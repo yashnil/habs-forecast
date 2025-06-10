@@ -1,0 +1,4 @@
+data_root: "/Users/yashnilmohanty/Desktop/HABs_Research/Processed"
+forecast_lag: 1
+hab_threshold: 5.0
+pos_weight: 6.7
