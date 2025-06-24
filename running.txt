@@ -1,3 +1,5 @@
+Running Instructions:
+
 micromamba activate habs
 cd ~/Desktop/habs-forecast
 python dir/fileName.py
