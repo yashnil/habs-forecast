@@ -30,14 +30,12 @@ PRED_VARS = [
 best_params = {
     "n_estimators": 300,
     "max_depth": 4,
-    "learning_rate": 0.018858981562472215,
-    "subsample": 0.6643226915701169,
-    "colsample_bytree": 0.8496171077713075,
-    "min_child_weight": 4.308082067248617,
-    "gamma": 2.092433875822892,
-    "reg_lambda": 0.06867791794984984,
-    "random_state": 42,          # keep reproducibility
-    "objective": "reg:squarederror"
+    "learning_rate": 0.015804704867439994,
+    "subsample": 0.9885668717366809,
+    "colsample_bytree": 0.8659690419027274,
+    "min_child_weight": 4.1935572069285945,
+    "gamma": 2.1888927171422337,
+    "reg_lambda": 0.6880408368756581
 }
 
 out_tsv = root / "Models" / "cv_metrics.tsv"
