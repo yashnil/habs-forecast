@@ -89,20 +89,32 @@ X_tr,y_tr = _sub(train);  X_va,y_va = _sub(val);  X_te,y_te = _sub(test)
 print("Split sizes train/val/test :", [len(y_tr), len(y_va), len(y_te)])
 
 # ── XGBoost parameters (tuned via Optuna) ─────────────────────────
-best_params = {
-    "n_estimators": 300,
-    "max_depth": 4,
-    "learning_rate": 0.015804704867439994,
-    "subsample": 0.9885668717366809,
-    "colsample_bytree": 0.8659690419027274,
-    "min_child_weight": 4.1935572069285945,
-    "gamma": 2.1888927171422337,
-    "reg_lambda": 0.6880408368756581,
-    "tree_method": "hist",
-    "objective": "reg:squarederror",
-    "n_jobs": -1,
-    "random_state": 42
-}
+tuned_yaml = OUT_DIR / "xgb_tuned_params.yaml"
+best_params = {}
+if tuned_yaml.exists():
+    import yaml, json
+    best_params.update(yaml.safe_load(open(tuned_yaml)))
+else:
+    # fallback defaults (only used the very first time)
+    best_params.update({
+        "n_estimators": 300,
+        "max_depth": 4,
+        "learning_rate": 0.015804704867439994,
+        "subsample": 0.9885668717366809,
+        "colsample_bytree": 0.8659690419027274,
+        "min_child_weight": 4.1935572069285945,
+        "gamma": 2.1888927171422337,
+        "reg_lambda": 0.6880408368756581,
+    })
+
+# add fixed items that aren’t tuned
+best_params.update(
+    tree_method = "hist",
+    objective   = "reg:squarederror",
+    n_jobs      = -1,
+    random_state= 42
+)
+
 
 # ── Regressor ─────────────────────────────────────────────────────
 reg = XGBRegressor(**best_params, eval_metric="rmse",
