@@ -14,7 +14,7 @@ Channels
 """
 from __future__ import annotations
 import pathlib, yaml, xarray as xr, numpy as np, torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from typing import Tuple, List
 
 # ────────────── paths & constants ────────────────────────────────
@@ -108,9 +108,28 @@ class HABMiniCube(Dataset):
 
 def make_loaders(batch:int=32, workers:int=4):
     pin = torch.cuda.is_available()
-    tr = DataLoader(HABMiniCube([2016,17,18,19]), batch_size=batch,
-                    shuffle=True,  num_workers=workers,
-                    pin_memory=pin, drop_last=True)
+
+    # --- build train sampler stratified by log_chl quintile ---
+    train_ds = HABMiniCube([2016,17,18,19])
+    # grab every target (log_chl at center)
+    all_targets = np.array([train_ds[i][1].item()
+                             for i in range(len(train_ds))])
+    # quintile edges
+    edges = np.percentile(all_targets, np.linspace(0, 100, 6))
+    # bin into 0–4
+    quint = np.digitize(all_targets, edges[1:-1], right=True)
+    # inverse‐frequency weights
+    counts = np.bincount(quint, minlength=5)
+    weights = 1.0 / counts[quint]
+    sampler = WeightedRandomSampler(weights,
+                                    num_samples=len(weights),
+                                    replacement=True)
+
+    tr = DataLoader(train_ds, batch_size=batch,
+                    sampler=sampler,
+                    num_workers=workers, pin_memory=pin,
+                    drop_last=True)
+
     va = DataLoader(HABMiniCube([2020]),          batch_size=batch,
                     shuffle=False, num_workers=workers,
                     pin_memory=pin, drop_last=True)
