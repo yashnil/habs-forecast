@@ -1,41 +1,80 @@
-
 #!/usr/bin/env python3
-"""Quick NaN scanner for the std-0 cube."""
-import pathlib, yaml, xarray as xr, numpy as np
+#scripts/debug_nans.py
+"""
+NaN scanner for the std-0(F) cube
+---------------------------------
+* Text table of NaN counts (water pixels only)
+* Optional spatial map (--plot <var> | ANY) saved as PNG
+"""
+from __future__ import annotations
+import argparse, pathlib, yaml, numpy as np, xarray as xr, matplotlib.pyplot as plt
 
-root  = pathlib.Path(__file__).resolve().parents[1]
-cfg   = yaml.safe_load(open(root / "config.yaml"))
-cube  = pathlib.Path(cfg["data_root"]) / "HAB_cube_std0_2016_2021.nc"
+# ───────── CLI ────────────────────────────────────────────────────
+p = argparse.ArgumentParser()
+p.add_argument("--cube", default="HAB_cube_std0F_2016_2021.nc",
+               help="NetCDF file inside data_root to inspect")
+p.add_argument("--plot", metavar="VAR",
+               help="Make PNG of NaN locations for VAR (or 'ANY')")
+args = p.parse_args()
 
-# ── load root + derivatives lazily (keeps memory small) ──────────
-ds_root   = xr.open_dataset(cube,                           chunks={"time": 50})
+# ───────── paths & load cube lazily ───────────────────────────────
+root = pathlib.Path(__file__).resolve().parents[1]
+cfg  = yaml.safe_load(open(root / "config.yaml"))
+cube = root / cfg["data_root"] / args.cube
+
+ds_root  = xr.open_dataset(cube, chunks={"time": 50})
 try:
-    ds_deriv  = xr.open_dataset(cube, group="derivatives", chunks={"time": 50})
+    ds_deriv = xr.open_dataset(cube, group="derivatives", chunks={"time": 50})
 except FileNotFoundError:
     ds_deriv = xr.Dataset()
 
 ds = xr.merge([ds_root, ds_deriv])
 
-print("╭───────────── NaN report ─────────────╮")
+# ───────── coast mask via thetao (finite anywhere) ───────────────
+try:
+    coast = xr.open_dataset(cube, group="masks")["water_mask"].load()
+except FileNotFoundError:
+    raise SystemExit("❌  masks/water_mask not found – run make_water_mask.py first")
+n_water = int(coast.sum())
+print(f"Water-grid cells : {n_water:,}\n")
+
+# ───────── NaN count per var (water only) ────────────────────────
+print("╭──────── NaN report (ocean only) ───────╮")
 bad_vars = []
 for v in ds.data_vars:
-    n_bad = int(ds[v].isnull().sum().compute())
+    nan_mask = ds[v].where(coast).isnull() & coast 
+    n_bad = int(nan_mask.sum().compute())
     if n_bad:
+        worst = int(nan_mask.sum(("lat","lon")).max().compute())
         bad_vars.append(v)
-        print(f"⚠️  {v:18s}  NaNs = {n_bad:,}")
+        print(f"⚠️  {v:18s} NaNs = {n_bad:,}  (worst composite: {worst:,})")
     else:
-        print(f"✓ {v:18s}  OK")
+        print(f"✓ {v:18s} OK")
 
-# ── bail out if everything is fine ───────────────────────────────
 if not bad_vars:
-    print("✓ No NaNs remain — dataset is clean.")
-    quit()
+    print("✓ No NaNs remain over water — dataset is clean.")
+    exit(0)
 
-print("\nInspecting first offending location …")
-for v in bad_vars:
-    bad_mask = ds[v].isnull()
-    if bad_mask.any():
-        idx = np.argwhere(bad_mask.values)[0]      # (lat, lon, time) order
-        lat_i, lon_i, time_i = idx
-        print(f"{v}: NaN at time={int(time_i)}  lat_i={lat_i}  lon_i={lon_i}")
-        break
+# ───────── optional plot ─────────────────────────────────────────
+if args.plot:
+    if args.plot != "ANY" and args.plot not in ds:
+        raise SystemExit(f"Variable '{args.plot}' not found in cube.")
+
+    if args.plot == "ANY":
+        nan2d = xr.concat([ds[v].where(coast).isnull() for v in ds.data_vars],
+                          dim="tmp").any("tmp").any("time")
+        title = "ANY variable"
+        fname = "nanmap_ANY.png"
+    else:
+        nan2d = ds[args.plot].where(coast).isnull().any("time")
+        title = args.plot
+        fname = f"nanmap_{args.plot}.png"
+
+    nan_img = nan2d.astype(int).plot.imshow(
+        cmap="Reds", add_colorbar=False
+    )
+    plt.title(f"NaN locations for {title} (red=NaN)")
+    plt.xlabel("lon index"); plt.ylabel("lat index")
+    plt.savefig(fname, dpi=200, bbox_inches="tight")
+    print(f"🖼  saved → {fname}")
+    plt.show()
