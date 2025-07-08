@@ -12,7 +12,7 @@ import pathlib, yaml, numpy as np, xarray as xr, pandas as pd
 from scipy.ndimage import distance_transform_edt
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from xgboost import XGBRegressor
-from _feature_utils import build_design_matrix
+from scripts.XGB._feature_utils import build_design_matrix
 
 # ── config & paths ────────────────────────────────────────────────
 root = pathlib.Path(__file__).resolve().parents[1]

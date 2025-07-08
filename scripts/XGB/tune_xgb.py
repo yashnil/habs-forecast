@@ -18,7 +18,7 @@ import pathlib, yaml, numpy as np, xarray as xr, optuna, joblib, json, warnings
 from scipy.ndimage import distance_transform_edt
 from sklearn.metrics import mean_squared_error
 from xgboost import XGBRegressor
-from _feature_utils import build_design_matrix
+from scripts.XGB._feature_utils import build_design_matrix
 
 warnings.filterwarnings("ignore", "The specified chunks")
 

@@ -36,7 +36,7 @@ if mat_path.exists() and vars_path.exists():
     feat_names = np.load(vars_path, allow_pickle=True)
 else:
     import xarray as xr, yaml
-    from _feature_utils import build_design_matrix
+    from scripts.XGB._feature_utils import build_design_matrix
 
     cfg   = yaml.safe_load(open(repo / "config.yaml"))
     cube  = pathlib.Path(cfg["data_root"]) / "HAB_cube_2016_2021.nc"

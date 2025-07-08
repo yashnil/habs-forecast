@@ -13,7 +13,7 @@ from sklearn.metrics import (mean_squared_error, mean_absolute_error, r2_score,
                              classification_report)
 from scipy.ndimage import distance_transform_edt
 from xgboost import XGBRegressor, XGBClassifier
-from _feature_utils import build_design_matrix
+from scripts.XGB._feature_utils import build_design_matrix
 
 # ── config ────────────────────────────────────────────────────────
 repo = pathlib.Path(__file__).resolve().parents[1]
