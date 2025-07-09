@@ -11,7 +11,7 @@ import argparse, pathlib, yaml, numpy as np, xarray as xr, matplotlib.pyplot as 
 
 # ───────── CLI ────────────────────────────────────────────────────
 p = argparse.ArgumentParser()
-p.add_argument("--cube", default="HAB_cube_std0F_2016_2021.nc",
+p.add_argument("--cube", default="HAB_cube_std0_2016_2021.nc",
                help="NetCDF file inside data_root to inspect")
 p.add_argument("--plot", metavar="VAR",
                help="Make PNG of NaN locations for VAR (or 'ANY')")
@@ -78,3 +78,34 @@ if args.plot:
     plt.savefig(fname, dpi=200, bbox_inches="tight")
     print(f"🖼  saved → {fname}")
     plt.show()
+
+'''
+Results:
+
+Water-grid cells : 32,642
+
+╭──────── NaN report (ocean only) ───────╮
+✓ chlor_a            OK
+✓ Kd_490             OK
+✓ nflh               OK
+✓ sst                OK
+✓ tp                 OK
+✓ avg_sdswrf         OK
+✓ t2m                OK
+✓ d2m                OK
+✓ u10                OK
+✓ v10                OK
+✓ uo                 OK
+✓ vo                 OK
+✓ zos                OK
+✓ so                 OK
+✓ thetao             OK
+✓ log_chl            OK
+✓ sin_doy            OK
+✓ cos_doy            OK
+✓ curl_uv            OK
+✓ dist_river_km      OK
+✓ log1p_dist_river   OK
+✓ No NaNs remain over water — dataset is clean.
+
+'''
