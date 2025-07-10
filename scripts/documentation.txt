@@ -1,0 +1,108 @@
+1. Data Acquisition & Initial Harmonization
+-------------------------------------------
+
+1.1 NASA Ocean Color (Aqua/Terra) 8-day composites  
+    • Variables: Chlorophyll-a (chlor_a), nFLH, Kd₄₉₀, SST  
+    • Spatial: 4 km native; subset to 32 N–50 N, 125 W–115 W  
+    • Temporal: 8-day aggregates, Jan 2003–Jan 2025  
+    • Preprocessing:  
+        – Trim to common window (2016-01-09–2021-06-17)  
+        – Convert chlor_a ≤ 0 → NaN, then log₁₀ → log_chl  
+
+1.2 ERA5 Reanalysis (CDS) daily  
+    • Variables: 10 m u/v wind, 2 m air temp & dewpoint, precip, downward SW radiation  
+    • Spatial: ~31 km native; regridded (bilinear) to 4 km ocean-mask grid  
+    • Temporal: daily (4 timestamps/day) → aggregated to 8-day means  
+
+1.3 Copernicus Global Ocean Physics  
+    • Variables: salinity (so), potential temperature (thetao), uo/vo, sea-surface height (zos)  
+    • Spatial: 8 km native; regridded → 4 km grid (nearest + bilinear)  
+    • Temporal: daily → aggregated to 8-day  
+
+1.4 Derived Physical Predictors  
+    • Curl: ∂v/∂x – ∂u/∂y via finite differences, lat-scaled to m⁻¹ → curl_uv  
+    • Distance to river mouths:  
+        – Sacramento & Columbia points → Euclidean distance transform → dist_river_km + log1p_dist_river  
+
+1.5 Master “Root” Cube  
+    • Merged ALL sources into a single NetCDF (time, lat, lon)  
+    • Groups:  
+        – / (root): primary vars + water_mask  
+        – /derivatives: curl_uv, dist_river_km, log1p_dist_river  
+        – /masks: strict water_mask (ever-non-NaN in chlor_a & thetao)  
+
+2. Imputation & “All-filled” Cube
+---------------------------------
+
+2.1 Variable-specific Imputation (…_varspec_imputed.nc)  
+    For each var on ocean only (mask):  
+    1. Linear interp over time + ffill/bfill at edges  
+    2. Nearest-neighbor spatial fill (lat→lon→lat→lon)  
+    3. Clip to original observed [min, max]  
+
+2.2 Water-mask Refinement (“no-stripes” fix)  
+    • Observed 3-column & 1-row artifacts → forced lon ≥ –116.0 or lat ≤ 32.0 → land  
+    • Re-mask all 2D vars + overwrite water_mask → …_varspec_nostripes.nc  
+
+3. Feature Engineering & Mini-cube Generation
+---------------------------------------------
+
+3.1 Seasonal Features  
+    • sin_doy & cos_doy for day-of-year seasonality  
+
+3.2 Mini-cube Sampler (scripts/data_cubes.py)  
+    • Patch: 64×64 px around each coastal pixel  
+    • Sequence: 4 consecutive 8-day frames → (B,4,20,64,64)  
+    • Label: next-frame 64×64 log_chl patch + 64×64 water mask  
+    • Centers: only where center log_chl(t) is observed  
+
+3.3 Masked Convolution Strategy  
+    • Zero out land inputs after per-var ocean μ/σ standardization  
+    • In forward & loss: multiply/where() with water mask  
+    • Loss = Σ(err²) over water & observed only  
+
+4. In-RAM Normalization (no new on-disk cube)
+----------------------------------------------
+
+• Compute μ/σ per var over ocean pixels from full cube  
+• In __getitem__: tile[:,c] = (tile[:,c] – μ)/σ, then NaN→0 to zero-out land  
+• Labels (log_chl) remain in physical units  
+
+5. Modeling
+-----------
+
+5.1 XGBoost Baseline  
+    • Design matrix: current vars + lags 1–3 + 3-comp means + nat. seasonality + optical anomalies + curl + dist_river → 67 dims  
+    • Mask: coastal (distance ≤ 4 cells) & no NaNs  
+    • Splits: train=2016–2019, val=2020, test=2021  
+    • Optuna tune: n_estimators 300–1500, max_depth 4–10, η 3e-4–0.3, subsample, γ, λ…  
+    • Metrics: RMSE(log₁₀) → convert back to µg L⁻¹  
+
+5.2 ConvLSTM
+    • Architecture:  
+        – PixelLSTMCell stack: 20 →32 → 32 →64 hidden channels (per px LSTMCell)  
+        – 1×1 conv head → Δlog_chl patch  
+    • Training: Adam (lr=1e-4, weight_decay=1e-5), clip_grad_norm=1.0, ReduceLROnPlateau(patience=3), early-stop(patience=10)  
+    • Eval: RMSE over water & observed only  
+    • First-run RMSE ≈ 0.22 (log-chlorophyll)  
+
+6. Diagnostics & Visualization
+------------------------------
+
+1. Persistence vs. Climatology RMSE  
+2. RMSE breakdown: by season, lat band, log_chl quintile  
+3. Predicted vs. Observed scatter (water only)  
+4. Mean spatial residual map (ocean bias), land greyed out, lon/lat mesh, equal aspect  
+5. Residual histogram & QQ-plot  
+
+7. Major Challenges & Take-homes
+-------------------------------
+
+• **Multi-source regridding & alignment** across disparate grids & time steps  
+• **Cloud/data gaps**: variable-specific minima for log_chl & strategic spatial fills  
+• **Land-mask artifacts**: “nostripes” hack for rogue columns/rows  
+• **Masked convolutions**: ensuring no land leakage while preserving neighborhood context  
+• **Unit preservation**: in-RAM standardization vs. persisting a normalized cube  
+
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––  
+7/9/25 | End of update  
