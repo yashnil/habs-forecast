@@ -1,2 +1,2 @@
-val_rmse=0.61193
-test_rmse=0.44455
+val_rmse=0.21343
+test_rmse=0.22312
