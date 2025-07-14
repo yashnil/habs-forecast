@@ -35,8 +35,8 @@ with xr.open_dataset(cube, chunks={"time": 50}) as ds:
     # 2. Distance to river mouths                        #
     # -------------------------------------------------- #
     river_pts = {                  # (lat ,  lon)
-        "sacramento": (38.00 , -121.80),
-        "columbia"  : (46.25 , -124.05),
+        "sacramento": (38.06325 , -121.85274),
+        "columbia"  : (46.246922 , -124.09344),
     }
 
     river_mask = xr.zeros_like(ds['chlor_a'].isel(time=0), dtype=bool)
