@@ -1,31 +1,83 @@
 #!/usr/bin/env python3
-# scripts/make_water_mask.py
+# scripts/helpers/make_water_mask.py
 """
-Build precise coastal-water mask and store it in the cube:
-group='masks'/water_mask   (1=ocean, 0=land/invalid)
+Append two masks to HAB_master_8day_4km.nc
+
+ /masks/water_mask          1 = pixel ever ocean (any layer non‑NaN)
+ /masks/coastal_water_mask  1 = ocean pixel ≤ 16 km from land
 """
 from __future__ import annotations
-import pathlib, yaml, xarray as xr
+import pathlib, numpy as np, xarray as xr, netCDF4
+from  scipy.ndimage import distance_transform_edt
 
-root = pathlib.Path(__file__).resolve().parents[1]
-cfg  = yaml.safe_load(open(root / "config.yaml"))
-cube = pathlib.Path(cfg["data_root"]) / "HAB_cube_std0_2016_2021.nc"
+# ── config ──────────────────────────────────────────────────────────────
+ROOT = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research")
+CUBE = ROOT / "Data" / "Finalized" / "HAB_master_8day_4km.nc"
 
-print("▶ building strict water-mask …")
-with xr.open_dataset(cube, chunks={"time": 50}) as ds:
+MAX_DIST_KM = 16                    # ≈10 mi (4 MODIS cells)
+R_EARTH     = 6_371_000
+DEG2M       = np.pi / 180 * R_EARTH
 
-    chl_foot   = ds["chlor_a"].isnull().all("time") == False
-    theta_foot = ds["thetao"].isnull().all("time") == False
-    water_mask = (chl_foot & theta_foot).load()      # (lat,lon) boolean
+print("▶ building water / coastal‑water masks …")
+with xr.open_dataset(CUBE, chunks={"time": 90}) as ds:
+    lat, lon = ds["lat"], ds["lon"]
 
-n_pix = int(water_mask.sum())
-print(f"   ✓ water pixels: {n_pix:,} / {water_mask.size} "
-      f"({n_pix/water_mask.size*100:.1f} %)")
+    # 1) ever‑water mask
+    water_mask = (
+        (~ds["chlor_a"].isnull()).any("time") &
+        (~ds["thetao"  ].isnull()).any("time")
+    ).load()                                           # (lat,lon) bool
 
-# ─── write as its own Dataset so xarray can create the subgroup ───
-ds_mask = xr.Dataset({"water_mask": water_mask.astype("int8")})
-ds_mask.to_netcdf(
-    cube, mode="a", group="masks", engine="netcdf4",
-    encoding={"water_mask": {"zlib": True, "complevel": 4}}
-)
-print("✓ water_mask appended under group='masks'")
+    # 2) distance‑to‑land in pixels – run EDT once on the full NumPy array
+    #    SciPy’s EDT returns the distance of EVERY pixel to the nearest
+    #    **zero** pixel.  We want “distance from water → land”, so:
+    #        • water = 1  (foreground)
+    #        • land  = 0  (background)
+    dist_px_np = distance_transform_edt(water_mask.values.astype("uint8"))
+    dist_px    = xr.DataArray(dist_px_np,
+                              coords=water_mask.coords,
+                              dims=water_mask.dims)
+
+    # 3) px → km  (mean grid‑cell ≈4.6 km)
+    dlat  = float(abs(lat.diff("lat").mean()))      # ensure +ve
+    dlon  = float(abs(lon.diff("lon").mean()))
+    dy_km = dlat * DEG2M / 1_000
+    dx_km = (dlon * DEG2M * np.cos(np.deg2rad(lat))).mean() / 1_000
+    cell_km = (dx_km + dy_km) / 2.0
+
+    dist_km = (dist_px * cell_km).astype("float32")
+
+    coastal_water_mask = (water_mask & (dist_km <= MAX_DIST_KM)).astype("int8")
+
+    # ── diagnostics ────────────────────────────────────────────────────
+    sea_px   = int(water_mask.sum())
+    coast_px = int(coastal_water_mask.sum())
+    print(f"   water pixels        : {sea_px:,}")
+    print(f"   coastal ≤{MAX_DIST_KM} km : {coast_px:,}  "
+          f"({coast_px / sea_px * 100:.1f} %)")
+    print(f"   max distance in domain: {dist_km.max().item():.1f} km")
+
+    masks_ds = xr.Dataset(
+        {"water_mask": water_mask.astype("int8"),
+         "coastal_water_mask": coastal_water_mask}
+    )
+    masks_ds["water_mask"].attrs.update(
+        long_name="ocean pixel ever valid", flag_values=[0, 1])
+    masks_ds["coastal_water_mask"].attrs.update(
+        long_name=f"ocean pixel ≤ {MAX_DIST_KM} km from land",
+        flag_values=[0, 1])
+
+print("✚ writing to cube …")
+with netCDF4.Dataset(CUBE, "a") as nc:
+    grp = nc.groups.get("masks") or nc.createGroup("masks")
+
+    for name in ("water_mask", "coastal_water_mask"):
+        da = masks_ds[name]
+        if name not in grp.variables:
+            var = grp.createVariable(name, "i1", ("lat", "lon"),
+                                     zlib=True, complevel=4,
+                                     chunksizes=(144, 80))
+            var.setncatts(da.attrs)
+        grp.variables[name][:] = da.values
+
+print("✅  masks appended – done!")

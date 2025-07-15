@@ -62,10 +62,17 @@ delayed = master.to_netcdf(OUT_NC, encoding=enc, engine="netcdf4", compute=False
 with ProgressBar():
     delayed.compute()
 
+'''
 # ───────── optional Zarr (left disabled) -----------------------------------------
-if OUT_ZARR.exists(): OUT_ZARR.unlink(missing_ok=True)
+if OUT_ZARR.exists():
+    if OUT_ZARR.is_dir():
+        shutil.rmtree(OUT_ZARR)          # <- works for directories
+    else:
+        OUT_ZARR.unlink()                # <- works for plain files
+# uncomment if/when you really want the Zarr output
 print(f"→ writing Zarr    {OUT_ZARR.name}")
 master.chunk({"time": 90, "lat": 128}).to_zarr(OUT_ZARR, mode="w")
+'''
 
 # ───────── QC snapshots ----------------------------------------------------------
 print("→ QC snapshots")
