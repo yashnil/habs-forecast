@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# scripts/interpolate_nearest.py
 import pathlib, yaml
 import xarray as xr
 import numpy as np

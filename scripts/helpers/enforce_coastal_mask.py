@@ -77,3 +77,27 @@ for ts in coastal_ds.time.values[::46]:          # every ≈ quarter
     )
 
 print("✅  all set – inspect snapshots in Panoply to verify the coastal band.")
+
+'''
+NaN fraction (entire grid vs. coastal strip)
+| variable      | all pixels   | coastal strip   |
+|---------------|--------------|-----------------|
+| chlor_a       | 97.8 %       | 97.8 %          |
+| Kd_490        | 97.8 %       | 97.8 %          |
+| nflh          | 98.0 %       | 98.0 %          |
+| tp            | 97.4 %       | 97.4 %          |
+| avg_sdswrf    | 97.4 %       | 97.4 %          |
+| u10           | 97.4 %       | 97.4 %          |
+| v10           | 97.4 %       | 97.4 %          |
+| t2m           | 97.4 %       | 97.4 %          |
+| d2m           | 97.4 %       | 97.4 %          |
+| so            | 97.4 %       | 97.4 %          |
+| thetao        | 97.4 %       | 97.4 %          |
+| uo            | 97.4 %       | 97.4 %          |
+| vo            | 97.4 %       | 97.4 %          |
+| zos           | 97.4 %       | 97.4 %          |
+| log_chl       | 97.8 %       | 97.8 %          |
+| curl_uv       | 97.4 %       | 97.4 %          |
+| dist_river_km | 97.4 %       | 97.4 %          |
+
+'''

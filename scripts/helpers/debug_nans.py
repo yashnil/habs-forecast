@@ -37,3 +37,29 @@ print("NaN fraction *inside* the 16‑km coastal stripe")
 print(tabulate(rows,
                headers=["variable", "NaN count", "stripe cells", "NaN %"],
                tablefmt="github"))
+
+'''
+   coastal‑stripe cells: 2,325,783 (2.64 % of the grid)
+
+NaN fraction *inside* the 16‑km coastal stripe
+| variable      | NaN count   | stripe cells   | NaN %   |
+|---------------|-------------|----------------|---------|
+| chlor_a       | 411,982     | 2,325,783      | 17.71 % |
+| Kd_490        | 411,977     | 2,325,783      | 17.71 % |
+| nflh          | 588,170     | 2,325,783      | 25.29 % |
+| tp            | 0           | 2,325,783      | 0.00 %  |
+| avg_sdswrf    | 0           | 2,325,783      | 0.00 %  |
+| u10           | 0           | 2,325,783      | 0.00 %  |
+| v10           | 0           | 2,325,783      | 0.00 %  |
+| t2m           | 0           | 2,325,783      | 0.00 %  |
+| d2m           | 0           | 2,325,783      | 0.00 %  |
+| so            | 0           | 2,325,783      | 0.00 %  |
+| thetao        | 0           | 2,325,783      | 0.00 %  |
+| uo            | 0           | 2,325,783      | 0.00 %  |
+| vo            | 0           | 2,325,783      | 0.00 %  |
+| zos           | 0           | 2,325,783      | 0.00 %  |
+| log_chl       | 411,982     | 2,325,783      | 17.71 % |
+| curl_uv       | 0           | 2,325,783      | 0.00 %  |
+| dist_river_km | 0           | 2,325,783      | 0.00 %  |
+
+'''
