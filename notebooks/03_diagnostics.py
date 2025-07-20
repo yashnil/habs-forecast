@@ -2,43 +2,25 @@
 """
 03_diagnostics.py  —  ConvLSTM v0.3 diagnostic suite
 ====================================================
+Generates publication / science-fair quality diagnostics for the ConvLSTM
+baseline trained in 02_baseline_model.py.
 
-Generates publication / science-fair quality diagnostics for the trained
-California HABs ConvLSTM baseline model (v0.3).
+Key guarantees
+--------------
+* Uses the **same predictor list** that the model was trained with
+  (the 30-variable ALL_VARS list in 02_baseline_model.py).
+* Loads the checkpoint with strict shape checking (`strict=True`) so a
+  mismatch is caught immediately.
+* Same SEQ = 4 (32-day history) and LEAD = 1 (8-day forecast) defaults.
+* Produces the usual CSV/NetCDF/PNG output bundle.
 
-Inputs
-------
-* HAB_freeze_v1.nc (analysis-ready coastal strip dataset)
-* convLSTM_best.pt (trained model weights; architecture as in v0.3 training)
-* SAME variable list & temporal split as training:
-      train < 2016-01-01
-      val   2016-01-01 .. 2018-12-31
-      test  > 2018-12-31
-* SEQ=4 history, LEAD=1 (8 d), full coastal grid inference.
-
-Outputs
--------
-* metrics_global.csv        (train/val/test, model & persistence, log & mg)
-* metrics_month.csv         (month skill)
-* metrics_bins.csv          (chl quartile bins)
-* metrics_timeseries.csv    (domain-mean obs/pred/pers series)
-* predicted_fields.nc       (log_chl_pred, log_chl_true, log_chl_pers, valid_mask)
-* skill_maps.npz            (rmse_model, rmse_pers, skill_pct)
-* suite of PNG figs in OUT_DIR:
-      fig_timeseries.png
-      fig_scatter_val.png
-      fig_month_skill.png
-      fig_skill_maps.png
-      fig_bins_skill.png
-      fig_residual_hist.png
-
-Notes
------
-* Uses μ,σ computed from TRAIN years (consistent w/ training).
-* If `pixel_ok` missing, it is built from log_chl finite >=20% coverage rule.
-* Computations done in float32; metrics in float64.
-* Designed to run on CPU reasonably; will use GPU if available.
-
+Run example
+-----------
+python 03_diagnostics.py \
+  --freeze "/path/to/HAB_freeze_v1.nc" \
+  --ckpt   "Models/convLSTM_best.pt"   \
+  --out    "Diagnostics_v0p3"          \
+  --batch  64            # 64–128 on GPU; 8–16 on CPU
 """
 
 from __future__ import annotations
@@ -50,47 +32,49 @@ import torch
 import torch.nn as nn
 from torch.cuda.amp import autocast
 import matplotlib
-matplotlib.use("Agg")  # headless
+matplotlib.use("Agg")  # headless backend
 import matplotlib.pyplot as plt
 
-# --------------------------------------------------
-# CLI
-# --------------------------------------------------
-def get_args():
-    p = argparse.ArgumentParser(description="ConvLSTM v0.3 diagnostics")
-    p.add_argument("--freeze", required=True, help="Path to HAB_freeze_v1.nc")
-    p.add_argument("--ckpt",   required=True, help="Path to trained convLSTM_best.pt")
-    p.add_argument("--out",    default="Diagnostics", help="Output directory")
-    p.add_argument("--seq",    type=int, default=4, help="History length (composites)")
-    p.add_argument("--lead",   type=int, default=1, help="Lead steps (1=8d)")
-    p.add_argument("--batch",  type=int, default=1, help="Batch size for inference (leave 1; memory saver)")
-    p.add_argument("--no_mixed_prec", action="store_true", help="Disable autocast even if CUDA")
-    p.add_argument("--no_gpu", action="store_true", help="Force CPU")
-    return p.parse_args()
-
-# --------------------------------------------------
-# Config (variable groups as in v0.3 training)
-# --------------------------------------------------
+# ------------------------------------------------------------------ #
+# Predictor lists (identical to 02_baseline_model.py)
+# ------------------------------------------------------------------ #
 SATELLITE = ["log_chl", "Kd_490", "nflh"]
 METEO     = ["u10","v10","wind_speed","tau_mag","avg_sdswrf","tp","t2m","d2m"]
-OCEAN     = ["uo","vo","cur_speed","cur_div","cur_vort","zos","ssh_grad_mag","so","thetao"]
+OCEAN     = ["uo","vo","cur_speed","cur_div","cur_vort","zos",
+             "ssh_grad_mag","so","thetao"]
 DERIVED   = ["chl_anom_monthly",
              "chl_roll24d_mean","chl_roll24d_std",
              "chl_roll40d_mean","chl_roll40d_std"]
 STATIC    = ["river_rank","dist_river_km","ocean_mask_static"]
 ALL_VARS  = SATELLITE + METEO + OCEAN + DERIVED + STATIC
+# ------------------------------------------------------------------ #
 
-# We'll find the index of log_chl dynamically after pruning missing vars.
+# ------------------------------------------------------------------ #
+# CLI
+# ------------------------------------------------------------------ #
+def get_args():
+    p = argparse.ArgumentParser(description="ConvLSTM v0.3 diagnostics")
+    p.add_argument("--freeze", required=True, help="Path to HAB_freeze_v1.nc")
+    p.add_argument("--ckpt",   required=True, help="Path to convLSTM_best.pt")
+    p.add_argument("--out",    default="Diagnostics", help="Output directory")
+    p.add_argument("--seq",    type=int, default=4, help="History length (default 4)")
+    p.add_argument("--lead",   type=int, default=1, help="Lead steps (default 1)")
+    p.add_argument("--batch",  type=int, default=1,
+                   help="Number of core time steps per forward pass")
+    p.add_argument("--no_mixed_prec", action="store_true", help="Disable AMP")
+    p.add_argument("--no_gpu", action="store_true", help="Force CPU")
+    return p.parse_args()
+
+# ------------------------------------------------------------------ #
+# Helper functions
+# ------------------------------------------------------------------ #
 def discover_vars(ds):
-    vlist = [v for v in ALL_VARS if v in ds.data_vars]
-    if "log_chl" not in vlist:
-        raise RuntimeError("Dataset missing 'log_chl' — required target & predictor.")
-    log_idx = vlist.index("log_chl")
-    return vlist, log_idx
+    """Return (varlist, log_chl index) for variables present in BOTH freeze & ALL_VARS."""
+    varlist = [v for v in ALL_VARS if v in ds.data_vars]
+    if "log_chl" not in varlist:
+        raise RuntimeError("Dataset missing 'log_chl' — cannot run diagnostics.")
+    return varlist, varlist.index("log_chl")
 
-# --------------------------------------------------
-# Dataset prep
-# --------------------------------------------------
 def build_pixel_ok_if_needed(ds, thresh=0.20):
     if "pixel_ok" in ds:
         return ds.pixel_ok.astype(bool)
@@ -98,7 +82,6 @@ def build_pixel_ok_if_needed(ds, thresh=0.20):
     return (frac >= thresh).astype("uint8").astype(bool)
 
 def time_splits(times):
-    """Return boolean masks for train/val/test given datetime64 array."""
     t = np.asarray(times)
     train = t <  np.datetime64("2016-01-01")
     val   = (t >= np.datetime64("2016-01-01")) & (t <= np.datetime64("2018-12-31"))
@@ -106,23 +89,16 @@ def time_splits(times):
     return train, val, test
 
 def norm_stats(ds, train_mask, varlist):
-    """Compute (mu,sd) per var (train years only for dynamic vars)."""
     stats = {}
-    train_idx = np.where(train_mask)[0]
+    idx = np.where(train_mask)[0]
     for v in varlist:
-        da = ds[v]
-        if "time" in da.dims:
-            da_tr = da.isel(time=train_idx)
-        else:
-            da_tr = da
-        mu = float(da_tr.mean(skipna=True))
-        sd = float(da_tr.std(skipna=True))
-        if not np.isfinite(sd) or sd == 0.0:
-            sd = 1.0
+        da = ds[v].isel(time=idx) if "time" in ds[v].dims else ds[v]
+        mu = float(da.mean(skipna=True))
+        sd = float(da.std(skipna=True)) or 1.0
         stats[v] = (mu, sd)
     return stats
 
-def zscore_np(arr, mu_sd):
+def z_np(arr, mu_sd):
     mu, sd = mu_sd
     return (arr - mu) / sd
 
@@ -169,6 +145,23 @@ class ConvLSTM(nn.Module):
             o1,h1 = self.l1(f,h1)
             o2,h2 = self.l2(o1,h2)
         return self.head(o2).squeeze(1)   # (B,H,W) ∆log_chl
+    
+
+# ------------------------------------------------------------------ #
+# Build (seq,C,H,W) input block for time index k
+# ------------------------------------------------------------------ #
+def make_input(ds, varlist, stats, k, seq, lat_slice, lon_slice):
+    frames = []
+    for dt in range(seq):
+        t = k - seq + 1 + dt
+        bands = []
+        for v in varlist:
+            da = ds[v].isel(
+                time=t, lat=lat_slice, lon=lon_slice) if "time" in ds[v].dims else \
+                 ds[v].isel(lat=lat_slice, lon=lon_slice)
+            bands.append(np.nan_to_num(z_np(da.values, stats[v]), nan=0.0))
+        frames.append(np.stack(bands, 0))
+    return np.stack(frames, 0).astype(np.float32)
 
 # --------------------------------------------------
 # Build input tensor for a given core time index k
@@ -189,91 +182,75 @@ def build_input_block(ds, varlist, stats, k, seq, patch_slice_lat, patch_slice_l
             else:
                 da = darr.isel(lat=patch_slice_lat, lon=patch_slice_lon)
             arr = da.values
-            arr = np.nan_to_num(zscore_np(arr, stats[v]), nan=0.0)
+            arr = np.nan_to_num(z_np(arr, stats[v]), nan=0.0)
             bands.append(arr)
         frames.append(np.stack(bands,0))
     return np.stack(frames,0).astype(np.float32)
 
-# --------------------------------------------------
-# Full-grid inference
-# --------------------------------------------------
-def run_full_inference(ds, varlist, log_idx, stats, pixel_ok, seq, lead, device,
-                       batch=1, mixed_prec=True, verbose=True):
-    """
-    Slide across time (core idx k) -> predict log_chl at k+lead.
-
-    Returns:
-      times_pred     : np.ndarray datetime64 for prediction times
-      pred_log       : (T,H,W) float32
-      pers_log       : (T,H,W) float32 (persistence = last log_chl frame)
-      true_log       : (T,H,W) float32
-      valid_mask     : (T,H,W) bool   (= pixel_ok & finite true)
-    """
+# ------------------------------------------------------------------ #
+# Full-grid inference loop
+# ------------------------------------------------------------------ #
+def run_inference(ds, varlist, log_idx, stats, pixel_ok,
+                  seq, lead, batch_k, device, mixed_prec=True, verbose=True):
     ntime = ds.sizes["time"]
-    H     = ds.sizes["lat"]
-    W     = ds.sizes["lon"]
+    H, W  = ds.sizes["lat"], ds.sizes["lon"]
 
-    BATCH_K = 16
+    # bounding box of valid coast pixels to save work
+    lat_any = np.where(pixel_ok.any("lon"))[0]
+    lon_any = np.where(pixel_ok.any("lat"))[0]
+    lat_slice = slice(lat_any.min(), lat_any.max()+1)
+    lon_slice = slice(lon_any.min(), lon_any.max()+1)
+    Hs = lat_any.max() - lat_any.min() + 1
+    Ws = lon_any.max() - lon_any.min() + 1
 
-    core_range = np.arange(seq-1, ntime - lead)  # inclusive start; exclusive stop of invalid tail
-    Tpred      = core_range.size
+    core_range = np.arange(seq-1, ntime-lead)
+    Tpred = len(core_range)
     times_pred = ds.time.values[core_range + lead]
 
-    pred_log = np.full((Tpred,H,W), np.nan, np.float32)
-    pers_log = np.full((Tpred,H,W), np.nan, np.float32)
-    true_log = np.full((Tpred,H,W), np.nan, np.float32)
-    valid_m  = np.zeros((Tpred,H,W), bool)
+    pred_log = np.full((Tpred, Hs, Ws), np.nan, np.float32)
+    pers_log = np.full_like(pred_log, np.nan)
+    true_log = np.full_like(pred_log, np.nan)
+    valid_m  = np.zeros_like(pred_log, bool)
 
-    # init model
-    Cin = len(varlist)
-    model = ConvLSTM(Cin).to(device)
+    model = ConvLSTM(len(varlist)).to(device)
+    model.load_state_dict(
+        torch.load(args.ckpt, map_location=device), strict=True)
     model.eval()
 
-    # load checkpoint
-    # We'll cautiously allow missing/unexpected keys (strict=False) to guard if you changed varlist length.
-    ckpt_path = args.ckpt
-    state = torch.load(ckpt_path, map_location=device)
-    missing, unexpected = model.load_state_dict(state, strict=False)
-    if verbose:
-        if missing:   print("[diag] Warning: missing keys in ckpt:", missing)
-        if unexpected:print("[diag] Warning: unexpected keys in ckpt:", unexpected)
-
-    # slices (full domain)
-    lat_slice = slice(None)
-    lon_slice = slice(None)
-
-    # loop
-    core_range = np.arange(seq-1, ntime-lead)
-    for i in range(0, len(core_range), BATCH_K):
-        ks   = core_range[i : i+BATCH_K]
-        X_np = np.stack([
-            build_input_block(ds, varlist, stats, k, seq,
-                            slice(None), slice(None))    # full grid
-            for k in ks
-        ], 0)                                             # (B,seq,C,H,W)
-        X_t  = torch.from_numpy(X_np).to(device)
+    for i in range(0, Tpred, batch_k):
+        ks = core_range[i:i+batch_k]
+        X_np = np.stack([make_input(ds, varlist, stats, k, seq,
+                                    lat_slice, lon_slice) for k in ks], 0)
+        X_t = torch.from_numpy(X_np).to(device)
 
         with torch.no_grad(), autocast(enabled=mixed_prec):
-            delta = model(X_t).cpu().numpy()              # (B,H,W)
+            delta = model(X_t).cpu().numpy()   # (B, Hs, Ws)
 
-        last_log = ds["log_chl"].isel(
-            time=(ks), lat=slice(None), lon=slice(None)
-        ).values.astype(np.float32)                       # (B,H,W)
-        pred     = last_log + delta
-        truth    = ds["log_chl"].isel(
-            time=(ks + lead), lat=slice(None), lon=slice(None)
-        ).values.astype(np.float32)
+        last_log = ds.log_chl.isel(
+            time=ks, lat=lat_slice, lon=lon_slice).values.astype(np.float32)
+        truth = ds.log_chl.isel(
+            time=ks+lead, lat=lat_slice, lon=lon_slice).values.astype(np.float32)
 
-        idx_out = slice(i, i+len(ks))                     # write block
-        pred_log[idx_out] = pred
-        pers_log[idx_out] = last_log
-        true_log[idx_out] = truth
-        valid_m [idx_out] = pixel_ok & np.isfinite(truth)
+        idx = slice(i, i+len(ks))
+        pred_log[idx] = last_log + delta
+        pers_log[idx] = last_log
+        true_log[idx] = truth
+        valid_m[idx]  = pixel_ok.isel(
+            lat=lat_slice, lon=lon_slice).values & np.isfinite(truth)
 
         if verbose:
-            print(f"[diag] processed {i+len(ks):>4}/{len(core_range)} …", flush=True)
+            print(f"[diag] processed {i+len(ks):>4}/{Tpred}", flush=True)
 
-    return times_pred, pred_log, pers_log, true_log, valid_m
+    # pad back to full grid for plotting convenience
+    def pad(arr, fill=np.nan):
+        out = np.full((Tpred, H, W),
+                      fill if arr.dtype.kind == "f" else False,
+                      arr.dtype)
+        out[:, lat_any.min():lat_any.max()+1,
+                lon_any.min():lon_any.max()+1] = arr
+        return out
+
+    return times_pred, pad(pred_log), pad(pers_log), pad(true_log), pad(valid_m, False)
 
 # --------------------------------------------------
 # Metric helpers
@@ -490,48 +467,35 @@ if __name__ == "__main__":
 
     FREEZE = pathlib.Path(args.freeze).expanduser().resolve()
     CKPT   = pathlib.Path(args.ckpt  ).expanduser().resolve()
-    OUT    = pathlib.Path(args.out   ).expanduser().resolve()
-    OUT.mkdir(exist_ok=True, parents=True)
+    OUTDIR = pathlib.Path(args.out   ).expanduser().resolve()
+    OUTDIR.mkdir(parents=True, exist_ok=True)
+    OUT = OUTDIR
 
     if not FREEZE.is_file():
         sys.exit(f"[ERR] freeze file not found: {FREEZE}")
     if not CKPT.is_file():
         sys.exit(f"[ERR] checkpoint not found: {CKPT}")
 
-    # Device / mixed precision flags
-    if args.no_gpu:
-        device = torch.device("cpu")
-    else:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    mixed_prec = (not args.no_mixed_prec) and device.type=="cuda"
+    device = torch.device("cpu") if args.no_gpu else \
+             torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    mixed_prec = (not args.no_mixed_prec) and device.type == "cuda"
 
-    print("Loading data & checkpoint …", flush=True)
-    ds = xr.open_dataset(FREEZE, chunks={"time":-1})  # read in 1 chunk along time for speed
-    ds.load()                          # ①  pull everything once into RAM
+    print("[diag] loading data …", flush=True)
+    ds = xr.open_dataset(FREEZE, chunks={"time": -1})
+    ds.load()  # pull into RAM once
 
-    # pixel_ok
     pixel_ok = build_pixel_ok_if_needed(ds)
-
-    # var discovery
     varlist, LOG_IDX = discover_vars(ds)
+    Cin = len(varlist)              # MUST match checkpoint
 
-    DIAG_VARS = ["log_chl","Kd_490","nflh","wind_speed",
-             "tau_mag","chl_anom_monthly","ocean_mask_static"]
-    varlist, LOG_IDX = [v for v in DIAG_VARS if v in ds], DIAG_VARS.index("log_chl")
-
-    # time splits (based on PRED times! but for stats we use raw times)
-    times_all = ds.time.values
-    tr_mask, va_mask, te_mask = time_splits(times_all)
-
-    # norm stats from TRAIN years
+    tr_mask, va_mask, te_mask = time_splits(ds.time.values)
     stats = norm_stats(ds, tr_mask, varlist)
 
-    # Run inference
-    times_pred, pred_log, pers_log, true_log, valid_m = run_full_inference(
+    print("[diag] running inference …", flush=True)
+    times_pred, pred_log, pers_log, true_log, valid_m = run_inference(
         ds, varlist, LOG_IDX, stats, pixel_ok,
-        seq=args.seq, lead=args.lead, device=device,
-        batch=args.batch, mixed_prec=mixed_prec, verbose=True
-    )
+        seq=args.seq, lead=args.lead, batch_k=args.batch,
+        device=device, mixed_prec=mixed_prec)
 
     # Align train/val/test subsets to PRED times (k+lead)
     t_pred = times_pred
@@ -638,6 +602,6 @@ python notebooks/03_diagnostics.py \
   --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_freeze_v1.nc" \
   --ckpt  "/Users/yashnilmohanty/Desktop/habs-forecast/Models/convLSTM_best.pt" \
   --out   "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_v0p3" \
-  --batch 16
+  --batch 64
 
 '''
