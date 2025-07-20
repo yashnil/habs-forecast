@@ -1,0 +1,18 @@
+# California Coastal HABs ML - Data Freeze v1
+source_path: "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Finalized/HAB_master_8day_4km_coastal_CA_climclip.nc"
+output_path: "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_freeze_v1.nc"
+
+target: "log_chl"
+floor_mg_m3: 0.056616          # detection floor
+floor_policy: "retain_flag"    # keep & flag sub-floor pixels
+
+coastal_mask_method: "non_nan_log_chl"
+drop_low_coverage: 0.20        # drop timestep if <80% valid ocean; null to keep all
+
+roll_windows: [1, 3, 5]        # 8, 24, 40 d
+lag_steps: [1, 2, 3]           # 8, 16, 24 d
+
+include_physics_derived: true  # wind stress, currents, SSH grad, river rank
+river_decay_km: 50.0
+
+chunk_time: 64
