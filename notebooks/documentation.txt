@@ -1,0 +1,119 @@
+California Coastal HAB ML — Technical Log, Stage 2  
+Yashnil Mohanty — 20 Jul 2025  
+
+This note extends the “Data Acquisition & Initial Harmonization” document.  
+Everything below starts after the master root cube was first assembled (Sec 1.5 in the prior PDF) and captures all preprocessing, QC, feature-engineering, model, and diagnostic work up to the current `HAB_freeze_v1.nc` + ConvLSTM v0.4 milestone.  
+
+============================================================
+1. Coastal-Stripe Definition & Water Masks  
+============================================================
+
+| Mask                 | Grid        | Rule                                                               | Script                    |
+|----------------------|-------------|--------------------------------------------------------------------|---------------------------|
+| `water_mask`         | (lat, lon)  | pixel is ever–ocean if any layer finite (`chlor_a ∨ thetao`)      | `make_water_mask.py`      |
+| `coastal_water_mask` | (lat, lon)  | `water_mask ∧ (dist_to_land ≤ 16 km)` via EDT                     | `make_water_mask.py`      |
+| `pixel_ok`           | (time, ...) | finite `log_chl`                                                   | created on-the-fly        |
+| `ocean_mask_static`  | (lat, lon)  | spatial union of `pixel_ok` over time                             | `data_freeze_v1.py`       |
+
+• Distance rule: 16 km ≈ 4 grid cells (4 km spacing)  
+• “Stripe” artifacts cleaned post hoc using `enforce_coastal_mask.py`  
+• All learning & diagnostics apply this mask  
+
+============================================================
+2. MODIS Gap-Filling (CA subset only)  
+============================================================
+
+| Variable       | Imputation Method                                | Guard Condition                |
+|----------------|--------------------------------------------------|--------------------------------|
+| `chlor_a`      | log-median + 8-day seasonal anomaly              | ±5× local median               |
+| `Kd_490`       | log-median + 8-day seasonal anomaly              | ±3× local median               |
+| `nflh`         | median + seasonal anomaly                        | ±5× IQR                        |
+| fallback       | block-climatology + percentile clip (1–99%)     |                                |
+
+• `_obs` masks (1=observed, 0=filled) are retained  
+• `log_chl` recomputed after setting dynamic floor  
+
+============================================================
+3. Physics-Derived + Static Predictors  
+============================================================
+
+Groups:
+• Winds (ERA5): `wind_speed`, `tau_x`, `tau_y`, `tau_mag`, `upwelling_wind_proxy`  
+• Surface currents (CMEMS): `cur_speed`, `cur_div`, `cur_vort`, `cur_dir_rad`  
+• SSH gradient magnitude: `ssh_grad_mag`  
+• River forcing: `dist_river_km`, `river_rank = exp(–d/50km)`  
+• Rolling stats: 24d & 40d mean/std  
+• Lags: 8d, 16d, 24d for all 3D vars  
+
+Implemented in `data_freeze_v1.py`.
+
+============================================================
+4. Freeze Script v1.0 (`HAB_freeze_v1.nc`)  
+============================================================
+
+• Inputs: cleaned, merged drivers + static variables  
+• Targets:  
+    - `log_chl`  
+    - `chl_lin = exp(log_chl) – floor`  
+    - `chl_anom_monthly`  
+• Roll windows: 24d (3×8d) and 40d (5×8d)  
+• Output: NetCDF (one chunk per time) + metadata.json  
+
+Final shape: 851 × 240 × 240, 30+ variables, 32 channels.
+
+============================================================
+5. ConvLSTM v0.4 Training Setup  
+============================================================
+
+| Setting                 | v0.3            | v0.4 (Current)                |
+|-------------------------|----------------|-------------------------------|
+| History Length (SEQ)    | 4 (32 days)     | **6 (48 days)**               |
+| Patch Sampling          | uniform         | **stratified (chl quartiles)**|
+| Loss Function           | MSE             | **Huber (δ=1.0), class-weighted** |
+| Masking                 | ocean_mask      | **exclude depth < 10 m**      |
+| Residual Skip           | no              | **yes (1×1 conv)**            |
+| Optimizer               | AdamW (3e-4)     | same                          |
+| Early Stop              | yes (6 patience)| same                          |
+| GPU Usage               | 8–9 GB          | ~11 GB (fits A6000)           |
+
+Bloom quartile oversampling (1.0 / 1.5 / 2.5 / 4.0)  
+Huber loss penalizes large errors less severely.
+
+Validation performance:
+• val RMSE_log ↓ from 0.88 → **0.73**  
+• test RMSE_log ↓ from 0.90 → **0.77**
+
+============================================================
+6. Diagnostics (`03_diagnostics.py`)  
+============================================================
+
+• Strict match to training varlist  
+• Evaluates global, monthly, and chl-bloom quartiles  
+• Visuals:  
+    - `fig_skill_maps.png` (RMSE model, persistence, skill %)  
+    - `fig_residual_hist_val.png`  
+    - `fig_bins_skill.png` (by chl quartiles)  
+    - `fig_month_skill.png` (monthly RMSE)  
+    - `fig_timeseries.png`, `fig_scatter_val.png`  
+• Outputs `.csv`, `.png`, `.nc`, `.json` bundles  
+• SF Bay skill bias solved with bay mask (depth < 10 m) in v0.4  
+
+============================================================
+7. QC Checks  
+============================================================
+
+• `qc_compare_input.py` = 1:1 for observed pixels  
+• `sanity_allvars.py` = 0.00% NaNs within coastal grid  
+• Top residuals correspond to high-bloom edge cases  
+
+============================================================
+8. Next Steps  
+============================================================
+
+• Physics-informed ConvLSTM loss (advection term)  
+• TFT-style multi-horizon prediction with quantile outputs  
+• Sentinel-2 fusion for high-res chlorophyll hotspots  
+• Operationalization → dashboard + nowcasts
+
+------------------------------------------------------------  
+End of Technical Log – Stage 2  

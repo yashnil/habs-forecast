@@ -20,7 +20,7 @@ from torch.cuda.amp import autocast, GradScaler
 # ------------------------------------------------------------------ #
 # CONFIG
 # ------------------------------------------------------------------ #
-FREEZE   = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_freeze_v1.nc")
+FREEZE   = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc")
 SEQ       = 6        # ← 48 day history (was 4)
 LEAD_IDX  = 1        # forecast +8 d
 PATCH     = 64
@@ -32,6 +32,7 @@ WEIGHT_EXP= 1.5      # strat weight exponent (freq^-exp)
 HUBER_DELTA= 1.0     # Huber delta in log‑space
 MIXED_PREC= torch.cuda.is_available()
 DEVICE    = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {DEVICE}")
 SCALER    = GradScaler(enabled=MIXED_PREC)
 OUT_DIR   = pathlib.Path(__file__).resolve().parents[1] / "Models"
 
@@ -201,7 +202,7 @@ def train_one(dl, net, opt, qthr):
                         torch.where(chl_lin < qthr[2], 2.5, 4.0)))
             w = w * m
             # Huber loss
-            abs_err = err.abs(); quadratic = torch.minimum(abs_err, HUBER_DELTA)
+            abs_err = err.abs(); quadratic = torch.minimum(abs_err, torch.tensor(HUBER_DELTA, device=abs_err.device))
             linear   = abs_err - quadratic
             huber    = 0.5 * quadratic**2 + HUBER_DELTA * linear
             loss = (w * huber).sum() / w.sum()
