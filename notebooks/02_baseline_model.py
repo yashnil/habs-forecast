@@ -20,6 +20,8 @@ from torch.cuda.amp import autocast, GradScaler
 # ------------------------------------------------------------------ #
 # CONFIG
 # ------------------------------------------------------------------ #
+# FREEZE   = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc")
+
 FREEZE   = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc")
 SEQ       = 6        # ← 48 day history (was 4)
 LEAD_IDX  = 1        # forecast +8 d
@@ -34,7 +36,9 @@ MIXED_PREC= torch.cuda.is_available()
 DEVICE    = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {DEVICE}")
 SCALER    = GradScaler(enabled=MIXED_PREC)
-OUT_DIR   = pathlib.Path(__file__).resolve().parents[1] / "Models"
+OUT_DIR = pathlib.Path.home() / "HAB_Models"       # ~/HAB_Models
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+_FLOOR = 0.056616   # detection floor used when log_chl was created
 
 # ------------------------------------------------------------------ #
 # Predictor lists  (identical to freezer)
@@ -111,6 +115,12 @@ DEF_MASK_DEPTH = 10.0  # metres; mask bays & very shallow cells
 def make_loaders():
     ds = xr.open_dataset(FREEZE, chunks={"time": 1})
 
+    # ➡️ NEW: synthesise linear-space chl if missing
+    if "chl_lin" not in ds:
+        ds["chl_lin"] = np.exp(ds["log_chl"]) - _FLOOR
+        # keep attrs tidy if you like
+        ds["chl_lin"].attrs.update({"units": "mg m-3", "long_name": "chlorophyll-a"})
+
     # build pixel_ok if missing
     if "pixel_ok" not in ds:
         frac = np.isfinite(ds.log_chl).sum("time") / ds.sizes["time"]
@@ -135,7 +145,7 @@ def make_loaders():
     # stratified sampler (steeper exponent)
     sampler = None
     if STRATIFY:
-        chl = ds.chl_lin.isel(time=tr_i).where(pixel_ok).median(("lat", "lon")).values
+        chl = (np.exp(ds.log_chl) - _FLOOR).isel(time=tr_i).where(pixel_ok).median(("lat", "lon")).values
         q = np.nanquantile(chl, [.25, .5, .75]); bin_ = np.digitize(chl, q)
         freq = np.maximum(np.bincount(bin_, minlength=4), 1)
         w = (1 / freq) ** WEIGHT_EXP
@@ -218,7 +228,7 @@ def main():
     Cin = len([v for v in ALL_VARS if v in xr.open_dataset(FREEZE).data_vars])
     net=ConvLSTM(Cin).to(DEVICE)
     opt=torch.optim.AdamW(net.parameters(),3e-4,weight_decay=1e-4)
-    sched=ReduceLROnPlateau(opt,'min',patience=3,factor=.5,verbose=True)
+    sched = ReduceLROnPlateau(opt, 'min', patience=3, factor=.5)
     OUT_DIR.mkdir(exist_ok=True)
 
     best=1e9; bad=0
