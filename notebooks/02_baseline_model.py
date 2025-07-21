@@ -251,6 +251,8 @@ if __name__=="__main__":
     main()
 
 '''
+Vers 1 results (old baseline):
+
 E01  val RMSE_log=0.840  lr=3.0e-04
 E02  val RMSE_log=0.834  lr=3.0e-04
 E03  val RMSE_log=0.826  lr=3.0e-04
