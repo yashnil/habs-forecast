@@ -16,11 +16,13 @@ Key guarantees
 
 Run example
 -----------
-python 03_diagnostics.py \
-  --freeze "/path/to/HAB_freeze_v1.nc" \
-  --ckpt   "Models/convLSTM_best.pt"   \
-  --out    "Diagnostics_v0p3"          \
-  --batch  64            # 64–128 on GPU; 8–16 on CPU
+python notebooks/03_diagnostics.py \
+  --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
+  --ckpt   "/Users/yashnilmohanty/HAB_Models/convLSTM_best.pt" \
+  --out    "Diagnostics_v0p4" \
+  --seq    6      \   # 48-day history in v0.4
+  --lead   1      \   # 8-day forecast (unchanged)
+  --batch  32         # whatever your CPU/GPU memory allows
 """
 
 from __future__ import annotations
@@ -135,16 +137,19 @@ class ConvLSTM(nn.Module):
         self.reduce = nn.Conv2d(Cin, 24, 1)
         self.l1     = PxLSTM(24, 48)
         self.l2     = PxLSTM(48, 64)
+        self.skip   = nn.Conv2d(Cin, 1, 1)   # <-- new
         self.head   = nn.Conv2d(64, 1, 1)
 
     def forward(self, x):
         # x: (B,L,C,H,W)
         h1=h2=None
+        last_in=None
         for t in range(x.size(1)):
             f = self.reduce(x[:,t])
             o1,h1 = self.l1(f,h1)
             o2,h2 = self.l2(o1,h2)
-        return self.head(o2).squeeze(1)   # (B,H,W) ∆log_chl
+            last_in = x[:,t]                 # remember most-recent frame
+        return ( self.head(o2) + self.skip(last_in) ).squeeze(1)
     
 
 # ------------------------------------------------------------------ #
@@ -594,14 +599,3 @@ if __name__ == "__main__":
 
     print("\n✓ Diagnostics complete.")
     print(f"Outputs written to: {OUT}")
-
-'''
-To run the code:
-
-python notebooks/03_diagnostics.py \
-  --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_freeze_v1.nc" \
-  --ckpt  "/Users/yashnilmohanty/Desktop/habs-forecast/Models/convLSTM_best.pt" \
-  --out   "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_v0p3" \
-  --batch 64
-
-'''
