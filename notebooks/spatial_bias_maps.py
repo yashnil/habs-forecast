@@ -156,6 +156,16 @@ mu_obs = obs_mg.where(mask).mean(["lat","lon"])
 mu_mod = pred_mg.where(mask).mean(["lat","lon"])
 mu_pers= pers_mg.where(mask).mean(["lat","lon"])
 
+'''
+# drop this into a notebook
+mu_obs  = np.exp(obs_log).where(mask).mean().item()
+mu_pred = np.exp(pred_log).where(mask).mean().item()
+mu_pers = np.exp(pers_log).where(mask).mean().item()
+
+print(mu_obs, mu_pers, mu_pred,
+      mu_pred - mu_pers, mu_pred - mu_obs)
+'''
+
 fig, ax = plt.subplots(figsize=(10,3))
 ax.plot(time, mu_obs,  label="Observed",     lw=1.3)
 ax.plot(time, mu_mod,  label="Model",        lw=1.1)
@@ -328,7 +338,6 @@ very_high 344306 10.367783 -0.794286 0.378148   0.373854
 
 new results:
 
-GLOBAL METRICS (model vs obs):
 Bloom contingency (≥5 mg m-3): {'metric': 'bloom_≥5mg', 'hits': 224212, 'miss': 44446, 'false_alarm': 246032, 'POD': 0.8345629015328007, 'FAR': 0.52320072132765, 'CSI': 0.43562532786725905}
 
 GLOBAL METRICS (model vs obs):
