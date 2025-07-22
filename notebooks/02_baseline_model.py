@@ -175,13 +175,13 @@ class ConvLSTM(nn.Module):
         super().__init__()
         self.reduce = nn.Conv2d(Cin, 24, 1)
         self.l1, self.l2 = PxLSTM(24,48), PxLSTM(48,64)
-        self.skip       = nn.Conv2d(Cin, 1, 1)  # simple residual head
+        # self.skip       = nn.Conv2d(Cin, 1, 1)  # simple residual head
         self.head       = nn.Conv2d(64, 1, 1)
     def forward(self, x):                 # x: (B,L,C,H,W)
         h1 = h2 = None; last_in = None
         for t in range(x.size(1)):
             f = self.reduce(x[:,t]); o1,h1 = self.l1(f,h1); o2,h2 = self.l2(o1,h2); last_in = x[:,t]
-        return self.head(o2).squeeze(1) + self.skip(last_in).squeeze(1)
+        return self.head(o2).squeeze(1) # output = Δ(log-chl)
 
 # ------------------------------------------------------------------ #
 # Train / eval helpers
