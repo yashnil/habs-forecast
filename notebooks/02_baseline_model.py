@@ -247,7 +247,21 @@ def main():
     print("\nFINAL RMSE_log:",metrics)
     json.dump(metrics, open(OUT_DIR/'convLSTM_metrics.json','w'), indent=2)
 
-if __name__=="__main__":
+# ------------------------------------------------------------------ #
+# Optional CLI overrides for quick smoke-tests
+# ------------------------------------------------------------------ #
+import argparse
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--seq",    type=int)
+    ap.add_argument("--epochs", type=int)
+    ap.add_argument("--batch",  type=int)
+    args = ap.parse_args()
+
+    if args.seq:    SEQ    = args.seq
+    if args.epochs: EPOCHS = args.epochs
+    if args.batch:  BATCH  = args.batch
+
     main()
 
 '''
@@ -286,10 +300,15 @@ E29  val RMSE_log=0.738  lr=1.5e-04
 Epoch 00030: reducing learning rate of group 0 to 7.5000e-05.
 E30  val RMSE_log=0.734  lr=7.5e-05
 
-FINAL RMSE_log: {'train': 0.7637301112146647, 'val': 0.7341518534766268, 'test': 0.7663904919928541}
+Vers 1 Results:
 
+FINAL RMSE_log: {'train': 0.7637301112146647, 'val': 0.7341518534766268, 'test': 0.7663904919928541}
 
 Vers 2 Results:
 
 FINAL RMSE_log: {'train': 0.7613221948147806, 'val': 0.7052083968964123, 'test': 0.8027556186136691}
+
+Vers 3 Results:
+
+FINAL RMSE_log: {'train': 0.750839870832172, 'val': 0.7093618217215355, 'test': 0.805177950877685}
 '''
