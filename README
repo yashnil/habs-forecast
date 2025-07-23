@@ -1,0 +1,92 @@
+California Coastal HABs ML Project
+
+Project Goal:
+
+Develop and compare machine learning and physics-augmented models to forecast coastal chlorophyll-a (Chl-a) concentrations and harmful algal bloom (HAB) events along the California coast using multi-decadal satellite and reanalysis datasets.
+
+Hypothesis:
+
+H3 – Physics-augmented loss curbs spatial spread error: Imposing advection-diffusion residuals (winds + currents) in the loss will reduce down-coast displacement and false bloom area compared to purely data-driven spatiotemporal models.
+
+Comprehensive List of Steps:
+
+Data Acquisition & Overview
+• Obtain MODIS Level-3 8-day composite chlorophyll-a data (2003–mid-2021) at ~4 km resolution, clipped to a coastal stripe (lat × lon = 240 × 240).
+• Acquire ancillary reanalysis variables: Kd_490, nflh, precipitation, shortwave radiation, 10 m winds (u10, v10), 2 m temperature (t2m, d2m), salinity (so), ocean currents (uo, vo), sea surface height (zos), wind stress curl (curl_uv), and distance-to-river metric.
+
+Data Audit & Harmonization (T0)
+• Load NetCDF files with xarray; apply coastal mask and generate QC flags.
+• Convert time units, ensure consistent physical units, and verify NaN-free coverage within stripe.
+• Compute monthly climatologies and anomalies for all variables.
+
+Feature Engineering & Stratification
+• Derive features: rolling means & standard deviations (8-, 24-, 40-day), lagged drivers (1–3 steps), wind stress components, Ekman upwelling index, current speed & vorticity, SSH gradient magnitude, river influence rank.
+• Target engineering: compute linear chlorophyll (chl_lin = exp(log_chl) – floor) and retain log_chl as regression target; define bloom intensity tiers based on pooled seasonal quantile distribution (<50%, 50–75%, 75–95%, >95%).
+
+Spatiotemporal Split Design
+• Temporal blocking: Train (2003–2015), Validation (2016–2018), Test (2019–2021); optional sliding k-fold windows.
+• Spatial blocking: Cluster coastal cells into ~5 latitudinal bands or k-means on (lat, lon); leave one band out per spatial fold.
+• Combined stratified folds: Cartesian product of temporal × spatial blocks; maintain class balance across bloom tiers.
+• Define production splits: STRICT_OOS (latest years + northern band), TEMP_ONLY, SPACE_ONLY.
+
+Baseline & Tabular ML Models
+• Naïve baselines: persistence (ŷ(t+1)=y(t)), monthly climatology, linear/ridge regression.
+• Tabular models: XGBoost and LightGBM on pixelwise feature vectors; compute SHAP feature importances.
+
+Deep Spatiotemporal Models (T1–T2)
+• ConvLSTM v0: single-scale nowcast (0-lead) and short-lead (8-day) forecast; benchmark skill and baseline attribution.
+• ConvLSTM v1+: add multi-scale attention, residual connections, multi-lead seq2seq training.
+• Temporal Fusion Transformer (TFT): flatten coastal stripe to pixel sequence or patch embeddings; multi-horizon probabilistic outputs with gating and variable selection.
+
+Physics-Augmented & Hybrid Models (T4)
+• Embed advection–diffusion PDE residuals (winds, currents, learned κ) into training loss (PINN framework).
+• Enforce no-flux boundary conditions; compare spread fidelity vs. data-only models.
+
+Driver Ablation & Transfer Skill (T5)
+• Remove groups of drivers (atmospheric, oceanic, riverine) to assess individual contributions.
+• Test transfer skill by training/validation across sub-regions (north ↔ south).
+
+Event Detection & Classification (T3)
+• Convert continuous Chl forecasts to categorical bloom tiers; evaluate hit/miss rates, probability of detection (POD), false alarm ratio (FAR), and critical success index (CSI).
+
+Evaluation Metrics & Diagnostics
+• Global metrics: RMSE, MAE, Bias, Pearson r, Spearman ρ, NSE, KGE in log and linear space.
+• Stratified metrics: RMSE by Chl tier, monthly RMSE curves.
+• Spatial diagnostics: skill maps (RMSE & % improvement), mean & bias maps, RMSE by latitude bands.
+• Temporal diagnostics: domain-mean time series, lead-time skill curves, ROC curves for bloom thresholds.
+• Additional analyses: Taylor diagrams of monthly anomalies, hexbin scatter (obs vs pred), error boxplots by observed quartiles, Hovmöller diagrams, case-study snapshot maps.
+
+Figure Package for Manuscript
+• Study region & data sources map
+• Data flow diagram
+• Chlorophyll distribution CDF with strata thresholds
+• Blocked CV schematic
+• Skill comparison barplots (baselines, ML, hybrid)
+• SHAP variable importance charts
+• Reliability/calibration curves for probabilistic outputs
+• Case study maps for major bloom events (e.g., 2015 warm blob, 2016 El Niño)
+
+Reproducibility & Data Management
+• Versioned data freeze (v1.0) with SHA hashes
+• Conda environment YAML with exact package versions
+• Metadata JSON (variable names, units, fill values, strata edges)
+• Train/Val/Test index files and fold definitions
+• Model checkpoints and configuration files
+• End-to-end reproducible pipeline script (Makefile or Snakemake)
+
+Computational Considerations
+• Chunked data loading with Dask; mixed precision training
+• Batch sampling strategies: patch mode vs stripe-flatten mode
+• Class-balanced queue for rare-event sampling
+
+Risk Mitigation & Future Extensions
+• Address data gaps: track valid coverage and drop low-coverage frames
+• Handle floor bias: censor modeling or mask low-level signals
+• Plan extensions: super-resolution downscaling, multi-sensor fusion, species-specific risk layers, operational dashboard
+
+Novelty:
+
+Embedding a simplified 2-D advection-diffusion PDE into the model’s loss function (a PINN-style hybrid) to force the network to honor realistic transport physics, then comparing its spatial‐forecast skill against purely data-driven ConvLSTM/TFT approaches.
+
+End of Project Outline
+
