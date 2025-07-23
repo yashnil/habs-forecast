@@ -19,10 +19,10 @@ Run example
 python notebooks/03_diagnostics.py \
   --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
   --ckpt   "/Users/yashnilmohanty/HAB_Models/convLSTM_best.pt" \
-  --out    "Diagnostics_v0p4" \
-  --seq    6      \   # 48-day history in v0.4
-  --lead   1      \   # 8-day forecast (unchanged)
-  --batch  32         # whatever your CPU/GPU memory allows
+  --out    "Diagnostics_v0p5" \
+  --seq    6 \
+  --lead   1 \
+  --batch  32
 """
 
 from __future__ import annotations
@@ -137,7 +137,7 @@ class ConvLSTM(nn.Module):
         self.reduce = nn.Conv2d(Cin, 24, 1)
         self.l1     = PxLSTM(24, 48)
         self.l2     = PxLSTM(48, 64)
-        self.skip   = nn.Conv2d(Cin, 1, 1)   # <-- new
+        # self.skip   = nn.Conv2d(Cin, 1, 1)   # <-- new
         self.head   = nn.Conv2d(64, 1, 1)
 
     def forward(self, x):
@@ -148,8 +148,9 @@ class ConvLSTM(nn.Module):
             f = self.reduce(x[:,t])
             o1,h1 = self.l1(f,h1)
             o2,h2 = self.l2(o1,h2)
-            last_in = x[:,t]                 # remember most-recent frame
-        return ( self.head(o2) + self.skip(last_in) ).squeeze(1)
+            # last_log = x[:, t, LOGCHL_IDX]
+            # last_in = x[:,t]                 # remember most-recent frame
+        return self.head(o2).squeeze(1)       # Δ-log-chl only
     
 
 # ------------------------------------------------------------------ #
@@ -501,6 +502,15 @@ if __name__ == "__main__":
         ds, varlist, LOG_IDX, stats, pixel_ok,
         seq=args.seq, lead=args.lead, batch_k=args.batch,
         device=device, mixed_prec=mixed_prec)
+    # ------------------------------------------------------------------
+    #  ── bias correction ───────────────────────────────────────────────
+    # compute mean log-error over all valid pixels & times
+    bias_val = np.nanmean((pred_log - true_log)[valid_m])
+    print(f"[diag] constant log-bias = {bias_val:.4f}; subtracting to correct forecasts")
+    # subtract it off
+    pred_log = pred_log - bias_val
+    # now pers_log remains pure persistence, but pred_log is bias-corrected
+    # ------------------------------------------------------------------
 
     # Align train/val/test subsets to PRED times (k+lead)
     t_pred = times_pred
