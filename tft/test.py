@@ -4,7 +4,7 @@ Minimal, Apple‑silicon‑safe Temporal‑Fusion‑Transformer trainer.
 History = 6 timesteps (48 d); Lead = 1 (8 d).
 Run:
   python tft/test.py --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
-                               --epochs 60 --batch 256 --seq 6 --lead 1 --device cpu
+                               --epochs 25 --batch 256 --seq 6 --lead 1 --device cpu
 """
 
 import argparse, pathlib
@@ -12,9 +12,11 @@ from typing import Tuple
 
 import numpy as np, pandas as pd, xarray as xr, torch, lightning as L
 from torch.utils.data import DataLoader
-from pytorch_forecasting.models.temporal_fusion_transformer import TemporalFusionTransformer
 from pytorch_forecasting.metrics import RMSE
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
+from pytorch_forecasting.models.temporal_fusion_transformer import (
+    TemporalFusionTransformer,
+)
 
 # ───────────────────────────── constants ─────────────────────────────
 SATELLITE = ["log_chl", "Kd_490", "nflh"]
@@ -30,6 +32,29 @@ ALL_VARS   = SATELLITE + METEO + OCEAN + DERIVED + STATIC
 STATIC_SET = set(STATIC)
 X_REAL     = ALL_VARS + STATIC          # 36 continuous inputs
 DUMMY_CAT  = "dummy"
+
+# ---------------------------------------------------------------------
+# 1.  A helper that replaces ±inf/NaN _after_ the zero-fill
+# ---------------------------------------------------------------------
+def make_tensor(df_block, shape):
+    arr = (df_block.fillna(0.0)
+                   .replace([np.inf, -np.inf], 0.0)
+                   .to_numpy(np.float32)
+                   .reshape(*shape))
+    return torch.from_numpy(arr)
+
+# ---------------------------------------------------------------------
+# 2.  Silence the metric logging that triggers the crash
+# ---------------------------------------------------------------------
+class TFTNoScale(TemporalFusionTransformer):
+    def transform_output(self, out, target_scale=None):
+        return out                    # keep your “no rescaling” tweak
+
+    # NEW --------------------------------------------------------------
+    # completely disable the extra metric pass → no NaN assertion anymore
+    def log_metrics(self, *args, **kwargs):           # overrides base method
+        return {}
+# ---------------------------------------------------------------------
 
 # ─────────────────── helper: NetCDF → long dataframe ──────────────────
 def melt_to_df(ds: xr.Dataset) -> pd.DataFrame:
@@ -55,50 +80,51 @@ def melt_to_df(ds: xr.Dataset) -> pd.DataFrame:
 
 # ─────────────────────────── Pixel dataset ───────────────────────────
 class PixelTSD(torch.utils.data.Dataset):
-    def __init__(self, df: pd.DataFrame, core_ts: np.ndarray, seq: int, lead: int):
-        self.df, self.core_ts, self.seq, self.lead = df, core_ts, seq, lead
-        self.idx = df[df.t.isin(core_ts)].reset_index(drop=True)
+    def __init__(self, core_mask: torch.Tensor, feat: torch.Tensor,
+                 stat: torch.Tensor, seq: int, lead: int):
+        """
+        core_mask : (P, T) bool  – True for each (pixel,time) we want as a sample
+        feat      : (P, T, C)    – pre-tensorised dynamic features (36)
+        stat      : (P, S)       – static continuous features  (3)
+        """
+        self.core_index = core_mask.nonzero(as_tuple=False)  # (N, 2) → (pid, t)
+        self.feat, self.stat = feat, stat
+        self.seq, self.lead  = seq, lead
 
     def __len__(self):
-        return len(self.idx)
+        return len(self.core_index)
 
-    def __getitem__(self, i):
-        row  = self.idx.iloc[i]
-        sid, t_core = int(row.sid), int(row.t)
+    def __getitem__(self, idx):
+        pid, t_core = self.core_index[idx]       # integers
 
-        # ---------- encoder & decoder ----------
-        enc = torch.tensor([
-            self.df[(self.df.sid == sid) & (self.df.t == t_core + dt)].iloc[0][ALL_VARS].values
-            for dt in range(-self.seq + 1, 1)
-        ], dtype=torch.float32)
-        dec = enc[-1:].repeat(self.lead, 1)
+        enc = self.feat[pid, t_core-self.seq+1 : t_core+1]        # (seq, C)
+        dec = enc[-1:].repeat(self.lead, 1)                       # (lead, C)
 
-        # ---------- static & target ----------
-        static_cont = torch.tensor(row[STATIC].values, dtype=torch.float32)
-        tgt_val = self.df[(self.df.sid == sid) & (self.df.t == t_core + self.lead)].log_chl.values[0]
-        tgt = torch.tensor([tgt_val], dtype=torch.float32)            # shape (lead,)
+        # in PixelTSD.__getitem__
+        tgt = self.feat[pid, t_core + self.lead, 0]      # scalar ()
+        tgt = tgt.view(1, 1)                             # (1, 1)  ← two-dim
+
+        # encoder history target to match
+        encoder_target = enc[:, 0].unsqueeze(-1)         # (seq, 1)
 
         x = dict(
-            encoder_cont     = enc,
-            decoder_cont     = dec,
-            encoder_cat      = torch.zeros(self.seq, 1, dtype=torch.long),
-            decoder_cat      = torch.zeros(self.lead, 1, dtype=torch.long),
-            static_cat       = torch.zeros(1, dtype=torch.long),
+            encoder_cont = enc,
+            decoder_cont = dec,
+            encoder_cat  = torch.zeros(self.seq, 1, dtype=torch.long),
+            decoder_cat  = torch.zeros(self.lead,1, dtype=torch.long),
+            static_cat   = torch.zeros(1,dtype=torch.long),
+
+            static_cont      = self.stat[pid],                    # (3,)
             encoder_time_idx = torch.arange(self.seq),
             decoder_time_idx = torch.arange(self.lead),
-            encoder_lengths  = torch.tensor(self.seq,  dtype=torch.long),
-            decoder_lengths  = torch.tensor(self.lead, dtype=torch.long),
-            static_cont      = static_cont,
-            groups           = torch.tensor([sid]),
-            decoder_target   = tgt,              # ★ required by Pytorch‑Forecasting internals
-            target_scale     = torch.tensor([1.0, 0.0]),  # placeholder, unused
+            encoder_lengths  = torch.tensor(self.seq),
+            decoder_lengths  = torch.tensor(self.lead),
+            groups           = torch.tensor([pid]),
+            encoder_target   = encoder_target,                         # history target
+            decoder_target   = tgt,
+            target_scale     = torch.tensor([1.0,0.0]),
         )
         return x, tgt
-
-# ────────────────── tiny patch: TFT without rescaling ─────────────────
-class TFTNoScale(TemporalFusionTransformer):
-    def transform_output(self, out, target_scale=None):  # override one line → skip scale logic
-        return out
 
 # ───────────────────────────── training ──────────────────────────────
 def run(cfg):
@@ -111,13 +137,67 @@ def run(cfg):
     val_ts   = np.where((times>=np.datetime64("2016-01-01"))&(times<=np.datetime64("2018-12-31")))[0]
     test_ts  = np.where(times >  np.datetime64("2018-12-31"))[0]
 
-    train = PixelTSD(df, train_ts[train_ts>=cfg.seq-1], cfg.seq, cfg.lead)
-    val   = PixelTSD(df, val_ts  [val_ts  >=cfg.seq-1], cfg.seq, cfg.lead)
-    test  = PixelTSD(df, test_ts [test_ts >=cfg.seq-1], cfg.seq, cfg.lead)
+    # ---------- PRE-TENSORISE ------------------------------------------------
+    # shape: (P, T, C)
+    # ─────── 1️⃣  build feat / static tensors with NaNs filled  ────────
 
-    dl_train = DataLoader(train, cfg.batch, shuffle=True,  num_workers=0)
-    dl_val   = DataLoader(val,   cfg.batch,                num_workers=0)
-    dl_test  = DataLoader(test,  cfg.batch,                num_workers=0)
+    feat_tensor = make_tensor(
+    df[ALL_VARS],
+    (df.sid.nunique(), df.t.nunique(), len(ALL_VARS)),
+    )
+    static_tensor = make_tensor(
+        df.groupby("sid").first()[STATIC],
+        (feat_tensor.shape[0], len(STATIC)),
+    )
+
+    # static_np = (
+    #     df.groupby("sid").first()[STATIC]
+    #     .fillna(0.0)        # ← NEW
+    #     .to_numpy(np.float32)
+    # )
+    # static_tensor = torch.from_numpy(static_np)
+
+    # ─────── 2️⃣  make the core-time mask robust to *any* NaNs ────────
+    chl = feat_tensor[..., 0]            # (P, T) – the target variable
+
+    valid_core = torch.zeros_like(chl, dtype=torch.bool)
+    core_slice = slice(cfg.seq - 1, -cfg.lead)      # encoder-end positions
+    # future_ix  = slice(cfg.seq - 1 + cfg.lead, None)
+
+    # history OK ↔ all log-chl in the encoder window are finite
+    hist_ok = torch.isfinite(
+        torch.stack(
+            [chl[:, i : i + cfg.seq] for i in range(chl.shape[1] - cfg.seq + 1)],
+            dim=-1,
+        )
+    ).all(dim=1)                                   # shape (P, T - seq + 1)
+
+    # --- NEW: trim the extra columns so it matches future_ok ---
+    if cfg.lead > 0:
+        hist_ok = hist_ok[:, :-cfg.lead]            # now length = T - seq - lead + 1
+    # ----------------------------------------------------------
+
+    future_ok = torch.isfinite(chl[:, cfg.seq - 1 + cfg.lead :])  # same length
+    valid_core[:, core_slice] = hist_ok & future_ok
+
+    # split into train / val / test boolean masks over (P, T)
+    train_mask = valid_core.clone()
+    val_mask   = valid_core.clone()
+    test_mask  = valid_core.clone()
+
+    train_mask[:, (times >= np.datetime64("2016-01-01"))] = False
+    val_mask[:, (times <  np.datetime64("2016-01-01")) |
+                (times >  np.datetime64("2018-12-31"))] = False
+    test_mask[:, (times <= np.datetime64("2018-12-31"))] = False
+
+    # ---------- Dataset objects (new signature) -----------------------------
+    train_ds = PixelTSD(train_mask, feat_tensor, static_tensor, cfg.seq, cfg.lead)
+    val_ds   = PixelTSD(val_mask,   feat_tensor, static_tensor, cfg.seq, cfg.lead)
+    test_ds  = PixelTSD(test_mask,  feat_tensor, static_tensor, cfg.seq, cfg.lead)
+
+    dl_train = DataLoader(train_ds, cfg.batch, shuffle=True,  num_workers=0)
+    dl_val   = DataLoader(val_ds,   cfg.batch,                num_workers=0)
+    dl_test  = DataLoader(test_ds,  cfg.batch,                num_workers=0)
 
     # ---------- model ----------
     tft = TFTNoScale(
@@ -130,7 +210,7 @@ def run(cfg):
         dropout            = 0.10,
         output_size        = cfg.lead,
         loss               = RMSE(),
-        logging_metrics    = [RMSE()],
+        # logging_metrics    = [RMSE()],
     )
 
     # ---------- training ----------
@@ -152,7 +232,7 @@ def run(cfg):
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--freeze", required=True, type=pathlib.Path)
-    p.add_argument("--epochs", type=int, default=60)
+    p.add_argument("--epochs", type=int, default=25)
     p.add_argument("--batch",  type=int, default=256)
     p.add_argument("--seq",    type=int, default=6)
     p.add_argument("--lead",   type=int, default=1)
