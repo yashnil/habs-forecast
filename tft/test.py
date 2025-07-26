@@ -123,6 +123,7 @@ class PixelTSD(torch.utils.data.Dataset):
             encoder_target   = encoder_target,                         # history target
             decoder_target   = tgt,
             target_scale     = torch.tensor([1.0,0.0]),
+            t_core       = torch.tensor(t_core, dtype=torch.long),  # ← add this
         )
         return x, tgt
 
