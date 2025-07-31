@@ -43,6 +43,7 @@ OUTDIR.mkdir(parents=True, exist_ok=True)
 
 TILER  = cimgt.GoogleTiles(style='satellite'); TILER.request_timeout = 5
 EXTENT = [-125, -114, 31, 43]   # CA coast bbox
+_floor = 0.056616  # mg m⁻³  
 
 # ────────────────────────────────────────────────────────────────
 # load & prep
@@ -113,6 +114,12 @@ def _save(fig, name):
     fig.tight_layout()
     fig.savefig(OUTDIR/name, dpi=RES)
     plt.close(fig)
+
+
+# apply a hard floor so nothing goes below log(_floor)
+min_log = np.log(_floor)
+obs_log = obs_log.clip(min_log, None)
+pred_log = pred_log.clip(min_log, None)
 
 flat = lambda arr: arr.where(mask).values.flatten()
 

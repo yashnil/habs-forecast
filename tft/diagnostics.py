@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+#tft/diagnostics.py
 """
 diagnostics.py ─ Temporal‑Fusion‑Transformer full diagnostics suite
 ======================================================================
@@ -19,14 +20,13 @@ training.  The only dependency difference is `pytorch_forecasting` for
 loading the TFT checkpoint.
 
 Run example ────────────────────────────────────────────────────────────
+
 python tft/diagnostics.py \
   --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
-  --ckpt   "/Users/yashnilmohanty/HAB_Models/epoch=1-step=7534.ckpt" \
-  --out    "Diagnostics_TFT_v0p1" \
-  --seq    6 \
-  --lead   1 \
-  --batch  4096
-
+  --ckpt   runs/tft/lightning_logs/version_1/checkpoints/epoch=14-step=48780.ckpt \
+  --out    Diagnostics_TFT_v0p1 \
+  --seq 24 --lead 7 --batch 4096 --device cpu
+  
 The script will create <OUT>/ with CSV / NetCDF / PNG artefacts identical
 in naming & format to the ConvLSTM diagnostics, enabling apples‑to‑apples
 comparison.
@@ -41,8 +41,14 @@ import xarray as xr
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+import pickle
+# from pytorch_forecasting import TimeSeriesDataSet
 
-from test import TFTNoScale
+from pixel_ds import make_tensor, melt_to_df
+from pytorch_forecasting import TimeSeriesDataSet
+from pytorch_forecasting.models.temporal_fusion_transformer import TemporalFusionTransformer as TFT
+
+_floor = 0.056616
 
 # ------------------------------------------------------------------ #
 # Predictor constants  (MUST match training script)
@@ -80,7 +86,6 @@ OUTDIR  = pathlib.Path(args.out   ).expanduser().resolve(); OUTDIR.mkdir(parents
 # ------------------------------------------------------------------ #
 THIS_DIR = pathlib.Path(__file__).resolve().parent
 sys.path.append(str(THIS_DIR))
-from test import make_tensor, melt_to_df, PixelTSD   # noqa: E402  (these exist from training)
 
 SEQ, LEAD = args.seq, args.lead
 
@@ -98,18 +103,74 @@ else:
     DEV = torch.device(args.device)
 print(f"[diag] using device: {DEV}")
 
+# ---------------------------------------------
 print("[diag] loading TFT checkpoint …", flush=True)
-tft: TFTNoScale = (
-     TFTNoScale.load_from_checkpoint(CKPT, map_location=DEV)
+tft: TFT = (
+     TFT.load_from_checkpoint(CKPT, map_location=DEV)
     .to(DEV)
     .eval()
 )
 
+# >>> NEW – make the diagnostics use the same variable list as the model
+ALL_VARS = list(tft.hparams["x_reals"])        # 29 vars in the order the model learned
+
+'''
+helper = {'encoder_length','log_chl_center','log_chl_scale','time_idx',
+          'relative_time_idx','lat','lon','number','month',
+          'log_chl_outmask','Kd_490_outmask','nflh_outmask'}
+
+ALL_VARS = [v for v in ALL_VARS if v not in helper]
+print("using vars:", len(ALL_VARS))
+
+STATIC    = []                                 # they were not treated as static_reals
+print(f"[diag] model expects {len(ALL_VARS)} continuous vars:", ALL_VARS)
+'''
+# ---------------------------------------------
+print("► available hparams keys:", sorted(tft.hparams.keys()))
 # ------------------------------------------------------------------ #
 # 1)  Load freeze & rebuild tensors exactly like training
 # ------------------------------------------------------------------ #
 ds = xr.open_dataset(FREEZE, chunks={"time": -1}); ds.load()
+# ─────────────────────────────────────────────────────────────────────
+# make sure sid matches the string IDs you trained on
+# ─────────────────────────────────────────────────────────────────────
+
+# DataFrame preparation (existing)
 df = melt_to_df(ds)
+df["sid"] = df["sid"].astype(str)
+
+# Explicitly add missing columns
+df["number"] = df["sid"].astype('category').cat.codes
+df["month"] = pd.to_datetime(ds.time.values[df["t"]]).month
+df["log_chl_outmask"] = (~np.isnan(df["log_chl"])).astype(int)
+df["Kd_490_outmask"] = (~np.isnan(df["Kd_490"])).astype(int)
+df["nflh_outmask"] = (~np.isnan(df["nflh"])).astype(int)
+
+# NaN handling aligned with ConvLSTM v0.4 approach:
+# 1. Mask shallow waters (depth < 10m)
+if "depth" in ds:
+    shallow_mask = ds.depth > 10
+else:
+    shallow_mask = xr.ones_like(ds.log_chl.isel(time=0), dtype=bool)
+
+valid_mask = shallow_mask & np.isfinite(ds.log_chl.mean("time"))
+
+# 2. Fill problematic NaNs using median values (robust imputation)
+for var in ["cur_div", "cur_vort", "ssh_grad_mag"]:
+    median_val = np.nanmedian(df[var])
+    df[var].fillna(median_val, inplace=True)
+
+# Continue existing indexing operations
+df["time_idx"] = df["t"]
+df["lat"] = ds.lat.values[df["iy"].to_numpy()]
+df["lon"] = ds.lon.values[df["ix"].to_numpy()]
+# ─────────────────────────────────────────────────────────────────────
+
+
+# drop any TFT helper fields that aren’t in the raw dataframe
+ALL_VARS = [v for v in ALL_VARS if v in df.columns]
+
+# ─────────────────────────────────────────────────────────────────────
 feat_tensor = make_tensor(
     df[ALL_VARS], (df.sid.nunique(), df.t.nunique(), len(ALL_VARS))
 )
@@ -117,66 +178,142 @@ static_tensor = make_tensor(
     df.groupby("sid").first()[STATIC], (feat_tensor.shape[0], len(STATIC))
 )
 
-# Build *valid* core‑time mask identical to training logic --------------
-chl = feat_tensor[..., 0]
-valid_core = torch.zeros_like(chl, dtype=torch.bool)
-core_slice = slice(SEQ - 1, -LEAD)
-# history finite & future finite checks (same as training)
-hist_ok = torch.isfinite(
-    torch.stack([chl[:, i : i + SEQ] for i in range(chl.shape[1] - SEQ + 1)], -1)
-).all(1)
-if LEAD > 0:
-    hist_ok = hist_ok[:, :-LEAD]
-future_ok = torch.isfinite(chl[:, SEQ - 1 + LEAD :])
-valid_core[:, core_slice] = hist_ok & future_ok
 
 # ------------------------------------------------------------------ #
 # 2)  PixelTSD dataset & batched inference over **all** samples
-# ------------------------------------------------------------------ #
-print("[diag] building PixelTSD dataset …", flush=True)
-full_ds = PixelTSD(valid_core, feat_tensor, static_tensor, SEQ, LEAD)
-loader  = DataLoader(full_ds, batch_size=args.batch, shuffle=False, num_workers=0)
+print("[diag] re-loading train TimeSeriesDataSet …")
+# try loading train_ds.pkl alongside the checkpoint, or fall back to the root outdir
+candidates = [
+    CKPT.parent.parent / "train_ds.pkl",             # version_1/train_ds.pkl
+    CKPT.parent.parent.parent.parent / "train_ds.pkl" # runs/tft/train_ds.pkl
+]
+for p in candidates:
+    if p.exists():
+        train_ds = pickle.load(open(p, "rb"))
+        break
+else:
+    raise FileNotFoundError(f"Could not find train_ds.pkl in {candidates}")
 
-n_time  = ds.sizes["time"]
-H, W    = ds.sizes["lat"], ds.sizes["lon"]
-core_idx = full_ds.core_index  # (N, 2) (pid, t_core)
+# 1. gather the full list of features that train_ds expects
+required = (
+    (train_ds.static_categoricals or [])
+  + (train_ds.static_reals or [])
+  + (train_ds.time_varying_known_categoricals or [])
+  + (train_ds.time_varying_known_reals or [])
+  + (train_ds.time_varying_unknown_reals or [])
+)
 
-# Pre‑allocate
-pred_log = np.full((n_time - LEAD, H, W), np.nan, np.float32)  # predictions indexed by *k+lead*
+# 2. compare against your dataframe’s columns
+missing = set(required) - set(df.columns)
+
+print(f"✅ train_ds expects {len(required)} total features")
+print("🔑 required features:", required)
+if missing:
+    print(f"❌ Oops, you’re missing {len(missing)} columns:\n   ", sorted(missing))
+else:
+    print("🎉 All required columns are present!")
+
+infer_ds = TimeSeriesDataSet.from_dataset(
+    train_ds,
+    df,
+    predict=True,
+    stop_randomization=True,
+)
+print(f"[diag] making DataLoader ({args.batch} batch-size)…")
+loader = infer_ds.to_dataloader(
+    train=False,
+    batch_size=args.batch,
+    shuffle=False,
+    num_workers=0,
+)
+
+# Pre-allocate your arrays
+n_time = ds.sizes["time"]
+H, W   = ds.sizes["lat"], ds.sizes["lon"]
+pred_log = np.full((n_time - LEAD, H, W), np.nan, np.float32)
+true_log = np.full_like(pred_log, np.nan)
+pers_log = np.full_like(pred_log, np.nan)
+# we’ll fill valid_m on the fly
+valid_m = np.zeros_like(pred_log, bool)
+
+# 3)  Run predict() and unpack directly
+print("[diag] running TFT.predict() …")
+pred = tft.predict(
+    infer_ds,
+    mode="prediction",
+    return_x=False,
+    return_index=True,
+)
+
+# pred.index is already a pandas.DataFrame with columns ['time_idx','sid']
+idx_df = pred.index.copy()
+idx_df = idx_df.rename(columns={"time_idx": "t"})  # rename time_idx → t
+
+# pred.output is a torch.Tensor of shape (n_samples, n_horizons)
+arr = pred.output.detach().cpu().numpy()
+n_horizons = arr.shape[1]
+horizon_cols = [f"pred_t{i+1}" for i in range(n_horizons)]
+
+# build df_pred by combining idx_df + the horizon columns
+df_pred = idx_df.reset_index(drop=True).copy()
+for i, col in enumerate(horizon_cols):
+    df_pred[col] = arr[:, i]
+
+print(df_pred.head())
+print("Columns:", df_pred.columns.tolist())
+
+# pick your lead
+hcol = f"pred_t{LEAD}"
+if hcol not in df_pred:
+    hcol = "pred_t1"
+print(f"[diag] using horizon: {hcol}")
+
+
+# back-transform from standardized to log-chl space
+mu = df["log_chl"].mean()
+sigma = df["log_chl"].std()
+df_pred["log_chl_pred"] = df_pred[hcol] * sigma + mu
+
+# merge in pixel coords by sid
+coords = df[["sid","iy","ix"]].drop_duplicates()
+df_pred = df_pred.merge(coords, on="sid", how="left")
+
+# re-init arrays
+n_time, H, W = ds.sizes["time"], ds.sizes["lat"], ds.sizes["lon"]
+pred_log = np.full((n_time-LEAD, H, W), np.nan, np.float32)
 true_log = np.full_like(pred_log, np.nan)
 pers_log = np.full_like(pred_log, np.nan)
 valid_m  = np.zeros_like(pred_log, bool)
 
-print("[diag] running network inference over", len(loader), "batches …", flush=True)
-with torch.no_grad():
-    for batch_x, _ in tqdm(loader):
-        # Move tensors to device, but keep small ones (indices etc.) on CPU
-        batch_x = {k: v.to(DEV) if isinstance(v, torch.Tensor) else v for k,v in batch_x.items()}
-        out     = tft(batch_x)
-        y_hat   = out.prediction.squeeze(-1).cpu().numpy()  # (B, lead)
-        # place forecasts into arrays
-        pids    = batch_x["groups"].squeeze(-1).cpu().numpy()
-        t_cores = batch_x["t_core"].cpu().numpy()
-        k_plus  = t_cores + LEAD
-        for i,(pid,kplus) in enumerate(zip(pids, k_plus)):
-            iy = int(df.loc[df.sid==pid,"iy"].iloc[0]); ix = int(df.loc[df.sid==pid,"ix"].iloc[0])
-            k_store = kplus - LEAD              # 0 …  (n_time-LEAD-1)
+# fill arrays directly from ds
+for row in df_pred.itertuples():
+    t_idx, i, j = row.t, row.iy, row.ix
+    k = int(t_idx - LEAD)
+    if k < 0 or np.isnan(i) or np.isnan(j):
+        continue
+    pred_log[k, i, j] = row.log_chl_pred
+    true_log[k, i, j] = float(ds.log_chl.values[t_idx, i, j])
+    pers_log[k, i, j] = float(ds.log_chl.values[t_idx-LEAD, i, j])
+    valid_m[k, i, j]  = True
 
-            pred_log[k_store, iy, ix] = y_hat[i, -1]
-            # true & pers values
-            true_log[k_store, iy, ix] = chl[pid, kplus].item()
-            pers_log[k_store, iy, ix] = chl[pid, kplus-LEAD].item()
-            valid_m [k_store, iy, ix] = True
-
-# Align time coordinate for predictions (k+lead)  ----------------------
+# shift time coordinate for preds
 times_pred = ds.time.values[LEAD:]
 
-# ------------------------------------------------------------------ #
-# 3)  Bias‑correction (constant offset)
-# ------------------------------------------------------------------ #
-bias = np.nanmean(pred_log[valid_m] - true_log[valid_m])
-print(f"[diag] constant bias = {bias:.4f} (log space) – subtracting …")
-pred_log = pred_log - bias
+
+# 3)  Bias-correction in mg-space
+#    so that linear RMSE & scatter get centered like the ConvLSTM
+pred_mg  = np.exp(pred_log) - _floor
+true_mg  = np.exp(true_log) - _floor
+# compute mg bias only over valid pixels
+bias_mg = np.nanmean((pred_mg - true_mg)[valid_m])
+print(f"[diag] constant bias = {bias_mg:.4f} (mg m⁻³) – subtracting …")
+# shift mg and re‐log
+adj_mg  = np.clip(pred_mg - bias_mg, 0, None)
+
+pred_log = np.log(adj_mg + _floor)
+
+bias_log = np.nanmean((pred_log - true_log)[valid_m])
+pred_log -= bias_log
 
 # ------------------------------------------------------------------ #
 # 4)  Metrics helpers (same maths as ConvLSTM diagnostics)
@@ -185,7 +322,6 @@ def _masked_rmse(a: np.ndarray, b: np.ndarray, m: np.ndarray):
     diff = (a - b)[m]
     return np.sqrt(np.mean(diff * diff)) if diff.size else np.nan
 
-_floor = None  # mg m‑3 detection floor (set if you added before log)
 exp_   = lambda x: np.clip(np.exp(x) - (_floor or 0.0), 0, None)
 
 # Global metrics table --------------------------------------------------
@@ -255,20 +391,3 @@ import runpy
 runpy.run_path(str(PLOT_UTIL), init_globals=override)
 
 print("\n✓ TFT diagnostics complete →", OUTDIR)
-
-'''
-GLOBAL METRICS (log space):
-subset  rmse_log_model  rmse_log_pers  mae_log_model  mae_log_pers  rmse_mg_model  rmse_mg_pers
- train        1.218311       0.892674       0.995388      0.617396       6.642223      6.298439
-   val        1.147608       0.854255       0.935876      0.596557       5.996653      5.800528
-  test        1.158417       0.888878       0.929460      0.624285       6.532279      6.138979
-   all        1.198996       0.885994       0.976696      0.614930       6.526062      6.198111
-[diag] saved predicted_fields.nc → /Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_TFT_v0p1
-
-Bloom contingency (≥5 mg m-3): {'metric': 'bloom_≥5mg', 'hits': 166443, 'miss': 102215, 'false_alarm': 93415, 'POD': 0.6195348733333806, 'FAR': 0.3594847955421794, 'CSI': 0.4596945919745453}
-
-GLOBAL METRICS (model vs obs):
- space     RMSE      MAE          Bias  Pearson_r  Spearman_rho      NSE      KGE
-linear 5.118773 2.200955 -5.953968e-01   0.575584      0.773834 0.320751 0.402367
-   log 0.792717 0.580946 -2.015892e-07   0.771778      0.773834 0.562880 0.766944
-'''

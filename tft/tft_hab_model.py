@@ -1,339 +1,197 @@
-#!/usr/bin/env python3
-"""
-tft_hab_model.py  —  Temporal Fusion Transformer baseline v0.1
-==============================================================
-Forecasts 8-day-ahead natural-log chlorophyll-a (log_chl) for every
-valid 4 km coastal pixel in the analysis-ready freeze
-`HAB_convLSTM_core_v1_clean.nc`.
+# tft_hab_model.py ---------------------------------------------------
 
-Key parallels with the ConvLSTM baseline
-----------------------------------------
-* Predictor set: the exact same 30 variables (satellite, meteo, ocean, derived)
-  plus 3 static covariates.
-* History window  : SEQ = 6  →  48 days of context
-* Lead time       : LEAD = 1 →  +8 day forecast
-* Train/Val/Test  : <2016-01-01 / 2016-01-01–2018-12-31 / >2018-12-31
-* Target          : log_chl (already log-transformed with detection floor)
-* Metrics         : RMSE_log, Quantile loss; persistence RMSE for skill
-
-Dependencies
-------------
-    pip install torch pytorch-lightning==2.2.2 pytorch-forecasting==1.0.0
-    pip install xarray netCDF4 pandas numpy tqdm
-
-Running
-------------
-
+'''
 python tft/tft_hab_model.py \
   --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
-  --epochs 60 --batch 256 --seq 6 --lead 1
-"""
-
+  --epochs 15 \
+  --seq 24 \
+  --lead 7 \
+  --device cpu
 '''
-
-Sanity check to ensure all dependencies are installed:
-
-python - <<'PY'
-import torch, lightning, pytorch_forecasting, sys
-print("Torch:", torch.__version__)
-print("Lightning:", lightning.__version__)
-print("PForecast:", pytorch_forecasting.__version__)
-PY
-
-'''
-
-import argparse
-import json
-import math
-import pathlib
-from itertools import product  # (kept in case you add grid-search)
-from typing import Tuple
-
-import numpy as np
-import pandas as pd
-import xarray as xr
-from tqdm.auto import tqdm
-
-import torch
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import (
-    EarlyStopping,
-    ModelCheckpoint,
-    LearningRateMonitor,
-)
-
-from pytorch_forecasting import (
-    TimeSeriesDataSet,
-    TemporalFusionTransformer,
-)
+import argparse, warnings
+import pandas as pd, numpy as np, xarray as xr, torch
+import lightning as L
+from torch.utils.data import DataLoader
+from pytorch_forecasting import TimeSeriesDataSet
 from pytorch_forecasting.metrics import QuantileLoss
+from pytorch_forecasting.models import TemporalFusionTransformer
+from pytorch_forecasting.data import GroupNormalizer
+import pickle, pathlib
+import random
 
-import torch.multiprocessing as mp
-import os
+# ---------- 1. cube  -> tidy dataframe ---------- #
+def cube_to_long(nc_path: pathlib.Path) -> pd.DataFrame:
+    ds = xr.open_dataset(nc_path)
+    ds = ds.copy()  # don’t overwrite the on-disk file
 
-mp.set_start_method("spawn", force=True)
-# Disable the NumPy-arrow fast path that seg-faults on macOS/py3.10
-os.environ["DATASET_PROCESSING_NUMPY"] = "0"
+    # spatially fill missing cur_div and cur_vort from nearest neighbor
+    for var in ["cur_div", "cur_vort", "ssh_grad_mag"]:
+        ds[var] = (
+            ds[var]
+            .ffill(dim="lat")   # fill down along latitude
+            .bfill(dim="lat")   # then back up
+            .ffill(dim="lon")   # and same along longitude
+            .bfill(dim="lon")
+        )
 
-# ──────────────────────────────────────────────────────────────────────
-# CONFIG (override at CLI)
-# ──────────────────────────────────────────────────────────────────────
-FREEZE   = pathlib.Path(
-    "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/"
-    "HAB_convLSTM_core_v1_clean.nc"
-)
-SEQ       = 6        # 48-day encoder length
-LEAD_IDX  = 1        # 8-day prediction horizon (1 step)
-BATCH     = 256      # ≈ GPU-dependent; 256 fits 12 GB for this dataset
-EPOCHS    = 60
-SEED      = 42
-DEVICE    = "cuda" if torch.cuda.is_available() else "cpu"
-OUT_DIR   = pathlib.Path.home() / "HAB_Models"
-OUT_DIR.mkdir(parents=True, exist_ok=True)
+    # now mask & flatten exactly as before
+    keep = (np.isfinite(ds.log_chl).sum("time") / ds.sizes["time"]) >= .2
+    ys, xs = np.where(keep)
+    rows = []
+    for sid, (iy, ix) in enumerate(zip(ys, xs)):
+        tmp = ds.isel(lat=iy, lon=ix).to_dataframe().reset_index()
+        tmp["sid"] = sid
+        rows.append(tmp)
+    df = pd.concat(rows, ignore_index=True)
+    df = df.dropna(subset=["log_chl"])
+    df["sid"] = df["sid"].astype(str)
+    return df
 
-# Predictor lists (identical to ConvLSTM)
-SATELLITE = ["log_chl", "Kd_490", "nflh"]
-METEO     = [
-    "u10", "v10", "wind_speed", "tau_mag",
-    "avg_sdswrf", "tp", "t2m", "d2m",
-]
-OCEAN     = [
-    "uo", "vo", "cur_speed", "cur_div", "cur_vort",
-    "zos", "ssh_grad_mag", "so", "thetao",
-]
-DERIVED   = [
-    "chl_anom_monthly",
-    "chl_roll24d_mean", "chl_roll24d_std",
-    "chl_roll40d_mean", "chl_roll40d_std",
-]
-STATIC    = ["river_rank", "dist_river_km", "ocean_mask_static"]
-
-ALL_VARS      = SATELLITE + METEO + OCEAN + DERIVED + STATIC
-STATIC_VARS   = STATIC
-_FLOOR        = 0.056616  # detection floor used in log transform
-
-torch.manual_seed(SEED)
-np.random.seed(SEED)
-pl.seed_everything(SEED, workers=True)
-
-# ──────────────────────────────────────────────────────────────────────
-# 1. Helper — melt (time,lat,lon) cube → long dataframe
-# ──────────────────────────────────────────────────────────────────────
-def melt_dataset_to_long(
-    ds: xr.Dataset, pixel_mask: xr.DataArray
-) -> pd.DataFrame:
+# ---------- 2. make TimeSeriesDataSet ---------- #
+def make_tsd(df: pd.DataFrame, seq: int, lead: int, outdir: pathlib.Path):
     """
-    Each valid (lat,lon) pixel becomes a unique series_id.
-    Returns long-format DataFrame with columns:
-        series_id | time_idx | date | dynamic vars … | target | static vars …
+    Build train / validation TimeSeriesDataSet objects for the TFT.
+
+    Parameters
+    ----------
+    df   : tidy dataframe returned by `cube_to_long`
+    seq  : encoder length  (max history length, in days)
+    lead : prediction length (forecast horizon, in days)
+
+    Returns
+    -------
+    train_ds : TimeSeriesDataSet for training
+    val_ds   : TimeSeriesDataSet for validation
     """
-    lat_idx, lon_idx = np.where(pixel_mask.values)
-    series_ids = np.arange(len(lat_idx))
-    time_idx = np.arange(ds.sizes["time"])
-    dates = pd.to_datetime(ds.time.values)
+    # 1) housekeeping -------------------------------------------------
+    df = df.copy()
+    df["sid"] = df["sid"].astype(str)                       # categorical!
+    df["time_idx"] = (df["time"] - df["time"].min()).dt.days
 
-    frames = []
-    for sid, iy, ix in tqdm(
-        zip(series_ids, lat_idx, lon_idx),
-        total=len(series_ids),
-        desc="Melting pixels → long format",
-    ):
-        dct = {
-            "series_id": sid,
-            "time_idx": time_idx,
-            "date": dates,
-        }
-        # Dynamic variables (time-varying)
-        for v in ALL_VARS:
-            if v not in STATIC_VARS:
-                dct[v] = ds[v][:, iy, ix].values
-        # Target (already in dynamic set)
-        dct["log_chl"] = ds["log_chl"][:, iy, ix].values
-        df = pd.DataFrame(dct)
+    # 2) calendar‐based split exactly like ConvLSTM:
+    #    train = dates < 2016-01-01
+    #    val   = 2016-01-01 … 2018-12-31
+    #    test  = dates > 2018-12-31
+    split_train_end = pd.Timestamp("2016-01-01")
+    split_val_end   = pd.Timestamp("2019-01-01")  # one day past Dec 31, 2018
 
-        # Static vars (broadcast)
-        for v in STATIC_VARS:
-            if v in ds.data_vars:
-                if "time" in ds[v].dims:
-                    val = float(ds[v][0, iy, ix].values)
-                else:
-                    val = float(ds[v][iy, ix].values)
-            else:
-                val = np.nan
-            df[v] = val
+    # convert dates → indices
+    df_min = df["time"].min()
+    train_cutoff = (pd.Timestamp("2016-01-01") - df_min).days
+    val_cutoff   = (pd.Timestamp("2019-01-01") - df_min).days
 
-        # Drop rows with NaN target
-        df = df[np.isfinite(df["log_chl"])]
-        frames.append(df)
+    # df.time_idx <  train_cutoff     # training  
+    # (df.time_idx >= train_cutoff) & (df.time_idx < val_cutoff)  # validation
 
-    return pd.concat(frames, ignore_index=True)
-
-# ──────────────────────────────────────────────────────────────────────
-# 2. Helper — build TimeSeriesDataSet & dataloaders
-# ──────────────────────────────────────────────────────────────────────
-def create_dataloaders(
-    df: pd.DataFrame,
-) -> Tuple[torch.utils.data.DataLoader, ...]:
-    # Date-based split indices (same thresholds as ConvLSTM)
-    dates = df.groupby("time_idx").first()["date"].sort_index()
-    train_cut = dates.searchsorted(np.datetime64("2016-01-01")) - 1
-    val_start = dates.searchsorted(np.datetime64("2016-01-01"))
-    val_end   = dates.searchsorted(np.datetime64("2018-12-31"))
-    test_start = val_end + 1
-
-    max_encoder_length = SEQ
-    max_prediction_length = LEAD_IDX
-
-    training = TimeSeriesDataSet(
-        df[df.time_idx <= train_cut],
-        time_idx="time_idx",
-        target="log_chl",
-        group_ids=["series_id"],
-        max_encoder_length=max_encoder_length,
-        max_prediction_length=max_prediction_length,
-        static_categoricals=[],
-        static_reals=STATIC_VARS,
-        time_varying_known_reals=[],    # none for +8 d horizon
-        time_varying_unknown_reals=[
-            v for v in ALL_VARS if v not in STATIC_VARS
+    # now build your TFT datasets
+    unknown_reals = [c for c in df.columns
+                 if c not in {"sid","time","time_idx","log_chl"}]
+    
+    train_ds = TimeSeriesDataSet(
+        df[df.time_idx <  train_cutoff],
+        time_idx                   = "time_idx",
+        group_ids                  = ["sid"],
+        target                     = "log_chl",
+        max_encoder_length         = seq,
+        max_prediction_length      = lead,
+        static_categoricals        = ["sid"],
+        static_reals        = ["river_rank","dist_river_km","ocean_mask_static"],
+        time_varying_unknown_reals = [
+            v for v in unknown_reals
+            if v not in {"river_rank","dist_river_km","ocean_mask_static"}
         ],
-        add_relative_time_idx=True,
-        add_target_scales=True,
-        add_encoder_length=True,
-        allow_missing_timesteps=True,
+        time_varying_known_reals=["time_idx"],
+        target_normalizer          = GroupNormalizer(
+                                        groups=["sid"], transformation=None
+                                    ),
+        add_relative_time_idx      = True,
+        add_target_scales          = True,
+        add_encoder_length         = True,
+        allow_missing_timesteps    = True,
     )
 
-    validation = TimeSeriesDataSet.from_dataset(
-        training,
-        df[(df.time_idx >= val_start) & (df.time_idx <= val_end)],
-        stop_randomization=True,
-    )
-    testing = TimeSeriesDataSet.from_dataset(
-        training,
-        df[df.time_idx >= test_start],
-        stop_randomization=True,
+    val_ds = TimeSeriesDataSet.from_dataset(
+        train_ds,
+        df[(df.time_idx >= train_cutoff) & (df.time_idx < val_cutoff)],
+        stop_randomization=True
     )
 
-    train_dl = training.to_dataloader(
-    train=True, batch_size=BATCH, num_workers=0, shuffle=True
-    )
-    val_dl = validation.to_dataloader(
-        train=False, batch_size=BATCH, num_workers=0
-    )
-    test_dl = testing.to_dataloader(
-        train=False, batch_size=BATCH, num_workers=0
-    )
-    return train_dl, val_dl, test_dl, training
+    dest = outdir / "lightning_logs" / "version_1"
+    dest.mkdir(parents=True, exist_ok=True)
+    fname = dest / "train_ds.pkl"
+    with open(fname, "wb") as f:
+        pickle.dump(train_ds, f)
+    print("✅ Saved train_ds.pkl →", fname)
+    # print("✅ Saved train_ds.pkl →", outdir/"train_ds.pkl")
+    return train_ds, val_ds
 
-# ──────────────────────────────────────────────────────────────────────
-# 3. Helper — RMSE of simple persistence baseline
-# ──────────────────────────────────────────────────────────────────────
-def rmse_persistence(loader):
-    errs = []
-    for batch in loader:
-        y_true = batch[0]["target"][..., -1]          # (B, 1)
-        last_enc = batch[0]["encoder_target"][..., -1]
-        mask = torch.isfinite(y_true)
-        errs.append(((y_true - last_enc)[mask] ** 2).cpu().numpy())
-    return math.sqrt(np.concatenate(errs).mean())
-
-# ──────────────────────────────────────────────────────────────────────
-# 4. Training routine
-# ──────────────────────────────────────────────────────────────────────
-def train_tft(df: pd.DataFrame):
-    train_dl, val_dl, test_dl, training = create_dataloaders(df)
-
-    model = TemporalFusionTransformer.from_dataset(
-        training,
-        hidden_size=64,
-        lstm_layers=2,
-        attention_head_size=4,
-        dropout=0.10,
-        hidden_continuous_size=32,
-        learning_rate=3e-4,
-        loss=QuantileLoss(),
-        reduce_on_plateau_patience=3,
-        log_interval=10,
+# ---------- 3. train ---------- #
+def run(cfg):
+    random.seed(cfg.seed)
+    np.random.seed(cfg.seed)
+    torch.manual_seed(cfg.seed)
+    df              = cube_to_long(cfg.freeze)
+    train, val = make_tsd(df, cfg.seq, cfg.lead, cfg.outdir)
+    batch_size      = min(256, 8*torch.cuda.device_count()+8)
+    # --- build loaders -------------------------------------------------
+    train_loader = train.to_dataloader(
+        train=True,  batch_size=batch_size, num_workers=4
+    )
+    val_loader   = val.to_dataloader(
+        train=False, batch_size=batch_size, num_workers=4
     )
 
-    ckpt_cb = ModelCheckpoint(
-        dirpath=OUT_DIR,
-        filename="tft_best",
-        monitor="val_loss",
-        mode="min",
-        save_top_k=1,
-    )
-    early_cb = EarlyStopping(monitor="val_loss", patience=8, mode="min")
-    lr_cb = LearningRateMonitor(logging_interval="epoch")
+    # quick sanity check – iterate one batch to prove it works
+    x, y = next(iter(train_loader))
+    y_data, y_weight = y            # y_weight == None in this case
 
-    trainer = pl.Trainer(
-        max_epochs=EPOCHS,
-        accelerator="cpu",      # <-- force CPU
-        devices=1,
-        precision=32,
-        gradient_clip_val=1.0,
-        callbacks=[ckpt_cb, early_cb, lr_cb],
-        log_every_n_steps=50,
+    print("✅ first batch fetched – keys:", x.keys(),
+        "| target shape:", y_data.shape,
+        "| weight:", "None" if y_weight is None else y_weight.shape)
+
+    tft = TemporalFusionTransformer.from_dataset(
+        train,
+        learning_rate = 2e-3,
+        hidden_size   = 64,
+        attention_head_size = 4,
+        dropout = 0.1,
+        loss    = QuantileLoss([0.1, 0.5, 0.9]),
     )
 
-    trainer.fit(model, train_dl, val_dl)
-
-    best = TemporalFusionTransformer.load_from_checkpoint(
-        ckpt_cb.best_model_path
+    trainer = L.Trainer(
+        max_epochs          = cfg.epochs,
+        accelerator         = cfg.device,
+        devices             = 1,
+        gradient_clip_val   = 1.0,
+        default_root_dir    = cfg.outdir,
+        log_every_n_steps   = 50,
     )
-
-    val_metrics  = best.test(val_dl, verbose=False)[0]
-    test_metrics = best.test(test_dl, verbose=False)[0]
-
-    # Persistence reference
-    val_rmse_p  = rmse_persistence(val_dl)
-    test_rmse_p = rmse_persistence(test_dl)
-
-    metrics = {
-        "val":  {**val_metrics,  "rmse_persistence": val_rmse_p},
-        "test": {**test_metrics, "rmse_persistence": test_rmse_p},
-    }
-    with open(OUT_DIR / "tft_metrics.json", "w") as f:
-        json.dump(metrics, f, indent=2)
-
-    print("\n✓ TFT evaluation complete")
-    print(json.dumps(metrics, indent=2))
-    print("Best checkpoint:", ckpt_cb.best_model_path)
-
-# ──────────────────────────────────────────────────────────────────────
-# 5. CLI
-# ──────────────────────────────────────────────────────────────────────
-def main():
-
-    global FREEZE, EPOCHS, BATCH, SEQ, LEAD_IDX
-
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--freeze", type=str, default=str(FREEZE))
-    ap.add_argument("--epochs", type=int, default=EPOCHS)
-    ap.add_argument("--batch",  type=int, default=BATCH)
-    ap.add_argument("--seq",    type=int, default=SEQ)
-    ap.add_argument("--lead",   type=int, default=LEAD_IDX)
-    args = ap.parse_args()
-
-    FREEZE   = pathlib.Path(args.freeze).expanduser()
-    EPOCHS   = args.epochs
-    BATCH    = args.batch
-    SEQ      = args.seq
-    LEAD_IDX = args.lead
-
-    # Load NetCDF (into RAM once; small at 851 × 240 × 240)
-    ds = xr.open_dataset(FREEZE, chunks={"time": -1})
-    ds.load()
-
-    # Build/derive pixel_ok mask (≥20 % finite log_chl)
-    if "pixel_ok" in ds:
-        pixel_mask = ds.pixel_ok.astype(bool)
-    else:
-        frac = np.isfinite(ds.log_chl).sum("time") / ds.sizes["time"]
-        pixel_mask = frac >= 0.20
-
-    df = melt_dataset_to_long(ds, pixel_mask)
-    train_tft(df)
+    trainer.fit(tft, train_loader, val_loader)
 
 if __name__ == "__main__":
-    main()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--freeze", type=pathlib.Path, required=True)
+    ap.add_argument("--epochs", type=int, default=15)
+    ap.add_argument("--seq",   type=int, default=24)   # 24 days encoder
+    ap.add_argument("--lead",  type=int, default=7)    # 7-day forecast
+    ap.add_argument("--device", default="cpu", choices=["cpu","mps","cuda"])
+    ap.add_argument("--outdir", type=pathlib.Path, default="runs/tft")
+    ap.add_argument("--seed", type=int, default=42)
+    cfg = ap.parse_args()
+    run(cfg)
+
+'''
+Sanity Check in Terminal:
+
+# quick, metrics-only smoke test (no heavy Cartopy plots)
+python tft/diagnostics.py \
+  --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
+  --ckpt   runs/tft/lightning_logs/version_1/checkpoints/epoch=14-step=48780.ckpt \
+  --out    Diagnostics_TFT_v0p1 \
+  --seq    24 \
+  --lead   7 \
+  --batch  4096 \
+  --device mps \
+  --no_plots
+
+'''
