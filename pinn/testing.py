@@ -313,3 +313,132 @@ def main():
 # ─────────────────────────────────────────────────────────────
 if __name__=="__main__":
     main()
+
+
+'''
+Results:
+
+→ Epoch 01/40 (data-only)
+   data=5.14e-01  phys=4.38e+00  λ=0.00
+E01  val RMSE_log=1.003  λ=0.00  lr=5.0e-05
+→ Epoch 02/40 (data-only)
+   data=4.83e-01  phys=4.28e+00  λ=0.00
+E02  val RMSE_log=0.914  λ=0.00  lr=5.0e-05
+→ Epoch 03/40 (data-only)
+   data=4.10e-01  phys=4.15e+00  λ=0.00
+E03  val RMSE_log=0.834  λ=0.00  lr=4.9e-05
+→ Epoch 04/40 (data-only)
+   data=3.72e-01  phys=4.10e+00  λ=0.00
+E04  val RMSE_log=0.802  λ=0.00  lr=4.9e-05
+→ Epoch 05/40 (data-only)
+   data=3.35e-01  phys=4.06e+00  λ=0.00
+E05  val RMSE_log=0.815  λ=0.00  lr=4.8e-05
+→ Epoch 06/40 (data-only)
+   data=3.48e-01  phys=4.06e+00  λ=0.00
+E06  val RMSE_log=0.833  λ=0.00  lr=4.8e-05
+→ Epoch 07/40 (data-only)
+   data=3.22e-01  phys=4.05e+00  λ=0.00
+E07  val RMSE_log=0.786  λ=0.00  lr=4.7e-05
+→ Epoch 08/40 (data-only)
+   data=3.11e-01  phys=4.03e+00  λ=0.00
+E08  val RMSE_log=0.835  λ=0.00  lr=4.6e-05
+→ Epoch 09/40 (data-only)
+   data=3.21e-01  phys=4.03e+00  λ=0.00
+E09  val RMSE_log=0.812  λ=0.00  lr=4.5e-05
+→ Epoch 10/40 (data-only)
+   data=3.24e-01  phys=4.02e+00  λ=0.00
+E10  val RMSE_log=0.838  λ=0.00  lr=4.3e-05
+→ Epoch 11/40 (data-only)
+   data=3.33e-01  phys=4.05e+00  λ=0.00
+E11  val RMSE_log=0.845  λ=0.00  lr=4.2e-05
+→ Epoch 12/40 (data-only)
+   data=3.16e-01  phys=4.02e+00  λ=0.00
+E12  val RMSE_log=0.853  λ=0.00  lr=4.1e-05
+→ Epoch 13/40 (data-only)
+   data=3.15e-01  phys=4.04e+00  λ=0.00
+E13  val RMSE_log=0.835  λ=0.00  lr=3.9e-05
+→ Epoch 14/40 (data-only)
+   data=3.14e-01  phys=4.03e+00  λ=0.00
+E14  val RMSE_log=0.818  λ=0.00  lr=3.8e-05
+→ Epoch 15/40 (data-only)
+   data=3.28e-01  phys=4.06e+00  λ=0.00
+E15  val RMSE_log=0.871  λ=0.00  lr=3.6e-05
+→ Epoch 16/40 (data-only)
+   data=3.08e-01  phys=4.01e+00  λ=0.00
+E16  val RMSE_log=0.820  λ=0.00  lr=3.4e-05
+→ Epoch 17/40 (data-only)
+   data=3.33e-01  phys=4.01e+00  λ=0.00
+E17  val RMSE_log=0.845  λ=0.00  lr=3.3e-05
+→ Epoch 18/40 (data-only)
+   data=3.35e-01  phys=4.05e+00  λ=0.00
+E18  val RMSE_log=0.865  λ=0.00  lr=3.1e-05
+→ Epoch 19/40 (data-only)
+   data=3.04e-01  phys=4.00e+00  λ=0.00
+E19  val RMSE_log=0.866  λ=0.00  lr=2.9e-05
+→ Epoch 20/40 (data-only)
+   data=3.22e-01  phys=4.00e+00  λ=0.00
+E20  val RMSE_log=0.839  λ=0.00  lr=2.8e-05
+→ Epoch 21/40 (data-only)
+   data=3.06e-01  phys=4.04e+00  λ=0.00
+E21  val RMSE_log=0.821  λ=0.00  lr=2.6e-05
+→ Epoch 22/40 (data-only)
+   data=3.13e-01  phys=4.08e+00  λ=0.00
+E22  val RMSE_log=0.828  λ=0.00  lr=2.4e-05
+→ Epoch 23/40 (data-only)
+   data=3.33e-01  phys=4.05e+00  λ=0.00
+E23  val RMSE_log=0.862  λ=0.00  lr=2.2e-05
+→ Epoch 24/40 (data-only)
+   data=3.22e-01  phys=4.02e+00  λ=0.00
+E24  val RMSE_log=0.834  λ=0.00  lr=2.1e-05
+→ Epoch 25/40 (λ_phys=0.05)
+   data=3.22e-01  phys=4.05e+00  λ=0.05
+E25  val RMSE_log=0.838  λ=0.05  lr=1.9e-05
+→ Epoch 26/40 (λ_phys=0.05)
+   data=3.35e-01  phys=4.05e+00  λ=0.05
+E26  val RMSE_log=0.828  λ=0.05  lr=1.7e-05
+→ Epoch 27/40 (λ_phys=0.05)
+   data=3.18e-01  phys=4.03e+00  λ=0.05
+E27  val RMSE_log=0.856  λ=0.05  lr=1.6e-05
+→ Epoch 28/40 (λ_phys=0.05)
+   data=3.29e-01  phys=3.98e+00  λ=0.05
+E28  val RMSE_log=0.804  λ=0.05  lr=1.4e-05
+→ Epoch 29/40 (λ_phys=0.05)
+   data=3.20e-01  phys=3.93e+00  λ=0.05
+E29  val RMSE_log=0.807  λ=0.05  lr=1.3e-05
+→ Epoch 30/40 (λ_phys=0.05)
+   data=3.27e-01  phys=3.92e+00  λ=0.05
+E30  val RMSE_log=0.816  λ=0.05  lr=1.2e-05
+→ Epoch 31/40 (λ_phys=0.05)
+   data=3.05e-01  phys=3.90e+00  λ=0.05
+E31  val RMSE_log=0.869  λ=0.05  lr=1.0e-05
+→ Epoch 32/40 (λ_phys=0.05)
+   data=3.17e-01  phys=3.88e+00  λ=0.05
+E32  val RMSE_log=0.855  λ=0.05  lr=9.3e-06
+→ Epoch 33/40 (λ_phys=0.05)
+   data=3.17e-01  phys=3.86e+00  λ=0.05
+E33  val RMSE_log=0.874  λ=0.05  lr=8.3e-06
+→ Epoch 34/40 (λ_phys=0.05)
+   data=3.07e-01  phys=3.86e+00  λ=0.05
+E34  val RMSE_log=0.808  λ=0.05  lr=7.5e-06
+→ Epoch 35/40 (λ_phys=0.05)
+   data=3.12e-01  phys=3.84e+00  λ=0.05
+E35  val RMSE_log=0.817  λ=0.05  lr=6.7e-06
+→ Epoch 36/40 (λ_phys=0.05)
+   data=3.20e-01  phys=3.87e+00  λ=0.05
+E36  val RMSE_log=0.867  λ=0.05  lr=6.1e-06
+→ Epoch 37/40 (λ_phys=0.05)
+   data=3.16e-01  phys=3.84e+00  λ=0.05
+E37  val RMSE_log=0.813  λ=0.05  lr=5.6e-06
+→ Epoch 38/40 (λ_phys=0.05)
+   data=3.28e-01  phys=3.89e+00  λ=0.05
+E38  val RMSE_log=0.858  λ=0.05  lr=5.3e-06
+→ Epoch 39/40 (λ_phys=0.05)
+   data=3.26e-01  phys=3.82e+00  λ=0.05
+E39  val RMSE_log=0.875  λ=0.05  lr=5.1e-06
+→ Epoch 40/40 (λ_phys=0.05)
+   data=3.20e-01  phys=3.81e+00  λ=0.05
+E40  val RMSE_log=0.871  λ=0.05  lr=5.0e-06
+
+FINAL RMSE_log: {'train': 0.8697551863936697, 'val': 0.859390116829139, 'test': 0.9130545632825462}
+
+'''
