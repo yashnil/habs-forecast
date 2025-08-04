@@ -26,6 +26,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from torch.amp import autocast, GradScaler
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.nn import Parameter
+import argparse, sys
 
 # ─────────────────────────────────────────────────────────────
 # CONFIG  (can be overridden from CLI)
@@ -42,6 +45,7 @@ INIT_LR    = 5e-5       # ❹ lower start-LR
 WEIGHT_DEC = 1e-4
 WEIGHT_EXP = 2.0
 HUBER_DELTA = 1.0
+MAX_PHYS_WEIGHT = 0.2
 STRATIFY   = True
 DEVICE     = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 MIXED_PREC = (DEVICE.type == "cuda")
@@ -73,6 +77,33 @@ random.seed(SEED); np.random.seed(SEED); torch.manual_seed(SEED)
 # ─────────────────────────────────────────────────────────────
 # helpers
 # ─────────────────────────────────────────────────────────────
+def _LAMBDA_SCHEDULE(ep: int) -> float:
+    """
+    A small phys‐loss for the first 8 epochs,
+    then ramp up to 0.12 by epoch 20, then hold.
+    """
+    if ep < 8:
+        return 0.0
+    elif ep < 20:
+        return 0.01 * (ep - 7)
+    else:
+        return 0.12
+    
+# ─────────────────────────────────────────────────────────────
+# λ_phys schedule  (place near other helpers)
+# ─────────────────────────────────────────────────────────────
+def lambda_phys(epoch: int, warm: int = 15, max_lambda: float = 0.05) -> float:
+    """
+    Cosine ramp from 0 → max_lambda.
+    • first <warm> epochs: 0
+    • next 10 epochs: smooth rise
+    • afterwards: flat at max_lambda
+    """
+    if epoch < warm:
+        return 0.0
+    ramp = 0.5 * (1.0 - np.cos(np.pi * (epoch - warm) / 10.0))
+    return max_lambda * min(1.0, ramp)
+
 def norm_stats(ds, train_idx):
     st = {}
     for v in ALL_VARS:
@@ -159,8 +190,8 @@ def make_loaders():
 # ─────────────────────────────────────────────────────────────
 # Model
 # ─────────────────────────────────────────────────────────────
-HID1, HID2 = 64, 128          # ❷ larger hidden state
-DROPIN     = 0.15             # ❺ stronger dropout
+HID1, HID2 = 48, 64     # baseline widths
+DROPIN      = 0.0       # no dropout for now
 
 class PxLSTM(nn.Module):
     def __init__(self, ci, co):
@@ -179,12 +210,22 @@ class PxLSTM(nn.Module):
 
 class ConvLSTM(nn.Module):
     def __init__(self,Cin, mu_u, sd_u, mu_v, sd_v):
+        # self.kappa   = nn.Parameter(torch.tensor(25.0))
         super().__init__()
-        self.kappa   = nn.Parameter(torch.tensor(25.0))
-        self.reduce  = nn.Conv2d(Cin, 48, 1)
+        # physics‐diffusivity
+        self.kappa = Parameter(torch.tensor(25.0))
+
+        # learnable physics‐weight λ_phys (sigmoid → [0, 0.2])
+        self.logit_lambda = Parameter(torch.tensor(-3.0))
+
+        # learnable derivative kernels (initialized to your 3×3 stencils)
+        self.kdx  = Parameter(KDX.clone())
+        self.kdy  = Parameter(KDY.clone())
+        self.klap = Parameter(KLAP.clone())
         self.dropout = nn.Dropout2d(DROPIN)
-        self.l1, self.l2 = PxLSTM(48, HID1), PxLSTM(HID1, HID2)
-        self.head    = nn.Conv2d(HID2, 1, 1)
+        self.reduce = nn.Conv2d(Cin, 24, 1)
+        self.l1, self.l2 = PxLSTM(24, HID1), PxLSTM(HID1, HID2)
+        self.head = nn.Conv2d(HID2, 1, 1)
         # stats for de-norm currents
         self.mu_u,self.sd_u,self.mu_v,self.sd_v = mu_u,sd_u,mu_v,sd_v
     def forward(self,x):                     # x:(B,T,C,H,W)
@@ -213,10 +254,22 @@ def _convolve(field,kernel):
     return F.conv2d(padded,kernel, padding=0).squeeze(1)
 
 def physics_residual(C_pred_lin, C_last_lin, u_lin, v_lin, kappa):
-    dCdt=(C_pred_lin-C_last_lin)/DT_SEC
-    phys=dCdt + u_lin*_convolve(C_pred_lin,KDX) + v_lin*_convolve(C_pred_lin,KDY) - kappa*_convolve(C_pred_lin,KLAP)
-    med = median(phys.abs()[phys.isfinite()]) + 1e-9
-    return torch.clamp(phys/med, -10., 10.)
+    dCdt = (C_pred_lin - C_last_lin) / DT_SEC
+    dCdx = _convolve(C_pred_lin, KDX)
+    dCdy = _convolve(C_pred_lin, KDY)
+    lap  = _convolve(C_pred_lin, KLAP)
+
+    raw = dCdt + u_lin * dCdx + v_lin * dCdy - kappa * lap
+
+    finite = raw.isfinite()
+    if finite.any():
+        # batch MAD
+        sigma = median(raw[finite].abs()) + 1e-9
+    else:
+        sigma = raw.new_tensor(1.0)
+
+    phys = torch.clamp(raw / sigma, -10.0, 10.0)
+    return phys
 
 # ─────────────────────────────────────────────────────────────
 # Train / eval
@@ -232,87 +285,170 @@ def rmse(dl,net,stats):
         se+=(err**2).sum().item(); n+=m.sum().item()
     return math.sqrt(se/n)
 
-def train_one(dl, net, opt, stats, sched, λ_phys):
-    net.train(); mu_u,sd_u=stats["uo"]; mu_v,sd_v=stats["vo"]
-    running_d=running_p=0.0
-    for X,y,m in dl:
-        X,y,m=[t.to(DEVICE) for t in (X,y,m)]
-        with autocast(device_type=DEVICE.type, enabled=MIXED_PREC):
+def train_one(dl, net, opt, stats, *, epoch: int):
+    net.train()
+    λ_phys = lambda_phys(epoch)
+
+    running_d = running_p = 0.0
+    for X, y, m in dl:
+        X, y, m = [t.to(DEVICE) for t in (X, y, m)]
+
+        # ----------- forward pass -----------
+        with autocast(device_type=DEVICE.type, enabled=MIXED_PREC):          # data-loss only in AMP
             delta    = net(X)
-            log_pred = X[:,-1,LOGCHL_IDX] + delta
-            err      = (log_pred-y).masked_fill_(~m,0)
+            log_pred = X[:, -1, LOGCHL_IDX] + delta
+            err      = (log_pred - y).masked_fill_(~m, 0)
 
-            # Huber data-loss --------------------------------------------------
-            chl_lin=torch.exp(y)
-            w=torch.where(chl_lin<0.5,1.0,torch.where(chl_lin<2.0,1.5,torch.where(chl_lin<5,2.5,4.0)))
-            w=w*m
-            abs_err=err.abs(); quad=torch.minimum(abs_err,torch.tensor(HUBER_DELTA,device=err.device))
-            huber=0.5*quad**2 + HUBER_DELTA*(abs_err-quad)
-            data_loss=(w*huber).sum()/w.sum()
+            chl_lin = torch.exp(y)
+            w = torch.where(chl_lin < 0.5, 1.,
+                    torch.where(chl_lin < 2., 1.5,
+                    torch.where(chl_lin < 5., 2.5, 4.0))) * m
 
-            # physics-loss -----------------------------------------------------
-            u_lin=un_z(X[:,-1,U_IDX],(mu_u,sd_u)); v_lin=un_z(X[:,-1,V_IDX],(mu_v,sd_v))
-            C_last_lin=torch.exp(X[:,-1,LOGCHL_IDX])-_FLOOR
-            C_pred_lin=torch.exp(log_pred)-_FLOOR
-            phys=physics_residual(C_pred_lin,C_last_lin,u_lin,v_lin,net.kappa)
-            phys_loss=(0.5*torch.minimum(phys[m].abs(), torch.tensor(3.,device=err.device))**2).mean()
+            quad  = torch.minimum(err.abs(), torch.tensor(HUBER_DELTA, device=err.device))
+            huber = 0.5*quad**2 + HUBER_DELTA*(err.abs()-quad)
+            data_loss = (w*huber).sum() / w.sum()
 
-            loss=data_loss + λ_phys*phys_loss
+        # ---------- physics loss in fp32 ----------
+        mu_u, sd_u = stats["uo"];  mu_v, sd_v = stats["vo"]
+        u_lin = un_z(X[:, -1, U_IDX], (mu_u, sd_u))
+        v_lin = un_z(X[:, -1, V_IDX], (mu_v, sd_v))
+        C_last_lin = torch.exp(X[:, -1, LOGCHL_IDX]) - _FLOOR
+        C_pred_lin = torch.exp(log_pred) - _FLOOR
+
+        phys = physics_residual(C_pred_lin, C_last_lin, u_lin, v_lin, net.kappa).abs()
+        phys_loss = (phys * m).sum() / m.sum()      # see Fix 4
+
+        loss = data_loss + λ_phys * phys_loss
+
+        # ----------- backward ------------
         SCALER.scale(loss).backward()
-        SCALER.unscale_(opt); nn.utils.clip_grad_norm_(net.parameters(),0.8)   # ❺
+        SCALER.unscale_(opt); nn.utils.clip_grad_norm_(net.parameters(), 0.8)
         SCALER.step(opt); SCALER.update(); opt.zero_grad()
-        sched.step()
-        running_d+=data_loss.item(); running_p+=phys_loss.item()
-    nb=len(dl)
-    print(f"   data={running_d/nb:.2e}  phys={running_p/nb:.2e}  λ={λ_phys:.02f}")
+
+        running_d += data_loss.item(); running_p += phys_loss.item()
+
+    print(f"   data={running_d/len(dl):.2e}  phys={running_p/len(dl):.2e}  λ={λ_phys:.03f}")
+   
+class EarlyStop:
+    def __init__(self, patience=7, min_delta=1e-3):
+        self.patience, self.min_delta = patience, min_delta
+        self.best = float("inf"); self.bad = 0
+    def step(self, metric):               # returns True  ⇢  stop now
+        if metric < self.best - self.min_delta:
+            self.best, self.bad = metric, 0
+            return False
+        self.bad += 1
+        return self.bad >= self.patience
 
 # ─────────────────────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────────────────────
-def main():
-    tr_dl,va_dl,te_dl,stats=make_loaders()
-    Cin=len([v for v in ALL_VARS if v in xr.open_dataset(FREEZE).data_vars])
-    mu_u,sd_u=stats["uo"]; mu_v,sd_v=stats["vo"]
-    net=ConvLSTM(Cin,mu_u,sd_u,mu_v,sd_v).to(DEVICE)
+def main(argv=None):
+    # ---------- CLI ----------------------------------------------------------
+    p = argparse.ArgumentParser()
+    p.add_argument("--freeze",      type=pathlib.Path, required=True)
+    p.add_argument("--epochs",      type=int, default=40)      # final epoch #
+    p.add_argument("--seq",         type=int, default=12)
+    p.add_argument("--lead",        type=int, default=1)
+    p.add_argument("--batch",       type=int, default=32)
+    args = p.parse_args(argv)
 
-    opt  = torch.optim.AdamW(net.parameters(), lr=INIT_LR, weight_decay=WEIGHT_DEC)
-    total_steps=EPOCHS*len(tr_dl)
-    sched=torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=total_steps, eta_min=5e-6)
+    # ----- wire CLI flags into globals the rest of the file expects ----------
+    global FREEZE, SEQ, LEAD_IDX, BATCH
+    FREEZE, SEQ, LEAD_IDX, BATCH = args.freeze, args.seq, args.lead, args.batch
 
-    best=1e9; bad=0
-    # ── stage-1 : data-only ---------------------------------------------------
-    for ep in range(1,25):
-        print(f"→ Epoch {ep:02d}/40 (data-only)")
-        train_one(tr_dl,net,opt,stats,sched,λ_phys=0.0)
-        val_rm=rmse(va_dl,net,stats)
-        print(f"E{ep:02d}  val RMSE_log={val_rm:.3f}  λ=0.00  lr={opt.param_groups[0]['lr']:.1e}")
-        if val_rm<best-1e-3:
-            best,bad=val_rm,0; torch.save(net.state_dict(),OUT_DIR/'best.pt')
-        else: bad+=1
+    # ---------- data ---------------------------------------------------------
+    tr_dl, va_dl, te_dl, stats = make_loaders()
+    Cin = len([v for v in ALL_VARS if v in xr.open_dataset(FREEZE).data_vars])
 
-    # ── stage-2 : PINN fine-tune --------------------------------------------
-    phase2_lambda=0.05
-    for ep in range(25,41):
-        print(f"→ Epoch {ep:02d}/40 (λ_phys={phase2_lambda})")
-        train_one(tr_dl,net,opt,stats,sched,λ_phys=phase2_lambda)
-        val_rm=rmse(va_dl,net,stats)
-        print(f"E{ep:02d}  val RMSE_log={val_rm:.3f}  λ={phase2_lambda:.2f}  lr={opt.param_groups[0]['lr']:.1e}")
-        if val_rm<best-1e-3:
-            best,bad=val_rm,0; torch.save(net.state_dict(),OUT_DIR/'best.pt')
-        else:
-            bad+=1
-            if bad==10: break                       # early-stop
+    # ---------- model --------------------------------------------------------
+    mu_u, sd_u = stats["uo"];  mu_v, sd_v = stats["vo"]
+    net = ConvLSTM(Cin, mu_u, sd_u, mu_v, sd_v).to(DEVICE)
 
-    net.load_state_dict(torch.load(OUT_DIR/'best.pt'))
-    metrics={"train":rmse(tr_dl,net,stats),
-             "val"  :rmse(va_dl,net,stats),
-             "test" :rmse(te_dl,net,stats)}
-    print("\nFINAL RMSE_log:",metrics)
-    json.dump(metrics, open(OUT_DIR/'convLSTM_PINN_metrics.json','w'), indent=2)
+    # ------------------------  helpers ---------------------------------------
+    def evaluate(dl):                 # quick val-metric wrapper
+        return rmse(dl, net, stats)
+
+    # =======================  STAGE-1 : data-only  ===========================
+    print("\n─── Stage-1 : data-only training (epochs 1-24) ───")
+    opt1   = torch.optim.AdamW(net.parameters(), lr=1e-4, weight_decay=1e-4)
+    plate1 = ReduceLROnPlateau(opt1, mode="min", factor=0.5, patience=1,
+                               min_lr=5e-6)
+    stop1  = EarlyStop(patience=20, min_delta=2e-4)
+    best_f = OUT_DIR / "baseline.pt"
+
+    for ep in range(1, 25):
+        train_one(tr_dl, net, opt1, stats, epoch=ep)
+        val_rm = evaluate(va_dl)
+        plate1.step(val_rm)
+
+        if val_rm < stop1.best:
+            torch.save(net.state_dict(), best_f)
+        print(f"E{ep:02d}  val RMSE_log={val_rm:.3f}  lr={opt1.param_groups[0]['lr']:.1e}")
+
+        if stop1.step(val_rm):
+            print(f"Early-stop Stage-1 at epoch {ep}  (best = {stop1.best:.3f})")
+            break
+
+    # keep best Stage-1 weights
+    net.load_state_dict(torch.load(best_f))
+
+    # ─── keep Adam moments but stop weight-decay for fine-tune ───
+    for g in opt1.param_groups:
+      g["weight_decay"] = 0.0
+
+    # =======================  STAGE-2 : physics-fine-tune  ===================
+    print(f"\n─── Stage-2 : physics fine-tune (epochs 25-{args.epochs}) ───")
+
+    # freeze ConvLSTM & decoder; train only physics pieces
+    phys_params = {"kdx", "kdy", "klap", "kappa", "logit_lambda"}
+    for n, p in net.named_parameters():
+        p.requires_grad = n in phys_params
+
+    # opt2 = torch.optim.AdamW(filter(lambda p: p.requires_grad, net.parameters()),
+    #                         lr=5e-5, weight_decay=0.)
+    plate2 = ReduceLROnPlateau(opt1, mode="min", factor=0.5, patience=3,
+                               min_lr=1e-6)
+    stop2  = EarlyStop(patience=10, min_delta=5e-4)
+    best_f2 = OUT_DIR / "best.pt"
+
+    ran_stage2 = False
+
+    for ep in range(25, args.epochs + 1):
+        # smooth ramp: 0 → 0.05 over first 10 Stage-2 epochs
+        # λ_phys = min(0.05, 0.005 * (ep - 24))
+        train_one(tr_dl, net, opt1, stats, epoch=ep)
+        val_rm = evaluate(va_dl)
+        plate2.step(val_rm)
+
+        if val_rm < stop2.best:
+            torch.save(net.state_dict(), best_f2)
+            ran_stage2 = True
+        print(f"E{ep:02d}  val RMSE_log={val_rm:.3f}  λ={lambda_phys(ep):.3f}  "
+          f"lr={opt1.param_groups[0]['lr']:.1e}")
+
+        if stop2.step(val_rm):
+            print(f"Early-stop Stage-2 at epoch {ep}  (best = {stop2.best:.3f})")
+            break
+
+    # --------------- final metrics ------------------------------------------
+    if ran_stage2:
+        net.load_state_dict(torch.load(best_f2))
+    else:
+        print("Stage-2 skipped → keeping Stage-1 weights")
+
+    metrics = {
+        "train": evaluate(tr_dl),
+        "val":   evaluate(va_dl),
+        "test":  evaluate(te_dl),
+    }
+    print("\nFINAL RMSE_log:", metrics)
+    json.dump(metrics, open(OUT_DIR / "convLSTM_PINN_metrics.json", "w"), indent=2)
+
 
 # ─────────────────────────────────────────────────────────────
 if __name__=="__main__":
-    main()
+    main(sys.argv[1:])
 
 
 '''

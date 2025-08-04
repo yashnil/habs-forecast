@@ -1,0 +1,31 @@
+   data=4.97e-01  phys=4.30e+00  λ=0.05
+E01  val RMSE_log=0.971  λ=0.05  lr=1.0e-04
+   data=4.25e-01  phys=4.11e+00  λ=0.05
+E02  val RMSE_log=0.835  λ=0.05  lr=1.0e-04
+   data=3.27e-01  phys=3.95e+00  λ=0.05
+E03  val RMSE_log=0.838  λ=0.05  lr=1.0e-04
+   data=3.16e-01  phys=3.90e+00  λ=0.05
+E04  val RMSE_log=0.833  λ=0.05  lr=1.0e-04
+   data=3.27e-01  phys=3.78e+00  λ=0.05
+E05  val RMSE_log=0.804  λ=0.05  lr=1.0e-04
+   data=3.44e-01  phys=3.69e+00  λ=0.05
+E06  val RMSE_log=0.827  λ=0.05  lr=1.0e-04
+   data=3.20e-01  phys=3.52e+00  λ=0.05
+E07  val RMSE_log=0.783  λ=0.05  lr=1.0e-04
+   data=3.08e-01  phys=3.25e+00  λ=0.05
+E08  val RMSE_log=0.818  λ=0.05  lr=1.0e-04
+   data=3.24e-01  phys=2.76e+00  λ=0.05
+E09  val RMSE_log=0.793  λ=0.05  lr=1.0e-04
+   data=3.32e-01  phys=1.98e+00  λ=0.05
+E10  val RMSE_log=0.819  λ=0.05  lr=1.0e-04
+   data=3.36e-01  phys=1.84e+00  λ=0.05
+E11  val RMSE_log=0.822  λ=0.05  lr=5.0e-05
+   data=3.28e-01  phys=1.84e+00  λ=0.05
+E12  val RMSE_log=0.835  λ=0.05  lr=5.0e-05
+   data=3.23e-01  phys=1.84e+00  λ=0.05
+E13  val RMSE_log=0.825  λ=0.05  lr=5.0e-05
+   data=3.15e-01  phys=1.86e+00  λ=0.05
+E14  val RMSE_log=0.787  λ=0.05  lr=5.0e-05
+Early-stop: best val-RMSE = 0.783
+
+FINAL RMSE_log: {'train': 0.8980076144608209, 'val': 0.8834993592163752, 'test': 0.9144344274410239}

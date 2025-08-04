@@ -1,0 +1,83 @@
+
+─── Stage-1 : data-only training (epochs 1-24) ───
+   data=5.36e-01  phys=4.22e+00  λ=0.00
+E01  val RMSE_log=1.046  lr=1.0e-04
+   data=5.09e-01  phys=4.41e+00  λ=0.00
+E02  val RMSE_log=0.924  lr=1.0e-04
+   data=4.04e-01  phys=4.15e+00  λ=0.00
+E03  val RMSE_log=0.799  lr=1.0e-04
+   data=3.36e-01  phys=4.03e+00  λ=0.00
+E04  val RMSE_log=0.875  lr=1.0e-04
+   data=3.33e-01  phys=3.98e+00  λ=0.00
+E05  val RMSE_log=0.788  lr=1.0e-04
+   data=3.14e-01  phys=4.00e+00  λ=0.00
+E06  val RMSE_log=0.815  lr=1.0e-04
+   data=3.37e-01  phys=3.98e+00  λ=0.00
+E07  val RMSE_log=0.784  lr=1.0e-04
+   data=3.12e-01  phys=3.96e+00  λ=0.00
+E08  val RMSE_log=0.826  lr=1.0e-04
+   data=3.12e-01  phys=3.95e+00  λ=0.00
+E09  val RMSE_log=0.799  lr=5.0e-05
+   data=3.22e-01  phys=3.98e+00  λ=0.00
+E10  val RMSE_log=0.834  lr=5.0e-05
+   data=3.22e-01  phys=4.00e+00  λ=0.00
+E11  val RMSE_log=0.835  lr=2.5e-05
+   data=3.21e-01  phys=3.97e+00  λ=0.00
+E12  val RMSE_log=0.845  lr=2.5e-05
+   data=3.04e-01  phys=3.97e+00  λ=0.00
+E13  val RMSE_log=0.834  lr=1.3e-05
+   data=3.36e-01  phys=4.03e+00  λ=0.00
+E14  val RMSE_log=0.808  lr=1.3e-05
+   data=3.18e-01  phys=4.02e+00  λ=0.00
+E15  val RMSE_log=0.871  lr=6.3e-06
+   data=3.04e-01  phys=3.98e+00  λ=0.00
+E16  val RMSE_log=0.813  lr=6.3e-06
+   data=3.18e-01  phys=3.95e+00  λ=0.00
+E17  val RMSE_log=0.838  lr=5.0e-06
+   data=3.15e-01  phys=4.00e+00  λ=0.00
+E18  val RMSE_log=0.855  lr=5.0e-06
+   data=3.08e-01  phys=3.95e+00  λ=0.00
+E19  val RMSE_log=0.854  lr=5.0e-06
+   data=3.10e-01  phys=3.94e+00  λ=0.00
+E20  val RMSE_log=0.831  lr=5.0e-06
+   data=3.33e-01  phys=3.99e+00  λ=0.00
+E21  val RMSE_log=0.815  lr=5.0e-06
+   data=3.24e-01  phys=4.01e+00  λ=0.00
+E22  val RMSE_log=0.824  lr=5.0e-06
+   data=3.12e-01  phys=4.00e+00  λ=0.00
+E23  val RMSE_log=0.856  lr=5.0e-06
+   data=3.26e-01  phys=4.00e+00  λ=0.00
+E24  val RMSE_log=0.830  lr=5.0e-06
+
+─── Stage-2 : physics fine-tune (epochs 25-40) ───
+   data=3.11e-01  phys=4.01e+00  λ=0.01
+E25  val RMSE_log=0.847  λ=0.005  lr=5.0e-05
+   data=3.23e-01  phys=4.01e+00  λ=0.01
+E26  val RMSE_log=0.832  λ=0.010  lr=5.0e-05
+   data=3.08e-01  phys=3.97e+00  λ=0.01
+E27  val RMSE_log=0.864  λ=0.015  lr=5.0e-05
+   data=3.06e-01  phys=3.95e+00  λ=0.02
+E28  val RMSE_log=0.814  λ=0.020  lr=5.0e-05
+   data=3.28e-01  phys=3.98e+00  λ=0.03
+E29  val RMSE_log=0.817  λ=0.025  lr=5.0e-05
+   data=3.29e-01  phys=3.96e+00  λ=0.03
+E30  val RMSE_log=0.826  λ=0.030  lr=5.0e-05
+   data=3.17e-01  phys=3.97e+00  λ=0.04
+E31  val RMSE_log=0.882  λ=0.035  lr=5.0e-05
+   data=3.50e-01  phys=3.99e+00  λ=0.04
+E32  val RMSE_log=0.871  λ=0.040  lr=2.5e-05
+   data=3.24e-01  phys=3.98e+00  λ=0.04
+E33  val RMSE_log=0.885  λ=0.045  lr=2.5e-05
+   data=3.27e-01  phys=3.93e+00  λ=0.05
+E34  val RMSE_log=0.822  λ=0.050  lr=2.5e-05
+   data=3.20e-01  phys=3.95e+00  λ=0.05
+E35  val RMSE_log=0.831  λ=0.050  lr=2.5e-05
+   data=3.23e-01  phys=3.99e+00  λ=0.05
+E36  val RMSE_log=0.877  λ=0.050  lr=1.3e-05
+   data=3.09e-01  phys=3.96e+00  λ=0.05
+E37  val RMSE_log=0.825  λ=0.050  lr=1.3e-05
+   data=3.17e-01  phys=3.99e+00  λ=0.05
+E38  val RMSE_log=0.868  λ=0.050  lr=1.3e-05
+Early-stop Stage-2 at epoch 38  (best = 0.814)
+
+FINAL RMSE_log: {'train': 0.8765123604188331, 'val': 0.885186008201396, 'test': 0.9154455535486049}

@@ -1,0 +1,26 @@
+# 1. activate the env (already done, but include for completeness)
+micromamba activate habs
+
+# 2. make sure a logs/ folder exists
+mkdir -p logs
+
+# 3-6. launch the four runs (unbuffered output → live progress)
+python -u pinn/testing.py \
+  --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
+  --epochs 40 --seq 12 --lead 1 --batch 32 \
+  --lambda_phys 0.00 | tee logs/run_lambda_0.00.log
+
+python -u pinn/testing.py \
+  --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
+  --epochs 40 --seq 12 --lead 1 --batch 32 \
+  --lambda_phys 0.01 | tee logs/run_lambda_0.01.log
+
+python -u pinn/testing.py \
+  --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
+  --epochs 40 --seq 12 --lead 1 --batch 32 \
+  --lambda_phys 0.02 | tee logs/run_lambda_0.02.log
+
+python -u pinn/testing.py \
+  --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
+  --epochs 40 --seq 12 --lead 1 --batch 32 \
+  --lambda_phys 0.05 | tee logs/run_lambda_0.05.log
