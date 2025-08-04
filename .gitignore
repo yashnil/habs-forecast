@@ -1,3 +1,4 @@
 runs/tft/lightning_logs/*/train_ds.pkl
 runs/tft/lightning_logs/*/train_ds.pkl
 train_ds.pkl
+archive/HAB_convLSTM_core_v1_clean.nc
