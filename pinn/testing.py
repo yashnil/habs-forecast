@@ -15,7 +15,7 @@ Running instruction:
 
 python pinn/testing.py \
      --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
-     --epochs 40 --seq 12 --lead 1 --batch 32
+     --epochs 40 --seq 12 --lead 1 --batch 64
 
 """
 
@@ -29,6 +29,7 @@ from torch.amp import autocast, GradScaler
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.nn import Parameter
 import argparse, sys
+torch.backends.cudnn.benchmark = True
 
 # ─────────────────────────────────────────────────────────────
 # CONFIG  (can be overridden from CLI)
@@ -40,6 +41,7 @@ PATCH      = 64
 BATCH      = 32
 EPOCHS     = 40
 SEED       = 42
+GRAD_ACC = 2   # put near CONFIG
 
 INIT_LR    = 5e-5       # ❹ lower start-LR
 WEIGHT_DEC = 1e-4
@@ -73,6 +75,7 @@ U_IDX      = ALL_VARS.index("uo")
 V_IDX      = ALL_VARS.index("vo")
 
 random.seed(SEED); np.random.seed(SEED); torch.manual_seed(SEED)
+print(">>> TEST SCRIPT VERSION xyz loaded <<<")
 
 # ─────────────────────────────────────────────────────────────
 # helpers
@@ -92,16 +95,10 @@ def _LAMBDA_SCHEDULE(ep: int) -> float:
 # ─────────────────────────────────────────────────────────────
 # λ_phys schedule  (place near other helpers)
 # ─────────────────────────────────────────────────────────────
-def lambda_phys(epoch: int, warm: int = 15, max_lambda: float = 0.05) -> float:
-    """
-    Cosine ramp from 0 → max_lambda.
-    • first <warm> epochs: 0
-    • next 10 epochs: smooth rise
-    • afterwards: flat at max_lambda
-    """
-    if epoch < warm:
+def lambda_phys(epoch: int, warm: int = 24, max_lambda: float = 0.03):
+    if epoch < warm:               # warm-up now ends at epoch-24
         return 0.0
-    ramp = 0.5 * (1.0 - np.cos(np.pi * (epoch - warm) / 10.0))
+    ramp = 0.5 * (1 - np.cos(np.pi * (epoch - warm) / 10.0))
     return max_lambda * min(1.0, ramp)
 
 def norm_stats(ds, train_idx):
@@ -182,9 +179,16 @@ def make_loaders():
         w=(1/freq)**WEIGHT_EXP
         sampler=WeightedRandomSampler(torch.as_tensor(w[bin_]), len(bin_), replacement=True)
 
-    tr_dl = DataLoader(tr_ds,BATCH,sampler=sampler,shuffle=sampler is None)
-    va_dl = DataLoader(va_ds,BATCH,shuffle=False)
-    te_dl = DataLoader(te_ds,BATCH,shuffle=False)
+    tr_dl = DataLoader(tr_ds,
+                   BATCH,
+                   sampler=sampler,
+                   shuffle=sampler is None,
+                   num_workers=4,
+                   pin_memory=True,
+                   drop_last=True)     # ↩︎ adds drop-last
+    val_rng = torch.Generator().manual_seed(SEED)
+    va_dl = DataLoader(va_ds, BATCH, shuffle=False, generator=val_rng)
+    te_dl = DataLoader(te_ds, BATCH, shuffle=False, generator=val_rng)
     return tr_dl,va_dl,te_dl,stats
 
 # ─────────────────────────────────────────────────────────────
@@ -289,15 +293,16 @@ def train_one(dl, net, opt, stats, *, epoch: int):
     net.train()
     λ_phys = lambda_phys(epoch)
 
+    opt.zero_grad()                                  # ← NEW — reset once per epoch
     running_d = running_p = 0.0
-    for X, y, m in dl:
+    for step, (X, y, m) in enumerate(dl):
         X, y, m = [t.to(DEVICE) for t in (X, y, m)]
 
         # ----------- forward pass -----------
-        with autocast(device_type=DEVICE.type, enabled=MIXED_PREC):          # data-loss only in AMP
-            delta    = net(X)
-            log_pred = X[:, -1, LOGCHL_IDX] + delta
-            err      = (log_pred - y).masked_fill_(~m, 0)
+        with autocast(device_type=DEVICE.type, enabled=MIXED_PREC):
+            tgt_delta   = y - X[:, -1, LOGCHL_IDX]          # Δ(log-chl) label
+            delta_pred  = net(X)
+            err         = (delta_pred - tgt_delta).masked_fill_(~m, 0)
 
             chl_lin = torch.exp(y)
             w = torch.where(chl_lin < 0.5, 1.,
@@ -305,27 +310,42 @@ def train_one(dl, net, opt, stats, *, epoch: int):
                     torch.where(chl_lin < 5., 2.5, 4.0))) * m
 
             quad  = torch.minimum(err.abs(), torch.tensor(HUBER_DELTA, device=err.device))
-            huber = 0.5*quad**2 + HUBER_DELTA*(err.abs()-quad)
-            data_loss = (w*huber).sum() / w.sum()
+            huber = 0.5 * quad**2 + HUBER_DELTA * (err.abs() - quad)
+            data_loss = (w * huber).sum() / w.sum()
+            # print(f"   Δ-target huber={data_loss.item():.3f}")
 
-        # ---------- physics loss in fp32 ----------
+            # keep this for the physics term ↓
+            log_pred = X[:, -1, LOGCHL_IDX] + delta_pred
+
+        # ---------- physics loss (fp32) ----------
         mu_u, sd_u = stats["uo"];  mu_v, sd_v = stats["vo"]
         u_lin = un_z(X[:, -1, U_IDX], (mu_u, sd_u))
         v_lin = un_z(X[:, -1, V_IDX], (mu_v, sd_v))
+        u_lin.clamp_(-2.0, 2.0); v_lin.clamp_(-2.0, 2.0)      # already added
         C_last_lin = torch.exp(X[:, -1, LOGCHL_IDX]) - _FLOOR
         C_pred_lin = torch.exp(log_pred) - _FLOOR
 
         phys = physics_residual(C_pred_lin, C_last_lin, u_lin, v_lin, net.kappa).abs()
-        phys_loss = (phys * m).sum() / m.sum()      # see Fix 4
+        phys_loss = (phys * m).sum() / m.sum()
 
         loss = data_loss + λ_phys * phys_loss
 
-        # ----------- backward ------------
-        SCALER.scale(loss).backward()
-        SCALER.unscale_(opt); nn.utils.clip_grad_norm_(net.parameters(), 0.8)
-        SCALER.step(opt); SCALER.update(); opt.zero_grad()
+        # ----------- backward  (accumulate) ------------
+        SCALER.scale(loss / GRAD_ACC).backward()
 
-        running_d += data_loss.item(); running_p += phys_loss.item()
+        update_now = ((step + 1) % GRAD_ACC == 0) or ((step + 1) == len(dl))
+        if update_now:
+            SCALER.unscale_(opt)
+            nn.utils.clip_grad_norm_(net.parameters(), 0.8)
+            SCALER.step(opt)
+            SCALER.update()
+            opt.zero_grad()
+        if update_now and step < 3:       # only first few lines to keep the log short
+            print(f"   ↳ step {step:3d} lr={opt.param_groups[0]['lr']:.1e}")
+
+        running_d += data_loss.item()
+        running_p += phys_loss.item()
+
 
     print(f"   data={running_d/len(dl):.2e}  phys={running_p/len(dl):.2e}  λ={λ_phys:.03f}")
    
@@ -371,9 +391,16 @@ def main(argv=None):
 
     # =======================  STAGE-1 : data-only  ===========================
     print("\n─── Stage-1 : data-only training (epochs 1-24) ───")
-    opt1   = torch.optim.AdamW(net.parameters(), lr=1e-4, weight_decay=1e-4)
-    plate1 = ReduceLROnPlateau(opt1, mode="min", factor=0.5, patience=1,
-                               min_lr=5e-6)
+    opt1   = torch.optim.AdamW(net.parameters(), lr=3e-4, weight_decay=1e-4)
+    plate1 = ReduceLROnPlateau(
+      opt1,
+      mode="min",
+      factor=0.5,
+      patience=6,          # was 3
+      threshold=1e-3,      # ignore tiny wiggles
+      cooldown=2,
+      min_lr=5e-5          # let it ride down only this far
+    )
     stop1  = EarlyStop(patience=20, min_delta=2e-4)
     best_f = OUT_DIR / "baseline.pt"
 
@@ -394,22 +421,25 @@ def main(argv=None):
     net.load_state_dict(torch.load(best_f))
 
     # ─── keep Adam moments but stop weight-decay for fine-tune ───
+    '''
     for g in opt1.param_groups:
       g["weight_decay"] = 0.0
+
+    for g in opt1.param_groups:
+      g["lr"] *= 0.33
+    '''
 
     # =======================  STAGE-2 : physics-fine-tune  ===================
     print(f"\n─── Stage-2 : physics fine-tune (epochs 25-{args.epochs}) ───")
 
-    # freeze ConvLSTM & decoder; train only physics pieces
-    phys_params = {"kdx", "kdy", "klap", "kappa", "logit_lambda"}
-    for n, p in net.named_parameters():
-        p.requires_grad = n in phys_params
+    phys_params = [p for n,p in net.named_parameters()
+                  if n in {"kdx","kdy","klap","kappa","logit_lambda"}]
 
-    # opt2 = torch.optim.AdamW(filter(lambda p: p.requires_grad, net.parameters()),
-    #                         lr=5e-5, weight_decay=0.)
-    plate2 = ReduceLROnPlateau(opt1, mode="min", factor=0.5, patience=3,
-                               min_lr=1e-6)
+    opt2 = torch.optim.AdamW(phys_params, lr=1e-4, weight_decay=0.0)
+    plate2 = ReduceLROnPlateau(opt2, mode="min", factor=0.5,
+                              patience=3, min_lr=1e-6)
     stop2  = EarlyStop(patience=10, min_delta=5e-4)
+
     best_f2 = OUT_DIR / "best.pt"
 
     ran_stage2 = False
@@ -417,7 +447,7 @@ def main(argv=None):
     for ep in range(25, args.epochs + 1):
         # smooth ramp: 0 → 0.05 over first 10 Stage-2 epochs
         # λ_phys = min(0.05, 0.005 * (ep - 24))
-        train_one(tr_dl, net, opt1, stats, epoch=ep)
+        train_one(tr_dl, net, opt2, stats, epoch=ep)   # <-- use opt2
         val_rm = evaluate(va_dl)
         plate2.step(val_rm)
 
@@ -576,5 +606,6 @@ E39  val RMSE_log=0.875  λ=0.05  lr=5.1e-06
 E40  val RMSE_log=0.871  λ=0.05  lr=5.0e-06
 
 FINAL RMSE_log: {'train': 0.8697551863936697, 'val': 0.859390116829139, 'test': 0.9130545632825462}
-
+FINAL RMSE_log: {'train': 0.8664424975012915, 'val': 0.8634451925794802, 'test': 0.9128222303558874}
+FINAL RMSE_log: {'train': 0.8370650339804695, 'val': 0.8579255372674858, 'test': 0.8939661495409225}
 '''

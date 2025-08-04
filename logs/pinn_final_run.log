@@ -1,6 +1,0 @@
-
-─── Stage-1 : data-only training (epochs 1-24) ───
-   data=5.89e-01  phys=8.19e+00  λ=0.000
-E01  val RMSE_log=1.086  lr=1.0e-04
-   data=5.54e-01  phys=8.93e+00  λ=0.000
-E02  val RMSE_log=0.983  lr=1.0e-04
