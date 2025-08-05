@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+(CURRENT FINAL CODE USED)
+
 diagnostics.py  —  ConvLSTM v0.3 diagnostic suite
 ====================================================
 Generates publication / science-fair quality diagnostics for the ConvLSTM
@@ -18,11 +20,11 @@ Run example
 -----------
 python pinn/diagnostics.py \
   --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
-  --ckpt   "/Users/yashnilmohanty/HAB_Models/best_pinn_v1p3.pt" \
-  --out    "Diagnostics_PINN" \
-  --seq    6 \
-  --lead   1 \
-  --batch  32
+  --ckpt "runs/pinn_best.pt" \
+  --out "Diagnostics_PINN2" \
+  --seq 6 \
+  --lead 1 \
+  --batch 32
 """
 
 from __future__ import annotations
@@ -36,11 +38,12 @@ from torch.cuda.amp import autocast
 import matplotlib
 matplotlib.use("Agg")  # headless backend
 import matplotlib.pyplot as plt
-from pinn_convLSTM_v1p2 import ConvLSTM
+from testing import ConvLSTM
 
 # ------------------------------------------------------------------ #
 # Predictor lists (identical to 02_baseline_model.py)
 # ------------------------------------------------------------------ #
+'''
 SATELLITE = ["log_chl", "Kd_490", "nflh"]
 METEO     = ["u10","v10","wind_speed","tau_mag","avg_sdswrf","tp","t2m","d2m"]
 OCEAN     = ["uo","vo","cur_speed","cur_div","cur_vort","zos",
@@ -50,6 +53,16 @@ DERIVED   = ["chl_anom_monthly",
              "chl_roll40d_mean","chl_roll40d_std"]
 STATIC    = ["river_rank","dist_river_km","ocean_mask_static"]
 ALL_VARS  = SATELLITE + METEO + OCEAN + DERIVED + STATIC
+'''
+
+ALL_VARS = [
+    # currents & ocean physics (5)
+    "uo", "vo", "thetao", "so", "ssh_grad_mag",
+    # optics / colour          (3)
+    "log_chl", "Kd_490", "nflh",
+    # meteorology              (4)
+    "u10", "v10", "wind_speed", "avg_sdswrf",
+]  # length = 12 → matches training
 # ------------------------------------------------------------------ #
 
 # ------------------------------------------------------------------ #
@@ -183,17 +196,28 @@ def run_inference(ds, varlist, log_idx, stats, pixel_ok,
         X_t = torch.from_numpy(X_np).to(device)
 
         with torch.no_grad(), autocast(enabled=mixed_prec):
-            out   = model(X_t)                 # PINN → (delta, S); baseline → delta
+            out   = model(X_t)                 # PINN → Δ  (raw − norm)
             delta = (out[0] if isinstance(out, tuple) else out).cpu().numpy()
 
+        # raw last-frame (what persistence uses)
         last_log = ds.log_chl.isel(
             time=ks, lat=lat_slice, lon=lon_slice).values.astype(np.float32)
+
+        # --- NEW: normalise it exactly as in training -----------------
+        mu_log, sd_log = stats["log_chl"]
+        last_norm = (last_log - mu_log) / sd_log
+        # network learned:  Δ = raw − norm   ⇒   raw = norm + Δ
+        pred_raw_norm = last_norm + delta       # still in z-score space
+        pred_raw      = pred_raw_norm * sd_log + mu_log   # ← un-normalise
+        # --------------------------------------------------------------
+
         truth = ds.log_chl.isel(
             time=ks+lead, lat=lat_slice, lon=lon_slice).values.astype(np.float32)
 
         idx = slice(i, i+len(ks))
-        pred_log[idx] = last_log + delta
+        pred_log[idx] = pred_raw            # ✔ use corrected prediction
         pers_log[idx] = last_log
+
         true_log[idx] = truth
         valid_m[idx]  = pixel_ok.isel(
             lat=lat_slice, lon=lon_slice).values & np.isfinite(truth)

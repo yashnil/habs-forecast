@@ -49,8 +49,8 @@ from __future__ import annotations
 import math, random, json, argparse, pathlib, numpy as np, xarray as xr, torch
 import torch.nn as nn, torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-from torch.amp import GradScaler, autocast
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.amp import GradScaler, autocast
 
 # ───────────────────────── default hyper‑params ───────────────────────────
 FREEZE = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc")
@@ -75,6 +75,13 @@ ALL  = SAT+MET+OCE+DER+STAT
 IDX_LOG, IDX_U, IDX_V = SAT.index("log_chl"), ALL.index("uo"), ALL.index("vo")
 random.seed(SEED); np.random.seed(SEED); torch.manual_seed(SEED)
 
+# ------------------------------------------------------------------ #
+# Predictor (INPUT) list – notice log_chl is *excluded*
+# ------------------------------------------------------------------ #
+ALL_INPUT = [v for v in ALL if v != "log_chl"]      # 29 channels
+IDX_U_IN = ALL_INPUT.index("uo")   # u-current in X[:, :, IDX_U_IN, ...]
+IDX_V_IN = ALL_INPUT.index("vo")   # v-current in X[:, :, IDX_V_IN, ...]
+
 λ_FIXED = 0.02          # physics weight after warm‑up
 WARM_EPOCHS = 4
 
@@ -92,44 +99,140 @@ def z(x,mu_sd): mu,sd=mu_sd; return (x-mu)/sd
 
 def un_z(t,mu_sd): mu,sd=mu_sd; return t*sd+mu
 
-# ───────────────────────── dataset ─────────────────────────────────────────
+# ───────────────────────── PatchDS ──────────────────────────
 class PatchDS(Dataset):
-    def __init__(self,ds,tids,st,mask):
-        self.ds,self.tids,self.st,self.mask=ds,tids,st,mask
-        self.latL=np.arange(0,ds.sizes["lat"]-PATCH+1)
-        self.lonL=np.arange(0,ds.sizes["lon"]-PATCH+1)
-        self.rng=np.random.default_rng(SEED+len(tids))
-    def __len__(self): return len(self.tids)
-    def _corner(self):
-        for _ in range(20):
-            y=int(self.rng.choice(self.latL)); x=int(self.rng.choice(self.lonL))
-            if self.mask.isel(lat=slice(y,y+PATCH),lon=slice(x,x+PATCH)).any():
-                return y,x
-        return 0,0
-    def __getitem__(self,k):
-        t=int(self.tids[k]); y,x=self._corner(); frames=[]
-        for dt in range(SEQ):
-            bands=[]
-            for v in ALL:
-                if v not in self.ds: continue
-                sel = dict(lat=slice(y,y+PATCH),lon=slice(x,x+PATCH))
-                if "time" in self.ds[v].dims:
-                    sel["time"] = t-SEQ+1+dt
-                da=self.ds[v].isel(**sel)
-                bands.append(np.nan_to_num(z(da.values,self.st[v]), nan=0.0))
-            frames.append(np.stack(bands,0))
-        X=torch.from_numpy(np.stack(frames,0).astype(np.float32))
-        y_t = self.ds["log_chl"].isel(time=t+LEAD_IDX, lat=slice(y,y+PATCH),lon=slice(x,x+PATCH)).values
-        m = self.mask.isel(lat=slice(y,y+PATCH),lon=slice(x,x+PATCH)).values & np.isfinite(y_t)
-        return X, torch.from_numpy(y_t.astype(np.float32)), torch.from_numpy(m)
+    """
+    • Training  → random patches      (randomise=True,  ys/xs=None)
+    • Val/Test  → deterministic grid  (randomise=False, ys/xs pre-computed)
+    """
+    def __init__(
+        self,
+        ds: xr.Dataset,
+        tids: np.ndarray,
+        st: dict[str, tuple[float, float]],
+        mask2d: xr.DataArray | np.ndarray,
+        *,
+        ys: np.ndarray | None = None,
+        xs: np.ndarray | None = None,
+        randomise: bool = True,
+    ):
+        self.ds      = ds
+        self.tids    = np.asarray(tids)
+        self.st      = st
+        self.mask2d  = mask2d        # (lat, lon) boolean
+        self.patch   = PATCH
+        self.random  = randomise or (ys is None)
 
-# ───────────────────────── loaders ────────────────────────────────────────
+        # deterministic corner lists (val / test)
+        self.yc = ys
+        self.xc = xs
+
+        # lists used only for random sampling (train)
+        if self.random:
+            self.latL = np.arange(0, ds.sizes["lat"] - self.patch + 1)
+            self.lonL = np.arange(0, ds.sizes["lon"] - self.patch + 1)
+            self.rng  = np.random.default_rng(SEED + len(tids))
+
+    # --------------------------------------------------------
+    def __len__(self) -> int:
+        if self.yc is not None:                # grid mode
+            return len(self.tids) * len(self.yc)
+        return len(self.tids)
+
+    # --------------------------------------------------------
+    def _corner_random(self) -> tuple[int, int]:
+        """Randomly pick a patch corner that contains ≥ 1 valid pixel."""
+        for _ in range(50):                    # try 50 random spots first
+            y = int(self.rng.choice(self.latL))
+            x = int(self.rng.choice(self.lonL))
+            if self.mask2d.isel(lat=slice(y, y+self.patch),
+                                lon=slice(x, x+self.patch)).any():
+                return y, x
+        # fallback exhaustive scan (rare)
+        for y in self.latL:
+            for x in self.lonL:
+                if self.mask2d.isel(lat=slice(y, y+self.patch),
+                                    lon=slice(x, x+self.patch)).any():
+                    return y, x
+        raise RuntimeError("No valid patch found – mask too strict?")
+
+    # --------------------------------------------------------
+    def __getitem__(self, idx: int):
+        # --- choose (t, y, x) --------------------------------------------
+        if self.yc is not None:                # deterministic grid
+            n_corners = len(self.yc)
+            t_idx = idx // n_corners
+            c_idx = idx %  n_corners
+            t = int(self.tids[t_idx])
+            y = int(self.yc[c_idx])
+            x = int(self.xc[c_idx])
+        else:                                  # random patch (train)
+            t = int(self.tids[idx])
+            y, x = self._corner_random()
+
+        # --- build input tensor (SEQ, C, H, W) ----------------------------
+        frames = []
+        for dt in range(SEQ):
+            bands = []
+            ti = t - SEQ + 1 + dt
+            for v in ALL_INPUT:                # log_chl is *excluded*
+                if v not in self.ds:
+                    continue
+                da = self.ds[v]
+                if "time" in da.dims:
+                    da = da.isel(time=ti,
+                                 lat=slice(y, y+self.patch),
+                                 lon=slice(x, x+self.patch))
+                else:
+                    da = da.isel(lat=slice(y, y+self.patch),
+                                 lon=slice(x, x+self.patch))
+
+                # ── CLEAN & CLIP RAW VALUES ────────────────────────────
+                arr = da.values.astype(np.float32)
+                arr[~np.isfinite(arr)] = np.nan                # kill ±∞
+                z_arr = z(arr, self.st[v])                     # z-score
+                z_arr = np.clip(z_arr, -10.0, 10.0)            # tame outliers
+                bands.append(np.nan_to_num(z_arr, nan=0.0))    # final fill
+
+            frames.append(np.stack(bands, 0))
+        X = torch.from_numpy(np.stack(frames, 0).astype(np.float32))
+        X = torch.nan_to_num(X, 0.0, 0.0, 0.0)                  # extra belt
+
+        # --- targets & mask ----------------------------------------------
+        y_t = self.ds["log_chl"].isel(time=t+LEAD_IDX,
+                                      lat=slice(y, y+self.patch),
+                                      lon=slice(x, x+self.patch)).values
+        logC_prev = self.ds["log_chl"].isel(time=t,
+                                            lat=slice(y, y+self.patch),
+                                            lon=slice(x, x+self.patch)).values
+        m = (self.mask2d.isel(lat=slice(y, y+self.patch),
+                              lon=slice(x, x+self.patch)).values
+             & np.isfinite(y_t))
+
+        return (
+            X,
+            torch.from_numpy(y_t.astype(np.float32)),
+            torch.from_numpy(m),
+            torch.from_numpy(logC_prev.astype(np.float32)),
+        )
+# ───────────────────────── end PatchDS ──────────────────────────
+
+# Helper to pre-compute valid grid corners (unchanged)
+def valid_corners(mask2d: np.ndarray, patch: int):
+    ys, xs = [], []
+    for y in range(0, mask2d.shape[0] - patch + 1, patch):
+        for x in range(0, mask2d.shape[1] - patch + 1, patch):
+            if mask2d[y:y+patch, x:x+patch].any():
+                ys.append(y); xs.append(x)
+    return np.array(ys), np.array(xs)
+
 def make_loaders():
     ds=xr.open_dataset(FREEZE); ds.load()
     if "pixel_ok" not in ds:
         ok=(np.isfinite(ds.log_chl).sum("time")/ds.sizes["time"])>=0.2
         ds["pixel_ok"]=ok.astype("uint8")
-    mask=ds.pixel_ok.astype(bool)
+    mask = ds.pixel_ok.astype(bool)
+    ys, xs = valid_corners(mask.values, PATCH)
 
     t_all=np.arange(ds.sizes["time"]); times=ds.time.values
     tr=t_all[times<np.datetime64("2016-01-01")]
@@ -137,8 +240,21 @@ def make_loaders():
     te=t_all[times>np.datetime64("2018-12-31")]
 
     st=stats(ds,tr)
-    def _ds(idx): return PatchDS(ds, idx[SEQ-1:-LEAD_IDX], st, mask)
-    tr_ds,va_ds,te_ds=map(_ds,(tr,va,te))
+
+    def _ds(idx, randomise):
+        return PatchDS(
+            ds, idx[SEQ-1:-LEAD_IDX], st, mask,
+            ys=ys, xs=xs,  randomise=randomise
+        )
+
+    tr_ds = PatchDS(ds, tr[SEQ-1:-LEAD_IDX], st, mask,
+                    randomise=True)              # random patches
+
+    va_ds = PatchDS(ds, va[SEQ-1:-LEAD_IDX], st, mask,
+                    ys=ys, xs=xs, randomise=False)
+
+    te_ds = PatchDS(ds, te[SEQ-1:-LEAD_IDX], st, mask,
+                    ys=ys, xs=xs, randomise=False)
 
     tr_dl=DataLoader(tr_ds,BATCH,shuffle=True,num_workers=0,drop_last=True)
     va_dl=DataLoader(va_ds,BATCH,shuffle=False)
@@ -199,11 +315,18 @@ class ConvLSTM(nn.Module):
 @torch.no_grad()
 def rmse(dl,net):
     net.eval(); se=n=0
-    for X,y,m in dl:
-        X,y,m=[t.to(DEVICE) for t in (X,y,m)]
+    for X,y,m,logC_prev in dl:
+        X,y,m,logC_prev=[t.to(DEVICE) for t in (X,y,m,logC_prev)]
         with autocast(device_type=DEVICE.type, enabled=MIXED):
-            d,_=net(X); pred=X[:,-1,IDX_LOG]+d
-        err=(pred-y).masked_fill_(~m,0); se+=(err**2).sum().item(); n+=m.sum().item()
+            d,_=net(X); pred = logC_prev + d 
+
+        valid_pix = m.sum().item()
+        if valid_pix == 0:
+            continue
+        err = (pred-y).masked_fill_(~m,0)
+        se += (err**2).sum().item()
+        n  += valid_pix
+
     return math.sqrt(se/n)
 
 # ───────────────────────── training step ────────────────────────────────
@@ -215,15 +338,23 @@ def huber(e,δ):
 def train_one(dl, net, opt, epoch, mu_u, sd_u, mu_v, sd_v):
     λ=0.0 if epoch<=WARM_EPOCHS else λ_FIXED
     net.train(); run_d=run_p=0.
-    for X,y,m in dl:
-        X,y,m=[t.to(DEVICE) for t in (X,y,m)]
+    for X,y,m, logC_prev in dl:
+        X,y,m,logC_prev=[t.to(DEVICE) for t in (X,y,m,logC_prev)]
         with autocast(device_type=DEVICE.type, enabled=MIXED):
-            d,S=net(X); logC=X[:,-1,IDX_LOG]; logCp=logC+d
-            data_loss=huber((logCp-y).masked_fill_(~m,0),HUBER_DELTA).sum()/m.sum()
-            u,v = X[:,-1,IDX_U], X[:,-1,IDX_V]
+            d,S=net(X) # logC=X[:,-1,IDX_LOG]
+            logCp  = logC_prev + d
+
+            # ── guard: skip batches with zero valid pixels ─────────────────
+            valid_pix = m.sum()
+            if valid_pix == 0:
+                continue                    # drop this batch safely
+
+            data_loss = huber((logCp-y).masked_fill_(~m,0), HUBER_DELTA).sum() / valid_pix
+
+            u, v = X[:,-1, IDX_U_IN], X[:,-1, IDX_V_IN] # ← uses correct channels
             u   = un_z(u, (mu_u, sd_u))
             v   = un_z(v, (mu_v, sd_v))
-            phys = huber((phys_res(logCp, logC, u, v, net.kappa)-S).abs()*m, 3.0).mean()
+            phys = huber((phys_res(logCp, logC_prev, u, v, net.kappa)-S).abs()*m, 3.0).mean()
             loss=data_loss+λ*phys
         SCALER.scale(loss).backward(); SCALER.unscale_(opt); nn.utils.clip_grad_norm_(net.parameters(),0.8)
         SCALER.step(opt); SCALER.update(); opt.zero_grad()
@@ -255,7 +386,8 @@ def main(argv=None):
 
     tr_dl, va_dl, te_dl, st = make_loaders()
     mu_u, sd_u = st["uo"];  mu_v, sd_v = st["vo"]
-    Cin = len([v for v in ALL if v in xr.open_dataset(FREEZE).data_vars])
+    # Cin = len([v for v in ALL if v in xr.open_dataset(FREEZE).data_vars])
+    Cin = len(ALL_INPUT)
     net = ConvLSTM(Cin).to(DEVICE)
     opt=torch.optim.AdamW(net.parameters(),lr=INIT_LR,weight_decay=1e-4)
     plate = ReduceLROnPlateau(opt, mode="min", factor=0.5,
