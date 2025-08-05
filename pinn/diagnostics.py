@@ -20,10 +20,10 @@ Run example
 -----------
 python pinn/diagnostics.py \
   --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
-  --ckpt "runs/pinn_best.pt" \
-  --out "Diagnostics_PINN2" \
-  --seq 6 \
-  --lead 1 \
+  --ckpt  "/Users/yashnilmohanty/HAB_Models/convLSTM_best.pt" \
+  --out   Diagnostics_v0.4 \
+  --seq   6 \
+  --lead  1 \
   --batch 32
 """
 
@@ -38,7 +38,7 @@ from torch.cuda.amp import autocast
 import matplotlib
 matplotlib.use("Agg")  # headless backend
 import matplotlib.pyplot as plt
-from testing import ConvLSTM
+from baseline_model import ConvLSTM, ALL_VARS as MODEL_VARS, LOGCHL_IDX
 
 # ------------------------------------------------------------------ #
 # Predictor lists (identical to 02_baseline_model.py)
@@ -55,14 +55,7 @@ STATIC    = ["river_rank","dist_river_km","ocean_mask_static"]
 ALL_VARS  = SATELLITE + METEO + OCEAN + DERIVED + STATIC
 '''
 
-ALL_VARS = [
-    # currents & ocean physics (5)
-    "uo", "vo", "thetao", "so", "ssh_grad_mag",
-    # optics / colour          (3)
-    "log_chl", "Kd_490", "nflh",
-    # meteorology              (4)
-    "u10", "v10", "wind_speed", "avg_sdswrf",
-]  # length = 12 → matches training
+ALL_VARS = MODEL_VARS
 # ------------------------------------------------------------------ #
 
 # ------------------------------------------------------------------ #
@@ -73,7 +66,7 @@ def get_args():
     p.add_argument("--freeze", required=True, help="Path to HAB_freeze_v1.nc")
     p.add_argument("--ckpt",   required=True, help="Path to convLSTM_best.pt")
     p.add_argument("--out",    default="Diagnostics", help="Output directory")
-    p.add_argument("--seq",    type=int, default=4, help="History length (default 4)")
+    p.add_argument("--seq",    type=int, default=6, help="History length (default 6)")
     p.add_argument("--lead",   type=int, default=1, help="Lead steps (default 1)")
     p.add_argument("--batch",  type=int, default=1,
                    help="Number of core time steps per forward pass")
@@ -196,8 +189,7 @@ def run_inference(ds, varlist, log_idx, stats, pixel_ok,
         X_t = torch.from_numpy(X_np).to(device)
 
         with torch.no_grad(), autocast(enabled=mixed_prec):
-            out   = model(X_t)                 # PINN → Δ  (raw − norm)
-            delta = (out[0] if isinstance(out, tuple) else out).cpu().numpy()
+            delta = model(X_t).cpu().numpy()
 
         # raw last-frame (what persistence uses)
         last_log = ds.log_chl.isel(
@@ -469,7 +461,10 @@ if __name__ == "__main__":
     ds.load()  # pull into RAM once
 
     pixel_ok = build_pixel_ok_if_needed(ds)
-    varlist, LOG_IDX = discover_vars(ds)
+    # use exactly the same predictor list & log_chl‐index from baseline_model.py
+    varlist = MODEL_VARS
+    LOG_IDX = LOGCHL_IDX
+
     Cin = len(varlist)              # MUST match checkpoint
 
     tr_mask, va_mask, te_mask = time_splits(ds.time.values)

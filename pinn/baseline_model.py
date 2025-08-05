@@ -15,6 +15,7 @@ reuse diagnostics with a one‑line variable‑list update.
 
 run instructions:
 
+python pinn/baseline_model.py
 python pinn/baseline_model.py --epochs 40 --batch 16
 """
 from __future__ import annotations
@@ -39,20 +40,10 @@ SEED      = 42
 STRATIFY  = True
 WEIGHT_EXP= 1.5      # strat weight exponent (freq^-exp)
 HUBER_DELTA= 1.0     # Huber delta in log‑space
-MIXED_PREC = torch.cuda.is_available()
-DEVICE     = torch.device("cuda" if MIXED_PREC else "cpu")
-
-# Only create a GradScaler when we’re actually on CUDA
-if MIXED_PREC:
-    SCALER = GradScaler()
-else:
-    class _DummyScaler:               # no-op drop-in replacement
-        def scale(self,x):   return x
-        def unscale_(self,*a,**kw): pass
-        def step(self,*a,**kw): pass
-        def update(self,*a,**kw): pass
-    SCALER = _DummyScaler()
-
+MIXED_PREC= torch.cuda.is_available()
+DEVICE    = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {DEVICE}")
+SCALER    = GradScaler(enabled=MIXED_PREC)
 OUT_DIR = pathlib.Path.home() / "HAB_Models"       # ~/HAB_Models
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 _FLOOR = 0.056616   # detection floor used when log_chl was created
@@ -280,3 +271,7 @@ if __name__ == "__main__":
     if args.batch:  BATCH  = args.batch
 
     main()
+
+'''
+Vanilla ConvLSTM Results (baseline_model.py): FINAL RMSE_log: {'train': 0.7634156236815086, 'val': 0.6924955406655642, 'test': 0.7961275660619779}
+'''
