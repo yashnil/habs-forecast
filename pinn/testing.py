@@ -174,7 +174,7 @@ def make_loaders():
     tr_dl = DataLoader(tr_ds, BATCH, sampler=sampler, shuffle=sampler is None, num_workers=4, pin_memory=True, drop_last=True)
     va_dl = DataLoader(va_ds, BATCH, shuffle=False, num_workers=2, pin_memory=True)
     te_dl = DataLoader(te_ds, BATCH, shuffle=False, num_workers=2, pin_memory=True)
-    return tr_dl, va_dl, te_dl, q
+    return tr_dl, va_dl, te_dl, q, stats
 
 # ------------------------------------------------------------------ #
 # Model (unchanged)
@@ -217,7 +217,7 @@ def rmse(dl, net):
         se += (err**2).sum().item(); n += m.sum().item()
     return math.sqrt(se / n)
 
-def train_one(dl, net, opt, qthr, epoch):
+def train_one(dl, net, opt, qthr, stats, epoch):
     net.train()
     for X, y, m in dl:
         X, y, m = [t.to(DEVICE) for t in (X, y, m)]
@@ -257,8 +257,21 @@ def train_one(dl, net, opt, qthr, epoch):
             phys_loss = (res.abs()[ :,0 ])[m].pow(2).mean()
 
             # combine with a small weight (warm‐up for first 3 epochs)
-            λ_phys = 0.01
-            loss = sup_loss + (λ_phys * phys_loss if epoch > 3 else 0.0)
+            # after computing sup_loss, phys_loss …
+
+            # 1) un-normalize the delta so phys_loss is in log-units  
+            mu, sd = stats["log_chl"]                  # your stored mean/std
+            # phys_loss currently on normalized logC; scale back:
+            phys_loss_phys = phys_loss * (sd**2)       # because mse on z-scores * sd² → mse on raw
+
+            # get λ so phys and sup are roughly balanced
+            λ_raw = sup_loss.detach() / (phys_loss_phys.detach() + 1e-8)
+            λ_phys = λ_raw.clamp(0.1, 10.0)
+            if epoch <= 3:
+                λ_phys = λ_phys * (epoch / 3.0)
+
+            loss = sup_loss + λ_phys * phys_loss_phys
+
 
 
         SCALER.scale(loss).backward()
@@ -269,7 +282,7 @@ def train_one(dl, net, opt, qthr, epoch):
 # Main
 # ------------------------------------------------------------------ #
 def main():
-    tr_dl, va_dl, te_dl, qthr = make_loaders()
+    tr_dl, va_dl, te_dl, qthr, stats = make_loaders()
     Cin = len([v for v in ALL_VARS if v in xr.open_dataset(FREEZE).data_vars])
     net=ConvLSTM(Cin).to(DEVICE)
     opt=torch.optim.AdamW(net.parameters(),3e-4,weight_decay=1e-4)
@@ -278,7 +291,7 @@ def main():
 
     best=1e9; bad=0
     for ep in range(1,EPOCHS+1):
-        train_one(tr_dl, net, opt, qthr, ep)
+        train_one(tr_dl, net, opt, qthr, stats, ep)
         val_rm=rmse(va_dl,net); sched.step(val_rm)
         print(f"E{ep:02d}  val RMSE_log={val_rm:.3f}  lr={opt.param_groups[0]['lr']:.1e}")
         if val_rm < best-1e-3:
@@ -310,5 +323,11 @@ if __name__ == "__main__":
     main()
 
 '''
-PINN + Vanilla ConvLSTM Results (testing.py): FINAL RMSE_log: {'train': 0.7634156236815086, 'val': 0.6924955483312915, 'test': 0.7961275815969414}
+Vanilla + PINN Results (testing.py):
+
+Version 1 (pushed to Github)
+FINAL RMSE_log: {'train': 0.7634156236815086, 'val': 0.6924955483312915, 'test': 0.7961275815969414}
+
+Version 2 (recent)
+FINAL RMSE_log: {'train': 0.7634156029152483, 'val': 0.6924954863666604, 'test': 0.7961274946011418}
 '''
