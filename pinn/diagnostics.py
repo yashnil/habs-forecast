@@ -38,7 +38,9 @@ from torch.cuda.amp import autocast
 import matplotlib
 matplotlib.use("Agg")  # headless backend
 import matplotlib.pyplot as plt
-from baseline_model import ConvLSTM, ALL_VARS as MODEL_VARS, LOGCHL_IDX
+# import the new PINN version of the model and variable list
+# make sure that the `pinn` folder is on your PYTHONPATH
+from testing import ConvLSTM, ALL_VARS as MODEL_VARS, LOGCHL_IDX
 
 # ------------------------------------------------------------------ #
 # Predictor lists (identical to 02_baseline_model.py)
