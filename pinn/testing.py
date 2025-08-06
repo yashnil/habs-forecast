@@ -78,7 +78,7 @@ def norm_stats(ds, train_idx):
 def z(arr, mu_sd):
     mu, sd = mu_sd; return (arr - mu) / sd
 
-def physics_residual(logCp, logC, u, v, dx=4000.0, dt=8*86400.0, κ=0.01):
+def physics_residual(logCp, logC, u, v, κ, dx=4000.0, dt=8*86400.0):
     device, dtype = logCp.device, logCp.dtype
     LapK = torch.tensor([[[[0,1,0],[1,-4,1],[0,1,0]]]], dtype=dtype, device=device)/(dx*dx)
     GxK  = torch.tensor([[[[-0.5,0,0.5]]]],             dtype=dtype, device=device)/dx
@@ -194,14 +194,19 @@ class ConvLSTM(nn.Module):
     def __init__(self, Cin):
         super().__init__()
         self.reduce = nn.Conv2d(Cin, 24, 1)
+        # trainable physics coeff
+        self.kappa  = nn.Parameter(torch.tensor(25, dtype=torch.float32))
         self.l1, self.l2 = PxLSTM(24,48), PxLSTM(48,64)
         # self.skip       = nn.Conv2d(Cin, 1, 1)  # simple residual head
-        self.head       = nn.Conv2d(64, 1, 1)
+        self.dropout = nn.Dropout2d(0.1)
+        self.head    = nn.Conv2d(64, 1, 1)
     def forward(self, x):                 # x: (B,L,C,H,W)
         h1 = h2 = None; last_in = None
         for t in range(x.size(1)):
             f = self.reduce(x[:,t]); o1,h1 = self.l1(f,h1); o2,h2 = self.l2(o1,h2); last_in = x[:,t]
-        return self.head(o2).squeeze(1) # output = Δ(log-chl)
+        o = self.head(o2)
+        o = self.dropout(o)
+        return o.squeeze(1)
 
 # ------------------------------------------------------------------ #
 # Train / eval helpers
@@ -217,7 +222,7 @@ def rmse(dl, net):
         se += (err**2).sum().item(); n += m.sum().item()
     return math.sqrt(se / n)
 
-def train_one(dl, net, opt, qthr, stats, epoch):
+def train_one(dl, net, opt, qthr, stats, epoch, use_phys):
     net.train()
     for X, y, m in dl:
         X, y, m = [t.to(DEVICE) for t in (X, y, m)]
@@ -253,8 +258,10 @@ def train_one(dl, net, opt, qthr, stats, epoch):
             logCp_ = (last_log + delta).unsqueeze(1)
             u_     = X[:, -1, ALL_VARS.index("uo")].unsqueeze(1)
             v_     = X[:, -1, ALL_VARS.index("vo")].unsqueeze(1)
-            res    = physics_residual(logCp_, logC_, u_, v_)  # use logC_ not logC_
-            phys_loss = (res.abs()[ :,0 ])[m].pow(2).mean()
+            res = physics_residual(logCp_, logC_, u_, v_, net.kappa)
+            # sum‐then‐divide by number of valid pixels → stronger PDE signal
+            sq = (res[:,0][m]).pow(2)
+            phys_loss = sq.sum() / (m.sum().clamp(min=1))
 
             # combine with a small weight (warm‐up for first 3 epochs)
             # after computing sup_loss, phys_loss …
@@ -264,12 +271,19 @@ def train_one(dl, net, opt, qthr, stats, epoch):
             # phys_loss currently on normalized logC; scale back:
             phys_loss_phys = phys_loss * (sd**2)       # because mse on z-scores * sd² → mse on raw
 
-            # get λ so phys and sup are roughly balanced
+            # get λ so phys and sup are balanced, but allow larger weight
             λ_raw = sup_loss.detach() / (phys_loss_phys.detach() + 1e-8)
-            λ_phys = λ_raw.clamp(0.1, 10.0)
-            if epoch <= 3:
-                λ_phys = λ_phys * (epoch / 3.0)
+            λ_phys = λ_raw.clamp(min=0.1, max=1000.0)
 
+            # ramp λ over first 10 PINN epochs (i.e. epochs 21–30)
+            if use_phys:
+                # by epoch 25 (5 epochs into stage-2) we’re at full weight
+                ramp = min(max((epoch - 20) / 5,  0.0), 1.0)
+                λ_phys = λ_phys * ramp
+            else:
+                λ_phys = 0.0
+
+            # final loss: supervised + (if in stage 2) PINN term
             loss = sup_loss + λ_phys * phys_loss_phys
 
 
@@ -277,6 +291,8 @@ def train_one(dl, net, opt, qthr, stats, epoch):
         SCALER.scale(loss).backward()
         SCALER.unscale_(opt); nn.utils.clip_grad_norm_(net.parameters(), 1.)
         SCALER.step(opt); SCALER.update(); opt.zero_grad()
+        with torch.no_grad():
+            net.kappa.clamp_(1e-2, 1e3)
 
 # ------------------------------------------------------------------ #
 # Main
@@ -290,8 +306,10 @@ def main():
     OUT_DIR.mkdir(exist_ok=True)
 
     best=1e9; bad=0
-    for ep in range(1,EPOCHS+1):
-        train_one(tr_dl, net, opt, qthr, stats, ep)
+    for ep in range(1, EPOCHS+1):
+        # two‐stage: first 20 epochs only supervised, then PINN
+        use_phys = (ep > 20)
+        train_one(tr_dl, net, opt, qthr, stats, ep, use_phys)
         val_rm=rmse(va_dl,net); sched.step(val_rm)
         print(f"E{ep:02d}  val RMSE_log={val_rm:.3f}  lr={opt.param_groups[0]['lr']:.1e}")
         if val_rm < best-1e-3:
@@ -328,6 +346,9 @@ Vanilla + PINN Results (testing.py):
 Version 1 (pushed to Github)
 FINAL RMSE_log: {'train': 0.7634156236815086, 'val': 0.6924955483312915, 'test': 0.7961275815969414}
 
-Version 2 (recent)
+Version 2
 FINAL RMSE_log: {'train': 0.7634156029152483, 'val': 0.6924954863666604, 'test': 0.7961274946011418}
+
+Version 3 (recent)
+FINAL RMSE_log: {'train': 0.718884191753868, 'val': 0.6858681399130192, 'test': 0.7868559538957354}
 '''
