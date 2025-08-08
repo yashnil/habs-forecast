@@ -36,9 +36,9 @@ import cartopy.io.img_tiles as cimgt
 # paths – edit if needed
 # ────────────────────────────────────────────────────────────────
 FREEZE = pathlib.Path(
-    "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_freeze_v1.nc")
+    "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc")
 PRED   = pathlib.Path(
-     "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_patch/predicted_fields.nc")
+     "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_PINN/predicted_fields.nc")
 OUTDIR = pathlib.Path(
     "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_PINN")
 OUTDIR.mkdir(exist_ok=True, parents=True)

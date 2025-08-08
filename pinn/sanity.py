@@ -1,4 +1,23 @@
-import xarray as xr
-ds = xr.open_dataset("/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc")
-print(ds.data_vars.keys())
-print(ds.coords['time'][0].values, "→", ds.coords['time'][-1].values)
+
+import torch, pathlib, os, datetime
+from pprint import pprint
+
+CKPT = pathlib.Path("/Users/yashnilmohanty/HAB_Models/convLSTM_best.pt")
+
+# ── 1.  Basic file sanity: modified time & size
+print("File modified:", datetime.datetime.fromtimestamp(CKPT.stat().st_mtime))
+print("File size    :", CKPT.stat().st_size/1e6, "MB")
+
+# ── 2.  Inspect state-dict keys
+state = torch.load(CKPT, map_location="cpu")
+print("Keys count   :", len(state))
+print("Sample keys  :", list(state)[:8])
+
+# ── 3.  Instantiate *your* model class and load strictly
+from diagnostics import ConvLSTM   # exact class you added
+model = ConvLSTM(Cin=30)                              # 30 = number of channels
+model.load_state_dict(state, strict=True)             # will raise if mismatch
+print("✓ state-dict loaded with strict=True")
+
+# ── 4.  Spot-check a unique value (e.g., trained κ)
+print("kappa =", model.kappa.item())                  # should be ~25 → 1000
