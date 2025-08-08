@@ -14,7 +14,7 @@ Covers every ask in the latest convo:
 
 All outputs drop into *OUTDIR* so the folder can be zipped for a manuscript supplement.
 
-python pinn/spatial_bias_maps.py
+python pinn/spatial_bias.py
 """
 # pylint: disable=invalid-name
 import pathlib, json, itertools, warnings
@@ -38,9 +38,9 @@ import cartopy.io.img_tiles as cimgt
 FREEZE = pathlib.Path(
     "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_freeze_v1.nc")
 PRED   = pathlib.Path(
-    "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_PINN2/predicted_fields.nc")
+     "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_patch/predicted_fields.nc")
 OUTDIR = pathlib.Path(
-    "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_PINN2")
+    "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_PINN")
 OUTDIR.mkdir(exist_ok=True, parents=True)
 
 TILER  = cimgt.GoogleTiles(style='satellite'); TILER.request_timeout = 5
@@ -52,11 +52,29 @@ EXTENT = [-125, -114, 31, 43]   # CA coast bbox
 ds_pred  = xr.open_dataset(PRED)
 obs_log  = ds_pred["log_chl_true"].load()      # (time,lat,lon)
 pred_log = ds_pred["log_chl_pred"].load()
+
 mask     = ds_pred["valid_mask"].astype(bool).load()
 
 pers_log = ds_pred["log_chl_pers"] if "log_chl_pers" in ds_pred else obs_log.shift(time=1)
 
 FLOOR = 0.056616       # mg m-3
+
+
+# --- bias‐correction -----------------------------------
+# compute the global mean bias in log‐space (only over valid pixels)
+mean_bias_log = float(((pred_log - obs_log).where(mask).mean().item()))
+print(f"Mean bias (log space): {mean_bias_log:.4f}")
+
+# subtract it to get bias‐corrected predictions
+pred_log_bc = pred_log - mean_bias_log
+
+# re-derive linear‐space, floor‐corrected fields
+pred_mg_bc = np.clip(np.exp(pred_log_bc) - FLOOR, 0, None)
+# -----------------------------------------------------
+
+pred_log = pred_log_bc
+pred_mg  = pred_mg_bc
+
 obs_mg  = np.exp(obs_log)  - FLOOR
 pred_mg = np.exp(pred_log) - FLOOR
 pers_mg = np.exp(pers_log) - FLOOR
@@ -465,28 +483,3 @@ plt.savefig("fig_hovmoller.png")
 
 
 print("\n✓ All diagnostics & figures written to", OUTDIR)
-
-'''
-old results:
-
-RMSE  (mg m-3) = 6.136
-Bias  (mg m-3) = -1.476
-ρ (Spearman)  = 0.786
-KGE           = 0.539
-
-Tier-wise metrics (linear space):
-      bin      n      rmse      bias      rho        kge
-      low 344306  2.203102 -0.847233 0.632948 -11.857232
-      mid 344305  3.532932 -1.732169 0.245168 -12.505745
-     high 344305  5.076493 -2.530042 0.283291  -5.173887
-very_high 344306 10.367783 -0.794286 0.378148   0.373854
-
-new results:
-
-Bloom contingency (≥5 mg m-3): {'metric': 'bloom_≥5mg', 'hits': 166443, 'miss': 102215, 'false_alarm': 93415, 'POD': 0.6195348733333806, 'FAR': 0.3594847955421794, 'CSI': 0.4596945919745453}
-
-GLOBAL METRICS (model vs obs):
- space     RMSE      MAE          Bias  Pearson_r  Spearman_rho      NSE      KGE
-linear 5.118773 2.200955 -5.953968e-01   0.575584      0.773834 0.320751 0.402367
-   log 0.792717 0.580946 -2.015892e-07   0.771778      0.773834 0.562880 0.766944
-'''

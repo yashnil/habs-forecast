@@ -1,586 +1,270 @@
 #!/usr/bin/env python3
 """
-(CURRENT FINAL CODE USED)
+diagnostics.py — patch-based + full-grid diagnostics for convLSTM_best.pt
 
-diagnostics.py  —  ConvLSTM v0.3 diagnostic suite
-====================================================
-Generates publication / science-fair quality diagnostics for the ConvLSTM
-baseline trained in 02_baseline_model.py.
+Outputs:
+  - metrics_patch_val.csv
+  - fig_scatter_val_patch.png
+  - predicted_fields.nc
+  - printed Global metrics table (train/val/test/all)
 
-Key guarantees
---------------
-* Uses the **same predictor list** that the model was trained with
-  (the 30-variable ALL_VARS list in 02_baseline_model.py).
-* Loads the checkpoint with strict shape checking (`strict=True`) so a
-  mismatch is caught immediately.
-* Same SEQ = 4 (32-day history) and LEAD = 1 (8-day forecast) defaults.
-* Produces the usual CSV/NetCDF/PNG output bundle.
-
-Run example
------------
 python pinn/diagnostics.py \
-  --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
-  --ckpt  "/Users/yashnilmohanty/HAB_Models/convLSTM_best.pt" \
-  --out   Diagnostics_v0.4 \
-  --seq   6 \
-  --lead  1 \
-  --batch 32
+  --freeze /Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc \
+  --ckpt   "/Users/yashnilmohanty/HAB_Models/convLSTM_best.pt" \
+  --out    Diagnostics_patch \
+  --seq    6 \
+  --batch  32
 """
 
 from __future__ import annotations
-import argparse, json, math, pathlib, sys, warnings
+import argparse, json, pathlib, sys
+
 import numpy as np
 import pandas as pd
 import xarray as xr
 import torch
-import torch.nn as nn
 from torch.cuda.amp import autocast
 import matplotlib
-matplotlib.use("Agg")  # headless backend
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-# import the new PINN version of the model and variable list
-# make sure that the `pinn` folder is on your PYTHONPATH
-from testing import ConvLSTM, ALL_VARS as MODEL_VARS, LOGCHL_IDX
+from sklearn.metrics import mean_squared_error
 
-# ------------------------------------------------------------------ #
-# Predictor lists (identical to 02_baseline_model.py)
-# ------------------------------------------------------------------ #
-'''
-SATELLITE = ["log_chl", "Kd_490", "nflh"]
-METEO     = ["u10","v10","wind_speed","tau_mag","avg_sdswrf","tp","t2m","d2m"]
-OCEAN     = ["uo","vo","cur_speed","cur_div","cur_vort","zos",
-             "ssh_grad_mag","so","thetao"]
-DERIVED   = ["chl_anom_monthly",
-             "chl_roll24d_mean","chl_roll24d_std",
-             "chl_roll40d_mean","chl_roll40d_std"]
-STATIC    = ["river_rank","dist_river_km","ocean_mask_static"]
-ALL_VARS  = SATELLITE + METEO + OCEAN + DERIVED + STATIC
-'''
+from testing import make_loaders, ConvLSTM, ALL_VARS, LOGCHL_IDX, MIXED_PREC
+import testing
+import torch.nn.functional as _F
 
-ALL_VARS = MODEL_VARS
-# ------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------ #
-# CLI
-# ------------------------------------------------------------------ #
-def get_args():
-    p = argparse.ArgumentParser(description="ConvLSTM v0.3 diagnostics")
-    p.add_argument("--freeze", required=True, help="Path to HAB_freeze_v1.nc")
-    p.add_argument("--ckpt",   required=True, help="Path to convLSTM_best.pt")
-    p.add_argument("--out",    default="Diagnostics", help="Output directory")
-    p.add_argument("--seq",    type=int, default=6, help="History length (default 6)")
-    p.add_argument("--lead",   type=int, default=1, help="Lead steps (default 1)")
-    p.add_argument("--batch",  type=int, default=1,
-                   help="Number of core time steps per forward pass")
-    p.add_argument("--no_mixed_prec", action="store_true", help="Disable AMP")
-    p.add_argument("--no_gpu", action="store_true", help="Force CPU")
-    return p.parse_args()
-
-# ------------------------------------------------------------------ #
-# Helper functions
-# ------------------------------------------------------------------ #
-def discover_vars(ds):
-    """Return (varlist, log_chl index) for variables present in BOTH freeze & ALL_VARS."""
-    varlist = [v for v in ALL_VARS if v in ds.data_vars]
-    if "log_chl" not in varlist:
-        raise RuntimeError("Dataset missing 'log_chl' — cannot run diagnostics.")
-    return varlist, varlist.index("log_chl")
-
-def build_pixel_ok_if_needed(ds, thresh=0.20):
-    if "pixel_ok" in ds:
-        return ds.pixel_ok.astype(bool)
-    frac = np.isfinite(ds.log_chl).sum("time") / ds.sizes["time"]
-    return (frac >= thresh).astype("uint8").astype(bool)
-
-def time_splits(times):
-    t = np.asarray(times)
-    train = t <  np.datetime64("2016-01-01")
-    val   = (t >= np.datetime64("2016-01-01")) & (t <= np.datetime64("2018-12-31"))
-    test  = t >  np.datetime64("2018-12-31")
-    return train, val, test
-
-def norm_stats(ds, train_mask, varlist):
-    stats = {}
-    idx = np.where(train_mask)[0]
-    for v in varlist:
-        da = ds[v].isel(time=idx) if "time" in ds[v].dims else ds[v]
-        mu = float(da.mean(skipna=True))
-        sd = float(da.std(skipna=True)) or 1.0
-        stats[v] = (mu, sd)
-    return stats
-
-def z_np(arr, mu_sd):
-    mu, sd = mu_sd
-    return (arr - mu) / sd
-
-# ------------------------------------------------------------------ #
-# Build (seq,C,H,W) input block for time index k
-# ------------------------------------------------------------------ #
-def make_input(ds, varlist, stats, k, seq, lat_slice, lon_slice):
-    frames = []
-    for dt in range(seq):
-        t = k - seq + 1 + dt
-        bands = []
-        for v in varlist:
-            da = ds[v].isel(
-                time=t, lat=lat_slice, lon=lon_slice) if "time" in ds[v].dims else \
-                 ds[v].isel(lat=lat_slice, lon=lon_slice)
-            bands.append(np.nan_to_num(z_np(da.values, stats[v]), nan=0.0))
-        frames.append(np.stack(bands, 0))
-    return np.stack(frames, 0).astype(np.float32)
-
-# --------------------------------------------------
-# Build input tensor for a given core time index k
-# --------------------------------------------------
-def build_input_block(ds, varlist, stats, k, seq, patch_slice_lat, patch_slice_lon):
-    """
-    Extract 1 sample covering full patch_slice from times [k-seq+1 .. k].
-    Returns numpy array (seq, C, H, W).
-    """
-    frames = []
-    for dt in range(seq):
-        t = k - seq + 1 + dt
-        bands=[]
-        for v in varlist:
-            darr = ds[v]
-            if "time" in darr.dims:
-                da = darr.isel(time=t, lat=patch_slice_lat, lon=patch_slice_lon)
-            else:
-                da = darr.isel(lat=patch_slice_lat, lon=patch_slice_lon)
-            arr = da.values
-            arr = np.nan_to_num(z_np(arr, stats[v]), nan=0.0)
-            bands.append(arr)
-        frames.append(np.stack(bands,0))
-    return np.stack(frames,0).astype(np.float32)
-
-# ------------------------------------------------------------------ #
-# Full-grid inference loop
-# ------------------------------------------------------------------ #
 def run_inference(ds, varlist, log_idx, stats, pixel_ok,
-                  seq, lead, batch_k, device, mixed_prec=True, verbose=True):
+                  seq, lead, batch_k, device, mixed_prec, ckpt_path, verbose=True):
+    # ——— set up —
     ntime = ds.sizes["time"]
     H, W  = ds.sizes["lat"], ds.sizes["lon"]
-
-    # bounding box of valid coast pixels to save work
+    # bounding box
     lat_any = np.where(pixel_ok.any("lon"))[0]
     lon_any = np.where(pixel_ok.any("lat"))[0]
     lat_slice = slice(lat_any.min(), lat_any.max()+1)
     lon_slice = slice(lon_any.min(), lon_any.max()+1)
-    Hs = lat_any.max() - lat_any.min() + 1
-    Ws = lon_any.max() - lon_any.min() + 1
+    Hs = lat_any.max()-lat_any.min()+1
+    Ws = lon_any.max()-lon_any.min()+1
+    core = np.arange(seq-1, ntime-lead)
+    Tpred = len(core)
+    times = ds.time.values[core + lead]
 
-    core_range = np.arange(seq-1, ntime-lead)
-    Tpred = len(core_range)
-    times_pred = ds.time.values[core_range + lead]
-
-    pred_log = np.full((Tpred, Hs, Ws), np.nan, np.float32)
-    pers_log = np.full_like(pred_log, np.nan)
-    true_log = np.full_like(pred_log, np.nan)
-    valid_m  = np.zeros_like(pred_log, bool)
+    pred = np.full((Tpred,Hs,Ws), np.nan, np.float32)
+    pers = pred.copy()
+    true = pred.copy()
+    m    = np.zeros_like(pred, bool)
 
     model = ConvLSTM(len(varlist)).to(device)
-    model.load_state_dict(
-        torch.load(args.ckpt, map_location=device), strict=True)
-
+    model.load_state_dict(torch.load(ckpt_path, map_location=device), strict=True)
     model.eval()
 
     for i in range(0, Tpred, batch_k):
-        ks = core_range[i:i+batch_k]
-        X_np = np.stack([make_input(ds, varlist, stats, k, seq,
-                                    lat_slice, lon_slice) for k in ks], 0)
-        X_t = torch.from_numpy(X_np).to(device)
+        ks = core[i:i+batch_k]
+        # build inputs
+        # build inputs (handle static vs time‐varying)
+        frames = []
+        for k in ks:
+            bands = []
+            for v in varlist:
+                da = ds[v]
+                if "time" in da.dims:
+                    arr = da.isel(time=k-seq+1, lat=lat_slice, lon=lon_slice).values
+                else:
+                    arr = da.isel(lat=lat_slice, lon=lon_slice).values
+                µ, σ = stats[v]
+                normed = (arr - µ) / σ
+                bands.append(np.nan_to_num(normed, nan=0.0))
+            frames.append(np.stack(bands, 0))  # shape (C, Hs, Ws)
+        # stack into (B= len(ks), L=1, C, Hs, Ws)
+        Xb = np.stack(frames, 0)[None,...] if len(frames)==1 else np.stack(frames,0)[:,None,:,:,:]
+        Xb = Xb.astype(np.float32)
+
+        Xt = torch.from_numpy(Xb).to(device)
 
         with torch.no_grad(), autocast(enabled=mixed_prec):
-            delta = model(X_t).cpu().numpy()
+            Δ = model(Xt).cpu().numpy()
 
-        # raw last-frame (what persistence uses)
-        last_log = ds.log_chl.isel(
-            time=ks, lat=lat_slice, lon=lon_slice).values.astype(np.float32)
-
-        # --- NEW: normalise it exactly as in training -----------------
-        mu_log, sd_log = stats["log_chl"]
-        last_norm = (last_log - mu_log) / sd_log
-        # network learned:  Δ = raw − norm   ⇒   raw = norm + Δ
-        pred_raw_norm = last_norm + delta       # still in z-score space
-        pred_raw      = pred_raw_norm * sd_log + mu_log   # ← un-normalise
-        # --------------------------------------------------------------
-
-        truth = ds.log_chl.isel(
-            time=ks+lead, lat=lat_slice, lon=lon_slice).values.astype(np.float32)
-
-        idx = slice(i, i+len(ks))
-        pred_log[idx] = pred_raw            # ✔ use corrected prediction
-        pers_log[idx] = last_log
-
-        true_log[idx] = truth
-        valid_m[idx]  = pixel_ok.isel(
-            lat=lat_slice, lon=lon_slice).values & np.isfinite(truth)
-
+        last = ds.log_chl.isel(time=ks, lat=lat_slice, lon=lon_slice).values.astype(np.float32)
+        # un-normalize Δ?  (your network predicts raw residuals on log space)
+        pred[i:i+len(ks)] = last + Δ
+        pers[i:i+len(ks)] = last
+        true[i:i+len(ks)] = ds.log_chl.isel(time=ks+lead, lat=lat_slice, lon=lon_slice).values
+        m[i:i+len(ks)]    = pixel_ok.isel(lat=lat_slice, lon=lon_slice).values & np.isfinite(true[i:i+len(ks)])
         if verbose:
-            print(f"[diag] processed {i+len(ks):>4}/{Tpred}", flush=True)
+            print(f"[diag] full-grid {i+len(ks)}/{Tpred}")
 
-    # pad back to full grid for plotting convenience
-    def pad(arr, fill=np.nan):
-        out = np.full((Tpred, H, W),
-                      fill if arr.dtype.kind == "f" else False,
-                      arr.dtype)
-        out[:, lat_any.min():lat_any.max()+1,
-                lon_any.min():lon_any.max()+1] = arr
-        return out
+    return times, pred, pers, true, m
 
-    return times_pred, pad(pred_log), pad(pers_log), pad(true_log), pad(valid_m, False)
+def get_args():
+    p = argparse.ArgumentParser()
+    p.add_argument("--freeze", required=True, help="path to freeze .nc")
+    p.add_argument("--ckpt",   required=True, help="path to convLSTM_best.pt")
+    p.add_argument("--out",    required=True, help="output directory")
+    p.add_argument("--seq",    type=int, default=6)
+    p.add_argument("--batch",  type=int, default=32)
+    p.add_argument("--no_gpu", action="store_true")
+    return p.parse_args()
 
-# --------------------------------------------------
-# Metric helpers
-# --------------------------------------------------
-def _masked_rmse(a,b,m):
-    diff = (a-b)[m]
-    if diff.size==0: return np.nan
-    return np.sqrt(np.mean(diff*diff))
+def pad_full(sub, mask2d, H, W):
+    """Pad a sub‐grid array (T, h, w) back into full (T,H,W)."""
+    # find bounding box
+    lat_any = mask2d.any("lon").values.nonzero()[0]
+    lon_any = mask2d.any("lat").values.nonzero()[0]
+    ymin, ymax = lat_any.min(), lat_any.max()+1
+    xmin, xmax = lon_any.min(), lon_any.max()+1
 
-def _masked_mae(a,b,m):
-    diff = np.abs(a-b)[m]
-    if diff.size==0: return np.nan
-    return np.mean(diff)
+    out = np.full((sub.shape[0], H, W), np.nan, dtype=sub.dtype)
+    out[:, ymin:ymax, xmin:xmax] = sub
+    return out
 
-def _metrics_block(pred_log, pers_log, true_log, mask, floor_mg=None):
-    """
-    Return dict of metrics in log & mg space for arrays (T,H,W).
-    mg conversion uses exp(log). If you want to subtract a floor_mg
-    (as in freeze construction) supply it; otherwise raw exp().
-    """
-    m = mask
-    p = pred_log; r = pers_log; y = true_log
-
-    # log
-    rmse_log_m   = _masked_rmse(p, y, m)
-    rmse_log_p   = _masked_rmse(r, y, m)
-    mae_log_m    = _masked_mae(p, y, m)
-    mae_log_p    = _masked_mae(r, y, m)
-
-    # mg space
-    if floor_mg is not None:
-        p_lin = np.exp(p) - floor_mg
-        r_lin = np.exp(r) - floor_mg
-        y_lin = np.exp(y) - floor_mg
-        p_lin = np.clip(p_lin, 0, None)
-        r_lin = np.clip(r_lin, 0, None)
-        y_lin = np.clip(y_lin, 0, None)
-    else:
-        p_lin = np.exp(p); r_lin = np.exp(r); y_lin = np.exp(y)
-
-    rmse_mg_m  = _masked_rmse(p_lin, y_lin, m)
-    rmse_mg_p  = _masked_rmse(r_lin, y_lin, m)
-    mae_mg_m   = _masked_mae(p_lin, y_lin, m)
-    mae_mg_p   = _masked_mae(r_lin, y_lin, m)
-
-    return {
-        "rmse_log_model": rmse_log_m,
-        "rmse_log_pers" : rmse_log_p,
-        "mae_log_model" : mae_log_m,
-        "mae_log_pers"  : mae_log_p,
-        "rmse_mg_model" : rmse_mg_m,
-        "rmse_mg_pers"  : rmse_mg_p,
-        "mae_mg_model"  : mae_mg_m,
-        "mae_mg_pers"   : mae_mg_p,
-        "skill_log_pct" : 100.0 * (1.0 - (rmse_log_m / rmse_log_p)) if rmse_log_p>0 else np.nan,
-        "skill_mg_pct"  : 100.0 * (1.0 - (rmse_mg_m  / rmse_mg_p))  if rmse_mg_p>0 else np.nan,
-    }
-
-# --------------------------------------------------
-# Aggregations
-# --------------------------------------------------
-def subset_time_block(times_pred, mask, *arrays, mask_subset=None):
-    """
-    mask_subset is boolean mask over times_pred; returns arrays subset.
-    """
-    if mask_subset is None:
-        return arrays + (mask,)
-    idx = np.where(mask_subset)[0]
-    arrs = tuple(a[idx] for a in arrays)
-    m    = mask[idx]
-    return arrs + (m,)
-
-def monthly_skill(times_pred, pred_log, pers_log, true_log, valid_m):
-    months = pd.DatetimeIndex(times_pred).month.values
-    rows=[]
-    for m in range(1,13):
-        sel = months==m
-        P,R,Y,M = pred_log[sel], pers_log[sel], true_log[sel], valid_m[sel]
-        if P.size==0: continue
-        rows.append({"month":m, **_metrics_block(P,R,Y,M)})
-    return pd.DataFrame(rows).sort_values("month")
-
-def quartile_bins_skill(times_pred, true_log, mask_all):
-    """Use chl_lin (true) domain-median by time to define bins, then compute mask subset metrics later."""
-    # median over spatial domain each time (valid_m to guard)
-    chl_lin_time = np.exp(true_log)  # mg
-    chl_lin_time = np.where(mask_all, chl_lin_time, np.nan)
-    dom_med = np.nanmedian(chl_lin_time, axis=(1,2))
-    q = np.nanquantile(dom_med, [0.25,0.5,0.75])
-    bins = np.digitize(dom_med, q)  # 0-3
-    return bins, q  # caller will compute metrics per bin
-
-# --------------------------------------------------
-# Figures
-# --------------------------------------------------
-def _common_style():
-    plt.style.use("seaborn-v0_8-whitegrid")
-    plt.rcParams.update({
-        "figure.dpi":150,
-        "savefig.dpi":150,
-        "axes.titlesize":"medium",
-        "axes.labelsize":"small",
-        "legend.fontsize":"small",
-        "xtick.labelsize":"x-small",
-        "ytick.labelsize":"x-small",
-    })
-
-def plot_timeseries(outdir, times_pred, pred_log, pers_log, true_log, valid_m):
-    _common_style()
-    t = pd.to_datetime(times_pred)
-    # domain-mean mg m-3
-    y_lin = np.exp(true_log); p_lin = np.exp(pred_log); r_lin = np.exp(pers_log)
-    m = valid_m
-    y_mu = np.nanmean(np.where(m, y_lin, np.nan), axis=(1,2))
-    p_mu = np.nanmean(np.where(m, p_lin, np.nan), axis=(1,2))
-    r_mu = np.nanmean(np.where(m, r_lin, np.nan), axis=(1,2))
-    plt.figure(figsize=(10,3))
-    plt.plot(t, y_mu, label="Obs")
-    plt.plot(t, p_mu, label="Model", alpha=.8)
-    plt.plot(t, r_mu, label="Persistence", alpha=.8)
-    plt.ylabel("Chl (mg m$^{-3}$)")
-    plt.title("Domain-mean chlorophyll")
-    plt.legend(ncol=3, fontsize="x-small")
-    plt.tight_layout()
-    plt.savefig(outdir/"fig_timeseries.png")
-    plt.close()
-    # also save CSV
-    df = pd.DataFrame({"time":t, "chl_obs":y_mu, "chl_model":p_mu, "chl_pers":r_mu})
-    df.to_csv(outdir/"metrics_timeseries.csv", index=False)
-
-def plot_scatter(outdir, name, pred_log, true_log, valid_m):
-    _common_style()
-    # flatten
-    m = valid_m
-    x = true_log[m]; y = pred_log[m]
-    if x.size==0:
-        return
-    plt.figure(figsize=(3,3))
-    plt.hexbin(x, y, gridsize=60, bins='log', mincnt=1)
-    lim = [min(x.min(), y.min()), max(x.max(), y.max())]
-    plt.plot(lim,lim,'k--',lw=0.5)
-    plt.xlabel("Obs log_chl")
-    plt.ylabel("Model log_chl")
-    plt.title(f"{name} scatter")
-    plt.colorbar(label="count")
-    plt.tight_layout()
-    plt.savefig(outdir/f"fig_scatter_{name}.png")
-    plt.close()
-
-def plot_month_skill(outdir, df_month):
-    _common_style()
-    plt.figure(figsize=(5,3))
-    plt.plot(df_month.month, df_month.rmse_log_model, label="Model")
-    plt.plot(df_month.month, df_month.rmse_log_pers,  label="Persistence")
-    plt.xlabel("Month")
-    plt.ylabel("RMSE log_chl")
-    plt.title("Monthly RMSE (log)")
-    plt.xticks(range(1,13))
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(outdir/"fig_month_skill.png")
-    plt.close()
-
-def plot_bins_skill(outdir, df_bins):
-    _common_style()
-    width=0.35
-    idx = np.arange(len(df_bins))
-    plt.figure(figsize=(5,3))
-    plt.bar(idx-width/2, df_bins.rmse_log_model, width, label="Model")
-    plt.bar(idx+width/2, df_bins.rmse_log_pers,  width, label="Persistence")
-    plt.xticks(idx, df_bins.bin_label, rotation=45, ha="right")
-    plt.ylabel("RMSE log_chl")
-    plt.title("Skill by bloom quartile (domain median)")
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(outdir/"fig_bins_skill.png")
-    plt.close()
-
-def plot_residual_hist(outdir, name, pred_log, true_log, valid_m):
-    _common_style()
-    err = (pred_log - true_log)[valid_m]
-    plt.figure(figsize=(4,3))
-    plt.hist(err, bins=60, alpha=0.8, color="C0")
-    plt.xlabel("Prediction error (log chl)")
-    plt.ylabel("Count")
-    plt.title(f"Residuals {name}")
-    plt.tight_layout()
-    plt.savefig(outdir/f"fig_residual_hist_{name}.png")
-    plt.close()
-
-def plot_skill_maps(outdir, rmse_model, rmse_pers, skill_pct, lat, lon):
-    _common_style()
-    fig,axs = plt.subplots(1,3,figsize=(10,3), constrained_layout=True)
-    im0 = axs[0].pcolormesh(lon,lat, rmse_model, shading="nearest")
-    axs[0].set_title("RMSE model (log)")
-    fig.colorbar(im0, ax=axs[0], shrink=0.8)
-    im1 = axs[1].pcolormesh(lon,lat, rmse_pers, shading="nearest")
-    axs[1].set_title("RMSE persistence (log)")
-    fig.colorbar(im1, ax=axs[1], shrink=0.8)
-    im2 = axs[2].pcolormesh(lon,lat, skill_pct, shading="nearest", vmin=-100, vmax=100, cmap="coolwarm")
-    axs[2].set_title("Skill % (1 - RMSEm/RMSEp)")
-    fig.colorbar(im2, ax=axs[2], shrink=0.8)
-    for ax in axs:
-        ax.set_xlabel("lon"); ax.set_ylabel("lat")
-    fig.suptitle("Spatial skill maps", y=1.02)
-    fig.savefig(outdir/"fig_skill_maps.png", bbox_inches="tight")
-    plt.close(fig)
-
-# --------------------------------------------------
-# Main
-# --------------------------------------------------
-if __name__ == "__main__":
+def main():
     args = get_args()
-
     FREEZE = pathlib.Path(args.freeze).expanduser().resolve()
     CKPT   = pathlib.Path(args.ckpt  ).expanduser().resolve()
-    OUTDIR = pathlib.Path(args.out   ).expanduser().resolve()
-    OUTDIR.mkdir(parents=True, exist_ok=True)
-    OUT = OUTDIR
+    OUT    = pathlib.Path(args.out   ).expanduser().resolve()
+    OUT.mkdir(exist_ok=True)
+    if not FREEZE.is_file() or not CKPT.is_file():
+        sys.exit("❌ freeze or ckpt not found")
+    # global CKPT
 
-    if not FREEZE.is_file():
-        sys.exit(f"[ERR] freeze file not found: {FREEZE}")
-    if not CKPT.is_file():
-        sys.exit(f"[ERR] checkpoint not found: {CKPT}")
+    # ─────────────────────────────────────────────────────────────
+    # 0) configure testing.py
+    # ─────────────────────────────────────────────────────────────
+    testing.FREEZE   = FREEZE
+    testing.SEQ      = args.seq
+    testing.LEAD_IDX = 1
+    testing.BATCH    = args.batch
 
+    # 1) load freeze to count channels & build mask2d
+    ds = xr.open_dataset(FREEZE, chunks={"time":-1})
+    ds.load()
+    varlist = [v for v in ALL_VARS if v in ds.data_vars]
+    Cin = len(varlist)
+    pixel_ok = ds["pixel_ok"].astype(bool) if "pixel_ok" in ds else \
+               ((~np.isnan(ds.log_chl)).sum("time")/ds.sizes["time"]>=0.2)
+    full_H, full_W = ds.sizes["lat"], ds.sizes["lon"]
+
+    # 2) load model
     device = torch.device("cpu") if args.no_gpu else \
              torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    mixed_prec = (not args.no_mixed_prec) and device.type == "cuda"
+    mixed = MIXED_PREC and device.type=="cuda"
+    net = ConvLSTM(Cin).to(device)
+    net.load_state_dict(torch.load(CKPT, map_location=device), strict=True)
+    net.eval()
 
-    print("[diag] loading data …", flush=True)
-    ds = xr.open_dataset(FREEZE, chunks={"time": -1})
-    ds.load()  # pull into RAM once
+    # 3) patch‐based val scatter + CSV
+    print("[diag] patch‐based val scatter…")
+    _, va_dl, _, _, _ = make_loaders()
+    all_p, all_t = [], []
+    for X,y,m in va_dl:
+        X,y,m = X.to(device), y.to(device), m.to(device)
+        with autocast(enabled=mixed):
+            Δ = net(X)
+            p = (X[:,-1,LOGCHL_IDX] + Δ)[m]
+        all_p.append(p.detach().cpu().numpy())
+        all_t.append(y[m].detach().cpu().numpy())
+    preds = np.concatenate(all_p)
+    trues = np.concatenate(all_t)
+    # write CSV
+    pd.DataFrame({"obs":trues,"pred":preds}) \
+      .to_csv(OUT/"metrics_patch_val.csv", index=False)
+    # scatter
+    plt.hexbin(trues, preds, gridsize=60, bins="log", mincnt=1)
+    mn,mx = preds.min(), preds.max()
+    plt.plot([mn,mx],[mn,mx],"k--",lw=0.5)
+    plt.xlabel("Obs log_chl"); plt.ylabel("Pred log_chl")
+    plt.title("Patch‐based val scatter")
+    plt.colorbar(label="count")
+    plt.tight_layout()
+    plt.savefig(OUT/"fig_scatter_val_patch.png")
+    plt.close()
 
-    pixel_ok = build_pixel_ok_if_needed(ds)
-    # use exactly the same predictor list & log_chl‐index from baseline_model.py
-    varlist = MODEL_VARS
-    LOG_IDX = LOGCHL_IDX
+    # CKPT = str(pathlib.Path(args.ckpt).expanduser().resolve())
 
-    Cin = len(varlist)              # MUST match checkpoint
-
-    tr_mask, va_mask, te_mask = time_splits(ds.time.values)
-    stats = norm_stats(ds, tr_mask, varlist)
-
-    print("[diag] running inference …", flush=True)
-    times_pred, pred_log, pers_log, true_log, valid_m = run_inference(
-        ds, varlist, LOG_IDX, stats, pixel_ok,
-        seq=args.seq, lead=args.lead, batch_k=args.batch,
-        device=device, mixed_prec=mixed_prec)
-    # ------------------------------------------------------------------
-    #  ── bias correction ───────────────────────────────────────────────
-    # compute mean log-error over all valid pixels & times
-    bias_val = np.nanmean((pred_log - true_log)[valid_m])
-    print(f"[diag] constant log-bias = {bias_val:.4f}; subtracting to correct forecasts")
-    # subtract it off
-    pred_log = pred_log - bias_val
-    # now pers_log remains pure persistence, but pred_log is bias-corrected
-    # ------------------------------------------------------------------
-
-    # Align train/val/test subsets to PRED times (k+lead)
-    t_pred = times_pred
-    tr_sel = t_pred <  np.datetime64("2016-01-01")
-    va_sel = (t_pred >= np.datetime64("2016-01-01")) & (t_pred <= np.datetime64("2018-12-31"))
-    te_sel = t_pred >  np.datetime64("2018-12-31")
-
-    # Floor mg?  If you logged chl after adding detection floor, pass the floor you used
-    # into _metrics_block. If unknown, just None (raw exp). For now:
-    floor_mg = None
-
-    # Global metrics
-    blocks=[]
-    for label,sel in [("train",tr_sel),("val",va_sel),("test",te_sel),("all",None)]:
-        if sel is None:
-            P,R,Y,M = pred_log, pers_log, true_log, valid_m
+    # 4) full‐grid inference
+    print("[diag] full‐grid inference…")
+    # compute stats on train‐period:
+    # compute stats on train‐period, handling static vs time‐varying vars
+    tr_mask = ds.time < np.datetime64("2016-01-01")
+    stats = {}
+    for v in varlist:
+        da = ds[v]
+        if "time" in da.dims:
+            sel = da.isel(time=tr_mask)
         else:
-            P,R,Y,M = pred_log[sel], pers_log[sel], true_log[sel], valid_m[sel]
-        row = {"subset":label, **_metrics_block(P,R,Y,M, floor_mg=floor_mg)}
-        blocks.append(row)
-    df_global = pd.DataFrame(blocks)
-    df_global.to_csv(OUT/"metrics_global.csv", index=False)
-    print("\nGlobal metrics:")
-    print(df_global.to_string(index=False))
+            sel = da
+        μ = float(sel.mean(skipna=True).item())
+        σ = float(sel.std(skipna=True).item()) or 1.0
+        stats[v] = (μ, σ)
+    times, pred_sub, pers_sub, true_sub, m_sub = run_inference(
+        ds, varlist, LOGCHL_IDX, stats, pixel_ok,
+        args.seq, 1, args.batch, device, mixed, str(CKPT))
+    
+    # pad back
+    pred_full = pad_full(pred_sub, pixel_ok, full_H, full_W)
+    pers_full = pad_full(pers_sub, pixel_ok, full_H, full_W)
+    true_full = pad_full(true_sub, pixel_ok, full_H, full_W)
+    m_full    = pad_full(m_sub.astype("uint8"), pixel_ok, full_H, full_W)
 
-    # Monthly skill
-    df_month = monthly_skill(t_pred, pred_log, pers_log, true_log, valid_m)
-    df_month.to_csv(OUT/"metrics_month.csv", index=False)
-
-    # Quartile-bin skill (by domain-median chl at each pred time)
-    chl_bins, qvals = quartile_bins_skill(t_pred, true_log, valid_m)
-    rows=[]
-    labels=[]
-    for b in range(4):
-        sel = chl_bins==b
-        P,R,Y,M = pred_log[sel], pers_log[sel], true_log[sel], valid_m[sel]
-        row = {"bin":b, **_metrics_block(P,R,Y,M, floor_mg=floor_mg)}
-        rows.append(row)
-    # label strings
-    qstr = [f"<Q1({qvals[0]:.2f})",
-            f"Q1-Q2({qvals[0]:.2f}-{qvals[1]:.2f})",
-            f"Q2-Q3({qvals[1]:.2f}-{qvals[2]:.2f})",
-            f">=Q3({qvals[2]:.2f})"]
-    df_bins = pd.DataFrame(rows)
-    df_bins["bin_label"] = qstr
-    df_bins.to_csv(OUT/"metrics_bins.csv", index=False)
-
-    # Spatial skill maps (over ALL pred times)
-    # SSE by pixel
-    M = valid_m
-    diff_m = (pred_log - true_log)
-    diff_p = (pers_log - true_log)
-    sse_m  = np.nansum((diff_m**2)*M, axis=0)
-    sse_p  = np.nansum((diff_p**2)*M, axis=0)
-    cnt    = M.sum(axis=0).astype(float)
-    with np.errstate(invalid="ignore", divide="ignore"):
-        rmse_m_grid = np.sqrt(sse_m / cnt)
-        rmse_p_grid = np.sqrt(sse_p / cnt)
-        skill_pct_grid = 100.0 * (1.0 - (rmse_m_grid / rmse_p_grid))
-    np.savez(OUT/"skill_maps.npz",
-             rmse_model=rmse_m_grid, rmse_pers=rmse_p_grid, skill_pct=skill_pct_grid)
-
-    # Save predicted fields to NetCDF
-    pred_da = xr.DataArray(pred_log, coords={"time":t_pred, "lat":ds.lat, "lon":ds.lon},
-                           dims=("time","lat","lon"), name="log_chl_pred")
-    pers_da = xr.DataArray(pers_log, coords=pred_da.coords, dims=pred_da.dims, name="log_chl_pers")
-    true_da = xr.DataArray(true_log, coords=pred_da.coords, dims=pred_da.dims, name="log_chl_true")
-    vm_da   = xr.DataArray(valid_m.astype("uint8"), coords=pred_da.coords, dims=pred_da.dims, name="valid_mask")
-    ds_out  = xr.Dataset({"log_chl_pred":pred_da, "log_chl_pers":pers_da,
-                          "log_chl_true":true_da, "valid_mask":vm_da})
+    # write NetCDF
+    coords = {"time":times, "lat":ds.lat, "lon":ds.lon}
+    ds_out = xr.Dataset({
+      "log_chl_pred": (("time","lat","lon"), pred_full),
+      "log_chl_pers": (("time","lat","lon"), pers_full),
+      "log_chl_true": (("time","lat","lon"), true_full),
+      "valid_mask":   (("time","lat","lon"), m_full.astype("uint8")),
+    }, coords=coords)
     comp = {v:{"zlib":True,"complevel":4} for v in ds_out.data_vars}
-    ds_out.to_netcdf(OUT/"predicted_fields.nc", encoding=comp)
-
-    # --- FIGURES ---
-    print("\nBuilding figures …", flush=True)
-    plot_timeseries(OUT, t_pred, pred_log, pers_log, true_log, valid_m)
-    plot_scatter   (OUT, "val",  pred_log[va_sel], true_log[va_sel], valid_m[va_sel])
-    plot_month_skill(OUT, df_month)
-    plot_bins_skill (OUT, df_bins)
-    plot_residual_hist(OUT, "val", pred_log[va_sel], true_log[va_sel], valid_m[va_sel])
-    plot_skill_maps(OUT, rmse_m_grid, rmse_p_grid, skill_pct_grid,
-                    ds.lat.values, ds.lon.values)
-
-    # Save summary JSON
-    summary = {
-        "freeze_path" : str(FREEZE),
-        "ckpt_path"   : str(CKPT),
-        "seq"         : args.seq,
-        "lead"        : args.lead,
-        "global"      : df_global.to_dict(orient="records"),
-        "quartiles"   : df_bins.to_dict(orient="records"),
-        "month"       : df_month.to_dict(orient="records"),
+    ncpath = OUT/"predicted_fields.nc"
+    ds_out.to_netcdf(ncpath, encoding=comp)
+    print(f"[diag] wrote full‐grid to {ncpath}")
+    # 5) global metrics table
+    print("\nGlobal metrics:")
+    subsets = {
+      "train": times <  np.datetime64("2016-01-01"),
+      "val":   (times>=np.datetime64("2016-01-01")) & (times<=np.datetime64("2018-12-31")),
+      "test":  times >  np.datetime64("2018-12-31"),
+      "all":   np.ones_like(times, bool)
     }
-    with open(OUT/"diagnostics_summary.json","w") as f:
-        json.dump(summary, f, indent=2)
 
-    print("\n✓ Diagnostics complete.")
-    print(f"Outputs written to: {OUT}")
+    rows = []
+    for name, mask_t in subsets.items():
+        # first select the timeslice
+        P_slice = pred_full[mask_t]      # shape (Nt, H, W)
+        R_slice = pers_full[mask_t]
+        Y_slice = true_full[mask_t]
+        M_slice = m_full[mask_t] == 1     # boolean mask same shape
+
+        # flatten only the valid pixels
+        P_flat = P_slice[M_slice]
+        R_flat = R_slice[M_slice]
+        Y_flat = Y_slice[M_slice]
+
+        # log‐space
+        rm_m = np.sqrt(np.mean((P_flat - Y_flat)**2))
+        rm_p = np.sqrt(np.mean((R_flat - Y_flat)**2))
+        mae_m = np.mean(np.abs(P_flat - Y_flat))
+        mae_p = np.mean(np.abs(R_flat - Y_flat))
+
+        # linear‐space
+        mgP = np.exp(P_flat); mgR = np.exp(R_flat); mgY = np.exp(Y_flat)
+        rmM = np.sqrt(np.mean((mgP - mgY)**2))
+        rmP = np.sqrt(np.mean((mgR - mgY)**2))
+        maeM = np.mean(np.abs(mgP - mgY))
+        maeP = np.mean(np.abs(mgR - mgY))
+
+        skill_log = 100.0 * (1.0 - rm_m / rm_p) if rm_p>0 else np.nan
+        skill_mg  = 100.0 * (1.0 - rmM / rmP)  if rmP>0 else np.nan
+
+        rows.append({
+            "subset": name,
+            "rmse_log_model":  rm_m,  "rmse_log_pers": rm_p,
+            "mae_log_model":   mae_m, "mae_log_pers": mae_p,
+            "rmse_mg_model":   rmM,   "rmse_mg_pers":  rmP,
+            "mae_mg_model":    maeM,  "mae_mg_pers":   maeP,
+            "skill_log_pct":   skill_log, "skill_mg_pct": skill_mg
+        })
+
+    df = pd.DataFrame(rows)
+    print(df.to_string(index=False))
+    df.to_csv(OUT/"metrics_global.csv", index=False)

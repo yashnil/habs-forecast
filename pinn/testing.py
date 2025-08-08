@@ -343,10 +343,10 @@ if __name__ == "__main__":
 '''
 Vanilla + PINN Results (testing.py):
 
-Version 1 (pushed to Github)
+Version 1 
 FINAL RMSE_log: {'train': 0.7634156236815086, 'val': 0.6924955483312915, 'test': 0.7961275815969414}
 
-Version 2
+Version 2 (pushed to Github)
 FINAL RMSE_log: {'train': 0.7634156029152483, 'val': 0.6924954863666604, 'test': 0.7961274946011418}
 
 Version 3 (recent)

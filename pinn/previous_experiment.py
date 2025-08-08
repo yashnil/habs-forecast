@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-experiment.py  —  ConvLSTM v0.3 diagnostic suite
+previous_experiment.py  —  ConvLSTM v0.3 diagnostic suite
 ====================================================
 Generates publication / science-fair quality diagnostics for the ConvLSTM
 baseline trained in 02_baseline_model.py.
@@ -16,7 +16,7 @@ Key guarantees
 
 Run example
 -----------
-python pinn/experiment.py \
+python pinn/previous_experiment.py \
   --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
   --ckpt   "/Users/yashnilmohanty/HAB_Models/best_pinn_v1p3.pt" \
   --out    "Diagnostics_PINN2" \
