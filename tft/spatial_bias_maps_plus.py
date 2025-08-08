@@ -14,7 +14,7 @@ Covers every ask in the latest convo:
 
 All outputs drop into *OUTDIR* so the folder can be zipped for a manuscript supplement.
 
-python notebooks/spatial_bias_maps.py
+python tft/spatial_bias_maps_plus.py
 """
 # pylint: disable=invalid-name
 import pathlib, json, itertools, warnings
@@ -36,10 +36,13 @@ import cartopy.io.img_tiles as cimgt
 # paths – edit if needed
 # ────────────────────────────────────────────────────────────────
 # ── paths are injected by diagnostics.py; fall back to defaults if run stand-alone
-FREEZE = globals().get("FREEZE")                       # may be None
-PRED   = pathlib.Path(globals().get("PRED",   "predicted_fields.nc")).resolve()
-OUTDIR = pathlib.Path(globals().get("OUTDIR", "Diagnostics_auto")).resolve()
-OUTDIR.mkdir(parents=True, exist_ok=True)
+FREEZE = pathlib.Path(
+    "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc")
+PRED   = pathlib.Path(
+     "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_TFT/predicted_fields.nc")
+OUTDIR = pathlib.Path(
+    "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_TFT")
+OUTDIR.mkdir(exist_ok=True, parents=True)
 
 TILER  = cimgt.GoogleTiles(style='satellite'); TILER.request_timeout = 5
 EXTENT = [-125, -114, 31, 43]   # CA coast bbox
