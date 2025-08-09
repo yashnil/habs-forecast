@@ -245,15 +245,15 @@ def main():
         val_rm=rmse(va_dl,net); sched.step(val_rm)
         print(f"E{ep:02d}  val RMSE_log={val_rm:.3f}  lr={opt.param_groups[0]['lr']:.1e}")
         if val_rm < best-1e-3:
-            best=val_rm; bad=0; torch.save(net.state_dict(),OUT_DIR/'convLSTM_best.pt')
+            best=val_rm; bad=0; torch.save(net.state_dict(),OUT_DIR/'vanilla_best.pt')
         else:
             bad+=1
             if bad==6: break
 
-    net.load_state_dict(torch.load(OUT_DIR/'convLSTM_best.pt'))
+    net.load_state_dict(torch.load(OUT_DIR/'vanilla_best.pt'))
     metrics = {"train":rmse(tr_dl,net),"val":rmse(va_dl,net),"test":rmse(te_dl,net)}
     print("\nFINAL RMSE_log:",metrics)
-    json.dump(metrics, open(OUT_DIR/'convLSTM_metrics.json','w'), indent=2)
+    json.dump(metrics, open(OUT_DIR/'vanilla_metrics.json','w'), indent=2)
 
 # ------------------------------------------------------------------ #
 # Optional CLI overrides for quick smoke-tests

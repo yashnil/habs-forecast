@@ -14,7 +14,7 @@ Covers every ask in the latest convo:
 
 All outputs drop into *OUTDIR* so the folder can be zipped for a manuscript supplement.
 
-python notebooks/spatial_bias_maps.py
+python convLSTM/spatial_bias_maps.py
 """
 # pylint: disable=invalid-name
 import pathlib, json, itertools, warnings
@@ -38,9 +38,9 @@ import cartopy.io.img_tiles as cimgt
 FREEZE = pathlib.Path(
     "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_freeze_v1.nc")
 PRED   = pathlib.Path(
-    "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_v0p5/predicted_fields.nc")
+    "/Users/yashnilmohanty/Desktop/habs-forecast/New_Diagnostics/predicted_fields.nc")
 OUTDIR = pathlib.Path(
-    "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_v0p5")
+    "/Users/yashnilmohanty/Desktop/habs-forecast/New_Diagnostics")
 OUTDIR.mkdir(exist_ok=True, parents=True)
 
 TILER  = cimgt.GoogleTiles(style='satellite'); TILER.request_timeout = 5

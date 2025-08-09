@@ -16,10 +16,10 @@ Key guarantees
 
 Run example
 -----------
-python notebooks/03_diagnostics.py \
+python convLSTM/03_diagnostics.py \
   --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
-  --ckpt   "/Users/yashnilmohanty/HAB_Models/convLSTM_best.pt" \
-  --out    "Diagnostics_v0p5" \
+  --ckpt   "/Users/yashnilmohanty/HAB_Models/vanilla_best.pt" \
+  --out    "New_Diagnostics" \
   --seq    6 \
   --lead   1 \
   --batch  32
@@ -57,7 +57,7 @@ ALL_VARS  = SATELLITE + METEO + OCEAN + DERIVED + STATIC
 def get_args():
     p = argparse.ArgumentParser(description="ConvLSTM v0.3 diagnostics")
     p.add_argument("--freeze", required=True, help="Path to HAB_freeze_v1.nc")
-    p.add_argument("--ckpt",   required=True, help="Path to convLSTM_best.pt")
+    p.add_argument("--ckpt",   required=True, help="Path to vanilla_best.pt")
     p.add_argument("--out",    default="Diagnostics", help="Output directory")
     p.add_argument("--seq",    type=int, default=4, help="History length (default 4)")
     p.add_argument("--lead",   type=int, default=1, help="Lead steps (default 1)")
@@ -609,3 +609,12 @@ if __name__ == "__main__":
 
     print("\n✓ Diagnostics complete.")
     print(f"Outputs written to: {OUT}")
+
+'''
+Global metrics:
+subset  rmse_log_model  rmse_log_pers  mae_log_model  mae_log_pers  rmse_mg_model  rmse_mg_pers  mae_mg_model  mae_mg_pers  skill_log_pct  skill_mg_pct
+ train        0.806882       0.892674       0.596968      0.617396       5.193737      6.298439      2.251204     2.622593       9.610659     17.539293
+   val        0.771127       0.854255       0.570910      0.596557       4.729039      5.800528      2.038472     2.384271       9.731144     18.472273
+  test        0.807207       0.888878       0.596318      0.624285       5.082844      6.138979      2.257829     2.639769       9.188122     17.203754
+   all        0.801196       0.885994       0.592624      0.614930       5.105561      6.198111      2.217364     2.586010       9.570944     17.627138
+'''
