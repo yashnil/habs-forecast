@@ -130,12 +130,60 @@ def _open_pred(path: str) -> xr.DataArray:
             da = da.rename("log_chl")
         return da
 
-def _crop_bbox(da: xr.DataArray, bbox: Tuple[float, float, float, float]) -> xr.DataArray:
-    lon_min, lon_max, lat_min, lat_max = bbox
-    # Handle both 'lon'/'latitude' naming
-    lon_name = "lon" if "lon" in da.coords else "longitude"
-    lat_name = "lat" if "lat" in da.coords else "latitude"
-    return da.sel({lon_name: slice(lon_min, lon_max), lat_name: slice(lat_min, lat_max)})
+def _coord_names(da):
+    """Return (lon_name, lat_name) matching common conventions."""
+    lon_name = "lon" if "lon" in da.coords else ("longitude" if "longitude" in da.coords else list(da.coords)[-1])
+    lat_name = "lat" if "lat" in da.coords else ("latitude" if "latitude" in da.coords else list(da.coords)[-2])
+    return lon_name, lat_name
+
+def _crop_bbox(da, bbox, *, min_cells=4, pad_deg=0.05):
+    """Robust spatial crop that works for ascending or descending coords.
+
+    - Clips requested bbox to data extents
+    - Handles ascending/descending latitude/longitude
+    - If the crop would be empty, gradually expands the bbox outward until it
+      contains at least `min_cells` along each spatial dimension (or hits edges).
+    """
+    import numpy as np
+    lon_name, lat_name = _coord_names(da)
+
+    def _ordered_slice(a, lo, hi):
+        asc = bool(np.all(np.diff(a) > 0))
+        if asc:
+            return slice(min(lo, hi), max(lo, hi))
+        else:
+            return slice(max(lo, hi), min(lo, hi))
+
+    lon0, lon1, lat0, lat1 = bbox
+    # Clip to data range
+    lons = np.asarray(da[lon_name].values)
+    lats = np.asarray(da[lat_name].values)
+    lon0 = float(np.clip(lon0, np.nanmin(lons), np.nanmax(lons)))
+    lon1 = float(np.clip(lon1, np.nanmin(lons), np.nanmax(lons)))
+    lat0 = float(np.clip(lat0, np.nanmin(lats), np.nanmax(lats)))
+    lat1 = float(np.clip(lat1, np.nanmin(lats), np.nanmax(lats)))
+
+    out = da.sel({lon_name: _ordered_slice(lons, lon0, lon1),
+                  lat_name: _ordered_slice(lats, lat0, lat1)})
+
+    # Fallback: expand gently if empty
+    tries = 0
+    while ((out.sizes.get(lon_name, 0) == 0 or out.sizes.get(lat_name, 0) == 0) and tries < 10):
+        tries += 1
+        pad = pad_deg * tries
+        out = da.sel({lon_name: _ordered_slice(lons, lon0 - pad, lon1 + pad),
+                      lat_name: _ordered_slice(lats, lat0 - pad, lat1 + pad)})
+        if out.sizes.get(lon_name, 0) >= min_cells and out.sizes.get(lat_name, 0) >= min_cells:
+            break
+
+    # Final fallback: boolean mask drop (handles non-monotonic edge cases)
+    if out.sizes.get(lon_name, 0) == 0 or out.sizes.get(lat_name, 0) == 0:
+        out = da.where(
+            (da[lon_name] >= min(lon0, lon1)) & (da[lon_name] <= max(lon0, lon1)) &
+            (da[lat_name]  >= min(lat0, lat1)) & (da[lat_name]  <= max(lat0, lat1)),
+            drop=True
+        )
+    return out
 
 def _align_times(das: List[xr.DataArray]) -> List[xr.DataArray]:
     """Align on the intersection of times; cast to same calendar if needed."""
@@ -145,30 +193,56 @@ def _align_times(das: List[xr.DataArray]) -> List[xr.DataArray]:
     times = sorted(list(times))
     return [d.sel(time=times) for d in das]
 
-def _upsample_for_plot(da_lin: xr.DataArray, factor: int = 8, smooth_sigma: float = 0.6) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Returns (hires_image, hires_lons, hires_lats) ready for imshow/pcolormesh.
-    Uses bicubic interpolation and a gentle gaussian blur to suppress blockiness.
-    """
-    arr = da_lin.values
-    # mask
-    mask = np.isfinite(arr)
-    arr_filled = np.where(mask, arr, np.nanmedian(arr[np.isfinite(arr)]))
-    # order=3 bicubic; zoom only in y,x (2D)
-    hi = ndi_zoom(arr_filled, zoom=factor, order=3, mode="nearest")
-    if smooth_sigma and smooth_sigma > 0:
-        hi = gaussian_filter(hi, sigma=smooth_sigma)
-    # Reconstruct a mask at high-res (nearest of original mask)
-    mask_hi = ndi_zoom(mask.astype(float), zoom=factor, order=0) > 0.5
-    hi = np.where(mask_hi, hi, np.nan)
+def _upsample_for_plot(da_lin, factor=8, smooth_sigma=0.6):
+    """Upsample 2D field for prettier plotting, safely handling NaNs/empties.
 
-    # Build high-res lon/lat edges for pcolormesh if desired; but for imshow we'll use extent
-    lon = da_lin["lon"].values if "lon" in da_lin.coords else da_lin["longitude"].values
-    lat = da_lin["lat"].values if "lat" in da_lin.coords else da_lin["latitude"].values
-    # Create linearly spaced centers (good enough for small boxes)
-    lon_hr = np.linspace(lon.min(), lon.max(), hi.shape[1])
-    lat_hr = np.linspace(lat.min(), lat.max(), hi.shape[0])
-    return hi, lon_hr, lat_hr
+    Returns: hi_res_array, lons_hr, lats_hr
+    """
+    import numpy as np
+    from scipy.ndimage import zoom as ndi_zoom, gaussian_filter
+
+    if da_lin.ndim != 2:
+        # If a DataArray with time or other dims slipped through, squeeze them.
+        da_lin = da_lin.squeeze()
+
+    # Guard: empty selection
+    if da_lin.size == 0 or 0 in da_lin.shape:
+        # Return minimal NaN canvas to avoid crashes; caller can annotate "no data".
+        hi = np.full((2, 2), np.nan)
+        lat_name, lon_name = ("lat" if "lat" in da_lin.coords else "latitude", 
+                              "lon" if "lon" in da_lin.coords else "longitude")
+        lats = np.linspace(-1, 1, 2)
+        lons = np.linspace(-1, 1, 2)
+        return hi, lons, lats
+
+    arr = np.asarray(da_lin.values, dtype=float)
+    finite = np.isfinite(arr)
+
+    if not finite.any():
+        # All-NaN: make a blank canvas to keep the pipeline alive.
+        hi = np.full((max(2, arr.shape[0]*factor), max(2, arr.shape[1]*factor)), np.nan)
+        lats = np.linspace(float(da_lin[da_lin.dims[0]].values.min()), float(da_lin[da_lin.dims[0]].values.max()), hi.shape[0])
+        lons = np.linspace(float(da_lin[da_lin.dims[1]].values.min()), float(da_lin[da_lin.dims[1]].values.max()), hi.shape[1])
+        return hi, lons, lats
+
+    # Fill NaNs with local median (global median fallback) to avoid zoom ringing
+    med = np.nanmedian(arr) if np.isfinite(arr).any() else 0.0
+    arr_filled = np.where(np.isfinite(arr), arr, med)
+
+    # Upsample with cubic interpolation
+    hi = ndi_zoom(arr_filled, zoom=factor, order=3, mode="nearest")
+
+    # Gentle Gaussian to reduce pixelation
+    if smooth_sigma and smooth_sigma > 0:
+        hi = gaussian_filter(hi, sigma=smooth_sigma, mode="nearest")
+
+    # High-res coord vectors assuming quasi-regular grid
+    lat_name, lon_name = ("lat" if "lat" in da_lin.coords else "latitude",
+                          "lon" if "lon" in da_lin.coords else "longitude")
+    lats = np.linspace(float(da_lin[lat_name].values.min()), float(da_lin[lat_name].values.max()), hi.shape[0])
+    lons = np.linspace(float(da_lin[lon_name].values.min()), float(da_lin[lon_name].values.max()), hi.shape[1])
+
+    return hi, lons, lats
 
 def _auto_event_date(obs_lin: xr.DataArray, window_days: int = 56) -> pd.Timestamp:
     # Pick last N valid timesteps, choose date with max regional-mean chl
@@ -306,10 +380,14 @@ def build_case_figure(
     thresh = _compute_threshold(obs_lin_box.sel(time=t0), q=0.95)
 
     # ---------------- Prepare zoom imagery (obs + preds at t0)
+        # ---------------- Prepare zoom imagery (obs + preds at t0)
     def _prep_img(da_lin_t: xr.DataArray):
+        """Return (hi, extent, mask_hr) for plotting. Never raises on empty."""
+        # Safe upsample; returns small NaN canvas if empty
         hi, lons_hr, lats_hr = _upsample_for_plot(da_lin_t, factor=upsample, smooth_sigma=smooth_sigma)
-        extent = (lons_hr.min(), lons_hr.max(), lats_hr.min(), lats_hr.max())
-        mask_hr = hi >= thresh
+        extent = (np.nanmin(lons_hr), np.nanmax(lons_hr), np.nanmin(lats_hr), np.nanmax(lats_hr))
+        # Bloom mask against threshold; NaNs become False
+        mask_hr = np.where(np.isfinite(hi), hi >= thresh, False)
         return hi, extent, mask_hr
 
     obs_t = obs_lin_box.sel(time=t0)
@@ -377,12 +455,12 @@ def build_case_figure(
     if "y" in hov_obs.dims:
         im1 = ax1.pcolormesh(pd.to_datetime(hov_obs["time"].values),
                              hov_obs["y"].values, hov_obs.T,
-                             shading="auto", vmin=vmin, vmax=vmax, cmap=cmap)
+                             shading="nearest", rasterized=True, vmin=vmin, vmax=vmax, cmap=cmap)
         ax1.set_ylabel("Latitude (°)")
     else:
         im1 = ax1.pcolormesh(pd.to_datetime(hov_obs["time"].values),
                              hov_obs["x"].values, hov_obs.T,
-                             shading="auto", vmin=vmin, vmax=vmax, cmap=cmap)
+                             shading="nearest", rasterized=True, vmin=vmin, vmax=vmax, cmap=cmap)
         ax1.set_ylabel("Longitude (°)")
     ax1.axvline(pd.to_datetime(t0), color="k", lw=1.0, ls="--", alpha=0.7)
     ax1.set_title("Obs Hovmöller — along-coast band")
