@@ -275,7 +275,7 @@ def _contour_from_mask(ax, img_extent, mask_hr: np.ndarray, label: str, lw: floa
                               pe.Normal()],
                 label=label)
 
-def _add_coast(ax, bbox):
+def _add_coast(ax, bbox, satellite_bg=False):
     if not _HAS_CARTOPY:
         return
     ax.coastlines(resolution="10m", linewidth=0.6, color="k")
@@ -283,6 +283,13 @@ def _add_coast(ax, bbox):
                                         edgecolor="face", facecolor="#f2efe6", zorder=0)
     ax.add_feature(land, zorder=0)
     ax.set_extent([bbox[0], bbox[1], bbox[2], bbox[3]], crs=ccrs.PlateCarree())
+    if satellite_bg and _HAS_CARTOPY:
+        ax.stock_img()  # simple “satellite style” background
+    if satellite_bg and _HAS_CARTOPY:
+        try:
+            ax.stock_img()
+        except Exception:
+            pass
 
 def _hovmöller_band(da_lin: xr.DataArray, bbox: Tuple[float, float, float, float], width_km: float = 20.0) -> xr.DataArray:
     """A simple along-coast Hovmöller surrogate: mean across a narrow offshore band within the box,
@@ -315,6 +322,7 @@ def build_case_figure(
     vmax: Optional[float] = None,
     out_path: str = "fig_case_study.png",
     cmap: str = "turbo",
+    satellite_bg: bool = False,
 ) -> None:
     """
     pred_specs: list of strings like "/path/to/file.nc:Label"
@@ -441,7 +449,7 @@ def build_case_figure(
                      interpolation="none",
                      vmin=vmin, vmax=vmax, cmap=cmap, aspect="auto")
     if _HAS_CARTOPY:
-        _add_coast(ax0, bbox)
+        _add_coast(ax0, bbox, satellite_bg=args.satellite_bg)
     ax0.set_title(f"Regional context — Observed (mg m$^{{-3}}$) @ {pd.to_datetime(t0).date()}")
     ax0.grid(ls=":", lw=0.3, color="k", alpha=0.2)
 
@@ -485,7 +493,7 @@ def build_case_figure(
         if _HAS_CARTOPY:
             axi = fig.add_subplot(gs[1, j], projection=ccrs.PlateCarree())
             img = axi.imshow(hi, origin="upper", extent=extent, vmin=vmin, vmax=vmax, cmap=cmap)
-            _add_coast(axi, bbox)
+            _add_coast(ax0, bbox, satellite_bg=args.satellite_bg)
         else:
             axi = fig.add_subplot(gs[1, j])
             img = axi.imshow(hi, origin="upper", extent=extent, vmin=vmin, vmax=vmax, cmap=cmap, aspect="auto")
@@ -527,6 +535,11 @@ def parse_args():
     p.add_argument("--vmax", type=float, default=None, help="Color scale max (mg m⁻3). Defaults to robust 99.5th pct in window.")
     p.add_argument("--out", default="fig_case_study.png", help="Output PNG path.")
     p.add_argument("--cmap", default="turbo", help="Matplotlib colormap. Try 'viridis' or 'magma' if you prefer.")
+    p.add_argument(
+        "--satellite-bg",
+        action="store_true",
+        help="Use satellite-like basemap background under the chlorophyll map."
+    )
     return p.parse_args()
 
 if __name__ == "__main__":
@@ -543,4 +556,5 @@ if __name__ == "__main__":
         vmin=args.vmin, vmax=args.vmax,
         out_path=args.out,
         cmap=args.cmap,
+        satellite_bg=args.satellite_bg
     )
