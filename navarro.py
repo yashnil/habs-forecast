@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 '''
-chmod +x run_case.sh
-./run_case.sh
+chmod +x navarro_run_case.sh
+./navarro_run_case.sh
 '''
 
 import numpy as np
@@ -111,7 +111,7 @@ def build_water_mask_within_10mi(lon, lat, coast_miles=10, erode_px=2):
 
 def emphasize_pinpoint(arr, lat, lon, pin_lat, pin_lon, sigma_km=6.0, strength=0.85):
     """Add a small Gaussian bump (display-only) so the pinpoint is the brightest."""
-    # degrees-per-km approx near Monterey
+    # degrees-per-km approx near Navarro Lagoon
     lat_km = 1/111.0
     lon_km = 1/(111.0*np.cos(np.deg2rad(pin_lat)))
     sig_lat = sigma_km * lat_km
@@ -162,7 +162,7 @@ def _draw_pin(ax, pin):
 
 def plot_panel(ax, lon, lat, arr, title, pin, vlim=None):
     proj = ccrs.PlateCarree()
-    ax.set_extent([-122.3, -121.7, 36.4, 37.0], crs=proj)
+    ax.set_extent([-124.4, -123.6, 38.9, 39.5], crs=proj)
     ax.add_feature(cfeature.LAND, facecolor="0.92", zorder=1)
     ax.coastlines(resolution="10m", linewidth=0.8, color="k", zorder=3)
 
@@ -197,17 +197,17 @@ def select_pre_post_frames(da, event_dt):
 
 # --------------------- main ---------------------
 def main():
-    p = argparse.ArgumentParser(description="Monterey HAB case-study panels (pre/post 8-day)")
+    p = argparse.ArgumentParser(description="Navarro HAB case-study panels (pre/post 8-day)")
     p.add_argument("--obs", required=True)
     p.add_argument("--pred", action="append", required=True, help="file:model_name")
-    p.add_argument("--region", default="monterey")
-    p.add_argument("--event-date", default="2021-05-25")
+    p.add_argument("--region", default="navarro")
+    p.add_argument("--event-date", default="2020-07-24")
     p.add_argument("--window-days", type=int, default=56)
     p.add_argument("--upsample", type=int, default=8)
     p.add_argument("--smooth-sigma", type=float, default=1.2)
-    p.add_argument("--bloom-lat", type=float, default=36.609)
-    p.add_argument("--bloom-lon", type=float, default=-121.890)
-    p.add_argument("--output-dir", default="bloom_panels")
+    p.add_argument("--bloom-lat", type=float, default=39.191)
+    p.add_argument("--bloom-lon", type=float, default=-123.763)
+    p.add_argument("--output-dir", default="bloom_panels_navarro")
     p.add_argument("--no-emphasize", action="store_true", help="disable visual bump at pinpoint")
     args = p.parse_args()
 
@@ -218,7 +218,7 @@ def main():
     post_start, post_end = event_dt, event_dt + timedelta(days=7)
 
     # region bounds (your current box)
-    bounds = dict(lat=[36.4, 37.0], lon=[-122.3, -121.7])
+    bounds = dict(lat=[38.9, 39.5], lon=[-124.4, -123.6])
 
     # load observed
     obs = xr.open_dataset(args.obs)
@@ -297,7 +297,7 @@ def main():
     cb = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap="viridis"),
                   cax=cax, orientation="vertical")
     cb.set_label("log Chlorophyll-a (ln mg m⁻³)", fontsize=12, weight="bold")
-    fig.suptitle(f"Monterey Bay HAB — Pre composite (center: {args.event_date})", fontsize=14, weight="bold", y=0.98)
+    fig.suptitle(f"Navarro Lagoon HAB — Pre composite (center: {args.event_date})", fontsize=14, weight="bold", y=0.98)
     fig.tight_layout(rect=[0,0,0.9,0.96])
     pre_path = os.path.join(args.output_dir, "pre_panel.png")
     fig.savefig(pre_path, dpi=300)
@@ -314,7 +314,7 @@ def main():
     cb = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap="viridis"),
                       cax=cax, orientation="vertical")
     cb.set_label("log Chlorophyll-a (ln mg m⁻³)", fontsize=12, weight="bold")
-    fig.suptitle(f"Monterey Bay HAB — Post composite (center: {args.event_date})", fontsize=14, weight="bold", y=0.98)
+    fig.suptitle(f"Navarro Lagoon HAB — Post composite (center: {args.event_date})", fontsize=14, weight="bold", y=0.98)
     fig.tight_layout(rect=[0,0,0.9,0.96])
     post_path = os.path.join(args.output_dir, "post_panel.png")
     fig.savefig(post_path, dpi=300)
