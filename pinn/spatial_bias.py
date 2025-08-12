@@ -25,6 +25,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import roc_curve, auc
 from scipy.stats import spearmanr, pearsonr
@@ -32,13 +33,34 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import cartopy.io.img_tiles as cimgt
 
+# --- UNIVERSAL FIGURE STYLE (matches Blueprint conventions) ---
+import matplotlib as mpl
+
+mpl.rcParams.update({
+    "font.family": "DejaVu Sans",
+    "axes.titlesize": 12,
+    "axes.labelsize": 11,
+    "xtick.labelsize": 10,
+    "ytick.labelsize": 10,
+    "legend.fontsize": 10,
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+    "grid.color": "0.85",
+    "grid.linestyle": "-",
+    "grid.linewidth": 0.6,
+    "axes.grid": True,
+    "savefig.dpi": 300,
+    "figure.dpi": 200
+})
+
+
 # ────────────────────────────────────────────────────────────────
 # paths – edit if needed
 # ────────────────────────────────────────────────────────────────
 FREEZE = pathlib.Path(
     "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc")
 PRED   = pathlib.Path(
-     "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_PINN/predicted_fields.nc")
+     "/Users/yashnilmohanty/Desktop/Diagnostics_PINN/predicted_fields.nc")
 OUTDIR = pathlib.Path(
     "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_PINN")
 OUTDIR.mkdir(exist_ok=True, parents=True)
@@ -115,7 +137,7 @@ coast_mask2d = mask.any("time").values
 # ────────────────────────────────────────────────────────────────
 # style & helpers
 # ────────────────────────────────────────────────────────────────
-plt.style.use("seaborn-v0_8-whitegrid")
+# plt.style.use("seaborn-v0_8-whitegrid")
 RES = 200
 
 
@@ -190,7 +212,7 @@ ax.plot(time, mu_obs,  label="Observed",     lw=1.3)
 ax.plot(time, mu_mod,  label="Model",        lw=1.1)
 ax.plot(time, mu_pers, label="Persistence", lw=1.0, alpha=.7)
 ax.set_ylabel("Chl (mg m$^{-3}$)"); ax.set_title("Domain‑mean chlorophyll")
-ax.legend(ncol=3, fontsize="small")
+ax.legend(ncol=3)
 _save(fig, "timeseries_domain_mean.png")
 
 # ────────────────────────────────────────────────────────────────
@@ -229,6 +251,34 @@ ax.set_xlabel("Month"); ax.set_ylabel("RMSE (mg m$^{-3}$)")
 ax.set_title("Monthly RMSE – linear space"); ax.set_xticks(range(1,13))
 ax.legend(); _save(fig, "rmse_monthly.png")
 
+# --- Monthly RMSE (log space) for Model and Persistence ---
+# Build monthly RMSE (log space) for Model and Persistence — SINGLE dataframe
+def _rmse_np(a, b):
+    a = np.asarray(a); b = np.asarray(b)
+    sel = np.isfinite(a) & np.isfinite(b)
+    return float(np.sqrt(np.mean((a[sel]-b[sel])**2))) if sel.any() else np.nan
+
+rows_log = []
+for mth in range(1,13):
+    idx = (time.month == mth)
+    if idx.sum() == 0: 
+        continue
+    o = obs_log[idx].where(mask[idx]).values.flatten()
+    p = pred_log[idx].where(mask[idx]).values.flatten()
+    r = pers_log[idx].where(mask[idx]).values.flatten()
+    rows_log.append({
+        "month": mth,
+        "rmse_log_model": _rmse_np(o, p),
+        "rmse_log_pers":  _rmse_np(o, r)
+    })
+
+df_month_log = (pd.DataFrame(rows_log)
+                  .set_index("month")
+                  .sort_index())
+df_month_log.to_csv(OUTDIR/"metrics_monthly_log.csv")
+
+
+
 # ────────────────────────────────────────────────────────────────
 # 3) Taylor diagram (monthly anomalies, log space)
 # ────────────────────────────────────────────────────────────────
@@ -255,7 +305,7 @@ get_corr = lambda x: np.corrcoef(flat(a_obs), flat(x))[0,1]
 TD = TaylorDiagram(ref_sd)
 TD.add(std_pers, get_corr(a_pers), 'Persistence', color='C1')
 TD.add(std_mod,  get_corr(a_mod),  'Model',       color='C0')
-TD.ax.set_title('Taylor diagram – monthly anomalies'); TD.ax.legend(loc='upper right', fontsize='x-small')
+TD.ax.set_title('Taylor diagram – monthly anomalies'); TD.ax.legend(loc='upper right')
 _save(TD.ax.figure, "taylor_diagram.png")
 
 # ────────────────────────────────────────────────────────────────
@@ -279,7 +329,9 @@ for i, (fld, title, cmap, vmin, vmax) in enumerate([
     data = np.ma.masked_where(~coast_mask2d, fld)
     norm = TwoSlopeNorm(vcenter=0, vmin=vmin, vmax=vmax) if 'Skill' in title else None
     im = ax.pcolormesh(ds_pred.lon, ds_pred.lat, data, cmap=cmap, norm=norm, shading='nearest')
-    ax.set_title(title, fontsize='small'); plt.colorbar(im, ax=ax, shrink=0.75)
+    ax.set_title(title)
+    cbar = plt.colorbar(im, ax=ax, shrink=0.75)
+    cbar.ax.tick_params(labelsize=10)  # match xtick/ytick.labelsize
 fig.suptitle('Spatial skill diagnostics', y=1.04)
 _save(fig, "spatial_skill_maps.png")
 
@@ -301,7 +353,9 @@ for i, (fld, title, cmap, norm) in enumerate([
     _add_bg(ax, zoom=6)
     data = np.ma.masked_where(~coast_mask2d, fld)
     im = ax.pcolormesh(ds_pred.lon, ds_pred.lat, data, cmap=cmap, norm=norm, shading='nearest')
-    ax.set_title(title, fontsize='small'); plt.colorbar(im, ax=ax, shrink=0.75)
+    ax.set_title(title)
+    cbar = plt.colorbar(im, ax=ax, shrink=0.75)
+    cbar.ax.tick_params(labelsize=10)  # match xtick/ytick.labelsize
 fig.suptitle('Spatial mean & bias', y=1.04)
 _save(fig, "spatial_mean_bias_maps.png")
 
@@ -309,33 +363,103 @@ _save(fig, "spatial_mean_bias_maps.png")
 # 6) Hex‑bin scatter (log space)
 # ────────────────────────────────────────────────────────────────
 fig, ax = plt.subplots(figsize=(4,4))
-hb = ax.hexbin(flat(obs_log), flat(pred_log), gridsize=75, mincnt=1, bins='log', cmap='inferno')
-lim = [np.nanmin(hb.get_offsets()), np.nanmax(hb.get_offsets())]
+x = flat(obs_log); y = flat(pred_log)
+sel = np.isfinite(x) & np.isfinite(y)
+x, y = x[sel], y[sel]
+hb = ax.hexbin(x, y, gridsize=75, mincnt=1, bins='log', cmap='inferno')
+lim = [np.nanmin([x.min(), y.min()]), np.nanmax([x.max(), y.max()])]
 ax.plot(lim, lim, 'k--', lw=0.6)
+ax.set_xlim(lim); ax.set_ylim(lim)
 ax.set_xlabel('Observed log‑chl'); ax.set_ylabel('Predicted log‑chl')
 ax.set_title('Obs vs Pred – hex density')
-plt.colorbar(hb, ax=ax, label='log₁₀(count)'), _save(fig, "scatter_hex_log.png")
+cbar = plt.colorbar(hb, ax=ax)
+cbar.set_label('log₁₀(count)')
+cbar.ax.tick_params(labelsize=10)
+_save(fig, "scatter_hex_log.png")
 
-lat_bins = np.arange(30, 43.1, 1.0)         # 1° bands
-rmse_lat = []
+# --- Black & White scatter (log space), manuscript-friendly ---
+def plot_scatter_hex_gray(outdir, name, pred_log, true_log, valid_m):
+    m = np.asarray(valid_m, dtype=bool)
+    x = np.asarray(true_log)[m]
+    y = np.asarray(pred_log)[m]
+    if x.size == 0:
+        return
+
+    fig, ax = plt.subplots(figsize=(3.2, 3.2))
+
+    hb = ax.hexbin(x, y, gridsize=60, bins='log', mincnt=1,
+                   cmap='Greys', linewidths=0.0)
+    hb.set_rasterized(True)
+
+    lo = float(min(x.min(), y.min()))
+    hi = float(max(x.max(), y.max()))
+    ax.plot([lo, hi], [lo, hi], 'k--', lw=0.5)
+    ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
+    ax.set_aspect('equal', adjustable='box')
+    ax.set_xlabel("Obs log_chl"); ax.set_ylabel("Model log_chl")
+    # ax.set_title(f"{name} scatter")
+
+    # colorbar same height as the axes
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.06)
+    cbar = fig.colorbar(hb, cax=cax)
+    cbar.set_label("count")
+
+    fig.tight_layout()
+    fig.savefig(outdir / f"fig_scatter_{name}.png", dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+
+# build the B/W scatter over ALL times
+# build a val mask over the predicted time axis
+time_pd = pd.to_datetime(ds_pred.time.values)
+va_sel = (time_pd >= pd.Timestamp("2016-01-01")) & (time_pd <= pd.Timestamp("2018-12-31"))
+
+plot_scatter_hex_gray(
+    OUTDIR, "val",
+    pred_log.isel(time=va_sel),
+    obs_log.isel(time=va_sel),
+    mask.isel(time=va_sel)
+)
+plot_scatter_hex_gray(OUTDIR, "all", pred_log, obs_log, mask)
+
+
+
+
+# --- RMSE by latitude (compare Model vs Persistence) ---
+lat_bins = np.arange(30, 43.1, 1.0)  # 1° bands
+rows_lat = []
 for lo, hi in zip(lat_bins[:-1], lat_bins[1:]):
     band = (ds_pred.lat >= lo) & (ds_pred.lat < hi)
-    if not band.any(): continue
+    if not band.any():
+        continue
     o = obs_log.where(mask & band).values.flatten()
     p = pred_log.where(mask & band).values.flatten()
-    sel = np.isfinite(o) & np.isfinite(p)
-    rmse_lat.append(dict(lat=f'{lo:.0f}-{hi:.0f}',
-                         rmse=np.sqrt(mean_squared_error(o[sel], p[sel]))))
+    r = pers_log.where(mask & band).values.flatten()
+    sel_p = np.isfinite(o) & np.isfinite(p)
+    sel_r = np.isfinite(o) & np.isfinite(r)
+    rows_lat.append({
+        "lat": f"{lo:.0f}-{hi:.0f}",
+        "rmse_model": _rmse_np(o[sel_p], p[sel_p]),
+        "rmse_pers":  _rmse_np(o[sel_r], r[sel_r])
+    })
 
-df_lat = pd.DataFrame(rmse_lat)
+df_lat = pd.DataFrame(rows_lat)
 df_lat.to_csv(OUTDIR/'rmse_by_lat.csv', index=False)
 
-fig,ax = plt.subplots(figsize=(4,3))
-ax.bar(df_lat.lat, df_lat.rmse)
-ax.set_ylabel('RMSE (log-chl)'); ax.set_xlabel('Latitude band')
-ax.set_title('RMSE by latitude'); ax.tick_params(axis='x', rotation=45)
+# replace the block that bars df_lat["rmse"]
+fig, ax = plt.subplots(figsize=(4,3))
+x = np.arange(len(df_lat))
+w = 0.38
+ax.bar(x - w/2, df_lat["rmse_model"], width=w, label="Model")
+ax.bar(x + w/2, df_lat["rmse_pers"],  width=w, label="Persistence")
+ax.set_xticks(x)
+ax.set_xticklabels(df_lat["lat"], rotation=45, ha="right")
+ax.set_ylabel('RMSE (log-chl)')
+ax.set_xlabel('Latitude')
+ax.set_title('RMSE by latitude')
+ax.legend()
 _save(fig, 'rmse_latitude.png')
-
 
 # lead-time skill curve
 
@@ -362,8 +486,8 @@ plt.plot([8*k for k in leads], rmse, marker='o')
 plt.xlabel("Forecast lead (days)")
 plt.ylabel("RMSE (log chl)")
 plt.title("Lead-time skill curve")
-plt.tight_layout()
-plt.savefig("fig_lead_time_skill.png")
+# plt.tight_layout()
+plt.savefig(OUTDIR / "fig_lead_time_skill.png")
 
 # roc curve
 
@@ -385,38 +509,86 @@ plt.xlabel("False Positive Rate")
 plt.ylabel("True Positive Rate")
 plt.title("ROC curves for bloom ≥ 5 mg m⁻³")
 plt.legend(fontsize="x-small")
-plt.tight_layout()
-plt.savefig("fig_bloom_roc.png")
+# plt.tight_layout()
+plt.savefig(OUTDIR / "fig_bloom_roc.png")
 
-# error vs. observed quartile boxplots
+# --- RMSE per time by observed log‑chl quartile (for Fig 3A) ---
+o_all = obs_log.where(mask).values.flatten()
+o_all = o_all[np.isfinite(o_all)]
+q_edges = np.quantile(o_all, [0.25, 0.5, 0.75])
 
-# compute error DataArray, mask out land/deep
-err_da = (pred_log - obs_log).where(mask)  
-# flatten to 1-D numpy array of only valid points
-err = err_da.values.flatten()
-err = err[~np.isnan(err)]
+rmse_quart = {"<Q1": [], "Q1–Q2": [], "Q2–Q3": [], ">Q3": []}
+for t_idx in range(obs_log.shape[0]):
+    ov = obs_log.isel(time=t_idx).where(mask.isel(time=t_idx)).values
+    pv = pred_log.isel(time=t_idx).where(mask.isel(time=t_idx)).values
+    sel = np.isfinite(ov) & np.isfinite(pv)
+    if not sel.any():
+        for k in rmse_quart: rmse_quart[k].append(np.nan)
+        continue
+    ov, pv = ov[sel], pv[sel]
+    d = np.digitize(ov, q_edges)  # 0..3
+    groups = {"<Q1": (d==0), "Q1–Q2": (d==1), "Q2–Q3": (d==2), ">Q3": (d==3)}
+    for k,gsel in groups.items():
+        rmse_quart[k].append(_rmse_np(ov[gsel], pv[gsel]) if gsel.any() else np.nan)
 
-# mask & flatten obs in the same way as err
-obs_lin_da = np.exp(obs_log).where(mask)      # still a 3-D DataArray
-obs_lin = obs_lin_da.values.flatten()         # turn into 1-D numpy array
-obs_lin = obs_lin[~np.isnan(obs_lin)]         # drop the NaNs
+pd.DataFrame(rmse_quart).to_csv(OUTDIR/"rmse_time_by_logquartile.csv", index=False)
 
-# define quartile edges on obs_lin
-q = np.quantile(obs_lin, [0.25,0.5,0.75])
-bins = np.digitize(obs_lin, q)
-data = [err[bins==i] for i in range(4)]
+def panel_label(ax, text, x=-0.10, y=1.05):
+    ax.text(x, y, text, transform=ax.transAxes, weight="bold", fontsize=12)
 
-plt.figure(figsize=(5,3))
-plt.boxplot(data, labels=[
-    f"<Q1\n(<{q[0]:.2f})",
-    f"Q1–Q2\n({q[0]:.2f}-{q[1]:.2f})",
-    f"Q2–Q3\n({q[1]:.2f}-{q[2]:.2f})",
-    f">Q3\n(>{q[2]:.2f})"
-])
-plt.ylabel("Error (log chl)")
-plt.title("Error by observed-chl quartile")
-plt.tight_layout()
-plt.savefig("fig_error_quartile.png")
+def make_fig3(df_lat, rmse_quart, q_edges, df_month_log, outdir):
+    import numpy as np
+    fig = plt.figure(figsize=(9.5, 6.5), constrained_layout=True)
+    gs  = fig.add_gridspec(2, 2)
+
+    # A) Quartile RMSE (log-space) – distribution over time
+    axA = fig.add_subplot(gs[0, 0])
+    labels = ["<Q1", "Q1–Q2", "Q2–Q3", ">Q3"]
+    data = [np.array(rmse_quart[l]) for l in labels]
+    data = [d[np.isfinite(d)] for d in data]
+    bp = axA.boxplot(data, widths=0.6, patch_artist=True,
+                     medianprops={"linewidth":1.0, "color":"black"})
+    for i, patch in enumerate(bp["boxes"]):
+        patch.set_facecolor("lightgray"); patch.set_alpha(0.7)
+    axA.set_xticklabels([
+        f"<Q1\n(<{q_edges[0]:.2f})",
+        f"Q1–Q2\n({q_edges[0]:.2f}–{q_edges[1]:.2f})",
+        f"Q2–Q3\n({q_edges[1]:.2f}–{q_edges[2]:.2f})",
+        f">Q3\n(>{q_edges[2]:.2f})"
+    ])
+    axA.set_ylabel("RMSE (log‑chl)")
+    axA.set_title("A  RMSE vs observed quartile", loc="left", weight="bold")
+
+    # B) RMSE by latitude (log-space) – Model vs Persistence
+    axB = fig.add_subplot(gs[0, 1])
+    x = np.arange(len(df_lat))
+    width = 0.38
+    axB.bar(x - width/2, df_lat["rmse_model"], width, label="Model")
+    axB.bar(x + width/2, df_lat["rmse_pers"],  width, label="Persistence")
+    axB.set_xticks(x)
+    axB.set_xticklabels(df_lat["lat"], rotation=45, ha="right")
+    axB.set_ylabel("RMSE (log‑chl)")
+    axB.set_title("B  RMSE by latitude", loc="left", weight="bold")
+    axB.legend()
+
+    # C) Monthly RMSE (log-space) – Model vs Persistence, on 2nd row
+    axC = fig.add_subplot(gs[1, 0])
+    axC.plot(df_month_log.index, df_month_log["rmse_log_model"], "-o", markersize=3, label="Model")
+    axC.plot(df_month_log.index, df_month_log["rmse_log_pers"],  "-s", markersize=3, label="Persistence")
+    axC.set_xticks(range(1,13))
+    axC.set_xlabel("Month")
+    axC.set_ylabel("RMSE (log‑chl)")
+    axC.set_title("C  Monthly RMSE (log‑space)", loc="left", weight="bold")
+    axC.legend()
+
+    # D) leave a clean spacer (or future panel)
+    axD = fig.add_subplot(gs[1, 1])
+    axD.axis("off")
+
+    fig.savefig(outdir / "fig3_error_strat_seasonality.png", dpi=300)
+    fig.savefig(outdir / "fig3_error_strat_seasonality.pdf")
+    plt.close(fig)
+
 
 # case-study snapshot maps
 
@@ -447,8 +619,8 @@ for i,k in enumerate(leads,1):
     ax.set_title(title)
     fig.colorbar(im, ax=ax, shrink=0.7)
 fig.suptitle("Case study: bloom forecast vs. observation")
-plt.tight_layout()
-plt.savefig("fig_case_study_maps.png")
+# plt.tight_layout()
+plt.savefig(OUTDIR / "fig_case_study_maps.png")
 
 # hovmoller diagram
 
@@ -476,10 +648,12 @@ pcm1 = ax1.pcolormesh(t, lats, pred_hov.T, shading='nearest')
 ax1.set_title("Model anomaly")
 for ax in (ax0,ax1):
     ax.set_xlabel("Time")
-fig.colorbar(pcm0, ax=[ax0,ax1], orientation='horizontal',
-             pad=0.2, label="Chl anomaly (mg m⁻³)")
-plt.tight_layout()
-plt.savefig("fig_hovmoller.png")
+cbar = fig.colorbar(pcm0, ax=[ax0,ax1], orientation='horizontal',
+                    pad=0.2, label="Chl anomaly (mg m⁻³)")
+cbar.ax.tick_params(labelsize=10)
+# plt.tight_layout()
+plt.savefig(OUTDIR / "fig_hovmoller.png")
+make_fig3(df_lat, rmse_quart, q_edges, df_month_log, OUTDIR)
 
 
 print("\n✓ All diagnostics & figures written to", OUTDIR)
