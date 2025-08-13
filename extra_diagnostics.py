@@ -66,6 +66,14 @@ OUT_ROOT = ROOT / "Diagnostics_Combo_New"; OUT_ROOT.mkdir(exist_ok=True)
 
 plt.style.use("seaborn-v0_8-whitegrid")
 
+
+mpl.rcParams.update({
+    "font.family": "DejaVu Sans",
+    "font.sans-serif": ["DejaVu Sans", "Arial", "Helvetica", "Liberation Sans"],
+    "mathtext.fontset": "dejavusans",
+    "mathtext.default": "regular",
+})
+
 # ── predictor lists (same as freezer) ─────────────────────────────────
 SATELLITE = ["log_chl", "Kd_490", "nflh"]
 METEO     = ["u10","v10","wind_speed","tau_mag","avg_sdswrf","tp","t2m","d2m"]
