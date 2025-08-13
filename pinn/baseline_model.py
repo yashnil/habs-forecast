@@ -273,5 +273,5 @@ if __name__ == "__main__":
     main()
 
 '''
-Vanilla ConvLSTM Results (baseline_model.py): FINAL RMSE_log: {'train': 0.7634156236815086, 'val': 0.6924955406655642, 'test': 0.7961275660619779}
+Vanilla ConvLSTM Results (baseline_model.py): FINAL RMSE_log: {'train': 0.7509010979783992, 'val': 0.7094283528116662, 'test': 0.8051987725618648}
 '''
