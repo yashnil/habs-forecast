@@ -1,0 +1,21 @@
+feature_raw,feature_pretty,mean_abs_shap
+Kd_490,Water clarity Kd$_{490}$ (m$^{-1}$),0.35668808170062155
+dist_river_km,Distance to river (km),0.2480076784068101
+river_rank,River influence index (unitless),0.23355315148163464
+thetao,Sea surface temperature ($^\circ$C),0.1399643530647422
+avg_sdswrf,Downward shortwave (W m$^{-2}$),0.07201061761634177
+so,Sea surface salinity (psu),0.04274165116869377
+t2m,Air temperature 2 m (K),0.03341505212241675
+zos,Sea surface height (m),0.033340582626818265
+uo,Surface current U (m s$^{-1}$),0.029616600872059858
+nflh,Fluorescence nFLH (mW cm$^{-2}$ $\mu$m$^{-1}$ sr$^{-1}$),0.017357220932511557
+v10,10 m wind V (m s$^{-1}$),0.014270786192685512
+vo,Surface current V (m s$^{-1}$),0.014219157085492965
+d2m,Dew point 2 m (K),0.0123076176511115
+u10,10 m wind U (m s$^{-1}$),0.011839908686657042
+tau_mag,Wind stress |$\tau$| (N m$^{-2}$),0.011372388201920963
+tp,Total precipitation (m),0.009681821947173113
+wind_speed,Wind speed (m s$^{-1}$),0.008823069092709798
+cur_speed,Current speed (m s$^{-1}$),0.00811572039320959
+ssh_grad_mag,SSH gradient |∇SSH| (m m$^{-1}$),0.007848459099281715
+cur_div,Horizontal divergence (s$^{-1}$),0.007805804956805279

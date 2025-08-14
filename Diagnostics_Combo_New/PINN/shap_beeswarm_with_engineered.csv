@@ -1,0 +1,21 @@
+feature_raw,feature_pretty,mean_abs_shap
+chl_roll40d_mean,Chl 40 d mean (mg m${-3}$),0.2630625072501399
+chl_roll24d_mean,Chl 24 d mean (mg m${-3}$),0.2610011981739255
+thetao,Sea surface temperature ($^\circ$C),0.13347901483962202
+dist_river_km,Distance to river (km),0.10814979040203025
+river_rank,River influence index (unitless),0.10327453645322156
+Kd_490,Water clarity Kd$_{490}$ (m$^{-1}$),0.08596183518220472
+chl_anom_monthly,Chlorophyll anomaly (mg m${-3}$),0.08209824279155022
+so,Sea surface salinity (psu),0.06402724625330211
+avg_sdswrf,Downward shortwave (W m$^{-2}$),0.04845847211907112
+t2m,Air temperature 2 m (K),0.023897117007920153
+zos,Sea surface height (m),0.016421370943178047
+chl_roll40d_std,Chl 40 d std (mg m${-3}$),0.014555687760643185
+uo,Surface current U (m s$^{-1}$),0.013433948672523555
+u10,10 m wind U (m s$^{-1}$),0.013257620874449953
+nflh,Fluorescence nFLH (mW cm$^{-2}$ $\mu$m$^{-1}$ sr$^{-1}$),0.011679571036969863
+v10,10 m wind V (m s$^{-1}$),0.011372383990573517
+d2m,Dew point 2 m (K),0.008719092732694382
+chl_roll24d_std,Chl 24 d std (mg m${-3}$),0.00851378991698578
+tp,Total precipitation (m),0.008422582887709144
+vo,Surface current V (m s$^{-1}$),0.006958289897385578
