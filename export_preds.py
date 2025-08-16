@@ -55,16 +55,16 @@ from torch import nn
 from pinn.baseline_model import ConvLSTM          # <-- replace ConvLSTM if your class has a different name
 # ===== USE THESE with your repo layout =====
 # ConvLSTM lives in testing.py
-from pinn.testing import ConvLSTM  # class name is ConvLSTM in your file
+from pinn.pinn_model import ConvLSTM  # class name is ConvLSTM in your file
 
 # TFT lives in tft_train.py. If you have a class, import it;
 # if you only have a builder, import that (both shown — the code below handles either).
 try:
-    from tft.tft_train import TFT  # class (preferred if it exists)
+    from tft.tft_model import TFT  # class (preferred if it exists)
 except Exception:
     TFT = None
 try:
-    from tft.tft_train import build_tft_for_infer  # builder (fallback)
+    from tft.tft_model import build_tft_for_infer  # builder (fallback)
 except Exception:
     build_tft_for_infer = None
 # ==========================================
