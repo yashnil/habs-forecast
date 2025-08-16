@@ -1,92 +1,185 @@
-California Coastal HABs ML Project
+```markdown
+# 🌊 Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System
 
-Project Goal:
+## 🌲 Overview  
 
-Develop and compare machine learning and physics-augmented models to forecast coastal chlorophyll-a (Chl-a) concentrations and harmful algal bloom (HAB) events along the California coast using multi-decadal satellite and reanalysis datasets.
+This project develops a physics-guided deep learning framework for forecasting **harmful algal blooms (HABs)** along the California Current System. HABs, driven by climate variability and nutrient enrichment, threaten ecosystems, fisheries, and public health. Our models integrate **satellite ocean color, ocean reanalysis, and atmospheric predictors** to test whether adding **physical transport constraints** improves bloom prediction.
 
-Hypothesis:
+We compare three architectures:  
+- **ConvLSTM** – convolutional long short-term memory network  
+- **TFT** – Temporal Fusion Transformer  
+- **PINN** – physics-informed ConvLSTM enforcing 2D advection–diffusion dynamics  
 
-H3 – Physics-augmented loss curbs spatial spread error: Imposing advection-diffusion residuals (winds + currents) in the loss will reduce down-coast displacement and false bloom area compared to purely data-driven spatiotemporal models.
+The central question: *Do physics-guided neural networks improve coastal bloom forecast skill and spatial fidelity compared to purely statistical models?*  
 
-Comprehensive List of Steps:
+---
 
-Data Acquisition & Overview
-• Obtain MODIS Level-3 8-day composite chlorophyll-a data (2003–mid-2021) at ~4 km resolution, clipped to a coastal stripe (lat × lon = 240 × 240).
-• Acquire ancillary reanalysis variables: Kd_490, nflh, precipitation, shortwave radiation, 10 m winds (u10, v10), 2 m temperature (t2m, d2m), salinity (so), ocean currents (uo, vo), sea surface height (zos), wind stress curl (curl_uv), and distance-to-river metric.
+## 📘 Abstract  
 
-Data Audit & Harmonization (T0)
-• Load NetCDF files with xarray; apply coastal mask and generate QC flags.
-• Convert time units, ensure consistent physical units, and verify NaN-free coverage within stripe.
-• Compute monthly climatologies and anomalies for all variables.
+Harmful algal blooms (HABs) are intensifying along the California coast, challenging forecasting systems that must resolve complex physical–biogeochemical interactions. We present a deep learning framework for **chlorophyll-a forecasting** using ConvLSTM, TFT, and a physics-informed ConvLSTM (PINN). The models are trained on an 18.6-year (2003–2021) nearshore dataset at 4 km resolution with engineered hydroclimatic and static predictors.  
 
-Feature Engineering & Stratification
-• Derive features: rolling means & standard deviations (8-, 24-, 40-day), lagged drivers (1–3 steps), wind stress components, Ekman upwelling index, current speed & vorticity, SSH gradient magnitude, river influence rank.
-• Target engineering: compute linear chlorophyll (chl_lin = exp(log_chl) – floor) and retain log_chl as regression target; define bloom intensity tiers based on pooled seasonal quantile distribution (<50%, 50–75%, 75–95%, >95%).
+**Key Findings:**  
+* All models achieve ~0.80 RMSE and >0.77 correlation in log chlorophyll.  
+* The PINN modestly improves spatial fidelity (relative scale error, spectral energy ratios) and convergence stability.  
+* TFT lags in spatial generalization, showing stronger regional biases.  
+* Case studies (Monterey Bay 2021, Navarro Lagoon 2020) show convolutional–recurrent models outperform transformers in reproducing bloom footprints.  
+* Predictor attribution highlights **Kd490, river distance/influence, SST, and shortwave radiation** as dominant drivers.  
 
-Spatiotemporal Split Design
-• Temporal blocking: Train (2003–2015), Validation (2016–2018), Test (2019–2021); optional sliding k-fold windows.
-• Spatial blocking: Cluster coastal cells into ~5 latitudinal bands or k-means on (lat, lon); leave one band out per spatial fold.
-• Combined stratified folds: Cartesian product of temporal × spatial blocks; maintain class balance across bloom tiers.
-• Define production splits: STRICT_OOS (latest years + northern band), TEMP_ONLY, SPACE_ONLY.
+This hybrid framework balances statistical accuracy and physical interpretability, offering a scalable approach for operational coastal bloom forecasting.  
 
-Baseline & Tabular ML Models
-• Naïve baselines: persistence (ŷ(t+1)=y(t)), monthly climatology, linear/ridge regression.
-• Tabular models: XGBoost and LightGBM on pixelwise feature vectors; compute SHAP feature importances.
+---
 
-Deep Spatiotemporal Models (T1–T2)
-• ConvLSTM v0: single-scale nowcast (0-lead) and short-lead (8-day) forecast; benchmark skill and baseline attribution.
-• ConvLSTM v1+: add multi-scale attention, residual connections, multi-lead seq2seq training.
-• Temporal Fusion Transformer (TFT): flatten coastal stripe to pixel sequence or patch embeddings; multi-horizon probabilistic outputs with gating and variable selection.
+## 📁 Repository Structure  
 
-Physics-Augmented & Hybrid Models (T4)
-• Embed advection–diffusion PDE residuals (winds, currents, learned κ) into training loss (PINN framework).
-• Enforce no-flux boundary conditions; compare spread fidelity vs. data-only models.
+```
 
-Driver Ablation & Transfer Skill (T5)
-• Remove groups of drivers (atmospheric, oceanic, riverine) to assess individual contributions.
-• Test transfer skill by training/validation across sub-regions (north ↔ south).
+habs-forecast/
+│
+├── convLSTM/               # ConvLSTM model + diagnostics
+│   ├── baseline\_model.py
+│   ├── diagnostics.py
+│   └── spatial\_bias.py
+│
+├── pinn/                   # Physics-informed ConvLSTM
+│   ├── pinn\_model.py
+│   ├── diagnostics.py
+│   └── spatial\_bias.py
+│
+├── tft/                    # Temporal Fusion Transformer
+│   ├── tft\_model.py
+│   ├── diagnostics.py
+│   └── spatial\_bias.py
+│
+├── Diagnostics\_ConvLSTM/   # Predicted fields + plots
+├── Diagnostics\_PINN/
+├── Diagnostics\_TFT/
+│
+├── monterey.py             # Case study: Monterey Bay HAB (2021)
+├── navarro.py              # Case study: Navarro Lagoon HAB (2020)
+│
+├── predictor\_importance\_pdp.py   # PDP + SHAP analyses
+├── extra\_diagnostics.py          # SHAP + feature importance plots
+├── mech\_figure.py                # PINN robustness tests
+├── lead\_skill\_summary.py         # Lead time forecast skill
 
-Event Detection & Classification (T3)
-• Convert continuous Chl forecasts to categorical bloom tiers; evaluate hit/miss rates, probability of detection (POD), false alarm ratio (FAR), and critical success index (CSI).
+```
 
-Evaluation Metrics & Diagnostics
-• Global metrics: RMSE, MAE, Bias, Pearson r, Spearman ρ, NSE, KGE in log and linear space.
-• Stratified metrics: RMSE by Chl tier, monthly RMSE curves.
-• Spatial diagnostics: skill maps (RMSE & % improvement), mean & bias maps, RMSE by latitude bands.
-• Temporal diagnostics: domain-mean time series, lead-time skill curves, ROC curves for bloom thresholds.
-• Additional analyses: Taylor diagrams of monthly anomalies, hexbin scatter (obs vs pred), error boxplots by observed quartiles, Hovmöller diagrams, case-study snapshot maps.
+---
 
-Figure Package for Manuscript
-• Study region & data sources map
-• Data flow diagram
-• Chlorophyll distribution CDF with strata thresholds
-• Blocked CV schematic
-• Skill comparison barplots (baselines, ML, hybrid)
-• SHAP variable importance charts
-• Reliability/calibration curves for probabilistic outputs
-• Case study maps for major bloom events (e.g., 2015 warm blob, 2016 El Niño)
+## 🧪 Experiments Overview  
 
-Reproducibility & Data Management
-• Versioned data freeze (v1.0) with SHA hashes
-• Conda environment YAML with exact package versions
-• Metadata JSON (variable names, units, fill values, strata edges)
-• Train/Val/Test index files and fold definitions
-• Model checkpoints and configuration files
-• End-to-end reproducible pipeline script (Makefile or Snakemake)
+| Model | Key Purpose |
+|-------|-------------|
+| **ConvLSTM** | Data-driven spatiotemporal benchmark |
+| **TFT** | Attention-based probabilistic forecasting |
+| **PINN** | Physics-informed ConvLSTM with advection–diffusion constraint |
 
-Computational Considerations
-• Chunked data loading with Dask; mixed precision training
-• Batch sampling strategies: patch mode vs stripe-flatten mode
-• Class-balanced queue for rare-event sampling
+---
 
-Risk Mitigation & Future Extensions
-• Address data gaps: track valid coverage and drop low-coverage frames
-• Handle floor bias: censor modeling or mask low-level signals
-• Plan extensions: super-resolution downscaling, multi-sensor fusion, species-specific risk layers, operational dashboard
+## 📊 Evaluation Metrics  
 
-Novelty:
+* **RMSE, MAE, KGE** (continuous accuracy)  
+* **Spearman’s ρ, Pearson’s r** (correlation structure)  
+* **Bloom detection skill:** hit rate, false alarm ratio, F1, ROC-AUC, IoU  
+* **Spatial fidelity:** relative scale error, spectral energy ratio, coastal RMSE profiles  
+* **Physics diagnostics (PINN):** physics residuals, gradient norm ratios  
+* **Predictor attribution:** SHAP values, PDPs, scatterplots  
 
-Embedding a simplified 2-D advection-diffusion PDE into the model’s loss function (a PINN-style hybrid) to force the network to honor realistic transport physics, then comparing its spatial‐forecast skill against purely data-driven ConvLSTM/TFT approaches.
+---
 
-End of Project Outline
+## 📡 Data Sources  
 
+| Dataset | Variables | Relevance |
+|---------|-----------|------------|
+| **MODIS-Aqua (NASA Earthdata)** | Chlorophyll-a (ln), Kd490, nFLH, SST | Biomass proxy, optical/light drivers |
+| **ERA5 (ECMWF)** | Wind (u, v, τ), radiation, precipitation, T2m, dewpoint | Meteorological forcing |
+| **CMEMS GLORYS** | Currents, SSH, vorticity, salinity | Transport, circulation, retention |
+| **Static features** | River distance, coastal mask, latitude | Nutrient influence, spatial context |
+
+---
+
+## 🔍 Key Insights  
+
+* **PINN improves realism:** modest gains in RMSE but stronger fidelity in bloom structure.  
+* **ConvLSTM competitive:** achieves similar overall accuracy without physics, but less robust in structure.  
+* **TFT underperforms:** struggles with sparse coastal grids.  
+* **Drivers:** Kd490, river influence, SST, and radiation dominate predictor rankings.  
+* **Skill ceiling:** ~0.80 RMSE in log chlorophyll; limited by coarse drivers (4 km, 8-day composites).  
+
+---
+
+## 💻 Getting Started  
+
+### 📦 Dependencies  
+
+Install required packages:  
+```
+
+pip install -r requirements.txt
+
+```
+
+Key libraries:  
+* `tensorflow`, `keras`, `scikit-learn`, `xgboost`  
+* `numpy`, `pandas`, `scipy`, `matplotlib`, `seaborn`  
+* `xarray`, `rasterio`, `geopandas`, `cartopy`, `netCDF4`  
+
+### ▶️ Running Models  
+
+Activate environment and run:  
+```
+
+micromamba activate habs
+cd \~/Desktop/habs-forecast
+python convLSTM/baseline\_model.py
+python pinn/pinn\_model.py
+python tft/tft\_model.py
+
+```
+
+### 📈 Diagnostics and Plots  
+
+```
+
+python convLSTM/diagnostics.py
+python pinn/spatial\_bias.py
+python predictor\_importance\_pdp.py
+python extra\_diagnostics.py
+python mech\_figure.py
+python lead\_skill\_summary.py
+python monterey.py
+python navarro.py
+
+```
+
+---
+
+## 📑 Paper and Citation  
+
+If you use this work, please cite:  
+> Mohanty, Y. (2025). *Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System*. (In Review).  
+
+---
+
+## 🧠 Future Work  
+
+* Higher-resolution inputs (hyperspectral ocean color, ROMS forecasts)  
+* Ensemble probabilistic forecasting for longer leads (>2 weeks)  
+* Multi-task learning for coupled biogeochemical variables (nitrate, DO)  
+* Transferability tests in other upwelling systems (e.g., Humboldt, Benguela)  
+
+---
+
+## 📬 Contact  
+
+Questions or feedback? Reach out to:  
+
+- 📧 yashnilmohanty@gmail.com  
+- 🔗 GitHub: yashnil  
+
+---
+
+## 🏷 License  
+
+This project is licensed under the MIT License.  
+```
