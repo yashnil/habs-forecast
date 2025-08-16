@@ -1,4 +1,3 @@
-```markdown
 # 🌊 Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System
 
 ## 🌲 Overview  
