@@ -52,9 +52,9 @@ import torch
 from torch import nn
 
 # ===== CHANGE THESE to match your modules =====
-from pinn.baseline_model import ConvLSTM          # <-- replace ConvLSTM if your class has a different name
+from pinn.vanilla_model import ConvLSTM          # <-- vanilla ConvLSTM (no physics)
 # ===== USE THESE with your repo layout =====
-# ConvLSTM lives in testing.py
+# PINN model with physics constraints
 from pinn.pinn_model import ConvLSTM  # class name is ConvLSTM in your file
 
 # TFT lives in tft_train.py. If you have a class, import it;

@@ -484,7 +484,11 @@ if __name__ == "__main__":
     mixed_prec = (not args.no_mixed_prec) and device.type == "cuda"
 
     print("[diag] loading data …", flush=True)
-    ds = xr.open_dataset(FREEZE, chunks={"time": -1})
+    try:
+        ds = xr.open_dataset(FREEZE, chunks={"time": -1}, engine="netcdf4")
+    except (ImportError, ValueError):
+        # Fallback if dask not available
+        ds = xr.open_dataset(FREEZE, engine="netcdf4").load()
     ds.load()  # pull into RAM once
 
     pixel_ok = build_pixel_ok_if_needed(ds)

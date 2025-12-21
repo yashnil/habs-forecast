@@ -133,7 +133,16 @@ class PatchDS(Dataset):
 DEF_MASK_DEPTH = 10.0  # metres; mask bays & very shallow cells
 
 def make_loaders():
-    ds = xr.open_dataset(FREEZE).load()
+    # Open dataset with explicit engine to avoid backend detection issues
+    try:
+        ds = xr.open_dataset(FREEZE, engine='netcdf4').load()
+    except (ValueError, ImportError, OSError):
+        # Fallback: try h5netcdf or let xarray auto-detect
+        try:
+            ds = xr.open_dataset(FREEZE, engine='h5netcdf').load()
+        except (ValueError, ImportError, OSError):
+            # Last resort: let xarray choose (may work if backend is available)
+            ds = xr.open_dataset(FREEZE).load()
 
     # ➡️ NEW: synthesise linear-space chl if missing
     if "chl_lin" not in ds:

@@ -1,0 +1,251 @@
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/miniforge3/lib/python3.12/site-packages/torch/utils/data/dataloader.py:683: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+Using device: cpu
+
+======================================================================
+IMPUTATION SENSITIVITY ANALYSIS
+======================================================================
+Testing methods: ['original', 'zero', 'mean', 'median', 'forward_fill', 'climatology', 'interpolate']
+Data: /Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc
+Model: /Users/yashnilmohanty/HAB_Models/convLSTM_best.pt
+
+
+──────────────────────────────────────────────────────────────────────
+Testing imputation method: original
+──────────────────────────────────────────────────────────────────────
+  Evaluating on train/val/test splits...
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/imputation_sensitivity.py:174: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=MIXED_PREC):
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/miniforge3/lib/python3.12/site-packages/torch/utils/data/dataloader.py:683: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  Results:
+    Train RMSE: 0.7509
+    Val RMSE:   0.6990
+    Test RMSE:  0.8012
+  ✓ Saved progress to paper_results/imputation/imputation_results.csv
+
+──────────────────────────────────────────────────────────────────────
+Testing imputation method: zero
+──────────────────────────────────────────────────────────────────────
+  Evaluating on train/val/test splits...
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/imputation_sensitivity.py:174: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=MIXED_PREC):
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/miniforge3/lib/python3.12/site-packages/torch/utils/data/dataloader.py:683: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  Results:
+    Train RMSE: 0.9540
+    Val RMSE:   0.9283
+    Test RMSE:  1.0643
+  ✓ Saved progress to paper_results/imputation/imputation_results.csv
+
+──────────────────────────────────────────────────────────────────────
+Testing imputation method: mean
+──────────────────────────────────────────────────────────────────────
+  Evaluating on train/val/test splits...
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/imputation_sensitivity.py:174: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=MIXED_PREC):
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/miniforge3/lib/python3.12/site-packages/torch/utils/data/dataloader.py:683: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  Results:
+    Train RMSE: 0.9629
+    Val RMSE:   0.8848
+    Test RMSE:  0.9739
+  ✓ Saved progress to paper_results/imputation/imputation_results.csv
+
+──────────────────────────────────────────────────────────────────────
+Testing imputation method: median
+──────────────────────────────────────────────────────────────────────
+  Evaluating on train/val/test splits...
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/imputation_sensitivity.py:174: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=MIXED_PREC):
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/miniforge3/lib/python3.12/site-packages/torch/utils/data/dataloader.py:683: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  Results:
+    Train RMSE: 0.9357
+    Val RMSE:   0.8772
+    Test RMSE:  0.9895
+  ✓ Saved progress to paper_results/imputation/imputation_results.csv
+
+──────────────────────────────────────────────────────────────────────
+Testing imputation method: forward_fill
+──────────────────────────────────────────────────────────────────────
+  Evaluating on train/val/test splits...
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/imputation_sensitivity.py:174: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=MIXED_PREC):
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/miniforge3/lib/python3.12/site-packages/torch/utils/data/dataloader.py:683: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  Results:
+    Train RMSE: 0.9540
+    Val RMSE:   0.9283
+    Test RMSE:  1.0643
+  ✓ Saved progress to paper_results/imputation/imputation_results.csv
+
+──────────────────────────────────────────────────────────────────────
+Testing imputation method: climatology
+──────────────────────────────────────────────────────────────────────
+  Evaluating on train/val/test splits...
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/imputation_sensitivity.py:174: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=MIXED_PREC):
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/miniforge3/lib/python3.12/site-packages/torch/utils/data/dataloader.py:683: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  Results:
+    Train RMSE: 0.8646
+    Val RMSE:   0.8239
+    Test RMSE:  0.8712
+  ✓ Saved progress to paper_results/imputation/imputation_results.csv
+
+──────────────────────────────────────────────────────────────────────
+Testing imputation method: interpolate
+──────────────────────────────────────────────────────────────────────
+  Evaluating on train/val/test splits...
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/imputation_sensitivity.py:174: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=MIXED_PREC):
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+/Users/yashnilmohanty/Desktop/habs-forecast/pinn/pinn_model.py:46: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  SCALER    = GradScaler(enabled=MIXED_PREC)
+Using device: cpu
+Using device: cpu
+  Results:
+    Train RMSE: 0.9540
+    Val RMSE:   0.9283
+    Test RMSE:  1.0643
+  ✓ Saved progress to paper_results/imputation/imputation_results.csv
+
+Results saved to: paper_results/imputation/imputation_results.csv
+
+Saved plot: paper_results/imputation/imputation_sensitivity.png
+
+======================================================================
+Summary:
+======================================================================
+      method  train_rmse  train_mae  train_corr  val_rmse  val_mae  val_corr  test_rmse  test_mae  test_corr  n_missing_after  n_missing_before
+    original    0.750862   0.561831    0.773865  0.699031 0.516946  0.787977   0.801249  0.602486   0.732985       1288389321        1288389321
+        zero    0.954031   0.386586    0.773120  0.928283 0.377383  0.787584   1.064338  0.398122   0.799591                0        1288389321
+        mean    0.962880   0.333169    0.752738  0.884848 0.315825  0.732390   0.973917  0.326869   0.737955                0        1288389321
+      median    0.935682   0.206409    0.756571  0.877166 0.191725  0.750982   0.989549  0.206408   0.756071                0        1288389321
+forward_fill    0.954031   0.386586    0.773120  0.928283 0.377383  0.787584   1.064338  0.398122   0.799591                0        1288389321
+ climatology    0.864630   0.614858    0.829737  0.823895 0.597740  0.826338   0.871245  0.613237   0.826486                0        1288389321
+ interpolate    0.954031   0.386586    0.773120  0.928283 0.377383  0.787584   1.064338  0.398122   0.799591                0        1288389321
