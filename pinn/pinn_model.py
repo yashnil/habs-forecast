@@ -18,6 +18,7 @@ run instructions:
 python pinn/testing.py --epochs 40 --batch 16
 """
 from __future__ import annotations
+import os
 import math, random, json, pathlib, numpy as np, xarray as xr
 import torch, torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
@@ -28,9 +29,8 @@ import torch.nn.functional as F
 # ------------------------------------------------------------------ #
 # CONFIG
 # ------------------------------------------------------------------ #
-# FREEZE   = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc")
-
-FREEZE   = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc")
+DATA_ROOT = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
+FREEZE   = pathlib.Path(os.environ.get("HABS_FREEZE", DATA_ROOT / "Data/Derived/HAB_convLSTM_core_v1_clean.nc")).expanduser()
 SEQ       = 6        # ← 48 day history (was 4)
 LEAD_IDX  = 1        # forecast +8 d
 PATCH     = 64
@@ -44,7 +44,7 @@ MIXED_PREC= torch.cuda.is_available()
 DEVICE    = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {DEVICE}")
 SCALER    = GradScaler(enabled=MIXED_PREC)
-OUT_DIR = pathlib.Path.home() / "HAB_Models"       # ~/HAB_Models
+OUT_DIR = pathlib.Path(os.environ.get("HABS_MODEL_DIR", "~/HAB_Models")).expanduser()   # $HABS_MODEL_DIR (default ~/HAB_Models)
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 _FLOOR = 0.056616   # detection floor used when log_chl was created
 

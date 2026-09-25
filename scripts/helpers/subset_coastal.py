@@ -16,6 +16,7 @@ Output:
 """
 
 from __future__ import annotations
+import os
 import pathlib
 import numpy as np
 import xarray as xr
@@ -24,7 +25,7 @@ import netCDF4
 # ------------------------------------------------------------------
 # paths
 # ------------------------------------------------------------------
-ROOT = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research")
+ROOT = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
 FIN  = ROOT / "Data" / "Finalized"
 
 SRC = FIN / "HAB_master_8day_4km_coastal.nc"

@@ -22,6 +22,7 @@ Usage:
     python pinn/run_paper_experiments.py --step figures
 """
 from __future__ import annotations
+import os
 import argparse, json, pathlib, subprocess, sys
 
 # Add parent directory to path for imports
@@ -119,7 +120,7 @@ def run_imputation_sensitivity():
     imputation_dir.mkdir(exist_ok=True)
     
     # Check if model exists
-    model_path = pathlib.Path.home() / "HAB_Models" / "convLSTM_best.pt"
+    model_path = pathlib.Path(os.environ.get("HABS_MODEL_DIR", "~/HAB_Models")).expanduser() / "convLSTM_best.pt"
     if not model_path.exists():
         print(f"⚠ Warning: Model not found at {model_path}")
         print("  Skipping imputation sensitivity (need trained model first)")

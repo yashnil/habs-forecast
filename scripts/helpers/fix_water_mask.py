@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
+import os
 import xarray as xr
 import numpy as np
 import pathlib
 
-# ─── 0) absolute paths ───────────────────────────────────────────
-in_nc   = "/Users/yashnilmohanty/Desktop/HABs_Research/Processed/HAB_cube_2016_2021.nc"
-out_nc  = "/Users/yashnilmohanty/Desktop/HABs_Research/Processed/HAB_cube_2016_2021_fixed.nc"
+# ─── 0) paths ────────────────────────────────────────────────────
+PROCESSED = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser() / "Processed"
+in_nc   = str(PROCESSED / "HAB_cube_2016_2021.nc")
+out_nc  = str(PROCESSED / "HAB_cube_2016_2021_fixed.nc")
 
 # ─── 1) load the original root‑group data ─────────────────────────
 ds = xr.open_dataset(in_nc, chunks={"time":50})

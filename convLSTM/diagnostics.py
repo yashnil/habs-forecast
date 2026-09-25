@@ -17,8 +17,8 @@ Key guarantees
 Run example
 -----------
 python convLSTM/03_diagnostics.py \
-  --freeze "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
-  --ckpt   "/Users/yashnilmohanty/HAB_Models/vanilla_best.pt" \
+  --freeze "$HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
+  --ckpt   "~/HAB_Models/vanilla_best.pt" \
   --out    "New_Diagnostics" \
   --seq    6 \
   --lead   1 \

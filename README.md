@@ -34,41 +34,68 @@ This hybrid framework balances statistical accuracy and physical interpretabilit
 ## 📁 Repository Structure  
 
 ```
-
 habs-forecast/
+├── convLSTM/                  # ConvLSTM baseline
+│   ├── prepare_data.py            # Builds the data-freeze NetCDF (HAB_convLSTM_core_v1_clean.nc)
+│   ├── scrub_outliers.py          # 3×3 median outlier replacement
+│   ├── baseline_model.py          # Training
+│   ├── diagnostics.py             # Metrics, skill maps, predicted fields
+│   └── spatial_bias.py
 │
-├── convLSTM/               # ConvLSTM model + diagnostics
-│   ├── baseline\_model.py
+├── pinn/                      # Physics-informed ConvLSTM
+│   ├── pinn_model.py              # Main PINN model (optimal: λ=5.0, κ=100)
+│   ├── vanilla_model.py           # Baseline ConvLSTM (no physics)
+│   ├── pinn_model_uncertainty.py  # PINN with uncertainty quantification
+│   ├── inference_uncertainty.py   # Uncertainty quantification inference
+│   ├── ablation_studies.py        # Hyperparameter sensitivity (λ, κ)
+│   ├── imputation_sensitivity.py  # Data gap robustness analysis
+│   ├── run_paper_experiments.py   # Runs the reviewer-response experiments end to end
+│   ├── compile_paper_results.py   # Collects results into one summary
 │   ├── diagnostics.py
-│   └── spatial\_bias.py
+│   ├── spatial_bias.py
+│   └── *.md                       # ABLATION / UNCERTAINTY / PAPER_WORKFLOW / QUICK_START_PAPER guides
 │
-├── pinn/                   # Physics-informed ConvLSTM
-│   ├── pinn\_model.py          # Main PINN model (optimal: λ=5.0, κ=100)
-│   ├── vanilla\_model.py       # Baseline ConvLSTM (no physics)
-│   ├── pinn\_model\_uncertainty.py  # PINN with uncertainty quantification
-│   ├── ablation\_studies.py    # Hyperparameter sensitivity (λ, κ)
-│   ├── imputation\_sensitivity.py  # Data gap robustness analysis
+├── tft/                       # Temporal Fusion Transformer
+│   ├── tft_model.py
 │   ├── diagnostics.py
-│   ├── spatial\_bias.py
-│   └── inference\_uncertainty.py   # Uncertainty quantification inference
+│   └── spatial_bias.py
 │
-├── tft/                    # Temporal Fusion Transformer
-│   ├── tft\_model.py
-│   ├── diagnostics.py
-│   └── spatial\_bias.py
+├── new_ds/                    # Dataset construction: regrid MODIS / ERA5 / CMEMS to the 4 km MODIS grid
+├── scripts/
+│   ├── XGB/                       # XGBoost tabular baseline (train, tune, CV, diagnostics)
+│   ├── helpers/                   # Masking, imputation, QC and sanity-check utilities
+│   └── prep_hab_cube.py
+├── config/data_freeze_v1.yaml # Data-freeze configuration
+├── config.yaml                # XGBoost / tabular pipeline config
 │
-├── Diagnostics\_ConvLSTM/   # Predicted fields + plots
-├── Diagnostics\_PINN/
-├── Diagnostics\_TFT/
+├── Diagnostics_ConvLSTM/      # Predicted fields, metrics CSVs, figures per model
+├── Diagnostics_PINN/
+├── Diagnostics_PINN_Optimized/    # PINN with λ=5.0, κ=100
+├── Diagnostics_TFT/
+├── Models/                    # XGBoost artifacts, ConvLSTM checkpoint, Optuna studies
+├── runs/pinn_best.pt          # PINN checkpoint
+├── paper_results/             # Ablation (λ, κ) and imputation-sensitivity CSVs + figures
 │
-├── monterey.py             # Case study: Monterey Bay HAB (2021)
-├── navarro.py              # Case study: Navarro Lagoon HAB (2020)
+├── export_preds.py            # Inference helpers for case studies (ConvLSTM / TFT / PINN)
+├── case_studies.py            # Multi-panel case-study figures
+├── monterey.py                # Case study: Monterey Bay HAB (2021)
+├── navarro.py                 # Case study: Navarro Lagoon HAB (2020)
+├── background.py              # Individual case-study analysis
+├── study_domain.py            # Figure 1: study domain + alongshore climatology
+├── region_overviews.py        # Monterey / Navarro overview maps
+├── predictor_importance_pdp.py    # PDP + SHAP analyses
+├── extra_diagnostics.py       # SHAP + feature importance plots
+├── mech_figure.py             # PINN robustness tests
+├── lead_skill_summary.py      # Lead time forecast skill
+├── calibration.py             # Calibration diagnostics
+├── RUN_DIAGNOSTICS.sh         # Diagnostics for the optimized PINN
 │
-├── predictor\_importance\_pdp.py   # PDP + SHAP analyses
-├── extra\_diagnostics.py          # SHAP + feature importance plots
-├── mech\_figure.py                # PINN robustness tests
-├── lead\_skill\_summary.py         # Lead time forecast skill
-
+├── dashboard/                 # Streamlit decision-support dashboard (see dashboard/README.md)
+├── coastwatch-web/            # Next.js + Mapbox web front end (see coastwatch-web/README.md)
+│
+├── PAPER_READY_SUMMARY.md     # Reviewer-response status and results
+├── PAPER_STATUS_REPORT.md
+└── GOALS.md                   # Product goals for the fisheries decision platform
 ```
 
 ---
@@ -123,51 +150,81 @@ habs-forecast/
 
 ### 📦 Dependencies  
 
-Install required packages:  
+The research pipeline was developed with Python 3.10. Conda is recommended because `cartopy`, `geopandas` and `xesmf` depend on native libraries:  
+
+```bash
+micromamba env create -f environment.yml   # or: conda env create -f environment.yml
+micromamba activate habs
 ```
 
-pip install -r requirements.txt
+Or with pip only (skips `xesmf`, which is only needed for the regridding scripts in `new_ds/`):  
 
+```bash
+pip install -r requirements.txt
 ```
 
 Key libraries:  
-* `torch`, `torchvision` (PyTorch)  
-* `scikit-learn`, `xgboost`, `shap`  
+* `torch`, `pytorch-lightning` (PyTorch)  
+* `scikit-learn`, `xgboost`, `shap`, `optuna`  
 * `numpy`, `pandas`, `scipy`, `matplotlib`, `seaborn`  
-* `xarray`, `rasterio`, `geopandas`, `cartopy`, `netCDF4`  
+* `xarray`, `netCDF4`, `dask`, `cartopy`, `geopandas`, `shapely`, `pyproj`  
+
+### 🗂 Data and paths  
+
+The training data (the data-freeze file `HAB_convLSTM_core_v1_clean.nc`, built by `convLSTM/prepare_data.py` from the `new_ds/` cubes) is **not included** in this repository. Scripts locate data and checkpoints through environment variables:  
+
+| Variable | Default | Used for |
+|----------|---------|----------|
+| `HABS_DATA_ROOT` | `~/Desktop/HABs_Research` | Raw/processed data root (`Data/`, `Processed/`), used by `new_ds/` and `scripts/helpers/` |
+| `HABS_FREEZE` | `$HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc` | Data-freeze file for model training and diagnostics |
+| `HABS_MODEL_DIR` | `~/HAB_Models` | Model checkpoints and prediction exports |
+
+```bash
+export HABS_DATA_ROOT=/path/to/HABs_Research
+export HABS_MODEL_DIR=/path/to/HAB_Models
+```
+
+`config.yaml` and `config/data_freeze_v1.yaml` also accept `~` and `$VARS` in their paths. Scripts that take `--freeze` / `--obs` / `--ckpt` arguments use those instead. Diagnostics read and write the `Diagnostics_*` folders in this repo.  
 
 ### ▶️ Running Models  
 
-Activate environment and run:  
-```
-
-micromamba activate habs
-cd \~/Desktop/habs-forecast
-python convLSTM/baseline\_model.py
-python pinn/pinn\_model.py
-python tft/tft\_model.py
-
+```bash
+python convLSTM/baseline_model.py
+python pinn/pinn_model.py
+python tft/tft_model.py
 ```
 
 ### 📈 Diagnostics and Plots  
 
+Diagnostics scripts need the data-freeze file and a trained checkpoint:  
+
 ```bash
-# Standard diagnostics
-python convLSTM/diagnostics.py
-python pinn/diagnostics.py
-python pinn/spatial\_bias.py
-python predictor\_importance\_pdp.py
-python extra\_diagnostics.py
-python mech\_figure.py
-python lead\_skill\_summary.py
-python monterey.py
-python navarro.py
+python pinn/diagnostics.py \
+    --freeze /path/to/HAB_convLSTM_core_v1_clean.nc \
+    --ckpt   /path/to/checkpoint.pt \
+    --out    Diagnostics_PINN_Optimized \
+    --seq 6 --lead 1 --batch 32
+# convLSTM/diagnostics.py and tft/diagnostics.py take the same --freeze / --ckpt arguments
+```
+
+Other analyses (run each with `--help` to see its arguments):  
+
+```bash
+python pinn/spatial_bias.py
+python predictor_importance_pdp.py --freeze /path/to/HAB_convLSTM_core_v1_clean.nc
+python extra_diagnostics.py
+python mech_figure.py --obs ... --pred ... --start ... --end ...
+python lead_skill_summary.py
+python monterey.py --obs ... --pred ...
+python navarro.py  --obs ... --pred ...
 
 # Additional analyses
 python pinn/ablation_studies.py --study lambda  # Find optimal λ
 python pinn/ablation_studies.py --study kappa   # Find optimal κ
 python pinn/imputation_sensitivity.py          # Data gap robustness
 ```
+
+See `pinn/PAPER_WORKFLOW.md` and `pinn/QUICK_START_PAPER.md` for the full reviewer-response workflow.  
 
 ### ⚙️ Hyperparameter Optimization
 
@@ -188,6 +245,23 @@ python pinn/ablation_studies.py \
 ```
 
 **Current optimal parameters:** λ=5.0, κ=100 m²/s (from validation RMSE optimization)
+
+---
+
+## 🗺 Dashboard and Web App  
+
+Two decision-support front ends visualize a chlorophyll snapshot exported from the pipeline. They are **not** regulatory or public-health products.  
+
+* **`dashboard/`**: a lightweight Streamlit app. Quick start:  
+  ```bash
+  pip install -r dashboard/requirements.txt
+  python dashboard/scripts/make_demo_snapshot.py   # synthetic demo data
+  streamlit run dashboard/app.py
+  ```
+  Use `dashboard/scripts/export_map_snapshot.py` to export real model output. See [`dashboard/README.md`](dashboard/README.md).  
+* **`coastwatch-web/`**: a Next.js 15 + Mapbox front end with NASA GIBS chlorophyll tiles, ports and regional summaries. It needs a Mapbox token in `.env.local` (copy from `.env.example`). See [`coastwatch-web/README.md`](coastwatch-web/README.md).  
+
+A GitHub Actions workflow (`.github/workflows/dashboard-demo.yml`) smoke-tests demo snapshot generation.  
 
 ---
 
@@ -229,5 +303,5 @@ Questions or feedback? Reach out to:
 
 ## 🏷 License  
 
-This project is licensed under the MIT License.  
+This project is licensed under the MIT License. See [`LICENSE`](LICENSE).  
 ```

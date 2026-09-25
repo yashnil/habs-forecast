@@ -5,6 +5,7 @@ Baseline XGBoost regressor & classifier for HAB forecasting.
 Design matrix: current vars + lags 1-3 + 3-comp means + seasonality +
 optical indices + curl/dist-river  → 67 predictors
 """
+import os
 import warnings, pathlib, yaml, numpy as np, xarray as xr, joblib, pandas as pd
 warnings.filterwarnings("ignore", module=r"xarray\.")
 from sklearn.metrics import (mean_squared_error, mean_absolute_error, r2_score,
@@ -19,7 +20,7 @@ from scripts.XGB._feature_utils import build_design_matrix
 repo = pathlib.Path(__file__).resolve().parents[1]
 cfg  = yaml.safe_load(open(repo / "config.yaml"))
 
-CUBE     = pathlib.Path(cfg["data_root"]) / "HAB_cube_2016_2021.nc"
+CUBE     = pathlib.Path(os.path.expandvars(cfg["data_root"])).expanduser() / "HAB_cube_2016_2021.nc"
 OUT_DIR  = repo / "Models"; OUT_DIR.mkdir(exist_ok=True)
 
 FORE_LAG = int(cfg.get("forecast_lag", 1))
@@ -179,7 +180,7 @@ print(f"→ metrics written to {OUT_DIR / 'metrics.tsv'}")
 
 '''
 micromamba activate habs
-cd ~/Desktop/habs-forecast
+cd /path/to/habs-forecast
 python scripts/train_baseline.py      # new 2021 metrics
 python scripts/cv_xgb.py              # updated cross-val summary
 '''

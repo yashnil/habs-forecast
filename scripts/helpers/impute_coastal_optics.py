@@ -12,6 +12,7 @@ Output: HAB_master_8day_4km_coastal_CA_climclip.nc
 """
 
 from __future__ import annotations
+import os
 import pathlib
 import numpy as np
 import xarray as xr
@@ -20,7 +21,7 @@ from scipy import ndimage
 # ---------------------------------------------------------------------
 # config / paths
 # ---------------------------------------------------------------------
-ROOT = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research")
+ROOT = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
 FIN  = ROOT / "Data" / "Finalized"
 
 IN_FP  = FIN / "HAB_master_8day_4km_coastal_CA.nc"

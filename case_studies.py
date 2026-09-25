@@ -20,10 +20,10 @@ Highlights
 Usage
 ------
 python case_studies.py \
-  --obs "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
-  --pred "/Users/yashnilmohanty/HAB_Models/exports/convlstm__vanilla_best.nc:ConvLSTM" \
-  --pred "/Users/yashnilmohanty/HAB_Models/exports/tft__convTFT_best.nc:TFT" \
-  --pred "/Users/yashnilmohanty/HAB_Models/exports/pinn__convLSTM_best.nc:PINN" \
+  --obs "$HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
+  --pred "~/HAB_Models/exports/convlstm__vanilla_best.nc:ConvLSTM" \
+  --pred "~/HAB_Models/exports/tft__convTFT_best.nc:TFT" \
+  --pred "~/HAB_Models/exports/pinn__convLSTM_best.nc:PINN" \
   --region monterey \
   --date 2020-06-01 \
   --window-days 56 \

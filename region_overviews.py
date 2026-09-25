@@ -8,7 +8,7 @@ Region overviews with red bounding boxes (two separate images)
 
 Usage:
 python region_overviews.py \
-  --obs "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
+  --obs "$HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
   --outdir ./overviews
 
 Optional:

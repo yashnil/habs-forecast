@@ -8,6 +8,7 @@ Usage (identical flags to testing.py):
 """
 
 from __future__ import annotations
+import os
 import math, random, json, pathlib, numpy as np, xarray as xr
 import torch, torch.nn as nn, torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
@@ -18,7 +19,8 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
 # ─────────────────────────────────  CONFIG  ──────────────────────────────────
-FREEZE  = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc")
+DATA_ROOT = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
+FREEZE  = pathlib.Path(os.environ.get("HABS_FREEZE", DATA_ROOT / "Data/Derived/HAB_convLSTM_core_v1_clean.nc")).expanduser()
 SEQ      = 6
 LEAD_IDX = 1
 PATCH    = 64
@@ -29,7 +31,7 @@ STRATIFY = True
 WEIGHT_EXP = 1.5
 HUBER_DELTA = 1.0
 DEVICE   = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-OUT_DIR  = pathlib.Path.home() / "HAB_Models"
+OUT_DIR  = pathlib.Path(os.environ.get("HABS_MODEL_DIR", "~/HAB_Models")).expanduser()   # $HABS_MODEL_DIR (default ~/HAB_Models)
 OUT_DIR.mkdir(exist_ok=True, parents=True)
 _FLOOR   = 0.056616   # mg m⁻³ detection floor
 

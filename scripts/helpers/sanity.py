@@ -7,13 +7,14 @@ Edit the FILLED / RAW paths below as needed.
 """
 
 from __future__ import annotations
+import os
 import pathlib
 import xarray as xr
 import numpy as np
 from tabulate import tabulate
 
 # ── paths ──────────────────────────────────────────────────────────────────
-ROOT = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research")
+ROOT = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
 FIN  = ROOT / "Data" / "Finalized"
 
 # dataset you want to inspect (filled or not)

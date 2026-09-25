@@ -13,6 +13,7 @@ Run:  python extra_diagnostics.py
 """
 
 # ── imports ───────────────────────────────────────────────────────────
+import os
 import pathlib, warnings
 import numpy as np, pandas as pd, xarray as xr
 import matplotlib; matplotlib.use("Agg")
@@ -48,15 +49,16 @@ def to_mathtext(s: str) -> str:
 
 # ── file registry ─────────────────────────────────────────────────────
 ROOT = pathlib.Path.cwd()
+MODEL_DIR = pathlib.Path(os.environ.get("HABS_MODEL_DIR", "~/HAB_Models")).expanduser()
 MODELS = {
     "Vanilla": dict(
-        ckpt = pathlib.Path("~/HAB_Models/vanilla_best.pt").expanduser(),
+        ckpt = MODEL_DIR / "vanilla_best.pt",
         pred = ROOT / "Diagnostics_ConvLSTM/predicted_fields.nc"),
     "PINN": dict(
-        ckpt = pathlib.Path("~/HAB_Models/convLSTM_best.pt").expanduser(),
+        ckpt = MODEL_DIR / "convLSTM_best.pt",
         pred = ROOT / "Diagnostics_PINN/predicted_fields.nc"),
     "TFT": dict(
-        ckpt = pathlib.Path("~/HAB_Models/convTFT_best.pt").expanduser(),
+        ckpt = MODEL_DIR / "convTFT_best.pt",
         pred = ROOT / "Diagnostics_TFT/predicted_fields.nc"),
 }
 
@@ -129,9 +131,8 @@ NICE_NAME = {
 
 
 # path to the freeze with predictors
-FREEZE_PATH = pathlib.Path(
-    "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc"
-).expanduser()
+DATA_ROOT = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
+FREEZE_PATH = pathlib.Path(os.environ.get("HABS_FREEZE", DATA_ROOT / "Data/Derived/HAB_convLSTM_core_v1_clean.nc")).expanduser()
 
 # ── utils ─────────────────────────────────────────────────────────────
 def _save(fig, path): fig.tight_layout(); fig.savefig(path, dpi=220); plt.close(fig)

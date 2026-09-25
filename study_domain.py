@@ -8,7 +8,7 @@ Figure 1 — Study domain & alongshore context (2 panels)
 
 Usage:
 python study_domain.py \
-  --obs "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
+  --obs "$HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
   --out study_domain.png
 
 Optional flags:

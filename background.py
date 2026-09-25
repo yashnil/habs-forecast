@@ -3,10 +3,10 @@
 Individual case study analysis for HAB events with improved visualization and error fixes.
 
 python case_studies_individual.py \
-  --obs "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
-  --pred "/Users/yashnilmohanty/HAB_Models/exports/convlstm__vanilla_best.nc:ConvLSTM" \
-  --pred "/Users/yashnilmohanty/HAB_Models/exports/tft__convTFT_best.nc:TFT" \
-  --pred "/Users/yashnilmohanty/HAB_Models/exports/pinn__convLSTM_best.nc:PINN" \
+  --obs "$HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
+  --pred "~/HAB_Models/exports/convlstm__vanilla_best.nc:ConvLSTM" \
+  --pred "~/HAB_Models/exports/tft__convTFT_best.nc:TFT" \
+  --pred "~/HAB_Models/exports/pinn__convLSTM_best.nc:PINN" \
   --region monterey \
   --window-days 56 \
   --upsample 8 \

@@ -11,10 +11,11 @@ Outputs (compressed NetCDF):
 """
 
 # ── imports ──────────────────────────────────────────────────────────────
+import os
 import pathlib, xarray as xr, numpy as np, xesmf as xe
 
 # ── fixed paths ──────────────────────────────────────────────────────────
-ROOT     = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research")
+ROOT     = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
 FIN      = ROOT / "Data" / "Finalized"          # native cubes live here
 PROCESSED= ROOT / "Processed"                   # keep weight files here
 PROCESSED.mkdir(exist_ok=True)

@@ -17,6 +17,7 @@ Usage:
         --output imputation_sensitivity_results.csv
 """
 from __future__ import annotations
+import os
 import argparse, pathlib, json
 import numpy as np
 import pandas as pd
@@ -413,7 +414,7 @@ def main():
                     help="If > 0, retrain model on imputed data")
     args = ap.parse_args()
     
-    model_path = pathlib.Path(args.model) if args.model else pathlib.Path.home() / "HAB_Models" / "convLSTM_best.pt"
+    model_path = pathlib.Path(args.model) if args.model else pathlib.Path(os.environ.get("HABS_MODEL_DIR", "~/HAB_Models")).expanduser() / "convLSTM_best.pt"
     data_path = pathlib.Path(args.data)
     out_dir = pathlib.Path(args.output_dir)
     

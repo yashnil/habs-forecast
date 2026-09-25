@@ -6,7 +6,7 @@
 **This finds optimal hyperparameters - do this FIRST**
 
 ```bash
-cd /Users/yashnilmohanty/Desktop/habs-forecast
+cd /path/to/habs-forecast
 
 # Lambda ablation (find best physics weight)
 python pinn/ablation_studies.py \
@@ -75,7 +75,7 @@ python pinn/run_paper_experiments.py --step train-best
 
 ```bash
 python pinn/imputation_sensitivity.py \
-    --data /Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc \
+    --data $HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc \
     --model ~/HAB_Models/convLSTM_best.pt \
     --methods original zero mean median forward_fill climatology interpolate \
     --output imputation_results.csv
@@ -91,7 +91,7 @@ python pinn/imputation_sensitivity.py \
 ```bash
 # Run diagnostics on best model
 python pinn/diagnostics.py \
-    --freeze /Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc \
+    --freeze $HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc \
     --ckpt ~/HAB_Models/convLSTM_best.pt \
     --out Diagnostics_PINN_Best \
     --seq 6 \
@@ -114,7 +114,7 @@ python pinn/pinn_model_uncertainty.py --epochs 40 --batch 32
 # Then generate uncertainty predictions
 python pinn/inference_uncertainty.py \
     --ckpt ~/HAB_Models/pinn_uncertainty_best.pt \
-    --data /Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc \
+    --data $HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc \
     --output predictions_uncertainty.nc \
     --mc-samples 20
 ```

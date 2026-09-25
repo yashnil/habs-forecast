@@ -1,0 +1,109 @@
+{
+  "schema_version": 2,
+  "generated_at": "2026-04-04T10:32:37.060765+00:00",
+  "california_focus": true,
+  "data_source": "synthetic_demo",
+  "variable": "log_chl_demo",
+  "time": "demo-static",
+  "viewer": {
+    "time_headline": "Sample map \u2014 not today\u2019s ocean",
+    "time_detail": "This is a built-in pattern so you can see how the map works. It is **not** a real satellite image and **not** current conditions. For real use, export a recent layer from the project NetCDF (see \u201cTechnical details\u201d).",
+    "what_map_shows": "Colored shading is clipped to the **ocean** using a global land outline (Natural Earth via GeoPandas when available). Colors rank **relative algae abundance** (chlorophyll) compared with other **water** pixels on this map \u2014 useful as **bloom context**, not as a fishing guarantee or health warning."
+  },
+  "bounds": {
+    "south": 31.65,
+    "west": -126.35,
+    "north": 42.82999999999978,
+    "east": -116.6899999999986
+  },
+  "colormap": {
+    "name": "YlGnBu",
+    "vmin": -0.46047957219983443,
+    "vmax": -0.16098921730510535
+  },
+  "overlay_file": "overlay.png",
+  "notes": "Synthetic field for UI testing only \u2014 replace via export_map_snapshot.py.",
+  "land_mask": "fallback_polyline",
+  "refresh_policy": {
+    "recommended_every_days": 7,
+    "what_to_refresh": [
+      "overlay.png",
+      "snapshot.json"
+    ],
+    "how": "Run `python dashboard/scripts/export_map_snapshot.py` on your latest NetCDF (cron / GitHub Actions / cloud scheduler). Daily\u2013weekly is typical for satellite composites."
+  },
+  "regional_algae": {
+    "reference_percentiles": {
+      "p33": -0.36558202675439,
+      "p67": -0.2995300701388503
+    },
+    "regions": {
+      "north_coast": {
+        "label": "North coast",
+        "lat_range": [
+          40.0,
+          42.9
+        ],
+        "median_log_chl": -0.2854261549368115,
+        "tier": "higher_than_most_water_on_this_map",
+        "tier_short": "Higher",
+        "pixel_count": 13950
+      },
+      "north_bay": {
+        "label": "North Bay / Mendocino\u2013Sonoma",
+        "lat_range": [
+          38.2,
+          40.0
+        ],
+        "median_log_chl": -0.3085145886321994,
+        "tier": "typical_for_this_map",
+        "tier_short": "Typical",
+        "pixel_count": 10125
+      },
+      "central_bay": {
+        "label": "SF Bay / Marin",
+        "lat_range": [
+          37.0,
+          38.2
+        ],
+        "median_log_chl": -0.3138839354191948,
+        "tier": "typical_for_this_map",
+        "tier_short": "Typical",
+        "pixel_count": 6750
+      },
+      "monterey": {
+        "label": "Monterey / Santa Cruz",
+        "lat_range": [
+          35.8,
+          37.0
+        ],
+        "median_log_chl": -0.3095101609356724,
+        "tier": "typical_for_this_map",
+        "tier_short": "Typical",
+        "pixel_count": 6750
+      },
+      "morro": {
+        "label": "Morro / Big Sur",
+        "lat_range": [
+          34.6,
+          35.8
+        ],
+        "median_log_chl": -0.35661363110635363,
+        "tier": "typical_for_this_map",
+        "tier_short": "Typical",
+        "pixel_count": 6750
+      },
+      "southern": {
+        "label": "Southern CA",
+        "lat_range": [
+          32.0,
+          34.6
+        ],
+        "median_log_chl": -0.42302214300298446,
+        "tier": "lower_than_most_water_on_this_map",
+        "tier_short": "Lower",
+        "pixel_count": 14662
+      }
+    }
+  }
+}

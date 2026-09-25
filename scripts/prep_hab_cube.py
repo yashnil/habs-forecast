@@ -5,6 +5,7 @@
 # Trim the master dataset to the common 2016-01-09 – 2021-06-17
 # window and save as HAB_cube_2016_2021.nc
 # -----------------------------------------------------------
+import os
 import pathlib, xarray as xr, numpy as np, pandas as pd
 
 import pathlib, yaml, xarray as xr, numpy as np, pandas as pd
@@ -12,7 +13,7 @@ import pathlib, yaml, xarray as xr, numpy as np, pandas as pd
 root = pathlib.Path(__file__).resolve().parents[1]      # repo root
 cfg  = yaml.safe_load(open(root / "config.yaml"))
 
-data_dir = pathlib.Path(cfg["data_root"])               # <- external folder
+data_dir = pathlib.Path(os.path.expandvars(cfg["data_root"])).expanduser()               # <- external folder
 src = data_dir / "root_dataset_filled.nc"
 dst = data_dir / "HAB_cube_2016_2021.nc"
 

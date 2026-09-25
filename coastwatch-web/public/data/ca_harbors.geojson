@@ -1,0 +1,22 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-124.183,41.745]},"properties":{"name":"Crescent City","region_key":"north_coast"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-124.163,40.805]},"properties":{"name":"Eureka / Woodley","region_key":"north_coast"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-123.805,39.433]},"properties":{"name":"Fort Bragg / Noyo","region_key":"north_coast"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-123.05,38.33]},"properties":{"name":"Bodega Bay","region_key":"north_bay"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-122.84,38.4]},"properties":{"name":"Point Reyes / Inverness","region_key":"north_bay"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-122.39,37.81]},"properties":{"name":"San Francisco (Fisherman's Wharf)","region_key":"central_bay"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-122.5,37.63]},"properties":{"name":"Pillar Point / Princeton","region_key":"central_bay"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-122.495,37.504]},"properties":{"name":"Half Moon Bay","region_key":"central_bay"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-121.97,36.96]},"properties":{"name":"Santa Cruz","region_key":"monterey"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-121.89,36.61]},"properties":{"name":"Monterey / Wharf","region_key":"monterey"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-121.79,36.8]},"properties":{"name":"Moss Landing","region_key":"monterey"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-120.85,35.37]},"properties":{"name":"Morro Bay","region_key":"morro"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-120.73,35.17]},"properties":{"name":"Avila / Port San Luis","region_key":"morro"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-119.69,34.25]},"properties":{"name":"Santa Barbara","region_key":"southern"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-119.28,34.25]},"properties":{"name":"Ventura","region_key":"southern"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-118.5,33.75]},"properties":{"name":"San Pedro / LA","region_key":"southern"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-117.23,32.71]},"properties":{"name":"San Diego / Shelter Island","region_key":"southern"}}
+  ]
+}

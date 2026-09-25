@@ -9,8 +9,8 @@ Outputs:
   - printed Global metrics table (train/val/test/all)
 
 python tft/diagnostics.py \
-  --freeze /Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc \
-  --ckpt   /Users/yashnilmohanty/HAB_Models/convTFT_best.ckpt \
+  --freeze $HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc \
+  --ckpt   ~/HAB_Models/convTFT_best.ckpt \
   --out    Diagnostics_TFT \
   --seq 6 --lead 1 --batch 32
 """

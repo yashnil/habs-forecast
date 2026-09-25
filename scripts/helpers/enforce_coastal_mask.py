@@ -11,12 +11,13 @@ Data/Finalized/qc_coastal_stripe/*.nc           (1 frame per quarter)
 """
 
 from __future__ import annotations
+import os
 import pathlib, numpy as np, xarray as xr
 from tabulate import tabulate          # pip install tabulate
 from dask.diagnostics import ProgressBar
 
 # ───────── paths ────────────────────────────────────────────────────────────
-ROOT = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research")
+ROOT = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
 FIN  = ROOT / "Data" / "Finalized"
 
 SRC_CUBE = FIN / "HAB_master_8day_4km.nc"          # original with groups

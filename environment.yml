@@ -1,0 +1,12 @@
+name: habs
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - cartopy
+  - geopandas
+  - xesmf
+  - netcdf4
+  - pip
+  - pip:
+      - -r requirements.txt

@@ -7,11 +7,12 @@ Append two masks to HAB_master_8day_4km.nc
  /masks/coastal_water_mask  1 = ocean pixel ≤ 16 km from land
 """
 from __future__ import annotations
+import os
 import pathlib, numpy as np, xarray as xr, netCDF4
 from  scipy.ndimage import distance_transform_edt
 
 # ── config ──────────────────────────────────────────────────────────────
-ROOT = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research")
+ROOT = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
 CUBE = ROOT / "Data" / "Finalized" / "HAB_master_8day_4km.nc"
 
 MAX_DIST_KM = 16                    # ≈10 mi (4 MODIS cells)

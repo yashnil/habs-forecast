@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RAW="/Users/yashnilmohanty/Desktop/HABs_Research/Data"
-OUT="/Users/yashnilmohanty/Desktop/HABs_Research/Processed/modis_l3m"
+DATA_ROOT="${HABS_DATA_ROOT:-$HOME/Desktop/HABs_Research}"
+RAW="$DATA_ROOT/Data"
+OUT="$DATA_ROOT/Processed/modis_l3m"
 mkdir -p "$OUT"/{chlorophyll,kd490,nFLH}
 
 command -v l3mapgen >/dev/null 2>&1 || { echo "❌  l3mapgen not on PATH"; exit 1; }

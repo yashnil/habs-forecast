@@ -18,10 +18,11 @@ Outputs  (written to the same folder)
 """
 
 # ─────────────────────────────────────────────────────────────────────────────
+import os
 import pathlib, numpy as np, xarray as xr
 from dask.diagnostics import ProgressBar
 
-ROOT      = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research")
+ROOT      = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
 FIN       = ROOT / "Data" / "Finalized"
 OUT_NC    = FIN  / "HAB_master_8day_4km.nc"
 OUT_ZARR  = FIN  / "HAB_master_8day_4km.zarr"    # currently unused

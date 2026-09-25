@@ -1,6 +1,6 @@
 # California Coastal HABs ML - Data Freeze v1
-source_path: "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Finalized/HAB_master_8day_4km_coastal_CA_climclip.nc"
-output_path: "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_freeze_v1.nc"
+source_path: "~/Desktop/HABs_Research/Data/Finalized/HAB_master_8day_4km_coastal_CA_climclip.nc"
+output_path: "~/Desktop/HABs_Research/Data/Derived/HAB_freeze_v1.nc"
 
 target: "log_chl"
 floor_mg_m3: 0.056616          # detection floor

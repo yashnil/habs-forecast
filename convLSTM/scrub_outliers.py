@@ -108,6 +108,6 @@ if __name__ == "__main__":
 To run the code:
 
 python notebooks/scrub_outliers.py \
-    "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1.nc" \
-    -o "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc"
+    "$HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1.nc" \
+    -o "$HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc"
 '''

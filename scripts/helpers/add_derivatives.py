@@ -14,11 +14,12 @@ Append extra predictors to HAB_master_8day_4km.nc
 """
 
 # ── std / third-party ───────────────────────────────────────────────────────
+import os
 import pathlib, numpy as np, xarray as xr, netCDF4
 from   scipy.ndimage import distance_transform_edt
 
 # ── paths ───────────────────────────────────────────────────────────────────
-ROOT   = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research")
+ROOT   = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
 CUBE   = ROOT / "Data" / "Finalized" / "HAB_master_8day_4km.nc"
 
 # ── constants ───────────────────────────────────────────────────────────────

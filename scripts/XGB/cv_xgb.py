@@ -8,6 +8,7 @@ Design matrix  : 67 features  (t, lags 1-3, 3-comp means, seasonality,
 CV folds       : leave-one-year-out  (2016-2020) ; 2021 stays untouched
 Output         : Models/cv_metrics.tsv   (per-year RMSE, MAE, R²)
 """
+import os
 import pathlib, yaml, numpy as np, xarray as xr, pandas as pd
 from scipy.ndimage import distance_transform_edt
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
@@ -17,7 +18,7 @@ from scripts.XGB._feature_utils import build_design_matrix
 # ── config & paths ────────────────────────────────────────────────
 root = pathlib.Path(__file__).resolve().parents[1]
 cfg  = yaml.safe_load(open(root / "config.yaml"))
-cube = pathlib.Path(cfg["data_root"]) / "HAB_cube_2016_2021.nc"
+cube = pathlib.Path(os.path.expandvars(cfg["data_root"])).expanduser() / "HAB_cube_2016_2021.nc"
 out_tsv = root / "Models" / "cv_metrics.tsv"
 out_tsv.parent.mkdir(exist_ok=True)
 
@@ -121,6 +122,6 @@ print(f"\n✓ per-year metrics saved → {out_tsv}")
 '''
 Run with:
 micromamba activate habs
-cd ~/Desktop/habs-forecast
+cd /path/to/habs-forecast
 python scripts/cv_xgb.py
 '''

@@ -3,13 +3,14 @@
 Recompute log10(chlor_a) in the raw cube,
 treating chlor_a<=0 as NaN, and overwrite log_chl.
 """
+import os
 import pathlib, yaml
 import numpy as np, xarray as xr
 
 root = pathlib.Path(__file__).resolve().parents[1]
 cfg  = yaml.safe_load(open(root/"config.yaml"))
 
-src = pathlib.Path(cfg["data_root"]) / "HAB_cube_2016_2021.nc"
+src = pathlib.Path(os.path.expandvars(cfg["data_root"])).expanduser() / "HAB_cube_2016_2021.nc"
 with xr.open_dataset(src, mode="a") as ds:
     # compute log10, masking zeros/negatives
     chlor = ds["chlor_a"]

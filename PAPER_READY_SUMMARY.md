@@ -135,7 +135,7 @@ OR manually:
 
 ```bash
 python pinn/diagnostics.py \
-  --freeze /Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc \
+  --freeze $HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc \
   --ckpt ~/HAB_Models/convLSTM_best.pt \
   --out Diagnostics_PINN_Optimized \
   --seq 6 --lead 1 --batch 32

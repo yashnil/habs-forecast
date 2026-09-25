@@ -1,8 +1,9 @@
 #!/bin/bash
 # Run diagnostics for optimized PINN model
 
-FREEZE="/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc"
-CKPT="$HOME/HAB_Models/convLSTM_best.pt"
+DATA_ROOT="${HABS_DATA_ROOT:-$HOME/Desktop/HABs_Research}"
+FREEZE="${HABS_FREEZE:-$DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc}"
+CKPT="${HABS_MODEL_DIR:-$HOME/HAB_Models}/convLSTM_best.pt"
 OUT="Diagnostics_PINN_Optimized"
 
 echo "========================================="

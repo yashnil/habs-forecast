@@ -10,11 +10,12 @@ Outputs  →  .../Data/Finalized/
             era5_8day_native.nc
             cmems_8day_native.nc
 """
+import os
 import pathlib, re, datetime as dt, numpy as np, xarray as xr, pandas as pd
 from align_utils import to_datetime                               # existing helper
 
 # ───── paths ────────────────────────────────────────────────────────────────
-ROOT    = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research")
+ROOT    = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
 P_MODIS = ROOT / "Processed" / "modis_l3m"
 P_ERA5  = ROOT / "Data" / "era5"
 P_CMEMS = ROOT / "Data" / "newcmems"

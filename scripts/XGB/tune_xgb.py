@@ -14,6 +14,7 @@ Design matrix (build_design_matrix):
       ------------------------------------------------
       total = 67 predictors
 """
+import os
 import pathlib, yaml, numpy as np, xarray as xr, optuna, joblib, json, warnings
 from scipy.ndimage import distance_transform_edt
 from sklearn.metrics import mean_squared_error
@@ -25,7 +26,7 @@ warnings.filterwarnings("ignore", "The specified chunks")
 # ─── paths & constants ────────────────────────────────────────────
 root   = pathlib.Path(__file__).resolve().parents[1]
 cfg    = yaml.safe_load(open(root / "config.yaml"))
-cube_f = pathlib.Path(cfg["data_root"]) / "HAB_cube_2016_2021.nc"
+cube_f = pathlib.Path(os.path.expandvars(cfg["data_root"])).expanduser() / "HAB_cube_2016_2021.nc"
 
 FORE_LAG  = int(cfg.get("forecast_lag", 1))
 COAST_R   = int(cfg.get("coast_radius_cells", 4))

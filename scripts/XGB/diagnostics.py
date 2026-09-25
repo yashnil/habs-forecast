@@ -11,6 +11,7 @@ diagnostics/
  ├─ dep_<feature_2>.png
  └─ … (top-5 features)
 """
+import os
 import warnings, pathlib, joblib, numpy as np, pandas as pd, shap
 import matplotlib.pyplot as plt
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -39,7 +40,7 @@ else:
     from scripts.XGB._feature_utils import build_design_matrix
 
     cfg   = yaml.safe_load(open(repo / "config.yaml"))
-    cube  = pathlib.Path(cfg["data_root"]) / "HAB_cube_2016_2021.nc"
+    cube  = pathlib.Path(os.path.expandvars(cfg["data_root"])).expanduser() / "HAB_cube_2016_2021.nc"
     ds    = xr.open_dataset(cube)
     X_all, _ = build_design_matrix(
         ds,

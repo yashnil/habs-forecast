@@ -28,7 +28,7 @@ Notes
 Running
 -----
 python predictor_importance_pdp.py \
-  --freeze /Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc \
+  --freeze $HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc \
   --model_out models/xgb_tabular.json \
   --outdir out/predictor_importance \
   --lead 1 \

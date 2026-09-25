@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "disclaimer": "General California context only — not landing prices, quotas, or legal advice. Always confirm seasons, bag limits, and health advisories with CDFW and CDPH.",
+  "regions": {
+    "north_coast": {
+      "headline": "North coast",
+      "typical_targets": "Dungeness crab (seasonal), rockfish, salmon (seasonal), nearshore groundfish.",
+      "operational_note": "Rougher ocean common; use weather + bar forecasts. If a map patch shows higher algae than nearby water, treat it as a cue to ask locals and check biotoxin bulletins — not a go/no-go signal.",
+      "links": [
+        {"label": "CDFW — Ocean / marine fisheries", "url": "https://wildlife.ca.gov/Fishing/Ocean"}
+      ]
+    },
+    "north_bay": {
+      "headline": "North Bay / Mendocino–Sonoma",
+      "typical_targets": "Salmon (when open), rockfish, crab, albacore offshore.",
+      "operational_note": "Upwelling shadows and river plumes can concentrate chlorophyll without implying toxin levels. Pair map context with CDPH shellfish safety.",
+      "links": [
+        {"label": "CDPH marine biotoxins", "url": "https://www.cdph.ca.gov/Programs/CEH/DRSEM/Pages/EMB/MarineBiotech.aspx"}
+      ]
+    },
+    "central_bay": {
+      "headline": "San Francisco Bay / Marin",
+      "typical_targets": "Halibut, salmon (seasonal), rockfish, crab, herring (seasonal).",
+      "operational_note": "Bay vs outer coast conditions differ. This map follows the coastal grid — use it as a coarse offshore indicator, not a bay substitute.",
+      "links": [
+        {"label": "CDFW — Bay Delta", "url": "https://wildlife.ca.gov/Fishing/Freshwater/Bay-Delta"}
+      ]
+    },
+    "monterey": {
+      "headline": "Monterey / Santa Cruz",
+      "typical_targets": "Salmon (seasonal), squid, groundfish, rockfish, whale-watching charter overlap.",
+      "operational_note": "Historic HAB hot spot for research — higher chlorophyll here is common during upwelling. Economic risk management means diversifying target species and sale channels when blooms are in the news, not chasing this map alone.",
+      "links": [
+        {"label": "NOAA WC harmful algae", "url": "https://www.fisheries.noaa.gov/west-coast/ecosystems/harmful-algal-blooms-west-coast"}
+      ]
+    },
+    "morro": {
+      "headline": "Morro / Big Sur",
+      "typical_targets": "Rockfish, salmon (seasonal), nearshore finfish.",
+      "operational_note": "Strong seasonal wind shifts; map is one snapshot — compare with recent weeks when you have them.",
+      "links": [
+        {"label": "CDFW — Sport fishing", "url": "https://wildlife.ca.gov/Fishing/Ocean"}
+      ]
+    },
+    "southern": {
+      "headline": "Southern California",
+      "typical_targets": "Yellowtail, tuna (seasonal), rockfish, squid, lobster (seasonal).",
+      "operational_note": "Chlorophyll filaments can be sharp. Use the map to see **relative** patterns on this date; combine with port intel and official closures.",
+      "links": [
+        {"label": "OEHHA — domoic acid", "url": "https://oehha.ca.gov/fish/general-info/domoic-acid"}
+      ]
+    }
+  }
+}

@@ -230,7 +230,7 @@ def main():
     args = ap.parse_args()
     P = load_params(args.config)
 
-    ds = xr.open_dataset(P["source_path"], chunks={"time": P.get("chunk_time",64)})
+    ds = xr.open_dataset(os.path.expanduser(os.path.expandvars(P["source_path"])), chunks={"time": P.get("chunk_time",64)})
     ds = decode_time_if_needed(ds)
 
     static_mask, valid_mask_t = build_masks(ds, P["coastal_mask_method"])
@@ -270,7 +270,7 @@ def main():
     print(f"  timesteps: {n_time}")
 
 
-    write_outputs(ds, P["output_path"], P)
+    write_outputs(ds, os.path.expanduser(os.path.expandvars(P["output_path"])), P)
 
 if __name__ == "__main__":
     main()

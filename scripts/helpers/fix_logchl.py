@@ -11,12 +11,13 @@ log_chl = log10( chlor_a )             (chlor_a > 0)
 Nothing else in the file is modified.
 """
 from __future__ import annotations
+import os
 import pathlib, yaml, numpy as np, xarray as xr
 
 root = pathlib.Path(__file__).resolve().parents[1]
 cfg  = yaml.safe_load(open(root / "config.yaml"))
 
-raw   = pathlib.Path(cfg["data_root"]) / "HAB_cube_RAW.nc"
+raw   = pathlib.Path(os.path.expandvars(cfg["data_root"])).expanduser() / "HAB_cube_RAW.nc"
 print("▶ writing log_chl into", raw.name)
 
 with xr.open_dataset(raw, mode="a") as ds:

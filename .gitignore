@@ -1,5 +1,23 @@
 runs/tft/lightning_logs/*/train_ds.pkl
-runs/tft/lightning_logs/*/train_ds.pkl
 train_ds.pkl
 archive/HAB_convLSTM_core_v1_clean.nc
 *.npy
+
+# OS / editor
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv*/
+.ipynb_checkpoints/
+
+# Local config / secrets
+.env
+.env.*
+!.env.example
+.dashboard_paths.json
+
+# Node / Next.js (coastwatch-web also has its own .gitignore)
+node_modules/
+.next/

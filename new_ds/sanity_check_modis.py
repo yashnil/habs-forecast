@@ -12,11 +12,13 @@ Pass criteria (rule-of-thumb):
 Edit the RAW_DIR / ARCHIVED paths if yours differ.
 """
 
+import os
 import random, xarray as xr, numpy as np, pathlib, sys, xesmf as xe
 
 # ─────────────────────────────── paths ──────────────────────────────────
-RAW_DIR     = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research/Data/chlorophyll")
-ARCHIVED_DIR = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research/Processed/modis_l3m/chlorophyll")
+ROOT        = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
+RAW_DIR     = ROOT / "Data" / "chlorophyll"
+ARCHIVED_DIR = ROOT / "Processed" / "modis_l3m" / "chlorophyll"
 
 if not RAW_DIR.is_dir() or not ARCHIVED_DIR.is_dir():
     sys.exit("❌  Check RAW_DIR and ARCHIVED_DIR paths at top of script")

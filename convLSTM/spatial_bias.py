@@ -17,6 +17,7 @@ All outputs drop into *OUTDIR* so the folder can be zipped for a manuscript supp
 python convLSTM/spatial_bias_maps.py
 """
 # pylint: disable=invalid-name
+import os
 import pathlib, json, itertools, warnings
 import numpy as np
 import pandas as pd
@@ -57,12 +58,11 @@ mpl.rcParams.update({
 # ────────────────────────────────────────────────────────────────
 # paths – edit if needed
 # ────────────────────────────────────────────────────────────────
-FREEZE = pathlib.Path(
-    "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc")
-PRED   = pathlib.Path(
-     "/Users/yashnilmohanty/Desktop/Diagnostics_ConvLSTM/predicted_fields.nc")
-OUTDIR = pathlib.Path(
-    "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_ConvLSTM")
+REPO   = pathlib.Path(__file__).resolve().parents[1]
+DATA_ROOT = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
+FREEZE = pathlib.Path(os.environ.get("HABS_FREEZE", DATA_ROOT / "Data/Derived/HAB_convLSTM_core_v1_clean.nc")).expanduser()
+PRED   = REPO / "Diagnostics_ConvLSTM" / "predicted_fields.nc"
+OUTDIR = REPO / "Diagnostics_ConvLSTM"
 OUTDIR.mkdir(exist_ok=True, parents=True)
 
 TILER  = cimgt.GoogleTiles(style='satellite'); TILER.request_timeout = 5

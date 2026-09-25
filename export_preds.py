@@ -32,12 +32,12 @@ Notes
 
 
 python export_preds.py \
-  --obs "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
+  --obs "$HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc" \
   --start 2019-01-01 --end 2021-12-31 \
-  --convlstm.ckpt "/Users/yashnilmohanty/HAB_Models/vanilla_best.pt" \
-  --tft.ckpt      "/Users/yashnilmohanty/HAB_Models/convTFT_best.ckpt" \
-  --pinn.ckpt     "/Users/yashnilmohanty/HAB_Models/convLSTM_best.pt" \
-  --outdir "/Users/yashnilmohanty/HAB_Models/exports"
+  --convlstm.ckpt "~/HAB_Models/vanilla_best.pt" \
+  --tft.ckpt      "~/HAB_Models/convTFT_best.ckpt" \
+  --pinn.ckpt     "~/HAB_Models/convLSTM_best.pt" \
+  --outdir "~/HAB_Models/exports"
 """
 from __future__ import annotations
 

@@ -9,11 +9,12 @@
 """
 
 from __future__ import annotations
+import os
 import pathlib, tempfile, shutil
 import numpy as np, xarray as xr, netCDF4
 from scipy import ndimage
 
-ROOT  = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research")
+ROOT  = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
 CUBE  = ROOT / "Data" / "Finalized" / "HAB_master_8day_4km.nc"
 
 # ────────────────────────────────────────────────────────────────────────────

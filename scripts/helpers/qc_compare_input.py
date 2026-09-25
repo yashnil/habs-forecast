@@ -30,6 +30,7 @@ QC workflow at regional scale.  See refs in header comments below.
 """
 
 from __future__ import annotations
+import os
 import pathlib
 import numpy as np
 import xarray as xr
@@ -44,7 +45,7 @@ except ImportError:  # graceful fallback
 # ------------------------------------------------------------------
 # paths
 # ------------------------------------------------------------------
-ROOT = pathlib.Path("/Users/yashnilmohanty/Desktop/HABs_Research")
+ROOT = pathlib.Path(os.environ.get("HABS_DATA_ROOT", "~/Desktop/HABs_Research")).expanduser()
 FIN  = ROOT / "Data" / "Finalized"
 
 RAW_FP = FIN / "HAB_master_8day_4km_coastal_CA.nc"              # before fill
@@ -264,7 +265,7 @@ Time coverage (fraction of stripe with data) …
   nflh    raw mean=0.023 filled mean=0.028 (Δ=+0.005) raw min=0.004 max=0.028  filled min=0.028 max=0.028
   log_chl raw mean=0.025 filled mean=0.028 (Δ=+0.003) raw min=0.010 max=0.028  filled min=0.028 max=0.028
 
-Top synthetic values written → /Users/yashnilmohanty/Desktop/HABs_Research/Data/Finalized/qc_ca_coastal_impute_extremes.csv (first 10 shown)
+Top synthetic values written → $HABS_DATA_ROOT/Data/Finalized/qc_ca_coastal_impute_extremes.csv (first 10 shown)
     var       time       lat         lon     value  raw_obs
 chlor_a 2021-06-26 36.937500 -121.854164 30.945389        2
 chlor_a 2021-06-26 39.104168 -123.770836 30.945389      757

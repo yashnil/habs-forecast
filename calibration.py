@@ -281,6 +281,6 @@ if __name__ == "__main__":
 '''
 Run file:
 
-python calibration.py --pred "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_PINN/predicted_fields.nc:PINN" --pred "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_ConvLSTM/predicted_fields.nc:ConvLSTM" --pred "/Users/yashnilmohanty/Desktop/habs-forecast/Diagnostics_TFT/predicted_fields.nc:TFT" --obs "/Users/yashnilmohanty/Desktop/HABs_Research/Data/Derived/HAB_convLSTM_core_v1_clean.nc" --thresh 5.0 --scale 2.5 --floor 0.056616 --out_calib calib_pr.png --out_hov coverage_hov.png
+python calibration.py --pred "Diagnostics_PINN/predicted_fields.nc:PINN" --pred "Diagnostics_ConvLSTM/predicted_fields.nc:ConvLSTM" --pred "Diagnostics_TFT/predicted_fields.nc:TFT" --obs "$HABS_DATA_ROOT/Data/Derived/HAB_convLSTM_core_v1_clean.nc" --thresh 5.0 --scale 2.5 --floor 0.056616 --out_calib calib_pr.png --out_hov coverage_hov.png
 
 '''

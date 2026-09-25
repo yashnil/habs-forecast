@@ -15,20 +15,20 @@ Usage:
   python lead_skill_summary.py --subset all
      where subset ∈ {all, train, val, test}
 
-Paths assume your existing layout; edit below if needed.
+Reads Diagnostics_<MODEL>/predicted_fields.nc from the repo root.
 """
 
 import argparse, pathlib, numpy as np, pandas as pd, xarray as xr
 
 FLOOR = 0.056616  # mg m^-3
+REPO = pathlib.Path(__file__).resolve().parent
 OUT_ROOT = pathlib.Path.cwd() / "Diagnostics_Combo_New"
 OUT_ROOT.mkdir(exist_ok=True)
 
-# Your corrected paths
 BASE_MODELS = {
-    "ConvLSTM": pathlib.Path("/Users/yashnilmohanty/Desktop/Diagnostics_ConvLSTM/predicted_fields.nc"),
-    "PINN"    : pathlib.Path("/Users/yashnilmohanty/Desktop/Diagnostics_PINN/predicted_fields.nc"),
-    "TFT"     : pathlib.Path("/Users/yashnilmohanty/Desktop/Diagnostics_TFT/predicted_fields.nc"),
+    "ConvLSTM": REPO / "Diagnostics_ConvLSTM" / "predicted_fields.nc",
+    "PINN"    : REPO / "Diagnostics_PINN" / "predicted_fields.nc",
+    "TFT"     : REPO / "Diagnostics_TFT" / "predicted_fields.nc",
 }
 
 LEAD_DAYS = [8, 16, 24, 32]  # human-friendly leads
@@ -115,8 +115,8 @@ def arrays_for_lead(ds, lead_days):
     return P, Y, R, M, times_used
 
 def try_open_perlead(model_name, lead_days):
-    """If /Users/.../Diagnostics_{MODEL}_L{lead}/predicted_fields.nc exists, return that path, else None."""
-    base = pathlib.Path(f"/Users/yashnilmohanty/Desktop/Diagnostics_{model_name}_L{lead_days}/predicted_fields.nc")
+    """If <repo>/Diagnostics_{MODEL}_L{lead}/predicted_fields.nc exists, return that path, else None."""
+    base = REPO / f"Diagnostics_{model_name}_L{lead_days}" / "predicted_fields.nc"
     return base if base.is_file() else None
 
 def main():
