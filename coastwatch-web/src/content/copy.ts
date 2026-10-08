@@ -34,10 +34,10 @@ export const OFFICIAL_STATUS = {
 } as const;
 
 export const FORECAST_COPY = {
-  heading: "Bloom and toxin forecast",
+  heading: "Bloom and domoic acid forecast",
   productLine: "C-HARM v3.1 · NOAA CoastWatch West Coast",
   whatItIs:
-    "Probability forecasts of a Pseudo-nitzschia bloom and of domoic acid in the water, from an official NOAA model.",
+    "Probability forecasts of a Pseudo-nitzschia bloom and of domoic acid in the water, from a NOAA model.",
   notA: "A forecast probability, not a measurement of toxin in seafood and not a closure decision.",
   lowNotSafe: "A low probability does not mean an area is safe.",
   issuedInferred: "Issue date inferred — C-HARM publishes valid days only.",

@@ -46,6 +46,6 @@ export function relativeDay(date: string, now: Date): string {
 export function formatAge(days: number | null): string {
   if (days === null) return "";
   if (days <= 0) return "today";
-  if (days === 1) return "1 day old";
-  return `${days} days old`;
+  if (days === 1) return "1 day ago";
+  return `${days} days ago`;
 }

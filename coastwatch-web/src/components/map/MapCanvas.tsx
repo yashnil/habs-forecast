@@ -88,7 +88,7 @@ export default function MapCanvas({ raster, opacity, ports, showPorts, inspect, 
       aria-label="Map of the California coast"
     >
       <NavigationControl position="bottom-right" showCompass={false} />
-      <ScaleControl position="bottom-left" unit="metric" />
+      {wide && <ScaleControl position="bottom-left" unit="metric" />}
 
       {raster?.kind === "image" && (
         <Source key={raster.id} id="forecast" type="image" url={raster.url} coordinates={raster.corners as [[number, number], [number, number], [number, number], [number, number]]}>

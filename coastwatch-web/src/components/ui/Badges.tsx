@@ -31,7 +31,9 @@ const STATE_STYLE: Record<FreshnessState, { color: string; icon: React.ReactNode
   },
 };
 
-export function FreshnessBadge({ f, compact = false }: { f: Freshness | null; compact?: boolean }) {
+const BASIS_WORD: Record<string, string> = { issued_date: "issued", observed_date: "observed", valid_date: "updated" };
+
+export function FreshnessBadge({ f, compact = false, basis }: { f: Freshness | null; compact?: boolean; basis?: string }) {
   const state: FreshnessState = f?.state ?? "unavailable";
   const s = STATE_STYLE[state];
   return (
@@ -44,14 +46,19 @@ export function FreshnessBadge({ f, compact = false }: { f: Freshness | null; co
         {s.icon}
       </svg>
       {f ? FRESHNESS_LABEL[state] : "Checking…"}
-      {!compact && f?.ageDays != null && <span className="text-ink-3">· {formatAge(f.ageDays)}</span>}
+      {!compact && f?.ageDays != null && (
+        <span className="text-ink-3">
+          · {basis ? `${BASIS_WORD[basis] ?? ""} ` : ""}
+          {formatAge(f.ageDays)}
+        </span>
+      )}
     </span>
   );
 }
 
 const CLASS_LABEL: Record<ProductClass, string> = {
   official_regulatory: "Official · regulatory",
-  official_forecast: "Official forecast",
+  official_forecast: "Agency forecast",
   observation: "Observation",
   experimental_model: "Experimental",
   historical_context: "Historical",

@@ -39,7 +39,7 @@ export function ForecastPanel(p: Props) {
       <header className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-2">
           <ProductClassBadge pc="official_forecast" />
-          <FreshnessBadge f={fresh} />
+          <FreshnessBadge f={fresh} basis={anyLayer?.freshness.basis} />
         </div>
         <h2 id="forecast-h" className="text-[15px] font-semibold tracking-tight text-ink">
           {FORECAST_COPY.heading}
@@ -113,10 +113,6 @@ export function ForecastPanel(p: Props) {
               </p>
               <ProbabilityLegend palette={layer.palette!} threshold={layer.threshold_text} />
               <Controls shown={p.shown} onShow={p.onShow} opacity={p.opacity} onOpacity={p.onOpacity} />
-              <ul className="space-y-1 text-[12px] leading-snug text-ink-2">
-                <li>{FORECAST_COPY.notA}</li>
-                <li>{FORECAST_COPY.lowNotSafe}</li>
-              </ul>
               <Caveats layer={layer} />
             </div>
           )}
@@ -192,17 +188,21 @@ function Controls({ shown, onShow, opacity, onOpacity }: { shown: boolean; onSho
 
 export function Caveats({ layer }: { layer: LayerArtifact }) {
   return (
+    <div className="space-y-2">
+      <div data-testid="forecast-caveats" className="rounded-lg border border-hairline bg-surface-2/60 px-3 py-2 text-[12px] leading-snug text-ink-2">
+        <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink-3">Read before using</p>
+        <ul className="list-disc space-y-1 pl-4">
+          {layer.caveats.map((c) => (
+            <li key={c}>{c}</li>
+          ))}
+        </ul>
+      </div>
     <details className="group rounded-lg border border-hairline px-3 py-2 text-[12px] text-ink-2">
       <summary className="cursor-pointer list-none font-medium text-ink marker:hidden [&::-webkit-details-marker]:hidden">
         <span className="group-open:hidden">▸</span>
-        <span className="hidden group-open:inline">▾</span> Caveats and source
+        <span className="hidden group-open:inline">▾</span> Source and provenance
       </summary>
-      <ul className="mt-2 list-disc space-y-1 pl-4">
-        {layer.caveats.map((c) => (
-          <li key={c}>{c}</li>
-        ))}
-      </ul>
-      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 border-t border-hairline pt-2 text-[11px]">
+      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[11px]">
         <dt className="text-ink-3">Source</dt>
         <dd>
           <a className="text-accent hover:underline" href={layer.provenance.source_url} target="_blank" rel="noreferrer">
@@ -239,5 +239,6 @@ export function Caveats({ layer }: { layer: LayerArtifact }) {
         )}
       </dl>
     </details>
+    </div>
   );
 }

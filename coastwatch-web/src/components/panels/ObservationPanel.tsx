@@ -71,15 +71,14 @@ export function ObservationPanel({ layers, status, selected, onSelect, now }: Pr
           ) : (
             <p className="text-[12px] text-serious">Legend unavailable — colours cannot be read quantitatively.</p>
           )}
-          <p className="text-[12px] text-ink-3">{CHLOROPHYLL_COPY.gaps}</p>
+          <ul data-testid="chl-caveats" className="list-disc space-y-1 pl-4 text-[12px] leading-snug text-ink-2">
+            {active.caveats.map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ul>
           <details className="rounded-lg border border-hairline px-3 py-2 text-[11.5px] text-ink-2">
             <summary className="cursor-pointer font-medium text-ink">How the date was chosen</summary>
             <p className="mt-1.5">{active.tiles.date_selection}</p>
-            <ul className="mt-1.5 list-disc space-y-1 pl-4">
-              {active.caveats.map((c) => (
-                <li key={c}>{c}</li>
-              ))}
-            </ul>
             <p className="mt-1.5 text-ink-3">
               {active.provenance.source_name} · layer <span className="font-mono">{active.provenance.dataset_id}</span> · checked{" "}
               {formatDateTimePT(active.provenance.retrieved_at)}

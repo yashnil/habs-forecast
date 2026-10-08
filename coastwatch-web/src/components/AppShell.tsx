@@ -27,7 +27,7 @@ export function AppShell({
             <span className="text-[15px] font-semibold tracking-tight text-ink">CoastWatch</span>
             <span className="hidden text-[11px] text-ink-3 sm:inline">California</span>
           </Link>
-          <nav aria-label="Experiences" className="order-3 w-full overflow-x-auto sm:order-none sm:w-auto">
+          <nav aria-label="Experiences" className="order-3 w-full sm:order-none sm:w-auto">
             <ul className="flex gap-1 text-[12.5px]">
               {EXPERIENCES.map((e) => (
                 <li key={e.key}>
@@ -45,7 +45,7 @@ export function AppShell({
                     <span
                       aria-disabled="true"
                       data-testid={`nav-upcoming-${e.key}`}
-                      className="flex cursor-default items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-ink-3"
+                      className="hidden cursor-default items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-ink-3 md:flex"
                     >
                       {e.label}
                       <span className="rounded border border-hairline px-1 text-[9.5px] uppercase tracking-wider">Upcoming</span>
@@ -53,6 +53,11 @@ export function AppShell({
                   )}
                 </li>
               ))}
+              <li className="md:hidden">
+                <span className="flex items-center whitespace-nowrap rounded-md px-2.5 py-1.5 text-[11.5px] text-ink-3" title="Bloom Intelligence, Fisheries & Economic Exposure, My Coast">
+                  + 3 upcoming
+                </span>
+              </li>
             </ul>
           </nav>
           <div className="ml-auto flex items-center gap-3">
