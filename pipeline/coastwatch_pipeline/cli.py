@@ -93,6 +93,39 @@ def cmd_guard(a: argparse.Namespace) -> int:
     return main_guard(a.root)
 
 
+def cmd_watch(a: argparse.Namespace) -> int:
+    """Report whether the official pages changed since the last human review. Read-only."""
+    from .sources import official
+
+    reg = official.load_registry(Path(a.registry))
+    errors, conflicts = official.validate_registry(reg)
+    results = official.watch(RunContext(out_dir=Path(".")), reg)
+    report = {
+        "registry_errors": errors,
+        "conflicts": conflicts,
+        "review": {"status": reg.review.status, "reviewed_at": reg.review.reviewed_at, "reviewed_by": reg.review.reviewed_by},
+        "sources": [w.model_dump(exclude={"items_seen"}) for w in results],
+    }
+    print(json.dumps(report, indent=2))
+    changed = errors or conflicts or any((not w.ok) or w.new_items or w.matches_review is False for w in results)
+    if a.github_output:
+        with open(a.github_output, "a") as fh:
+            fh.write(f"changed={'true' if changed else 'false'}\n")
+    return 0
+
+
+def cmd_review(a: argparse.Namespace) -> int:
+    """Run by a person AFTER checking every record against the official pages."""
+    from .sources import official
+
+    if a.status == "human_verified" and not a.confirm:
+        print("Refusing: pass --confirm to state that you checked every record against the official sources.", file=sys.stderr)
+        return 2
+    review = official.record_review(Path(a.registry), RunContext(out_dir=Path(".")), a.reviewer, a.status, a.method)
+    print(json.dumps(review, indent=2))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="cwp", description="CoastWatch pipeline")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -125,6 +158,18 @@ def main(argv: list[str] | None = None) -> int:
     g = sub.add_parser("guard-publish", help="refuse to publish anything except v1/ pipeline artifacts")
     g.add_argument("--root", required=True)
     g.set_defaults(fn=cmd_guard)
+    reg_default = str(REPO / "data" / "curated" / "official_notices.json")
+    w = sub.add_parser("watch-official", help="check official pages for changes since the last review (never edits records)")
+    w.add_argument("--registry", default=reg_default)
+    w.add_argument("--github-output", help="append changed=true|false for GitHub Actions")
+    w.set_defaults(fn=cmd_watch)
+    rv = sub.add_parser("review-official", help="record a human review of the official notices registry")
+    rv.add_argument("--registry", default=reg_default)
+    rv.add_argument("--reviewer", required=True)
+    rv.add_argument("--status", choices=["human_verified", "pending_human_review"], default="human_verified")
+    rv.add_argument("--method", default="Each record compared with the linked CDFW/CDPH pages; watched pages fingerprinted.")
+    rv.add_argument("--confirm", action="store_true")
+    rv.set_defaults(fn=cmd_review)
     a = p.parse_args(argv)
     return a.fn(a)
 

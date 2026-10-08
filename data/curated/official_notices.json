@@ -1,0 +1,442 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "cdph-2026-annual-mussel-quarantine",
+      "agency": "CDPH",
+      "action": "quarantine",
+      "status": "active",
+      "title": "Annual quarantine of sport-harvested mussels",
+      "summary": "Sport-harvested mussels from the entire California coast, including bays and estuaries, may not be harvested for human consumption (bait only).",
+      "official_text": "The quarantine begins May 1 and applies to all species of mussels that are recreationally harvested for human consumption along the California coast, including all bays and estuaries. During the quarantine, mussels may only be harvested for use as bait.",
+      "fishery": "sport_harvest",
+      "species": [
+        "mussels (all species)"
+      ],
+      "toxins": [
+        "psp",
+        "domoic_acid"
+      ],
+      "area": {
+        "type": "statewide",
+        "description": "Along the California coast, including all bays and estuaries",
+        "geometry_basis": "none",
+        "geometry_note": "Statewide; not drawn on the map."
+      },
+      "effective_date": "2026-05-01",
+      "expected_end_date": "2026-10-31",
+      "expected_end_note": "CDPH (Sept 14, 2026): the quarantine \"will continue through at least October 31.\" It can be extended; an end date is not confirmed until CDPH announces it.",
+      "sources": [
+        {
+          "label": "CDPH SN26-008: Annual quarantine of sport-harvested mussels begins May 1",
+          "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-008.aspx",
+          "kind": "press_release"
+        },
+        {
+          "label": "CDPH SN26-018 (states the quarantine continues through at least October 31)",
+          "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-018.aspx",
+          "kind": "press_release",
+          "published_date": "2026-09-14"
+        }
+      ],
+      "uncertainties": [
+        "Applies to sport-harvested mussels; commercially harvested mussels from certified dealers are regulated separately by CDPH."
+      ]
+    },
+    {
+      "id": "cdph-2026-sn26-018-monterey-bivalves",
+      "agency": "CDPH",
+      "action": "consumption_advisory",
+      "status": "active",
+      "title": "Do not eat sport-harvested bivalve shellfish from Monterey County",
+      "summary": "CDPH advises not eating sport-harvested mussels, clams, scallops or oysters from Monterey County because of dangerous levels of domoic acid detected in mussels.",
+      "official_text": "CDPH is advising the public not to eat sport-harvested mussels, clams, scallops, or oysters, gathered from Monterey County due to dangerous levels of domoic acid toxin detected in mussels from Monterey County.",
+      "fishery": "sport_harvest",
+      "species": [
+        "mussels",
+        "clams",
+        "scallops",
+        "oysters"
+      ],
+      "toxins": [
+        "domoic_acid"
+      ],
+      "area": {
+        "type": "county",
+        "description": "Monterey County",
+        "counties": [
+          "Monterey"
+        ],
+        "geometry_basis": "official_polygon",
+        "geometry_note": "CDPH county polygon from the CDPH shellfish advisory map; the advisory applies to shellfish gathered from the county, not to a line at sea."
+      },
+      "effective_date": "2026-09-14",
+      "sources": [
+        {
+          "label": "CDPH SN26-018",
+          "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-018.aspx",
+          "kind": "press_release",
+          "published_date": "2026-09-14"
+        },
+        {
+          "label": "CDPH recreational bivalve shellfish advisory map",
+          "url": "https://experience.arcgis.com/experience/394836318cfe4f7494e1c09097a43559",
+          "kind": "map"
+        }
+      ],
+      "uncertainties": []
+    },
+    {
+      "id": "cdph-2026-sn26-019-anchovy-central-coast",
+      "agency": "CDPH",
+      "action": "consumption_advisory",
+      "status": "active",
+      "title": "Do not eat northern anchovies from Pigeon Point to Point Lobos",
+      "summary": "CDPH advises not eating northern anchovies harvested between Pigeon Point (San Mateo County) and Point Lobos (Monterey County) because of dangerous levels of domoic acid. Does not apply to anchovies taken for bait.",
+      "official_text": "The California Department of Public Health (CDPH) advises the public not to consume northern anchovies harvested from waters between: Pigeon Point, San Mateo County (37° 11.00’ N. lat.) and Point Lobos, Monterey County (36° 31.46’ N. Lat.)",
+      "fishery": "consumption",
+      "species": [
+        "northern anchovy"
+      ],
+      "toxins": [
+        "domoic_acid"
+      ],
+      "area": {
+        "type": "lat_band",
+        "description": "Waters between Pigeon Point, San Mateo County (37° 11.00’ N) and Point Lobos, Monterey County (36° 31.46’ N)",
+        "lat_north": 37.183333,
+        "lat_south": 36.524333,
+        "geometry_basis": "derived_from_official_latitudes",
+        "geometry_note": "Shaded over C-HARM ocean cells within 20 km of the coast between the two official latitudes. The notice gives no offshore limit; the shading is a display aid and the official wording controls."
+      },
+      "effective_date": "2026-09-14",
+      "sources": [
+        {
+          "label": "CDPH SN26-019",
+          "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-019.aspx",
+          "kind": "press_release",
+          "published_date": "2026-09-14"
+        }
+      ],
+      "uncertainties": [
+        "The notice states latitudes only; how far offshore it applies is not specified."
+      ]
+    },
+    {
+      "id": "cdfw-2026-anchovy-take-restriction-monterey-bay",
+      "agency": "CDFW",
+      "action": "take_restriction",
+      "status": "active",
+      "title": "Northern anchovy: no take for human consumption, Pigeon Point to Point Lobos",
+      "summary": "Northern anchovies may not be harvested recreationally or commercially for human consumption in Monterey Bay (Pigeon Point to Point Lobos). Commercially taken anchovies may only be sold as dead bait; recreationally taken anchovies may only be used as bait.",
+      "official_text": "Northern anchovies may not be harvested recreationally or commercially for human consumption in Monterey Bay (Pigeon Point, San Mateo County to Point Lobos, Monterey County) due to elevated levels of domoic acid toxin in the fish. The Monterey Bay closure went into effect on September 11, 2026.",
+      "fishery": "commercial_and_recreational",
+      "species": [
+        "northern anchovy"
+      ],
+      "toxins": [
+        "domoic_acid"
+      ],
+      "area": {
+        "type": "lat_band",
+        "description": "Monterey Bay: Pigeon Point, San Mateo County (37° 11.000’ N) to Point Lobos, Monterey County (36° 31.461’ N)",
+        "lat_north": 37.183333,
+        "lat_south": 36.52435,
+        "geometry_basis": "derived_from_official_latitudes",
+        "geometry_note": "Latitudes from the CDFW declaration as summarised in the CDFW evidence log; shaded over C-HARM ocean cells within 20 km of the coast. The official wording controls."
+      },
+      "effective_date": "2026-09-11",
+      "sources": [
+        {
+          "label": "CDFW: Health advisories and closures (finfish)",
+          "url": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+          "kind": "status_page"
+        },
+        {
+          "label": "CDFW news release (Sept 11, 2026)",
+          "url": "https://wildlife.ca.gov/News/Archive/commercial-and-recreational-take-restrictions-in-place-for-northern-anchovy-in-monterey-bay-due-to-public-health-hazard",
+          "kind": "press_release",
+          "published_date": "2026-09-11"
+        },
+        {
+          "label": "CDFW Director's declaration (PDF)",
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=247331",
+          "kind": "legal_document"
+        }
+      ],
+      "uncertainties": [
+        "Offshore extent is not stated on the CDFW status page."
+      ]
+    },
+    {
+      "id": "cdfw-2024-razor-clam-humboldt",
+      "agency": "CDFW",
+      "action": "fishery_closure",
+      "status": "active",
+      "title": "Recreational razor clam fishery closed in Humboldt County",
+      "summary": "The recreational razor clam fishery remains closed in Humboldt County because of elevated domoic acid in razor clams.",
+      "official_text": "The recreational razor clam fishery remains closed in Humboldt County due to elevated levels of domoic acid in razor clams. The Humboldt County closure has been in effect since May 2, 2024.",
+      "fishery": "recreational",
+      "species": [
+        "razor clam"
+      ],
+      "toxins": [
+        "domoic_acid"
+      ],
+      "area": {
+        "type": "county",
+        "description": "Humboldt County",
+        "counties": [
+          "Humboldt"
+        ],
+        "geometry_basis": "official_polygon",
+        "geometry_note": "CDPH county polygon; the closure applies to the county's razor clam beaches."
+      },
+      "effective_date": "2024-05-02",
+      "sources": [
+        {
+          "label": "CDFW: Health advisories and closures (razor clam)",
+          "url": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+          "kind": "status_page"
+        },
+        {
+          "label": "OEHHA recommendation memo, May 2, 2024 (PDF)",
+          "url": "https://oehha.ca.gov/sites/default/files/media/2024-10/razorclamrecreationalfisherymemo050224.pdf",
+          "kind": "legal_document",
+          "published_date": "2024-05-02"
+        }
+      ],
+      "uncertainties": []
+    },
+    {
+      "id": "cdfw-rock-crab-commercial-40n",
+      "agency": "CDFW",
+      "action": "fishery_closure",
+      "status": "active",
+      "title": "Commercial rock crab: domoic acid closure, 40°00′ N to 40°30′ N",
+      "summary": "A domoic acid fishery closure is in effect for the commercial rock crab fishery from the Mendocino/Humboldt county line to Cape Mendocino.",
+      "official_text": "A Domoic Acid Fishery Closure is in effect for the commercial rock crab fishery from the Mendocino/Humboldt county line (40° 00.00’ N. lat.) to Cape Mendocino, Humboldt County (40° 30.00’ N. lat.).",
+      "fishery": "commercial",
+      "species": [
+        "rock crab"
+      ],
+      "toxins": [
+        "domoic_acid"
+      ],
+      "area": {
+        "type": "lat_band",
+        "description": "Mendocino/Humboldt county line (40° 00.00’ N) to Cape Mendocino, Humboldt County (40° 30.00’ N)",
+        "lat_north": 40.5,
+        "lat_south": 40.0,
+        "geometry_basis": "derived_from_official_latitudes",
+        "geometry_note": "Shaded over C-HARM ocean cells within 20 km of the coast between the two official latitudes. The official wording controls."
+      },
+      "effective_date": null,
+      "effective_date_note": "The CDFW status page does not state when this closure took effect.",
+      "sources": [
+        {
+          "label": "CDFW: Health advisories and closures (rock crab, commercial)",
+          "url": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+          "kind": "status_page"
+        },
+        {
+          "label": "CDFW Domoic Acid Fishery Closure Information Line (831) 649-2883",
+          "url": "tel:+18316492883",
+          "kind": "information_line"
+        }
+      ],
+      "uncertainties": [
+        "Start date not published on the status page; confirm with CDFW.",
+        "Offshore extent not stated."
+      ]
+    },
+    {
+      "id": "cdph-rock-crab-viscera-north-coast-nci",
+      "agency": "CDPH",
+      "action": "consumption_advisory",
+      "status": "active",
+      "title": "Do not eat rock crab internal organs: CA/OR border to Mendocino/Sonoma line, and Northern Channel Islands",
+      "summary": "CDPH recommends not eating the internal organs (viscera) of rock crab caught from the California/Oregon border to the Mendocino/Sonoma county line, and from waters off Santa Rosa Island and the Northern Channel Islands.",
+      "official_text": "CDPH currently recommends not eating the interal organs of rock crab caught from the California/Oregon border to the Mendocino/Sonoma county line, and from the waters off Santa Rosa Island and the Northern Channel Islands.",
+      "fishery": "consumption",
+      "species": [
+        "rock crab (internal organs)"
+      ],
+      "toxins": [
+        "domoic_acid"
+      ],
+      "area": {
+        "type": "lat_band",
+        "description": "California/Oregon border to the Mendocino/Sonoma county line; and waters off Santa Rosa Island and the Northern Channel Islands",
+        "lat_north": 42.0,
+        "lat_south": 38.76875,
+        "geometry_basis": "derived_from_official_latitudes",
+        "geometry_note": "Mainland segment only. The Mendocino/Sonoma county line latitude (38° 46.125’ N) is taken from CDFW's RAMP zone definitions because the advisory names the line without a coordinate. The Northern Channel Islands portion is not drawn."
+      },
+      "effective_date": null,
+      "effective_date_note": "Quoted from the CDFW status page (verbatim, including the agency's spelling). The originating CDPH release was not re-read for this record.",
+      "sources": [
+        {
+          "label": "CDFW: Health advisories and closures (rock crab note)",
+          "url": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+          "kind": "status_page"
+        },
+        {
+          "label": "CDPH shellfish and seafood advisories (list)",
+          "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx",
+          "kind": "status_page"
+        }
+      ],
+      "uncertainties": [
+        "Effective date not confirmed from the CDPH release.",
+        "Northern Channel Islands part of the area is not mapped in CoastWatch."
+      ]
+    },
+    {
+      "id": "cdph-nci-bivalve-special-advisory",
+      "agency": "CDPH",
+      "action": "special_advisory",
+      "status": "active",
+      "title": "Bivalve shellfish special advisory: Northern Channel Islands",
+      "summary": "CDPH's shellfish advisory map shows an active 'Special Advisory' for sport-harvested bivalve shellfish around the Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa and San Miguel islands).",
+      "official_text": "Special Advisory Area - Northern Channel Islands",
+      "fishery": "sport_harvest",
+      "species": [
+        "bivalve shellfish (mussels, clams, scallops, oysters)"
+      ],
+      "toxins": [
+        "domoic_acid",
+        "psp"
+      ],
+      "area": {
+        "type": "named_area",
+        "description": "Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, San Miguel)",
+        "geometry_basis": "official_polygon",
+        "geometry_note": "Polygon from CDPH's 'All Bivalve Shellfish Health Advisory - Special Advisory' map layer."
+      },
+      "effective_date": null,
+      "effective_date_note": "The CDPH map layer does not state an issue date; its popup says the advisory will remain until additional samples allow it to be lifted.",
+      "sources": [
+        {
+          "label": "CDPH recreational bivalve shellfish advisory map",
+          "url": "https://experience.arcgis.com/experience/394836318cfe4f7494e1c09097a43559",
+          "kind": "map"
+        }
+      ],
+      "uncertainties": [
+        "Known only from the CDPH map layer, which CDPH edits by hand; no press release was identified.",
+        "Toxin type not stated on the layer."
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "cdfw-dungeness-recreational-no-toxin-closure",
+      "agency": "CDFW",
+      "topic": "Dungeness crab, recreational — marine toxin closures",
+      "statement": "There are currently no closures in the recreational Dungeness crab fishery due to naturally occurring marine toxins.",
+      "source": {
+        "label": "CDFW: Health advisories and closures",
+        "url": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+        "kind": "status_page"
+      }
+    },
+    {
+      "id": "cdfw-dungeness-commercial-no-toxin-closure",
+      "agency": "CDFW",
+      "topic": "Dungeness crab, commercial — marine toxin closures",
+      "statement": "There are currently no closures in the commercial Dungeness crab fishery due to naturally occurring marine toxins.",
+      "source": {
+        "label": "CDFW: Health advisories and closures",
+        "url": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+        "kind": "status_page"
+      }
+    },
+    {
+      "id": "cdfw-dungeness-2026-27-season-status",
+      "agency": "CDFW",
+      "topic": "Dungeness crab 2026-27 season status (all fishing zones)",
+      "statement": "Commercial Fishery: Season is closed. Recreational Fishery: Season is closed.",
+      "source": {
+        "label": "CDFW: Whale Safe Fisheries — Dungeness Crab 2026-27 Fishery Status",
+        "url": "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries",
+        "kind": "status_page"
+      }
+    },
+    {
+      "id": "cdfw-spiny-lobster-no-toxin-closure",
+      "agency": "CDFW",
+      "topic": "Spiny lobster — marine toxin closures",
+      "statement": "There are currently no closures of the recreational or commercial California spiny lobster fisheries due to naturally occurring marine toxins.",
+      "source": {
+        "label": "CDFW: Health advisories and closures",
+        "url": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+        "kind": "status_page"
+      }
+    }
+  ],
+  "watched_sources": [
+    {
+      "id": "cdph_release_list",
+      "label": "CDPH shellfish and seafood advisories (news releases)",
+      "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx",
+      "parser": "cdph_release_list"
+    },
+    {
+      "id": "cdfw_health_advisories",
+      "label": "CDFW health advisories and closures",
+      "url": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+      "parser": "html_main_text"
+    },
+    {
+      "id": "cdfw_whale_safe",
+      "label": "CDFW Whale Safe Fisheries (Dungeness status)",
+      "url": "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries",
+      "parser": "html_main_text"
+    }
+  ],
+  "review": {
+    "status": "pending_human_review",
+    "reviewed_at": "2026-10-08T19:32:08Z",
+    "reviewed_by": "Claude (AI assistant): transcription from official pages; NOT reviewed by a person",
+    "method": "Records transcribed from CDFW/CDPH pages fetched 2026-10-08 (verbatim quotes); awaiting a person to check each record against its source.",
+    "source_fingerprints": {
+      "cdph_release_list": "sha256:e65d32b04974b23b4aaff462e1429236a6de5a2a4f25253e5bd257ae80cc4b59",
+      "cdfw_health_advisories": "sha256:eae579f3271025176aa8adb79b57705c2bb730bcad6601814fa768a248b46559",
+      "cdfw_whale_safe": "sha256:3b4205016241b6d83551a43e3a17aba1ebb31eb7d95678e1f9d02c7c09e13801"
+    },
+    "cdph_release_ids_reviewed": [
+      "SN26-019",
+      "SN26-018",
+      "SN26-017",
+      "SN26-016",
+      "SN26-015",
+      "SN26-014",
+      "SN26-013",
+      "SN26-012",
+      "SN26-011",
+      "SN26-010",
+      "SN26-009",
+      "SN26-008",
+      "SN26-007",
+      "SN26-006",
+      "SN26-005",
+      "SN26-004",
+      "SN26-003",
+      "SN26-002",
+      "SN26-001"
+    ]
+  },
+  "hotlines": [
+    {
+      "label": "CDPH shellfish & biotoxin information",
+      "phone": "(800) 553-4133",
+      "tel": "+18005534133"
+    },
+    {
+      "label": "CDFW domoic acid fishery closure line",
+      "phone": "(831) 649-2883",
+      "tel": "+18316492883"
+    }
+  ]
+}

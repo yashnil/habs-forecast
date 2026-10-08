@@ -1,29 +1,247 @@
 {
-  "description": "Principal California ocean landing ports shown in CoastWatch. Geometry, names and port areas come from CDFW 'Marine Landing Data System Ports' [ds3081]; this file only selects ports by CDFW port code and sets display names. Edit by pull request.",
+  "description": "Principal California ocean landing ports shown in CoastWatch. Geometry, names and port areas come from CDFW 'Marine Landing Data System Ports' [ds3081]; this file only selects ports by CDFW port code and sets display names. Edit by pull request. County is used to relate county-level CDPH advisories to ports; region drives map navigation.",
   "source": "https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3081_fpu/FeatureServer/0",
   "last_reviewed": "2026-10-08",
   "ports": [
-    {"port_code": 201, "display_name": "Crescent City", "expected_port_area": "EUREKA"},
-    {"port_code": 231, "display_name": "Trinidad", "expected_port_area": "EUREKA"},
-    {"port_code": 220, "display_name": "Eureka", "expected_port_area": "EUREKA"},
-    {"port_code": 215, "display_name": "Shelter Cove", "expected_port_area": "EUREKA"},
-    {"port_code": 223, "display_name": "Fort Bragg", "expected_port_area": "FORT BRAGG"},
-    {"port_code": 213, "display_name": "Point Arena", "expected_port_area": "FORT BRAGG"},
-    {"port_code": 473, "display_name": "Bodega Bay", "expected_port_area": "BODEGA BAY"},
-    {"port_code": 440, "display_name": "San Francisco", "expected_port_area": "SAN FRANCISCO"},
-    {"port_code": 452, "display_name": "Princeton / Half Moon Bay", "expected_port_area": "SAN FRANCISCO"},
-    {"port_code": 593, "display_name": "Santa Cruz", "expected_port_area": "MONTEREY"},
-    {"port_code": 592, "display_name": "Moss Landing", "expected_port_area": "MONTEREY"},
-    {"port_code": 550, "display_name": "Monterey", "expected_port_area": "MONTEREY"},
-    {"port_code": 606, "display_name": "Morro Bay", "expected_port_area": "MORRO BAY"},
-    {"port_code": 602, "display_name": "Avila / Port San Luis", "expected_port_area": "MORRO BAY"},
-    {"port_code": 611, "display_name": "Santa Barbara", "expected_port_area": "SANTA BARBARA"},
-    {"port_code": 613, "display_name": "Ventura", "expected_port_area": "SANTA BARBARA"},
-    {"port_code": 605, "display_name": "Port Hueneme", "expected_port_area": "SANTA BARBARA"},
-    {"port_code": 770, "display_name": "San Pedro", "expected_port_area": "LOS ANGELES"},
-    {"port_code": 748, "display_name": "Newport Beach", "expected_port_area": "LOS ANGELES"},
-    {"port_code": 767, "display_name": "Dana Point", "expected_port_area": "LOS ANGELES"},
-    {"port_code": 883, "display_name": "Oceanside", "expected_port_area": "SAN DIEGO"},
-    {"port_code": 880, "display_name": "San Diego", "expected_port_area": "SAN DIEGO"}
+    {
+      "port_code": 201,
+      "display_name": "Crescent City",
+      "expected_port_area": "EUREKA",
+      "county": "Del Norte",
+      "region": "north_coast"
+    },
+    {
+      "port_code": 231,
+      "display_name": "Trinidad",
+      "expected_port_area": "EUREKA",
+      "county": "Humboldt",
+      "region": "north_coast"
+    },
+    {
+      "port_code": 220,
+      "display_name": "Eureka",
+      "expected_port_area": "EUREKA",
+      "county": "Humboldt",
+      "region": "north_coast"
+    },
+    {
+      "port_code": 215,
+      "display_name": "Shelter Cove",
+      "expected_port_area": "EUREKA",
+      "county": "Humboldt",
+      "region": "north_coast"
+    },
+    {
+      "port_code": 223,
+      "display_name": "Fort Bragg",
+      "expected_port_area": "FORT BRAGG",
+      "county": "Mendocino",
+      "region": "mendocino_sonoma"
+    },
+    {
+      "port_code": 213,
+      "display_name": "Point Arena",
+      "expected_port_area": "FORT BRAGG",
+      "county": "Mendocino",
+      "region": "mendocino_sonoma"
+    },
+    {
+      "port_code": 473,
+      "display_name": "Bodega Bay",
+      "expected_port_area": "BODEGA BAY",
+      "county": "Sonoma",
+      "region": "mendocino_sonoma"
+    },
+    {
+      "port_code": 440,
+      "display_name": "San Francisco",
+      "expected_port_area": "SAN FRANCISCO",
+      "county": "San Francisco",
+      "region": "sf_bay_farallones"
+    },
+    {
+      "port_code": 452,
+      "display_name": "Princeton / Half Moon Bay",
+      "expected_port_area": "SAN FRANCISCO",
+      "county": "San Mateo",
+      "region": "sf_bay_farallones"
+    },
+    {
+      "port_code": 593,
+      "display_name": "Santa Cruz",
+      "expected_port_area": "MONTEREY",
+      "county": "Santa Cruz",
+      "region": "monterey_bay"
+    },
+    {
+      "port_code": 592,
+      "display_name": "Moss Landing",
+      "expected_port_area": "MONTEREY",
+      "county": "Monterey",
+      "region": "monterey_bay"
+    },
+    {
+      "port_code": 550,
+      "display_name": "Monterey",
+      "expected_port_area": "MONTEREY",
+      "county": "Monterey",
+      "region": "monterey_bay"
+    },
+    {
+      "port_code": 606,
+      "display_name": "Morro Bay",
+      "expected_port_area": "MORRO BAY",
+      "county": "San Luis Obispo",
+      "region": "central_coast"
+    },
+    {
+      "port_code": 602,
+      "display_name": "Avila / Port San Luis",
+      "expected_port_area": "MORRO BAY",
+      "county": "San Luis Obispo",
+      "region": "central_coast"
+    },
+    {
+      "port_code": 611,
+      "display_name": "Santa Barbara",
+      "expected_port_area": "SANTA BARBARA",
+      "county": "Santa Barbara",
+      "region": "southern_california"
+    },
+    {
+      "port_code": 613,
+      "display_name": "Ventura",
+      "expected_port_area": "SANTA BARBARA",
+      "county": "Ventura",
+      "region": "southern_california"
+    },
+    {
+      "port_code": 605,
+      "display_name": "Port Hueneme",
+      "expected_port_area": "SANTA BARBARA",
+      "county": "Ventura",
+      "region": "southern_california"
+    },
+    {
+      "port_code": 770,
+      "display_name": "San Pedro",
+      "expected_port_area": "LOS ANGELES",
+      "county": "Los Angeles",
+      "region": "southern_california"
+    },
+    {
+      "port_code": 748,
+      "display_name": "Newport Beach",
+      "expected_port_area": "LOS ANGELES",
+      "county": "Orange",
+      "region": "southern_california"
+    },
+    {
+      "port_code": 767,
+      "display_name": "Dana Point",
+      "expected_port_area": "LOS ANGELES",
+      "county": "Orange",
+      "region": "southern_california"
+    },
+    {
+      "port_code": 883,
+      "display_name": "Oceanside",
+      "expected_port_area": "SAN DIEGO",
+      "county": "San Diego",
+      "region": "southern_california"
+    },
+    {
+      "port_code": 880,
+      "display_name": "San Diego",
+      "expected_port_area": "SAN DIEGO",
+      "county": "San Diego",
+      "region": "southern_california"
+    }
+  ],
+  "regions": [
+    {
+      "id": "north_coast",
+      "label": "North Coast",
+      "bounds": [
+        [
+          -124.75,
+          39.9
+        ],
+        [
+          -123.6,
+          42.05
+        ]
+      ]
+    },
+    {
+      "id": "mendocino_sonoma",
+      "label": "Mendocino–Sonoma",
+      "bounds": [
+        [
+          -124.0,
+          38.2
+        ],
+        [
+          -122.8,
+          39.95
+        ]
+      ]
+    },
+    {
+      "id": "sf_bay_farallones",
+      "label": "San Francisco & Farallones",
+      "bounds": [
+        [
+          -123.35,
+          37.25
+        ],
+        [
+          -122.2,
+          38.15
+        ]
+      ]
+    },
+    {
+      "id": "monterey_bay",
+      "label": "Monterey Bay",
+      "bounds": [
+        [
+          -122.45,
+          36.45
+        ],
+        [
+          -121.72,
+          37.15
+        ]
+      ]
+    },
+    {
+      "id": "central_coast",
+      "label": "Central Coast",
+      "bounds": [
+        [
+          -121.6,
+          34.4
+        ],
+        [
+          -120.4,
+          36.1
+        ]
+      ]
+    },
+    {
+      "id": "southern_california",
+      "label": "Southern California",
+      "bounds": [
+        [
+          -120.6,
+          32.45
+        ],
+        [
+          -117.05,
+          34.55
+        ]
+      ]
+    }
   ]
 }

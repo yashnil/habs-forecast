@@ -30,6 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      official_changed: ${{ steps.watch.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,6 +51,10 @@ jobs:
       - name: Run pipeline
         working-directory: pipeline
         run: uv sync && uv run cwp run --out ../publish/v1
+      - name: Watch official pages for changes since the last human review (never edits records)
+        id: watch
+        working-directory: pipeline
+        run: uv run cwp watch-official --github-output "$GITHUB_OUTPUT" | tee ../watch-report.json
       - name: Verify new C-HARM data against ERDDAP (13 points x 12 layers)
         working-directory: pipeline
         run: uv run cwp verify-charm --only-if-updated --out ../publish/v1 --report ../publish/v1/verification/charm-points.json
@@ -64,6 +70,24 @@ jobs:
           path: publish/
           include-hidden-files: false
           retention-days: 7
+
+  notify-review:
+    # Official pages changed (or could not be read): ask a person to review the registry.
+    needs: build
+    if: needs.build.outputs.official_changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the review issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Official notices: sources changed since last review"
+          body="The CoastWatch watcher detected changes (or could not read) official CDFW/CDPH pages since the last human review. The app shows official notices as NOT verified until a person checks every record in data/curated/official_notices.json against the sources and runs: cwp review-official --reviewer NAME --confirm. Details: ${RUN_URL} (job build, step 'Watch official pages')."
+          n=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ -n "$n" ]; then gh issue comment "$n" --repo "$GITHUB_REPOSITORY" --body "$body"; else gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"; fi
 
   publish:
     needs: build

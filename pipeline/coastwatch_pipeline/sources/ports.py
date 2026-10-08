@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..context import RunContext
-from ..models import PortFeature, PortProperties, PortsCollection, Provenance
+from ..models import PortFeature, PortProperties, PortsCollection, Provenance, Region
 
 SOURCE_ID = "cdfw_ports"
 SERVICE = "https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3081_fpu/FeatureServer/0"
@@ -71,13 +71,20 @@ def build(ctx: RunContext, raw: dict, curated: dict) -> PortsCollection:
                     display_name=p["display_name"],
                     port_area=str(a.get("MajorPort")),
                     port_area_code=int(a.get("MajorPortC")),
+                    county=p["county"],
+                    region=p["region"],
                 ),
             )
         )
     if problems:
         raise PortsError("; ".join(problems))
+    region_ids = {r["id"] for r in curated.get("regions", [])}
+    missing_regions = sorted({f.properties.region for f in features} - region_ids)
+    if missing_regions:
+        raise PortsError(f"ports reference unknown regions {missing_regions}")
     return PortsCollection(
         features=features,
+        regions=[Region(**r) for r in curated.get("regions", [])],
         caveats=[
             "Port points are CDFW reference locations for landing records; CDFW notes a point may not represent the exact harbour location.",
         ],

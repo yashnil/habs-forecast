@@ -1,0 +1,42 @@
+{
+ "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(36.7450):2:(36.4555)%5D%5B(-122.0725):2:(-121.7168)%5D": {
+  "content_type": "application/x-netcdf",
+  "file": "3b2dcaa92c89385f.bin"
+ },
+ "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(36.9491):2:(36.6597)%5D%5B(-121.9652):2:(-121.6086)%5D": {
+  "content_type": "application/x-netcdf",
+  "file": "6e81009e8401cc26.bin"
+ },
+ "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.445):(36.755)%5D%5B(237.917):(238.293)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.445):(36.755)%5D%5B(237.917):(238.293)%5D,cellular_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.445):(36.755)%5D%5B(237.917):(238.293)%5D": {
+  "content_type": "application/x-netcdf",
+  "file": "7980d527e3042c94.bin"
+ },
+ "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.650):(36.959)%5D%5B(238.025):(238.401)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.650):(36.959)%5D%5B(238.025):(238.401)%5D,cellular_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.650):(36.959)%5D%5B(238.025):(238.401)%5D": {
+  "content_type": "application/x-netcdf",
+  "file": "afea1574c5f2d7d0.bin"
+ },
+ "https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/All_Bivalve_Shellfish_Health_Advisory_Special_Advisory/FeatureServer/3/query?where=1%3D1&outFields=TITLE&outSR=4326&f=geojson": {
+  "content_type": "application/json; charset=utf-8",
+  "file": "5202a28b9aa6d2e1.bin"
+ },
+ "https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/California_Coastal_Counties/FeatureServer/3/query?where=TITLE%20%3D%20%27Humboldt%20County%27&outFields=TITLE&outSR=4326&f=geojson": {
+  "content_type": "application/json; charset=utf-8",
+  "file": "14eb6bdc8941af18.bin"
+ },
+ "https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/California_Coastal_Counties/FeatureServer/3/query?where=TITLE%20%3D%20%27Monterey%20County%27&outFields=TITLE&outSR=4326&f=geojson": {
+  "content_type": "application/json; charset=utf-8",
+  "file": "688edb3223fcf242.bin"
+ },
+ "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries": {
+  "content_type": "text/html; charset=utf-8",
+  "file": "60e6671246487355.html"
+ },
+ "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories": {
+  "content_type": "text/html; charset=utf-8",
+  "file": "2d1412abb097f4ab.html"
+ },
+ "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx": {
+  "content_type": "text/html; charset=utf-8",
+  "file": "e368d8ebea12174f.html"
+ }
+}

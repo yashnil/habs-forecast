@@ -17,7 +17,7 @@ def test_every_manifest_reference_exists_and_decodes(out):
     run_pipeline(fixture_context(out))
     report = check_published(str(out))
     assert report["ok"], report["problems"]
-    assert report["files_checked"] == 1 + 24 + 1  # manifest + 12 images + 12 grids + ports
+    assert report["files_checked"] == 1 + 24 + 1 + 2  # manifest + 12 images + 12 grids + ports + official + port intel
 
 
 def test_asset_paths_are_content_addressed(out):
