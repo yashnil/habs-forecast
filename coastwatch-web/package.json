@@ -14,7 +14,8 @@
     "data:live": "cd ../pipeline && uv run cwp run --out ../coastwatch-web/public/data/v1",
     "data:fixture": "node scripts/copy-fixture-data.mjs",
     "test": "vitest run",
-    "test:e2e": "npm run data:fixture && npm run build && playwright test"
+    "test:e2e": "npm run data:fixture && npm run build && playwright test",
+    "test:published": "playwright test -c playwright.published.config.ts"
   },
   "dependencies": {
     "ajv": "^8.20.0",
