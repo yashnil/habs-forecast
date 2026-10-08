@@ -1,0 +1,770 @@
+{
+  "$defs": {
+    "AreaSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "counties": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Counties",
+          "type": "array"
+        },
+        "description": {
+          "description": "Area as worded by the agency",
+          "title": "Description",
+          "type": "string"
+        },
+        "geometry_basis": {
+          "enum": [
+            "official_polygon",
+            "derived_from_official_latitudes",
+            "none"
+          ],
+          "title": "Geometry Basis",
+          "type": "string"
+        },
+        "geometry_note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Geometry Note"
+        },
+        "lat_north": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat North"
+        },
+        "lat_south": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat South"
+        },
+        "type": {
+          "enum": [
+            "statewide",
+            "county",
+            "lat_band",
+            "named_area"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "description",
+        "geometry_basis"
+      ],
+      "title": "AreaSpec",
+      "type": "object"
+    },
+    "OfficialRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": [
+            "fishery_closure",
+            "take_restriction",
+            "consumption_advisory",
+            "quarantine",
+            "special_advisory",
+            "reopening",
+            "advisory_lifted"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "agency": {
+          "enum": [
+            "CDFW",
+            "CDPH",
+            "OEHHA"
+          ],
+          "title": "Agency",
+          "type": "string"
+        },
+        "area": {
+          "$ref": "#/$defs/AreaSpec"
+        },
+        "effective_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Effective Date"
+        },
+        "effective_date_note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effective Date Note"
+        },
+        "expected_end_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected End Date"
+        },
+        "expected_end_note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected End Note"
+        },
+        "fishery": {
+          "enum": [
+            "commercial",
+            "recreational",
+            "commercial_and_recreational",
+            "consumption",
+            "sport_harvest"
+          ],
+          "title": "Fishery",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "lifted_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lifted Date"
+        },
+        "official_text": {
+          "description": "Verbatim wording from the official source",
+          "title": "Official Text",
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "minItems": 1,
+          "title": "Sources",
+          "type": "array"
+        },
+        "species": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Species",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "lifted",
+            "superseded"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "summary": {
+          "description": "Plain-language summary written by the reviewer",
+          "title": "Summary",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "toxins": {
+          "items": {
+            "enum": [
+              "domoic_acid",
+              "psp"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Toxins",
+          "type": "array"
+        },
+        "uncertainties": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Uncertainties",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "agency",
+        "action",
+        "status",
+        "title",
+        "summary",
+        "official_text",
+        "fishery",
+        "species",
+        "toxins",
+        "area",
+        "effective_date",
+        "sources"
+      ],
+      "title": "OfficialRecord",
+      "type": "object"
+    },
+    "OfficialRegistry": {
+      "additionalProperties": false,
+      "properties": {
+        "hotlines": {
+          "items": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "title": "Hotlines",
+          "type": "array"
+        },
+        "records": {
+          "items": {
+            "$ref": "#/$defs/OfficialRecord"
+          },
+          "title": "Records",
+          "type": "array"
+        },
+        "review": {
+          "$ref": "#/$defs/ReviewInfo"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "statements": {
+          "items": {
+            "$ref": "#/$defs/OfficialStatement"
+          },
+          "title": "Statements",
+          "type": "array"
+        },
+        "watched_sources": {
+          "items": {
+            "$ref": "#/$defs/WatchedSource"
+          },
+          "title": "Watched Sources",
+          "type": "array"
+        }
+      },
+      "required": [
+        "records",
+        "statements",
+        "watched_sources",
+        "review"
+      ],
+      "title": "OfficialRegistry",
+      "type": "object"
+    },
+    "OfficialStatement": {
+      "additionalProperties": false,
+      "description": "An official statement that does not restrict anything, quoted verbatim (e.g. 'There\nare currently no closures \u2026 due to naturally occurring marine toxins'). Never rendered\nas 'open' or 'safe'.",
+      "properties": {
+        "agency": {
+          "enum": [
+            "CDFW",
+            "CDPH",
+            "OEHHA"
+          ],
+          "title": "Agency",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceRef"
+        },
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        },
+        "topic": {
+          "title": "Topic",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "agency",
+        "topic",
+        "statement",
+        "source"
+      ],
+      "title": "OfficialStatement",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "citation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Citation"
+        },
+        "dataset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Id"
+        },
+        "institution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Institution"
+        },
+        "license": {
+          "title": "License",
+          "type": "string"
+        },
+        "pipeline_run_id": {
+          "title": "Pipeline Run Id",
+          "type": "string"
+        },
+        "pipeline_version": {
+          "title": "Pipeline Version",
+          "type": "string"
+        },
+        "product_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Product Version"
+        },
+        "request_urls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Request Urls",
+          "type": "array"
+        },
+        "retrieved_at": {
+          "description": "UTC ISO-8601 time the pipeline fetched the data",
+          "title": "Retrieved At",
+          "type": "string"
+        },
+        "source_id": {
+          "description": "Stable id of the upstream source, e.g. 'charm'",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_name": {
+          "title": "Source Name",
+          "type": "string"
+        },
+        "source_url": {
+          "description": "Dataset or page URL a person can open",
+          "title": "Source Url",
+          "type": "string"
+        },
+        "upstream_metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Selected upstream attributes kept verbatim",
+          "title": "Upstream Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source_id",
+        "source_name",
+        "source_url",
+        "license",
+        "retrieved_at",
+        "pipeline_version",
+        "pipeline_run_id"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "ReviewInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "cdph_release_ids_reviewed": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Cdph Release Ids Reviewed",
+          "type": "array"
+        },
+        "method": {
+          "title": "Method",
+          "type": "string"
+        },
+        "reviewed_at": {
+          "title": "Reviewed At",
+          "type": "string"
+        },
+        "reviewed_by": {
+          "title": "Reviewed By",
+          "type": "string"
+        },
+        "source_fingerprints": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "watched source id -> content hash at review",
+          "title": "Source Fingerprints",
+          "type": "object"
+        },
+        "status": {
+          "enum": [
+            "human_verified",
+            "pending_human_review"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "reviewed_at",
+        "reviewed_by",
+        "method",
+        "source_fingerprints",
+        "cdph_release_ids_reviewed"
+      ],
+      "title": "ReviewInfo",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "press_release",
+            "status_page",
+            "legal_document",
+            "map",
+            "information_line"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "published_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Published Date"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "url",
+        "kind"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    },
+    "VerificationPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "aging_max_age_days": {
+          "title": "Aging Max Age Days",
+          "type": "integer"
+        },
+        "note": {
+          "title": "Note",
+          "type": "string"
+        },
+        "verified_max_age_days": {
+          "title": "Verified Max Age Days",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "verified_max_age_days",
+        "aging_max_age_days",
+        "note"
+      ],
+      "title": "VerificationPolicy",
+      "type": "object"
+    },
+    "WatchResult": {
+      "additionalProperties": false,
+      "properties": {
+        "checked_at": {
+          "title": "Checked At",
+          "type": "string"
+        },
+        "content_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content Hash"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "http_status": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Http Status"
+        },
+        "items_seen": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Items Seen",
+          "type": "array"
+        },
+        "matches_review": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Matches Review"
+        },
+        "new_items": {
+          "description": "Items not present at the last review",
+          "items": {
+            "type": "string"
+          },
+          "title": "New Items",
+          "type": "array"
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "url",
+        "checked_at",
+        "ok"
+      ],
+      "title": "WatchResult",
+      "type": "object"
+    },
+    "WatchedSource": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "parser": {
+          "enum": [
+            "cdph_release_list",
+            "html_main_text"
+          ],
+          "title": "Parser",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "url",
+        "parser"
+      ],
+      "title": "WatchedSource",
+      "type": "object"
+    }
+  },
+  "$id": "https://coastwatch/schemas/v1/official.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "conflicts": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Conflicts",
+      "type": "array"
+    },
+    "generated_at": {
+      "title": "Generated At",
+      "type": "string"
+    },
+    "geometry": {
+      "additionalProperties": true,
+      "description": "GeoJSON FeatureCollection; properties.record_ids, basis, note",
+      "title": "Geometry",
+      "type": "object"
+    },
+    "geometry_errors": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Geometry Errors",
+      "type": "array"
+    },
+    "policy": {
+      "$ref": "#/$defs/VerificationPolicy"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "registry": {
+      "$ref": "#/$defs/OfficialRegistry"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "watch": {
+      "items": {
+        "$ref": "#/$defs/WatchResult"
+      },
+      "title": "Watch",
+      "type": "array"
+    }
+  },
+  "required": [
+    "generated_at",
+    "registry",
+    "watch",
+    "conflicts",
+    "geometry",
+    "geometry_errors",
+    "policy",
+    "provenance"
+  ],
+  "title": "OfficialDataset",
+  "type": "object"
+}

@@ -6,6 +6,21 @@ export function gradientCss(p: Palette): string {
   return `linear-gradient(to right, ${stops.join(", ")})`;
 }
 
+/** Palette colour for a value (linear interpolation between stops, as in the pipeline). */
+export function colorAt(p: Palette, v: number): string {
+  const [lo, hi] = p.domain;
+  const t = Math.min(1, Math.max(0, (v - lo) / (hi - lo)));
+  const stops = p.stops;
+  let i = 0;
+  while (i < stops.length - 2 && stops[i + 1].value < t) i++;
+  const a = stops[i];
+  const b = stops[i + 1];
+  const f = (t - a.value) / Math.max(1e-9, b.value - a.value);
+  const ch = (h: string, k: number) => parseInt(h.slice(1 + 2 * k, 3 + 2 * k), 16);
+  const mix = [0, 1, 2].map((k) => Math.round(ch(a.color, k) + (ch(b.color, k) - ch(a.color, k)) * f));
+  return `rgb(${mix.join(",")})`;
+}
+
 export function ProbabilityLegend({ palette, threshold }: { palette: Palette; threshold: string | null | undefined }) {
   const ticks = [0, 25, 50, 75, 100];
   return (

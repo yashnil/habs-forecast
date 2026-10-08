@@ -27,7 +27,7 @@ test.describe("information hierarchy and labelling", () => {
       await forecast.elementHandle(),
     );
     expect(before).toBe(true);
-    await expect(official).toContainText("does not track closures");
+    await expect(official).toContainText("does not mean an area is open");
     const hrefs = await official.locator("a[href^='https']").evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href));
     expect(hrefs).toContain("https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories");
     expect(hrefs).toContain("https://www.cdph.ca.gov/Programs/CEH/DRSEM/Pages/EMB/Shellfish/Marine-Biotoxin-Monitoring-Program.aspx");

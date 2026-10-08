@@ -389,7 +389,7 @@
     "institution": "California Department of Fish and Wildlife, Marine Region",
     "license": "CDFW BIOS public dataset; attribute CDFW.",
     "citation": null,
-    "retrieved_at": "2026-10-12T18:00:00Z",
+    "retrieved_at": "2026-10-08T19:20:37Z",
     "request_urls": [
       "https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3081_fpu/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=json&resultRecordCount=2000"
     ],
@@ -397,7 +397,7 @@
       "curated_list": "data/curated/ports.json",
       "curated_last_reviewed": "2026-10-08"
     },
-    "pipeline_version": "fixture",
-    "pipeline_run_id": "fixture"
+    "pipeline_version": "4cf841b477d6",
+    "pipeline_run_id": "37831194499"
   }
 }

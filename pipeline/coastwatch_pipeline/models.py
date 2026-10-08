@@ -20,6 +20,7 @@ ProductClass = Literal[
     "experimental_model",
     "historical_context",
     "reference",
+    "derived_summary",
 ]
 
 
@@ -49,7 +50,7 @@ class FreshnessPolicy(_Model):
     """How the client classifies age. Computed in the browser so a dead pipeline
     still degrades to 'stale' / 'historical' instead of looking current."""
 
-    basis: Literal["issued_date", "valid_date", "observed_date"]
+    basis: Literal["issued_date", "valid_date", "observed_date", "reviewed_date"]
     current_max_age_days: int = Field(ge=0)
     stale_max_age_days: int = Field(ge=0, description="Older than this is 'historical'")
     note: str
@@ -195,6 +196,16 @@ class PortProperties(_Model):
     display_name: str
     port_area: str
     port_area_code: int
+    # Added in M2. Optional so ports files written by the M1 pipeline (same schema
+    # version) stay valid; the pipeline always fills them now.
+    county: str | None = None
+    region: str | None = None
+
+
+class Region(_Model):
+    id: str
+    label: str
+    bounds: list[list[float]] = Field(min_length=2, max_length=2, description="[[west, south], [east, north]]")
 
 
 class PortFeature(_Model):
@@ -207,6 +218,7 @@ class PortsCollection(_Model):
     schema_version: Literal[1] = SCHEMA_VERSION
     type: Literal["FeatureCollection"] = "FeatureCollection"
     features: list[PortFeature]
+    regions: list[Region] = Field(default_factory=list)
     caveats: list[str]
     provenance: Provenance
 
@@ -220,9 +232,202 @@ class Manifest(_Model):
     forecast_runs: list[ForecastRun]
     sources: list[SourceStatus]
     ports_url: str | None
+    official_url: str | None = None
+    port_intel_url: str | None = None
+
+
+# ---------------------------------------------------------------- official notices (M2)
+Agency = Literal["CDFW", "CDPH", "OEHHA"]
+
+
+class SourceRef(_Model):
+    label: str
+    url: str
+    kind: Literal["press_release", "status_page", "legal_document", "map", "information_line"]
+    published_date: str | None = None
+
+
+class AreaSpec(_Model):
+    type: Literal["statewide", "county", "lat_band", "named_area"]
+    description: str = Field(description="Area as worded by the agency")
+    counties: list[str] = Field(default_factory=list)
+    lat_north: float | None = None
+    lat_south: float | None = None
+    geometry_basis: Literal["official_polygon", "derived_from_official_latitudes", "none"]
+    geometry_note: str | None = None
+
+
+class OfficialRecord(_Model):
+    id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]+$")
+    agency: Agency
+    action: Literal[
+        "fishery_closure",
+        "take_restriction",
+        "consumption_advisory",
+        "quarantine",
+        "special_advisory",
+        "reopening",
+        "advisory_lifted",
+    ]
+    status: Literal["active", "lifted", "superseded"]
+    title: str
+    summary: str = Field(description="Plain-language summary written by the reviewer")
+    official_text: str = Field(description="Verbatim wording from the official source")
+    fishery: Literal["commercial", "recreational", "commercial_and_recreational", "consumption", "sport_harvest"]
+    species: list[str] = Field(min_length=1)
+    toxins: list[Literal["domoic_acid", "psp"]] = Field(min_length=1)
+    area: AreaSpec
+    effective_date: str | None
+    effective_date_note: str | None = None
+    expected_end_date: str | None = None
+    expected_end_note: str | None = None
+    lifted_date: str | None = None
+    sources: list[SourceRef] = Field(min_length=1)
+    uncertainties: list[str] = Field(default_factory=list)
+
+
+class OfficialStatement(_Model):
+    """An official statement that does not restrict anything, quoted verbatim (e.g. 'There
+    are currently no closures … due to naturally occurring marine toxins'). Never rendered
+    as 'open' or 'safe'."""
+
+    id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]+$")
+    agency: Agency
+    topic: str
+    statement: str
+    source: SourceRef
+
+
+class WatchedSource(_Model):
+    id: str
+    label: str
+    url: str
+    parser: Literal["cdph_release_list", "html_main_text"]
+
+
+class ReviewInfo(_Model):
+    status: Literal["human_verified", "pending_human_review"]
+    reviewed_at: str
+    reviewed_by: str
+    method: str
+    source_fingerprints: dict[str, str] = Field(description="watched source id -> content hash at review")
+    cdph_release_ids_reviewed: list[str]
+
+
+class OfficialRegistry(_Model):
+    schema_version: Literal[1] = SCHEMA_VERSION
+    records: list[OfficialRecord]
+    statements: list[OfficialStatement]
+    watched_sources: list[WatchedSource]
+    review: ReviewInfo
+    hotlines: list[dict[str, str]] = Field(default_factory=list)
+
+
+class WatchResult(_Model):
+    source_id: str
+    url: str
+    checked_at: str
+    ok: bool
+    http_status: int | None = None
+    error: str | None = None
+    content_hash: str | None = None
+    matches_review: bool | None = None
+    items_seen: list[str] = Field(default_factory=list)
+    new_items: list[str] = Field(default_factory=list, description="Items not present at the last review")
+
+
+class VerificationPolicy(_Model):
+    verified_max_age_days: int
+    aging_max_age_days: int
+    note: str
+
+
+class OfficialDataset(_Model):
+    schema_version: Literal[1] = SCHEMA_VERSION
+    generated_at: str
+    registry: OfficialRegistry
+    watch: list[WatchResult]
+    conflicts: list[str]
+    geometry: dict = Field(description="GeoJSON FeatureCollection; properties.record_ids, basis, note")
+    geometry_errors: list[str]
+    policy: VerificationPolicy
+    provenance: Provenance
+
+
+# ---------------------------------------------------------------- port intelligence (M2)
+class Stat(_Model):
+    n: int
+    median: float | None
+    min: float | None
+    max: float | None
+
+
+class PortLeadSummary(_Model):
+    lead_days: int
+    valid_date: str
+    variables: dict[str, Stat]
+
+
+class SeriesPoint(_Model):
+    date: str
+    value: float | None
+    n: int
+
+
+class PortCharm(_Model):
+    issued_date: str | None
+    radius_km: float
+    cells_in_radius: int
+    nearest_cell_km: float | None
+    leads: list[PortLeadSummary]
+    history: dict[str, list[SeriesPoint]] = Field(default_factory=dict, description="nowcast median by valid date")
+    history_error: str | None = None
+
+
+class PortChlorophyll(_Model):
+    dataset_id: str
+    source_url: str
+    radius_km: float
+    composite_days: int
+    latest_center_date: str | None
+    latest: Stat | None
+    latest_valid_fraction: float | None
+    history: list[SeriesPoint] = Field(default_factory=list)
+    error: str | None = None
+
+
+class PortOfficialRelation(_Model):
+    record_id: str
+    relation: Literal["statewide", "same_county", "port_latitude_within_stated_range", "named_area_nearby"]
+    note: str
+
+
+class PortIntel(_Model):
+    port_code: int
+    display_name: str
+    county: str
+    region: str
+    lon: float
+    lat: float
+    charm: PortCharm | None
+    chlorophyll: PortChlorophyll | None
+    official_relations: list[PortOfficialRelation] = Field(
+        description="Official records whose stated area may include waters near this port, and why"
+    )
+    caveats: list[str]
+
+
+class PortIntelCollection(_Model):
+    schema_version: Literal[1] = SCHEMA_VERSION
+    generated_at: str
+    ports: list[PortIntel]
+    method: dict[str, str]
+    provenance: list[Provenance]
 
 
 SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "manifest": Manifest,
     "ports": PortsCollection,
+    "official": OfficialDataset,
+    "port_intel": PortIntelCollection,
 }

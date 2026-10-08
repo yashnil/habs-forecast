@@ -15,11 +15,32 @@ import json
 from pathlib import Path
 
 from .context import RunContext
-from .models import ForecastRun, LayerArtifact, Manifest, SourceStatus
+from .models import (
+    ForecastRun,
+    FreshnessPolicy,
+    LayerArtifact,
+    Manifest,
+    OfficialDataset,
+    PortsCollection,
+    SourceStatus,
+)
 from .publish.files import write_bytes, write_json
-from .sources import charm, gibs, ports
+from .sources import charm, gibs, official, port_intel, ports
 
-ALL_SOURCES = ("charm", "gibs_chl", "cdfw_ports")
+ALL_SOURCES = ("charm", "gibs_chl", "cdfw_ports", "official", "port_intel")
+
+OFFICIAL_FRESHNESS = FreshnessPolicy(
+    basis="reviewed_date",
+    current_max_age_days=official.POLICY.verified_max_age_days,
+    stale_max_age_days=official.POLICY.aging_max_age_days,
+    note=official.POLICY.note,
+)
+PORT_INTEL_FRESHNESS = FreshnessPolicy(
+    basis="valid_date",
+    current_max_age_days=2,
+    stale_max_age_days=7,
+    note="Port summaries are rebuilt from each pipeline run; their inputs carry their own dates.",
+)
 
 
 def load_previous(out_dir: Path) -> Manifest | None:
@@ -141,6 +162,67 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     else:
         _carry(statuses, prev, ports.SOURCE_ID)
 
+    # ---- official notices (human-reviewed registry + page watcher + official geometry)
+    official_url = prev.official_url if prev else None
+    official_ds: OfficialDataset | None = _load(ctx, official_url, OfficialDataset)
+    if "official" in only:
+        res = official.run(ctx)
+        prev_s = _prev_status(prev, official.SOURCE_ID)
+        if res.dataset:
+            official_url = _write_hashed(ctx, "official", res.dataset.model_dump(mode="json"))
+            official_ds = res.dataset
+            watch_failed = any(not w.ok for w in res.dataset.watch)
+            statuses.append(
+                SourceStatus(
+                    source_id=official.SOURCE_ID,
+                    title="Official closures and advisories (CDFW, CDPH)",
+                    product_class="official_regulatory",
+                    last_attempt_at=ctx.now_iso,
+                    last_success_at=ctx.now_iso,
+                    outcome="partial" if watch_failed or res.dataset.geometry_errors else "updated",
+                    error="; ".join(w.error or "" for w in res.dataset.watch if not w.ok) or None,
+                    notes=res.notes,
+                    latest_valid_date=res.dataset.registry.review.reviewed_at[:10],
+                    freshness=OFFICIAL_FRESHNESS,
+                )
+            )
+        else:
+            statuses.append(
+                _failed(ctx, official.SOURCE_ID, "Official closures and advisories (CDFW, CDPH)", "official_regulatory", OFFICIAL_FRESHNESS, prev_s, res.errors)
+            )
+    else:
+        _carry(statuses, prev, official.SOURCE_ID)
+
+    # ---- port intelligence (depends on the C-HARM layers, ports and official notices above)
+    port_intel_url = prev.port_intel_url if prev else None
+    if "port_intel" in only:
+        ports_coll = _load(ctx, ports_url, PortsCollection)
+        pi = port_intel.run(ctx, layers, ports_coll, official_ds)
+        prev_s = _prev_status(prev, port_intel.SOURCE_ID)
+        if pi.collection:
+            port_intel_url = _write_hashed(ctx, "port-intel", pi.collection.model_dump(mode="json"))
+            charm_run = next((r for r in runs if r.source_id == charm.SOURCE_ID), None)
+            statuses.append(
+                SourceStatus(
+                    source_id=port_intel.SOURCE_ID,
+                    title="Port summaries (C-HARM, satellite chlorophyll, official notices)",
+                    product_class="derived_summary",
+                    last_attempt_at=ctx.now_iso,
+                    last_success_at=ctx.now_iso,
+                    outcome="partial" if pi.notes else "updated",
+                    notes=pi.notes[:40],
+                    latest_issued_date=charm_run.issued_date if charm_run else None,
+                    latest_valid_date=ctx.now.date().isoformat(),
+                    freshness=PORT_INTEL_FRESHNESS,
+                )
+            )
+        else:
+            statuses.append(
+                _failed(ctx, port_intel.SOURCE_ID, "Port summaries (C-HARM, satellite chlorophyll, official notices)", "derived_summary", PORT_INTEL_FRESHNESS, prev_s, pi.errors)
+            )
+    else:
+        _carry(statuses, prev, port_intel.SOURCE_ID)
+
     manifest = Manifest(
         generated_at=ctx.now_iso,
         pipeline_version=ctx.pipeline_version,
@@ -149,10 +231,28 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
         forecast_runs=runs,
         sources=statuses,
         ports_url=ports_url,
+        official_url=official_url,
+        port_intel_url=port_intel_url,
     )
     write_json(ctx.out_dir / "manifest.json", manifest.model_dump(mode="json"))
     prune(ctx.out_dir, manifest, prev)
     return manifest
+
+
+def _write_hashed(ctx: RunContext, stem: str, obj: dict) -> str:
+    body = (json.dumps(obj, indent=1, ensure_ascii=False) + "\n").encode()
+    name = f"{stem}-{hashlib.sha256(body).hexdigest()[:10]}.json"
+    write_bytes(ctx.out_dir / name, body)
+    return name
+
+
+def _load(ctx: RunContext, rel: str | None, model):
+    if not rel or not (ctx.out_dir / rel).exists():
+        return None
+    try:
+        return model.model_validate_json((ctx.out_dir / rel).read_text())
+    except Exception:
+        return None
 
 
 def _ports_freshness():
@@ -197,8 +297,9 @@ def referenced_paths(m: Manifest | None) -> set[str]:
             out.add(lyr.image.url)
         if lyr.grid:
             out.add(lyr.grid.url)
-    if m.ports_url:
-        out.add(m.ports_url)
+    for rel in (m.ports_url, m.official_url, m.port_intel_url):
+        if rel:
+            out.add(rel)
     return out
 
 
@@ -215,9 +316,10 @@ def prune(out_dir: Path, manifest: Manifest, previous: Manifest | None) -> None:
                 f.unlink()
             elif f.is_dir() and not any(f.iterdir()):
                 f.rmdir()
-    for f in out_dir.glob("ports*.geojson"):
-        if f.name not in keep:
-            f.unlink()
+    for pattern in ("ports*.geojson", "official-*.json", "port-intel-*.json"):
+        for f in out_dir.glob(pattern):
+            if f.name not in keep:
+                f.unlink()
 
 
 def manifest_summary(m: Manifest) -> str:

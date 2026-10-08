@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Manifest, PortFeature } from "@/generated/schema";
-import { FORECAST_COPY } from "@/content/copy";
+import type { Manifest } from "@/generated/schema";
+import type { OfficialDataset } from "@/generated/official";
+import { FORECAST_COPY, OFFICIAL_STATUS } from "@/content/copy";
+import { ACTION_LABEL, officialAt, type Verification } from "@/lib/official";
+import { VerificationBadge } from "@/components/official/Official";
 import { loadGrid, sample, type Sample } from "@/lib/grid";
 import { CHARM_VARIABLES, artifactUrl, charmLayer, leadLabel } from "@/lib/layers";
 import { formatDate } from "@/lib/time";
 import { gradientCss } from "@/components/ui/ProbabilityLegend";
 
-export type InspectPoint = { lat: number; lon: number; port?: PortFeature["properties"] | null };
+export type InspectPoint = { lat: number; lon: number };
 
 type Row = { variable: string; title: string; threshold: string | null; sample: Sample | null; error?: string };
 
@@ -18,13 +21,18 @@ export function Inspector({
   point,
   lead,
   onClose,
+  official,
+  verification,
 }: {
   manifest: Manifest;
   baseUrl: string;
   point: InspectPoint;
   lead: number;
   onClose: () => void;
+  official: OfficialDataset | null;
+  verification: Verification | null;
 }) {
+  const here = officialAt(official, point.lon, point.lat);
   const [rows, setRows] = useState<Row[] | null>(null);
   const layers = CHARM_VARIABLES.map((v) => charmLayer(manifest, v, lead));
   const first = layers.find(Boolean) ?? null;
@@ -55,20 +63,14 @@ export function Inspector({
     <section
       data-testid="inspector"
       aria-live="polite"
-      className="w-full rounded-xl border border-hairline-strong bg-surface/95 p-4 shadow-2xl backdrop-blur"
+      className="w-full"
     >
       <header className="flex items-start justify-between gap-3">
         <div>
-          {point.port ? (
-            <>
-              <h3 className="text-[14px] font-semibold text-ink">{point.port.display_name}</h3>
-              <p className="text-[11px] text-ink-3">CDFW port area: {titleCase(point.port.port_area)} · port code {point.port.port_code}</p>
-            </>
-          ) : (
-            <h3 className="text-[13px] font-semibold text-ink tabular">
-              {point.lat.toFixed(3)}°N, {Math.abs(point.lon).toFixed(3)}°W
-            </h3>
-          )}
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-accent">Point</p>
+          <h3 className="text-[14px] font-semibold text-ink tabular">
+            {point.lat.toFixed(3)}°N, {Math.abs(point.lon).toFixed(3)}°W
+          </h3>
           {first?.time.valid_date && (
             <p className="mt-0.5 text-[11.5px] text-ink-2">
               C-HARM {leadLabel(lead).toLowerCase()} · valid {formatDate(first.time.valid_date, { year: true })}
@@ -79,6 +81,26 @@ export function Inspector({
           ✕
         </button>
       </header>
+
+      <div className="mt-3 space-y-1.5 rounded-md border border-[#ffb547]/30 bg-[#ffb547]/[0.04] p-2.5" data-testid="inspect-official">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[12px] font-semibold text-ink">Official notices here</p>
+          <VerificationBadge v={verification} />
+        </div>
+        {!official ? (
+          <p className="text-[11.5px] text-ink-2">Official notices unavailable; check CDFW and CDPH.</p>
+        ) : (
+          <ul className="space-y-1 text-[11.5px] text-ink-2">
+            {here.map(({ record: r, reason }) => (
+              <li key={r.id} data-testid={`inspect-notice-${r.id}`}>
+                <span className="font-medium text-ink">{ACTION_LABEL[r.action]}:</span> {r.title} <span className="text-ink-3">({reason})</span>
+              </li>
+            ))}
+            {here.some((h) => h.reason !== "statewide") && <li className="text-ink-3">{OFFICIAL_STATUS.areaNote}</li>}
+          </ul>
+        )}
+        <p className="text-[11px] text-ink-3">{OFFICIAL_STATUS.missingNotOpen}</p>
+      </div>
 
       {!first ? (
         <p className="mt-3 text-[12.5px] text-ink-2">No forecast is available for this valid day.</p>
@@ -127,6 +149,3 @@ export function Inspector({
   );
 }
 
-function titleCase(s: string) {
-  return s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
-}

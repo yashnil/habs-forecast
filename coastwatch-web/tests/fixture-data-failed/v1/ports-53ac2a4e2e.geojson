@@ -16,7 +16,9 @@
         "name": "CRESCENT CITY",
         "display_name": "Crescent City",
         "port_area": "EUREKA",
-        "port_area_code": 1
+        "port_area_code": 1,
+        "county": "Del Norte",
+        "region": "north_coast"
       }
     },
     {
@@ -33,7 +35,9 @@
         "name": "TRINIDAD",
         "display_name": "Trinidad",
         "port_area": "EUREKA",
-        "port_area_code": 1
+        "port_area_code": 1,
+        "county": "Humboldt",
+        "region": "north_coast"
       }
     },
     {
@@ -50,7 +54,9 @@
         "name": "EUREKA",
         "display_name": "Eureka",
         "port_area": "EUREKA",
-        "port_area_code": 1
+        "port_area_code": 1,
+        "county": "Humboldt",
+        "region": "north_coast"
       }
     },
     {
@@ -67,7 +73,9 @@
         "name": "SHELTER COVE",
         "display_name": "Shelter Cove",
         "port_area": "EUREKA",
-        "port_area_code": 1
+        "port_area_code": 1,
+        "county": "Humboldt",
+        "region": "north_coast"
       }
     },
     {
@@ -84,7 +92,9 @@
         "name": "FORT BRAGG",
         "display_name": "Fort Bragg",
         "port_area": "FORT BRAGG",
-        "port_area_code": 2
+        "port_area_code": 2,
+        "county": "Mendocino",
+        "region": "mendocino_sonoma"
       }
     },
     {
@@ -101,7 +111,9 @@
         "name": "POINT ARENA",
         "display_name": "Point Arena",
         "port_area": "FORT BRAGG",
-        "port_area_code": 2
+        "port_area_code": 2,
+        "county": "Mendocino",
+        "region": "mendocino_sonoma"
       }
     },
     {
@@ -118,7 +130,9 @@
         "name": "BODEGA BAY",
         "display_name": "Bodega Bay",
         "port_area": "BODEGA BAY",
-        "port_area_code": 3
+        "port_area_code": 3,
+        "county": "Sonoma",
+        "region": "mendocino_sonoma"
       }
     },
     {
@@ -135,7 +149,9 @@
         "name": "SAN FRANCISCO",
         "display_name": "San Francisco",
         "port_area": "SAN FRANCISCO",
-        "port_area_code": 4
+        "port_area_code": 4,
+        "county": "San Francisco",
+        "region": "sf_bay_farallones"
       }
     },
     {
@@ -152,7 +168,9 @@
         "name": "PRINCETON-HALF MOON",
         "display_name": "Princeton / Half Moon Bay",
         "port_area": "SAN FRANCISCO",
-        "port_area_code": 4
+        "port_area_code": 4,
+        "county": "San Mateo",
+        "region": "sf_bay_farallones"
       }
     },
     {
@@ -169,7 +187,9 @@
         "name": "SANTA CRUZ",
         "display_name": "Santa Cruz",
         "port_area": "MONTEREY",
-        "port_area_code": 5
+        "port_area_code": 5,
+        "county": "Santa Cruz",
+        "region": "monterey_bay"
       }
     },
     {
@@ -186,7 +206,9 @@
         "name": "MOSS LANDING",
         "display_name": "Moss Landing",
         "port_area": "MONTEREY",
-        "port_area_code": 5
+        "port_area_code": 5,
+        "county": "Monterey",
+        "region": "monterey_bay"
       }
     },
     {
@@ -203,7 +225,9 @@
         "name": "MONTEREY",
         "display_name": "Monterey",
         "port_area": "MONTEREY",
-        "port_area_code": 5
+        "port_area_code": 5,
+        "county": "Monterey",
+        "region": "monterey_bay"
       }
     },
     {
@@ -220,7 +244,9 @@
         "name": "MORRO BAY",
         "display_name": "Morro Bay",
         "port_area": "MORRO BAY",
-        "port_area_code": 6
+        "port_area_code": 6,
+        "county": "San Luis Obispo",
+        "region": "central_coast"
       }
     },
     {
@@ -237,7 +263,9 @@
         "name": "AVILA/PORT SAN LUIS",
         "display_name": "Avila / Port San Luis",
         "port_area": "MORRO BAY",
-        "port_area_code": 6
+        "port_area_code": 6,
+        "county": "San Luis Obispo",
+        "region": "central_coast"
       }
     },
     {
@@ -254,7 +282,9 @@
         "name": "SANTA BARBARA HARBOR",
         "display_name": "Santa Barbara",
         "port_area": "SANTA BARBARA",
-        "port_area_code": 7
+        "port_area_code": 7,
+        "county": "Santa Barbara",
+        "region": "southern_california"
       }
     },
     {
@@ -271,7 +301,9 @@
         "name": "VENTURA",
         "display_name": "Ventura",
         "port_area": "SANTA BARBARA",
-        "port_area_code": 7
+        "port_area_code": 7,
+        "county": "Ventura",
+        "region": "southern_california"
       }
     },
     {
@@ -288,7 +320,9 @@
         "name": "PORT HUENEME",
         "display_name": "Port Hueneme",
         "port_area": "SANTA BARBARA",
-        "port_area_code": 7
+        "port_area_code": 7,
+        "county": "Ventura",
+        "region": "southern_california"
       }
     },
     {
@@ -305,7 +339,9 @@
         "name": "SAN PEDRO",
         "display_name": "San Pedro",
         "port_area": "LOS ANGELES",
-        "port_area_code": 8
+        "port_area_code": 8,
+        "county": "Los Angeles",
+        "region": "southern_california"
       }
     },
     {
@@ -322,7 +358,9 @@
         "name": "NEWPORT BEACH",
         "display_name": "Newport Beach",
         "port_area": "LOS ANGELES",
-        "port_area_code": 8
+        "port_area_code": 8,
+        "county": "Orange",
+        "region": "southern_california"
       }
     },
     {
@@ -339,7 +377,9 @@
         "name": "DANA POINT",
         "display_name": "Dana Point",
         "port_area": "LOS ANGELES",
-        "port_area_code": 8
+        "port_area_code": 8,
+        "county": "Orange",
+        "region": "southern_california"
       }
     },
     {
@@ -356,7 +396,9 @@
         "name": "OCEANSIDE",
         "display_name": "Oceanside",
         "port_area": "SAN DIEGO",
-        "port_area_code": 9
+        "port_area_code": 9,
+        "county": "San Diego",
+        "region": "southern_california"
       }
     },
     {
@@ -373,8 +415,96 @@
         "name": "SAN DIEGO",
         "display_name": "San Diego",
         "port_area": "SAN DIEGO",
-        "port_area_code": 9
+        "port_area_code": 9,
+        "county": "San Diego",
+        "region": "southern_california"
       }
+    }
+  ],
+  "regions": [
+    {
+      "id": "north_coast",
+      "label": "North Coast",
+      "bounds": [
+        [
+          -124.75,
+          39.9
+        ],
+        [
+          -123.6,
+          42.05
+        ]
+      ]
+    },
+    {
+      "id": "mendocino_sonoma",
+      "label": "Mendocino\u2013Sonoma",
+      "bounds": [
+        [
+          -124.0,
+          38.2
+        ],
+        [
+          -122.8,
+          39.95
+        ]
+      ]
+    },
+    {
+      "id": "sf_bay_farallones",
+      "label": "San Francisco & Farallones",
+      "bounds": [
+        [
+          -123.35,
+          37.25
+        ],
+        [
+          -122.2,
+          38.15
+        ]
+      ]
+    },
+    {
+      "id": "monterey_bay",
+      "label": "Monterey Bay",
+      "bounds": [
+        [
+          -122.45,
+          36.45
+        ],
+        [
+          -121.72,
+          37.15
+        ]
+      ]
+    },
+    {
+      "id": "central_coast",
+      "label": "Central Coast",
+      "bounds": [
+        [
+          -121.6,
+          34.4
+        ],
+        [
+          -120.4,
+          36.1
+        ]
+      ]
+    },
+    {
+      "id": "southern_california",
+      "label": "Southern California",
+      "bounds": [
+        [
+          -120.6,
+          32.45
+        ],
+        [
+          -117.05,
+          34.55
+        ]
+      ]
     }
   ],
   "caveats": [

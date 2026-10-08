@@ -5,9 +5,11 @@
  */
 
 export const OFFICIAL_STATUS = {
-  heading: "Official closures and health advisories",
+  heading: "Official closures and advisories",
   notTracked:
-    "CoastWatch does not track closures, quarantines or health advisories yet. They are not shown on this map, and nothing here means an area is open or clear.",
+    "CoastWatch lists only notices a person has transcribed from CDFW and CDPH. The absence of a notice here does not mean an area is open or that seafood is safe.",
+  missingNotOpen:
+    "No notice listed here does not mean an area is open or that seafood is safe. Always confirm with CDFW and CDPH.",
   instruction: "Before fishing or harvesting, check the official sources:",
   links: [
     {
@@ -31,6 +33,16 @@ export const OFFICIAL_STATUS = {
     { label: "CDPH shellfish & biotoxin information", phone: "(800) 553-4133", tel: "+18005534133" },
     { label: "CDFW domoic acid fishery closure line", phone: "(831) 649-2883", tel: "+18316492883" },
   ],
+  verification: {
+    verified: "Verified",
+    aging: "Review ageing",
+    unverified: "Not verified",
+    unavailable: "Unavailable",
+  },
+  notVerifiedLead: "Treat these records as unconfirmed. The agency pages are the authority.",
+  statementsHeading: "Official statements (quoted)",
+  statementsNote: "Quoted for context. A statement that no toxin closure exists is not a statement that a fishery is open; seasons and other rules still apply.",
+  areaNote: "Map outlines and latitude lines are drawn from the agency's wording; the wording controls. Latitude-defined notices state no offshore limit.",
 } as const;
 
 export const FORECAST_COPY = {
@@ -42,6 +54,15 @@ export const FORECAST_COPY = {
   lowNotSafe: "A low probability does not mean an area is safe.",
   issuedInferred: "Issue date inferred — C-HARM publishes valid days only.",
   noValue: "No forecast value here (land, outside the model, or a nearshore cell the model does not cover).",
+} as const;
+
+export const PORT_COPY = {
+  spatial:
+    "Summaries cover forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at a particular fishing ground.",
+  nearshore: "C-HARM does not provide domoic acid probabilities for many cells within about 3–6 km of shore, so fewer cells contribute to those values.",
+  history: "One value per C-HARM nowcast (median of the same cells). Days without a published run are left blank.",
+  chlorophyll:
+    "NOAA VIIRS 8-day composites (dated at the centre of each 8-day window; neighbouring values overlap). Median of clear pixels within 15 km. Chlorophyll is algae biomass, not toxin.",
 } as const;
 
 export const CHLOROPHYLL_COPY = {

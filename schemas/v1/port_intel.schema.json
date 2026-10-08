@@ -1,0 +1,530 @@
+{
+  "$defs": {
+    "PortCharm": {
+      "additionalProperties": false,
+      "properties": {
+        "cells_in_radius": {
+          "title": "Cells In Radius",
+          "type": "integer"
+        },
+        "history": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/SeriesPoint"
+            },
+            "type": "array"
+          },
+          "description": "nowcast median by valid date",
+          "title": "History",
+          "type": "object"
+        },
+        "history_error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "History Error"
+        },
+        "issued_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Issued Date"
+        },
+        "leads": {
+          "items": {
+            "$ref": "#/$defs/PortLeadSummary"
+          },
+          "title": "Leads",
+          "type": "array"
+        },
+        "nearest_cell_km": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Nearest Cell Km"
+        },
+        "radius_km": {
+          "title": "Radius Km",
+          "type": "number"
+        }
+      },
+      "required": [
+        "issued_date",
+        "radius_km",
+        "cells_in_radius",
+        "nearest_cell_km",
+        "leads"
+      ],
+      "title": "PortCharm",
+      "type": "object"
+    },
+    "PortChlorophyll": {
+      "additionalProperties": false,
+      "properties": {
+        "composite_days": {
+          "title": "Composite Days",
+          "type": "integer"
+        },
+        "dataset_id": {
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "history": {
+          "items": {
+            "$ref": "#/$defs/SeriesPoint"
+          },
+          "title": "History",
+          "type": "array"
+        },
+        "latest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Stat"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latest_center_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Latest Center Date"
+        },
+        "latest_valid_fraction": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Latest Valid Fraction"
+        },
+        "radius_km": {
+          "title": "Radius Km",
+          "type": "number"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dataset_id",
+        "source_url",
+        "radius_km",
+        "composite_days",
+        "latest_center_date",
+        "latest",
+        "latest_valid_fraction"
+      ],
+      "title": "PortChlorophyll",
+      "type": "object"
+    },
+    "PortIntel": {
+      "additionalProperties": false,
+      "properties": {
+        "caveats": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Caveats",
+          "type": "array"
+        },
+        "charm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PortCharm"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "chlorophyll": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PortChlorophyll"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "county": {
+          "title": "County",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "lat": {
+          "title": "Lat",
+          "type": "number"
+        },
+        "lon": {
+          "title": "Lon",
+          "type": "number"
+        },
+        "official_relations": {
+          "description": "Official records whose stated area may include waters near this port, and why",
+          "items": {
+            "$ref": "#/$defs/PortOfficialRelation"
+          },
+          "title": "Official Relations",
+          "type": "array"
+        },
+        "port_code": {
+          "title": "Port Code",
+          "type": "integer"
+        },
+        "region": {
+          "title": "Region",
+          "type": "string"
+        }
+      },
+      "required": [
+        "port_code",
+        "display_name",
+        "county",
+        "region",
+        "lon",
+        "lat",
+        "charm",
+        "chlorophyll",
+        "official_relations",
+        "caveats"
+      ],
+      "title": "PortIntel",
+      "type": "object"
+    },
+    "PortLeadSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "lead_days": {
+          "title": "Lead Days",
+          "type": "integer"
+        },
+        "valid_date": {
+          "title": "Valid Date",
+          "type": "string"
+        },
+        "variables": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Stat"
+          },
+          "title": "Variables",
+          "type": "object"
+        }
+      },
+      "required": [
+        "lead_days",
+        "valid_date",
+        "variables"
+      ],
+      "title": "PortLeadSummary",
+      "type": "object"
+    },
+    "PortOfficialRelation": {
+      "additionalProperties": false,
+      "properties": {
+        "note": {
+          "title": "Note",
+          "type": "string"
+        },
+        "record_id": {
+          "title": "Record Id",
+          "type": "string"
+        },
+        "relation": {
+          "enum": [
+            "statewide",
+            "same_county",
+            "port_latitude_within_stated_range",
+            "named_area_nearby"
+          ],
+          "title": "Relation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_id",
+        "relation",
+        "note"
+      ],
+      "title": "PortOfficialRelation",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "citation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Citation"
+        },
+        "dataset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Id"
+        },
+        "institution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Institution"
+        },
+        "license": {
+          "title": "License",
+          "type": "string"
+        },
+        "pipeline_run_id": {
+          "title": "Pipeline Run Id",
+          "type": "string"
+        },
+        "pipeline_version": {
+          "title": "Pipeline Version",
+          "type": "string"
+        },
+        "product_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Product Version"
+        },
+        "request_urls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Request Urls",
+          "type": "array"
+        },
+        "retrieved_at": {
+          "description": "UTC ISO-8601 time the pipeline fetched the data",
+          "title": "Retrieved At",
+          "type": "string"
+        },
+        "source_id": {
+          "description": "Stable id of the upstream source, e.g. 'charm'",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_name": {
+          "title": "Source Name",
+          "type": "string"
+        },
+        "source_url": {
+          "description": "Dataset or page URL a person can open",
+          "title": "Source Url",
+          "type": "string"
+        },
+        "upstream_metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Selected upstream attributes kept verbatim",
+          "title": "Upstream Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source_id",
+        "source_name",
+        "source_url",
+        "license",
+        "retrieved_at",
+        "pipeline_version",
+        "pipeline_run_id"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "SeriesPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "date": {
+          "title": "Date",
+          "type": "string"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "date",
+        "value",
+        "n"
+      ],
+      "title": "SeriesPoint",
+      "type": "object"
+    },
+    "Stat": {
+      "additionalProperties": false,
+      "properties": {
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Max"
+        },
+        "median": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Median"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Min"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "n",
+        "median",
+        "min",
+        "max"
+      ],
+      "title": "Stat",
+      "type": "object"
+    }
+  },
+  "$id": "https://coastwatch/schemas/v1/port_intel.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "generated_at": {
+      "title": "Generated At",
+      "type": "string"
+    },
+    "method": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Method",
+      "type": "object"
+    },
+    "ports": {
+      "items": {
+        "$ref": "#/$defs/PortIntel"
+      },
+      "title": "Ports",
+      "type": "array"
+    },
+    "provenance": {
+      "items": {
+        "$ref": "#/$defs/Provenance"
+      },
+      "title": "Provenance",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "generated_at",
+    "ports",
+    "method",
+    "provenance"
+  ],
+  "title": "PortIntelCollection",
+  "type": "object"
+}

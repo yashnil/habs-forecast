@@ -44,11 +44,27 @@ class FixtureFetcher:
             raise FetchError(f"HTTP 404 for {url}")
         return Response(url=url, status=200, content_type=ctype, body=p.read_bytes())
 
+    def _recorded(self, url: str) -> Response | None:
+        """Responses recorded by scripts/record_m2_fixtures.py, keyed by exact URL."""
+        idx = self.root / "recorded" / "index.json"
+        if not idx.exists():
+            return None
+        import json
+
+        entry = json.loads(idx.read_text()).get(url)
+        if not entry:
+            return None
+        return Response(url=url, status=200, content_type=entry["content_type"], body=(self.root / "recorded" / entry["file"]).read_bytes())
+
     def _serve(self, url: str) -> Response:
+        rec = self._recorded(url)
+        if rec is not None:
+            return rec
         m = re.search(r"wvcharmV3_(\d)day\.csv0\?time", url)
         if m:
             return self._file(url, f"charm/lead{m.group(1)}_time.csv", "text/csv")
-        m = re.search(r"wvcharmV3_(\d)day\.nc\?", url)
+        # single-time lead requests only; time-range (history) requests must be recorded explicitly
+        m = re.search(r"wvcharmV3_(\d)day\.nc\?pseudo_nitzschia%5B\(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\)%5D", url)
         if m:
             return self._file(url, f"charm/lead{m.group(1)}.nc", "application/x-netcdf")
         if url.endswith("WMTSCapabilities.xml"):

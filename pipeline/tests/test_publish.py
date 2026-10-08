@@ -17,7 +17,7 @@ def test_every_manifest_reference_exists_and_decodes(out):
     run_pipeline(fixture_context(out))
     report = check_published(str(out))
     assert report["ok"], report["problems"]
-    assert report["files_checked"] == 1 + 24 + 1  # manifest + 12 images + 12 grids + ports
+    assert report["files_checked"] == 1 + 24 + 1 + 2  # manifest + 12 images + 12 grids + ports + official + port intel
 
 
 def test_asset_paths_are_content_addressed(out):
@@ -104,3 +104,15 @@ def test_verification_report_is_not_required_but_allowed(tmp_path: Path):
     (root / "v1" / "verification").mkdir(parents=True)
     (root / "v1" / "verification" / "charm-points.json").write_text(json.dumps({}))
     assert guard_publish_tree(root) == []
+
+
+def test_m1_published_dataset_still_validates_with_current_schema():
+    """Schema changes within schema_version 1 must be additive: the dataset the M1 pipeline
+    published to GitHub Pages (recorded 2026-10-08) must still validate."""
+    from coastwatch_pipeline.fixtures import FIXTURES
+    from coastwatch_pipeline.models import Manifest, PortsCollection
+
+    root = FIXTURES / "compat" / "m1"
+    m = Manifest.model_validate_json((root / "manifest.json").read_text())
+    assert m.official_url is None and m.port_intel_url is None
+    PortsCollection.model_validate_json((root / m.ports_url).read_text())

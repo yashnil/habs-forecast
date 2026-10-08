@@ -28,6 +28,18 @@
     "PortProperties": {
       "additionalProperties": false,
       "properties": {
+        "county": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "County"
+        },
         "display_name": {
           "title": "Display Name",
           "type": "string"
@@ -47,6 +59,18 @@
         "port_code": {
           "title": "Port Code",
           "type": "integer"
+        },
+        "region": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Region"
         }
       },
       "required": [
@@ -168,6 +192,39 @@
       ],
       "title": "Provenance",
       "type": "object"
+    },
+    "Region": {
+      "additionalProperties": false,
+      "properties": {
+        "bounds": {
+          "description": "[[west, south], [east, north]]",
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Bounds",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "bounds"
+      ],
+      "title": "Region",
+      "type": "object"
     }
   },
   "$id": "https://coastwatch/schemas/v1/ports.schema.json",
@@ -189,6 +246,13 @@
     },
     "provenance": {
       "$ref": "#/$defs/Provenance"
+    },
+    "regions": {
+      "items": {
+        "$ref": "#/$defs/Region"
+      },
+      "title": "Regions",
+      "type": "array"
     },
     "schema_version": {
       "const": 1,

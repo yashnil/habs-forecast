@@ -12,6 +12,8 @@
 > | Product classes | Added `reference` (ports) | Ports are reference geometry, not history |
 > | Map: one layer registry | One raster at a time (official forecast, one satellite product, or none) | One product per legend (rule R7) |
 >
+> M2 additions (as built): `official-<sha>.json` (registry + watcher results + official geometry) and `port-intel-<sha>.json` referenced from the manifest; GitHub Pages hosting workflow (pending one repository setting); review-issue job in the data workflow. See [`09-m2-implementation.md`](09-m2-implementation.md).
+>
 > Schemas: `pipeline/coastwatch_pipeline/models.py` → `schemas/v1/{manifest,ports}.schema.json` → `coastwatch-web/src/generated/schema.ts`. Implementation notes and verification results: [`07-m1-implementation.md`](07-m1-implementation.md).
 
 ## 1. Design decisions (summary)

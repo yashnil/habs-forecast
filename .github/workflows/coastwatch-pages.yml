@@ -20,6 +20,8 @@ concurrency:
 
 jobs:
   deploy:
+    # Always deploys the production branch (coastwatch-data); staging runs write to a
+    # different branch, so a redeploy after a staging run is a no-op for users.
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
@@ -47,7 +49,7 @@ jobs:
           fi
       - name: Fetch the published dataset
         if: steps.pages.outputs.enabled == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: coastwatch-data
           path: data-branch
@@ -63,12 +65,12 @@ jobs:
           if [ -n "$bad" ]; then echo "refusing to publish: $bad"; exit 1; fi
           find _site -type f | wc -l
       - if: steps.pages.outputs.enabled == 'true'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - if: steps.pages.outputs.enabled == 'true'
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   check:
     needs: deploy
@@ -77,10 +79,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - name: Hosted dataset is complete, decodes, and is CORS-enabled

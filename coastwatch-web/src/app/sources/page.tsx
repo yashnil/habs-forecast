@@ -20,7 +20,7 @@ export default async function SourcesPage() {
         </header>
         <OfficialStatusCard />
         {manifest ? (
-          <SourceTable manifest={manifest} />
+          <SourceTable manifest={manifest} official={data.ok ? data.official : null} />
         ) : (
           <p className="text-ink-2">Source status cannot be shown because the data manifest is unavailable.</p>
         )}

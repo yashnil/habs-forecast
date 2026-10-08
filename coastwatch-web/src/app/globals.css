@@ -23,6 +23,8 @@
   --cw-serious: #ec835a;
   --cw-critical: #d03b3b;
   --cw-neutral: #8193ac;
+  --cw-chl: #48c9a8;
+  --cw-official: #ffb547;
   --cw-water: #040e1f;
   --cw-land: #17263b;
 }
@@ -44,6 +46,8 @@
   --color-serious: var(--cw-serious);
   --color-critical: var(--cw-critical);
   --color-neutral: var(--cw-neutral);
+  --color-chl: var(--cw-chl);
+  --color-official: var(--cw-official);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

@@ -22,7 +22,7 @@ export type Caveats = string[];
 
 export type Description = string;
 
-export type Basis = "issued_date" | "valid_date" | "observed_date";
+export type Basis = "issued_date" | "valid_date" | "observed_date" | "reviewed_date";
 
 export type CurrentMaxAgeDays = number;
 
@@ -117,7 +117,8 @@ export type ProductClass =
   | "observation"
   | "experimental_model"
   | "historical_context"
-  | "reference";
+  | "reference"
+  | "derived_summary";
 
 export type Citation = string | null;
 
@@ -227,9 +228,13 @@ export type Variable = string;
 
 export type Layers = LayerArtifact[];
 
+export type OfficialUrl = string | null;
+
 export type PipelineRunId1 = string;
 
 export type PipelineVersion1 = string;
+
+export type PortIntelUrl = string | null;
 
 export type PortsUrl = string | null;
 
@@ -258,7 +263,8 @@ export type ProductClass1 =
   | "observation"
   | "experimental_model"
   | "historical_context"
-  | "reference";
+  | "reference"
+  | "derived_summary";
 
 export type SourceId2 = string;
 
@@ -270,8 +276,10 @@ export interface Manifest {
   forecast_runs: ForecastRuns;
   generated_at: GeneratedAt;
   layers: Layers;
+  official_url?: OfficialUrl;
   pipeline_run_id: PipelineRunId1;
   pipeline_version: PipelineVersion1;
+  port_intel_url?: PortIntelUrl;
   ports_url: PortsUrl;
   schema_version?: SchemaVersion1;
   sources: Sources;
@@ -440,6 +448,8 @@ export interface SourceStatus {
   title: Title1;
 }
 
+export type County = string | null;
+
 export type DisplayName = string;
 
 export type PortArea = string;
@@ -448,9 +458,17 @@ export type PortAreaCode = number;
 
 export type PortCode = number;
 
+export type Region = string | null;
+
 export type Type = "Feature";
 
 export type Features = PortFeature[];
+
+export type Bounds = [number[], number[]];
+
+export type Label = string;
+
+export type Regions = Region1[];
 
 export type Type1 = "FeatureCollection";
 
@@ -458,6 +476,7 @@ export interface PortsCollection {
   caveats: Caveats;
   features: Features;
   provenance: Provenance;
+  regions?: Regions;
   schema_version?: SchemaVersion;
   type?: Type1;
 }
@@ -473,9 +492,17 @@ export interface Geometry {
 }
 
 export interface PortProperties {
+  county?: County;
   display_name: DisplayName;
   name: Name;
   port_area: PortArea;
   port_area_code: PortAreaCode;
   port_code: PortCode;
+  region?: Region;
+}
+
+export interface Region1 {
+  bounds: Bounds;
+  id: Id;
+  label: Label;
 }
