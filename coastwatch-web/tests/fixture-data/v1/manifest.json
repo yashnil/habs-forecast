@@ -32,7 +32,7 @@
         "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
       },
       "image": {
-        "url": "charm/2026-10-08/lead0/pseudo_nitzschia.png",
+        "url": "charm/2026-10-08/lead0-e84b8af42e/pseudo_nitzschia.png",
         "crs": "EPSG:3857",
         "width": 204,
         "height": 407,
@@ -63,7 +63,7 @@
         "resampling": "nearest"
       },
       "grid": {
-        "url": "charm/2026-10-08/lead0/pseudo_nitzschia.u16.gz",
+        "url": "charm/2026-10-08/lead0-e84b8af42e/pseudo_nitzschia.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 51,
         "height": 81,
@@ -280,7 +280,7 @@
         "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
       },
       "image": {
-        "url": "charm/2026-10-08/lead0/particulate_domoic.png",
+        "url": "charm/2026-10-08/lead0-e84b8af42e/particulate_domoic.png",
         "crs": "EPSG:3857",
         "width": 204,
         "height": 407,
@@ -311,7 +311,7 @@
         "resampling": "nearest"
       },
       "grid": {
-        "url": "charm/2026-10-08/lead0/particulate_domoic.u16.gz",
+        "url": "charm/2026-10-08/lead0-e84b8af42e/particulate_domoic.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 51,
         "height": 81,
@@ -529,7 +529,7 @@
         "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
       },
       "image": {
-        "url": "charm/2026-10-08/lead0/cellular_domoic.png",
+        "url": "charm/2026-10-08/lead0-e84b8af42e/cellular_domoic.png",
         "crs": "EPSG:3857",
         "width": 204,
         "height": 407,
@@ -560,7 +560,7 @@
         "resampling": "nearest"
       },
       "grid": {
-        "url": "charm/2026-10-08/lead0/cellular_domoic.u16.gz",
+        "url": "charm/2026-10-08/lead0-e84b8af42e/cellular_domoic.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 51,
         "height": 81,
@@ -778,7 +778,7 @@
         "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
       },
       "image": {
-        "url": "charm/2026-10-08/lead1/pseudo_nitzschia.png",
+        "url": "charm/2026-10-08/lead1-728b4aaf46/pseudo_nitzschia.png",
         "crs": "EPSG:3857",
         "width": 204,
         "height": 407,
@@ -809,7 +809,7 @@
         "resampling": "nearest"
       },
       "grid": {
-        "url": "charm/2026-10-08/lead1/pseudo_nitzschia.u16.gz",
+        "url": "charm/2026-10-08/lead1-728b4aaf46/pseudo_nitzschia.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 51,
         "height": 81,
@@ -1026,7 +1026,7 @@
         "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
       },
       "image": {
-        "url": "charm/2026-10-08/lead1/particulate_domoic.png",
+        "url": "charm/2026-10-08/lead1-728b4aaf46/particulate_domoic.png",
         "crs": "EPSG:3857",
         "width": 204,
         "height": 407,
@@ -1057,7 +1057,7 @@
         "resampling": "nearest"
       },
       "grid": {
-        "url": "charm/2026-10-08/lead1/particulate_domoic.u16.gz",
+        "url": "charm/2026-10-08/lead1-728b4aaf46/particulate_domoic.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 51,
         "height": 81,
@@ -1275,7 +1275,7 @@
         "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
       },
       "image": {
-        "url": "charm/2026-10-08/lead1/cellular_domoic.png",
+        "url": "charm/2026-10-08/lead1-728b4aaf46/cellular_domoic.png",
         "crs": "EPSG:3857",
         "width": 204,
         "height": 407,
@@ -1306,7 +1306,7 @@
         "resampling": "nearest"
       },
       "grid": {
-        "url": "charm/2026-10-08/lead1/cellular_domoic.u16.gz",
+        "url": "charm/2026-10-08/lead1-728b4aaf46/cellular_domoic.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 51,
         "height": 81,
@@ -1524,7 +1524,7 @@
         "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
       },
       "image": {
-        "url": "charm/2026-10-08/lead2/pseudo_nitzschia.png",
+        "url": "charm/2026-10-08/lead2-780baed6c8/pseudo_nitzschia.png",
         "crs": "EPSG:3857",
         "width": 204,
         "height": 407,
@@ -1555,7 +1555,7 @@
         "resampling": "nearest"
       },
       "grid": {
-        "url": "charm/2026-10-08/lead2/pseudo_nitzschia.u16.gz",
+        "url": "charm/2026-10-08/lead2-780baed6c8/pseudo_nitzschia.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 51,
         "height": 81,
@@ -1772,7 +1772,7 @@
         "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
       },
       "image": {
-        "url": "charm/2026-10-08/lead2/particulate_domoic.png",
+        "url": "charm/2026-10-08/lead2-780baed6c8/particulate_domoic.png",
         "crs": "EPSG:3857",
         "width": 204,
         "height": 407,
@@ -1803,7 +1803,7 @@
         "resampling": "nearest"
       },
       "grid": {
-        "url": "charm/2026-10-08/lead2/particulate_domoic.u16.gz",
+        "url": "charm/2026-10-08/lead2-780baed6c8/particulate_domoic.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 51,
         "height": 81,
@@ -2021,7 +2021,7 @@
         "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
       },
       "image": {
-        "url": "charm/2026-10-08/lead2/cellular_domoic.png",
+        "url": "charm/2026-10-08/lead2-780baed6c8/cellular_domoic.png",
         "crs": "EPSG:3857",
         "width": 204,
         "height": 407,
@@ -2052,7 +2052,7 @@
         "resampling": "nearest"
       },
       "grid": {
-        "url": "charm/2026-10-08/lead2/cellular_domoic.u16.gz",
+        "url": "charm/2026-10-08/lead2-780baed6c8/cellular_domoic.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 51,
         "height": 81,
@@ -2270,7 +2270,7 @@
         "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
       },
       "image": {
-        "url": "charm/2026-10-08/lead3/pseudo_nitzschia.png",
+        "url": "charm/2026-10-08/lead3-a7f9ea0aa6/pseudo_nitzschia.png",
         "crs": "EPSG:3857",
         "width": 204,
         "height": 407,
@@ -2301,7 +2301,7 @@
         "resampling": "nearest"
       },
       "grid": {
-        "url": "charm/2026-10-08/lead3/pseudo_nitzschia.u16.gz",
+        "url": "charm/2026-10-08/lead3-a7f9ea0aa6/pseudo_nitzschia.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 51,
         "height": 81,
@@ -2518,7 +2518,7 @@
         "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
       },
       "image": {
-        "url": "charm/2026-10-08/lead3/particulate_domoic.png",
+        "url": "charm/2026-10-08/lead3-a7f9ea0aa6/particulate_domoic.png",
         "crs": "EPSG:3857",
         "width": 204,
         "height": 407,
@@ -2549,7 +2549,7 @@
         "resampling": "nearest"
       },
       "grid": {
-        "url": "charm/2026-10-08/lead3/particulate_domoic.u16.gz",
+        "url": "charm/2026-10-08/lead3-a7f9ea0aa6/particulate_domoic.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 51,
         "height": 81,
@@ -2767,7 +2767,7 @@
         "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
       },
       "image": {
-        "url": "charm/2026-10-08/lead3/cellular_domoic.png",
+        "url": "charm/2026-10-08/lead3-a7f9ea0aa6/cellular_domoic.png",
         "crs": "EPSG:3857",
         "width": 204,
         "height": 407,
@@ -2798,7 +2798,7 @@
         "resampling": "nearest"
       },
       "grid": {
-        "url": "charm/2026-10-08/lead3/cellular_domoic.u16.gz",
+        "url": "charm/2026-10-08/lead3-a7f9ea0aa6/cellular_domoic.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 51,
         "height": 81,
@@ -3197,5 +3197,5 @@
       }
     }
   ],
-  "ports_url": "ports.geojson"
+  "ports_url": "ports-93214d5a19.geojson"
 }

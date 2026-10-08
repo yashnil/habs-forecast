@@ -17,7 +17,7 @@ afterEach(() => {
 describe("schema validation (shared JSON Schema from the pipeline)", () => {
   it("accepts the pipeline's fixture manifest and ports", () => {
     expect(checkManifest(read("manifest.json")).ok).toBe(true);
-    expect(checkPorts(read("ports.geojson")).ok).toBe(true);
+    expect(checkPorts(read(read("manifest.json").ports_url)).ok).toBe(true);
   });
 
   it.each([

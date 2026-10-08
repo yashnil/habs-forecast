@@ -10,18 +10,16 @@ Failure policy (docs/coastwatch/04-architecture.md §6):
 
 from __future__ import annotations
 
+import hashlib
 import json
-import shutil
-from datetime import date, timedelta
 from pathlib import Path
 
 from .context import RunContext
 from .models import ForecastRun, LayerArtifact, Manifest, SourceStatus
-from .publish.files import write_json
+from .publish.files import write_bytes, write_json
 from .sources import charm, gibs, ports
 
 ALL_SOURCES = ("charm", "gibs_chl", "cdfw_ports")
-RETENTION_DAYS = 14
 
 
 def load_previous(out_dir: Path) -> Manifest | None:
@@ -123,8 +121,9 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
         prev_s = _prev_status(prev, ports.SOURCE_ID)
         port_policy = _ports_freshness()
         if pr.collection:
-            write_json(ctx.out_dir / "ports.geojson", pr.collection.model_dump(mode="json"))
-            ports_url = "ports.geojson"
+            body = (json.dumps(pr.collection.model_dump(mode="json"), indent=2) + "\n").encode()
+            ports_url = f"ports-{hashlib.sha256(body).hexdigest()[:10]}.geojson"
+            write_bytes(ctx.out_dir / ports_url, body)
             statuses.append(
                 SourceStatus(
                     source_id=ports.SOURCE_ID,
@@ -152,7 +151,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
         ports_url=ports_url,
     )
     write_json(ctx.out_dir / "manifest.json", manifest.model_dump(mode="json"))
-    prune(ctx.out_dir, manifest, ctx.now.date())
+    prune(ctx.out_dir, manifest, prev)
     return manifest
 
 
@@ -188,20 +187,37 @@ def _carry(statuses: list[SourceStatus], prev: Manifest | None, source_id: str) 
         statuses.append(s)
 
 
-def prune(out_dir: Path, manifest: Manifest, today: date) -> None:
-    """Delete C-HARM run directories that are unreferenced and older than RETENTION_DAYS."""
-    keep = {lyr.image.url.split("/")[1] for lyr in manifest.layers if lyr.image and lyr.image.url.startswith("charm/")}
-    root = out_dir / "charm"
-    if not root.exists():
-        return
-    cutoff = today - timedelta(days=RETENTION_DAYS)
-    for d in root.iterdir():
-        try:
-            dd = date.fromisoformat(d.name)
-        except ValueError:
-            continue
-        if d.name not in keep and dd < cutoff:
-            shutil.rmtree(d)
+def referenced_paths(m: Manifest | None) -> set[str]:
+    """Every artifact file a manifest points to (relative paths)."""
+    if not m:
+        return set()
+    out: set[str] = set()
+    for lyr in m.layers:
+        if lyr.image:
+            out.add(lyr.image.url)
+        if lyr.grid:
+            out.add(lyr.grid.url)
+    if m.ports_url:
+        out.add(m.ports_url)
+    return out
+
+
+def prune(out_dir: Path, manifest: Manifest, previous: Manifest | None) -> None:
+    """Keep files referenced by the new manifest and by the previous one (clients and CDN
+    caches may still hold the previous manifest for a few minutes); delete everything
+    else the pipeline owns. Never touches files outside charm/ and ports-*.geojson."""
+    keep = referenced_paths(manifest) | referenced_paths(previous)
+    charm_root = out_dir / "charm"
+    if charm_root.exists():
+        for f in sorted(charm_root.rglob("*"), reverse=True):
+            rel = f.relative_to(out_dir).as_posix()
+            if f.is_file() and rel not in keep:
+                f.unlink()
+            elif f.is_dir() and not any(f.iterdir()):
+                f.rmdir()
+    for f in out_dir.glob("ports*.geojson"):
+        if f.name not in keep:
+            f.unlink()
 
 
 def manifest_summary(m: Manifest) -> str:

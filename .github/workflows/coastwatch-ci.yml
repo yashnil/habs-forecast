@@ -16,6 +16,14 @@ on:
       - "data/curated/**"
       - ".github/workflows/coastwatch-ci.yml"
 
+# Read-only token: CI never writes to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: coastwatch-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pipeline:
     runs-on: ubuntu-latest
@@ -24,10 +32,14 @@ jobs:
         working-directory: pipeline
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
       - run: uv sync
-      - name: Offline tests (recorded fixtures)
-        run: uv run pytest
+      - name: Offline tests (recorded fixtures; the single live test is run by the data workflow)
+        run: uv run pytest -rs
       - name: JSON Schema is in sync with the models
         run: uv run cwp schema && git diff --exit-code ../schemas
       - name: Committed web fixture data is reproducible
@@ -46,6 +58,8 @@ jobs:
       CI: "1"
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22

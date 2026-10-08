@@ -9,6 +9,7 @@ Verified 2026-10-08 (docs/coastwatch/evidence/sources-charm.md):
 
 from __future__ import annotations
 
+import hashlib
 import io
 import math
 from dataclasses import dataclass
@@ -175,6 +176,7 @@ class LeadData:
     values: dict[str, np.ndarray]
     attrs: dict[str, str]
     request_url: str
+    content_hash: str = ""
 
 
 def parse_netcdf(blob: bytes) -> tuple[dict[str, np.ndarray], dict[str, dict[str, object]], dict[str, str]]:
@@ -352,7 +354,9 @@ def build_lead_artifacts(ctx: RunContext, ld: LeadData, checks: list[QCCheck], i
     lon_step = round(float(ld.lon[-1] - ld.lon[0]) / (ld.lon.size - 1), 6)
     src = SourceGrid(lat_first, lat_step, lon_first, lon_step, ld.lat.size, ld.lon.size)
     img = plan_image(src, upsample=4)
-    base = f"charm/{issued.isoformat()}/lead{ld.lead}"
+    # Content-addressed directory: new data never overwrites a path a cached manifest
+    # may still reference, so a published dataset is never a mix of two versions.
+    base = f"charm/{issued.isoformat()}/lead{ld.lead}-{ld.content_hash or 'nohash'}"
     valid = ld.valid_time.date()
     artifacts: list[LayerArtifact] = []
     for v in VARIABLES:
@@ -459,6 +463,7 @@ def run(ctx: RunContext) -> CharmResult:
         try:
             r = ctx.fetcher(url)
             ld, checks = load_lead(r.body, lead, probed[lead], url)
+            ld.content_hash = hashlib.sha256(r.body).hexdigest()[:10]
             layers.extend(build_lead_artifacts(ctx, ld, checks, newest))
             available.append(lead)
         except ValidationFailure as e:
