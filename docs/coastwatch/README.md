@@ -11,6 +11,7 @@ Planning and architecture for turning `coastwatch-web/` and the HABs research in
 | [05 — Science & safety](05-science-and-safety.md) | Non-negotiable rules R1–R26 (hierarchy, chlorophyll, C-HARM, experimental models, economics, provenance) |
 | [06 — Development plan](06-development-plan.md) | Prioritized MVP list, milestones M0–M4 + P2/P3, testing & validation, deployment, risks, work not to do yet |
 | [07 — Milestone 1 implementation](07-m1-implementation.md) | What is built, verification results, tests, known issues, how to run |
+| [08 — Scientific review checklist](08-scientific-review-checklist.md) | 20-minute checklist for a HAB scientist reviewing the C-HARM layer |
 | [m1/](m1/) | Screenshots of the running app (live data, 2026-10-08) |
 | [evidence/](evidence/) | Raw verification logs from live requests (satellite, C-HARM, regulatory, economics) and the M1 C-HARM point verification |
 

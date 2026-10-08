@@ -14,13 +14,6 @@ on:
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:
-  # TEMPORARY (integration gate for M1): exercise the real publishing path from the feature
-  # branch. Remove before merging.
-  push:
-    branches: [feat/coastwatch-m1-baseline]
-    paths:
-      - ".github/workflows/coastwatch-data.yml"
-      - "pipeline/**"
 
 permissions: {}
 

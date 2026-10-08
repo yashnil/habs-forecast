@@ -1,6 +1,6 @@
 # 07 — Milestone 1 implementation: honest baseline + live C-HARM forecast
 
-Branch `feat/coastwatch-m1-baseline` (not merged, not deployed). Built and verified 2026-10-08.
+Branch `feat/coastwatch-m1-baseline` (not merged; website not deployed). Built and verified 2026-10-08. Integration gate (GitHub CI + real data publishing) completed the same day — see §7.
 
 ## 1. What works
 
@@ -16,7 +16,7 @@ Branch `feat/coastwatch-m1-baseline` (not merged, not deployed). Built and verif
 | Freshness | current / stale / historical / unavailable computed in the browser per source policy; failed updates shown in a banner and on `/sources` | unit tests at day boundaries; e2e with a frozen clock |
 | Hierarchy | Official-status card first (closures not tracked yet; official links and hotlines), then official forecast, then observation | e2e DOM-order test |
 | Design | Navy MapLibre basemap (OpenFreeMap), magenta single-hue probability ramp (monotone lightness, 0% at 2.16:1 against water), Geist type, desktop floating panel, mobile stacked layout, Upcoming nav items not linked | screenshots in [`m1/`](m1/) |
-| Scheduling | `coastwatch-data.yml` every 6 h → `coastwatch-data` branch; refuses to publish if live verification fails. `coastwatch-ci.yml` runs all checks | inert until merged (scheduled workflows run from the default branch) |
+| Scheduling and publishing | `coastwatch-data.yml` every 6 h: build (read token) → publish (write token, no repo code) → check public URL (read token). `coastwatch-ci.yml` runs all checks | Both ran green on GitHub (§7) |
 
 ## 2. C-HARM geographic verification (live)
 
@@ -65,8 +65,8 @@ Coverage of the requested areas: schema validity (Python + Ajv, malformed manife
 1. **C-HARM issue date is inferred** (nowcast valid day + 1). Derived from metadata patterns on 2026-10-08, not documented by the producer. Labelled "(inferred)" everywhere.
 2. **No published skill assessment for C-HARM v3.1** was found; the app cites the v1 assessment (Anderson et al. 2016) and states this.
 3. **Official closures and advisories are not ingested.** The card says so and links to CDFW/CDPH. Curated records are M2.
-4. **CI has not run.** Workflows were written and their commands run locally, but GitHub Actions has not executed them. Linux headless Chromium uses software WebGL; locally, SwiftShader did not draw vector layers (rasters and map sources work). The e2e tests do not depend on vector-layer pixels, but this is unverified on CI.
-5. **Data publishing to the `coastwatch-data` branch is untested end to end** (requires merge to the default branch, and a public repository for raw.githubusercontent.com access).
+4. *(Resolved §7)* CI runs green on GitHub, including Playwright on Linux headless Chromium.
+5. *(Resolved §7)* Publishing to the `coastwatch-data` branch tested end to end on GitHub.
 6. **Basemap depends on OpenFreeMap** (free, no SLA). If it is unreachable, the forecast still renders on the land-coloured background without coastline or labels.
 7. **NASA GIBS legend SVGs are ~600 KB** and drawn for a light background (shown on a white chip). Satellite chlorophyll also appears over inland lakes, as NASA provides it.
 8. **Mobile:** the panel stacks below a 58vh map rather than a bottom sheet; the expanded attribution can overlap the scale bar on narrow screens.
@@ -97,3 +97,75 @@ npm run lint && npm run typecheck && npm test && npm run test:e2e
 ## 6. Merge readiness
 
 Ready for review, not for public deployment. Before merging: run CI on GitHub (item 4) and have a domain reviewer read the forecast copy. Before deploying publicly: the steps in `06-development-plan.md` §6, including scientific review of the copy, confirming the data branch publishes, and deciding whether the curated official-status records (M2) must ship first.
+
+## 7. Integration gate (2026-10-08)
+
+### 7.1 GitHub CI
+
+| Workflow | Run | Result |
+|---|---|---|
+| CoastWatch CI (pipeline + web) | [37827522709](https://github.com/yashnil/habs-forecast/actions/runs/37827522709) | ✅ pipeline: 53 passed, 1 deselected (the live test; its equivalent runs in the data workflow) · schema and fixture drift checks clean · web: lint, typecheck, 40 vitest, production build, 15 Playwright e2e on headless Chromium |
+| CoastWatch data refresh | [37827522650](https://github.com/yashnil/habs-forecast/actions/runs/37827522650) | ✅ build → publish → public-URL check (details below) |
+
+The final commits were re-run on CI after this report; see the pull request checks for the latest runs.
+
+Permissions: repository default is read-only (`default_workflow_permissions: read`). CI declares `contents: read` and does not persist credentials. The data workflow declares `permissions: {}` at the top; only the `publish` job has `contents: write`, and it checks out no repository code and runs no third-party build tools (it downloads the verified artifact and pushes it). No tests are skipped; the only deselected test is the live end-to-end check, which the data workflow covers with `cwp verify-charm`.
+
+### 7.2 Real data publishing
+
+Path verified on GitHub runners: ERDDAP / NASA GIBS / CDFW → `cwp run` → validation → `cwp verify-charm` (156/156 against ERDDAP) → `cwp check-published` (26/26 files) → `cwp guard-publish` → artifact → force-replace of the `coastwatch-data` branch (single commit) → `cwp check-published` against the public URL with the expected run id (26/26, CORS OK).
+
+**Public data URL** (no account changes were needed; the repository was already public):
+`https://raw.githubusercontent.com/yashnil/habs-forecast/coastwatch-data/v1/manifest.json`
+
+| Check | Result |
+|---|---|
+| Manifest and assets load from published URLs | ✅ HTTP 200; independently re-checked from a workstation with `cwp check-published` |
+| CORS | ✅ `access-control-allow-origin: *` on manifest, PNGs and grids; PNGs served as `image/png`; manifest as `text/plain` (fine for server-side `fetch().json()`) |
+| Every manifest reference exists and decodes | ✅ 12 images (sizes match), 12 grids (decoded length matches), ports |
+| Atomic versions | ✅ assets are content-addressed (`charm/<issued>/lead<k>-<sha>/…`, `ports-<sha>.geojson`); a new manifest references only new paths, and the previous manifest's files are kept one more run to cover the 5-minute CDN cache, so a client never mixes versions. The branch update is a single ref update. Tests: `pipeline/tests/test_publish.py` |
+| Failed refresh preserves last valid data without pretending it is current | ✅ Drill on the real published dataset with ERDDAP unreachable: C-HARM `outcome: failed`, `last_success_at` kept, issue date still 2026-10-08, same asset paths, dataset still passes `check-published`; verification is skipped (nothing new) so the failure status is still published. The browser then classifies by date (stale after 2 days, historical after 7) and shows the failure banner (e2e) |
+| Cannot expose unrelated repository files | ✅ The publish tree is built in a separate directory from pipeline output only; `guard-publish` rejects anything not `v1/*.{json,geojson,png,u16.gz}` (test: research code, `.env`, notes are refused); the publish job also refuses staged paths outside `v1/`. Published branch: 1 commit, 27 files, all under `v1/` |
+| Research repo not bloated by data | ✅ The data branch is a single squashed commit each run (bot force-push), so history does not accumulate in clones |
+| Production-equivalent frontend | ✅ `npm run build` + `next start` with `CW_DATA_BASE_URL` = the public URL; `npm run test:published` (Playwright): no data-unavailable or fixture banner, map image source = published content-addressed URL, inspector values decoded in the browser equal the values verified against ERDDAP, no failed cross-origin requests |
+
+**Limitation:** raw.githubusercontent.com is fine for validation and light use, but it is not a production CDN (rate limits, `text/plain` for JSON, no SLA). For public launch, publish the same artifact to **GitHub Pages** (one repository setting) or Cloudflare R2. Setup steps are in §7.5.
+
+### 7.3 Scientific and UI review outcomes
+
+Verified against the ERDDAP metadata: variable names and thresholds (`pseudo_nitzschia` > 10,000 cells/L, `particulate_domoic` > 500 ng/L, `cellular_domoic` > 10 pg/cell), probability scale 0–1 shown as 0–100% on a fixed legend, lead/valid dates (nowcast = 2026-10-07, +3 = 2026-10-10), inferred issue date labelled, freshness by issue date. Monterey mid-bay inspector (94% / 77% / 32%) equals ERDDAP.
+
+Changes made in this review:
+- Badge "Official forecast" → **"Agency forecast"** so that a NOAA model forecast cannot be confused with an official closure or advisory.
+- Heading "Bloom and toxin forecast" → **"Bloom and domoic acid forecast"** (C-HARM predicts DA in the water column, not toxicity of seafood).
+- **All caveats are visible without expanding** ("Read before using" box for C-HARM; caveat list for satellite chlorophyll); source and provenance stay in a collapsible section. Test: every published caveat must be visible.
+- Freshness badge says what the age refers to ("Current · issued today", "observed 1 day ago").
+- Mobile: upcoming experiences collapse to "+ 3 upcoming"; scale bar hidden on narrow screens to avoid overlapping the attribution.
+
+Checked: no copy asserts toxicity of seafood, safety, or fishing productivity (automated phrase checks over copy, artifacts and components). Reviewer checklist: [`08-scientific-review-checklist.md`](08-scientific-review-checklist.md).
+
+Final screenshots (production build reading the published dataset): [`m1/01-live-map-desktop.png`](m1/01-live-map-desktop.png), [`02-inspector-monterey.png`](m1/02-inspector-monterey.png), [`03-satellite-chlorophyll.png`](m1/03-satellite-chlorophyll.png), [`04-mobile-nearshore.png`](m1/04-mobile-nearshore.png), [`05-data-and-sources.png`](m1/05-data-and-sources.png).
+
+### 7.4 Remaining blockers before public launch
+
+1. **Scientific sign-off** on the C-HARM copy (checklist 08). Required before the site is public.
+2. **Production data host:** move from raw.githubusercontent.com to GitHub Pages or R2 (requires a repository setting or an account; see 7.5).
+3. **Web hosting** not set up (deliberately not deployed).
+4. **Official closures and advisories** are linked, not ingested (M2). Decide whether launch waits for M2.
+5. Known issues 1–3 and 6–11 in §4 remain (inferred issue date, no v3.1 skill paper, OpenFreeMap dependency, GIBS legend size, mobile panel layout, no full accessibility audit).
+
+### 7.5 Steps that need you (not done here)
+
+**GitHub Pages as the data host (recommended before launch):**
+1. Repository → Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+2. Tell me when that's done; the data workflow then gets a `deploy-pages` job (`actions/upload-pages-artifact` + `actions/deploy-pages`, with `pages: write` and `id-token: write` on that job only). The data URL becomes `https://yashnil.github.io/habs-forecast/v1/`, and the app's `CW_DATA_BASE_URL` changes to match. Note that this creates a public `github.io` site containing only the data artifacts.
+
+**Web hosting (when you decide to launch):** connect `coastwatch-web/` to Vercel or Cloudflare Pages, set `CW_DATA_BASE_URL` to the data URL, and build with Node 22.
+
+### 7.6 Commits in the integration gate
+
+See `git log main..feat/coastwatch-m1-baseline`. Gate-specific commits: atomic publishing and published-data checks; review fixes and production-equivalent test; this report.
+
+### 7.7 Merge recommendation
+
+All technical gates pass: CI green on GitHub, real publishing verified end to end, failure drill passed, production-equivalent frontend verified. **Ready to merge into `main`** once the PR checks pass. Merging enables the six-hourly data refresh on `main`, which publishes data only, not the website. **Not ready for public launch** until scientific sign-off and a production data host are in place (§7.4).
