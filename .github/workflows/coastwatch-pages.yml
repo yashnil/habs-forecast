@@ -1,0 +1,92 @@
+name: CoastWatch data hosting (GitHub Pages)
+
+# Serves the verified dataset on the coastwatch-data branch from GitHub Pages
+# (CDN, correct content types, CORS) at https://<owner>.github.io/<repo>/v1/.
+# Only v1/ pipeline artifacts are uploaded; no repository code or files.
+# Requires one repository setting: Settings -> Pages -> Source: "GitHub Actions".
+# Until that is set, the workflow skips with a warning instead of failing.
+on:
+  workflow_run:
+    workflows: ["CoastWatch data refresh"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: coastwatch-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    outputs:
+      enabled: ${{ steps.pages.outputs.enabled }}
+      url: ${{ steps.deployment.outputs.page_url }}
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Is GitHub Pages enabled with the Actions source?
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          src=$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.build_type' 2>/dev/null || true)
+          if [ "$src" = "workflow" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=GitHub Pages not enabled::Set Settings -> Pages -> Build and deployment -> Source to 'GitHub Actions', then re-run this workflow. Data remains available from the coastwatch-data branch."
+          fi
+      - name: Fetch the published dataset
+        if: steps.pages.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: coastwatch-data
+          path: data-branch
+          persist-credentials: false
+      - name: Build the site from v1/ only
+        if: steps.pages.outputs.enabled == 'true'
+        run: |
+          mkdir -p _site
+          cp -R data-branch/v1 _site/v1
+          touch _site/.nojekyll
+          # refuse anything that is not a pipeline artifact
+          bad=$(find _site -type f ! -name '.nojekyll' ! -path '_site/v1/*' -o -type f -path '_site/v1/*' ! \( -name '*.json' -o -name '*.geojson' -o -name '*.png' -o -name '*.u16.gz' \) | head)
+          if [ -n "$bad" ]; then echo "refusing to publish: $bad"; exit 1; fi
+          find _site -type f | wc -l
+      - if: steps.pages.outputs.enabled == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - if: steps.pages.outputs.enabled == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  check:
+    needs: deploy
+    if: needs.deploy.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Hosted dataset is complete, decodes, and is CORS-enabled
+        working-directory: pipeline
+        env:
+          SITE: ${{ needs.deploy.outputs.url }}
+        run: |
+          uv sync
+          uv run cwp check-published --base "${SITE%/}/v1" --retries 12 --wait 15
