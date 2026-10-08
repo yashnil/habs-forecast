@@ -1,0 +1,213 @@
+{
+  "$defs": {
+    "PortFeature": {
+      "additionalProperties": false,
+      "properties": {
+        "geometry": {
+          "additionalProperties": true,
+          "title": "Geometry",
+          "type": "object"
+        },
+        "properties": {
+          "$ref": "#/$defs/PortProperties"
+        },
+        "type": {
+          "const": "Feature",
+          "default": "Feature",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "geometry",
+        "properties"
+      ],
+      "title": "PortFeature",
+      "type": "object"
+    },
+    "PortProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "port_area": {
+          "title": "Port Area",
+          "type": "string"
+        },
+        "port_area_code": {
+          "title": "Port Area Code",
+          "type": "integer"
+        },
+        "port_code": {
+          "title": "Port Code",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "port_code",
+        "name",
+        "display_name",
+        "port_area",
+        "port_area_code"
+      ],
+      "title": "PortProperties",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "citation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Citation"
+        },
+        "dataset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Id"
+        },
+        "institution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Institution"
+        },
+        "license": {
+          "title": "License",
+          "type": "string"
+        },
+        "pipeline_run_id": {
+          "title": "Pipeline Run Id",
+          "type": "string"
+        },
+        "pipeline_version": {
+          "title": "Pipeline Version",
+          "type": "string"
+        },
+        "product_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Product Version"
+        },
+        "request_urls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Request Urls",
+          "type": "array"
+        },
+        "retrieved_at": {
+          "description": "UTC ISO-8601 time the pipeline fetched the data",
+          "title": "Retrieved At",
+          "type": "string"
+        },
+        "source_id": {
+          "description": "Stable id of the upstream source, e.g. 'charm'",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_name": {
+          "title": "Source Name",
+          "type": "string"
+        },
+        "source_url": {
+          "description": "Dataset or page URL a person can open",
+          "title": "Source Url",
+          "type": "string"
+        },
+        "upstream_metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Selected upstream attributes kept verbatim",
+          "title": "Upstream Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source_id",
+        "source_name",
+        "source_url",
+        "license",
+        "retrieved_at",
+        "pipeline_version",
+        "pipeline_run_id"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    }
+  },
+  "$id": "https://coastwatch/schemas/v1/ports.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "caveats": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Caveats",
+      "type": "array"
+    },
+    "features": {
+      "items": {
+        "$ref": "#/$defs/PortFeature"
+      },
+      "title": "Features",
+      "type": "array"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "type": {
+      "const": "FeatureCollection",
+      "default": "FeatureCollection",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "features",
+    "caveats",
+    "provenance"
+  ],
+  "title": "PortsCollection",
+  "type": "object"
+}
