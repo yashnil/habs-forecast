@@ -73,6 +73,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
                     last_success_at=ctx.now_iso,
                     outcome=outcome,
                     error="; ".join(res.errors) or None,
+                    notes=res.run.notes,
                     latest_issued_date=res.latest_issued.isoformat() if res.latest_issued else None,
                     latest_valid_date=res.latest_valid.isoformat() if res.latest_valid else None,
                     freshness=charm.FRESHNESS,
@@ -103,7 +104,8 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
                     last_attempt_at=ctx.now_iso,
                     last_success_at=ctx.now_iso,
                     outcome="partial" if g.errors else "updated",
-                    error="; ".join(g.errors + g.notes) or None,
+                    error="; ".join(g.errors) or None,
+                    notes=g.notes,
                     latest_valid_date=g.latest_date,
                     freshness=gibs.FRESHNESS,
                 )

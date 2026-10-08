@@ -54,7 +54,7 @@ def cmd_verify(a: argparse.Namespace) -> int:
 def cmd_fixture(a: argparse.Namespace) -> int:
     from .fixtures import build_fixture_dataset
 
-    m = build_fixture_dataset(Path(a.out), now=a.now)
+    m = build_fixture_dataset(Path(a.out), now=a.now, scenario=a.scenario)
     print(manifest_summary(m))
     return 0
 
@@ -78,6 +78,7 @@ def main(argv: list[str] | None = None) -> int:
     f = sub.add_parser("fixture", help="build a deterministic dataset from recorded fixtures (no network)")
     f.add_argument("--out", required=True)
     f.add_argument("--now", default="2026-10-08T18:00:00Z")
+    f.add_argument("--scenario", default="normal", choices=["normal", "charm-failed"])
     f.set_defaults(fn=cmd_fixture)
     a = p.parse_args(argv)
     return a.fn(a)

@@ -23,7 +23,7 @@ _PROB_HEX = [
 
 PROBABILITY = Palette(
     id="cw-probability-magenta-v1",
-    domain=(0.0, 1.0),
+    domain=[0.0, 1.0],
     stops=[
         PaletteStop(value=round(i / (len(_PROB_HEX) - 1), 6), color=c)
         for i, c in enumerate(_PROB_HEX)

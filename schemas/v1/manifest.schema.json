@@ -257,16 +257,11 @@
       "additionalProperties": false,
       "properties": {
         "domain": {
+          "items": {
+            "type": "number"
+          },
           "maxItems": 2,
           "minItems": 2,
-          "prefixItems": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "number"
-            }
-          ],
           "title": "Domain",
           "type": "array"
         },
@@ -520,83 +515,24 @@
       "properties": {
         "bounds_lnglat": {
           "description": "west, south, east, north of the image edges",
+          "items": {
+            "type": "number"
+          },
           "maxItems": 4,
           "minItems": 4,
-          "prefixItems": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "number"
-            },
-            {
-              "type": "number"
-            },
-            {
-              "type": "number"
-            }
-          ],
           "title": "Bounds Lnglat",
           "type": "array"
         },
         "corners_lnglat": {
-          "description": "top-left, top-right, bottom-right, bottom-left (MapLibre order)",
+          "description": "[lng, lat] of top-left, top-right, bottom-right, bottom-left (MapLibre order)",
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
           "maxItems": 4,
           "minItems": 4,
-          "prefixItems": [
-            {
-              "maxItems": 2,
-              "minItems": 2,
-              "prefixItems": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "number"
-                }
-              ],
-              "type": "array"
-            },
-            {
-              "maxItems": 2,
-              "minItems": 2,
-              "prefixItems": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "number"
-                }
-              ],
-              "type": "array"
-            },
-            {
-              "maxItems": 2,
-              "minItems": 2,
-              "prefixItems": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "number"
-                }
-              ],
-              "type": "array"
-            },
-            {
-              "maxItems": 2,
-              "minItems": 2,
-              "prefixItems": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "number"
-                }
-              ],
-              "type": "array"
-            }
-          ],
           "title": "Corners Lnglat",
           "type": "array"
         },
@@ -691,6 +627,14 @@
           ],
           "default": null,
           "title": "Latest Valid Date"
+        },
+        "notes": {
+          "description": "Informational messages, e.g. fallbacks taken",
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
         },
         "outcome": {
           "enum": [

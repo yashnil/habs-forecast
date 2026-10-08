@@ -84,7 +84,7 @@ def test_grid_round_trip_within_quantization_error():
 
 
 def test_palette_is_fixed_and_monotone_in_lightness():
-    assert PROBABILITY.domain == (0.0, 1.0)
+    assert PROBABILITY.domain == [0.0, 1.0]
     lum = [sum(int(s.color[i : i + 2], 16) * w for i, w in ((1, 0.2126), (3, 0.7152), (5, 0.0722))) for s in PROBABILITY.stops]
     assert all(b > a for a, b in zip(lum, lum[1:]))
     rgba = apply_palette(np.array([np.nan, 0.0, 1.0]), PROBABILITY)

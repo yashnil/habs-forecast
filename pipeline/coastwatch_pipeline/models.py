@@ -89,7 +89,7 @@ class PaletteStop(_Model):
 
 class Palette(_Model):
     id: str
-    domain: tuple[float, float]
+    domain: list[float] = Field(min_length=2, max_length=2)
     stops: list[PaletteStop]
     interpolation: Literal["linear"] = "linear"
     nodata: Literal["transparent"] = "transparent"
@@ -102,12 +102,14 @@ class RasterImage(_Model):
     crs: Literal["EPSG:3857"] = "EPSG:3857"
     width: int
     height: int
-    bounds_lnglat: tuple[float, float, float, float] = Field(
-        description="west, south, east, north of the image edges"
+    bounds_lnglat: list[float] = Field(
+        min_length=4, max_length=4, description="west, south, east, north of the image edges"
     )
-    corners_lnglat: tuple[
-        tuple[float, float], tuple[float, float], tuple[float, float], tuple[float, float]
-    ] = Field(description="top-left, top-right, bottom-right, bottom-left (MapLibre order)")
+    corners_lnglat: list[list[float]] = Field(
+        min_length=4,
+        max_length=4,
+        description="[lng, lat] of top-left, top-right, bottom-right, bottom-left (MapLibre order)",
+    )
     resampling: Literal["nearest"] = "nearest"
 
 
@@ -181,6 +183,7 @@ class SourceStatus(_Model):
     last_success_at: str | None
     outcome: Literal["updated", "unchanged", "failed", "partial"]
     error: str | None = None
+    notes: list[str] = Field(default_factory=list, description="Informational messages, e.g. fallbacks taken")
     latest_issued_date: str | None = None
     latest_valid_date: str | None = None
     freshness: FreshnessPolicy

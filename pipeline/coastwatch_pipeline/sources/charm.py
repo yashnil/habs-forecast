@@ -344,8 +344,12 @@ def _provenance(ctx: RunContext, ld: LeadData, probe_url: str) -> Provenance:
 
 
 def build_lead_artifacts(ctx: RunContext, ld: LeadData, checks: list[QCCheck], issued: date) -> list[LayerArtifact]:
-    lat_first, lat_step = float(ld.lat[0]), float(ld.lat[1] - ld.lat[0])
-    lon_first, lon_step = float(ld.lon[0]), float(ld.lon[1] - ld.lon[0])
+    # Axis values arrive as float32; derive the step from the full span and round the
+    # origin to 0.1 m-scale precision so cell centres sit exactly on the 0.03 deg lattice.
+    lat_first = round(float(ld.lat[0]), 4)
+    lon_first = round(float(ld.lon[0]), 4)
+    lat_step = round(float(ld.lat[-1] - ld.lat[0]) / (ld.lat.size - 1), 6)
+    lon_step = round(float(ld.lon[-1] - ld.lon[0]) / (ld.lon.size - 1), 6)
     src = SourceGrid(lat_first, lat_step, lon_first, lon_step, ld.lat.size, ld.lon.size)
     img = plan_image(src, upsample=4)
     base = f"charm/{issued.isoformat()}/lead{ld.lead}"
@@ -387,8 +391,8 @@ def build_lead_artifacts(ctx: RunContext, ld: LeadData, checks: list[QCCheck], i
                     url=img_rel,
                     width=img.width,
                     height=img.height,
-                    bounds_lnglat=(img.west, img.south, img.east, img.north),
-                    corners_lnglat=img.corners,
+                    bounds_lnglat=[img.west, img.south, img.east, img.north],
+                    corners_lnglat=[list(c) for c in img.corners],
                 ),
                 grid=ValueGrid(
                     url=grid_rel,

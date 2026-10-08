@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 import shutil
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .context import RunContext
@@ -84,7 +84,27 @@ def fixture_context(out: Path, now: str = FIXTURE_NOW, fetcher: FixtureFetcher |
     )
 
 
-def build_fixture_dataset(out: Path, now: str = FIXTURE_NOW) -> Manifest:
+def build_fixture_dataset(out: Path, now: str = FIXTURE_NOW, scenario: str = "normal") -> Manifest:
+    """Scenarios: 'normal' (all sources succeed) or 'charm-failed' (a later run in which
+    every C-HARM request fails, so the previous run is kept and the failure recorded)."""
+    import json
+
+    from .verify import verify_charm
+
     if out.exists():
         shutil.rmtree(out)
-    return run_pipeline(fixture_context(out, now))
+    m = run_pipeline(fixture_context(out, now))
+    if scenario == "charm-failed":
+        later = (datetime.fromisoformat(now.replace("Z", "+00:00")) + timedelta(days=4)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        fetcher = FixtureFetcher(overrides={r"wvcharmV3_": _fail_502})
+        m = run_pipeline(fixture_context(out, later, fetcher))
+    elif scenario != "normal":
+        raise ValueError(f"unknown scenario {scenario}")
+    report = verify_charm(out, live=False)
+    (out / "verification").mkdir(exist_ok=True)
+    (out / "verification" / "charm-points.json").write_text(json.dumps(report, indent=2) + "\n")
+    return m
+
+
+def _fail_502(url: str) -> Response:
+    raise FetchError(f"HTTP 502 for {url}")
