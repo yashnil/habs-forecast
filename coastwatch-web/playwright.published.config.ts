@@ -10,6 +10,10 @@ const url = process.env.PUBLISHED_DATA_URL ?? "https://raw.githubusercontent.com
 export default defineConfig({
   testDir: "tests/published",
   timeout: 60_000,
+  // The app's server caches the manifest (stale-while-revalidate, 5 min) and GitHub Pages
+  // caches for 10 min, so the first request after a new publish can render the previous
+  // (still complete, correctly dated) version while the test compares with the new one.
+  retries: 1,
   reporter: [["list"]],
   use: { viewport: { width: 1440, height: 900 }, channel: process.env.CI ? undefined : "chrome" },
   webServer: { command: "npx next start -p 3300", port: 3300, reuseExistingServer: false, env: { CW_DATA_BASE_URL: url } },

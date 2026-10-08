@@ -52,3 +52,17 @@ A local production build (`next build` + `next start`) reading the staging URL (
 All integration gates pass. Merging PR #3 switches the six-hourly production refresh to the M2 pipeline. GitHub Pages will then publish the official-notices registry (marked `pending_human_review`, shown as **Not verified**) and the port summaries as public data. The Next.js website stays undeployed.
 
 **Before any public website launch:** a person reviews the official registry (`cwp review-official --reviewer NAME --confirm`), and a HAB scientist signs off (checklist 08).
+
+## 7. Merge and production verification
+
+| Step | Result |
+|---|---|
+| Final gates on head `a91c22e` | CI [37845532545](https://github.com/yashnil/habs-forecast/actions/runs/37845532545) green; staging re-run [37845538664](https://github.com/yashnil/habs-forecast/actions/runs/37845538664) green, 28/28 files; production-equivalent frontend 2/2 |
+| PR #3 merged with a merge commit | `47015e1` |
+| Production refresh on `main` (M2 pipeline) | [37846066753](https://github.com/yashnil/habs-forecast/actions/runs/37846066753): build, publish, check green; review issue skipped (official pages unchanged) |
+| GitHub Pages deploy, triggered automatically by the refresh | [37846384722](https://github.com/yashnil/habs-forecast/actions/runs/37846384722): deploy and check green; `check-published` 28/28 at `https://yashnil.github.io/habs-forecast/v1`; 0 Node 20 annotations |
+| Independent check from a workstation | `check-published` 28/28 with run id 37846066753; `npm run test:published` against the Pages URL 2/2 |
+
+**Observed caching behaviour.** On the first attempt the published-data browser test rendered the previous manifest. Next.js's server data cache (`revalidate: 300`, persisted in `.next/cache`) still held the M1-era manifest fetched earlier, and serves stale data while it revalidates; the immediate re-run passed. Users may therefore see the previous complete dataset for up to about 5 minutes (app cache), plus up to 10 minutes (Pages CDN `max-age=600`), after a publish. That data is still correctly dated, and freshness and verification labels come from those dates. Content-addressed asset paths keep each version internally consistent. The published-data test now retries once.
+
+**Status:** M2 is integrated into `main`; the production data pipeline and GitHub Pages hosting run M2; the website is not deployed. The integration review is complete. M3 has not been started.
