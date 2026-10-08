@@ -1,0 +1,29 @@
+{
+  "description": "Principal California ocean landing ports shown in CoastWatch. Geometry, names and port areas come from CDFW 'Marine Landing Data System Ports' [ds3081]; this file only selects ports by CDFW port code and sets display names. Edit by pull request.",
+  "source": "https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3081_fpu/FeatureServer/0",
+  "last_reviewed": "2026-10-08",
+  "ports": [
+    {"port_code": 201, "display_name": "Crescent City", "expected_port_area": "EUREKA"},
+    {"port_code": 231, "display_name": "Trinidad", "expected_port_area": "EUREKA"},
+    {"port_code": 220, "display_name": "Eureka", "expected_port_area": "EUREKA"},
+    {"port_code": 215, "display_name": "Shelter Cove", "expected_port_area": "EUREKA"},
+    {"port_code": 223, "display_name": "Fort Bragg", "expected_port_area": "FORT BRAGG"},
+    {"port_code": 213, "display_name": "Point Arena", "expected_port_area": "FORT BRAGG"},
+    {"port_code": 473, "display_name": "Bodega Bay", "expected_port_area": "BODEGA BAY"},
+    {"port_code": 440, "display_name": "San Francisco", "expected_port_area": "SAN FRANCISCO"},
+    {"port_code": 452, "display_name": "Princeton / Half Moon Bay", "expected_port_area": "SAN FRANCISCO"},
+    {"port_code": 593, "display_name": "Santa Cruz", "expected_port_area": "MONTEREY"},
+    {"port_code": 592, "display_name": "Moss Landing", "expected_port_area": "MONTEREY"},
+    {"port_code": 550, "display_name": "Monterey", "expected_port_area": "MONTEREY"},
+    {"port_code": 606, "display_name": "Morro Bay", "expected_port_area": "MORRO BAY"},
+    {"port_code": 602, "display_name": "Avila / Port San Luis", "expected_port_area": "MORRO BAY"},
+    {"port_code": 611, "display_name": "Santa Barbara", "expected_port_area": "SANTA BARBARA"},
+    {"port_code": 613, "display_name": "Ventura", "expected_port_area": "SANTA BARBARA"},
+    {"port_code": 605, "display_name": "Port Hueneme", "expected_port_area": "SANTA BARBARA"},
+    {"port_code": 770, "display_name": "San Pedro", "expected_port_area": "LOS ANGELES"},
+    {"port_code": 748, "display_name": "Newport Beach", "expected_port_area": "LOS ANGELES"},
+    {"port_code": 767, "display_name": "Dana Point", "expected_port_area": "LOS ANGELES"},
+    {"port_code": 883, "display_name": "Oceanside", "expected_port_area": "SAN DIEGO"},
+    {"port_code": 880, "display_name": "San Diego", "expected_port_area": "SAN DIEGO"}
+  ]
+}

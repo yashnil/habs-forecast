@@ -1,0 +1,102 @@
+/**
+ * Scientific-safety invariants for user-facing copy and code
+ * (docs/coastwatch/05-science-and-safety.md).
+ */
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import * as copy from "@/content/copy";
+import manifestJson from "../fixture-data/v1/manifest.json";
+import type { Manifest } from "@/generated/schema";
+import { generate } from "../../scripts/gen-types.mjs";
+
+const SRC = path.resolve(__dirname, "../../src");
+
+function files(dir: string): string[] {
+  return readdirSync(dir).flatMap((f) => {
+    const p = path.join(dir, f);
+    return statSync(p).isDirectory() ? files(p) : /\.(tsx?|css)$/.test(f) ? [p] : [];
+  });
+}
+
+function strings(obj: unknown): string[] {
+  if (typeof obj === "string") return [obj];
+  if (Array.isArray(obj)) return obj.flatMap(strings);
+  if (obj && typeof obj === "object") return Object.values(obj).flatMap(strings);
+  return [];
+}
+
+const sentences = (t: string) => t.split(/(?<=[.;!?])\s+/).filter(Boolean);
+const FORBIDDEN = [/all clear/i, /safe to (eat|fish|harvest)/i, /\bno risk\b/i, /\bgo fishing\b/i, /good (fishing|place to fish)/i, /\brecommended (area|zone|spot)/i, /best (place|spot) to fish/i];
+
+const appCode = files(SRC).filter((f) => !f.includes(`${path.sep}generated${path.sep}`));
+const appText = appCode.map((f) => readFileSync(f, "utf8")).join("\n");
+const manifest = manifestJson as unknown as Manifest;
+const artifactText = manifest.layers.flatMap((l) => [l.title, l.short_title, l.description, l.threshold_text ?? "", ...l.caveats, l.freshness.note]);
+
+describe("copy never labels an area safe or recommends fishing", () => {
+  const texts = [...strings(copy), ...artifactText];
+  it("'safe' only appears in negated sentences", () => {
+    for (const t of texts)
+      for (const s of sentences(t))
+        if (/(?<!whale[- ])\bsafe(ly)?\b/i.test(s)) expect(s, s).toMatch(/\bnot\b|\bdoes not\b|\bnever\b/i);
+  });
+  it("contains no forbidden phrases (copy, artifacts, or components)", () => {
+    for (const re of FORBIDDEN) {
+      for (const t of texts) expect(t, `${re} in copy`).not.toMatch(re);
+      expect(appText, `${re} in src`).not.toMatch(re);
+    }
+  });
+});
+
+describe("hierarchy and labelling", () => {
+  it("official status card states plainly that closures are not tracked", () => {
+    expect(copy.OFFICIAL_STATUS.notTracked).toMatch(/does not track closures/);
+    expect(copy.OFFICIAL_STATUS.notTracked).toMatch(/nothing here means an area is open/);
+  });
+  it("official links point to official agency domains over https", () => {
+    for (const l of copy.OFFICIAL_STATUS.links) expect(l.href).toMatch(/^https:\/\/(www\.)?(cdph\.ca\.gov|wildlife\.ca\.gov)\//);
+    // the dead link from the old app must not come back
+    expect(appText).not.toContain("MarineBiotech.aspx");
+  });
+  it("forecast copy says it is not a closure decision or a seafood toxin measurement", () => {
+    expect(copy.FORECAST_COPY.notA).toMatch(/not a measurement of toxin in seafood/);
+    expect(copy.FORECAST_COPY.notA).toMatch(/not a closure decision/);
+    expect(copy.FORECAST_COPY.lowNotSafe).toMatch(/does not mean an area is safe/);
+  });
+  it("chlorophyll is never equated with toxins or fish", () => {
+    expect(copy.CHLOROPHYLL_COPY.biomass).toMatch(/does not measure toxins/);
+    expect(copy.CHLOROPHYLL_COPY.biomass).toMatch(/does not predict where fish are/);
+    for (const l of manifest.layers.filter((x) => x.variable === "chlorophyll_a")) {
+      expect(l.product_class).toBe("observation");
+      expect(l.caveats.join(" ")).toMatch(/does not measure toxins/);
+    }
+  });
+  it("only C-HARM layers are labelled official forecasts", () => {
+    for (const l of manifest.layers) if (l.product_class === "official_forecast") expect(l.group_id).toBe("charm");
+  });
+  it("unfinished experiences are not active navigation", () => {
+    const upcoming = copy.EXPERIENCES.filter((e) => !e.available);
+    expect(upcoming.map((e) => e.key).sort()).toEqual(["bloom", "coast", "fisheries"]);
+    for (const e of upcoming) expect(e.href).toBeNull();
+  });
+});
+
+describe("no unsupported claims or relative-risk tiers", () => {
+  it("does not repeat the unsupported 8.3% PINN claim", () => {
+    expect(appText).not.toMatch(/8\.3\s*%/);
+  });
+  it("does not rank areas by within-map percentiles", () => {
+    expect(appText).not.toMatch(/percentile|tertile|higher than most water/i);
+  });
+  it("probability palette domain is fixed at 0-1", () => {
+    for (const l of manifest.layers.filter((x) => x.palette)) expect(l.palette!.domain).toEqual([0, 1]);
+  });
+});
+
+describe("generated types", () => {
+  it("src/generated/schema.ts is up to date with schemas/v1", async () => {
+    const current = readFileSync(path.join(SRC, "generated", "schema.ts"), "utf8");
+    expect(await generate()).toBe(current);
+  });
+});

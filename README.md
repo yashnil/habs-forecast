@@ -29,10 +29,9 @@ Harmful algal blooms (HABs) are intensifying along the California coast, challen
 **Key findings:**
 
 * All models achieve ~0.80 RMSE and >0.77 correlation in log chlorophyll on test set.
-* The PINN shows 8.3% validation improvement (RMSE: 0.699 vs. 0.762 baseline) with optimal parameters (λ=5.0, κ=100 m²/s).
+* Evaluated with the same diagnostics pipeline, the optimized PINN (λ=5.0, κ=100 m²/s) matches but does not beat the ConvLSTM baseline: validation RMSE 0.765 vs. 0.762 and test RMSE 0.801 vs. 0.801 in log chlorophyll (Section 4.1).
 * The PINN modestly improves spatial fidelity (relative scale error, spectral energy ratios) and convergence stability.
-* Model demonstrates resilience to climate extremes (2019 marine heatwave) with <3% skill degradation.
-* Robustness analysis confirms model performance is maintained across diverse data imputation methods.
+* Leaving native satellite gaps masked gives the best skill; every gap-filling strategy tested degrades test RMSE (0.87–1.06 vs. 0.80, Section 4.4).
 * TFT lags in spatial generalization, showing stronger regional biases.
 * Case studies (Monterey Bay 2021, Navarro Lagoon 2020) show convolutional–recurrent models outperform transformers in reproducing bloom footprints.
 * Predictor attribution highlights **Kd490, river distance/influence, SST, and shortwave radiation** as dominant drivers.
@@ -216,11 +215,11 @@ For each model, `Diagnostics_<model>/` holds:
 
 ## 5. Discussion
 
-* **PINN improves realism:** 8.3% validation improvement (RMSE: 0.699 vs. 0.762) with optimal hyperparameters, plus stronger fidelity in bloom structure.
+* **PINN vs. ConvLSTM:** on the same evaluation pipeline the optimized PINN is statistically indistinguishable from the ConvLSTM (Section 4.1). The λ ablation (Section 4.3) reaches validation RMSE 0.695 at λ = 5, but those are separate 30-epoch runs and are not directly comparable with the Section 4.1 checkpoints.
 * **Optimal parameters:** Systematic ablation identified λ=5.0 (physics loss weight) and κ=100 m²/s (diffusivity) as optimal for this domain.
-* **Climate resilience:** PINN maintains skill during extreme climate events (2019 marine heatwave) with <3% degradation vs. >3% for baseline.
-* **Data robustness:** Model performance robust to data gaps; native MODIS gaps handled effectively through masked loss computation.
-* **ConvLSTM competitive:** achieves similar overall accuracy without physics, but less robust in structure and climate extremes.
+* **Data gaps:** masking native MODIS gaps in the loss outperforms all six gap-filling strategies tested (Section 4.4).
+* **ConvLSTM competitive:** achieves the same overall accuracy without the physics term.
+* **Note on earlier figures:** internal status notes (`PAPER_READY_SUMMARY.md`, `PAPER_STATUS_REPORT.md`) cite an "8.3% validation improvement (0.699 vs. 0.762)". That figure compares the validation RMSE from the imputation-sensitivity run with the ConvLSTM's validation RMSE from the diagnostics run, so it is not a like-for-like comparison and is not used here. Skill during the 2019 marine heatwave is not quantified in the result files in this repository.
 * **TFT underperforms:** struggles with sparse coastal grids.
 * **Drivers:** Kd490, river influence, SST, and radiation dominate predictor rankings.
 * **Computational efficiency:** Inference <10 seconds per forecast enables real-time operational deployment.
@@ -383,8 +382,11 @@ habs-forecast/
 ├── calibration.py             # Calibration diagnostics
 ├── RUN_DIAGNOSTICS.sh         # Diagnostics for the optimized PINN
 │
-├── dashboard/                 # Streamlit decision-support dashboard (see dashboard/README.md)
-├── coastwatch-web/            # Next.js + Mapbox web front end (see coastwatch-web/README.md)
+├── pipeline/                  # CoastWatch data pipeline: ingest, validate, render, publish (see pipeline/README.md)
+├── coastwatch-web/            # CoastWatch Next.js + MapLibre web app (see coastwatch-web/README.md)
+├── schemas/v1/                # JSON Schema shared by the pipeline and the web app
+├── data/curated/              # Human-reviewed inputs (CDFW port selection)
+├── docs/coastwatch/           # CoastWatch planning, architecture, safety rules, source evidence
 │
 ├── PAPER_READY_SUMMARY.md     # Reviewer-response status and results
 ├── PAPER_STATUS_REPORT.md
@@ -393,20 +395,18 @@ habs-forecast/
 
 ---
 
-## 8. Decision-Support Applications
+## 8. Decision-Support Application (CoastWatch)
 
-Two front ends visualize a chlorophyll snapshot exported from the pipeline. They are **decision support only**, not regulatory or public-health products; official CDPH, CDFW and NOAA guidance takes precedence.
+**CoastWatch** (`coastwatch-web/` + `pipeline/`) is a public-facing coastal map for California fishing communities. It is **decision support only**, not a regulatory or public-health product; closures and advisories from CDFW, CDPH and OEHHA always take precedence.
 
-* **`dashboard/`** is a lightweight Streamlit application:
-  ```bash
-  pip install -r dashboard/requirements.txt
-  python dashboard/scripts/make_demo_snapshot.py   # synthetic demo data
-  streamlit run dashboard/app.py
-  ```
-  `dashboard/scripts/export_map_snapshot.py` exports real observations or model output (for example, `log_chl_pred` from a PINN export). See [`dashboard/README.md`](dashboard/README.md).
-* **`coastwatch-web/`** is a Next.js 15 + Mapbox GL front end. It combines NASA GIBS MODIS-Aqua 8-day chlorophyll tiles, California fishing ports and regional summaries. It requires a Mapbox token in `.env.local` (copy it from `.env.example`). See [`coastwatch-web/README.md`](coastwatch-web/README.md).
+The current release (Milestone 1) shows the official **C-HARM v3.1** harmful-algal-bloom and domoic-acid forecast probabilities from NOAA CoastWatch West Coast, satellite chlorophyll from NASA GIBS as a separate observation layer, and CDFW landing ports. **The research models in this repository are not used by CoastWatch yet**; they need retraining on operational (VIIRS-era) inputs and fresh validation first (see `docs/coastwatch/06-development-plan.md`).
 
-The workflow `.github/workflows/dashboard-demo.yml` runs a weekly smoke test that generates the demo snapshot, and also runs on every push that changes `dashboard/`. The product roadmap is in `GOALS.md`.
+```bash
+cd pipeline && uv sync && uv run cwp run          # fetch + validate + publish to coastwatch-web/public/data/v1
+cd ../coastwatch-web && npm install && npm run dev  # http://localhost:3000
+```
+
+See [`docs/coastwatch/`](docs/coastwatch/README.md) for the architecture, data-source register and the scientific safety rules. The earlier Streamlit dashboard, which displayed a synthetic demo field, has been retired.
 
 ---
 

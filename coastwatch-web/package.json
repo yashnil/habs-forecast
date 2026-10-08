@@ -3,28 +3,40 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-maplibre-worker.mjs",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "sync-data": "node scripts/sync-data.mjs"
+    "lint": "eslint src tests",
+    "typecheck": "tsc --noEmit",
+    "gen:types": "node scripts/gen-types.mjs",
+    "data:live": "cd ../pipeline && uv run cwp run --out ../coastwatch-web/public/data/v1",
+    "data:fixture": "node scripts/copy-fixture-data.mjs",
+    "test": "vitest run",
+    "test:e2e": "npm run data:fixture && npm run build && playwright test",
+    "test:published": "playwright test -c playwright.published.config.ts"
   },
   "dependencies": {
+    "ajv": "^8.20.0",
+    "maplibre-gl": "^6.13.0",
+    "next": "15.5.14",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "next": "15.5.14",
-    "mapbox-gl": "^3.9.4",
     "react-map-gl": "^8.0.1"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^20",
+    "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.64.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.5.14",
-    "@eslint/eslintrc": "^3"
+    "json-schema-to-typescript": "^16.0.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^5.0.3"
   }
 }

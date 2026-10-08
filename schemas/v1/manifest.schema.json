@@ -1,0 +1,958 @@
+{
+  "$defs": {
+    "ForecastRun": {
+      "additionalProperties": false,
+      "properties": {
+        "group_id": {
+          "title": "Group Id",
+          "type": "string"
+        },
+        "issued_date": {
+          "title": "Issued Date",
+          "type": "string"
+        },
+        "issued_date_derived": {
+          "title": "Issued Date Derived",
+          "type": "boolean"
+        },
+        "leads_available": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Leads Available",
+          "type": "array"
+        },
+        "leads_missing": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Leads Missing",
+          "type": "array"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "group_id",
+        "source_id",
+        "issued_date",
+        "issued_date_derived",
+        "leads_available",
+        "leads_missing",
+        "notes"
+      ],
+      "title": "ForecastRun",
+      "type": "object"
+    },
+    "FreshnessPolicy": {
+      "additionalProperties": false,
+      "description": "How the client classifies age. Computed in the browser so a dead pipeline\nstill degrades to 'stale' / 'historical' instead of looking current.",
+      "properties": {
+        "basis": {
+          "enum": [
+            "issued_date",
+            "valid_date",
+            "observed_date"
+          ],
+          "title": "Basis",
+          "type": "string"
+        },
+        "current_max_age_days": {
+          "minimum": 0,
+          "title": "Current Max Age Days",
+          "type": "integer"
+        },
+        "note": {
+          "title": "Note",
+          "type": "string"
+        },
+        "stale_max_age_days": {
+          "description": "Older than this is 'historical'",
+          "minimum": 0,
+          "title": "Stale Max Age Days",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "basis",
+        "current_max_age_days",
+        "stale_max_age_days",
+        "note"
+      ],
+      "title": "FreshnessPolicy",
+      "type": "object"
+    },
+    "LayerArtifact": {
+      "additionalProperties": false,
+      "properties": {
+        "caveats": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Caveats",
+          "type": "array"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "freshness": {
+          "$ref": "#/$defs/FreshnessPolicy"
+        },
+        "grid": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValueGrid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "group_id": {
+          "title": "Group Id",
+          "type": "string"
+        },
+        "image": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RasterImage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "layer_id": {
+          "title": "Layer Id",
+          "type": "string"
+        },
+        "palette": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Palette"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "product_class": {
+          "enum": [
+            "official_regulatory",
+            "official_forecast",
+            "observation",
+            "experimental_model",
+            "historical_context",
+            "reference"
+          ],
+          "title": "Product Class",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "qc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/QualityControl"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "resolution_deg": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolution Deg"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "short_title": {
+          "title": "Short Title",
+          "type": "string"
+        },
+        "threshold_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threshold Text"
+        },
+        "tiles": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TileLayer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "time": {
+          "$ref": "#/$defs/TimeInfo"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "units": {
+          "title": "Units",
+          "type": "string"
+        },
+        "variable": {
+          "title": "Variable",
+          "type": "string"
+        }
+      },
+      "required": [
+        "layer_id",
+        "group_id",
+        "product_class",
+        "title",
+        "short_title",
+        "variable",
+        "units",
+        "description",
+        "time",
+        "freshness",
+        "caveats",
+        "provenance"
+      ],
+      "title": "LayerArtifact",
+      "type": "object"
+    },
+    "Palette": {
+      "additionalProperties": false,
+      "properties": {
+        "domain": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Domain",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "interpolation": {
+          "const": "linear",
+          "default": "linear",
+          "title": "Interpolation",
+          "type": "string"
+        },
+        "nodata": {
+          "const": "transparent",
+          "default": "transparent",
+          "title": "Nodata",
+          "type": "string"
+        },
+        "stops": {
+          "items": {
+            "$ref": "#/$defs/PaletteStop"
+          },
+          "title": "Stops",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "domain",
+        "stops"
+      ],
+      "title": "Palette",
+      "type": "object"
+    },
+    "PaletteStop": {
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "pattern": "^#[0-9a-f]{6}$",
+          "title": "Color",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "value",
+        "color"
+      ],
+      "title": "PaletteStop",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "citation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Citation"
+        },
+        "dataset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Id"
+        },
+        "institution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Institution"
+        },
+        "license": {
+          "title": "License",
+          "type": "string"
+        },
+        "pipeline_run_id": {
+          "title": "Pipeline Run Id",
+          "type": "string"
+        },
+        "pipeline_version": {
+          "title": "Pipeline Version",
+          "type": "string"
+        },
+        "product_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Product Version"
+        },
+        "request_urls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Request Urls",
+          "type": "array"
+        },
+        "retrieved_at": {
+          "description": "UTC ISO-8601 time the pipeline fetched the data",
+          "title": "Retrieved At",
+          "type": "string"
+        },
+        "source_id": {
+          "description": "Stable id of the upstream source, e.g. 'charm'",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_name": {
+          "title": "Source Name",
+          "type": "string"
+        },
+        "source_url": {
+          "description": "Dataset or page URL a person can open",
+          "title": "Source Url",
+          "type": "string"
+        },
+        "upstream_metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Selected upstream attributes kept verbatim",
+          "title": "Upstream Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source_id",
+        "source_name",
+        "source_url",
+        "license",
+        "retrieved_at",
+        "pipeline_version",
+        "pipeline_run_id"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "QCCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "passed",
+        "detail"
+      ],
+      "title": "QCCheck",
+      "type": "object"
+    },
+    "QualityControl": {
+      "additionalProperties": false,
+      "properties": {
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/QCCheck"
+          },
+          "title": "Checks",
+          "type": "array"
+        },
+        "n_cells": {
+          "title": "N Cells",
+          "type": "integer"
+        },
+        "n_valid": {
+          "title": "N Valid",
+          "type": "integer"
+        },
+        "valid_fraction": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Valid Fraction",
+          "type": "number"
+        },
+        "value_max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value Max"
+        },
+        "value_min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value Min"
+        }
+      },
+      "required": [
+        "checks",
+        "n_cells",
+        "n_valid",
+        "valid_fraction",
+        "value_min",
+        "value_max"
+      ],
+      "title": "QualityControl",
+      "type": "object"
+    },
+    "RasterImage": {
+      "additionalProperties": false,
+      "description": "A PNG already reprojected to EPSG:3857 so it can be placed by its corners.",
+      "properties": {
+        "bounds_lnglat": {
+          "description": "west, south, east, north of the image edges",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Bounds Lnglat",
+          "type": "array"
+        },
+        "corners_lnglat": {
+          "description": "[lng, lat] of top-left, top-right, bottom-right, bottom-left (MapLibre order)",
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Corners Lnglat",
+          "type": "array"
+        },
+        "crs": {
+          "const": "EPSG:3857",
+          "default": "EPSG:3857",
+          "title": "Crs",
+          "type": "string"
+        },
+        "height": {
+          "title": "Height",
+          "type": "integer"
+        },
+        "resampling": {
+          "const": "nearest",
+          "default": "nearest",
+          "title": "Resampling",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        },
+        "width": {
+          "title": "Width",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "url",
+        "width",
+        "height",
+        "bounds_lnglat",
+        "corners_lnglat"
+      ],
+      "title": "RasterImage",
+      "type": "object"
+    },
+    "SourceStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "freshness": {
+          "$ref": "#/$defs/FreshnessPolicy"
+        },
+        "last_attempt_at": {
+          "title": "Last Attempt At",
+          "type": "string"
+        },
+        "last_success_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Success At"
+        },
+        "latest_issued_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latest Issued Date"
+        },
+        "latest_valid_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latest Valid Date"
+        },
+        "notes": {
+          "description": "Informational messages, e.g. fallbacks taken",
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "outcome": {
+          "enum": [
+            "updated",
+            "unchanged",
+            "failed",
+            "partial"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "product_class": {
+          "enum": [
+            "official_regulatory",
+            "official_forecast",
+            "observation",
+            "experimental_model",
+            "historical_context",
+            "reference"
+          ],
+          "title": "Product Class",
+          "type": "string"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "title",
+        "product_class",
+        "last_attempt_at",
+        "last_success_at",
+        "outcome",
+        "freshness"
+      ],
+      "title": "SourceStatus",
+      "type": "object"
+    },
+    "TileLayer": {
+      "additionalProperties": false,
+      "description": "Third-party pre-rendered tiles (e.g. NASA GIBS).",
+      "properties": {
+        "date_selection": {
+          "description": "How the tile date was chosen and verified",
+          "title": "Date Selection",
+          "type": "string"
+        },
+        "legend_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Legend Url"
+        },
+        "legend_verified": {
+          "title": "Legend Verified",
+          "type": "boolean"
+        },
+        "max_native_zoom": {
+          "title": "Max Native Zoom",
+          "type": "integer"
+        },
+        "tile_size": {
+          "default": 256,
+          "title": "Tile Size",
+          "type": "integer"
+        },
+        "url_template": {
+          "title": "Url Template",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url_template",
+        "max_native_zoom",
+        "legend_url",
+        "legend_verified",
+        "date_selection"
+      ],
+      "title": "TileLayer",
+      "type": "object"
+    },
+    "TimeInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "issued_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "UTC calendar date the product was issued",
+          "title": "Issued Date"
+        },
+        "issued_date_derived": {
+          "default": false,
+          "description": "True when the issue date is inferred, not published upstream",
+          "title": "Issued Date Derived",
+          "type": "boolean"
+        },
+        "issued_date_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Issued Date Method"
+        },
+        "lead_days": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lead Days"
+        },
+        "observed_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed Date"
+        },
+        "valid_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "UTC calendar date the value represents",
+          "title": "Valid Date"
+        },
+        "valid_time": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Upstream time stamp, verbatim",
+          "title": "Valid Time"
+        }
+      },
+      "title": "TimeInfo",
+      "type": "object"
+    },
+    "ValueGrid": {
+      "additionalProperties": false,
+      "description": "Source values on the source (equirectangular) grid, quantized to uint16 and\ngzip-compressed. value = raw * scale_factor + add_offset; raw == nodata -> no value.",
+      "properties": {
+        "add_offset": {
+          "title": "Add Offset",
+          "type": "number"
+        },
+        "encoding": {
+          "const": "uint16le+gzip",
+          "default": "uint16le+gzip",
+          "title": "Encoding",
+          "type": "string"
+        },
+        "height": {
+          "title": "Height",
+          "type": "integer"
+        },
+        "lat_first": {
+          "description": "Latitude of the first row's cell centre",
+          "title": "Lat First",
+          "type": "number"
+        },
+        "lat_step": {
+          "description": "Signed step between rows",
+          "title": "Lat Step",
+          "type": "number"
+        },
+        "lon_first": {
+          "title": "Lon First",
+          "type": "number"
+        },
+        "lon_step": {
+          "title": "Lon Step",
+          "type": "number"
+        },
+        "max_quantization_error": {
+          "title": "Max Quantization Error",
+          "type": "number"
+        },
+        "nodata": {
+          "default": 65535,
+          "title": "Nodata",
+          "type": "integer"
+        },
+        "scale_factor": {
+          "title": "Scale Factor",
+          "type": "number"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        },
+        "width": {
+          "title": "Width",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "url",
+        "width",
+        "height",
+        "lat_first",
+        "lat_step",
+        "lon_first",
+        "lon_step",
+        "scale_factor",
+        "add_offset",
+        "max_quantization_error"
+      ],
+      "title": "ValueGrid",
+      "type": "object"
+    }
+  },
+  "$id": "https://coastwatch/schemas/v1/manifest.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "forecast_runs": {
+      "items": {
+        "$ref": "#/$defs/ForecastRun"
+      },
+      "title": "Forecast Runs",
+      "type": "array"
+    },
+    "generated_at": {
+      "title": "Generated At",
+      "type": "string"
+    },
+    "layers": {
+      "items": {
+        "$ref": "#/$defs/LayerArtifact"
+      },
+      "title": "Layers",
+      "type": "array"
+    },
+    "pipeline_run_id": {
+      "title": "Pipeline Run Id",
+      "type": "string"
+    },
+    "pipeline_version": {
+      "title": "Pipeline Version",
+      "type": "string"
+    },
+    "ports_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Ports Url"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/SourceStatus"
+      },
+      "title": "Sources",
+      "type": "array"
+    }
+  },
+  "required": [
+    "generated_at",
+    "pipeline_version",
+    "pipeline_run_id",
+    "layers",
+    "forecast_runs",
+    "sources",
+    "ports_url"
+  ],
+  "title": "Manifest",
+  "type": "object"
+}

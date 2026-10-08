@@ -1,0 +1,117 @@
+name: CoastWatch data refresh
+
+# ERDDAP / GIBS / CDFW -> pipeline -> validation -> artifacts -> coastwatch-data branch.
+#
+# - build (read-only token): starts from the currently published dataset (last known good),
+#   runs the pipeline, verifies new C-HARM data against ERDDAP, checks every manifest
+#   reference, and refuses anything that is not a v1/ pipeline artifact.
+# - publish (write token, no repository code checked out): replaces the coastwatch-data
+#   branch with a single commit containing only that artifact. One ref update = atomic.
+# - check (read-only): confirms the new version is served at the public URL with CORS.
+#
+# Scheduled workflows run only from the default branch.
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: coastwatch-data
+  cancel-in-progress: false
+
+env:
+  DATA_BRANCH: coastwatch-data
+  DATA_URL: https://raw.githubusercontent.com/${{ github.repository }}/coastwatch-data/v1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Start from the published dataset (last known good)
+        run: |
+          mkdir -p publish
+          if git ls-remote --exit-code --heads origin "$DATA_BRANCH" >/dev/null; then
+            git fetch --depth 1 origin "$DATA_BRANCH"
+            git --work-tree=publish checkout FETCH_HEAD -- v1
+            git reset -q
+          fi
+          ls -la publish || true
+      - name: Run pipeline
+        working-directory: pipeline
+        run: uv sync && uv run cwp run --out ../publish/v1
+      - name: Verify new C-HARM data against ERDDAP (13 points x 12 layers)
+        working-directory: pipeline
+        run: uv run cwp verify-charm --only-if-updated --out ../publish/v1 --report ../publish/v1/verification/charm-points.json
+      - name: Every manifest reference exists and decodes
+        working-directory: pipeline
+        run: uv run cwp check-published --base ../publish/v1
+      - name: Only pipeline artifacts may be published
+        working-directory: pipeline
+        run: uv run cwp guard-publish --root ../publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coastwatch-data
+          path: publish/
+          include-hidden-files: false
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: coastwatch-data
+          path: publish
+      - name: Replace the data branch with this dataset (single commit)
+        working-directory: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git init -q
+          git checkout -q --orphan "$DATA_BRANCH"
+          git config user.name "coastwatch-bot"
+          git config user.email "coastwatch-bot@users.noreply.github.com"
+          git add v1
+          git status --short | head -5
+          # nothing outside v1/ may be staged
+          if git diff --cached --name-only | grep -v '^v1/'; then echo "refusing: files outside v1/"; exit 1; fi
+          git commit -q -m "data: run ${GITHUB_RUN_ID} (${GITHUB_SHA::12})"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${DATA_BRANCH}"
+
+  check:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: New version is live at the public URL, complete, and CORS-enabled
+        working-directory: pipeline
+        run: |
+          uv sync
+          # raw.githubusercontent.com caches files for up to ~5 minutes: retry until this run is served
+          uv run cwp check-published --base "$DATA_URL" --expect-run "$GITHUB_RUN_ID" --retries 24 --wait 20 --report ../published-check.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: published-check
+          path: published-check.json
+          if-no-files-found: ignore

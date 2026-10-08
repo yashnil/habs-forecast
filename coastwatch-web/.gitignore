@@ -40,3 +40,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# pipeline output (published to the coastwatch-data branch, not committed here)
+/public/data/
+# playwright
+/test-results/
+/playwright-report/
+/public/vendor/
