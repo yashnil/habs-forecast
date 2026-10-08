@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import * as copy from "@/content/copy";
 import manifestJson from "../fixture-data/v1/manifest.json";
 import type { Manifest } from "@/generated/schema";
-import { generate } from "../../scripts/gen-types.mjs";
+import { MODULES, generate } from "../../scripts/gen-types.mjs";
 
 const SRC = path.resolve(__dirname, "../../src");
 
@@ -50,9 +50,10 @@ describe("copy never labels an area safe or recommends fishing", () => {
 });
 
 describe("hierarchy and labelling", () => {
-  it("official status card states plainly that closures are not tracked", () => {
-    expect(copy.OFFICIAL_STATUS.notTracked).toMatch(/does not track closures/);
-    expect(copy.OFFICIAL_STATUS.notTracked).toMatch(/nothing here means an area is open/);
+  it("official copy states that a missing notice does not mean open or safe", () => {
+    expect(copy.OFFICIAL_STATUS.notTracked).toMatch(/does not mean an area is open/);
+    expect(copy.OFFICIAL_STATUS.missingNotOpen).toMatch(/does not mean an area is open or that seafood is safe/);
+    expect(copy.OFFICIAL_STATUS.verification.verified).toBe("Verified");
   });
   it("official links point to official agency domains over https", () => {
     for (const l of copy.OFFICIAL_STATUS.links) expect(l.href).toMatch(/^https:\/\/(www\.)?(cdph\.ca\.gov|wildlife\.ca\.gov)\//);
@@ -95,8 +96,10 @@ describe("no unsupported claims or relative-risk tiers", () => {
 });
 
 describe("generated types", () => {
-  it("src/generated/schema.ts is up to date with schemas/v1", async () => {
-    const current = readFileSync(path.join(SRC, "generated", "schema.ts"), "utf8");
-    expect(await generate()).toBe(current);
+  it("src/generated/*.ts are up to date with schemas/v1", async () => {
+    for (const [mod, names] of Object.entries(MODULES)) {
+      const current = readFileSync(path.join(SRC, "generated", `${mod}.ts`), "utf8");
+      expect(await generate(names), mod).toBe(current);
+    }
   });
 });

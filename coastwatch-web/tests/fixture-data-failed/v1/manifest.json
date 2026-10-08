@@ -3195,7 +3195,86 @@
         "stale_max_age_days": 120,
         "note": "Reference geometry; changes rarely. Re-fetched every run."
       }
+    },
+    {
+      "source_id": "official",
+      "title": "Official closures and advisories (CDFW, CDPH)",
+      "product_class": "official_regulatory",
+      "last_attempt_at": "2026-10-12T18:00:00Z",
+      "last_success_at": "2026-10-12T18:00:00Z",
+      "outcome": "updated",
+      "error": null,
+      "notes": [],
+      "latest_issued_date": null,
+      "latest_valid_date": "2026-10-08",
+      "freshness": {
+        "basis": "reviewed_date",
+        "current_max_age_days": 3,
+        "stale_max_age_days": 7,
+        "note": "Verified: a person reviewed every record against the official pages within 3 days and the watcher has seen no change since. Ageing: 4-7 days since review. Older reviews, pending reviews, detected source changes, or a failed watcher mean the records are NOT verified."
+      }
+    },
+    {
+      "source_id": "port_intel",
+      "title": "Port summaries (C-HARM, satellite chlorophyll, official notices)",
+      "product_class": "historical_context",
+      "last_attempt_at": "2026-10-12T18:00:00Z",
+      "last_success_at": "2026-10-12T18:00:00Z",
+      "outcome": "partial",
+      "error": null,
+      "notes": [
+        "Crescent City: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(41.594):(41.904)%5D%5B(235.595):(235.997)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(41.",
+        "Crescent City: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.8938):2:(41.6043)%5D%5B(-124.3946):2:(-124.0134)%5D",
+        "Trinidad: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(40.905):(41.214)%5D%5B(235.658):(236.056)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(40.",
+        "Trinidad: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.2040):2:(40.9146)%5D%5B(-124.3318):2:(-123.9544)%5D",
+        "Eureka: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(40.644):(40.953)%5D%5B(235.638):(236.034)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(40.",
+        "Eureka: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(40.9431):2:(40.6536)%5D%5B(-124.3518):2:(-123.9758)%5D",
+        "Shelter Cove: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(39.871):(40.180)%5D%5B(235.738):(236.130)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(39.",
+        "Shelter Cove: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(40.1702):2:(39.8808)%5D%5B(-124.2524):2:(-123.8804)%5D",
+        "Fort Bragg: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(39.270):(39.580)%5D%5B(236.002):(236.391)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(39.",
+        "Fort Bragg: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(39.5699):2:(39.2804)%5D%5B(-123.9882):2:(-123.6193)%5D",
+        "Point Arena: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(38.754):(39.064)%5D%5B(236.114):(236.500)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(38.",
+        "Point Arena: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(39.0535):2:(38.7641)%5D%5B(-123.8762):2:(-123.5099)%5D",
+        "Bodega Bay: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(38.179):(38.488)%5D%5B(236.760):(237.144)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(38.",
+        "Bodega Bay: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(38.4780):2:(38.1885)%5D%5B(-123.2298):2:(-122.8663)%5D",
+        "San Francisco: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(37.654):(37.963)%5D%5B(237.394):(237.775)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(37.",
+        "San Francisco: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(37.9534):2:(37.6639)%5D%5B(-122.5961):2:(-122.2350)%5D",
+        "Princeton / Half Moon Bay: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(37.349):(37.658)%5D%5B(237.328):(237.708)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(37.",
+        "Princeton / Half Moon Bay: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(37.6484):2:(37.3590)%5D%5B(-122.6617):2:(-122.3020)%5D",
+        "Santa Cruz: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.819):(37.129)%5D%5B(237.781):(238.158)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.",
+        "Santa Cruz: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(37.1189):2:(36.8294)%5D%5B(-122.2095):2:(-121.8521)%5D",
+        "Moss Landing: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.650):(36.959)%5D%5B(238.025):(238.401)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.",
+        "Moss Landing: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(36.9491):2:(36.6597)%5D%5B(-121.9652):2:(-121.6086)%5D",
+        "Monterey: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.445):(36.755)%5D%5B(237.917):(238.293)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.",
+        "Monterey: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(36.7450):2:(36.4555)%5D%5B(-122.0725):2:(-121.7168)%5D",
+        "Morro Bay: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(35.211):(35.521)%5D%5B(238.965):(239.335)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(35.",
+        "Morro Bay: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(35.5106):2:(35.2211)%5D%5B(-121.0251):2:(-120.6747)%5D",
+        "Avila / Port San Luis: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(35.020):(35.330)%5D%5B(239.060):(239.430)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(35.",
+        "Avila / Port San Luis: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(35.3197):2:(35.0302)%5D%5B(-120.9300):2:(-120.5803)%5D",
+        "Santa Barbara: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(34.252):(34.562)%5D%5B(240.128):(240.495)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(34.",
+        "Santa Barbara: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(34.5520):2:(34.2625)%5D%5B(-119.8621):2:(-119.5154)%5D",
+        "Ventura: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(34.124):(34.433)%5D%5B(240.524):(240.890)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(34.",
+        "Ventura: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(34.4231):2:(34.1336)%5D%5B(-119.4663):2:(-119.1201)%5D",
+        "Port Hueneme: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.993):(34.303)%5D%5B(240.622):(240.988)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.",
+        "Port Hueneme: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(34.2925):2:(34.0030)%5D%5B(-119.3679):2:(-119.0223)%5D",
+        "San Pedro: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.581):(33.891)%5D%5B(241.526):(241.890)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.",
+        "San Pedro: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(33.8806):2:(33.5911)%5D%5B(-118.4643):2:(-118.1203)%5D",
+        "Newport Beach: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.461):(33.770)%5D%5B(241.888):(242.251)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.",
+        "Newport Beach: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(33.7602):2:(33.4707)%5D%5B(-118.1024):2:(-117.7588)%5D",
+        "Dana Point: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.312):(33.622)%5D%5B(242.120):(242.483)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.",
+        "Dana Point: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-13T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(33.6117):2:(33.3222)%5D%5B(-117.8696):2:(-117.5266)%5D"
+      ],
+      "latest_issued_date": "2026-10-08",
+      "latest_valid_date": "2026-10-12",
+      "freshness": {
+        "basis": "valid_date",
+        "current_max_age_days": 2,
+        "stale_max_age_days": 7,
+        "note": "Port summaries are rebuilt from each pipeline run; their inputs carry their own dates."
+      }
     }
   ],
-  "ports_url": "ports-6b435061a9.geojson"
+  "ports_url": "ports-9e81ebe6cd.geojson",
+  "official_url": "official-3388b6b7c9.json",
+  "port_intel_url": "port-intel-680ed72844.json"
 }
