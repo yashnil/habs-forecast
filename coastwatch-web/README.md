@@ -1,46 +1,64 @@
-# California Coastwatch (web)
+# CoastWatch — web app
 
-WellWatch-style **Next.js + Mapbox** front end for the `habs-forecast` dashboard data: interactive zoom/pan, **your location**, California **fishing ports**, a **NASA GIBS** 8-day chlorophyll layer (continually updated by NASA’s tile service), and the **research grid** (`overlay.png` + `snapshot.json`) from the Python pipeline.
+Next.js 15 (App Router) + TypeScript + Tailwind 4 + **MapLibre GL** (via `react-map-gl/maplibre`) with a navy basemap on OpenFreeMap vector tiles. No map token or paid service.
 
-## Quick start
+The app renders static artifacts produced by [`../pipeline`](../pipeline/README.md). It never calls upstream agencies at request time.
 
-From repo root:
+## Run it
 
 ```bash
-cd coastwatch-web
 npm install
-cp .env.example .env.local
-# Edit .env.local — add NEXT_PUBLIC_MAPBOX_TOKEN
-npm run sync-data
-npm run dev
+npm run data:live     # runs the pipeline (needs uv) -> public/data/v1
+npm run dev           # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Without network access, use the recorded fixture data:
 
-`npm run sync-data` copies `dashboard/data/snapshot.json`, `overlay.png`, and `dashboard/fisheries_context.json` into `public/data/`. Re-run after each Python export.
+```bash
+npm run data:fixture                               # -> public/data/fixture/v1
+CW_DATA_BASE_URL=/data/fixture/v1 npm run dev      # a "Test data" banner is shown
+```
 
-## Stack (aligned with [WellWatch](https://github.com/yashnil/WellWatch))
+## What it shows (Milestone 1)
 
-- **Next.js 15** (App Router)
-- **TypeScript** + **Tailwind CSS 4**
-- **Mapbox GL** + **react-map-gl** — navigation, geolocate, raster + image sources
-- **Public data:** [NASA GIBS](https://wiki.earthdata.nasa.gov/display/GIBS/) WMTS tiles for MODIS Aqua L3S 8-day chlorophyll
+| Section | Product class | Source |
+|---|---|---|
+| Official closures and health advisories | (pointer only) | Not ingested yet: the card says so and links to CDFW / CDPH pages and hotlines |
+| Bloom and toxin forecast | Official forecast | C-HARM v3.1, NOAA CoastWatch West Coast ERDDAP: P(*Pseudo-nitzschia* > 10,000 cells/L), P(particulate DA > 500 ng/L), P(cellular DA > 10 pg/cell); nowcast and +1 to +3 days |
+| Satellite chlorophyll | Observation | NASA GIBS VIIRS NOAA-20 and PACE OCI tiles (validated date, verified legend) |
+| Landing ports | Reference | CDFW ds3081 |
 
-## What users get
+Bloom Intelligence, Fisheries & Economic Exposure and My Coast appear in navigation as **Upcoming** and are not linked.
 
-- **Interactive map** — zoom, pan, locate me, optional layers
-- **Clear legend** — research grid chlorophyll scale
-- **Ports** — GeoJSON harbors keyed to regional summaries
-- **ML / grid insight** — regional tier (Lower / Typical / Higher) from `snapshot.json`
-- **Fish & economics** — rule-based recommendations from tier + curated `fisheries_context.json`
-- **Refresh story** — `generated_at` and recommended cadence from the manifest
+## How it stays honest
 
-## Production
+- The server validates `manifest.json` and `ports.geojson` against `src/generated/schemas` (copied from `../schemas/v1`) before rendering. Missing or invalid data shows an explicit "Live data unavailable" state.
+- Freshness (current / stale / historical / unavailable) is computed **in the browser** from the dates in the artifacts and each source's published policy. A stalled pipeline therefore cannot make old data look current.
+- Failed updates are shown in a banner and on `/sources`; the last good data keeps its real dates.
+- Only one raster is on the map at a time, each with its own legend.
+- The point inspector reads the published value grids. Where a nearshore cell has no forecast value, it shows the nearest forecast cell, labelled with its distance.
+- Safety-relevant copy lives in `src/content/copy.ts` and is checked by `tests/unit/safety.test.ts`.
 
-- Set `NEXT_PUBLIC_MAPBOX_TOKEN` in the host environment.
-- Run `npm run sync-data` (or CI) before `npm run build` so `public/data` is populated.
-- GIBS tile dates are chosen client-side (~6 days back); adjust in `src/lib/geo.ts` if tiles are blank.
+## Code map
 
-## License
+```
+src/app/page.tsx                 Live Ocean Map (server: loads + validates data)
+src/app/sources/page.tsx         Data & sources (status, errors, notes, freshness rules)
+src/components/LiveOceanMap.tsx  client container: URL state (?var, lead, layer, inspect)
+src/components/map/              MapCanvas (MapLibre), Inspector
+src/components/panels/           OfficialStatusCard, ForecastPanel, ObservationPanel
+src/lib/                         data (server), freshness, grid decoding, layers, time, basemap
+src/content/copy.ts              user-facing copy with safety meaning, official links
+src/generated/                   types + schemas generated from ../schemas/v1 (npm run gen:types)
+scripts/                         gen-types, copy-fixture-data, copy-maplibre-worker
+tests/unit, tests/e2e            vitest, playwright (fixture data in tests/fixture-data*)
+```
 
-Same as parent repository (MIT unless otherwise noted).
+## Checks
+
+```bash
+npm run lint && npm run typecheck && npm test   # unit tests
+npm run test:e2e                                # production build + Playwright on fixture data
+```
+
+Configuration: see `.env.example`.
