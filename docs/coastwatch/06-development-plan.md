@@ -1,5 +1,7 @@
 # 06 — Development plan
 
+> **Status (2026-10-08).** "Milestone 1: Honest Baseline + One Live C-HARM Forecast" — which combines M0 below with the MapLibre migration, design foundation and scheduled refresh from M1/M3 — is implemented on `feat/coastwatch-m1-baseline`. See [`07-m1-implementation.md`](07-m1-implementation.md) for what is built, test evidence and open issues. Not yet built from M1/M2: VIIRS ERDDAP ingestion, MPA/RAMP geometry, NWS, curated official records, port pages.
+
 ## 1. Prioritized MVP feature list
 
 Priority order = build order. P0 items block public launch.

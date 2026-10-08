@@ -1,5 +1,19 @@
 # 04 — Technical architecture
 
+> **Status (2026-10-08, Milestone 1 built on branch `feat/coastwatch-m1-baseline`).** Sections marked *as built* describe running code; everything else is the plan. Differences from the original plan:
+>
+> | Planned | As built | Why |
+> |---|---|---|
+> | Cloudflare R2 object storage | `coastwatch-data` git branch written by `.github/workflows/coastwatch-data.yml`; app reads it via `CW_DATA_BASE_URL` (e.g. raw.githubusercontent.com) | No account or secret needed; git history versions every run. R2 remains the upgrade path if traffic grows |
+> | `latest.json` + `status.json` | One `manifest.json` (layers, forecast runs, per-source status) + `ports.geojson` | Fewer moving parts; the manifest is written last and atomically |
+> | uint16 PNG value grids decoded via canvas | `uint16le+gzip` binary on the **source** grid, decoded with `DecompressionStream` | Canvas colour management can alter PNG values; raw binary is exact |
+> | ISR pages reading the manifest | `dynamic = "force-dynamic"` server pages; remote manifest fetches cached 5 min | Lets one build serve different data directories (tests, staging) |
+> | `ports.yaml` | `data/curated/ports.json` selecting CDFW ds3081 port codes | No YAML dependency; geometry comes from CDFW, not hand entry |
+> | Product classes | Added `reference` (ports) | Ports are reference geometry, not history |
+> | Map: one layer registry | One raster at a time (official forecast, one satellite product, or none) | One product per legend (rule R7) |
+>
+> Schemas: `pipeline/coastwatch_pipeline/models.py` → `schemas/v1/{manifest,ports}.schema.json` → `coastwatch-web/src/generated/schema.ts`. Implementation notes and verification results: [`07-m1-implementation.md`](07-m1-implementation.md).
+
 ## 1. Design decisions (summary)
 
 | # | Decision | Why | Rejected alternative |
@@ -172,7 +186,7 @@ type LayerArtifact = {
   threshold_text?: string;      // "P(Pseudo-nitzschia > 10,000 cells/L)"
   coverage?: { valid_fraction: number; domain: "ca_nearshore" };
   image?: { url: string; bounds_3857: [number, number, number, number]; corners_lnglat: [[number,number],[number,number],[number,number],[number,number]] };
-  grid?: { url: string; width: number; height: number; transform: number[]; encoding: "uint16_png"; scale_factor: number; add_offset: number; nodata: number };
+  grid?: { url: string; width: number; height: number; lat_first: number; lat_step: number; lon_first: number; lon_step: number; encoding: "uint16le+gzip"; scale_factor: number; add_offset: number; nodata: number; max_quantization_error: number };  // as built
   geojson_url?: string;
   caveats: string[];            // e.g. "Toxin probabilities not provided within ~3–6 km of shore"
   provenance: Provenance;
@@ -200,6 +214,7 @@ type OfficialRecord = {
   last_verified_at: string;
 };
 
+// PortSummary and ExposureMetrics are planned for M2+ (not built yet)
 type PortSummary = {
   port_id: string;
   generated_at: string;
@@ -246,7 +261,7 @@ type ExposureMetrics = {
 
 - **Domain:** CA nearshore analysis domain = ocean within 50 km of the coastline, 32.4–42.1°N (exact mask built once from Natural Earth / CDFW coastline, versioned).
 - **Reprojection:** `rioxarray`/`rasterio` warp to EPSG:3857 at a fixed grid per product (C-HARM ~3 km, VIIRS ~750 m); bounds stored with the artifact.
-- **Value grids:** quantized uint16 PNG (lossless, small, decodable in the browser via canvas) with scale/offset/nodata in the artifact; used by the inspector and by client-side summaries.
+- **Value grids (as built):** values on the source grid, quantized to uint16 (max error 7.6e-6 for probabilities), little-endian, gzip; decoded in the browser with `DecompressionStream`. Images are rendered from these published values, so every pixel is exactly the palette colour of a readable value.
 - **Rendering:** fixed palettes and fixed ranges per product (never data-driven percentiles; R6). Nodata → transparent; cloud gaps → hatch pattern drawn client-side from the grid's nodata mask.
 - **Port nearshore areas:** per port, polygon = analysis domain ∩ circle (default 30 km) around the port entrance, adjustable per port in `ports.yaml`, reviewed; C-HARM toxin variables use nearest valid offshore pixels where the mask excludes nearshore cells (caveat recorded).
 - **C-HARM trend:** compare nowcast area-fraction over the last 7 available days with a minimum of 4 runs; else `insufficient_data`.
@@ -254,7 +269,7 @@ type ExposureMetrics = {
 
 ### 5.3 Storage
 
-Object storage with public read behind a CDN. Recommended: **Cloudflare R2** (free egress, free tier covers this scale). Alternative: GitHub Pages branch or Vercel Blob.
+*As built:* the `coastwatch-data` git branch (see status table above). Planned upgrade: object storage with public read behind a CDN, e.g. **Cloudflare R2** (free egress).
 
 ```
 /v1/latest.json
@@ -289,7 +304,7 @@ Every rendered number carries its `Provenance`; the port page ends with a source
 
 ## 7. Web application
 
-- **Rendering:** port pages and the map shell are server components with ISR (`revalidate` ≈ 10 min) reading `latest.json`; dynamic layer artifacts are fetched client-side from the CDN. Ports index drives `generateStaticParams`.
+- **Rendering (as built):** server components read and schema-validate `manifest.json` per request; raster images and value grids are fetched client-side from the same base URL.
 - **State:** URL is the state (`?layer=charm_pda&lead=1&port=moss-landing`) for shareable links; small React context for theme and favorite port (localStorage, try/catch).
 - **Map:** `react-map-gl/maplibre`; layers declared in a registry keyed by `layer_id` with `product_class` → badge, legend, default visibility, z-order (official vector overlays always on top).
 - **Performance budget:** JS < 250 KB gzipped on port pages (map lazy-loaded); images < 1 MB per layer; LCP < 2.5 s on 4G.
@@ -316,8 +331,8 @@ Preconditions (see `06-development-plan.md` §2, P3): retrained on VIIRS-era inp
 | Item | Choice | Cost |
 |---|---|---|
 | Hosting (web) | Vercel Hobby or Cloudflare Pages (confirm terms for a public non-commercial project) | $0 |
-| Artifacts | Cloudflare R2 + CDN | $0 at expected scale |
+| Artifacts | `coastwatch-data` git branch (as built); R2 + CDN later | $0 |
 | Scheduler | GitHub Actions (public repo) | $0 |
-| Basemap | Open keyless basemap (e.g., OpenFreeMap or self-hosted Protomaps PMTiles on R2) | $0 |
+| Basemap | OpenFreeMap vector tiles with a custom navy style (as built) | $0 |
 | Paid APIs | None | $0 |
-| Accounts needed | R2 (or chosen storage); later: Copernicus Marine (free) for P3; email provider for P2 alerts | — |
+| Accounts needed | None for M1 (GitHub only). Later: object storage, Copernicus Marine (free) for P3, email provider for P2 alerts | — |
