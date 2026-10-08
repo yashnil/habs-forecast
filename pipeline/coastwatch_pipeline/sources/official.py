@@ -23,7 +23,6 @@ from datetime import date
 from pathlib import Path
 
 import numpy as np
-from scipy import ndimage
 
 from ..context import RunContext
 from ..models import (
@@ -52,7 +51,7 @@ KNOWN_COUNTIES = {
     "Orange", "San Diego", "Alameda", "Contra Costa", "Solano",
 }
 CA_LAT = (32.4, 42.1)
-BAND_OFFSHORE_KM = 20.0
+BOUNDARY_KM = 30.0
 
 POLICY = VerificationPolicy(
     verified_max_age_days=3,
@@ -277,37 +276,43 @@ class OceanMask:
         return cls(d["lat_first"], d["lat_step"], d["lon_first"], d["lon_step"], m)
 
 
-def lat_band_feature(mask: OceanMask, north: float, south: float, offshore_km: float = BAND_OFFSHORE_KM) -> dict:
-    """Ocean cells within `offshore_km` of the coast between two official latitudes, as a
-    MultiPolygon of row runs. Cells are clipped exactly to the band latitudes."""
-    mid = math.radians((north + south) / 2)
-    dy_km = abs(mask.lat_step) * 111.32
-    dx_km = abs(mask.lon_step) * 111.32 * math.cos(mid)
-    land_dist = ndimage.distance_transform_edt(mask.ocean, sampling=(dy_km, dx_km))
-    near = mask.ocean & (land_dist <= offshore_km)
-    polys = []
-    h, w = mask.ocean.shape
-    for r in range(h):
-        c_lat = mask.lat_first + r * mask.lat_step
-        top, bot = c_lat + abs(mask.lat_step) / 2, c_lat - abs(mask.lat_step) / 2
-        top, bot = min(top, north), max(bot, south)
-        if top <= bot:
-            continue
-        c = 0
-        while c < w:
-            if near[r, c]:
-                s = c
-                while c < w and near[r, c]:
-                    c += 1
-                west = mask.lon_first + (s - 0.5) * mask.lon_step
-                east = mask.lon_first + (c - 0.5) * mask.lon_step
-                ring = [[west, bot], [east, bot], [east, top], [west, top], [west, bot]]
-                polys.append([[[round(x, 5), round(y, 5)] for x, y in ring]])
-            else:
-                c += 1
-    if not polys:
-        raise ValueError(f"no ocean cells between {south} and {north}")
-    return {"type": "MultiPolygon", "coordinates": polys}
+def coast_lon(mask: OceanMask, lat: float) -> float | None:
+    """Longitude of the coastline at a latitude: east edge of the easternmost ocean run in
+    the mask row nearest that latitude (C-HARM's own land/sea boundary, ~3 km)."""
+    r = int(round((lat - mask.lat_first) / mask.lat_step))
+    if not 0 <= r < mask.ocean.shape[0]:
+        return None
+    cols = np.where(mask.ocean[r])[0]
+    if cols.size == 0:
+        return None
+    return float(mask.lon_first + (cols.max() + 0.5) * mask.lon_step)
+
+
+def fmt_lat(lat: float) -> str:
+    d = int(lat)
+    m = (lat - d) * 60
+    return f"{d}°{m:05.2f}′ N"
+
+
+def lat_band_boundaries(mask: OceanMask, north: float, south: float, offshore_km: float = BOUNDARY_KM) -> list[dict]:
+    """The official latitude limits of a notice, drawn as lines from the coast out to sea.
+    The notices define latitudes only, so the map shows those limits rather than a shaded
+    area that would imply an offshore extent."""
+    out = []
+    for lat, which in ((north, "north"), (south, "south")):
+        lon = coast_lon(mask, lat)
+        if lon is None:
+            raise ValueError(f"no coastline in the C-HARM mask at {lat}")
+        west = lon - offshore_km / (111.32 * math.cos(math.radians(lat)))
+        out.append(
+            {
+                "geometry": {"type": "LineString", "coordinates": [[round(west, 5), round(lat, 6)], [round(lon, 5), round(lat, 6)]]},
+                "which": which,
+                "lat": lat,
+                "label": f"{fmt_lat(lat)} · {which} limit",
+            }
+        )
+    return out
 
 
 def _round_geom(g: dict) -> dict:
@@ -387,17 +392,20 @@ def build_geometry(ctx: RunContext, reg: OfficialRegistry) -> tuple[dict, list[s
         if mask is None:
             continue
         try:
-            g = lat_band_feature(mask, max(r.area.lat_north for r in recs), min(r.area.lat_south for r in recs))  # type: ignore[type-var]
-            label = recs[0].area.description
-            features.append(
-                _feature(
-                    g,
+            north = max(r.area.lat_north for r in recs)  # type: ignore[type-var]
+            south = min(r.area.lat_south for r in recs)  # type: ignore[type-var]
+            for b in lat_band_boundaries(mask, north, south):
+                f = _feature(
+                    b["geometry"],
                     [r.id for r in recs],
                     "derived_from_official_latitudes",
-                    f"{label}. Shaded within ~{BAND_OFFSHORE_KM:.0f} km of the coast for display; the official wording controls.",
-                    "lat_band",
+                    f"{recs[0].area.description}. Official {b['which']} limit at {fmt_lat(b['lat'])}, drawn {BOUNDARY_KM:.0f} km out from the coast; the notice states no offshore limit and its wording controls.",
+                    "lat_limit",
                 )
-            )
+                f["properties"]["label"] = b["label"]
+                f["properties"]["lat_north"] = north
+                f["properties"]["lat_south"] = south
+                features.append(f)
         except Exception as e:
             errors.append(f"band {s}..{n}: {e}")
     return {"type": "FeatureCollection", "features": features}, errors

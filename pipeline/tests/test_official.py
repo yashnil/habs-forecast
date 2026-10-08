@@ -173,27 +173,21 @@ def test_review_refuses_while_sources_unreadable(tmp_path):
 
 
 # ---------------------------------------------------------------- geometry
-def test_latitude_bands_stay_between_official_latitudes_over_nearshore_ocean():
+def test_latitude_limits_are_drawn_at_the_official_latitudes_from_the_coast_out():
     mask = official.OceanMask.load()
     north, south = 37.183333, 36.524333
-    g = official.lat_band_feature(mask, north, south)
-    ys = [pt[1] for poly in g["coordinates"] for ring in poly for pt in ring]
-    xs = [pt[0] for poly in g["coordinates"] for ring in poly for pt in ring]
-    assert min(ys) >= south - 1e-5 and max(ys) <= north + 1e-5  # coordinates rounded to 5 dp (~1 m)
-    # every shaded rectangle's centre is an ocean cell within 20 km of land
-    from scipy import ndimage
-
-    dist = ndimage.distance_transform_edt(mask.ocean, sampling=(abs(mask.lat_step) * 111.32, abs(mask.lon_step) * 111.32 * np.cos(np.radians(36.85))))
-    for poly in g["coordinates"]:
-        ring = poly[0]
-        cy = (ring[0][1] + ring[2][1]) / 2
-        r = int(round((cy - mask.lat_first) / mask.lat_step))
-        c0 = int(round((ring[0][0] + abs(mask.lon_step) / 2 - mask.lon_first) / mask.lon_step))
-        c1 = int(round((ring[1][0] - abs(mask.lon_step) / 2 - mask.lon_first) / mask.lon_step))
-        assert mask.ocean[r, c0 : c1 + 1].all()
-        assert (dist[r, c0 : c1 + 1] <= 20.0 + 1e-6).all()
-    # Monterey Bay (inside the band) is covered; the Monterey Peninsula land is not
-    assert min(xs) > -122.75 and max(xs) < -121.75
+    lines = official.lat_band_boundaries(mask, north, south)
+    assert [b["which"] for b in lines] == ["north", "south"]
+    for b, lat in zip(lines, (north, south)):
+        (x0, y0), (x1, y1) = b["geometry"]["coordinates"]
+        assert y0 == y1 == round(lat, 6)  # exactly the official latitude
+        assert x0 < x1  # from offshore to the coast
+        km_len = (x1 - x0) * 111.32 * np.cos(np.radians(lat))
+        assert abs(km_len - official.BOUNDARY_KM) < 0.5
+    # east end sits on C-HARM's coastline near Pigeon Point (~122.4 W) and Point Lobos (~121.95 W)
+    assert -122.5 < lines[0]["geometry"]["coordinates"][1][0] < -122.3
+    assert -122.0 < lines[1]["geometry"]["coordinates"][1][0] < -121.85
+    assert lines[0]["label"].startswith("37°11.00′ N")
 
 
 def test_official_geometry_and_failures(out):
@@ -202,7 +196,9 @@ def test_official_geometry_and_failures(out):
     kinds = {(f["properties"]["kind"], tuple(f["properties"]["record_ids"])) for f in ds.geometry["features"]}
     assert ("county", ("cdph-2026-sn26-018-monterey-bivalves",)) in kinds
     assert ("named_area", ("cdph-nci-bivalve-special-advisory",)) in kinds
-    assert ("lat_band", ("cdph-2026-sn26-019-anchovy-central-coast", "cdfw-2026-anchovy-take-restriction-monterey-bay")) in kinds
+    assert ("lat_limit", ("cdph-2026-sn26-019-anchovy-central-coast", "cdfw-2026-anchovy-take-restriction-monterey-bay")) in kinds
+    # latitude-defined notices are drawn as their limits only, never as shaded areas
+    assert not any(f["geometry"]["type"] in ("Polygon", "MultiPolygon") and f["properties"]["kind"] == "lat_limit" for f in ds.geometry["features"])
     assert ds.geometry_errors == []
     # statewide records are not drawn as shapes
     assert not any("cdph-2026-annual-mussel-quarantine" in f["properties"]["record_ids"] for f in ds.geometry["features"])

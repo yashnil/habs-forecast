@@ -107,7 +107,7 @@
         "lat_north": 37.183333,
         "lat_south": 36.524333,
         "geometry_basis": "derived_from_official_latitudes",
-        "geometry_note": "Shaded over C-HARM ocean cells within 20 km of the coast between the two official latitudes. The notice gives no offshore limit; the shading is a display aid and the official wording controls."
+        "geometry_note": "The map shows the notice's official north and south latitude limits as lines drawn 30 km out from the coast (coastline from the C-HARM land/sea mask). The notice states no offshore limit; its wording controls."
       },
       "effective_date": "2026-09-14",
       "sources": [
@@ -143,7 +143,7 @@
         "lat_north": 37.183333,
         "lat_south": 36.52435,
         "geometry_basis": "derived_from_official_latitudes",
-        "geometry_note": "Latitudes from the CDFW declaration as summarised in the CDFW evidence log; shaded over C-HARM ocean cells within 20 km of the coast. The official wording controls."
+        "geometry_note": "The map shows the notice's official north and south latitude limits as lines drawn 30 km out from the coast (coastline from the C-HARM land/sea mask). The notice states no offshore limit; its wording controls. Latitudes as recorded from CDFW's Sept 11, 2026 restriction (docs/coastwatch/evidence/sources-regulatory.md)."
       },
       "effective_date": "2026-09-11",
       "sources": [
@@ -229,7 +229,7 @@
         "lat_north": 40.5,
         "lat_south": 40.0,
         "geometry_basis": "derived_from_official_latitudes",
-        "geometry_note": "Shaded over C-HARM ocean cells within 20 km of the coast between the two official latitudes. The official wording controls."
+        "geometry_note": "The map shows the notice's official north and south latitude limits as lines drawn 30 km out from the coast (coastline from the C-HARM land/sea mask). The notice states no offshore limit; its wording controls."
       },
       "effective_date": null,
       "effective_date_note": "The CDFW status page does not state when this closure took effect.",
@@ -271,7 +271,7 @@
         "lat_north": 42.0,
         "lat_south": 38.76875,
         "geometry_basis": "derived_from_official_latitudes",
-        "geometry_note": "Mainland segment only. The Mendocino/Sonoma county line latitude (38° 46.125’ N) is taken from CDFW's RAMP zone definitions because the advisory names the line without a coordinate. The Northern Channel Islands portion is not drawn."
+        "geometry_note": "The map shows the notice's official north and south latitude limits as lines drawn 30 km out from the coast (coastline from the C-HARM land/sea mask). The notice states no offshore limit; its wording controls. The Mendocino/Sonoma county line latitude (38° 46.125’ N) is taken from CDFW's RAMP zone definitions because the advisory names the line without a coordinate. The Northern Channel Islands portion is not drawn."
       },
       "effective_date": null,
       "effective_date_note": "Quoted from the CDFW status page (verbatim, including the agency's spelling). The originating CDPH release was not re-read for this record.",
