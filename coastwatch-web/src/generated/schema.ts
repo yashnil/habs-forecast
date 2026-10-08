@@ -117,7 +117,8 @@ export type ProductClass =
   | "observation"
   | "experimental_model"
   | "historical_context"
-  | "reference";
+  | "reference"
+  | "derived_summary";
 
 export type Citation = string | null;
 
@@ -262,7 +263,8 @@ export type ProductClass1 =
   | "observation"
   | "experimental_model"
   | "historical_context"
-  | "reference";
+  | "reference"
+  | "derived_summary";
 
 export type SourceId2 = string;
 

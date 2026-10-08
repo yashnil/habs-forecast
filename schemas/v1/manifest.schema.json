@@ -157,7 +157,8 @@
             "observation",
             "experimental_model",
             "historical_context",
-            "reference"
+            "reference",
+            "derived_summary"
           ],
           "title": "Product Class",
           "type": "string"
@@ -654,7 +655,8 @@
             "observation",
             "experimental_model",
             "historical_context",
-            "reference"
+            "reference",
+            "derived_summary"
           ],
           "title": "Product Class",
           "type": "string"

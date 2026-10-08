@@ -33,3 +33,24 @@ test("app renders the published dataset: forecast image, grids and values load c
   }
   expect(failed.filter((f) => f.includes(BASE))).toEqual([]);
 });
+
+test("M2 data loads from the published URL: official notices, overlay and port summaries", async ({ page, request }) => {
+  const manifest = await (await request.get(`${BASE}/manifest.json`)).json();
+  test.skip(!manifest.official_url || !manifest.port_intel_url, "published dataset predates M2 (no official/port files)");
+  const official = await (await request.get(`${BASE}/${manifest.official_url}`)).json();
+  const intel = await (await request.get(`${BASE}/${manifest.port_intel_url}`)).json();
+  const failed: string[] = [];
+  page.on("requestfailed", (r) => failed.push(`${r.failure()?.errorText} ${r.url()}`));
+
+  await page.goto(`${APP}/?region=monterey_bay&port=550&var=particulate_domoic&lead=1`);
+  const rail = page.getByTestId("official-status");
+  const expected = official.registry.review.status === "human_verified" ? /verified|aging|unverified/ : /unverified/;
+  await expect(rail.getByTestId("official-verification")).toHaveAttribute("data-state", expected);
+  const p = intel.ports.find((x: { port_code: number }) => x.port_code === 550);
+  const panel = page.getByTestId("port-panel");
+  for (const rel of p.official_relations) await expect(panel.getByTestId(`notice-${rel.record_id}`)).toBeVisible();
+  const lead1 = p.charm.leads.find((l: { lead_days: number }) => l.lead_days === 1);
+  await expect(panel.getByTestId("port-median-particulate_domoic")).toHaveText(`${Math.round(lead1.variables.particulate_domoic.median * 100)}%`);
+  await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { getSource: (s: string) => unknown } }).__cwMap?.getSource("official"));
+  expect(failed.filter((f) => f.includes(BASE))).toEqual([]);
+});

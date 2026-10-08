@@ -13,6 +13,7 @@ Planning and architecture for turning `coastwatch-web/` and the HABs research in
 | [07 — Milestone 1 implementation](07-m1-implementation.md) | What is built, verification results, tests, known issues, how to run |
 | [08 — Scientific review checklist](08-scientific-review-checklist.md) | 20-minute checklist for a HAB scientist reviewing the C-HARM layer |
 | [09 — Milestone 2 implementation](09-m2-implementation.md) | Official notices (human-reviewed), port intelligence, redesigned map; tests, screenshots, limits |
+| [10 — M2 integration review](10-m2-integration-review.md) | Schema-compatibility fix, Node 24 actions, staging run, production-equivalent checks, merge decision |
 | [m2/](m2/) | Screenshots of the M2 app (live data, 2026-10-08) |
 | [m1/](m1/) | Screenshots of the running app (live data, 2026-10-08) |
 | [evidence/](evidence/) | Raw verification logs from live requests (satellite, C-HARM, regulatory, economics) and the M1 C-HARM point verification |

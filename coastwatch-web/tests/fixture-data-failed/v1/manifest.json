@@ -3217,7 +3217,7 @@
     {
       "source_id": "port_intel",
       "title": "Port summaries (C-HARM, satellite chlorophyll, official notices)",
-      "product_class": "historical_context",
+      "product_class": "derived_summary",
       "last_attempt_at": "2026-10-12T18:00:00Z",
       "last_success_at": "2026-10-12T18:00:00Z",
       "outcome": "partial",

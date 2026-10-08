@@ -52,7 +52,12 @@ export function SourceTable({ manifest, official }: { manifest: Manifest; offici
                 <Row k="Last attempt" v={`${formatDateTimePT(s.last_attempt_at)} — ${OUTCOME[s.outcome]}`} />
                 <Row k="Last success" v={s.last_success_at ? formatDateTimePT(s.last_success_at) : "never"} />
                 {s.latest_issued_date && <Row k="Latest issued" v={formatDate(s.latest_issued_date, { year: true })} />}
-                {s.latest_valid_date && <Row k={s.freshness.basis === "observed_date" ? "Latest observed" : "Latest valid"} v={formatDate(s.latest_valid_date, { year: true })} />}
+                {s.latest_valid_date && (
+                  <Row
+                    k={s.freshness.basis === "observed_date" ? "Latest observed" : s.freshness.basis === "reviewed_date" ? "Last reviewed or transcribed" : "Latest valid"}
+                    v={formatDate(s.latest_valid_date, { year: true })}
+                  />
+                )}
               </dl>
               <p className="mt-2 text-[12px] text-ink-3">{s.freshness.note}</p>
               {s.error && (

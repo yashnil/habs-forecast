@@ -63,6 +63,7 @@ const CLASS_LABEL: Record<ProductClass, string> = {
   experimental_model: "Experimental",
   historical_context: "Historical",
   reference: "Reference",
+  derived_summary: "Derived summary",
 };
 
 export function ProductClassBadge({ pc }: { pc: ProductClass }) {

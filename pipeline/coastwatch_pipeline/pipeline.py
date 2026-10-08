@@ -206,7 +206,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
                 SourceStatus(
                     source_id=port_intel.SOURCE_ID,
                     title="Port summaries (C-HARM, satellite chlorophyll, official notices)",
-                    product_class="historical_context",
+                    product_class="derived_summary",
                     last_attempt_at=ctx.now_iso,
                     last_success_at=ctx.now_iso,
                     outcome="partial" if pi.notes else "updated",
@@ -218,7 +218,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
             )
         else:
             statuses.append(
-                _failed(ctx, port_intel.SOURCE_ID, "Port summaries (C-HARM, satellite chlorophyll, official notices)", "historical_context", PORT_INTEL_FRESHNESS, prev_s, pi.errors)
+                _failed(ctx, port_intel.SOURCE_ID, "Port summaries (C-HARM, satellite chlorophyll, official notices)", "derived_summary", PORT_INTEL_FRESHNESS, prev_s, pi.errors)
             )
     else:
         _carry(statuses, prev, port_intel.SOURCE_ID)

@@ -20,6 +20,7 @@ ProductClass = Literal[
     "experimental_model",
     "historical_context",
     "reference",
+    "derived_summary",
 ]
 
 
