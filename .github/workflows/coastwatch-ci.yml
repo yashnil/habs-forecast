@@ -1,0 +1,62 @@
+name: CoastWatch CI
+
+on:
+  push:
+    paths:
+      - "pipeline/**"
+      - "coastwatch-web/**"
+      - "schemas/**"
+      - "data/curated/**"
+      - ".github/workflows/coastwatch-ci.yml"
+  pull_request:
+    paths:
+      - "pipeline/**"
+      - "coastwatch-web/**"
+      - "schemas/**"
+      - "data/curated/**"
+      - ".github/workflows/coastwatch-ci.yml"
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - name: Offline tests (recorded fixtures)
+        run: uv run pytest
+      - name: JSON Schema is in sync with the models
+        run: uv run cwp schema && git diff --exit-code ../schemas
+      - name: Committed web fixture data is reproducible
+        # JSON only: PNG/gzip bytes can legitimately differ between zlib builds.
+        run: |
+          uv run cwp fixture --out ../coastwatch-web/tests/fixture-data/v1
+          uv run cwp fixture --scenario charm-failed --out ../coastwatch-web/tests/fixture-data-failed/v1
+          git diff --exit-code -- '../coastwatch-web/tests/*.json' '../coastwatch-web/tests/*.geojson'
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: coastwatch-web
+    env:
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: coastwatch-web/package-lock.json
+      - run: npm ci
+      - name: Generated types are in sync with schemas/v1
+        run: npm run gen:types && git diff --exit-code src/generated
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - name: Production build + end-to-end tests on fixture data
+        run: npm run test:e2e

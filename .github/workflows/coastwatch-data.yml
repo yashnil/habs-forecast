@@ -1,0 +1,45 @@
+name: CoastWatch data refresh
+
+# Runs the pipeline and publishes static artifacts to the `coastwatch-data` branch.
+# Scheduled workflows only run from the default branch, so this is inert until merged.
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: coastwatch-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Check out the data branch (keeps the last good artifacts)
+        run: |
+          if git ls-remote --exit-code --heads origin coastwatch-data >/dev/null; then
+            git fetch --depth 1 origin coastwatch-data
+            git worktree add data-branch origin/coastwatch-data
+          else
+            git worktree add --orphan -b coastwatch-data data-branch
+          fi
+      - name: Run pipeline
+        working-directory: pipeline
+        run: uv sync && uv run cwp run --out ../data-branch/v1
+      - name: Verify C-HARM artifacts against ERDDAP before publishing
+        working-directory: pipeline
+        run: uv run cwp verify-charm --out ../data-branch/v1
+      - name: Publish
+        working-directory: data-branch
+        run: |
+          git config user.name "coastwatch-bot"
+          git config user.email "coastwatch-bot@users.noreply.github.com"
+          git add -A v1
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "data: pipeline run ${GITHUB_RUN_ID}"
+          git push origin HEAD:coastwatch-data
