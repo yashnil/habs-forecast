@@ -63,7 +63,7 @@ export function Inspector({
     <section
       data-testid="inspector"
       aria-live="polite"
-      className="w-full rounded-lg border border-hairline-strong bg-surface p-4 shadow-2xl"
+      className="w-full"
     >
       <header className="flex items-start justify-between gap-3">
         <div>
