@@ -89,7 +89,7 @@ def test_palette_is_fixed_and_monotone_in_lightness():
     assert all(b > a for a, b in zip(lum, lum[1:]))
     rgba = apply_palette(np.array([np.nan, 0.0, 1.0]), PROBABILITY)
     assert rgba[0, 3] == 0 and rgba[1, 3] == 255
-    assert palette_color(0.0, PROBABILITY) == (0x5D, 0x27, 0x48)
+    assert palette_color(0.0, PROBABILITY) == (0x72, 0x34, 0x59)
 
 
 def test_published_images_and_grids_agree_with_source_points(out):
@@ -125,3 +125,19 @@ def test_grid_values_equal_source_netcdf(out):
     pr, pc = mi.pixel_of(lat, lon)
     if not np.isnan(raw[40, 25]):
         assert tuple(im[pr, pc, :3]) == palette_color(float(dec[40, 25]), PROBABILITY)
+
+
+def test_every_image_pixel_is_the_palette_colour_of_the_published_value(out):
+    """Whole-image check (not just sample points): PNG == palette(resample(decoded grid))."""
+    m = run_pipeline(fixture_context(out))
+    for lyr in m.layers:
+        if not lyr.image:
+            continue
+        g = lyr.grid
+        vals = gridcodec.decode((out / g.url).read_bytes(), g.width, g.height, g.scale_factor, g.add_offset)
+        src = SourceGrid(g.lat_first, g.lat_step, g.lon_first, g.lon_step, g.height, g.width)
+        img = plan_image(src)
+        expected = apply_palette(resample_to_mercator(vals, src, img), PROBABILITY)
+        actual = np.asarray(Image.open(out / lyr.image.url).convert("RGBA"))
+        assert actual.shape == expected.shape
+        assert np.array_equal(actual, expected), lyr.layer_id

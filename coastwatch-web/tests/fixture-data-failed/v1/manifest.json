@@ -78,7 +78,7 @@
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v1",
+        "id": "cw-probability-magenta-v2",
         "domain": [
           0.0,
           1.0
@@ -86,39 +86,39 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#5d2748"
+            "color": "#723459"
           },
           {
             "value": 0.125,
-            "color": "#7f2a60"
+            "color": "#923770"
           },
           {
             "value": 0.25,
-            "color": "#a12e79"
+            "color": "#b13d87"
           },
           {
             "value": 0.375,
-            "color": "#be3b90"
+            "color": "#cd499d"
           },
           {
             "value": 0.5,
-            "color": "#d753a6"
+            "color": "#e35eb1"
           },
           {
             "value": 0.625,
-            "color": "#e872b9"
+            "color": "#f37ac3"
           },
           {
             "value": 0.75,
-            "color": "#f394cb"
+            "color": "#fd99d3"
           },
           {
             "value": 0.875,
-            "color": "#f9b6db"
+            "color": "#ffbce1"
           },
           {
             "value": 1.0,
-            "color": "#fed8ec"
+            "color": "#ffddef"
           }
         ],
         "interpolation": "linear",
@@ -326,7 +326,7 @@
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v1",
+        "id": "cw-probability-magenta-v2",
         "domain": [
           0.0,
           1.0
@@ -334,39 +334,39 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#5d2748"
+            "color": "#723459"
           },
           {
             "value": 0.125,
-            "color": "#7f2a60"
+            "color": "#923770"
           },
           {
             "value": 0.25,
-            "color": "#a12e79"
+            "color": "#b13d87"
           },
           {
             "value": 0.375,
-            "color": "#be3b90"
+            "color": "#cd499d"
           },
           {
             "value": 0.5,
-            "color": "#d753a6"
+            "color": "#e35eb1"
           },
           {
             "value": 0.625,
-            "color": "#e872b9"
+            "color": "#f37ac3"
           },
           {
             "value": 0.75,
-            "color": "#f394cb"
+            "color": "#fd99d3"
           },
           {
             "value": 0.875,
-            "color": "#f9b6db"
+            "color": "#ffbce1"
           },
           {
             "value": 1.0,
-            "color": "#fed8ec"
+            "color": "#ffddef"
           }
         ],
         "interpolation": "linear",
@@ -575,7 +575,7 @@
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v1",
+        "id": "cw-probability-magenta-v2",
         "domain": [
           0.0,
           1.0
@@ -583,39 +583,39 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#5d2748"
+            "color": "#723459"
           },
           {
             "value": 0.125,
-            "color": "#7f2a60"
+            "color": "#923770"
           },
           {
             "value": 0.25,
-            "color": "#a12e79"
+            "color": "#b13d87"
           },
           {
             "value": 0.375,
-            "color": "#be3b90"
+            "color": "#cd499d"
           },
           {
             "value": 0.5,
-            "color": "#d753a6"
+            "color": "#e35eb1"
           },
           {
             "value": 0.625,
-            "color": "#e872b9"
+            "color": "#f37ac3"
           },
           {
             "value": 0.75,
-            "color": "#f394cb"
+            "color": "#fd99d3"
           },
           {
             "value": 0.875,
-            "color": "#f9b6db"
+            "color": "#ffbce1"
           },
           {
             "value": 1.0,
-            "color": "#fed8ec"
+            "color": "#ffddef"
           }
         ],
         "interpolation": "linear",
@@ -824,7 +824,7 @@
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v1",
+        "id": "cw-probability-magenta-v2",
         "domain": [
           0.0,
           1.0
@@ -832,39 +832,39 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#5d2748"
+            "color": "#723459"
           },
           {
             "value": 0.125,
-            "color": "#7f2a60"
+            "color": "#923770"
           },
           {
             "value": 0.25,
-            "color": "#a12e79"
+            "color": "#b13d87"
           },
           {
             "value": 0.375,
-            "color": "#be3b90"
+            "color": "#cd499d"
           },
           {
             "value": 0.5,
-            "color": "#d753a6"
+            "color": "#e35eb1"
           },
           {
             "value": 0.625,
-            "color": "#e872b9"
+            "color": "#f37ac3"
           },
           {
             "value": 0.75,
-            "color": "#f394cb"
+            "color": "#fd99d3"
           },
           {
             "value": 0.875,
-            "color": "#f9b6db"
+            "color": "#ffbce1"
           },
           {
             "value": 1.0,
-            "color": "#fed8ec"
+            "color": "#ffddef"
           }
         ],
         "interpolation": "linear",
@@ -1072,7 +1072,7 @@
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v1",
+        "id": "cw-probability-magenta-v2",
         "domain": [
           0.0,
           1.0
@@ -1080,39 +1080,39 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#5d2748"
+            "color": "#723459"
           },
           {
             "value": 0.125,
-            "color": "#7f2a60"
+            "color": "#923770"
           },
           {
             "value": 0.25,
-            "color": "#a12e79"
+            "color": "#b13d87"
           },
           {
             "value": 0.375,
-            "color": "#be3b90"
+            "color": "#cd499d"
           },
           {
             "value": 0.5,
-            "color": "#d753a6"
+            "color": "#e35eb1"
           },
           {
             "value": 0.625,
-            "color": "#e872b9"
+            "color": "#f37ac3"
           },
           {
             "value": 0.75,
-            "color": "#f394cb"
+            "color": "#fd99d3"
           },
           {
             "value": 0.875,
-            "color": "#f9b6db"
+            "color": "#ffbce1"
           },
           {
             "value": 1.0,
-            "color": "#fed8ec"
+            "color": "#ffddef"
           }
         ],
         "interpolation": "linear",
@@ -1321,7 +1321,7 @@
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v1",
+        "id": "cw-probability-magenta-v2",
         "domain": [
           0.0,
           1.0
@@ -1329,39 +1329,39 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#5d2748"
+            "color": "#723459"
           },
           {
             "value": 0.125,
-            "color": "#7f2a60"
+            "color": "#923770"
           },
           {
             "value": 0.25,
-            "color": "#a12e79"
+            "color": "#b13d87"
           },
           {
             "value": 0.375,
-            "color": "#be3b90"
+            "color": "#cd499d"
           },
           {
             "value": 0.5,
-            "color": "#d753a6"
+            "color": "#e35eb1"
           },
           {
             "value": 0.625,
-            "color": "#e872b9"
+            "color": "#f37ac3"
           },
           {
             "value": 0.75,
-            "color": "#f394cb"
+            "color": "#fd99d3"
           },
           {
             "value": 0.875,
-            "color": "#f9b6db"
+            "color": "#ffbce1"
           },
           {
             "value": 1.0,
-            "color": "#fed8ec"
+            "color": "#ffddef"
           }
         ],
         "interpolation": "linear",
@@ -1570,7 +1570,7 @@
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v1",
+        "id": "cw-probability-magenta-v2",
         "domain": [
           0.0,
           1.0
@@ -1578,39 +1578,39 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#5d2748"
+            "color": "#723459"
           },
           {
             "value": 0.125,
-            "color": "#7f2a60"
+            "color": "#923770"
           },
           {
             "value": 0.25,
-            "color": "#a12e79"
+            "color": "#b13d87"
           },
           {
             "value": 0.375,
-            "color": "#be3b90"
+            "color": "#cd499d"
           },
           {
             "value": 0.5,
-            "color": "#d753a6"
+            "color": "#e35eb1"
           },
           {
             "value": 0.625,
-            "color": "#e872b9"
+            "color": "#f37ac3"
           },
           {
             "value": 0.75,
-            "color": "#f394cb"
+            "color": "#fd99d3"
           },
           {
             "value": 0.875,
-            "color": "#f9b6db"
+            "color": "#ffbce1"
           },
           {
             "value": 1.0,
-            "color": "#fed8ec"
+            "color": "#ffddef"
           }
         ],
         "interpolation": "linear",
@@ -1818,7 +1818,7 @@
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v1",
+        "id": "cw-probability-magenta-v2",
         "domain": [
           0.0,
           1.0
@@ -1826,39 +1826,39 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#5d2748"
+            "color": "#723459"
           },
           {
             "value": 0.125,
-            "color": "#7f2a60"
+            "color": "#923770"
           },
           {
             "value": 0.25,
-            "color": "#a12e79"
+            "color": "#b13d87"
           },
           {
             "value": 0.375,
-            "color": "#be3b90"
+            "color": "#cd499d"
           },
           {
             "value": 0.5,
-            "color": "#d753a6"
+            "color": "#e35eb1"
           },
           {
             "value": 0.625,
-            "color": "#e872b9"
+            "color": "#f37ac3"
           },
           {
             "value": 0.75,
-            "color": "#f394cb"
+            "color": "#fd99d3"
           },
           {
             "value": 0.875,
-            "color": "#f9b6db"
+            "color": "#ffbce1"
           },
           {
             "value": 1.0,
-            "color": "#fed8ec"
+            "color": "#ffddef"
           }
         ],
         "interpolation": "linear",
@@ -2067,7 +2067,7 @@
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v1",
+        "id": "cw-probability-magenta-v2",
         "domain": [
           0.0,
           1.0
@@ -2075,39 +2075,39 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#5d2748"
+            "color": "#723459"
           },
           {
             "value": 0.125,
-            "color": "#7f2a60"
+            "color": "#923770"
           },
           {
             "value": 0.25,
-            "color": "#a12e79"
+            "color": "#b13d87"
           },
           {
             "value": 0.375,
-            "color": "#be3b90"
+            "color": "#cd499d"
           },
           {
             "value": 0.5,
-            "color": "#d753a6"
+            "color": "#e35eb1"
           },
           {
             "value": 0.625,
-            "color": "#e872b9"
+            "color": "#f37ac3"
           },
           {
             "value": 0.75,
-            "color": "#f394cb"
+            "color": "#fd99d3"
           },
           {
             "value": 0.875,
-            "color": "#f9b6db"
+            "color": "#ffbce1"
           },
           {
             "value": 1.0,
-            "color": "#fed8ec"
+            "color": "#ffddef"
           }
         ],
         "interpolation": "linear",
@@ -2316,7 +2316,7 @@
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v1",
+        "id": "cw-probability-magenta-v2",
         "domain": [
           0.0,
           1.0
@@ -2324,39 +2324,39 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#5d2748"
+            "color": "#723459"
           },
           {
             "value": 0.125,
-            "color": "#7f2a60"
+            "color": "#923770"
           },
           {
             "value": 0.25,
-            "color": "#a12e79"
+            "color": "#b13d87"
           },
           {
             "value": 0.375,
-            "color": "#be3b90"
+            "color": "#cd499d"
           },
           {
             "value": 0.5,
-            "color": "#d753a6"
+            "color": "#e35eb1"
           },
           {
             "value": 0.625,
-            "color": "#e872b9"
+            "color": "#f37ac3"
           },
           {
             "value": 0.75,
-            "color": "#f394cb"
+            "color": "#fd99d3"
           },
           {
             "value": 0.875,
-            "color": "#f9b6db"
+            "color": "#ffbce1"
           },
           {
             "value": 1.0,
-            "color": "#fed8ec"
+            "color": "#ffddef"
           }
         ],
         "interpolation": "linear",
@@ -2564,7 +2564,7 @@
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v1",
+        "id": "cw-probability-magenta-v2",
         "domain": [
           0.0,
           1.0
@@ -2572,39 +2572,39 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#5d2748"
+            "color": "#723459"
           },
           {
             "value": 0.125,
-            "color": "#7f2a60"
+            "color": "#923770"
           },
           {
             "value": 0.25,
-            "color": "#a12e79"
+            "color": "#b13d87"
           },
           {
             "value": 0.375,
-            "color": "#be3b90"
+            "color": "#cd499d"
           },
           {
             "value": 0.5,
-            "color": "#d753a6"
+            "color": "#e35eb1"
           },
           {
             "value": 0.625,
-            "color": "#e872b9"
+            "color": "#f37ac3"
           },
           {
             "value": 0.75,
-            "color": "#f394cb"
+            "color": "#fd99d3"
           },
           {
             "value": 0.875,
-            "color": "#f9b6db"
+            "color": "#ffbce1"
           },
           {
             "value": 1.0,
-            "color": "#fed8ec"
+            "color": "#ffddef"
           }
         ],
         "interpolation": "linear",
@@ -2813,7 +2813,7 @@
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v1",
+        "id": "cw-probability-magenta-v2",
         "domain": [
           0.0,
           1.0
@@ -2821,39 +2821,39 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#5d2748"
+            "color": "#723459"
           },
           {
             "value": 0.125,
-            "color": "#7f2a60"
+            "color": "#923770"
           },
           {
             "value": 0.25,
-            "color": "#a12e79"
+            "color": "#b13d87"
           },
           {
             "value": 0.375,
-            "color": "#be3b90"
+            "color": "#cd499d"
           },
           {
             "value": 0.5,
-            "color": "#d753a6"
+            "color": "#e35eb1"
           },
           {
             "value": 0.625,
-            "color": "#e872b9"
+            "color": "#f37ac3"
           },
           {
             "value": 0.75,
-            "color": "#f394cb"
+            "color": "#fd99d3"
           },
           {
             "value": 0.875,
-            "color": "#f9b6db"
+            "color": "#ffbce1"
           },
           {
             "value": 1.0,
-            "color": "#fed8ec"
+            "color": "#ffddef"
           }
         ],
         "interpolation": "linear",

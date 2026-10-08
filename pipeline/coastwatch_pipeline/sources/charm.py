@@ -360,7 +360,10 @@ def build_lead_artifacts(ctx: RunContext, ld: LeadData, checks: list[QCCheck], i
         blob, scale, offset, qerr = gridcodec.encode(vals, 0.0, 1.0)
         grid_rel = f"{base}/{v.name}.u16.gz"
         write_bytes(ctx.out_dir / grid_rel, blob)
-        rgba = apply_palette(resample_to_mercator(vals, src, img), PROBABILITY)
+        # Render from the published (quantized) values so every image pixel is exactly
+        # the palette colour of the value a user can read back from the grid.
+        published = gridcodec.decode(blob, src.width, src.height, scale, offset)
+        rgba = apply_palette(resample_to_mercator(published, src, img), PROBABILITY)
         img_rel = f"{base}/{v.name}.png"
         write_png(ctx.out_dir / img_rel, rgba)
         caveats = list(CAVEATS_COMMON) + [CAVEAT_ISSUE]

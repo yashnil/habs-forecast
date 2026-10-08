@@ -6,23 +6,24 @@ import numpy as np
 
 from ..models import Palette, PaletteStop
 
-# Single-hue magenta ramp, OKLCH L 0.36 -> 0.92 (monotone), hue 345.
+# Single-hue magenta ramp, OKLCH L 0.42 -> 0.93 (monotone), hue 345. The 0% colour
+# keeps >= 2:1 contrast with the navy water so "0% probability" differs from "no value".
 # Low end recedes toward the navy surface; high end is brightest. Magenta is
 # kept distinct from water blues and from the reserved status colours.
 _PROB_HEX = [
-    "#5d2748",
-    "#7f2a60",
-    "#a12e79",
-    "#be3b90",
-    "#d753a6",
-    "#e872b9",
-    "#f394cb",
-    "#f9b6db",
-    "#fed8ec",
+    "#723459",
+    "#923770",
+    "#b13d87",
+    "#cd499d",
+    "#e35eb1",
+    "#f37ac3",
+    "#fd99d3",
+    "#ffbce1",
+    "#ffddef",
 ]
 
 PROBABILITY = Palette(
-    id="cw-probability-magenta-v1",
+    id="cw-probability-magenta-v2",
     domain=[0.0, 1.0],
     stops=[
         PaletteStop(value=round(i / (len(_PROB_HEX) - 1), 6), color=c)
