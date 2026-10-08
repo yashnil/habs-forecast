@@ -1,6 +1,9 @@
 "use client";
 
 import type { Manifest } from "@/generated/schema";
+import type { OfficialDataset } from "@/generated/official";
+import { officialVerification } from "@/lib/official";
+import { VerificationBadge } from "@/components/official/Official";
 import { classifySource } from "@/lib/freshness";
 import { charmRun, leadLabel } from "@/lib/layers";
 import { formatDate, formatDateTimePT } from "@/lib/time";
@@ -14,7 +17,7 @@ const OUTCOME: Record<string, string> = {
   failed: "Update failed",
 };
 
-export function SourceTable({ manifest }: { manifest: Manifest }) {
+export function SourceTable({ manifest, official }: { manifest: Manifest; official: OfficialDataset | null }) {
   const now = useNow();
   const run = charmRun(manifest);
   return (
@@ -37,7 +40,12 @@ export function SourceTable({ manifest }: { manifest: Manifest }) {
                 <ProductClassBadge pc={s.product_class} />
                 <h3 className="text-[14px] font-semibold text-ink">{s.title}</h3>
                 <span className="ml-auto">
-                  <FreshnessBadge f={f} />
+                  {s.source_id === "official" ? (
+                    // regulatory records show verification, never a generic "current" badge
+                    <VerificationBadge v={now ? officialVerification(official, s, now) : null} />
+                  ) : (
+                    <FreshnessBadge f={f} basis={s.freshness.basis} />
+                  )}
                 </span>
               </div>
               <dl className="mt-2 grid gap-x-6 gap-y-1 text-[12.5px] sm:grid-cols-2">

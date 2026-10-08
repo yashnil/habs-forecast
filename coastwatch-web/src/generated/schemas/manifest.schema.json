@@ -61,7 +61,8 @@
           "enum": [
             "issued_date",
             "valid_date",
-            "observed_date"
+            "observed_date",
+            "reviewed_date"
           ],
           "title": "Basis",
           "type": "string"
@@ -911,6 +912,18 @@
       "title": "Layers",
       "type": "array"
     },
+    "official_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Official Url"
+    },
     "pipeline_run_id": {
       "title": "Pipeline Run Id",
       "type": "string"
@@ -918,6 +931,18 @@
     "pipeline_version": {
       "title": "Pipeline Version",
       "type": "string"
+    },
+    "port_intel_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Port Intel Url"
     },
     "ports_url": {
       "anyOf": [
