@@ -126,7 +126,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       setInspect(null);
       const f = ports?.features.find((x) => x.properties.port_code === code);
       if (f) {
-        setRegion(f.properties.region);
+        if (f.properties.region) setRegion(f.properties.region);
         const [lon, lat] = f.geometry.coordinates as number[];
         mapRef.current?.flyTo({ center: [lon, lat], zoom: Math.max(mapRef.current.getZoom(), 9.2), padding: { ...padding(), right: window.innerWidth >= 1024 ? 452 : 24 }, duration: 900 });
         pendingFly.current = mapRef.current ? null : code;

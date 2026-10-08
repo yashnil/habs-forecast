@@ -62,3 +62,16 @@ describe("loadData", () => {
     if (!d.ok) expect(d.error).toMatch(/schema validation/);
   });
 });
+
+describe("compatibility with older datasets (same schema version)", () => {
+  it("loads the dataset the M1 pipeline published to GitHub Pages, with explicit unavailable states", async () => {
+    process.env.CW_DATA_DIR = path.resolve(__dirname, "../../../pipeline/tests/fixtures/compat/m1");
+    const d = await loadData();
+    expect(d.ok).toBe(true);
+    if (!d.ok) return;
+    expect(d.ports?.features.length).toBe(22);
+    expect(d.official).toBeNull();
+    expect(d.officialError).toBe("not published");
+    expect(d.portIntel).toBeNull();
+  });
+});

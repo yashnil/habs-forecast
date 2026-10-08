@@ -446,7 +446,7 @@ export interface SourceStatus {
   title: Title1;
 }
 
-export type County = string;
+export type County = string | null;
 
 export type DisplayName = string;
 
@@ -456,7 +456,7 @@ export type PortAreaCode = number;
 
 export type PortCode = number;
 
-export type Region = string;
+export type Region = string | null;
 
 export type Type = "Feature";
 
@@ -490,13 +490,13 @@ export interface Geometry {
 }
 
 export interface PortProperties {
-  county: County;
+  county?: County;
   display_name: DisplayName;
   name: Name;
   port_area: PortArea;
   port_area_code: PortAreaCode;
   port_code: PortCode;
-  region: Region;
+  region?: Region;
 }
 
 export interface Region1 {

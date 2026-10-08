@@ -195,8 +195,10 @@ class PortProperties(_Model):
     display_name: str
     port_area: str
     port_area_code: int
-    county: str
-    region: str
+    # Added in M2. Optional so ports files written by the M1 pipeline (same schema
+    # version) stay valid; the pipeline always fills them now.
+    county: str | None = None
+    region: str | None = None
 
 
 class Region(_Model):

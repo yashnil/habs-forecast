@@ -29,8 +29,16 @@
       "additionalProperties": false,
       "properties": {
         "county": {
-          "title": "County",
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "County"
         },
         "display_name": {
           "title": "Display Name",
@@ -53,8 +61,16 @@
           "type": "integer"
         },
         "region": {
-          "title": "Region",
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Region"
         }
       },
       "required": [
@@ -62,9 +78,7 @@
         "name",
         "display_name",
         "port_area",
-        "port_area_code",
-        "county",
-        "region"
+        "port_area_code"
       ],
       "title": "PortProperties",
       "type": "object"

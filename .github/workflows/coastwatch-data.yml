@@ -14,16 +14,22 @@ on:
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:
+    inputs:
+      channel:
+        description: "production publishes to coastwatch-data (served by GitHub Pages); staging publishes to coastwatch-data-staging (never deployed to Pages, no review issues)"
+        type: choice
+        options: [production, staging]
+        default: production
 
 permissions: {}
 
 concurrency:
-  group: coastwatch-data
+  group: coastwatch-data-${{ inputs.channel || 'production' }}
   cancel-in-progress: false
 
 env:
-  DATA_BRANCH: coastwatch-data
-  DATA_URL: https://raw.githubusercontent.com/${{ github.repository }}/coastwatch-data/v1
+  DATA_BRANCH: ${{ inputs.channel == 'staging' && 'coastwatch-data-staging' || 'coastwatch-data' }}
+  DATA_URL: https://raw.githubusercontent.com/${{ github.repository }}/${{ inputs.channel == 'staging' && 'coastwatch-data-staging' || 'coastwatch-data' }}/v1
 
 jobs:
   build:
@@ -33,10 +39,10 @@ jobs:
     outputs:
       official_changed: ${{ steps.watch.outputs.changed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - name: Start from the published dataset (last known good)
@@ -64,7 +70,7 @@ jobs:
       - name: Only pipeline artifacts may be published
         working-directory: pipeline
         run: uv run cwp guard-publish --root ../publish
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: coastwatch-data
           path: publish/
@@ -74,7 +80,7 @@ jobs:
   notify-review:
     # Official pages changed (or could not be read): ask a person to review the registry.
     needs: build
-    if: needs.build.outputs.official_changed == 'true'
+    if: needs.build.outputs.official_changed == 'true' && (inputs.channel || 'production') == 'production'
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -95,7 +101,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: coastwatch-data
           path: publish
@@ -121,10 +127,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
       - name: New version is live at the public URL, complete, and CORS-enabled
@@ -133,7 +139,7 @@ jobs:
           uv sync
           # raw.githubusercontent.com caches files for up to ~5 minutes: retry until this run is served
           uv run cwp check-published --base "$DATA_URL" --expect-run "$GITHUB_RUN_ID" --retries 24 --wait 20 --report ../published-check.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: published-check
