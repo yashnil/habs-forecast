@@ -1,4 +1,4 @@
-"""Command line entry point: `cwp run | schema | verify-charm | verify-satellite | verify-currents | fixture | …`."""
+"""Command line entry point: `cwp run | schema | verify-charm | verify-satellite | verify-currents | health | fixture | …`."""
 
 from __future__ import annotations
 
@@ -58,6 +58,20 @@ def cmd_verify(a: argparse.Namespace) -> int:
     print(json.dumps(report["summary"], indent=2))
     print(f"report: {path}")
     return 0 if report["summary"]["all_passed"] else 1
+
+
+def cmd_health(a: argparse.Namespace) -> int:
+    from .health import markdown, run_health
+
+    h = run_health(Path(a.out), a.previous_generated_at or None)
+    md = markdown(h, a.run_url or "")
+    if a.markdown:
+        Path(a.markdown).write_text(md + "\n")
+    if a.github_output:
+        with open(a.github_output, "a") as f:
+            f.write(f"alerts={len(h['alerts'])}\nnew_alerts={len(h['new_alerts'])}\ncleared={len(h['cleared_alerts'])}\n")
+    print(md)
+    return 0  # alerts are reported, never a reason to withhold valid data
 
 
 def cmd_verify_currents(a: argparse.Namespace) -> int:
@@ -193,6 +207,13 @@ def main(argv: list[str] | None = None) -> int:
     vc.add_argument("--offline", action="store_true", help="skip live ERDDAP point queries")
     vc.add_argument("--only-if-updated", action="store_true", help="skip unless this run published new HF-radar data")
     vc.set_defaults(fn=cmd_verify_currents)
+    hp = sub.add_parser("health", help="evaluate pipeline health (alerts) and update health.json in the dataset")
+    hp.add_argument("--out", default=str(DEFAULT_OUT))
+    hp.add_argument("--previous-generated-at", help="generated_at of the dataset this run started from")
+    hp.add_argument("--markdown", help="write the alert summary (issue body) here")
+    hp.add_argument("--github-output", help="append alerts/new_alerts/cleared counts for GitHub Actions")
+    hp.add_argument("--run-url")
+    hp.set_defaults(fn=cmd_health)
     f = sub.add_parser("fixture", help="build a deterministic dataset from recorded fixtures (no network)")
     f.add_argument("--out", required=True)
     f.add_argument("--now", default="2026-10-08T18:00:00Z")
