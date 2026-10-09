@@ -1,5 +1,7 @@
 # 11 — Milestone 3: Bloom Intelligence, Fisheries Economics & Product Design
 
+> Updated by the integration review ([12](12-m3-integration-review.md)): licensing evidence, NOAA reconciliation, statewide-total definition, fixes and merge results are recorded there.
+
 Branch `feat/coastwatch-m3-bloom-economics` (pushed; **not merged, website not deployed, nothing published to production**). Built and verified 2026-10-08. Data published only to the staging channel (`coastwatch-data-staging`, never served by GitHub Pages).
 
 **Not claimed:** the official notices remain an unreviewed AI transcription (`pending_human_review`, shown as **Not verified**); no HAB scientist has reviewed the new pages (shown as **Scientific review pending**); species tiers are an editorial grouping awaiting that review.
@@ -49,12 +51,12 @@ Staging run, 2026-10-08: all 17 stations updated and C-HARM context for all 17. 
 - **Terminology.** "Historical fisheries exposure: the reported value of past commercial landings of species that marine toxins can affect. It is not a prediction of losses…" Tests fail if "loss" appears un-negated anywhere in the artifact or rendered page.
 - **Groups (tiers await scientific review).** Tier 1 — Dungeness crab, rock crabs, northern anchovy (commercial closures or take restrictions for domoic acid, current or past; rock crab and anchovy link the active official records). Tier 2 — California spiny lobster, Pacific sardine, bivalve shellfish. Each upstream row maps to at most one group by exact name; an ambiguous name raises.
 - **Inflation.** Real = nominal × CPI(2024)/CPI(year), CPI-U annual averages from 12 published months; base year rule and the missing October 2025 value are shown on the page.
-- **Suppression.** FOSS's withheld row stays separate every year, never attributed; rows without a value are counted, never treated as $0.
-- **No double counting.** Group sums + ungrouped rows reconcile exactly to the statewide total in every year (tested against the raw responses); the duplicate oyster listing is excluded and listed.
+- **Suppression.** FOSS's withheld row is shown separately every year and never attributed to a species or group; it is included in the statewide total, as in NOAA's own state totals (changed in the integration review, see 12). Rows without a value are counted, never treated as $0.
+- **No double counting.** Group sums reconcile exactly to the assigned source rows and the statewide total to all kept rows in every year (tested against the raw responses); the duplicate oyster listing (PacFIN code KSTR mapped to two FOSS names, confirmed upstream in 12) is excluded and listed. The statewide total reproduces NOAA's published California totals within 0.17%.
 - **Port level.** `PortLevelStatus = unavailable` with reasons. A disclosure-safe aggregation (`aggregate_cells`) exists for when a port-level source is authorised: suppressed components are never estimated, aggregates containing them are labelled "at least", and complementary suppression blocks a total that would reveal a single withheld component. Tested only with clearly labelled synthetic cells; no real port data exist in the repository.
 - **UI.** Definition box, port-level unavailable notice, tier and real/nominal filters, three summary tiles, total bar chart, per-group small multiples (own scales, tier basis, official links, upstream category names), values table with statewide total and withheld row, duplicate disclosure, deflator box, methods and provenance.
 
-Staging values (2024, nominal): Dungeness $49.7M, spiny lobster $20.9M, bivalves $10.9M, rock crab $2.4M, sardine $0.67M, anchovy $0.63M; all California commercial landings $200.0M (excluding the withheld $10.8k).
+Staging values (2024, nominal): Dungeness $49.7M, spiny lobster $20.9M, bivalves $10.9M, rock crab $2.4M, sardine $0.67M, anchovy $0.63M; all California commercial landings $200.0M (NOAA state total, including the $10.8k withheld).
 
 ## 5. UI and design changes
 
