@@ -43,13 +43,13 @@ const StationMap = dynamic(() => import("./StationMap"), {
 });
 
 const COLOR: Record<ObsVariableId, string> = {
-  pDA: "#c9a7ff",
-  tDA: "#c9a7ff",
-  dDA: "#c9a7ff",
-  pn_seriata: "#7cc4ff",
-  pn_delicatissima: "#7cc4ff",
+  pDA: "var(--cw-series-toxin)",
+  tDA: "var(--cw-series-toxin)",
+  dDA: "var(--cw-series-toxin)",
+  pn_seriata: "var(--cw-series-cells)",
+  pn_delicatissima: "var(--cw-series-cells)",
   chl_extracted: "var(--cw-chl)",
-  temp: "#b4c2d6",
+  temp: "var(--cw-series-temp)",
 };
 const MODEL_VARS = [
   { value: "particulate_domoic", label: "Particulate DA" },
@@ -139,7 +139,7 @@ export function BloomIntelligence({ stations, station, dataset, status, official
       </header>
 
       {/* official notices first */}
-      <section className="space-y-2 rounded-lg border border-[#ffb547]/30 bg-surface p-3.5" data-testid="bloom-official" aria-labelledby="bloom-official-h">
+      <section className="space-y-2 rounded-lg border border-official-line bg-surface p-3.5" data-testid="bloom-official" aria-labelledby="bloom-official-h">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="bloom-official-h" className="text-[13.5px] font-semibold text-ink">
             {OFFICIAL_STATUS.heading} — these take precedence over anything on this page
@@ -176,20 +176,23 @@ export function BloomIntelligence({ stations, station, dataset, status, official
 
       <div className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
         <aside className="space-y-3 lg:sticky lg:top-16 lg:self-start" aria-label="Stations">
-          <div className="h-[230px] overflow-hidden rounded-lg border border-hairline lg:h-[280px]" data-testid="station-map">
-            <StationMap stations={points} selected={station.station_id} bounds={REGION_BOUNDS[station.region ?? ""] ?? CALIFORNIA_BOUNDS} onSelect={select} />
-          </div>
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] text-ink-3" aria-label="Map key">
-            <span className="flex items-center gap-1">
-              <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#eef3fa]" /> sampled in the last 2 weeks
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#b4c2d6]" /> 2–6 weeks
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-[#5d6f88]" /> older
-            </span>
-            <span>Dots mark sampling piers, not areas.</span>
+          {/* the station map keeps the dark sea, with its key, on the paper page */}
+          <div className="theme-dark space-y-2 rounded-lg p-2">
+            <div className="h-[230px] overflow-hidden rounded-md border border-hairline lg:h-[280px]" data-testid="station-map">
+              <StationMap stations={points} selected={station.station_id} bounds={REGION_BOUNDS[station.region ?? ""] ?? CALIFORNIA_BOUNDS} onSelect={select} />
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] text-ink-3" aria-label="Map key">
+              <span className="flex items-center gap-1">
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#eef3fa]" /> sampled in the last 2 weeks
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#b4c2d6]" /> 2–6 weeks
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-[#5d6f88]" /> older
+              </span>
+              <span>Dots mark sampling piers, not areas.</span>
+            </div>
           </div>
           <label className="block lg:hidden">
             <span className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-ink-3">Station</span>

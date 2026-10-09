@@ -1,11 +1,91 @@
 @import "tailwindcss";
 
 /*
- * CoastWatch design tokens — dark navy marine theme.
- * Status colours follow the dataviz reference status palette and are reserved for
- * freshness/state; they always ship with an icon and a text label.
+ * CoastWatch design tokens (design reset, docs/coastwatch/design-reset/design-spec.md §2).
+ * "Navy frame, paper surfaces, dark sea": a navy masthead frames every page, reading and
+ * analysis happen on light paper (the default theme below), and map canvases use the dark
+ * theme (`.theme-dark`). Components use the semantic `--cw-*` names, so the same component
+ * reads correctly in either theme.
+ *
+ * Semantic colours are reserved: official = amber, model = violet, measured = teal.
+ * Freshness/state colours always ship with an icon and a text label.
  */
 :root {
+  color-scheme: light;
+
+  /* frame (same in both themes) */
+  --cw-navy-950: #06111e;
+  --cw-navy-900: #0a1a2c;
+  --cw-navy-800: #10263e;
+  --cw-on-navy: #e8eef5;
+  --cw-on-navy-2: #a9b8c9;
+  --cw-official-on-navy: #f6bb5c;
+  --cw-accent-on-navy: #6cc6dc;
+
+  /* paper surfaces */
+  --cw-page: #f5f3ee;
+  --cw-surface: #ffffff;
+  --cw-surface-2: #faf9f6;
+  --cw-surface-3: #f0ede6;
+  --cw-hairline: #e4e0d7;
+  --cw-hairline-strong: #cbc4b6;
+  --cw-ink: #0d1b2a;
+  --cw-ink-2: #3d4b5c;
+  --cw-ink-3: #5f6b79;
+  --cw-accent: #0b6a85;
+
+  /* semantic families */
+  --cw-official: #9a4a00;
+  --cw-official-ink: #7a3a00;
+  --cw-official-bg: #fdf2e0;
+  --cw-official-line: #eeb565;
+  --cw-forecast: #6a3fb0; /* model */
+  --cw-model-ink: #6a3fb0;
+  --cw-model-bg: #f3eefb;
+  --cw-model-line: #cdbcef;
+  --cw-chl: #0d756c; /* measured */
+  --cw-measured-bg: #e5f3f0;
+  --cw-measured-line: #a6d6cf;
+  --cw-history: #34495f;
+  --cw-history-bg: #eef1f5;
+  --cw-history-line: #cfd8e3;
+
+  /* state (text-safe on paper) */
+  --cw-good: #1a7a4f;
+  --cw-warning: #8a5f00;
+  --cw-serious: #b4471f;
+  --cw-critical: #b42318;
+  --cw-neutral: #5f6874;
+
+  /* chart series on paper */
+  --cw-series-toxin: #0d756c;
+  --cw-series-cells: #2f6fa8;
+  --cw-series-temp: #5f6b79;
+  --cw-series-bar: #3a75ab;
+
+  /* map canvas (also used by maps embedded in paper pages) */
+  --cw-water: #040e1f;
+  --cw-land: #17263b;
+
+  /* Forecast probability display classes (10 % steps, not risk levels). Mirrors
+     FORECAST_CLASSES in src/lib/palette.ts; the map adopts them in phase P1. */
+  --cw-p0: #3a385b;
+  --cw-p1: #4c436a;
+  --cw-p2: #5f4e79;
+  --cw-p3: #735986;
+  --cw-p4: #886492;
+  --cw-p5: #9c709c;
+  --cw-p6: #af7ea4;
+  --cw-p7: #c28cab;
+  --cw-p8: #d39cb3;
+  --cw-p9: #e5abbc;
+
+  --cw-masthead-h: 56px;
+  --cw-tabbar-h: 64px;
+}
+
+/* Dark sea: map canvases and the panels that float over them. */
+.theme-dark {
   color-scheme: dark;
   --cw-page: #040b17;
   --cw-surface: #0a1628;
@@ -17,16 +97,31 @@
   --cw-ink-2: #b4c2d6;
   --cw-ink-3: #8193ac;
   --cw-accent: #6fd3ee;
+  --cw-official: #ffb547;
+  --cw-official-ink: #ffcf85;
+  --cw-official-bg: rgba(255, 181, 71, 0.035);
+  --cw-official-line: rgba(255, 181, 71, 0.3);
   --cw-forecast: #d753a6;
+  --cw-model-ink: #c3aef3;
+  --cw-model-bg: rgba(195, 174, 243, 0.08);
+  --cw-model-line: rgba(195, 174, 243, 0.35);
+  --cw-chl: #48c9a8;
+  --cw-measured-bg: rgba(72, 201, 168, 0.08);
+  --cw-measured-line: rgba(72, 201, 168, 0.35);
+  --cw-history: #cfd8e3;
+  --cw-history-bg: rgba(207, 216, 227, 0.08);
+  --cw-history-line: rgba(207, 216, 227, 0.3);
   --cw-good: #0ca30c;
   --cw-warning: #fab219;
   --cw-serious: #ec835a;
   --cw-critical: #d03b3b;
   --cw-neutral: #8193ac;
-  --cw-chl: #48c9a8;
-  --cw-official: #ffb547;
-  --cw-water: #040e1f;
-  --cw-land: #17263b;
+  --cw-series-toxin: #c9a7ff;
+  --cw-series-cells: #7cc4ff;
+  --cw-series-temp: #b4c2d6;
+  --cw-series-bar: #8fb3e8;
+  background: var(--cw-page);
+  color: var(--cw-ink);
 }
 
 @theme inline {
@@ -41,22 +136,45 @@
   --color-ink-3: var(--cw-ink-3);
   --color-accent: var(--cw-accent);
   --color-forecast: var(--cw-forecast);
+  --color-model: var(--cw-forecast);
+  --color-model-ink: var(--cw-model-ink);
+  --color-model-bg: var(--cw-model-bg);
+  --color-model-line: var(--cw-model-line);
   --color-good: var(--cw-good);
   --color-warning: var(--cw-warning);
   --color-serious: var(--cw-serious);
   --color-critical: var(--cw-critical);
   --color-neutral: var(--cw-neutral);
   --color-chl: var(--cw-chl);
+  --color-measured: var(--cw-chl);
+  --color-measured-bg: var(--cw-measured-bg);
+  --color-measured-line: var(--cw-measured-line);
+  --color-history: var(--cw-history);
+  --color-history-bg: var(--cw-history-bg);
+  --color-history-line: var(--cw-history-line);
   --color-official: var(--cw-official);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-official-ink: var(--cw-official-ink);
+  --color-official-bg: var(--cw-official-bg);
+  --color-official-line: var(--cw-official-line);
+  --color-navy-950: var(--cw-navy-950);
+  --color-navy-900: var(--cw-navy-900);
+  --color-navy-800: var(--cw-navy-800);
+  --color-on-navy: var(--cw-on-navy);
+  --color-on-navy-2: var(--cw-on-navy-2);
+  --color-official-on-navy: var(--cw-official-on-navy);
+  --color-accent-on-navy: var(--cw-accent-on-navy);
+  --font-sans: var(--font-plex-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: var(--font-newsreader), "Iowan Old Style", Georgia, serif;
 }
 
 html,
 body {
   background: var(--cw-page);
   color: var(--cw-ink);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-plex-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* tabular lining figures everywhere, so numbers align in tables and readouts */
+  font-feature-settings: "tnum" 1, "lnum" 1;
 }
 
 a {
@@ -73,7 +191,7 @@ a {
   border-radius: 6px;
 }
 
-/* MapLibre chrome tuned to the theme */
+/* MapLibre chrome tuned to the dark map theme */
 .maplibregl-ctrl-group {
   background: var(--cw-surface) !important;
   border: 1px solid var(--cw-hairline-strong) !important;
@@ -82,16 +200,16 @@ a {
 .maplibregl-ctrl-group button + button {
   border-top: 1px solid var(--cw-hairline) !important;
 }
-.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+.theme-dark .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
   filter: invert(0.9);
 }
 .maplibregl-ctrl-attrib {
   background: rgba(4, 11, 23, 0.72) !important;
-  color: var(--cw-ink-3) !important;
+  color: #8193ac !important;
   font-size: 10px;
 }
 .maplibregl-ctrl-attrib a {
-  color: var(--cw-ink-2) !important;
+  color: #b4c2d6 !important;
 }
 .maplibregl-ctrl-attrib-button {
   filter: invert(0.85);

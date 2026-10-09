@@ -53,7 +53,7 @@ export function Segmented<T extends string | number>({
   testidPrefix?: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="grid gap-1 rounded-md bg-surface-2 p-1" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+    <div role="radiogroup" aria-label={label} className="grid gap-0.5 rounded-[9px] bg-surface-3 p-[3px]" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -65,8 +65,8 @@ export function Segmented<T extends string | number>({
             title={o.title}
             data-testid={testidPrefix ? `${testidPrefix}-${o.value}` : undefined}
             onClick={() => onChange(o.value)}
-            className={`rounded px-1.5 py-1.5 text-left text-[12px] transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
-              active ? "bg-surface-3 text-ink ring-1 ring-hairline-strong" : "text-ink-2 hover:text-ink"
+            className={`rounded-[7px] px-1.5 py-1.5 text-left text-[12px] transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
+              active ? "bg-surface text-ink shadow-[0_1px_2px_rgba(13,27,42,0.12)] ring-1 ring-hairline-strong" : "text-ink-2 hover:text-ink"
             }`}
           >
             <span className="block font-medium leading-tight">{o.label}</span>

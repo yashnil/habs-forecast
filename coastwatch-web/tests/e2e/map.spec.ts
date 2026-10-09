@@ -67,16 +67,13 @@ test.describe("information hierarchy and labelling", () => {
     await expect(page).toHaveURL(/lead=3/);
   });
 
-  test("My Coast is marked upcoming and is not a link; M3 experiences are links", async ({ page }) => {
+  test("primary navigation links the three built experiences and nothing unbuilt", async ({ page }) => {
     await open(page, OK);
+    const nav = page.getByRole("navigation", { name: "Primary" }).first();
+    await expect(page.getByTestId("nav-map")).toHaveAttribute("aria-current", "page");
     await expect(page.getByTestId("nav-bloom")).toHaveAttribute("href", "/bloom");
     await expect(page.getByTestId("nav-fisheries")).toHaveAttribute("href", "/fisheries");
-    for (const key of ["coast"]) {
-      const el = page.getByTestId(`nav-upcoming-${key}`);
-      await expect(el).toContainText("Upcoming");
-      await expect(el).toHaveAttribute("aria-disabled", "true");
-      expect(await el.evaluate((n) => n.closest("a"))).toBeNull();
-    }
+    await expect(nav).not.toContainText(/My Coast|Upcoming/i);
   });
 });
 

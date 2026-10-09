@@ -76,10 +76,10 @@ describe("hierarchy and labelling", () => {
   it("only C-HARM layers are labelled official forecasts", () => {
     for (const l of manifest.layers) if (l.product_class === "official_forecast") expect(l.group_id).toBe("charm");
   });
-  it("unfinished experiences are not active navigation", () => {
-    const upcoming = copy.EXPERIENCES.filter((e) => !e.available);
-    expect(upcoming.map((e) => e.key).sort()).toEqual(["coast"]);
-    for (const e of upcoming) expect(e.href).toBeNull();
+  it("primary navigation lists only built experiences (no placeholder entries)", () => {
+    expect(copy.EXPERIENCES.map((e) => e.key)).toEqual(["map", "bloom", "fisheries"]);
+    for (const e of copy.EXPERIENCES) expect(e.href).toMatch(/^\//);
+    expect(JSON.stringify(copy.EXPERIENCES)).not.toMatch(/my coast|upcoming/i);
   });
 });
 

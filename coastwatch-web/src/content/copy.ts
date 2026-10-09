@@ -74,11 +74,11 @@ export const CHLOROPHYLL_COPY = {
 export const DISCLAIMER =
   "CoastWatch brings together public data from state and federal agencies. It is not an official source. Closures, advisories and seasons from CDFW, CDPH and OEHHA always take precedence. Forecasts are probabilities, not guarantees.";
 
+/** Primary navigation. Only built experiences appear: unbuilt features are not navigation. */
 export const EXPERIENCES = [
-  { key: "map", label: "Live Ocean Map", short: "Map", href: "/", available: true },
-  { key: "bloom", label: "Bloom Intelligence", short: "Blooms", href: "/bloom", available: true },
-  { key: "fisheries", label: "Fisheries & Economic Exposure", short: "Fisheries", href: "/fisheries", available: true },
-  { key: "coast", label: "My Coast", short: "My Coast", href: null, available: false },
+  { key: "map", label: "Ocean Map", short: "Map", href: "/" },
+  { key: "bloom", label: "Bloom Intelligence", short: "Blooms", href: "/bloom" },
+  { key: "fisheries", label: "Fisheries", short: "Fisheries", href: "/fisheries" },
 ] as const;
 
 export const REGION_LABEL: Record<string, string> = {
