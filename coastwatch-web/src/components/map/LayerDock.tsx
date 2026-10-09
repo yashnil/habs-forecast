@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ForecastRun, LayerArtifact, Manifest, SourceStatus } from "@/generated/schema";
 import { CHLOROPHYLL_COPY, FORECAST_COPY } from "@/content/copy";
 import { classifyTime, type Freshness } from "@/lib/freshness";
@@ -69,12 +69,20 @@ function Seg<T extends string | number>({ value, options, onChange, label, testi
 }
 
 export function LayerDock(p: Props) {
-  // On phones the dock starts collapsed (controls and colour scale only) and expands on demand.
+  // On phones and short screens the dock starts collapsed (controls, colour scale and the
+  // essential qualifiers) and expands on demand.
   const [expanded, setExpanded] = useState(!p.compact);
+  const [short, setShort] = useState(false);
+  useEffect(() => {
+    if (!p.compact && window.innerHeight < 800) {
+      setShort(true);
+      setExpanded(false);
+    }
+  }, [p.compact]);
   const q = { ...p, expanded };
   return (
     <section data-testid="layer-dock" data-expanded={expanded} aria-label="Map layers" className="theme-paper rounded-2xl bg-surface text-ink shadow-[0_1px_2px_rgba(6,17,30,0.12),0_8px_24px_rgba(6,17,30,0.18)]">
-      {p.compact && (
+      {(p.compact || short) && (
         <button type="button" onClick={() => setExpanded(!expanded)} aria-expanded={expanded} aria-label={expanded ? "Show less" : "Show layer details"} data-testid="dock-handle" className="flex w-full justify-center pb-0.5 pt-2">
           <span className="h-1 w-9 rounded-full bg-hairline-strong" aria-hidden />
         </button>
