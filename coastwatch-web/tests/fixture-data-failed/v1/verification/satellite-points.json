@@ -2,8 +2,8 @@
   "manifest_generated_at": "2026-10-12T18:00:00Z",
   "live_source_comparison": false,
   "summary": {
-    "layers": 3,
-    "checks": 36,
+    "layers": 4,
+    "checks": 48,
     "failures": 0,
     "all_passed": true
   },
@@ -356,6 +356,126 @@
       "layer_id": "olci300_chl_2026-10-06",
       "row": 320,
       "col": 340,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 0,
+      "col": 0,
+      "lat": 37.19625,
+      "lon": -122.59875,
+      "value": 0.49143,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-03",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 32,
+      "col": 21,
+      "lat": 36.95625,
+      "lon": -122.44125,
+      "value": 2.22188,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-03",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 43,
+      "col": 11,
+      "lat": 36.87375,
+      "lon": -122.51625,
+      "value": 0.57476,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-03",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 53,
+      "col": 97,
+      "lat": 36.79875,
+      "lon": -121.87125,
+      "value": 2.35847,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-04",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 65,
+      "col": 12,
+      "lat": 36.70875,
+      "lon": -122.50875,
+      "value": 0.45321,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-03",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 75,
+      "col": 56,
+      "lat": 36.63375,
+      "lon": -122.17875,
+      "value": 1.05768,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-03",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 87,
+      "col": 87,
+      "lat": 36.54375,
+      "lon": -121.94625,
+      "value": 1.25595,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-04",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 106,
+      "col": 91,
+      "lat": 36.40125,
+      "lon": -121.91625,
+      "value": 1.56911,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-03",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 0,
+      "col": 15,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 17,
+      "col": 26,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 66,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 106,
+      "col": 113,
       "value": null,
       "tile_transparent": true,
       "status": "pass"

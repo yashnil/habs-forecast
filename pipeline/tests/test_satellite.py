@@ -221,6 +221,18 @@ def test_viirs_outage_keeps_previous_viirs_while_olci_updates(tmp_path):
     assert check_published(str(out))["ok"]
 
 
+def test_window_holds_only_days_inside_it_although_erddap_snaps_the_start(tmp_path):
+    # staging, 2026-10-09: time[(2026-10-02T00:00:00Z):...] returned the 10-01 19 UTC overpass
+    out = tmp_path / "v1"
+    ctx = fixture_context(out, "2026-10-09T18:00:00Z")
+    res = satellite.run(ctx, [])
+    comp = by_id(res, "olci300_chl_latest").composite
+    assert comp.oldest_observed_date >= "2026-10-02"
+    assert all(d.date >= "2026-10-02" for d in comp.days)
+    assert by_id(res, "olci300_chl_2026-10-01") is None
+    assert max(b.age_days for b in comp.age_histogram) <= satellite.WINDOW_DAYS
+
+
 def test_unchanged_days_are_reused_not_refetched(tmp_path):
     out = tmp_path / "v1"
     run_pipeline(fixture_context(out))

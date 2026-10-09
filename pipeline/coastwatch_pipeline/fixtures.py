@@ -90,7 +90,15 @@ class FixtureFetcher:
         entries = idx.get(self.satellite_region, {}).get(ds, [])
         if kind == "csv0":
             start = re.search(r"time\[\((\d{4}-\d\d-\d\d)", q)
-            times = [e["time"] for e in entries if not start or e["time"][:10] >= start.group(1)]
+            times = [e["time"] for e in entries]
+            if start and times:
+                # like ERDDAP, the start bound snaps to the nearest available time, which can
+                # be before it (e.g. the previous evening's overpass)
+                from datetime import datetime
+
+                t0 = datetime.fromisoformat(f"{start.group(1)}T00:00:00+00:00")
+                gap = lambda t: abs((datetime.fromisoformat(t.replace("Z", "+00:00")) - t0).total_seconds())  # noqa: E731
+                times = times[times.index(min(times, key=gap)):]
             if not times:
                 raise FetchError(f"HTTP 404 for {url} (no matching results)")
             return Response(url=url, status=200, content_type="text/csv", body=("\n".join(times) + "\n").encode())

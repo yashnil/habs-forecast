@@ -562,7 +562,9 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
     for plat, sectors in p.platforms:
         for ds, _, _, _ in sectors:
             try:
-                listings[(plat, ds)] = [t for t in list_times(ctx, p.server, ds, start) if t[:10] <= ctx.now.date().isoformat()]
+                # ERDDAP snaps the start bound to the nearest time, which can be the evening
+                # before the window; keep only times inside it
+                listings[(plat, ds)] = [t for t in list_times(ctx, p.server, ds, start) if start.isoformat() <= t[:10] <= ctx.now.date().isoformat()]
             except Exception as e:
                 errors.append(f"{plat} {ds}: time listing failed: {e}")
     if not listings:
