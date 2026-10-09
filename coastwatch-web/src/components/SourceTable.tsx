@@ -44,7 +44,7 @@ export function SourceTable({ manifest, official }: { manifest: Manifest; offici
                     // regulatory records show verification, never a generic "current" badge
                     <VerificationBadge v={now ? officialVerification(official, s, now) : null} />
                   ) : (
-                    <FreshnessBadge f={f} basis={s.freshness.basis} />
+                    <FreshnessBadge f={f} basis={s.freshness.basis} compact={s.product_class === "historical_context"} />
                   )}
                 </span>
               </div>

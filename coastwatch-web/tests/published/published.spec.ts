@@ -54,3 +54,29 @@ test("M2 data loads from the published URL: official notices, overlay and port s
   await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { getSource: (s: string) => unknown } }).__cwMap?.getSource("official"));
   expect(failed.filter((f) => f.includes(BASE))).toEqual([]);
 });
+
+test("M3 pages: real measurements and landings when published, explicit unavailable states otherwise", async ({ page, request }) => {
+  const manifest = await (await request.get(`${BASE}/manifest.json`)).json();
+  if (!manifest.observations_url) {
+    await page.goto(`${APP}/bloom`);
+    await expect(page.getByTestId("bloom-unavailable")).toContainText("does not mean toxin is absent");
+  } else {
+    const obs = await (await request.get(`${BASE}/${manifest.observations_url}`)).json();
+    const sc = obs.stations.find((s: { station_id: string }) => s.station_id === "HABs-SantaCruzWharf");
+    await page.goto(`${APP}/bloom`);
+    await expect(page.getByTestId("station-detail")).toHaveAttribute("data-station", "HABs-SantaCruzWharf");
+    const last = sc.sample_times.at(-1);
+    const day = new Date(last).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+    await expect(page.getByTestId("last-sample")).toContainText(day);
+    await expect(page.getByTestId("bloom-official")).toBeVisible();
+  }
+  if (!manifest.fisheries_url) {
+    await page.goto(`${APP}/fisheries`);
+    await expect(page.getByTestId("fisheries-unavailable")).toBeVisible();
+  } else {
+    const fish = await (await request.get(`${BASE}/${manifest.fisheries_url}`)).json();
+    await page.goto(`${APP}/fisheries`);
+    await expect(page.getByTestId("data-through")).toContainText(String(fish.years.at(-1)));
+    await expect(page.getByTestId("port-level-unavailable")).toBeVisible();
+  }
+});
