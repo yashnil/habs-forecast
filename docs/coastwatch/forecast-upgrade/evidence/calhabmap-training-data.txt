@@ -1,0 +1,14 @@
+window_start 2014-01-01 generated 2026-10-09T03:43:34Z stations 17
+station                      pDA_n  pDA>=0.5ng/mL  years
+HABs-ScrippsPier               657      9        2014-2026
+HABs-SantaMonicaPier           649     12        2014-2026
+HABs-CalPolyPier               644     13        2014-2026
+HABs-StearnsWharf              627     13        2014-2026
+HABs-SantaCruzWharf            621     46        2014-2026
+HABs-NewportBeachPier          604      6        2014-2026
+HABs-MontereyWharf             165     39        2014-2022
+HABs-TrinidadPier              108     10        2017-2026
+HABs-HumboldtSouthBay          104      5        2017-2026
+HABs-Humboldt                   88      2        2017-2026
+TOTAL pDA samples 4267 exceedances (>=0.5 ng/mL = 500 ng/L) 155
+TOTAL PN samples (either size class) 9744 >=1e4 cells/L 1510

@@ -1,0 +1,19 @@
+creator_name : Clarissa Anderson
+date_created : 2022-12-07T17:56:54Z
+date_modified : 2022-12-07T17:56:54Z
+geospatial_lat_max : 43.0
+geospatial_lat_min : 31.3
+geospatial_lon_max : 243.0
+geospatial_lon_min : 232.5
+history : 2026-10-08: DINEOF gap filling was applied to daily S-NPP NOAA VIIRS chlorophyll, 551nm reflectance, and 486nm reflectance fields extending back 180 days from today's date.
+ The gap-filled data plus salinity and temperature data from the WCOFS model were used as inputs to the C-HARM model to obtain nowcast. 
+ ROMS current forecasts were used to advect the NOAA VIIRS data 1, 2, and 3 days into the future. Data gaps resulting from the advection were filled with a second DINEOF. 
+ The advected gap-filled data plus salinity and temperature WCOFS forecast data were used as inputs to the C-HARM mode
+institution : NOAA/NMFS/SWFSC/ERD, CoastWatch West Coast
+license : The data may be used and redistributed for free but is not intended for legal use, since it may contain inaccuracies. Neither the data Contributor, CoastWatch, NOAA, nor the United States Government, nor any of their employees or contractors, makes any warranty, express or implied, including warranties of merchantability and fitness for a particular purpose, or assumes any legal liability for the accuracy, completeness, or usefulness, of this information.
+product_version : 3.1
+source : Satellite data, C-HARM model output, and WCOFS model output
+summary : The C-HARM model generates nowcast and forecasts of the probability of Pseudo-nitzschia concentrations of in excess of 10,000 cells/L, the probability of particulate domoic acid > 500 nanograms/L, and the probability of cellular domoic acid > 10 picograms/cell in California and Southern Oregon coastal water. Inputs for the model include near real-time satellite NOAA S-National Polar-orbiting Partnership (NPP) Visible and Infrared Imager/Radiometer Suite (VIIRS) observations gap-filled chlorophyll a, 486nm reflectance, and 551nm reflectance fields from the S-NPP NOAA VIIRS sensor plus nowcast a
+time_coverage_end : 2026-10-07T12:00:00Z
+time_coverage_start : 2022-11-01T12:00:00Z
+title : C-HARM v3.1 Nowcast:, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, California and Southern Oregon coast, 2022-present

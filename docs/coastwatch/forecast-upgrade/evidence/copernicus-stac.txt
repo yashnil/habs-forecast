@@ -1,0 +1,20 @@
+== GLOBAL_ANALYSISFORECAST_PHY_001_024
+ title: Global Ocean Physics Analysis and Forecast
+ temporal: {'interval': [['2019-01-01T00:00:00Z', '2026-10-19T00:00:00Z']]}
+ datasets: ['cmems_mod_glo_phy_anfc_0.083deg_static_202211--ext--coords', 'cmems_mod_glo_phy_anfc_0.083deg_static_202211--ext--bathy', 'cmems_mod_glo_phy_anfc_0.083deg_static_202211--ext--mdt', 'cmems_mod_glo_phy_anfc_merged-uv_PT1H-i_202211', 'cmems_mod_glo_phy_anfc_0.083deg_P1D-m_202406', 'cmems_mod_glo_phy_anfc_0.083deg_P1M-m_202406', 'cmems_mod_glo_phy_anfc_0.083deg_PT1H-m_202406', 'cmems_mod_glo_phy-so_anfc_0.083deg_P1D-m_202406', 'cmems_mod_glo_phy-so_anfc_0.083deg_PT6H-i_202406', 'cmems_mod_glo_phy-thetao_anfc_0.083deg_P1D-m_202406', 'cmems_mod_glo_phy-so_anfc_0.083deg_P1M-m_202406', 'cmems_mod_glo_phy-thetao_anfc_0.083deg_P1M-m_202406']
+ license: proprietary
+== GLOBAL_ANALYSISFORECAST_BGC_001_028
+ title: Global Ocean Biogeochemistry Analysis and Forecast
+ temporal: {'interval': [['2021-10-01T00:00:00Z', '2026-10-18T00:00:00Z']]}
+ datasets: ['cmems_mod_glo_bgc_anfc_0.25deg_static_202311--ext--coords', 'cmems_mod_glo_bgc_anfc_0.25deg_static_202311--ext--mask', 'cmems_mod_glo_bgc-optics_anfc_0.25deg_P1D-m_202311', 'cmems_mod_glo_bgc-bio_anfc_0.25deg_P1M-m_202311', 'cmems_mod_glo_bgc-car_anfc_0.25deg_P1M-m_202311', 'cmems_mod_glo_bgc-co2_anfc_0.25deg_P1M-m_202311', 'cmems_mod_glo_bgc-nut_anfc_0.25deg_P1M-m_202311', 'cmems_mod_glo_bgc-pft_anfc_0.25deg_P1M-m_202311', 'cmems_mod_glo_bgc-pft_anfc_0.25deg_P1D-m_202311', 'cmems_mod_glo_bgc-co2_anfc_0.25deg_P1D-m_202311', 'cmems_mod_glo_bgc-nut_anfc_0.25deg_P1D-m_202311', 'cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m_202311']
+ license: proprietary
+== OCEANCOLOUR_GLO_BGC_L3_NRT_009_101
+ title: Global Ocean Colour (Copernicus-GlobColour), Bio-Geo-Chemical, L3 (daily) from Satellite Observations (Near Real Time)
+ temporal: {'interval': [['2023-04-25T00:00:00Z', '2026-10-08T00:00:00Z']]}
+ datasets: ['cmems_obs-oc_glo_bgc-plankton_nrt_l3-olci-300m_P1D_202207', 'cmems_obs-oc_glo_bgc-reflectance_nrt_l3-olci-4km_P1D_202207', 'cmems_obs-oc_glo_bgc-transp_nrt_l3-olci-4km_P1D_202207', 'cmems_obs-oc_glo_bgc-optics_nrt_l3-multi-4km_P1D_202311', 'cmems_obs-oc_glo_bgc-reflectance_nrt_l3-multi-4km_P1D_202311', 'cmems_obs-oc_glo_bgc-transp_nrt_l3-multi-4km_P1D_202311', 'cmems_obs-oc_glo_bgc-plankton_nrt_l3-multi-4km_P1D_202411', 'cmems_obs-oc_glo_bgc-reflectance_nrt_l3-olci-300m_P1D_202211', 'cmems_obs-oc_glo_bgc-plankton_nrt_l3-olci-4km_P1D_202511', 'cmems_obs-oc_glo_bgc-car_nrt_l3-multi-4km_P1D-m_202611', 'cmems_obs-oc_glo_bgc-plankton_nrt_l3-multi-4km_P1D_202611', 'cmems_obs-oc_glo_bgc-plankton_nrt_l3-olci-300m_P1D_202611']
+ license: proprietary
+== OCEANCOLOUR_GLO_BGC_L4_NRT_009_102
+ title: Global Ocean Colour (Copernicus-GlobColour), Bio-Geo-Chemical, L4 (monthly and interpolated) from Satellite Observations (Near Real Time)
+ temporal: {'interval': [['2023-04-01T00:00:00Z', '2026-10-08T00:00:00Z']]}
+ datasets: ['cmems_obs-oc_glo_bgc-plankton_nrt_l4-olci-300m_P1M_202211', 'cmems_obs-oc_glo_bgc-plankton_nrt_l4-olci-4km_P1M_202207', 'cmems_obs-oc_glo_bgc-reflectance_nrt_l4-olci-4km_P1M_202207', 'cmems_obs-oc_glo_bgc-transp_nrt_l4-olci-4km_P1M_202207', 'cmems_obs-oc_glo_bgc-optics_nrt_l4-multi-4km_P1M_202311', 'cmems_obs-oc_glo_bgc-plankton_nrt_l4-gapfree-multi-4km_P1D_202311', 'cmems_obs-oc_glo_bgc-pp_nrt_l4-multi-4km_P1M_202311', 'cmems_obs-oc_glo_bgc-reflectance_nrt_l4-multi-4km_P1M_202311', 'cmems_obs-oc_glo_bgc-transp_nrt_l4-multi-4km_P1M_202311', 'cmems_obs-oc_glo_bgc-plankton_nrt_l4-multi-4km_P1M_202411', 'cmems_obs-oc_glo_bgc-reflectance_nrt_l4-olci-300m_P1M_202211', 'cmems_obs-oc_glo_bgc-transp_nrt_l4-gapfree-multi-4km_P1D_202311']
+ license: proprietary

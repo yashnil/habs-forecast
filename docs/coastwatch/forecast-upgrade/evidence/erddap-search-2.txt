@@ -1,0 +1,122 @@
+== https://coastwatch.noaa.gov/erddap/search/index.json?page=1&itemsPerPage=80&searchFor=olci
+  ERR 502 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>502 Proxy Error</title>
+</head><body>
+<h1>Proxy Error</h1>
+<p>The proxy server received an invalid
+response from an upstream ser
+== https://coastwatch.noaa.gov/erddap/search/index.json?page=1&itemsPerPage=80&searchFor=pace
+  ERR 502 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>502 Proxy Error</title>
+</head><body>
+<h1>Proxy Error</h1>
+<p>The proxy server received an invalid
+response from an upstream ser
+== https://coastwatch.pfeg.noaa.gov/erddap/search/index.json?page=1&itemsPerPage=80&searchFor=sentinel-3
+  pmlEsaCCI60OceanColorDaily | ESA CCI Ocean Colour Product (CCI ALL-v6.0-DAILY), 0.041666668°, 1997-present
+  pmlEsaCCI60OceanColorDaily_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v6.0-DAILY), 0.041666668°, 1997-present, Lon0360
+  nesdisSSH1day | NOAA CoastWatch, Sea Surface Height Anomalies and Geostrophic Currents from Altimetry, Global, 2017-present, EXPERIMENTA
+  nesdisSSH1day_Lon0360 | NOAA CoastWatch, Sea Surface Height Anomalies and Geostrophic Currents from Altimetry, Global, 2017-present, EXPERIMENTA
+  nesdisNPPN20S3AkdSCIDINEOFDaily | Kd490 (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Quality, Global 9km, 2018-recent, 
+  nesdisNPPN20S3ASCIDINEOFDaily | Chlorophyll (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Quality, Global 9km, 2018-
+r
+  nesdisNPPN20S3AspmSCIDINEOFDaily | Suspended Particulate Matter (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Quality, Gl
+  noaacwNPPN20S3ASCIDINEOF2kmDaily | Chlorophyll (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Quality, Global 2km, 2018-re
+  noaacwNPPN20S3AkdSCIDINEOF2kmDaily | Kd490 (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Quality, Global 2km, 2018-recent, 
+  noaacwNPPN20S3AspmSCIDINEOF2kmDaily | Suspended Particulate Matter (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Quality, Gl
+  pmlEsaCCI60OceanColor5Day | ESA CCI Ocean Colour Product (CCI ALL-v6.0-5DAY), 0.041666668°, 1997-present
+  pmlEsaCCI60OceanColor8Day | ESA CCI Ocean Colour Product (CCI ALL-v6.0-8DAY), 0.041666668°, 1997-present
+  pmlEsaCCI60OceanColorMonthly | ESA CCI Ocean Colour Product (CCI ALL-v6.0-MONTHLY), 0.041666668°, 1997-2022
+  pmlEsaCCI60OceanColor5Day_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v6.0-5DAY), 0.041666668°, 1997-present, Lon0360
+  pmlEsaCCI60OceanColor8Day_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v6.0-8DAY), 0.041666668°, 1997-present, Lon0360
+  pmlEsaCCI60OceanColorMonthly_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v6.0-MONTHLY), 0.041666668°, 1997-2022, Lon0360
+  pmlEsaCCI50OceanColor5Day | ESA CCI Ocean Colour Product (CCI ALL-v5.0-5DAY), 0.04166666°, 1997-present
+  pmlEsaCCI50OceanColor5Day_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v5.0-5DAY), 0.04166666°, 1997-present, Lon0360
+  pmlEsaCCI50OceanColor8Day | ESA CCI Ocean Colour Product (CCI ALL-v5.0-8DAY), 0.04166666°, 1997-present
+  pmlEsaCCI50OceanColor8Day_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v5.0-8DAY), 0.04166666°, 1997-present, Lon0360
+  pmlEsaCCI50OceanColorDaily | ESA CCI Ocean Colour Product (CCI ALL-v5.0-DAILY), 0.04166666°, 1997-present
+  pmlEsaCCI50OceanColorDaily_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v5.0-DAILY), 0.04166666°, 1997-present, Lon0360
+  pmlEsaCCI50OceanColorMonthly | ESA CCI Ocean Colour Product (CCI ALL-v5.0-MONTHLY), 0.04166666°, 1997-present
+  pmlEsaCCI50OceanColorMonthly_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v5.0-MONTHLY), 0.04166666°, 1997-present, Lon0360
+== https://coastwatch.pfeg.noaa.gov/erddap/search/index.json?page=1&itemsPerPage=80&searchFor=OCI%20PACE
+  jplOscar | OSCAR Sea Surface Velocity, 1/3°;, L4, Global, 1992-present, 5 Day Composite
+  erdSW2018chla1day | Chlorophyll-a, Orbview-2 SeaWiFS, R2018.0, 0.1°, Global, 1997-2010 (1 Day Composite)
+  erdSW2018chla8day | Chlorophyll-a, Orbview-2 SeaWiFS, R2018.0, 0.1°, Global, 1997-2010 (8 Day Composite)
+  erdSW2018chlamday | Chlorophyll-a, Orbview-2 SeaWiFS, R2018.0, 0.1°, Global, 1997-2010 (Monthly Composite)
+  erdSW2018chla1day_Lon0360 | Chlorophyll-a, Orbview-2 SeaWiFS, R2018.0, 0.1°, Global, 1997-2010 (1 Day Composite), Lon0360
+  erdSW2018chla8day_Lon0360 | Chlorophyll-a, Orbview-2 SeaWiFS, R2018.0, 0.1°, Global, 1997-2010 (8 Day Composite), Lon0360
+  erdSW2018chlamday_Lon0360 | Chlorophyll-a, Orbview-2 SeaWiFS, R2018.0, 0.1°, Global, 1997-2010 (Monthly Composite), Lon0360
+  erdMH1chla1day_R2022SQ | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 SQ, 2003-present (1 Day Composite)
+  erdMH1chla8day_R202SQ | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 SQ, 2003-present (8 Day Composite)
+  erdMH1chla1day_R2022NRT | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 NRT, 2003-present (1 Day Composite)
+  erdMH1chla8day_R2022NRT | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 NRT, 2003-present (8 Day Composite)
+  erdMH1chlamday_R2022SQ | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 SQ, 2003-present (Monthly Composite)
+  erdMH1chlamday_R2022NRT | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 NRT, 2003-present (Monthly Composite)
+  erdMH1chla8day | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (8 Day Composite)
+  erdMH1chla8day_Lon0360 | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (8 Day Composite), Lon0360
+  erdMH1chlamday | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (Monthly Composite)
+  erdMH1chlamday_Lon0360 | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (Monthly Composite), Lon0360
+  erdMH1chla1day | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (1 Day Composite)
+  erdMH1chla1day_Lon0360 | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (1 Day Composite), Lon0360
+  erdVH2018chla8day | VIIRSN, Suomi-NPP, Level-3 SMI, NASA, Global, 4km, Chlorophyll a, OCI Algorithm, R2018, 2012-present, 8-Day
+  erdVH2018chla1day | VIIRSN, Suomi-NPP, Level-3 SMI, NASA, Global, 4km, Chlorophyll a, OCI Algorithm, R2018, 2012-present, Daily
+  erdVH2018chlamday | VIIRSN, Suomi-NPP, Level-3 SMI, NASA, Global, 4km, Chlorophyll a, OCI Algorithm, R2018, 2012-present, Monthly
+  erdVH2018chla8day_Lon0360 | VIIRSN, Suomi-NPP, Level-3 SMI, NASA, Global, 4km, Chlorophyll a, OCI Algorithm, R2018, 2012-present, 8-Day, Lon0360
+  erdVH2018chla1day_Lon0360 | VIIRSN, Suomi-NPP, Level-3 SMI, NASA, Global, 4km, Chlorophyll a, OCI Algorithm, R2018, 2012-present, Daily, Lon0360
+  erdVH2018chlamday_Lon0360 | VIIRSN, Suomi-NPP, Level-3 SMI, NASA, Global, 4km, Chlorophyll a, OCI Algorithm, R2018, 2012-present, Monthly, Lon0360
+  nsidcG02202v5shmday | Sea Ice Concentration, NOAA/NSIDC Climate Data Record V5, Southern Hemisphere, 25km, Science
+		Quality, 1978-Present, Mo
+  nsidcG02202v6shmday | Sea Ice Concentration, NOAA/NSIDC Climate Data Record V6, Southern Hemisphere, 25km, Science
+        Quality, 1978-Prese
+  NWW3_Global_Best | WaveWatch III (WW3) Global Wave Model
+  nsidcG02202v5nh1day | Sea Ice Concentration, NOAA/NSIDC Climate Data Record V5, Northern Hemisphere, 25km, Science
+Quality, 1978-Present, Dail
+  nsidcG02202v6nh1day | Sea Ice Concentration, NOAA/NSIDC Climate Data Record V6, Northern Hemisphere, 25km, Science
+Quality, 1978-Present, Dail
+  nsidcG10016v3nh1day | Sea Ice Concentration, NOAA/NSIDC NRT Climate Data Record V3, Northern Hemisphere, 25km, Near Real-Time, 2024-Present, D
+  nsidcG02202v4shmday | Sea Ice Concentration, NOAA/NSIDC Climate Data Record V4, Southern Hemisphere, 25km, Science Quality, 1978-Present, Mont
+  nsidcG10016v2shmday | Sea Ice Concentration, NOAA/NSIDC NRT Climate Data Record V2, Southern Hemisphere, 25km, Near Real-Time, 2021-Present, M
+  ccmp_31 | RSS CCMP V3.1 6-hourly surface winds (Level 4)
+  ccmp_31_LonPM180 | RSS CCMP V3.1 6-hourly surface winds (Level 4), Lon+/-180
+  nsidcG02202v4sh1day | Sea Ice Concentration, NOAA/NSIDC Climate Data Record V4, Southern Hemisphere, 25km, Science Quality, 1978-Present, Dail
+  nsidcG10016v2sh1day | Sea Ice Concentration, NOAA/NSIDC NRT Climate Data Record V2, Southern Hemisphere, 25km, Near Real-Time, 2021-Present, D
+  nsidcG02202v5nhmday | Sea Ice Concentration, NOAA/NSIDC Climate Data Record V5, Northern Hemisphere, 25km, Science Quality, 1978-Present, Mont
+  nsidcG02202v6nhmday | Sea Ice Concentration, NOAA/NSIDC Climate Data Record V6, Northern Hemisphere, 25km, Science Quality, 1978-Present, Mont
+  nsidcG02202v4nhmday | Sea Ice Concentration, NOAA/NSIDC Climate Data Record V4, Northern Hemisphere, 25km, Science Quality, 1978-Present, Mont
+== https://polarwatch.noaa.gov/erddap/search/index.json?page=1&itemsPerPage=80&searchFor=pace
+  nsidcCDRice_sh_grid | Sea Ice Concentration Lat-Lon Grid, NOAA/NSIDC Climate Data Record, Southern Hemisphere, 25km
+  noaacweddymunsterdaily | MUltiparameter NRT System for Tracking Eddies Retroactively and Multiparameter Eddy Significance Index, Multiple satelli
+  nsidcCDRice_nh_grid | Sea Ice Concentration Lat-Lon Grid, NOAA/NSIDC Climate Data Record, Northern Hemisphere, 25km
+  noaacwSMOSsss3day | Sea Surface Salinity, Miras SMOS, Near Real-Time, Global 0.25°, 2010-present, 3 Day Composite
+  noaacwSMOSsssDaily | Sea Surface Salinity, Miras SMOS, Near Real-Time, Global 0.25°, 2010-present, Daily
+  noaacwSARnrcsnpoleDaily | Normalized Radar Cross Section, SAR Composite, Near Real-Time, 1km, North Pole, Daily
+  noaacwInSituSatelliteSSSmiras | Sea Surface Salinity, satellite (SMOS MIRAS) and in situ matchups
+  noaacwNPPVIIRSSQchlaDaily | Chlorophyll, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  noaacwNPPN20VIIRSkd490Daily | Kd490, NOAA S-NPP NOAA-20 VIIRS, Science Quality, Merged Global 4km, Level 3, 2019-present, Daily
+  noaacwNPPVIIRSSQchlaWeekly | Chlorophyll, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  noaacwNPPVIIRSSQkd490Daily | Kd490, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  noaacwNPPVIIRSSQchlaMonthly | Chlorophyll, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  noaacwNPPN20VIIRSkdparDaily | KdPAR, NOAA S-NPP NOAA-20 VIIRS, Science Quality, Merged Global 4km, Level 3, 2019-present, Daily
+  noaacwNPPVIIRSSQnLw410Weekly | nLw410, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  noaacwNPPVIIRSSQnLw443Weekly | nLw443, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  noaacwNPPVIIRSSQnLw486Weekly | nLw486, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  noaacwNPPVIIRSSQnLw551Weekly | nLw551, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  noaacwNPPVIIRSSQnLw671Weekly | nLw671, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  noaacwNPPVIIRSSQnLw410Monthly | nLw410, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  noaacwNPPVIIRSSQnLw443Monthly | nLw443, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  noaacwNPPVIIRSSQnLw486Monthly | nLw486, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  noaacwNPPVIIRSSQnLw551Monthly | nLw551, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  noaacwNPPVIIRSSQnLw671Monthly | nLw671, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  noaacwNPPVIIRSSQkd490Weekly | Kd490, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  noaacwNPPVIIRSSQkd490Monthly | Kd490, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  noaacwNPPVIIRSSQkdparWeekly | KdPAR, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  noaacwNPPVIIRSSQkdparMonthly | KdPAR, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  noaacwNPPVIIRSSQnLw410Daily | nLw410, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  noaacwNPPVIIRSSQnLw443Daily | nLw443, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  noaacwNPPVIIRSSQnLw486Daily | nLw486, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  noaacwNPPVIIRSSQnLw551Daily | nLw551, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  noaacwNPPVIIRSSQnLw671Daily | nLw671, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  noaacwNPPVIIRSSQkdparDaily | KdPAR, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  nesdis_ease2_latlon_shem_1k | Latitude and Longitude grids corresponding to ygrids and xgrids in EASE-2 Projection used in NESDIS sea ice data product

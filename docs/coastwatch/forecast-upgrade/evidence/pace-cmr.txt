@@ -1,0 +1,41 @@
+collections:
+  PACE_OCI_L2_AOP 3.2 | PACE OCI Level-2 Regional  Apparent Optical Properties Data, version 3.2
+  PACE_OCI_L2_BGC 3.2 | PACE OCI Level-2 Regional  Ocean Biogeochemical Properties Data, version 3.2
+  PACE_OCI_L2_BGC_NRT 3.2 | PACE OCI Level-2 Regional  Ocean Biogeochemical Properties - Near Real-time (NRT) Data, ve
+  PACE_OCI_L3M_BGC 3.2 | PACE OCI Level-3 Global Mapped Ocean Biogeochemical Properties Data, version 3.2
+  PACE_OCI_L2_AOP_NRT 3.2 | PACE OCI Level-2 Regional  Apparent Optical Properties - Near Real-time (NRT) Data, versio
+  PACE_OCI_L3M_LANDVI 3.1 | PACE OCI Level-3 Global Mapped Land Vegetation Indices Data, version 3.1
+  PACE_OCI_L2_LANDVI 3.1 | PACE OCI Level-2 Regional  Land Vegetation Indices Data, version 3.1
+  PACE_OCI_L3M_AOP 3.2 | PACE OCI Level-3 Global Mapped Apparent Optical Properties Data, version 3.2
+  PACE_OCI_L2_CLOUD_MASK 3.1 | PACE OCI Level-2 Regional  Cloud Mask Data, version 3.1
+  PACE_OCI_L2_CLOUD_MASK_NRT 3.1 | PACE OCI Level-2 Regional  Cloud Mask - Near Real-time (NRT) Data, version 3.1
+  PACE_OCI_L2_CLOUD 3.1 | PACE OCI Level-2 Regional  Cloud Optical Properties Data, version 3.1
+  PACE_OCI_L3M_BGC_NRT 3.2 | PACE OCI Level-3 Global Mapped Ocean Biogeochemical Properties - Near Real-time (NRT) Data
+  PACE_OCI_L2_CLOUD_NRT 3.1 | PACE OCI Level-2 Regional  Cloud Optical Properties - Near Real-time (NRT) Data, version 3
+  PACE_OCI_MI_CLOSE 1 | PACE OCI Closed-Loop Ocean Simulation for Evaluation - Model Input Data, version 1
+  PACE_OCI_L3M_AOP_NRT 3.2 | PACE OCI Level-3 Global Mapped Apparent Optical Properties - Near Real-time (NRT) Data, ve
+  PACE_OCI_L3M_CLOUD 3.1 | PACE OCI Level-3 Global Mapped Cloud Optical Properties Data, version 3.1
+  PACE_OCI_L3M_CLOUD_NRT 3.1 | PACE OCI Level-3 Global Mapped Cloud Optical Properties - Near Real-time (NRT) Data, versi
+  PACE_OCI_L2_LANDVI_NRT 3.1 | PACE OCI Level-2 Regional  Land Vegetation Indices - Near Real-time (NRT) Data, version 3.
+  PACE_OCI_L3B_CLOSE 3.1 | PACE OCI Level-3 Global Binned Closed-Loop Ocean Simulation for Evaluation Data, version 3
+  PACE_OCI_L3B_LANDVI 3.1 | PACE OCI Level-3 Global Binned Land Vegetation Indices Data, version 3.1
+  PACE_OCI_L3B_LANDVI_NRT 3.1 | PACE OCI Level-3 Global Binned Land Vegetation Indices - Near Real-time (NRT) Data, versio
+  PACE_OCI_L3M_CLOSE 3.1 | PACE OCI Level-3 Global Mapped Closed-Loop Ocean Simulation for Evaluation Data, version 3
+  PACE_OCI_L3M_LANDVI_NRT 3.1 | PACE OCI Level-3 Global Mapped Land Vegetation Indices - Near Real-time (NRT) Data, versio
+  PACE_OCI_L2_CLOSE 3.1 | PACE OCI Level-2 Regional  Closed-Loop Ocean Simulation for Evaluation Data, version 3.1
+  PACE_SPEXONE_L2_AER_RTAPOCEAN 4.0 | PACE SPEXone Level-2 Regional  Ocean Properties, RemoTAP Algorithm Data, version 4.0
+  PACE_SPEXONE_L3M_AER_RTAPOCEAN 4.0 | PACE SPEXone Level-3 Global Mapped Ocean Properties, RemoTAP Algorithm Data, version 4.0
+  PACE_SPEXONE_L3M_AER_RTAPOCEAN 3.0 | PACE SPEXone Level-3 Global Mapped Ocean Properties, RemoTAP Algorithm Data, version 3.0
+  PACE_SPEXONE_L3M_AER_RTAPOCEAN_NRT 4.0 | PACE SPEXone Level-3 Global Mapped Ocean Properties, RemoTAP Algorithm - Near Real-time (N
+  PACE_SPEXONE_L3M_AER_RTAPOCEAN_NRT 3.0 | PACE SPEXone Level-3 Global Mapped Ocean Properties, RemoTAP Algorithm - Near Real-time (N
+  PACE_SPEXONE_L2_AER_RTAPOCEAN 3.0 | PACE SPEXone Level-2 Regional  Ocean Properties, RemoTAP Algorithm Data, version 3.0
+  PACE_SPEXONE_L2_AER_RTAPOCEAN_NRT 4.0 | PACE SPEXone Level-2 Regional  Ocean Properties, RemoTAP Algorithm - Near Real-time (NRT) 
+  PACE_SPEXONE_L2_AER_RTAPOCEAN_NRT 3.0 | PACE SPEXone Level-2 Regional Aerosol Optical Properties Over Ocean, RemoTAP Algorithm - N
+PACE_OCI_L3M_CHL_NRT []
+PACE_OCI_L3M_CHL []
+PACE_OCI_L2_BGC_NRT [('PACE_OCI.20261008T210227.L2.OC_BGC.V3_2.NRT.nc', '2026-10-08T21:02:27.000Z', '2026-10-08T23:30:02.896Z'), ('PACE_OCI.20261008T205727.L2.OC_BGC.V3_2.NRT.nc', '2026-10-08T20:57:27.000Z', '2026-10-08T22:54:39.626Z'), ('PACE_OCI.20261007T202754.L2.OC_BGC.V3_2.NRT.nc', '2026-10-07T20:27:54.000Z', '2026-10-07T23:46:41.260Z')]
+PACE_OCI_L2_BGC [('PACE_OCI.20260831T202155.L2.OC_BGC.V3_2.nc', '2026-08-31T20:21:55.000Z', '2026-09-25T18:42:20.453Z'), ('PACE_OCI.20260830T212539.L2.OC_BGC.V3_2.nc', '2026-08-30T21:25:39.000Z', '2026-09-25T18:59:37.230Z'), ('PACE_OCI.20260830T194721.L2.OC_BGC.V3_2.nc', '2026-08-30T19:47:21.000Z', '2026-09-25T18:25:42.126Z')]
+granule PACE_OCI.20261008T210227.L2.OC_BGC.V3_2.NRT.nc
+size MB [None]
+urls ['https://obdaac-tea.earthdatacloud.nasa.gov/ob-cumulus-prod-public/PACE_OCI.20261008T210227.L2.OC_BGC.V3_2.NRT.nc', 's3://ob-cumulus-prod-public/PACE_OCI.20261008T210227.L2.OC_BGC.V3_2.NRT.nc']
+download attempt without Earthdata login: HTTP 401, final URL host https://urs.earthdata.nasa.gov/…

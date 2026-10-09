@@ -1,0 +1,5469 @@
+{
+ "layers": [
+  {
+   "id": "charm_native_lead0",
+   "url": "layers/charm_native_lead0.png",
+   "corners": [
+    [
+     -127.515,
+     43.01500000097813
+    ],
+    [
+     -116.985,
+     43.01500000097813
+    ],
+    [
+     -116.985,
+     31.28499923608242
+    ],
+    [
+     -127.515,
+     31.28499923608242
+    ]
+   ],
+   "bytes": 42298,
+   "kind": "model",
+   "product": "C-HARM v3.1 particulate DA > 500 ng/L",
+   "native": "0.03\u00b0 (~3 km)",
+   "date": "2026-10-07",
+   "lead": 0,
+   "render": "nearest"
+  },
+  {
+   "id": "charm_display_lead0",
+   "url": "layers/charm_display_lead0.png",
+   "corners": [
+    [
+     -127.51499557495117,
+     43.015268087387085
+    ],
+    [
+     -116.98542404174805,
+     43.015268087387085
+    ],
+    [
+     -116.98542404174805,
+     31.28499960899353
+    ],
+    [
+     -127.51499557495117,
+     31.28499960899353
+    ]
+   ],
+   "bytes": 90030,
+   "kind": "model",
+   "product": "C-HARM v3.1 particulate DA > 500 ng/L",
+   "native": "0.03\u00b0 (~3 km)",
+   "date": "2026-10-07",
+   "lead": 0,
+   "render": "display interpolation between 3 km cell centres"
+  },
+  {
+   "id": "charm_native_lead1",
+   "url": "layers/charm_native_lead1.png",
+   "corners": [
+    [
+     -127.515,
+     43.01500000097813
+    ],
+    [
+     -116.985,
+     43.01500000097813
+    ],
+    [
+     -116.985,
+     31.28499923608242
+    ],
+    [
+     -127.515,
+     31.28499923608242
+    ]
+   ],
+   "bytes": 40482,
+   "kind": "model",
+   "product": "C-HARM v3.1 particulate DA > 500 ng/L",
+   "native": "0.03\u00b0 (~3 km)",
+   "date": "2026-10-08",
+   "lead": 1,
+   "render": "nearest"
+  },
+  {
+   "id": "charm_display_lead1",
+   "url": "layers/charm_display_lead1.png",
+   "corners": [
+    [
+     -127.51499557495117,
+     43.015268087387085
+    ],
+    [
+     -116.98542404174805,
+     43.015268087387085
+    ],
+    [
+     -116.98542404174805,
+     31.28499960899353
+    ],
+    [
+     -127.51499557495117,
+     31.28499960899353
+    ]
+   ],
+   "bytes": 85347,
+   "kind": "model",
+   "product": "C-HARM v3.1 particulate DA > 500 ng/L",
+   "native": "0.03\u00b0 (~3 km)",
+   "date": "2026-10-08",
+   "lead": 1,
+   "render": "display interpolation between 3 km cell centres"
+  },
+  {
+   "id": "charm_native_lead2",
+   "url": "layers/charm_native_lead2.png",
+   "corners": [
+    [
+     -127.515,
+     43.01500000097813
+    ],
+    [
+     -116.985,
+     43.01500000097813
+    ],
+    [
+     -116.985,
+     31.28499923608242
+    ],
+    [
+     -127.515,
+     31.28499923608242
+    ]
+   ],
+   "bytes": 40962,
+   "kind": "model",
+   "product": "C-HARM v3.1 particulate DA > 500 ng/L",
+   "native": "0.03\u00b0 (~3 km)",
+   "date": "2026-10-09",
+   "lead": 2,
+   "render": "nearest"
+  },
+  {
+   "id": "charm_display_lead2",
+   "url": "layers/charm_display_lead2.png",
+   "corners": [
+    [
+     -127.51499557495117,
+     43.015268087387085
+    ],
+    [
+     -116.98542404174805,
+     43.015268087387085
+    ],
+    [
+     -116.98542404174805,
+     31.28499960899353
+    ],
+    [
+     -127.51499557495117,
+     31.28499960899353
+    ]
+   ],
+   "bytes": 84705,
+   "kind": "model",
+   "product": "C-HARM v3.1 particulate DA > 500 ng/L",
+   "native": "0.03\u00b0 (~3 km)",
+   "date": "2026-10-09",
+   "lead": 2,
+   "render": "display interpolation between 3 km cell centres"
+  },
+  {
+   "id": "charm_native_lead3",
+   "url": "layers/charm_native_lead3.png",
+   "corners": [
+    [
+     -127.515,
+     43.01500000097813
+    ],
+    [
+     -116.985,
+     43.01500000097813
+    ],
+    [
+     -116.985,
+     31.28499923608242
+    ],
+    [
+     -127.515,
+     31.28499923608242
+    ]
+   ],
+   "bytes": 41507,
+   "kind": "model",
+   "product": "C-HARM v3.1 particulate DA > 500 ng/L",
+   "native": "0.03\u00b0 (~3 km)",
+   "date": "2026-10-10",
+   "lead": 3,
+   "render": "nearest"
+  },
+  {
+   "id": "charm_display_lead3",
+   "url": "layers/charm_display_lead3.png",
+   "corners": [
+    [
+     -127.51499557495117,
+     43.015268087387085
+    ],
+    [
+     -116.98542404174805,
+     43.015268087387085
+    ],
+    [
+     -116.98542404174805,
+     31.28499960899353
+    ],
+    [
+     -127.51499557495117,
+     31.28499960899353
+    ]
+   ],
+   "bytes": 86723,
+   "kind": "model",
+   "product": "C-HARM v3.1 particulate DA > 500 ng/L",
+   "native": "0.03\u00b0 (~3 km)",
+   "date": "2026-10-10",
+   "lead": 3,
+   "render": "display interpolation between 3 km cell centres"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-14",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-14.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 3153,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-14",
+   "valid_cells": 1207,
+   "cells": 1638,
+   "median": 1.0515198707580566,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-15",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-15.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 3055,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-15",
+   "valid_cells": 1207,
+   "cells": 1638,
+   "median": 0.8854225873947144,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-16",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-16.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 3010,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-16",
+   "valid_cells": 1207,
+   "cells": 1638,
+   "median": 0.8779357075691223,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-17",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-17.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 2968,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-17",
+   "valid_cells": 1207,
+   "cells": 1638,
+   "median": 0.9323033094406128,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-18",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-18.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 3054,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-18",
+   "valid_cells": 1207,
+   "cells": 1638,
+   "median": 0.917253315448761,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-19",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-19.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 3082,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-19",
+   "valid_cells": 1207,
+   "cells": 1638,
+   "median": 0.954714834690094,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-20",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-20.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 2997,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-20",
+   "valid_cells": 1207,
+   "cells": 1638,
+   "median": 0.8202224373817444,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-21",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-21.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 3032,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-21",
+   "valid_cells": 1207,
+   "cells": 1638,
+   "median": 0.848875105381012,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-22",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-22.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 3078,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-22",
+   "valid_cells": 1207,
+   "cells": 1638,
+   "median": 0.727698028087616,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-23",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-23.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 3470,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-23",
+   "valid_cells": 1206,
+   "cells": 1638,
+   "median": 0.9540477395057678,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-24",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-24.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 3285,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-24",
+   "valid_cells": 1207,
+   "cells": 1638,
+   "median": 0.9056388735771179,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-25",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-25.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 3194,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-25",
+   "valid_cells": 1206,
+   "cells": 1638,
+   "median": 1.1487760543823242,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-26",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-26.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 3227,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-26",
+   "valid_cells": 1206,
+   "cells": 1638,
+   "median": 1.1261258721351624,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_dineof_2km_sq_2026-09-27",
+   "url": "layers/monterey_dineof_2km_sq_2026-09-27.png",
+   "corners": [
+    [
+     -122.60416663565287,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     37.20833080693295
+    ],
+    [
+     -121.72916924081197,
+     36.39582950190494
+    ],
+    [
+     -122.60416663565287,
+     36.39582950190494
+    ]
+   ],
+   "bytes": 3275,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-27",
+   "valid_cells": 1206,
+   "cells": 1638,
+   "median": 1.1536246538162231,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-09-24",
+   "url": "layers/monterey_olci300_s3a_CI_2026-09-24.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 142880,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-24",
+   "valid_cells": 72111,
+   "cells": 109461,
+   "median": 0.890679657459259,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-09-25",
+   "url": "layers/monterey_olci300_s3a_CI_2026-09-25.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 2201,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-25",
+   "valid_cells": 0,
+   "cells": 109461,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-09-26",
+   "url": "layers/monterey_olci300_s3a_CI_2026-09-26.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 2201,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-26",
+   "valid_cells": 0,
+   "cells": 109461,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-09-27",
+   "url": "layers/monterey_olci300_s3a_CI_2026-09-27.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 6360,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-27",
+   "valid_cells": 953,
+   "cells": 109461,
+   "median": 1.242294192314148,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-09-28",
+   "url": "layers/monterey_olci300_s3a_CI_2026-09-28.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 22546,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-28",
+   "valid_cells": 8049,
+   "cells": 109461,
+   "median": 1.4617520570755005,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-09-29",
+   "url": "layers/monterey_olci300_s3a_CI_2026-09-29.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 2201,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-29",
+   "valid_cells": 0,
+   "cells": 109461,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-09-30",
+   "url": "layers/monterey_olci300_s3a_CI_2026-09-30.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 2201,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-30",
+   "valid_cells": 0,
+   "cells": 109461,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-10-01",
+   "url": "layers/monterey_olci300_s3a_CI_2026-10-01.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 7734,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-01",
+   "valid_cells": 1069,
+   "cells": 109461,
+   "median": 5.554440021514893,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-10-02",
+   "url": "layers/monterey_olci300_s3a_CI_2026-10-02.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 4807,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-02",
+   "valid_cells": 887,
+   "cells": 109461,
+   "median": 0.35588398575782776,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-10-03",
+   "url": "layers/monterey_olci300_s3a_CI_2026-10-03.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 2201,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-03",
+   "valid_cells": 0,
+   "cells": 109461,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-10-04",
+   "url": "layers/monterey_olci300_s3a_CI_2026-10-04.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 2201,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-04",
+   "valid_cells": 0,
+   "cells": 109461,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-10-05",
+   "url": "layers/monterey_olci300_s3a_CI_2026-10-05.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 33829,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-05",
+   "valid_cells": 12037,
+   "cells": 109461,
+   "median": 0.6862772107124329,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-10-06",
+   "url": "layers/monterey_olci300_s3a_CI_2026-10-06.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 18973,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-06",
+   "valid_cells": 8743,
+   "cells": 109461,
+   "median": 0.6135123372077942,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_olci300_s3a_CI_2026-10-07",
+   "url": "layers/monterey_olci300_s3a_CI_2026-10-07.png",
+   "corners": [
+    [
+     -122.60249999999996,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     37.2025
+    ],
+    [
+     -121.74999999999997,
+     36.4
+    ],
+    [
+     -122.60249999999996,
+     36.4
+    ]
+   ],
+   "bytes": 2201,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-07",
+   "valid_cells": 0,
+   "cells": 109461,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs750_1day_2026-06-13",
+   "url": "layers/monterey_viirs750_1day_2026-06-13.png",
+   "corners": [
+    [
+     -122.60249999999999,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     36.3975
+    ],
+    [
+     -122.60249999999999,
+     36.3975
+    ]
+   ],
+   "bytes": 2322,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-06-13",
+   "valid_cells": 185,
+   "cells": 12312,
+   "median": 1.406558871269226,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs750_1day_2026-06-14",
+   "url": "layers/monterey_viirs750_1day_2026-06-14.png",
+   "corners": [
+    [
+     -122.60249999999999,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     36.3975
+    ],
+    [
+     -122.60249999999999,
+     36.3975
+    ]
+   ],
+   "bytes": 1034,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-06-14",
+   "valid_cells": 0,
+   "cells": 12312,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs750_1day_2026-09-20",
+   "url": "layers/monterey_viirs750_1day_2026-09-20.png",
+   "corners": [
+    [
+     -122.60249999999999,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     36.3975
+    ],
+    [
+     -122.60249999999999,
+     36.3975
+    ]
+   ],
+   "bytes": 1034,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-20",
+   "valid_cells": 0,
+   "cells": 12312,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs750_1day_2026-09-22",
+   "url": "layers/monterey_viirs750_1day_2026-09-22.png",
+   "corners": [
+    [
+     -122.60249999999999,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     36.3975
+    ],
+    [
+     -122.60249999999999,
+     36.3975
+    ]
+   ],
+   "bytes": 3328,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-22",
+   "valid_cells": 481,
+   "cells": 12312,
+   "median": 1.363349437713623,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs750_1day_2026-09-23",
+   "url": "layers/monterey_viirs750_1day_2026-09-23.png",
+   "corners": [
+    [
+     -122.60249999999999,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     36.3975
+    ],
+    [
+     -122.60249999999999,
+     36.3975
+    ]
+   ],
+   "bytes": 3050,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-23",
+   "valid_cells": 329,
+   "cells": 12312,
+   "median": 1.987178921699524,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs750_1day_2026-09-25",
+   "url": "layers/monterey_viirs750_1day_2026-09-25.png",
+   "corners": [
+    [
+     -122.60249999999999,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     36.3975
+    ],
+    [
+     -122.60249999999999,
+     36.3975
+    ]
+   ],
+   "bytes": 18746,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-25",
+   "valid_cells": 8541,
+   "cells": 12312,
+   "median": 1.216353416442871,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs750_1day_2026-09-26",
+   "url": "layers/monterey_viirs750_1day_2026-09-26.png",
+   "corners": [
+    [
+     -122.60249999999999,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     36.3975
+    ],
+    [
+     -122.60249999999999,
+     36.3975
+    ]
+   ],
+   "bytes": 5063,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-26",
+   "valid_cells": 861,
+   "cells": 12312,
+   "median": 1.3126347064971924,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs750_1day_2026-09-29",
+   "url": "layers/monterey_viirs750_1day_2026-09-29.png",
+   "corners": [
+    [
+     -122.60249999999999,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     36.3975
+    ],
+    [
+     -122.60249999999999,
+     36.3975
+    ]
+   ],
+   "bytes": 13681,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-29",
+   "valid_cells": 4374,
+   "cells": 12312,
+   "median": 2.092221260070801,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs750_1day_2026-09-30",
+   "url": "layers/monterey_viirs750_1day_2026-09-30.png",
+   "corners": [
+    [
+     -122.60249999999999,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     36.3975
+    ],
+    [
+     -122.60249999999999,
+     36.3975
+    ]
+   ],
+   "bytes": 7338,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-30",
+   "valid_cells": 1887,
+   "cells": 12312,
+   "median": 2.865222215652466,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs750_1day_2026-10-01",
+   "url": "layers/monterey_viirs750_1day_2026-10-01.png",
+   "corners": [
+    [
+     -122.60249999999999,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     36.3975
+    ],
+    [
+     -122.60249999999999,
+     36.3975
+    ]
+   ],
+   "bytes": 1034,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-10-01",
+   "valid_cells": 0,
+   "cells": 12312,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs750_1day_2026-10-02",
+   "url": "layers/monterey_viirs750_1day_2026-10-02.png",
+   "corners": [
+    [
+     -122.60249999999999,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     36.3975
+    ],
+    [
+     -122.60249999999999,
+     36.3975
+    ]
+   ],
+   "bytes": 1034,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-10-02",
+   "valid_cells": 0,
+   "cells": 12312,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs750_1day_2026-10-03",
+   "url": "layers/monterey_viirs750_1day_2026-10-03.png",
+   "corners": [
+    [
+     -122.60249999999999,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     36.3975
+    ],
+    [
+     -122.60249999999999,
+     36.3975
+    ]
+   ],
+   "bytes": 18696,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-10-03",
+   "valid_cells": 6952,
+   "cells": 12312,
+   "median": 1.262760877609253,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs750_1day_2026-10-04",
+   "url": "layers/monterey_viirs750_1day_2026-10-04.png",
+   "corners": [
+    [
+     -122.60249999999999,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     37.207499999999996
+    ],
+    [
+     -121.7475,
+     36.3975
+    ],
+    [
+     -122.60249999999999,
+     36.3975
+    ]
+   ],
+   "bytes": 9377,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-10-04",
+   "valid_cells": 2356,
+   "cells": 12312,
+   "median": 1.4047021865844727,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-09-23",
+   "url": "layers/monterey_viirs_n20_4km_2026-09-23.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 442,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-23",
+   "valid_cells": 36,
+   "cells": 552,
+   "median": 0.9704399406909943,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-09-24",
+   "url": "layers/monterey_viirs_n20_4km_2026-09-24.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 1408,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-24",
+   "valid_cells": 342,
+   "cells": 552,
+   "median": 0.7556560039520264,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-09-25",
+   "url": "layers/monterey_viirs_n20_4km_2026-09-25.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 1666,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-25",
+   "valid_cells": 392,
+   "cells": 552,
+   "median": 2.006118893623352,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-09-26",
+   "url": "layers/monterey_viirs_n20_4km_2026-09-26.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 918,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-26",
+   "valid_cells": 114,
+   "cells": 552,
+   "median": 2.1432197093963623,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-09-27",
+   "url": "layers/monterey_viirs_n20_4km_2026-09-27.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 1235,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-27",
+   "valid_cells": 217,
+   "cells": 552,
+   "median": 0.7090746164321899,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-09-28",
+   "url": "layers/monterey_viirs_n20_4km_2026-09-28.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 1055,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-28",
+   "valid_cells": 137,
+   "cells": 552,
+   "median": 0.9550437331199646,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-09-29",
+   "url": "layers/monterey_viirs_n20_4km_2026-09-29.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 1599,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-29",
+   "valid_cells": 395,
+   "cells": 552,
+   "median": 1.3694958686828613,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-09-30",
+   "url": "layers/monterey_viirs_n20_4km_2026-09-30.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 753,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-30",
+   "valid_cells": 94,
+   "cells": 552,
+   "median": 2.2866973876953125,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-10-01",
+   "url": "layers/monterey_viirs_n20_4km_2026-10-01.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 181,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-01",
+   "valid_cells": 5,
+   "cells": 552,
+   "median": 0.8287330269813538,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-10-02",
+   "url": "layers/monterey_viirs_n20_4km_2026-10-02.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 123,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-02",
+   "valid_cells": 0,
+   "cells": 552,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-10-03",
+   "url": "layers/monterey_viirs_n20_4km_2026-10-03.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 1532,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-03",
+   "valid_cells": 368,
+   "cells": 552,
+   "median": 0.9684606194496155,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-10-04",
+   "url": "layers/monterey_viirs_n20_4km_2026-10-04.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 1186,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-04",
+   "valid_cells": 163,
+   "cells": 552,
+   "median": 1.2194147109985352,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-10-05",
+   "url": "layers/monterey_viirs_n20_4km_2026-10-05.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 599,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-05",
+   "valid_cells": 56,
+   "cells": 552,
+   "median": 1.2845337390899658,
+   "render": "nearest"
+  },
+  {
+   "id": "monterey_viirs_n20_4km_2026-10-06",
+   "url": "layers/monterey_viirs_n20_4km_2026-10-06.png",
+   "corners": [
+    [
+     -122.62500000000001,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     37.2375
+    ],
+    [
+     -121.72500000000002,
+     36.375
+    ],
+    [
+     -122.62500000000001,
+     36.375
+    ]
+   ],
+   "bytes": 506,
+   "kind": "observation",
+   "region": "monterey",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-06",
+   "valid_cells": 52,
+   "cells": 552,
+   "median": 0.8217823207378387,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_dineof_2km_sq_2026-09-14",
+   "url": "layers/north_coast_dineof_2km_sq_2026-09-14.png",
+   "corners": [
+    [
+     -124.70833079020183,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     40.39582951863607
+    ],
+    [
+     -124.70833079020183,
+     40.39582951863607
+    ]
+   ],
+   "bytes": 3306,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-14",
+   "valid_cells": 1257,
+   "cells": 1813,
+   "median": 0.6800242066383362,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_dineof_2km_sq_2026-09-16",
+   "url": "layers/north_coast_dineof_2km_sq_2026-09-16.png",
+   "corners": [
+    [
+     -124.70833079020183,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     40.39582951863607
+    ],
+    [
+     -124.70833079020183,
+     40.39582951863607
+    ]
+   ],
+   "bytes": 3412,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-16",
+   "valid_cells": 1257,
+   "cells": 1813,
+   "median": 0.7196067571640015,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_dineof_2km_sq_2026-09-19",
+   "url": "layers/north_coast_dineof_2km_sq_2026-09-19.png",
+   "corners": [
+    [
+     -124.70833079020183,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     40.39582951863607
+    ],
+    [
+     -124.70833079020183,
+     40.39582951863607
+    ]
+   ],
+   "bytes": 3635,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-19",
+   "valid_cells": 1257,
+   "cells": 1813,
+   "median": 0.7168811559677124,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_dineof_2km_sq_2026-09-20",
+   "url": "layers/north_coast_dineof_2km_sq_2026-09-20.png",
+   "corners": [
+    [
+     -124.70833079020183,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     40.39582951863607
+    ],
+    [
+     -124.70833079020183,
+     40.39582951863607
+    ]
+   ],
+   "bytes": 3644,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-20",
+   "valid_cells": 1257,
+   "cells": 1813,
+   "median": 0.70698481798172,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_dineof_2km_sq_2026-09-21",
+   "url": "layers/north_coast_dineof_2km_sq_2026-09-21.png",
+   "corners": [
+    [
+     -124.70833079020183,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     40.39582951863607
+    ],
+    [
+     -124.70833079020183,
+     40.39582951863607
+    ]
+   ],
+   "bytes": 3538,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-21",
+   "valid_cells": 1257,
+   "cells": 1813,
+   "median": 0.7327743768692017,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_dineof_2km_sq_2026-09-22",
+   "url": "layers/north_coast_dineof_2km_sq_2026-09-22.png",
+   "corners": [
+    [
+     -124.70833079020183,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     40.39582951863607
+    ],
+    [
+     -124.70833079020183,
+     40.39582951863607
+    ]
+   ],
+   "bytes": 3662,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-22",
+   "valid_cells": 1256,
+   "cells": 1813,
+   "median": 0.8325600028038025,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_dineof_2km_sq_2026-09-23",
+   "url": "layers/north_coast_dineof_2km_sq_2026-09-23.png",
+   "corners": [
+    [
+     -124.70833079020183,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     40.39582951863607
+    ],
+    [
+     -124.70833079020183,
+     40.39582951863607
+    ]
+   ],
+   "bytes": 3635,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-23",
+   "valid_cells": 1256,
+   "cells": 1813,
+   "median": 0.963478684425354,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_dineof_2km_sq_2026-09-24",
+   "url": "layers/north_coast_dineof_2km_sq_2026-09-24.png",
+   "corners": [
+    [
+     -124.70833079020183,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     40.39582951863607
+    ],
+    [
+     -124.70833079020183,
+     40.39582951863607
+    ]
+   ],
+   "bytes": 3780,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-24",
+   "valid_cells": 1256,
+   "cells": 1813,
+   "median": 1.1362627148628235,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_dineof_2km_sq_2026-09-25",
+   "url": "layers/north_coast_dineof_2km_sq_2026-09-25.png",
+   "corners": [
+    [
+     -124.70833079020183,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     40.39582951863607
+    ],
+    [
+     -124.70833079020183,
+     40.39582951863607
+    ]
+   ],
+   "bytes": 3752,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-25",
+   "valid_cells": 1256,
+   "cells": 1813,
+   "median": 1.2706892490386963,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_dineof_2km_sq_2026-09-26",
+   "url": "layers/north_coast_dineof_2km_sq_2026-09-26.png",
+   "corners": [
+    [
+     -124.70833079020183,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     40.39582951863607
+    ],
+    [
+     -124.70833079020183,
+     40.39582951863607
+    ]
+   ],
+   "bytes": 3702,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-26",
+   "valid_cells": 1256,
+   "cells": 1813,
+   "median": 1.3563766479492188,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_dineof_2km_sq_2026-09-27",
+   "url": "layers/north_coast_dineof_2km_sq_2026-09-27.png",
+   "corners": [
+    [
+     -124.70833079020183,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     41.4166628519694
+    ],
+    [
+     -123.93749745686848,
+     40.39582951863607
+    ],
+    [
+     -124.70833079020183,
+     40.39582951863607
+    ]
+   ],
+   "bytes": 3762,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-27",
+   "valid_cells": 1256,
+   "cells": 1813,
+   "median": 1.1882776618003845,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-09-24",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-09-24.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 2617,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-24",
+   "valid_cells": 8,
+   "cells": 120701,
+   "median": 77.59430694580078,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-09-25",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-09-25.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 2556,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-25",
+   "valid_cells": 0,
+   "cells": 120701,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-09-26",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-09-26.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 4100,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-26",
+   "valid_cells": 235,
+   "cells": 120701,
+   "median": 0.9337807297706604,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-09-27",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-09-27.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 10577,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-27",
+   "valid_cells": 2280,
+   "cells": 120701,
+   "median": 0.36003436148166656,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-09-28",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-09-28.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 26052,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-28",
+   "valid_cells": 15878,
+   "cells": 120701,
+   "median": 0.4164053350687027,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-09-29",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-09-29.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 2556,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-29",
+   "valid_cells": 0,
+   "cells": 120701,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-09-30",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-09-30.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 2556,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-30",
+   "valid_cells": 0,
+   "cells": 120701,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-10-01",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-10-01.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 81282,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-01",
+   "valid_cells": 35779,
+   "cells": 120701,
+   "median": 0.8005903959274292,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-10-02",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-10-02.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 6961,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-02",
+   "valid_cells": 2423,
+   "cells": 120701,
+   "median": 0.2661905586719513,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-10-03",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-10-03.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 2556,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-03",
+   "valid_cells": 0,
+   "cells": 120701,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-10-04",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-10-04.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 2556,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-04",
+   "valid_cells": 0,
+   "cells": 120701,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-10-05",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-10-05.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 2607,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-05",
+   "valid_cells": 3,
+   "cells": 120701,
+   "median": 1.6397238969802856,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-10-06",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-10-06.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 2556,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-06",
+   "valid_cells": 0,
+   "cells": 120701,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_olci300_s3a_CI_2026-10-07",
+   "url": "layers/north_coast_olci300_s3a_CI_2026-10-07.png",
+   "corners": [
+    [
+     -124.70249999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     41.400000000000006
+    ],
+    [
+     -123.94999999999997,
+     40.39750000000001
+    ],
+    [
+     -124.70249999999997,
+     40.39750000000001
+    ]
+   ],
+   "bytes": 2556,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-07",
+   "valid_cells": 0,
+   "cells": 120701,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs750_1day_2026-06-13",
+   "url": "layers/north_coast_viirs750_1day_2026-06-13.png",
+   "corners": [
+    [
+     -124.7025,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     40.395
+    ],
+    [
+     -124.7025,
+     40.395
+    ]
+   ],
+   "bytes": 25369,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-06-13",
+   "valid_cells": 8228,
+   "cells": 13534,
+   "median": 6.926722288131714,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs750_1day_2026-06-14",
+   "url": "layers/north_coast_viirs750_1day_2026-06-14.png",
+   "corners": [
+    [
+     -124.7025,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     40.395
+    ],
+    [
+     -124.7025,
+     40.395
+    ]
+   ],
+   "bytes": 1191,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-06-14",
+   "valid_cells": 0,
+   "cells": 13534,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs750_1day_2026-09-20",
+   "url": "layers/north_coast_viirs750_1day_2026-09-20.png",
+   "corners": [
+    [
+     -124.7025,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     40.395
+    ],
+    [
+     -124.7025,
+     40.395
+    ]
+   ],
+   "bytes": 1191,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-20",
+   "valid_cells": 0,
+   "cells": 13534,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs750_1day_2026-09-22",
+   "url": "layers/north_coast_viirs750_1day_2026-09-22.png",
+   "corners": [
+    [
+     -124.7025,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     40.395
+    ],
+    [
+     -124.7025,
+     40.395
+    ]
+   ],
+   "bytes": 4198,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-22",
+   "valid_cells": 582,
+   "cells": 13534,
+   "median": 0.8662157356739044,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs750_1day_2026-09-23",
+   "url": "layers/north_coast_viirs750_1day_2026-09-23.png",
+   "corners": [
+    [
+     -124.7025,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     40.395
+    ],
+    [
+     -124.7025,
+     40.395
+    ]
+   ],
+   "bytes": 16104,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-23",
+   "valid_cells": 5479,
+   "cells": 13534,
+   "median": 0.8916600942611694,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs750_1day_2026-09-24",
+   "url": "layers/north_coast_viirs750_1day_2026-09-24.png",
+   "corners": [
+    [
+     -124.7025,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     40.395
+    ],
+    [
+     -124.7025,
+     40.395
+    ]
+   ],
+   "bytes": 3049,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-24",
+   "valid_cells": 332,
+   "cells": 13534,
+   "median": 1.19439035654068,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs750_1day_2026-09-25",
+   "url": "layers/north_coast_viirs750_1day_2026-09-25.png",
+   "corners": [
+    [
+     -124.7025,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     40.395
+    ],
+    [
+     -124.7025,
+     40.395
+    ]
+   ],
+   "bytes": 23607,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-25",
+   "valid_cells": 8697,
+   "cells": 13534,
+   "median": 1.2613602876663208,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs750_1day_2026-09-29",
+   "url": "layers/north_coast_viirs750_1day_2026-09-29.png",
+   "corners": [
+    [
+     -124.7025,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     40.395
+    ],
+    [
+     -124.7025,
+     40.395
+    ]
+   ],
+   "bytes": 9675,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-29",
+   "valid_cells": 2108,
+   "cells": 13534,
+   "median": 3.258534789085388,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs750_1day_2026-09-30",
+   "url": "layers/north_coast_viirs750_1day_2026-09-30.png",
+   "corners": [
+    [
+     -124.7025,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     40.395
+    ],
+    [
+     -124.7025,
+     40.395
+    ]
+   ],
+   "bytes": 4609,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-30",
+   "valid_cells": 1334,
+   "cells": 13534,
+   "median": 0.9067959487438202,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs750_1day_2026-10-01",
+   "url": "layers/north_coast_viirs750_1day_2026-10-01.png",
+   "corners": [
+    [
+     -124.7025,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     40.395
+    ],
+    [
+     -124.7025,
+     40.395
+    ]
+   ],
+   "bytes": 17566,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-10-01",
+   "valid_cells": 6346,
+   "cells": 13534,
+   "median": 2.1370511054992676,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs750_1day_2026-10-02",
+   "url": "layers/north_coast_viirs750_1day_2026-10-02.png",
+   "corners": [
+    [
+     -124.7025,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     40.395
+    ],
+    [
+     -124.7025,
+     40.395
+    ]
+   ],
+   "bytes": 8404,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-10-02",
+   "valid_cells": 1859,
+   "cells": 13534,
+   "median": 1.3995872735977173,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs750_1day_2026-10-03",
+   "url": "layers/north_coast_viirs750_1day_2026-10-03.png",
+   "corners": [
+    [
+     -124.7025,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     40.395
+    ],
+    [
+     -124.7025,
+     40.395
+    ]
+   ],
+   "bytes": 1416,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-10-03",
+   "valid_cells": 21,
+   "cells": 13534,
+   "median": 4.3550896644592285,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs750_1day_2026-10-04",
+   "url": "layers/north_coast_viirs750_1day_2026-10-04.png",
+   "corners": [
+    [
+     -124.7025,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     41.4
+    ],
+    [
+     -123.94500000000001,
+     40.395
+    ],
+    [
+     -124.7025,
+     40.395
+    ]
+   ],
+   "bytes": 1191,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-10-04",
+   "valid_cells": 0,
+   "cells": 13534,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-09-23",
+   "url": "layers/north_coast_viirs_n20_4km_2026-09-23.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 1454,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-23",
+   "valid_cells": 311,
+   "cells": 567,
+   "median": 0.8267295956611633,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-09-24",
+   "url": "layers/north_coast_viirs_n20_4km_2026-09-24.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 913,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-24",
+   "valid_cells": 122,
+   "cells": 567,
+   "median": 2.0492300987243652,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-09-25",
+   "url": "layers/north_coast_viirs_n20_4km_2026-09-25.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 1784,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-25",
+   "valid_cells": 391,
+   "cells": 567,
+   "median": 1.252808928489685,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-09-26",
+   "url": "layers/north_coast_viirs_n20_4km_2026-09-26.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 1753,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-26",
+   "valid_cells": 376,
+   "cells": 567,
+   "median": 1.4674923419952393,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-09-27",
+   "url": "layers/north_coast_viirs_n20_4km_2026-09-27.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 1055,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-27",
+   "valid_cells": 143,
+   "cells": 567,
+   "median": 0.8797846436500549,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-09-28",
+   "url": "layers/north_coast_viirs_n20_4km_2026-09-28.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 1683,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-28",
+   "valid_cells": 349,
+   "cells": 567,
+   "median": 1.5962425470352173,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-09-29",
+   "url": "layers/north_coast_viirs_n20_4km_2026-09-29.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 1013,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-29",
+   "valid_cells": 121,
+   "cells": 567,
+   "median": 2.7196781635284424,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-09-30",
+   "url": "layers/north_coast_viirs_n20_4km_2026-09-30.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 768,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-30",
+   "valid_cells": 117,
+   "cells": 567,
+   "median": 0.8825452327728271,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-10-01",
+   "url": "layers/north_coast_viirs_n20_4km_2026-10-01.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 1277,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-01",
+   "valid_cells": 259,
+   "cells": 567,
+   "median": 1.0316495895385742,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-10-02",
+   "url": "layers/north_coast_viirs_n20_4km_2026-10-02.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 855,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-02",
+   "valid_cells": 142,
+   "cells": 567,
+   "median": 0.4232460558414459,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-10-03",
+   "url": "layers/north_coast_viirs_n20_4km_2026-10-03.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 196,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-03",
+   "valid_cells": 3,
+   "cells": 567,
+   "median": 2.843489170074463,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-10-04",
+   "url": "layers/north_coast_viirs_n20_4km_2026-10-04.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 126,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-04",
+   "valid_cells": 0,
+   "cells": 567,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-10-05",
+   "url": "layers/north_coast_viirs_n20_4km_2026-10-05.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 159,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-05",
+   "valid_cells": 1,
+   "cells": 567,
+   "median": 1.858811855316162,
+   "render": "nearest"
+  },
+  {
+   "id": "north_coast_viirs_n20_4km_2026-10-06",
+   "url": "layers/north_coast_viirs_n20_4km_2026-10-06.png",
+   "corners": [
+    [
+     -124.72500000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     41.4
+    ],
+    [
+     -123.93750000000001,
+     40.3875
+    ],
+    [
+     -124.72500000000001,
+     40.3875
+    ]
+   ],
+   "bytes": 1046,
+   "kind": "observation",
+   "region": "north_coast",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-06",
+   "valid_cells": 200,
+   "cells": 567,
+   "median": 0.61488476395607,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-14",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-14.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8572,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-14",
+   "valid_cells": 4588,
+   "cells": 6716,
+   "median": 0.20490122586488724,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-15",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-15.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8728,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-15",
+   "valid_cells": 4588,
+   "cells": 6716,
+   "median": 0.19904763996601105,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-16",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-16.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8817,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-16",
+   "valid_cells": 4587,
+   "cells": 6716,
+   "median": 0.19350744783878326,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-17",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-17.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8627,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-17",
+   "valid_cells": 4588,
+   "cells": 6716,
+   "median": 0.18874114751815796,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-18",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-18.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8612,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-18",
+   "valid_cells": 4588,
+   "cells": 6716,
+   "median": 0.18000447005033493,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-19",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-19.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8560,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-19",
+   "valid_cells": 4588,
+   "cells": 6716,
+   "median": 0.17870625853538513,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-20",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-20.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8504,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-20",
+   "valid_cells": 4590,
+   "cells": 6716,
+   "median": 0.18189923465251923,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-21",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-21.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8516,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-21",
+   "valid_cells": 4588,
+   "cells": 6716,
+   "median": 0.17906277626752853,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-22",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-22.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8540,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-22",
+   "valid_cells": 4588,
+   "cells": 6716,
+   "median": 0.1755342185497284,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-23",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-23.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8714,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-23",
+   "valid_cells": 4586,
+   "cells": 6716,
+   "median": 0.1636228784918785,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-24",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-24.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8968,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-24",
+   "valid_cells": 4585,
+   "cells": 6716,
+   "median": 0.16228820383548737,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-25",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-25.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8863,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-25",
+   "valid_cells": 4589,
+   "cells": 6716,
+   "median": 0.16844898462295532,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-26",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-26.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8679,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-26",
+   "valid_cells": 4589,
+   "cells": 6716,
+   "median": 0.17516522109508514,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_dineof_2km_sq_2026-09-27",
+   "url": "layers/socal_bight_dineof_2km_sq_2026-09-27.png",
+   "corners": [
+    [
+     -119.00000255710476,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     34.1041628519694
+    ],
+    [
+     -117.08333331936008,
+     32.58332951863607
+    ],
+    [
+     -119.00000255710476,
+     32.58332951863607
+    ]
+   ],
+   "bytes": 8591,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS + OLCI chlorophyll-a, DINEOF gap-filled, science quality",
+   "native": "0.0208\u00b0 (~2 km), gap-filled",
+   "date": "2026-09-27",
+   "valid_cells": 4589,
+   "cells": 6716,
+   "median": 0.17785727977752686,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-09-24",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-09-24.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 10257,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-24",
+   "valid_cells": 312,
+   "cells": 457361,
+   "median": 0.1655377745628357,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-09-25",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-09-25.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 119587,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-25",
+   "valid_cells": 55612,
+   "cells": 457361,
+   "median": 0.19975068420171738,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-09-26",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-09-26.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 8583,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-26",
+   "valid_cells": 0,
+   "cells": 457361,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-09-27",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-09-27.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 8583,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-27",
+   "valid_cells": 0,
+   "cells": 457361,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-09-28",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-09-28.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 459006,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-28",
+   "valid_cells": 238991,
+   "cells": 457361,
+   "median": 0.15137580037117004,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-09-29",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-09-29.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 384748,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-29",
+   "valid_cells": 291966,
+   "cells": 457361,
+   "median": 0.16623473167419434,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-09-30",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-09-30.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 8583,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-09-30",
+   "valid_cells": 0,
+   "cells": 457361,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-10-01",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-10-01.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 21014,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-01",
+   "valid_cells": 4762,
+   "cells": 457361,
+   "median": 0.18635957688093185,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-10-02",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-10-02.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 388839,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-02",
+   "valid_cells": 207654,
+   "cells": 457361,
+   "median": 0.1607494056224823,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-10-03",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-10-03.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 346023,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-03",
+   "valid_cells": 296080,
+   "cells": 457361,
+   "median": 0.15996064245700836,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-10-04",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-10-04.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 8583,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-04",
+   "valid_cells": 0,
+   "cells": 457361,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-10-05",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-10-05.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 389001,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-05",
+   "valid_cells": 217665,
+   "cells": 457361,
+   "median": 0.1740037053823471,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-10-06",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-10-06.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 484947,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-06",
+   "valid_cells": 298937,
+   "cells": 457361,
+   "median": 0.15764515101909637,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_olci300_s3a_DI_2026-10-07",
+   "url": "layers/socal_bight_olci300_s3a_DI_2026-10-07.png",
+   "corners": [
+    [
+     -119.0,
+     34.1
+    ],
+    [
+     -117.0975,
+     34.1
+    ],
+    [
+     -117.0975,
+     32.597500000000004
+    ],
+    [
+     -119.0,
+     32.597500000000004
+    ]
+   ],
+   "bytes": 133153,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "Sentinel-3A OLCI chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0025\u00b0 (~250 m)",
+   "date": "2026-10-07",
+   "valid_cells": 103973,
+   "cells": 457361,
+   "median": 0.12869444489479065,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-06-13",
+   "url": "layers/socal_bight_viirs750_1day_2026-06-13.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 27094,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-06-13",
+   "valid_cells": 9057,
+   "cells": 51054,
+   "median": 0.26110637187957764,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-06-14",
+   "url": "layers/socal_bight_viirs750_1day_2026-06-14.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 19904,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-06-14",
+   "valid_cells": 5530,
+   "cells": 51054,
+   "median": 0.32431305944919586,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-09-20",
+   "url": "layers/socal_bight_viirs750_1day_2026-09-20.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 14967,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-20",
+   "valid_cells": 3022,
+   "cells": 51054,
+   "median": 0.21273291110992432,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-09-22",
+   "url": "layers/socal_bight_viirs750_1day_2026-09-22.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 56118,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-22",
+   "valid_cells": 26004,
+   "cells": 51054,
+   "median": 0.23680029064416885,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-09-23",
+   "url": "layers/socal_bight_viirs750_1day_2026-09-23.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 49426,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-23",
+   "valid_cells": 23438,
+   "cells": 51054,
+   "median": 0.22647028416395187,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-09-24",
+   "url": "layers/socal_bight_viirs750_1day_2026-09-24.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 20786,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-24",
+   "valid_cells": 4156,
+   "cells": 51054,
+   "median": 0.1963922679424286,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-09-25",
+   "url": "layers/socal_bight_viirs750_1day_2026-09-25.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 45210,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-25",
+   "valid_cells": 19418,
+   "cells": 51054,
+   "median": 0.24706754088401794,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-09-26",
+   "url": "layers/socal_bight_viirs750_1day_2026-09-26.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 44197,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-26",
+   "valid_cells": 22609,
+   "cells": 51054,
+   "median": 0.25658687949180603,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-09-29",
+   "url": "layers/socal_bight_viirs750_1day_2026-09-29.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 52829,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-29",
+   "valid_cells": 33017,
+   "cells": 51054,
+   "median": 0.23893243074417114,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-09-30",
+   "url": "layers/socal_bight_viirs750_1day_2026-09-30.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 44841,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-09-30",
+   "valid_cells": 22940,
+   "cells": 51054,
+   "median": 0.22423291206359863,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-10-01",
+   "url": "layers/socal_bight_viirs750_1day_2026-10-01.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 52902,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-10-01",
+   "valid_cells": 27414,
+   "cells": 51054,
+   "median": 0.23683110624551773,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-10-02",
+   "url": "layers/socal_bight_viirs750_1day_2026-10-02.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 59195,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-10-02",
+   "valid_cells": 32460,
+   "cells": 51054,
+   "median": 0.23571455478668213,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-10-03",
+   "url": "layers/socal_bight_viirs750_1day_2026-10-03.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 49228,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-10-03",
+   "valid_cells": 33085,
+   "cells": 51054,
+   "median": 0.2389308214187622,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs750_1day_2026-10-04",
+   "url": "layers/socal_bight_viirs750_1day_2026-10-04.png",
+   "corners": [
+    [
+     -119.0025,
+     34.1025
+    ],
+    [
+     -117.0975,
+     34.1025
+    ],
+    [
+     -117.0975,
+     32.595000000000006
+    ],
+    [
+     -119.0025,
+     32.595000000000006
+    ]
+   ],
+   "bytes": 51307,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "VIIRS chlorophyll-a, 1-day composite, CoastWatch West Coast",
+   "native": "0.0075\u00b0 (~750 m)",
+   "date": "2026-10-04",
+   "valid_cells": 33164,
+   "cells": 51054,
+   "median": 0.22615619748830795,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-09-23",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-09-23.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 3556,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-23",
+   "valid_cells": 1029,
+   "cells": 2132,
+   "median": 0.163130521774292,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-09-24",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-09-24.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 2533,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-24",
+   "valid_cells": 419,
+   "cells": 2132,
+   "median": 0.18175186216831207,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-09-25",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-09-25.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 4117,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-25",
+   "valid_cells": 1293,
+   "cells": 2132,
+   "median": 0.2021993100643158,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-09-26",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-09-26.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 3835,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-26",
+   "valid_cells": 1420,
+   "cells": 2132,
+   "median": 0.19519321620464325,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-09-27",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-09-27.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 238,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-27",
+   "valid_cells": 0,
+   "cells": 2132,
+   "median": null,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-09-28",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-09-28.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 4260,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-28",
+   "valid_cells": 1396,
+   "cells": 2132,
+   "median": 0.16031085699796677,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-09-29",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-09-29.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 3970,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-29",
+   "valid_cells": 1416,
+   "cells": 2132,
+   "median": 0.1884014829993248,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-09-30",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-09-30.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 3804,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-09-30",
+   "valid_cells": 1186,
+   "cells": 2132,
+   "median": 0.1936529204249382,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-10-01",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-10-01.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 3744,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-01",
+   "valid_cells": 1375,
+   "cells": 2132,
+   "median": 0.20482833683490753,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-10-02",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-10-02.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 3562,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-02",
+   "valid_cells": 1346,
+   "cells": 2132,
+   "median": 0.21633295714855194,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-10-03",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-10-03.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 2763,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-03",
+   "valid_cells": 1021,
+   "cells": 2132,
+   "median": 0.21726107597351074,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-10-04",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-10-04.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 3738,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-04",
+   "valid_cells": 1419,
+   "cells": 2132,
+   "median": 0.1893800050020218,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-10-05",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-10-05.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 3606,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-05",
+   "valid_cells": 1423,
+   "cells": 2132,
+   "median": 0.19278860092163086,
+   "render": "nearest"
+  },
+  {
+   "id": "socal_bight_viirs_n20_4km_2026-10-06",
+   "url": "layers/socal_bight_viirs_n20_4km_2026-10-06.png",
+   "corners": [
+    [
+     -119.025,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     34.125
+    ],
+    [
+     -117.07500000000002,
+     32.587500000000006
+    ],
+    [
+     -119.025,
+     32.587500000000006
+    ]
+   ],
+   "bytes": 3645,
+   "kind": "observation",
+   "region": "socal_bight",
+   "product": "NOAA-20 VIIRS chlorophyll-a, NOAA CoastWatch NRT",
+   "native": "0.0375\u00b0 (~4 km)",
+   "date": "2026-10-06",
+   "valid_cells": 1430,
+   "cells": 2132,
+   "median": 0.19618607312440872,
+   "render": "nearest"
+  }
+ ],
+ "currents": {
+  "run": "2026-10-09T06:00:00",
+  "hours": [
+   0.0,
+   3.0,
+   9.0,
+   21.0,
+   33.0,
+   45.0,
+   57.0,
+   69.0
+  ],
+  "native": "WCOFS 0.04\u00b0 regular-grid output (~4 km; model grid ~4 km curvilinear)",
+  "arrows_state": "currents_state.geojson",
+  "arrows_monterey": "currents_monterey.geojson",
+  "drift_monterey": "drift_monterey.geojson"
+ }
+}

@@ -1,0 +1,2 @@
+block 256 KiB: 57.4 MB requested over 41 HTTP range reads for a California surface subset of a 582 MB file, 10.2 s
+block 2048 KiB: 105.6 MB requested over 29 HTTP range reads for a California surface subset of a 582 MB file, 10.7 s

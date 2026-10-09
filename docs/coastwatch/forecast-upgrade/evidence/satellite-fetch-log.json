@@ -1,0 +1,3201 @@
+[
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-09-24T19:01:53Z",
+  "bytes": 449236,
+  "seconds": 3.59,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 72111,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-09-25T18:37:13Z",
+  "bytes": 449236,
+  "seconds": 3.54,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 0,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-09-26T19:01:32Z",
+  "bytes": 449236,
+  "seconds": 3.61,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 0,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-09-27T18:35:21Z",
+  "bytes": 449236,
+  "seconds": 3.84,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 953,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-09-28T18:58:09Z",
+  "bytes": 449236,
+  "seconds": 3.98,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 8049,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-09-29T18:34:58Z",
+  "bytes": 449236,
+  "seconds": 2.91,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 0,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-09-30T18:57:47Z",
+  "bytes": 449236,
+  "seconds": 2.91,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 0,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-10-01T19:19:05Z",
+  "bytes": 449236,
+  "seconds": 4.75,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 1069,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-10-02T18:54:24Z",
+  "bytes": 449236,
+  "seconds": 2.05,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 887,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-10-03T18:31:13Z",
+  "bytes": 449236,
+  "seconds": 4.11,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 0,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-10-04T18:54:02Z",
+  "bytes": 449236,
+  "seconds": 3.94,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 0,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-10-05T19:15:21Z",
+  "bytes": 449236,
+  "seconds": 4.02,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 12037,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-10-06T18:50:40Z",
+  "bytes": 449236,
+  "seconds": 5.07,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 8743,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "monterey",
+  "time": "2026-10-07T19:16:29Z",
+  "bytes": 449236,
+  "seconds": 3.77,
+  "shape": [
+   321,
+   341
+  ],
+  "valid": 0,
+  "cells": 109461
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-09-24T19:01:53Z",
+  "bytes": 494516,
+  "seconds": 2.39,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 8,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-09-25T18:37:13Z",
+  "bytes": 494516,
+  "seconds": 2.05,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 0,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-09-26T19:01:32Z",
+  "bytes": 494516,
+  "seconds": 1.86,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 235,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-09-27T18:35:21Z",
+  "bytes": 494516,
+  "seconds": 1.75,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 2280,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-09-28T18:58:09Z",
+  "bytes": 494516,
+  "seconds": 2.14,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 15878,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-09-29T18:34:58Z",
+  "bytes": 494516,
+  "seconds": 2.72,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 0,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-09-30T18:57:47Z",
+  "bytes": 494516,
+  "seconds": 2.45,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 0,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-10-01T19:19:05Z",
+  "bytes": 494516,
+  "seconds": 2.33,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 35779,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-10-02T18:54:24Z",
+  "bytes": 494516,
+  "seconds": 1.61,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 2423,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-10-03T18:31:13Z",
+  "bytes": 494516,
+  "seconds": 1.25,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 0,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-10-04T18:54:02Z",
+  "bytes": 494516,
+  "seconds": 1.82,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 0,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-10-05T19:15:21Z",
+  "bytes": 494516,
+  "seconds": 2.69,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 3,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-10-06T18:50:40Z",
+  "bytes": 494516,
+  "seconds": 1.24,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 0,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_CI",
+  "dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+  "region": "north_coast",
+  "time": "2026-10-07T19:16:29Z",
+  "bytes": 494516,
+  "seconds": 2.32,
+  "shape": [
+   401,
+   301
+  ],
+  "valid": 0,
+  "cells": 120701
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-09-24T17:22:24Z",
+  "bytes": 1846432,
+  "seconds": 3.55,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 312,
+  "cells": 457361
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-09-25T17:46:43Z",
+  "bytes": 1846432,
+  "seconds": 6.89,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 55612,
+  "cells": 457361
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-09-26T17:20:32Z",
+  "bytes": 1846432,
+  "seconds": 4.82,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 0,
+  "cells": 457361
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-09-27T17:43:21Z",
+  "bytes": 1846432,
+  "seconds": 4.87,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 0,
+  "cells": 457361
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-09-28T17:18:40Z",
+  "bytes": 1846432,
+  "seconds": 7.16,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 238991,
+  "cells": 457361
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-09-29T17:42:59Z",
+  "bytes": 1846432,
+  "seconds": 1.89,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 291966,
+  "cells": 457361
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-09-30T17:16:48Z",
+  "bytes": 1846432,
+  "seconds": 4.2,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 0,
+  "cells": 457361
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-10-01T17:39:36Z",
+  "bytes": 1846432,
+  "seconds": 6.27,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 4762,
+  "cells": 457361
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-10-02T17:16:25Z",
+  "bytes": 1846432,
+  "seconds": 6.89,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 207654,
+  "cells": 457361
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-10-03T17:39:14Z",
+  "bytes": 1846432,
+  "seconds": 8.22,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 296080,
+  "cells": 457361
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-10-04T18:00:32Z",
+  "bytes": 1846432,
+  "seconds": 4.39,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 0,
+  "cells": 457361
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-10-05T17:35:51Z",
+  "bytes": 1846432,
+  "seconds": 6.26,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 217665,
+  "cells": 457361
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-10-06T17:12:40Z",
+  "bytes": 1846432,
+  "seconds": 7.14,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 298937,
+  "cells": 457361
+ },
+ {
+  "layer": "olci300_s3a_DI",
+  "dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+  "region": "socal_bight",
+  "time": "2026-10-07T17:35:29Z",
+  "bytes": 1846432,
+  "seconds": 4.61,
+  "shape": [
+   601,
+   761
+  ],
+  "valid": 103973,
+  "cells": 457361
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-06-13T12:00:00Z",
+  "bytes": 57380,
+  "seconds": 0.57,
+  "shape": [
+   108,
+   114
+  ],
+  "valid": 185,
+  "cells": 12312
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-06-14T12:00:00Z",
+  "bytes": 57380,
+  "seconds": 0.56,
+  "shape": [
+   108,
+   114
+  ],
+  "valid": 0,
+  "cells": 12312
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-09-20T12:00:00Z",
+  "bytes": 57380,
+  "seconds": 0.52,
+  "shape": [
+   108,
+   114
+  ],
+  "valid": 0,
+  "cells": 12312
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-09-22T12:00:00Z",
+  "bytes": 57380,
+  "seconds": 0.57,
+  "shape": [
+   108,
+   114
+  ],
+  "valid": 481,
+  "cells": 12312
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-09-23T12:00:00Z",
+  "bytes": 57380,
+  "seconds": 0.64,
+  "shape": [
+   108,
+   114
+  ],
+  "valid": 329,
+  "cells": 12312
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-09-24T12:00:00Z",
+  "error": "HTTP 503"
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-09-25T12:00:00Z",
+  "bytes": 57380,
+  "seconds": 0.64,
+  "shape": [
+   108,
+   114
+  ],
+  "valid": 8541,
+  "cells": 12312
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-09-26T12:00:00Z",
+  "bytes": 57380,
+  "seconds": 0.57,
+  "shape": [
+   108,
+   114
+  ],
+  "valid": 861,
+  "cells": 12312
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-09-29T12:00:00Z",
+  "bytes": 57380,
+  "seconds": 0.6,
+  "shape": [
+   108,
+   114
+  ],
+  "valid": 4374,
+  "cells": 12312
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-09-30T12:00:00Z",
+  "bytes": 57380,
+  "seconds": 0.6,
+  "shape": [
+   108,
+   114
+  ],
+  "valid": 1887,
+  "cells": 12312
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-10-01T12:00:00Z",
+  "bytes": 57380,
+  "seconds": 0.67,
+  "shape": [
+   108,
+   114
+  ],
+  "valid": 0,
+  "cells": 12312
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-10-02T12:00:00Z",
+  "bytes": 57380,
+  "seconds": 0.51,
+  "shape": [
+   108,
+   114
+  ],
+  "valid": 0,
+  "cells": 12312
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-10-03T12:00:00Z",
+  "bytes": 57380,
+  "seconds": 0.54,
+  "shape": [
+   108,
+   114
+  ],
+  "valid": 6952,
+  "cells": 12312
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "monterey",
+  "time": "2026-10-04T12:00:00Z",
+  "bytes": 57380,
+  "seconds": 0.61,
+  "shape": [
+   108,
+   114
+  ],
+  "valid": 2356,
+  "cells": 12312
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-06-13T12:00:00Z",
+  "bytes": 62372,
+  "seconds": 0.45,
+  "shape": [
+   134,
+   101
+  ],
+  "valid": 8228,
+  "cells": 13534
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-06-14T12:00:00Z",
+  "bytes": 62372,
+  "seconds": 0.46,
+  "shape": [
+   134,
+   101
+  ],
+  "valid": 0,
+  "cells": 13534
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-09-20T12:00:00Z",
+  "bytes": 62372,
+  "seconds": 0.51,
+  "shape": [
+   134,
+   101
+  ],
+  "valid": 0,
+  "cells": 13534
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-09-22T12:00:00Z",
+  "bytes": 62372,
+  "seconds": 0.49,
+  "shape": [
+   134,
+   101
+  ],
+  "valid": 582,
+  "cells": 13534
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-09-23T12:00:00Z",
+  "bytes": 62372,
+  "seconds": 0.51,
+  "shape": [
+   134,
+   101
+  ],
+  "valid": 5479,
+  "cells": 13534
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-09-24T12:00:00Z",
+  "bytes": 62372,
+  "seconds": 0.6,
+  "shape": [
+   134,
+   101
+  ],
+  "valid": 332,
+  "cells": 13534
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-09-25T12:00:00Z",
+  "bytes": 62372,
+  "seconds": 0.45,
+  "shape": [
+   134,
+   101
+  ],
+  "valid": 8697,
+  "cells": 13534
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-09-26T12:00:00Z",
+  "error": "HTTP 503"
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-09-29T12:00:00Z",
+  "bytes": 62372,
+  "seconds": 0.56,
+  "shape": [
+   134,
+   101
+  ],
+  "valid": 2108,
+  "cells": 13534
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-09-30T12:00:00Z",
+  "bytes": 62372,
+  "seconds": 0.51,
+  "shape": [
+   134,
+   101
+  ],
+  "valid": 1334,
+  "cells": 13534
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-10-01T12:00:00Z",
+  "bytes": 62372,
+  "seconds": 0.85,
+  "shape": [
+   134,
+   101
+  ],
+  "valid": 6346,
+  "cells": 13534
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-10-02T12:00:00Z",
+  "bytes": 62372,
+  "seconds": 0.46,
+  "shape": [
+   134,
+   101
+  ],
+  "valid": 1859,
+  "cells": 13534
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-10-03T12:00:00Z",
+  "bytes": 62372,
+  "seconds": 0.5,
+  "shape": [
+   134,
+   101
+  ],
+  "valid": 21,
+  "cells": 13534
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "north_coast",
+  "time": "2026-10-04T12:00:00Z",
+  "bytes": 62372,
+  "seconds": 0.56,
+  "shape": [
+   134,
+   101
+  ],
+  "valid": 0,
+  "cells": 13534
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-06-13T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 0.62,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 9057,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-06-14T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 0.6,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 5530,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-09-20T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 0.55,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 3022,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-09-22T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 0.59,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 26004,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-09-23T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 0.58,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 23438,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-09-24T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 0.63,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 4156,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-09-25T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 0.63,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 19418,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-09-26T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 0.57,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 22609,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-09-29T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 0.56,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 33017,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-09-30T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 4.43,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 22940,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-10-01T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 0.72,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 27414,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-10-02T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 0.58,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 32460,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-10-03T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 0.63,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 33085,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs750_1day",
+  "dataset": "erdVHNchla1day",
+  "region": "socal_bight",
+  "time": "2026-10-04T12:00:00Z",
+  "bytes": 214212,
+  "seconds": 0.61,
+  "shape": [
+   201,
+   254
+  ],
+  "valid": 33164,
+  "cells": 51054
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-09-23T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 2.25,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 36,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-09-24T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 1.81,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 342,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-09-25T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 3.27,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 392,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-09-26T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 2.32,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 114,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-09-27T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 2.41,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 217,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-09-28T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 1.74,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 137,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-09-29T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 3.25,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 395,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-09-30T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 2.11,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 94,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-10-01T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 1.49,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 5,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-10-02T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 2.2,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 0,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-10-03T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 1.63,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 368,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-10-04T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 2.89,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 163,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-10-05T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 1.76,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 56,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "monterey",
+  "time": "2026-10-06T12:00:00Z",
+  "bytes": 8328,
+  "seconds": 3.31,
+  "shape": [
+   23,
+   24
+  ],
+  "valid": 52,
+  "cells": 552
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-09-23T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 2.65,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 311,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-09-24T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 2.69,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 122,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-09-25T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 2.43,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 391,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-09-26T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 1.93,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 376,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-09-27T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 1.95,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 143,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-09-28T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 4.57,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 349,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-09-29T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 1.96,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 121,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-09-30T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 1.31,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 117,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-10-01T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 1.63,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 259,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-10-02T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 1.75,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 142,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-10-03T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 2.67,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 3,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-10-04T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 1.41,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 0,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-10-05T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 1.61,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 1,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "north_coast",
+  "time": "2026-10-06T12:00:00Z",
+  "bytes": 8396,
+  "seconds": 1.87,
+  "shape": [
+   27,
+   21
+  ],
+  "valid": 200,
+  "cells": 567
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-09-23T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 2.53,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 1029,
+  "cells": 2132
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-09-24T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 2.76,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 419,
+  "cells": 2132
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-09-25T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 2.11,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 1293,
+  "cells": 2132
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-09-26T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 1.79,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 1420,
+  "cells": 2132
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-09-27T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 2.76,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 0,
+  "cells": 2132
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-09-28T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 1.77,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 1396,
+  "cells": 2132
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-09-29T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 1.7,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 1416,
+  "cells": 2132
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-09-30T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 1.85,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 1186,
+  "cells": 2132
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-10-01T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 1.43,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 1375,
+  "cells": 2132
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-10-02T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 2.25,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 1346,
+  "cells": 2132
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-10-03T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 3.77,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 1021,
+  "cells": 2132
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-10-04T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 2.04,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 1419,
+  "cells": 2132
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-10-05T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 1.31,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 1423,
+  "cells": 2132
+ },
+ {
+  "layer": "viirs_n20_4km",
+  "dataset": "nesdisVHNnoaa20chlaDaily",
+  "region": "socal_bight",
+  "time": "2026-10-06T12:00:00Z",
+  "bytes": 15016,
+  "seconds": 1.75,
+  "shape": [
+   41,
+   52
+  ],
+  "valid": 1430,
+  "cells": 2132
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-09-24T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-09-25T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-09-26T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-09-27T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-09-28T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-09-29T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-09-30T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-10-01T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-10-02T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-10-03T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-10-04T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-10-05T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-10-06T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "monterey",
+  "time": "2026-10-07T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-09-24T12:00:00Z",
+  "error": "HTTP 503"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-09-25T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-09-26T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-09-27T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-09-28T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-09-29T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-09-30T12:00:00Z",
+  "error": "HTTP 503"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-10-01T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-10-02T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-10-03T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-10-04T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-10-05T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-10-06T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "north_coast",
+  "time": "2026-10-07T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-09-24T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-09-25T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-09-26T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-09-27T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-09-28T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-09-29T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-09-30T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-10-01T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-10-02T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-10-03T12:00:00Z",
+  "error": "HTTP 503"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-10-04T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-10-05T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-10-06T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "modis_aqua_4km_nrt",
+  "dataset": "erdMH1chla1day_R2022NRT",
+  "region": "socal_bight",
+  "time": "2026-10-07T12:00:00Z",
+  "error": "HTTP 500"
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-14T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 5.79,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1207,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-15T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 3.39,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1207,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-16T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 5.84,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1207,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-17T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 3.77,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1207,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-18T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 6.47,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1207,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-19T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 3.01,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1207,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-20T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 3.79,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1207,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-21T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 3.78,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1207,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-22T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 4.6,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1207,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-23T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 5.99,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1206,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-24T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 5.62,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1207,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-25T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 2.59,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1206,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-26T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 5.01,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1206,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "monterey",
+  "time": "2026-09-27T12:00:00Z",
+  "bytes": 14552,
+  "seconds": 4.76,
+  "shape": [
+   39,
+   42
+  ],
+  "valid": 1206,
+  "cells": 1638
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-14T12:00:00Z",
+  "bytes": 15272,
+  "seconds": 5.31,
+  "shape": [
+   49,
+   37
+  ],
+  "valid": 1257,
+  "cells": 1813
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-15T12:00:00Z",
+  "error": "HTTP 502"
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-16T12:00:00Z",
+  "bytes": 15272,
+  "seconds": 10.1,
+  "shape": [
+   49,
+   37
+  ],
+  "valid": 1257,
+  "cells": 1813
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-17T12:00:00Z",
+  "error": "HTTP 502"
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-18T12:00:00Z",
+  "error": "HTTP 502"
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-19T12:00:00Z",
+  "bytes": 15272,
+  "seconds": 7.11,
+  "shape": [
+   49,
+   37
+  ],
+  "valid": 1257,
+  "cells": 1813
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-20T12:00:00Z",
+  "bytes": 15272,
+  "seconds": 7.75,
+  "shape": [
+   49,
+   37
+  ],
+  "valid": 1257,
+  "cells": 1813
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-21T12:00:00Z",
+  "bytes": 15272,
+  "seconds": 7.6,
+  "shape": [
+   49,
+   37
+  ],
+  "valid": 1257,
+  "cells": 1813
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-22T12:00:00Z",
+  "bytes": 15272,
+  "seconds": 7.93,
+  "shape": [
+   49,
+   37
+  ],
+  "valid": 1256,
+  "cells": 1813
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-23T12:00:00Z",
+  "bytes": 15272,
+  "seconds": 4.53,
+  "shape": [
+   49,
+   37
+  ],
+  "valid": 1256,
+  "cells": 1813
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-24T12:00:00Z",
+  "bytes": 15272,
+  "seconds": 4.81,
+  "shape": [
+   49,
+   37
+  ],
+  "valid": 1256,
+  "cells": 1813
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-25T12:00:00Z",
+  "bytes": 15272,
+  "seconds": 4.73,
+  "shape": [
+   49,
+   37
+  ],
+  "valid": 1256,
+  "cells": 1813
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-26T12:00:00Z",
+  "bytes": 15272,
+  "seconds": 5.16,
+  "shape": [
+   49,
+   37
+  ],
+  "valid": 1256,
+  "cells": 1813
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "north_coast",
+  "time": "2026-09-27T12:00:00Z",
+  "bytes": 15272,
+  "seconds": 5.17,
+  "shape": [
+   49,
+   37
+  ],
+  "valid": 1256,
+  "cells": 1813
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-14T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 3.62,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4588,
+  "cells": 6716
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-15T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 6.05,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4588,
+  "cells": 6716
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-16T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 8.43,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4587,
+  "cells": 6716
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-17T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 4.18,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4588,
+  "cells": 6716
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-18T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 1.99,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4588,
+  "cells": 6716
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-19T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 4.47,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4588,
+  "cells": 6716
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-20T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 2.34,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4590,
+  "cells": 6716
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-21T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 2.17,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4588,
+  "cells": 6716
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-22T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 3.65,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4588,
+  "cells": 6716
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-23T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 2.08,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4586,
+  "cells": 6716
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-24T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 2.0,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4585,
+  "cells": 6716
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-25T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 2.0,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4589,
+  "cells": 6716
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-26T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 4.82,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4589,
+  "cells": 6716
+ },
+ {
+  "layer": "dineof_2km_sq",
+  "dataset": "noaacwNPPN20S3ASCIDINEOF2kmDaily",
+  "region": "socal_bight",
+  "time": "2026-09-27T12:00:00Z",
+  "bytes": 35200,
+  "seconds": 1.89,
+  "shape": [
+   73,
+   92
+  ],
+  "valid": 4589,
+  "cells": 6716
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-09-23T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 0.33,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-09-24T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 2.82,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-09-25T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 0.3,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-09-26T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 0.28,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-09-27T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 0.29,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-09-28T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 0.27,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-09-29T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 0.29,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-09-30T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 0.28,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-10-01T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 0.28,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-10-02T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 0.26,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-10-03T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 0.21,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-10-04T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 0.29,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-10-06T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 0.3,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "monterey",
+  "time": "2026-10-07T12:00:00Z",
+  "bytes": 13004,
+  "seconds": 0.29,
+  "shape": [
+   28,
+   30
+  ],
+  "valid": 541,
+  "cells": 840
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-09-23T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.22,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-09-24T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.45,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-09-25T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.22,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-09-26T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.21,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-09-27T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.21,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-09-28T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.2,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-09-29T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.21,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-09-30T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.21,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-10-01T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.21,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-10-02T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.22,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-10-03T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.22,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-10-04T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.22,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-10-06T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.21,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "north_coast",
+  "time": "2026-10-07T12:00:00Z",
+  "bytes": 13296,
+  "seconds": 0.22,
+  "shape": [
+   35,
+   26
+  ],
+  "valid": 572,
+  "cells": 910
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-09-23T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 0.24,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-09-24T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 3.23,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-09-25T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 0.3,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-09-26T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 0.25,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-09-27T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 0.26,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-09-28T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 0.24,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-09-29T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 0.25,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-09-30T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 0.25,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-10-01T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 0.24,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-10-02T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 0.27,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-10-03T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 0.26,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-10-04T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 0.26,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-10-06T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 0.25,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ },
+ {
+  "layer": "charm_nowcast",
+  "dataset": "wvcharmV3_0day",
+  "region": "socal_bight",
+  "time": "2026-10-07T12:00:00Z",
+  "bytes": 23132,
+  "seconds": 0.3,
+  "shape": [
+   51,
+   65
+  ],
+  "valid": 2064,
+  "cells": 3315
+ }
+]

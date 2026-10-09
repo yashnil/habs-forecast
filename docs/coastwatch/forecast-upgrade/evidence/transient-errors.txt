@@ -1,0 +1,3 @@
+transient: wvcharmV3_2day HTTP 503 on first attempt 2026-10-09T15:50:02Z, succeeded on retry
+MODIS chlorophyll with correct variable: 200 7336B
+note: the 39 MODIS HTTP 500s in satellite-fetch-log.json were caused by a wrong variable name in fetch_samples.py (chlor_a; the dataset uses 'chlorophyll'), not by the server. Corrected request above.

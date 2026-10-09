@@ -1,0 +1,171 @@
+== coastwatch.pfeg.noaa.gov olci
+  noaacwNPPN20S3ASCIDINEOF2kmDaily | Chlorophyll (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Quality, Global 2k
+  nesdisNPPN20S3ASCIDINEOFDaily | Chlorophyll (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Quality, Global 9k
+  noaacwNPPN20S3AkdSCIDINEOF2kmDaily | Kd490 (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Quality, Global 2km, 201
+  nesdisNPPN20S3AkdSCIDINEOFDaily | Kd490 (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Quality, Global 9km, 201
+  noaacwNPPN20S3AspmSCIDINEOF2kmDaily | Suspended Particulate Matter (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Q
+  nesdisNPPN20S3AspmSCIDINEOFDaily | Suspended Particulate Matter (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Q
+  pmlEsaCCI50OceanColorDaily | ESA CCI Ocean Colour Product (CCI ALL-v5.0-DAILY), 0.04166666°, 1997-present
+  pmlEsaCCI60OceanColorDaily | ESA CCI Ocean Colour Product (CCI ALL-v6.0-DAILY), 0.041666668°, 1997-present
+  pmlEsaCCI50OceanColorDaily_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v5.0-DAILY), 0.04166666°, 1997-present, Lon0360
+  pmlEsaCCI60OceanColorDaily_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v6.0-DAILY), 0.041666668°, 1997-present, Lon0360
+  pmlEsaCCI50OceanColor5Day | ESA CCI Ocean Colour Product (CCI ALL-v5.0-5DAY), 0.04166666°, 1997-present
+  pmlEsaCCI50OceanColor8Day | ESA CCI Ocean Colour Product (CCI ALL-v5.0-8DAY), 0.04166666°, 1997-present
+  pmlEsaCCI50OceanColorMonthly | ESA CCI Ocean Colour Product (CCI ALL-v5.0-MONTHLY), 0.04166666°, 1997-present
+  pmlEsaCCI50OceanColor5Day_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v5.0-5DAY), 0.04166666°, 1997-present, Lon0360
+  pmlEsaCCI50OceanColor8Day_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v5.0-8DAY), 0.04166666°, 1997-present, Lon0360
+  pmlEsaCCI50OceanColorMonthly_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v5.0-MONTHLY), 0.04166666°, 1997-present, Lon0360
+  pmlEsaCCI60OceanColor5Day | ESA CCI Ocean Colour Product (CCI ALL-v6.0-5DAY), 0.041666668°, 1997-present
+  pmlEsaCCI60OceanColor8Day | ESA CCI Ocean Colour Product (CCI ALL-v6.0-8DAY), 0.041666668°, 1997-present
+  pmlEsaCCI60OceanColorMonthly | ESA CCI Ocean Colour Product (CCI ALL-v6.0-MONTHLY), 0.041666668°, 1997-2022
+  pmlEsaCCI60OceanColor5Day_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v6.0-5DAY), 0.041666668°, 1997-present, Lon0360
+  pmlEsaCCI60OceanColor8Day_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v6.0-8DAY), 0.041666668°, 1997-present, Lon0360
+  pmlEsaCCI60OceanColorMonthly_Lon0360 | ESA CCI Ocean Colour Product (CCI ALL-v6.0-MONTHLY), 0.041666668°, 1997-2022, Lon0360
+== coastwatch.pfeg.noaa.gov viirs%20chlorophyll
+  nesdisVHNnoaa20chlaDaily | Chlorophyll, NOAA NOAA-20 VIIRS, Near Real-Time, Global 4km, Level 3, 2017-present,  Daily
+  nesdisVHNnoaa20chlaDaily_Lon0360 | Chlorophyll, NOAA NOAA-20 VIIRS, Near Real-Time, Global 4km, Level 3, 2017-present,  Daily, Lon0360
+  nesdisVHNnoaa20chlaWeekly | Chlorophyll, NOAA NOAA-20 VIIRS, Near Real-Time, Global 4km, Level 3, 2017-present,  Weekly
+  nesdisVHNnoaa20chlaWeekly_Lon0360 | Chlorophyll, NOAA NOAA-20 VIIRS, Near Real-Time, Global 4km, Level 3, 2017-present,  Weekly, Lon0360
+  nesdisVHNchlaDaily | Chlorophyll, NOAA S-NPP VIIRS, Near Real-Time, Global 4km, Level 3, 2017-present,  Daily
+  nesdisVHNchlaDaily_Lon0360 | Chlorophyll, NOAA S-NPP VIIRS, Near Real-Time, Global 4km, Level 3, 2017-present,  Daily, Lon0360
+  nesdisVHNchlaWeekly | Chlorophyll, NOAA S-NPP VIIRS, Near Real-Time, Global 4km, Level 3, 2017-present,  Weekly
+  nesdisVHNSQchlaDaily | Chlorophyll, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  nesdisVHNSQchlaDaily_Lon0360 | Chlorophyll, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily, Lon0360
+  nesdisVHNSQchlaMonthly | Chlorophyll, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  nesdisVHNSQchlaWeekly | Chlorophyll, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  nesdisVHNSQchlaWeekly_Lon0360 | Chlorophyll, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly, Lon0360
+  erdVHNchla1day | Chlorophyll a, North Pacific, NOAA VIIRS, 750m resolution, 2015-present (1 Day Composite)
+  erdVHNchla1day_Lon0360 | Chlorophyll a, North Pacific, NOAA VIIRS, 750m resolution, 2015-present (1 Day Composite), Lon0360
+  erdVHNchla3day | Chlorophyll a, North Pacific, NOAA VIIRS, 750m resolution, 2015-present (3 Day Composite)
+  erdVHNchla3day_Lon0360 | Chlorophyll a, North Pacific, NOAA VIIRS, 750m resolution, 2015-present (3 Day Composite), Lon0360
+  erdVHNchla8day | Chlorophyll a, North Pacific, NOAA VIIRS, 750m resolution, 2015-present (8 Day Composite)
+  erdVHNchla8day_Lon0360 | Chlorophyll a, North Pacific, NOAA VIIRS, 750m resolution, 2015-present (8 Day Composite), Lon0360
+  erdVHNchlamday | Chlorophyll a, North Pacific, NOAA VIIRS, 750m resolution, 2015-present (Monthly Composite)
+  erdVHNchlamday_Lon0360 | Chlorophyll a, North Pacific, NOAA VIIRS, 750m resolution, 2015-present (Monthly Composite), Lon0360
+  noaacwNPPN20S3ASCIDINEOF2kmDaily | Chlorophyll (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Quality, Global 2k
+  nesdisNPPN20S3ASCIDINEOFDaily | Chlorophyll (Gap-filled DINEOF), NOAA S-NPP NOAA-20 VIIRS and Copernicus S-3A OLCI, Science Quality, Global 9k
+  nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily | Chlorophyll (Gap-filled DINEOF), NOAA S-NPP NOAA-20, VIIRS, Near Real-Time, Global 9km, 2020-present,  Daily
+  nesdisVHNnoaaSNPPnoaa20chlaGapfilledDaily | Chlorophyll (Gap-filled DINEOF), NOAA S-NPP NOAA-20, VIIRS, Science Quality, Global 9km, 2018-recent,  Daily
+  nesdisVHNnoaaSNPPnoaa20chlaGapfilledDaily_Lon0360 | Chlorophyll (Gap-filled DINEOF), NOAA S-NPP NOAA-20, VIIRS, Science Quality, Global 9km, 2018-recent,  Daily, 
+  erdVH2018chla8day | VIIRSN, Suomi-NPP, Level-3 SMI, NASA, Global, 4km, Chlorophyll a, OCI Algorithm, R2018, 2012-present, 8-Day
+  erdVH2018chla8day_Lon0360 | VIIRSN, Suomi-NPP, Level-3 SMI, NASA, Global, 4km, Chlorophyll a, OCI Algorithm, R2018, 2012-present, 8-Day, L
+  erdVH2018chla1day | VIIRSN, Suomi-NPP, Level-3 SMI, NASA, Global, 4km, Chlorophyll a, OCI Algorithm, R2018, 2012-present, Daily
+  erdVH2018chla1day_Lon0360 | VIIRSN, Suomi-NPP, Level-3 SMI, NASA, Global, 4km, Chlorophyll a, OCI Algorithm, R2018, 2012-present, Daily, L
+  erdVH2018chlamday | VIIRSN, Suomi-NPP, Level-3 SMI, NASA, Global, 4km, Chlorophyll a, OCI Algorithm, R2018, 2012-present, Monthly
+  erdVH2018chlamday_Lon0360 | VIIRSN, Suomi-NPP, Level-3 SMI, NASA, Global, 4km, Chlorophyll a, OCI Algorithm, R2018, 2012-present, Monthly,
+  productivity_viirs_noaa20_daily_nrt | Primary Productivity, VIIRS NOAA20, NRT, Global, 4km, 2017-present (1 Day Composite)
+  productivity_viirs_noaa20_daily | Primary Productivity, VIIRS NOAA20, Science Quality, Global, 4km, 2017-present (1 Day Composite)
+  nesdisVHNSQkdparWeekly | KdPAR, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  nesdisVHNSQnLw410Weekly | nLw410, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  nesdisVHNSQnLw443Monthly | nLw443, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  nesdisVHNSQnLw443Weekly | nLw443, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  nesdisVHNSQnLw486Monthly | nLw486, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  nesdisVHNSQnLw486Weekly | nLw486, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  nesdisVHNSQnLw551Monthly | nLw551, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  nesdisVHNSQnLw551Weekly | nLw551, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  nesdisVHNSQnLw671Monthly | nLw671, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  nesdisVHNSQnLw671Weekly | nLw671, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly
+  nesdisVHNSQkdparMonthly | KdPAR, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  productivity_viirs_snpp_nrt_daily | Primary Productivity, VIIRS SNPP, Near Real-Time, Global, 4km, 2012-present (1 Day Composite)
+  productivity_viirs_snpp_daily | Primary Productivity, VIIRS SNPP, Science Quality, Global, 4km, 2012-present (1 Day Composite)
+  nesdisVHNSQnLw410Daily | nLw410, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  nesdisVHNSQnLw410Monthly | nLw410, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly
+  nesdisVHNSQnLw410Weekly_Lon0360 | nLw410, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly, Lon0360
+  nesdisVHNSQnLw443Daily | nLw443, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  nesdisVHNSQnLw443Monthly_Lon0360 | nLw443, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly, Lon0360
+  nesdisVHNSQnLw443Weekly_Lon0360 | nLw443, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly, Lon0360
+  nesdisVHNSQnLw486Daily | nLw486, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  nesdisVHNSQnLw486Monthly_Lon0360 | nLw486, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly, Lon0360
+  nesdisVHNSQnLw486Weekly_Lon0360 | nLw486, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly, Lon0360
+  nesdisVHNSQnLw551Daily | nLw551, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  nesdisVHNSQnLw551Monthly_Lon0360 | nLw551, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly, Lon0360
+  nesdisVHNSQnLw551Weekly_Lon0360 | nLw551, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Weekly, Lon0360
+  nesdisVHNSQnLw671Daily | nLw671, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Daily
+  nesdisVHNSQnLw671Monthly_Lon0360 | nLw671, NOAA S-NPP VIIRS, Science Quality, Global 4km, Level 3, 2012-present, Monthly, Lon0360
+== coastwatch.pfeg.noaa.gov pace
+  erdHadISSTDecomp | HadISST SST state-space components Monthly, 1870-present
+  erdHadISSTDecomp_Lon0360 | HadISST SST state-space components Monthly, 1870-present, Lon0360
+  erdMPIC1day_R2022SQ | MODIS Aqua, Level-3 R2022 SQ, Global, 4km, Particulate Inorganic Carbon, 2003-present (1 Day Composite)
+  erdMPIC8day_R2022SQ | MODIS Aqua, Level-3 R2022 SQ, Global, 4km, Particulate Inorganic Carbon, 2003-present (8 Day Composite)
+  erdMH1cflh1day_R2022NRT | Fluorescence Line Height, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 NRT, 2003-present (1 Day Composite)
+  erdMH1cflh8day_R2022NRT | Fluorescence Line Height, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 NRT, 2003-present (8 Day Composite)
+  erdMH1cflhmday_R2022NRT | Fluorescence Line Height, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 NRT, 2003-present (Monthly Composite)
+  erdMH1cflh1day_R2022SQ | Fluorescence Line Height, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 SQ 2003-present (1 Day Composite)
+  erdMH1cflh8day_R2022SQ | Fluorescence Line Height, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 SQ, 2003-present (8 Day Composite)
+  erdMH1cflhmday_R2022SQ | Fluorescence Line Height, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 SQ, 2003-present (Monthly Composite)
+  erdMPIC1day_R2022NRT | MODIS Aqua, Level-3 R2022 NRT, Global, 4km, Particulate Inorganic Carbon, 2003-present (1 Day Composite)
+  erdMPIC8day_R2022NRT | MODIS Aqua, Level-3 R2022 NRT, Global, 4km, Particulate Inorganic Carbon, 2003-present (8 Day Composite)
+  erdMPICmday_R2022NRT | MODIS Aqua, Level-3 R2022 NRT, Global, 4km, Particulate Inorganic Carbon, 2003-present (Monthly Composite)
+  erdMPOC1day_R2022NRT | MODIS Aqua, Level-3 R2022 NRT, Global, 4km, Particulate Organic Carbon, 2003-present (1 Day Composite)
+  erdMPOC8day_R2022NRT | MODIS Aqua, Level-3 R2022 NRT, Global, 4km, Particulate Organic Carbon, 2003-present (8 Day Composite)
+  erdMPOCmday_R2022NRT | MODIS Aqua, Level-3 R2022 NRT, Global, 4km, Particulate Organic Carbon, 2003-present (Monthly Composite)
+  erdMPICmday_R2022SQ | MODIS Aqua, Level-3 R2022 SQ, Global, 4km, Particulate Inorganic Carbon, 2003-present (Monthly Composite)
+  erdMPOC1day_R2022SQ | MODIS Aqua, Level-3 R2022 SQ, Global, 4km, Particulate Organic Carbon, 2003-present (1 Day Composite)
+  erdMPOC8day_R2022SQ | MODIS Aqua, Level-3 R2022 SQ, Global, 4km, Particulate Organic Carbon, 2003-present (8 Day Composite)
+  erdMPOCmday_R2022SQ | MODIS Aqua, Level-3 R2022 SQ, Global, 4km, Particulate Organic Carbon, 2003-present (Monthly Composite)
+  erdMBsstd5day | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (5 Day Composite)
+  nsidcCDRice_sh_grid | Sea Ice Concentration Lat-Lon Grid, NOAA/NSIDC Climate Data Record, Southern Hemisphere, 25km
+  erdMBsstd1day | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (1 Day Composite)
+  erdMBsstd14day | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (14 Day Composite)
+  erdMBsstd3day | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (3 Day Composite)
+  erdMBsstd8day | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (8 Day Composite)
+  erdMBsstd1dayF | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (1 Day Composite), degree_F
+  erdMBsstd8dayF | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (8 Day Composite), degree_F
+  erdMH1cflh1day | Fluorescence Line Height, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (1 Day Composite)
+  erdMH1cflh8day | Fluorescence Line Height, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (8 Day Composite)
+  erdMH1cflhmday | Fluorescence Line Height, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (Monthly Composite)
+  erdMBsstd5day_LonPM180 | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (5 Day Composite), Lon+/-180
+  erdMH1cflh1day_Lon0360 | Fluorescence Line Height, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (1 Day Composite), L
+  erdMH1cflh8day_Lon0360 | Fluorescence Line Height, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (8 Day Composite), L
+  erdMH1cflhmday_Lon0360 | Fluorescence Line Height, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (Monthly Composite),
+  jplOscar | OSCAR Sea Surface Velocity, 1/3°;, L4, Global, 1992-present, 5 Day Composite
+  erdMBsstd1day_LonPM180 | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (1 Day Composite), Lon+/-180
+  erdMBsstd14day_LonPM180 | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (14 Day Composite), Lon+/-180
+  erdMBsstd3day_LonPM180 | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (3 Day Composite), Lon+/-180
+  erdMBsstd8day_LonPM180 | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (8 Day Composite), Lon+/-180
+  erdMH1chla8day | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (8 Day Composite)
+  erdMH1chlamday | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (Monthly Composite)
+  erdMBsstd1dayF_LonPM180 | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (1 Day Composite), degree_F, Lon+/-1
+  erdMBsstd8dayF_LonPM180 | SST, Aqua MODIS, NPP, 0.025 degrees, Pacific Ocean, Daytime, 2006-present (8 Day Composite), degree_F, Lon+/-1
+  erdMH1chla8day_Lon0360 | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (8 Day Composite), Lon0360
+  erdMH1chlamday_Lon0360 | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (Monthly Composite), Lon0360
+  erdMH1kd4901day_R2022SQ | Diffuse Attenuation K490, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 SQ, 2003-present (1 Day Composite)
+  erdMH1kd4908day_R2022SQ | Diffuse Attenuation K490, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 SQ, 2003-present (8 Day Composite)
+  erdMH1kd4901day_R2022NRT | Diffuse Attenuation K490, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 NRT, 2003-present (1 Day Composite)
+  erdMH1kd4908day_R2022NRT | Diffuse Attenuation K490, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 NRT, 2003-present (8 Day Composite)
+  erdMH1kd490mday_R2022NRT | Diffuse Attenuation K490, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 NRT, 2003-present (Monthly Composite)
+  erdMH1kd490mday_R2022SQ | Diffuse Attenuation K490, Aqua MODIS, NPP, L3SMI, Global, 4km, R2022 SQ, 2003-present (Monthly Composite)
+  erdMH1chla1day | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (1 Day Composite)
+  erdMH1chla1day_Lon0360 | Chlorophyll-a, Aqua MODIS, NPP, L3SMI, Global, 4km, Science Quality, 2003-2022 (1 Day Composite), Lon0360
+  erdSW2018chla1day | Chlorophyll-a, Orbview-2 SeaWiFS, R2018.0, 0.1°, Global, 1997-2010 (1 Day Composite)
+  erdSW2018chla8day | Chlorophyll-a, Orbview-2 SeaWiFS, R2018.0, 0.1°, Global, 1997-2010 (8 Day Composite)
+  erdSW2018chlamday | Chlorophyll-a, Orbview-2 SeaWiFS, R2018.0, 0.1°, Global, 1997-2010 (Monthly Composite)
+  nsidcCDRice_nh_grid | Sea Ice Concentration Lat-Lon Grid, NOAA/NSIDC Climate Data Record, Northern Hemisphere, 25km
+  erdSW2018chla1day_Lon0360 | Chlorophyll-a, Orbview-2 SeaWiFS, R2018.0, 0.1°, Global, 1997-2010 (1 Day Composite), Lon0360
+  erdSW2018chla8day_Lon0360 | Chlorophyll-a, Orbview-2 SeaWiFS, R2018.0, 0.1°, Global, 1997-2010 (8 Day Composite), Lon0360
+== coastwatch.pfeg.noaa.gov charm
+  charmForecast0day | C-HARM v1 Nowcast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, California 
+  charmForecast1day | C-HARM v1 1-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Cali
+  charmForecast2day | C-HARM v1 2-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Cali
+  charmForecast0day_LonPM180 | C-HARM v1 Nowcast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, California 
+  charmForecast3day | C-HARM v1, 3-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Cal
+  charmForecast1dayV2 | C-HARM v2 1-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Cali
+  charmForecast2dayV2 | C-HARM v2 2-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Cali
+  charmForecast3dayV2 | C-HARM v2 3-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Cali
+  charmForecast0dayV2 | C-HARM v2 Nowcast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, California 
+  wvcharmV3_0day | C-HARM v3.1 Nowcast:, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Californ
+  charmForecast1day_LonPM180 | C-HARM v1 1-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Cali
+  charmForecast2day_LonPM180 | C-HARM v1 2-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Cali
+  charmForecast3day_LonPM180 | C-HARM v1, 3-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Cal
+  charmForecast1dayV2_LonPM180 | C-HARM v2 1-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Cali
+  charmForecast2dayV2_LonPM180 | C-HARM v2 2-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Cali
+  charmForecast3dayV2_LonPM180 | C-HARM v2 3-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Cali
+  charmForecast0dayV2_LonPM180 | C-HARM v2 Nowcast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, California 
+  wvcharmV3_1day | C-HARM v3.1 1-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Ca
+  wvcharmV3_2day | C-HARM v3.1 2-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Ca
+  wvcharmV3_3day | C-HARM v3.1 3-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Ca
+  wvcharmV3_0day_LonPM180 | C-HARM v3.1 Nowcast:, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Californ
+  wvcharmV3_1day_LonPM180 | C-HARM v3.1 1-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Ca
+  wvcharmV3_2day_LonPM180 | C-HARM v3.1 2-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Ca
+  wvcharmV3_3day_LonPM180 | C-HARM v3.1 3-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, Ca
+== coastwatch.noaa.gov olci

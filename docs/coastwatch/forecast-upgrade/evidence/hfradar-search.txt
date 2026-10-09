@@ -1,0 +1,28 @@
+ucsdHfrW1 | Currents, HF Radar, US West Coast, RTV, Near-Real Time, 2012-present, Hourly, 1km
+ucsdHfrW1_Lon0360 | Currents, HF Radar, US West Coast, RTV, Near-Real Time, 2012-present, Hourly, 1km, Lon0360
+ucsdHfrW2 | Currents, HF Radar, US West Coast, RTV, Near-Real Time, 2012-present, Hourly, 2km
+ucsdHfrW2_Lon0360 | Currents, HF Radar, US West Coast, RTV, Near-Real Time, 2012-present, Hourly, 2km, Lon0360
+ucsdHfrW500 | Currents, HF Radar, US West Coast, RTV, Near-Real Time, 2012-present, Hourly, 500m
+ucsdHfrW500_Lon0360 | Currents, HF Radar, US West Coast, RTV, Near-Real Time, 2012-present, Hourly, 500m, Lon0360
+ucsdHfrW6 | Currents, HF Radar, US West Coast, RTV, Near-Real Time, 2012-present, Hourly, 6km
+ucsdHfrW6_Lon0360 | Currents, HF Radar, US West Coast, RTV, Near-Real Time, 2012-present, Hourly, 6km, Lon0360
+ucsdHfrE6 | Currents, HF Radar, US East Coast and Gulf of Mexico, RTV, Near-Real Time, 2012-present, Hourly, 6km
+ucsdHfrE6_Lon0360 | Currents, HF Radar, US East Coast and Gulf of Mexico, RTV, Near-Real Time, 2012-present, Hourly, 6km, Lon0360
+ucsdHfrE1 | Currents, HF Radar, US East Coast and Gulf of Mexico, RTV, Near-Real Time, 2012-present, Hourly, 1km
+ucsdHfrE1_Lon0360 | Currents, HF Radar, US East Coast and Gulf of Mexico, RTV, Near-Real Time, 2012-present, Hourly, 1km, Lon0360
+ucsdHfrE2 | Currents, HF Radar, US East Coast and Gulf of Mexico, RTV, Near-Real Time, 2012-present, Hourly, 2km
+ucsdHfrE2_Lon0360 | Currents, HF Radar, US East Coast and Gulf of Mexico, RTV, Near-Real Time, 2012-present, Hourly, 2km, Lon0360
+ucsdHfrP2 | Currents, HF Radar, Puerto Rico and the US Virgin Islands, RTV, Near-Real Time, 2012-present, Hourly, 2km
+ucsdHfrP2_Lon0360 | Currents, HF Radar, Puerto Rico and the US Virgin Islands, RTV, Near-Real Time, 2012-present, Hourly, 2km, Lon
+ucsdHfrH1 | Currents, HF Radar, US Hawai'i State, RTV, Near-Real Time, 2012-present, Hourly, 1km
+ucsdHfrH1_Lon0360 | Currents, HF Radar, US Hawai'i State, RTV, Near-Real Time, 2012-present, Hourly, 1km, Lon0360
+ucsdHfrP6 | Currents, HF Radar, Puerto Rico and the US Virgin Islands, RTV, Near-Real Time, 2012-present, Hourly, 6km
+ucsdHfrP6_Lon0360 | Currents, HF Radar, Puerto Rico and the US Virgin Islands, RTV, Near-Real Time, 2012-present, Hourly, 6km, Lon
+ucsdHfrW6 None HTTPError: HTTP Error 503:  {}
+ucsdHfrW2 None HTTPError: HTTP Error 503:  {}
+ucsdHfrW1 None HTTPError: HTTP Error 503:  {}
+ucsdHfrW500 None HTTPError: HTTP Error 503:  {}
+ucsdHfrW6 ['2026-10-09T06:00:00Z', '2026-10-09T07:00:00Z', '2026-10-09T08:00:00Z']  {'latitude': 'nValues=367, evenlySpaced=true, averageSpacing=0.05394000000000001', 'longitude': 'nValues=234, evenlySpaced=true, averageSpacing=0.06246523605150221'}
+ucsdHfrW2 ['2026-10-09T07:00:00Z', '2026-10-09T08:00:00Z', '2026-10-09T09:00:00Z']  {'latitude': 'nValues=1099, evenlySpaced=true, averageSpacing=0.017980000000000003', 'longitude': 'nValues=700, evenlySpaced=true, averageSpacing=0.02082174535050074'}
+HFR 2km Monterey subset: 200 23716B 2.606690s
+time 2026-10-09T09:00:00.000000000 shape (46, 42) valid 864 of 1932
