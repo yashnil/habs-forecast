@@ -274,9 +274,14 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
         prev_s = _prev_status(prev, fisheries.SOURCE_ID)
         title = "Historical fisheries exposure (NOAA FOSS landings, BLS CPI-U)"
         prev_fish = _load(ctx, fisheries_url, FisheriesDataset)
-        recent = prev_fish is not None and prev_s is not None and prev_s.last_success_at is not None and (
-            ctx.now - datetime.fromisoformat(prev_s.last_success_at.replace("Z", "+00:00"))
-        ) < timedelta(days=FISHERIES_REFRESH_DAYS)
+        # reuse only an artifact built by this same pipeline version (a code change may change the method)
+        recent = (
+            prev_fish is not None
+            and prev_s is not None
+            and prev_s.last_success_at is not None
+            and all(p.pipeline_version == ctx.pipeline_version for p in prev_fish.provenance)
+            and (ctx.now - datetime.fromisoformat(prev_s.last_success_at.replace("Z", "+00:00"))) < timedelta(days=FISHERIES_REFRESH_DAYS)
+        )
         if recent:
             assert prev_s is not None
             statuses.append(prev_s.model_copy(update={"last_attempt_at": ctx.now_iso, "outcome": "unchanged", "notes": [f"Annual data; refreshed every {FISHERIES_REFRESH_DAYS} days."]}))

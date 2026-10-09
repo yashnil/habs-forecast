@@ -210,3 +210,14 @@ def test_suppression_propagates_and_complementary_suppression():
     assert d.includes_suppressed and d.publishable and d.value == 10.0 and "At least" in d.note
     # each cell counted once
     assert sum(1 for c in cells for k in by_port if (c.key[0], c.key[2]) == k) == len(cells)
+
+
+def test_new_pipeline_version_rebuilds_within_the_refresh_window(out):
+    """A code change may change the method, so a cached artifact from another version is not reused."""
+    run(out)
+    ctx = fixture_context(out, now="2026-10-10T18:00:00Z")
+    ctx.pipeline_version = "next-version"
+    m = run_pipeline(ctx)
+    st = next(s for s in m.sources if s.source_id == "foss_landings")
+    assert st.outcome == "updated"
+    assert any("fisheries.noaa.gov" in c for c in ctx.fetcher.calls)
