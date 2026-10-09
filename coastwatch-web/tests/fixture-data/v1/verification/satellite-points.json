@@ -3,8 +3,10 @@
   "live_source_comparison": false,
   "summary": {
     "layers": 6,
+    "layers_from_earlier_runs_not_rechecked": 0,
     "checks": 72,
     "failures": 0,
+    "unverifiable_upstream_unreachable": 0,
     "all_passed": true
   },
   "rows": [

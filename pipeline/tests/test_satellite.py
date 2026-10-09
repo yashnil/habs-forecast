@@ -304,3 +304,31 @@ def test_days_made_by_older_processing_are_rebuilt_not_reused(tmp_path, monkeypa
     assert [u for u in f2.calls if "OLCIchla" in u and ".nc?" in u]  # re-fetched
     days = [lyr for lyr in m2.layers if lyr.layer_id.startswith("olci300_chl_2")]
     assert all(d.provenance.upstream_metadata["processing"] == "satellite-processing-test" for d in days)
+
+
+def test_verification_checks_only_this_runs_layers_and_names_an_unreachable_upstream(tmp_path, monkeypatch):
+    # staging run 37991306340: VIIRS was carried over, ERDDAP refused VIIRS, and the
+    # re-check of the old layer was reported as 8 value mismatches
+    from coastwatch_pipeline import verify_satellite as vs
+
+    out = tmp_path / "v1"
+    run_pipeline(fixture_context(out))
+    fetcher = FixtureFetcher(overrides={r"erdVHNchla1day": lambda url: (_ for _ in ()).throw(FetchError(f"HTTP 403 for {url}"))})
+    ctx = fixture_context(out, fetcher=fetcher)
+    ctx.run_id = "second"
+    run_pipeline(ctx)
+    rep = verify_satellite(out, live=False)
+    checked = {r["layer_id"] for r in rep["rows"]}
+    assert "viirs750_chl_latest" not in checked and "olci300_chl_latest" in checked
+    assert rep["summary"]["layers_from_earlier_runs_not_rechecked"] >= 1 and rep["summary"]["all_passed"]
+
+    def refused(url, **kw):
+        raise FetchError(f"Failed after 4 attempts: {url} (HTTP Error 403: )")
+
+    monkeypatch.setattr(vs, "fetch", refused)
+    monkeypatch.setattr(vs.time, "sleep", lambda s: None)
+    rep = verify_satellite(out, live=True, per_layer=2)
+    live_rows = [r for r in rep["rows"] if r.get("value") is not None]
+    assert live_rows and all(r["source_error"].startswith("UNVERIFIABLE, ERDDAP unreachable") for r in live_rows)
+    assert rep["summary"]["unverifiable_upstream_unreachable"] == len(live_rows)
+    assert not rep["summary"]["all_passed"]  # still blocks publication: new data must be checked

@@ -22,7 +22,7 @@ from urllib.parse import quote
 import numpy as np
 from PIL import Image
 
-from .http import fetch
+from .http import FetchError, fetch
 from .models import LayerArtifact, Manifest
 from .process.palette import palette_indices
 from .process.tiles import TILE, lat_to_y, lon_to_x
@@ -59,22 +59,32 @@ def _tile_index(out_dir: Path, lyr: LayerArtifact, lat: float, lon: float) -> in
         return int(np.asarray(im)[int(y % TILE), int(x % TILE)])
 
 
+class Unreachable(Exception):
+    """ERDDAP did not answer (e.g. HTTP 403 to cloud runners): the value could not be
+    checked. Reported separately from a mismatch; it still fails verification."""
+
+
 def _erddap(server: str, ds: str, var: str, t: str, lat: float, lon: float) -> tuple[float, float, float] | None:
     q = f"{var}[({t})][(0.0)][({lat:.5f})][({lon:.5f})]"
     url = f"{server}/griddap/{ds}.csv0?" + quote(q, safe=",():")
     try:
         line = fetch(url, retries=3, backoff=3).body.decode().strip().splitlines()[-1].split(",")
-    except Exception:
-        return None
+    except FetchError as e:
+        if "HTTP 404" in str(e):  # no data at that time and place: a real answer
+            return None
+        raise Unreachable(str(e)[:200]) from e
     v = float("nan") if line[-1] in ("NaN", "") else float(line[-1])
     return v, float(line[2]), float(line[3])
 
 
 def verify_satellite(out_dir: Path, live: bool = True, per_layer: int = 8) -> dict:
     m = Manifest.model_validate_json((out_dir / "manifest.json").read_text())
-    layers = [lyr for lyr in m.layers if lyr.provenance.source_id == satellite.SOURCE_ID and lyr.grid]
+    all_layers = [lyr for lyr in m.layers if lyr.provenance.source_id == satellite.SOURCE_ID and lyr.grid]
+    # Only layers made by this run: reused and carried-over layers were verified when they
+    # were first published (and their upstream may be the part that is down right now).
+    layers = [lyr for lyr in all_layers if lyr.provenance.pipeline_run_id == m.pipeline_run_id]
     rows: list[dict] = []
-    days = {lyr.time.observed_date: lyr for lyr in layers if lyr.composite is None and lyr.layer_id.startswith("olci")}
+    days = {lyr.time.observed_date: lyr for lyr in all_layers if lyr.composite is None and lyr.layer_id.startswith("olci")}
     for lyr in layers:
         vals = _published(out_dir, lyr)
         g = lyr.grid
@@ -108,12 +118,17 @@ def verify_satellite(out_dir: Path, live: bool = True, per_layer: int = 8) -> di
             if live:
                 tol = g.max_quantization_error + 1e-6
                 match = None
+                unreachable = None
                 for plat, sectors in prod.platforms:
                     for ds, lo, hi, _ in sectors:
                         if not ((lo == -180 or lon > lo) and lon < hi):
                             continue
                         for t in times:
-                            res = _erddap(prod.server, ds, prod.variable, t, lat, lon)
+                            try:
+                                res = _erddap(prod.server, ds, prod.variable, t, lat, lon)
+                            except Unreachable as e:
+                                unreachable = str(e)
+                                res = None
                             time.sleep(0.2)
                             if res and math.isfinite(res[0]) and res[0] > 0:
                                 match = (plat, ds, t, *res)
@@ -130,7 +145,7 @@ def verify_satellite(out_dir: Path, live: bool = True, per_layer: int = 8) -> di
                     ok = ok and row["source_cell_matches"] and row["source_matches_grid"]
                 else:
                     row["source_matches_grid"] = False
-                    row["source_error"] = "no valid value at this cell in the listed scenes"
+                    row["source_error"] = f"UNVERIFIABLE, ERDDAP unreachable: {unreachable}" if unreachable else "no valid value at this cell in the listed scenes"
                     ok = False
             row["status"] = "pass" if ok else "FAIL"
             rows.append(row)
@@ -141,10 +156,15 @@ def verify_satellite(out_dir: Path, live: bool = True, per_layer: int = 8) -> di
             got = _tile_index(out_dir, lyr, lat, lon)
             rows.append({"layer_id": lyr.layer_id, "row": int(rr[i]), "col": int(cc[i]), "value": None, "tile_transparent": got in (None, 0), "status": "pass" if got in (None, 0) else "FAIL"})
     failed = [r for r in rows if r["status"] == "FAIL"]
+    unverifiable = [r for r in failed if str(r.get("source_error", "")).startswith("UNVERIFIABLE")]
     return {
         "manifest_generated_at": m.generated_at,
         "live_source_comparison": live,
-        "summary": {"layers": len(layers), "checks": len(rows), "failures": len(failed), "all_passed": bool(rows) and not failed},
+        "summary": {
+            "layers": len(layers), "layers_from_earlier_runs_not_rechecked": len(all_layers) - len(layers),
+            "checks": len(rows), "failures": len(failed), "unverifiable_upstream_unreachable": len(unverifiable),
+            "all_passed": not failed and (bool(rows) or not layers),
+        },
         "rows": rows,
     }
 
