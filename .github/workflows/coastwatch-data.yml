@@ -64,6 +64,9 @@ jobs:
       - name: Verify new C-HARM data against ERDDAP (13 points x 12 layers)
         working-directory: pipeline
         run: uv run cwp verify-charm --only-if-updated --out ../publish/v1 --report ../publish/v1/verification/charm-points.json
+      - name: Verify new satellite chlorophyll against ERDDAP (values, cell centres, tiles, composite)
+        working-directory: pipeline
+        run: uv run cwp verify-satellite --only-if-updated --out ../publish/v1 --report ../publish/v1/verification/satellite-points.json
       - name: Every manifest reference exists and decodes
         working-directory: pipeline
         run: uv run cwp check-published --base ../publish/v1
