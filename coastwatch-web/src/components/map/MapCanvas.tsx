@@ -67,7 +67,7 @@ export default function MapCanvas({ raster, opacity, ports, showPorts, officialG
       mapStyle={BASEMAP_STYLE}
       initialViewState={{
         bounds: initialBounds,
-        fitBoundsOptions: { padding: wide ? { top: 56, bottom: 40, left: 400, right: 440 } : 24 },
+        fitBoundsOptions: { padding: wide ? { top: 56, bottom: 140, left: 400, right: 440 } : 24 },
       }}
       maxBounds={[CA_BOUNDS[0][0], CA_BOUNDS[0][1], CA_BOUNDS[1][0], CA_BOUNDS[1][1]]}
       minZoom={4.2}

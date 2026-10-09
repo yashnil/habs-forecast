@@ -6,7 +6,6 @@ import { classifyTime, type Freshness } from "@/lib/freshness";
 import { CHARM_LEADS, CHARM_VARIABLES, charmLayer, leadLabel, type CharmVariable } from "@/lib/layers";
 import { formatDate, formatDateTimePT, relativeDay } from "@/lib/time";
 import { FreshnessBadge, ProductClassBadge } from "@/components/ui/Badges";
-import { ProbabilityLegend } from "@/components/ui/ProbabilityLegend";
 
 type Props = {
   manifest: Manifest;
@@ -111,7 +110,7 @@ export function ForecastPanel(p: Props) {
                 <span className="font-medium text-ink">{layer.title}</span> · valid{" "}
                 <span className="tabular">{formatDate(layer.time.valid_date!, { year: true })}</span>
               </p>
-              <ProbabilityLegend palette={layer.palette!} threshold={layer.threshold_text} />
+              <p className="text-[12px] leading-snug text-ink-2">{layer.threshold_text} The colour key is on the map.</p>
               <Controls shown={p.shown} onShow={p.onShow} opacity={p.opacity} onOpacity={p.onOpacity} />
               <Caveats layer={layer} />
             </div>

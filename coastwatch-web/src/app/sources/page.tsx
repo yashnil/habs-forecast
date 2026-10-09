@@ -12,7 +12,7 @@ export default async function SourcesPage() {
   const data = await loadData();
   const manifest = data.ok ? data.manifest : null;
   return (
-    <AppShell active="sources" manifest={manifest} banner={<DataBanners manifest={manifest} error={data.ok ? null : data.error} />}>
+    <AppShell active="sources" manifest={manifest} banner={<DataBanners manifest={manifest} error={data.ok ? null : data.error} />} scroll="page">
       <div className="mx-auto w-full max-w-4xl space-y-6 overflow-y-auto px-4 py-6">
         <header className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight text-ink">Data & sources</h1>

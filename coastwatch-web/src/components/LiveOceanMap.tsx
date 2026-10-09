@@ -17,7 +17,9 @@ import { Inspector, type InspectPoint } from "@/components/map/Inspector";
 import { MobileSheet } from "@/components/MobileSheet";
 import type { Raster } from "@/components/map/MapCanvas";
 import { OFFICIAL_STATUS } from "@/content/copy";
-import { colorAt } from "@/components/ui/ProbabilityLegend";
+import { ProbabilityLegend, colorAt } from "@/components/ui/ProbabilityLegend";
+import { Segmented } from "@/components/ui/Primitives";
+import { formatDate } from "@/lib/time";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), {
   ssr: false,
@@ -107,7 +109,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   }, [region, port, variable, lead, choice, inspect]);
 
   const padding = useCallback(
-    () => (window.innerWidth >= 1024 ? { top: 56, bottom: 40, left: 400, right: port != null || inspect ? 452 : 40 } : { top: 56, bottom: Math.round(window.innerHeight * 0.56), left: 24, right: 24 }),
+    () => (window.innerWidth >= 1024 ? { top: 56, bottom: 140, left: 400, right: port != null || inspect ? 452 : 40 } : { top: 56, bottom: Math.round(window.innerHeight * 0.56), left: 24, right: 24 }),
     [port, inspect],
   );
 
@@ -278,6 +280,50 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     </>
   );
 
+  const chlActive = choice.kind === "observation" ? chl.find((c) => c.layer_id === choice.layerId) : null;
+  const layerKind = choice.kind === "forecast" ? "forecast" : choice.kind === "observation" ? "chl" : "none";
+  const VAR_NAME: Record<CharmVariable, string> = { pseudo_nitzschia: "Bloom", particulate_domoic: "Particulate domoic acid", cellular_domoic: "Cellular domoic acid" };
+  const legendCard = (
+    <section aria-label="Map layer and colour key" data-testid="map-legend" className="space-y-2 rounded-lg border border-hairline-strong bg-surface/95 p-3 shadow-xl">
+      <Segmented
+        label="Map layer"
+        value={layerKind}
+        testidPrefix="maplayer"
+        onChange={(k) => setChoice(k === "forecast" ? { kind: "forecast" } : k === "chl" && chl[0] ? { kind: "observation", layerId: chl[0].layer_id } : { kind: "none" })}
+        options={[
+          { value: "forecast", label: "Forecast", disabled: !forecastLayer },
+          { value: "chl", label: "Chlorophyll", disabled: chl.length === 0 },
+          { value: "none", label: "Off" },
+        ]}
+      />
+      {layerKind === "forecast" && forecastLayer?.palette && (
+        <div className="space-y-1">
+          <p className="text-[12px] font-medium text-ink">
+            {VAR_NAME[variable]} · {leadLabel(lead)}
+            {forecastLayer.time.valid_date && <span className="font-normal text-ink-3"> · valid {formatDate(forecastLayer.time.valid_date)}</span>}
+          </p>
+          <ProbabilityLegend palette={forecastLayer.palette} threshold={null} />
+        </div>
+      )}
+      {layerKind === "chl" && chlActive && (
+        <div className="space-y-1">
+          <p className="text-[12px] font-medium text-ink">
+            {chlActive.short_title}
+            {chlActive.time.observed_date && <span className="font-normal text-ink-3"> · {formatDate(chlActive.time.observed_date)}</span>}
+          </p>
+          {chlActive.tiles?.legend_verified && chlActive.tiles.legend_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={chlActive.tiles.legend_url} alt={`Colour legend for ${chlActive.title} (mg per cubic metre)`} className="w-full rounded bg-white p-0.5" loading="lazy" />
+          ) : (
+            <p className="text-[11.5px] text-serious">Legend unavailable — colours cannot be read quantitatively.</p>
+          )}
+          <p className="text-[11px] text-ink-3">Algae biomass, not toxin. Gaps are clouds.</p>
+        </div>
+      )}
+      {layerKind === "none" && <p className="text-[11.5px] text-ink-3">No data layer shown.</p>}
+    </section>
+  );
+
   const regionBar = (
     <nav aria-label="Regions" className="flex gap-1 overflow-x-auto" data-testid="region-bar">
       {regions.map((r) => (
@@ -337,6 +383,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
           <div className="absolute left-[396px] right-3 top-3 z-10 flex justify-start">
             <div className="max-w-full rounded-lg border border-hairline bg-page/90 p-1">{regionBar}</div>
           </div>
+          <div className="absolute bottom-3 left-[396px] z-10 w-[320px]">{legendCard}</div>
           {detail ? (
             <aside aria-label="Details" className="absolute bottom-3 right-3 top-14 z-10 w-[424px] overflow-y-auto rounded-lg border border-hairline-strong bg-surface p-4 shadow-2xl [scrollbar-width:thin]" data-testid="detail-panel">
               {detail}
@@ -349,7 +396,15 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
         </>
       ) : (
         <>
-          <div className="absolute left-2 right-2 top-2 z-10">{regionBar}</div>
+          <div className="absolute left-2 right-2 top-2 z-10 space-y-1.5">
+            {regionBar}
+            <details className="w-[min(300px,100%)] rounded-lg border border-hairline-strong bg-surface/95 text-[12px] text-ink-2" data-testid="mobile-legend">
+              <summary className="cursor-pointer px-3 py-1.5 font-medium text-ink">
+                {layerKind === "forecast" ? `${VAR_NAME[variable]} · ${leadLabel(lead)}` : layerKind === "chl" ? "Satellite chlorophyll" : "No layer"} — key
+              </summary>
+              <div className="px-1 pb-1">{legendCard}</div>
+            </details>
+          </div>
           <MobileSheet
             peek={
               detail
