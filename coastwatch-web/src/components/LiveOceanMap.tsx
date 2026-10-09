@@ -24,10 +24,12 @@ import { useNow } from "@/lib/useNow";
 import { PortPanel } from "@/components/port/PortPanel";
 import { Inspector, type InspectPoint } from "@/components/map/Inspector";
 import { MobileSheet } from "@/components/MobileSheet";
-import type { ImageRaster, TileRaster } from "@/components/map/MapCanvas";
+import type { CurrentsOverlay, ImageRaster, TileRaster } from "@/components/map/MapCanvas";
 import { NavCard, type RegionDef } from "@/components/map/NavCard";
-import { LayerDock, type LayerGroup, type SatChoice } from "@/components/map/LayerDock";
+import { LayerDock, selectedCurrents, type CurChoice, type FlowMode, type LayerGroup, type SatChoice } from "@/components/map/LayerDock";
 import { SatelliteNear } from "@/components/map/SatelliteNear";
+import { CurrentsNear } from "@/components/map/CurrentsNear";
+import { currentsHourly, fieldFeatures, loadField, type CurrentField } from "@/lib/currents";
 import { OFFICIAL_STATUS } from "@/content/copy";
 import { useOfficialDrawer } from "@/components/shell/OfficialShell";
 import { Icon } from "@/components/ui/Icon";
@@ -58,8 +60,15 @@ const VIEW: Record<string, [[number, number], [number, number]]> = {
 };
 const DEFAULT_REGION = "monterey_bay";
 
+function parseCurrents(v: string | null): CurChoice | null {
+  if (!v || !v.startsWith("currents")) return null;
+  const rest = v.split(":")[1] ?? null;
+  return rest === "mean" ? { hour: null, mean: true } : { hour: rest && /^\d{8}T\d{2}Z$/.test(rest) ? rest : null, mean: false };
+}
+
 function parseLayer(v: string | null): { group: LayerGroup; sat: SatChoice } | null {
   if (!v || v === "forecast") return v ? { group: "forecast", sat: { product: "olci300", day: null } } : null;
+  if (v.startsWith("currents")) return { group: "currents", sat: { product: "olci300", day: null } };
   if (v.startsWith("imagery:")) return { group: "satellite", sat: { imagery: v.slice(8) } };
   const [prod, day] = v.split(":");
   if (prod === "olci300" || prod === "viirs750" || prod === "multi") return { group: "satellite", sat: { product: prod, day: prod === "multi" ? null : (day ?? null) } };
@@ -88,6 +97,16 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   const initialLayer = parseLayer(initialQ.get("layer"));
   const [group, setGroup] = useState<LayerGroup>(initialLayer?.group ?? "forecast");
   const [sat, setSat] = useState<SatChoice>(initialLayer?.sat ?? { product: satelliteLatest(manifest, "olci300") ? "olci300" : "viirs750", day: null });
+  const [cur, setCur] = useState<CurChoice>(parseCurrents(initialQ.get("layer")) ?? { hour: null, mean: false });
+  const [flow, setFlow] = useState<FlowMode>(initialQ.get("flow") === "particles" ? "particles" : "arrows");
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const on = () => setReducedMotion(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
   const [showAge, setShowAgeRaw] = useState(initialQ.get("age") === "1");
   const [showSensor, setShowSensorRaw] = useState(initialQ.get("sensor") === "1" && initialQ.get("age") !== "1");
   // the age and sensor views replace the chlorophyll colours, so only one at a time
@@ -129,7 +148,8 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const layerParam = group === "forecast" ? "forecast" : "imagery" in sat ? `imagery:${sat.imagery}` : sat.day ? `${sat.product}:${sat.day}` : sat.product;
+  const layerParam =
+    group === "currents" ? (cur.mean ? "currents:mean" : cur.hour ? `currents:${cur.hour}` : "currents") : group === "forecast" ? "forecast" : "imagery" in sat ? `imagery:${sat.imagery}` : sat.day ? `${sat.product}:${sat.day}` : sat.product;
   useEffect(() => {
     const q = new URLSearchParams();
     q.set("region", region);
@@ -139,9 +159,10 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     q.set("layer", layerParam);
     if (showAge && group === "satellite") q.set("age", "1");
     if (showSensor && group === "satellite") q.set("sensor", "1");
+    if (flow === "particles" && group === "currents") q.set("flow", "particles");
     if (inspect) q.set("inspect", `${inspect.lat.toFixed(4)},${inspect.lon.toFixed(4)}`);
     window.history.replaceState(null, "", `?${q.toString()}`);
-  }, [region, port, variable, lead, layerParam, inspect, showAge, showSensor, group]);
+  }, [region, port, variable, lead, layerParam, inspect, showAge, showSensor, group, flow]);
 
   const detailOpen = port != null || inspect != null;
   const padding = useCallback(() => {
@@ -203,6 +224,23 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     if (!t || !satLayer) return null;
     return { id: `${satLayer.layer_id}-${showAge ? "age" : "sensor"}`, template: artifactUrl(baseUrl, t.url_template), minzoom: t.min_zoom ?? 0, maxzoom: t.max_native_zoom, bounds: t.bounds_lnglat };
   }, [satLayer, baseUrl, showAge, showSensor]);
+  // observed currents: the selected hour (or mean) decoded from its u/v grids
+  const curLayer = currentsHourly(manifest).length ? selectedCurrents(manifest, cur) : null;
+  const [curField, setCurField] = useState<{ id: string; field: CurrentField } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (group !== "currents" || !curLayer) return;
+    loadField(baseUrl, curLayer)
+      .then((f) => !cancelled && setCurField({ id: curLayer.layer_id, field: f }))
+      .catch(() => !cancelled && setCurField(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [group, curLayer, baseUrl]);
+  const currentsOverlay: CurrentsOverlay | null = useMemo(() => {
+    if (group !== "currents" || !curField || curField.id !== curLayer?.layer_id) return null;
+    return { id: curField.id, field: curField.field, features: fieldFeatures(curField.field), mode: flow === "particles" && !reducedMotion ? "particles" : "arrows" };
+  }, [group, curField, curLayer, flow, reducedMotion]);
   const imageryLayer = group === "satellite" && "imagery" in sat ? (chlorophyllLayers(manifest).find((l) => l.layer_id === sat.imagery) ?? chlorophyllLayers(manifest)[0]) : null;
   const imagery: TileRaster | null = imageryLayer?.tiles ? { id: imageryLayer.layer_id, template: imageryLayer.tiles.url_template, minzoom: 0, maxzoom: imageryLayer.tiles.max_native_zoom } : null;
 
@@ -223,6 +261,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
         <div className="space-y-5">
           <PortPanel port={intel} coll={portIntel} manifest={manifest} official={official} verification={verification} lead={lead} onLead={setLead} variable={variable} onVariable={setVariable} now={now} onClose={() => setPort(null)} />
           <SatelliteNear manifest={manifest} baseUrl={baseUrl} lat={intel.lat} lon={intel.lon} place={intel.display_name} />
+          {curLayer && <CurrentsNear layer={curLayer} baseUrl={baseUrl} lat={intel.lat} lon={intel.lon} place={intel.display_name} />}
         </div>
       ) : (
         <div className="rounded-lg border border-hairline-strong p-4 text-[13px] text-ink-2" data-testid="port-unavailable">
@@ -236,6 +275,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       <div className="space-y-5">
         <Inspector manifest={manifest} baseUrl={baseUrl} point={inspect} lead={lead} onClose={() => setInspect(null)} official={official} verification={verification} />
         <SatelliteNear manifest={manifest} baseUrl={baseUrl} lat={inspect.lat} lon={inspect.lon} place="this point" />
+        {curLayer && <CurrentsNear layer={curLayer} baseUrl={baseUrl} lat={inspect.lat} lon={inspect.lon} place="this point" />}
       </div>
     ) : null;
 
@@ -273,6 +313,12 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       onShowAge={setShowAge}
       showSensor={showSensor}
       onShowSensor={setShowSensor}
+      cur={cur}
+      onCur={setCur}
+      flow={flow}
+      onFlow={setFlow}
+      curStatus={sourceStatus(manifest, "hf_radar")}
+      reducedMotion={reducedMotion}
       regionId={region === STATEWIDE.id ? "monterey_bay" : region}
       regionLabel={region === STATEWIDE.id ? "Monterey Bay" : regionLabel}
       now={now}
@@ -286,6 +332,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       satellite={satellite}
       satelliteAge={satelliteAge}
       imagery={imagery}
+      currents={currentsOverlay}
       ports={ports}
       showPorts
       officialGeometry={(official?.geometry as unknown as GeoJSON.FeatureCollection) ?? null}

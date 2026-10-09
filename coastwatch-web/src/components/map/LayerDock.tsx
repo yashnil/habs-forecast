@@ -9,8 +9,12 @@ import { formatDate, formatDateTimePT, relativeDay } from "@/lib/time";
 import { FreshnessBadge, ProductClassBadge } from "@/components/ui/Badges";
 import { AgeLegend, ChlorophyllLegend, ProbabilityLegend, SensorLegend } from "@/components/ui/ProbabilityLegend";
 import { multiSensorMembers, ratioPhrase } from "@/lib/multisensor";
+import { currentsHourly, currentsMean, hourStamp, hoursAgo, KNOTS_PER_MS } from "@/lib/currents";
 
-export type LayerGroup = "forecast" | "satellite";
+export type LayerGroup = "forecast" | "satellite" | "currents";
+/** Currents: one observed hour (null = newest) or the 24-hour mean, drawn as arrows or particles. */
+export type CurChoice = { hour: string | null; mean: boolean };
+export type FlowMode = "arrows" | "particles";
 export type SatChoice = { product: SatProduct; day: string | null } | { imagery: string };
 
 type Props = {
@@ -36,6 +40,12 @@ type Props = {
   regionLabel: string;
   now: Date | null;
   compact?: boolean;
+  cur: CurChoice;
+  onCur: (c: CurChoice) => void;
+  flow: FlowMode;
+  onFlow: (m: FlowMode) => void;
+  curStatus: SourceStatus | null;
+  reducedMotion: boolean;
 };
 
 const VAR_SHORT: Record<CharmVariable, string> = { particulate_domoic: "Particulate DA", pseudo_nitzschia: "Pseudo-nitzschia", cellular_domoic: "Cellular DA" };
@@ -109,19 +119,32 @@ export function LayerDock(p: Props) {
             <span className={`hidden rounded-full px-1.5 text-[10.5px] font-semibold uppercase tracking-wider sm:inline ${g === "forecast" ? "bg-model-bg text-model-ink" : "bg-measured-bg text-measured"}`}>{kind}</span>
           </button>
         ))}
-        <button
-          role="tab"
-          aria-selected={false}
-          aria-disabled="true"
-          disabled
-          data-testid="group-currents"
-          title="Ocean currents (NOAA WCOFS forecast, HF-radar observations) are being prepared and are not published yet."
-          className="-mb-px flex cursor-not-allowed items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-2.5 py-2 text-[14px] font-medium text-ink-3/70"
-        >
-          {p.compact ? "Currents" : "Ocean currents"} <span className="rounded-full border border-hairline-strong px-1.5 text-[10.5px] font-semibold uppercase tracking-wider">{p.compact ? "Soon" : "Next phase"}</span>
-        </button>
+        {currentsHourly(p.manifest).length > 0 ? (
+          <button
+            role="tab"
+            aria-selected={p.group === "currents"}
+            data-testid="group-currents"
+            onClick={() => p.onGroup("currents")}
+            className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-2.5 py-2 text-[14px] font-medium ${p.group === "currents" ? "border-accent text-ink" : "border-transparent text-ink-3 hover:text-ink"}`}
+          >
+            {p.compact ? "Currents" : "Ocean currents"}
+            <span className="hidden rounded-full bg-measured-bg px-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-measured sm:inline">Observation</span>
+          </button>
+        ) : (
+          <button
+            role="tab"
+            aria-selected={false}
+            aria-disabled="true"
+            disabled
+            data-testid="group-currents"
+            title="Observed currents are not in this dataset."
+            className="-mb-px flex cursor-not-allowed items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-2.5 py-2 text-[14px] font-medium text-ink-3/70"
+          >
+            {p.compact ? "Currents" : "Ocean currents"} <span className="rounded-full border border-hairline-strong px-1.5 text-[10.5px] font-semibold uppercase tracking-wider">{p.compact ? "Soon" : "Next phase"}</span>
+          </button>
+        )}
       </div>
-      <div className={`space-y-2.5 px-3.5 pt-2.5 ${p.compact ? "pb-2" : "pb-3"}`}>{p.group === "forecast" ? <ForecastSection {...q} /> : <SatelliteSection {...q} />}</div>
+      <div className={`space-y-2.5 px-3.5 pt-2.5 ${p.compact ? "pb-2" : "pb-3"}`}>{p.group === "forecast" ? <ForecastSection {...q} /> : p.group === "currents" ? <CurrentsSection {...q} /> : <SatelliteSection {...q} />}</div>
     </section>
   );
 }
@@ -501,5 +524,143 @@ function MultiDates({ ms, primary, secondary, regionId, regionLabel }: { ms: Non
         )}
       </span>
     </>
+  );
+}
+
+// ---------------------------------------------------------------- observed currents (HF radar)
+export function selectedCurrents(m: Manifest, c: CurChoice): LayerArtifact | null {
+  if (c.mean) return currentsMean(m);
+  const hours = currentsHourly(m);
+  return (c.hour ? hours.find((h) => h.time.valid_time && hourStamp(h.time.valid_time) === c.hour) : null) ?? hours[hours.length - 1] ?? null;
+}
+
+function CurrentsSection(p: Props & { expanded: boolean }) {
+  const hours = currentsHourly(p.manifest);
+  const mean = currentsMean(p.manifest);
+  const layer = selectedCurrents(p.manifest, p.cur);
+  const idx = layer && !p.cur.mean ? hours.findIndex((h) => h.layer_id === layer.layer_id) : hours.length - 1;
+  const fresh = p.now && layer ? classifyTime(layer.freshness, layer.time, p.now) : null;
+  const cov = regionCoverage(layer, p.regionId);
+  const go = (i: number) => {
+    const h = hours[Math.max(0, Math.min(hours.length - 1, i))];
+    if (h?.time.valid_time) p.onCur({ hour: hourStamp(h.time.valid_time), mean: false });
+  };
+  const t = layer?.time.valid_time;
+  const failed = p.curStatus?.outcome === "failed";
+  return (
+    <div data-testid="currents-panel" className="space-y-2.5">
+      <Seg
+        label="Currents view"
+        value={p.cur.mean ? "mean" : "hourly"}
+        options={[
+          { value: "hourly", label: "Hourly", testid: "cur-hourly" },
+          { value: "mean", label: "24-hour mean", disabled: !mean, testid: "cur-mean", title: "Mean of the last 24 hours at each cell with at least 18 valid hours" },
+        ]}
+        onChange={(v) => (v === "mean" ? p.onCur({ hour: p.cur.hour, mean: true }) : p.onCur({ hour: p.cur.hour, mean: false }))}
+      />
+      {!p.cur.mean && hours.length > 0 && (
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => go(idx - 1)} disabled={idx <= 0} aria-label="Previous hour" data-testid="cur-hour-prev" className="rounded-md border border-hairline px-2 py-0.5 text-[13px] disabled:opacity-40">
+            ‹
+          </button>
+          <input
+            type="range"
+            min={0}
+            max={hours.length - 1}
+            step={1}
+            value={Math.max(0, idx)}
+            onChange={(e) => go(Number(e.target.value))}
+            aria-label="Observation hour"
+            aria-valuetext={t ? formatDateTimePT(t) : ""}
+            data-testid="cur-hour-slider"
+            className="min-w-0 flex-1 accent-[var(--color-accent)]"
+          />
+          <button type="button" onClick={() => go(idx + 1)} disabled={idx >= hours.length - 1} aria-label="Next hour" data-testid="cur-hour-next" className="rounded-md border border-hairline px-2 py-0.5 text-[13px] disabled:opacity-40">
+            ›
+          </button>
+        </div>
+      )}
+      <p className="text-[12.5px] text-ink-2" data-testid="cur-time">
+        {layer ? (
+          p.cur.mean ? (
+            <>
+              <span className="font-medium text-ink">24-hour mean</span>, {formatDateTimePT((layer.time.observed_times ?? [])[0] ?? "")} to {formatDateTimePT((layer.time.observed_times ?? []).at(-1) ?? "")}
+            </>
+          ) : (
+            <>
+              Observed <span className="font-medium text-ink">{t ? formatDateTimePT(t) : "—"}</span>
+              {t && <span className="text-ink-3"> ({t.slice(11, 16)} UTC)</span>}
+              {t && p.now && <span className="text-ink-3" data-testid="cur-age"> · {hoursAgo(t, p.now)} h ago</span>}
+              {idx === hours.length - 1 && <span className="text-ink-3"> · newest hour</span>}
+            </>
+          )
+        ) : (
+          "No observed currents in this dataset."
+        )}
+      </p>
+      <Seg
+        label="Currents drawing"
+        value={p.reducedMotion ? "arrows" : p.flow}
+        options={[
+          { value: "arrows", label: "Arrows", testid: "cur-mode-arrows" },
+          { value: "particles", label: "Animated flow", disabled: p.reducedMotion, testid: "cur-mode-particles", title: p.reducedMotion ? "Off because your system asks for reduced motion" : "Particles moving through this one observed field" },
+        ]}
+        onChange={(v) => p.onFlow(v as FlowMode)}
+      />
+      <CurrentsLegend particles={p.flow === "particles" && !p.reducedMotion} />
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 border-t border-hairline pt-2 text-[12px] text-ink-3">
+        <ProductClassBadge pc="observation" />
+        <span>HF radar · HFRNet / NOAA CoastWatch</span>
+        <Res l={layer} />
+        <span className="ml-auto">
+          <FreshnessBadge f={fresh} basis="observed_date" />
+        </span>
+      </div>
+      <p className={`text-[12px] leading-snug text-ink-2 ${p.expanded ? "" : "line-clamp-2"}`} data-testid="cur-notes">
+        {cov && <span data-testid="cur-coverage">{Math.round(cov.observed_fraction * 100)}% of {p.regionLabel} ocean observed {p.cur.mean ? "in the mean" : "this hour"}. </span>}
+        {p.cur.mean ? "The mean smooths out most daily and tidal back-and-forth. " : "Each hour is a separate snapshot; nothing is shown between hours. "}
+        Gaps are no data, not calm water. Observed currents, not a forecast.
+      </p>
+      {failed && p.curStatus && (
+        <p className="text-[12px] text-serious" data-testid="cur-update-failed">
+          The latest update ({formatDateTimePT(p.curStatus.last_attempt_at)}) did not refresh currents. Showing the last published hours, with their own times.
+        </p>
+      )}
+      {layer && p.expanded && <AboutLayer layer={layer} title="About this layer" testid="currents-caveats" />}
+    </div>
+  );
+}
+
+const LEGEND_SPEEDS = [0.1, 0.25, 0.5, 1];
+// mirrors the map's icon-size interpolation (MapCanvas): 0 -> 0.32, 0.25 -> 0.6, 0.5 -> 0.85, 1 -> 1.05
+const iconScale = (sp: number) => (sp <= 0.25 ? 0.32 + (sp / 0.25) * 0.28 : sp <= 0.5 ? 0.6 + ((sp - 0.25) / 0.25) * 0.25 : 0.85 + Math.min(1, (sp - 0.5) / 0.5) * 0.2);
+
+function CurrentsLegend({ particles }: { particles: boolean }) {
+  return (
+    <figure data-testid="currents-legend" className="space-y-1" aria-label="Legend: current speed">
+      <figcaption className="text-[13px] font-medium text-ink">
+        {particles ? "Particles move with the observed current" : "Arrows point where the surface water is moving"}
+        <span className="font-normal text-ink-3"> · speed in m/s</span>
+      </figcaption>
+      <div className="flex items-end gap-4 rounded-lg bg-navy-900 px-3 py-2">
+        {LEGEND_SPEEDS.map((sp) => (
+          <span key={sp} className="flex flex-col items-center gap-1 text-[11px] text-on-navy-2 tabular" data-testid="currents-legend-item">
+            {particles ? (
+              // a particle streak: length and brightness grow with speed (FlowParticles)
+              <svg width={34} height={30} viewBox="0 0 34 30" aria-hidden>
+                <line x1={17 - sp * 15} y1={15} x2={17 + sp * 15} y2={15} stroke="#eef4fa" strokeWidth={1.6} strokeLinecap="round" strokeOpacity={Math.min(0.95, 0.35 + sp * 1.6)} />
+              </svg>
+            ) : (
+              <svg width={20} height={30} viewBox="0 0 20 30" style={{ transform: `scale(${iconScale(sp)})`, transformOrigin: "bottom center" }} aria-hidden>
+                <path d="M10 2 L16.5 12 L11.6 12 L11.6 28 L8.4 28 L8.4 12 L3.5 12 Z" fill="#eef4fa" stroke="rgba(6,17,30,0.9)" strokeWidth={1.1} strokeLinejoin="round" />
+              </svg>
+            )}
+            {sp} m/s
+          </span>
+        ))}
+        <span className="ml-auto self-center text-[11px] text-on-navy-2">1 m/s ≈ {KNOTS_PER_MS.toFixed(1)} knots</span>
+      </div>
+      <p className="text-[11.5px] text-ink-3">{particles ? "Screen speed shows relative speed at every zoom; particles stop where there is no observation. Not a trajectory." : "Longer, brighter arrows are faster. Zoom in for more arrows (one per 2 km cell)."}</p>
+    </figure>
   );
 }

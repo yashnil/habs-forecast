@@ -29,12 +29,10 @@ const mapSource = (page: Page, id: string) =>
   }, id);
 
 test.describe("layer groups", () => {
-  test("HAB forecast, satellite and a clearly not-yet-live currents group", async ({ page }) => {
+  test("HAB forecast first; one group drawn at a time (currents only when chosen)", async ({ page }) => {
     await open(page, OK);
     await expect(page.getByTestId("group-forecast")).toHaveAttribute("aria-selected", "true");
-    const currents = page.getByTestId("group-currents");
-    await expect(currents).toBeDisabled();
-    await expect(currents).toContainText("Next phase");
+    // a dataset without currents keeps that tab disabled: tests/e2e/p2-currents.spec.ts
     expect(await mapSource(page, "currents")).toBeNull();
     // the C-HARM raster is opaque and nearest-sampled, over a hatched no-value sea
     const paint = await page.evaluate(() => {

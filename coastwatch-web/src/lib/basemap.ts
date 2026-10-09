@@ -128,3 +128,32 @@ export function hatchImage(): ImageData {
   g.stroke();
   return g.getImageData(0, 0, n, n);
 }
+
+/** Arrow glyph pointing north (rotated per feature): light fill with a dark outline so it
+ *  reads over any sea colour. Drawn at 2x; register with pixelRatio 2. */
+export function arrowImage(): ImageData {
+  const k = 2;
+  const w = 20 * k;
+  const h = 30 * k;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const g = c.getContext("2d")!;
+  g.scale(k, k);
+  g.beginPath();
+  g.moveTo(10, 2);
+  g.lineTo(16.5, 12);
+  g.lineTo(11.6, 12);
+  g.lineTo(11.6, 28);
+  g.lineTo(8.4, 28);
+  g.lineTo(8.4, 12);
+  g.lineTo(3.5, 12);
+  g.closePath();
+  g.lineJoin = "round";
+  g.lineWidth = 2.2;
+  g.strokeStyle = "rgba(6,17,30,0.9)";
+  g.stroke();
+  g.fillStyle = "#eef4fa";
+  g.fill();
+  return g.getImageData(0, 0, w, h);
+}

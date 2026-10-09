@@ -5,7 +5,9 @@ import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLa
 import { setWorkerUrl, type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { PortsCollection } from "@/generated/schema";
-import { BASEMAP_STYLE, BEFORE_OVERLAY_ID, CA_BOUNDS, hatchImage } from "@/lib/basemap";
+import { arrowImage, BASEMAP_STYLE, BEFORE_OVERLAY_ID, CA_BOUNDS, hatchImage } from "@/lib/basemap";
+import type { CurrentField } from "@/lib/currents";
+import FlowParticles from "./FlowParticles";
 
 // MapLibre's module worker is copied to public/ by scripts/copy-maplibre-worker.mjs
 setWorkerUrl("/vendor/maplibre/maplibre-gl-worker.mjs");
@@ -16,12 +18,15 @@ export type ImageRaster = { id: string; url: string; corners: number[][] };
 export type TileRaster = { id: string; template: string; minzoom: number; maxzoom: number; bounds?: number[] | null };
 
 export type MapPoint = { lat: number; lon: number };
+/** Observed currents for one hour (or the 24 h mean): arrows from the published grids, or particles. */
+export type CurrentsOverlay = { id: string; features: GeoJSON.FeatureCollection; field: CurrentField; mode: "arrows" | "particles" };
 
 type Props = {
   forecast: ImageRaster | null;
   satellite: TileRaster | null;
   satelliteAge: TileRaster | null;
   imagery: TileRaster | null;
+  currents?: CurrentsOverlay | null;
   ports: PortsCollection | null;
   showPorts: boolean;
   officialGeometry: GeoJSON.FeatureCollection | null;
@@ -36,6 +41,14 @@ type Props = {
 };
 
 const OFFICIAL = "#f6bb5c";
+// [level, minzoom, maxzoom]: zoomed out, only cells on every 8th row and column carry an
+// arrow; arrows never move between zooms, more appear. HF radar cells are about 2 km.
+const ARROW_ZOOMS: [number, number, number][] = [
+  [8, 0, 7],
+  [4, 7, 8.4],
+  [2, 8.4, 9.6],
+  [1, 9.6, 24],
+];
 // Every data raster is opaque and nearest-sampled: a pixel is a real source cell, and the
 // legend colours are exactly the colours on the map (design reset rev. 2, §5.1).
 const RASTER_PAINT = { "raster-opacity": 1, "raster-resampling": "nearest", "raster-fade-duration": 0 } as const;
@@ -82,8 +95,10 @@ export default function MapCanvas(p: Props) {
       onLoad={(e) => {
         const m = e.target;
         if (!m.hasImage("hatch")) m.addImage("hatch", hatchImage());
+        if (!m.hasImage("cw-arrow")) m.addImage("cw-arrow", arrowImage(), { pixelRatio: 2 });
         m.on("styleimagemissing", (ev: { id: string }) => {
           if (ev.id === "hatch" && !m.hasImage("hatch")) m.addImage("hatch", hatchImage());
+          if (ev.id === "cw-arrow" && !m.hasImage("cw-arrow")) m.addImage("cw-arrow", arrowImage(), { pixelRatio: 2 });
         });
         // exposed for end-to-end tests and debugging
         (window as unknown as { __cwMap?: unknown }).__cwMap = e.target;
@@ -124,6 +139,32 @@ export default function MapCanvas(p: Props) {
           <Layer id="observation-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={{ "raster-opacity": 1, "raster-fade-duration": 0 }} />
         </Source>
       )}
+
+      {p.currents && p.currents.mode === "arrows" && (
+        <Source key={p.currents.id} id="currents" type="geojson" data={p.currents.features}>
+          {ARROW_ZOOMS.map(([level, minzoom, maxzoom]) => (
+            <Layer
+              key={level}
+              id={`currents-arrows-${level}`}
+              type="symbol"
+              minzoom={minzoom}
+              maxzoom={maxzoom}
+              filter={[">=", ["get", "level"], level]}
+              layout={{
+                "icon-image": "cw-arrow",
+                "icon-rotate": ["get", "dir"],
+                "icon-rotation-alignment": "map",
+                "icon-allow-overlap": true,
+                "icon-ignore-placement": true,
+                // length grows with speed; capped so a fast cell does not cover its neighbours
+                "icon-size": ["interpolate", ["linear"], ["get", "speed"], 0, 0.32, 0.25, 0.6, 0.5, 0.85, 1, 1.05],
+              }}
+              paint={{ "icon-opacity": ["interpolate", ["linear"], ["get", "speed"], 0, 0.45, 0.2, 0.8, 0.4, 1] }}
+            />
+          ))}
+        </Source>
+      )}
+      {p.currents && p.currents.mode === "particles" && <FlowParticles key={p.currents.id} field={p.currents.field} count={wide ? 1400 : 600} />}
 
       {p.showOfficial && p.officialGeometry && (
         <Source id="official" type="geojson" data={p.officialGeometry}>
