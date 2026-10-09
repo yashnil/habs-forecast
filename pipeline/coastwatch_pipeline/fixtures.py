@@ -108,6 +108,63 @@ class FixtureFetcher:
             raise FetchError(f"HTTP 404 for {url}")
         return self._file(url, f"satellite/{hit['file']}", "application/x-netcdf")
 
+    def _currents(self, url: str) -> Response | None:
+        """HF-radar (ucsdHfrW2) from responses recorded by scripts/record_p2_currents_fixtures.py:
+        axes and time lists as recorded; NetCDF requests are cut from the recorded region files
+        by the requested time and index ranges (values untouched)."""
+        import io
+        import json
+        from datetime import datetime
+        from urllib.parse import unquote
+
+        import numpy as np
+        from scipy.io import netcdf_file
+
+        m = re.search(r"/griddap/ucsdHfrW2\.(csv0|nc)\?(.*)$", url)
+        if not m:
+            return None
+        kind, q = m.group(1), unquote(m.group(2))
+        root = self.root / "currents"
+        idx = json.loads((root / "index.json").read_text())
+        if kind == "csv0":
+            if q in ("latitude", "longitude"):
+                return self._file(url, f"currents/{q}.csv", "text/csv")
+            start = re.search(r"time\[\((\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ)", q)
+            times = idx["times"]
+            if start:
+                t0 = datetime.fromisoformat(start.group(1).replace("Z", "+00:00"))
+                gap = lambda t: abs((datetime.fromisoformat(t.replace("Z", "+00:00")) - t0).total_seconds())  # noqa: E731
+                times = times[times.index(min(times, key=gap)) :]  # like ERDDAP: nearest time to the bound
+            return Response(url=url, status=200, content_type="text/csv", body=("\n".join(times) + "\n").encode())
+        sel = re.search(r"\[\((\S+?)\):1:\((\S+?)\)\]\[(\d+):1:(\d+)\]\[(\d+):1:(\d+)\]", q)
+        if not sel:
+            raise FetchError(f"HTTP 400 for {url} (fixture supports time ranges by index only)")
+        ta, tb, i0, i1, j0, j1 = sel.group(1), sel.group(2), *(int(sel.group(k)) for k in range(3, 7))
+        reg = next((r for r in idx["regions"].values() if r["i0"] <= i0 and i1 <= r["i1"] and r["j0"] <= j0 and j1 <= r["j1"]), None)
+        if reg is None or ta not in idx["times"] or tb not in idx["times"]:
+            raise FetchError(f"HTTP 404 for {url} (outside the recorded fixture)")
+        k0, k1 = idx["times"].index(ta), idx["times"].index(tb)
+        src = netcdf_file(io.BytesIO((root / reg["file"]).read_bytes()), mmap=False)
+        out = io.BytesIO()
+        dst = netcdf_file(out, "w", version=1)
+        ri, rj = slice(i0 - reg["i0"], i1 - reg["i0"] + 1), slice(j0 - reg["j0"], j1 - reg["j0"] + 1)
+        cut = {"time": slice(k0, k1 + 1), "latitude": ri, "longitude": rj}
+        for d in ("time", "latitude", "longitude"):
+            dst.createDimension(d, len(range(*cut[d].indices(src.variables[d].shape[0]))))
+        names = [n for n in src.variables if n in ("time", "latitude", "longitude") or any(n == v for v in re.findall(r"(\w+)\[", q))]
+        for name in names:
+            var = src.variables[name]
+            data = np.array(var.data)[tuple(cut[d] for d in var.dimensions)]
+            nv = dst.createVariable(name, data.dtype, var.dimensions)
+            nv[:] = data
+            for k, v in var._attributes.items():
+                setattr(nv, k, v)
+        dst.flush()
+        body = out.getvalue()
+        dst.close()
+        src.close()
+        return Response(url=url, status=200, content_type="application/x-netcdf", body=body)
+
     def _serve(self, url: str) -> Response:
         rec = self._recorded(url)
         if rec is not None:
@@ -115,6 +172,9 @@ class FixtureFetcher:
         sat = self._satellite(url)
         if sat is not None:
             return sat
+        cur = self._currents(url)
+        if cur is not None:
+            return cur
         m = re.search(r"wvcharmV3_(\d)day\.csv0\?time", url)
         if m:
             return self._file(url, f"charm/lead{m.group(1)}_time.csv", "text/csv")

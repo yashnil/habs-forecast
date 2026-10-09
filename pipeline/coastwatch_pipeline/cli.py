@@ -1,4 +1,4 @@
-"""Command line entry point: `cwp run | schema | verify-charm | verify-satellite | fixture | …`."""
+"""Command line entry point: `cwp run | schema | verify-charm | verify-satellite | verify-currents | fixture | …`."""
 
 from __future__ import annotations
 
@@ -53,6 +53,25 @@ def cmd_verify(a: argparse.Namespace) -> int:
             return 0
     report = verify_charm(Path(a.out), live=not a.offline)
     path = Path(a.report) if a.report else Path(a.out) / "verification" / "charm-points.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report, indent=2) + "\n")
+    print(json.dumps(report["summary"], indent=2))
+    print(f"report: {path}")
+    return 0 if report["summary"]["all_passed"] else 1
+
+
+def cmd_verify_currents(a: argparse.Namespace) -> int:
+    from .models import Manifest
+    from .verify_currents import verify_currents
+
+    if a.only_if_updated:
+        m = Manifest.model_validate_json((Path(a.out) / "manifest.json").read_text())
+        st = next((s for s in m.sources if s.source_id == "hf_radar"), None)
+        if not st or st.outcome not in ("updated", "partial"):
+            print(f"skip: HF-radar outcome is {st.outcome if st else 'absent'}; nothing new to verify")
+            return 0
+    report = verify_currents(Path(a.out), live=not a.offline)
+    path = Path(a.report) if a.report else Path(a.out) / "verification" / "currents-points.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report["summary"], indent=2))
@@ -168,6 +187,12 @@ def main(argv: list[str] | None = None) -> int:
     vs.add_argument("--offline", action="store_true", help="skip live ERDDAP point queries")
     vs.add_argument("--only-if-updated", action="store_true", help="skip unless this run published new satellite data")
     vs.set_defaults(fn=cmd_verify_satellite)
+    vc = sub.add_parser("verify-currents", help="check published HF-radar currents against ERDDAP and the 24-hour mean against the hours")
+    vc.add_argument("--out", default=str(DEFAULT_OUT))
+    vc.add_argument("--report")
+    vc.add_argument("--offline", action="store_true", help="skip live ERDDAP point queries")
+    vc.add_argument("--only-if-updated", action="store_true", help="skip unless this run published new HF-radar data")
+    vc.set_defaults(fn=cmd_verify_currents)
     f = sub.add_parser("fixture", help="build a deterministic dataset from recorded fixtures (no network)")
     f.add_argument("--out", required=True)
     f.add_argument("--now", default="2026-10-08T18:00:00Z")

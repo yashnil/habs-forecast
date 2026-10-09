@@ -28,9 +28,9 @@ from .models import (
     SourceStatus,
 )
 from .publish.files import write_bytes, write_json
-from .sources import charm, fisheries, gibs, observations, official, port_intel, ports, satellite
+from .sources import charm, currents, fisheries, gibs, observations, official, port_intel, ports, satellite
 
-ALL_SOURCES = ("charm", "gibs_chl", "satellite_chl", "cdfw_ports", "official", "port_intel", "calhabmap", "foss_landings")
+ALL_SOURCES = ("charm", "gibs_chl", "satellite_chl", "hf_radar", "cdfw_ports", "official", "port_intel", "calhabmap", "foss_landings")
 
 OFFICIAL_FRESHNESS = FreshnessPolicy(
     basis="reviewed_date",
@@ -184,6 +184,35 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     else:
         layers.extend(_prev_layers(prev, satellite.SOURCE_ID))
         _carry(statuses, prev, satellite.SOURCE_ID)
+
+    # ---- observed surface currents (HF radar 2 km, hourly + 24 h mean)
+    cur_title = "Observed surface currents: HF radar 2 km (HFRNet), hourly and 24-hour mean"
+    if "hf_radar" in only:
+        prev_cur = _prev_layers(prev, currents.SOURCE_ID)
+        cres = currents.run(ctx, prev_cur)
+        prev_s = _prev_status(prev, currents.SOURCE_ID)
+        if cres.layers:
+            layers.extend(cres.layers)
+            statuses.append(
+                SourceStatus(
+                    source_id=currents.SOURCE_ID,
+                    title=cur_title,
+                    product_class="observation",
+                    last_attempt_at=ctx.now_iso,
+                    last_success_at=ctx.now_iso,
+                    outcome="partial" if cres.errors else "updated",
+                    error="; ".join(cres.errors)[:800] or None,
+                    notes=cres.notes[:40],
+                    latest_valid_date=cres.latest_time[:10] if cres.latest_time else None,
+                    freshness=currents.FRESHNESS,
+                )
+            )
+        else:
+            layers.extend(prev_cur)
+            statuses.append(_failed(ctx, currents.SOURCE_ID, cur_title, "observation", currents.FRESHNESS, prev_s, cres.errors + cres.notes))
+    else:
+        layers.extend(_prev_layers(prev, currents.SOURCE_ID))
+        _carry(statuses, prev, currents.SOURCE_ID)
 
     # ---- CDFW ports
     if "cdfw_ports" in only:
@@ -431,6 +460,10 @@ def referenced_paths(m: Manifest | None) -> set[str]:
             out.add(lyr.image.url)
         if lyr.grid and not lyr.grid.chunks:
             out.add(lyr.grid.url)
+        if lyr.vectors:
+            out |= {lyr.vectors.u_grid.url, lyr.vectors.v_grid.url}
+            if lyr.vectors.arrows_url:
+                out.add(lyr.vectors.arrows_url)
     for rel in (m.ports_url, m.official_url, m.port_intel_url, m.observations_url, m.fisheries_url):
         if rel:
             out.add(rel)
@@ -440,10 +473,10 @@ def referenced_paths(m: Manifest | None) -> set[str]:
 def prune(out_dir: Path, manifest: Manifest, previous: Manifest | None) -> None:
     """Keep files referenced by the new manifest and by the previous one (clients and CDN
     caches may still hold the previous manifest for a few minutes); delete everything
-    else the pipeline owns. Never touches files outside charm/, satellite/ and the hashed JSON/GeoJSON artifacts."""
+    else the pipeline owns. Never touches files outside charm/, satellite/, currents/ and the hashed JSON/GeoJSON artifacts."""
     keep = referenced_paths(manifest) | referenced_paths(previous)
     prefixes = tuple(referenced_prefixes(manifest) | referenced_prefixes(previous))
-    for root in ("charm", "satellite"):
+    for root in ("charm", "satellite", "currents"):
         base = out_dir / root
         if not base.exists():
             continue

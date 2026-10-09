@@ -67,6 +67,9 @@ jobs:
       - name: Verify new satellite chlorophyll against ERDDAP (values, cell centres, tiles, composite)
         working-directory: pipeline
         run: uv run cwp verify-satellite --only-if-updated --out ../publish/v1 --report ../publish/v1/verification/satellite-points.json
+      - name: Verify new HF-radar currents against ERDDAP (values, cell centres, dropped cells, 24 h mean)
+        working-directory: pipeline
+        run: uv run cwp verify-currents --only-if-updated --out ../publish/v1 --report ../publish/v1/verification/currents-points.json
       - name: Every manifest reference exists and decodes
         working-directory: pipeline
         run: uv run cwp check-published --base ../publish/v1

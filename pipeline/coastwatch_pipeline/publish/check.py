@@ -140,6 +140,26 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
                     except Exception as e:
                         ok, detail = False, f"not gzip: {e}"
                 record(rel, kind, f, ok, detail)
+        if lyr.vectors:
+            for kind, g in (("u_grid", lyr.vectors.u_grid), ("v_grid", lyr.vectors.v_grid)):
+                f = _get(base, g.url)
+                ok, detail = f.status == 200, f"HTTP {f.status}"
+                if ok:
+                    try:
+                        n = len(gzip.decompress(f.body))
+                        ok = n == g.width * g.height * 2
+                        detail = f"{kind}: {n} bytes decoded" + ("" if ok else f" != {g.width * g.height * 2}")
+                    except Exception as e:
+                        ok, detail = False, f"not gzip: {e}"
+                record(g.url, kind, f, ok, detail)
+            if lyr.vectors.arrows_url:
+                f = _get(base, lyr.vectors.arrows_url)
+                ok = f.status == 200
+                try:
+                    ok = ok and json.loads(f.body).get("type") == "FeatureCollection"
+                except Exception:
+                    ok = False
+                record(lyr.vectors.arrows_url, "arrows", f, ok, "GeoJSON FeatureCollection" if ok else "missing or not GeoJSON")
         if lyr.coverage:
             cov_ok = all(0 <= rc.observed_fraction <= 1 for rc in lyr.coverage.regions)
             if not cov_ok:

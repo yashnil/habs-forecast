@@ -352,13 +352,22 @@ def coastal_mask(target: Target) -> np.ndarray:
 
 def coverage(values: np.ndarray, target: Target) -> Coverage:
     """Share of C-HARM ocean cells (3 km) that contain at least one valid pixel."""
-    mask, ocean, regions = _load_reference()
-    ref = SourceGrid(mask["lat_first"], mask["lat_step"], mask["lon_first"], mask["lon_step"], mask["height"], mask["width"])
     rr, cc = np.nonzero(np.isfinite(values))
-    observed = np.zeros_like(ocean)
     lat = target.lat_first - rr * target.step
     lon = target.lon_first + cc * target.step
-    if rr.size:
+    px_km2 = (target.step * 111.32) ** 2 * np.cos(np.radians(lat))
+    south, north = target.lat_first - target.step * (target.height - 1), target.lat_first
+    west, east = target.lon_first, target.lon_first + target.step * (target.width - 1)
+    return coverage_points(lat, lon, px_km2, (south, north, west, east))
+
+
+def coverage_points(lat: np.ndarray, lon: np.ndarray, px_km2: np.ndarray, bounds: tuple[float, float, float, float]) -> Coverage:
+    """Coverage from the centres (and areas) of valid cells of any regular grid;
+    `bounds` = (south, north, west, east) of the grid's cell centres."""
+    mask, ocean, regions = _load_reference()
+    ref = SourceGrid(mask["lat_first"], mask["lat_step"], mask["lon_first"], mask["lon_step"], mask["height"], mask["width"])
+    observed = np.zeros_like(ocean)
+    if lat.size:
         r3, c3 = ref.cell_index(lat, lon)
         ok = (r3 >= 0) & (c3 >= 0)
         observed[r3[ok], c3[ok]] = True
@@ -366,10 +375,8 @@ def coverage(values: np.ndarray, target: Target) -> Coverage:
     # restrict the reference to the target domain
     lats = mask["lat_first"] + mask["lat_step"] * np.arange(mask["height"])
     lons = mask["lon_first"] + mask["lon_step"] * np.arange(mask["width"])
-    south, north = target.lat_first - target.step * (target.height - 1), target.lat_first
-    west, east = target.lon_first, target.lon_first + target.step * (target.width - 1)
+    south, north, west, east = bounds
     in_dom = ((lats >= south) & (lats <= north))[:, None] & ((lons >= west) & (lons <= east))[None, :]
-    px_km2 = (target.step * 111.32) ** 2 * np.cos(np.radians(lat))
 
     def frac(sel: np.ndarray) -> tuple[float, int]:
         n = int((ocean & sel).sum())
