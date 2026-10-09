@@ -65,8 +65,10 @@ def fetch(
                     body=r.read() if method != "HEAD" else b"",
                 )
         except urllib.error.HTTPError as e:
-            # 4xx other than 429 will not get better by retrying
-            if 400 <= e.code < 500 and e.code != 429:
+            # 4xx other than 429 will not get better by retrying, except 403: NOAA's
+            # ERDDAP intermittently answers 403 to cloud runners (seen in staging run
+            # 37964087582, 2026-10-09) and serves the same request moments later
+            if 400 <= e.code < 500 and e.code not in (403, 429):
                 raise FetchError(f"HTTP {e.code} for {url}") from e
             last = e
         except (urllib.error.URLError, TimeoutError, ConnectionError) as e:

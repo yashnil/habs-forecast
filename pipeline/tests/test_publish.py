@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from coastwatch_pipeline.fixtures import FixtureFetcher, fixture_context
 from coastwatch_pipeline.models import Manifest
 from coastwatch_pipeline.pipeline import referenced_paths, run_pipeline
@@ -173,3 +175,42 @@ def test_a_new_rendering_gets_new_addresses_and_is_reported_updated(out, monkeyp
     new = {lyr.image.url for lyr in m3.layers if lyr.group_id == "charm"}
     assert old.isdisjoint(new)
     assert next(s for s in m3.sources if s.source_id == "charm").outcome == "updated"
+
+
+def test_http_retries_transient_403_but_not_404(monkeypatch):
+    import urllib.error
+    import urllib.request
+
+    from coastwatch_pipeline import http
+
+    calls = {"n": 0}
+
+    class R:
+        status = 200
+        headers = {"Content-Type": "text/csv"}
+
+        def read(self):
+            return b"ok"
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def flaky(req, timeout, context):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise urllib.error.HTTPError(req.full_url, 403, "Forbidden", {}, None)
+        return R()
+
+    monkeypatch.setattr(urllib.request, "urlopen", flaky)
+    monkeypatch.setattr(http.time, "sleep", lambda s: None)
+    assert http.fetch("https://example.test/a").body == b"ok" and calls["n"] == 2
+
+    def missing(req, timeout, context):
+        raise urllib.error.HTTPError(req.full_url, 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(urllib.request, "urlopen", missing)
+    with pytest.raises(http.FetchError, match="HTTP 404"):
+        http.fetch("https://example.test/b")
