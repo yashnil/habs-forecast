@@ -62,7 +62,7 @@ function parseLayer(v: string | null): { group: LayerGroup; sat: SatChoice } | n
   if (!v || v === "forecast") return v ? { group: "forecast", sat: { product: "olci300", day: null } } : null;
   if (v.startsWith("imagery:")) return { group: "satellite", sat: { imagery: v.slice(8) } };
   const [prod, day] = v.split(":");
-  if (prod === "olci300" || prod === "viirs750") return { group: "satellite", sat: { product: prod, day: day ?? null } };
+  if (prod === "olci300" || prod === "viirs750" || prod === "multi") return { group: "satellite", sat: { product: prod, day: prod === "multi" ? null : (day ?? null) } };
   if (v.startsWith("gibs_")) return { group: "satellite", sat: { imagery: v } }; // M1-M3 links
   return null;
 }
@@ -88,7 +88,17 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   const initialLayer = parseLayer(initialQ.get("layer"));
   const [group, setGroup] = useState<LayerGroup>(initialLayer?.group ?? "forecast");
   const [sat, setSat] = useState<SatChoice>(initialLayer?.sat ?? { product: satelliteLatest(manifest, "olci300") ? "olci300" : "viirs750", day: null });
-  const [showAge, setShowAge] = useState(initialQ.get("age") === "1");
+  const [showAge, setShowAgeRaw] = useState(initialQ.get("age") === "1");
+  const [showSensor, setShowSensorRaw] = useState(initialQ.get("sensor") === "1" && initialQ.get("age") !== "1");
+  // the age and sensor views replace the chlorophyll colours, so only one at a time
+  const setShowAge = (v: boolean) => {
+    setShowAgeRaw(v);
+    if (v) setShowSensorRaw(false);
+  };
+  const setShowSensor = (v: boolean) => {
+    setShowSensorRaw(v);
+    if (v) setShowAgeRaw(false);
+  };
   const [variable, setVariable] = useState<CharmVariable>("particulate_domoic");
   const [lead, setLead] = useState<number>(firstLead);
   const [region, setRegion] = useState<string>(initialRegion.id);
@@ -128,9 +138,10 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     q.set("lead", String(lead));
     q.set("layer", layerParam);
     if (showAge && group === "satellite") q.set("age", "1");
+    if (showSensor && group === "satellite") q.set("sensor", "1");
     if (inspect) q.set("inspect", `${inspect.lat.toFixed(4)},${inspect.lon.toFixed(4)}`);
     window.history.replaceState(null, "", `?${q.toString()}`);
-  }, [region, port, variable, lead, layerParam, inspect, showAge, group]);
+  }, [region, port, variable, lead, layerParam, inspect, showAge, showSensor, group]);
 
   const detailOpen = port != null || inspect != null;
   const padding = useCallback(() => {
@@ -183,14 +194,15 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   const satLayer = group === "satellite" && !("imagery" in sat) ? (sat.day ? satelliteDays(manifest, sat.product as SatProduct).find((d) => d.time.observed_date === sat.day) ?? null : satelliteLatest(manifest, sat.product)) : null;
   const satellite: TileRaster | null = useMemo(() => {
     const t = satLayer?.tiles;
-    if (!satLayer || !t || (showAge && satLayer.composite)) return null;
+    if (!satLayer || !t || (showAge && (satLayer.composite || satLayer.multisensor)) || (showSensor && satLayer.multisensor)) return null;
     return { id: satLayer.layer_id, template: t.relative ? artifactUrl(baseUrl, t.url_template) : t.url_template, minzoom: t.min_zoom ?? 0, maxzoom: t.max_native_zoom, bounds: t.bounds_lnglat };
-  }, [satLayer, baseUrl, showAge]);
+  }, [satLayer, baseUrl, showAge, showSensor]);
+  // categorical overlays that replace the chlorophyll colours: observation age, or which sensor
   const satelliteAge: TileRaster | null = useMemo(() => {
-    const t = satLayer?.composite?.age_tiles;
-    if (!showAge || !t) return null;
-    return { id: `${satLayer!.layer_id}-age`, template: artifactUrl(baseUrl, t.url_template), minzoom: t.min_zoom ?? 0, maxzoom: t.max_native_zoom, bounds: t.bounds_lnglat };
-  }, [satLayer, baseUrl, showAge]);
+    const t = showAge ? (satLayer?.composite?.age_tiles ?? satLayer?.multisensor?.age_tiles) : showSensor ? satLayer?.multisensor?.sensor_tiles : null;
+    if (!t || !satLayer) return null;
+    return { id: `${satLayer.layer_id}-${showAge ? "age" : "sensor"}`, template: artifactUrl(baseUrl, t.url_template), minzoom: t.min_zoom ?? 0, maxzoom: t.max_native_zoom, bounds: t.bounds_lnglat };
+  }, [satLayer, baseUrl, showAge, showSensor]);
   const imageryLayer = group === "satellite" && "imagery" in sat ? (chlorophyllLayers(manifest).find((l) => l.layer_id === sat.imagery) ?? chlorophyllLayers(manifest)[0]) : null;
   const imagery: TileRaster | null = imageryLayer?.tiles ? { id: imageryLayer.layer_id, template: imageryLayer.tiles.url_template, minzoom: 0, maxzoom: imageryLayer.tiles.max_native_zoom } : null;
 
@@ -259,6 +271,8 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       onSat={setSat}
       showAge={showAge}
       onShowAge={setShowAge}
+      showSensor={showSensor}
+      onShowSensor={setShowSensor}
       regionId={region === STATEWIDE.id ? "monterey_bay" : region}
       regionLabel={region === STATEWIDE.id ? "Monterey Bay" : regionLabel}
       now={now}

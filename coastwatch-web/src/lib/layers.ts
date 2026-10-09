@@ -38,12 +38,13 @@ export function isFixture(m: Manifest): boolean {
 
 // ---------------------------------------------------------------- satellite chlorophyll (P1)
 export const SAT_GROUP = "satellite_chlorophyll_hr";
-export const SAT_PRODUCTS = ["olci300", "viirs750"] as const;
+export const SAT_PRODUCTS = ["multi", "olci300", "viirs750"] as const;
 export type SatProduct = (typeof SAT_PRODUCTS)[number];
 
 /** "Latest clear view" composite for a product (each pixel its newest observation, dated). */
 export function satelliteLatest(m: Manifest, p: SatProduct): LayerArtifact | null {
-  return m.layers.find((l) => l.group_id === SAT_GROUP && l.layer_id === `${p}_chl_latest`) ?? null;
+  const id = p === "multi" ? "multisensor_chl_latest" : `${p}_chl_latest`;
+  return m.layers.find((l) => l.group_id === SAT_GROUP && l.layer_id === id) ?? null;
 }
 
 /** Single-day layers for a product, oldest first. Days without a clear pixel are included (no grid). */
@@ -64,7 +65,7 @@ export function nativeLabel(l: LayerArtifact | null | undefined): string | null 
   return m >= 1000 ? `${Math.round(m / 1000)} km` : `${Math.round(m / 50) * 50} m`;
 }
 
-const PRODUCT_ERROR: Record<SatProduct, RegExp> = { olci300: /olci/i, viirs750: /viirs|erdVHN/i };
+const PRODUCT_ERROR: Record<SatProduct, RegExp> = { multi: /olci|viirs|erdVHN|multi-sensor/i, olci300: /olci/i, viirs750: /viirs|erdVHN/i };
 
 /** Did the last update attempt fail (or bring nothing new) for this product? The layers shown are then the
  *  previously published ones (with their own observation dates). */

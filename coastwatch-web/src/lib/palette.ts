@@ -69,3 +69,5 @@ export function gradientCss(p: Palette): string {
 
 /** Colours for the age of a latest-clear-view pixel, index = days. Mirrors the pipeline's AGE_COLOURS. */
 export const AGE_COLOURS = ["#e8f1f8", "#bcd3e6", "#8fb2d0", "#6790b5", "#4a7097", "#365477", "#273d58", "#1c2c40"];
+/** Which sensor a multi-sensor pixel comes from: Sentinel-3 OLCI, VIIRS. Mirrors the pipeline's SENSOR_COLOURS. */
+export const SENSOR_COLOURS = ["#2f6db5", "#e39a2d"];

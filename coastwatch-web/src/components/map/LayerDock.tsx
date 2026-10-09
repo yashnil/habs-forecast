@@ -7,7 +7,8 @@ import { classifyTime, type Freshness } from "@/lib/freshness";
 import { CHARM_LEADS, CHARM_VARIABLES, charmLayer, chlorophyllLayers, leadLabel, nativeLabel, regionCoverage, satelliteDays, satelliteLatest, satelliteUpdateFailed, type CharmVariable, type SatProduct } from "@/lib/layers";
 import { formatDate, formatDateTimePT, relativeDay } from "@/lib/time";
 import { FreshnessBadge, ProductClassBadge } from "@/components/ui/Badges";
-import { AgeLegend, ChlorophyllLegend, ProbabilityLegend } from "@/components/ui/ProbabilityLegend";
+import { AgeLegend, ChlorophyllLegend, ProbabilityLegend, SensorLegend } from "@/components/ui/ProbabilityLegend";
+import { multiSensorMembers, ratioPhrase } from "@/lib/multisensor";
 
 export type LayerGroup = "forecast" | "satellite";
 export type SatChoice = { product: SatProduct; day: string | null } | { imagery: string };
@@ -29,6 +30,8 @@ type Props = {
   onSat: (c: SatChoice) => void;
   showAge: boolean;
   onShowAge: (b: boolean) => void;
+  showSensor: boolean;
+  onShowSensor: (b: boolean) => void;
   regionId: string;
   regionLabel: string;
   now: Date | null;
@@ -39,7 +42,7 @@ const VAR_SHORT: Record<CharmVariable, string> = { particulate_domoic: "Particul
 const VAR_NAME: Record<CharmVariable, string> = { particulate_domoic: "Particulate domoic acid", pseudo_nitzschia: "Pseudo-nitzschia bloom", cellular_domoic: "Cellular domoic acid" };
 
 function Res({ l }: { l: LayerArtifact | null | undefined }) {
-  const n = nativeLabel(l);
+  const n = l?.multisensor ? l.multisensor.members.map((m) => nativeLabel({ native_resolution_m: m.native_resolution_m } as LayerArtifact)).join(" + ") : nativeLabel(l);
   return n ? (
     <span data-testid="native-resolution" className="rounded bg-surface-3 px-1.5 py-px font-mono text-[11.5px] text-ink-2">
       native {n}
@@ -239,17 +242,21 @@ function SatelliteSection(p: Props) {
   const imagery = chlorophyllLayers(p.manifest);
   const olci = satelliteLatest(p.manifest, "olci300");
   const viirs = satelliteLatest(p.manifest, "viirs750");
+  const multi = satelliteLatest(p.manifest, "multi");
   const days = satelliteDays(p.manifest, "olci300");
   const isImagery = "imagery" in p.sat;
   const product = isImagery ? null : (p.sat as { product: SatProduct }).product;
   const day = isImagery ? null : (p.sat as { day: string | null }).day;
-  const latest = product === "viirs750" ? viirs : olci;
+  const latest = product === "viirs750" ? viirs : product === "multi" ? multi : olci;
   const layer = day ? days.find((d) => d.time.observed_date === day) ?? null : latest;
   const fresh: Freshness | null = p.now && layer ? classifyTime(layer.freshness, layer.time, p.now) : null;
   const cov = regionCoverage(layer, p.regionId);
   const comp = layer?.composite;
+  const ms = layer?.multisensor;
+  const [mPrimary, mSecondary] = multiSensorMembers(p.manifest, layer);
 
   const options = [
+    { value: "multi", label: "Multi-sensor", disabled: !multi, testid: "sat-multi", title: "Sentinel-3 300 m where it has a recent observation, VIIRS 750 m elsewhere; nothing averaged" },
     { value: "olci300", label: "OLCI 300 m", disabled: !olci, testid: "sat-olci300" },
     { value: "viirs750", label: "VIIRS 750 m", disabled: !viirs, testid: "sat-viirs750" },
     { value: "imagery", label: "Imagery", disabled: imagery.length === 0, testid: "sat-imagery", title: "Same-day pictures from NASA GIBS; values cannot be read from them" },
@@ -307,16 +314,30 @@ function SatelliteSection(p: Props) {
               })}
             </div>
           )}
-          {layer?.palette && (p.showAge && comp ? <AgeLegend maxDays={comp.window_days} /> : <ChlorophyllLegend palette={layer.palette} />)}
-          {comp && p.expanded && (
-            <label className="flex items-center gap-2 text-[13px] text-ink-2">
-              <input type="checkbox" checked={p.showAge} onChange={(e) => p.onShowAge(e.target.checked)} data-testid="toggle-age" />
-              Show each pixel&apos;s observation date
-            </label>
+          {ms && (
+            <p data-testid="multi-label" className="text-[12px] leading-snug text-ink-2">
+              <span className="font-medium text-ink">Multi-sensor display.</span> Sentinel-3 300 m where it has an observation in the last {comp?.window_days ?? 7} days; VIIRS 750 m elsewhere, or where VIIRS is more than {ms.prefer_primary_within_days} days newer. Each pixel is one sensor&apos;s own value and date; nothing is averaged.
+            </p>
+          )}
+          {layer?.palette &&
+            (p.showAge && (comp || ms) ? <AgeLegend maxDays={comp?.window_days ?? 7} /> : p.showSensor && ms ? <SensorLegend labels={ms.members.map((m) => m.label)} /> : <ChlorophyllLegend palette={layer.palette} />)}
+          {(comp || ms) && p.expanded && (
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              <label className="flex items-center gap-2 text-[13px] text-ink-2">
+                <input type="checkbox" checked={p.showAge} onChange={(e) => p.onShowAge(e.target.checked)} data-testid="toggle-age" />
+                Show each pixel&apos;s observation date
+              </label>
+              {ms && (
+                <label className="flex items-center gap-2 text-[13px] text-ink-2">
+                  <input type="checkbox" checked={p.showSensor} onChange={(e) => p.onShowSensor(e.target.checked)} data-testid="toggle-sensor" />
+                  Show which sensor
+                </label>
+              )}
+            </div>
           )}
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 border-t border-hairline pt-2 text-[12px] text-ink-3">
             <ProductClassBadge pc="observation" />
-            <span>{product === "viirs750" ? "VIIRS · NOAA" : "Sentinel-3 OLCI · NOAA CoastWatch"}</span>
+            <span>{product === "viirs750" ? "VIIRS · NOAA" : product === "multi" ? "Sentinel-3 OLCI + VIIRS · NOAA CoastWatch" : "Sentinel-3 OLCI · NOAA CoastWatch"}</span>
             <Res l={layer} />
             <span className="ml-auto">
               <FreshnessBadge f={fresh} basis="observed_date" />
@@ -328,7 +349,9 @@ function SatelliteSection(p: Props) {
             </p>
           )}
           <p className={`text-[12px] leading-snug text-ink-2 ${p.expanded ? "" : "line-clamp-2"}`} data-testid="sat-dates">
-            {layer && !layer.grid ? (
+            {ms ? (
+              <MultiDates ms={ms} primary={mPrimary} secondary={mSecondary} regionId={p.regionId} regionLabel={p.regionLabel} />
+            ) : layer && !layer.grid ? (
               <>No clear observation on {formatDate(layer.time.observed_date!)}: clouds, fog or no overpass. Nothing is shown for that day.</>
             ) : comp ? (
               <>
@@ -448,5 +471,35 @@ function AboutLayer({ layer, title, testid }: { layer: LayerArtifact; title: str
         </dl>
       </div>
     </details>
+  );
+}
+
+function MultiDates({ ms, primary, secondary, regionId, regionLabel }: { ms: NonNullable<LayerArtifact["multisensor"]>; primary: LayerArtifact | null; secondary: LayerArtifact | null; regionId: string; regionLabel: string }) {
+  const range = (l: LayerArtifact | null) => (l?.composite ? `${formatDate(l.composite.oldest_observed_date)}–${formatDate(l.composite.newest_observed_date)}` : "—");
+  const cov = ms.coverage_comparison.find((c) => c.region_id === regionId) ?? ms.coverage_comparison.find((c) => c.region_id === "domain");
+  const agree = [ms.agreement.find((a) => a.region_id === regionId), ms.agreement.find((a) => a.region_id === "domain")].find((a) => a && a.median_log10_ratio != null);
+  const where = cov?.region_id === "domain" ? "the domain" : regionLabel;
+  const sec = ms.shown?.find((x) => x.order === 1);
+  return (
+    <>
+      Sentinel-3 pixels observed {range(primary)}; VIIRS {range(secondary)}.{" "}
+      {sec?.median_age_days != null && sec.pixels > 0 && (
+        <span data-testid="multi-viirs-age">VIIRS pixels shown are a median {Math.round(sec.median_age_days)} days old (VIIRS is published about 5 days after observation). </span>
+      )}
+      {cov && (
+        <span data-testid="multi-coverage">
+          {Math.round(cov.combined_fraction * 100)}% of {where} ocean observed by either sensor (Sentinel-3 alone {Math.round(cov.primary_fraction * 100)}%).{" "}
+        </span>
+      )}
+      <span data-testid="sat-agreement">
+        {agree ? (
+          <>
+            Where both saw the same water on the same day{agree.region_id === "domain" ? "" : ` in ${agree.label}`}, {ratioPhrase(agree.median_log10_ratio!)} ({agree.n_cells.toLocaleString("en-US")} cells): a colour step at a sensor edge may be the sensors, not the water.{" "}
+          </>
+        ) : (
+          <>No same-day overlap this week to compare the two sensors. </>
+        )}
+      </span>
+    </>
   );
 }
