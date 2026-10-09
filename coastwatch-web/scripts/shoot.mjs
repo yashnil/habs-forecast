@@ -20,12 +20,27 @@ const drawer = async (p) => {
   await p.getByRole("dialog").waitFor();
 };
 // name, path, viewports, full page, action
+const ALL = ["desktop-1440", "laptop-1280", "mobile-390"];
 const SHOTS = [
-  ["01-map", "/", ["desktop-1440", "laptop-1280", "mobile-390"], false],
-  ["02-bloom", "/bloom", ["desktop-1440", "laptop-1280", "mobile-390"], true],
-  ["03-fisheries", "/fisheries", ["desktop-1440", "laptop-1280", "mobile-390"], true],
-  ["04-sources", "/sources", ["desktop-1440", "mobile-390"], false],
-  ["05-official-drawer", "/fisheries", ["desktop-1440", "mobile-390"], false, drawer],
+  ["01-map-forecast", "/", ALL, false],
+  ["02-map-satellite", "/?layer=olci300", ALL, false],
+  ["03-map-port", "/?region=monterey_bay&port=593", ALL, false],
+  ["04-map-satellite-age", "/?layer=olci300&age=1", ["desktop-1440", "mobile-390"], false],
+  ["05-map-statewide-satellite", "/?region=california&layer=olci300", ["desktop-1440", "laptop-1280"], false],
+  ["06-map-places", "/", ["mobile-390"], false, async (p) => { await p.getByTestId("place-button").click(); await p.waitForTimeout(300); }],
+  ["10-map-satellite-clouded-day", "/?layer=olci300", ["desktop-1440"], false, async (p) => {
+    const days = p.locator("[data-testid^=sat-day-2]");
+    const n = await days.count();
+    // the newest day whose coverage bar is empty (fully clouded or no overpass), if any
+    for (let i = n - 1; i >= 0; i--) {
+      const t = (await days.nth(i).getAttribute("title")) ?? "";
+      if (/: 0% of/.test(t)) { await days.nth(i).click(); break; }
+    }
+    await p.waitForTimeout(800);
+  }],
+  ["07-bloom", "/bloom", ["desktop-1440", "mobile-390"], true],
+  ["08-fisheries", "/fisheries", ["desktop-1440", "mobile-390"], true],
+  ["09-official-drawer", "/", ["desktop-1440", "mobile-390"], false, drawer],
 ];
 
 const server = spawn("npx", ["next", "start", "-p", String(PORT)], { env: { ...process.env, CW_DATA_BASE_URL: BASE }, stdio: "ignore" });
@@ -38,14 +53,22 @@ for (let i = 0; ; i++) {
 }
 const browser = await chromium.launch(process.env.CI ? {} : { channel: "chrome" });
 try {
+  const only = process.env.SHOTS_FILTER ? new RegExp(process.env.SHOTS_FILTER) : null;
   for (const [name, url, vps, full, action] of SHOTS) {
     for (const vp of vps) {
+      if (only && !only.test(`${vp}/${name}`)) continue;
       const ctx = await browser.newContext(VIEWPORTS[vp]);
       const page = await ctx.newPage();
       page.on("pageerror", (e) => console.error(`[${name} ${vp}]`, e.message));
+      // SHOTS_NOW freezes the clock (stale/historical states against recorded data)
+      if (process.env.SHOTS_NOW) await page.clock.setFixedTime(new Date(process.env.SHOTS_NOW));
       await page.goto(`http://localhost:${PORT}${url}`, { waitUntil: "networkidle" });
       await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(1200);
+      if (url.startsWith("/") && !url.startsWith("/bloom") && !url.startsWith("/fisheries") && !url.startsWith("/sources")) {
+        await page.waitForFunction(() => !!window.__cwMap && window.__cwMap.loaded(), null, { timeout: 30000 }).catch(() => {});
+        await page.waitForTimeout(1500);
+      }
       if (action) await action(page);
       // full-page captures: pin the mobile tab bar to the end of the page instead of mid-image
       if (full && !action) await page.addStyleTag({ content: "body{position:relative}[data-testid=tabbar]{position:absolute!important}" });

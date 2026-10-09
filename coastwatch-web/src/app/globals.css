@@ -10,7 +10,8 @@
  * Semantic colours are reserved: official = amber, model = violet, measured = teal.
  * Freshness/state colours always ship with an icon and a text label.
  */
-:root {
+:root,
+.theme-paper {
   color-scheme: light;
 
   /* frame (same in both themes) */
@@ -84,7 +85,7 @@
   --cw-tabbar-h: 64px;
 }
 
-/* Dark sea: map canvases and the panels that float over them. */
+/* Dark sea: map canvases. Panels floating over the map use `.theme-paper` (above). */
 .theme-dark {
   color-scheme: dark;
   --cw-page: #040b17;

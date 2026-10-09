@@ -47,6 +47,7 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
     remote = base.startswith(("http://", "https://"))
     problems: list[str] = []
     checked: list[dict] = []
+    tiles_validated = 0
 
     mf = _get(base, "manifest.json")
     if mf.status != 200:
@@ -81,7 +82,70 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
                 except Exception as e:
                     ok, detail = False, f"not a PNG: {e}"
             record(lyr.image.url, "image", f, ok, detail)
-        if lyr.grid:
+        tile_sets = [("tiles", lyr.tiles)] + ([("age_tiles", lyr.composite.age_tiles)] if lyr.composite and lyr.composite.age_tiles else [])
+        for kind, t in tile_sets:
+            if not t or not t.relative:
+                continue
+            if not t.sample_tiles:
+                record(t.url_template, kind, Fetched(200, b""), False, "relative tile layer lists no sample tiles")
+            for key in t.sample_tiles:
+                z, x, y = key.split("/")
+                rel = t.url_template.replace("{z}", z).replace("{x}", x).replace("{y}", y)
+                f = _get(base, rel)
+                ok, detail = f.status == 200, f"HTTP {f.status}"
+                if ok:
+                    try:
+                        with Image.open(io.BytesIO(f.body)) as im:
+                            ok = im.size == (t.tile_size, t.tile_size) and im.mode == "P"
+                            detail = f"tile {im.size[0]}x{im.size[1]} mode {im.mode}"
+                    except Exception as e:
+                        ok, detail = False, f"not a PNG: {e}"
+                record(rel, kind, f, ok, detail)
+            if not remote:
+                # Before publishing, every tile is checked, not just the samples: the tile
+                # directory holds exactly n_tiles files and each one is a 256 px palette PNG.
+                # (At the public URL the samples confirm serving; the content is the same commit.)
+                root = Path(base) / t.url_template.split("{z}", 1)[0]
+                files = sorted(root.rglob("*.png")) if root.is_dir() else []
+                bad = []
+                for fp in files:
+                    try:
+                        with Image.open(fp) as im:
+                            if im.size != (t.tile_size, t.tile_size) or im.mode != "P":
+                                bad.append(f"{fp.relative_to(root).as_posix()} {im.size} {im.mode}")
+                    except Exception as e:
+                        bad.append(f"{fp.relative_to(root).as_posix()}: {e}")
+                why = ([f"{len(files)} tile files != n_tiles {t.n_tiles}"] if t.n_tiles is not None and len(files) != t.n_tiles else []) + (
+                    [f"{len(bad)} bad tiles, e.g. {bad[0]}"] if bad else [])
+                ok = not why
+                detail = f"all {len(files)} tiles decode as {t.tile_size} px palette PNGs" if ok else "; ".join(why)
+                tiles_validated += len(files) - len(bad)
+                record(t.url_template, f"{kind}_all", Fetched(200, b""), ok, detail)
+        grids = [("grid", lyr.grid)] + ([("age_grid", lyr.composite.age_grid)] if lyr.composite else [])
+        for kind, g in grids:
+            if not g or not g.chunks:
+                continue
+            ch = g.chunks
+            for key in ch.present:
+                r, c = (int(v) for v in key.split("_"))
+                h = min(ch.rows, g.height - r * ch.rows)
+                w = min(ch.cols, g.width - c * ch.cols)
+                rel = ch.url_template.format(row=r, col=c)
+                f = _get(base, rel)
+                ok, detail = f.status == 200 and h > 0 and w > 0, f"HTTP {f.status}"
+                if ok:
+                    try:
+                        n = len(gzip.decompress(f.body))
+                        ok = n == h * w * 2
+                        detail = f"chunk {key}: {n} bytes decoded" + ("" if ok else f" != {h * w * 2}")
+                    except Exception as e:
+                        ok, detail = False, f"not gzip: {e}"
+                record(rel, kind, f, ok, detail)
+        if lyr.coverage:
+            cov_ok = all(0 <= rc.observed_fraction <= 1 for rc in lyr.coverage.regions)
+            if not cov_ok:
+                problems.append(f"{lyr.layer_id}: coverage fraction out of range")
+        if lyr.grid and not lyr.grid.chunks:
             g = lyr.grid
             f = _get(base, g.url)
             ok, detail = f.status == 200, f"HTTP {f.status}"
@@ -129,6 +193,8 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
         "pipeline_run_id": manifest.pipeline_run_id,
         "ok": not problems,
         "files_checked": len(checked) + 1,
+        # every tile file, when checking a local tree; 0 at a URL (samples only)
+        "tiles_validated": tiles_validated,
         "problems": problems,
         "checked": checked,
     }

@@ -27,6 +27,12 @@ type Ctx = {
 
 const OfficialCtx = createContext<Ctx | null>(null);
 
+/** Open the global official-notices drawer from anywhere inside the shell. */
+export function useOfficialDrawer() {
+  const { openDrawer, records, verification, ds } = useOfficial();
+  return { openDrawer, count: records.length, verification, available: !!ds };
+}
+
 function useOfficial(): Ctx {
   const c = useContext(OfficialCtx);
   if (!c) throw new Error("useOfficial outside OfficialProvider");

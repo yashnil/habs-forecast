@@ -1,0 +1,4 @@
+2026-10-08T15:00:00Z +12h {"n": 692, "hfr_mean_speed_m_s": 0.165, "wcofs_mean_speed_m_s": 0.163, "rmse_vector_m_s": 0.282, "complex_correlation_magnitude": 0.451, "complex_correlation_angle_deg": -162.4, "mean_direction_difference_deg": -46.3}
+2026-10-08T18:00:00Z +15h {"n": 723, "hfr_mean_speed_m_s": 0.189, "wcofs_mean_speed_m_s": 0.148, "rmse_vector_m_s": 0.291, "complex_correlation_magnitude": 0.391, "complex_correlation_angle_deg": 148.8, "mean_direction_difference_deg": -36.9}
+2026-10-08T21:00:00Z +18h {"n": 678, "hfr_mean_speed_m_s": 0.171, "wcofs_mean_speed_m_s": 0.143, "rmse_vector_m_s": 0.266, "complex_correlation_magnitude": 0.415, "complex_correlation_angle_deg": 129.8, "mean_direction_difference_deg": -65.5}
+2026-10-09T00:00:00Z +21h {"n": 651, "hfr_mean_speed_m_s": 0.14, "wcofs_mean_speed_m_s": 0.122, "rmse_vector_m_s": 0.258, "complex_correlation_magnitude": 0.253, "complex_correlation_angle_deg": 176.9, "mean_direction_difference_deg": 160.8}

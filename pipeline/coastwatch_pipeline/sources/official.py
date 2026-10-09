@@ -246,9 +246,10 @@ def watch(ctx: RunContext, reg: OfficialRegistry) -> list[WatchResult]:
 
 
 def _uses_default_fetch(ctx: RunContext) -> bool:
-    from ..http import fetch
+    from ..http import CircuitBreaker, fetch
 
-    return ctx.fetcher is fetch
+    f = ctx.fetcher
+    return f is fetch or (isinstance(f, CircuitBreaker) and f.inner is fetch)
 
 
 def _browser_fetch(ctx: RunContext, url: str):

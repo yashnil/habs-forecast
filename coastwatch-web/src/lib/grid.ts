@@ -80,3 +80,75 @@ export function sample(g: ValueGrid, codes: Uint16Array, lat: number, lon: numbe
   if (!best) return { kind: "none", cell: c };
   return { kind: "value", value: best.value, cell: best.cell, distanceKm: best.d, nearest: true };
 }
+
+// ---------------------------------------------------------------- chunked grids (satellite)
+
+/** Decoded value of a raw code, honouring the grid's transform (e.g. log10 for chlorophyll). */
+export function decodeCode(g: ValueGrid, code: number): number | null {
+  if (code === (g.nodata ?? 65535)) return null;
+  const q = code * g.scale_factor + g.add_offset;
+  return g.transform === "log10" ? 10 ** q : q;
+}
+
+function chunkOf(g: ValueGrid, row: number, col: number) {
+  const ch = g.chunks!;
+  const r = Math.floor(row / ch.rows);
+  const c = Math.floor(col / ch.cols);
+  const key = `${r}_${c}`;
+  const width = Math.min(ch.cols, g.width - c * ch.cols);
+  return { key, r, c, width, localRow: row - r * ch.rows, localCol: col - c * ch.cols };
+}
+
+/**
+ * Value at a cell of a chunked grid. Only the chunk containing the cell is fetched.
+ * Chunks that were not written hold no values anywhere (all cloud, land or outside).
+ */
+export async function chunkedCode(baseUrl: string, g: ValueGrid, row: number, col: number): Promise<number> {
+  if (!g.chunks) throw new Error("grid is not chunked");
+  const nodata = g.nodata ?? 65535;
+  if (row < 0 || row >= g.height || col < 0 || col >= g.width) return nodata;
+  const k = chunkOf(g, row, col);
+  if (!g.chunks.present.includes(k.key)) return nodata;
+  const url = `${baseUrl.replace(/\/$/, "")}/${g.chunks.url_template.replace("{row}", String(k.r)).replace("{col}", String(k.c))}`;
+  const codes = await loadGrid(url);
+  return codes[k.localRow * k.width + k.localCol];
+}
+
+export type ChunkedSample =
+  | { kind: "value"; value: number; cell: Cell; distanceKm: number; nearest: boolean; ageDays: number | null }
+  | { kind: "none"; cell: Cell | null };
+
+/**
+ * Value at a point from a chunked grid (and, for a composite, the age of that pixel).
+ * Like `sample`: with no value at the point, the nearest cell with a value within
+ * `searchCells` is reported with its distance, never as the value at the point.
+ */
+export async function sampleChunked(baseUrl: string, g: ValueGrid, lat: number, lon: number, age?: ValueGrid | null, searchCells = 4): Promise<ChunkedSample> {
+  const c = cellAt(g, lat, lon);
+  if (!c) return { kind: "none", cell: null };
+  let best: { code: number; cell: Cell; d: number } | null = null;
+  for (let ring = 0; ring <= searchCells && !best; ring++) {
+    for (let dr = -ring; dr <= ring; dr++) {
+      for (let dc = -ring; dc <= ring; dc++) {
+        if (Math.max(Math.abs(dr), Math.abs(dc)) !== ring) continue;
+        const r = c.row + dr;
+        const k = c.col + dc;
+        const code = await chunkedCode(baseUrl, g, r, k);
+        if (code === (g.nodata ?? 65535)) continue;
+        const cell = { row: r, col: k, lat: g.lat_first + r * g.lat_step, lon: g.lon_first + k * g.lon_step };
+        const d = ring === 0 ? 0 : distanceKm(lat, lon, cell.lat, cell.lon);
+        if (!best || d < best.d) best = { code, cell, d };
+      }
+    }
+  }
+  if (!best) return { kind: "none", cell: c };
+  const ageCode = age ? await chunkedCode(baseUrl, age, best.cell.row, best.cell.col) : null;
+  return {
+    kind: "value",
+    value: decodeCode(g, best.code)!,
+    cell: best.cell,
+    distanceKm: best.d,
+    nearest: best.d > 0,
+    ageDays: ageCode == null || ageCode === (age?.nodata ?? 65535) ? null : ageCode,
+  };
+}

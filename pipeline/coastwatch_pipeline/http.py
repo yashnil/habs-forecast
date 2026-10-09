@@ -65,8 +65,10 @@ def fetch(
                     body=r.read() if method != "HEAD" else b"",
                 )
         except urllib.error.HTTPError as e:
-            # 4xx other than 429 will not get better by retrying
-            if 400 <= e.code < 500 and e.code != 429:
+            # 4xx other than 429 will not get better by retrying, except 403: NOAA's
+            # ERDDAP intermittently answers 403 to cloud runners (seen in staging run
+            # 37964087582, 2026-10-09) and serves the same request moments later
+            if 400 <= e.code < 500 and e.code not in (403, 429):
                 raise FetchError(f"HTTP {e.code} for {url}") from e
             last = e
         except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
@@ -74,6 +76,47 @@ def fetch(
         if attempt < retries:
             time.sleep(backoff * (2**attempt))
     raise FetchError(f"Failed after {retries + 1} attempts: {url} ({last})")
+
+
+class CircuitBreaker:
+    """Per-run fetcher that stops calling an upstream endpoint after it has failed
+    `threshold` times in a row (each failure already includes fetch()'s retries).
+
+    The key is host + path without the query or extension, i.e. one ERDDAP dataset:
+    NOAA's ERDDAP has refused one dataset while serving another from the same host
+    (staging run 37967595146), so a whole-host breaker would drop working sources.
+    Bounds a run's time when an endpoint refuses everything (~35 s per request
+    otherwise) and makes the outcome explicit; nothing is written for failed requests.
+    """
+
+    def __init__(self, inner: Fetcher = fetch, threshold: int = 2):
+        self.inner, self.threshold = inner, threshold
+        self.failures: dict[str, int] = {}
+        self.opened: dict[str, str] = {}
+
+    @staticmethod
+    def key(url: str) -> str:
+        from urllib.parse import urlsplit
+
+        u = urlsplit(url)
+        path = u.path.rsplit(".", 1)[0] if "." in u.path.rsplit("/", 1)[-1] else u.path
+        return f"{u.netloc}{path}"
+
+    def __call__(self, url: str) -> Response:
+        k = self.key(url)
+        if k in self.opened:
+            raise FetchError(f"circuit open for {k} after {self.threshold} consecutive failures this run (last: {self.opened[k]}): {url}")
+        try:
+            r = self.inner(url)
+        except FetchError as e:
+            if "HTTP 404" in str(e):  # a definite answer, not an outage
+                raise
+            self.failures[k] = self.failures.get(k, 0) + 1
+            if self.failures[k] >= self.threshold:
+                self.opened[k] = str(e)[:200]
+            raise
+        self.failures[k] = 0
+        return r
 
 
 Poster = Callable[[str, bytes], Response]

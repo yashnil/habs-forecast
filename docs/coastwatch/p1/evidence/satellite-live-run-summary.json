@@ -1,0 +1,1714 @@
+{
+ "generated_at": "2026-10-09T16:52:31Z",
+ "sources": [
+  {
+   "source_id": "satellite_chl",
+   "title": "Satellite chlorophyll-a: Sentinel-3 OLCI 300 m (VIIRS 750 m fallback)",
+   "product_class": "observation",
+   "last_attempt_at": "2026-10-09T16:52:31Z",
+   "last_success_at": "2026-10-09T16:52:31Z",
+   "outcome": "updated",
+   "error": null,
+   "notes": [
+    "olci300: 7 day(s) in window; newest observed 2026-10-07.",
+    "viirs750: 3 day(s) in window; newest observed 2026-10-04."
+   ],
+   "latest_issued_date": null,
+   "latest_valid_date": "2026-10-07",
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 3,
+    "stale_max_age_days": 7,
+    "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+   }
+  }
+ ],
+ "layers": [
+  {
+   "layer_id": "olci300_chl_latest",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-07",
+    "valid_time": null,
+    "observed_date": "2026-10-07",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-01T17:39:36Z",
+     "2026-10-01T19:19:05Z",
+     "2026-10-01T19:32:23Z",
+     "2026-10-02T17:16:25Z",
+     "2026-10-02T17:29:43Z",
+     "2026-10-02T18:54:24Z",
+     "2026-10-03T16:59:02Z",
+     "2026-10-03T17:39:14Z",
+     "2026-10-03T18:31:13Z",
+     "2026-10-04T18:00:32Z",
+     "2026-10-04T18:54:02Z",
+     "2026-10-05T17:35:51Z",
+     "2026-10-05T19:15:21Z",
+     "2026-10-06T17:12:40Z",
+     "2026-10-06T18:50:40Z",
+     "2026-10-07T17:35:29Z",
+     "2026-10-07T19:16:29Z"
+    ]
+   },
+   "coverage": {
+    "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+    "domain_observed_fraction": 0.433,
+    "regions": [
+     {
+      "region_id": "north_coast",
+      "label": "North Coast",
+      "observed_fraction": 0.5967,
+      "observed_km2": 6297.3,
+      "reference_cells": 1376
+     },
+     {
+      "region_id": "mendocino_sonoma",
+      "label": "Mendocino\u2013Sonoma",
+      "observed_fraction": 0.1528,
+      "observed_km2": 927.4,
+      "reference_cells": 805
+     },
+     {
+      "region_id": "sf_bay_farallones",
+      "label": "San Francisco & Farallones",
+      "observed_fraction": 0.0054,
+      "observed_km2": 827.0,
+      "reference_cells": 734
+     },
+     {
+      "region_id": "monterey_bay",
+      "label": "Monterey Bay",
+      "observed_fraction": 0.3065,
+      "observed_km2": 836.9,
+      "reference_cells": 372
+     },
+     {
+      "region_id": "central_coast",
+      "label": "Central Coast",
+      "observed_fraction": 0.1044,
+      "observed_km2": 802.5,
+      "reference_cells": 1264
+     },
+     {
+      "region_id": "southern_california",
+      "label": "Southern California",
+      "observed_fraction": 0.9861,
+      "observed_km2": 52511.5,
+      "reference_cells": 5746
+     }
+    ]
+   },
+   "native_resolution_m": 300.0,
+   "platforms": [
+    "Sentinel-3A",
+    "Sentinel-3B"
+   ],
+   "qc": {
+    "checks": [
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-01T19:19:05Z, listed 2026-10-01T19:19:05Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0508% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-01T17:39:36Z, listed 2026-10-01T17:39:36Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0471% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-01T19:32:23Z, listed 2026-10-01T19:32:23Z"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0000% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-02T18:54:24Z, listed 2026-10-02T18:54:24Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.3263% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-02T17:16:25Z, listed 2026-10-02T17:16:25Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0242% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-02T17:29:43Z, listed 2026-10-02T17:29:43Z"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0000% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-03T18:31:13Z, listed 2026-10-03T18:31:13Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0000% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-03T17:39:14Z, listed 2026-10-03T17:39:14Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0167% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-03T16:59:02Z, listed 2026-10-03T16:59:02Z"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0000% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-04T18:54:02Z, listed 2026-10-04T18:54:02Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0015% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-04T18:00:32Z, listed 2026-10-04T18:00:32Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0000% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-05T19:15:21Z, listed 2026-10-05T19:15:21Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.3882% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-05T17:35:51Z, listed 2026-10-05T17:35:51Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0003% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-06T18:50:40Z, listed 2026-10-06T18:50:40Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.1119% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-06T17:12:40Z, listed 2026-10-06T17:12:40Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0103% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-07T19:16:29Z, listed 2026-10-07T19:16:29Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0000% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-07T17:35:29Z, listed 2026-10-07T17:35:29Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0122% of values > 200.0 mg m-3"
+     }
+    ],
+    "n_cells": 13192000,
+    "n_valid": 2308477,
+    "valid_fraction": 0.174991,
+    "value_min": 0.009999999776482582,
+    "value_max": 380.8538818359375
+   },
+   "tiles": {
+    "n_tiles": 694,
+    "min_zoom": 5,
+    "max_native_zoom": 10
+   }
+  },
+  {
+   "layer_id": "olci300_chl_2026-10-01",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-01",
+    "valid_time": null,
+    "observed_date": "2026-10-01",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-01T17:39:36Z",
+     "2026-10-01T19:19:05Z",
+     "2026-10-01T19:32:23Z"
+    ]
+   },
+   "coverage": {
+    "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+    "domain_observed_fraction": 0.219,
+    "regions": [
+     {
+      "region_id": "north_coast",
+      "label": "North Coast",
+      "observed_fraction": 0.532,
+      "observed_km2": 5511.1,
+      "reference_cells": 1376
+     },
+     {
+      "region_id": "mendocino_sonoma",
+      "label": "Mendocino\u2013Sonoma",
+      "observed_fraction": 0.0012,
+      "observed_km2": 20.1,
+      "reference_cells": 805
+     },
+     {
+      "region_id": "sf_bay_farallones",
+      "label": "San Francisco & Farallones",
+      "observed_fraction": 0.0,
+      "observed_km2": 783.0,
+      "reference_cells": 734
+     },
+     {
+      "region_id": "monterey_bay",
+      "label": "Monterey Bay",
+      "observed_fraction": 0.0538,
+      "observed_km2": 67.0,
+      "reference_cells": 372
+     },
+     {
+      "region_id": "central_coast",
+      "label": "Central Coast",
+      "observed_fraction": 0.0,
+      "observed_km2": 7.9,
+      "reference_cells": 1264
+     },
+     {
+      "region_id": "southern_california",
+      "label": "Southern California",
+      "observed_fraction": 0.0324,
+      "observed_km2": 997.0,
+      "reference_cells": 5746
+     }
+    ]
+   },
+   "native_resolution_m": 300.0,
+   "platforms": [
+    "Sentinel-3A",
+    "Sentinel-3B"
+   ],
+   "qc": {
+    "checks": [
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-01T19:19:05Z, listed 2026-10-01T19:19:05Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0508% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-01T17:39:36Z, listed 2026-10-01T17:39:36Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0471% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-01T19:32:23Z, listed 2026-10-01T19:32:23Z"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0000% of values > 200.0 mg m-3"
+     }
+    ],
+    "n_cells": 13192000,
+    "n_valid": 1173261,
+    "valid_fraction": 0.088937,
+    "value_min": 0.009999999776482582,
+    "value_max": 400.5484619140625
+   },
+   "tiles": {
+    "n_tiles": 488,
+    "min_zoom": 5,
+    "max_native_zoom": 10
+   }
+  },
+  {
+   "layer_id": "olci300_chl_2026-10-02",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-02",
+    "valid_time": null,
+    "observed_date": "2026-10-02",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-02T17:16:25Z",
+     "2026-10-02T17:29:43Z",
+     "2026-10-02T18:54:24Z"
+    ]
+   },
+   "coverage": {
+    "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+    "domain_observed_fraction": 0.0946,
+    "regions": [
+     {
+      "region_id": "north_coast",
+      "label": "North Coast",
+      "observed_fraction": 0.1446,
+      "observed_km2": 922.7,
+      "reference_cells": 1376
+     },
+     {
+      "region_id": "mendocino_sonoma",
+      "label": "Mendocino\u2013Sonoma",
+      "observed_fraction": 0.0373,
+      "observed_km2": 111.1,
+      "reference_cells": 805
+     },
+     {
+      "region_id": "sf_bay_farallones",
+      "label": "San Francisco & Farallones",
+      "observed_fraction": 0.0014,
+      "observed_km2": 12.8,
+      "reference_cells": 734
+     },
+     {
+      "region_id": "monterey_bay",
+      "label": "Monterey Bay",
+      "observed_fraction": 0.0188,
+      "observed_km2": 7.0,
+      "reference_cells": 372
+     },
+     {
+      "region_id": "central_coast",
+      "label": "Central Coast",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.1,
+      "reference_cells": 1264
+     },
+     {
+      "region_id": "southern_california",
+      "label": "Southern California",
+      "observed_fraction": 0.5808,
+      "observed_km2": 25611.8,
+      "reference_cells": 5746
+     }
+    ]
+   },
+   "native_resolution_m": 300.0,
+   "platforms": [
+    "Sentinel-3A",
+    "Sentinel-3B"
+   ],
+   "qc": {
+    "checks": [
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-02T18:54:24Z, listed 2026-10-02T18:54:24Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.3263% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-02T17:16:25Z, listed 2026-10-02T17:16:25Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0242% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-02T17:29:43Z, listed 2026-10-02T17:29:43Z"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0000% of values > 200.0 mg m-3"
+     }
+    ],
+    "n_cells": 13192000,
+    "n_valid": 434753,
+    "valid_fraction": 0.032956,
+    "value_min": 0.009999999776482582,
+    "value_max": 326.8175354003906
+   },
+   "tiles": {
+    "n_tiles": 322,
+    "min_zoom": 5,
+    "max_native_zoom": 10
+   }
+  },
+  {
+   "layer_id": "olci300_chl_2026-10-03",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-03",
+    "valid_time": null,
+    "observed_date": "2026-10-03",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-03T16:59:02Z",
+     "2026-10-03T17:39:14Z",
+     "2026-10-03T18:31:13Z"
+    ]
+   },
+   "coverage": {
+    "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+    "domain_observed_fraction": 0.081,
+    "regions": [
+     {
+      "region_id": "north_coast",
+      "label": "North Coast",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 1376
+     },
+     {
+      "region_id": "mendocino_sonoma",
+      "label": "Mendocino\u2013Sonoma",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 805
+     },
+     {
+      "region_id": "sf_bay_farallones",
+      "label": "San Francisco & Farallones",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 734
+     },
+     {
+      "region_id": "monterey_bay",
+      "label": "Monterey Bay",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 372
+     },
+     {
+      "region_id": "central_coast",
+      "label": "Central Coast",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 1264
+     },
+     {
+      "region_id": "southern_california",
+      "label": "Southern California",
+      "observed_fraction": 0.5339,
+      "observed_km2": 28362.7,
+      "reference_cells": 5746
+     }
+    ]
+   },
+   "native_resolution_m": 300.0,
+   "platforms": [
+    "Sentinel-3A",
+    "Sentinel-3B"
+   ],
+   "qc": {
+    "checks": [
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-03T18:31:13Z, listed 2026-10-03T18:31:13Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0000% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-03T17:39:14Z, listed 2026-10-03T17:39:14Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0167% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-03T16:59:02Z, listed 2026-10-03T16:59:02Z"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3BOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0000% of values > 200.0 mg m-3"
+     }
+    ],
+    "n_cells": 13192000,
+    "n_valid": 456349,
+    "valid_fraction": 0.034593,
+    "value_min": 0.009999999776482582,
+    "value_max": 314.7590026855469
+   },
+   "tiles": {
+    "n_tiles": 89,
+    "min_zoom": 5,
+    "max_native_zoom": 10
+   }
+  },
+  {
+   "layer_id": "olci300_chl_2026-10-04",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-04",
+    "valid_time": null,
+    "observed_date": "2026-10-04",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-04T18:00:32Z",
+     "2026-10-04T18:54:02Z"
+    ]
+   },
+   "coverage": {
+    "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+    "domain_observed_fraction": 0.0287,
+    "regions": [
+     {
+      "region_id": "north_coast",
+      "label": "North Coast",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 1376
+     },
+     {
+      "region_id": "mendocino_sonoma",
+      "label": "Mendocino\u2013Sonoma",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 805
+     },
+     {
+      "region_id": "sf_bay_farallones",
+      "label": "San Francisco & Farallones",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 734
+     },
+     {
+      "region_id": "monterey_bay",
+      "label": "Monterey Bay",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 372
+     },
+     {
+      "region_id": "central_coast",
+      "label": "Central Coast",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 1264
+     },
+     {
+      "region_id": "southern_california",
+      "label": "Southern California",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 5746
+     }
+    ]
+   },
+   "native_resolution_m": 300.0,
+   "platforms": [
+    "Sentinel-3A"
+   ],
+   "qc": {
+    "checks": [
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-04T18:54:02Z, listed 2026-10-04T18:54:02Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0015% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-04T18:00:32Z, listed 2026-10-04T18:00:32Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0000% of values > 200.0 mg m-3"
+     }
+    ],
+    "n_cells": 13192000,
+    "n_valid": 131557,
+    "valid_fraction": 0.009972,
+    "value_min": 0.009999999776482582,
+    "value_max": 253.99305725097656
+   },
+   "tiles": {
+    "n_tiles": 46,
+    "min_zoom": 5,
+    "max_native_zoom": 10
+   }
+  },
+  {
+   "layer_id": "olci300_chl_2026-10-05",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-05",
+    "valid_time": null,
+    "observed_date": "2026-10-05",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-05T17:35:51Z",
+     "2026-10-05T19:15:21Z"
+    ]
+   },
+   "coverage": {
+    "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+    "domain_observed_fraction": 0.0879,
+    "regions": [
+     {
+      "region_id": "north_coast",
+      "label": "North Coast",
+      "observed_fraction": 0.0603,
+      "observed_km2": 699.3,
+      "reference_cells": 1376
+     },
+     {
+      "region_id": "mendocino_sonoma",
+      "label": "Mendocino\u2013Sonoma",
+      "observed_fraction": 0.118,
+      "observed_km2": 805.8,
+      "reference_cells": 805
+     },
+     {
+      "region_id": "sf_bay_farallones",
+      "label": "San Francisco & Farallones",
+      "observed_fraction": 0.0041,
+      "observed_km2": 779.6,
+      "reference_cells": 734
+     },
+     {
+      "region_id": "monterey_bay",
+      "label": "Monterey Bay",
+      "observed_fraction": 0.2634,
+      "observed_km2": 746.3,
+      "reference_cells": 372
+     },
+     {
+      "region_id": "central_coast",
+      "label": "Central Coast",
+      "observed_fraction": 0.0498,
+      "observed_km2": 427.0,
+      "reference_cells": 1264
+     },
+     {
+      "region_id": "southern_california",
+      "label": "Southern California",
+      "observed_fraction": 0.4342,
+      "observed_km2": 19997.3,
+      "reference_cells": 5746
+     }
+    ]
+   },
+   "native_resolution_m": 300.0,
+   "platforms": [
+    "Sentinel-3A"
+   ],
+   "qc": {
+    "checks": [
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-05T19:15:21Z, listed 2026-10-05T19:15:21Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.3882% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-05T17:35:51Z, listed 2026-10-05T17:35:51Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0003% of values > 200.0 mg m-3"
+     }
+    ],
+    "n_cells": 13192000,
+    "n_valid": 435107,
+    "valid_fraction": 0.032983,
+    "value_min": 0.009999999776482582,
+    "value_max": 353.5161437988281
+   },
+   "tiles": {
+    "n_tiles": 418,
+    "min_zoom": 5,
+    "max_native_zoom": 10
+   }
+  },
+  {
+   "layer_id": "olci300_chl_2026-10-06",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-06",
+    "valid_time": null,
+    "observed_date": "2026-10-06",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-06T17:12:40Z",
+     "2026-10-06T18:50:40Z"
+    ]
+   },
+   "coverage": {
+    "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+    "domain_observed_fraction": 0.1725,
+    "regions": [
+     {
+      "region_id": "north_coast",
+      "label": "North Coast",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 1376
+     },
+     {
+      "region_id": "mendocino_sonoma",
+      "label": "Mendocino\u2013Sonoma",
+      "observed_fraction": 0.0,
+      "observed_km2": 17.2,
+      "reference_cells": 805
+     },
+     {
+      "region_id": "sf_bay_farallones",
+      "label": "San Francisco & Farallones",
+      "observed_fraction": 0.0,
+      "observed_km2": 651.7,
+      "reference_cells": 734
+     },
+     {
+      "region_id": "monterey_bay",
+      "label": "Monterey Bay",
+      "observed_fraction": 0.1855,
+      "observed_km2": 541.1,
+      "reference_cells": 372
+     },
+     {
+      "region_id": "central_coast",
+      "label": "Central Coast",
+      "observed_fraction": 0.0839,
+      "observed_km2": 567.6,
+      "reference_cells": 1264
+     },
+     {
+      "region_id": "southern_california",
+      "label": "Southern California",
+      "observed_fraction": 0.9856,
+      "observed_km2": 52324.8,
+      "reference_cells": 5746
+     }
+    ]
+   },
+   "native_resolution_m": 300.0,
+   "platforms": [
+    "Sentinel-3A"
+   ],
+   "qc": {
+    "checks": [
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-06T18:50:40Z, listed 2026-10-06T18:50:40Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.1119% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-06T17:12:40Z, listed 2026-10-06T17:12:40Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0103% of values > 200.0 mg m-3"
+     }
+    ],
+    "n_cells": 13192000,
+    "n_valid": 960812,
+    "valid_fraction": 0.072833,
+    "value_min": 0.009999999776482582,
+    "value_max": 317.2571716308594
+   },
+   "tiles": {
+    "n_tiles": 388,
+    "min_zoom": 5,
+    "max_native_zoom": 10
+   }
+  },
+  {
+   "layer_id": "olci300_chl_2026-10-07",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-07",
+    "valid_time": null,
+    "observed_date": "2026-10-07",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-07T17:35:29Z",
+     "2026-10-07T19:16:29Z"
+    ]
+   },
+   "coverage": {
+    "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+    "domain_observed_fraction": 0.0288,
+    "regions": [
+     {
+      "region_id": "north_coast",
+      "label": "North Coast",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 1376
+     },
+     {
+      "region_id": "mendocino_sonoma",
+      "label": "Mendocino\u2013Sonoma",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 805
+     },
+     {
+      "region_id": "sf_bay_farallones",
+      "label": "San Francisco & Farallones",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 734
+     },
+     {
+      "region_id": "monterey_bay",
+      "label": "Monterey Bay",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 372
+     },
+     {
+      "region_id": "central_coast",
+      "label": "Central Coast",
+      "observed_fraction": 0.0,
+      "observed_km2": 0.0,
+      "reference_cells": 1264
+     },
+     {
+      "region_id": "southern_california",
+      "label": "Southern California",
+      "observed_fraction": 0.1824,
+      "observed_km2": 8862.9,
+      "reference_cells": 5746
+     }
+    ]
+   },
+   "native_resolution_m": 300.0,
+   "platforms": [
+    "Sentinel-3A"
+   ],
+   "qc": {
+    "checks": [
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-07T19:16:29Z, listed 2026-10-07T19:16:29Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0000% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-07T17:35:29Z, listed 2026-10-07T17:35:29Z"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "noaacwS3AOLCIchlaSectorDIDaily:plausible_values",
+      "passed": true,
+      "detail": "0.0122% of values > 200.0 mg m-3"
+     }
+    ],
+    "n_cells": 13192000,
+    "n_valid": 147967,
+    "valid_fraction": 0.011216,
+    "value_min": 0.009999999776482582,
+    "value_max": 236.79913330078125
+   },
+   "tiles": {
+    "n_tiles": 55,
+    "min_zoom": 5,
+    "max_native_zoom": 10
+   }
+  },
+  {
+   "layer_id": "viirs750_chl_latest",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-04",
+    "valid_time": null,
+    "observed_date": "2026-10-04",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-02T12:00:00Z",
+     "2026-10-03T12:00:00Z",
+     "2026-10-04T12:00:00Z"
+    ]
+   },
+   "coverage": {
+    "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+    "domain_observed_fraction": 0.749,
+    "regions": [
+     {
+      "region_id": "north_coast",
+      "label": "North Coast",
+      "observed_fraction": 0.3336,
+      "observed_km2": 3026.5,
+      "reference_cells": 1376
+     },
+     {
+      "region_id": "mendocino_sonoma",
+      "label": "Mendocino\u2013Sonoma",
+      "observed_fraction": 0.5317,
+      "observed_km2": 3143.0,
+      "reference_cells": 805
+     },
+     {
+      "region_id": "sf_bay_farallones",
+      "label": "San Francisco & Farallones",
+      "observed_fraction": 0.9428,
+      "observed_km2": 6682.0,
+      "reference_cells": 734
+     },
+     {
+      "region_id": "monterey_bay",
+      "label": "Monterey Bay",
+      "observed_fraction": 0.9355,
+      "observed_km2": 2984.4,
+      "reference_cells": 372
+     },
+     {
+      "region_id": "central_coast",
+      "label": "Central Coast",
+      "observed_fraction": 0.8924,
+      "observed_km2": 9565.7,
+      "reference_cells": 1264
+     },
+     {
+      "region_id": "southern_california",
+      "label": "Southern California",
+      "observed_fraction": 0.9939,
+      "observed_km2": 53135.4,
+      "reference_cells": 5746
+     }
+    ]
+   },
+   "native_resolution_m": 750.0,
+   "platforms": [
+    "VIIRS"
+   ],
+   "qc": {
+    "checks": [
+     {
+      "name": "erdVHNchla1day:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "erdVHNchla1day:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-02T12:00:00Z, listed 2026-10-02T12:00:00Z"
+     },
+     {
+      "name": "erdVHNchla1day:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "erdVHNchla1day:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "erdVHNchla1day:plausible_values",
+      "passed": true,
+      "detail": "0.0071% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "erdVHNchla1day:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "erdVHNchla1day:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-03T12:00:00Z, listed 2026-10-03T12:00:00Z"
+     },
+     {
+      "name": "erdVHNchla1day:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "erdVHNchla1day:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "erdVHNchla1day:plausible_values",
+      "passed": true,
+      "detail": "0.0125% of values > 200.0 mg m-3"
+     },
+     {
+      "name": "erdVHNchla1day:required_variables",
+      "passed": true,
+      "detail": "all present"
+     },
+     {
+      "name": "erdVHNchla1day:time_matches_listing",
+      "passed": true,
+      "detail": "file 2026-10-04T12:00:00Z, listed 2026-10-04T12:00:00Z"
+     },
+     {
+      "name": "erdVHNchla1day:coordinates_on_lattice",
+      "passed": true,
+      "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+     },
+     {
+      "name": "erdVHNchla1day:within_domain",
+      "passed": true,
+      "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+     },
+     {
+      "name": "erdVHNchla1day:plausible_values",
+      "passed": true,
+      "detail": "0.0174% of values > 200.0 mg m-3"
+     }
+    ],
+    "n_cells": 1464969,
+    "n_valid": 446679,
+    "valid_fraction": 0.304907,
+    "value_min": 0.10809779167175293,
+    "value_max": 392.4879150390625
+   },
+   "tiles": {
+    "n_tiles": 243,
+    "min_zoom": 5,
+    "max_native_zoom": 9
+   }
+  }
+ ]
+}

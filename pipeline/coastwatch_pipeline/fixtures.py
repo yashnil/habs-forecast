@@ -21,15 +21,23 @@ from .pipeline import run_pipeline
 FIXTURES = Path(__file__).resolve().parents[1] / "tests" / "fixtures"
 FIXTURE_NOW = "2026-10-08T18:00:00Z"
 
+# Bounding boxes of the satellite fixtures (real ERDDAP responses, recorded 2026-10-09).
+SATELLITE_REGIONS = {
+    "monterey": (36.40125, 37.20125, -122.60125, -121.75125),
+    "north_coast": (40.40125, 41.40125, -124.70125, -123.95125),
+    "socal_bight": (32.60125, 34.10125, -119.00125, -117.10125),
+}
+
 
 class FixtureFetcher:
     """Serves recorded responses by URL pattern. `overrides` maps a regex to a callable
     returning a Response (or raising) so tests can inject failures and malformed data."""
 
-    def __init__(self, root: Path = FIXTURES, overrides: dict[str, Callable[[str], Response]] | None = None):
+    def __init__(self, root: Path = FIXTURES, overrides: dict[str, Callable[[str], Response]] | None = None, satellite_region: str = "monterey"):
         self.root = root
         self.overrides = overrides or {}
         self.calls: list[str] = []
+        self.satellite_region = satellite_region
 
     def __call__(self, url: str) -> Response:
         self.calls.append(url)
@@ -70,10 +78,43 @@ class FixtureFetcher:
             return None
         return Response(url=url, status=200, content_type=entry["content_type"], body=(self.root / "recorded" / entry["file"]).read_bytes())
 
+    def _satellite(self, url: str) -> Response | None:
+        import json
+        from urllib.parse import unquote
+
+        m = re.search(r"/griddap/((?:noaacwS3[AB]OLCIchlaSector[A-Z]{2}Daily)|erdVHNchla1day)\.(csv0|nc)\?(.*)$", url)
+        if not m:
+            return None
+        ds, kind, q = m.group(1), m.group(2), unquote(m.group(3))
+        idx = json.loads((self.root / "satellite" / "index.json").read_text())
+        entries = idx.get(self.satellite_region, {}).get(ds, [])
+        if kind == "csv0":
+            start = re.search(r"time\[\((\d{4}-\d\d-\d\d)", q)
+            times = [e["time"] for e in entries]
+            if start and times:
+                # like ERDDAP, the start bound snaps to the nearest available time, which can
+                # be before it (e.g. the previous evening's overpass)
+                from datetime import datetime
+
+                t0 = datetime.fromisoformat(f"{start.group(1)}T00:00:00+00:00")
+                gap = lambda t: abs((datetime.fromisoformat(t.replace("Z", "+00:00")) - t0).total_seconds())  # noqa: E731
+                times = times[times.index(min(times, key=gap)):]
+            if not times:
+                raise FetchError(f"HTTP 404 for {url} (no matching results)")
+            return Response(url=url, status=200, content_type="text/csv", body=("\n".join(times) + "\n").encode())
+        t = re.search(r"\[\((\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ)\)\]", q)
+        hit = next((e for e in entries if t and e["time"] == t.group(1)), None)
+        if not hit:
+            raise FetchError(f"HTTP 404 for {url}")
+        return self._file(url, f"satellite/{hit['file']}", "application/x-netcdf")
+
     def _serve(self, url: str) -> Response:
         rec = self._recorded(url)
         if rec is not None:
             return rec
+        sat = self._satellite(url)
+        if sat is not None:
+            return sat
         m = re.search(r"wvcharmV3_(\d)day\.csv0\?time", url)
         if m:
             return self._file(url, f"charm/lead{m.group(1)}_time.csv", "text/csv")
@@ -105,9 +146,14 @@ class FixtureFetcher:
 
 
 def fixture_context(out: Path, now: str = FIXTURE_NOW, fetcher: FixtureFetcher | None = None) -> RunContext:
+    from .sources.satellite import Domain
+
+    f = fetcher or FixtureFetcher()
+    lat_s, lat_n, lon_w, lon_e = SATELLITE_REGIONS[f.satellite_region]
     return RunContext(
         out_dir=out,
-        fetcher=(f := fetcher or FixtureFetcher()),
+        options={"satellite_domain": Domain(lat_s, lat_n, lon_w, lon_e)},
+        fetcher=f,
         poster=f.post,
         now=datetime.fromisoformat(now.replace("Z", "+00:00")).astimezone(timezone.utc),
         pipeline_version="fixture",
@@ -131,9 +177,13 @@ def build_fixture_dataset(out: Path, now: str = FIXTURE_NOW, scenario: str = "no
         m = run_pipeline(fixture_context(out, later, fetcher))
     elif scenario != "normal":
         raise ValueError(f"unknown scenario {scenario}")
+    from .verify_satellite import verify_satellite
+
     report = verify_charm(out, live=False)
     (out / "verification").mkdir(exist_ok=True)
     (out / "verification" / "charm-points.json").write_text(json.dumps(report, indent=2) + "\n")
+    sat = verify_satellite(out, live=False)
+    (out / "verification" / "satellite-points.json").write_text(json.dumps(sat, indent=2) + "\n")
     return m
 
 

@@ -141,8 +141,11 @@ test.describe("published M2 data (before any M3 artifact exists)", () => {
     await open(page, `${M2}/fisheries`);
     await expect(page.getByTestId("fisheries-unavailable")).toContainText("published before fisheries data were added");
     await open(page, `${M2}/`);
-    await expect(page.getByTestId("official-status")).toBeVisible();
+    await expect(page.getByTestId("official-summary")).toBeVisible();
     await expect(page.getByTestId("region-ports")).toBeVisible();
+    // M2 data has no satellite layers: the satellite group says so instead of drawing anything
+    await page.getByTestId("group-satellite").click();
+    await expect(page.getByTestId("satellite-unavailable")).toBeVisible();
   });
 });
 
@@ -185,7 +188,7 @@ test.describe("mobile", () => {
   });
   test("map: legend is reachable on the map", async ({ page }) => {
     await open(page, `${OK}/`);
-    await page.getByTestId("mobile-legend").locator("summary").click();
     await expect(page.getByTestId("mobile-legend").getByTestId("probability-legend")).toBeVisible();
+    await expect(page.getByTestId("mobile-legend").getByTestId("native-resolution")).toHaveText("native 3 km");
   });
 });

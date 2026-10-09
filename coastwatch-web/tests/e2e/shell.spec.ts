@@ -109,10 +109,13 @@ test.describe("mobile shell", () => {
     }
   });
 
-  test("map: the slide-up sheet sits above the tab bar", async ({ page }) => {
+  test("map: the layer dock and the port sheet sit above the tab bar", async ({ page }) => {
     await open(page, `${OK}/`);
-    const sheet = await page.getByTestId("mobile-sheet").boundingBox();
     const bar = await page.getByTestId("tabbar").boundingBox();
+    const dock = await page.getByTestId("layer-dock").boundingBox();
+    expect(dock!.y + dock!.height).toBeLessThanOrEqual(bar!.y + 1);
+    await open(page, `${OK}/?region=monterey_bay&port=593`);
+    const sheet = await page.getByTestId("mobile-sheet").boundingBox();
     expect(sheet!.y + sheet!.height).toBeLessThanOrEqual(bar!.y + 1);
     await expect(page.getByTestId("sheet-handle")).toBeVisible();
   });
