@@ -16,7 +16,9 @@ Planning and architecture for turning `coastwatch-web/` and the HABs research in
 | [10 — M2 integration review](10-m2-integration-review.md) | Schema-compatibility fix, Node 24 actions, staging run, production-equivalent checks, merge decision |
 | [11 — Milestone 3 implementation](11-m3-implementation.md) | Source audit, CalHABMAP observations, Bloom Intelligence, statewide fisheries exposure (FOSS + CPI-U), UI refinement, compatibility with published M2 data, staging results, decisions awaiting approval |
 | [12 — M3 integration review](12-m3-integration-review.md) | Licence evidence per dataset, NOAA reconciliation (KSTR duplicate, FUS Table 4), deflator check, fixes, test and publication evidence, merge results |
+| [13 — Redesign P0: foundations](13-redesign-p0.md) | Design tokens (paper + dark sea), self-hosted type, navy shell with the official pill and drawer, mobile tab bar with Notices, status primitives; tests and screenshots |
 | [drafts/cdfw-landings-data-request.md](drafts/cdfw-landings-data-request.md) | **Draft, not sent:** request to CDFW for disclosure-safe port-area landings and display permission |
+| [redesign-p0/](redesign-p0/) | Screenshots of redesign phase P0 (published data, 2026-10-09) |
 | [m3/](m3/) | Screenshots of the M3 app (staging data, 2026-10-08) |
 | [m2/](m2/) | Screenshots of the M2 app (live data, 2026-10-08) |
 | [m1/](m1/) | Screenshots of the running app (live data, 2026-10-08) |
