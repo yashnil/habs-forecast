@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CoastWatch design reset · prototypes</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="base.css" />
+  <style>
+    main { max-width: 880px; margin: 0 auto; padding: 56px 24px; display: grid; gap: 28px; }
+    h1 { font: var(--t-display-1); }
+    .lede { font: var(--t-lede); color: var(--ink-2); }
+    .pages { display: grid; gap: 12px; }
+    .pages a { display: grid; gap: 4px; padding: 18px 20px; border-radius: var(--radius-l); background: var(--surface); border: 1px solid var(--line); text-decoration: none; color: var(--ink); }
+    .pages a:hover { border-color: var(--accent); }
+    .pages b { font: var(--t-title); }
+    .pages span { font: var(--t-ui); color: var(--ink-3); }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">CoastWatch · design reset · not production</p>
+    <h1>Three concepts, built on the published data</h1>
+    <p class="lede">Every number, date, label and review state on these pages is read from a snapshot of the production GitHub Pages dataset. Nothing is invented. Resize the window below 720 px for the mobile layouts.</p>
+    <nav class="pages">
+      <a href="map.html"><b>Ocean Map</b><span>Statewide C-HARM forecast, coast index, port inspector. Try <code>?region=monterey_bay&amp;port=593</code>.</span></a>
+      <a href="bloom.html"><b>Bloom Intelligence</b><span>CalHABMAP station explorer. Try <code>?station=HABs-MontereyWharf</code> or <code>?station=HABs-TrinidadPier</code>.</span></a>
+      <a href="fisheries.html"><b>Fisheries &amp; Economic Exposure</b><span>NOAA landings, 2015–2024. Try <code>?group=bivalves</code> or <code>?tiers=12&amp;dollars=nominal</code>.</span></a>
+    </nav>
+    <p class="fine" id="snap"></p>
+  </main>
+  <script src="data/coastwatch-data.js"></script>
+  <script>document.getElementById("snap").textContent = `Data snapshot: production run ${CW_DATA.snapshot.pipeline_run_id}, generated ${CW_DATA.snapshot.generated_at}, from ${CW_DATA.snapshot.base_url}.`;</script>
+</body>
+</html>

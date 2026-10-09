@@ -1,0 +1,105 @@
+/*
+ * CoastWatch design-reset tokens.
+ * "Navy frame, paper surfaces, dark sea": a deep-navy masthead frames every page,
+ * reading and analysis happen on warm paper surfaces, and only the map canvas is dark.
+ * Semantic colours are reserved: amber = official notices, violet = model forecast,
+ * teal = measurements. Nothing decorative may use them.
+ */
+:root {
+  /* frame */
+  --navy-950: #06111e;
+  --navy-900: #0a1a2c;
+  --navy-800: #10263e;
+  --navy-700: #1a3654;
+  --navy-600: #2a4b70;
+  --on-navy: #e8eef5;
+  --on-navy-2: #a9b8c9;
+
+  /* map canvas */
+  --sea: #0b1d33;
+  --land: #1c2a3c;
+  --coast: #a8bfd6;
+
+  /* paper */
+  --paper: #f5f3ee;
+  --surface: #ffffff;
+  --surface-2: #faf9f6;
+  --line: #e4e0d7;
+  --line-strong: #cbc4b6;
+  --ink: #0d1b2a;
+  --ink-2: #3d4b5c;
+  --ink-3: #5f6b79;
+
+  /* interactive */
+  --accent: #0b6a85;
+  --accent-soft: #e3f0f4;
+  --accent-on-navy: #6cc6dc;
+  --focus: #1689b0;
+
+  /* semantic: official notices (always first, always amber, always with the shield) */
+  --official: #9a4a00;
+  --official-strong: #7a3a00;
+  --official-bg: #fdf2e0;
+  --official-line: #eeb565;
+  --official-on-navy: #f6bb5c;
+
+  /* semantic: model forecast (C-HARM); hue matches the forecast ramp */
+  --model: #6a3fb0;
+  --model-bg: #f3eefb;
+  --model-line: #cdbcef;
+  --model-on-navy: #c3aef3;
+
+  /* semantic: in-situ measurement (CalHABMAP) */
+  --measured: #0d756c;
+  --measured-bg: #e5f3f0;
+  --measured-line: #a6d6cf;
+
+  /* freshness (always paired with a word and a glyph) */
+  --fresh-current: #1d7f53;
+  --fresh-stale: #9a6a00;
+  --fresh-historical: #6b7480;
+
+  /* fisheries categorical: tier 1 blues, tier 2 sage */
+  --sp-dungeness: #173f66;
+  --sp-rockcrab: #3a75ab;
+  --sp-anchovy: #86b6dc;
+  --sp-lobster: #4f7a64;
+  --sp-sardine: #86a996;
+  --sp-bivalves: #c3d3c9;
+  --sp-other: #d9d4c9;
+
+  /* forecast probability classes (10 % steps); mirrors scripts/render_rasters.py */
+  --p0: #554da0; --p1: #7552b4; --p2: #9757c3; --p3: #b95ec9; --p4: #da67c7;
+  --p5: #f676c1; --p6: #fe95ba; --p7: #feb5be; --p8: #fed0cd; --p9: #ffe9e3;
+
+  /* type */
+  --font-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --t-display-1: 500 2.75rem/1.08 var(--font-display);   /* 44 */
+  --t-display-2: 500 2rem/1.15 var(--font-display);      /* 32 */
+  --t-display-3: 500 1.5rem/1.2 var(--font-display);     /* 24 */
+  --t-lede: 400 1.1875rem/1.55 var(--font-display);      /* 19 */
+  --t-title: 600 1.125rem/1.4 var(--font-sans);          /* 18 */
+  --t-heading: 600 1rem/1.4 var(--font-sans);            /* 16 */
+  --t-body: 400 1rem/1.6 var(--font-sans);               /* 16 */
+  --t-ui: 400 0.875rem/1.45 var(--font-sans);            /* 14 */
+  --t-small: 400 0.8125rem/1.45 var(--font-sans);        /* 13 */
+  --t-axis: 400 0.75rem/1.2 var(--font-sans);            /* 12: chart axes only */
+  --t-figure: 600 2.5rem/1 var(--font-sans);             /* 40 */
+  --t-figure-sm: 600 1.75rem/1.05 var(--font-sans);      /* 28 */
+
+  /* space (4 px base) */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px;
+  --s8: 32px; --s10: 40px; --s12: 48px; --s16: 64px;
+
+  --radius-s: 6px;
+  --radius: 10px;
+  --radius-l: 16px;
+  --shadow-float: 0 1px 2px rgb(6 17 30 / 0.12), 0 8px 24px rgb(6 17 30 / 0.18);
+  --shadow-raise: 0 1px 2px rgb(6 17 30 / 0.06), 0 2px 8px rgb(6 17 30 / 0.06);
+
+  --masthead-h: 56px;
+  --tabbar-h: 64px;
+}

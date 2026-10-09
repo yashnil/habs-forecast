@@ -1,0 +1,125 @@
+/* Fisheries & Economic Exposure: an editorial page. Narrative first, three figures, one chart,
+   one interactive breakdown, an honest empty state, then methods. Max 1120 px reading column. */
+.m-strip { display: none; }
+.fish-main { max-width: 1120px; margin: 0 auto; padding: 40px 32px 64px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 36px; }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 40px; align-items: end; }
+.hero .eyebrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hero h1 { font: var(--t-display-1); margin: 14px 0 14px; max-width: 760px; letter-spacing: -0.01em; }
+.lede { font: var(--t-lede); color: var(--ink-2); max-width: 720px; }
+.through { font: var(--t-ui); color: var(--ink-3); padding-left: 16px; border-left: 2px solid var(--line-strong); }
+.through b { color: var(--ink); }
+
+.controls { display: flex; gap: 28px; flex-wrap: wrap; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl-l { font: 600 0.75rem/1 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+
+.figures { display: grid; grid-template-columns: repeat(3, 1fr); }
+.fig { display: grid; gap: 6px; align-content: start; padding: 0 28px; border-left: 1px solid var(--line); }
+.fig:first-child { padding-left: 0; border-left: 0; }
+.fig-n { font: 600 3.25rem/1 var(--font-sans); letter-spacing: -0.03em; color: var(--ink); }
+.fig-l { font: 500 1rem/1.35 var(--font-sans); color: var(--ink); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-l); }
+.primary { padding: 24px 28px 18px; }
+.pc-head { display: flex; justify-content: space-between; gap: 24px; align-items: start; margin-bottom: 8px; }
+.pc-head h2 { font: var(--t-display-3); margin-bottom: 4px; }
+.pc-head .legend { justify-content: flex-end; max-width: 440px; }
+.pc-head .legend .k { padding: 4px 8px; border-radius: 6px; font: var(--t-small); color: var(--ink-2); }
+.pc-head .legend .k.on { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--ink); }
+.primary .chart .bar-total { font: 600 12px var(--font-sans); fill: var(--ink); }
+.primary .chart .yr { font: 500 12px var(--font-sans); fill: var(--ink-2); }
+.primary .chart .yr.cur { fill: var(--ink); font-weight: 600; }
+.primary .chart .share, .primary .chart .share-l { font: 400 11px var(--font-sans); fill: var(--ink-3); }
+.primary .chart .ann-t { font: 500 12px var(--font-sans); fill: var(--ink-2); }
+
+.breakdown .section-head { margin-bottom: 12px; }
+.bd-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.bd-table { width: 100%; border-collapse: collapse; font: var(--t-ui); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-l); overflow: hidden; }
+.bd-table th { text-align: left; font: 600 0.75rem/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); padding: 14px 14px 10px; border-bottom: 1px solid var(--line); }
+.bd-table td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.bd-table tr:last-child td { border-bottom: 0; }
+.bd-table tbody tr { cursor: pointer; }
+.bd-table tbody tr:hover { background: var(--surface-2); }
+.bd-table tbody tr.on { background: var(--accent-soft); }
+.bd-table tbody tr.out { opacity: 0.5; }
+.bd-table .num { text-align: right; white-space: nowrap; }
+.bd-table td svg { display: block; }
+.g { display: flex; align-items: center; gap: 10px; }
+.g .swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+.g small { display: block; font: var(--t-small); color: var(--ink-3); }
+.detail { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-l); padding: 20px 22px; display: grid; gap: 12px; }
+.detail.empty { background: transparent; border-style: dashed; color: var(--ink-2); font: var(--t-ui); }
+.detail h3 { font: var(--t-display-3); }
+.d-figs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.d-figs > div { display: grid; gap: 4px; }
+.d-n { font: var(--t-figure-sm); font-size: 1.375rem; }
+.d-basis { font: var(--t-ui); color: var(--ink-2); }
+.d-off { padding: 2px 12px; border-radius: 10px; background: var(--official-bg); border: 1px solid var(--official-line); }
+.d-note { font: var(--t-small); color: var(--ink-2); padding: 10px 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); }
+.bd-note { margin-top: 12px; }
+
+.ports-na {
+  display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 40px;
+  padding: 28px; border-radius: var(--radius-l);
+  background: repeating-linear-gradient(135deg, #f7f5f0 0 10px, #f1eee7 10px 11px);
+  border: 1px solid var(--line-strong);
+}
+.pna-text .eyebrow { display: flex; align-items: center; gap: 6px; }
+.pna-text h2 { font: var(--t-display-3); margin: 8px 0 12px; }
+.pna-text ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; font: var(--t-ui); color: var(--ink-2); }
+.pna-areas { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 2px; }
+.pna-row { display: grid; grid-template-columns: 120px 1fr 20px; gap: 12px; align-items: center; padding: 6px 0; font: var(--t-ui); color: var(--ink-2); border-top: 1px solid var(--line); }
+.pna-bar { height: 8px; border-radius: 4px; background: repeating-linear-gradient(90deg, #e9e5dc 0 6px, transparent 6px 9px); }
+.pna-v { color: var(--ink-3); display: grid; place-items: center; }
+
+.methods { display: grid; gap: 0; }
+.section-title { font: var(--t-display-3); margin-bottom: 16px; }
+.m-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding-bottom: 24px; font: var(--t-ui); color: var(--ink-2); }
+.m-grid .eyebrow { margin-bottom: 6px; }
+.tbl-wrap { overflow-x: auto; }
+.vt { border-collapse: collapse; font: var(--t-small); width: 100%; }
+.vt th, .vt td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.vt .num { text-align: right; }
+.vt tr.tot td { font-weight: 600; color: var(--ink); border-top: 1px solid var(--line-strong); }
+.methods .source { margin-top: 16px; }
+
+@media (max-width: 1100px) {
+  .m-grid { grid-template-columns: 1fr 1fr; }
+  .bd-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .official-strip { display: none; }
+  .m-strip {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 11px 16px; background: var(--official-bg); border-bottom: 1px solid var(--official-line);
+    font: var(--t-ui); color: var(--official-strong); text-align: left;
+  }
+  .m-strip > span:nth-of-type(1) { flex: 1; color: var(--ink); }
+  .fish-main { padding: 20px 16px calc(var(--tabbar-h) + 32px); gap: 28px; }
+  .hero { grid-template-columns: 1fr; gap: 16px; }
+  .hero h1 { font: var(--t-display-2); margin: 12px 0 10px; }
+  .lede { font-size: 1.0625rem; }
+  .controls { flex-direction: column; gap: 10px; padding: 12px 0; }
+  .ctl { display: grid; gap: 6px; }
+  .ctl .seg { display: flex; }
+  .ctl .seg button { flex: 1; padding: 0 8px; }
+  .ctl .long { display: none; }
+  .figures { grid-template-columns: 1fr; gap: 18px; }
+  .fig { padding: 0 0 18px; border-left: 0; border-bottom: 1px solid var(--line); }
+  .fig:last-child { border-bottom: 0; padding-bottom: 0; }
+  .fig-n { font-size: 2.75rem; }
+  .primary { padding: 18px 0 12px; margin: 0 -16px; border-radius: 0; border-left: 0; border-right: 0; }
+  .primary > * { padding: 0 16px; }
+  .primary > .chart { padding: 0; }
+  .pc-head { flex-direction: column; gap: 10px; }
+  .pc-head h2 { font-size: 1.3125rem; }
+  .pc-head .legend { justify-content: flex-start; }
+  .hide-m { display: none; }
+  .detail.empty { display: none; }
+  .primary .chart .bar-total { font-size: 10px; letter-spacing: -0.02em; }
+  .ports-na { grid-template-columns: 1fr; gap: 20px; padding: 20px 16px; margin: 0 -16px; border-radius: 0; border-left: 0; border-right: 0; }
+  .m-grid { grid-template-columns: 1fr; gap: 16px; }
+  .d-figs { grid-template-columns: 1fr 1fr 1fr; }
+  .d-n { font-size: 1.125rem; }
+}

@@ -1,0 +1,254 @@
+{
+ "charm_pseudo_nitzschia_lead0": {
+  "url": "img/pseudo_nitzschia-lead0.png",
+  "corners": [
+   [
+    -127.515,
+    43.015
+   ],
+   [
+    -116.985,
+    43.015
+   ],
+   [
+    -116.985,
+    31.285
+   ],
+   [
+    -127.515,
+    31.285
+   ]
+  ]
+ },
+ "charm_particulate_domoic_lead0": {
+  "url": "img/particulate_domoic-lead0.png",
+  "corners": [
+   [
+    -127.515,
+    43.015
+   ],
+   [
+    -116.985,
+    43.015
+   ],
+   [
+    -116.985,
+    31.285
+   ],
+   [
+    -127.515,
+    31.285
+   ]
+  ]
+ },
+ "charm_cellular_domoic_lead0": {
+  "url": "img/cellular_domoic-lead0.png",
+  "corners": [
+   [
+    -127.515,
+    43.015
+   ],
+   [
+    -116.985,
+    43.015
+   ],
+   [
+    -116.985,
+    31.285
+   ],
+   [
+    -127.515,
+    31.285
+   ]
+  ]
+ },
+ "charm_pseudo_nitzschia_lead1": {
+  "url": "img/pseudo_nitzschia-lead1.png",
+  "corners": [
+   [
+    -127.515,
+    43.015
+   ],
+   [
+    -116.985,
+    43.015
+   ],
+   [
+    -116.985,
+    31.285
+   ],
+   [
+    -127.515,
+    31.285
+   ]
+  ]
+ },
+ "charm_particulate_domoic_lead1": {
+  "url": "img/particulate_domoic-lead1.png",
+  "corners": [
+   [
+    -127.515,
+    43.015
+   ],
+   [
+    -116.985,
+    43.015
+   ],
+   [
+    -116.985,
+    31.285
+   ],
+   [
+    -127.515,
+    31.285
+   ]
+  ]
+ },
+ "charm_cellular_domoic_lead1": {
+  "url": "img/cellular_domoic-lead1.png",
+  "corners": [
+   [
+    -127.515,
+    43.015
+   ],
+   [
+    -116.985,
+    43.015
+   ],
+   [
+    -116.985,
+    31.285
+   ],
+   [
+    -127.515,
+    31.285
+   ]
+  ]
+ },
+ "charm_pseudo_nitzschia_lead2": {
+  "url": "img/pseudo_nitzschia-lead2.png",
+  "corners": [
+   [
+    -127.515,
+    43.015
+   ],
+   [
+    -116.985,
+    43.015
+   ],
+   [
+    -116.985,
+    31.285
+   ],
+   [
+    -127.515,
+    31.285
+   ]
+  ]
+ },
+ "charm_particulate_domoic_lead2": {
+  "url": "img/particulate_domoic-lead2.png",
+  "corners": [
+   [
+    -127.515,
+    43.015
+   ],
+   [
+    -116.985,
+    43.015
+   ],
+   [
+    -116.985,
+    31.285
+   ],
+   [
+    -127.515,
+    31.285
+   ]
+  ]
+ },
+ "charm_cellular_domoic_lead2": {
+  "url": "img/cellular_domoic-lead2.png",
+  "corners": [
+   [
+    -127.515,
+    43.015
+   ],
+   [
+    -116.985,
+    43.015
+   ],
+   [
+    -116.985,
+    31.285
+   ],
+   [
+    -127.515,
+    31.285
+   ]
+  ]
+ },
+ "charm_pseudo_nitzschia_lead3": {
+  "url": "img/pseudo_nitzschia-lead3.png",
+  "corners": [
+   [
+    -127.515,
+    43.015
+   ],
+   [
+    -116.985,
+    43.015
+   ],
+   [
+    -116.985,
+    31.285
+   ],
+   [
+    -127.515,
+    31.285
+   ]
+  ]
+ },
+ "charm_particulate_domoic_lead3": {
+  "url": "img/particulate_domoic-lead3.png",
+  "corners": [
+   [
+    -127.515,
+    43.015
+   ],
+   [
+    -116.985,
+    43.015
+   ],
+   [
+    -116.985,
+    31.285
+   ],
+   [
+    -127.515,
+    31.285
+   ]
+  ]
+ },
+ "charm_cellular_domoic_lead3": {
+  "url": "img/cellular_domoic-lead3.png",
+  "corners": [
+   [
+    -127.515,
+    43.015
+   ],
+   [
+    -116.985,
+    43.015
+   ],
+   [
+    -116.985,
+    31.285
+   ],
+   [
+    -127.515,
+    31.285
+   ]
+  ]
+ }
+}

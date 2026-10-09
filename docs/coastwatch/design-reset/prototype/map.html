@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Ocean Map · CoastWatch (design reset prototype)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="base.css" />
+  <link rel="stylesheet" href="map.css" />
+</head>
+<body class="page-map">
+  <main id="app" class="map-app">
+    <div id="map" class="map-canvas" role="region" aria-label="Map of the California coast"></div>
+    <aside id="coast" class="panel panel-coast" aria-label="Official notices and coast index"></aside>
+    <aside id="inspector" class="panel panel-inspector" aria-label="Selected location" hidden></aside>
+    <section id="dock" class="panel dock" aria-label="Forecast layer, time and legend"></section>
+  </main>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="data/coastwatch-data.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/map.js"></script>
+</body>
+</html>
