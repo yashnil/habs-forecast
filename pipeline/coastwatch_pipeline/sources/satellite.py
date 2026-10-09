@@ -643,8 +643,18 @@ def run(ctx: RunContext, prev_layers: list[LayerArtifact], domain: Domain | None
     domain = domain or ctx.options.get("satellite_domain", CALIFORNIA)
     res_o = run_product(ctx, OLCI, domain, prev_layers, range(5, 11), per_day=True)
     res_v = run_product(ctx, VIIRS, domain, prev_layers, range(5, 10), per_day=False)
-    latest = max([d for d in (res_o.latest_date, res_v.latest_date) if d], default=None)
     notes = res_o.notes + res_v.notes
+    # A product that failed this run keeps its previously published layers, with their real
+    # observation dates, as long as the other product still updated (a total outage is
+    # carried over by the pipeline as a failed source).
+    if res_o.layers or res_v.layers:
+        for p, res in ((OLCI, res_o), (VIIRS, res_v)):
+            if not res.layers:
+                kept = [lyr for lyr in prev_layers if lyr.layer_id.startswith(f"{p.key}_chl_") and _published_intact(ctx.out_dir, lyr)]
+                if kept:
+                    res.layers = kept
+                    notes.append(f"{p.title} unavailable this run: kept the previously published layers with their observation dates.")
     if not res_o.layers:
         notes.append("OLCI unavailable this run: the VIIRS 750 m latest clear view is the fallback.")
+    latest = max([d for d in (res_o.latest_date, res_v.latest_date) if d], default=None)
     return SatelliteResult(res_o.layers + res_v.layers, res_o.errors + res_v.errors, notes, latest, res_o.bytes_written + res_v.bytes_written)

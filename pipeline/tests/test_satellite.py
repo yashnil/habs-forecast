@@ -206,6 +206,21 @@ def test_total_outage_keeps_previous_layers_with_real_dates(tmp_path):
     assert check_published(str(out))["ok"]
 
 
+def test_viirs_outage_keeps_previous_viirs_while_olci_updates(tmp_path):
+    # staging, 2026-10-09: ERDDAP answered 403 to every VIIRS request while OLCI worked
+    out = tmp_path / "v1"
+    m1 = run_pipeline(fixture_context(out))
+    prev = next(lyr for lyr in m1.layers if lyr.layer_id == "viirs750_chl_latest")
+    fetcher = FixtureFetcher(overrides={r"erdVHNchla1day": lambda url: (_ for _ in ()).throw(FetchError(f"HTTP 403 for {url}"))})
+    m2 = run_pipeline(fixture_context(out, fetcher=fetcher))
+    kept = next(lyr for lyr in m2.layers if lyr.layer_id == "viirs750_chl_latest")
+    assert kept.model_dump() == prev.model_dump()  # same files, same real dates
+    assert any(lyr.layer_id == "olci300_chl_latest" for lyr in m2.layers)
+    st = next(s for s in m2.sources if s.source_id == "satellite_chl")
+    assert st.outcome == "partial" and any("kept the previously published layers" in n for n in st.notes)
+    assert check_published(str(out))["ok"]
+
+
 def test_unchanged_days_are_reused_not_refetched(tmp_path):
     out = tmp_path / "v1"
     run_pipeline(fixture_context(out))
