@@ -463,7 +463,8 @@ def run(ctx: RunContext) -> CharmResult:
         try:
             r = ctx.fetcher(url)
             ld, checks = load_lead(r.body, lead, probed[lead], url)
-            ld.content_hash = hashlib.sha256(r.body).hexdigest()[:10]
+            # the palette is part of the address: re-rendered images never reuse an old URL
+            ld.content_hash = hashlib.sha256(r.body + PROBABILITY.id.encode()).hexdigest()[:10]
             layers.extend(build_lead_artifacts(ctx, ld, checks, newest))
             available.append(lead)
         except ValidationFailure as e:

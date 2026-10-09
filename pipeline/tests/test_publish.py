@@ -156,3 +156,20 @@ def test_m3_pipeline_runs_on_top_of_an_m2_output_directory(tmp_path: Path):
     prev = json.loads((FIXTURES / "compat" / "m2" / "manifest.json").read_text())
     for rel in (prev["official_url"], prev["port_intel_url"], prev["ports_url"]):
         assert (out / rel).exists()
+
+
+def test_a_new_rendering_gets_new_addresses_and_is_reported_updated(out, monkeypatch):
+    from coastwatch_pipeline.models import Palette, PaletteStop
+    from coastwatch_pipeline.sources import charm
+
+    m1 = run_pipeline(fixture_context(out))
+    m2 = run_pipeline(fixture_context(out))
+    st2 = next(s for s in m2.sources if s.source_id == "charm")
+    assert st2.outcome == "unchanged"  # same run, same palette: same URLs
+    other = Palette(id="test-palette-v0", domain=[0.0, 1.0], stops=[PaletteStop(value=0.0, color="#000000"), PaletteStop(value=1.0, color="#ffffff")])
+    monkeypatch.setattr(charm, "PROBABILITY", other)
+    m3 = run_pipeline(fixture_context(out))
+    old = {lyr.image.url for lyr in m1.layers if lyr.group_id == "charm"}
+    new = {lyr.image.url for lyr in m3.layers if lyr.group_id == "charm"}
+    assert old.isdisjoint(new)
+    assert next(s for s in m3.sources if s.source_id == "charm").outcome == "updated"

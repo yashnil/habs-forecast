@@ -97,7 +97,10 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
             layers.extend(res.layers)
             assert res.run is not None
             runs.append(res.run)
-            unchanged = prev_s is not None and prev_s.latest_issued_date == (res.latest_issued.isoformat() if res.latest_issued else None)
+            # "unchanged" only when the same run is republished at the same addresses; new
+            # renderings (e.g. a palette change) count as updated so they are verified
+            same_paths = {lyr.image.url for lyr in res.layers if lyr.image} == {lyr.image.url for lyr in _prev_layers(prev, charm.SOURCE_ID) if lyr.image}
+            unchanged = same_paths and prev_s is not None and prev_s.latest_issued_date == (res.latest_issued.isoformat() if res.latest_issued else None)
             outcome = "partial" if res.errors or res.run.leads_missing else ("unchanged" if unchanged else "updated")
             statuses.append(
                 SourceStatus(
