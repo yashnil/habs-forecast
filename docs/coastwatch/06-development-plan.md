@@ -1,6 +1,6 @@
 # 06 — Development plan
 
-> **Status (2026-10-08).** "Milestone 1: Honest Baseline + One Live C-HARM Forecast" — which combines M0 below with the MapLibre migration, design foundation and scheduled refresh from M1/M3 — is implemented on `feat/coastwatch-m1-baseline`. See [`07-m1-implementation.md`](07-m1-implementation.md) for what is built, test evidence and open issues. Not yet built from M1/M2: VIIRS ERDDAP ingestion, MPA/RAMP geometry, NWS, curated official records, port pages.
+> **Status (2026-10-08).** "Milestone 1: Honest Baseline + One Live C-HARM Forecast" — which combines M0 below with the MapLibre migration, design foundation and scheduled refresh from M1/M3 — is implemented on `feat/coastwatch-m1-baseline`. See [`07-m1-implementation.md`](07-m1-implementation.md) for what is built, test evidence and open issues. Later status: M2 (official notices, port intelligence, map redesign) is merged — [`09`](09-m2-implementation.md), [`10`](10-m2-integration-review.md); the delivered "M3: Bloom Intelligence, Fisheries Economics & Product Design" (measured CalHABMAP observations, statewide historical fisheries exposure, UI refinement) is on `feat/coastwatch-m3-bloom-economics` awaiting approval — [`11`](11-m3-implementation.md). Not yet built from M1/M2: VIIRS ERDDAP ingestion, MPA/RAMP geometry, NWS, curated official records, port pages.
 
 ## 1. Prioritized MVP feature list
 

@@ -32,6 +32,22 @@
 
 ---
 
+## 1a. As built through M3 (2026-10-08)
+
+The deployed shape is simpler than the original plan below: one scheduled GitHub Actions workflow runs the Python pipeline, which publishes content-addressed static artifacts plus `manifest.json` to a data branch served by GitHub Pages (or `coastwatch-data-staging`, never served); the Next.js app reads and schema-validates the manifest per request.
+
+| Source id | Product class | Artifact | Added |
+|---|---|---|---|
+| `charm` | official_forecast | `charm/<issued>/lead<k>-<sha>/*.png, *.u16.gz` | M1 |
+| `gibs_chl` | observation | tile templates in the manifest | M1 |
+| `cdfw_ports` | reference | `ports-<sha>.geojson` | M1 |
+| `official` | official_regulatory | `official-<sha>.json` (human-curated registry + watcher) | M2 |
+| `port_intel` | derived_summary | `port-intel-<sha>.json` | M2 |
+| `calhabmap` | observation | `observations-<sha>.json` (17 shore stations, null ≠ 0, censoring qualifiers, 180-day C-HARM context) | M3 |
+| `foss_landings` | historical_context | `fisheries-<sha>.json` (statewide landings by tier, CPI-U real dollars, withheld separate, port level unavailable) | M3 |
+
+Every source runs in isolation; a failure keeps the previous artifact with its real dates. Manifest fields are additive within schema version 1 and are tested against the data the previous milestone actually published (`pipeline/tests/fixtures/compat/`).
+
 ## 2. System overview
 
 ```mermaid
