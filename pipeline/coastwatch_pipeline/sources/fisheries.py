@@ -46,7 +46,13 @@ CPI_SERIES = "CUUR0000SA0"
 FIRST_YEAR = 2015
 PAGE_LIMIT = 1000
 WITHHELD = "WITHHELD FOR CONFIDENTIALITY"
-FOSS_LICENSE = "U.S. Government work (NOAA Fisheries); public domain within the United States. FOSS asks users to cite the query and access date."
+FOSS_LICENSE = (
+    "Information created by the U.S. government is not subject to copyright in the United States (NOAA Fisheries copyright policy, "
+    "https://www.fisheries.noaa.gov/national/about-us/website-policies-and-disclaimers). NOAA Fisheries requests the acknowledgement "
+    "'Courtesy: National Oceanic and Atmospheric Administration'. Only non-confidential statistics are released; confidential landings "
+    "are combined into 'Withheld for Confidentiality'."
+)
+FOSS_CAVEATS_URL = "https://apps-st.fisheries.noaa.gov/foss/f?p=215:240"
 BLS_LICENSE = "U.S. Government work (Bureau of Labor Statistics); public domain."
 
 TIER_REVIEW = "Tier assignments are CoastWatch's editorial grouping and await HAB scientific review."
@@ -97,9 +103,10 @@ GROUPS: list[dict] = [
         "id": "bivalves",
         "label": "Bivalve shellfish (oysters, clams, mussels, scallops)",
         "tier": 2,
-        "basis": "CDPH quarantines and advisories apply to sport-harvested bivalves; commercially sold bivalves come from certified growers tested under CDPH's program.",
+        "basis": "CDPH quarantines and advisories apply to sport-harvested bivalves; commercially sold bivalves come from certified growers tested under CDPH's program. NOAA includes farmed clams, mussels and oysters in these landings, so this group is mostly aquaculture; pounds are meat weight.",
         "records": ["cdph-2026-annual-mussel-quarantine", "cdph-2026-sn26-018-monterey-bivalves", "cdph-nci-bivalve-special-advisory"],
-        "names": [r"OYSTERS?(,.*)?", r"CLAMS?(,.*)?( \*\*)?", r"MUSSELS?(,.*)?", r"SCALLOPS?(,.*)?"],
+        # FOSS marks generic categories with a trailing " **"
+        "names": [r"OYSTERS?(,.*)?( \*\*)?", r"CLAMS?(,.*)?( \*\*)?", r"MUSSELS?(,.*)?( \*\*)?", r"SCALLOPS?(,.*)?( \*\*)?"],
     },
 ]
 
@@ -227,10 +234,12 @@ def aggregate(rows_by_year: dict[int, list[dict]], cpi: Deflator):
         if id(r) in excluded_ids:
             continue
         name = r["ts_afs_name"] or ""
+        # NOAA's state total includes confidential landings (published only in aggregate);
+        # they are never attributed to a species or group.
+        total[r["year"]].append(r)
         if name == WITHHELD:
             withheld[r["year"]].append(r)
             continue
-        total[r["year"]].append(r)
         gid = assign_group(name)
         if gid:
             groups[gid][r["year"]].append(r)
@@ -387,17 +396,21 @@ def run(ctx: RunContext) -> FisheriesResult:
         method={
             "source": "NOAA Fisheries FOSS commercial landings for California (compiled from PacFIN), one request per year; every row is kept with its upstream species name.",
             "groups": "Each upstream species row is assigned to at most one group by exact name; rows in no group count only toward the statewide total.",
-            "withheld": "FOSS's 'WITHHELD FOR CONFIDENTIALITY' row is reported separately for each year and never assigned to a species or group.",
+            "withheld": "FOSS's 'WITHHELD FOR CONFIDENTIALITY' row is reported separately for each year and never assigned to a species or group. It is included in the statewide total, as in NOAA's own state totals.",
+            "statewide_total": "Sum of all California commercial rows including the withheld row, with duplicate listings counted once. This reproduces NOAA's published state totals (Fisheries of the United States, Table 4) within FOSS's routine revisions.",
+            "unassigned": "Generic categories that cannot be attributed to one species (e.g. 'CRABS, DECAPODA (ORDER) **', 'MOLLUSKS **', 'ANCHOVIES') are not assigned to any group, so group values are lower bounds.",
             "missing": "Rows without a published value are counted (n_rows_without_value) and never treated as zero.",
-            "duplicates": "Rows in the same year with different names but identical non-zero pounds and dollars are counted once; the excluded rows are listed.",
+            "duplicates": "Rows in the same year with different names but identical non-zero pounds and dollars are counted once; the excluded rows are listed. The only case found is explained upstream: FOSS's source-species table maps PacFIN code KSTR (Kumamoto oyster) to both 'OYSTER, PACIFIC' and 'OYSTER, KUMAMOTO', and NOAA's published state totals count it once.",
             "inflation": cpi.method,
             "tiers": "Tier 1: fisheries with commercial closures or take restrictions for marine toxins (current or past). Tier 2: species under consumption advisories, sport-harvest quarantines or monitoring. " + TIER_REVIEW,
         },
         caveats=[
             "Historical fisheries exposure is not a forecast of losses. Past landings say nothing about whether a fishery will be closed.",
             "Values are ex-vessel revenue reported for landings; they exclude processing, retail, tourism and other economic activity.",
-            "Statewide values cannot be divided among ports. Confidential landings are withheld by the source and not included in species values.",
-            "Upstream species categories are market categories; some combine several species.",
+            "Statewide values cannot be divided among ports. Confidential landings are withheld by the source and not included in species values; NOAA notes that species values may in some instances be misleading because of confidentiality.",
+            "Upstream species categories are market categories; some combine several species. Generic categories are left unassigned, so group values are lower bounds.",
+            "Bivalve values include aquaculture (farmed clams, mussels and oysters); bivalve pounds are meat weight.",
+            "NOAA updates these statistics weekly and published annual summaries are preliminary; values can be revised.",
             TIER_REVIEW,
         ],
         provenance=[
@@ -408,9 +421,9 @@ def run(ctx: RunContext) -> FisheriesResult:
                 dataset_id="foss/landings",
                 institution="NOAA Fisheries Office of Science and Technology",
                 license=FOSS_LICENSE,
-                citation=f"NOAA Fisheries Office of Science and Technology, Commercial Landings Query, available at www.fisheries.noaa.gov/foss, accessed {ctx.now.date().isoformat()}.",
+                citation=f"Courtesy: National Oceanic and Atmospheric Administration. NOAA Fisheries Office of Science and Technology, Commercial Landings Query, available at www.fisheries.noaa.gov/foss, accessed {ctx.now.date().isoformat()}.",
                 retrieved_at=ctx.now_iso,
-                request_urls=[foss_url(y) for y in requested[-3:]],
+                request_urls=[foss_url(y) for y in requested[-3:]] + [FOSS_CAVEATS_URL],
                 pipeline_version=ctx.pipeline_version,
                 pipeline_run_id=ctx.run_id,
             ),

@@ -71,15 +71,40 @@ def test_dungeness_values_match_source_and_deflation(out):
 def test_no_double_counting_and_totals_reconcile(out):
     _, ds = run(out)
     for y in ds.years:
-        rows = [r for r in foss_rows(y) if r["ts_afs_name"] != fish.WITHHELD]
+        rows = foss_rows(y)
         excluded = {(e.source_name, e.pounds, e.dollars_nominal) for e in ds.excluded_rows if e.year == y}
         kept = [r for r in rows if (r["ts_afs_name"], r["pounds"], r["dollars"]) not in excluded]
-        assigned = [fish.assign_group(r["ts_afs_name"]) for r in kept]
+        species = [r for r in kept if r["ts_afs_name"] != fish.WITHHELD]
+        assigned = [fish.assign_group(r["ts_afs_name"]) for r in species]
         group_sum = sum(yv(g.annual, y).dollars_nominal or 0 for g in ds.groups)
-        grouped_rows = sum(r["dollars"] or 0 for r, a in zip(kept, assigned) if a)
+        grouped_rows = sum(r["dollars"] or 0 for r, a in zip(species, assigned) if a)
         assert group_sum == pytest.approx(grouped_rows, abs=0.1)
+        # statewide total = every kept row including the withheld row (NOAA's definition)
         assert yv(ds.statewide_total, y).dollars_nominal == pytest.approx(sum(r["dollars"] or 0 for r in kept), abs=0.1)
         assert sum(yv(g.annual, y).n_rows for g in ds.groups) == sum(1 for a in assigned if a)
+
+
+# NOAA, Fisheries of the United States 2022 and 2023, Table 4 (California, thousands of dollars)
+FUS_TABLE4 = {2021: 209_783, 2022: (207_919, 207_849), 2023: 170_330}
+
+
+def test_statewide_totals_reproduce_noaa_published_state_totals(out):
+    """NOAA's published California totals equal FOSS rows with the KSTR duplicate counted once
+    (within routine revisions); a plain sum of all rows overshoots by up to 2.7%."""
+    _, ds = run(out)
+    for y, published in FUS_TABLE4.items():
+        for p in published if isinstance(published, tuple) else (published,):
+            ours = yv(ds.statewide_total, y).dollars_nominal / 1e3
+            assert abs(ours - p) / p < 0.002, (y, ours, p)
+            naive = sum(r["dollars"] or 0 for r in foss_rows(y)) / 1e3
+            assert (naive - p) / p > 0.003
+
+
+def test_generic_bivalve_categories_are_matched_but_generic_crabs_are_not():
+    for n in ("SCALLOPS **", "CLAMS **", "MUSSELS **", "OYSTER, KUMAMOTO **", "OYSTER, PACIFIC"):
+        assert fish.assign_group(n) == "bivalves"
+    for n in ("CRABS, DECAPODA (ORDER) **", "MOLLUSKS **", "ANCHOVIES", "SQUID, CALIFORNIA MARKET", "CRAB, KING **"):
+        assert fish.assign_group(n) is None
 
 
 def test_duplicate_oyster_listing_counted_once(out):
@@ -96,6 +121,8 @@ def test_withheld_kept_separate_and_never_attributed(out):
         sv = next(s for s in ds.withheld if s.year == y)
         assert sv.dollars_nominal == pytest.approx(w["dollars"], abs=0.01)
         assert fish.WITHHELD not in {n for g in ds.groups for n in g.source_names}
+    assert any("Courtesy: National Oceanic and Atmospheric Administration" in (p.citation or "") for p in ds.provenance)
+    assert any("aquaculture" in c for c in ds.caveats) and any("meat weight" in c for c in ds.caveats)
 
 
 def test_rows_without_value_are_not_zero():

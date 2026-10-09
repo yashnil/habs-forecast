@@ -495,7 +495,7 @@
       "type": "string"
     },
     "statewide_total": {
-      "description": "All commercial rows, excluding the withheld category and excluded duplicates",
+      "description": "All commercial rows including the withheld row (as in NOAA's state totals), duplicates counted once",
       "items": {
         "$ref": "#/$defs/YearValue"
       },

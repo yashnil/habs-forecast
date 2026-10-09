@@ -585,7 +585,7 @@ class FisheriesDataset(_Model):
     years_requested_unavailable: list[int] = Field(default_factory=list)
     deflator: Deflator
     groups: list[SpeciesGroup]
-    statewide_total: list[YearValue] = Field(description="All commercial rows, excluding the withheld category and excluded duplicates")
+    statewide_total: list[YearValue] = Field(description="All commercial rows including the withheld row (as in NOAA's state totals), duplicates counted once")
     withheld: list[SuppressedValue]
     excluded_rows: list[ExcludedRow]
     port_level: PortLevelStatus

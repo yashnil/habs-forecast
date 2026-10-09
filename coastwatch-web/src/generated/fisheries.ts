@@ -120,7 +120,7 @@ export type SchemaVersion = 1;
 
 export type Scope = string;
 /**
- * All commercial rows, excluding the withheld category and excluded duplicates
+ * All commercial rows including the withheld row (as in NOAA's state totals), duplicates counted once
  */
 
 export type StatewideTotal = YearValue[];

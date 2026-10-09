@@ -522,7 +522,7 @@
    "id": "bivalves",
    "label": "Bivalve shellfish (oysters, clams, mussels, scallops)",
    "tier": 2,
-   "tier_basis": "CDPH quarantines and advisories apply to sport-harvested bivalves; commercially sold bivalves come from certified growers tested under CDPH's program.",
+   "tier_basis": "CDPH quarantines and advisories apply to sport-harvested bivalves; commercially sold bivalves come from certified growers tested under CDPH's program. NOAA includes farmed clams, mussels and oysters in these landings, so this group is mostly aquaculture; pounds are meat weight.",
    "official_record_ids": [
     "cdph-2026-annual-mussel-quarantine",
     "cdph-2026-sn26-018-monterey-bivalves",
@@ -533,7 +533,8 @@
     "OYSTER, EASTERN",
     "OYSTER, EDIBLE",
     "OYSTER, OLYMPIA",
-    "OYSTER, PACIFIC"
+    "OYSTER, PACIFIC",
+    "SCALLOPS **"
    ],
    "annual": [
     {
@@ -597,8 +598,8 @@
      "pounds": 655755.3,
      "dollars_nominal": 9808154.4,
      "dollars_real": 10513096.12,
-     "n_rows": 6,
-     "n_rows_without_value": 1
+     "n_rows": 7,
+     "n_rows_without_value": 2
     },
     {
      "year": 2023,
@@ -622,82 +623,82 @@
  "statewide_total": [
   {
    "year": 2015,
-   "pounds": 187918889.8,
-   "dollars_nominal": 142901077.54,
-   "dollars_real": 189127767.68,
-   "n_rows": 239,
+   "pounds": 188030734.6,
+   "dollars_nominal": 143025747.37,
+   "dollars_real": 189292766.62,
+   "n_rows": 240,
    "n_rows_without_value": 44
   },
   {
    "year": 2016,
-   "pounds": 168650162.2,
-   "dollars_nominal": 204943158.98,
-   "dollars_real": 267860581.56,
-   "n_rows": 241,
+   "pounds": 168688869.0,
+   "dollars_nominal": 205002338.47,
+   "dollars_real": 267937929.11,
+   "n_rows": 242,
    "n_rows_without_value": 40
   },
   {
    "year": 2017,
-   "pounds": 209815896.2,
-   "dollars_nominal": 209236138.39,
-   "dollars_real": 267767114.13,
-   "n_rows": 238,
+   "pounds": 209831756.4,
+   "dollars_nominal": 209254128.2,
+   "dollars_real": 267790136.35,
+   "n_rows": 239,
    "n_rows_without_value": 30
   },
   {
    "year": 2018,
-   "pounds": 179662619.1,
-   "dollars_nominal": 196514647.84,
-   "dollars_real": 245490899.76,
-   "n_rows": 226,
+   "pounds": 181041193.1,
+   "dollars_nominal": 196774273.56,
+   "dollars_real": 245815230.55,
+   "n_rows": 227,
    "n_rows_without_value": 24
   },
   {
    "year": 2019,
-   "pounds": 112478510.2,
-   "dollars_nominal": 165804736.37,
-   "dollars_real": 203441024.29,
-   "n_rows": 238,
+   "pounds": 112483393.9,
+   "dollars_nominal": 165810496.3,
+   "dollars_real": 203448091.68,
+   "n_rows": 239,
    "n_rows_without_value": 26
   },
   {
    "year": 2020,
-   "pounds": 106062325.1,
-   "dollars_nominal": 144568211.87,
-   "dollars_real": 175222296.63,
-   "n_rows": 230,
+   "pounds": 106980372.5,
+   "dollars_nominal": 144931076.7,
+   "dollars_real": 175662102.92,
+   "n_rows": 231,
    "n_rows_without_value": 38
   },
   {
    "year": 2021,
-   "pounds": 149757811.8,
-   "dollars_nominal": 209573219.84,
-   "dollars_real": 242612886.14,
-   "n_rows": 225,
+   "pounds": 149775397.2,
+   "dollars_nominal": 209712942.25,
+   "dollars_real": 242774636.09,
+   "n_rows": 226,
    "n_rows_without_value": 31
   },
   {
    "year": 2022,
-   "pounds": 186124948.4,
-   "dollars_nominal": 207706512.54,
-   "dollars_real": 222635007.82,
-   "n_rows": 226,
+   "pounds": 186205588.3,
+   "dollars_nominal": 207870047.07,
+   "dollars_real": 222810296.07,
+   "n_rows": 227,
    "n_rows_without_value": 37
   },
   {
    "year": 2023,
-   "pounds": 112433767.7,
-   "dollars_nominal": 170604995.35,
-   "dollars_real": 175636885.83,
-   "n_rows": 217,
+   "pounds": 112436092.7,
+   "dollars_nominal": 170609807.9,
+   "dollars_real": 175641840.32,
+   "n_rows": 218,
    "n_rows_without_value": 16
   },
   {
    "year": 2024,
-   "pounds": 179225679.2,
-   "dollars_nominal": 200015045.46,
-   "dollars_real": 200015045.46,
-   "n_rows": 220,
+   "pounds": 179236555.3,
+   "dollars_nominal": 200025856.07,
+   "dollars_real": 200025856.07,
+   "n_rows": 221,
    "n_rows_without_value": 34
   }
  ],
@@ -884,17 +885,21 @@
  "method": {
   "source": "NOAA Fisheries FOSS commercial landings for California (compiled from PacFIN), one request per year; every row is kept with its upstream species name.",
   "groups": "Each upstream species row is assigned to at most one group by exact name; rows in no group count only toward the statewide total.",
-  "withheld": "FOSS's 'WITHHELD FOR CONFIDENTIALITY' row is reported separately for each year and never assigned to a species or group.",
+  "withheld": "FOSS's 'WITHHELD FOR CONFIDENTIALITY' row is reported separately for each year and never assigned to a species or group. It is included in the statewide total, as in NOAA's own state totals.",
+  "statewide_total": "Sum of all California commercial rows including the withheld row, with duplicate listings counted once. This reproduces NOAA's published state totals (Fisheries of the United States, Table 4) within FOSS's routine revisions.",
+  "unassigned": "Generic categories that cannot be attributed to one species (e.g. 'CRABS, DECAPODA (ORDER) **', 'MOLLUSKS **', 'ANCHOVIES') are not assigned to any group, so group values are lower bounds.",
   "missing": "Rows without a published value are counted (n_rows_without_value) and never treated as zero.",
-  "duplicates": "Rows in the same year with different names but identical non-zero pounds and dollars are counted once; the excluded rows are listed.",
+  "duplicates": "Rows in the same year with different names but identical non-zero pounds and dollars are counted once; the excluded rows are listed. The only case found is explained upstream: FOSS's source-species table maps PacFIN code KSTR (Kumamoto oyster) to both 'OYSTER, PACIFIC' and 'OYSTER, KUMAMOTO', and NOAA's published state totals count it once.",
   "inflation": "Annual average = mean of the 12 published monthly values, rounded to 3 decimals (as BLS publishes). Real value = nominal × CPI(2024) / CPI(year). Base year = most recent year with all 12 monthly values published.",
   "tiers": "Tier 1: fisheries with commercial closures or take restrictions for marine toxins (current or past). Tier 2: species under consumption advisories, sport-harvest quarantines or monitoring. Tier assignments are CoastWatch's editorial grouping and await HAB scientific review."
  },
  "caveats": [
   "Historical fisheries exposure is not a forecast of losses. Past landings say nothing about whether a fishery will be closed.",
   "Values are ex-vessel revenue reported for landings; they exclude processing, retail, tourism and other economic activity.",
-  "Statewide values cannot be divided among ports. Confidential landings are withheld by the source and not included in species values.",
-  "Upstream species categories are market categories; some combine several species.",
+  "Statewide values cannot be divided among ports. Confidential landings are withheld by the source and not included in species values; NOAA notes that species values may in some instances be misleading because of confidentiality.",
+  "Upstream species categories are market categories; some combine several species. Generic categories are left unassigned, so group values are lower bounds.",
+  "Bivalve values include aquaculture (farmed clams, mussels and oysters); bivalve pounds are meat weight.",
+  "NOAA updates these statistics weekly and published annual summaries are preliminary; values can be revised.",
   "Tier assignments are CoastWatch's editorial grouping and await HAB scientific review."
  ],
  "provenance": [
@@ -905,13 +910,14 @@
    "dataset_id": "foss/landings",
    "product_version": null,
    "institution": "NOAA Fisheries Office of Science and Technology",
-   "license": "U.S. Government work (NOAA Fisheries); public domain within the United States. FOSS asks users to cite the query and access date.",
-   "citation": "NOAA Fisheries Office of Science and Technology, Commercial Landings Query, available at www.fisheries.noaa.gov/foss, accessed 2026-10-08.",
+   "license": "Information created by the U.S. government is not subject to copyright in the United States (NOAA Fisheries copyright policy, https://www.fisheries.noaa.gov/national/about-us/website-policies-and-disclaimers). NOAA Fisheries requests the acknowledgement 'Courtesy: National Oceanic and Atmospheric Administration'. Only non-confidential statistics are released; confidential landings are combined into 'Withheld for Confidentiality'.",
+   "citation": "Courtesy: National Oceanic and Atmospheric Administration. NOAA Fisheries Office of Science and Technology, Commercial Landings Query, available at www.fisheries.noaa.gov/foss, accessed 2026-10-08.",
    "retrieved_at": "2026-10-08T18:00:00Z",
    "request_urls": [
     "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2023%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0",
     "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2024%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0",
-    "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2025%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0"
+    "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2025%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0",
+    "https://apps-st.fisheries.noaa.gov/foss/f?p=215:240"
    ],
    "upstream_metadata": {},
    "pipeline_version": "fixture",
