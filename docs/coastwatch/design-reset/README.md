@@ -1,8 +1,9 @@
 # CoastWatch design reset
 
 A complete redesign of the CoastWatch frontend, delivered as **specification + working prototypes +
-screenshots** for review. Nothing in `coastwatch-web/` or `pipeline/` was changed. Nothing is merged or
-deployed.
+screenshots**. The direction was approved in the PR #7 review (2026-10-09) with targeted refinements;
+this is **revision 2**, which includes them. The decisions and refinements are listed at the top of
+[design-spec.md](design-spec.md). Nothing in `pipeline/` was changed, and nothing is merged or deployed.
 
 | Document | Contents |
 |---|---|
@@ -34,6 +35,7 @@ python3 -m http.server 8765 -d prototype   # then open http://localhost:8765/
 
 Narrow the window below 720 px for the mobile layouts. Useful URLs: `map.html?region=monterey_bay&port=593`,
 `bloom.html?station=HABs-MontereyWharf`, `bloom.html?station=HABs-TrinidadPier`,
+`bloom.html?var=pn_seriata`,
 `fisheries.html?group=bivalves`.
 
 Regenerate everything from the current production data:
@@ -46,32 +48,64 @@ node scripts/shoot.mjs                    # needs coastwatch-web/node_modules (P
 
 ## Screenshots
 
+Start with the Ocean Map default and selected-port states (rows 1 and 3).
+
 ### Ocean Map
 
 | | Desktop 1440 | Laptop 1280 | Mobile 390 |
 |---|---|---|---|
-| Statewide | ![](screenshots/desktop-1440/01-map-statewide.png) | ![](screenshots/laptop-1280/01-map-statewide.png) | ![](screenshots/mobile-390/01-map-statewide.png) |
-| Santa Cruz selected | ![](screenshots/desktop-1440/02-map-port-santa-cruz.png) | ![](screenshots/laptop-1280/02-map-port-santa-cruz.png) | ![](screenshots/mobile-390/02-map-port-santa-cruz.png) |
-| Official drawer | ![](screenshots/desktop-1440/03-map-official-drawer.png) | | ![](screenshots/mobile-390/03-map-official-drawer.png) |
+| Default (statewide) | ![](screenshots/desktop-1440/01-map-statewide.png) | ![](screenshots/laptop-1280/01-map-statewide.png) | ![](screenshots/mobile-390/01-map-statewide.png) |
+| Region: Monterey Bay | ![](screenshots/desktop-1440/02-map-region-monterey.png) | ![](screenshots/laptop-1280/02-map-region-monterey.png) | ![](screenshots/mobile-390/02-map-region-monterey.png) |
+| Port selected: Santa Cruz | ![](screenshots/desktop-1440/03-map-port-santa-cruz.png) | ![](screenshots/laptop-1280/03-map-port-santa-cruz.png) | ![](screenshots/mobile-390/03-map-port-santa-cruz.png) |
+| Exact value under the pointer / tap | ![](screenshots/desktop-1440/04-map-exact-value.png) |  | ![](screenshots/mobile-390/04-map-exact-value.png) |
+| Official drawer | ![](screenshots/desktop-1440/05-map-official-drawer.png) |  | ![](screenshots/mobile-390/05-map-official-drawer.png) |
+| Places sheet (mobile) |  |  | ![](screenshots/mobile-390/06-map-places-sheet.png) |
 
 ### Bloom Intelligence
 
 | | Desktop 1440 | Laptop 1280 | Mobile 390 |
 |---|---|---|---|
-| Santa Cruz Wharf | ![](screenshots/desktop-1440/04-bloom-santa-cruz.png) | ![](screenshots/laptop-1280/04-bloom-santa-cruz.png) | ![](screenshots/mobile-390/04-bloom-santa-cruz.png) |
-| Monterey Wharf (pDA last measured 2022) | ![](screenshots/desktop-1440/05-bloom-monterey-wharf.png) | | ![](screenshots/mobile-390/05-bloom-monterey-wharf.png) |
-| Trinidad Pier (historical station) | ![](screenshots/desktop-1440/06-bloom-trinidad-historical.png) | | |
+| Santa Cruz Wharf | ![](screenshots/desktop-1440/07-bloom-santa-cruz.png) | ![](screenshots/laptop-1280/07-bloom-santa-cruz.png) | ![](screenshots/mobile-390/07-bloom-santa-cruz.png) |
+| Measurement selected (P-n seriata) | ![](screenshots/desktop-1440/08-bloom-measurement-selected.png) |  | ![](screenshots/mobile-390/08-bloom-measurement-selected.png) |
+| Monterey Wharf (pDA last measured 2022) | ![](screenshots/desktop-1440/09-bloom-monterey-wharf.png) |  | ![](screenshots/mobile-390/09-bloom-monterey-wharf.png) |
+| Trinidad Pier (historical station) | ![](screenshots/desktop-1440/10-bloom-trinidad-historical.png) |  |  |
 
 ### Fisheries & Economic Exposure
 
 | | Desktop 1440 | Laptop 1280 | Mobile 390 |
 |---|---|---|---|
-| Default (Tier 1, 2024 $) | ![](screenshots/desktop-1440/07-fisheries.png) | ![](screenshots/laptop-1280/07-fisheries.png) | ![](screenshots/mobile-390/07-fisheries.png) |
-| Dungeness crab selected | ![](screenshots/desktop-1440/08-fisheries-species-selected.png) | | ![](screenshots/mobile-390/08-fisheries-species-selected.png) |
+| Default (Tier 1, 2024 $) | ![](screenshots/desktop-1440/11-fisheries.png) | ![](screenshots/laptop-1280/11-fisheries.png) | ![](screenshots/mobile-390/11-fisheries.png) |
+| Dungeness crab selected | ![](screenshots/desktop-1440/12-fisheries-species-selected.png) |  | ![](screenshots/mobile-390/12-fisheries-species-selected.png) |
 
-Bloom and Fisheries captures are full-page. Map captures are the viewport.
+Bloom and Fisheries default captures are full-page. Map captures are the viewport.
 
 ## Self-review: what changed between iterations
+
+### Revision 2 (after the PR #7 review)
+
+- **Forecast colours.** Seven ramps were rendered from the same published grids and compared at
+  statewide and harbour zoom. The chosen low-chroma ramp puts the common 60–80 % classes at mid
+  lightness, so Monterey Bay at ~75 % reads as a calm mauve rather than bright pink, and the white
+  coastline (now drawn above the forecast) and port labels stay legible.
+- **Missing vs low.** Revision 1 showed "no value" as bare sea, close to the darkest class. Water with no
+  value is now hatched, the raster is opaque, and the legend and the readout name the case.
+- **Legend honesty.** Revision 1 faded the raster with zoom, so map colours stopped matching the legend.
+  The raster is now opaque at every zoom.
+- **Default map view.** Only a 312 px navigation card and the dock float over the map. The inspector
+  exists only with a port selected, and the card then shrinks to a breadcrumb. The region card at
+  1280 × 720 first clipped its port list; the duplicated notice rows were dropped (the official row
+  already scopes to the region, and the inspector lists them).
+- **Monterey Bay framing.** Region views are hand-set rather than padded bounds, and the mobile view gets
+  extra right padding so "Moss Landing" is not cut off.
+- **Mobile map sheet.** About 310 → 250 px: the place search moved to a floating button at the top, the
+  quantity became a native select beside the day steps, and the legend lost a row.
+- **Bloom length.** Removing the small multiples and collapsing the heatmap and caveats on mobile took
+  the phone page from 4,490 to 2,770 px. The selector-card previews keep secondary measurements
+  explorable.
+- **Fisheries.** The port-level section is now a one-line note that expands on demand, and a not-a-loss
+  sentence sits directly under the headline figures.
+
+### Revision 1
 
 I reviewed each capture and iterated. The changes that mattered:
 
@@ -101,3 +135,5 @@ I reviewed each capture and iterated. The changes that mattered:
 - They are design references, not production code: see design-spec §8 for unimplemented interactions.
 - Contrast was verified numerically for the tokens. A full assistive-technology pass belongs to P4.
 - The forecast palette requires a small pipeline change to ship (implementation plan, P1.1).
+- `prototype/grids/` holds copies of the published u16 grids (1.7 MB) so the exact-value readout works
+  offline from the snapshot.

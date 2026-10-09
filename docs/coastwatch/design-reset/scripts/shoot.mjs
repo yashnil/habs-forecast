@@ -3,17 +3,17 @@
 // Playwright is resolved from coastwatch-web/node_modules; nothing is installed.
 import { createRequire } from "node:module";
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../prototype");
-const OUT = path.resolve(HERE, "../screenshots");
+const OUT = process.env.CW_OUT ? path.resolve(process.env.CW_OUT) : path.resolve(HERE, "../screenshots");
 const require = createRequire(path.resolve(HERE, "../../../../coastwatch-web/package.json"));
 const { chromium } = require("@playwright/test");
 
-const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".json": "application/json", ".svg": "image/svg+xml" };
+const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".json": "application/json", ".svg": "image/svg+xml", ".gz": "application/gzip" };
 const server = createServer(async (req, res) => {
   const p = path.join(ROOT, decodeURIComponent(new URL(req.url, "http://x").pathname).replace(/\/$/, "/index.html"));
   try {
@@ -31,15 +31,27 @@ const VIEWPORTS = {
 };
 
 // name, url, viewports, optional action, fullPage
+const ALL = ["desktop-1440", "laptop-1280", "mobile-390"];
+const at = (lng, lat) => async (p) => {
+  const pt = await p.evaluate(([x, y]) => window.__cwMap.project([x, y]), [lng, lat]);
+  const box = await p.locator("#map").boundingBox();
+  await p.mouse.move(box.x + pt.x, box.y + pt.y);
+  if ((p.viewportSize()?.width ?? 0) <= 720) await p.mouse.click(box.x + pt.x, box.y + pt.y);
+  await p.waitForTimeout(400);
+};
 const SHOTS = [
-  ["01-map-statewide", "map.html", ["desktop-1440", "laptop-1280", "mobile-390"]],
-  ["02-map-port-santa-cruz", "map.html?region=monterey_bay&port=593", ["desktop-1440", "laptop-1280", "mobile-390"]],
-  ["03-map-official-drawer", "map.html?region=monterey_bay", ["desktop-1440", "mobile-390"], async (p) => { await p.locator(".official-pill").click(); await p.waitForTimeout(200); }],
-  ["04-bloom-santa-cruz", "bloom.html", ["desktop-1440", "laptop-1280", "mobile-390"], null, true],
-  ["05-bloom-monterey-wharf", "bloom.html?station=HABs-MontereyWharf", ["desktop-1440", "mobile-390"], null, true],
-  ["06-bloom-trinidad-historical", "bloom.html?station=HABs-TrinidadPier", ["desktop-1440"], null, false],
-  ["07-fisheries", "fisheries.html", ["desktop-1440", "laptop-1280", "mobile-390"], null, true],
-  ["08-fisheries-species-selected", "fisheries.html?group=dungeness_crab", ["desktop-1440", "mobile-390"], async (p) => { await p.locator("#breakdown").scrollIntoViewIfNeeded(); }, false],
+  ["01-map-statewide", "map.html", ALL],
+  ["02-map-region-monterey", "map.html?region=monterey_bay", ALL],
+  ["03-map-port-santa-cruz", "map.html?region=monterey_bay&port=593", ALL],
+  ["04-map-exact-value", "map.html?region=monterey_bay", ["desktop-1440", "mobile-390"], at(-122.12, 36.78)],
+  ["05-map-official-drawer", "map.html?region=monterey_bay", ["desktop-1440", "mobile-390"], async (p) => { await p.locator(".official-pill").click(); await p.waitForTimeout(200); }],
+  ["06-map-places-sheet", "map.html", ["mobile-390"], async (p) => { await p.locator(".m-place").click(); await p.waitForTimeout(200); }],
+  ["07-bloom-santa-cruz", "bloom.html", ALL, null, true],
+  ["08-bloom-measurement-selected", "bloom.html?station=HABs-SantaCruzWharf&var=pn_seriata", ["desktop-1440", "mobile-390"], null, false],
+  ["09-bloom-monterey-wharf", "bloom.html?station=HABs-MontereyWharf", ["desktop-1440", "mobile-390"], null, true],
+  ["10-bloom-trinidad-historical", "bloom.html?station=HABs-TrinidadPier", ["desktop-1440"], null, false],
+  ["11-fisheries", "fisheries.html", ALL, null, true],
+  ["12-fisheries-species-selected", "fisheries.html?group=dungeness_crab", ["desktop-1440", "mobile-390"], async (p) => { await p.locator("#breakdown").scrollIntoViewIfNeeded(); }, false],
 ];
 
 const filter = process.argv[2];
@@ -60,6 +72,7 @@ for (const [name, url, vps, action, full] of SHOTS) {
     // Full-page captures: pin the mobile tab bar to the end of the page instead of mid-image.
     if (full) await page.addStyleTag({ content: "body{position:relative}.tabbar{position:absolute!important}" });
     const file = path.join(OUT, vp, `${name}.png`);
+    await mkdir(path.dirname(file), { recursive: true });
     await page.screenshot({ path: file, fullPage: !!full });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     console.log(`${vp}/${name}.png${overflow > 1 ? `  OVERFLOW ${overflow}px` : ""}`);

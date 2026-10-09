@@ -14,6 +14,8 @@ from __future__ import annotations
 import gzip
 import json
 import math
+import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -22,25 +24,31 @@ from PIL import Image
 
 R = 6378137.0
 
-# Forecast probability ramp, 10 classes of 10 percentage points. Built in OKLCH:
-# lightness rises in equal steps 0.47 -> 0.95, adjacent classes differ by ~1.2:1, so
-# order survives greyscale and colour-vision deficiency; hue turns indigo -> violet ->
-# magenta -> rose -> shell.
-# The 0-10 % class keeps 2.4:1 contrast against the sea (#0b1d33) so "low
-# probability" is never mistaken for "no value". No class uses the amber reserved
-# for official notices or the teal reserved for measurements.
+# Forecast probability ramp "cw-probability-classes-v1": 10 display classes of 10
+# percentage points. They are colour steps for reading the map, not risk categories;
+# exact values come from the grid. Built in OKLCH: lightness rises in equal steps
+# 0.36 -> 0.80 (adjacent classes ~1.2:1), so order survives greyscale and colour-vision
+# deficiency; hue turns dusk violet -> mauve -> rose at low chroma, so the common
+# 60-80 % range reads as a mid tone and the coastline, land and labels stay legible.
+# "No value" is never a colour on this ramp: the map hatches water without a value and
+# the raster is opaque, so hatching only shows where there is no model value. No class
+# uses the amber reserved for official notices or the teal reserved for measurements.
 FORECAST_CLASSES = [
-    "#554da0",
-    "#7552b4",
-    "#9757c3",
-    "#b95ec9",
-    "#da67c7",
-    "#f676c1",
-    "#fe95ba",
-    "#feb5be",
-    "#fed0cd",
-    "#ffe9e3",
+    "#3a385b",
+    "#4c436a",
+    "#5f4e79",
+    "#735986",
+    "#886492",
+    "#9c709c",
+    "#af7ea4",
+    "#c28cab",
+    "#d39cb3",
+    "#e5abbc",
 ]
+
+
+if os.environ.get("CW_PALETTE"):  # design exploration only: comma-separated hexes
+    FORECAST_CLASSES = os.environ["CW_PALETTE"].split(",")
 
 
 def merc_y(lat):
@@ -77,6 +85,10 @@ def render(values: np.ndarray, g: dict, upsample: int = 4) -> tuple[Image.Image,
 
 def main(src: Path, out: Path) -> None:
     out.mkdir(parents=True, exist_ok=True)
+    # The prototype also ships the published value grids unchanged, so the map can read
+    # out the exact model value under the pointer, as production does.
+    grids = out.parent / "grids"
+    grids.mkdir(exist_ok=True)
     manifest = json.loads((src / "manifest.json").read_text())
     index = {}
     for layer in manifest["layers"]:
@@ -88,7 +100,9 @@ def main(src: Path, out: Path) -> None:
         img, corners = render(vals, g)
         name = f"{layer['variable']}-lead{layer['time']['lead_days']}.png"
         img.save(out / name, optimize=True)
-        index[layer["layer_id"]] = {"url": f"img/{name}", "corners": corners}
+        shutil.copyfile(src / g["url"], grids / f"{layer['layer_id']}.u16.gz")
+        meta = {k: g[k] for k in ("width", "height", "lat_first", "lat_step", "lon_first", "lon_step", "scale_factor", "add_offset", "nodata")}
+        index[layer["layer_id"]] = {"url": f"img/{name}", "corners": corners, "grid": {"url": f"grids/{layer['layer_id']}.u16.gz", **meta}}
     (out / "rasters.json").write_text(json.dumps(index, indent=1))
     print(f"wrote {len(index)} rasters to {out}")
 

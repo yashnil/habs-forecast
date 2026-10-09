@@ -17,8 +17,8 @@
 
   /* map canvas */
   --sea: #0b1d33;
-  --land: #1c2a3c;
-  --coast: #a8bfd6;
+  --land: #2a3646;
+  --coast: #d3dfeb;
 
   /* paper */
   --paper: #f5f3ee;
@@ -68,9 +68,9 @@
   --sp-bivalves: #c3d3c9;
   --sp-other: #d9d4c9;
 
-  /* forecast probability classes (10 % steps); mirrors scripts/render_rasters.py */
-  --p0: #554da0; --p1: #7552b4; --p2: #9757c3; --p3: #b95ec9; --p4: #da67c7;
-  --p5: #f676c1; --p6: #fe95ba; --p7: #feb5be; --p8: #fed0cd; --p9: #ffe9e3;
+  /* forecast probability display classes (10 % steps, not risk levels); mirrors scripts/render_rasters.py */
+  --p0: #3a385b; --p1: #4c436a; --p2: #5f4e79; --p3: #735986; --p4: #886492;
+  --p5: #9c709c; --p6: #af7ea4; --p7: #c28cab; --p8: #d39cb3; --p9: #e5abbc;
 
   /* type */
   --font-display: "Newsreader", "Iowan Old Style", Georgia, serif;

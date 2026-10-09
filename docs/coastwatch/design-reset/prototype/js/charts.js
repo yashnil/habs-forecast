@@ -36,8 +36,8 @@
     return ticks;
   }
 
-  /** Probability classes, 10 % wide, matching the map raster. */
-  const P_CLASSES = ["#554da0", "#7552b4", "#9757c3", "#b95ec9", "#da67c7", "#f676c1", "#fe95ba", "#feb5be", "#fed0cd", "#ffe9e3"];
+  /** Probability display classes, 10 % wide, matching the map raster (not risk levels). */
+  const P_CLASSES = ["#3a385b", "#4c436a", "#5f4e79", "#735986", "#886492", "#9c709c", "#af7ea4", "#c28cab", "#d39cb3", "#e5abbc"];
   const pClass = (v) => P_CLASSES[Math.max(0, Math.min(9, Math.floor(v * 10)))];
 
   function sparkline(points, { w = 280, h = 56, color = "#6a3fb0", t0, t1, area = true, yLabel = true } = {}) {

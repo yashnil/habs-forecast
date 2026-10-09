@@ -148,6 +148,16 @@
     return { svg, pts, visits, x, zeros, m };
   }
 
+  // Selector-card preview: the same points on the same fixed axis, no labels. Gaps stay gaps.
+  function miniSpark(s, v, t0, t1, w = 132, h = 30) {
+    const cfg = VARS[v];
+    const pts = samples(s, v).filter((p) => p.t >= t0 && p.t <= t1);
+    if (!pts.length) return `<svg class="mini" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><line x1="0" x2="${w}" y1="${h - 1}" y2="${h - 1}" stroke="var(--line)" stroke-dasharray="2 3"/></svg>`;
+    const x = lin(t0, t1, 2, w - 2);
+    const y = cfg.scale === "log" ? log(cfg.domain[0], cfg.domain[1], h - 3, 3) : lin(cfg.domain[0], cfg.domain[1], h - 3, 3);
+    return `<svg class="mini" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><line x1="0" x2="${w}" y1="${h - 1}" y2="${h - 1}" stroke="var(--line)"/>${pts.map((p) => `<circle cx="${x(p.t).toFixed(1)}" cy="${(p.v > 0 || cfg.scale === "linear" ? y(Math.max(p.v, cfg.domain[0])) : h - 3).toFixed(1)}" r="1.6" fill="${p.v === 0 && cfg.scale === "log" ? "#fff" : "var(--measured)"}" stroke="${p.v === 0 && cfg.scale === "log" ? "var(--ink-3)" : "none"}" stroke-width=".8"/>`).join("")}</svg>`;
+  }
+
   function attachTooltip(wrap, s, v, chart) {
     const svgEl = wrap.querySelector("svg");
     const tip = wrap.querySelector(".tooltip");
@@ -246,6 +256,7 @@
 
   // ---------- main ----------
   function render() {
+    const keepX = document.querySelector(".readouts")?.scrollLeft ?? 0;
     const s = byId[state.station];
     const cfg = VARS[state.variable];
     const f = CW.freshness(lastSample(s), POLICY);
@@ -260,23 +271,23 @@
 
     const readout = (v) => {
       const c = VARS[v], sm = summary(s, v);
-      if (!sm?.last_date) return `<button class="readout none" data-var="${v}" aria-pressed="${v === state.variable}"><span class="r-l">${c.short}</span><span class="r-v r-none">Not measured here since 2014</span><span class="r-d">${c.kind}</span></button>`;
+      const n = samples(s, v).filter((p) => p.t >= t0 && p.t <= t1).length;
+      const prev = `<span class="r-prev">${miniSpark(s, v, t0, t1)}<span>${n ? `${n} in view` : "none in view"}</span></span>`;
+      if (!sm?.last_date) return `<button class="readout none" data-var="${v}" aria-pressed="${v === state.variable}"><span class="r-l">${c.short}</span><span class="r-v r-none">Not measured here since 2014</span><span class="r-d">${c.kind}</span>${prev}</button>`;
       const rf = CW.freshness(sm.last_date, POLICY);
       // An old value never gets headline size: the date leads, the value follows.
-      if (rf.state === "historical") return `<button class="readout old" data-var="${v}" aria-pressed="${v === state.variable}"><span class="r-l">${c.short}</span><span class="r-v r-none">Not measured since ${fmtDate(sm.last_date, { month: "short", year: "numeric" })}</span><span class="r-d">${CW.freshChip(rf, "Historical")}<span>last value ${sm.last_qualifier === "reported_zero" ? "reported 0" : fmtVal(sm.last_value, c.unit)}, ${fmtDate(sm.last_date)}</span></span></button>`;
+      if (rf.state === "historical") return `<button class="readout old" data-var="${v}" aria-pressed="${v === state.variable}"><span class="r-l">${c.short}</span><span class="r-v r-none">Not measured since ${fmtDate(sm.last_date, { month: "short", year: "numeric" })}</span><span class="r-d">${CW.freshChip(rf, "Historical")}<span>last value ${sm.last_qualifier === "reported_zero" ? "reported 0" : fmtVal(sm.last_value, c.unit)}, ${fmtDate(sm.last_date)}</span></span>${prev}</button>`;
       const val = sm.last_qualifier === "reported_zero" ? `Reported 0` : fmtVal(sm.last_value, c.unit);
       return `<button class="readout" data-var="${v}" aria-pressed="${v === state.variable}">
         <span class="r-l">${c.short}</span>
         <span class="r-v">${/^[\d.,]+ /.test(val) ? val.replace(/ (\S+)$/, '<span class="u"> $1</span>') : val}${sm.last_qualifier === "reported_zero" ? `<small> not quantified</small>` : ""}</span>
         <span class="r-d">${CW.freshChip(rf, fmtDate(sm.last_date, { month: "short", day: "numeric", year: rf.state === "historical" ? "numeric" : undefined }))}<span>${sm.n_last_365d} in 12 mo</span></span>
+        ${prev}
       </button>`;
     };
 
     const chartW = mobile() ? W : W - 48;
     const mainChart = obsChart(s, state.variable, { w: chartW, h: mobile() ? 260 : 340, t0, t1, id: "main" });
-    const others = ORDER.filter((v) => v !== state.variable);
-    const smW = mobile() ? W : Math.floor((W - 48 - 24) / 2);
-    const smCharts = others.map((v) => ({ v, c: obsChart(s, v, { w: smW, h: 150, t0, t1, compact: true, id: v }) }));
     const nVisits = mainChart.visits.length;
     const nMeas = mainChart.pts.length;
 
@@ -298,7 +309,11 @@
       </header>
       ${f.state === "historical" ? `<div class="hist-banner">${icon("info")}<p><b>This station's latest sample is from ${fmtDate(lastSample(s))}.</b> Its values do not describe current conditions. No new sample is not the same as no toxin.</p></div>` : ""}
 
-      <section class="readouts" aria-label="Latest measurement of each quantity">${ORDER.map(readout).join("")}</section>
+      <section class="selector" aria-labelledby="sel-title">
+        <div class="sel-head"><h2 id="sel-title">Latest measurement of each quantity</h2><p class="fine">Select one to chart it. Previews share the chart's period and axis.</p></div>
+        <div class="readouts" role="group" aria-label="Measurement to chart">${ORDER.map(readout).join("")}</div>
+        <p class="fine sm-note">Pseudo-nitzschia counts are cells of a size group; not every Pseudo-nitzschia produces toxin. Chlorophyll measures algae biomass, not toxin.</p>
+      </section>
 
       <section class="card chart-card" aria-labelledby="main-chart-title">
         <div class="cc-head">
@@ -308,7 +323,6 @@
           </div>
           <div class="seg" role="group" aria-label="Time range">${Object.keys(RANGES).map((r) => `<button data-range="${r}" aria-pressed="${r === state.range}">${{ "3m": "3 mo", "1y": "1 yr", "3y": "3 yr", all: "Since 2014" }[r]}</button>`).join("")}</div>
         </div>
-        <div class="var-tabs" role="tablist" aria-label="Measurement">${ORDER.map((v) => `<button role="tab" data-var="${v}" aria-selected="${v === state.variable}">${VARS[v].tab}</button>`).join("")}</div>
         <div class="chart main-chart" style="position:relative">${mainChart.svg}<div class="tooltip" hidden></div></div>
         <div class="legend cc-legend">
           <span class="k"><i class="swatch dot" style="background:var(--measured)"></i>measured</span>
@@ -318,26 +332,12 @@
         </div>
       </section>
 
-      <section aria-labelledby="sm-title">
-        <div class="section-head"><h2 id="sm-title">Other measurements, same period</h2><p>Each panel has its own axis. Select one to make it the main chart.</p></div>
-        <div class="small-multiples">${smCharts
-          .map(({ v, c }) => {
-            const sm = summary(s, v);
-            return `<button class="card sm" data-var="${v}">
-              <span class="sm-head"><span class="sm-title">${VARS[v].short}</span><span class="sm-last">${sm?.last_date ? (sm.last_qualifier === "reported_zero" ? "reported 0" : fmtVal(sm.last_value, VARS[v].unit)) : "not measured"}</span></span>
-              ${c.pts.length ? `<span class="chart">${c.svg}</span>` : `<span class="sm-empty">${sm?.last_date ? `Not measured in this period. Last measured ${fmtDate(sm.last_date, { month: "short", year: "numeric" })}.` : "Not measured at this station since 2014."} No measurement is not the same as none present.</span>`}
-              ${c.pts.length ? `<span class="fine">${c.pts.length} measured in view · ${VARS[v].unit}, ${VARS[v].scale}</span>` : ""}
-            </button>`;
-          })
-          .join("")}</div>
-        <p class="fine sm-note">Pseudo-nitzschia counts are cells of a size group; not every Pseudo-nitzschia produces toxin. Chlorophyll measures algae biomass, not toxin.</p>
-      </section>
 
-      <section class="card heat-card" aria-labelledby="heat-title">
-        <div class="section-head"><div><p class="eyebrow measured">Historical context</p><h2 id="heat-title">Every ${mobile() ? "month" : "week"} since ${new Date(first).getUTCFullYear()}: ${cfg.short.toLowerCase()}</h2></div><p>Highest value each ${mobile() ? "month" : "week"}. Decade bins, not risk levels.</p></div>
+      <details class="card heat-card" ${mobile() ? "" : "open"}>
+        <summary class="section-head"><div><p class="eyebrow measured">Historical context</p><h2 id="heat-title">Every ${mobile() ? "month" : "week"} since ${new Date(first).getUTCFullYear()}: ${cfg.short.toLowerCase()}</h2></div><p>Highest value each ${mobile() ? "month" : "week"}. Decade bins, not risk levels.</p></summary>
         <div class="chart">${heatmap(s, state.variable, mobile() ? W - 34 : W - 48)}</div>
         ${heatLegend(state.variable)}
-      </section>
+      </details>
 
       <section class="model-band" data-testid="model-section" aria-labelledby="model-title">
         <div class="mb-head">
@@ -348,18 +348,20 @@
           </div>
           <span class="chip chip-model">C-HARM v3.1 · NOAA</span>
         </div>
-        ${s.charm?.history?.particulate_domoic?.length ? `<div class="chart">${modelChart(s, mobile() ? W : W - 48, mobile() ? 170 : 190, Math.max(t0, CW.NOW - 365 * CW.DAY), t1)}</div>
+        ${s.charm?.history?.particulate_domoic?.length ? `<div class="chart">${modelChart(s, mobile() ? W : W - 48, mobile() ? 150 : 180, Math.max(t0, CW.NOW - 365 * CW.DAY), t1)}</div>
           <div class="legend"><span class="k"><i class="swatch" style="height:2px;background:var(--model)"></i>daily nowcast median</span>${modelChart.nPartial ? `<span class="k"><i class="swatch ring" style="box-shadow:inset 0 0 0 1.5px var(--model)"></i>partial coverage (fewer than 60% of the usual model cells had values)</span>` : ""}<span class="k muted">Day-to-day swings are the model's own output and are not smoothed.</span></div>
           <p class="fine">Same time axis as the main chart${RANGES[state.range] && RANGES[state.range] <= 365 ? "" : " (last 12 months)"}. ${s.charm.history.particulate_domoic.length} daily nowcasts. Days without a model run are left blank. A probability is not a closure decision, and a low value does not mean it is safe to fish or harvest.</p>` : `<p class="mb-empty" data-testid="model-unavailable">Model history is unavailable for this station. That says nothing about bloom conditions.</p>`}
       </section>
 
       <section class="about" aria-labelledby="about-title">
         <h2 id="about-title" class="sr-only">About these data</h2>
-        <div class="about-grid">
+        ${mobile()
+          ? [["Seawater is not seafood", OBS.caveats[1]], ["Blanks and zeros", `${OBS.caveats[2]} ${OBS.caveats[3]}`], ["What a value means", OBS.caveats[0]]].map(([h, t]) => `<details class="disclosure"><summary>${h}</summary><div class="body"><p>${esc(t)}</p></div></details>`).join("")
+          : `<div class="about-grid">
           <div><p class="eyebrow">What a value means</p><p>${esc(OBS.caveats[0])}</p></div>
           <div><p class="eyebrow">Blanks and zeros</p><p>${esc(OBS.caveats[2])} ${esc(OBS.caveats[3])}</p></div>
           <div><p class="eyebrow">Seawater is not seafood</p><p>${esc(OBS.caveats[1])}</p></div>
-        </div>
+        </div>`}
         <details class="disclosure"><summary>What each quantity is</summary><div class="body"><ul>${OBS.variables.map((v) => `<li><b>${esc(v.label)}</b> (${esc(v.units)}). ${esc(v.method)} ${esc(v.detection_limit_note ?? "")}</li>`).join("")}</ul></div></details>
         <details class="disclosure"><summary>Quality checks for this station</summary><div class="body"><ul>${s.qc.map((c) => `<li>${c.passed ? "Passed" : "Flagged"} — ${esc(c.detail)}</li>`).join("")}</ul></div></details>
         <details class="disclosure"><summary>How CoastWatch processes these data</summary><div class="body"><ul>${Object.values(OBS.method).map((m) => `<li>${esc(m)}</li>`).join("")}</ul></div></details>
@@ -367,6 +369,7 @@
       </section>`;
 
     attachTooltip(main.querySelector(".main-chart"), s, state.variable, mainChart);
+    main.querySelector(".readouts").scrollLeft = keepX;
   }
 
   function sync() {

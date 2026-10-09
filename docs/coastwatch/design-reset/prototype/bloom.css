@@ -67,6 +67,12 @@
 .r-none { font: 500 0.9375rem/1.35 var(--font-sans); color: var(--ink-3); }
 .r-d { display: flex; flex-wrap: wrap; gap: 4px 10px; font: var(--t-small); color: var(--ink-3); }
 .r-d .fresh { font-size: 0.8125rem; }
+.r-prev { display: grid; gap: 2px; margin-top: 4px; font: 400 0.6875rem/1.2 var(--font-sans); color: var(--ink-3); }
+.r-prev .mini { display: block; width: 100%; height: 30px; }
+.readout[aria-pressed="true"] { background: var(--measured-bg); }
+.selector { display: grid; gap: 10px; }
+.sel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.sel-head h2 { font: var(--t-heading); }
 
 /* ---------- cards & charts ---------- */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-l); }
@@ -74,19 +80,15 @@
 .cc-head { display: flex; justify-content: space-between; align-items: start; gap: 16px; }
 .cc-head h2 { font: var(--t-title); }
 .cc-head h2 .muted { font-weight: 400; font-size: 0.9375rem; }
-.var-tabs { display: flex; gap: 4px; margin: 16px 0 8px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
-.var-tabs button { padding: 10px 12px; font: 500 0.875rem/1 var(--font-sans); color: var(--ink-3); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
-.var-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--measured); }
 .cc-legend { margin-top: 6px; }
-.small-multiples { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
-.sm { display: grid; gap: 6px; padding: 14px 16px 12px; text-align: left; }
-.sm:hover { border-color: var(--measured-line); }
-.sm-head { display: flex; justify-content: space-between; gap: 12px; }
-.sm-title { font: 600 0.9375rem/1.3 var(--font-sans); }
-.sm-last { font: 500 0.875rem/1.3 var(--font-sans); color: var(--ink-2); }
-.sm-note { margin-top: 12px; }
-.sm-empty { display: grid; place-items: center; min-height: 110px; padding: 12px; border-radius: 8px; background: repeating-linear-gradient(135deg, #faf9f6 0 6px, #f3f0ea 6px 7px); font: var(--t-ui); color: var(--ink-3); text-align: center; }
+
 .heat-card { padding: 20px 24px 18px; }
+.heat-card > summary { list-style: none; cursor: pointer; }
+.heat-card > summary::-webkit-details-marker { display: none; }
+.heat-card:not([open]) > summary { margin-bottom: 0; }
+.heat-card > summary { position: relative; padding-right: 28px; }
+.heat-card > summary::after { content: "+"; position: absolute; right: 0; top: 2px; font: 400 1.375rem/1 var(--font-sans); color: var(--ink-3); }
+.heat-card[open] > summary::after { content: "–"; }
 .heat-card .section-head { margin-bottom: 12px; }
 .heat-card .chart { margin-bottom: 10px; }
 
@@ -138,19 +140,21 @@
   .st-title h1 { font: var(--t-display-2); margin: 6px 0 6px; }
   .st-title .eyebrow { font-size: 0.6875rem; }
   .fresh-card { width: auto; padding: 14px 16px 12px; }
-  .readouts { grid-template-columns: 1fr 1fr; }
-  .readout { border-left: 0; border-top: 1px solid var(--line); }
-  .readout:nth-child(even) { border-left: 1px solid var(--line); }
-  .readout:nth-child(-n + 2) { border-top: 0; }
-  .readout:nth-child(5) { grid-column: 1 / -1; }
-  .r-v { font-size: 1.375rem; }
+  /* measurement selector: one swipeable row instead of a grid */
+  .sel-head { flex-direction: column; gap: 2px; }
+  .readouts { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; margin: 0 -16px; padding: 0 16px; gap: 8px; background: transparent; border: 0; border-radius: 0; scrollbar-width: none; }
+  .readout { flex: 0 0 168px; scroll-snap-align: start; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 12px 12px 10px; }
+  .readout:first-child { border-left: 1px solid var(--line); }
+  .readout[aria-pressed="true"] { border-color: var(--measured); background: var(--measured-bg); }
+  .readout[aria-pressed="true"]::after { display: none; }
+  .r-v { font-size: 1.25rem; }
+  .r-d { font-size: 0.75rem; }
+  .heat-card:not([open]) { padding-bottom: 16px; }
   .chart-card, .heat-card { padding: 16px 0 14px; border-radius: 0; border-left: 0; border-right: 0; margin: 0 -16px; }
   .chart-card > *, .heat-card > * { margin-left: 16px; margin-right: 16px; }
   .chart-card > .chart { margin: 0; }
   .cc-head { flex-direction: column; }
-  .var-tabs { margin: 12px 0 4px; }
-  .small-multiples { grid-template-columns: 1fr; gap: 12px; }
-  .section-head { flex-direction: column; align-items: start; gap: 4px; }
+    .section-head { flex-direction: column; align-items: start; gap: 4px; }
   .model-band { padding: 18px 16px 14px; margin: 0 -16px; border-radius: 0; border-left: 0; border-right: 0; }
   .mb-head { flex-direction: column; gap: 8px; }
   .mb-head h2 { font-size: 1.3125rem; }

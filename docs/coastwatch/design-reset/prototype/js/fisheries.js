@@ -133,6 +133,7 @@
         <div class="fig"><span class="fig-n">${money(avg)}</span><span class="fig-l">average per year, ${years[0]}–${latest}</span><span class="fine">lowest ${money(Math.min(...totals))} (${minY}) · highest ${money(Math.max(...totals))} (${maxY})</span></div>
         <div class="fig"><span class="fig-n">${Math.round(share * 100)}%</span><span class="fig-l">of all California commercial landings, ${latest}</span><span class="fine">NOAA state total ${money(state_total(latest))}, which includes ${money(withheld(latest))} withheld as confidential</span></div>
       </section>
+      <p class="not-loss">${icon("info", "icon-s")}Past landings show what was at stake in earlier seasons. They are not losses, not a forecast of losses, and say nothing about the current season.</p>
 
       <section class="card primary" aria-labelledby="pc-title">
         <div class="pc-head">
@@ -163,21 +164,16 @@
           </table>
           <aside class="bd-detail">${sel ? detail(sel) : `<div class="detail empty"><p class="eyebrow">Species detail</p><p>Select a group to see why it is included, which official notices concern it, and which NOAA categories it combines.</p><p class="fine">Tiers are CoastWatch’s editorial grouping and await review by an independent HAB scientist.</p></div>`}</aside>
         </div>
+        <details class="pna" data-testid="port-level-unavailable">
+          <summary>${icon("lock", "icon-s")}<span><b>Port-level values are not available yet.</b> Everything here is statewide and is never divided among ports.</span><span class="pna-why">Why</span></summary>
+          <div class="pna-body">
+            <ul>${F.port_level.reasons.filter((r) => !r.startsWith("Statewide values below")).map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
+            <p class="fine">CDFW port areas, north to south: ${areas.map(title).join(" · ")}.</p>
+          </div>
+        </details>
         <p class="fine bd-note">Groups leave out generic categories (for example unspecified crabs), so they are lower bounds. Landings withheld for confidentiality (${money(withheld(latest))} in ${latest}) are never attributed to a group.</p>
       </section>
 
-      <section class="ports-na" data-testid="port-level-unavailable" aria-labelledby="pna-title">
-        <div class="pna-text">
-          <p class="eyebrow">${icon("lock", "icon-s")} Not available</p>
-          <h2 id="pna-title">Port-level values need CDFW permission</h2>
-          <ul>${F.port_level.reasons.filter((r) => !r.startsWith("Statewide values below")).map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
-        </div>
-        <div class="pna-areas" aria-label="CDFW port areas, north to south">
-          <p class="fine">CDFW port areas, north to south</p>
-          ${areas.map((a) => `<div class="pna-row"><span>${title(a)}</span><span class="pna-bar"></span><span class="pna-v">${icon("lock", "icon-s")}</span></div>`).join("")}
-          <p class="fine">Statewide values are never divided among ports: any split would be an estimate.</p>
-        </div>
-      </section>
 
       <section class="methods" aria-labelledby="m-title">
         <h2 id="m-title" class="section-title">How these numbers are made</h2>

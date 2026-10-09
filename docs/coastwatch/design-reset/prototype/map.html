@@ -15,9 +15,11 @@
 <body class="page-map">
   <main id="app" class="map-app">
     <div id="map" class="map-canvas" role="region" aria-label="Map of the California coast"></div>
-    <aside id="coast" class="panel panel-coast" aria-label="Official notices and coast index"></aside>
-    <aside id="inspector" class="panel panel-inspector" aria-label="Selected location" hidden></aside>
-    <section id="dock" class="panel dock" aria-label="Forecast layer, time and legend"></section>
+    <aside id="nav" class="panel nav-card" aria-label="Official notices and places"></aside>
+    <aside id="inspector" class="panel panel-inspector" aria-label="Selected port" hidden></aside>
+    <section id="dock" class="panel dock" aria-label="Forecast quantity, day and legend"></section>
+    <button id="mplace" class="m-place" data-open-nav></button>
+    <div id="readout" class="readout" hidden></div>
   </main>
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="data/coastwatch-data.js"></script>

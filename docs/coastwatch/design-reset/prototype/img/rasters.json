@@ -18,7 +18,19 @@
     -127.515,
     31.285
    ]
-  ]
+  ],
+  "grid": {
+   "url": "grids/charm_pseudo_nitzschia_lead0.u16.gz",
+   "width": 351,
+   "height": 391,
+   "lat_first": 31.3,
+   "lat_step": 0.03,
+   "lon_first": -127.5,
+   "lon_step": 0.03,
+   "scale_factor": 1.5259254737998596e-05,
+   "add_offset": 0.0,
+   "nodata": 65535
+  }
  },
  "charm_particulate_domoic_lead0": {
   "url": "img/particulate_domoic-lead0.png",
@@ -39,7 +51,19 @@
     -127.515,
     31.285
    ]
-  ]
+  ],
+  "grid": {
+   "url": "grids/charm_particulate_domoic_lead0.u16.gz",
+   "width": 351,
+   "height": 391,
+   "lat_first": 31.3,
+   "lat_step": 0.03,
+   "lon_first": -127.5,
+   "lon_step": 0.03,
+   "scale_factor": 1.5259254737998596e-05,
+   "add_offset": 0.0,
+   "nodata": 65535
+  }
  },
  "charm_cellular_domoic_lead0": {
   "url": "img/cellular_domoic-lead0.png",
@@ -60,7 +84,19 @@
     -127.515,
     31.285
    ]
-  ]
+  ],
+  "grid": {
+   "url": "grids/charm_cellular_domoic_lead0.u16.gz",
+   "width": 351,
+   "height": 391,
+   "lat_first": 31.3,
+   "lat_step": 0.03,
+   "lon_first": -127.5,
+   "lon_step": 0.03,
+   "scale_factor": 1.5259254737998596e-05,
+   "add_offset": 0.0,
+   "nodata": 65535
+  }
  },
  "charm_pseudo_nitzschia_lead1": {
   "url": "img/pseudo_nitzschia-lead1.png",
@@ -81,7 +117,19 @@
     -127.515,
     31.285
    ]
-  ]
+  ],
+  "grid": {
+   "url": "grids/charm_pseudo_nitzschia_lead1.u16.gz",
+   "width": 351,
+   "height": 391,
+   "lat_first": 31.3,
+   "lat_step": 0.03,
+   "lon_first": -127.5,
+   "lon_step": 0.03,
+   "scale_factor": 1.5259254737998596e-05,
+   "add_offset": 0.0,
+   "nodata": 65535
+  }
  },
  "charm_particulate_domoic_lead1": {
   "url": "img/particulate_domoic-lead1.png",
@@ -102,7 +150,19 @@
     -127.515,
     31.285
    ]
-  ]
+  ],
+  "grid": {
+   "url": "grids/charm_particulate_domoic_lead1.u16.gz",
+   "width": 351,
+   "height": 391,
+   "lat_first": 31.3,
+   "lat_step": 0.03,
+   "lon_first": -127.5,
+   "lon_step": 0.03,
+   "scale_factor": 1.5259254737998596e-05,
+   "add_offset": 0.0,
+   "nodata": 65535
+  }
  },
  "charm_cellular_domoic_lead1": {
   "url": "img/cellular_domoic-lead1.png",
@@ -123,7 +183,19 @@
     -127.515,
     31.285
    ]
-  ]
+  ],
+  "grid": {
+   "url": "grids/charm_cellular_domoic_lead1.u16.gz",
+   "width": 351,
+   "height": 391,
+   "lat_first": 31.3,
+   "lat_step": 0.03,
+   "lon_first": -127.5,
+   "lon_step": 0.03,
+   "scale_factor": 1.5259254737998596e-05,
+   "add_offset": 0.0,
+   "nodata": 65535
+  }
  },
  "charm_pseudo_nitzschia_lead2": {
   "url": "img/pseudo_nitzschia-lead2.png",
@@ -144,7 +216,19 @@
     -127.515,
     31.285
    ]
-  ]
+  ],
+  "grid": {
+   "url": "grids/charm_pseudo_nitzschia_lead2.u16.gz",
+   "width": 351,
+   "height": 391,
+   "lat_first": 31.3,
+   "lat_step": 0.03,
+   "lon_first": -127.5,
+   "lon_step": 0.03,
+   "scale_factor": 1.5259254737998596e-05,
+   "add_offset": 0.0,
+   "nodata": 65535
+  }
  },
  "charm_particulate_domoic_lead2": {
   "url": "img/particulate_domoic-lead2.png",
@@ -165,7 +249,19 @@
     -127.515,
     31.285
    ]
-  ]
+  ],
+  "grid": {
+   "url": "grids/charm_particulate_domoic_lead2.u16.gz",
+   "width": 351,
+   "height": 391,
+   "lat_first": 31.3,
+   "lat_step": 0.03,
+   "lon_first": -127.5,
+   "lon_step": 0.03,
+   "scale_factor": 1.5259254737998596e-05,
+   "add_offset": 0.0,
+   "nodata": 65535
+  }
  },
  "charm_cellular_domoic_lead2": {
   "url": "img/cellular_domoic-lead2.png",
@@ -186,7 +282,19 @@
     -127.515,
     31.285
    ]
-  ]
+  ],
+  "grid": {
+   "url": "grids/charm_cellular_domoic_lead2.u16.gz",
+   "width": 351,
+   "height": 391,
+   "lat_first": 31.3,
+   "lat_step": 0.03,
+   "lon_first": -127.5,
+   "lon_step": 0.03,
+   "scale_factor": 1.5259254737998596e-05,
+   "add_offset": 0.0,
+   "nodata": 65535
+  }
  },
  "charm_pseudo_nitzschia_lead3": {
   "url": "img/pseudo_nitzschia-lead3.png",
@@ -207,7 +315,19 @@
     -127.515,
     31.285
    ]
-  ]
+  ],
+  "grid": {
+   "url": "grids/charm_pseudo_nitzschia_lead3.u16.gz",
+   "width": 351,
+   "height": 391,
+   "lat_first": 31.3,
+   "lat_step": 0.03,
+   "lon_first": -127.5,
+   "lon_step": 0.03,
+   "scale_factor": 1.5259254737998596e-05,
+   "add_offset": 0.0,
+   "nodata": 65535
+  }
  },
  "charm_particulate_domoic_lead3": {
   "url": "img/particulate_domoic-lead3.png",
@@ -228,7 +348,19 @@
     -127.515,
     31.285
    ]
-  ]
+  ],
+  "grid": {
+   "url": "grids/charm_particulate_domoic_lead3.u16.gz",
+   "width": 351,
+   "height": 391,
+   "lat_first": 31.3,
+   "lat_step": 0.03,
+   "lon_first": -127.5,
+   "lon_step": 0.03,
+   "scale_factor": 1.5259254737998596e-05,
+   "add_offset": 0.0,
+   "nodata": 65535
+  }
  },
  "charm_cellular_domoic_lead3": {
   "url": "img/cellular_domoic-lead3.png",
@@ -249,6 +381,18 @@
     -127.515,
     31.285
    ]
-  ]
+  ],
+  "grid": {
+   "url": "grids/charm_cellular_domoic_lead3.u16.gz",
+   "width": 351,
+   "height": 391,
+   "lat_first": 31.3,
+   "lat_step": 0.03,
+   "lon_first": -127.5,
+   "lon_step": 0.03,
+   "scale_factor": 1.5259254737998596e-05,
+   "add_offset": 0.0,
+   "nodata": 65535
+  }
  }
 }
