@@ -3329,7 +3329,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/latest-2026-10-12-b4d69bb2ae/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/latest-2026-10-12-ee65221c28/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3345,14 +3345,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/latest-2026-10-12-b4d69bb2ae/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/latest-2026-10-12-ee65221c28/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/latest-2026-10-12-b4d69bb2ae/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/latest-2026-10-12-ee65221c28/tiles/{z}/{x}/{y}.png",
         "tile_size": 256,
         "max_native_zoom": 10,
         "legend_url": null,
@@ -3541,7 +3541,8 @@
         "retrieved_at": "2026-10-12T18:00:00Z",
         "request_urls": [],
         "upstream_metadata": {
-          "days": "2026-10-05, 2026-10-06, 2026-10-07"
+          "days": "2026-10-05, 2026-10-06, 2026-10-07",
+          "processing": "satellite-processing-2"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -3611,7 +3612,7 @@
           }
         ],
         "age_grid": {
-          "url": "satellite/olci300/latest-2026-10-12-b4d69bb2ae/age/{row}_{col}.u16.gz",
+          "url": "satellite/olci300/latest-2026-10-12-ee65221c28/age/{row}_{col}.u16.gz",
           "encoding": "uint16le+gzip",
           "width": 341,
           "height": 321,
@@ -3627,14 +3628,14 @@
           "chunks": {
             "rows": 512,
             "cols": 512,
-            "url_template": "satellite/olci300/latest-2026-10-12-b4d69bb2ae/age/{row}_{col}.u16.gz",
+            "url_template": "satellite/olci300/latest-2026-10-12-ee65221c28/age/{row}_{col}.u16.gz",
             "present": [
               "0_0"
             ]
           }
         },
         "age_tiles": {
-          "url_template": "satellite/olci300/latest-2026-10-12-b4d69bb2ae/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/olci300/latest-2026-10-12-ee65221c28/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 256,
           "max_native_zoom": 10,
           "legend_url": null,
@@ -3692,7 +3693,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-05-9fded4c814/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-05-950c454a96/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3708,14 +3709,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-05-9fded4c814/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-05-950c454a96/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-05-9fded4c814/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-05-950c454a96/tiles/{z}/{x}/{y}.png",
         "tile_size": 256,
         "max_native_zoom": 10,
         "legend_url": null,
@@ -3845,7 +3846,8 @@
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-05T19:15:21Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
         ],
         "upstream_metadata": {
-          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-05T19:15:21Z"
+          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-05T19:15:21Z",
+          "processing": "satellite-processing-2"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -3902,7 +3904,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-06-a6828a105a/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-06-3bfe3a01c2/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3918,14 +3920,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-06-a6828a105a/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-06-3bfe3a01c2/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-06-a6828a105a/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-06-3bfe3a01c2/tiles/{z}/{x}/{y}.png",
         "tile_size": 256,
         "max_native_zoom": 10,
         "legend_url": null,
@@ -4055,7 +4057,8 @@
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-06T18:50:40Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
         ],
         "upstream_metadata": {
-          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-06T18:50:40Z"
+          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-06T18:50:40Z",
+          "processing": "satellite-processing-2"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4220,7 +4223,8 @@
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-07T19:16:29Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
         ],
         "upstream_metadata": {
-          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-07T19:16:29Z"
+          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-07T19:16:29Z",
+          "processing": "satellite-processing-2"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"

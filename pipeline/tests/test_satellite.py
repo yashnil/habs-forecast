@@ -266,3 +266,14 @@ def test_satellite_fixture_index_is_real_erddap_data():
 
 
 
+
+
+def test_days_made_by_older_processing_are_rebuilt_not_reused(tmp_path, monkeypatch):
+    out = tmp_path / "v1"
+    run_pipeline(fixture_context(out))
+    monkeypatch.setattr(satellite, "PROCESSING_VERSION", "satellite-processing-test")
+    f2 = FixtureFetcher()
+    m2 = run_pipeline(fixture_context(out, fetcher=f2))
+    assert [u for u in f2.calls if "OLCIchla" in u and ".nc?" in u]  # re-fetched
+    days = [lyr for lyr in m2.layers if lyr.layer_id.startswith("olci300_chl_2")]
+    assert all(d.provenance.upstream_metadata["processing"] == "satellite-processing-test" for d in days)

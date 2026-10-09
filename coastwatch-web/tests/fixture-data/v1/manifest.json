@@ -3331,7 +3331,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/latest-2026-10-08-1ab379234c/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/latest-2026-10-08-4ee14063ad/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3347,14 +3347,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/latest-2026-10-08-1ab379234c/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/latest-2026-10-08-4ee14063ad/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/latest-2026-10-08-1ab379234c/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/latest-2026-10-08-4ee14063ad/tiles/{z}/{x}/{y}.png",
         "tile_size": 256,
         "max_native_zoom": 10,
         "legend_url": null,
@@ -3671,7 +3671,8 @@
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-07T19:16:29Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
         ],
         "upstream_metadata": {
-          "days": "2026-10-01, 2026-10-02, 2026-10-03, 2026-10-04, 2026-10-05, 2026-10-06, 2026-10-07"
+          "days": "2026-10-01, 2026-10-02, 2026-10-03, 2026-10-04, 2026-10-05, 2026-10-06, 2026-10-07",
+          "processing": "satellite-processing-2"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -3789,7 +3790,7 @@
           }
         ],
         "age_grid": {
-          "url": "satellite/olci300/latest-2026-10-08-1ab379234c/age/{row}_{col}.u16.gz",
+          "url": "satellite/olci300/latest-2026-10-08-4ee14063ad/age/{row}_{col}.u16.gz",
           "encoding": "uint16le+gzip",
           "width": 341,
           "height": 321,
@@ -3805,14 +3806,14 @@
           "chunks": {
             "rows": 512,
             "cols": 512,
-            "url_template": "satellite/olci300/latest-2026-10-08-1ab379234c/age/{row}_{col}.u16.gz",
+            "url_template": "satellite/olci300/latest-2026-10-08-4ee14063ad/age/{row}_{col}.u16.gz",
             "present": [
               "0_0"
             ]
           }
         },
         "age_tiles": {
-          "url_template": "satellite/olci300/latest-2026-10-08-1ab379234c/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/olci300/latest-2026-10-08-4ee14063ad/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 256,
           "max_native_zoom": 10,
           "legend_url": null,
@@ -3870,7 +3871,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-01-c39820f120/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-01-fe044c6f22/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3886,14 +3887,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-01-c39820f120/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-01-fe044c6f22/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-01-c39820f120/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-01-fe044c6f22/tiles/{z}/{x}/{y}.png",
         "tile_size": 256,
         "max_native_zoom": 10,
         "legend_url": null,
@@ -4023,7 +4024,8 @@
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-01T19:19:05Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
         ],
         "upstream_metadata": {
-          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-01T19:19:05Z"
+          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-01T19:19:05Z",
+          "processing": "satellite-processing-2"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4080,7 +4082,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-02-baab63b344/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-02-7a883c66bf/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -4096,14 +4098,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-02-baab63b344/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-02-7a883c66bf/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-02-baab63b344/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-02-7a883c66bf/tiles/{z}/{x}/{y}.png",
         "tile_size": 256,
         "max_native_zoom": 10,
         "legend_url": null,
@@ -4233,7 +4235,8 @@
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-02T18:54:24Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
         ],
         "upstream_metadata": {
-          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-02T18:54:24Z"
+          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-02T18:54:24Z",
+          "processing": "satellite-processing-2"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4398,7 +4401,8 @@
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-03T18:31:13Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
         ],
         "upstream_metadata": {
-          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-03T18:31:13Z"
+          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-03T18:31:13Z",
+          "processing": "satellite-processing-2"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4563,7 +4567,8 @@
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-04T18:54:02Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
         ],
         "upstream_metadata": {
-          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-04T18:54:02Z"
+          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-04T18:54:02Z",
+          "processing": "satellite-processing-2"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4620,7 +4625,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-05-9fded4c814/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-05-950c454a96/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -4636,14 +4641,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-05-9fded4c814/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-05-950c454a96/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-05-9fded4c814/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-05-950c454a96/tiles/{z}/{x}/{y}.png",
         "tile_size": 256,
         "max_native_zoom": 10,
         "legend_url": null,
@@ -4773,7 +4778,8 @@
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-05T19:15:21Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
         ],
         "upstream_metadata": {
-          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-05T19:15:21Z"
+          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-05T19:15:21Z",
+          "processing": "satellite-processing-2"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4830,7 +4836,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-06-a6828a105a/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-06-3bfe3a01c2/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -4846,14 +4852,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-06-a6828a105a/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-06-3bfe3a01c2/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-06-a6828a105a/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-06-3bfe3a01c2/tiles/{z}/{x}/{y}.png",
         "tile_size": 256,
         "max_native_zoom": 10,
         "legend_url": null,
@@ -4983,7 +4989,8 @@
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-06T18:50:40Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
         ],
         "upstream_metadata": {
-          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-06T18:50:40Z"
+          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-06T18:50:40Z",
+          "processing": "satellite-processing-2"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -5148,7 +5155,8 @@
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-07T19:16:29Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
         ],
         "upstream_metadata": {
-          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-07T19:16:29Z"
+          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-07T19:16:29Z",
+          "processing": "satellite-processing-2"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -5206,7 +5214,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/viirs750/latest-2026-10-08-3e39fbd7f9/grid/{row}_{col}.u16.gz",
+        "url": "satellite/viirs750/latest-2026-10-08-a0bd363d43/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 114,
         "height": 107,
@@ -5222,14 +5230,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/viirs750/latest-2026-10-08-3e39fbd7f9/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/viirs750/latest-2026-10-08-a0bd363d43/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/viirs750/latest-2026-10-08-3e39fbd7f9/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/viirs750/latest-2026-10-08-a0bd363d43/tiles/{z}/{x}/{y}.png",
         "tile_size": 256,
         "max_native_zoom": 9,
         "legend_url": null,
@@ -5453,7 +5461,8 @@
           "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.nc?chla%5B(2026-10-04T12:00:00Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D"
         ],
         "upstream_metadata": {
-          "days": "2026-10-01, 2026-10-02, 2026-10-03, 2026-10-04"
+          "days": "2026-10-01, 2026-10-02, 2026-10-03, 2026-10-04",
+          "processing": "satellite-processing-2"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -5533,7 +5542,7 @@
           }
         ],
         "age_grid": {
-          "url": "satellite/viirs750/latest-2026-10-08-3e39fbd7f9/age/{row}_{col}.u16.gz",
+          "url": "satellite/viirs750/latest-2026-10-08-a0bd363d43/age/{row}_{col}.u16.gz",
           "encoding": "uint16le+gzip",
           "width": 114,
           "height": 107,
@@ -5549,14 +5558,14 @@
           "chunks": {
             "rows": 512,
             "cols": 512,
-            "url_template": "satellite/viirs750/latest-2026-10-08-3e39fbd7f9/age/{row}_{col}.u16.gz",
+            "url_template": "satellite/viirs750/latest-2026-10-08-a0bd363d43/age/{row}_{col}.u16.gz",
             "present": [
               "0_0"
             ]
           }
         },
         "age_tiles": {
-          "url_template": "satellite/viirs750/latest-2026-10-08-3e39fbd7f9/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/viirs750/latest-2026-10-08-a0bd363d43/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 256,
           "max_native_zoom": 9,
           "legend_url": null,

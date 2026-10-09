@@ -57,6 +57,9 @@ GROUP_ID = "satellite_chlorophyll_hr"
 REPO = Path(__file__).resolve().parents[3]
 
 WINDOW_DAYS = 7
+# Bump whenever processing changes what a published day contains (scope, masks, encoding):
+# published days are reused across runs only when made by the same processing version.
+PROCESSING_VERSION = "satellite-processing-2"
 CHUNK = 512
 LOG_RANGE = (-3.0, 3.0)  # quantization domain for log10(chl): 0.001 .. 1000 mg m-3
 IMPLAUSIBLE_MG_M3 = 200.0  # flagged in QC, never silently removed
@@ -300,7 +303,7 @@ class Day:
 
     @property
     def key(self) -> str:
-        return hashlib.sha256(("|".join(sorted(self.observed_times))).encode()).hexdigest()[:10]
+        return hashlib.sha256(("|".join(sorted(self.observed_times)) + PROCESSING_VERSION).encode()).hexdigest()[:10]
 
 
 def mosaic(target: Target, scenes: list[Scene], platform_order: list[str], scope: np.ndarray | None = None) -> tuple[np.ndarray, int]:
@@ -473,7 +476,7 @@ def day_layer(ctx: RunContext, p: Product, target: Target, day: Day, zooms: rang
         time=TimeInfo(observed_date=day.date.isoformat(), valid_date=day.date.isoformat(), observed_times=sorted(day.observed_times)),
         freshness=FRESHNESS, grid=grid if has else None, tiles=tiles if has else None, palette=CHLOROPHYLL,
         caveats=list(CAVEATS), qc=_qc(day.values, day.checks), coverage=coverage(day.values, target),
-        provenance=_provenance(ctx, p, [s.url for s in day.scenes], {"scenes": ", ".join(f"{s.platform} {s.dataset} {s.time}" for s in day.scenes)}),
+        provenance=_provenance(ctx, p, [s.url for s in day.scenes], {"scenes": ", ".join(f"{s.platform} {s.dataset} {s.time}" for s in day.scenes), "processing": PROCESSING_VERSION}),
     )
     return layer, nbytes
 
@@ -515,7 +518,7 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
             window_days=WINDOW_DAYS, reference_date=ref.isoformat(), newest_observed_date=newest.isoformat(),
             oldest_observed_date=oldest.isoformat(), days=used, age_histogram=hist, age_grid=age_grid, age_tiles=age_tiles,
         ),
-        provenance=_provenance(ctx, p, [s.url for d in days for s in d.scenes], {"days": ", ".join(sorted(d.date.isoformat() for d in days))}),
+        provenance=_provenance(ctx, p, [s.url for d in days for s in d.scenes], {"days": ", ".join(sorted(d.date.isoformat() for d in days)), "processing": PROCESSING_VERSION}),
     )
     return layer, nbytes + abytes + ats.bytes
 
@@ -579,7 +582,8 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
         entries = by_day[d]
         times = sorted(t for _, _, t in entries)
         prev = prev_days.get(d.isoformat())
-        if prev and target is not None and sorted(prev.time.observed_times) == times and _published_intact(ctx.out_dir, prev):
+        same_processing = prev is not None and prev.provenance.upstream_metadata.get("processing") == PROCESSING_VERSION
+        if prev and target is not None and same_processing and sorted(prev.time.observed_times) == times and _published_intact(ctx.out_dir, prev):
             vals = load_published(ctx.out_dir, prev.grid) if prev.grid else np.full((target.height, target.width), np.nan)
             if vals.shape == (target.height, target.width):
                 days.append(Day(d, vals, observed_times=times, platforms=list(prev.platforms), checks=list(prev.qc.checks) if prev.qc else [], reused=prev))
