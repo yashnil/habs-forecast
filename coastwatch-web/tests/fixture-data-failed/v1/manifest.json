@@ -3272,9 +3272,67 @@
         "stale_max_age_days": 7,
         "note": "Port summaries are rebuilt from each pipeline run; their inputs carry their own dates."
       }
+    },
+    {
+      "source_id": "calhabmap",
+      "title": "CalHABMAP shore-station measurements (domoic acid, Pseudo-nitzschia)",
+      "product_class": "observation",
+      "last_attempt_at": "2026-10-12T18:00:00Z",
+      "last_success_at": "2026-10-12T18:00:00Z",
+      "outcome": "updated",
+      "error": null,
+      "notes": [
+        "Trinidad Pier: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(40.900):(41.210)%5D%5B(235.654):(236.052)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Humboldt Bay: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(40.624):(40.933)%5D%5B(235.605):(236.001)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Humboldt Bay, South Bay: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(40.569):(40.878)%5D%5B(235.579):(235.974)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Bodega Marine Lab: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(38.161):(38.471)%5D%5B(236.738):(237.121)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Bodega Marine Lab buoy: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(38.158):(38.467)%5D%5B(236.726):(237.109)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Tomales Bay mouth: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(38.076):(38.386)%5D%5B(236.829):(237.212)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Tomales Bay mid-channel buoy: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(38.035):(38.344)%5D%5B(236.880):(237.263)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Inner Tomales Bay: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(37.963):(38.273)%5D%5B(236.942):(237.324)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Santa Cruz Wharf: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.803):(37.113)%5D%5B(237.794):(238.172)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Monterey Wharf: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.449):(36.758)%5D%5B(237.923):(238.299)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Morro Bay, front bay: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(35.216):(35.526)%5D%5B(238.956):(239.327)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Morro Bay, back bay: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(35.175):(35.485)%5D%5B(238.970):(239.341)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Cal Poly Pier (Avila Beach): C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(35.015):(35.325)%5D%5B(239.074):(239.444)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Stearns Wharf (Santa Barbara): C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(34.253):(34.563)%5D%5B(240.132):(240.498)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Santa Monica Pier: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.853):(34.163)%5D%5B(241.318):(241.684)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Newport Beach Pier: C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.451):(33.761)%5D%5B(241.887):(242.251)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D",
+        "Scripps Pier (La Jolla): C-HARM nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(32.712):(33.022)%5D%5B(242.563):(242.923)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D"
+      ],
+      "latest_issued_date": null,
+      "latest_valid_date": "2026-10-07",
+      "freshness": {
+        "basis": "observed_date",
+        "current_max_age_days": 14,
+        "stale_max_age_days": 45,
+        "note": "Shore stations are sampled about weekly and published after laboratory analysis; each station and variable carries its own sample dates."
+      }
+    },
+    {
+      "source_id": "foss_landings",
+      "title": "Historical fisheries exposure (NOAA FOSS landings, BLS CPI-U)",
+      "product_class": "historical_context",
+      "last_attempt_at": "2026-10-12T18:00:00Z",
+      "last_success_at": "2026-10-08T18:00:00Z",
+      "outcome": "unchanged",
+      "error": null,
+      "notes": [
+        "Annual data; refreshed every 7 days."
+      ],
+      "latest_issued_date": null,
+      "latest_valid_date": "2024-12-31",
+      "freshness": {
+        "basis": "valid_date",
+        "current_max_age_days": 730,
+        "stale_max_age_days": 1100,
+        "note": "Annual landings are finalised and published one to two years after the year ends; the date is the end of the latest year included."
+      }
     }
   ],
   "ports_url": "ports-9e81ebe6cd.geojson",
   "official_url": "official-3388b6b7c9.json",
-  "port_intel_url": "port-intel-680ed72844.json"
+  "port_intel_url": "port-intel-680ed72844.json",
+  "observations_url": "observations-1c166f49df.json",
+  "fisheries_url": "fisheries-1a0f5f0119.json"
 }

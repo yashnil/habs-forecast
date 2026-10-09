@@ -11,7 +11,13 @@ const schemaDir = join(root, "..", "schemas", "v1");
 // manifest + ports share definitions and go into schema.ts; the others get their own module
 // because json-schema-to-typescript derives type names from titles, and names such as
 // "Sources" or "Provenance" mean different things in different schemas.
-export const MODULES = { schema: ["manifest", "ports"], official: ["official"], port_intel: ["port_intel"] };
+export const MODULES = {
+  schema: ["manifest", "ports"],
+  official: ["official"],
+  port_intel: ["port_intel"],
+  observations: ["observations"],
+  fisheries: ["fisheries"],
+};
 
 export async function generate(names = MODULES.schema) {
   let out =
