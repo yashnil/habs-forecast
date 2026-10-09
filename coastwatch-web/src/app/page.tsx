@@ -3,6 +3,7 @@ import { DataBanners } from "@/components/Banners";
 import { LiveOceanMap } from "@/components/LiveOceanMap";
 import { OfficialStatusCard } from "@/components/panels/OfficialStatusCard";
 import { loadData } from "@/lib/data";
+import { sourceStatus } from "@/lib/layers";
 
 // Artifacts change several times a day; read the manifest per request (remote fetches are cached 5 min).
 export const dynamic = "force-dynamic";
@@ -12,7 +13,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const sp = await searchParams;
   const initialParams = Object.fromEntries(Object.entries(sp).filter(([, v]) => typeof v === "string")) as Record<string, string>;
   return (
-    <AppShell active="map" manifest={data.ok ? data.manifest : null} banner={<DataBanners manifest={data.ok ? data.manifest : null} error={data.ok ? null : data.error} />}>
+    <AppShell
+      active="map"
+      manifest={data.ok ? data.manifest : null}
+      official={data.ok ? data.official : null}
+      officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null}
+      banner={<DataBanners manifest={data.ok ? data.manifest : null} error={data.ok ? null : data.error} />}>
       {data.ok ? (
         <LiveOceanMap
           manifest={data.manifest}

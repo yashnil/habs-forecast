@@ -18,7 +18,7 @@ export default async function BloomPage({ searchParams }: { searchParams: Promis
   const banner = <DataBanners manifest={manifest} error={data.ok ? null : data.error} />;
   if (!data.ok || !data.observations) {
     return (
-      <AppShell active="bloom" manifest={manifest} banner={banner} scroll="page">
+      <AppShell active="bloom" manifest={manifest} official={data.ok ? data.official : null} officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null} banner={banner} scroll="page">
         <div className="mx-auto w-full max-w-2xl space-y-4 px-4 py-6" data-testid="bloom-unavailable">
           <h1 className="text-[22px] font-semibold tracking-tight text-ink">{BLOOM_COPY.heading}</h1>
           <Notice tone="warning" title={BLOOM_COPY.unavailable}>
@@ -39,7 +39,7 @@ export default async function BloomPage({ searchParams }: { searchParams: Promis
   const relations = data.portIntel?.ports.find((p) => p.port_code === station.nearest_port_code)?.official_relations ?? [];
   const { variables, method, caveats, provenance, generated_at, window_start, program } = obs;
   return (
-    <AppShell active="bloom" manifest={manifest} banner={banner} scroll="page">
+    <AppShell active="bloom" manifest={manifest} official={data.ok ? data.official : null} officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null} banner={banner} scroll="page">
       <BloomIntelligence
           stations={lite}
           station={station}

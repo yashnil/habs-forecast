@@ -7,6 +7,7 @@ import { OFFICIAL_STATUS } from "@/content/copy";
 import { ACTION_LABEL, FISHERY_LABEL, activeRecords, criticalFlags, recordFlags, type Verification } from "@/lib/official";
 import { formatDate, formatDateTimePT } from "@/lib/time";
 import { Notice, SourceLink } from "@/components/ui/Primitives";
+import { AgencyChip } from "@/components/ui/Badges";
 
 const V_STYLE: Record<Verification["state"], { color: string; icon: React.ReactNode }> = {
   verified: { color: "var(--cw-good)", icon: <path d="M3 6.2l2 2 4-4.4" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" /> },
@@ -72,27 +73,22 @@ export function VerificationDetail({ v, brief = false }: { v: Verification; brie
   );
 }
 
-const AGENCY_STYLE: Record<string, string> = {
-  CDFW: "border-[#ffb547]/60 text-[#ffcf85]",
-  CDPH: "border-[#ffb547]/60 text-[#ffcf85]",
-  OEHHA: "border-[#ffb547]/60 text-[#ffcf85]",
-};
 
 export function NoticeCard({ r, now, relationNote, compact = false, dense = false }: { r: OfficialRecord; now: Date | null; relationNote?: string; compact?: boolean; dense?: boolean }) {
   const [open, setOpen] = useState(!compact);
   const critical = now ? criticalFlags(r, now) : [];
   const flags = now ? recordFlags(r, now).filter((f) => !critical.includes(f)) : [];
   return (
-    <article data-testid={`notice-${r.id}`} className="rounded-md border border-[#ffb547]/25 bg-[#ffb547]/[0.035]">
+    <article data-testid={`notice-${r.id}`} className="rounded-md border border-official-line bg-official-bg">
       <button
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className={`flex w-full items-start gap-2 px-2.5 text-left hover:bg-[#ffb547]/[0.05] ${dense ? "py-1.5" : "py-2"}`}
+        className={`flex w-full items-start gap-2 px-2.5 text-left hover:bg-official-line/10 ${dense ? "py-1.5" : "py-2"}`}
       >
-        <span className={`mt-px shrink-0 rounded border px-1 text-[10px] font-bold tracking-wide ${AGENCY_STYLE[r.agency]}`}>{r.agency}</span>
+        <AgencyChip agency={r.agency} />
         <span className="min-w-0 flex-1">
-          <span className={`block text-[10.5px] font-semibold uppercase tracking-wide text-[#ffcf85] ${dense && !open ? "truncate" : ""}`}>
+          <span className={`block text-[10.5px] font-semibold uppercase tracking-wide text-official-ink ${dense && !open ? "truncate" : ""}`}>
             {ACTION_LABEL[r.action]} · {FISHERY_LABEL[r.fishery]}
           </span>
           <span className={`block text-[12.5px] font-semibold leading-snug text-ink ${dense && !open ? "truncate" : ""}`}>{r.title}</span>
@@ -114,9 +110,9 @@ export function NoticeCard({ r, now, relationNote, compact = false, dense = fals
         </ul>
       )}
       {open && (
-        <div className="space-y-2 border-t border-[#ffb547]/15 px-2.5 py-2 text-[12px] text-ink-2">
+        <div className="space-y-2 border-t border-official-line px-2.5 py-2 text-[12px] text-ink-2">
           <p>{r.summary}</p>
-          <blockquote className="border-l-2 border-[#ffb547]/50 pl-2 text-ink" data-testid="official-text">
+          <blockquote className="border-l-2 border-official-line pl-2 text-ink" data-testid="official-text">
             “{r.official_text}”
           </blockquote>
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[11.5px]">
@@ -180,7 +176,7 @@ export function OfficialSummary({ ds, v, now, error }: { ds: OfficialDataset | n
   const records = activeRecords(ds);
   const shown = showAll ? records : records.slice(0, 3);
   return (
-    <section data-testid="official-status" aria-labelledby="official-h" className="space-y-2.5 rounded-lg border border-[#ffb547]/30 bg-surface p-3.5">
+    <section data-testid="official-status" aria-labelledby="official-h" className="space-y-2.5 rounded-lg border border-official-line bg-surface p-3.5">
       <div className="flex items-center justify-between gap-2">
         <h2 id="official-h" className="text-[13.5px] font-semibold tracking-tight text-ink">
           {OFFICIAL_STATUS.heading}

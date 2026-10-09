@@ -4,6 +4,7 @@ import { OfficialStatusCard } from "@/components/panels/OfficialStatusCard";
 import { SourceTable } from "@/components/SourceTable";
 import { DISCLAIMER } from "@/content/copy";
 import { loadData } from "@/lib/data";
+import { sourceStatus } from "@/lib/layers";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Data & sources — CoastWatch" };
@@ -12,7 +13,12 @@ export default async function SourcesPage() {
   const data = await loadData();
   const manifest = data.ok ? data.manifest : null;
   return (
-    <AppShell active="sources" manifest={manifest} banner={<DataBanners manifest={manifest} error={data.ok ? null : data.error} />} scroll="page">
+    <AppShell
+      active="sources"
+      manifest={manifest}
+      official={data.ok ? data.official : null}
+      officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null}
+      banner={<DataBanners manifest={manifest} error={data.ok ? null : data.error} />} scroll="page">
       <div className="mx-auto w-full max-w-4xl space-y-6 overflow-y-auto px-4 py-6">
         <header className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight text-ink">Data & sources</h1>

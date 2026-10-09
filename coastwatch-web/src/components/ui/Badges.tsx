@@ -16,14 +16,10 @@ const STATE_STYLE: Record<FreshnessState, { color: string; icon: React.ReactNode
       </>
     ),
   },
+  // Historical: an open ring in neutral grey. Old data is not an alarm, it is simply not current.
   historical: {
-    color: "var(--cw-serious)",
-    icon: (
-      <>
-        <circle cx="6" cy="6" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M6 3.3v3l2 1.2" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />
-      </>
-    ),
+    color: "var(--cw-neutral)",
+    icon: <circle cx="6" cy="6" r="4.25" fill="none" stroke="currentColor" strokeWidth="1.6" />,
   },
   unavailable: {
     color: "var(--cw-neutral)",
@@ -66,19 +62,34 @@ const CLASS_LABEL: Record<ProductClass, string> = {
   derived_summary: "Derived summary",
 };
 
+// Semantic product colours (design reset §2.2): violet = model, teal = measured,
+// amber = official, slate = historical. Never used decoratively.
+const CLASS_STYLE: Record<ProductClass, string> = {
+  official_regulatory: "border-official-line bg-official-bg text-official-ink",
+  official_forecast: "border-model-line bg-model-bg text-model-ink",
+  observation: "border-measured-line bg-measured-bg text-measured",
+  experimental_model: "border-dashed border-ink-3 text-ink-2",
+  historical_context: "border-history-line bg-history-bg text-history",
+  reference: "border-hairline-strong text-ink-2",
+  derived_summary: "border-hairline-strong text-ink-2",
+};
+
 export function ProductClassBadge({ pc }: { pc: ProductClass }) {
-  const style =
-    pc === "official_forecast" || pc === "official_regulatory"
-      ? "bg-ink text-page border-ink"
-      : pc === "experimental_model"
-        ? "border-dashed border-ink-3 text-ink-2"
-        : "border-hairline-strong text-ink-2";
   return (
     <span
       data-testid="product-class"
-      className={`inline-flex items-center rounded-md border px-1.5 py-px text-[10px] font-semibold uppercase tracking-wider ${style}`}
+      className={`inline-flex items-center rounded-full border px-2 py-px text-[10.5px] font-semibold uppercase tracking-wider ${CLASS_STYLE[pc]}`}
     >
       {CLASS_LABEL[pc]}
+    </span>
+  );
+}
+
+/** Issuing agency of an official notice (CDFW, CDPH, …), always in the official amber family. */
+export function AgencyChip({ agency }: { agency: string }) {
+  return (
+    <span className="mt-px inline-flex shrink-0 items-center rounded border border-official-line bg-surface px-1 text-[10.5px] font-semibold tracking-wide text-official-ink">
+      {agency}
     </span>
   );
 }

@@ -15,7 +15,7 @@ import { useNow } from "@/lib/useNow";
 import { fisheriesValue, selectedTotal, type Dollars } from "@/lib/fisheries";
 
 type TierSel = "1" | "12";
-const BAR = "#8fb3e8";
+const BAR = "var(--cw-series-bar)";
 
 export function FisheriesExposure({ ds, status, official }: { ds: FisheriesDataset; status: SourceStatus | null; official: OfficialDataset | null }) {
   const now = useNow();
@@ -165,7 +165,7 @@ export function FisheriesExposure({ ds, status, official }: { ds: FisheriesDatas
                   {(g.official_record_ids ?? []).map((id) => {
                     const r = records.get(id);
                     return (
-                      <li key={id} className="text-[#ffcf85]">
+                      <li key={id} className="text-official-ink">
                         Official: {r ? `${r.agency} — ${r.title}` : id}
                         {r?.status && r.status !== "active" ? ` (${r.status})` : ""}
                       </li>

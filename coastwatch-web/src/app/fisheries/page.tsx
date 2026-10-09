@@ -13,7 +13,12 @@ export default async function FisheriesPage() {
   const data = await loadFisheriesData();
   const manifest = data.ok ? data.manifest : null;
   return (
-    <AppShell active="fisheries" manifest={manifest} banner={<DataBanners manifest={manifest} error={data.ok ? null : data.error} />} scroll="page">
+    <AppShell
+      active="fisheries"
+      manifest={manifest}
+      official={data.ok ? data.official : null}
+      officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null}
+      banner={<DataBanners manifest={manifest} error={data.ok ? null : data.error} />} scroll="page">
       {data.ok && data.fisheries ? (
         <FisheriesExposure ds={data.fisheries} status={sourceStatus(data.manifest, "foss_landings")} official={data.official} />
       ) : (
