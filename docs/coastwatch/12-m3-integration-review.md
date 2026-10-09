@@ -99,4 +99,35 @@ The official registry is published exactly as in M2: `pending_human_review`, sho
 
 ## 7. Merge and production verification
 
-_Filled in after the merge (section below)._
+| Step | Result |
+|---|---|
+| PR [#5](https://github.com/yashnil/habs-forecast/pull/5) checks (pipeline, web) | green; `CLEAN` / `MERGEABLE` |
+| Merged with a merge commit | `8d1087a` |
+| First production refresh on `main` with the M3 pipeline ([37880564301](https://github.com/yashnil/habs-forecast/actions/runs/37880564301)) | build, publish, check **green**; review issue skipped (official pages unchanged) |
+| GitHub Pages deploy, triggered by the refresh ([37880874831](https://github.com/yashnil/habs-forecast/actions/runs/37880874831)) | deploy and check **green**; 0 Node 20 annotations |
+| Independent `check-published` on `https://yashnil.github.io/habs-forecast/v1` | **30/30 files**, run id 37880564301, `access-control-allow-origin: *`, `cache-control: max-age=600` |
+| Sources in the production manifest | C-HARM unchanged (issued 2026-10-08, verified 156/156 earlier this review); GIBS, ports, official, port intel, **CalHABMAP (17/17 stations updated)**, **FOSS** updated |
+| Published content | fisheries 2022 total $207,870,047 (NOAA FUS: $207.9M), 10 duplicate rows excluded, port level `unavailable`; official registry still `pending_human_review` |
+| Production build against Pages (now M3 data), retries disabled | **3/3** |
+
+The C-HARM verification step in the production run was skipped by design (`--only-if-updated`; the C-HARM run was unchanged). The same run's values were verified live against ERDDAP earlier in this review: 156/156.
+
+**Status:** M3 is integrated into `main`. The production pipeline and GitHub Pages now publish CalHABMAP observations and statewide historical fisheries exposure as public data. The Next.js website is **not deployed**. Official notices are **Not verified**, and no scientific sign-off is claimed. M4 is not started.
+
+## 8. Remaining limitations
+
+- Official registry awaits human review (`cwp review-official --reviewer NAME --confirm`). HAB scientist review of `/bloom`, the species tiers and the C-HARM context is pending (checklist 08).
+- Port-level landings are unavailable until CDFW responds; a draft request is in [`drafts/cdfw-landings-data-request.md`](drafts/cdfw-landings-data-request.md) (not sent).
+- CalHABMAP publishes no detection limits or analytical methods. Lab results lag sampling by days to weeks. Northern stations have been inactive since spring 2026, and Monterey Wharf has had no pDA since 2022.
+- FOSS is revised weekly and FUS is preliminary, so small differences (≤0.2%) are expected. Group values are lower bounds (generic categories unassigned), and bivalves are mostly aquaculture.
+- The BLS v1 API is rate-limited (about 25 requests/day/IP); a refused request keeps the previous fisheries artifact. Fisheries rebuilds at most weekly or on a new pipeline version.
+- After a publish, the app can show the previous complete dataset for up to about 15 minutes (5-minute server cache plus 10-minute Pages cache).
+
+## 9. Recommendations for M4
+
+1. **Human review cadence** for official notices: a named reviewer and a crab-season rota, so the app can show Verified.
+2. **Scientific review session** with a HAB scientist on `/bloom`, the tiers and the C-HARM wording, then record the sign-off in the repo.
+3. **Send the CDFW request** (after you review the draft). If permission is granted, add the port-area adapter through the existing disclosure-safe aggregation.
+4. **Staging website deployment** for user testing with Monterey Bay fishermen and port staff (needs your approval and a host).
+5. **Alerting** when a source fails or goes stale, beyond GitHub issues.
+6. **Accessibility depth:** screen-reader testing on real devices, Spanish copy, and a keyboard-operable map inspector.
