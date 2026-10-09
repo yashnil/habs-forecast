@@ -113,13 +113,37 @@ def test_grid_alignment_with_source_coordinates(tmp_path):
     arrays, vattrs, _ = parse_netcdf((FIX / "socal_bight" / "olci300_s3a_DI_2026-10-06.nc").read_bytes())
     a = np.asarray(arrays["chlor_a"], dtype=float).reshape(arrays["latitude"].size, arrays["longitude"].size)
     pub = satellite.load_published(ctx.out_dir, g)
+    target = satellite.Target(g.lat_first, g.lon_first, 0.0025, g.height, g.width)
+    scope = satellite.coastal_mask(target)
     rows, cols = np.nonzero(np.isfinite(a) & (a > 0))
-    for k in np.linspace(0, rows.size - 1, 25).astype(int):
+    compared = 0
+    for k in np.linspace(0, rows.size - 1, 60).astype(int):
         lat, lon = float(arrays["latitude"][rows[k]]), float(arrays["longitude"][cols[k]])
         r = int(round((g.lat_first - lat) / 0.0025))
         c = int(round((lon - g.lon_first) / 0.0025))
-        if 0 <= r < g.height and 0 <= c < g.width:
+        if not (0 <= r < g.height and 0 <= c < g.width):
+            continue
+        if np.isfinite(pub[r, c]):
             assert abs(np.log10(pub[r, c]) - np.log10(a[rows[k], cols[k]])) <= g.max_quantization_error + 1e-9
+            compared += 1
+        else:
+            assert not scope[r, c]  # only pixels outside the coastal-ocean scope are left out
+    assert compared >= 40
+
+
+def test_inland_water_is_left_out_and_counted(tmp_path):
+    ctx, res = run_region(tmp_path, "monterey")
+    latest = by_id(res, "olci300_chl_latest")
+    target = satellite.Target(latest.grid.lat_first, latest.grid.lon_first, 0.0025, latest.grid.height, latest.grid.width)
+    pub = satellite.load_published(ctx.out_dir, latest.grid)
+    assert not (np.isfinite(pub) & ~satellite.coastal_mask(target)).any()
+    # Lexington Reservoir (37.20 N, 121.99 W) has upstream values on 2026-10-01; it is inland
+    r, c = int(round((latest.grid.lat_first - 37.20125) / 0.0025)), int(round((-121.98625 - latest.grid.lon_first) / 0.0025))
+    assert np.isnan(pub[r, c])
+    day = by_id(res, "olci300_chl_2026-10-01")
+    note = next(c for c in day.qc.checks if c.name == "coastal_scope")
+    assert int(note.detail.split()[0]) > 0
+    assert any("coastal ocean only" in c for c in latest.caveats)
 
 
 def _shifted_scene(blob: bytes, dlat: float) -> bytes:

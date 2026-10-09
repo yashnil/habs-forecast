@@ -60,6 +60,10 @@ WINDOW_DAYS = 7
 CHUNK = 512
 LOG_RANGE = (-3.0, 3.0)  # quantization domain for log10(chl): 0.001 .. 1000 mg m-3
 IMPLAUSIBLE_MG_M3 = 200.0  # flagged in QC, never silently removed
+# Product scope: the coastal ocean. The C-HARM ocean domain (3 km) extended this many
+# cells (about 12 km) landward keeps the nearshore strip and bays, and drops inland lakes,
+# reservoirs and the mixed land/water pixels the upstream L3 product carries inland.
+COASTAL_DILATE_CELLS = 4
 MAX_IMPLAUSIBLE_FRACTION = 0.01
 
 LICENSE_OLCI = (
@@ -79,15 +83,20 @@ FRESHNESS = FreshnessPolicy(
     ),
 )
 
-CAVEATS = [
+CAVEATS_BASE = [
     "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
     "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
     "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
 ]
+CAVEAT_SCOPE = (
+    "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; "
+    "bays within about 12 km of the coastal ocean are included."
+)
 CAVEAT_COMPOSITE = (
     "Latest clear view: each pixel shows its most recent valid observation within {n} days; neighbouring pixels can come "
     "from different days. Check the observation date in the readout."
 )
+CAVEATS = CAVEATS_BASE + [CAVEAT_SCOPE]
 
 
 @dataclass(frozen=True)
@@ -294,15 +303,21 @@ class Day:
         return hashlib.sha256(("|".join(sorted(self.observed_times))).encode()).hexdigest()[:10]
 
 
-def mosaic(target: Target, scenes: list[Scene], platform_order: list[str]) -> np.ndarray:
-    """Primary platform first; a later platform only fills cells the earlier one left empty."""
+def mosaic(target: Target, scenes: list[Scene], platform_order: list[str], scope: np.ndarray | None = None) -> tuple[np.ndarray, int]:
+    """Primary platform first; a later platform only fills cells the earlier one left empty.
+    Cells outside the coastal scope are dropped (returned count), never altered."""
     out = np.full((target.height, target.width), np.nan)
     for plat in platform_order:
         for sc in scenes:
             if sc.platform == plat:
                 fill = np.isnan(out) & np.isfinite(sc.values)
                 out[fill] = sc.values[fill]
-    return out
+    dropped = 0
+    if scope is not None:
+        outside = np.isfinite(out) & ~scope
+        dropped = int(outside.sum())
+        out[outside] = np.nan
+    return out, dropped
 
 
 # ---------------------------------------------------------------- coverage
@@ -314,6 +329,22 @@ def _load_reference():
             ocean[r, s : s + n] = True
     regions = json.loads((REPO / "data" / "curated" / "ports.json").read_text()).get("regions", [])
     return mask, ocean, regions
+
+
+def coastal_mask(target: Target) -> np.ndarray:
+    """True where a target cell lies in the coastal-ocean scope (see COASTAL_DILATE_CELLS)."""
+    from scipy.ndimage import binary_dilation
+
+    mask, ocean, _ = _load_reference()
+    scope = binary_dilation(ocean, iterations=COASTAL_DILATE_CELLS)
+    ref = SourceGrid(mask["lat_first"], mask["lat_step"], mask["lon_first"], mask["lon_step"], mask["height"], mask["width"])
+    lats, lons = target.lats(), target.lons()
+    r3, _ = ref.cell_index(lats, np.full_like(lats, mask["lon_first"]))
+    _, c3 = ref.cell_index(np.full_like(lons, mask["lat_first"]), lons)
+    ok = (r3[:, None] >= 0) & (c3[None, :] >= 0)
+    out = np.zeros((target.height, target.width), dtype=bool)
+    out[ok] = scope[np.broadcast_to(r3[:, None], ok.shape)[ok], np.broadcast_to(c3[None, :], ok.shape)[ok]]
+    return out
 
 
 def coverage(values: np.ndarray, target: Target) -> Coverage:
@@ -535,6 +566,7 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
         return SatelliteResult([], errors, notes, None)
     # OLCI's lattice is fixed and known; VIIRS's is read from the first scene.
     target = target_for(p, domain) if p.lattice_lat or p.lattice_lon else None
+    scope: np.ndarray | None = None
 
     by_day: dict[date, list[tuple[str, str, str]]] = {}
     for (plat, ds), ts in listings.items():
@@ -570,8 +602,14 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
                 errors.append(f"{plat} {ds} {t}: {e}")
         if not scenes or target is None:
             continue
-        day = Day(d, mosaic(target, scenes, order), scenes=scenes, observed_times=sorted(s.time for s in scenes),
-                  platforms=[pl for pl in order if any(s.platform == pl for s in scenes)], checks=[c for s in scenes for c in s.checks])
+        if scope is None:
+            scope = coastal_mask(target)
+        vals, dropped = mosaic(target, scenes, order, scope)
+        checks = [c for s in scenes for c in s.checks] + [
+            QCCheck(name="coastal_scope", passed=True, detail=f"{dropped} valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out")
+        ]
+        day = Day(d, vals, scenes=scenes, observed_times=sorted(s.time for s in scenes),
+                  platforms=[pl for pl in order if any(s.platform == pl for s in scenes)], checks=checks)
         days.append(day)
     if not days or target is None:
         return SatelliteResult([], errors or [f"{p.key}: no scenes in the last {WINDOW_DAYS} days"], notes, None)

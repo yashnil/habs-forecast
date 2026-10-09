@@ -3368,13 +3368,13 @@
           -121.75,
           37.2025
         ],
-        "n_tiles": 20,
+        "n_tiles": 18,
         "sample_tiles": [
           "5/5/12",
-          "7/20/50",
-          "9/82/198",
-          "10/165/397",
-          "10/163/399"
+          "7/20/49",
+          "8/41/99",
+          "9/82/199",
+          "10/164/398"
         ]
       },
       "palette": {
@@ -3429,7 +3429,8 @@
         "Latest clear view: each pixel shows its most recent valid observation within 7 days; neighbouring pixels can come from different days. Check the observation date in the readout.",
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
-        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency)."
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
+        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
       ],
       "qc": {
         "checks": [
@@ -3459,6 +3460,11 @@
             "detail": "1.3096% of values > 200.0 mg m-3"
           },
           {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "16 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
             "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
             "passed": true,
             "detail": "all present"
@@ -3482,6 +3488,11 @@
             "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           },
           {
             "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
@@ -3509,6 +3520,11 @@
             "detail": "0.0000% of values > 200.0 mg m-3"
           },
           {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
             "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
             "passed": true,
             "detail": "all present"
@@ -3532,6 +3548,11 @@
             "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           },
           {
             "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
@@ -3559,6 +3580,11 @@
             "detail": "0.2077% of values > 200.0 mg m-3"
           },
           {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "9 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
             "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
             "passed": true,
             "detail": "all present"
@@ -3584,6 +3610,11 @@
             "detail": "0.0000% of values > 200.0 mg m-3"
           },
           {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "9 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
             "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
             "passed": true,
             "detail": "all present"
@@ -3607,11 +3638,16 @@
             "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           }
         ],
         "n_cells": 109461,
-        "n_valid": 14272,
-        "valid_fraction": 0.130384,
+        "n_valid": 14242,
+        "valid_fraction": 0.13011,
         "value_min": 0.009999999776482582,
         "value_max": 316.25555419921875
       },
@@ -3652,7 +3688,7 @@
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
             "observed_fraction": 0.3065,
-            "observed_km2": 835.1,
+            "observed_km2": 834.9,
             "reference_cells": 372
           }
         ]
@@ -3681,7 +3717,7 @@
             "observed_times": [
               "2026-10-06T18:50:40Z"
             ],
-            "pixels_used": 8743
+            "pixels_used": 8734
           },
           {
             "date": "2026-10-05",
@@ -3691,7 +3727,7 @@
             "observed_times": [
               "2026-10-05T19:15:21Z"
             ],
-            "pixels_used": 4434
+            "pixels_used": 4425
           },
           {
             "date": "2026-10-04",
@@ -3731,13 +3767,13 @@
             "observed_times": [
               "2026-10-01T19:19:05Z"
             ],
-            "pixels_used": 208
+            "pixels_used": 196
           }
         ],
         "age_histogram": [
           {
             "age_days": 2,
-            "fraction": 0.6126
+            "fraction": 0.6133
           },
           {
             "age_days": 3,
@@ -3745,11 +3781,11 @@
           },
           {
             "age_days": 6,
-            "fraction": 0.0621
+            "fraction": 0.0623
           },
           {
             "age_days": 7,
-            "fraction": 0.0146
+            "fraction": 0.0138
           }
         ],
         "age_grid": {
@@ -3790,13 +3826,13 @@
             -121.75,
             37.2025
           ],
-          "n_tiles": 20,
+          "n_tiles": 18,
           "sample_tiles": [
             "5/5/12",
-            "7/20/50",
-            "9/82/198",
-            "10/165/397",
-            "10/163/399"
+            "7/20/49",
+            "8/41/99",
+            "9/82/199",
+            "10/164/398"
           ]
         }
       },
@@ -3871,13 +3907,13 @@
           -121.75,
           37.2025
         ],
-        "n_tiles": 10,
+        "n_tiles": 8,
         "sample_tiles": [
           "5/5/12",
+          "6/10/24",
           "7/20/49",
-          "9/82/198",
-          "10/165/397",
-          "10/165/398"
+          "8/41/99",
+          "9/82/199"
         ]
       },
       "palette": {
@@ -3931,7 +3967,8 @@
       "caveats": [
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
-        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency)."
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
+        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
       ],
       "qc": {
         "checks": [
@@ -3959,11 +3996,16 @@
             "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
             "passed": false,
             "detail": "1.3096% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "16 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           }
         ],
         "n_cells": 109461,
-        "n_valid": 1069,
-        "valid_fraction": 0.009766,
+        "n_valid": 1053,
+        "valid_fraction": 0.00962,
         "value_min": 0.6944026350975037,
         "value_max": 316.25555419921875
       },
@@ -3998,7 +4040,7 @@
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
             "observed_fraction": 0.0538,
-            "observed_km2": 65.5,
+            "observed_km2": 65.3,
             "reference_cells": 372
           }
         ]
@@ -4135,7 +4177,8 @@
       "caveats": [
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
-        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency)."
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
+        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
       ],
       "qc": {
         "checks": [
@@ -4163,6 +4206,11 @@
             "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           }
         ],
         "n_cells": 109461,
@@ -4294,7 +4342,8 @@
       "caveats": [
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
-        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency)."
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
+        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
       ],
       "qc": {
         "checks": [
@@ -4322,6 +4371,11 @@
             "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           }
         ],
         "n_cells": 109461,
@@ -4453,7 +4507,8 @@
       "caveats": [
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
-        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency)."
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
+        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
       ],
       "qc": {
         "checks": [
@@ -4481,6 +4536,11 @@
             "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           }
         ],
         "n_cells": 109461,
@@ -4597,13 +4657,13 @@
           -121.75,
           37.2025
         ],
-        "n_tiles": 16,
+        "n_tiles": 14,
         "sample_tiles": [
           "5/5/12",
-          "7/20/49",
+          "6/10/25",
+          "7/20/50",
           "8/41/100",
-          "9/82/200",
-          "10/165/398"
+          "9/82/200"
         ]
       },
       "palette": {
@@ -4657,7 +4717,8 @@
       "caveats": [
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
-        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency)."
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
+        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
       ],
       "qc": {
         "checks": [
@@ -4685,11 +4746,16 @@
             "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
             "passed": true,
             "detail": "0.2077% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "9 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           }
         ],
         "n_cells": 109461,
-        "n_valid": 12037,
-        "valid_fraction": 0.109966,
+        "n_valid": 12028,
+        "valid_fraction": 0.109884,
         "value_min": 0.035233814269304276,
         "value_max": 315.6449890136719
       },
@@ -4724,7 +4790,7 @@
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
             "observed_fraction": 0.2634,
-            "observed_km2": 745.8,
+            "observed_km2": 745.7,
             "reference_cells": 372
           }
         ]
@@ -4801,13 +4867,13 @@
           -121.75,
           37.2025
         ],
-        "n_tiles": 11,
+        "n_tiles": 9,
         "sample_tiles": [
           "5/5/12",
+          "6/10/24",
           "7/20/49",
-          "9/82/198",
-          "10/165/397",
-          "10/165/398"
+          "8/41/99",
+          "9/82/199"
         ]
       },
       "palette": {
@@ -4861,7 +4927,8 @@
       "caveats": [
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
-        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency)."
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
+        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
       ],
       "qc": {
         "checks": [
@@ -4889,11 +4956,16 @@
             "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "9 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           }
         ],
         "n_cells": 109461,
-        "n_valid": 8743,
-        "valid_fraction": 0.079873,
+        "n_valid": 8734,
+        "valid_fraction": 0.079791,
         "value_min": 0.009999999776482582,
         "value_max": 138.30592346191406
       },
@@ -5020,7 +5092,8 @@
       "caveats": [
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
-        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency)."
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
+        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
       ],
       "qc": {
         "checks": [
@@ -5048,6 +5121,11 @@
             "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           }
         ],
         "n_cells": 109461,
@@ -5226,7 +5304,8 @@
         "Latest clear view: each pixel shows its most recent valid observation within 7 days; neighbouring pixels can come from different days. Check the observation date in the readout.",
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
-        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency)."
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
+        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
       ],
       "qc": {
         "checks": [
@@ -5256,6 +5335,11 @@
             "detail": "0.0000% of values > 200.0 mg m-3"
           },
           {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
             "name": "erdVHNchla1day:required_variables",
             "passed": true,
             "detail": "all present"
@@ -5279,6 +5363,11 @@
             "name": "erdVHNchla1day:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           },
           {
             "name": "erdVHNchla1day:required_variables",
@@ -5306,6 +5395,11 @@
             "detail": "0.0000% of values > 200.0 mg m-3"
           },
           {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
             "name": "erdVHNchla1day:required_variables",
             "passed": true,
             "detail": "all present"
@@ -5329,6 +5423,11 @@
             "name": "erdVHNchla1day:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "coastal_scope",
+            "passed": true,
+            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           }
         ],
         "n_cells": 12198,
