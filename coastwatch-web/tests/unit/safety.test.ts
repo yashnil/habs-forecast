@@ -78,7 +78,7 @@ describe("hierarchy and labelling", () => {
   });
   it("unfinished experiences are not active navigation", () => {
     const upcoming = copy.EXPERIENCES.filter((e) => !e.available);
-    expect(upcoming.map((e) => e.key).sort()).toEqual(["bloom", "coast", "fisheries"]);
+    expect(upcoming.map((e) => e.key).sort()).toEqual(["coast"]);
     for (const e of upcoming) expect(e.href).toBeNull();
   });
 });

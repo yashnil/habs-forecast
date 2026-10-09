@@ -48,8 +48,11 @@ test.describe("information hierarchy and labelling", () => {
     const layer = manifest.layers.find((l: { layer_id: string }) => l.layer_id === "charm_particulate_domoic_lead1");
     for (const c of layer.caveats) await expect(panel.getByTestId("forecast-caveats")).toContainText(c);
     await expect(panel.getByTestId("run-line")).toContainText("Issued Thu, Oct 8, 2026 (inferred)");
-    await expect(panel.getByTestId("probability-legend")).toContainText("particulate domoic acid exceeds 500 ng per litre");
-    await expect(panel.getByTestId("probability-legend")).toContainText("100%");
+    await expect(panel).toContainText("particulate domoic acid exceeds 500 ng per litre");
+    // the colour key sits on the map, next to the data it explains
+    const key = page.getByTestId("map-legend");
+    await expect(key.getByTestId("probability-legend")).toContainText("100%");
+    await expect(key).toContainText("Particulate domoic acid · +1 day");
     await expect(panel).toContainText("not a closure or health decision");
     await expect(panel).toContainText("does not mean an area is safe");
   });
@@ -64,9 +67,11 @@ test.describe("information hierarchy and labelling", () => {
     await expect(page).toHaveURL(/lead=3/);
   });
 
-  test("unfinished experiences are marked upcoming and are not links", async ({ page }) => {
+  test("My Coast is marked upcoming and is not a link; M3 experiences are links", async ({ page }) => {
     await open(page, OK);
-    for (const key of ["bloom", "fisheries", "coast"]) {
+    await expect(page.getByTestId("nav-bloom")).toHaveAttribute("href", "/bloom");
+    await expect(page.getByTestId("nav-fisheries")).toHaveAttribute("href", "/fisheries");
+    for (const key of ["coast"]) {
       const el = page.getByTestId(`nav-upcoming-${key}`);
       await expect(el).toContainText("Upcoming");
       await expect(el).toHaveAttribute("aria-disabled", "true");

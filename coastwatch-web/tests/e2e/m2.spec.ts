@@ -28,7 +28,7 @@ test.describe("official notices", () => {
     await open(page, OK);
     const panel = page.getByTestId("official-status");
     await expect(panel.getByTestId("official-verification")).toHaveAttribute("data-state", "unverified");
-    await expect(panel.getByTestId("official-not-verified")).toContainText("not been checked by a person");
+    await expect(panel.getByTestId("official-not-verified-brief")).toContainText("not been checked by a person");
     await panel.getByTestId("official-show-all").click();
     const active = official.registry.records.filter((r: { status: string }) => r.status === "active");
     for (const r of active) await expect(panel.getByTestId(`notice-${r.id}`)).toBeVisible();
@@ -60,7 +60,7 @@ test.describe("official notices", () => {
   test("when the data stops updating, official notices say how old the review and the last check are", async ({ page }) => {
     // failed-update dataset: records transcribed Oct 8, official pages last checked Oct 12
     await open(page, FAILED, "2026-10-20T20:00:00Z");
-    const v = page.getByTestId("official-status").getByTestId("official-not-verified");
+    const v = page.getByTestId("official-status").getByTestId("official-not-verified-brief");
     await expect(v).toContainText("Last review was 12 days ago");
     await expect(v).toContainText("last checked 8 days ago");
     await expect(page.getByTestId("source-failure-banner")).toContainText("Latest update failed");
