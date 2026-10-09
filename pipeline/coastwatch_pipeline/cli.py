@@ -101,7 +101,7 @@ def cmd_check(a: argparse.Namespace) -> int:
     if a.report:
         Path(a.report).parent.mkdir(parents=True, exist_ok=True)
         Path(a.report).write_text(json.dumps(report, indent=2) + "\n")
-    summary = {k: report[k] for k in ("base", "ok", "files_checked", "problems") if k in report}
+    summary = {k: report[k] for k in ("base", "ok", "files_checked", "tiles_validated", "problems") if k in report}
     print(json.dumps(summary, indent=2))
     return 0 if report["ok"] else 1
 

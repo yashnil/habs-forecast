@@ -74,6 +74,20 @@ An earlier local figure of 43 % statewide was inflated: ERDDAP snaps a time-rang
 | Statewide tile pyramid render (synthetic, 3,880 × 3,400 cells) | 2.6 s |
 | Browser cost of a satellite readout | one 512 × 512 chunk (tens of KB gzipped) |
 
+### Artifact inventory and what is checked
+
+- **What the counts mean:** `files_checked` counts every manifest-referenced file except tiles: the manifest, JSON datasets, C-HARM images and grids, every satellite grid chunk and age grid, plus the sample tiles. Tiles are counted separately in `tiles_validated`.
+- **Before publishing,** `check-published` now validates *every* tile:
+  - each tile directory holds exactly the manifest's `n_tiles` files;
+  - each one decodes as a 256 px palette PNG.
+- **At the public URL,** the sample tiles confirm the files are served. The content is the same single commit.
+- **Staging after run 37993419432:** 228 files checked plus 1,614 of 1,614 tiles validated, 0 problems.
+- **Previous run kept:** the branch also keeps the previous run's artifacts (the prune policy is current plus previous manifest, for clients and CDN caches mid-load). After run 6 that was 1,167 files: the previous composite, the 10-01 day and the previous C-HARM rendering. That is why "2,882 satellite files" was larger than the checked count.
+- **GitHub Pages size:**
+  - typical 35–60 MB;
+  - worst case a cloud-free week of 300 m layers, about 150 MB, or about 300 MB with the previous run kept. That is about 30 % of the 1 GB limit.
+  - The repository is 242 MB; force-pushed data commits leave unreferenced objects until GitHub collects them, so repository size needs watching; the next phase adds it to the pipeline health check.
+
 ## 4. Tests and validation evidence
 
 | Suite | Result |
