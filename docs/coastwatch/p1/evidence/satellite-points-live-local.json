@@ -1,0 +1,1692 @@
+{
+  "manifest_generated_at": "2026-10-09T16:52:31Z",
+  "live_source_comparison": true,
+  "summary": {
+    "layers": 9,
+    "checks": 108,
+    "failures": 0,
+    "all_passed": true
+  },
+  "rows": [
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 0,
+      "col": 0,
+      "lat": 42.09875,
+      "lon": -125.49875,
+      "value": 1.0106,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-01",
+      "composite_matches_day": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-01T17:39:36Z",
+      "source_value": 1.0106,
+      "source_cell": [
+        42.09875,
+        -125.49874999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 765,
+      "col": 19,
+      "lat": 40.18625,
+      "lon": -125.45125,
+      "value": 0.25355,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-01",
+      "composite_matches_day": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-01T17:39:36Z",
+      "source_value": 0.25355,
+      "source_cell": [
+        40.18625,
+        -125.45124999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 1480,
+      "col": 103,
+      "lat": 38.39875,
+      "lon": -125.24125,
+      "value": 0.29499,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-01",
+      "composite_matches_day": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-01T17:39:36Z",
+      "source_value": 0.295,
+      "source_cell": [
+        38.39875,
+        -125.24124999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 2091,
+      "col": 531,
+      "lat": 36.87125,
+      "lon": -124.17125,
+      "value": 0.38604,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-01",
+      "composite_matches_day": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-01T17:39:36Z",
+      "source_value": 0.38604,
+      "source_cell": [
+        36.87125,
+        -124.17124999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 3227,
+      "col": 2241,
+      "lat": 34.03125,
+      "lon": -119.89625,
+      "value": 0.50796,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-06",
+      "composite_matches_day": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-06T17:12:40Z",
+      "source_value": 0.50793,
+      "source_cell": [
+        34.03125000000001,
+        -119.89625
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 3540,
+      "col": 2086,
+      "lat": 33.24875,
+      "lon": -120.28375,
+      "value": 0.18602,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-06",
+      "composite_matches_day": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-06T17:12:40Z",
+      "source_value": 0.18602,
+      "source_cell": [
+        33.24875,
+        -120.28374999999996
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 3719,
+      "col": 1924,
+      "lat": 32.80125,
+      "lon": -120.68875,
+      "value": 0.15986,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-06",
+      "composite_matches_day": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-06T17:12:40Z",
+      "source_value": 0.15985,
+      "source_cell": [
+        32.801249999999996,
+        -120.68874999999996
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 3879,
+      "col": 3362,
+      "lat": 32.40125,
+      "lon": -117.09375,
+      "value": 6.3538,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-02",
+      "composite_matches_day": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-02T17:16:25Z",
+      "source_value": 6.3534,
+      "source_cell": [
+        32.401250000000005,
+        -117.09375
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 0,
+      "col": 395,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 1228,
+      "col": 1749,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 2484,
+      "col": 1883,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 3879,
+      "col": 3399,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 0,
+      "col": 0,
+      "lat": 42.09875,
+      "lon": -125.49875,
+      "value": 1.0106,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-01T17:39:36Z",
+      "source_value": 1.0106,
+      "source_cell": [
+        42.09875,
+        -125.49874999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 384,
+      "col": 354,
+      "lat": 41.13875,
+      "lon": -124.61375,
+      "value": 0.75279,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-01T17:39:36Z",
+      "source_value": 0.75285,
+      "source_cell": [
+        41.13875,
+        -124.61374999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 795,
+      "col": 108,
+      "lat": 40.11125,
+      "lon": -125.22875,
+      "value": 0.33625,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-01T17:39:36Z",
+      "source_value": 0.33625,
+      "source_cell": [
+        40.111250000000005,
+        -125.22874999999996
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 1215,
+      "col": 2174,
+      "lat": 39.06125,
+      "lon": -120.06375,
+      "value": 0.17974,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-01T17:39:36Z",
+      "source_value": 0.17975,
+      "source_cell": [
+        39.06125,
+        -120.06374999999996
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 1598,
+      "col": 166,
+      "lat": 38.10375,
+      "lon": -125.08375,
+      "value": 0.35684,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-01T17:39:36Z",
+      "source_value": 0.35682,
+      "source_cell": [
+        38.103750000000005,
+        -125.08374999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 1932,
+      "col": 74,
+      "lat": 37.26875,
+      "lon": -125.31375,
+      "value": 0.29381,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-01T17:39:36Z",
+      "source_value": 0.29381,
+      "source_cell": [
+        37.268750000000004,
+        -125.31374999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 2200,
+      "col": 211,
+      "lat": 36.59875,
+      "lon": -124.97125,
+      "value": 0.44526,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-01T17:39:36Z",
+      "source_value": 0.44523,
+      "source_cell": [
+        36.59875,
+        -124.97124999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 3585,
+      "col": 2413,
+      "lat": 33.13625,
+      "lon": -119.46625,
+      "value": 0.12793,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-01T17:39:36Z",
+      "source_value": 0.12793,
+      "source_cell": [
+        33.136250000000004,
+        -119.46625
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 0,
+      "col": 395,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 1341,
+      "col": 3113,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 2696,
+      "col": 1538,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 3879,
+      "col": 3399,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 0,
+      "col": 421,
+      "lat": 42.09875,
+      "lon": -124.44625,
+      "value": 5.11581,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-02T17:16:25Z",
+      "source_value": 5.11604,
+      "source_cell": [
+        42.09875,
+        -124.44624999999996
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 3265,
+      "col": 2370,
+      "lat": 33.93625,
+      "lon": -119.57375,
+      "value": 0.17997,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-02T17:16:25Z",
+      "source_value": 0.17997,
+      "source_cell": [
+        33.93625000000001,
+        -119.57374999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 3441,
+      "col": 3068,
+      "lat": 33.49625,
+      "lon": -117.82875,
+      "value": 0.30089,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-02T17:16:25Z",
+      "source_value": 0.30092,
+      "source_cell": [
+        33.49625,
+        -117.82875
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 3571,
+      "col": 3000,
+      "lat": 33.17125,
+      "lon": -117.99875,
+      "value": 0.126,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-02T17:16:25Z",
+      "source_value": 0.12601,
+      "source_cell": [
+        33.17125000000001,
+        -117.99875
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 3658,
+      "col": 3038,
+      "lat": 32.95375,
+      "lon": -117.90375,
+      "value": 0.14653,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-02T17:16:25Z",
+      "source_value": 0.14654,
+      "source_cell": [
+        32.95375000000001,
+        -117.90374999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 3728,
+      "col": 2944,
+      "lat": 32.77875,
+      "lon": -118.13875,
+      "value": 0.17066,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-02T17:16:25Z",
+      "source_value": 0.17064,
+      "source_cell": [
+        32.77875000000001,
+        -118.13875
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 3801,
+      "col": 2968,
+      "lat": 32.59625,
+      "lon": -118.07875,
+      "value": 0.14463,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-02T17:16:25Z",
+      "source_value": 0.14464,
+      "source_cell": [
+        32.596250000000005,
+        -118.07875
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 3879,
+      "col": 3362,
+      "lat": 32.40125,
+      "lon": -117.09375,
+      "value": 6.3538,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-02T17:16:25Z",
+      "source_value": 6.3534,
+      "source_cell": [
+        32.401250000000005,
+        -117.09375
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 1256,
+      "col": 2903,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 2508,
+      "col": 1246,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 3879,
+      "col": 3399,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-03",
+      "row": 2909,
+      "col": 2723,
+      "lat": 34.82625,
+      "lon": -118.69125,
+      "value": 32.97416,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-03T16:59:02Z",
+      "source_value": 32.97588,
+      "source_cell": [
+        34.82625000000001,
+        -118.69125
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-03",
+      "row": 3393,
+      "col": 2851,
+      "lat": 33.61625,
+      "lon": -118.37125,
+      "value": 0.18587,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-03T16:59:02Z",
+      "source_value": 0.18585,
+      "source_cell": [
+        33.61625000000001,
+        -118.37124999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-03",
+      "row": 3499,
+      "col": 2573,
+      "lat": 33.35125,
+      "lon": -119.06625,
+      "value": 0.14356,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-03T16:59:02Z",
+      "source_value": 0.14355,
+      "source_cell": [
+        33.35125000000001,
+        -119.06625
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-03",
+      "row": 3584,
+      "col": 3145,
+      "lat": 33.13875,
+      "lon": -117.63625,
+      "value": 0.124,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-03T16:59:02Z",
+      "source_value": 0.12401,
+      "source_cell": [
+        33.13875000000001,
+        -117.63624999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-03",
+      "row": 3663,
+      "col": 2487,
+      "lat": 32.94125,
+      "lon": -119.28125,
+      "value": 0.16531,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-03T16:59:02Z",
+      "source_value": 0.1653,
+      "source_cell": [
+        32.941250000000004,
+        -119.28125
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-03",
+      "row": 3740,
+      "col": 2626,
+      "lat": 32.74875,
+      "lon": -118.93375,
+      "value": 0.17499,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-03T16:59:02Z",
+      "source_value": 0.17498,
+      "source_cell": [
+        32.74875000000001,
+        -118.93374999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-03",
+      "row": 3811,
+      "col": 2706,
+      "lat": 32.57125,
+      "lon": -118.73375,
+      "value": 0.19047,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-03T16:59:02Z",
+      "source_value": 0.19048,
+      "source_cell": [
+        32.571250000000006,
+        -118.73375
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-03",
+      "row": 3879,
+      "col": 3361,
+      "lat": 32.40125,
+      "lon": -117.09625,
+      "value": 5.83383,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-03T16:59:02Z",
+      "source_value": 5.83347,
+      "source_cell": [
+        32.401250000000005,
+        -117.09625
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-03",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-03",
+      "row": 1248,
+      "col": 2016,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-03",
+      "row": 2497,
+      "col": 633,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-03",
+      "row": 3879,
+      "col": 3399,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-04",
+      "row": 291,
+      "col": 1494,
+      "lat": 41.37125,
+      "lon": -121.76375,
+      "value": 47.24627,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-04T18:00:32Z",
+      "source_value": 47.24681,
+      "source_cell": [
+        41.37125,
+        -121.76374999999996
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-04",
+      "row": 3611,
+      "col": 110,
+      "lat": 33.07125,
+      "lon": -125.22375,
+      "value": 0.12611,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-04T18:00:32Z",
+      "source_value": 0.1261,
+      "source_cell": [
+        33.07125,
+        -125.22374999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-04",
+      "row": 3656,
+      "col": 320,
+      "lat": 32.95875,
+      "lon": -124.69875,
+      "value": 0.08309,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-04T18:00:32Z",
+      "source_value": 0.08308,
+      "source_cell": [
+        32.958749999999995,
+        -124.69874999999998
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-04",
+      "row": 3698,
+      "col": 319,
+      "lat": 32.85375,
+      "lon": -124.70125,
+      "value": 0.06882,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-04T18:00:32Z",
+      "source_value": 0.06882,
+      "source_cell": [
+        32.85375,
+        -124.70124999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-04",
+      "row": 3741,
+      "col": 297,
+      "lat": 32.74625,
+      "lon": -124.75625,
+      "value": 0.06296,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-04T18:00:32Z",
+      "source_value": 0.06296,
+      "source_cell": [
+        32.746249999999996,
+        -124.75624999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-04",
+      "row": 3786,
+      "col": 53,
+      "lat": 32.63375,
+      "lon": -125.36625,
+      "value": 0.11349,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-04T18:00:32Z",
+      "source_value": 0.11348,
+      "source_cell": [
+        32.63375,
+        -125.36624999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-04",
+      "row": 3832,
+      "col": 67,
+      "lat": 32.51875,
+      "lon": -125.33125,
+      "value": 0.09929,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-04T18:00:32Z",
+      "source_value": 0.09928,
+      "source_cell": [
+        32.51875,
+        -125.33124999999997
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-04",
+      "row": 3879,
+      "col": 384,
+      "lat": 32.40125,
+      "lon": -124.53875,
+      "value": 0.06738,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-04T18:00:32Z",
+      "source_value": 0.06739,
+      "source_cell": [
+        32.40125,
+        -124.53874999999996
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-04",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-04",
+      "row": 1280,
+      "col": 1533,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-04",
+      "row": 2560,
+      "col": 3014,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-04",
+      "row": 3879,
+      "col": 3399,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 0,
+      "col": 1444,
+      "lat": 42.09875,
+      "lon": -121.88875,
+      "value": 84.57536,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-05T17:35:51Z",
+      "source_value": 84.56963,
+      "source_cell": [
+        42.09875,
+        -121.88874999999996
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 1850,
+      "col": 1371,
+      "lat": 37.47375,
+      "lon": -122.07125,
+      "value": 9.66764,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-05T17:35:51Z",
+      "source_value": 9.66663,
+      "source_cell": [
+        37.47375,
+        -122.07124999999996
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 3324,
+      "col": 2691,
+      "lat": 33.78875,
+      "lon": -118.77125,
+      "value": 0.28031,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-05T17:35:51Z",
+      "source_value": 0.2803,
+      "source_cell": [
+        33.78875000000001,
+        -118.77125
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 3448,
+      "col": 3079,
+      "lat": 33.47875,
+      "lon": -117.80125,
+      "value": 0.21026,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-05T17:35:51Z",
+      "source_value": 0.21028,
+      "source_cell": [
+        33.478750000000005,
+        -117.80125
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 3563,
+      "col": 2939,
+      "lat": 33.19125,
+      "lon": -118.15125,
+      "value": 0.17338,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-05T17:35:51Z",
+      "source_value": 0.17336,
+      "source_cell": [
+        33.191250000000004,
+        -118.15124999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 3667,
+      "col": 2762,
+      "lat": 32.93125,
+      "lon": -118.59375,
+      "value": 0.14353,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-05T17:35:51Z",
+      "source_value": 0.14353,
+      "source_cell": [
+        32.931250000000006,
+        -118.59375
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 3780,
+      "col": 2484,
+      "lat": 32.64875,
+      "lon": -119.28875,
+      "value": 0.1622,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-05T17:35:51Z",
+      "source_value": 0.1622,
+      "source_cell": [
+        32.64875000000001,
+        -119.28875
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 3879,
+      "col": 3003,
+      "lat": 32.40125,
+      "lon": -117.99125,
+      "value": 0.13508,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-05T17:35:51Z",
+      "source_value": 0.13509,
+      "source_cell": [
+        32.401250000000005,
+        -117.99125
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 1263,
+      "col": 107,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 2524,
+      "col": 1002,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 3879,
+      "col": 3399,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 8,
+      "col": 1876,
+      "lat": 42.07875,
+      "lon": -120.80875,
+      "value": 83.00331,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-06T17:12:40Z",
+      "source_value": 83.00938,
+      "source_cell": [
+        42.07875000000001,
+        -120.80874999999996
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 3238,
+      "col": 2714,
+      "lat": 34.00375,
+      "lon": -118.71375,
+      "value": 0.26164,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-06T17:12:40Z",
+      "source_value": 0.26165,
+      "source_cell": [
+        34.003750000000004,
+        -118.71374999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 3402,
+      "col": 2295,
+      "lat": 33.59375,
+      "lon": -119.76125,
+      "value": 0.15603,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-06T17:12:40Z",
+      "source_value": 0.15602,
+      "source_cell": [
+        33.59375000000001,
+        -119.76124999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 3523,
+      "col": 2521,
+      "lat": 33.29125,
+      "lon": -119.19625,
+      "value": 0.16944,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-06T17:12:40Z",
+      "source_value": 0.16945,
+      "source_cell": [
+        33.291250000000005,
+        -119.19624999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 3618,
+      "col": 1880,
+      "lat": 33.05375,
+      "lon": -120.79875,
+      "value": 0.22352,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorCIDaily",
+      "source_time": "2026-10-06T17:12:40Z",
+      "source_value": 0.2235,
+      "source_cell": [
+        33.05375,
+        -120.79874999999996
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 3709,
+      "col": 3044,
+      "lat": 32.82625,
+      "lon": -117.88875,
+      "value": 0.16562,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-06T17:12:40Z",
+      "source_value": 0.16562,
+      "source_cell": [
+        32.82625000000001,
+        -117.88875
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 3795,
+      "col": 2671,
+      "lat": 32.61125,
+      "lon": -118.82125,
+      "value": 0.14805,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-06T17:12:40Z",
+      "source_value": 0.14806,
+      "source_cell": [
+        32.611250000000005,
+        -118.82124999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 3879,
+      "col": 3361,
+      "lat": 32.40125,
+      "lon": -117.09625,
+      "value": 3.45201,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-06T17:12:40Z",
+      "source_value": 3.4517,
+      "source_cell": [
+        32.401250000000005,
+        -117.09625
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 1201,
+      "col": 496,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 2408,
+      "col": 1819,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 3879,
+      "col": 3399,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-07",
+      "row": 2942,
+      "col": 3260,
+      "lat": 34.74375,
+      "lon": -117.34875,
+      "value": 22.00748,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-07T17:35:29Z",
+      "source_value": 22.00721,
+      "source_cell": [
+        34.743750000000006,
+        -117.34875
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-07",
+      "row": 3521,
+      "col": 2902,
+      "lat": 33.29625,
+      "lon": -118.24375,
+      "value": 0.11169,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-07T17:35:29Z",
+      "source_value": 0.11168,
+      "source_cell": [
+        33.29625000000001,
+        -118.24374999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-07",
+      "row": 3614,
+      "col": 3240,
+      "lat": 33.06375,
+      "lon": -117.39875,
+      "value": 0.28938,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-07T17:35:29Z",
+      "source_value": 0.28936,
+      "source_cell": [
+        33.063750000000006,
+        -117.39874999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-07",
+      "row": 3690,
+      "col": 3023,
+      "lat": 32.87375,
+      "lon": -117.94125,
+      "value": 0.10126,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-07T17:35:29Z",
+      "source_value": 0.10126,
+      "source_cell": [
+        32.87375000000001,
+        -117.94125
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-07",
+      "row": 3755,
+      "col": 3118,
+      "lat": 32.71125,
+      "lon": -117.70375,
+      "value": 0.10509,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-07T17:35:29Z",
+      "source_value": 0.1051,
+      "source_cell": [
+        32.71125000000001,
+        -117.70375
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-07",
+      "row": 3804,
+      "col": 2808,
+      "lat": 32.58875,
+      "lon": -118.47875,
+      "value": 0.12758,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-07T17:35:29Z",
+      "source_value": 0.12759,
+      "source_cell": [
+        32.588750000000005,
+        -118.47874999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-07",
+      "row": 3843,
+      "col": 2940,
+      "lat": 32.49125,
+      "lon": -118.14875,
+      "value": 0.15606,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-07T17:35:29Z",
+      "source_value": 0.15607,
+      "source_cell": [
+        32.49125000000001,
+        -118.14874999999999
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-07",
+      "row": 3879,
+      "col": 3361,
+      "lat": 32.40125,
+      "lon": -117.09625,
+      "value": 5.86836,
+      "tile_matches_value": true,
+      "source_dataset": "noaacwS3AOLCIchlaSectorDIDaily",
+      "source_time": "2026-10-07T17:35:29Z",
+      "source_value": 5.86841,
+      "source_cell": [
+        32.401250000000005,
+        -117.09625
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-07",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-07",
+      "row": 1278,
+      "col": 2810,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-07",
+      "row": 2557,
+      "col": 2221,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-07",
+      "row": 3879,
+      "col": 3399,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 0,
+      "col": 0,
+      "lat": 42.09375,
+      "lon": -125.49375,
+      "value": 0.9011,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-02",
+      "source_dataset": "erdVHNchla1day",
+      "source_time": "2026-10-02T12:00:00Z",
+      "source_value": 0.90117,
+      "source_cell": [
+        42.09375,
+        -125.49375
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 670,
+      "col": 299,
+      "lat": 37.06875,
+      "lon": -123.25125,
+      "value": 0.51573,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-04",
+      "source_dataset": "erdVHNchla1day",
+      "source_time": "2026-10-04T12:00:00Z",
+      "source_value": 0.5157,
+      "source_cell": [
+        37.06875,
+        -123.25125
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 905,
+      "col": 149,
+      "lat": 35.30625,
+      "lon": -124.37625,
+      "value": 0.32792,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-04",
+      "source_dataset": "erdVHNchla1day",
+      "source_time": "2026-10-04T12:00:00Z",
+      "source_value": 0.32788,
+      "source_cell": [
+        35.30625,
+        -124.37625
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 1016,
+      "col": 11,
+      "lat": 34.47375,
+      "lon": -125.41125,
+      "value": 0.20837,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-04",
+      "source_dataset": "erdVHNchla1day",
+      "source_time": "2026-10-04T12:00:00Z",
+      "source_value": 0.20836,
+      "source_cell": [
+        34.47375,
+        -125.41125
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 1099,
+      "col": 348,
+      "lat": 33.85125,
+      "lon": -122.88375,
+      "value": 0.38963,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-04",
+      "source_dataset": "erdVHNchla1day",
+      "source_time": "2026-10-04T12:00:00Z",
+      "source_value": 0.38965,
+      "source_cell": [
+        33.85125,
+        -122.88375
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 1168,
+      "col": 173,
+      "lat": 33.33375,
+      "lon": -124.19625,
+      "value": 0.17507,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-04",
+      "source_dataset": "erdVHNchla1day",
+      "source_time": "2026-10-04T12:00:00Z",
+      "source_value": 0.17505,
+      "source_cell": [
+        33.33375,
+        -124.19625
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 1231,
+      "col": 227,
+      "lat": 32.86125,
+      "lon": -123.79125,
+      "value": 0.16618,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-03",
+      "source_dataset": "erdVHNchla1day",
+      "source_time": "2026-10-03T12:00:00Z",
+      "source_value": 0.1662,
+      "source_cell": [
+        32.86125,
+        -123.79125
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 1292,
+      "col": 1119,
+      "lat": 32.40375,
+      "lon": -117.10125,
+      "value": 1.26952,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-04",
+      "source_dataset": "erdVHNchla1day",
+      "source_time": "2026-10-04T12:00:00Z",
+      "source_value": 1.26942,
+      "source_cell": [
+        32.40375,
+        -117.10125
+      ],
+      "source_cell_matches": true,
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 0,
+      "col": 2,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 324,
+      "col": 779,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 653,
+      "col": 613,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 1292,
+      "col": 1132,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    }
+  ]
+}

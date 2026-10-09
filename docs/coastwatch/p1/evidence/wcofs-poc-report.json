@@ -1,0 +1,70 @@
+{
+ "run": "20261009",
+ "steps": [
+  {
+   "url": "https://noaa-nos-ofs-pds.s3.amazonaws.com/wcofs/netcdf/2026/10/09/wcofs.t03z.20261009.regulargrid.f003.nc",
+   "valid_time": "2026-10-09T06:00:00Z",
+   "seconds": 5.9,
+   "bytes_requested": 33888832,
+   "grid": [
+    265,
+    238
+   ],
+   "u_bytes": 59382,
+   "v_bytes": 59495,
+   "speed_max_m_s": 1.475
+  },
+  {
+   "url": "https://noaa-nos-ofs-pds.s3.amazonaws.com/wcofs/netcdf/2026/10/09/wcofs.t03z.20261009.regulargrid.f024.nc",
+   "valid_time": "2026-10-10T03:00:00Z",
+   "seconds": 5.2,
+   "bytes_requested": 33888832,
+   "grid": [
+    265,
+    238
+   ],
+   "u_bytes": 59585,
+   "v_bytes": 59605,
+   "speed_max_m_s": 1.653
+  },
+  {
+   "url": "https://noaa-nos-ofs-pds.s3.amazonaws.com/wcofs/netcdf/2026/10/09/wcofs.t03z.20261009.regulargrid.f048.nc",
+   "valid_time": "2026-10-11T03:00:00Z",
+   "seconds": 5.1,
+   "bytes_requested": 33888832,
+   "grid": [
+    265,
+    238
+   ],
+   "u_bytes": 59422,
+   "v_bytes": 59564,
+   "speed_max_m_s": 1.309
+  },
+  {
+   "url": "https://noaa-nos-ofs-pds.s3.amazonaws.com/wcofs/netcdf/2026/10/09/wcofs.t03z.20261009.regulargrid.f072.nc",
+   "valid_time": "2026-10-12T03:00:00Z",
+   "seconds": 5.1,
+   "bytes_requested": 33888832,
+   "grid": [
+    265,
+    238
+   ],
+   "u_bytes": 59367,
+   "v_bytes": 59911,
+   "speed_max_m_s": 1.177
+  }
+ ],
+ "hf_radar_comparison": {
+  "forecast": "WCOFS run 2026-10-08 t03z, +21 h",
+  "valid_time": "2026-10-09T00:00:00Z",
+  "region": "Monterey Bay",
+  "hfr_dataset": "ucsdHfrW2",
+  "n": 651,
+  "hfr_mean_speed_m_s": 0.14,
+  "wcofs_mean_speed_m_s": 0.122,
+  "rmse_vector_m_s": 0.258,
+  "complex_correlation_magnitude": 0.253,
+  "complex_correlation_angle_deg": 176.9,
+  "mean_direction_difference_deg": 160.8
+ }
+}

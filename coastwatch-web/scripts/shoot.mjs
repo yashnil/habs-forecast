@@ -28,6 +28,16 @@ const SHOTS = [
   ["04-map-satellite-age", "/?layer=olci300&age=1", ["desktop-1440", "mobile-390"], false],
   ["05-map-statewide-satellite", "/?region=california&layer=olci300", ["desktop-1440", "laptop-1280"], false],
   ["06-map-places", "/", ["mobile-390"], false, async (p) => { await p.getByTestId("place-button").click(); await p.waitForTimeout(300); }],
+  ["10-map-satellite-clouded-day", "/?layer=olci300", ["desktop-1440"], false, async (p) => {
+    const days = p.locator("[data-testid^=sat-day-2]");
+    const n = await days.count();
+    // the newest day whose coverage bar is empty (fully clouded or no overpass), if any
+    for (let i = n - 1; i >= 0; i--) {
+      const t = (await days.nth(i).getAttribute("title")) ?? "";
+      if (/: 0% of/.test(t)) { await days.nth(i).click(); break; }
+    }
+    await p.waitForTimeout(800);
+  }],
   ["07-bloom", "/bloom", ["desktop-1440", "mobile-390"], true],
   ["08-fisheries", "/fisheries", ["desktop-1440", "mobile-390"], true],
   ["09-official-drawer", "/", ["desktop-1440", "mobile-390"], false, drawer],
@@ -50,6 +60,8 @@ try {
       const ctx = await browser.newContext(VIEWPORTS[vp]);
       const page = await ctx.newPage();
       page.on("pageerror", (e) => console.error(`[${name} ${vp}]`, e.message));
+      // SHOTS_NOW freezes the clock (stale/historical states against recorded data)
+      if (process.env.SHOTS_NOW) await page.clock.setFixedTime(new Date(process.env.SHOTS_NOW));
       await page.goto(`http://localhost:${PORT}${url}`, { waitUntil: "networkidle" });
       await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(1200);
