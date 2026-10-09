@@ -1,5 +1,158 @@
 {
   "$defs": {
+    "AgeBin": {
+      "additionalProperties": false,
+      "properties": {
+        "age_days": {
+          "title": "Age Days",
+          "type": "integer"
+        },
+        "fraction": {
+          "description": "Share of observed pixels with this age",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Fraction",
+          "type": "number"
+        }
+      },
+      "required": [
+        "age_days",
+        "fraction"
+      ],
+      "title": "AgeBin",
+      "type": "object"
+    },
+    "CompositeDay": {
+      "additionalProperties": false,
+      "properties": {
+        "date": {
+          "description": "UTC calendar date of the overpass(es)",
+          "title": "Date",
+          "type": "string"
+        },
+        "observed_times": {
+          "description": "Upstream overpass time stamps, verbatim",
+          "items": {
+            "type": "string"
+          },
+          "title": "Observed Times",
+          "type": "array"
+        },
+        "pixels_used": {
+          "title": "Pixels Used",
+          "type": "integer"
+        },
+        "platforms": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Platforms",
+          "type": "array"
+        }
+      },
+      "required": [
+        "date",
+        "platforms",
+        "observed_times",
+        "pixels_used"
+      ],
+      "title": "CompositeDay",
+      "type": "object"
+    },
+    "CompositeInfo": {
+      "additionalProperties": false,
+      "description": "'Latest clear view': each pixel is its most recent valid observation within the\nwindow. Values are never interpolated or gap-filled; every pixel keeps its own date.",
+      "properties": {
+        "age_grid": {
+          "$ref": "#/$defs/ValueGrid",
+          "description": "Age in whole days at each cell (raw code = days)"
+        },
+        "age_histogram": {
+          "items": {
+            "$ref": "#/$defs/AgeBin"
+          },
+          "title": "Age Histogram",
+          "type": "array"
+        },
+        "age_tiles": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TileLayer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "days": {
+          "items": {
+            "$ref": "#/$defs/CompositeDay"
+          },
+          "title": "Composite Days",
+          "type": "array"
+        },
+        "newest_observed_date": {
+          "title": "Newest Observed Date",
+          "type": "string"
+        },
+        "oldest_observed_date": {
+          "title": "Oldest Observed Date",
+          "type": "string"
+        },
+        "reference_date": {
+          "description": "Date ages are counted from (UTC)",
+          "title": "Reference Date",
+          "type": "string"
+        },
+        "window_days": {
+          "title": "Window Days",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "window_days",
+        "reference_date",
+        "newest_observed_date",
+        "oldest_observed_date",
+        "days",
+        "age_histogram",
+        "age_grid"
+      ],
+      "title": "CompositeInfo",
+      "type": "object"
+    },
+    "Coverage": {
+      "additionalProperties": false,
+      "description": "How much of the ocean a layer actually observed. Satellite layers only.",
+      "properties": {
+        "domain_observed_fraction": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Domain Observed Fraction",
+          "type": "number"
+        },
+        "reference": {
+          "description": "What the fractions are a share of",
+          "title": "Reference",
+          "type": "string"
+        },
+        "regions": {
+          "items": {
+            "$ref": "#/$defs/RegionCoverage"
+          },
+          "title": "Coverage Regions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "reference",
+        "domain_observed_fraction",
+        "regions"
+      ],
+      "title": "Coverage",
+      "type": "object"
+    },
     "ForecastRun": {
       "additionalProperties": false,
       "properties": {
@@ -92,6 +245,45 @@
       "title": "FreshnessPolicy",
       "type": "object"
     },
+    "GridChunks": {
+      "additionalProperties": false,
+      "description": "A large grid split into row-major chunks so a browser fetches only the chunk it\nreads. Chunk (r, c) covers rows r*rows .. and columns c*cols .. of the full grid;\nedge chunks are smaller. Chunks with no value anywhere are not written.",
+      "properties": {
+        "cols": {
+          "description": "Grid columns per chunk",
+          "exclusiveMinimum": 0,
+          "title": "Cols",
+          "type": "integer"
+        },
+        "present": {
+          "description": "'row_col' keys of the chunks that exist",
+          "items": {
+            "type": "string"
+          },
+          "title": "Present",
+          "type": "array"
+        },
+        "rows": {
+          "description": "Grid rows per chunk",
+          "exclusiveMinimum": 0,
+          "title": "Rows",
+          "type": "integer"
+        },
+        "url_template": {
+          "description": "Relative URL with {row} and {col}",
+          "title": "Url Template",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rows",
+        "cols",
+        "url_template",
+        "present"
+      ],
+      "title": "GridChunks",
+      "type": "object"
+    },
     "LayerArtifact": {
       "additionalProperties": false,
       "properties": {
@@ -101,6 +293,28 @@
           },
           "title": "Caveats",
           "type": "array"
+        },
+        "composite": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CompositeInfo"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "coverage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Coverage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "description": {
           "title": "Description",
@@ -139,6 +353,19 @@
           "title": "Layer Id",
           "type": "string"
         },
+        "native_resolution_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Approximate size of one source cell",
+          "title": "Native Resolution M"
+        },
         "palette": {
           "anyOf": [
             {
@@ -149,6 +376,14 @@
             }
           ],
           "default": null
+        },
+        "platforms": {
+          "description": "Satellites or systems the values come from",
+          "items": {
+            "type": "string"
+          },
+          "title": "Platforms",
+          "type": "array"
         },
         "product_class": {
           "enum": [
@@ -236,6 +471,17 @@
         "variable": {
           "title": "Variable",
           "type": "string"
+        },
+        "vectors": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VectorField"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -272,8 +518,11 @@
           "type": "string"
         },
         "interpolation": {
-          "const": "linear",
           "default": "linear",
+          "enum": [
+            "linear",
+            "step"
+          ],
           "title": "Interpolation",
           "type": "string"
         },
@@ -281,6 +530,15 @@
           "const": "transparent",
           "default": "transparent",
           "title": "Nodata",
+          "type": "string"
+        },
+        "scale": {
+          "default": "linear",
+          "enum": [
+            "linear",
+            "log10"
+          ],
+          "title": "Scale",
           "type": "string"
         },
         "stops": {
@@ -573,6 +831,44 @@
       "title": "RasterImage",
       "type": "object"
     },
+    "RegionCoverage": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "observed_fraction": {
+          "description": "Share of reference ocean cells with at least one value",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Observed Fraction",
+          "type": "number"
+        },
+        "observed_km2": {
+          "minimum": 0,
+          "title": "Observed Km2",
+          "type": "number"
+        },
+        "reference_cells": {
+          "title": "Reference Cells",
+          "type": "integer"
+        },
+        "region_id": {
+          "title": "Region Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "region_id",
+        "label",
+        "observed_fraction",
+        "observed_km2",
+        "reference_cells"
+      ],
+      "title": "RegionCoverage",
+      "type": "object"
+    },
     "SourceStatus": {
       "additionalProperties": false,
       "properties": {
@@ -684,8 +980,26 @@
     },
     "TileLayer": {
       "additionalProperties": false,
-      "description": "Third-party pre-rendered tiles (e.g. NASA GIBS).",
+      "description": "Pre-rendered XYZ (Web Mercator) tiles: third-party (NASA GIBS, absolute URL) or\nrendered by this pipeline (`relative`: the template is relative to the dataset base).",
       "properties": {
+        "bounds_lnglat": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 4,
+              "minItems": 4,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "west, south, east, north",
+          "title": "Bounds Lnglat"
+        },
         "date_selection": {
           "description": "How the tile date was chosen and verified",
           "title": "Date Selection",
@@ -709,6 +1023,36 @@
         "max_native_zoom": {
           "title": "Max Native Zoom",
           "type": "integer"
+        },
+        "min_zoom": {
+          "default": 0,
+          "title": "Min Zoom",
+          "type": "integer"
+        },
+        "n_tiles": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "N Tiles"
+        },
+        "relative": {
+          "default": false,
+          "title": "Relative",
+          "type": "boolean"
+        },
+        "sample_tiles": {
+          "description": "'z/x/y' of tiles guaranteed to exist (checks)",
+          "items": {
+            "type": "string"
+          },
+          "title": "Sample Tiles",
+          "type": "array"
         },
         "tile_size": {
           "default": 256,
@@ -789,6 +1133,14 @@
           "default": null,
           "title": "Observed Date"
         },
+        "observed_times": {
+          "description": "Upstream observation time stamps, verbatim",
+          "items": {
+            "type": "string"
+          },
+          "title": "Observed Times",
+          "type": "array"
+        },
         "valid_date": {
           "anyOf": [
             {
@@ -821,11 +1173,22 @@
     },
     "ValueGrid": {
       "additionalProperties": false,
-      "description": "Source values on the source (equirectangular) grid, quantized to uint16 and\ngzip-compressed. value = raw * scale_factor + add_offset; raw == nodata -> no value.",
+      "description": "Source values on the source (equirectangular) grid, quantized to uint16 and\ngzip-compressed. q = raw * scale_factor + add_offset; raw == nodata -> no value.\nvalue = q, or 10**q when transform is 'log10'. When `chunks` is set, `url` repeats\nthe chunk URL template and the grid must be read chunk by chunk.",
       "properties": {
         "add_offset": {
           "title": "Add Offset",
           "type": "number"
+        },
+        "chunks": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GridChunks"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "encoding": {
           "const": "uint16le+gzip",
@@ -856,6 +1219,7 @@
           "type": "number"
         },
         "max_quantization_error": {
+          "description": "In the quantized (q) space",
           "title": "Max Quantization Error",
           "type": "number"
         },
@@ -867,6 +1231,15 @@
         "scale_factor": {
           "title": "Scale Factor",
           "type": "number"
+        },
+        "transform": {
+          "default": "none",
+          "enum": [
+            "none",
+            "log10"
+          ],
+          "title": "Transform",
+          "type": "string"
         },
         "url": {
           "title": "Url",
@@ -890,6 +1263,61 @@
         "max_quantization_error"
       ],
       "title": "ValueGrid",
+      "type": "object"
+    },
+    "VectorField": {
+      "additionalProperties": false,
+      "description": "Contract for ocean-current layers (WCOFS forecast, HF-radar observation).\nDefined ahead of the currents phase; no layer uses it yet.",
+      "properties": {
+        "arrows_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Thinned arrows GeoJSON for static display",
+          "title": "Arrows Url"
+        },
+        "depth_m": {
+          "title": "Depth M",
+          "type": "number"
+        },
+        "speed_max": {
+          "title": "Speed Max",
+          "type": "number"
+        },
+        "texture": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RasterImage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "u/v packed into RG channels for particle rendering"
+        },
+        "u_grid": {
+          "$ref": "#/$defs/ValueGrid",
+          "description": "Eastward velocity, m s-1"
+        },
+        "v_grid": {
+          "$ref": "#/$defs/ValueGrid",
+          "description": "Northward velocity, m s-1"
+        }
+      },
+      "required": [
+        "u_grid",
+        "v_grid",
+        "depth_m",
+        "speed_max"
+      ],
+      "title": "VectorField",
       "type": "object"
     }
   },

@@ -34,6 +34,8 @@ class RunContext:
     poster: Poster = post_json
     now: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     pipeline_version: str = field(default_factory=_git_sha)
+    # Per-run options, e.g. a smaller satellite domain for fixtures and tests.
+    options: dict = field(default_factory=dict)
     run_id: str = field(
         default_factory=lambda: os.environ.get("GITHUB_RUN_ID")
         or "local-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")

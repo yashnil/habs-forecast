@@ -17,7 +17,13 @@ def test_every_manifest_reference_exists_and_decodes(out):
     run_pipeline(fixture_context(out))
     report = check_published(str(out))
     assert report["ok"], report["problems"]
-    assert report["files_checked"] == 1 + 24 + 1 + 4  # manifest + 12 images + 12 grids + ports + official + port intel + observations + fisheries
+    kinds = {}
+    for c in report["checked"]:
+        kinds[c["kind"]] = kinds.get(c["kind"], 0) + 1
+    # C-HARM: 12 images + 12 grids; then ports, official, port intel, observations, fisheries;
+    # plus every satellite grid chunk and sample tiles
+    assert kinds["image"] == 12 and kinds["grid"] >= 12
+    assert {"tiles", "age_tiles", "age_grid", "ports", "official", "port_intel", "observations", "fisheries"} <= set(kinds)
 
 
 def test_asset_paths_are_content_addressed(out):

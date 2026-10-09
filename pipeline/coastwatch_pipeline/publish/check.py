@@ -81,7 +81,50 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
                 except Exception as e:
                     ok, detail = False, f"not a PNG: {e}"
             record(lyr.image.url, "image", f, ok, detail)
-        if lyr.grid:
+        tile_sets = [("tiles", lyr.tiles)] + ([("age_tiles", lyr.composite.age_tiles)] if lyr.composite and lyr.composite.age_tiles else [])
+        for kind, t in tile_sets:
+            if not t or not t.relative:
+                continue
+            if not t.sample_tiles:
+                record(t.url_template, kind, Fetched(200, b""), False, "relative tile layer lists no sample tiles")
+            for key in t.sample_tiles:
+                z, x, y = key.split("/")
+                rel = t.url_template.replace("{z}", z).replace("{x}", x).replace("{y}", y)
+                f = _get(base, rel)
+                ok, detail = f.status == 200, f"HTTP {f.status}"
+                if ok:
+                    try:
+                        with Image.open(io.BytesIO(f.body)) as im:
+                            ok = im.size == (t.tile_size, t.tile_size) and im.mode == "P"
+                            detail = f"tile {im.size[0]}x{im.size[1]} mode {im.mode}"
+                    except Exception as e:
+                        ok, detail = False, f"not a PNG: {e}"
+                record(rel, kind, f, ok, detail)
+        grids = [("grid", lyr.grid)] + ([("age_grid", lyr.composite.age_grid)] if lyr.composite else [])
+        for kind, g in grids:
+            if not g or not g.chunks:
+                continue
+            ch = g.chunks
+            for key in ch.present:
+                r, c = (int(v) for v in key.split("_"))
+                h = min(ch.rows, g.height - r * ch.rows)
+                w = min(ch.cols, g.width - c * ch.cols)
+                rel = ch.url_template.format(row=r, col=c)
+                f = _get(base, rel)
+                ok, detail = f.status == 200 and h > 0 and w > 0, f"HTTP {f.status}"
+                if ok:
+                    try:
+                        n = len(gzip.decompress(f.body))
+                        ok = n == h * w * 2
+                        detail = f"chunk {key}: {n} bytes decoded" + ("" if ok else f" != {h * w * 2}")
+                    except Exception as e:
+                        ok, detail = False, f"not gzip: {e}"
+                record(rel, kind, f, ok, detail)
+        if lyr.coverage:
+            cov_ok = all(0 <= rc.observed_fraction <= 1 for rc in lyr.coverage.regions)
+            if not cov_ok:
+                problems.append(f"{lyr.layer_id}: coverage fraction out of range")
+        if lyr.grid and not lyr.grid.chunks:
             g = lyr.grid
             f = _get(base, g.url)
             ok, detail = f.status == 200, f"HTTP {f.status}"

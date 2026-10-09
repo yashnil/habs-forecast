@@ -66,6 +66,7 @@ class TimeInfo(_Model):
     valid_time: str | None = Field(None, description="Upstream time stamp, verbatim")
     observed_date: str | None = None
     lead_days: int | None = Field(None, ge=0)
+    observed_times: list[str] = Field(default_factory=list, description="Upstream observation time stamps, verbatim")
 
 
 class QCCheck(_Model):
@@ -92,7 +93,11 @@ class Palette(_Model):
     id: str
     domain: list[float] = Field(min_length=2, max_length=2)
     stops: list[PaletteStop]
-    interpolation: Literal["linear"] = "linear"
+    # "step": each stop's colour applies from its value up to the next stop (display
+    # classes, e.g. 10 % probability steps). "linear": colours are interpolated.
+    interpolation: Literal["linear", "step"] = "linear"
+    # "log10": stops and domain are in log10 of the value (e.g. chlorophyll).
+    scale: Literal["linear", "log10"] = "linear"
     nodata: Literal["transparent"] = "transparent"
 
 
@@ -114,9 +119,22 @@ class RasterImage(_Model):
     resampling: Literal["nearest"] = "nearest"
 
 
+class GridChunks(_Model):
+    """A large grid split into row-major chunks so a browser fetches only the chunk it
+    reads. Chunk (r, c) covers rows r*rows .. and columns c*cols .. of the full grid;
+    edge chunks are smaller. Chunks with no value anywhere are not written."""
+
+    rows: int = Field(gt=0, description="Grid rows per chunk")
+    cols: int = Field(gt=0, description="Grid columns per chunk")
+    url_template: str = Field(description="Relative URL with {row} and {col}")
+    present: list[str] = Field(description="'row_col' keys of the chunks that exist")
+
+
 class ValueGrid(_Model):
     """Source values on the source (equirectangular) grid, quantized to uint16 and
-    gzip-compressed. value = raw * scale_factor + add_offset; raw == nodata -> no value."""
+    gzip-compressed. q = raw * scale_factor + add_offset; raw == nodata -> no value.
+    value = q, or 10**q when transform is 'log10'. When `chunks` is set, `url` repeats
+    the chunk URL template and the grid must be read chunk by chunk."""
 
     url: str
     encoding: Literal["uint16le+gzip"] = "uint16le+gzip"
@@ -129,11 +147,14 @@ class ValueGrid(_Model):
     scale_factor: float
     add_offset: float
     nodata: int = 65535
-    max_quantization_error: float
+    max_quantization_error: float = Field(description="In the quantized (q) space")
+    transform: Literal["none", "log10"] = "none"
+    chunks: GridChunks | None = None
 
 
 class TileLayer(_Model):
-    """Third-party pre-rendered tiles (e.g. NASA GIBS)."""
+    """Pre-rendered XYZ (Web Mercator) tiles: third-party (NASA GIBS, absolute URL) or
+    rendered by this pipeline (`relative`: the template is relative to the dataset base)."""
 
     url_template: str
     tile_size: int = 256
@@ -141,6 +162,66 @@ class TileLayer(_Model):
     legend_url: str | None
     legend_verified: bool
     date_selection: str = Field(description="How the tile date was chosen and verified")
+    relative: bool = False
+    min_zoom: int = 0
+    bounds_lnglat: list[float] | None = Field(None, min_length=4, max_length=4, description="west, south, east, north")
+    n_tiles: int | None = None
+    sample_tiles: list[str] = Field(default_factory=list, description="'z/x/y' of tiles guaranteed to exist (checks)")
+
+
+class RegionCoverage(_Model):
+    region_id: str
+    label: str
+    observed_fraction: float = Field(ge=0, le=1, description="Share of reference ocean cells with at least one value")
+    observed_km2: float = Field(ge=0)
+    reference_cells: int
+
+
+class Coverage(_Model):
+    """How much of the ocean a layer actually observed. Satellite layers only."""
+
+    reference: str = Field(description="What the fractions are a share of")
+    domain_observed_fraction: float = Field(ge=0, le=1)
+    # explicit title: generated TypeScript names types by title, and "Regions" is the ports' type
+    regions: list[RegionCoverage] = Field(title="Coverage Regions")
+
+
+class CompositeDay(_Model):
+    date: str = Field(description="UTC calendar date of the overpass(es)")
+    platforms: list[str]
+    observed_times: list[str] = Field(description="Upstream overpass time stamps, verbatim")
+    pixels_used: int
+
+
+class AgeBin(_Model):
+    age_days: int
+    fraction: float = Field(ge=0, le=1, description="Share of observed pixels with this age")
+
+
+class CompositeInfo(_Model):
+    """'Latest clear view': each pixel is its most recent valid observation within the
+    window. Values are never interpolated or gap-filled; every pixel keeps its own date."""
+
+    window_days: int
+    reference_date: str = Field(description="Date ages are counted from (UTC)")
+    newest_observed_date: str
+    oldest_observed_date: str
+    days: list[CompositeDay] = Field(title="Composite Days")
+    age_histogram: list[AgeBin]
+    age_grid: ValueGrid = Field(description="Age in whole days at each cell (raw code = days)")
+    age_tiles: TileLayer | None = None
+
+
+class VectorField(_Model):
+    """Contract for ocean-current layers (WCOFS forecast, HF-radar observation).
+    Defined ahead of the currents phase; no layer uses it yet."""
+
+    u_grid: ValueGrid = Field(description="Eastward velocity, m s-1")
+    v_grid: ValueGrid = Field(description="Northward velocity, m s-1")
+    depth_m: float
+    speed_max: float
+    arrows_url: str | None = Field(None, description="Thinned arrows GeoJSON for static display")
+    texture: RasterImage | None = Field(None, description="u/v packed into RG channels for particle rendering")
 
 
 class LayerArtifact(_Model):
@@ -164,6 +245,12 @@ class LayerArtifact(_Model):
     caveats: list[str]
     qc: QualityControl | None = None
     provenance: Provenance
+    # Added in P1 (additive; absent in manifests written by earlier pipelines).
+    native_resolution_m: float | None = Field(None, description="Approximate size of one source cell")
+    platforms: list[str] = Field(default_factory=list, description="Satellites or systems the values come from")
+    coverage: Coverage | None = None
+    composite: CompositeInfo | None = None
+    vectors: VectorField | None = None
 
 
 class ForecastRun(_Model):

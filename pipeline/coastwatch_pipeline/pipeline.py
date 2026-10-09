@@ -28,9 +28,9 @@ from .models import (
     SourceStatus,
 )
 from .publish.files import write_bytes, write_json
-from .sources import charm, fisheries, gibs, observations, official, port_intel, ports
+from .sources import charm, fisheries, gibs, observations, official, port_intel, ports, satellite
 
-ALL_SOURCES = ("charm", "gibs_chl", "cdfw_ports", "official", "port_intel", "calhabmap", "foss_landings")
+ALL_SOURCES = ("charm", "gibs_chl", "satellite_chl", "cdfw_ports", "official", "port_intel", "calhabmap", "foss_landings")
 
 OFFICIAL_FRESHNESS = FreshnessPolicy(
     basis="reviewed_date",
@@ -151,6 +151,36 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     else:
         layers.extend(_prev_layers(prev, gibs.SOURCE_ID))
         _carry(statuses, prev, gibs.SOURCE_ID)
+
+    # ---- high-resolution satellite chlorophyll (OLCI 300 m, VIIRS 750 m fallback)
+    sat_title = "Satellite chlorophyll-a: Sentinel-3 OLCI 300 m (VIIRS 750 m fallback)"
+    if "satellite_chl" in only:
+        prev_sat = _prev_layers(prev, satellite.SOURCE_ID)
+        sres = satellite.run(ctx, prev_sat)
+        prev_s = _prev_status(prev, satellite.SOURCE_ID)
+        if sres.layers:
+            layers.extend(sres.layers)
+            olci_ok = any(lyr.layer_id == "olci300_chl_latest" for lyr in sres.layers)
+            statuses.append(
+                SourceStatus(
+                    source_id=satellite.SOURCE_ID,
+                    title=sat_title,
+                    product_class="observation",
+                    last_attempt_at=ctx.now_iso,
+                    last_success_at=ctx.now_iso,
+                    outcome="partial" if sres.errors or not olci_ok else "updated",
+                    error="; ".join(sres.errors)[:800] or None,
+                    notes=sres.notes[:40],
+                    latest_valid_date=sres.latest_date,
+                    freshness=satellite.FRESHNESS,
+                )
+            )
+        else:
+            layers.extend(prev_sat)
+            statuses.append(_failed(ctx, satellite.SOURCE_ID, sat_title, "observation", satellite.FRESHNESS, prev_s, sres.errors + sres.notes))
+    else:
+        layers.extend(_prev_layers(prev, satellite.SOURCE_ID))
+        _carry(statuses, prev, satellite.SOURCE_ID)
 
     # ---- CDFW ports
     if "cdfw_ports" in only:
@@ -374,15 +404,30 @@ def _carry(statuses: list[SourceStatus], prev: Manifest | None, source_id: str) 
         statuses.append(s)
 
 
+def referenced_prefixes(m: Manifest | None) -> set[str]:
+    """Directories a manifest references as a whole: tile pyramids and chunked grids."""
+    out: set[str] = set()
+    for lyr in m.layers if m else []:
+        tiles = [lyr.tiles] + ([lyr.composite.age_tiles] if lyr.composite and lyr.composite.age_tiles else [])
+        for t in tiles:
+            if t and t.relative:
+                out.add(t.url_template.split("{z}")[0])
+        grids = [lyr.grid] + ([lyr.composite.age_grid] if lyr.composite else [])
+        for g in grids:
+            if g and g.chunks:
+                out.add(g.chunks.url_template.split("{row}")[0])
+    return out
+
+
 def referenced_paths(m: Manifest | None) -> set[str]:
-    """Every artifact file a manifest points to (relative paths)."""
+    """Every single artifact file a manifest points to (relative paths)."""
     if not m:
         return set()
     out: set[str] = set()
     for lyr in m.layers:
         if lyr.image:
             out.add(lyr.image.url)
-        if lyr.grid:
+        if lyr.grid and not lyr.grid.chunks:
             out.add(lyr.grid.url)
     for rel in (m.ports_url, m.official_url, m.port_intel_url, m.observations_url, m.fisheries_url):
         if rel:
@@ -393,13 +438,16 @@ def referenced_paths(m: Manifest | None) -> set[str]:
 def prune(out_dir: Path, manifest: Manifest, previous: Manifest | None) -> None:
     """Keep files referenced by the new manifest and by the previous one (clients and CDN
     caches may still hold the previous manifest for a few minutes); delete everything
-    else the pipeline owns. Never touches files outside charm/ and ports-*.geojson."""
+    else the pipeline owns. Never touches files outside charm/, satellite/ and the hashed JSON/GeoJSON artifacts."""
     keep = referenced_paths(manifest) | referenced_paths(previous)
-    charm_root = out_dir / "charm"
-    if charm_root.exists():
-        for f in sorted(charm_root.rglob("*"), reverse=True):
+    prefixes = tuple(referenced_prefixes(manifest) | referenced_prefixes(previous))
+    for root in ("charm", "satellite"):
+        base = out_dir / root
+        if not base.exists():
+            continue
+        for f in sorted(base.rglob("*"), reverse=True):
             rel = f.relative_to(out_dir).as_posix()
-            if f.is_file() and rel not in keep:
+            if f.is_file() and rel not in keep and not (prefixes and rel.startswith(prefixes)):
                 f.unlink()
             elif f.is_dir() and not any(f.iterdir()):
                 f.rmdir()

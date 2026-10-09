@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import math
 
+from pathlib import Path
+
 import numpy as np
 from PIL import Image
 
@@ -84,12 +86,28 @@ def test_grid_round_trip_within_quantization_error():
 
 
 def test_palette_is_fixed_and_monotone_in_lightness():
+    assert PROBABILITY.id == "cw-probability-classes-v1"
     assert PROBABILITY.domain == [0.0, 1.0]
+    assert PROBABILITY.interpolation == "step" and len(PROBABILITY.stops) == 10
     lum = [sum(int(s.color[i : i + 2], 16) * w for i, w in ((1, 0.2126), (3, 0.7152), (5, 0.0722))) for s in PROBABILITY.stops]
     assert all(b > a for a, b in zip(lum, lum[1:]))
     rgba = apply_palette(np.array([np.nan, 0.0, 1.0]), PROBABILITY)
     assert rgba[0, 3] == 0 and rgba[1, 3] == 255
-    assert palette_color(0.0, PROBABILITY) == (0x72, 0x34, 0x59)
+    assert palette_color(0.0, PROBABILITY) == (0x3A, 0x38, 0x5B)
+
+
+def test_probability_classes_are_ten_point_display_steps():
+    # every value in [k/10, (k+1)/10) gets class k's colour; 1.0 falls in the top class
+    for k in range(10):
+        lo_c, hi_c = palette_color(k / 10, PROBABILITY), palette_color(k / 10 + 0.0999, PROBABILITY)
+        assert lo_c == hi_c == tuple(int(PROBABILITY.stops[k].color[i : i + 2], 16) for i in (1, 3, 5))
+    assert palette_color(1.0, PROBABILITY) == palette_color(0.95, PROBABILITY)
+
+
+def test_web_and_pipeline_probability_classes_match():
+    web = (Path(__file__).resolve().parents[2] / "coastwatch-web" / "src" / "lib" / "palette.ts").read_text()
+    for s in PROBABILITY.stops:
+        assert f'"{s.color}"' in web
 
 
 def test_published_images_and_grids_agree_with_source_points(out):

@@ -22,20 +22,27 @@ export type GeneratedAt = string;
 
 export type Caveats = string[];
 
-export type Description = string;
-
-export type Basis = "issued_date" | "valid_date" | "observed_date" | "reviewed_date";
-
-export type CurrentMaxAgeDays = number;
-
-export type Note = string;
+export type AddOffset = number;
 /**
- * Older than this is 'historical'
+ * Grid columns per chunk
  */
 
-export type StaleMaxAgeDays = number;
+export type Cols = number;
+/**
+ * 'row_col' keys of the chunks that exist
+ */
 
-export type AddOffset = number;
+export type Present = string[];
+/**
+ * Grid rows per chunk
+ */
+
+export type Rows = number;
+/**
+ * Relative URL with {row} and {col}
+ */
+
+export type UrlTemplate = string;
 
 export type Encoding = "uint16le+gzip";
 
@@ -54,6 +61,9 @@ export type LatStep = number;
 export type LonFirst = number;
 
 export type LonStep = number;
+/**
+ * In the quantized (q) space
+ */
 
 export type MaxQuantizationError = number;
 
@@ -61,9 +71,113 @@ export type Nodata = number;
 
 export type ScaleFactor = number;
 
+export type Transform = "none" | "log10";
+
 export type Url = string;
 
 export type Width = number;
+
+export type AgeDays = number;
+/**
+ * Share of observed pixels with this age
+ */
+
+export type Fraction = number;
+
+export type AgeHistogram = AgeBin[];
+/**
+ * west, south, east, north
+ */
+
+export type BoundsLnglat = [number, number, number, number] | null;
+/**
+ * How the tile date was chosen and verified
+ */
+
+export type DateSelection = string;
+
+export type LegendUrl = string | null;
+
+export type LegendVerified = boolean;
+
+export type MaxNativeZoom = number;
+
+export type MinZoom = number;
+
+export type NTiles = number | null;
+
+export type Relative = boolean;
+/**
+ * 'z/x/y' of tiles guaranteed to exist (checks)
+ */
+
+export type SampleTiles = string[];
+
+export type TileSize = number;
+
+export type UrlTemplate1 = string;
+/**
+ * UTC calendar date of the overpass(es)
+ */
+
+export type Date = string;
+/**
+ * Upstream overpass time stamps, verbatim
+ */
+
+export type ObservedTimes = string[];
+
+export type PixelsUsed = number;
+
+export type Platforms = string[];
+
+export type CompositeDays = CompositeDay[];
+
+export type NewestObservedDate = string;
+
+export type OldestObservedDate = string;
+/**
+ * Date ages are counted from (UTC)
+ */
+
+export type ReferenceDate = string;
+
+export type WindowDays = number;
+
+export type DomainObservedFraction = number;
+/**
+ * What the fractions are a share of
+ */
+
+export type Reference = string;
+
+export type Label = string;
+/**
+ * Share of reference ocean cells with at least one value
+ */
+
+export type ObservedFraction = number;
+
+export type ObservedKm2 = number;
+
+export type ReferenceCells = number;
+
+export type RegionId = string;
+
+export type CoverageRegions = RegionCoverage[];
+
+export type Description = string;
+
+export type Basis = "issued_date" | "valid_date" | "observed_date" | "reviewed_date";
+
+export type CurrentMaxAgeDays = number;
+
+export type Note = string;
+/**
+ * Older than this is 'historical'
+ */
+
+export type StaleMaxAgeDays = number;
 
 export type GroupId1 = string;
 /**
@@ -73,7 +187,7 @@ export type GroupId1 = string;
  * @maxItems 4
  */
 
-export type BoundsLnglat = [number, number, number, number];
+export type BoundsLnglat1 = [number, number, number, number];
 /**
  * [lng, lat] of top-left, top-right, bottom-right, bottom-left (MapLibre order)
  *
@@ -95,6 +209,11 @@ export type Width1 = number;
 
 export type LayerId = string;
 /**
+ * Approximate size of one source cell
+ */
+
+export type NativeResolutionM = number | null;
+/**
  * @minItems 2
  * @maxItems 2
  */
@@ -103,15 +222,22 @@ export type Domain = [number, number];
 
 export type Id = string;
 
-export type Interpolation = "linear";
+export type Interpolation = "linear" | "step";
 
 export type Nodata1 = "transparent";
+
+export type Scale = "linear" | "log10";
 
 export type Color = string;
 
 export type Value = number;
 
 export type Stops = PaletteStop[];
+/**
+ * Satellites or systems the values come from
+ */
+
+export type Platforms1 = string[];
 
 export type ProductClass =
   | "official_regulatory"
@@ -181,21 +307,6 @@ export type ShortTitle = string;
 
 export type ThresholdText = string | null;
 /**
- * How the tile date was chosen and verified
- */
-
-export type DateSelection = string;
-
-export type LegendUrl = string | null;
-
-export type LegendVerified = boolean;
-
-export type MaxNativeZoom = number;
-
-export type TileSize = number;
-
-export type UrlTemplate = string;
-/**
  * UTC calendar date the product was issued
  */
 
@@ -212,6 +323,11 @@ export type LeadDays = number | null;
 
 export type ObservedDate = string | null;
 /**
+ * Upstream observation time stamps, verbatim
+ */
+
+export type ObservedTimes1 = string[];
+/**
  * UTC calendar date the value represents
  */
 
@@ -227,6 +343,15 @@ export type Title = string;
 export type Units = string;
 
 export type Variable = string;
+/**
+ * Thinned arrows GeoJSON for static display
+ */
+
+export type ArrowsUrl = string | null;
+
+export type DepthM = number;
+
+export type SpeedMax = number;
 
 export type Layers = LayerArtifact[];
 
@@ -303,13 +428,17 @@ export interface ForecastRun {
 
 export interface LayerArtifact {
   caveats: Caveats;
+  composite?: CompositeInfo | null;
+  coverage?: Coverage | null;
   description: Description;
   freshness: FreshnessPolicy;
-  grid?: ValueGrid | null;
+  grid?: ValueGrid1 | null;
   group_id: GroupId1;
   image?: RasterImage | null;
   layer_id: LayerId;
+  native_resolution_m?: NativeResolutionM;
   palette?: Palette | null;
+  platforms?: Platforms1;
   product_class: ProductClass;
   provenance: Provenance;
   qc?: QualityControl | null;
@@ -322,6 +451,101 @@ export interface LayerArtifact {
   title: Title;
   units: Units;
   variable: Variable;
+  vectors?: VectorField | null;
+}
+/**
+ * 'Latest clear view': each pixel is its most recent valid observation within the
+ * window. Values are never interpolated or gap-filled; every pixel keeps its own date.
+ */
+
+export interface CompositeInfo {
+  age_grid: ValueGrid;
+  age_histogram: AgeHistogram;
+  age_tiles?: TileLayer | null;
+  days: CompositeDays;
+  newest_observed_date: NewestObservedDate;
+  oldest_observed_date: OldestObservedDate;
+  reference_date: ReferenceDate;
+  window_days: WindowDays;
+}
+/**
+ * Age in whole days at each cell (raw code = days)
+ */
+
+export interface ValueGrid {
+  add_offset: AddOffset;
+  chunks?: GridChunks | null;
+  encoding?: Encoding;
+  height: Height;
+  lat_first: LatFirst;
+  lat_step: LatStep;
+  lon_first: LonFirst;
+  lon_step: LonStep;
+  max_quantization_error: MaxQuantizationError;
+  nodata?: Nodata;
+  scale_factor: ScaleFactor;
+  transform?: Transform;
+  url: Url;
+  width: Width;
+}
+/**
+ * A large grid split into row-major chunks so a browser fetches only the chunk it
+ * reads. Chunk (r, c) covers rows r*rows .. and columns c*cols .. of the full grid;
+ * edge chunks are smaller. Chunks with no value anywhere are not written.
+ */
+
+export interface GridChunks {
+  cols: Cols;
+  present: Present;
+  rows: Rows;
+  url_template: UrlTemplate;
+}
+
+export interface AgeBin {
+  age_days: AgeDays;
+  fraction: Fraction;
+}
+/**
+ * Pre-rendered XYZ (Web Mercator) tiles: third-party (NASA GIBS, absolute URL) or
+ * rendered by this pipeline (`relative`: the template is relative to the dataset base).
+ */
+
+export interface TileLayer {
+  bounds_lnglat?: BoundsLnglat;
+  date_selection: DateSelection;
+  legend_url: LegendUrl;
+  legend_verified: LegendVerified;
+  max_native_zoom: MaxNativeZoom;
+  min_zoom?: MinZoom;
+  n_tiles?: NTiles;
+  relative?: Relative;
+  sample_tiles?: SampleTiles;
+  tile_size?: TileSize;
+  url_template: UrlTemplate1;
+}
+
+export interface CompositeDay {
+  date: Date;
+  observed_times: ObservedTimes;
+  pixels_used: PixelsUsed;
+  platforms: Platforms;
+}
+/**
+ * How much of the ocean a layer actually observed. Satellite layers only.
+ */
+
+export interface Coverage {
+  domain_observed_fraction: DomainObservedFraction;
+  reference: Reference;
+  regions: CoverageRegions;
+}
+
+export interface RegionCoverage {
+  label: Label;
+  observed_fraction: ObservedFraction;
+  observed_km2: ObservedKm2;
+  reference_cells: ReferenceCells;
+  region_id: RegionId;
 }
 /**
  * How the client classifies age. Computed in the browser so a dead pipeline
@@ -336,11 +560,14 @@ export interface FreshnessPolicy {
 }
 /**
  * Source values on the source (equirectangular) grid, quantized to uint16 and
- * gzip-compressed. value = raw * scale_factor + add_offset; raw == nodata -> no value.
+ * gzip-compressed. q = raw * scale_factor + add_offset; raw == nodata -> no value.
+ * value = q, or 10**q when transform is 'log10'. When `chunks` is set, `url` repeats
+ * the chunk URL template and the grid must be read chunk by chunk.
  */
 
-export interface ValueGrid {
+export interface ValueGrid1 {
   add_offset: AddOffset;
+  chunks?: GridChunks | null;
   encoding?: Encoding;
   height: Height;
   lat_first: LatFirst;
@@ -350,6 +577,7 @@ export interface ValueGrid {
   max_quantization_error: MaxQuantizationError;
   nodata?: Nodata;
   scale_factor: ScaleFactor;
+  transform?: Transform;
   url: Url;
   width: Width;
 }
@@ -358,7 +586,7 @@ export interface ValueGrid {
  */
 
 export interface RasterImage {
-  bounds_lnglat: BoundsLnglat;
+  bounds_lnglat: BoundsLnglat1;
   corners_lnglat: CornersLnglat;
   crs?: Crs;
   height: Height1;
@@ -372,6 +600,7 @@ export interface Palette {
   id: Id;
   interpolation?: Interpolation;
   nodata?: Nodata1;
+  scale?: Scale;
   stops: Stops;
 }
 
@@ -417,18 +646,6 @@ export interface QCCheck {
   name: Name;
   passed: Passed;
 }
-/**
- * Third-party pre-rendered tiles (e.g. NASA GIBS).
- */
-
-export interface TileLayer {
-  date_selection: DateSelection;
-  legend_url: LegendUrl;
-  legend_verified: LegendVerified;
-  max_native_zoom: MaxNativeZoom;
-  tile_size?: TileSize;
-  url_template: UrlTemplate;
-}
 
 export interface TimeInfo {
   issued_date?: IssuedDate1;
@@ -436,8 +653,71 @@ export interface TimeInfo {
   issued_date_method?: IssuedDateMethod;
   lead_days?: LeadDays;
   observed_date?: ObservedDate;
+  observed_times?: ObservedTimes1;
   valid_date?: ValidDate;
   valid_time?: ValidTime;
+}
+/**
+ * Contract for ocean-current layers (WCOFS forecast, HF-radar observation).
+ * Defined ahead of the currents phase; no layer uses it yet.
+ */
+
+export interface VectorField {
+  arrows_url?: ArrowsUrl;
+  depth_m: DepthM;
+  speed_max: SpeedMax;
+  /**
+   * u/v packed into RG channels for particle rendering
+   */
+  texture?: RasterImage | null;
+  u_grid: ValueGrid2;
+  v_grid: ValueGrid3;
+}
+/**
+ * Source values on the source (equirectangular) grid, quantized to uint16 and
+ * gzip-compressed. q = raw * scale_factor + add_offset; raw == nodata -> no value.
+ * value = q, or 10**q when transform is 'log10'. When `chunks` is set, `url` repeats
+ * the chunk URL template and the grid must be read chunk by chunk.
+ */
+
+export interface ValueGrid2 {
+  add_offset: AddOffset;
+  chunks?: GridChunks | null;
+  encoding?: Encoding;
+  height: Height;
+  lat_first: LatFirst;
+  lat_step: LatStep;
+  lon_first: LonFirst;
+  lon_step: LonStep;
+  max_quantization_error: MaxQuantizationError;
+  nodata?: Nodata;
+  scale_factor: ScaleFactor;
+  transform?: Transform;
+  url: Url;
+  width: Width;
+}
+/**
+ * Source values on the source (equirectangular) grid, quantized to uint16 and
+ * gzip-compressed. q = raw * scale_factor + add_offset; raw == nodata -> no value.
+ * value = q, or 10**q when transform is 'log10'. When `chunks` is set, `url` repeats
+ * the chunk URL template and the grid must be read chunk by chunk.
+ */
+
+export interface ValueGrid3 {
+  add_offset: AddOffset;
+  chunks?: GridChunks | null;
+  encoding?: Encoding;
+  height: Height;
+  lat_first: LatFirst;
+  lat_step: LatStep;
+  lon_first: LonFirst;
+  lon_step: LonStep;
+  max_quantization_error: MaxQuantizationError;
+  nodata?: Nodata;
+  scale_factor: ScaleFactor;
+  transform?: Transform;
+  url: Url;
+  width: Width;
 }
 
 export interface SourceStatus {
@@ -471,8 +751,6 @@ export type Type = "Feature";
 export type Features = PortFeature[];
 
 export type Bounds = [number[], number[]];
-
-export type Label = string;
 
 export type Regions = Region1[];
 
