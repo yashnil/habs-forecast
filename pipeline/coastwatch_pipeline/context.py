@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .http import Fetcher, Poster, fetch, post_json
+from .http import CircuitBreaker, Fetcher, Poster, post_json
 
 
 def _git_sha() -> str:
@@ -30,7 +30,8 @@ def iso(dt: datetime) -> str:
 @dataclass
 class RunContext:
     out_dir: Path
-    fetcher: Fetcher = fetch
+    # one breaker per run: an endpoint that keeps failing is not retried all run long
+    fetcher: Fetcher = field(default_factory=CircuitBreaker)
     poster: Poster = post_json
     now: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     pipeline_version: str = field(default_factory=_git_sha)

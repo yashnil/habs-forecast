@@ -214,3 +214,94 @@ def test_http_retries_transient_403_but_not_404(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", missing)
     with pytest.raises(http.FetchError, match="HTTP 404"):
         http.fetch("https://example.test/b")
+
+
+def test_persistent_403_is_retried_a_bounded_number_of_times(monkeypatch):
+    import urllib.error
+    import urllib.request
+
+    from coastwatch_pipeline import http
+
+    calls = {"n": 0}
+
+    def refuse(req, timeout, context):
+        calls["n"] += 1
+        raise urllib.error.HTTPError(req.full_url, 403, "Forbidden", {}, None)
+
+    monkeypatch.setattr(urllib.request, "urlopen", refuse)
+    monkeypatch.setattr(http.time, "sleep", lambda s: None)
+    with pytest.raises(http.FetchError, match="Failed after 4 attempts"):
+        http.fetch("https://example.test/a")
+    assert calls["n"] == 4
+
+
+def test_circuit_breaker_stops_calling_a_failing_dataset_but_not_its_neighbours():
+    from coastwatch_pipeline.http import CircuitBreaker, FetchError, Response
+
+    seen: list[str] = []
+
+    def inner(url):
+        seen.append(url)
+        if "wvcharm" in url:
+            raise FetchError(f"Failed after 4 attempts: {url} (HTTP Error 403)")
+        if "missing" in url:
+            raise FetchError(f"HTTP 404 for {url}")
+        return Response(url, 200, "text/csv", b"ok")
+
+    b = CircuitBreaker(inner, threshold=2)
+    host = "https://coastwatch.pfeg.noaa.gov/erddap/griddap"
+    for _ in range(2):
+        with pytest.raises(FetchError, match="403"):
+            b(f"{host}/wvcharmV3_0day.csv0?time[last]")
+    with pytest.raises(FetchError, match="circuit open"):
+        b(f"{host}/wvcharmV3_0day.nc?pseudo_nitzschia[last]")  # same dataset, other format
+    assert len(seen) == 2
+    # the same host keeps serving other datasets (staging: OLCI worked while C-HARM got 403)
+    assert b(f"{host}/noaacwS3AOLCIchlaSectorCIDaily.csv0?time").body == b"ok"
+    # 404 is an answer, not an outage
+    for _ in range(3):
+        with pytest.raises(FetchError, match="404"):
+            b(f"{host}/missing.csv0")
+    assert sum("missing" in u for u in seen) == 3
+
+
+def test_a_source_refused_all_run_keeps_its_published_files_byte_for_byte(tmp_path):
+    from coastwatch_pipeline.http import CircuitBreaker, FetchError
+
+    out = tmp_path / "v1"
+    m1 = run_pipeline(fixture_context(out))
+    before = {p.relative_to(out).as_posix(): p.read_bytes() for p in (out / "charm").rglob("*") if p.is_file()}
+
+    def refuse(url):
+        raise FetchError(f"Failed after 4 attempts: {url} (HTTP Error 403: )")
+
+    fx = FixtureFetcher(overrides={r"wvcharmV3_": refuse})
+    ctx = fixture_context(out, "2026-10-09T18:00:00Z", fx)
+    ctx.fetcher = CircuitBreaker(fx)
+    m = run_pipeline(ctx)
+    st = next(s for s in m.sources if s.source_id == "charm")
+    assert st.outcome == "failed" and "403" in (st.error or "")
+    # bounded: the breaker stops after two refusals per C-HARM dataset
+    charm_calls = [u for u in fx.calls if "wvcharmV3_" in u]
+    assert len(charm_calls) <= 2 * len({CircuitBreaker.key(u) for u in charm_calls})
+    after = {p.relative_to(out).as_posix(): p.read_bytes() for p in (out / "charm").rglob("*") if p.is_file()}
+    assert after == before  # nothing rewritten, nothing partial
+    # the previous run is still published with its original dates, not relabelled as new
+    key = lambda mm: {lyr.layer_id: (lyr.time.model_dump(), lyr.grid.url if lyr.grid else None) for lyr in mm.layers if lyr.group_id == "charm"}  # noqa: E731
+    assert key(m) == key(m1) and key(m)
+    assert check_published(str(out))["ok"]
+
+
+def test_check_published_validates_every_tile_before_publishing(tmp_path):
+    out = tmp_path / "v1"
+    m = run_pipeline(fixture_context(out))
+    rep = check_published(str(out))
+    expected = sum((t.n_tiles or 0) for lyr in m.layers for t in [lyr.tiles, lyr.composite.age_tiles if lyr.composite else None] if t and t.relative)
+    assert rep["ok"] and expected > 0 and rep["tiles_validated"] == expected
+    # one missing tile and one corrupt tile are both caught
+    tiles = sorted((out / "satellite").rglob("*.png"))
+    tiles[0].unlink()
+    tiles[1].write_bytes(b"not a png")
+    rep = check_published(str(out))
+    assert not rep["ok"]
+    assert any("!= n_tiles" in p for p in rep["problems"]) and any("bad tiles" in p for p in rep["problems"])
