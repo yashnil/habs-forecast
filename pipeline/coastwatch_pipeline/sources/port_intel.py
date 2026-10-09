@@ -115,10 +115,10 @@ def charm_near(grids: dict[tuple[str, int], Grid], lat: float, lon: float) -> Po
     )
 
 
-def charm_history(ctx: RunContext, lat: float, lon: float, end: date) -> dict[str, list[SeriesPoint]]:
+def charm_history(ctx: RunContext, lat: float, lon: float, end: date, days: int = HISTORY_DAYS) -> dict[str, list[SeriesPoint]]:
     from .charm import parse_netcdf
 
-    start = end - timedelta(days=HISTORY_DAYS - 1)
+    start = end - timedelta(days=days - 1)
     dlat, dlon = RADIUS_KM / KM_PER_DEG + 0.02, RADIUS_KM / (KM_PER_DEG * math.cos(math.radians(lat))) + 0.02
     lon360 = lon + 360
     # clip to the published C-HARM domain; ERDDAP rejects out-of-range requests

@@ -1,4 +1,56 @@
 {
+ "https://api.bls.gov/publicAPI/v1/timeseries/data/#563500cebc1566c5": {
+  "content_type": "text/plain;charset=ISO-8859-1",
+  "file": "3ba0ea0677d147ad.bin"
+ },
+ "https://api.bls.gov/publicAPI/v1/timeseries/data/#a8f75b0ef735fc3a": {
+  "content_type": "text/plain;charset=ISO-8859-1",
+  "file": "5746c6a79afe1da1.bin"
+ },
+ "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2015%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0": {
+  "content_type": "application/json",
+  "file": "aca5bc6df67a82fd.json"
+ },
+ "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2016%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0": {
+  "content_type": "application/json",
+  "file": "3b79e0e1bc4e5ab9.json"
+ },
+ "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2017%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0": {
+  "content_type": "application/json",
+  "file": "fd0765fdd16ea6f6.json"
+ },
+ "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2018%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0": {
+  "content_type": "application/json",
+  "file": "921ca0f63e2744a1.json"
+ },
+ "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2019%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0": {
+  "content_type": "application/json",
+  "file": "bc468000481338c3.json"
+ },
+ "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2020%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0": {
+  "content_type": "application/json",
+  "file": "41c86e1c8d6b1dc8.json"
+ },
+ "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2021%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0": {
+  "content_type": "application/json",
+  "file": "7222d24d8f2528a3.json"
+ },
+ "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2022%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0": {
+  "content_type": "application/json",
+  "file": "75302a29274c0c47.json"
+ },
+ "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2023%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0": {
+  "content_type": "application/json",
+  "file": "ef41892dadd00ed9.json"
+ },
+ "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2024%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0": {
+  "content_type": "application/json",
+  "file": "1fe1d2b1b706cda6.json"
+ },
+ "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2025%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0": {
+  "content_type": "application/json",
+  "file": "7bd26c4a06812749.json"
+ },
  "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(36.7450):2:(36.4555)%5D%5B(-122.0725):2:(-121.7168)%5D": {
   "content_type": "application/x-netcdf",
   "file": "3b2dcaa92c89385f.bin"
@@ -7,6 +59,14 @@
   "content_type": "application/x-netcdf",
   "file": "6e81009e8401cc26.bin"
  },
+ "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.449):(36.758)%5D%5B(237.923):(238.299)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.449):(36.758)%5D%5B(237.923):(238.299)%5D,cellular_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.449):(36.758)%5D%5B(237.923):(238.299)%5D": {
+  "content_type": "application/x-netcdf",
+  "file": "7f5d58a03126439e.bin"
+ },
+ "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.803):(37.113)%5D%5B(237.794):(238.172)%5D,particulate_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.803):(37.113)%5D%5B(237.794):(238.172)%5D,cellular_domoic%5B(2026-04-11T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.803):(37.113)%5D%5B(237.794):(238.172)%5D": {
+  "content_type": "application/x-netcdf",
+  "file": "af3f50b2fd04a6bf.bin"
+ },
  "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.445):(36.755)%5D%5B(237.917):(238.293)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.445):(36.755)%5D%5B(237.917):(238.293)%5D,cellular_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.445):(36.755)%5D%5B(237.917):(238.293)%5D": {
   "content_type": "application/x-netcdf",
   "file": "7980d527e3042c94.bin"
@@ -14,6 +74,74 @@
  "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.650):(36.959)%5D%5B(238.025):(238.401)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.650):(36.959)%5D%5B(238.025):(238.401)%5D,cellular_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.650):(36.959)%5D%5B(238.025):(238.401)%5D": {
   "content_type": "application/x-netcdf",
   "file": "afea1574c5f2d7d0.bin"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-BodegaMarineLab.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "34e49fdc42cba7e2.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-BodegaMarineLabBuoy.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "52ee8f6aa1ce8e15.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-CalPolyPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "e12ca088ad4cc564.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-Humboldt.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "822b658feeb44c2a.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-HumboldtSouthBay.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "952b83c59c7cbcf0.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-InnerTomalesBay.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "731067a3f7ddc8aa.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-MontereyWharf.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "b8347729519a064e.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-MorroBayBackBay.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "17a5fc194ee8e56b.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-MorroBayFrontBay.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "e886ec2048fbf670.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-NewportBeachPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "faefbee972631a74.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-SantaCruzWharf.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "64bb60fae6c89818.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-SantaMonicaPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "643c5a7b10bef97a.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-ScrippsPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "1ca82cd857a3f47c.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-StearnsWharf.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "d1735b47f9d339f2.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-TomalesBayMid-ChannelBuoy.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "dc8e0f89e74682c7.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-TomalesBayMouth.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "f9b3fba1d9c24c54.csv"
+ },
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-TrinidadPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+  "content_type": "text/csv;charset=ISO-8859-1",
+  "file": "a63cf8367b39a4b5.csv"
  },
  "https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/All_Bivalve_Shellfish_Health_Advisory_Special_Advisory/FeatureServer/3/query?where=1%3D1&outFields=TITLE&outSR=4326&f=geojson": {
   "content_type": "application/json; charset=utf-8",

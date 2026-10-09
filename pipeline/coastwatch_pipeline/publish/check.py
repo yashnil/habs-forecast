@@ -18,7 +18,7 @@ from pathlib import Path
 from PIL import Image
 
 from ..http import USER_AGENT
-from ..models import Manifest, OfficialDataset, PortIntelCollection, PortsCollection
+from ..models import FisheriesDataset, Manifest, ObservationDataset, OfficialDataset, PortIntelCollection, PortsCollection
 
 TEST_ORIGIN = "https://coastwatch.example"
 
@@ -105,7 +105,12 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
                 ok, detail = False, f"invalid ports: {e}"
         record(manifest.ports_url, "ports", f, ok, detail)
 
-    for rel, model, kind in ((manifest.official_url, OfficialDataset, "official"), (manifest.port_intel_url, PortIntelCollection, "port_intel")):
+    for rel, model, kind in (
+        (manifest.official_url, OfficialDataset, "official"),
+        (manifest.port_intel_url, PortIntelCollection, "port_intel"),
+        (manifest.observations_url, ObservationDataset, "observations"),
+        (manifest.fisheries_url, FisheriesDataset, "fisheries"),
+    ):
         if not rel:
             continue
         f = _get(base, rel)

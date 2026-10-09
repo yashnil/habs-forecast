@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from .context import RunContext
@@ -20,14 +21,16 @@ from .models import (
     FreshnessPolicy,
     LayerArtifact,
     Manifest,
+    FisheriesDataset,
+    ObservationDataset,
     OfficialDataset,
     PortsCollection,
     SourceStatus,
 )
 from .publish.files import write_bytes, write_json
-from .sources import charm, gibs, official, port_intel, ports
+from .sources import charm, fisheries, gibs, observations, official, port_intel, ports
 
-ALL_SOURCES = ("charm", "gibs_chl", "cdfw_ports", "official", "port_intel")
+ALL_SOURCES = ("charm", "gibs_chl", "cdfw_ports", "official", "port_intel", "calhabmap", "foss_landings")
 
 OFFICIAL_FRESHNESS = FreshnessPolicy(
     basis="reviewed_date",
@@ -41,6 +44,19 @@ PORT_INTEL_FRESHNESS = FreshnessPolicy(
     stale_max_age_days=7,
     note="Port summaries are rebuilt from each pipeline run; their inputs carry their own dates.",
 )
+OBS_FRESHNESS = FreshnessPolicy(
+    basis="observed_date",
+    current_max_age_days=14,
+    stale_max_age_days=45,
+    note="Shore stations are sampled about weekly and published after laboratory analysis; each station and variable carries its own sample dates.",
+)
+FISHERIES_FRESHNESS = FreshnessPolicy(
+    basis="valid_date",
+    current_max_age_days=730,
+    stale_max_age_days=1100,
+    note="Annual landings are finalised and published one to two years after the year ends; the date is the end of the latest year included.",
+)
+FISHERIES_REFRESH_DAYS = 7  # annual data; avoids hitting the BLS API's daily request limit
 
 
 def load_previous(out_dir: Path) -> Manifest | None:
@@ -223,6 +239,69 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     else:
         _carry(statuses, prev, port_intel.SOURCE_ID)
 
+    # ---- measured observations (CalHABMAP); uses ports and the C-HARM layers above
+    observations_url = prev.observations_url if prev else None
+    if "calhabmap" in only:
+        prev_obs = _load(ctx, observations_url, ObservationDataset)
+        ob = observations.run(ctx, _load(ctx, ports_url, PortsCollection), layers, prev_obs)
+        prev_s = _prev_status(prev, observations.SOURCE_ID)
+        title = "CalHABMAP shore-station measurements (domoic acid, Pseudo-nitzschia)"
+        if ob.dataset:
+            observations_url = _write_hashed(ctx, "observations", ob.dataset.model_dump(mode="json"), compact=True)
+            degraded = [s for s in ob.dataset.stations if s.status != "updated"]
+            statuses.append(
+                SourceStatus(
+                    source_id=observations.SOURCE_ID,
+                    title=title,
+                    product_class="observation",
+                    last_attempt_at=ctx.now_iso,
+                    last_success_at=ctx.now_iso,
+                    outcome="partial" if degraded or ob.errors else "updated",
+                    error="; ".join(ob.errors)[:500] or None,
+                    notes=ob.notes[:40],
+                    latest_valid_date=ob.latest_sample[:10] if ob.latest_sample else None,
+                    freshness=OBS_FRESHNESS,
+                )
+            )
+        else:
+            statuses.append(_failed(ctx, observations.SOURCE_ID, title, "observation", OBS_FRESHNESS, prev_s, ob.errors))
+    else:
+        _carry(statuses, prev, observations.SOURCE_ID)
+
+    # ---- historical fisheries exposure (FOSS + BLS CPI); refreshed weekly
+    fisheries_url = prev.fisheries_url if prev else None
+    if "foss_landings" in only:
+        prev_s = _prev_status(prev, fisheries.SOURCE_ID)
+        title = "Historical fisheries exposure (NOAA FOSS landings, BLS CPI-U)"
+        prev_fish = _load(ctx, fisheries_url, FisheriesDataset)
+        recent = prev_fish is not None and prev_s is not None and prev_s.last_success_at is not None and (
+            ctx.now - datetime.fromisoformat(prev_s.last_success_at.replace("Z", "+00:00"))
+        ) < timedelta(days=FISHERIES_REFRESH_DAYS)
+        if recent:
+            assert prev_s is not None
+            statuses.append(prev_s.model_copy(update={"last_attempt_at": ctx.now_iso, "outcome": "unchanged", "notes": [f"Annual data; refreshed every {FISHERIES_REFRESH_DAYS} days."]}))
+        else:
+            fr = fisheries.run(ctx)
+            if fr.dataset:
+                fisheries_url = _write_hashed(ctx, "fisheries", fr.dataset.model_dump(mode="json"))
+                statuses.append(
+                    SourceStatus(
+                        source_id=fisheries.SOURCE_ID,
+                        title=title,
+                        product_class="historical_context",
+                        last_attempt_at=ctx.now_iso,
+                        last_success_at=ctx.now_iso,
+                        outcome="updated",
+                        notes=fr.notes,
+                        latest_valid_date=f"{fr.latest_year}-12-31" if fr.latest_year else None,
+                        freshness=FISHERIES_FRESHNESS,
+                    )
+                )
+            else:
+                statuses.append(_failed(ctx, fisheries.SOURCE_ID, title, "historical_context", FISHERIES_FRESHNESS, prev_s, fr.errors))
+    else:
+        _carry(statuses, prev, fisheries.SOURCE_ID)
+
     manifest = Manifest(
         generated_at=ctx.now_iso,
         pipeline_version=ctx.pipeline_version,
@@ -233,14 +312,17 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
         ports_url=ports_url,
         official_url=official_url,
         port_intel_url=port_intel_url,
+        observations_url=observations_url,
+        fisheries_url=fisheries_url,
     )
     write_json(ctx.out_dir / "manifest.json", manifest.model_dump(mode="json"))
     prune(ctx.out_dir, manifest, prev)
     return manifest
 
 
-def _write_hashed(ctx: RunContext, stem: str, obj: dict) -> str:
-    body = (json.dumps(obj, indent=1, ensure_ascii=False) + "\n").encode()
+def _write_hashed(ctx: RunContext, stem: str, obj: dict, compact: bool = False) -> str:
+    text = json.dumps(obj, separators=(",", ":"), ensure_ascii=False) if compact else json.dumps(obj, indent=1, ensure_ascii=False)
+    body = (text + "\n").encode()
     name = f"{stem}-{hashlib.sha256(body).hexdigest()[:10]}.json"
     write_bytes(ctx.out_dir / name, body)
     return name
@@ -297,7 +379,7 @@ def referenced_paths(m: Manifest | None) -> set[str]:
             out.add(lyr.image.url)
         if lyr.grid:
             out.add(lyr.grid.url)
-    for rel in (m.ports_url, m.official_url, m.port_intel_url):
+    for rel in (m.ports_url, m.official_url, m.port_intel_url, m.observations_url, m.fisheries_url):
         if rel:
             out.add(rel)
     return out
@@ -316,7 +398,7 @@ def prune(out_dir: Path, manifest: Manifest, previous: Manifest | None) -> None:
                 f.unlink()
             elif f.is_dir() and not any(f.iterdir()):
                 f.rmdir()
-    for pattern in ("ports*.geojson", "official-*.json", "port-intel-*.json"):
+    for pattern in ("ports*.geojson", "official-*.json", "port-intel-*.json", "observations-*.json", "fisheries-*.json"):
         for f in out_dir.glob(pattern):
             if f.name not in keep:
                 f.unlink()
