@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { ForecastRun, LayerArtifact, Manifest, SourceStatus } from "@/generated/schema";
 import { CHLOROPHYLL_COPY, FORECAST_COPY } from "@/content/copy";
 import { classifyTime, type Freshness } from "@/lib/freshness";
-import { CHARM_LEADS, CHARM_VARIABLES, charmLayer, chlorophyllLayers, leadLabel, nativeLabel, regionCoverage, satelliteDays, satelliteLatest, type CharmVariable, type SatProduct } from "@/lib/layers";
+import { CHARM_LEADS, CHARM_VARIABLES, charmLayer, chlorophyllLayers, leadLabel, nativeLabel, regionCoverage, satelliteDays, satelliteLatest, satelliteUpdateFailed, type CharmVariable, type SatProduct } from "@/lib/layers";
 import { formatDate, formatDateTimePT, relativeDay } from "@/lib/time";
 import { FreshnessBadge, ProductClassBadge } from "@/components/ui/Badges";
 import { AgeLegend, ChlorophyllLegend, ProbabilityLegend } from "@/components/ui/ProbabilityLegend";
@@ -322,6 +322,11 @@ function SatelliteSection(p: Props) {
               <FreshnessBadge f={fresh} basis="observed_date" />
             </span>
           </div>
+          {product && satelliteUpdateFailed(p.satStatus, product) && p.satStatus && (
+            <p className="text-[12px] text-serious" data-testid="sat-update-failed">
+              The latest update ({formatDateTimePT(p.satStatus.last_attempt_at)}) did not refresh this product. Showing the last published observations, with their own dates.
+            </p>
+          )}
           <p className={`text-[12px] leading-snug text-ink-2 ${p.expanded ? "" : "line-clamp-2"}`} data-testid="sat-dates">
             {layer && !layer.grid ? (
               <>No clear observation on {formatDate(layer.time.observed_date!)}: clouds, fog or no overpass. Nothing is shown for that day.</>

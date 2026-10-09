@@ -7,6 +7,7 @@ const FIX = path.resolve(__dirname, "../fixture-data/v1");
 const manifest = JSON.parse(readFileSync(path.join(FIX, "manifest.json"), "utf8"));
 const satReport = JSON.parse(readFileSync(path.join(FIX, "verification/satellite-points.json"), "utf8"));
 const OK = "http://localhost:3200";
+const FAILED = "http://localhost:3201";
 const BASE = "/data/fixture/v1";
 
 type Layer = { layer_id: string; palette?: { stops: { color: string }[] }; tiles?: { url_template: string; sample_tiles: string[] }; composite?: { oldest_observed_date: string; newest_observed_date: string; window_days: number; age_tiles: { url_template: string } } };
@@ -103,6 +104,34 @@ test.describe("satellite observations", () => {
     await expect(near.getByTestId("satellite-near-date")).toHaveText(fmt(row.observed_date));
     await expect(near).toContainText("native 300 m");
     await expect(near).not.toContainText("nearest clear pixel");
+  });
+});
+
+test.describe("old or failed satellite data never reads as recent", () => {
+  const newest = latest.composite!.newest_observed_date;
+  const plus = (d: string, n: number) => new Date(Date.parse(`${d}T20:00:00Z`) + n * 86_400_000).toISOString();
+  for (const [days, state] of [
+    [1, "current"],
+    [5, "stale"],
+    [12, "historical"],
+  ] as const) {
+    test(`${days} days after the newest overpass the layer is ${state}`, async ({ page }) => {
+      await open(page, `${OK}/?layer=olci300`, plus(newest, days));
+      const badge = page.getByTestId("satellite-panel").getByTestId("freshness");
+      await expect(badge).toHaveAttribute("data-state", state);
+      await expect(badge).toContainText(`observed ${days} day`);
+    });
+  }
+
+  test("a product the last update did not refresh says so and keeps its own dates", async ({ page }) => {
+    const failed = JSON.parse(readFileSync(path.resolve(__dirname, "../fixture-data-failed/v1/manifest.json"), "utf8"));
+    const viirs = failed.layers.find((l: Layer) => l.layer_id === "viirs750_chl_latest");
+    await open(page, `${FAILED}/?layer=viirs750`, "2026-10-12T20:00:00Z");
+    await expect(page.getByTestId("sat-update-failed")).toContainText("did not refresh this product");
+    await expect(page.getByTestId("sat-dates")).toContainText(`Pixels observed ${fmt(viirs.composite.oldest_observed_date)}–${fmt(viirs.composite.newest_observed_date)}`);
+    // OLCI did update in that run: no failure note there
+    await page.getByTestId("sat-olci300").click();
+    await expect(page.getByTestId("sat-update-failed")).toHaveCount(0);
   });
 });
 

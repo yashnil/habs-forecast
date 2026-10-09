@@ -63,3 +63,13 @@ export function nativeLabel(l: LayerArtifact | null | undefined): string | null 
   if (!m) return null;
   return m >= 1000 ? `${Math.round(m / 1000)} km` : `${Math.round(m / 50) * 50} m`;
 }
+
+const PRODUCT_ERROR: Record<SatProduct, RegExp> = { olci300: /olci/i, viirs750: /viirs|erdVHN/i };
+
+/** Did the last update attempt fail (or bring nothing new) for this product? The layers shown are then the
+ *  previously published ones (with their own observation dates). */
+export function satelliteUpdateFailed(status: SourceStatus | null | undefined, p: SatProduct): boolean {
+  if (!status) return false;
+  if (status.outcome === "failed") return true;
+  return status.outcome === "partial" && PRODUCT_ERROR[p].test(status.error ?? "");
+}
