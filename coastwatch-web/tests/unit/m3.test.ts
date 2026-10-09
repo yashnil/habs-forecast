@@ -6,7 +6,7 @@ import type { ObservationDataset } from "@/generated/observations";
 import type { FisheriesDataset } from "@/generated/fisheries";
 import * as copy from "@/content/copy";
 import { checkFisheries, checkManifest, checkObservations } from "@/lib/data";
-import { cadenceLabel, coverage, formatObs, logDomain, samples, stationFreshness, summaryOf, toxinStatus } from "@/lib/observations";
+import { REGION_BOUNDS, cadenceLabel, coverage, formatObs, logDomain, samples, stationFreshness, summaryOf, toxinStatus } from "@/lib/observations";
 import { fisheriesValue, selectedTotal } from "@/lib/fisheries";
 
 const DIR = path.resolve(__dirname, "../fixture-data/v1");
@@ -102,5 +102,13 @@ describe("M3 copy", () => {
   it("states that absence of measurement is not absence of toxin", () => {
     expect(copy.BLOOM_COPY.absence).toContain("not the same as no toxin");
     expect(copy.BLOOM_COPY.reviewPending).toContain("not yet been reviewed");
+  });
+});
+
+describe("station map regions", () => {
+  it("region bounds match the curated regions", () => {
+    const curated = JSON.parse(readFileSync(path.resolve(__dirname, "../../../data/curated/ports.json"), "utf8")).regions;
+    expect(Object.fromEntries(curated.map((r: { id: string; bounds: unknown }) => [r.id, r.bounds]))).toEqual(REGION_BOUNDS);
+    for (const st of obs.stations) if (st.region) expect(REGION_BOUNDS[st.region]).toBeDefined();
   });
 });

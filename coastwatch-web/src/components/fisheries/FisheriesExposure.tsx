@@ -114,7 +114,7 @@ export function FisheriesExposure({ ds, status, official }: { ds: FisheriesDatas
         <Tile
           label={`Share of all California commercial landings, ${latest}`}
           value={latestTotal != null && stateV ? `${Math.round((latestTotal / stateV) * 100)}%` : "—"}
-          sub={`of ${stateV != null ? money(stateV) : "—"}; excludes ${withheld?.dollars_nominal != null ? money(withheld.dollars_nominal) : "the"} withheld as confidential`}
+          sub={`of ${stateV != null ? money(stateV) : "—"} statewide (NOAA's state total, which includes ${withheld?.dollars_nominal != null ? money(withheld.dollars_nominal) : "the"} withheld as confidential)`}
           testid="tile-share"
         />
       </section>
@@ -220,7 +220,7 @@ export function FisheriesExposure({ ds, status, official }: { ds: FisheriesDatas
                 </tr>
               ))}
               <tr className="border-t-2 border-hairline-strong">
-                <td className="py-1 pr-2 text-left font-medium text-ink">All CA commercial landings</td>
+                <td className="py-1 pr-2 text-left font-medium text-ink">All CA commercial landings (NOAA state total)</td>
                 {ds.years.map((y) => {
                   const t = ds.statewide_total.find((x) => x.year === y);
                   const v = t ? fisheriesValue(t, dollars) : null;
@@ -247,7 +247,7 @@ export function FisheriesExposure({ ds, status, official }: { ds: FisheriesDatas
           </table>
         </div>
         <p className="text-[11px] text-ink-3">
-          Confidential landings are aggregated by NOAA into one withheld value per year; CoastWatch never assigns them to a species or group. Rows without a published value are shown as “no value”, never as $0.
+          Confidential landings are aggregated by NOAA into one withheld value per year. They are part of the statewide total, as in NOAA&apos;s published state totals, but CoastWatch never assigns them to a species or group. Rows without a published value are shown as “no value”, never as $0. Species groups leave out generic categories (for example unspecified crabs), so they are lower bounds.
         </p>
         {ds.excluded_rows.length > 0 && (
           <details className="text-[11.5px] text-ink-2" data-testid="excluded-rows">

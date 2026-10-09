@@ -43,13 +43,16 @@ export default function StationMap({
     [stations],
   );
 
-  const sel = stations.find((s) => s.id === selected);
+  // frame the selected station's region; re-frame only when the region changes
+  const boundsKey = JSON.stringify(bounds);
+  const firstFrame = useRef(true);
   useEffect(() => {
-    const m = ref.current;
-    if (!m || !sel) return;
-    const b = m.getBounds();
-    if (!b.contains([sel.lon, sel.lat])) m.flyTo({ center: [sel.lon, sel.lat], zoom: Math.max(m.getZoom(), 7.5), duration: 700 });
-  }, [sel]);
+    if (firstFrame.current) {
+      firstFrame.current = false; // initialViewState already framed it
+      return;
+    }
+    ref.current?.fitBounds(JSON.parse(boundsKey), { padding: 28, duration: 700 });
+  }, [boundsKey]);
 
   const onClick = (e: MapLayerMouseEvent) => {
     const f = e.features?.[0];

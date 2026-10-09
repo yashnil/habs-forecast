@@ -16,7 +16,9 @@ import { Notice, Segmented, SourceLink } from "@/components/ui/Primitives";
 import { classifySource } from "@/lib/freshness";
 import { officialVerification } from "@/lib/official";
 import {
+  CALIFORNIA_BOUNDS,
   RANGES,
+  REGION_BOUNDS,
   cadenceLabel,
   formatObs,
   logDomain,
@@ -59,8 +61,6 @@ const MODEL_TITLE: Record<string, string> = {
   pseudo_nitzschia: "Probability of a Pseudo-nitzschia bloom",
   cellular_domoic: "Probability of cellular domoic acid above the model threshold",
 };
-const CA: [[number, number], [number, number]] = [[-124.6, 32.4], [-117.0, 42.0]];
-const MB: [[number, number], [number, number]] = [[-122.45, 36.45], [-121.72, 37.15]];
 
 export type BloomProps = {
   /** every station without its series (list and map) */
@@ -125,6 +125,7 @@ export function BloomIntelligence({ stations, station, dataset, status, official
           <div className="flex flex-wrap items-center gap-2">
             <ProductClassBadge pc="observation" />
             <FreshnessBadge f={dsFresh} basis="observed_date" />
+            <span className="text-[11px] text-ink-3">newest sample in the network; each station shows its own</span>
             <span className="rounded-md border border-dashed border-hairline-strong px-1.5 py-px text-[10px] font-semibold uppercase tracking-wider text-ink-3" data-testid="science-review-pending">
               Scientific review pending
             </span>
@@ -176,7 +177,7 @@ export function BloomIntelligence({ stations, station, dataset, status, official
       <div className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
         <aside className="space-y-3 lg:sticky lg:top-16 lg:self-start" aria-label="Stations">
           <div className="h-[230px] overflow-hidden rounded-lg border border-hairline lg:h-[280px]" data-testid="station-map">
-            <StationMap stations={points} selected={station.station_id} bounds={station.region === "monterey_bay" ? MB : CA} onSelect={select} />
+            <StationMap stations={points} selected={station.station_id} bounds={REGION_BOUNDS[station.region ?? ""] ?? CALIFORNIA_BOUNDS} onSelect={select} />
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] text-ink-3" aria-label="Map key">
             <span className="flex items-center gap-1">

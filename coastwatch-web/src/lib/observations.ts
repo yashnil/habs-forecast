@@ -135,3 +135,14 @@ export function toxinStatus(v: ObsVariable, sm: ObsVariableSummary | null): stri
 export function monthYear(date: string): string {
   return new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 }
+
+/** Map bounds per region, identical to data/curated/ports.json (checked by a unit test). */
+export const REGION_BOUNDS: Record<string, [[number, number], [number, number]]> = {
+  north_coast: [[-124.75, 39.9], [-123.6, 42.05]],
+  mendocino_sonoma: [[-124.0, 38.2], [-122.8, 39.95]],
+  sf_bay_farallones: [[-123.35, 37.25], [-122.2, 38.15]],
+  monterey_bay: [[-122.45, 36.45], [-121.72, 37.15]],
+  central_coast: [[-121.6, 34.4], [-120.4, 36.1]],
+  southern_california: [[-120.6, 32.45], [-117.05, 34.55]],
+};
+export const CALIFORNIA_BOUNDS: [[number, number], [number, number]] = [[-124.6, 32.4], [-117.0, 42.0]];
