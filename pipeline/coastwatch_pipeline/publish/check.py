@@ -82,8 +82,7 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
                 except Exception as e:
                     ok, detail = False, f"not a PNG: {e}"
             record(lyr.image.url, "image", f, ok, detail)
-        tile_sets = [("tiles", lyr.tiles)] + ([("age_tiles", lyr.composite.age_tiles)] if lyr.composite and lyr.composite.age_tiles else [])
-        for kind, t in tile_sets:
+        for kind, t in lyr.tile_layers():
             if not t or not t.relative:
                 continue
             if not t.sample_tiles:

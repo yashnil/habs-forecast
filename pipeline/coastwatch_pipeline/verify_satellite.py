@@ -155,16 +155,86 @@ def verify_satellite(out_dir: Path, live: bool = True, per_layer: int = 8) -> di
             lat, lon = g.lat_first + rr[i] * g.lat_step, g.lon_first + cc[i] * g.lon_step
             got = _tile_index(out_dir, lyr, lat, lon)
             rows.append({"layer_id": lyr.layer_id, "row": int(rr[i]), "col": int(cc[i]), "value": None, "tile_transparent": got in (None, 0), "status": "pass" if got in (None, 0) else "FAIL"})
+    ms_rows = verify_multisensor(out_dir)
+    rows.extend(ms_rows)
     failed = [r for r in rows if r["status"] == "FAIL"]
     unverifiable = [r for r in failed if str(r.get("source_error", "")).startswith("UNVERIFIABLE")]
     return {
         "manifest_generated_at": m.generated_at,
         "live_source_comparison": live,
         "summary": {
-            "layers": len(layers), "layers_from_earlier_runs_not_rechecked": len(all_layers) - len(layers),
+            "layers": len(layers), "multisensor_pixels_checked": len(ms_rows), "layers_from_earlier_runs_not_rechecked": len(all_layers) - len(layers),
             "checks": len(rows), "failures": len(failed), "unverifiable_upstream_unreachable": len(unverifiable),
             "all_passed": not failed and (bool(rows) or not layers),
         },
         "rows": rows,
     }
 
+
+
+def verify_multisensor(out_dir: Path, per_tile: int = 64) -> list[dict]:
+    """Independent re-check of a multi-sensor display, pixel by pixel in published tiles:
+    for each sampled tile pixel, look up the Sentinel-3 and VIIRS cells containing the pixel
+    centre in the members' own grids, apply the rule, and compare with the published
+    sensor, colour and age tiles. Also confirms no pixel shows a value neither member has."""
+    from .process.tiles import x_to_lon, y_to_lat
+    from .sources import multisensor as msmod
+
+    m = Manifest.model_validate_json((out_dir / "manifest.json").read_text())
+    by_id = {lyr.layer_id: lyr for lyr in m.layers}
+    rows: list[dict] = []
+    for lyr in m.layers:
+        if not lyr.multisensor or lyr.provenance.pipeline_run_id != m.pipeline_run_id:
+            continue
+        info = lyr.multisensor
+        o, v = (by_id.get(mb.layer_id) for mb in sorted(info.members, key=lambda x: x.order))
+        if not (o and v and o.grid and v.grid and lyr.tiles):
+            rows.append({"layer_id": lyr.layer_id, "status": "FAIL", "detail": "member layer missing"})
+            continue
+        grids = []
+        for mem in (o, v):
+            vals = satellite.load_published(out_dir, mem.grid)
+            dates = msmod.obs_dates(mem, out_dir)
+            grids.append((vals, dates, msmod.target_of(mem.grid).grid))
+        ref = date.fromisoformat(info.reference_date).toordinal()
+        t = lyr.tiles
+        z = t.max_native_zoom
+        root = out_dir / t.url_template.split("{z}")[0] / str(z)
+        files = sorted(root.rglob("*.png"))
+        pick_files = files[:: max(1, len(files) // 6)][:6]
+        rng = np.random.default_rng(0)
+        for fp in pick_files:
+            tx, ty = int(fp.parent.name), int(fp.stem)
+            with Image.open(fp) as im:
+                chl = np.asarray(im)
+            sens_p = out_dir / info.sensor_tiles.url_template.format(z=z, x=tx, y=ty)
+            age_p = out_dir / info.age_tiles.url_template.format(z=z, x=tx, y=ty)
+            sens = np.asarray(Image.open(sens_p)) if sens_p.exists() else np.zeros_like(chl)
+            agt = np.asarray(Image.open(age_p)) if age_p.exists() else np.zeros_like(chl)
+            py, px = rng.integers(0, TILE, per_tile), rng.integers(0, TILE, per_tile)
+            lats = y_to_lat(ty * TILE + py + 0.5, z)
+            lons = x_to_lon(tx * TILE + px + 0.5, z)
+            got = []
+            for vals, dates, g in grids:
+                r, c = g.cell_index(lats, lons)
+                ok = (r >= 0) & (c >= 0)
+                vv = np.where(ok, vals[np.clip(r, 0, None), np.clip(c, 0, None)], np.nan)
+                dd = np.where(ok, dates[np.clip(r, 0, None), np.clip(c, 0, None)], np.nan)
+                got.append((vv, dd))
+            (ov, od), (vv, vd) = got
+            code = msmod.pick(ov, od, vv, vd, info.prefer_primary_within_days)
+            val = np.where(code == 1, ov, np.where(code == 2, vv, np.nan))
+            dat = np.where(code == 1, od, np.where(code == 2, vd, np.nan))
+            want_chl = palette_indices(val, lyr.palette)[0]
+            want_age = np.where(np.isfinite(dat), np.clip(ref - np.nan_to_num(dat), 0, 7) + 1, 0)
+            s_ok = sens[py, px] == code
+            c_ok = chl[py, px] == want_chl
+            a_ok = agt[py, px] == want_age
+            for i in range(per_tile):
+                rows.append({
+                    "layer_id": lyr.layer_id, "tile": f"{z}/{tx}/{ty}", "lat": round(float(lats[i]), 6), "lon": round(float(lons[i]), 6),
+                    "sensor": ["none", "Sentinel-3", "VIIRS"][int(code[i])], "value": None if not np.isfinite(val[i]) else round(float(val[i]), 5),
+                    "sensor_tile_matches": bool(s_ok[i]), "colour_tile_matches": bool(c_ok[i]), "age_tile_matches": bool(a_ok[i]),
+                    "status": "pass" if (s_ok[i] and c_ok[i] and a_ok[i]) else "FAIL",
+                })
+    return rows

@@ -411,9 +411,8 @@ def referenced_prefixes(m: Manifest | None) -> set[str]:
     """Directories a manifest references as a whole: tile pyramids and chunked grids."""
     out: set[str] = set()
     for lyr in m.layers if m else []:
-        tiles = [lyr.tiles] + ([lyr.composite.age_tiles] if lyr.composite and lyr.composite.age_tiles else [])
-        for t in tiles:
-            if t and t.relative:
+        for _, t in lyr.tile_layers():
+            if t.relative:
                 out.add(t.url_template.split("{z}")[0])
         grids = [lyr.grid] + ([lyr.composite.age_grid] if lyr.composite else [])
         for g in grids:

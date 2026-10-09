@@ -328,7 +328,7 @@ def test_verification_checks_only_this_runs_layers_and_names_an_unreachable_upst
     monkeypatch.setattr(vs, "fetch", refused)
     monkeypatch.setattr(vs.time, "sleep", lambda s: None)
     rep = verify_satellite(out, live=True, per_layer=2)
-    live_rows = [r for r in rep["rows"] if r.get("value") is not None]
+    live_rows = [r for r in rep["rows"] if r.get("value") is not None and r["layer_id"] != "multisensor_chl_latest"]
     assert live_rows and all(r["source_error"].startswith("UNVERIFIABLE, ERDDAP unreachable") for r in live_rows)
     assert rep["summary"]["unverifiable_upstream_unreachable"] == len(live_rows)
     assert not rep["summary"]["all_passed"]  # still blocks publication: new data must be checked

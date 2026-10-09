@@ -296,7 +296,7 @@ def test_check_published_validates_every_tile_before_publishing(tmp_path):
     out = tmp_path / "v1"
     m = run_pipeline(fixture_context(out))
     rep = check_published(str(out))
-    expected = sum((t.n_tiles or 0) for lyr in m.layers for t in [lyr.tiles, lyr.composite.age_tiles if lyr.composite else None] if t and t.relative)
+    expected = sum((t.n_tiles or 0) for lyr in m.layers for _, t in lyr.tile_layers() if t.relative)
     assert rep["ok"] and expected > 0 and rep["tiles_validated"] == expected
     # one missing tile and one corrupt tile are both caught
     tiles = sorted((out / "satellite").rglob("*.png"))

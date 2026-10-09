@@ -389,10 +389,10 @@ def coverage(values: np.ndarray, target: Target) -> Coverage:
                 observed_km2=round(float(px_km2[in_reg].sum()), 1), reference_cells=n_ref,
             )
         )
-    f_dom, _ = frac(in_dom)
+    f_dom, n_dom = frac(in_dom)
     return Coverage(
         reference="C-HARM v3.1 ocean cells (0.03°, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
-        domain_observed_fraction=round(f_dom, 4),
+        domain_observed_fraction=round(f_dom, 4), domain_reference_cells=n_dom,
         regions=out_regions,
     )
 
@@ -656,7 +656,24 @@ def run(ctx: RunContext, prev_layers: list[LayerArtifact], domain: Domain | None
                 if kept:
                     res.layers = kept
                     notes.append(f"{p.title} unavailable this run: kept the previously published layers with their observation dates.")
-    if not res_o.layers:
+    if not res_o.layers and res_v.layers:
         notes.append("OLCI unavailable this run: the VIIRS 750 m latest clear view is the fallback.")
+    elif not res_o.layers:
+        notes.append("Neither OLCI nor VIIRS could be updated this run.")
+    extra: list[LayerArtifact] = []
+    nbytes = 0
+    o_latest = next((lyr for lyr in res_o.layers if lyr.layer_id == f"{OLCI.key}_chl_latest"), None)
+    v_latest = next((lyr for lyr in res_v.layers if lyr.layer_id == f"{VIIRS.key}_chl_latest"), None)
+    if o_latest and v_latest:
+        from . import multisensor
+
+        try:
+            days = [lyr for lyr in res_o.layers if lyr.layer_id.startswith(f"{OLCI.key}_chl_2")]
+            ms, nbytes = multisensor.build(ctx, o_latest, v_latest, days, range(5, 11))
+            extra.append(ms)
+        except Exception as e:  # the members stay published; only the display is missing
+            notes.append(f"multi-sensor view not built: {e}")
+    else:
+        notes.append("multi-sensor view needs both the Sentinel-3 and the VIIRS latest clear view; not built this run.")
     latest = max([d for d in (res_o.latest_date, res_v.latest_date) if d], default=None)
-    return SatelliteResult(res_o.layers + res_v.layers, res_o.errors + res_v.errors, notes, latest, res_o.bytes_written + res_v.bytes_written)
+    return SatelliteResult(res_o.layers + res_v.layers + extra, res_o.errors + res_v.errors, notes, latest, res_o.bytes_written + res_v.bytes_written + nbytes)

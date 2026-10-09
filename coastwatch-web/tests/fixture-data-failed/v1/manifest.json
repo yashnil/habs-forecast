@@ -263,7 +263,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -525,7 +526,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -787,7 +789,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -1048,7 +1051,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -1310,7 +1314,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -1572,7 +1577,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -1833,7 +1839,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -2095,7 +2102,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -2357,7 +2365,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -2618,7 +2627,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -2880,7 +2890,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -3142,7 +3153,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -3218,7 +3230,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -3294,7 +3307,8 @@
       "platforms": [],
       "coverage": null,
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -3554,6 +3568,7 @@
       "coverage": {
         "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
         "domain_observed_fraction": 0.205,
+        "domain_reference_cells": 522,
         "regions": [
           {
             "region_id": "monterey_bay",
@@ -3659,7 +3674,8 @@
           ]
         }
       },
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -3859,6 +3875,7 @@
       "coverage": {
         "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
         "domain_observed_fraction": 0.1877,
+        "domain_reference_cells": 522,
         "regions": [
           {
             "region_id": "monterey_bay",
@@ -3870,7 +3887,8 @@
         ]
       },
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -4070,6 +4088,7 @@
       "coverage": {
         "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
         "domain_observed_fraction": 0.1322,
+        "domain_reference_cells": 522,
         "regions": [
           {
             "region_id": "monterey_bay",
@@ -4081,7 +4100,8 @@
         ]
       },
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -4236,6 +4256,7 @@
       "coverage": {
         "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
         "domain_observed_fraction": 0.0,
+        "domain_reference_cells": 522,
         "regions": [
           {
             "region_id": "monterey_bay",
@@ -4247,7 +4268,8 @@
         ]
       },
       "composite": null,
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
     },
     {
       "schema_version": 1,
@@ -4542,6 +4564,7 @@
       "coverage": {
         "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
         "domain_observed_fraction": 0.9176,
+        "domain_reference_cells": 522,
         "regions": [
           {
             "region_id": "monterey_bay",
@@ -4657,7 +4680,349 @@
           ]
         }
       },
-      "vectors": null
+      "vectors": null,
+      "multisensor": null
+    },
+    {
+      "schema_version": 1,
+      "layer_id": "multisensor_chl_latest",
+      "group_id": "satellite_chlorophyll_hr",
+      "product_class": "observation",
+      "title": "Satellite chlorophyll-a, multi-sensor latest view (Sentinel-3 300 m, VIIRS 750 m where Sentinel-3 has none)",
+      "short_title": "Chlorophyll \u00b7 multi-sensor",
+      "variable": "chlorophyll_a",
+      "units": "mg m-3",
+      "threshold_text": null,
+      "description": "Display of the most informative recent observation at each pixel from two sensors, each at its own resolution and date. At each pixel: Sentinel-3 OLCI (300 m) if it has a valid observation in the last 7 days, unless VIIRS observed that place more than 2 days more recently; otherwise VIIRS (750 m) if it has one; otherwise no observation. Each pixel shows one sensor's own value and date; nothing is averaged.",
+      "resolution_deg": null,
+      "time": {
+        "issued_date": null,
+        "issued_date_derived": false,
+        "issued_date_method": null,
+        "valid_date": "2026-10-06",
+        "valid_time": null,
+        "observed_date": "2026-10-06",
+        "lead_days": null,
+        "observed_times": [
+          "2026-10-03T12:00:00Z",
+          "2026-10-04T12:00:00Z",
+          "2026-10-05T19:15:21Z",
+          "2026-10-06T18:50:40Z"
+        ]
+      },
+      "freshness": {
+        "basis": "observed_date",
+        "current_max_age_days": 3,
+        "stale_max_age_days": 7,
+        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+      },
+      "image": null,
+      "grid": null,
+      "tiles": {
+        "url_template": "satellite/multisensor/latest-2026-10-12-b3d78d76f6/tiles/{z}/{x}/{y}.png",
+        "tile_size": 256,
+        "max_native_zoom": 10,
+        "legend_url": null,
+        "legend_verified": false,
+        "date_selection": "Rendered by CoastWatch: each tile pixel shows one sensor's published value on that sensor's own grid (nearest cell); Sentinel-3 over VIIRS by the rule.",
+        "relative": true,
+        "min_zoom": 5,
+        "bounds_lnglat": [
+          -122.6025,
+          36.4,
+          -121.75,
+          37.2025
+        ],
+        "n_tiles": 24,
+        "sample_tiles": [
+          "5/5/12",
+          "7/20/50",
+          "8/41/100",
+          "9/81/200",
+          "10/164/398"
+        ]
+      },
+      "palette": {
+        "id": "cw-chlorophyll-log-v1",
+        "domain": [
+          -1.30103,
+          1.69897
+        ],
+        "stops": [
+          {
+            "value": -1.30103,
+            "color": "#102a4c"
+          },
+          {
+            "value": -0.92603,
+            "color": "#14466e"
+          },
+          {
+            "value": -0.55103,
+            "color": "#126483"
+          },
+          {
+            "value": -0.17603,
+            "color": "#147f85"
+          },
+          {
+            "value": 0.19897,
+            "color": "#2a9a7c"
+          },
+          {
+            "value": 0.57397,
+            "color": "#5bb267"
+          },
+          {
+            "value": 0.94897,
+            "color": "#9bc851"
+          },
+          {
+            "value": 1.32397,
+            "color": "#d6dd5e"
+          },
+          {
+            "value": 1.69897,
+            "color": "#f3ef9c"
+          }
+        ],
+        "interpolation": "linear",
+        "scale": "log10",
+        "nodata": "transparent"
+      },
+      "caveats": [
+        "Multi-sensor display: Sentinel-3 300 m where available, VIIRS 750 m elsewhere. The two sensors use different algorithms and can differ at the same place and day (see the agreement figures); a colour change at a sensor boundary may be the sensors, not the water.",
+        "Latest clear view: each pixel shows its most recent valid observation within 7 days; neighbouring pixels can come from different days. Check the observation date in the readout.",
+        "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
+        "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
+        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
+      ],
+      "qc": {
+        "checks": [
+          {
+            "name": "one_sensor_per_pixel",
+            "passed": true,
+            "detail": "13159 pixels Sentinel-3, 53109 pixels VIIRS (on the 300 m lattice); no pixel combines values"
+          },
+          {
+            "name": "members_unchanged",
+            "passed": true,
+            "detail": "values and dates read from olci300_chl_latest and viirs750_chl_latest as published"
+          }
+        ],
+        "n_cells": 109461,
+        "n_valid": 66268,
+        "valid_fraction": 0.605403,
+        "value_min": 0.009999297310040017,
+        "value_max": 297.9865075625561
+      },
+      "provenance": {
+        "source_id": "satellite_chl",
+        "source_name": "CoastWatch multi-sensor display of NOAA CoastWatch Sentinel-3 OLCI and VIIRS chlorophyll-a",
+        "source_url": "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.html",
+        "dataset_id": "noaacwS3AOLCIchlaSectorCIDaily,noaacwS3AOLCIchlaSectorDIDaily,noaacwS3BOLCIchlaSectorCIDaily,noaacwS3BOLCIchlaSectorDIDaily,erdVHNchla1day",
+        "product_version": null,
+        "institution": "NOAA CoastWatch (data); CoastWatch pipeline (display)",
+        "license": "Contains modified Copernicus Sentinel-3 data (EUMETSAT), processed by NOAA CoastWatch/OceanWatch; free and open. NOAA data: may be used and redistributed for free.",
+        "citation": null,
+        "retrieved_at": "2026-10-12T18:00:00Z",
+        "request_urls": [],
+        "upstream_metadata": {
+          "members": "olci300_chl_latest (fixture), viirs750_chl_latest (fixture)",
+          "rule": "multisensor-1"
+        },
+        "pipeline_version": "fixture",
+        "pipeline_run_id": "fixture"
+      },
+      "native_resolution_m": null,
+      "platforms": [
+        "Sentinel-3A",
+        "VIIRS"
+      ],
+      "coverage": {
+        "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+        "domain_observed_fraction": 0.933,
+        "domain_reference_cells": 522,
+        "regions": [
+          {
+            "region_id": "monterey_bay",
+            "label": "Monterey Bay",
+            "observed_fraction": 0.9543,
+            "observed_km2": 2992.1,
+            "reference_cells": 372
+          }
+        ]
+      },
+      "composite": null,
+      "vectors": null,
+      "multisensor": {
+        "reference_date": "2026-10-12",
+        "rule": "At each pixel: Sentinel-3 OLCI (300 m) if it has a valid observation in the last 7 days, unless VIIRS observed that place more than 2 days more recently; otherwise VIIRS (750 m) if it has one; otherwise no observation. Each pixel shows one sensor's own value and date; nothing is averaged.",
+        "prefer_primary_within_days": 2,
+        "members": [
+          {
+            "order": 0,
+            "layer_id": "olci300_chl_latest",
+            "label": "Sentinel-3 OLCI 300 m",
+            "native_resolution_m": 300.0
+          },
+          {
+            "order": 1,
+            "layer_id": "viirs750_chl_latest",
+            "label": "VIIRS 750 m",
+            "native_resolution_m": 750.0
+          }
+        ],
+        "sensor_tiles": {
+          "url_template": "satellite/multisensor/latest-2026-10-12-b3d78d76f6/sensor-tiles/{z}/{x}/{y}.png",
+          "tile_size": 256,
+          "max_native_zoom": 10,
+          "legend_url": null,
+          "legend_verified": false,
+          "date_selection": "Which sensor is shown at each pixel (categorical).",
+          "relative": true,
+          "min_zoom": 5,
+          "bounds_lnglat": [
+            -122.6025,
+            36.4,
+            -121.75,
+            37.2025
+          ],
+          "n_tiles": 24,
+          "sample_tiles": [
+            "5/5/12",
+            "7/20/50",
+            "8/41/100",
+            "9/81/200",
+            "10/164/398"
+          ]
+        },
+        "age_tiles": {
+          "url_template": "satellite/multisensor/latest-2026-10-12-b3d78d76f6/age-tiles/{z}/{x}/{y}.png",
+          "tile_size": 256,
+          "max_native_zoom": 10,
+          "legend_url": null,
+          "legend_verified": false,
+          "date_selection": "Age in days of the observation shown at each pixel (categorical).",
+          "relative": true,
+          "min_zoom": 5,
+          "bounds_lnglat": [
+            -122.6025,
+            36.4,
+            -121.75,
+            37.2025
+          ],
+          "n_tiles": 24,
+          "sample_tiles": [
+            "5/5/12",
+            "7/20/50",
+            "8/41/100",
+            "9/81/200",
+            "10/164/398"
+          ]
+        },
+        "coverage_comparison": [
+          {
+            "region_id": "domain",
+            "label": "Whole domain",
+            "reference_cells": 522,
+            "primary_fraction": 0.205,
+            "secondary_fraction": 0.9176,
+            "combined_fraction": 0.933,
+            "secondary_only_fraction": 0.728
+          },
+          {
+            "region_id": "monterey_bay",
+            "label": "Monterey Bay",
+            "reference_cells": 372,
+            "primary_fraction": 0.2876,
+            "secondary_fraction": 0.9355,
+            "combined_fraction": 0.9543,
+            "secondary_only_fraction": 0.6667
+          }
+        ],
+        "shown": [
+          {
+            "order": 0,
+            "pixels": 13159,
+            "median_age_days": 6.0,
+            "max_age_days": 7
+          },
+          {
+            "order": 1,
+            "pixels": 53109,
+            "median_age_days": 9.0,
+            "max_age_days": 9
+          }
+        ],
+        "agreement_method": "Same-day pairs: for each VIIRS 750 m cell observed on a day Sentinel-3 also observed, the geometric mean of the valid Sentinel-3 300 m pixels inside it (at least 5) against the VIIRS value, in log10. Overpasses differ by a few hours. Describes the visible seam; not a validation of either sensor.",
+        "agreement": [
+          {
+            "region_id": "domain",
+            "label": "Whole domain",
+            "n_cells": 0,
+            "dates": [],
+            "median_log10_ratio": null,
+            "rmsd_log10": null,
+            "pearson_r_log10": null
+          },
+          {
+            "region_id": "north_coast",
+            "label": "North Coast",
+            "n_cells": 0,
+            "dates": [],
+            "median_log10_ratio": null,
+            "rmsd_log10": null,
+            "pearson_r_log10": null
+          },
+          {
+            "region_id": "mendocino_sonoma",
+            "label": "Mendocino\u2013Sonoma",
+            "n_cells": 0,
+            "dates": [],
+            "median_log10_ratio": null,
+            "rmsd_log10": null,
+            "pearson_r_log10": null
+          },
+          {
+            "region_id": "sf_bay_farallones",
+            "label": "San Francisco & Farallones",
+            "n_cells": 0,
+            "dates": [],
+            "median_log10_ratio": null,
+            "rmsd_log10": null,
+            "pearson_r_log10": null
+          },
+          {
+            "region_id": "monterey_bay",
+            "label": "Monterey Bay",
+            "n_cells": 0,
+            "dates": [],
+            "median_log10_ratio": null,
+            "rmsd_log10": null,
+            "pearson_r_log10": null
+          },
+          {
+            "region_id": "central_coast",
+            "label": "Central Coast",
+            "n_cells": 0,
+            "dates": [],
+            "median_log10_ratio": null,
+            "rmsd_log10": null,
+            "pearson_r_log10": null
+          },
+          {
+            "region_id": "southern_california",
+            "label": "Southern California",
+            "n_cells": 0,
+            "dates": [],
+            "median_log10_ratio": null,
+            "rmsd_log10": null,
+            "pearson_r_log10": null
+          }
+        ]
+      }
     }
   ],
   "forecast_runs": [

@@ -132,6 +132,18 @@
           "title": "Domain Observed Fraction",
           "type": "number"
         },
+        "domain_reference_cells": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Domain Reference Cells"
+        },
         "reference": {
           "description": "What the fractions are a share of",
           "title": "Reference",
@@ -353,6 +365,17 @@
           "title": "Layer Id",
           "type": "string"
         },
+        "multisensor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MultiSensorInfo"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "native_resolution_m": {
           "anyOf": [
             {
@@ -499,6 +522,78 @@
         "provenance"
       ],
       "title": "LayerArtifact",
+      "type": "object"
+    },
+    "MultiSensorInfo": {
+      "additionalProperties": false,
+      "description": "A display that shows, at each pixel, one sensor's own published observation. No values\nare averaged, blended or resampled; each member keeps its native grid, values and dates.",
+      "properties": {
+        "age_tiles": {
+          "$ref": "#/$defs/TileLayer",
+          "description": "Age in days of the observation shown at each pixel"
+        },
+        "agreement": {
+          "items": {
+            "$ref": "#/$defs/SensorAgreement"
+          },
+          "title": "Sensor Agreement",
+          "type": "array"
+        },
+        "agreement_method": {
+          "title": "Agreement Method",
+          "type": "string"
+        },
+        "coverage_comparison": {
+          "items": {
+            "$ref": "#/$defs/SensorCoverage"
+          },
+          "title": "Coverage Comparison",
+          "type": "array"
+        },
+        "members": {
+          "items": {
+            "$ref": "#/$defs/SensorMember"
+          },
+          "title": "Members",
+          "type": "array"
+        },
+        "prefer_primary_within_days": {
+          "description": "Primary wins unless the secondary observation is newer by more than this many days",
+          "title": "Prefer Primary Within Days",
+          "type": "integer"
+        },
+        "reference_date": {
+          "title": "Reference Date",
+          "type": "string"
+        },
+        "rule": {
+          "title": "Rule",
+          "type": "string"
+        },
+        "sensor_tiles": {
+          "$ref": "#/$defs/TileLayer",
+          "description": "Which sensor is shown at each pixel (categorical)"
+        },
+        "shown": {
+          "items": {
+            "$ref": "#/$defs/SensorShown"
+          },
+          "title": "Sensor Shown",
+          "type": "array"
+        }
+      },
+      "required": [
+        "reference_date",
+        "rule",
+        "prefer_primary_within_days",
+        "members",
+        "sensor_tiles",
+        "age_tiles",
+        "coverage_comparison",
+        "agreement_method",
+        "agreement"
+      ],
+      "title": "MultiSensorInfo",
       "type": "object"
     },
     "Palette": {
@@ -867,6 +962,210 @@
         "reference_cells"
       ],
       "title": "RegionCoverage",
+      "type": "object"
+    },
+    "SensorAgreement": {
+      "additionalProperties": false,
+      "description": "Same-day agreement between the two sensors where both observed a cell.",
+      "properties": {
+        "dates": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Agreement Dates",
+          "type": "array"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "median_log10_ratio": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Median of log10(primary / secondary); 0.1 = primary 26% higher",
+          "title": "Median Log10 Ratio"
+        },
+        "n_cells": {
+          "title": "N Cells",
+          "type": "integer"
+        },
+        "pearson_r_log10": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pearson R Log10"
+        },
+        "region_id": {
+          "title": "Region Id",
+          "type": "string"
+        },
+        "rmsd_log10": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rmsd Log10"
+        }
+      },
+      "required": [
+        "region_id",
+        "label",
+        "n_cells",
+        "dates"
+      ],
+      "title": "SensorAgreement",
+      "type": "object"
+    },
+    "SensorCoverage": {
+      "additionalProperties": false,
+      "description": "Share of reference ocean cells observed by each sensor alone and together.",
+      "properties": {
+        "combined_fraction": {
+          "description": "Observed by either sensor",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Combined Fraction",
+          "type": "number"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "primary_fraction": {
+          "description": "Observed by the primary sensor (Sentinel-3 OLCI)",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Primary Fraction",
+          "type": "number"
+        },
+        "reference_cells": {
+          "title": "Reference Cells",
+          "type": "integer"
+        },
+        "region_id": {
+          "description": "'domain' for the whole layer domain",
+          "title": "Region Id",
+          "type": "string"
+        },
+        "secondary_fraction": {
+          "description": "Observed by the secondary sensor (VIIRS)",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Secondary Fraction",
+          "type": "number"
+        },
+        "secondary_only_fraction": {
+          "description": "Observed only by the secondary sensor",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Secondary Only Fraction",
+          "type": "number"
+        }
+      },
+      "required": [
+        "region_id",
+        "label",
+        "reference_cells",
+        "primary_fraction",
+        "secondary_fraction",
+        "combined_fraction",
+        "secondary_only_fraction"
+      ],
+      "title": "SensorCoverage",
+      "type": "object"
+    },
+    "SensorMember": {
+      "additionalProperties": false,
+      "description": "One sensor contributing to a multi-sensor display, drawn in `order` (0 = on top).",
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "layer_id": {
+          "description": "The member's own latest-clear-view layer (values, ages, tiles)",
+          "title": "Layer Id",
+          "type": "string"
+        },
+        "native_resolution_m": {
+          "title": "Native Resolution M",
+          "type": "number"
+        },
+        "order": {
+          "title": "Order",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "order",
+        "layer_id",
+        "label",
+        "native_resolution_m"
+      ],
+      "title": "SensorMember",
+      "type": "object"
+    },
+    "SensorShown": {
+      "additionalProperties": false,
+      "description": "How much of the display each sensor supplies, and how old those pixels are.",
+      "properties": {
+        "max_age_days": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Age Days"
+        },
+        "median_age_days": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Median Age Days"
+        },
+        "order": {
+          "title": "Order",
+          "type": "integer"
+        },
+        "pixels": {
+          "description": "Pixels of the 300 m lattice showing this sensor",
+          "title": "Pixels",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "order",
+        "pixels"
+      ],
+      "title": "SensorShown",
       "type": "object"
     },
     "SourceStatus": {
