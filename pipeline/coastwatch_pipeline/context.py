@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .http import Fetcher, fetch
+from .http import Fetcher, Poster, fetch, post_json
 
 
 def _git_sha() -> str:
@@ -31,6 +31,7 @@ def iso(dt: datetime) -> str:
 class RunContext:
     out_dir: Path
     fetcher: Fetcher = fetch
+    poster: Poster = post_json
     now: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     pipeline_version: str = field(default_factory=_git_sha)
     run_id: str = field(

@@ -51,10 +51,11 @@ def fetch(
     backoff: float = 5.0,
     method: str = "GET",
     headers: dict[str, str] | None = None,
+    data: bytes | None = None,
 ) -> Response:
     last: Exception | None = None
     for attempt in range(retries + 1):
-        req = urllib.request.Request(url, method=method, headers={"User-Agent": USER_AGENT, **(headers or {})})
+        req = urllib.request.Request(url, data=data, method=method, headers={"User-Agent": USER_AGENT, **(headers or {})})
         try:
             with urllib.request.urlopen(req, timeout=timeout, context=tls_context()) as r:
                 return Response(
@@ -73,3 +74,11 @@ def fetch(
         if attempt < retries:
             time.sleep(backoff * (2**attempt))
     raise FetchError(f"Failed after {retries + 1} attempts: {url} ({last})")
+
+
+Poster = Callable[[str, bytes], Response]
+
+
+def post_json(url: str, body: bytes) -> Response:
+    """POST a JSON body (used for the BLS public API, which only serves ranges via POST)."""
+    return fetch(url, method="POST", data=body, headers={"Content-Type": "application/json"})

@@ -234,6 +234,9 @@ class Manifest(_Model):
     ports_url: str | None
     official_url: str | None = None
     port_intel_url: str | None = None
+    # Added in M3 (additive; absent in manifests written by earlier pipelines).
+    observations_url: str | None = None
+    fisheries_url: str | None = None
 
 
 # ---------------------------------------------------------------- official notices (M2)
@@ -425,9 +428,178 @@ class PortIntelCollection(_Model):
     provenance: list[Provenance]
 
 
+# ---------------------------------------------------------------- measured observations (M3)
+ObsVariableId = Literal["pDA", "tDA", "dDA", "pn_seriata", "pn_delicatissima", "chl_extracted", "temp"]
+Qualifier = Literal["reported_zero", "rejected_negative", "flag_high"]
+
+
+class ObsVariable(_Model):
+    """How one measured quantity is defined. Values of different variables are never
+    combined: fractions (particulate/dissolved/total), matrices and units stay separate."""
+
+    id: ObsVariableId
+    source_variable: str = Field(description="Upstream column name, verbatim")
+    label: str
+    upstream_long_name: str | None = None
+    units: str = Field(description="Units as published upstream, verbatim")
+    kind: Literal["toxin", "cell_abundance", "pigment", "physical"]
+    matrix: Literal["seawater"]
+    fraction: str | None = Field(None, description="e.g. particulate, dissolved, total; null if not applicable")
+    method: str = Field(description="Analytical method, or a statement that it is not published")
+    detection_limit: float | None = Field(None, description="Only when published upstream")
+    detection_limit_note: str
+    zero_policy: str = Field(description="How a reported 0 is interpreted")
+    plausible_max: float | None = Field(None, description="Values above this are kept but flagged for review")
+
+
+class ObsSeries(_Model):
+    """Values aligned with the station's sample_times. null = not measured in that sample
+    (absence of a measurement, never zero). qualifiers maps a sample index (as a string)
+    to a qualifier code."""
+
+    variable: ObsVariableId
+    values: list[float | None]
+    qualifiers: dict[str, Qualifier] = Field(default_factory=dict)
+
+
+class ObsVariableSummary(_Model):
+    variable: ObsVariableId
+    n_measured: int = Field(description="Samples with a reported value (including reported zeros)")
+    n_reported_zero: int
+    n_rejected: int
+    first_date: str | None
+    last_date: str | None
+    last_value: float | None
+    last_qualifier: Qualifier | None = None
+    days_since_last: int | None = Field(None, description="Days from the last measurement to the run date")
+    n_last_365d: int
+    median_interval_days_365d: float | None = Field(None, description="Median days between measurements in the last 365 days")
+    max_last_365d: float | None
+
+
+class StationCharm(_Model):
+    """C-HARM nowcast near the station: a model probability, shown beside (never compared
+    numerically with) the measurements."""
+
+    radius_km: float
+    nearest_cell_km: float | None
+    history_days: int
+    history: dict[str, list[SeriesPoint]] = Field(default_factory=dict)
+    error: str | None = None
+
+
+class ObsStation(_Model):
+    station_id: str = Field(description="Upstream dataset id, e.g. HABs-SantaCruzWharf")
+    name: str
+    location_code: str | None = None
+    lat: float | None = Field(description="Most recent sampling position; null only when the station has never been retrieved")
+    lon: float | None
+    region: str | None = None
+    nearest_port_code: int | None = None
+    nearest_port_name: str | None = None
+    nearest_port_km: float | None = None
+    status: Literal["updated", "carried_forward", "failed"]
+    error: str | None = None
+    retrieved_at: str | None = Field(None, description="When this station's data were fetched")
+    source_url: str
+    request_url: str | None = None
+    sample_times: list[str] = Field(description="UTC ISO-8601 sample times, ascending")
+    depths_m: list[float | None]
+    series: list[ObsSeries]
+    summaries: list[ObsVariableSummary]
+    qc: list[QCCheck]
+    charm: StationCharm | None = None
+
+
+class ObservationDataset(_Model):
+    schema_version: Literal[1] = SCHEMA_VERSION
+    generated_at: str
+    window_start: str = Field(description="Earliest sample date requested")
+    program: str
+    variables: list[ObsVariable]
+    stations: list[ObsStation]
+    method: dict[str, str]
+    caveats: list[str]
+    provenance: Provenance
+
+
+# ---------------------------------------------------------------- fisheries exposure (M3)
+class Deflator(_Model):
+    series_id: str
+    title: str
+    source_url: str
+    base_year: int
+    annual_index: dict[str, float] = Field(description="year -> annual average index")
+    months_used: dict[str, int] = Field(description="year -> number of monthly values averaged")
+    method: str
+    notes: list[str] = Field(default_factory=list)
+
+
+class YearValue(_Model):
+    year: int
+    pounds: float | None
+    dollars_nominal: float | None
+    dollars_real: float | None = Field(description="In base-year dollars; null when nominal is null")
+    n_rows: int = Field(description="Source rows aggregated")
+    n_rows_without_value: int = Field(0, description="Source rows with no published value (not zero)")
+
+
+class SpeciesGroup(_Model):
+    id: str
+    label: str
+    tier: Literal[1, 2]
+    tier_basis: str
+    official_record_ids: list[str] = Field(default_factory=list)
+    source_names: list[str] = Field(description="Upstream species names assigned to this group")
+    annual: list[YearValue]
+
+
+class SuppressedValue(_Model):
+    year: int
+    pounds: float | None
+    dollars_nominal: float | None
+    dollars_real: float | None
+    note: str
+
+
+class ExcludedRow(_Model):
+    year: int
+    source_name: str
+    duplicate_of: str
+    pounds: float | None
+    dollars_nominal: float | None
+    reason: str
+
+
+class PortLevelStatus(_Model):
+    status: Literal["available", "unavailable"]
+    reasons: list[str]
+    adapters: list[dict[str, str]] = Field(description="id, status, note for each port-level source considered")
+
+
+class FisheriesDataset(_Model):
+    schema_version: Literal[1] = SCHEMA_VERSION
+    generated_at: str
+    scope: str
+    years: list[int]
+    years_requested_unavailable: list[int] = Field(default_factory=list)
+    deflator: Deflator
+    groups: list[SpeciesGroup]
+    statewide_total: list[YearValue] = Field(description="All commercial rows including the withheld row (as in NOAA's state totals), duplicates counted once")
+    withheld: list[SuppressedValue]
+    excluded_rows: list[ExcludedRow]
+    port_level: PortLevelStatus
+    terminology: str
+    method: dict[str, str]
+    caveats: list[str]
+    provenance: list[Provenance]
+
+
 SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "manifest": Manifest,
     "ports": PortsCollection,
     "official": OfficialDataset,
     "port_intel": PortIntelCollection,
+    "observations": ObservationDataset,
+    "fisheries": FisheriesDataset,
 }

@@ -27,5 +27,6 @@ export default defineConfig({
     start(3200, "/data/fixture/v1"),
     start(3201, "/data/fixture-failed/v1"),
     start(3202, "/data/does-not-exist/v1"),
+    start(3203, "/data/compat-m2/v1"),
   ],
 });

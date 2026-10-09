@@ -78,7 +78,7 @@ const AGENCY_STYLE: Record<string, string> = {
   OEHHA: "border-[#ffb547]/60 text-[#ffcf85]",
 };
 
-export function NoticeCard({ r, now, relationNote, compact = false }: { r: OfficialRecord; now: Date | null; relationNote?: string; compact?: boolean }) {
+export function NoticeCard({ r, now, relationNote, compact = false, dense = false }: { r: OfficialRecord; now: Date | null; relationNote?: string; compact?: boolean; dense?: boolean }) {
   const [open, setOpen] = useState(!compact);
   const critical = now ? criticalFlags(r, now) : [];
   const flags = now ? recordFlags(r, now).filter((f) => !critical.includes(f)) : [];
@@ -88,15 +88,15 @@ export function NoticeCard({ r, now, relationNote, compact = false }: { r: Offic
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex w-full items-start gap-2 px-2.5 py-2 text-left hover:bg-[#ffb547]/[0.05]"
+        className={`flex w-full items-start gap-2 px-2.5 text-left hover:bg-[#ffb547]/[0.05] ${dense ? "py-1.5" : "py-2"}`}
       >
         <span className={`mt-px shrink-0 rounded border px-1 text-[10px] font-bold tracking-wide ${AGENCY_STYLE[r.agency]}`}>{r.agency}</span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[10.5px] font-semibold uppercase tracking-wide text-[#ffcf85]">
+          <span className={`block text-[10.5px] font-semibold uppercase tracking-wide text-[#ffcf85] ${dense && !open ? "truncate" : ""}`}>
             {ACTION_LABEL[r.action]} · {FISHERY_LABEL[r.fishery]}
           </span>
-          <span className="block text-[12.5px] font-semibold leading-snug text-ink">{r.title}</span>
-          <span className="mt-0.5 block text-[11px] text-ink-3">
+          <span className={`block text-[12.5px] font-semibold leading-snug text-ink ${dense && !open ? "truncate" : ""}`}>{r.title}</span>
+          <span className={`mt-0.5 block text-[11px] text-ink-3 ${dense && !open ? "hidden" : ""}`}>
             {r.effective_date ? `Since ${formatDate(r.effective_date, { year: true })}` : "Start date not published"}
             {r.expected_end_date ? ` · through at least ${formatDate(r.expected_end_date)}` : ""}
             {relationNote ? ` · ${relationNote}` : ""}
@@ -178,7 +178,7 @@ export function Hotlines() {
 export function OfficialSummary({ ds, v, now, error }: { ds: OfficialDataset | null; v: Verification | null; now: Date | null; error: string | null }) {
   const [showAll, setShowAll] = useState(false);
   const records = activeRecords(ds);
-  const shown = showAll ? records : records.slice(0, 4);
+  const shown = showAll ? records : records.slice(0, 3);
   return (
     <section data-testid="official-status" aria-labelledby="official-h" className="space-y-2.5 rounded-lg border border-[#ffb547]/30 bg-surface p-3.5">
       <div className="flex items-center justify-between gap-2">
@@ -193,16 +193,16 @@ export function OfficialSummary({ ds, v, now, error }: { ds: OfficialDataset | n
         </Notice>
       ) : (
         <>
-          {v && <VerificationDetail v={v} />}
+          {v && <VerificationDetail v={v} brief />}
           <p className="text-[12px] text-ink-2">
-            <span className="font-semibold text-ink tabular">{records.length}</span> active notices statewide from CDFW and CDPH.
+            <span className="font-semibold text-ink tabular">{records.length}</span> active notices statewide from CDFW and CDPH. Select one for the agency&apos;s wording.
           </p>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {shown.map((r) => (
-              <NoticeCard key={r.id} r={r} now={now} compact />
+              <NoticeCard key={r.id} r={r} now={now} compact dense />
             ))}
           </div>
-          {records.length > 4 && (
+          {records.length > 3 && (
             <button onClick={() => setShowAll(!showAll)} className="w-full rounded-md border border-hairline py-1.5 text-[12px] text-ink-2 hover:text-ink" data-testid="official-show-all">
               {showAll ? "Show fewer" : `Show all ${records.length} notices`}
             </button>

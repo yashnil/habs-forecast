@@ -1,0 +1,944 @@
+{
+ "schema_version": 1,
+ "generated_at": "2026-10-08T18:00:00Z",
+ "scope": "California commercial landings, statewide, by species group and year (all ports and gears combined).",
+ "years": [
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024
+ ],
+ "years_requested_unavailable": [
+  2025
+ ],
+ "deflator": {
+  "series_id": "CUUR0000SA0",
+  "title": "CPI-U, U.S. city average, all items, not seasonally adjusted (BLS)",
+  "source_url": "https://data.bls.gov/timeseries/CUUR0000SA0",
+  "base_year": 2024,
+  "annual_index": {
+   "2015": 237.017,
+   "2016": 240.007,
+   "2017": 245.12,
+   "2018": 251.107,
+   "2019": 255.657,
+   "2020": 258.811,
+   "2021": 270.97,
+   "2022": 292.655,
+   "2023": 304.702,
+   "2024": 313.689
+  },
+  "months_used": {
+   "2015": 12,
+   "2016": 12,
+   "2017": 12,
+   "2018": 12,
+   "2019": 12,
+   "2020": 12,
+   "2021": 12,
+   "2022": 12,
+   "2023": 12,
+   "2024": 12,
+   "2025": 11,
+   "2026": 8
+  },
+  "method": "Annual average = mean of the 12 published monthly values, rounded to 3 decimals (as BLS publishes). Real value = nominal × CPI(2024) / CPI(year). Base year = most recent year with all 12 monthly values published.",
+  "notes": [
+   "2025: 11 of 12 monthly values published (missing M10); no annual average is computed for 2025, so it cannot be the base year."
+  ]
+ },
+ "groups": [
+  {
+   "id": "dungeness_crab",
+   "label": "Dungeness crab",
+   "tier": 1,
+   "tier_basis": "CDFW has delayed or closed the commercial Dungeness crab fishery because of domoic acid in past seasons (for example 2015–16). CDFW currently states there are no marine-toxin closures in this fishery.",
+   "official_record_ids": [],
+   "source_names": [
+    "CRAB, DUNGENESS"
+   ],
+   "annual": [
+    {
+     "year": 2015,
+     "pounds": 3118884.7,
+     "dollars_nominal": 17002331.15,
+     "dollars_real": 22502370.11,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2016,
+     "pounds": 26680353.6,
+     "dollars_nominal": 83190953.35,
+     "dollars_real": 108730524.38,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2017,
+     "pounds": 12878559.3,
+     "dollars_nominal": 47004580.52,
+     "dollars_real": 60153475.27,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2018,
+     "pounds": 18804772.1,
+     "dollars_nominal": 62880327.99,
+     "dollars_real": 78551642.16,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2019,
+     "pounds": 15651920.4,
+     "dollars_nominal": 51955545.93,
+     "dollars_real": 63749020.16,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2020,
+     "pounds": 8383036.2,
+     "dollars_nominal": 30153091.71,
+     "dollars_real": 36546720.14,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2021,
+     "pounds": 10408272.0,
+     "dollars_nominal": 52962597.64,
+     "dollars_real": 61312264.42,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2022,
+     "pounds": 3657364.0,
+     "dollars_nominal": 21268210.47,
+     "dollars_real": 22796821.08,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2023,
+     "pounds": 21006928.0,
+     "dollars_nominal": 54105400.8,
+     "dollars_real": 55701206.66,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2024,
+     "pounds": 14173705.9,
+     "dollars_nominal": 49745602.1,
+     "dollars_real": 49745602.1,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    }
+   ]
+  },
+  {
+   "id": "rock_crab",
+   "label": "Rock crabs",
+   "tier": 1,
+   "tier_basis": "A CDFW commercial rock crab closure for domoic acid is active north of 40° N (see the official notice).",
+   "official_record_ids": [
+    "cdfw-rock-crab-commercial-40n"
+   ],
+   "source_names": [
+    "CRAB, RED ROCK"
+   ],
+   "annual": [
+    {
+     "year": 2015,
+     "pounds": 2227408.3,
+     "dollars_nominal": 3260717.03,
+     "dollars_real": 4315517.72,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2016,
+     "pounds": 1317150.9,
+     "dollars_nominal": 2023388.69,
+     "dollars_real": 2644567.76,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2017,
+     "pounds": 1292779.0,
+     "dollars_nominal": 2178929.37,
+     "dollars_real": 2788455.35,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2018,
+     "pounds": 1462798.2,
+     "dollars_nominal": 2466080.25,
+     "dollars_real": 3080687.71,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2019,
+     "pounds": 1431712.2,
+     "dollars_nominal": 2566605.53,
+     "dollars_real": 3149203.51,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2020,
+     "pounds": 1259353.9,
+     "dollars_nominal": 2316882.72,
+     "dollars_real": 2808151.99,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2021,
+     "pounds": 1062048.6,
+     "dollars_nominal": 2177432.88,
+     "dollars_real": 2520709.83,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2022,
+     "pounds": 1105085.0,
+     "dollars_nominal": 2619217.89,
+     "dollars_real": 2807469.0,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2023,
+     "pounds": 1128947.1,
+     "dollars_nominal": 2566395.04,
+     "dollars_real": 2642089.3,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2024,
+     "pounds": 1062359.0,
+     "dollars_nominal": 2427414.87,
+     "dollars_real": 2427414.87,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    }
+   ]
+  },
+  {
+   "id": "northern_anchovy",
+   "label": "Northern anchovy",
+   "tier": 1,
+   "tier_basis": "A CDFW commercial and recreational take restriction for domoic acid is active in Monterey Bay (see the official notice).",
+   "official_record_ids": [
+    "cdfw-2026-anchovy-take-restriction-monterey-bay"
+   ],
+   "source_names": [
+    "ANCHOVY, NORTHERN"
+   ],
+   "annual": [
+    {
+     "year": 2015,
+     "pounds": 38108907.2,
+     "dollars_nominal": 2006094.82,
+     "dollars_real": 2655041.11,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2016,
+     "pounds": 18449103.0,
+     "dollars_nominal": 1089790.7,
+     "dollars_real": 1424355.77,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2017,
+     "pounds": 12014087.7,
+     "dollars_nominal": 780784.54,
+     "dollars_real": 999198.44,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2018,
+     "pounds": 38364922.0,
+     "dollars_nominal": 1977538.86,
+     "dollars_real": 2470389.86,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2019,
+     "pounds": 22408961.2,
+     "dollars_nominal": 1291931.73,
+     "dollars_real": 1585189.42,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2020,
+     "pounds": 12425452.2,
+     "dollars_nominal": 722826.74,
+     "dollars_real": 876094.13,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2021,
+     "pounds": 6397923.9,
+     "dollars_nominal": 1408092.98,
+     "dollars_real": 1630081.85,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2022,
+     "pounds": 3323236.3,
+     "dollars_nominal": 548670.71,
+     "dollars_real": 588105.33,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2023,
+     "pounds": 6910603.6,
+     "dollars_nominal": 577226.67,
+     "dollars_real": 594251.62,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2024,
+     "pounds": 9718838.7,
+     "dollars_nominal": 627641.16,
+     "dollars_real": 627641.16,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    }
+   ]
+  },
+  {
+   "id": "spiny_lobster",
+   "label": "California spiny lobster",
+   "tier": 2,
+   "tier_basis": "CDFW monitors and reports marine-toxin closures for this fishery; it currently states there are none.",
+   "official_record_ids": [],
+   "source_names": [
+    "LOBSTER, CALIFORNIA SPINY"
+   ],
+   "annual": [
+    {
+     "year": 2015,
+     "pounds": 768271.7,
+     "dollars_nominal": 15739620.51,
+     "dollars_real": 20831188.56,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2016,
+     "pounds": 666261.5,
+     "dollars_nominal": 13593587.34,
+     "dollars_real": 17766810.21,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2017,
+     "pounds": 699569.1,
+     "dollars_nominal": 13176577.31,
+     "dollars_real": 16862546.34,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2018,
+     "pounds": 871716.2,
+     "dollars_nominal": 14124535.37,
+     "dollars_real": 17644714.71,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2019,
+     "pounds": 824013.3,
+     "dollars_nominal": 11324494.77,
+     "dollars_real": 13895060.33,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2020,
+     "pounds": 726401.1,
+     "dollars_nominal": 13846202.87,
+     "dollars_real": 16782136.51,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2021,
+     "pounds": 668236.0,
+     "dollars_nominal": 15115091.05,
+     "dollars_real": 17498017.48,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2022,
+     "pounds": 954613.0,
+     "dollars_nominal": 18431567.81,
+     "dollars_real": 19756300.34,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2023,
+     "pounds": 1096318.5,
+     "dollars_nominal": 21515330.94,
+     "dollars_real": 22149912.53,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2024,
+     "pounds": 1080861.3,
+     "dollars_nominal": 20897875.18,
+     "dollars_real": 20897875.18,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    }
+   ]
+  },
+  {
+   "id": "pacific_sardine",
+   "label": "Pacific sardine",
+   "tier": 2,
+   "tier_basis": "A plankton-feeding fish that can carry domoic acid; no current commercial toxin closure is listed.",
+   "official_record_ids": [],
+   "source_names": [
+    "SARDINE, PACIFIC"
+   ],
+   "annual": [
+    {
+     "year": 2015,
+     "pounds": 3751030.2,
+     "dollars_nominal": 343148.29,
+     "dollars_real": 454152.42,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2016,
+     "pounds": 954216.0,
+     "dollars_nominal": 95656.5,
+     "dollars_real": 125022.99,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2017,
+     "pounds": 952889.9,
+     "dollars_nominal": 61452.89,
+     "dollars_real": 78643.5,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2018,
+     "pounds": 720381.6,
+     "dollars_nominal": 77069.86,
+     "dollars_real": 96277.55,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2019,
+     "pounds": 4133494.3,
+     "dollars_nominal": 1910686.57,
+     "dollars_real": 2344396.44,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2020,
+     "pounds": 6314113.0,
+     "dollars_nominal": 2440903.42,
+     "dollars_real": 2958469.9,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2021,
+     "pounds": 3827437.7,
+     "dollars_nominal": 9836705.92,
+     "dollars_real": 11387483.65,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2022,
+     "pounds": 3897900.7,
+     "dollars_nominal": 1661715.39,
+     "dollars_real": 1781147.9,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2023,
+     "pounds": 3772991.1,
+     "dollars_nominal": 1062005.49,
+     "dollars_real": 1093328.7,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2024,
+     "pounds": 3258361.3,
+     "dollars_nominal": 667149.34,
+     "dollars_real": 667149.34,
+     "n_rows": 1,
+     "n_rows_without_value": 0
+    }
+   ]
+  },
+  {
+   "id": "bivalves",
+   "label": "Bivalve shellfish (oysters, clams, mussels, scallops)",
+   "tier": 2,
+   "tier_basis": "CDPH quarantines and advisories apply to sport-harvested bivalves; commercially sold bivalves come from certified growers tested under CDPH's program. NOAA includes farmed clams, mussels and oysters in these landings, so this group is mostly aquaculture; pounds are meat weight.",
+   "official_record_ids": [
+    "cdph-2026-annual-mussel-quarantine",
+    "cdph-2026-sn26-018-monterey-bivalves",
+    "cdph-nci-bivalve-special-advisory"
+   ],
+   "source_names": [
+    "CLAMS **",
+    "OYSTER, EASTERN",
+    "OYSTER, EDIBLE",
+    "OYSTER, OLYMPIA",
+    "OYSTER, PACIFIC",
+    "SCALLOPS **"
+   ],
+   "annual": [
+    {
+     "year": 2015,
+     "pounds": 859109.7,
+     "dollars_nominal": 13658587.0,
+     "dollars_real": 18076967.04,
+     "n_rows": 6,
+     "n_rows_without_value": 1
+    },
+    {
+     "year": 2016,
+     "pounds": 442255.9,
+     "dollars_nominal": 6364701.0,
+     "dollars_real": 8318660.26,
+     "n_rows": 6,
+     "n_rows_without_value": 1
+    },
+    {
+     "year": 2017,
+     "pounds": 879841.1,
+     "dollars_nominal": 14781870.16,
+     "dollars_real": 18916898.13,
+     "n_rows": 5,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2018,
+     "pounds": 1122296.2,
+     "dollars_nominal": 15256306.0,
+     "dollars_real": 19058550.23,
+     "n_rows": 6,
+     "n_rows_without_value": 1
+    },
+    {
+     "year": 2019,
+     "pounds": 1037637.2,
+     "dollars_nominal": 15410613.0,
+     "dollars_real": 18908693.22,
+     "n_rows": 6,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2020,
+     "pounds": 729863.3,
+     "dollars_nominal": 10628599.0,
+     "dollars_real": 12882275.45,
+     "n_rows": 6,
+     "n_rows_without_value": 1
+    },
+    {
+     "year": 2021,
+     "pounds": 659456.0,
+     "dollars_nominal": 7914337.0,
+     "dollars_real": 9162049.15,
+     "n_rows": 6,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2022,
+     "pounds": 655755.3,
+     "dollars_nominal": 9808154.4,
+     "dollars_real": 10513096.12,
+     "n_rows": 7,
+     "n_rows_without_value": 2
+    },
+    {
+     "year": 2023,
+     "pounds": 701800.4,
+     "dollars_nominal": 9726416.3,
+     "dollars_real": 10013291.03,
+     "n_rows": 5,
+     "n_rows_without_value": 0
+    },
+    {
+     "year": 2024,
+     "pounds": 756738.0,
+     "dollars_nominal": 10881966.7,
+     "dollars_real": 10881966.7,
+     "n_rows": 7,
+     "n_rows_without_value": 2
+    }
+   ]
+  }
+ ],
+ "statewide_total": [
+  {
+   "year": 2015,
+   "pounds": 188030734.6,
+   "dollars_nominal": 143025747.37,
+   "dollars_real": 189292766.62,
+   "n_rows": 240,
+   "n_rows_without_value": 44
+  },
+  {
+   "year": 2016,
+   "pounds": 168688869.0,
+   "dollars_nominal": 205002338.47,
+   "dollars_real": 267937929.11,
+   "n_rows": 242,
+   "n_rows_without_value": 40
+  },
+  {
+   "year": 2017,
+   "pounds": 209831756.4,
+   "dollars_nominal": 209254128.2,
+   "dollars_real": 267790136.35,
+   "n_rows": 239,
+   "n_rows_without_value": 30
+  },
+  {
+   "year": 2018,
+   "pounds": 181041193.1,
+   "dollars_nominal": 196774273.56,
+   "dollars_real": 245815230.55,
+   "n_rows": 227,
+   "n_rows_without_value": 24
+  },
+  {
+   "year": 2019,
+   "pounds": 112483393.9,
+   "dollars_nominal": 165810496.3,
+   "dollars_real": 203448091.68,
+   "n_rows": 239,
+   "n_rows_without_value": 26
+  },
+  {
+   "year": 2020,
+   "pounds": 106980372.5,
+   "dollars_nominal": 144931076.7,
+   "dollars_real": 175662102.92,
+   "n_rows": 231,
+   "n_rows_without_value": 38
+  },
+  {
+   "year": 2021,
+   "pounds": 149775397.2,
+   "dollars_nominal": 209712942.25,
+   "dollars_real": 242774636.09,
+   "n_rows": 226,
+   "n_rows_without_value": 31
+  },
+  {
+   "year": 2022,
+   "pounds": 186205588.3,
+   "dollars_nominal": 207870047.07,
+   "dollars_real": 222810296.07,
+   "n_rows": 227,
+   "n_rows_without_value": 37
+  },
+  {
+   "year": 2023,
+   "pounds": 112436092.7,
+   "dollars_nominal": 170609807.9,
+   "dollars_real": 175641840.32,
+   "n_rows": 218,
+   "n_rows_without_value": 16
+  },
+  {
+   "year": 2024,
+   "pounds": 179236555.3,
+   "dollars_nominal": 200025856.07,
+   "dollars_real": 200025856.07,
+   "n_rows": 221,
+   "n_rows_without_value": 34
+  }
+ ],
+ "withheld": [
+  {
+   "year": 2015,
+   "pounds": 111844.8,
+   "dollars_nominal": 124669.83,
+   "dollars_real": 164998.94,
+   "note": "Landings FOSS withholds for confidentiality, aggregated across species by FOSS. Not attributable to any species or group and not included in group or statewide values."
+  },
+  {
+   "year": 2016,
+   "pounds": 38706.7,
+   "dollars_nominal": 59179.49,
+   "dollars_real": 77347.56,
+   "note": "Landings FOSS withholds for confidentiality, aggregated across species by FOSS. Not attributable to any species or group and not included in group or statewide values."
+  },
+  {
+   "year": 2017,
+   "pounds": 15860.3,
+   "dollars_nominal": 17989.81,
+   "dollars_real": 23022.22,
+   "note": "Landings FOSS withholds for confidentiality, aggregated across species by FOSS. Not attributable to any species or group and not included in group or statewide values."
+  },
+  {
+   "year": 2018,
+   "pounds": 1378574.0,
+   "dollars_nominal": 259625.73,
+   "dollars_real": 324330.81,
+   "note": "Landings FOSS withholds for confidentiality, aggregated across species by FOSS. Not attributable to any species or group and not included in group or statewide values."
+  },
+  {
+   "year": 2019,
+   "pounds": 4883.7,
+   "dollars_nominal": 5759.93,
+   "dollars_real": 7067.39,
+   "note": "Landings FOSS withholds for confidentiality, aggregated across species by FOSS. Not attributable to any species or group and not included in group or statewide values."
+  },
+  {
+   "year": 2020,
+   "pounds": 918047.4,
+   "dollars_nominal": 362864.83,
+   "dollars_real": 439806.29,
+   "note": "Landings FOSS withholds for confidentiality, aggregated across species by FOSS. Not attributable to any species or group and not included in group or statewide values."
+  },
+  {
+   "year": 2021,
+   "pounds": 17585.4,
+   "dollars_nominal": 139722.41,
+   "dollars_real": 161749.95,
+   "note": "Landings FOSS withholds for confidentiality, aggregated across species by FOSS. Not attributable to any species or group and not included in group or statewide values."
+  },
+  {
+   "year": 2022,
+   "pounds": 80639.9,
+   "dollars_nominal": 163534.54,
+   "dollars_real": 175288.26,
+   "note": "Landings FOSS withholds for confidentiality, aggregated across species by FOSS. Not attributable to any species or group and not included in group or statewide values."
+  },
+  {
+   "year": 2023,
+   "pounds": 2325.0,
+   "dollars_nominal": 4812.55,
+   "dollars_real": 4954.49,
+   "note": "Landings FOSS withholds for confidentiality, aggregated across species by FOSS. Not attributable to any species or group and not included in group or statewide values."
+  },
+  {
+   "year": 2024,
+   "pounds": 10876.1,
+   "dollars_nominal": 10810.61,
+   "dollars_real": 10810.61,
+   "note": "Landings FOSS withholds for confidentiality, aggregated across species by FOSS. Not attributable to any species or group and not included in group or statewide values."
+  }
+ ],
+ "excluded_rows": [
+  {
+   "year": 2015,
+   "source_name": "OYSTER, KUMAMOTO **",
+   "duplicate_of": "OYSTER, PACIFIC",
+   "pounds": 245861.0,
+   "dollars_nominal": 5640359.0,
+   "reason": "Identical pounds and dollars to another species row in the same year; treated as a duplicate listing and counted once."
+  },
+  {
+   "year": 2016,
+   "source_name": "OYSTER, KUMAMOTO **",
+   "duplicate_of": "OYSTER, PACIFIC",
+   "pounds": 280.0,
+   "dollars_nominal": 6406.0,
+   "reason": "Identical pounds and dollars to another species row in the same year; treated as a duplicate listing and counted once."
+  },
+  {
+   "year": 2017,
+   "source_name": "OYSTER, KUMAMOTO **",
+   "duplicate_of": "OYSTER, PACIFIC",
+   "pounds": 259130.0,
+   "dollars_nominal": 5944757.0,
+   "reason": "Identical pounds and dollars to another species row in the same year; treated as a duplicate listing and counted once."
+  },
+  {
+   "year": 2018,
+   "source_name": "OYSTER, KUMAMOTO **",
+   "duplicate_of": "OYSTER, PACIFIC",
+   "pounds": 286644.0,
+   "dollars_nominal": 6575939.0,
+   "reason": "Identical pounds and dollars to another species row in the same year; treated as a duplicate listing and counted once."
+  },
+  {
+   "year": 2019,
+   "source_name": "OYSTER, KUMAMOTO **",
+   "duplicate_of": "OYSTER, PACIFIC",
+   "pounds": 261368.0,
+   "dollars_nominal": 5996082.0,
+   "reason": "Identical pounds and dollars to another species row in the same year; treated as a duplicate listing and counted once."
+  },
+  {
+   "year": 2020,
+   "source_name": "OYSTER, KUMAMOTO **",
+   "duplicate_of": "OYSTER, PACIFIC",
+   "pounds": 170707.0,
+   "dollars_nominal": 3916229.0,
+   "reason": "Identical pounds and dollars to another species row in the same year; treated as a duplicate listing and counted once."
+  },
+  {
+   "year": 2021,
+   "source_name": "OYSTER, KUMAMOTO **",
+   "duplicate_of": "OYSTER, PACIFIC",
+   "pounds": 32393.0,
+   "dollars_nominal": 743132.0,
+   "reason": "Identical pounds and dollars to another species row in the same year; treated as a duplicate listing and counted once."
+  },
+  {
+   "year": 2022,
+   "source_name": "OYSTER, KUMAMOTO **",
+   "duplicate_of": "OYSTER, PACIFIC",
+   "pounds": 171450.86500000034,
+   "dollars_nominal": 3933284.55,
+   "reason": "Identical pounds and dollars to another species row in the same year; treated as a duplicate listing and counted once."
+  },
+  {
+   "year": 2023,
+   "source_name": "OYSTER, KUMAMOTO **",
+   "duplicate_of": "OYSTER, PACIFIC",
+   "pounds": 191750.0,
+   "dollars_nominal": 4398965.35,
+   "reason": "Identical pounds and dollars to another species row in the same year; treated as a duplicate listing and counted once."
+  },
+  {
+   "year": 2024,
+   "source_name": "OYSTER, KUMAMOTO **",
+   "duplicate_of": "OYSTER, PACIFIC",
+   "pounds": 235702.0,
+   "dollars_nominal": 5371969.2,
+   "reason": "Identical pounds and dollars to another species row in the same year; treated as a duplicate listing and counted once."
+  }
+ ],
+ "port_level": {
+  "status": "unavailable",
+  "reasons": [
+   "Port-level landings for 2021 onward are published by CDFW only through the interactive Marine Fisheries Data Explorer (MFDE). CDFW asks users to consult it before using MFDE data, and permission for automated extraction or republication has not been obtained.",
+   "The public CALFISH compilation (Dryad, CC0) has port-level landings only to 2019, and its download requires a browser challenge or an API token that this pipeline does not use.",
+   "Statewide values below are not divided among ports: any split would be an estimate, and confidential values cannot be redistributed."
+  ],
+  "adapters": [
+   {
+    "id": "cdfw_mfde",
+    "status": "disabled",
+    "note": "Awaiting CDFW permission. When granted, port-level rows enter through the same disclosure-safe aggregation (suppression propagates; complementary suppression applied)."
+   },
+   {
+    "id": "calfish_dryad",
+    "status": "disabled",
+    "note": "Needs a manually downloaded, checksum-verified file; covers 1941–2019 only."
+   },
+   {
+    "id": "pacfin",
+    "status": "not_used",
+    "note": "PacFIN data-use terms not verified for republication."
+   }
+  ]
+ },
+ "terminology": "Historical fisheries exposure: the reported value of past commercial landings of species that marine toxins can affect. It is not a prediction of losses, not an estimate of harm, and says nothing about any current or future season.",
+ "method": {
+  "source": "NOAA Fisheries FOSS commercial landings for California (compiled from PacFIN), one request per year; every row is kept with its upstream species name.",
+  "groups": "Each upstream species row is assigned to at most one group by exact name; rows in no group count only toward the statewide total.",
+  "withheld": "FOSS's 'WITHHELD FOR CONFIDENTIALITY' row is reported separately for each year and never assigned to a species or group. It is included in the statewide total, as in NOAA's own state totals.",
+  "statewide_total": "Sum of all California commercial rows including the withheld row, with duplicate listings counted once. This reproduces NOAA's published state totals (Fisheries of the United States, Table 4) within FOSS's routine revisions.",
+  "unassigned": "Generic categories that cannot be attributed to one species (e.g. 'CRABS, DECAPODA (ORDER) **', 'MOLLUSKS **', 'ANCHOVIES') are not assigned to any group, so group values are lower bounds.",
+  "missing": "Rows without a published value are counted (n_rows_without_value) and never treated as zero.",
+  "duplicates": "Rows in the same year with different names but identical non-zero pounds and dollars are counted once; the excluded rows are listed. The only case found is explained upstream: FOSS's source-species table maps PacFIN code KSTR (Kumamoto oyster) to both 'OYSTER, PACIFIC' and 'OYSTER, KUMAMOTO', and NOAA's published state totals count it once.",
+  "inflation": "Annual average = mean of the 12 published monthly values, rounded to 3 decimals (as BLS publishes). Real value = nominal × CPI(2024) / CPI(year). Base year = most recent year with all 12 monthly values published.",
+  "tiers": "Tier 1: fisheries with commercial closures or take restrictions for marine toxins (current or past). Tier 2: species under consumption advisories, sport-harvest quarantines or monitoring. Tier assignments are CoastWatch's editorial grouping and await HAB scientific review."
+ },
+ "caveats": [
+  "Historical fisheries exposure is not a forecast of losses. Past landings say nothing about whether a fishery will be closed.",
+  "Values are ex-vessel revenue reported for landings; they exclude processing, retail, tourism and other economic activity.",
+  "Statewide values cannot be divided among ports. Confidential landings are withheld by the source and not included in species values; NOAA notes that species values may in some instances be misleading because of confidentiality.",
+  "Upstream species categories are market categories; some combine several species. Generic categories are left unassigned, so group values are lower bounds.",
+  "Bivalve values include aquaculture (farmed clams, mussels and oysters); bivalve pounds are meat weight.",
+  "NOAA updates these statistics weekly and published annual summaries are preliminary; values can be revised.",
+  "Tier assignments are CoastWatch's editorial grouping and await HAB scientific review."
+ ],
+ "provenance": [
+  {
+   "source_id": "foss_landings",
+   "source_name": "NOAA Fisheries FOSS — Commercial Landings (California, PacFIN)",
+   "source_url": "https://www.fisheries.noaa.gov/foss",
+   "dataset_id": "foss/landings",
+   "product_version": null,
+   "institution": "NOAA Fisheries Office of Science and Technology",
+   "license": "Information created by the U.S. government is not subject to copyright in the United States (NOAA Fisheries copyright policy, https://www.fisheries.noaa.gov/national/about-us/website-policies-and-disclaimers). NOAA Fisheries requests the acknowledgement 'Courtesy: National Oceanic and Atmospheric Administration'. Only non-confidential statistics are released; confidential landings are combined into 'Withheld for Confidentiality'.",
+   "citation": "Courtesy: National Oceanic and Atmospheric Administration. NOAA Fisheries Office of Science and Technology, Commercial Landings Query, available at www.fisheries.noaa.gov/foss, accessed 2026-10-08.",
+   "retrieved_at": "2026-10-08T18:00:00Z",
+   "request_urls": [
+    "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2023%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0",
+    "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2024%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0",
+    "https://apps-st.fisheries.noaa.gov/ods/foss/landings/?q=%7B%22state_name%22%3A%22CALIFORNIA%22%2C%22year%22%3A2025%2C%22collection%22%3A%22Commercial%22%7D&limit=1000&offset=0",
+    "https://apps-st.fisheries.noaa.gov/foss/f?p=215:240"
+   ],
+   "upstream_metadata": {},
+   "pipeline_version": "fixture",
+   "pipeline_run_id": "fixture"
+  },
+  {
+   "source_id": "bls_cpi_u",
+   "source_name": "BLS Consumer Price Index for All Urban Consumers (CPI-U), CUUR0000SA0",
+   "source_url": "https://data.bls.gov/timeseries/CUUR0000SA0",
+   "dataset_id": "CUUR0000SA0",
+   "product_version": null,
+   "institution": "U.S. Bureau of Labor Statistics",
+   "license": "U.S. Government work (Bureau of Labor Statistics); public domain.",
+   "citation": null,
+   "retrieved_at": "2026-10-08T18:00:00Z",
+   "request_urls": [
+    "https://api.bls.gov/publicAPI/v1/timeseries/data/"
+   ],
+   "upstream_metadata": {},
+   "pipeline_version": "fixture",
+   "pipeline_run_id": "fixture"
+  }
+ ]
+}

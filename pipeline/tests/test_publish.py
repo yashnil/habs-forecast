@@ -17,7 +17,7 @@ def test_every_manifest_reference_exists_and_decodes(out):
     run_pipeline(fixture_context(out))
     report = check_published(str(out))
     assert report["ok"], report["problems"]
-    assert report["files_checked"] == 1 + 24 + 1 + 2  # manifest + 12 images + 12 grids + ports + official + port intel
+    assert report["files_checked"] == 1 + 24 + 1 + 4  # manifest + 12 images + 12 grids + ports + official + port intel + observations + fisheries
 
 
 def test_asset_paths_are_content_addressed(out):
@@ -116,3 +116,37 @@ def test_m1_published_dataset_still_validates_with_current_schema():
     m = Manifest.model_validate_json((root / "manifest.json").read_text())
     assert m.official_url is None and m.port_intel_url is None
     PortsCollection.model_validate_json((root / m.ports_url).read_text())
+
+
+def test_m2_published_dataset_still_validates_with_current_schema():
+    """The dataset the M2 pipeline published to GitHub Pages (recorded 2026-10-08, run
+    37846066753) must validate with the M3 models: M3 fields are additive."""
+    from coastwatch_pipeline.fixtures import FIXTURES
+    from coastwatch_pipeline.models import Manifest, OfficialDataset, PortIntelCollection, PortsCollection
+
+    root = FIXTURES / "compat" / "m2"
+    m = Manifest.model_validate_json((root / "manifest.json").read_text())
+    assert m.pipeline_run_id == "37846066753"
+    assert m.observations_url is None and m.fisheries_url is None
+    PortsCollection.model_validate_json((root / m.ports_url).read_text())
+    OfficialDataset.model_validate_json((root / m.official_url).read_text())
+    PortIntelCollection.model_validate_json((root / m.port_intel_url).read_text())
+
+
+def test_m3_pipeline_runs_on_top_of_an_m2_output_directory(tmp_path: Path):
+    """Switch-over: the first M3 run finds an M2 manifest (no observation/fisheries
+    artifacts) and must add them while keeping every M2 artifact it still references."""
+    import shutil
+
+    from coastwatch_pipeline.fixtures import FIXTURES
+
+    out = tmp_path / "v1"
+    shutil.copytree(FIXTURES / "compat" / "m2", out)
+    m = run_pipeline(fixture_context(out))
+    assert m.observations_url and m.fisheries_url
+    ids = {s.source_id: s.outcome for s in m.sources}
+    assert ids["calhabmap"] in ("updated", "partial") and ids["foss_landings"] == "updated"
+    # files referenced by the previous (M2) manifest are retained for one run
+    prev = json.loads((FIXTURES / "compat" / "m2" / "manifest.json").read_text())
+    for rel in (prev["official_url"], prev["port_intel_url"], prev["ports_url"]):
+        assert (out / rel).exists()

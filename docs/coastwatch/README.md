@@ -14,6 +14,10 @@ Planning and architecture for turning `coastwatch-web/` and the HABs research in
 | [08 — Scientific review checklist](08-scientific-review-checklist.md) | 20-minute checklist for a HAB scientist reviewing the C-HARM layer |
 | [09 — Milestone 2 implementation](09-m2-implementation.md) | Official notices (human-reviewed), port intelligence, redesigned map; tests, screenshots, limits |
 | [10 — M2 integration review](10-m2-integration-review.md) | Schema-compatibility fix, Node 24 actions, staging run, production-equivalent checks, merge decision |
+| [11 — Milestone 3 implementation](11-m3-implementation.md) | Source audit, CalHABMAP observations, Bloom Intelligence, statewide fisheries exposure (FOSS + CPI-U), UI refinement, compatibility with published M2 data, staging results, decisions awaiting approval |
+| [12 — M3 integration review](12-m3-integration-review.md) | Licence evidence per dataset, NOAA reconciliation (KSTR duplicate, FUS Table 4), deflator check, fixes, test and publication evidence, merge results |
+| [drafts/cdfw-landings-data-request.md](drafts/cdfw-landings-data-request.md) | **Draft, not sent:** request to CDFW for disclosure-safe port-area landings and display permission |
+| [m3/](m3/) | Screenshots of the M3 app (staging data, 2026-10-08) |
 | [m2/](m2/) | Screenshots of the M2 app (live data, 2026-10-08) |
 | [m1/](m1/) | Screenshots of the running app (live data, 2026-10-08) |
 | [evidence/](evidence/) | Raw verification logs from live requests (satellite, C-HARM, regulatory, economics) and the M1 C-HARM point verification |
@@ -24,7 +28,7 @@ Planning and architecture for turning `coastwatch-web/` and the HABs research in
 2. **C-HARM v3.1 is the bloom/toxin-risk layer** (`wvcharmV3_*day`, live today). Older v1/v2 datasets are frozen; producer pages still link to them.
 3. **Regulatory status is human-curated.** No agency publishes closure/advisory status as data. Scrapers raise alarms; curators update PR-reviewed YAML; stale curation shows "Status not verified."
 4. **Static-first pipeline.** Scheduled Python jobs precompute validated, reprojected artifacts to object storage; the Next.js app reads a manifest; freshness is computed in the browser. No database, tile server, or paid APIs in the MVP.
-5. **Economics = historical exposure only**, from CDFW MFDE port-area landings of HAB-sensitive species (tiered), inflation-adjusted, suppression-aware, labeled a lower bound. No modeled loss.
+5. **Economics = historical exposure only** of HAB-sensitive species (tiered), inflation-adjusted, suppression-aware. No modeled loss. *As built in M3:* statewide NOAA FOSS landings with BLS CPI-U; port-level values (CDFW MFDE) stay unavailable until CDFW permits extraction (see 11).
 6. **The research model is not deployable yet** (data freeze absent, normalization stats not persisted, ambiguous checkpoints, MODIS-Aqua/`nflh` input dependency, ~10% skill vs persistence). It enters later as an explicitly experimental layer after retraining and held-out validation.
 
 ## First implementation milestone

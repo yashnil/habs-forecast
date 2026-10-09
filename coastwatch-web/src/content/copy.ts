@@ -75,8 +75,41 @@ export const DISCLAIMER =
   "CoastWatch brings together public data from state and federal agencies. It is not an official source. Closures, advisories and seasons from CDFW, CDPH and OEHHA always take precedence. Forecasts are probabilities, not guarantees.";
 
 export const EXPERIENCES = [
-  { key: "map", label: "Live Ocean Map", href: "/", available: true },
-  { key: "bloom", label: "Bloom Intelligence", href: null, available: false },
-  { key: "fisheries", label: "Fisheries & Economic Exposure", href: null, available: false },
-  { key: "coast", label: "My Coast", href: null, available: false },
+  { key: "map", label: "Live Ocean Map", short: "Map", href: "/", available: true },
+  { key: "bloom", label: "Bloom Intelligence", short: "Blooms", href: "/bloom", available: true },
+  { key: "fisheries", label: "Fisheries & Economic Exposure", short: "Fisheries", href: "/fisheries", available: true },
+  { key: "coast", label: "My Coast", short: "My Coast", href: null, available: false },
 ] as const;
+
+export const REGION_LABEL: Record<string, string> = {
+  north_coast: "North Coast",
+  mendocino_sonoma: "Mendocino–Sonoma",
+  sf_bay_farallones: "San Francisco & Farallones",
+  monterey_bay: "Monterey Bay",
+  central_coast: "Central Coast",
+  southern_california: "Southern California",
+  other: "Other",
+};
+
+export const BLOOM_COPY = {
+  heading: "Bloom Intelligence",
+  lede: "Measured harmful-algal-bloom data from CalHABMAP shore stations: domoic acid and Pseudo-nitzschia in water samples, with the C-HARM model shown separately on the same timeline.",
+  measuredVsModel:
+    "Measurements (top) are laboratory values from one water sample at one pier. The model (bottom) is a probability for nearby ocean cells. They are different quantities and are never compared numerically.",
+  notSeafood: "Toxin in seawater is not toxin in seafood. Only official agency testing decides whether seafood can be harvested or eaten.",
+  absence: "A blank means not measured. No measurement is not the same as no toxin, and a reported 0 means not quantified, not absent.",
+  pointNotArea: "A station describes the water sampled at that pier on that day, not nearby beaches or fishing grounds.",
+  chlNotToxin: "Chlorophyll measures algae biomass. High chlorophyll is not a toxic bloom; low chlorophyll does not rule one out.",
+  reviewPending: "These pages have not yet been reviewed by an independent HAB scientist.",
+  unavailable: "Measured observations are unavailable in this dataset.",
+} as const;
+
+export const FISHERIES_COPY = {
+  heading: "Fisheries & Economic Exposure",
+  lede: "How much California's commercial fisheries for toxin-affected species have landed in past years, from NOAA Fisheries landings data.",
+  definition:
+    "Historical fisheries exposure is the reported value of past commercial landings of species that marine toxins can affect. It is not a prediction of losses, not an estimate of harm, and says nothing about any current or future season.",
+  portUnavailable: "Port-level values are not available",
+  reviewPending: "Species tiers are CoastWatch's editorial grouping and await review by an independent HAB scientist.",
+  unavailable: "Fisheries data are unavailable in this dataset.",
+} as const;

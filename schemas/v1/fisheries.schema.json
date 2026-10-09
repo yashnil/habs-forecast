@@ -1,0 +1,548 @@
+{
+  "$defs": {
+    "Deflator": {
+      "additionalProperties": false,
+      "properties": {
+        "annual_index": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "year -> annual average index",
+          "title": "Annual Index",
+          "type": "object"
+        },
+        "base_year": {
+          "title": "Base Year",
+          "type": "integer"
+        },
+        "method": {
+          "title": "Method",
+          "type": "string"
+        },
+        "months_used": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "year -> number of monthly values averaged",
+          "title": "Months Used",
+          "type": "object"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "series_id": {
+          "title": "Series Id",
+          "type": "string"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "series_id",
+        "title",
+        "source_url",
+        "base_year",
+        "annual_index",
+        "months_used",
+        "method"
+      ],
+      "title": "Deflator",
+      "type": "object"
+    },
+    "ExcludedRow": {
+      "additionalProperties": false,
+      "properties": {
+        "dollars_nominal": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dollars Nominal"
+        },
+        "duplicate_of": {
+          "title": "Duplicate Of",
+          "type": "string"
+        },
+        "pounds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Pounds"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "source_name": {
+          "title": "Source Name",
+          "type": "string"
+        },
+        "year": {
+          "title": "Year",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "year",
+        "source_name",
+        "duplicate_of",
+        "pounds",
+        "dollars_nominal",
+        "reason"
+      ],
+      "title": "ExcludedRow",
+      "type": "object"
+    },
+    "PortLevelStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "adapters": {
+          "description": "id, status, note for each port-level source considered",
+          "items": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "title": "Adapters",
+          "type": "array"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "available",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "reasons",
+        "adapters"
+      ],
+      "title": "PortLevelStatus",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "citation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Citation"
+        },
+        "dataset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Id"
+        },
+        "institution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Institution"
+        },
+        "license": {
+          "title": "License",
+          "type": "string"
+        },
+        "pipeline_run_id": {
+          "title": "Pipeline Run Id",
+          "type": "string"
+        },
+        "pipeline_version": {
+          "title": "Pipeline Version",
+          "type": "string"
+        },
+        "product_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Product Version"
+        },
+        "request_urls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Request Urls",
+          "type": "array"
+        },
+        "retrieved_at": {
+          "description": "UTC ISO-8601 time the pipeline fetched the data",
+          "title": "Retrieved At",
+          "type": "string"
+        },
+        "source_id": {
+          "description": "Stable id of the upstream source, e.g. 'charm'",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_name": {
+          "title": "Source Name",
+          "type": "string"
+        },
+        "source_url": {
+          "description": "Dataset or page URL a person can open",
+          "title": "Source Url",
+          "type": "string"
+        },
+        "upstream_metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Selected upstream attributes kept verbatim",
+          "title": "Upstream Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source_id",
+        "source_name",
+        "source_url",
+        "license",
+        "retrieved_at",
+        "pipeline_version",
+        "pipeline_run_id"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "SpeciesGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "annual": {
+          "items": {
+            "$ref": "#/$defs/YearValue"
+          },
+          "title": "Annual",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "official_record_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Official Record Ids",
+          "type": "array"
+        },
+        "source_names": {
+          "description": "Upstream species names assigned to this group",
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Names",
+          "type": "array"
+        },
+        "tier": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Tier",
+          "type": "integer"
+        },
+        "tier_basis": {
+          "title": "Tier Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "tier",
+        "tier_basis",
+        "source_names",
+        "annual"
+      ],
+      "title": "SpeciesGroup",
+      "type": "object"
+    },
+    "SuppressedValue": {
+      "additionalProperties": false,
+      "properties": {
+        "dollars_nominal": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dollars Nominal"
+        },
+        "dollars_real": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dollars Real"
+        },
+        "note": {
+          "title": "Note",
+          "type": "string"
+        },
+        "pounds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Pounds"
+        },
+        "year": {
+          "title": "Year",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "year",
+        "pounds",
+        "dollars_nominal",
+        "dollars_real",
+        "note"
+      ],
+      "title": "SuppressedValue",
+      "type": "object"
+    },
+    "YearValue": {
+      "additionalProperties": false,
+      "properties": {
+        "dollars_nominal": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dollars Nominal"
+        },
+        "dollars_real": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "In base-year dollars; null when nominal is null",
+          "title": "Dollars Real"
+        },
+        "n_rows": {
+          "description": "Source rows aggregated",
+          "title": "N Rows",
+          "type": "integer"
+        },
+        "n_rows_without_value": {
+          "default": 0,
+          "description": "Source rows with no published value (not zero)",
+          "title": "N Rows Without Value",
+          "type": "integer"
+        },
+        "pounds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Pounds"
+        },
+        "year": {
+          "title": "Year",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "year",
+        "pounds",
+        "dollars_nominal",
+        "dollars_real",
+        "n_rows"
+      ],
+      "title": "YearValue",
+      "type": "object"
+    }
+  },
+  "$id": "https://coastwatch/schemas/v1/fisheries.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "caveats": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Caveats",
+      "type": "array"
+    },
+    "deflator": {
+      "$ref": "#/$defs/Deflator"
+    },
+    "excluded_rows": {
+      "items": {
+        "$ref": "#/$defs/ExcludedRow"
+      },
+      "title": "Excluded Rows",
+      "type": "array"
+    },
+    "generated_at": {
+      "title": "Generated At",
+      "type": "string"
+    },
+    "groups": {
+      "items": {
+        "$ref": "#/$defs/SpeciesGroup"
+      },
+      "title": "Groups",
+      "type": "array"
+    },
+    "method": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Method",
+      "type": "object"
+    },
+    "port_level": {
+      "$ref": "#/$defs/PortLevelStatus"
+    },
+    "provenance": {
+      "items": {
+        "$ref": "#/$defs/Provenance"
+      },
+      "title": "Provenance",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "scope": {
+      "title": "Scope",
+      "type": "string"
+    },
+    "statewide_total": {
+      "description": "All commercial rows including the withheld row (as in NOAA's state totals), duplicates counted once",
+      "items": {
+        "$ref": "#/$defs/YearValue"
+      },
+      "title": "Statewide Total",
+      "type": "array"
+    },
+    "terminology": {
+      "title": "Terminology",
+      "type": "string"
+    },
+    "withheld": {
+      "items": {
+        "$ref": "#/$defs/SuppressedValue"
+      },
+      "title": "Withheld",
+      "type": "array"
+    },
+    "years": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Years",
+      "type": "array"
+    },
+    "years_requested_unavailable": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Years Requested Unavailable",
+      "type": "array"
+    }
+  },
+  "required": [
+    "generated_at",
+    "scope",
+    "years",
+    "deflator",
+    "groups",
+    "statewide_total",
+    "withheld",
+    "excluded_rows",
+    "port_level",
+    "terminology",
+    "method",
+    "caveats",
+    "provenance"
+  ],
+  "title": "FisheriesDataset",
+  "type": "object"
+}

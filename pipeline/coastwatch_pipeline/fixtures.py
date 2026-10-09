@@ -38,6 +38,20 @@ class FixtureFetcher:
                 return fn(url)
         return self._serve(url)
 
+    def post(self, url: str, body: bytes) -> Response:
+        """POST requests are recorded under '<url>#<sha256(body)[:16]>'."""
+        import hashlib
+
+        key = f"{url}#{hashlib.sha256(body).hexdigest()[:16]}"
+        self.calls.append(key)
+        for pattern, fn in self.overrides.items():
+            if re.search(pattern, key):
+                return fn(key)
+        rec = self._recorded(key)
+        if rec is None:
+            raise FetchError(f"no fixture for POST {key}")
+        return rec
+
     def _file(self, url: str, rel: str, ctype: str) -> Response:
         p = self.root / rel
         if not p.exists():
@@ -93,7 +107,8 @@ class FixtureFetcher:
 def fixture_context(out: Path, now: str = FIXTURE_NOW, fetcher: FixtureFetcher | None = None) -> RunContext:
     return RunContext(
         out_dir=out,
-        fetcher=fetcher or FixtureFetcher(),
+        fetcher=(f := fetcher or FixtureFetcher()),
+        poster=f.post,
         now=datetime.fromisoformat(now.replace("Z", "+00:00")).astimezone(timezone.utc),
         pipeline_version="fixture",
         run_id="fixture",

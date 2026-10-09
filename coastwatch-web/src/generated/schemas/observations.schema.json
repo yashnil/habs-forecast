@@ -1,0 +1,817 @@
+{
+  "$defs": {
+    "ObsSeries": {
+      "additionalProperties": false,
+      "description": "Values aligned with the station's sample_times. null = not measured in that sample\n(absence of a measurement, never zero). qualifiers maps a sample index (as a string)\nto a qualifier code.",
+      "properties": {
+        "qualifiers": {
+          "additionalProperties": {
+            "enum": [
+              "reported_zero",
+              "rejected_negative",
+              "flag_high"
+            ],
+            "type": "string"
+          },
+          "title": "Qualifiers",
+          "type": "object"
+        },
+        "values": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Values",
+          "type": "array"
+        },
+        "variable": {
+          "enum": [
+            "pDA",
+            "tDA",
+            "dDA",
+            "pn_seriata",
+            "pn_delicatissima",
+            "chl_extracted",
+            "temp"
+          ],
+          "title": "Variable",
+          "type": "string"
+        }
+      },
+      "required": [
+        "variable",
+        "values"
+      ],
+      "title": "ObsSeries",
+      "type": "object"
+    },
+    "ObsStation": {
+      "additionalProperties": false,
+      "properties": {
+        "charm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StationCharm"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "depths_m": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Depths M",
+          "type": "array"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Most recent sampling position; null only when the station has never been retrieved",
+          "title": "Lat"
+        },
+        "location_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location Code"
+        },
+        "lon": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Lon"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "nearest_port_code": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nearest Port Code"
+        },
+        "nearest_port_km": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nearest Port Km"
+        },
+        "nearest_port_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nearest Port Name"
+        },
+        "qc": {
+          "items": {
+            "$ref": "#/$defs/QCCheck"
+          },
+          "title": "Qc",
+          "type": "array"
+        },
+        "region": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Region"
+        },
+        "request_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Request Url"
+        },
+        "retrieved_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "When this station's data were fetched",
+          "title": "Retrieved At"
+        },
+        "sample_times": {
+          "description": "UTC ISO-8601 sample times, ascending",
+          "items": {
+            "type": "string"
+          },
+          "title": "Sample Times",
+          "type": "array"
+        },
+        "series": {
+          "items": {
+            "$ref": "#/$defs/ObsSeries"
+          },
+          "title": "Series",
+          "type": "array"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "station_id": {
+          "description": "Upstream dataset id, e.g. HABs-SantaCruzWharf",
+          "title": "Station Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "updated",
+            "carried_forward",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "summaries": {
+          "items": {
+            "$ref": "#/$defs/ObsVariableSummary"
+          },
+          "title": "Summaries",
+          "type": "array"
+        }
+      },
+      "required": [
+        "station_id",
+        "name",
+        "lat",
+        "lon",
+        "status",
+        "source_url",
+        "sample_times",
+        "depths_m",
+        "series",
+        "summaries",
+        "qc"
+      ],
+      "title": "ObsStation",
+      "type": "object"
+    },
+    "ObsVariable": {
+      "additionalProperties": false,
+      "description": "How one measured quantity is defined. Values of different variables are never\ncombined: fractions (particulate/dissolved/total), matrices and units stay separate.",
+      "properties": {
+        "detection_limit": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Only when published upstream",
+          "title": "Detection Limit"
+        },
+        "detection_limit_note": {
+          "title": "Detection Limit Note",
+          "type": "string"
+        },
+        "fraction": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "e.g. particulate, dissolved, total; null if not applicable",
+          "title": "Fraction"
+        },
+        "id": {
+          "enum": [
+            "pDA",
+            "tDA",
+            "dDA",
+            "pn_seriata",
+            "pn_delicatissima",
+            "chl_extracted",
+            "temp"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "toxin",
+            "cell_abundance",
+            "pigment",
+            "physical"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "matrix": {
+          "const": "seawater",
+          "title": "Matrix",
+          "type": "string"
+        },
+        "method": {
+          "description": "Analytical method, or a statement that it is not published",
+          "title": "Method",
+          "type": "string"
+        },
+        "plausible_max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Values above this are kept but flagged for review",
+          "title": "Plausible Max"
+        },
+        "source_variable": {
+          "description": "Upstream column name, verbatim",
+          "title": "Source Variable",
+          "type": "string"
+        },
+        "units": {
+          "description": "Units as published upstream, verbatim",
+          "title": "Units",
+          "type": "string"
+        },
+        "upstream_long_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Upstream Long Name"
+        },
+        "zero_policy": {
+          "description": "How a reported 0 is interpreted",
+          "title": "Zero Policy",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "source_variable",
+        "label",
+        "units",
+        "kind",
+        "matrix",
+        "method",
+        "detection_limit_note",
+        "zero_policy"
+      ],
+      "title": "ObsVariable",
+      "type": "object"
+    },
+    "ObsVariableSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "days_since_last": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Days from the last measurement to the run date",
+          "title": "Days Since Last"
+        },
+        "first_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "First Date"
+        },
+        "last_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Date"
+        },
+        "last_qualifier": {
+          "anyOf": [
+            {
+              "enum": [
+                "reported_zero",
+                "rejected_negative",
+                "flag_high"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Qualifier"
+        },
+        "last_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Value"
+        },
+        "max_last_365d": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Max Last 365D"
+        },
+        "median_interval_days_365d": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Median days between measurements in the last 365 days",
+          "title": "Median Interval Days 365D"
+        },
+        "n_last_365d": {
+          "title": "N Last 365D",
+          "type": "integer"
+        },
+        "n_measured": {
+          "description": "Samples with a reported value (including reported zeros)",
+          "title": "N Measured",
+          "type": "integer"
+        },
+        "n_rejected": {
+          "title": "N Rejected",
+          "type": "integer"
+        },
+        "n_reported_zero": {
+          "title": "N Reported Zero",
+          "type": "integer"
+        },
+        "variable": {
+          "enum": [
+            "pDA",
+            "tDA",
+            "dDA",
+            "pn_seriata",
+            "pn_delicatissima",
+            "chl_extracted",
+            "temp"
+          ],
+          "title": "Variable",
+          "type": "string"
+        }
+      },
+      "required": [
+        "variable",
+        "n_measured",
+        "n_reported_zero",
+        "n_rejected",
+        "first_date",
+        "last_date",
+        "last_value",
+        "n_last_365d",
+        "max_last_365d"
+      ],
+      "title": "ObsVariableSummary",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "citation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Citation"
+        },
+        "dataset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Id"
+        },
+        "institution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Institution"
+        },
+        "license": {
+          "title": "License",
+          "type": "string"
+        },
+        "pipeline_run_id": {
+          "title": "Pipeline Run Id",
+          "type": "string"
+        },
+        "pipeline_version": {
+          "title": "Pipeline Version",
+          "type": "string"
+        },
+        "product_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Product Version"
+        },
+        "request_urls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Request Urls",
+          "type": "array"
+        },
+        "retrieved_at": {
+          "description": "UTC ISO-8601 time the pipeline fetched the data",
+          "title": "Retrieved At",
+          "type": "string"
+        },
+        "source_id": {
+          "description": "Stable id of the upstream source, e.g. 'charm'",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_name": {
+          "title": "Source Name",
+          "type": "string"
+        },
+        "source_url": {
+          "description": "Dataset or page URL a person can open",
+          "title": "Source Url",
+          "type": "string"
+        },
+        "upstream_metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Selected upstream attributes kept verbatim",
+          "title": "Upstream Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source_id",
+        "source_name",
+        "source_url",
+        "license",
+        "retrieved_at",
+        "pipeline_version",
+        "pipeline_run_id"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "QCCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "passed",
+        "detail"
+      ],
+      "title": "QCCheck",
+      "type": "object"
+    },
+    "SeriesPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "date": {
+          "title": "Date",
+          "type": "string"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "date",
+        "value",
+        "n"
+      ],
+      "title": "SeriesPoint",
+      "type": "object"
+    },
+    "StationCharm": {
+      "additionalProperties": false,
+      "description": "C-HARM nowcast near the station: a model probability, shown beside (never compared\nnumerically with) the measurements.",
+      "properties": {
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "history": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/SeriesPoint"
+            },
+            "type": "array"
+          },
+          "title": "History",
+          "type": "object"
+        },
+        "history_days": {
+          "title": "History Days",
+          "type": "integer"
+        },
+        "nearest_cell_km": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Nearest Cell Km"
+        },
+        "radius_km": {
+          "title": "Radius Km",
+          "type": "number"
+        }
+      },
+      "required": [
+        "radius_km",
+        "nearest_cell_km",
+        "history_days"
+      ],
+      "title": "StationCharm",
+      "type": "object"
+    }
+  },
+  "$id": "https://coastwatch/schemas/v1/observations.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "caveats": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Caveats",
+      "type": "array"
+    },
+    "generated_at": {
+      "title": "Generated At",
+      "type": "string"
+    },
+    "method": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Method",
+      "type": "object"
+    },
+    "program": {
+      "title": "Program",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "stations": {
+      "items": {
+        "$ref": "#/$defs/ObsStation"
+      },
+      "title": "Stations",
+      "type": "array"
+    },
+    "variables": {
+      "items": {
+        "$ref": "#/$defs/ObsVariable"
+      },
+      "title": "Variables",
+      "type": "array"
+    },
+    "window_start": {
+      "description": "Earliest sample date requested",
+      "title": "Window Start",
+      "type": "string"
+    }
+  },
+  "required": [
+    "generated_at",
+    "window_start",
+    "program",
+    "variables",
+    "stations",
+    "method",
+    "caveats",
+    "provenance"
+  ],
+  "title": "ObservationDataset",
+  "type": "object"
+}
