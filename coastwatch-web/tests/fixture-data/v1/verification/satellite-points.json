@@ -1,0 +1,708 @@
+{
+  "manifest_generated_at": "2026-10-08T18:00:00Z",
+  "live_source_comparison": false,
+  "summary": {
+    "layers": 6,
+    "checks": 72,
+    "failures": 0,
+    "all_passed": true
+  },
+  "rows": [
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 0,
+      "col": 246,
+      "lat": 37.20125,
+      "lon": -121.98625,
+      "value": 92.8545,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-01",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 107,
+      "col": 283,
+      "lat": 36.93375,
+      "lon": -121.89375,
+      "value": 3.83898,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-06",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 122,
+      "col": 253,
+      "lat": 36.89625,
+      "lon": -121.96875,
+      "value": 0.77273,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-06",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 137,
+      "col": 191,
+      "lat": 36.85875,
+      "lon": -122.12375,
+      "value": 0.38401,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-06",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 151,
+      "col": 243,
+      "lat": 36.82375,
+      "lon": -121.99375,
+      "value": 0.46738,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-06",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 167,
+      "col": 236,
+      "lat": 36.78375,
+      "lon": -122.01125,
+      "value": 0.38062,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-06",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 187,
+      "col": 219,
+      "lat": 36.73375,
+      "lon": -122.05375,
+      "value": 0.38726,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-05",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 270,
+      "col": 267,
+      "lat": 36.52625,
+      "lon": -121.93375,
+      "value": 0.76737,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-05",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 94,
+      "col": 230,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 227,
+      "col": 40,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 320,
+      "col": 340,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 0,
+      "col": 246,
+      "lat": 37.20125,
+      "lon": -121.98625,
+      "value": 92.8545,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 98,
+      "col": 272,
+      "lat": 36.95625,
+      "lon": -121.92125,
+      "value": 5.75443,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 104,
+      "col": 284,
+      "lat": 36.94125,
+      "lon": -121.89125,
+      "value": 8.12432,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 116,
+      "col": 263,
+      "lat": 36.91125,
+      "lon": -121.94375,
+      "value": 1.0055,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 170,
+      "col": 314,
+      "lat": 36.77625,
+      "lon": -121.81625,
+      "value": 2.97213,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 218,
+      "col": 306,
+      "lat": 36.65625,
+      "lon": -121.83625,
+      "value": 9.43608,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 229,
+      "col": 297,
+      "lat": 36.62875,
+      "lon": -121.85875,
+      "value": 1.69533,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 240,
+      "col": 288,
+      "lat": 36.60125,
+      "lon": -121.88125,
+      "value": 41.09204,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 106,
+      "col": 340,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 214,
+      "col": 18,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-01",
+      "row": 320,
+      "col": 340,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 80,
+      "col": 138,
+      "lat": 37.00125,
+      "lon": -122.25625,
+      "value": 14.67576,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 98,
+      "col": 37,
+      "lat": 36.95625,
+      "lon": -122.50875,
+      "value": 0.3741,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 104,
+      "col": 35,
+      "lat": 36.94125,
+      "lon": -122.51375,
+      "value": 0.3376,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 109,
+      "col": 35,
+      "lat": 36.92875,
+      "lon": -122.51375,
+      "value": 0.3719,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 119,
+      "col": 27,
+      "lat": 36.90375,
+      "lon": -122.53375,
+      "value": 0.34254,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 131,
+      "col": 9,
+      "lat": 36.87375,
+      "lon": -122.57875,
+      "value": 0.26648,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 137,
+      "col": 28,
+      "lat": 36.85875,
+      "lon": -122.53125,
+      "value": 0.35729,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 151,
+      "col": 20,
+      "lat": 36.82375,
+      "lon": -122.55125,
+      "value": 1.53088,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 107,
+      "col": 15,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 214,
+      "col": 295,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-02",
+      "row": 320,
+      "col": 340,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 3,
+      "col": 291,
+      "lat": 37.19375,
+      "lon": -121.87375,
+      "value": 81.52921,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 113,
+      "col": 235,
+      "lat": 36.91875,
+      "lon": -122.01375,
+      "value": 3.20918,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 128,
+      "col": 248,
+      "lat": 36.88125,
+      "lon": -121.98125,
+      "value": 0.67108,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 143,
+      "col": 226,
+      "lat": 36.84375,
+      "lon": -122.03625,
+      "value": 0.3893,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 156,
+      "col": 316,
+      "lat": 36.81125,
+      "lon": -121.81125,
+      "value": 1.22509,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 171,
+      "col": 214,
+      "lat": 36.77375,
+      "lon": -122.06625,
+      "value": 0.61151,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 189,
+      "col": 233,
+      "lat": 36.72875,
+      "lon": -122.01875,
+      "value": 0.44855,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 270,
+      "col": 267,
+      "lat": 36.52625,
+      "lon": -121.93375,
+      "value": 0.76737,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 95,
+      "col": 291,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 225,
+      "col": 11,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 320,
+      "col": 340,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 1,
+      "col": 246,
+      "lat": 37.19875,
+      "lon": -121.98625,
+      "value": 34.19896,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 106,
+      "col": 268,
+      "lat": 36.93625,
+      "lon": -121.93125,
+      "value": 1.87824,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 117,
+      "col": 214,
+      "lat": 36.90875,
+      "lon": -122.06625,
+      "value": 0.42615,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 127,
+      "col": 243,
+      "lat": 36.88375,
+      "lon": -121.99375,
+      "value": 0.55103,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 137,
+      "col": 235,
+      "lat": 36.85875,
+      "lon": -122.01375,
+      "value": 0.41106,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 147,
+      "col": 185,
+      "lat": 36.83375,
+      "lon": -122.13875,
+      "value": 0.13327,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 158,
+      "col": 213,
+      "lat": 36.80625,
+      "lon": -122.06875,
+      "value": 0.3726,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 183,
+      "col": 232,
+      "lat": 36.74375,
+      "lon": -122.02125,
+      "value": 0.20925,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 100,
+      "col": 91,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 222,
+      "col": 185,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 320,
+      "col": 340,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 0,
+      "col": 0,
+      "lat": 37.19625,
+      "lon": -122.59875,
+      "value": 0.49143,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-03",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 32,
+      "col": 21,
+      "lat": 36.95625,
+      "lon": -122.44125,
+      "value": 2.22188,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-03",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 43,
+      "col": 11,
+      "lat": 36.87375,
+      "lon": -122.51625,
+      "value": 0.57476,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-03",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 53,
+      "col": 97,
+      "lat": 36.79875,
+      "lon": -121.87125,
+      "value": 2.35847,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-04",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 65,
+      "col": 12,
+      "lat": 36.70875,
+      "lon": -122.50875,
+      "value": 0.45321,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-03",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 75,
+      "col": 56,
+      "lat": 36.63375,
+      "lon": -122.17875,
+      "value": 1.05768,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-03",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 87,
+      "col": 87,
+      "lat": 36.54375,
+      "lon": -121.94625,
+      "value": 1.25595,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-04",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 106,
+      "col": 91,
+      "lat": 36.40125,
+      "lon": -121.91625,
+      "value": 1.56911,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-03",
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 0,
+      "col": 15,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 17,
+      "col": 26,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 66,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "viirs750_chl_latest",
+      "row": 106,
+      "col": 113,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    }
+  ]
+}

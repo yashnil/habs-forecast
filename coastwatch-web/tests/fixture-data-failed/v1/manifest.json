@@ -23,7 +23,8 @@
         "valid_date": "2026-10-07",
         "valid_time": "2026-10-07T12:00:00Z",
         "observed_date": null,
-        "lead_days": 0
+        "lead_days": 0,
+        "observed_times": []
       },
       "freshness": {
         "basis": "issued_date",
@@ -74,11 +75,13 @@
         "scale_factor": 1.5259254737998596e-05,
         "add_offset": 0.0,
         "nodata": 65535,
-        "max_quantization_error": 7.629627368999298e-06
+        "max_quantization_error": 7.629627368999298e-06,
+        "transform": "none",
+        "chunks": null
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v2",
+        "id": "cw-probability-classes-v1",
         "domain": [
           0.0,
           1.0
@@ -86,42 +89,47 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#723459"
+            "color": "#3a385b"
           },
           {
-            "value": 0.125,
-            "color": "#923770"
+            "value": 0.1,
+            "color": "#4c436a"
           },
           {
-            "value": 0.25,
-            "color": "#b13d87"
+            "value": 0.2,
+            "color": "#5f4e79"
           },
           {
-            "value": 0.375,
-            "color": "#cd499d"
+            "value": 0.3,
+            "color": "#735986"
+          },
+          {
+            "value": 0.4,
+            "color": "#886492"
           },
           {
             "value": 0.5,
-            "color": "#e35eb1"
+            "color": "#9c709c"
           },
           {
-            "value": 0.625,
-            "color": "#f37ac3"
+            "value": 0.6,
+            "color": "#af7ea4"
           },
           {
-            "value": 0.75,
-            "color": "#fd99d3"
+            "value": 0.7,
+            "color": "#c28cab"
           },
           {
-            "value": 0.875,
-            "color": "#ffbce1"
+            "value": 0.8,
+            "color": "#d39cb3"
           },
           {
-            "value": 1.0,
-            "color": "#ffddef"
+            "value": 0.9,
+            "color": "#e5abbc"
           }
         ],
-        "interpolation": "linear",
+        "interpolation": "step",
+        "scale": "linear",
         "nodata": "transparent"
       },
       "caveats": [
@@ -250,7 +258,12 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
     },
     {
       "schema_version": 1,
@@ -271,7 +284,8 @@
         "valid_date": "2026-10-07",
         "valid_time": "2026-10-07T12:00:00Z",
         "observed_date": null,
-        "lead_days": 0
+        "lead_days": 0,
+        "observed_times": []
       },
       "freshness": {
         "basis": "issued_date",
@@ -322,11 +336,13 @@
         "scale_factor": 1.5259254737998596e-05,
         "add_offset": 0.0,
         "nodata": 65535,
-        "max_quantization_error": 7.629627368999298e-06
+        "max_quantization_error": 7.629627368999298e-06,
+        "transform": "none",
+        "chunks": null
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v2",
+        "id": "cw-probability-classes-v1",
         "domain": [
           0.0,
           1.0
@@ -334,42 +350,47 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#723459"
+            "color": "#3a385b"
           },
           {
-            "value": 0.125,
-            "color": "#923770"
+            "value": 0.1,
+            "color": "#4c436a"
           },
           {
-            "value": 0.25,
-            "color": "#b13d87"
+            "value": 0.2,
+            "color": "#5f4e79"
           },
           {
-            "value": 0.375,
-            "color": "#cd499d"
+            "value": 0.3,
+            "color": "#735986"
+          },
+          {
+            "value": 0.4,
+            "color": "#886492"
           },
           {
             "value": 0.5,
-            "color": "#e35eb1"
+            "color": "#9c709c"
           },
           {
-            "value": 0.625,
-            "color": "#f37ac3"
+            "value": 0.6,
+            "color": "#af7ea4"
           },
           {
-            "value": 0.75,
-            "color": "#fd99d3"
+            "value": 0.7,
+            "color": "#c28cab"
           },
           {
-            "value": 0.875,
-            "color": "#ffbce1"
+            "value": 0.8,
+            "color": "#d39cb3"
           },
           {
-            "value": 1.0,
-            "color": "#ffddef"
+            "value": 0.9,
+            "color": "#e5abbc"
           }
         ],
-        "interpolation": "linear",
+        "interpolation": "step",
+        "scale": "linear",
         "nodata": "transparent"
       },
       "caveats": [
@@ -499,7 +520,12 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
     },
     {
       "schema_version": 1,
@@ -520,7 +546,8 @@
         "valid_date": "2026-10-07",
         "valid_time": "2026-10-07T12:00:00Z",
         "observed_date": null,
-        "lead_days": 0
+        "lead_days": 0,
+        "observed_times": []
       },
       "freshness": {
         "basis": "issued_date",
@@ -571,11 +598,13 @@
         "scale_factor": 1.5259254737998596e-05,
         "add_offset": 0.0,
         "nodata": 65535,
-        "max_quantization_error": 7.629627368999298e-06
+        "max_quantization_error": 7.629627368999298e-06,
+        "transform": "none",
+        "chunks": null
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v2",
+        "id": "cw-probability-classes-v1",
         "domain": [
           0.0,
           1.0
@@ -583,42 +612,47 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#723459"
+            "color": "#3a385b"
           },
           {
-            "value": 0.125,
-            "color": "#923770"
+            "value": 0.1,
+            "color": "#4c436a"
           },
           {
-            "value": 0.25,
-            "color": "#b13d87"
+            "value": 0.2,
+            "color": "#5f4e79"
           },
           {
-            "value": 0.375,
-            "color": "#cd499d"
+            "value": 0.3,
+            "color": "#735986"
+          },
+          {
+            "value": 0.4,
+            "color": "#886492"
           },
           {
             "value": 0.5,
-            "color": "#e35eb1"
+            "color": "#9c709c"
           },
           {
-            "value": 0.625,
-            "color": "#f37ac3"
+            "value": 0.6,
+            "color": "#af7ea4"
           },
           {
-            "value": 0.75,
-            "color": "#fd99d3"
+            "value": 0.7,
+            "color": "#c28cab"
           },
           {
-            "value": 0.875,
-            "color": "#ffbce1"
+            "value": 0.8,
+            "color": "#d39cb3"
           },
           {
-            "value": 1.0,
-            "color": "#ffddef"
+            "value": 0.9,
+            "color": "#e5abbc"
           }
         ],
-        "interpolation": "linear",
+        "interpolation": "step",
+        "scale": "linear",
         "nodata": "transparent"
       },
       "caveats": [
@@ -748,7 +782,12 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
     },
     {
       "schema_version": 1,
@@ -769,7 +808,8 @@
         "valid_date": "2026-10-08",
         "valid_time": "2026-10-08T12:00:00Z",
         "observed_date": null,
-        "lead_days": 1
+        "lead_days": 1,
+        "observed_times": []
       },
       "freshness": {
         "basis": "issued_date",
@@ -820,11 +860,13 @@
         "scale_factor": 1.5259254737998596e-05,
         "add_offset": 0.0,
         "nodata": 65535,
-        "max_quantization_error": 7.629627368999298e-06
+        "max_quantization_error": 7.629627368999298e-06,
+        "transform": "none",
+        "chunks": null
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v2",
+        "id": "cw-probability-classes-v1",
         "domain": [
           0.0,
           1.0
@@ -832,42 +874,47 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#723459"
+            "color": "#3a385b"
           },
           {
-            "value": 0.125,
-            "color": "#923770"
+            "value": 0.1,
+            "color": "#4c436a"
           },
           {
-            "value": 0.25,
-            "color": "#b13d87"
+            "value": 0.2,
+            "color": "#5f4e79"
           },
           {
-            "value": 0.375,
-            "color": "#cd499d"
+            "value": 0.3,
+            "color": "#735986"
+          },
+          {
+            "value": 0.4,
+            "color": "#886492"
           },
           {
             "value": 0.5,
-            "color": "#e35eb1"
+            "color": "#9c709c"
           },
           {
-            "value": 0.625,
-            "color": "#f37ac3"
+            "value": 0.6,
+            "color": "#af7ea4"
           },
           {
-            "value": 0.75,
-            "color": "#fd99d3"
+            "value": 0.7,
+            "color": "#c28cab"
           },
           {
-            "value": 0.875,
-            "color": "#ffbce1"
+            "value": 0.8,
+            "color": "#d39cb3"
           },
           {
-            "value": 1.0,
-            "color": "#ffddef"
+            "value": 0.9,
+            "color": "#e5abbc"
           }
         ],
-        "interpolation": "linear",
+        "interpolation": "step",
+        "scale": "linear",
         "nodata": "transparent"
       },
       "caveats": [
@@ -996,7 +1043,12 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
     },
     {
       "schema_version": 1,
@@ -1017,7 +1069,8 @@
         "valid_date": "2026-10-08",
         "valid_time": "2026-10-08T12:00:00Z",
         "observed_date": null,
-        "lead_days": 1
+        "lead_days": 1,
+        "observed_times": []
       },
       "freshness": {
         "basis": "issued_date",
@@ -1068,11 +1121,13 @@
         "scale_factor": 1.5259254737998596e-05,
         "add_offset": 0.0,
         "nodata": 65535,
-        "max_quantization_error": 7.629627368999298e-06
+        "max_quantization_error": 7.629627368999298e-06,
+        "transform": "none",
+        "chunks": null
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v2",
+        "id": "cw-probability-classes-v1",
         "domain": [
           0.0,
           1.0
@@ -1080,42 +1135,47 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#723459"
+            "color": "#3a385b"
           },
           {
-            "value": 0.125,
-            "color": "#923770"
+            "value": 0.1,
+            "color": "#4c436a"
           },
           {
-            "value": 0.25,
-            "color": "#b13d87"
+            "value": 0.2,
+            "color": "#5f4e79"
           },
           {
-            "value": 0.375,
-            "color": "#cd499d"
+            "value": 0.3,
+            "color": "#735986"
+          },
+          {
+            "value": 0.4,
+            "color": "#886492"
           },
           {
             "value": 0.5,
-            "color": "#e35eb1"
+            "color": "#9c709c"
           },
           {
-            "value": 0.625,
-            "color": "#f37ac3"
+            "value": 0.6,
+            "color": "#af7ea4"
           },
           {
-            "value": 0.75,
-            "color": "#fd99d3"
+            "value": 0.7,
+            "color": "#c28cab"
           },
           {
-            "value": 0.875,
-            "color": "#ffbce1"
+            "value": 0.8,
+            "color": "#d39cb3"
           },
           {
-            "value": 1.0,
-            "color": "#ffddef"
+            "value": 0.9,
+            "color": "#e5abbc"
           }
         ],
-        "interpolation": "linear",
+        "interpolation": "step",
+        "scale": "linear",
         "nodata": "transparent"
       },
       "caveats": [
@@ -1245,7 +1305,12 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
     },
     {
       "schema_version": 1,
@@ -1266,7 +1331,8 @@
         "valid_date": "2026-10-08",
         "valid_time": "2026-10-08T12:00:00Z",
         "observed_date": null,
-        "lead_days": 1
+        "lead_days": 1,
+        "observed_times": []
       },
       "freshness": {
         "basis": "issued_date",
@@ -1317,11 +1383,13 @@
         "scale_factor": 1.5259254737998596e-05,
         "add_offset": 0.0,
         "nodata": 65535,
-        "max_quantization_error": 7.629627368999298e-06
+        "max_quantization_error": 7.629627368999298e-06,
+        "transform": "none",
+        "chunks": null
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v2",
+        "id": "cw-probability-classes-v1",
         "domain": [
           0.0,
           1.0
@@ -1329,42 +1397,47 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#723459"
+            "color": "#3a385b"
           },
           {
-            "value": 0.125,
-            "color": "#923770"
+            "value": 0.1,
+            "color": "#4c436a"
           },
           {
-            "value": 0.25,
-            "color": "#b13d87"
+            "value": 0.2,
+            "color": "#5f4e79"
           },
           {
-            "value": 0.375,
-            "color": "#cd499d"
+            "value": 0.3,
+            "color": "#735986"
+          },
+          {
+            "value": 0.4,
+            "color": "#886492"
           },
           {
             "value": 0.5,
-            "color": "#e35eb1"
+            "color": "#9c709c"
           },
           {
-            "value": 0.625,
-            "color": "#f37ac3"
+            "value": 0.6,
+            "color": "#af7ea4"
           },
           {
-            "value": 0.75,
-            "color": "#fd99d3"
+            "value": 0.7,
+            "color": "#c28cab"
           },
           {
-            "value": 0.875,
-            "color": "#ffbce1"
+            "value": 0.8,
+            "color": "#d39cb3"
           },
           {
-            "value": 1.0,
-            "color": "#ffddef"
+            "value": 0.9,
+            "color": "#e5abbc"
           }
         ],
-        "interpolation": "linear",
+        "interpolation": "step",
+        "scale": "linear",
         "nodata": "transparent"
       },
       "caveats": [
@@ -1494,7 +1567,12 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
     },
     {
       "schema_version": 1,
@@ -1515,7 +1593,8 @@
         "valid_date": "2026-10-09",
         "valid_time": "2026-10-09T12:00:00Z",
         "observed_date": null,
-        "lead_days": 2
+        "lead_days": 2,
+        "observed_times": []
       },
       "freshness": {
         "basis": "issued_date",
@@ -1566,11 +1645,13 @@
         "scale_factor": 1.5259254737998596e-05,
         "add_offset": 0.0,
         "nodata": 65535,
-        "max_quantization_error": 7.629627368999298e-06
+        "max_quantization_error": 7.629627368999298e-06,
+        "transform": "none",
+        "chunks": null
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v2",
+        "id": "cw-probability-classes-v1",
         "domain": [
           0.0,
           1.0
@@ -1578,42 +1659,47 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#723459"
+            "color": "#3a385b"
           },
           {
-            "value": 0.125,
-            "color": "#923770"
+            "value": 0.1,
+            "color": "#4c436a"
           },
           {
-            "value": 0.25,
-            "color": "#b13d87"
+            "value": 0.2,
+            "color": "#5f4e79"
           },
           {
-            "value": 0.375,
-            "color": "#cd499d"
+            "value": 0.3,
+            "color": "#735986"
+          },
+          {
+            "value": 0.4,
+            "color": "#886492"
           },
           {
             "value": 0.5,
-            "color": "#e35eb1"
+            "color": "#9c709c"
           },
           {
-            "value": 0.625,
-            "color": "#f37ac3"
+            "value": 0.6,
+            "color": "#af7ea4"
           },
           {
-            "value": 0.75,
-            "color": "#fd99d3"
+            "value": 0.7,
+            "color": "#c28cab"
           },
           {
-            "value": 0.875,
-            "color": "#ffbce1"
+            "value": 0.8,
+            "color": "#d39cb3"
           },
           {
-            "value": 1.0,
-            "color": "#ffddef"
+            "value": 0.9,
+            "color": "#e5abbc"
           }
         ],
-        "interpolation": "linear",
+        "interpolation": "step",
+        "scale": "linear",
         "nodata": "transparent"
       },
       "caveats": [
@@ -1742,7 +1828,12 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
     },
     {
       "schema_version": 1,
@@ -1763,7 +1854,8 @@
         "valid_date": "2026-10-09",
         "valid_time": "2026-10-09T12:00:00Z",
         "observed_date": null,
-        "lead_days": 2
+        "lead_days": 2,
+        "observed_times": []
       },
       "freshness": {
         "basis": "issued_date",
@@ -1814,11 +1906,13 @@
         "scale_factor": 1.5259254737998596e-05,
         "add_offset": 0.0,
         "nodata": 65535,
-        "max_quantization_error": 7.629627368999298e-06
+        "max_quantization_error": 7.629627368999298e-06,
+        "transform": "none",
+        "chunks": null
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v2",
+        "id": "cw-probability-classes-v1",
         "domain": [
           0.0,
           1.0
@@ -1826,42 +1920,47 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#723459"
+            "color": "#3a385b"
           },
           {
-            "value": 0.125,
-            "color": "#923770"
+            "value": 0.1,
+            "color": "#4c436a"
           },
           {
-            "value": 0.25,
-            "color": "#b13d87"
+            "value": 0.2,
+            "color": "#5f4e79"
           },
           {
-            "value": 0.375,
-            "color": "#cd499d"
+            "value": 0.3,
+            "color": "#735986"
+          },
+          {
+            "value": 0.4,
+            "color": "#886492"
           },
           {
             "value": 0.5,
-            "color": "#e35eb1"
+            "color": "#9c709c"
           },
           {
-            "value": 0.625,
-            "color": "#f37ac3"
+            "value": 0.6,
+            "color": "#af7ea4"
           },
           {
-            "value": 0.75,
-            "color": "#fd99d3"
+            "value": 0.7,
+            "color": "#c28cab"
           },
           {
-            "value": 0.875,
-            "color": "#ffbce1"
+            "value": 0.8,
+            "color": "#d39cb3"
           },
           {
-            "value": 1.0,
-            "color": "#ffddef"
+            "value": 0.9,
+            "color": "#e5abbc"
           }
         ],
-        "interpolation": "linear",
+        "interpolation": "step",
+        "scale": "linear",
         "nodata": "transparent"
       },
       "caveats": [
@@ -1991,7 +2090,12 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
     },
     {
       "schema_version": 1,
@@ -2012,7 +2116,8 @@
         "valid_date": "2026-10-09",
         "valid_time": "2026-10-09T12:00:00Z",
         "observed_date": null,
-        "lead_days": 2
+        "lead_days": 2,
+        "observed_times": []
       },
       "freshness": {
         "basis": "issued_date",
@@ -2063,11 +2168,13 @@
         "scale_factor": 1.5259254737998596e-05,
         "add_offset": 0.0,
         "nodata": 65535,
-        "max_quantization_error": 7.629627368999298e-06
+        "max_quantization_error": 7.629627368999298e-06,
+        "transform": "none",
+        "chunks": null
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v2",
+        "id": "cw-probability-classes-v1",
         "domain": [
           0.0,
           1.0
@@ -2075,42 +2182,47 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#723459"
+            "color": "#3a385b"
           },
           {
-            "value": 0.125,
-            "color": "#923770"
+            "value": 0.1,
+            "color": "#4c436a"
           },
           {
-            "value": 0.25,
-            "color": "#b13d87"
+            "value": 0.2,
+            "color": "#5f4e79"
           },
           {
-            "value": 0.375,
-            "color": "#cd499d"
+            "value": 0.3,
+            "color": "#735986"
+          },
+          {
+            "value": 0.4,
+            "color": "#886492"
           },
           {
             "value": 0.5,
-            "color": "#e35eb1"
+            "color": "#9c709c"
           },
           {
-            "value": 0.625,
-            "color": "#f37ac3"
+            "value": 0.6,
+            "color": "#af7ea4"
           },
           {
-            "value": 0.75,
-            "color": "#fd99d3"
+            "value": 0.7,
+            "color": "#c28cab"
           },
           {
-            "value": 0.875,
-            "color": "#ffbce1"
+            "value": 0.8,
+            "color": "#d39cb3"
           },
           {
-            "value": 1.0,
-            "color": "#ffddef"
+            "value": 0.9,
+            "color": "#e5abbc"
           }
         ],
-        "interpolation": "linear",
+        "interpolation": "step",
+        "scale": "linear",
         "nodata": "transparent"
       },
       "caveats": [
@@ -2240,7 +2352,12 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
     },
     {
       "schema_version": 1,
@@ -2261,7 +2378,8 @@
         "valid_date": "2026-10-10",
         "valid_time": "2026-10-10T12:00:00Z",
         "observed_date": null,
-        "lead_days": 3
+        "lead_days": 3,
+        "observed_times": []
       },
       "freshness": {
         "basis": "issued_date",
@@ -2312,11 +2430,13 @@
         "scale_factor": 1.5259254737998596e-05,
         "add_offset": 0.0,
         "nodata": 65535,
-        "max_quantization_error": 7.629627368999298e-06
+        "max_quantization_error": 7.629627368999298e-06,
+        "transform": "none",
+        "chunks": null
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v2",
+        "id": "cw-probability-classes-v1",
         "domain": [
           0.0,
           1.0
@@ -2324,42 +2444,47 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#723459"
+            "color": "#3a385b"
           },
           {
-            "value": 0.125,
-            "color": "#923770"
+            "value": 0.1,
+            "color": "#4c436a"
           },
           {
-            "value": 0.25,
-            "color": "#b13d87"
+            "value": 0.2,
+            "color": "#5f4e79"
           },
           {
-            "value": 0.375,
-            "color": "#cd499d"
+            "value": 0.3,
+            "color": "#735986"
+          },
+          {
+            "value": 0.4,
+            "color": "#886492"
           },
           {
             "value": 0.5,
-            "color": "#e35eb1"
+            "color": "#9c709c"
           },
           {
-            "value": 0.625,
-            "color": "#f37ac3"
+            "value": 0.6,
+            "color": "#af7ea4"
           },
           {
-            "value": 0.75,
-            "color": "#fd99d3"
+            "value": 0.7,
+            "color": "#c28cab"
           },
           {
-            "value": 0.875,
-            "color": "#ffbce1"
+            "value": 0.8,
+            "color": "#d39cb3"
           },
           {
-            "value": 1.0,
-            "color": "#ffddef"
+            "value": 0.9,
+            "color": "#e5abbc"
           }
         ],
-        "interpolation": "linear",
+        "interpolation": "step",
+        "scale": "linear",
         "nodata": "transparent"
       },
       "caveats": [
@@ -2488,7 +2613,12 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
     },
     {
       "schema_version": 1,
@@ -2509,7 +2639,8 @@
         "valid_date": "2026-10-10",
         "valid_time": "2026-10-10T12:00:00Z",
         "observed_date": null,
-        "lead_days": 3
+        "lead_days": 3,
+        "observed_times": []
       },
       "freshness": {
         "basis": "issued_date",
@@ -2560,11 +2691,13 @@
         "scale_factor": 1.5259254737998596e-05,
         "add_offset": 0.0,
         "nodata": 65535,
-        "max_quantization_error": 7.629627368999298e-06
+        "max_quantization_error": 7.629627368999298e-06,
+        "transform": "none",
+        "chunks": null
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v2",
+        "id": "cw-probability-classes-v1",
         "domain": [
           0.0,
           1.0
@@ -2572,42 +2705,47 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#723459"
+            "color": "#3a385b"
           },
           {
-            "value": 0.125,
-            "color": "#923770"
+            "value": 0.1,
+            "color": "#4c436a"
           },
           {
-            "value": 0.25,
-            "color": "#b13d87"
+            "value": 0.2,
+            "color": "#5f4e79"
           },
           {
-            "value": 0.375,
-            "color": "#cd499d"
+            "value": 0.3,
+            "color": "#735986"
+          },
+          {
+            "value": 0.4,
+            "color": "#886492"
           },
           {
             "value": 0.5,
-            "color": "#e35eb1"
+            "color": "#9c709c"
           },
           {
-            "value": 0.625,
-            "color": "#f37ac3"
+            "value": 0.6,
+            "color": "#af7ea4"
           },
           {
-            "value": 0.75,
-            "color": "#fd99d3"
+            "value": 0.7,
+            "color": "#c28cab"
           },
           {
-            "value": 0.875,
-            "color": "#ffbce1"
+            "value": 0.8,
+            "color": "#d39cb3"
           },
           {
-            "value": 1.0,
-            "color": "#ffddef"
+            "value": 0.9,
+            "color": "#e5abbc"
           }
         ],
-        "interpolation": "linear",
+        "interpolation": "step",
+        "scale": "linear",
         "nodata": "transparent"
       },
       "caveats": [
@@ -2737,7 +2875,12 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
     },
     {
       "schema_version": 1,
@@ -2758,7 +2901,8 @@
         "valid_date": "2026-10-10",
         "valid_time": "2026-10-10T12:00:00Z",
         "observed_date": null,
-        "lead_days": 3
+        "lead_days": 3,
+        "observed_times": []
       },
       "freshness": {
         "basis": "issued_date",
@@ -2809,11 +2953,13 @@
         "scale_factor": 1.5259254737998596e-05,
         "add_offset": 0.0,
         "nodata": 65535,
-        "max_quantization_error": 7.629627368999298e-06
+        "max_quantization_error": 7.629627368999298e-06,
+        "transform": "none",
+        "chunks": null
       },
       "tiles": null,
       "palette": {
-        "id": "cw-probability-magenta-v2",
+        "id": "cw-probability-classes-v1",
         "domain": [
           0.0,
           1.0
@@ -2821,42 +2967,47 @@
         "stops": [
           {
             "value": 0.0,
-            "color": "#723459"
+            "color": "#3a385b"
           },
           {
-            "value": 0.125,
-            "color": "#923770"
+            "value": 0.1,
+            "color": "#4c436a"
           },
           {
-            "value": 0.25,
-            "color": "#b13d87"
+            "value": 0.2,
+            "color": "#5f4e79"
           },
           {
-            "value": 0.375,
-            "color": "#cd499d"
+            "value": 0.3,
+            "color": "#735986"
+          },
+          {
+            "value": 0.4,
+            "color": "#886492"
           },
           {
             "value": 0.5,
-            "color": "#e35eb1"
+            "color": "#9c709c"
           },
           {
-            "value": 0.625,
-            "color": "#f37ac3"
+            "value": 0.6,
+            "color": "#af7ea4"
           },
           {
-            "value": 0.75,
-            "color": "#fd99d3"
+            "value": 0.7,
+            "color": "#c28cab"
           },
           {
-            "value": 0.875,
-            "color": "#ffbce1"
+            "value": 0.8,
+            "color": "#d39cb3"
           },
           {
-            "value": 1.0,
-            "color": "#ffddef"
+            "value": 0.9,
+            "color": "#e5abbc"
           }
         ],
-        "interpolation": "linear",
+        "interpolation": "step",
+        "scale": "linear",
         "nodata": "transparent"
       },
       "caveats": [
@@ -2986,7 +3137,12 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
     },
     {
       "schema_version": 1,
@@ -3007,7 +3163,8 @@
         "valid_date": "2026-10-06",
         "valid_time": null,
         "observed_date": "2026-10-06",
-        "lead_days": null
+        "lead_days": null,
+        "observed_times": []
       },
       "freshness": {
         "basis": "observed_date",
@@ -3023,7 +3180,12 @@
         "max_native_zoom": 7,
         "legend_url": "https://gibs.earthdata.nasa.gov/legends/VIIRS_Chlorophyll_H.svg",
         "legend_verified": true,
-        "date_selection": "Newest date advertised by GetCapabilities was 2026-10-07. Chosen date is the most recent of up to 7 days whose 3 probe tiles over central California returned HTTP 200 palette PNGs with data in at least 2% of pixels."
+        "date_selection": "Newest date advertised by GetCapabilities was 2026-10-07. Chosen date is the most recent of up to 7 days whose 3 probe tiles over central California returned HTTP 200 palette PNGs with data in at least 2% of pixels.",
+        "relative": false,
+        "min_zoom": 0,
+        "bounds_lnglat": null,
+        "n_tiles": null,
+        "sample_tiles": []
       },
       "palette": null,
       "caveats": [
@@ -3051,7 +3213,12 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
     },
     {
       "schema_version": 1,
@@ -3072,7 +3239,8 @@
         "valid_date": "2026-10-06",
         "valid_time": null,
         "observed_date": "2026-10-06",
-        "lead_days": null
+        "lead_days": null,
+        "observed_times": []
       },
       "freshness": {
         "basis": "observed_date",
@@ -3088,7 +3256,12 @@
         "max_native_zoom": 7,
         "legend_url": "https://gibs.earthdata.nasa.gov/legends/MODIS_Chlorophyll_H.svg",
         "legend_verified": true,
-        "date_selection": "Newest date advertised by GetCapabilities was 2026-10-08. Chosen date is the most recent of up to 7 days whose 3 probe tiles over central California returned HTTP 200 palette PNGs with data in at least 2% of pixels."
+        "date_selection": "Newest date advertised by GetCapabilities was 2026-10-08. Chosen date is the most recent of up to 7 days whose 3 probe tiles over central California returned HTTP 200 palette PNGs with data in at least 2% of pixels.",
+        "relative": false,
+        "min_zoom": 0,
+        "bounds_lnglat": null,
+        "n_tiles": null,
+        "sample_tiles": []
       },
       "palette": null,
       "caveats": [
@@ -3116,7 +3289,927 @@
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
-      }
+      },
+      "native_resolution_m": null,
+      "platforms": [],
+      "coverage": null,
+      "composite": null,
+      "vectors": null
+    },
+    {
+      "schema_version": 1,
+      "layer_id": "olci300_chl_latest",
+      "group_id": "satellite_chlorophyll_hr",
+      "product_class": "observation",
+      "title": "Satellite chlorophyll-a, Sentinel-3 OLCI 300 m, latest clear view",
+      "short_title": "Chlorophyll \u00b7 OLCI 300 m",
+      "variable": "chlorophyll_a",
+      "units": "mg m-3",
+      "threshold_text": null,
+      "description": "Most recent valid chlorophyll-a observation from the OLCI sensor on Sentinel-3A, with Sentinel-3B filling gaps at each pixel within 7 days, with the date of each pixel.",
+      "resolution_deg": 0.0025,
+      "time": {
+        "issued_date": null,
+        "issued_date_derived": false,
+        "issued_date_method": null,
+        "valid_date": "2026-10-06",
+        "valid_time": null,
+        "observed_date": "2026-10-06",
+        "lead_days": null,
+        "observed_times": [
+          "2026-10-05T19:15:21Z",
+          "2026-10-06T18:50:40Z"
+        ]
+      },
+      "freshness": {
+        "basis": "observed_date",
+        "current_max_age_days": 3,
+        "stale_max_age_days": 7,
+        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+      },
+      "image": null,
+      "grid": {
+        "url": "satellite/olci300/latest-2026-10-12-b4d69bb2ae/grid/{row}_{col}.u16.gz",
+        "encoding": "uint16le+gzip",
+        "width": 341,
+        "height": 321,
+        "lat_first": 37.20125,
+        "lat_step": -0.0025,
+        "lon_first": -122.60125,
+        "lon_step": 0.0025,
+        "scale_factor": 9.155552842799158e-05,
+        "add_offset": -3.0,
+        "nodata": 65535,
+        "max_quantization_error": 4.577776421399579e-05,
+        "transform": "log10",
+        "chunks": {
+          "rows": 512,
+          "cols": 512,
+          "url_template": "satellite/olci300/latest-2026-10-12-b4d69bb2ae/grid/{row}_{col}.u16.gz",
+          "present": [
+            "0_0"
+          ]
+        }
+      },
+      "tiles": {
+        "url_template": "satellite/olci300/latest-2026-10-12-b4d69bb2ae/tiles/{z}/{x}/{y}.png",
+        "tile_size": 256,
+        "max_native_zoom": 10,
+        "legend_url": null,
+        "legend_verified": false,
+        "date_selection": "Rendered by CoastWatch from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        "relative": true,
+        "min_zoom": 5,
+        "bounds_lnglat": [
+          -122.6025,
+          36.4,
+          -121.75,
+          37.2025
+        ],
+        "n_tiles": 16,
+        "sample_tiles": [
+          "5/5/12",
+          "7/20/49",
+          "8/41/100",
+          "9/82/200",
+          "10/165/398"
+        ]
+      },
+      "palette": {
+        "id": "cw-chlorophyll-log-v1",
+        "domain": [
+          -1.30103,
+          1.69897
+        ],
+        "stops": [
+          {
+            "value": -1.30103,
+            "color": "#102a4c"
+          },
+          {
+            "value": -0.92603,
+            "color": "#14466e"
+          },
+          {
+            "value": -0.55103,
+            "color": "#126483"
+          },
+          {
+            "value": -0.17603,
+            "color": "#147f85"
+          },
+          {
+            "value": 0.19897,
+            "color": "#2a9a7c"
+          },
+          {
+            "value": 0.57397,
+            "color": "#5bb267"
+          },
+          {
+            "value": 0.94897,
+            "color": "#9bc851"
+          },
+          {
+            "value": 1.32397,
+            "color": "#d6dd5e"
+          },
+          {
+            "value": 1.69897,
+            "color": "#f3ef9c"
+          }
+        ],
+        "interpolation": "linear",
+        "scale": "log10",
+        "nodata": "transparent"
+      },
+      "caveats": [
+        "Latest clear view: each pixel shows its most recent valid observation within 7 days; neighbouring pixels can come from different days. Check the observation date in the readout.",
+        "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
+        "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency)."
+      ],
+      "qc": {
+        "checks": [
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+            "passed": true,
+            "detail": "all present"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+            "passed": true,
+            "detail": "file 2026-10-05T19:15:21Z, listed 2026-10-05T19:15:21Z"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+            "passed": true,
+            "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+            "passed": true,
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+            "passed": true,
+            "detail": "0.2077% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+            "passed": true,
+            "detail": "all present"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+            "passed": true,
+            "detail": "file 2026-10-06T18:50:40Z, listed 2026-10-06T18:50:40Z"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+            "passed": true,
+            "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+            "passed": true,
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+            "passed": true,
+            "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+            "passed": true,
+            "detail": "all present"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+            "passed": true,
+            "detail": "file 2026-10-07T19:16:29Z, listed 2026-10-07T19:16:29Z"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+            "passed": true,
+            "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+            "passed": true,
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+            "passed": true,
+            "detail": "0.0000% of values > 200.0 mg m-3"
+          }
+        ],
+        "n_cells": 109461,
+        "n_valid": 13177,
+        "valid_fraction": 0.120381,
+        "value_min": 0.009999297310040017,
+        "value_max": 297.9865075625561
+      },
+      "provenance": {
+        "source_id": "satellite_chl",
+        "source_name": "Sentinel-3 OLCI chlorophyll-a, near real time (NOAA CoastWatch)",
+        "source_url": "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.html",
+        "dataset_id": "noaacwS3AOLCIchlaSectorCIDaily,noaacwS3AOLCIchlaSectorDIDaily,noaacwS3BOLCIchlaSectorCIDaily,noaacwS3BOLCIchlaSectorDIDaily",
+        "product_version": null,
+        "institution": "NOAA CoastWatch",
+        "license": "Contains modified Copernicus Sentinel-3 data (EUMETSAT), processed by NOAA CoastWatch/OceanWatch; free and open. NOAA data: may be used and redistributed for free.",
+        "citation": null,
+        "retrieved_at": "2026-10-12T18:00:00Z",
+        "request_urls": [],
+        "upstream_metadata": {
+          "days": "2026-10-05, 2026-10-06, 2026-10-07"
+        },
+        "pipeline_version": "fixture",
+        "pipeline_run_id": "fixture"
+      },
+      "native_resolution_m": 300.0,
+      "platforms": [
+        "Sentinel-3A"
+      ],
+      "coverage": {
+        "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+        "domain_observed_fraction": 0.205,
+        "regions": [
+          {
+            "region_id": "monterey_bay",
+            "label": "Monterey Bay",
+            "observed_fraction": 0.2876,
+            "observed_km2": 815.8,
+            "reference_cells": 372
+          }
+        ]
+      },
+      "composite": {
+        "window_days": 7,
+        "reference_date": "2026-10-12",
+        "newest_observed_date": "2026-10-06",
+        "oldest_observed_date": "2026-10-05",
+        "days": [
+          {
+            "date": "2026-10-07",
+            "platforms": [
+              "Sentinel-3A"
+            ],
+            "observed_times": [
+              "2026-10-07T19:16:29Z"
+            ],
+            "pixels_used": 0
+          },
+          {
+            "date": "2026-10-06",
+            "platforms": [
+              "Sentinel-3A"
+            ],
+            "observed_times": [
+              "2026-10-06T18:50:40Z"
+            ],
+            "pixels_used": 8743
+          },
+          {
+            "date": "2026-10-05",
+            "platforms": [
+              "Sentinel-3A"
+            ],
+            "observed_times": [
+              "2026-10-05T19:15:21Z"
+            ],
+            "pixels_used": 4434
+          }
+        ],
+        "age_histogram": [
+          {
+            "age_days": 6,
+            "fraction": 0.6635
+          },
+          {
+            "age_days": 7,
+            "fraction": 0.3365
+          }
+        ],
+        "age_grid": {
+          "url": "satellite/olci300/latest-2026-10-12-b4d69bb2ae/age/{row}_{col}.u16.gz",
+          "encoding": "uint16le+gzip",
+          "width": 341,
+          "height": 321,
+          "lat_first": 37.20125,
+          "lat_step": -0.0025,
+          "lon_first": -122.60125,
+          "lon_step": 0.0025,
+          "scale_factor": 1.0,
+          "add_offset": 0.0,
+          "nodata": 65535,
+          "max_quantization_error": 0.5,
+          "transform": "none",
+          "chunks": {
+            "rows": 512,
+            "cols": 512,
+            "url_template": "satellite/olci300/latest-2026-10-12-b4d69bb2ae/age/{row}_{col}.u16.gz",
+            "present": [
+              "0_0"
+            ]
+          }
+        },
+        "age_tiles": {
+          "url_template": "satellite/olci300/latest-2026-10-12-b4d69bb2ae/age-tiles/{z}/{x}/{y}.png",
+          "tile_size": 256,
+          "max_native_zoom": 10,
+          "legend_url": null,
+          "legend_verified": false,
+          "date_selection": "Age in days of each pixel of the latest clear view (categorical).",
+          "relative": true,
+          "min_zoom": 5,
+          "bounds_lnglat": [
+            -122.6025,
+            36.4,
+            -121.75,
+            37.2025
+          ],
+          "n_tiles": 16,
+          "sample_tiles": [
+            "5/5/12",
+            "7/20/49",
+            "8/41/100",
+            "9/82/200",
+            "10/165/398"
+          ]
+        }
+      },
+      "vectors": null
+    },
+    {
+      "schema_version": 1,
+      "layer_id": "olci300_chl_2026-10-05",
+      "group_id": "satellite_chlorophyll_hr",
+      "product_class": "observation",
+      "title": "Satellite chlorophyll-a, Sentinel-3 OLCI 300 m, single day",
+      "short_title": "Chlorophyll \u00b7 OLCI 300 m",
+      "variable": "chlorophyll_a",
+      "units": "mg m-3",
+      "threshold_text": null,
+      "description": "Chlorophyll-a from the OLCI sensor on Sentinel-3A, with Sentinel-3B filling gaps, as published for 2026-10-05. Cells without a clear observation have no value.",
+      "resolution_deg": 0.0025,
+      "time": {
+        "issued_date": null,
+        "issued_date_derived": false,
+        "issued_date_method": null,
+        "valid_date": "2026-10-05",
+        "valid_time": null,
+        "observed_date": "2026-10-05",
+        "lead_days": null,
+        "observed_times": [
+          "2026-10-05T19:15:21Z"
+        ]
+      },
+      "freshness": {
+        "basis": "observed_date",
+        "current_max_age_days": 3,
+        "stale_max_age_days": 7,
+        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+      },
+      "image": null,
+      "grid": {
+        "url": "satellite/olci300/day-2026-10-05-9fded4c814/grid/{row}_{col}.u16.gz",
+        "encoding": "uint16le+gzip",
+        "width": 341,
+        "height": 321,
+        "lat_first": 37.20125,
+        "lat_step": -0.0025,
+        "lon_first": -122.60125,
+        "lon_step": 0.0025,
+        "scale_factor": 9.155552842799158e-05,
+        "add_offset": -3.0,
+        "nodata": 65535,
+        "max_quantization_error": 4.577776421399579e-05,
+        "transform": "log10",
+        "chunks": {
+          "rows": 512,
+          "cols": 512,
+          "url_template": "satellite/olci300/day-2026-10-05-9fded4c814/grid/{row}_{col}.u16.gz",
+          "present": [
+            "0_0"
+          ]
+        }
+      },
+      "tiles": {
+        "url_template": "satellite/olci300/day-2026-10-05-9fded4c814/tiles/{z}/{x}/{y}.png",
+        "tile_size": 256,
+        "max_native_zoom": 10,
+        "legend_url": null,
+        "legend_verified": false,
+        "date_selection": "Rendered by CoastWatch from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        "relative": true,
+        "min_zoom": 5,
+        "bounds_lnglat": [
+          -122.6025,
+          36.4,
+          -121.75,
+          37.2025
+        ],
+        "n_tiles": 16,
+        "sample_tiles": [
+          "5/5/12",
+          "7/20/49",
+          "8/41/100",
+          "9/82/200",
+          "10/165/398"
+        ]
+      },
+      "palette": {
+        "id": "cw-chlorophyll-log-v1",
+        "domain": [
+          -1.30103,
+          1.69897
+        ],
+        "stops": [
+          {
+            "value": -1.30103,
+            "color": "#102a4c"
+          },
+          {
+            "value": -0.92603,
+            "color": "#14466e"
+          },
+          {
+            "value": -0.55103,
+            "color": "#126483"
+          },
+          {
+            "value": -0.17603,
+            "color": "#147f85"
+          },
+          {
+            "value": 0.19897,
+            "color": "#2a9a7c"
+          },
+          {
+            "value": 0.57397,
+            "color": "#5bb267"
+          },
+          {
+            "value": 0.94897,
+            "color": "#9bc851"
+          },
+          {
+            "value": 1.32397,
+            "color": "#d6dd5e"
+          },
+          {
+            "value": 1.69897,
+            "color": "#f3ef9c"
+          }
+        ],
+        "interpolation": "linear",
+        "scale": "log10",
+        "nodata": "transparent"
+      },
+      "caveats": [
+        "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
+        "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency)."
+      ],
+      "qc": {
+        "checks": [
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+            "passed": true,
+            "detail": "all present"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+            "passed": true,
+            "detail": "file 2026-10-05T19:15:21Z, listed 2026-10-05T19:15:21Z"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+            "passed": true,
+            "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+            "passed": true,
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+            "passed": true,
+            "detail": "0.2077% of values > 200.0 mg m-3"
+          }
+        ],
+        "n_cells": 109461,
+        "n_valid": 12037,
+        "valid_fraction": 0.109966,
+        "value_min": 0.035233814269304276,
+        "value_max": 315.6449890136719
+      },
+      "provenance": {
+        "source_id": "satellite_chl",
+        "source_name": "Sentinel-3 OLCI chlorophyll-a, near real time (NOAA CoastWatch)",
+        "source_url": "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.html",
+        "dataset_id": "noaacwS3AOLCIchlaSectorCIDaily,noaacwS3AOLCIchlaSectorDIDaily,noaacwS3BOLCIchlaSectorCIDaily,noaacwS3BOLCIchlaSectorDIDaily",
+        "product_version": null,
+        "institution": "NOAA CoastWatch",
+        "license": "Contains modified Copernicus Sentinel-3 data (EUMETSAT), processed by NOAA CoastWatch/OceanWatch; free and open. NOAA data: may be used and redistributed for free.",
+        "citation": null,
+        "retrieved_at": "2026-10-08T18:00:00Z",
+        "request_urls": [
+          "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-05T19:15:21Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
+        ],
+        "upstream_metadata": {
+          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-05T19:15:21Z"
+        },
+        "pipeline_version": "fixture",
+        "pipeline_run_id": "fixture"
+      },
+      "native_resolution_m": 300.0,
+      "platforms": [
+        "Sentinel-3A"
+      ],
+      "coverage": {
+        "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+        "domain_observed_fraction": 0.1877,
+        "regions": [
+          {
+            "region_id": "monterey_bay",
+            "label": "Monterey Bay",
+            "observed_fraction": 0.2634,
+            "observed_km2": 745.8,
+            "reference_cells": 372
+          }
+        ]
+      },
+      "composite": null,
+      "vectors": null
+    },
+    {
+      "schema_version": 1,
+      "layer_id": "olci300_chl_2026-10-06",
+      "group_id": "satellite_chlorophyll_hr",
+      "product_class": "observation",
+      "title": "Satellite chlorophyll-a, Sentinel-3 OLCI 300 m, single day",
+      "short_title": "Chlorophyll \u00b7 OLCI 300 m",
+      "variable": "chlorophyll_a",
+      "units": "mg m-3",
+      "threshold_text": null,
+      "description": "Chlorophyll-a from the OLCI sensor on Sentinel-3A, with Sentinel-3B filling gaps, as published for 2026-10-06. Cells without a clear observation have no value.",
+      "resolution_deg": 0.0025,
+      "time": {
+        "issued_date": null,
+        "issued_date_derived": false,
+        "issued_date_method": null,
+        "valid_date": "2026-10-06",
+        "valid_time": null,
+        "observed_date": "2026-10-06",
+        "lead_days": null,
+        "observed_times": [
+          "2026-10-06T18:50:40Z"
+        ]
+      },
+      "freshness": {
+        "basis": "observed_date",
+        "current_max_age_days": 3,
+        "stale_max_age_days": 7,
+        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+      },
+      "image": null,
+      "grid": {
+        "url": "satellite/olci300/day-2026-10-06-a6828a105a/grid/{row}_{col}.u16.gz",
+        "encoding": "uint16le+gzip",
+        "width": 341,
+        "height": 321,
+        "lat_first": 37.20125,
+        "lat_step": -0.0025,
+        "lon_first": -122.60125,
+        "lon_step": 0.0025,
+        "scale_factor": 9.155552842799158e-05,
+        "add_offset": -3.0,
+        "nodata": 65535,
+        "max_quantization_error": 4.577776421399579e-05,
+        "transform": "log10",
+        "chunks": {
+          "rows": 512,
+          "cols": 512,
+          "url_template": "satellite/olci300/day-2026-10-06-a6828a105a/grid/{row}_{col}.u16.gz",
+          "present": [
+            "0_0"
+          ]
+        }
+      },
+      "tiles": {
+        "url_template": "satellite/olci300/day-2026-10-06-a6828a105a/tiles/{z}/{x}/{y}.png",
+        "tile_size": 256,
+        "max_native_zoom": 10,
+        "legend_url": null,
+        "legend_verified": false,
+        "date_selection": "Rendered by CoastWatch from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        "relative": true,
+        "min_zoom": 5,
+        "bounds_lnglat": [
+          -122.6025,
+          36.4,
+          -121.75,
+          37.2025
+        ],
+        "n_tiles": 11,
+        "sample_tiles": [
+          "5/5/12",
+          "7/20/49",
+          "9/82/198",
+          "10/165/397",
+          "10/165/398"
+        ]
+      },
+      "palette": {
+        "id": "cw-chlorophyll-log-v1",
+        "domain": [
+          -1.30103,
+          1.69897
+        ],
+        "stops": [
+          {
+            "value": -1.30103,
+            "color": "#102a4c"
+          },
+          {
+            "value": -0.92603,
+            "color": "#14466e"
+          },
+          {
+            "value": -0.55103,
+            "color": "#126483"
+          },
+          {
+            "value": -0.17603,
+            "color": "#147f85"
+          },
+          {
+            "value": 0.19897,
+            "color": "#2a9a7c"
+          },
+          {
+            "value": 0.57397,
+            "color": "#5bb267"
+          },
+          {
+            "value": 0.94897,
+            "color": "#9bc851"
+          },
+          {
+            "value": 1.32397,
+            "color": "#d6dd5e"
+          },
+          {
+            "value": 1.69897,
+            "color": "#f3ef9c"
+          }
+        ],
+        "interpolation": "linear",
+        "scale": "log10",
+        "nodata": "transparent"
+      },
+      "caveats": [
+        "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
+        "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency)."
+      ],
+      "qc": {
+        "checks": [
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+            "passed": true,
+            "detail": "all present"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+            "passed": true,
+            "detail": "file 2026-10-06T18:50:40Z, listed 2026-10-06T18:50:40Z"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+            "passed": true,
+            "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+            "passed": true,
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+            "passed": true,
+            "detail": "0.0000% of values > 200.0 mg m-3"
+          }
+        ],
+        "n_cells": 109461,
+        "n_valid": 8743,
+        "valid_fraction": 0.079873,
+        "value_min": 0.009999999776482582,
+        "value_max": 138.30592346191406
+      },
+      "provenance": {
+        "source_id": "satellite_chl",
+        "source_name": "Sentinel-3 OLCI chlorophyll-a, near real time (NOAA CoastWatch)",
+        "source_url": "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.html",
+        "dataset_id": "noaacwS3AOLCIchlaSectorCIDaily,noaacwS3AOLCIchlaSectorDIDaily,noaacwS3BOLCIchlaSectorCIDaily,noaacwS3BOLCIchlaSectorDIDaily",
+        "product_version": null,
+        "institution": "NOAA CoastWatch",
+        "license": "Contains modified Copernicus Sentinel-3 data (EUMETSAT), processed by NOAA CoastWatch/OceanWatch; free and open. NOAA data: may be used and redistributed for free.",
+        "citation": null,
+        "retrieved_at": "2026-10-08T18:00:00Z",
+        "request_urls": [
+          "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-06T18:50:40Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
+        ],
+        "upstream_metadata": {
+          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-06T18:50:40Z"
+        },
+        "pipeline_version": "fixture",
+        "pipeline_run_id": "fixture"
+      },
+      "native_resolution_m": 300.0,
+      "platforms": [
+        "Sentinel-3A"
+      ],
+      "coverage": {
+        "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+        "domain_observed_fraction": 0.1322,
+        "regions": [
+          {
+            "region_id": "monterey_bay",
+            "label": "Monterey Bay",
+            "observed_fraction": 0.1855,
+            "observed_km2": 541.1,
+            "reference_cells": 372
+          }
+        ]
+      },
+      "composite": null,
+      "vectors": null
+    },
+    {
+      "schema_version": 1,
+      "layer_id": "olci300_chl_2026-10-07",
+      "group_id": "satellite_chlorophyll_hr",
+      "product_class": "observation",
+      "title": "Satellite chlorophyll-a, Sentinel-3 OLCI 300 m, single day",
+      "short_title": "Chlorophyll \u00b7 OLCI 300 m",
+      "variable": "chlorophyll_a",
+      "units": "mg m-3",
+      "threshold_text": null,
+      "description": "Chlorophyll-a from the OLCI sensor on Sentinel-3A, with Sentinel-3B filling gaps, as published for 2026-10-07. Cells without a clear observation have no value.",
+      "resolution_deg": 0.0025,
+      "time": {
+        "issued_date": null,
+        "issued_date_derived": false,
+        "issued_date_method": null,
+        "valid_date": "2026-10-07",
+        "valid_time": null,
+        "observed_date": "2026-10-07",
+        "lead_days": null,
+        "observed_times": [
+          "2026-10-07T19:16:29Z"
+        ]
+      },
+      "freshness": {
+        "basis": "observed_date",
+        "current_max_age_days": 3,
+        "stale_max_age_days": 7,
+        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+      },
+      "image": null,
+      "grid": null,
+      "tiles": null,
+      "palette": {
+        "id": "cw-chlorophyll-log-v1",
+        "domain": [
+          -1.30103,
+          1.69897
+        ],
+        "stops": [
+          {
+            "value": -1.30103,
+            "color": "#102a4c"
+          },
+          {
+            "value": -0.92603,
+            "color": "#14466e"
+          },
+          {
+            "value": -0.55103,
+            "color": "#126483"
+          },
+          {
+            "value": -0.17603,
+            "color": "#147f85"
+          },
+          {
+            "value": 0.19897,
+            "color": "#2a9a7c"
+          },
+          {
+            "value": 0.57397,
+            "color": "#5bb267"
+          },
+          {
+            "value": 0.94897,
+            "color": "#9bc851"
+          },
+          {
+            "value": 1.32397,
+            "color": "#d6dd5e"
+          },
+          {
+            "value": 1.69897,
+            "color": "#f3ef9c"
+          }
+        ],
+        "interpolation": "linear",
+        "scale": "log10",
+        "nodata": "transparent"
+      },
+      "caveats": [
+        "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
+        "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
+        "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency)."
+      ],
+      "qc": {
+        "checks": [
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
+            "passed": true,
+            "detail": "all present"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:time_matches_listing",
+            "passed": true,
+            "detail": "file 2026-10-07T19:16:29Z, listed 2026-10-07T19:16:29Z"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:coordinates_on_lattice",
+            "passed": true,
+            "detail": "max offset lat 7.11e-15, lon 4.26e-14 deg"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:within_domain",
+            "passed": true,
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+          },
+          {
+            "name": "noaacwS3AOLCIchlaSectorCIDaily:plausible_values",
+            "passed": true,
+            "detail": "0.0000% of values > 200.0 mg m-3"
+          }
+        ],
+        "n_cells": 109461,
+        "n_valid": 0,
+        "valid_fraction": 0.0,
+        "value_min": null,
+        "value_max": null
+      },
+      "provenance": {
+        "source_id": "satellite_chl",
+        "source_name": "Sentinel-3 OLCI chlorophyll-a, near real time (NOAA CoastWatch)",
+        "source_url": "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.html",
+        "dataset_id": "noaacwS3AOLCIchlaSectorCIDaily,noaacwS3AOLCIchlaSectorDIDaily,noaacwS3BOLCIchlaSectorCIDaily,noaacwS3BOLCIchlaSectorDIDaily",
+        "product_version": null,
+        "institution": "NOAA CoastWatch",
+        "license": "Contains modified Copernicus Sentinel-3 data (EUMETSAT), processed by NOAA CoastWatch/OceanWatch; free and open. NOAA data: may be used and redistributed for free.",
+        "citation": null,
+        "retrieved_at": "2026-10-08T18:00:00Z",
+        "request_urls": [
+          "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.nc?chlor_a%5B(2026-10-07T19:16:29Z)%5D%5B(0.0)%5D%5B(37.20125):(36.40125)%5D%5B(-122.60125):(-121.75125)%5D"
+        ],
+        "upstream_metadata": {
+          "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-07T19:16:29Z"
+        },
+        "pipeline_version": "fixture",
+        "pipeline_run_id": "fixture"
+      },
+      "native_resolution_m": 300.0,
+      "platforms": [
+        "Sentinel-3A"
+      ],
+      "coverage": {
+        "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
+        "domain_observed_fraction": 0.0,
+        "regions": [
+          {
+            "region_id": "monterey_bay",
+            "label": "Monterey Bay",
+            "observed_fraction": 0.0,
+            "observed_km2": 0.0,
+            "reference_cells": 372
+          }
+        ]
+      },
+      "composite": null,
+      "vectors": null
     }
   ],
   "forecast_runs": [
@@ -3176,6 +4269,29 @@
         "current_max_age_days": 4,
         "stale_max_age_days": 10,
         "note": "Daily satellite composites usually appear 1-3 days after observation. Current: observed within 4 days. Stale: 5-10 days. Historical: older."
+      }
+    },
+    {
+      "source_id": "satellite_chl",
+      "title": "Satellite chlorophyll-a: Sentinel-3 OLCI 300 m (VIIRS 750 m fallback)",
+      "product_class": "observation",
+      "last_attempt_at": "2026-10-12T18:00:00Z",
+      "last_success_at": "2026-10-12T18:00:00Z",
+      "outcome": "partial",
+      "error": "viirs750: no scenes in the last 7 days",
+      "notes": [
+        "olci300 2026-10-05: same overpasses as the published day; reused it.",
+        "olci300 2026-10-06: same overpasses as the published day; reused it.",
+        "olci300 2026-10-07: same overpasses as the published day; reused it.",
+        "olci300: 3 day(s) in window; newest observed 2026-10-06."
+      ],
+      "latest_issued_date": null,
+      "latest_valid_date": "2026-10-06",
+      "freshness": {
+        "basis": "observed_date",
+        "current_max_age_days": 3,
+        "stale_max_age_days": 7,
+        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       }
     },
     {

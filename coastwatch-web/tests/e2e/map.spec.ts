@@ -19,14 +19,16 @@ async function open(page: Page, url: string, now = "2026-10-08T20:00:00Z") {
 test.describe("information hierarchy and labelling", () => {
   test("official status comes before the forecast and links to official sources", async ({ page }) => {
     await open(page, OK);
-    const official = page.getByTestId("official-status");
+    const summary = page.getByTestId("official-summary");
     const forecast = page.getByTestId("forecast-panel");
-    await expect(official).toBeVisible();
-    const before = await official.evaluate(
+    await expect(summary).toBeVisible();
+    const before = await summary.evaluate(
       (o, f) => !!(o.compareDocumentPosition(f as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
       await forecast.elementHandle(),
     );
     expect(before).toBe(true);
+    await summary.click();
+    const official = page.getByTestId("official-drawer");
     await expect(official).toContainText("does not mean an area is open");
     const hrefs = await official.locator("a[href^='https']").evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href));
     expect(hrefs).toContain("https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories");
@@ -44,24 +46,29 @@ test.describe("information hierarchy and labelling", () => {
     const panel = page.getByTestId("forecast-panel");
     await expect(panel.getByTestId("product-class")).toHaveText("Agency forecast");
     await expect(panel.getByTestId("freshness").first()).toContainText("issued today");
-    // every caveat published with the layer is visible without expanding anything
+    // the essential qualifiers are always visible; every published caveat is one click away
+    await expect(panel).toContainText("not a closure decision");
+    await expect(panel).toContainText("does not mean an area is safe");
+    await panel.getByText("About this forecast").click();
     const layer = manifest.layers.find((l: { layer_id: string }) => l.layer_id === "charm_particulate_domoic_lead1");
     for (const c of layer.caveats) await expect(panel.getByTestId("forecast-caveats")).toContainText(c);
     await expect(panel.getByTestId("run-line")).toContainText("Issued Thu, Oct 8, 2026 (inferred)");
+    await expect(panel.getByTestId("run-line")).toContainText("showing Thu, Oct 8, forecast +1 day");
+    await expect(panel.getByTestId("run-line")).toContainText("no forecast exists beyond day 3");
     await expect(panel).toContainText("particulate domoic acid exceeds 500 ng per litre");
-    // the colour key sits on the map, next to the data it explains
-    const key = page.getByTestId("map-legend");
-    await expect(key.getByTestId("probability-legend")).toContainText("100%");
-    await expect(key).toContainText("Particulate domoic acid · +1 day");
-    await expect(panel).toContainText("not a closure or health decision");
-    await expect(panel).toContainText("does not mean an area is safe");
+    // the colour key sits with the layer it explains, at the layer's native resolution
+    await expect(panel.getByTestId("probability-legend")).toContainText("100%");
+    await expect(panel.getByTestId("probability-legend")).toContainText("not risk levels");
+    await expect(panel.getByTestId("native-resolution")).toHaveText("native 3 km");
   });
 
   test("lead buttons show real valid dates and select the matching layer", async ({ page }) => {
     await open(page, OK);
     await expect(page.getByTestId("lead-0")).toContainText("Oct 7");
-    await expect(page.getByTestId("lead-0")).toContainText("yesterday");
+    await expect(page.getByTestId("lead-0")).toContainText("nowcast");
+    await expect(page.getByTestId("lead-1")).toContainText("today");
     await expect(page.getByTestId("lead-3")).toContainText("Oct 10");
+    await expect(page.getByTestId("lead-4")).toHaveCount(0); // C-HARM issues nowcast + 3 days only
     await page.getByTestId("lead-3").click();
     await expect(page.getByTestId("valid-line")).toContainText("Sat, Oct 10, 2026");
     await expect(page).toHaveURL(/lead=3/);
@@ -156,6 +163,8 @@ test.describe("values and georeferencing", () => {
 
   test("selecting satellite chlorophyll replaces the forecast raster (one product per legend)", async ({ page }) => {
     await open(page, OK);
+    await page.getByTestId("group-satellite").click();
+    await page.getByTestId("sat-imagery").click();
     await page.getByRole("radio", { name: /Chlorophyll · VIIRS/ }).click();
     await page.waitForFunction(() => {
       const m = (window as unknown as { __cwMap?: { getSource: (id: string) => unknown } }).__cwMap;

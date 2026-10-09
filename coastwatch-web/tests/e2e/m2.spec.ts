@@ -12,7 +12,15 @@ const FAILED = "http://localhost:3201";
 async function open(page: Page, url: string, now = "2026-10-08T20:00:00Z") {
   await page.clock.setFixedTime(new Date(now));
   await page.goto(url);
-  await expect(page.getByTestId("official-verification").first()).not.toHaveText(/Checking/);
+  await expect(page.getByTestId("official-pill")).not.toHaveAttribute("data-state", "checking");
+}
+
+/** Official notices live in the global drawer (design reset P0/P1), opened from the map's official row. */
+async function openNotices(page: Page) {
+  await page.getByTestId("official-summary").click();
+  const drawer = page.getByTestId("official-drawer");
+  await expect(drawer).toBeVisible();
+  return drawer;
 }
 
 /** Every rendered sentence that says "open" or "safe" must be negated. */
@@ -24,25 +32,25 @@ async function assertNoOpenOrSafeClaims(page: Page) {
 }
 
 test.describe("official notices", () => {
-  test("rail lists every active notice, the transcription is flagged as not verified", async ({ page }) => {
+  test("the map's official row opens every active notice, flagged as not verified", async ({ page }) => {
     await open(page, OK);
-    const panel = page.getByTestId("official-status");
+    await expect(page.getByTestId("official-summary")).toContainText("Not verified");
+    const panel = await openNotices(page);
     await expect(panel.getByTestId("official-verification")).toHaveAttribute("data-state", "unverified");
-    await expect(panel.getByTestId("official-not-verified-brief")).toContainText("not been checked by a person");
-    await panel.getByTestId("official-show-all").click();
+    await expect(panel.getByTestId("official-not-verified")).toContainText("not been checked by a person");
     const active = official.registry.records.filter((r: { status: string }) => r.status === "active");
     for (const r of active) await expect(panel.getByTestId(`notice-${r.id}`)).toBeVisible();
     // details show the agency's own words and sources
     await panel.getByTestId("notice-cdfw-rock-crab-commercial-40n").getByRole("button").click();
     await expect(panel.getByTestId("notice-cdfw-rock-crab-commercial-40n").getByTestId("official-text")).toContainText("40° 00.00’ N");
     await expect(panel.getByTestId("notice-cdfw-rock-crab-commercial-40n").getByTestId("notice-flags")).toContainText("does not state when this closure took effect");
-    await expect(panel.getByTestId("missing-not-open")).toContainText("does not mean an area is open");
+    await expect(panel).toContainText("does not mean an area is open");
     await assertNoOpenOrSafeClaims(page);
   });
 
   test("past an expected end date, a notice is flagged as unconfirmed, not lifted", async ({ page }) => {
     await open(page, OK, "2026-11-03T20:00:00Z");
-    const q = page.getByTestId("notice-cdph-2026-annual-mussel-quarantine").first();
+    const q = (await openNotices(page)).getByTestId("notice-cdph-2026-annual-mussel-quarantine").first();
     await expect(q.getByTestId("notice-critical")).toContainText("has passed, but no lifting notice is recorded");
   });
 
@@ -60,7 +68,7 @@ test.describe("official notices", () => {
   test("when the data stops updating, official notices say how old the review and the last check are", async ({ page }) => {
     // failed-update dataset: records transcribed Oct 8, official pages last checked Oct 12
     await open(page, FAILED, "2026-10-20T20:00:00Z");
-    const v = page.getByTestId("official-status").getByTestId("official-not-verified-brief");
+    const v = (await openNotices(page)).getByTestId("official-not-verified");
     await expect(v).toContainText("Last review was 12 days ago");
     await expect(v).toContainText("last checked 8 days ago");
     await expect(page.getByTestId("source-failure-banner")).toContainText("Latest update failed");
@@ -70,7 +78,8 @@ test.describe("official notices", () => {
 test.describe("ports", () => {
   test("Monterey Bay is the default region with its ports listed", async ({ page }) => {
     await open(page, OK);
-    await expect(page.getByTestId("region-monterey_bay")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("nav-region-title")).toHaveText("Monterey Bay");
+    await expect(page.getByTestId("official-summary")).toContainText("may apply in Monterey Bay");
     for (const code of [593, 592, 550]) await expect(page.getByTestId(`port-row-${code}`)).toBeVisible();
   });
 
@@ -110,10 +119,12 @@ test.describe("ports", () => {
   test("region navigation moves the map", async ({ page }) => {
     await open(page, OK);
     await page.waitForFunction(() => !!(window as unknown as { __cwMap?: unknown }).__cwMap);
+    await page.getByTestId("nav-all").click();
     await page.getByTestId("region-north_coast").click();
+    // the North Coast is framed in view (above the layer dock) and Monterey Bay is not
     await page.waitForFunction(() => {
-      const c = (window as unknown as { __cwMap: { getCenter: () => { lat: number } } }).__cwMap.getCenter();
-      return c.lat > 40.4;
+      const b = (window as unknown as { __cwMap: { getBounds: () => { contains: (p: [number, number]) => boolean } } }).__cwMap.getBounds();
+      return b.contains([-124.17, 40.97]) && !b.contains([-121.9, 36.8]);
     });
     await expect(page.getByTestId("port-row-201")).toBeVisible();
   });

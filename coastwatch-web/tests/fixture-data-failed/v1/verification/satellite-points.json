@@ -1,0 +1,364 @@
+{
+  "manifest_generated_at": "2026-10-12T18:00:00Z",
+  "live_source_comparison": false,
+  "summary": {
+    "layers": 3,
+    "checks": 36,
+    "failures": 0,
+    "all_passed": true
+  },
+  "rows": [
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 1,
+      "col": 246,
+      "lat": 37.19875,
+      "lon": -121.98625,
+      "value": 34.19896,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-06",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 109,
+      "col": 258,
+      "lat": 36.92875,
+      "lon": -121.95625,
+      "value": 0.65336,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-06",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 124,
+      "col": 288,
+      "lat": 36.89125,
+      "lon": -121.88125,
+      "value": 2.24164,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-06",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 139,
+      "col": 258,
+      "lat": 36.85375,
+      "lon": -121.95625,
+      "value": 0.56777,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-06",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 153,
+      "col": 289,
+      "lat": 36.81875,
+      "lon": -121.87875,
+      "value": 0.54582,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-06",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 168,
+      "col": 271,
+      "lat": 36.78125,
+      "lon": -121.92375,
+      "value": 0.63328,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-05",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 187,
+      "col": 228,
+      "lat": 36.73375,
+      "lon": -122.03125,
+      "value": 0.44105,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-05",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 270,
+      "col": 267,
+      "lat": 36.52625,
+      "lon": -121.93375,
+      "value": 0.76737,
+      "tile_matches_value": true,
+      "observed_date": "2026-10-05",
+      "composite_matches_day": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 95,
+      "col": 205,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 226,
+      "col": 55,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_latest",
+      "row": 320,
+      "col": 340,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 3,
+      "col": 291,
+      "lat": 37.19375,
+      "lon": -121.87375,
+      "value": 81.52921,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 113,
+      "col": 235,
+      "lat": 36.91875,
+      "lon": -122.01375,
+      "value": 3.20918,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 128,
+      "col": 248,
+      "lat": 36.88125,
+      "lon": -121.98125,
+      "value": 0.67108,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 143,
+      "col": 226,
+      "lat": 36.84375,
+      "lon": -122.03625,
+      "value": 0.3893,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 156,
+      "col": 316,
+      "lat": 36.81125,
+      "lon": -121.81125,
+      "value": 1.22509,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 171,
+      "col": 214,
+      "lat": 36.77375,
+      "lon": -122.06625,
+      "value": 0.61151,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 189,
+      "col": 233,
+      "lat": 36.72875,
+      "lon": -122.01875,
+      "value": 0.44855,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 270,
+      "col": 267,
+      "lat": 36.52625,
+      "lon": -121.93375,
+      "value": 0.76737,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 95,
+      "col": 291,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 225,
+      "col": 11,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-05",
+      "row": 320,
+      "col": 340,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 1,
+      "col": 246,
+      "lat": 37.19875,
+      "lon": -121.98625,
+      "value": 34.19896,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 106,
+      "col": 268,
+      "lat": 36.93625,
+      "lon": -121.93125,
+      "value": 1.87824,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 117,
+      "col": 214,
+      "lat": 36.90875,
+      "lon": -122.06625,
+      "value": 0.42615,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 127,
+      "col": 243,
+      "lat": 36.88375,
+      "lon": -121.99375,
+      "value": 0.55103,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 137,
+      "col": 235,
+      "lat": 36.85875,
+      "lon": -122.01375,
+      "value": 0.41106,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 147,
+      "col": 185,
+      "lat": 36.83375,
+      "lon": -122.13875,
+      "value": 0.13327,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 158,
+      "col": 213,
+      "lat": 36.80625,
+      "lon": -122.06875,
+      "value": 0.3726,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 183,
+      "col": 232,
+      "lat": 36.74375,
+      "lon": -122.02125,
+      "value": 0.20925,
+      "tile_matches_value": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 0,
+      "col": 0,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 100,
+      "col": 91,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 222,
+      "col": 185,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "olci300_chl_2026-10-06",
+      "row": 320,
+      "col": 340,
+      "value": null,
+      "tile_transparent": true,
+      "status": "pass"
+    }
+  ]
+}

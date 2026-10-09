@@ -5,7 +5,7 @@ import { FORECAST_CLASSES, FORECAST_CLASSES_ID, forecastClass } from "@/lib/pale
 
 const css = readFileSync(path.resolve(__dirname, "../../src/app/globals.css"), "utf8");
 const token = (name: string, scope = ":root") => {
-  const block = css.slice(css.indexOf(`${scope} {`));
+  const block = css.slice(css.indexOf(scope === ":root" ? ":root," : `${scope} {`));
   return block.match(new RegExp(`--${name}:\\s*([^;]+);`))?.[1].trim();
 };
 

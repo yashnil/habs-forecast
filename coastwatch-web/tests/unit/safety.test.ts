@@ -91,7 +91,18 @@ describe("no unsupported claims or relative-risk tiers", () => {
     expect(appText).not.toMatch(/percentile|tertile|higher than most water/i);
   });
   it("probability palette domain is fixed at 0-1", () => {
-    for (const l of manifest.layers.filter((x) => x.palette)) expect(l.palette!.domain).toEqual([0, 1]);
+    for (const l of manifest.layers.filter((x) => x.palette && x.units.startsWith("probability"))) expect(l.palette!.domain).toEqual([0, 1]);
+  });
+  it("every palette is fixed: one palette id never has two domains (ranges never follow the data)", () => {
+    const byId = new Map<string, string>();
+    for (const l of manifest.layers.filter((x) => x.palette)) {
+      const key = JSON.stringify([l.palette!.domain, l.palette!.stops]);
+      expect(byId.get(l.palette!.id) ?? key).toBe(key);
+      byId.set(l.palette!.id, key);
+    }
+    const chl = manifest.layers.find((l) => l.layer_id === "olci300_chl_latest");
+    expect(chl?.palette?.scale).toBe("log10");
+    expect(chl?.palette?.domain.map((d) => Math.round(10 ** d * 100) / 100)).toEqual([0.05, 50]);
   });
 });
 

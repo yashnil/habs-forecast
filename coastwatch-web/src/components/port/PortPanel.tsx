@@ -47,7 +47,7 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
       <header className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-accent">Port</p>
-          <h2 id="port-h" className="text-[19px] font-semibold tracking-tight text-ink">
+          <h2 id="port-h" className="font-display text-[28px] font-medium leading-tight text-ink">
             {port.display_name}
           </h2>
           <p className="text-[12px] text-ink-3">
