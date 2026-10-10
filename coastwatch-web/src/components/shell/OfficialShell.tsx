@@ -10,6 +10,8 @@ import { useNow } from "@/lib/useNow";
 import { Hotlines, NoticeCard, VerificationBadge, VerificationDetail } from "@/components/official/Official";
 import { SourceLink } from "@/components/ui/Primitives";
 import { Icon } from "@/components/ui/Icon";
+import { DemoAboutButton } from "@/components/DemoIntro";
+import { DEMO } from "@/lib/demo";
 
 /**
  * Official notices are global: every page shows their count and verification state in the
@@ -212,11 +214,13 @@ export function OfficialDrawer() {
   );
 }
 
-const TABS = [
+const ALL_TABS = [
   { key: "map", href: "/", label: "Map", icon: "map" },
   { key: "bloom", href: "/bloom", label: "Blooms", icon: "bloom" },
   { key: "fisheries", href: "/fisheries", label: "Fisheries", icon: "fish" },
 ] as const;
+// the portfolio preview shows the map only; About takes the other slots' place
+const TABS = DEMO ? ALL_TABS.filter((t) => t.key === "map") : ALL_TABS;
 
 /** Mobile bottom navigation. Notices is a tab, so official information is one tap from anywhere. */
 export function TabBar({ active }: { active: string }) {
@@ -225,7 +229,7 @@ export function TabBar({ active }: { active: string }) {
     <nav
       aria-label="Primary"
       data-testid="tabbar"
-      className="fixed inset-x-0 bottom-0 z-40 grid h-[var(--cw-tabbar-h)] grid-cols-4 border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] text-ink-3 md:hidden"
+      className={`fixed inset-x-0 bottom-0 z-40 grid h-[var(--cw-tabbar-h)] ${DEMO ? "grid-cols-3" : "grid-cols-4"} border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] text-ink-3 md:hidden`}
       style={{ colorScheme: "light" }}
     >
       {TABS.map((t) => (
@@ -240,6 +244,12 @@ export function TabBar({ active }: { active: string }) {
           {t.label}
         </Link>
       ))}
+      {DEMO && (
+        <DemoAboutButton className="relative flex flex-col items-center justify-center gap-1 text-[12px] font-medium">
+          <Icon name="info" className="h-[22px] w-[22px]" />
+          About
+        </DemoAboutButton>
+      )}
       <button
         type="button"
         data-testid="tab-notices"

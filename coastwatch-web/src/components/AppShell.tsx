@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { EXPERIENCES } from "@/content/copy";
+import { DemoAboutButton, DemoIntro } from "@/components/DemoIntro";
 import { SourceHealthDot } from "@/components/SourceHealthDot";
+import { DEMO } from "@/lib/demo";
 import { OfficialDrawer, OfficialPill, OfficialProvider, TabBar } from "@/components/shell/OfficialShell";
 import type { Manifest, SourceStatus } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
@@ -43,6 +45,11 @@ export function AppShell({
               <span className="text-[17px] font-semibold tracking-tight text-white">CoastWatch</span>
               <span className="hidden border-l border-white/15 pl-2.5 text-[13px] text-on-navy-2 lg:inline">California</span>
             </Link>
+            {DEMO ? (
+              <span className="rounded-full border border-white/20 px-2.5 py-0.5 text-[12px] font-medium uppercase tracking-[0.08em] text-on-navy-2" data-testid="demo-badge">
+                Research preview
+              </span>
+            ) : (
             <nav aria-label="Primary" className="hidden h-full md:flex">
               <ul className="flex h-full gap-1">
                 {EXPERIENCES.map((e) => {
@@ -64,7 +71,9 @@ export function AppShell({
                 })}
               </ul>
             </nav>
+            )}
             <div className="ml-auto flex items-center gap-3">
+              {DEMO && <DemoAboutButton className="hidden rounded-md px-1.5 py-1.5 text-[14px] text-on-navy-2 hover:text-on-navy md:inline" />}
               <OfficialPill />
               <Link
                 href="/sources"
@@ -84,6 +93,7 @@ export function AppShell({
         <TabBar active={active} />
       </div>
       <OfficialDrawer />
+      {DEMO && <DemoIntro />}
     </OfficialProvider>
   );
 }
