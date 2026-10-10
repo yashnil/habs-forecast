@@ -28,4 +28,25 @@ describe("map timestamp lines", () => {
     const l = stampLines({ group: "forecast", forecast: f, run: { issued_date: "2026-10-08" } as never });
     expect(l).toEqual([{ kind: "model", testid: "stamp-forecast", text: "C-HARM forecast for Thu, Oct 8 · issued Oct 8" }]);
   });
+  it("satellite lines name the sensor and resolution of the layer drawn", () => {
+    const sat = (id: string, platforms: string[], res: number) =>
+      ({
+        layer_id: id,
+        short_title: "Chlorophyll",
+        platforms,
+        native_resolution_m: res,
+        time: { observed_date: "2026-10-04" },
+        composite: { oldest_observed_date: "2026-10-03", newest_observed_date: "2026-10-04" },
+      }) as unknown as LayerArtifact;
+    expect(stampLines({ group: "satellite", satellite: sat("viirs750_chl_latest", ["VIIRS"], 750) })[0].text).toBe(
+      "Chlorophyll, VIIRS 750 m · pixels observed Oct 3–Oct 4",
+    );
+    expect(stampLines({ group: "satellite", satellite: sat("olci300_chl_latest", ["Sentinel-3A", "Sentinel-3B"], 300) })[0].text).toBe(
+      "Chlorophyll, Sentinel-3 300 m · pixels observed Oct 3–Oct 4",
+    );
+    const day = { ...sat("olci300_chl_2026-10-04", ["Sentinel-3A"], 300), composite: null } as unknown as LayerArtifact;
+    expect(stampLines({ group: "satellite", satellite: day })[0].text).toBe("Chlorophyll, Sentinel-3 300 m · overpass Sun, Oct 4");
+    const ms = { ...sat("multisensor_chl_latest", ["Sentinel-3A", "Sentinel-3B", "VIIRS"], 0), native_resolution_m: null, composite: null, multisensor: {}, time: { observed_date: "2026-10-08" } } as unknown as LayerArtifact;
+    expect(stampLines({ group: "satellite", satellite: ms })[0].text).toBe("Chlorophyll, Sentinel-3 300 m + VIIRS 750 m · newest pixel Oct 8; each pixel has its own date");
+  });
 });
