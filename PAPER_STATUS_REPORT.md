@@ -1,3 +1,5 @@
+> **Historical internal note (written before publication).** The "8.3 % validation improvement" below compares the validation RMSE of the imputation-sensitivity run with the ConvLSTM's validation RMSE from the diagnostics run. It is **not a like-for-like comparison**. On the same diagnostics pipeline the optimized PINN matches but does not beat the ConvLSTM (test RMSE 0.801 vs. 0.801; [README §4.1](README.md#41-global-skill-at-8-day-lead)). The published paper is the reference: [doi:10.33422/ccgconf.v2i2.1619](https://doi.org/10.33422/ccgconf.v2i2.1619). This note is kept unchanged below for the record.
+
 # Paper Status Report: Reviewer Comments & Model Performance
 
 ## 📊 Model Performance Summary
