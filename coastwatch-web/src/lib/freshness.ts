@@ -1,4 +1,5 @@
 import type { FreshnessPolicy, SourceStatus, TimeInfo } from "@/generated/schema";
+import { pacificToday } from "@/lib/time";
 
 /**
  * Freshness is decided in the browser from published dates, so a stalled pipeline
@@ -14,10 +15,12 @@ export type Freshness = {
 
 const DAY_MS = 86_400_000;
 
-/** Whole UTC calendar days from `date` (YYYY-MM-DD) to `now`. */
+/** Whole calendar days from `date` (YYYY-MM-DD) to today in California (Pacific time), the
+ *  same calendar the day labels use ("today", "yesterday"), so an evening visitor never reads
+ *  "Oct 9 · today" next to "issued 2 days ago" for an Oct 8 run. */
 export function ageInDays(date: string, now: Date): number {
   const d = Date.parse(`${date}T00:00:00Z`);
-  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const today = Date.parse(`${pacificToday(now)}T00:00:00Z`);
   return Math.round((today - d) / DAY_MS);
 }
 
