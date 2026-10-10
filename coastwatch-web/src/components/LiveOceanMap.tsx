@@ -29,6 +29,8 @@ import { NavCard, type RegionDef } from "@/components/map/NavCard";
 import { LayerDock, selectedCurrents, type CurChoice, type FlowMode, type LayerGroup, type SatChoice } from "@/components/map/LayerDock";
 import { SatelliteNear } from "@/components/map/SatelliteNear";
 import { CurrentsNear } from "@/components/map/CurrentsNear";
+import { MapStamp } from "@/components/map/MapStamp";
+import { stampLines } from "@/lib/stamp";
 import { currentsHourly, fieldFeatures, loadField, type CurrentField } from "@/lib/currents";
 import { OFFICIAL_STATUS } from "@/content/copy";
 import { useOfficialDrawer } from "@/components/shell/OfficialShell";
@@ -99,6 +101,8 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   const [sat, setSat] = useState<SatChoice>(initialLayer?.sat ?? { product: satelliteLatest(manifest, "olci300") ? "olci300" : "viirs750", day: null });
   const [cur, setCur] = useState<CurChoice>(parseCurrents(initialQ.get("layer")) ?? { hour: null, mean: false });
   const [flow, setFlow] = useState<FlowMode>(initialQ.get("flow") === "particles" ? "particles" : "arrows");
+  // combined view (opt-in): satellite chlorophyll under the observed currents
+  const [underlay, setUnderlay] = useState(initialQ.get("chl") === "1");
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -160,15 +164,34 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     if (showAge && group === "satellite") q.set("age", "1");
     if (showSensor && group === "satellite") q.set("sensor", "1");
     if (flow === "particles" && group === "currents") q.set("flow", "particles");
+    if (underlay && group === "currents") q.set("chl", "1");
     if (inspect) q.set("inspect", `${inspect.lat.toFixed(4)},${inspect.lon.toFixed(4)}`);
     window.history.replaceState(null, "", `?${q.toString()}`);
-  }, [region, port, variable, lead, layerParam, inspect, showAge, showSensor, group, flow]);
+  }, [region, port, variable, lead, layerParam, inspect, showAge, showSensor, group, flow, underlay]);
 
   const detailOpen = port != null || inspect != null;
+  const [dockH, setDockH] = useState(280);
+  useEffect(() => {
+    const el = dockRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setDockH(el.getBoundingClientRect().height));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [wide]);
   const padding = useCallback(() => {
     if (window.innerWidth >= 1024) {
-      const dockH = dockRef.current?.getBoundingClientRect().height ?? 240;
-      return { top: 40, bottom: dockH + 40, left: 368, right: detailOpen ? 432 : 56 };
+      // the navigation card and the dock share the left column; fit the region into whichever
+      // free area is larger: right of the column, or above the dock
+      const r = dockRef.current?.getBoundingClientRect();
+      const dockH = r?.height ?? 240;
+      const dockW = r?.width ?? 640;
+      const right = detailOpen ? 432 : 56;
+      const W = window.innerWidth;
+      const H = window.innerHeight - 56;
+      const beside = { top: 40, bottom: 40, left: dockW + 32, right };
+      const above = { top: 40, bottom: dockH + 40, left: 368, right };
+      const area = (q: typeof beside) => Math.max(0, W - q.left - q.right) * Math.max(0, H - q.top - q.bottom);
+      return area(beside) >= area(above) ? beside : above;
     }
     return { top: 80, bottom: Math.round(window.innerHeight * 0.42), left: 16, right: 48 };
   }, [detailOpen]);
@@ -212,18 +235,26 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     () => (group === "forecast" && forecastLayer?.image ? { id: forecastLayer.layer_id, url: artifactUrl(baseUrl, forecastLayer.image.url), corners: forecastLayer.image.corners_lnglat } : null),
     [group, forecastLayer, baseUrl],
   );
-  const satLayer = group === "satellite" && !("imagery" in sat) ? (sat.day ? satelliteDays(manifest, sat.product as SatProduct).find((d) => d.time.observed_date === sat.day) ?? null : satelliteLatest(manifest, sat.product)) : null;
+  const combined = group === "currents" && underlay && !!satelliteLatest(manifest, "olci300");
+  const satLayer =
+    group === "satellite" && !("imagery" in sat)
+      ? sat.day
+        ? (satelliteDays(manifest, sat.product as SatProduct).find((d) => d.time.observed_date === sat.day) ?? null)
+        : satelliteLatest(manifest, sat.product)
+      : combined
+        ? satelliteLatest(manifest, "olci300")
+        : null;
   const satellite: TileRaster | null = useMemo(() => {
     const t = satLayer?.tiles;
-    if (!satLayer || !t || (showAge && (satLayer.composite || satLayer.multisensor)) || (showSensor && satLayer.multisensor)) return null;
+    if (!satLayer || !t || (!combined && ((showAge && (satLayer.composite || satLayer.multisensor)) || (showSensor && satLayer.multisensor)))) return null;
     return { id: satLayer.layer_id, template: t.relative ? artifactUrl(baseUrl, t.url_template) : t.url_template, minzoom: t.min_zoom ?? 0, maxzoom: t.max_native_zoom, bounds: t.bounds_lnglat };
-  }, [satLayer, baseUrl, showAge, showSensor]);
+  }, [satLayer, baseUrl, showAge, showSensor, combined]);
   // categorical overlays that replace the chlorophyll colours: observation age, or which sensor
   const satelliteAge: TileRaster | null = useMemo(() => {
-    const t = showAge ? (satLayer?.composite?.age_tiles ?? satLayer?.multisensor?.age_tiles) : showSensor ? satLayer?.multisensor?.sensor_tiles : null;
+    const t = combined ? null : showAge ? (satLayer?.composite?.age_tiles ?? satLayer?.multisensor?.age_tiles) : showSensor ? satLayer?.multisensor?.sensor_tiles : null;
     if (!t || !satLayer) return null;
     return { id: `${satLayer.layer_id}-${showAge ? "age" : "sensor"}`, template: artifactUrl(baseUrl, t.url_template), minzoom: t.min_zoom ?? 0, maxzoom: t.max_native_zoom, bounds: t.bounds_lnglat };
-  }, [satLayer, baseUrl, showAge, showSensor]);
+  }, [satLayer, baseUrl, showAge, showSensor, combined]);
   // observed currents: the selected hour (or mean) decoded from its u/v grids
   const curLayer = currentsHourly(manifest).length ? selectedCurrents(manifest, cur) : null;
   const [curField, setCurField] = useState<{ id: string; field: CurrentField } | null>(null);
@@ -239,11 +270,15 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   }, [group, curLayer, baseUrl]);
   const currentsOverlay: CurrentsOverlay | null = useMemo(() => {
     if (group !== "currents" || !curField || curField.id !== curLayer?.layer_id) return null;
-    return { id: curField.id, field: curField.field, features: fieldFeatures(curField.field), mode: flow === "particles" && !reducedMotion ? "particles" : "arrows" };
-  }, [group, curField, curLayer, flow, reducedMotion]);
+    return { id: curField.id, field: curField.field, features: fieldFeatures(curField.field), mode: flow === "particles" && !reducedMotion ? "particles" : "arrows", coarser: combined };
+  }, [group, curField, curLayer, flow, reducedMotion, combined]);
   const imageryLayer = group === "satellite" && "imagery" in sat ? (chlorophyllLayers(manifest).find((l) => l.layer_id === sat.imagery) ?? chlorophyllLayers(manifest)[0]) : null;
   const imagery: TileRaster | null = imageryLayer?.tiles ? { id: imageryLayer.layer_id, template: imageryLayer.tiles.url_template, minzoom: 0, maxzoom: imageryLayer.tiles.max_native_zoom } : null;
 
+  const stamp = stampLines({
+    group, forecast: forecastLayer, run, satellite: satLayer, imagery: imageryLayer, currents: group === "currents" ? curLayer : null, combined, now,
+    region: region === STATEWIDE.id ? null : { id: region, label: regions.find((r) => r.id === region)?.label ?? region },
+  });
   const verification = useMemo(() => (now ? officialVerification(official, sourceStatus(manifest, "official"), now) : null), [official, manifest, now]);
   const intel = port != null ? (portIntel?.ports.find((p) => p.port_code === port) ?? null) : null;
   const regionNotices = useMemo(() => {
@@ -292,6 +327,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       lead={lead}
       palette={forecastLayer?.palette}
       regionNotices={regionNotices}
+      showForecast={group === "forecast"}
     />
   );
   const dock = (
@@ -319,6 +355,8 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       onFlow={setFlow}
       curStatus={sourceStatus(manifest, "hf_radar")}
       reducedMotion={reducedMotion}
+      underlay={underlay}
+      onUnderlay={setUnderlay}
       regionId={region === STATEWIDE.id ? "monterey_bay" : region}
       regionLabel={region === STATEWIDE.id ? "Monterey Bay" : regionLabel}
       now={now}
@@ -365,10 +403,11 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       <div className="absolute inset-0">{map}</div>
       {wide ? (
         <>
-          <div className="absolute left-4 top-4 z-10 flex w-[320px]" style={{ maxHeight: "calc(100% - 300px)" }}>
+          <div className="absolute left-4 top-4 z-10 flex w-[320px]" style={{ maxHeight: `calc(100% - ${Math.round(dockH) + 48}px)` }}>
             {nav}
           </div>
-          <div ref={dockRef} className="absolute bottom-4 left-4 z-10" style={{ width: detailOpen ? "min(640px, calc(100% - 32px - 400px - 16px))" : "min(640px, calc(100% - 32px))" }}>
+          <MapStamp lines={stamp} className="absolute top-4 z-10 max-w-[calc(100%-760px)]" style={{ left: 352 }} />
+          <div ref={dockRef} className="absolute bottom-4 left-4 z-10 flex max-h-[70%] flex-col [&>section]:min-h-0 [&>section]:overflow-y-auto" style={{ width: detailOpen ? "min(640px, calc(100% - 32px - 400px - 16px))" : "min(640px, calc(100% - 32px))" }}>
             {dock}
           </div>
           {detail && (
@@ -391,6 +430,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
             <span className="flex-1 truncate">{port != null ? (intel?.display_name ?? "Port") : regionLabel}</span>
             <span aria-hidden className="text-ink-3">▾</span>
           </button>
+          {!navOpen && <MapStamp lines={stamp} className="absolute left-3 top-[60px] z-10 max-w-[calc(100%-24px)]" />}
           {navOpen && (
             <div className="theme-paper absolute inset-x-0 bottom-0 top-3 z-30 flex flex-col overflow-hidden rounded-t-2xl bg-surface text-ink shadow-[0_-8px_24px_rgba(6,17,30,0.35)]" role="dialog" aria-label="Places">
               <div className="flex items-center justify-between px-4 pb-1 pt-2.5">
@@ -424,7 +464,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
                 </span>
                 <span className="text-[12px] font-medium text-official-ink">{verification ? OFFICIAL_STATUS.verification[verification.state] : "Checking…"} ›</span>
               </button>
-              <div className="[&>section]:rounded-b-none">{dock}</div>
+              <div className="[&>section]:max-h-[55vh] [&>section]:overflow-y-auto [&>section]:rounded-b-none">{dock}</div>
             </div>
           )}
         </>

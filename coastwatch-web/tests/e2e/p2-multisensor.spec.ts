@@ -36,8 +36,10 @@ test("multi-sensor view is offered, clearly labelled, and draws its own tiles", 
   await expect(panel.getByTestId("sat-agreement")).toContainText("No same-day overlap this week");
   await expect(panel.getByTestId("multi-viirs-age")).toContainText("median 5 days old");
   await expect(page).toHaveURL(/layer=multi/);
-  await page.waitForFunction(() => !!(window as unknown as { __cwMap: { getSource: (s: string) => unknown } }).__cwMap.getSource("satellite"));
-  expect(await source(page, "satellite")).toBe(`${BASE}/${ms.tiles.url_template}`);
+  // wait for the multi-sensor tiles themselves (the previous product's source can linger a frame)
+  const want = `${BASE}/${ms.tiles.url_template}`;
+  await page.waitForFunction((t) => (window as unknown as { __cwMap: { getSource: (s: string) => { tiles?: string[] } | undefined } }).__cwMap.getSource("satellite")?.tiles?.[0] === t, want);
+  expect(await source(page, "satellite")).toBe(want);
 });
 
 test("which sensor and how old: categorical overlays replace the colours, one at a time", async ({ page }) => {

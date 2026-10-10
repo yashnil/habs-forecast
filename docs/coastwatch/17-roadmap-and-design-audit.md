@@ -1,14 +1,15 @@
-# 17 — Status, design audit and prioritized roadmap (2026-10-10)
+# 17 — Status, design audit and prioritized roadmap (2026-10-10, updated after the #16/#15 merges)
 
 ## 1. Status
 
 | Item | State |
 |---|---|
-| BASES demo, <https://coastwatch-demo.vercel.app> | Submitted and live. **Frozen.** The Vercel project `coastwatch-demo` was **disconnected from this repo's Git pushes**: every push, including the bot's data commits, had been creating deployments there. It now deploys only by a manual `vercel deploy`. A separate session works on a demo release candidate (`demo/bases-rc`) and has confirmed nothing reaches that URL without the user's approval. |
-| Production data, GitHub Pages | P0–P2 on `main` publish every 6 h, with all verification gates. Today NOAA again listed the Sentinel-3 sectors and `ucsdHfrW2` as "Currently unknown datasetID". The previous data stayed up with its own dates, and no alert fired (1 failure is below the 3-run threshold). |
+| BASES demo, <https://coastwatch-demo.vercel.app> | **Released 2026-10-10 with the user's approval:** PR #18's release candidate (`372a80c`), deployment `dpl_GpFfbFP42QGBM3XwvT6FfikWw4jm`. Its notice strip reads the published registry, so it stays true before and after the Del Norte records are published. The Vercel project's Git auto-deploys are disconnected (manual deploys only). Release refs are protected tags: `demo-release/2026-10-09-submitted` (the build submitted to BASES, the rollback) and `demo-release/2026-10-10`. |
+| Production data, GitHub Pages | P0–P3 on `main`, publishing every 6 h with all verification gates. NOAA dataset reloads ("Currently unknown datasetID") recur. The previous data stay up with their own dates. |
 | Full website | Not deployed. |
-| PR #15, P3 map refinement | Draft, CI green. Reviewed in §3. Two fixes added (`83a79cb`, `4b45ffb`). |
-| PR #16, regulatory | Draft. Adds the Del Norte CDFW closure and CDPH SN26-020 warning, both **unverified**, plus a site-wide disclosure. See §2. |
+| PR #16, regulatory | **Merged** (`4b603fd`). The Del Norte CDFW closure and CDPH SN26-020 warning are in the registry, **unverified**, with the site-wide disclosure and the corrected "not checked by a person" wording. |
+| PR #15, P3 map refinement | **Merged** (`88d6aef`) after #16. Includes Pacific-calendar freshness ages, the sensor-name fix for the on-map timestamp, and de-flaked tests. |
+| Parallel sessions | Ended. One development session; worktree and branch ownership consolidated. |
 | Issue #12 | Open. It needs a person: [checklist](p3/regulatory-review-2026-10-10.md). |
 
 ## 2. Regulatory omissions (PR #16)

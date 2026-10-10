@@ -195,6 +195,8 @@ def test_official_geometry_and_failures(out):
     ds = OfficialDataset.model_validate_json((out / m.official_url).read_text())
     kinds = {(f["properties"]["kind"], tuple(f["properties"]["record_ids"])) for f in ds.geometry["features"]}
     assert ("county", ("cdph-2026-sn26-018-monterey-bivalves",)) in kinds
+    # Del Norte (2026-10-09): the CDFW closure and the CDPH warning share the county polygon
+    assert ("county", ("cdfw-2026-razor-clam-del-norte", "cdph-2026-sn26-020-razor-clam-del-norte")) in kinds
     assert ("named_area", ("cdph-nci-bivalve-special-advisory",)) in kinds
     assert ("lat_limit", ("cdph-2026-sn26-019-anchovy-central-coast", "cdfw-2026-anchovy-take-restriction-monterey-bay")) in kinds
     # latitude-defined notices are drawn as their limits only, never as shaded areas
@@ -219,3 +221,21 @@ def test_official_dataset_never_contains_open_or_safe_language(out):
     text = json.dumps(ds["registry"]["records"]) + json.dumps(ds["policy"])
     for bad in (r"\bis safe\b", r"\bsafe to\b", r"\ball clear\b", r"\bnow open\b", r"\bopen for\b"):
         assert not re.search(bad, text, re.I), bad
+
+
+def test_del_norte_razor_clam_records_are_transcribed_not_verified():
+    """CDFW closed the Del Norte recreational razor clam fishery and CDPH issued SN26-020 on
+    2026-10-09. Both are transcribed verbatim; nothing claims a human review."""
+    reg = official.load_registry()
+    by = {r.id: r for r in reg.records}
+    cdfw, cdph = by["cdfw-2026-razor-clam-del-norte"], by["cdph-2026-sn26-020-razor-clam-del-norte"]
+    assert cdfw.agency == "CDFW" and cdfw.action == "fishery_closure" and cdfw.effective_date == "2026-10-09"
+    assert cdfw.official_text.startswith("The recreational razor clam fishery closed in Del Norte County on October 9, 2026")
+    assert cdph.agency == "CDPH" and cdph.action == "consumption_advisory" and cdph.effective_date == "2026-10-09"
+    assert "sport-harvested razor clams gathered from Del Norte County" in cdph.official_text
+    assert cdph.sources[0].url.endswith("SN26-020.aspx")
+    for r in (cdfw, cdph):
+        assert r.area.type == "county" and r.area.counties == ["Del Norte"] and r.species and r.uncertainties
+    # the registry as a whole is still awaiting a person; SN26-020 is not marked reviewed
+    assert reg.review.status != "human_verified"
+    assert "SN26-020" not in reg.review.cdph_release_ids_reviewed

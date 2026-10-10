@@ -48,6 +48,12 @@ const SHOTS = [
   ["17-map-currents-statewide", "/?region=california&layer=currents", ["desktop-1440", "laptop-1280"], false],
   ["18-map-currents-point", "/?region=monterey_bay&port=593&layer=currents", ALL, false],
   ["19-map-currents-north-coast-gap", "/?region=north_coast&layer=currents", ["desktop-1440", "mobile-390"], false],
+  // P3: refined map, combined view, mobile controls
+  ["20-map-combined", "/?layer=currents&chl=1", ALL, false],
+  ["21-map-combined-statewide", "/?region=california&layer=currents&chl=1", ["desktop-1440", "laptop-1280"], false],
+  ["22-map-combined-point", "/?region=monterey_bay&port=593&layer=currents&chl=1", ALL, false],
+  ["23-mobile-controls-expanded", "/?layer=currents", ["mobile-390"], false, async (p) => { await p.getByTestId("dock-handle").click(); await p.waitForTimeout(500); }],
+  ["24-mobile-satellite-expanded", "/?layer=olci300", ["mobile-390"], false, async (p) => { await p.getByTestId("dock-handle").click(); await p.waitForTimeout(500); }],
   ["07-bloom", "/bloom", ["desktop-1440", "mobile-390"], true],
   ["08-fisheries", "/fisheries", ["desktop-1440", "mobile-390"], true],
   ["09-official-drawer", "/", ["desktop-1440", "mobile-390"], false, drawer],
