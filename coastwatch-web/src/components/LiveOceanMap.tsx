@@ -421,7 +421,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
               >
                 <Icon name="shield" className="h-4 w-4 text-official" />
                 <span className="flex-1 text-ink">
-                  <b className="font-semibold text-official-ink">{official ? official.registry.records.filter((r) => r.status === "active").length : "?"} official notices</b> in California
+                  <b className="font-semibold text-official-ink">{official ? official.registry.records.filter((r) => r.status === "active").length : "?"} official notices</b> {DEMO ? "listed · incomplete" : "in California"}
                 </span>
                 <span className="text-[12px] font-medium text-official-ink">{verification ? OFFICIAL_STATUS.verification[verification.state] : "Checking…"} ›</span>
               </button>

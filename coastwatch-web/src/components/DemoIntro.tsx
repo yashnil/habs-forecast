@@ -106,7 +106,7 @@ export function DemoIntro() {
           <p className="mt-4 text-[14px] leading-relaxed text-ink-2">{c.audience}</p>
           <p className="mt-3 rounded-lg bg-surface-3 px-3.5 py-3 text-[13px] leading-relaxed text-ink-2" data-testid="demo-caveat">
             {c.caveat}{" "}
-            <a className="font-medium text-accent underline underline-offset-2" href="https://www.cdph.ca.gov/Programs/CEH/DRSEM/Pages/EMB/Shellfish/Shellfish-Advisories.aspx" target="_blank" rel="noreferrer">
+            <a className="font-medium text-accent underline underline-offset-2" href="https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx" target="_blank" rel="noreferrer">
               CDPH
             </a>{" "}
             and{" "}

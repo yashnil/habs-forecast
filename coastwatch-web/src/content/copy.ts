@@ -123,7 +123,7 @@ export const DEMO_COPY = {
   layers: [
     { kind: "model", badge: "Agency forecast", name: "C-HARM", text: "NOAA's modeled bloom and domoic-acid probabilities, shown as published: the nowcast and days 1–3, with the issue date." },
     { kind: "observation", badge: "Observation", name: "Satellite chlorophyll", text: "Sentinel-3 OLCI and VIIRS, dated by acquisition. Chlorophyll measures algae, not toxin." },
-    { kind: "official", badge: "Not verified", name: "Official notices", text: "CDPH and CDFW advisories transcribed with links to the agency pages. Treat them as unconfirmed." },
+    { kind: "official", badge: "Not verified", name: "Official notices", text: "CDPH and CDFW advisories transcribed with links to the agency pages. Unconfirmed and incomplete: the list is missing the Oct 9, 2026 Del Norte County razor clam closure and warning. Always check CDFW and CDPH." },
   ],
   audience:
     "It is built for the people who have to read these signals together: fishing and shellfish-harvesting communities, tribal harvesters, coastal public-health and resource managers, and researchers.",
