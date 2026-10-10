@@ -1,0 +1,3196 @@
+{
+ "schema_version": 1,
+ "generated_at": "2026-10-10T19:57:13Z",
+ "ports": [
+  {
+   "port_code": 201,
+   "display_name": "Crescent City",
+   "county": "Del Norte",
+   "region": "north_coast",
+   "lon": -124.20398,
+   "lat": 41.74901,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 51,
+    "nearest_cell_km": 2.38,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 40,
+        "median": 0.457488,
+        "min": 0.268258,
+        "max": 0.577853
+       },
+       "particulate_domoic": {
+        "n": 40,
+        "median": 0.140049,
+        "min": 0.030427,
+        "max": 0.289743
+       },
+       "pseudo_nitzschia": {
+        "n": 51,
+        "median": 0.886959,
+        "min": 0.379574,
+        "max": 0.965361
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 40,
+        "median": 0.421918,
+        "min": 0.277215,
+        "max": 0.507691
+       },
+       "particulate_domoic": {
+        "n": 40,
+        "median": 0.174635,
+        "min": 0.052705,
+        "max": 0.457442
+       },
+       "pseudo_nitzschia": {
+        "n": 51,
+        "median": 0.851543,
+        "min": 0.379574,
+        "max": 0.965361
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 40,
+        "median": 0.539476,
+        "min": 0.436796,
+        "max": 0.624577
+       },
+       "particulate_domoic": {
+        "n": 40,
+        "median": 0.365085,
+        "min": 0.067629,
+        "max": 0.502762
+       },
+       "pseudo_nitzschia": {
+        "n": 51,
+        "median": 0.869015,
+        "min": 0.379574,
+        "max": 0.965361
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 40,
+        "median": 0.68424,
+        "min": 0.554827,
+        "max": 0.781899
+       },
+       "particulate_domoic": {
+        "n": 40,
+        "median": 0.223449,
+        "min": 0.119297,
+        "max": 0.571734
+       },
+       "pseudo_nitzschia": {
+        "n": 51,
+        "median": 0.915586,
+        "min": 0.379574,
+        "max": 0.965361
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(41.594):(41.904)%5D%5B(235.595):(235.997)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.8938):2:(41.6043)%5D%5B(-124.3946):2:(-124.0134)%5D (HTTP Error 403: )"
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    },
+    {
+     "record_id": "cdfw-2026-razor-clam-del-norte",
+     "relation": "same_county",
+     "note": "Port is in Del Norte County."
+    },
+    {
+     "record_id": "cdph-2026-sn26-020-razor-clam-del-norte",
+     "relation": "same_county",
+     "note": "Port is in Del Norte County."
+    },
+    {
+     "record_id": "cdph-rock-crab-viscera-north-coast-nci",
+     "relation": "port_latitude_within_stated_range",
+     "note": "The port lies between the notice's official latitudes."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 231,
+   "display_name": "Trinidad",
+   "county": "Humboldt",
+   "region": "north_coast",
+   "lon": -124.14314,
+   "lat": 41.0593,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 49,
+    "nearest_cell_km": 1.07,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 36,
+        "median": 0.461447,
+        "min": 0.24485,
+        "max": 0.592303
+       },
+       "particulate_domoic": {
+        "n": 36,
+        "median": 0.317003,
+        "min": 0.096942,
+        "max": 0.571963
+       },
+       "pseudo_nitzschia": {
+        "n": 49,
+        "median": 0.928159,
+        "min": 0.093249,
+        "max": 0.989563
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 36,
+        "median": 0.585879,
+        "min": 0.219184,
+        "max": 0.707984
+       },
+       "particulate_domoic": {
+        "n": 36,
+        "median": 0.335696,
+        "min": 0.145482,
+        "max": 0.56946
+       },
+       "pseudo_nitzschia": {
+        "n": 49,
+        "median": 0.930067,
+        "min": 0.454299,
+        "max": 0.989563
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 36,
+        "median": 0.717467,
+        "min": 0.522523,
+        "max": 0.795694
+       },
+       "particulate_domoic": {
+        "n": 36,
+        "median": 0.412725,
+        "min": 0.164861,
+        "max": 0.605548
+       },
+       "pseudo_nitzschia": {
+        "n": 49,
+        "median": 0.951201,
+        "min": 0.454299,
+        "max": 0.989563
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 36,
+        "median": 0.768792,
+        "min": 0.557817,
+        "max": 0.847179
+       },
+       "particulate_domoic": {
+        "n": 36,
+        "median": 0.428701,
+        "min": 0.198935,
+        "max": 0.673025
+       },
+       "pseudo_nitzschia": {
+        "n": 49,
+        "median": 0.967315,
+        "min": 0.454299,
+        "max": 0.989563
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.2040):2:(40.9146)%5D%5B(-124.3318):2:(-123.9544)%5D (HTTP Error 403: )"
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    },
+    {
+     "record_id": "cdfw-2024-razor-clam-humboldt",
+     "relation": "same_county",
+     "note": "Port is in Humboldt County."
+    },
+    {
+     "record_id": "cdph-rock-crab-viscera-north-coast-nci",
+     "relation": "port_latitude_within_stated_range",
+     "note": "The port lies between the notice's official latitudes."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 220,
+   "display_name": "Eureka",
+   "county": "Humboldt",
+   "region": "north_coast",
+   "lon": -124.16376,
+   "lat": 40.79834,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 41,
+    "nearest_cell_km": 3.32,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 21,
+        "median": 0.597186,
+        "min": 0.355953,
+        "max": 0.682424
+       },
+       "particulate_domoic": {
+        "n": 21,
+        "median": 0.452345,
+        "min": 0.128956,
+        "max": 0.611591
+       },
+       "pseudo_nitzschia": {
+        "n": 41,
+        "median": 0.94528,
+        "min": 0.000336,
+        "max": 0.992752
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 21,
+        "median": 0.633793,
+        "min": 0.348659,
+        "max": 0.70014
+       },
+       "particulate_domoic": {
+        "n": 21,
+        "median": 0.502289,
+        "min": 0.145482,
+        "max": 0.571764
+       },
+       "pseudo_nitzschia": {
+        "n": 41,
+        "median": 0.94055,
+        "min": 0.000336,
+        "max": 0.992752
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 21,
+        "median": 0.687063,
+        "min": 0.529435,
+        "max": 0.754372
+       },
+       "particulate_domoic": {
+        "n": 21,
+        "median": 0.498962,
+        "min": 0.164861,
+        "max": 0.671773
+       },
+       "pseudo_nitzschia": {
+        "n": 41,
+        "median": 0.942274,
+        "min": 0.000336,
+        "max": 0.992752
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 21,
+        "median": 0.721274,
+        "min": 0.588061,
+        "max": 0.790521
+       },
+       "particulate_domoic": {
+        "n": 21,
+        "median": 0.405988,
+        "min": 0.198935,
+        "max": 0.564211
+       },
+       "pseudo_nitzschia": {
+        "n": 41,
+        "median": 0.943434,
+        "min": 0.000336,
+        "max": 0.992752
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    },
+    {
+     "record_id": "cdfw-2024-razor-clam-humboldt",
+     "relation": "same_county",
+     "note": "Port is in Humboldt County."
+    },
+    {
+     "record_id": "cdph-rock-crab-viscera-north-coast-nci",
+     "relation": "port_latitude_within_stated_range",
+     "note": "The port lies between the notice's official latitudes."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 215,
+   "display_name": "Shelter Cove",
+   "county": "Humboldt",
+   "region": "north_coast",
+   "lon": -124.0664,
+   "lat": 40.0255,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 37,
+    "nearest_cell_km": 1.26,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 31,
+        "median": 0.514191,
+        "min": 0.357387,
+        "max": 0.622868
+       },
+       "particulate_domoic": {
+        "n": 31,
+        "median": 0.409497,
+        "min": 0.089801,
+        "max": 0.62093
+       },
+       "pseudo_nitzschia": {
+        "n": 37,
+        "median": 0.957686,
+        "min": 0.898343,
+        "max": 0.986587
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 31,
+        "median": 0.482696,
+        "min": 0.433638,
+        "max": 0.555177
+       },
+       "particulate_domoic": {
+        "n": 31,
+        "median": 0.625309,
+        "min": 0.22808,
+        "max": 0.653127
+       },
+       "pseudo_nitzschia": {
+        "n": 37,
+        "median": 0.928465,
+        "min": 0.872265,
+        "max": 0.986587
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 31,
+        "median": 0.59537,
+        "min": 0.503952,
+        "max": 0.639653
+       },
+       "particulate_domoic": {
+        "n": 31,
+        "median": 0.592242,
+        "min": 0.257683,
+        "max": 0.655232
+       },
+       "pseudo_nitzschia": {
+        "n": 37,
+        "median": 0.920927,
+        "min": 0.839763,
+        "max": 0.986587
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 31,
+        "median": 0.677969,
+        "min": 0.513199,
+        "max": 0.743995
+       },
+       "particulate_domoic": {
+        "n": 31,
+        "median": 0.512513,
+        "min": 0.127979,
+        "max": 0.6919
+       },
+       "pseudo_nitzschia": {
+        "n": 37,
+        "median": 0.940031,
+        "min": 0.90759,
+        "max": 0.986587
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    },
+    {
+     "record_id": "cdfw-2024-razor-clam-humboldt",
+     "relation": "same_county",
+     "note": "Port is in Humboldt County."
+    },
+    {
+     "record_id": "cdfw-rock-crab-commercial-40n",
+     "relation": "port_latitude_within_stated_range",
+     "note": "The port lies between the notice's official latitudes."
+    },
+    {
+     "record_id": "cdph-rock-crab-viscera-north-coast-nci",
+     "relation": "port_latitude_within_stated_range",
+     "note": "The port lies between the notice's official latitudes."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 223,
+   "display_name": "Fort Bragg",
+   "county": "Mendocino",
+   "region": "mendocino_sonoma",
+   "lon": -123.80376,
+   "lat": 39.42518,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 46,
+    "nearest_cell_km": 0.76,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 33,
+        "median": 0.58269,
+        "min": 0.49028,
+        "max": 0.678488
+       },
+       "particulate_domoic": {
+        "n": 33,
+        "median": 0.579424,
+        "min": 0.352855,
+        "max": 0.680639
+       },
+       "pseudo_nitzschia": {
+        "n": 46,
+        "median": 0.964385,
+        "min": 0.888775,
+        "max": 0.989029
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 33,
+        "median": 0.467299,
+        "min": 0.405622,
+        "max": 0.612766
+       },
+       "particulate_domoic": {
+        "n": 33,
+        "median": 0.690329,
+        "min": 0.369457,
+        "max": 0.736671
+       },
+       "pseudo_nitzschia": {
+        "n": 46,
+        "median": 0.919012,
+        "min": 0.839976,
+        "max": 0.989029
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 33,
+        "median": 0.514649,
+        "min": 0.382702,
+        "max": 0.686102
+       },
+       "particulate_domoic": {
+        "n": 33,
+        "median": 0.705832,
+        "min": 0.415204,
+        "max": 0.775445
+       },
+       "pseudo_nitzschia": {
+        "n": 46,
+        "median": 0.923208,
+        "min": 0.839549,
+        "max": 0.989029
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 33,
+        "median": 0.668523,
+        "min": 0.555361,
+        "max": 0.793954
+       },
+       "particulate_domoic": {
+        "n": 33,
+        "median": 0.662099,
+        "min": 0.352199,
+        "max": 0.734077
+       },
+       "pseudo_nitzschia": {
+        "n": 46,
+        "median": 0.955153,
+        "min": 0.860714,
+        "max": 0.989029
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    },
+    {
+     "record_id": "cdph-rock-crab-viscera-north-coast-nci",
+     "relation": "port_latitude_within_stated_range",
+     "note": "The port lies between the notice's official latitudes."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 213,
+   "display_name": "Point Arena",
+   "county": "Mendocino",
+   "region": "mendocino_sonoma",
+   "lon": -123.69308,
+   "lat": 38.9088,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 44,
+    "nearest_cell_km": 2.64,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 35,
+        "median": 0.512635,
+        "min": 0.431364,
+        "max": 0.601794
+       },
+       "particulate_domoic": {
+        "n": 35,
+        "median": 0.682348,
+        "min": 0.614048,
+        "max": 0.724799
+       },
+       "pseudo_nitzschia": {
+        "n": 44,
+        "median": 0.965979,
+        "min": 0.741142,
+        "max": 0.986724
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 35,
+        "median": 0.402112,
+        "min": 0.315714,
+        "max": 0.594668
+       },
+       "particulate_domoic": {
+        "n": 35,
+        "median": 0.734199,
+        "min": 0.628803,
+        "max": 0.785531
+       },
+       "pseudo_nitzschia": {
+        "n": 44,
+        "median": 0.953558,
+        "min": 0.741142,
+        "max": 0.985626
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 35,
+        "median": 0.485656,
+        "min": 0.427961,
+        "max": 0.708213
+       },
+       "particulate_domoic": {
+        "n": 35,
+        "median": 0.72602,
+        "min": 0.56354,
+        "max": 0.77369
+       },
+       "pseudo_nitzschia": {
+        "n": 44,
+        "median": 0.966269,
+        "min": 0.741142,
+        "max": 0.997757
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 35,
+        "median": 0.672262,
+        "min": 0.497803,
+        "max": 0.829447
+       },
+       "particulate_domoic": {
+        "n": 35,
+        "median": 0.666341,
+        "min": 0.537568,
+        "max": 0.743126
+       },
+       "pseudo_nitzschia": {
+        "n": 44,
+        "median": 0.976691,
+        "min": 0.741142,
+        "max": 0.999985
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    },
+    {
+     "record_id": "cdph-rock-crab-viscera-north-coast-nci",
+     "relation": "port_latitude_within_stated_range",
+     "note": "The port lies between the notice's official latitudes."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 473,
+   "display_name": "Bodega Bay",
+   "county": "Sonoma",
+   "region": "mendocino_sonoma",
+   "lon": -123.04807,
+   "lat": 38.33325,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 39,
+    "nearest_cell_km": 1.81,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 36,
+        "median": 0.498848,
+        "min": 0.364788,
+        "max": 0.582232
+       },
+       "particulate_domoic": {
+        "n": 36,
+        "median": 0.673696,
+        "min": 0.534684,
+        "max": 0.743477
+       },
+       "pseudo_nitzschia": {
+        "n": 39,
+        "median": 0.992279,
+        "min": 0.976913,
+        "max": 0.997101
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 36,
+        "median": 0.531159,
+        "min": 0.460433,
+        "max": 0.612323
+       },
+       "particulate_domoic": {
+        "n": 36,
+        "median": 0.675657,
+        "min": 0.575701,
+        "max": 0.752709
+       },
+       "pseudo_nitzschia": {
+        "n": 39,
+        "median": 0.992615,
+        "min": 0.979171,
+        "max": 0.997803
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 36,
+        "median": 0.495224,
+        "min": 0.417447,
+        "max": 0.628727
+       },
+       "particulate_domoic": {
+        "n": 36,
+        "median": 0.726562,
+        "min": 0.58005,
+        "max": 0.763115
+       },
+       "pseudo_nitzschia": {
+        "n": 39,
+        "median": 0.991302,
+        "min": 0.971557,
+        "max": 0.999237
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 36,
+        "median": 0.540414,
+        "min": 0.474517,
+        "max": 0.680044
+       },
+       "particulate_domoic": {
+        "n": 36,
+        "median": 0.725311,
+        "min": 0.591525,
+        "max": 0.790628
+       },
+       "pseudo_nitzschia": {
+        "n": 39,
+        "median": 0.991638,
+        "min": 0.981979,
+        "max": 0.999649
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 440,
+   "display_name": "San Francisco",
+   "county": "San Francisco",
+   "region": "sf_bay_farallones",
+   "lon": -122.41551,
+   "lat": 37.80865,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 7,
+    "nearest_cell_km": 11.27,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 4,
+        "median": 0.028314,
+        "min": 0.026811,
+        "max": 0.032487
+       },
+       "particulate_domoic": {
+        "n": 4,
+        "median": 0.972282,
+        "min": 0.971358,
+        "max": 0.973815
+       },
+       "pseudo_nitzschia": {
+        "n": 7,
+        "median": 0.983963,
+        "min": 0.981216,
+        "max": 0.985168
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 4,
+        "median": 0.037782,
+        "min": 0.031297,
+        "max": 0.077227
+       },
+       "particulate_domoic": {
+        "n": 4,
+        "median": 0.970626,
+        "min": 0.946516,
+        "max": 0.973769
+       },
+       "pseudo_nitzschia": {
+        "n": 7,
+        "median": 0.983963,
+        "min": 0.973693,
+        "max": 0.985092
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 4,
+        "median": 0.048959,
+        "min": 0.032701,
+        "max": 0.137501
+       },
+       "particulate_domoic": {
+        "n": 4,
+        "median": 0.965285,
+        "min": 0.923582,
+        "max": 0.975448
+       },
+       "pseudo_nitzschia": {
+        "n": 7,
+        "median": 0.983306,
+        "min": 0.960875,
+        "max": 0.985092
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 4,
+        "median": 0.052759,
+        "min": 0.033952,
+        "max": 0.172826
+       },
+       "particulate_domoic": {
+        "n": 4,
+        "median": 0.965888,
+        "min": 0.911695,
+        "max": 0.977126
+       },
+       "pseudo_nitzschia": {
+        "n": 7,
+        "median": 0.983963,
+        "min": 0.953505,
+        "max": 0.98526
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 452,
+   "display_name": "Princeton / Half Moon Bay",
+   "county": "San Mateo",
+   "region": "sf_bay_farallones",
+   "lon": -122.48185,
+   "lat": 37.5037,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 41,
+    "nearest_cell_km": 2.73,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 30,
+        "median": 0.436544,
+        "min": 0.295709,
+        "max": 0.516404
+       },
+       "particulate_domoic": {
+        "n": 30,
+        "median": 0.756928,
+        "min": 0.703818,
+        "max": 0.817499
+       },
+       "pseudo_nitzschia": {
+        "n": 41,
+        "median": 0.97438,
+        "min": 0.938337,
+        "max": 0.984588
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 30,
+        "median": 0.454634,
+        "min": 0.337718,
+        "max": 0.564959
+       },
+       "particulate_domoic": {
+        "n": 30,
+        "median": 0.762375,
+        "min": 0.709174,
+        "max": 0.812067
+       },
+       "pseudo_nitzschia": {
+        "n": 41,
+        "median": 0.973601,
+        "min": 0.951094,
+        "max": 0.984405
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 30,
+        "median": 0.468162,
+        "min": 0.386547,
+        "max": 0.559542
+       },
+       "particulate_domoic": {
+        "n": 30,
+        "median": 0.743522,
+        "min": 0.703055,
+        "max": 0.795923
+       },
+       "pseudo_nitzschia": {
+        "n": 41,
+        "median": 0.970656,
+        "min": 0.911679,
+        "max": 0.984405
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 30,
+        "median": 0.537255,
+        "min": 0.42674,
+        "max": 0.647771
+       },
+       "particulate_domoic": {
+        "n": 30,
+        "median": 0.745193,
+        "min": 0.703314,
+        "max": 0.79548
+       },
+       "pseudo_nitzschia": {
+        "n": 41,
+        "median": 0.970595,
+        "min": 0.918531,
+        "max": 0.984405
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 593,
+   "display_name": "Santa Cruz",
+   "county": "Santa Cruz",
+   "region": "monterey_bay",
+   "lon": -122.03081,
+   "lat": 36.97412,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 25,
+    "nearest_cell_km": 4.23,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 24,
+        "median": 0.274003,
+        "min": 0.252419,
+        "max": 0.364223
+       },
+       "particulate_domoic": {
+        "n": 24,
+        "median": 0.776208,
+        "min": 0.744835,
+        "max": 0.789621
+       },
+       "pseudo_nitzschia": {
+        "n": 25,
+        "median": 0.96556,
+        "min": 0.944136,
+        "max": 0.98056
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 24,
+        "median": 0.278283,
+        "min": 0.210639,
+        "max": 0.36874
+       },
+       "particulate_domoic": {
+        "n": 24,
+        "median": 0.762963,
+        "min": 0.712149,
+        "max": 0.801889
+       },
+       "pseudo_nitzschia": {
+        "n": 25,
+        "median": 0.951827,
+        "min": 0.729301,
+        "max": 0.98056
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 24,
+        "median": 0.337848,
+        "min": 0.267067,
+        "max": 0.446318
+       },
+       "particulate_domoic": {
+        "n": 24,
+        "median": 0.757332,
+        "min": 0.661138,
+        "max": 0.793085
+       },
+       "pseudo_nitzschia": {
+        "n": 25,
+        "median": 0.931196,
+        "min": 0.147267,
+        "max": 0.98056
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 24,
+        "median": 0.369701,
+        "min": 0.287606,
+        "max": 0.528855
+       },
+       "particulate_domoic": {
+        "n": 24,
+        "median": 0.736991,
+        "min": 0.653539,
+        "max": 0.799829
+       },
+       "pseudo_nitzschia": {
+        "n": 25,
+        "median": 0.913114,
+        "min": 0.022263,
+        "max": 0.98056
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    },
+    {
+     "record_id": "cdph-2026-sn26-019-anchovy-central-coast",
+     "relation": "port_latitude_within_stated_range",
+     "note": "The port lies between the notice's official latitudes."
+    },
+    {
+     "record_id": "cdfw-2026-anchovy-take-restriction-monterey-bay",
+     "relation": "port_latitude_within_stated_range",
+     "note": "The port lies between the notice's official latitudes."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 592,
+   "display_name": "Moss Landing",
+   "county": "Monterey",
+   "region": "monterey_bay",
+   "lon": -121.78691,
+   "lat": 36.8044,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 36,
+    "nearest_cell_km": 1.98,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 28,
+        "median": 0.293191,
+        "min": 0.212241,
+        "max": 0.361187
+       },
+       "particulate_domoic": {
+        "n": 28,
+        "median": 0.764321,
+        "min": 0.729713,
+        "max": 0.799478
+       },
+       "pseudo_nitzschia": {
+        "n": 36,
+        "median": 0.963469,
+        "min": 0.379574,
+        "max": 0.978912
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 28,
+        "median": 0.267006,
+        "min": 0.190451,
+        "max": 0.343486
+       },
+       "particulate_domoic": {
+        "n": 28,
+        "median": 0.782517,
+        "min": 0.739128,
+        "max": 0.808023
+       },
+       "pseudo_nitzschia": {
+        "n": 36,
+        "median": 0.963324,
+        "min": 0.379574,
+        "max": 0.978912
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 28,
+        "median": 0.274483,
+        "min": 0.208777,
+        "max": 0.355892
+       },
+       "particulate_domoic": {
+        "n": 28,
+        "median": 0.771592,
+        "min": 0.749992,
+        "max": 0.795892
+       },
+       "pseudo_nitzschia": {
+        "n": 36,
+        "median": 0.962935,
+        "min": 0.379574,
+        "max": 0.978912
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 28,
+        "median": 0.304674,
+        "min": 0.239189,
+        "max": 0.393094
+       },
+       "particulate_domoic": {
+        "n": 28,
+        "median": 0.778809,
+        "min": 0.756478,
+        "max": 0.799692
+       },
+       "pseudo_nitzschia": {
+        "n": 36,
+        "median": 0.963858,
+        "min": 0.379574,
+        "max": 0.978912
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    },
+    {
+     "record_id": "cdph-2026-sn26-018-monterey-bivalves",
+     "relation": "same_county",
+     "note": "Port is in Monterey County."
+    },
+    {
+     "record_id": "cdph-2026-sn26-019-anchovy-central-coast",
+     "relation": "port_latitude_within_stated_range",
+     "note": "The port lies between the notice's official latitudes."
+    },
+    {
+     "record_id": "cdfw-2026-anchovy-take-restriction-monterey-bay",
+     "relation": "port_latitude_within_stated_range",
+     "note": "The port lies between the notice's official latitudes."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 550,
+   "display_name": "Monterey",
+   "county": "Monterey",
+   "region": "monterey_bay",
+   "lon": -121.89469,
+   "lat": 36.60024,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 46,
+    "nearest_cell_km": 1.16,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 27,
+        "median": 0.305292,
+        "min": 0.22869,
+        "max": 0.370373
+       },
+       "particulate_domoic": {
+        "n": 27,
+        "median": 0.758171,
+        "min": 0.70745,
+        "max": 0.774071
+       },
+       "pseudo_nitzschia": {
+        "n": 46,
+        "median": 0.956648,
+        "min": 0.379574,
+        "max": 0.983016
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 27,
+        "median": 0.299371,
+        "min": 0.252449,
+        "max": 0.354549
+       },
+       "particulate_domoic": {
+        "n": 27,
+        "median": 0.745674,
+        "min": 0.686514,
+        "max": 0.768334
+       },
+       "pseudo_nitzschia": {
+        "n": 46,
+        "median": 0.956381,
+        "min": 0.379574,
+        "max": 0.983016
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 27,
+        "median": 0.298318,
+        "min": 0.253548,
+        "max": 0.353679
+       },
+       "particulate_domoic": {
+        "n": 27,
+        "median": 0.735496,
+        "min": 0.687521,
+        "max": 0.778314
+       },
+       "pseudo_nitzschia": {
+        "n": 46,
+        "median": 0.950705,
+        "min": 0.379574,
+        "max": 0.983016
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 27,
+        "median": 0.33169,
+        "min": 0.283563,
+        "max": 0.383862
+       },
+       "particulate_domoic": {
+        "n": 27,
+        "median": 0.746101,
+        "min": 0.719443,
+        "max": 0.791696
+       },
+       "pseudo_nitzschia": {
+        "n": 46,
+        "median": 0.950629,
+        "min": 0.379574,
+        "max": 0.983016
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    },
+    {
+     "record_id": "cdph-2026-sn26-018-monterey-bivalves",
+     "relation": "same_county",
+     "note": "Port is in Monterey County."
+    },
+    {
+     "record_id": "cdph-2026-sn26-019-anchovy-central-coast",
+     "relation": "port_latitude_within_stated_range",
+     "note": "The port lies between the notice's official latitudes."
+    },
+    {
+     "record_id": "cdfw-2026-anchovy-take-restriction-monterey-bay",
+     "relation": "port_latitude_within_stated_range",
+     "note": "The port lies between the notice's official latitudes."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 606,
+   "display_name": "Morro Bay",
+   "county": "San Luis Obispo",
+   "region": "central_coast",
+   "lon": -120.84991,
+   "lat": 35.36581,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 23,
+    "nearest_cell_km": 2.53,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 18,
+        "median": 0.170927,
+        "min": 0.111682,
+        "max": 0.196829
+       },
+       "particulate_domoic": {
+        "n": 18,
+        "median": 0.775239,
+        "min": 0.755776,
+        "max": 0.8202
+       },
+       "pseudo_nitzschia": {
+        "n": 23,
+        "median": 0.861827,
+        "min": 0.677679,
+        "max": 0.943678
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 18,
+        "median": 0.168302,
+        "min": 0.124561,
+        "max": 0.18395
+       },
+       "particulate_domoic": {
+        "n": 18,
+        "median": 0.77459,
+        "min": 0.760842,
+        "max": 0.815348
+       },
+       "pseudo_nitzschia": {
+        "n": 23,
+        "median": 0.861827,
+        "min": 0.740806,
+        "max": 0.943678
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 18,
+        "median": 0.171041,
+        "min": 0.133137,
+        "max": 0.205283
+       },
+       "particulate_domoic": {
+        "n": 18,
+        "median": 0.779847,
+        "min": 0.75898,
+        "max": 0.811777
+       },
+       "pseudo_nitzschia": {
+        "n": 23,
+        "median": 0.839045,
+        "min": 0.297983,
+        "max": 0.943678
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 18,
+        "median": 0.1863,
+        "min": 0.150685,
+        "max": 0.229179
+       },
+       "particulate_domoic": {
+        "n": 18,
+        "median": 0.783166,
+        "min": 0.752663,
+        "max": 0.817392
+       },
+       "pseudo_nitzschia": {
+        "n": 23,
+        "median": 0.840083,
+        "min": 0.380886,
+        "max": 0.943678
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 602,
+   "display_name": "Avila / Port San Luis",
+   "county": "San Luis Obispo",
+   "region": "central_coast",
+   "lon": -120.75519,
+   "lat": 35.17498,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 34,
+    "nearest_cell_km": 4.5,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 30,
+        "median": 0.223914,
+        "min": 0.173956,
+        "max": 0.24836
+       },
+       "particulate_domoic": {
+        "n": 30,
+        "median": 0.738075,
+        "min": 0.713126,
+        "max": 0.766015
+       },
+       "pseudo_nitzschia": {
+        "n": 34,
+        "median": 0.814623,
+        "min": 0.595309,
+        "max": 0.958876
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 30,
+        "median": 0.154874,
+        "min": 0.102603,
+        "max": 0.205847
+       },
+       "particulate_domoic": {
+        "n": 30,
+        "median": 0.771752,
+        "min": 0.713706,
+        "max": 0.809931
+       },
+       "pseudo_nitzschia": {
+        "n": 34,
+        "median": 0.804712,
+        "min": 0.117359,
+        "max": 0.956389
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 30,
+        "median": 0.18347,
+        "min": 0.110157,
+        "max": 0.269982
+       },
+       "particulate_domoic": {
+        "n": 30,
+        "median": 0.767014,
+        "min": 0.695791,
+        "max": 0.829478
+       },
+       "pseudo_nitzschia": {
+        "n": 34,
+        "median": 0.726272,
+        "min": 0.018601,
+        "max": 0.956389
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 30,
+        "median": 0.193579,
+        "min": 0.134022,
+        "max": 0.326838
+       },
+       "particulate_domoic": {
+        "n": 30,
+        "median": 0.771798,
+        "min": 0.690451,
+        "max": 0.845119
+       },
+       "pseudo_nitzschia": {
+        "n": 34,
+        "median": 0.641614,
+        "min": 0.005402,
+        "max": 0.956389
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 611,
+   "display_name": "Santa Barbara",
+   "county": "Santa Barbara",
+   "region": "southern_california",
+   "lon": -119.68876,
+   "lat": 34.40722,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 32,
+    "nearest_cell_km": 2.18,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 29,
+        "median": 0.094592,
+        "min": 0.046754,
+        "max": 0.109241
+       },
+       "particulate_domoic": {
+        "n": 29,
+        "median": 0.790185,
+        "min": 0.765282,
+        "max": 0.865246
+       },
+       "pseudo_nitzschia": {
+        "n": 32,
+        "median": 0.17645,
+        "min": 0.057649,
+        "max": 0.90556
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 29,
+        "median": 0.121464,
+        "min": 0.054689,
+        "max": 0.345088
+       },
+       "particulate_domoic": {
+        "n": 29,
+        "median": 0.777581,
+        "min": 0.548952,
+        "max": 0.868709
+       },
+       "pseudo_nitzschia": {
+        "n": 32,
+        "median": 0.120746,
+        "min": 0.049226,
+        "max": 1.0
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 29,
+        "median": 0.15801,
+        "min": 0.064837,
+        "max": 0.634724
+       },
+       "particulate_domoic": {
+        "n": 29,
+        "median": 0.763207,
+        "min": 0.356044,
+        "max": 0.865078
+       },
+       "pseudo_nitzschia": {
+        "n": 32,
+        "median": 0.173643,
+        "min": 0.066149,
+        "max": 0.999924
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 29,
+        "median": 0.15421,
+        "min": 0.068148,
+        "max": 0.733024
+       },
+       "particulate_domoic": {
+        "n": 29,
+        "median": 0.765908,
+        "min": 0.028397,
+        "max": 0.862712
+       },
+       "pseudo_nitzschia": {
+        "n": 32,
+        "median": 0.211882,
+        "min": 0.089648,
+        "max": 0.999832
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    },
+    {
+     "record_id": "cdph-nci-bivalve-special-advisory",
+     "relation": "named_area_nearby",
+     "note": "Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, San Miguel) is about 46 km from the port."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 613,
+   "display_name": "Ventura",
+   "county": "Ventura",
+   "region": "southern_california",
+   "lon": -119.29318,
+   "lat": 34.27834,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 25,
+    "nearest_cell_km": 4.54,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 24,
+        "median": 0.083552,
+        "min": 0.046175,
+        "max": 0.097919
+       },
+       "particulate_domoic": {
+        "n": 24,
+        "median": 0.810991,
+        "min": 0.788049,
+        "max": 0.86578
+       },
+       "pseudo_nitzschia": {
+        "n": 25,
+        "median": 0.169805,
+        "min": 0.061739,
+        "max": 0.721366
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 24,
+        "median": 0.117756,
+        "min": 0.077578,
+        "max": 0.283807
+       },
+       "particulate_domoic": {
+        "n": 24,
+        "median": 0.789369,
+        "min": 0.614963,
+        "max": 0.840083
+       },
+       "pseudo_nitzschia": {
+        "n": 25,
+        "median": 0.082781,
+        "min": 0.0,
+        "max": 1.0
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 24,
+        "median": 0.133129,
+        "min": 0.09299,
+        "max": 0.502228
+       },
+       "particulate_domoic": {
+        "n": 24,
+        "median": 0.784989,
+        "min": 0.444426,
+        "max": 0.829661
+       },
+       "pseudo_nitzschia": {
+        "n": 25,
+        "median": 0.171712,
+        "min": 0.0,
+        "max": 1.0
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 24,
+        "median": 0.136639,
+        "min": 0.093982,
+        "max": 0.573763
+       },
+       "particulate_domoic": {
+        "n": 24,
+        "median": 0.777528,
+        "min": 0.396771,
+        "max": 0.833171
+       },
+       "pseudo_nitzschia": {
+        "n": 25,
+        "median": 0.17864,
+        "min": 0.0,
+        "max": 1.0
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    },
+    {
+     "record_id": "cdph-nci-bivalve-special-advisory",
+     "relation": "named_area_nearby",
+     "note": "Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, San Miguel) is about 14 km from the port."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 605,
+   "display_name": "Port Hueneme",
+   "county": "Ventura",
+   "region": "southern_california",
+   "lon": -119.19512,
+   "lat": 34.14779,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 40,
+    "nearest_cell_km": 0.53,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 37,
+        "median": 0.09978,
+        "min": 0.046175,
+        "max": 0.124226
+       },
+       "particulate_domoic": {
+        "n": 37,
+        "median": 0.788049,
+        "min": 0.753426,
+        "max": 0.86578
+       },
+       "pseudo_nitzschia": {
+        "n": 40,
+        "median": 0.061731,
+        "min": 0.000885,
+        "max": 0.721366
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 37,
+        "median": 0.100604,
+        "min": 0.048647,
+        "max": 0.283807
+       },
+       "particulate_domoic": {
+        "n": 37,
+        "median": 0.807474,
+        "min": 0.614963,
+        "max": 0.88345
+       },
+       "pseudo_nitzschia": {
+        "n": 40,
+        "median": 0.200941,
+        "min": 0.006531,
+        "max": 1.0
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 37,
+        "median": 0.114734,
+        "min": 0.036775,
+        "max": 0.502228
+       },
+       "particulate_domoic": {
+        "n": 37,
+        "median": 0.795877,
+        "min": 0.444426,
+        "max": 0.909192
+       },
+       "pseudo_nitzschia": {
+        "n": 40,
+        "median": 0.137364,
+        "min": 0.0,
+        "max": 1.0
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 37,
+        "median": 0.113102,
+        "min": 0.0309,
+        "max": 0.573763
+       },
+       "particulate_domoic": {
+        "n": 37,
+        "median": 0.796945,
+        "min": 0.396771,
+        "max": 0.910855
+       },
+       "pseudo_nitzschia": {
+        "n": 40,
+        "median": 0.22029,
+        "min": 0.0,
+        "max": 1.0
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    },
+    {
+     "record_id": "cdph-nci-bivalve-special-advisory",
+     "relation": "named_area_nearby",
+     "note": "Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, San Miguel) is about 9 km from the port."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 770,
+   "display_name": "San Pedro",
+   "county": "Los Angeles",
+   "region": "southern_california",
+   "lon": -118.2923,
+   "lat": 33.73586,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 41,
+    "nearest_cell_km": 4.74,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 32,
+        "median": 0.08121,
+        "min": 0.056032,
+        "max": 0.111759
+       },
+       "particulate_domoic": {
+        "n": 32,
+        "median": 0.810434,
+        "min": 0.75544,
+        "max": 0.859966
+       },
+       "pseudo_nitzschia": {
+        "n": 41,
+        "median": 0.215415,
+        "min": 0.093081,
+        "max": 0.894131
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 32,
+        "median": 0.105274,
+        "min": 0.066622,
+        "max": 0.134785
+       },
+       "particulate_domoic": {
+        "n": 32,
+        "median": 0.809725,
+        "min": 0.767266,
+        "max": 0.87553
+       },
+       "pseudo_nitzschia": {
+        "n": 41,
+        "median": 0.234062,
+        "min": 0.058855,
+        "max": 0.894131
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 32,
+        "median": 0.071902,
+        "min": 0.035096,
+        "max": 0.123127
+       },
+       "particulate_domoic": {
+        "n": 32,
+        "median": 0.759842,
+        "min": 0.693533,
+        "max": 0.873836
+       },
+       "pseudo_nitzschia": {
+        "n": 41,
+        "median": 0.230567,
+        "min": 0.061831,
+        "max": 0.906262
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 32,
+        "median": 0.071055,
+        "min": 0.026688,
+        "max": 0.098788
+       },
+       "particulate_domoic": {
+        "n": 32,
+        "median": 0.737671,
+        "min": 0.674825,
+        "max": 0.868542
+       },
+       "pseudo_nitzschia": {
+        "n": 41,
+        "median": 0.137349,
+        "min": 0.056429,
+        "max": 0.926557
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 748,
+   "display_name": "Newport Beach",
+   "county": "Orange",
+   "region": "southern_california",
+   "lon": -117.93063,
+   "lat": 33.61546,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 34,
+    "nearest_cell_km": 2.79,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 30,
+        "median": 0.061533,
+        "min": 0.038621,
+        "max": 0.069613
+       },
+       "particulate_domoic": {
+        "n": 30,
+        "median": 0.741714,
+        "min": 0.65949,
+        "max": 0.87347
+       },
+       "pseudo_nitzschia": {
+        "n": 34,
+        "median": 0.144986,
+        "min": 0.035173,
+        "max": 0.655721
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 30,
+        "median": 0.06267,
+        "min": 0.052126,
+        "max": 0.07973
+       },
+       "particulate_domoic": {
+        "n": 30,
+        "median": 0.738517,
+        "min": 0.675542,
+        "max": 0.857662
+       },
+       "pseudo_nitzschia": {
+        "n": 34,
+        "median": 0.299493,
+        "min": 0.071841,
+        "max": 0.655721
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 30,
+        "median": 0.071635,
+        "min": 0.051729,
+        "max": 0.083743
+       },
+       "particulate_domoic": {
+        "n": 30,
+        "median": 0.743843,
+        "min": 0.687918,
+        "max": 0.838771
+       },
+       "pseudo_nitzschia": {
+        "n": 34,
+        "median": 0.13345,
+        "min": 0.060305,
+        "max": 0.655721
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 30,
+        "median": 0.10165,
+        "min": 0.061693,
+        "max": 0.145009
+       },
+       "particulate_domoic": {
+        "n": 30,
+        "median": 0.797586,
+        "min": 0.753853,
+        "max": 0.880184
+       },
+       "pseudo_nitzschia": {
+        "n": 34,
+        "median": 0.108943,
+        "min": 0.053667,
+        "max": 0.655721
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 767,
+   "display_name": "Dana Point",
+   "county": "Orange",
+   "region": "southern_california",
+   "lon": -117.69812,
+   "lat": 33.46698,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 36,
+    "nearest_cell_km": 2.18,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 34,
+        "median": 0.050829,
+        "min": 0.032884,
+        "max": 0.067232
+       },
+       "particulate_domoic": {
+        "n": 34,
+        "median": 0.762093,
+        "min": 0.689062,
+        "max": 0.913312
+       },
+       "pseudo_nitzschia": {
+        "n": 36,
+        "median": 0.361301,
+        "min": 0.160482,
+        "max": 0.826838
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 34,
+        "median": 0.062677,
+        "min": 0.038789,
+        "max": 0.188375
+       },
+       "particulate_domoic": {
+        "n": 34,
+        "median": 0.74855,
+        "min": 0.654469,
+        "max": 0.901791
+       },
+       "pseudo_nitzschia": {
+        "n": 36,
+        "median": 0.21086,
+        "min": 0.090121,
+        "max": 1.0
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 34,
+        "median": 0.065981,
+        "min": 0.034318,
+        "max": 0.32165
+       },
+       "particulate_domoic": {
+        "n": 34,
+        "median": 0.736778,
+        "min": 0.479308,
+        "max": 0.871899
+       },
+       "pseudo_nitzschia": {
+        "n": 36,
+        "median": 0.185926,
+        "min": 0.010544,
+        "max": 1.0
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 34,
+        "median": 0.095004,
+        "min": 0.068941,
+        "max": 0.611499
+       },
+       "particulate_domoic": {
+        "n": 34,
+        "median": 0.832286,
+        "min": 0.612125,
+        "max": 0.94145
+       },
+       "pseudo_nitzschia": {
+        "n": 36,
+        "median": 0.068957,
+        "min": 0.043657,
+        "max": 1.0
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 883,
+   "display_name": "Oceanside",
+   "county": "San Diego",
+   "region": "southern_california",
+   "lon": -117.38484,
+   "lat": 33.19536,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 37,
+    "nearest_cell_km": 0.77,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 34,
+        "median": 0.05195,
+        "min": 0.04593,
+        "max": 0.094073
+       },
+       "particulate_domoic": {
+        "n": 34,
+        "median": 0.762932,
+        "min": 0.707678,
+        "max": 0.853114
+       },
+       "pseudo_nitzschia": {
+        "n": 37,
+        "median": 0.281793,
+        "min": 0.015046,
+        "max": 0.545076
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 34,
+        "median": 0.062113,
+        "min": 0.036119,
+        "max": 0.083163
+       },
+       "particulate_domoic": {
+        "n": 34,
+        "median": 0.753121,
+        "min": 0.671621,
+        "max": 0.836344
+       },
+       "pseudo_nitzschia": {
+        "n": 37,
+        "median": 0.333567,
+        "min": 0.077532,
+        "max": 0.684179
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 34,
+        "median": 0.11446,
+        "min": 0.068896,
+        "max": 0.17394
+       },
+       "particulate_domoic": {
+        "n": 34,
+        "median": 0.855693,
+        "min": 0.76925,
+        "max": 0.915357
+       },
+       "pseudo_nitzschia": {
+        "n": 37,
+        "median": 0.265465,
+        "min": 0.06859,
+        "max": 0.572344
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 34,
+        "median": 0.159314,
+        "min": 0.128498,
+        "max": 0.189688
+       },
+       "particulate_domoic": {
+        "n": 34,
+        "median": 0.89597,
+        "min": 0.882748,
+        "max": 0.919843
+       },
+       "pseudo_nitzschia": {
+        "n": 37,
+        "median": 0.235435,
+        "min": 0.052568,
+        "max": 0.534715
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  },
+  {
+   "port_code": 880,
+   "display_name": "San Diego",
+   "county": "San Diego",
+   "region": "southern_california",
+   "lon": -117.13414,
+   "lat": 32.71512,
+   "charm": {
+    "issued_date": "2026-10-08",
+    "radius_km": 15.0,
+    "cells_in_radius": 21,
+    "nearest_cell_km": 7.4,
+    "leads": [
+     {
+      "lead_days": 0,
+      "valid_date": "2026-10-07",
+      "variables": {
+       "cellular_domoic": {
+        "n": 13,
+        "median": 0.054827,
+        "min": 0.022828,
+        "max": 0.071551
+       },
+       "particulate_domoic": {
+        "n": 13,
+        "median": 0.840358,
+        "min": 0.808329,
+        "max": 0.899197
+       },
+       "pseudo_nitzschia": {
+        "n": 21,
+        "median": 0.746406,
+        "min": 0.304605,
+        "max": 0.918867
+       }
+      }
+     },
+     {
+      "lead_days": 1,
+      "valid_date": "2026-10-08",
+      "variables": {
+       "cellular_domoic": {
+        "n": 13,
+        "median": 0.130924,
+        "min": 0.098163,
+        "max": 0.178793
+       },
+       "particulate_domoic": {
+        "n": 13,
+        "median": 0.914426,
+        "min": 0.876156,
+        "max": 0.925581
+       },
+       "pseudo_nitzschia": {
+        "n": 21,
+        "median": 0.712119,
+        "min": 0.208136,
+        "max": 0.918867
+       }
+      }
+     },
+     {
+      "lead_days": 2,
+      "valid_date": "2026-10-09",
+      "variables": {
+       "cellular_domoic": {
+        "n": 13,
+        "median": 0.160009,
+        "min": 0.153462,
+        "max": 0.175954
+       },
+       "particulate_domoic": {
+        "n": 13,
+        "median": 0.922224,
+        "min": 0.906827,
+        "max": 0.927534
+       },
+       "pseudo_nitzschia": {
+        "n": 21,
+        "median": 0.166662,
+        "min": 0.046464,
+        "max": 0.918867
+       }
+      }
+     },
+     {
+      "lead_days": 3,
+      "valid_date": "2026-10-10",
+      "variables": {
+       "cellular_domoic": {
+        "n": 13,
+        "median": 0.129124,
+        "min": 0.107593,
+        "max": 0.16596
+       },
+       "particulate_domoic": {
+        "n": 13,
+        "median": 0.916868,
+        "min": 0.90553,
+        "max": 0.931455
+       },
+       "pseudo_nitzschia": {
+        "n": 21,
+        "median": 0.14066,
+        "min": 0.091906,
+        "max": 0.918867
+       }
+      }
+     }
+    ],
+    "history": {},
+    "history_error": "nowcast history unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z"
+   },
+   "chlorophyll": {
+    "dataset_id": "erdVHNchla8day",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+    "radius_km": 15.0,
+    "composite_days": 8,
+    "latest_center_date": null,
+    "latest": null,
+    "latest_valid_fraction": null,
+    "history": [],
+    "error": "satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-11T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   },
+   "official_relations": [
+    {
+     "record_id": "cdph-2026-annual-mussel-quarantine",
+     "relation": "statewide",
+     "note": "Applies along the whole California coast."
+    }
+   ],
+   "caveats": [
+    "Values summarise forecast or satellite cells within 15 km of the CDFW port location. They do not describe conditions at the dock or at any particular fishing ground.",
+    "C-HARM probabilities describe the water column, not toxin in seafood; low values do not mean an area is safe.",
+    "Chlorophyll measures algae biomass, not toxins.",
+    "Official records are listed when their stated area may include nearby waters; the agency's wording decides where they apply."
+   ]
+  }
+ ],
+ "method": {
+  "neighbourhood": "Cells whose centres lie within 15 km of the CDFW port point.",
+  "charm_leads": "Statistics from the published C-HARM value grids of the current run (same values as the map).",
+  "charm_history": "Median over the same neighbourhood for each C-HARM nowcast in the last 30 days available on ERDDAP; days without a run are absent.",
+  "chlorophyll": "Median of valid NOAA VIIRS S-NPP 750 m pixels (8-day composites, time = centre of the 8-day window, successive values overlap). Cloud and land pixels are excluded; a missing value means no clear observation.",
+  "official": "A record is related to a port if it is statewide, names the port's county, has official latitudes that include the port, or its official polygon lies within 60 km."
+ },
+ "provenance": [
+  {
+   "source_id": "charm",
+   "source_name": "C-HARM v3.1 (NOAA CoastWatch West Coast ERDDAP)",
+   "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.html",
+   "dataset_id": "wvcharmV3_0day..3day",
+   "product_version": "3.1",
+   "institution": null,
+   "license": "NOAA CoastWatch: may be used and redistributed for free but is not intended for legal use, since it may contain inaccuracies. No warranty or legal liability.",
+   "citation": null,
+   "retrieved_at": "2026-10-10T19:57:13Z",
+   "request_urls": [],
+   "upstream_metadata": {},
+   "pipeline_version": "88d6aef42bb1",
+   "pipeline_run_id": "38081801472"
+  },
+  {
+   "source_id": "viirs_chl_8day",
+   "source_name": "NOAA VIIRS S-NPP chlorophyll-a, 750 m, 8-day composite (NOAA CoastWatch West Coast ERDDAP)",
+   "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.html",
+   "dataset_id": "erdVHNchla8day",
+   "product_version": null,
+   "institution": null,
+   "license": "NOAA CoastWatch: may be used and redistributed for free but is not intended for legal use, since it may contain inaccuracies. No warranty or legal liability.",
+   "citation": null,
+   "retrieved_at": "2026-10-10T19:57:13Z",
+   "request_urls": [],
+   "upstream_metadata": {},
+   "pipeline_version": "88d6aef42bb1",
+   "pipeline_run_id": "38081801472"
+  }
+ ]
+}

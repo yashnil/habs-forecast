@@ -1,0 +1,98 @@
+{
+ "schema": "coastwatch-health-1",
+ "evaluated_at": "2026-10-10T21:50:16Z",
+ "pipeline_run_id": "38088878733",
+ "thresholds": {
+  "min_consecutive_failures": 3,
+  "olci_max_age_days": 4,
+  "viirs_max_age_days": 8,
+  "charm_max_age_days": 2,
+  "hfr_max_age_hours": 18,
+  "hfr_coverage_drop": 0.5,
+  "publish_max_age_hours": 14
+ },
+ "sources": {
+  "charm": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-10T21:46:18Z",
+   "error": null
+  },
+  "gibs_chl": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-10T21:46:18Z",
+   "error": null
+  },
+  "satellite_chl": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-10T21:46:18Z",
+   "error": null
+  },
+  "hf_radar": {
+   "outcome": "failed",
+   "consecutive_failures": 3,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-10T05:55:21Z",
+   "error": "ucsdHfrW2: axes or time listing failed: HTTP 404 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/ucsdHfrW2.csv0?latitude (Error { code=404; message=\"Not Found: Currently unknown datasetID=ucsdHfrW2\"; })"
+  },
+  "cdfw_ports": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-10T21:46:18Z",
+   "error": null
+  },
+  "official": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-10T21:46:18Z",
+   "error": null
+  },
+  "port_intel": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-10T21:46:18Z",
+   "error": null
+  },
+  "calhabmap": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-10T21:46:18Z",
+   "error": null
+  },
+  "foss_landings": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-10T21:46:18Z",
+   "error": null
+  }
+ },
+ "hfr_regions_last_covered": {
+  "mendocino_sonoma": "2026-10-10T21:50:16Z",
+  "sf_bay_farallones": "2026-10-10T21:50:16Z",
+  "monterey_bay": "2026-10-10T21:50:16Z",
+  "central_coast": "2026-10-10T21:50:16Z",
+  "southern_california": "2026-10-10T21:50:16Z"
+ },
+ "alerts": [
+  {
+   "key": "source_failing:hf_radar",
+   "kind": "source_failing",
+   "message": "Observed surface currents: HF radar 2 km (HFRNet), hourly and 24-hour mean: failed 3 runs in a row (last success 2026-10-10T05:55:21Z). Last error: ucsdHfrW2: axes or time listing failed: HTTP 404 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/ucsdHfrW2.csv0?latitude (Error { code=404; message=\"Not Found: Currently unknown datasetID=ucsdHfrW",
+   "since": "2026-10-10T21:50:16Z"
+  }
+ ],
+ "new_alerts": [
+  "source_failing:hf_radar"
+ ],
+ "cleared_alerts": []
+}
