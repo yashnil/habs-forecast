@@ -5,6 +5,20 @@ import { formatDate, formatDateTimePT } from "@/lib/time";
 export type Stamp = { kind: "observation" | "model" | "gap"; text: string; testid: string };
 const short = (d: string) => formatDate(d).replace(/^\w+, /, ""); // "Oct 8"
 
+/** "Sentinel-3 300 m" or "VIIRS 750 m": the sensor and native resolution of a satellite layer. */
+export function sensorLabel(l: LayerArtifact): string {
+  const name = l.platforms?.some((p) => p.startsWith("Sentinel-3")) ? "Sentinel-3" : l.platforms?.includes("VIIRS") ? "VIIRS" : null;
+  const res = l.native_resolution_m ? `${Math.round(l.native_resolution_m)} m` : null;
+  return [name, res].filter(Boolean).join(" ") || l.short_title.replace(/^Chlorophyll · /, "");
+}
+
+/** Multi-sensor view: Sentinel-3 300 m where it has a recent pixel, VIIRS 750 m elsewhere. */
+function multiSensorLabel(l: LayerArtifact): string {
+  const p = l.platforms ?? [];
+  const parts = [p.some((x) => x.startsWith("Sentinel-3")) && "Sentinel-3 300 m", p.includes("VIIRS") && "VIIRS 750 m"].filter(Boolean);
+  return parts.length ? parts.join(" + ") : "multi-sensor";
+}
+
 /** One line per layer on the map: what it is and when it was observed or is valid for. */
 export function stampLines(p: {
   group: "forecast" | "satellite" | "currents";
@@ -31,11 +45,11 @@ export function stampLines(p: {
     const ms = sat.multisensor;
     const comp = sat.composite;
     const text = ms
-      ? `Chlorophyll, multi-sensor · newest pixel ${short(sat.time.observed_date ?? "")}; each pixel has its own date`
+      ? `Chlorophyll, ${multiSensorLabel(sat)} · newest pixel ${short(sat.time.observed_date ?? "")}; each pixel has its own date`
       : comp
-        ? `Chlorophyll, Sentinel-3 300 m · pixels observed ${short(comp.oldest_observed_date)}–${short(comp.newest_observed_date)}`
+        ? `Chlorophyll, ${sensorLabel(sat)} · pixels observed ${short(comp.oldest_observed_date)}–${short(comp.newest_observed_date)}`
         : sat.time.observed_date
-          ? `Chlorophyll, Sentinel-3 300 m · overpass ${formatDate(sat.time.observed_date)}`
+          ? `Chlorophyll, ${sensorLabel(sat)} · overpass ${formatDate(sat.time.observed_date)}`
           : "Chlorophyll";
     out.push({ kind: "observation", testid: "stamp-satellite", text });
   }
