@@ -1084,7 +1084,8 @@ function CurrentsSection(p: Props & { expanded: boolean }) {
         <span>HF radar · HFRNet / NOAA CoastWatch</span>
         <Res l={layer} />
         <span className="ml-auto">
-          <FreshnessBadge f={fresh} basis="observed_date" />
+          {/* hourly data: the age is given in hours above; calendar days here would read "1 day ago" for a 4-hour-old hour */}
+          <FreshnessBadge f={fresh} compact />
         </span>
       </div>
       <p
