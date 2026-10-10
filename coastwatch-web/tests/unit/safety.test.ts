@@ -52,6 +52,9 @@ describe("copy never labels an area safe or recommends fishing", () => {
 describe("hierarchy and labelling", () => {
   it("official copy states that a missing notice does not mean open or safe", () => {
     expect(copy.OFFICIAL_STATUS.notTracked).toMatch(/does not mean an area is open/);
+    // the registry is transcribed and not human-reviewed; never say a person transcribed or checked it
+    expect(copy.OFFICIAL_STATUS.notTracked).toMatch(/has not been checked by a person/);
+    expect(copy.OFFICIAL_STATUS.notTracked).not.toMatch(/a person has transcribed/);
     expect(copy.OFFICIAL_STATUS.missingNotOpen).toMatch(/does not mean an area is open or that seafood is safe/);
     expect(copy.OFFICIAL_STATUS.verification.verified).toBe("Verified");
   });
