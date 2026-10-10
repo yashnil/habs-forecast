@@ -175,7 +175,7 @@
       "status": "active",
       "title": "Recreational razor clam fishery closed in Humboldt County",
       "summary": "The recreational razor clam fishery remains closed in Humboldt County because of elevated domoic acid in razor clams.",
-      "official_text": "The recreational razor clam fishery remains closed in Humboldt County due to elevated levels of domoic acid in razor clams. The Humboldt County closure has been in effect since May 2, 2024.",
+      "official_text": "The recreational razor clam fishery closed in Del Norte County on October 9, 2026, and remains closed in Humboldt County due to elevated levels of domoic acid in razor clams. The Humboldt County closure has been in effect since May 2, 2024.",
       "fishery": "recreational",
       "species": [
         "razor clam"
@@ -207,6 +207,79 @@
         }
       ],
       "uncertainties": []
+    },
+    {
+      "id": "cdfw-2026-razor-clam-del-norte",
+      "agency": "CDFW",
+      "action": "fishery_closure",
+      "status": "active",
+      "title": "Recreational razor clam fishery closed in Del Norte County",
+      "summary": "The recreational razor clam fishery closed in Del Norte County on October 9, 2026, because of elevated domoic acid in razor clams.",
+      "official_text": "The recreational razor clam fishery closed in Del Norte County on October 9, 2026, and remains closed in Humboldt County due to elevated levels of domoic acid in razor clams. The Humboldt County closure has been in effect since May 2, 2024.",
+      "fishery": "recreational",
+      "species": [
+        "razor clam"
+      ],
+      "toxins": [
+        "domoic_acid"
+      ],
+      "area": {
+        "type": "county",
+        "description": "Del Norte County",
+        "counties": [
+          "Del Norte"
+        ],
+        "geometry_basis": "official_polygon",
+        "geometry_note": "CDPH county polygon; the closure applies to the county's razor clam beaches."
+      },
+      "effective_date": "2026-10-09",
+      "sources": [
+        {
+          "label": "CDFW: Health advisories and closures (razor clam)",
+          "url": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+          "kind": "status_page"
+        }
+      ],
+      "uncertainties": [
+        "Transcribed from the CDFW status page on 2026-10-10; the OEHHA recommendation memo or CDFW news release for the Del Norte closure has not been located or checked."
+      ]
+    },
+    {
+      "id": "cdph-2026-sn26-020-razor-clam-del-norte",
+      "agency": "CDPH",
+      "action": "consumption_advisory",
+      "status": "active",
+      "title": "Do not eat sport-harvested razor clams from Del Norte County",
+      "summary": "CDPH advises not eating sport-harvested razor clams from Del Norte County because of dangerous levels of domoic acid. The warning applies only to razor clams in Del Norte County.",
+      "official_text": "CDPH is advising the public not to consume sport-harvested razor clams gathered from Del Norte County due to high levels of Domoic Acid. For Del Norte County, this warning only applies to razor clams as they are known to concentrate and retain domoic acid toxin in their meat and tissues at higher levels and for much longer than other species of bivalve shellfish.",
+      "fishery": "sport_harvest",
+      "species": [
+        "razor clams"
+      ],
+      "toxins": [
+        "domoic_acid"
+      ],
+      "area": {
+        "type": "county",
+        "description": "Del Norte County",
+        "counties": [
+          "Del Norte"
+        ],
+        "geometry_basis": "official_polygon",
+        "geometry_note": "CDPH county polygon; the warning applies to razor clams gathered from the county."
+      },
+      "effective_date": "2026-10-09",
+      "sources": [
+        {
+          "label": "CDPH SN26-020",
+          "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-020.aspx",
+          "kind": "press_release",
+          "published_date": "2026-10-09"
+        }
+      ],
+      "uncertainties": [
+        "SN26-020 says it is 'in addition to the razor clam advisory for Humboldt County'; that CDPH advisory is not a separate record in this registry and needs checking."
+      ]
     },
     {
       "id": "cdfw-rock-crab-commercial-40n",

@@ -39,6 +39,9 @@ import {
   hoursAgo,
   KNOTS_PER_MS,
 } from "@/lib/currents";
+import { combinedGapDays } from "@/lib/stamp";
+import { ARROW_LENGTHS, SPEED_CLASSES } from "@/lib/basemap";
+import { DEMO } from "@/lib/demo";
 
 export type LayerGroup = "forecast" | "satellite" | "currents";
 /** Currents: one observed hour (null = newest) or the 24-hour mean, drawn as arrows or particles. */
@@ -76,6 +79,9 @@ type Props = {
   onFlow: (m: FlowMode) => void;
   curStatus: SourceStatus | null;
   reducedMotion: boolean;
+  /** combined view (opt-in): satellite chlorophyll under the currents */
+  underlay?: boolean;
+  onUnderlay?: (b: boolean) => void;
 };
 
 const VAR_SHORT: Record<CharmVariable, string> = {
@@ -187,62 +193,77 @@ export function LayerDock(p: Props) {
           />
         </button>
       )}
-      <div
-        role="tablist"
-        aria-label="Layer group"
-        className={`flex items-end gap-1 border-b border-hairline px-3 ${p.compact ? "" : "pt-2"}`}
-      >
-        {(
-          [
-            ["forecast", "HAB forecast", "Model"],
-            ["satellite", "Satellite", "Observation"],
-          ] as const
-        ).map(([g, label, kind]) => (
-          <button
-            key={g}
-            role="tab"
-            aria-selected={p.group === g}
-            data-testid={`group-${g}`}
-            onClick={() => p.onGroup(g)}
-            className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-2.5 py-2 text-[14px] font-medium ${p.group === g ? "border-accent text-ink" : "border-transparent text-ink-3 hover:text-ink"}`}
-          >
-            {p.compact && g === "forecast" ? "Forecast" : label}
-            <span
-              className={`hidden rounded-full px-1.5 text-[10.5px] font-semibold uppercase tracking-wider sm:inline ${g === "forecast" ? "bg-model-bg text-model-ink" : "bg-measured-bg text-measured"}`}
+      <div className={`flex items-end border-b border-hairline px-3 ${p.compact ? "" : "pt-2"}`}>
+        <div role="tablist" aria-label="Layer group" className="flex items-end gap-1">
+          {(
+            [
+              ["forecast", "HAB forecast", "Model"],
+              ["satellite", "Satellite", "Observation"],
+            ] as const
+          ).map(([g, label, kind]) => (
+            <button
+              key={g}
+              role="tab"
+              aria-selected={p.group === g}
+              data-testid={`group-${g}`}
+              onClick={() => p.onGroup(g)}
+              className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-2.5 py-2 text-[14px] font-medium ${p.group === g ? "border-accent text-ink" : "border-transparent text-ink-3 hover:text-ink"}`}
             >
-              {kind}
-            </span>
-          </button>
-        ))}
-        {currentsHourly(p.manifest).length > 0 ? (
-          <button
-            role="tab"
-            aria-selected={p.group === "currents"}
-            data-testid="group-currents"
-            onClick={() => p.onGroup("currents")}
-            className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-2.5 py-2 text-[14px] font-medium ${p.group === "currents" ? "border-accent text-ink" : "border-transparent text-ink-3 hover:text-ink"}`}
-          >
-            {p.compact ? "Currents" : "Ocean currents"}
-            <span className="hidden rounded-full bg-measured-bg px-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-measured sm:inline">
-              Observation
-            </span>
-          </button>
-        ) : (
-          <button
-            role="tab"
-            aria-selected={false}
-            aria-disabled="true"
-            disabled
-            data-testid="group-currents"
-            title="Observed currents are not in this dataset."
-            className="-mb-px flex cursor-not-allowed items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-2.5 py-2 text-[14px] font-medium text-ink-3/70"
-          >
-            {p.compact ? "Currents" : "Ocean currents"}{" "}
-            <span className="rounded-full border border-hairline-strong px-1.5 text-[10.5px] font-semibold uppercase tracking-wider">
-              {p.compact ? "Soon" : "Next phase"}
-            </span>
-          </button>
-        )}
+              {p.compact && g === "forecast" ? "Forecast" : label}
+              <span
+                className={`hidden rounded-full px-1.5 text-[10.5px] font-semibold uppercase tracking-wider sm:inline ${g === "forecast" ? "bg-model-bg text-model-ink" : "bg-measured-bg text-measured"}`}
+              >
+                {kind}
+              </span>
+            </button>
+          ))}
+          {DEMO ? null : currentsHourly(p.manifest).length > 0 ? (
+            <button
+              role="tab"
+              aria-selected={p.group === "currents"}
+              data-testid="group-currents"
+              onClick={() => p.onGroup("currents")}
+              className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-2.5 py-2 text-[14px] font-medium ${p.group === "currents" ? "border-accent text-ink" : "border-transparent text-ink-3 hover:text-ink"}`}
+            >
+              {p.compact ? "Currents" : "Ocean currents"}
+              <span className="hidden rounded-full bg-measured-bg px-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-measured sm:inline">
+                Observation
+              </span>
+            </button>
+          ) : (
+            <button
+              role="tab"
+              aria-selected={false}
+              aria-disabled="true"
+              disabled
+              data-testid="group-currents"
+              title="Observed currents are not in this dataset."
+              className="-mb-px flex cursor-not-allowed items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-2.5 py-2 text-[14px] font-medium text-ink-3/70"
+            >
+              {p.compact ? "Currents" : "Ocean currents"}{" "}
+              <span className="rounded-full border border-hairline-strong px-1.5 text-[10.5px] font-semibold uppercase tracking-wider">
+                {p.compact ? "Soon" : "Next phase"}
+              </span>
+            </button>
+          )}
+        </div>
+          {p.compact && p.group === "forecast" && (
+            <label className="mb-1.5 ml-auto flex h-9 items-center rounded-[9px] bg-surface-3 px-2 text-[13px] font-medium">
+              <span className="sr-only">Forecast quantity</span>
+              <select
+                value={p.variable}
+                onChange={(e) => p.onVariable(e.target.value as CharmVariable)}
+                className="bg-transparent outline-none"
+                data-testid="variable-select"
+              >
+                {CHARM_VARIABLES.map((v) => (
+                  <option key={v} value={v}>
+                    {VAR_SHORT[v]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
       </div>
       <div
         className={`space-y-2.5 px-3.5 pt-2.5 ${p.compact ? "pb-2" : "pb-3"}`}
@@ -297,24 +318,8 @@ function ForecastSection(p: Props) {
   }
   return (
     <div data-testid="forecast-panel" className="space-y-2.5">
-      <div className={`flex gap-2 ${p.compact ? "flex-col" : "items-center"}`}>
-        {p.compact ? (
-          <label className="flex h-9 items-center rounded-[9px] bg-surface-3 px-2 text-[13px] font-medium">
-            <span className="sr-only">Forecast quantity</span>
-            <select
-              value={p.variable}
-              onChange={(e) => p.onVariable(e.target.value as CharmVariable)}
-              className="w-full bg-transparent outline-none"
-              data-testid="variable-select"
-            >
-              {CHARM_VARIABLES.map((v) => (
-                <option key={v} value={v}>
-                  {VAR_SHORT[v]}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : (
+      <div className="flex items-center gap-2">
+        {p.compact ? null : (
           <Seg
             label="Forecast quantity"
             value={p.variable}
@@ -363,7 +368,9 @@ function ForecastSection(p: Props) {
                     ? "not issued"
                     : l === 0
                       ? "nowcast"
-                      : p.now && lyr.time.valid_date
+                      : p.compact
+                        ? `day ${l}`
+                        : p.now && lyr.time.valid_date
                         ? relativeDay(lyr.time.valid_date, p.now)
                         : leadLabel(l)}
                 </span>
@@ -389,7 +396,7 @@ function ForecastSection(p: Props) {
         <span className={p.compact ? "hidden" : ""}>C-HARM v3.1 · NOAA</span>
         <Res l={layer ?? anyLayer} />
         <span className="ml-auto">
-          <FreshnessBadge f={fresh} basis={anyLayer.freshness.basis} />
+          <FreshnessBadge f={fresh} basis={anyLayer.freshness.basis} compact={p.compact} />
         </span>
       </div>
       <div
@@ -420,7 +427,7 @@ function ForecastSection(p: Props) {
           )}
           <span className="text-ink-3"> · no forecast exists beyond day 3</span>
         </p>
-        {fresh?.state === "stale" && (
+        {fresh?.state === "stale" && (!p.compact || p.expanded) && (
           <p className="text-warning" data-testid="stale-note">
             No newer C-HARM run has been published. This is the newest available
             forecast; its dates are shown as issued.
@@ -655,7 +662,7 @@ function SatelliteSection(p: Props) {
           )}
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 border-t border-hairline pt-2 text-[12px] text-ink-3">
             <ProductClassBadge pc="observation" />
-            <span>
+            <span className={p.compact && !p.expanded ? "hidden" : ""}>
               {product === "viirs750"
                 ? "VIIRS · NOAA"
                 : product === "multi"
@@ -669,7 +676,8 @@ function SatelliteSection(p: Props) {
           </div>
           {product &&
             satelliteUpdateFailed(p.satStatus, product) &&
-            p.satStatus && (
+            p.satStatus &&
+            (!p.compact || p.expanded) && (
               <p
                 className="text-[12px] text-serious"
                 data-testid="sat-update-failed"
@@ -1079,6 +1087,7 @@ function CurrentsSection(p: Props & { expanded: boolean }) {
         particles={p.flow === "particles" && !p.reducedMotion}
         detail={p.expanded}
       />
+      <CombinedSection {...p} currents={layer} />
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 border-t border-hairline pt-2 text-[12px] text-ink-3">
         <ProductClassBadge pc="observation" />
         <span>HF radar · HFRNet / NOAA CoastWatch</span>
@@ -1121,89 +1130,91 @@ function CurrentsSection(p: Props & { expanded: boolean }) {
   );
 }
 
-const LEGEND_SPEEDS = [0.1, 0.25, 0.5, 1];
-// mirrors the map's icon-size interpolation (MapCanvas): 0 -> 0.32, 0.25 -> 0.6, 0.5 -> 0.85, 1 -> 1.05
-const iconScale = (sp: number) =>
-  sp <= 0.25
-    ? 0.32 + (sp / 0.25) * 0.28
-    : sp <= 0.5
-      ? 0.6 + ((sp - 0.25) / 0.25) * 0.25
-      : 0.85 + Math.min(1, (sp - 0.5) / 0.5) * 0.2;
+const CLASS_LABELS = ["< 0.1", "0.1–0.25", "0.25–0.5", "0.5–1", "≥ 1"];
 
-function CurrentsLegend({
-  particles,
-  detail,
-}: {
-  particles: boolean;
-  detail: boolean;
-}) {
+/** The map's arrow glyph for a speed class (same geometry as lib/basemap arrowImage). */
+function ArrowGlyph({ length }: { length: number }) {
+  const W = 16;
+  const H = 32;
+  const top = H / 2 - length / 2;
+  const bottom = H / 2 + length / 2;
+  const head = Math.min(6, length * 0.45);
+  const d = `M${W / 2} ${bottom} L${W / 2} ${top + head * 0.6} M${W / 2 - head * 0.62} ${top + head} L${W / 2} ${top} L${W / 2 + head * 0.62} ${top + head}`;
   return (
-    <figure
-      data-testid="currents-legend"
-      className="space-y-1"
-      aria-label="Legend: current speed"
-    >
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
+      <path d={d} stroke="rgba(6,17,30,0.92)" strokeWidth={4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={d} stroke="#f2f6fa" strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CurrentsLegend({ particles, detail }: { particles: boolean; detail: boolean }) {
+  return (
+    <figure data-testid="currents-legend" className="space-y-1" aria-label="Legend: current speed classes">
       <figcaption className="text-[13px] font-medium text-ink">
-        {particles
-          ? "Particles move with the observed current"
-          : "Arrows point where the surface water is moving"}
-        <span className="font-normal text-ink-3"> · speed in m/s</span>
+        {particles ? "Particles move with the observed current" : "Arrows point where the surface water is moving"}
+        <span className="font-normal text-ink-3"> · speed, m/s</span>
       </figcaption>
-      <div className="flex items-end gap-4 rounded-lg bg-navy-900 px-3 py-2">
-        {LEGEND_SPEEDS.map((sp) => (
-          <span
-            key={sp}
-            className="flex flex-col items-center gap-1 text-[11px] text-on-navy-2 tabular"
-            data-testid="currents-legend-item"
-          >
+      <div className="flex items-center gap-1 rounded-lg bg-navy-900 px-2.5 py-1">
+        {ARROW_LENGTHS.map((len, i) => (
+          <span key={len} className="flex flex-1 flex-col items-center text-[11px] leading-tight text-on-navy-2 tabular" data-testid="currents-legend-item">
             {particles ? (
-              // a particle streak: length and brightness grow with speed (FlowParticles)
-              <svg width={34} height={30} viewBox="0 0 34 30" aria-hidden>
-                <line
-                  x1={17 - sp * 15}
-                  y1={15}
-                  x2={17 + sp * 15}
-                  y2={15}
-                  stroke="#eef4fa"
-                  strokeWidth={1.6}
-                  strokeLinecap="round"
-                  strokeOpacity={Math.min(0.95, 0.35 + sp * 1.6)}
-                />
+              <svg width={34} height={32} viewBox="0 0 34 32" aria-hidden>
+                <line x1={17 - len / 2} y1={16} x2={17 + len / 2} y2={16} stroke="#eef4fa" strokeWidth={1.6} strokeLinecap="round" strokeOpacity={Math.min(0.95, 0.35 + SPEED_CLASSES[i] * 1.6 + 0.1)} />
               </svg>
             ) : (
-              <svg
-                width={20}
-                height={30}
-                viewBox="0 0 20 30"
-                style={{
-                  transform: `scale(${iconScale(sp)})`,
-                  transformOrigin: "bottom center",
-                }}
-                aria-hidden
-              >
-                <path
-                  d="M10 2 L16.5 12 L11.6 12 L11.6 28 L8.4 28 L8.4 12 L3.5 12 Z"
-                  fill="#eef4fa"
-                  stroke="rgba(6,17,30,0.9)"
-                  strokeWidth={1.1}
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <ArrowGlyph length={len} />
             )}
-            {sp} m/s
+            {CLASS_LABELS[i]}
           </span>
         ))}
-        <span className="ml-auto self-center text-[11px] text-on-navy-2">
-          1 m/s ≈ {KNOTS_PER_MS.toFixed(1)} knots
-        </span>
       </div>
       {detail && (
         <p className="text-[11.5px] text-ink-3">
-          {particles
-            ? "Screen speed shows relative speed at every zoom; particles stop where there is no observation. Not a trajectory."
-            : "Longer, brighter arrows are faster. Zoom in for more arrows (one per 2 km cell)."}
+          1 m/s ≈ {KNOTS_PER_MS.toFixed(1)} knots.{" "}
+          {particles ? "Screen speed shows relative speed at every zoom; particles stop where there is no observation. Not a trajectory." : "One arrow per 2 km radar cell when zoomed in; fewer when zoomed out."}
         </p>
       )}
     </figure>
+  );
+}
+
+// ---------------------------------------------------------------- combined currents + chlorophyll (opt-in)
+function CombinedSection(p: Props & { expanded: boolean; currents: LayerArtifact | null }) {
+  const chl = satelliteLatest(p.manifest, "olci300");
+  if (!chl || !p.onUnderlay) return null;
+  const cTime = p.currents?.layer_id.endsWith("mean24h") ? (p.currents.time.observed_times ?? []).at(-1) : p.currents?.time.valid_time;
+  const gap = combinedGapDays(chl, p.currents);
+  return (
+    <div className="space-y-1.5 border-t border-hairline pt-2">
+      <label className="flex items-center gap-2 text-[13px] font-medium text-ink">
+        <input type="checkbox" checked={!!p.underlay} onChange={(e) => p.onUnderlay!(e.target.checked)} data-testid="toggle-combined" />
+        Show satellite chlorophyll underneath
+        <span className="rounded-full bg-surface-3 px-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-ink-3">Combined view</span>
+      </label>
+      {p.underlay && !p.expanded && (
+        <p data-testid="combined-notes-short" className="text-[12px] leading-snug text-ink-2">
+          Chlorophyll {chl.composite ? `${formatDate(chl.composite.oldest_observed_date).replace(/^\w+, /, "")}–${formatDate(chl.composite.newest_observed_date).replace(/^\w+, /, "")}` : ""} under currents {cTime ? formatDateTimePT(cTime) : ""}: different times. Ocean colour, not toxin; observed currents, not a forecast; arrows do not show where a bloom will travel.
+        </p>
+      )}
+      {p.underlay && p.expanded && (
+        <>
+          {chl.palette && (
+            <div data-testid="combined-chl-legend">
+              <ChlorophyllLegend palette={chl.palette} />
+            </div>
+          )}
+          <ul data-testid="combined-notes" className="list-disc space-y-0.5 pl-4 text-[12px] leading-snug text-ink-2">
+            <li>Chlorophyll is ocean colour (algae biomass), not toxin.</li>
+            <li>Currents are observed surface motion, not a forecast.</li>
+            <li data-testid="combined-times">
+              Different times: chlorophyll pixels observed {chl.composite ? `${formatDate(chl.composite.oldest_observed_date)}–${formatDate(chl.composite.newest_observed_date)}` : "—"}
+              {gap != null && gap > 0 ? `, a median ${gap} day${gap === 1 ? "" : "s"} before the currents` : ""}; currents {cTime ? formatDateTimePT(cTime) : "—"}.
+            </li>
+            <li className="font-medium text-ink">Arrows do not show where a bloom will travel.</li>
+          </ul>
+        </>
+      )}
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 import type { Manifest } from "@/generated/schema";
 import { isFixture } from "@/lib/layers";
+import { DEMO_HIDDEN_SOURCES } from "@/lib/demo";
 import { formatDateTimePT } from "@/lib/time";
 
 export function DataBanners({ manifest, error }: { manifest: Manifest | null; error: string | null }) {
@@ -11,7 +12,7 @@ export function DataBanners({ manifest, error }: { manifest: Manifest | null; er
       </div>
     );
   }
-  const failed = manifest.sources.filter((s) => s.outcome === "failed");
+  const failed = manifest.sources.filter((s) => s.outcome === "failed" && !DEMO_HIDDEN_SOURCES.includes(s.source_id));
   return (
     <>
       {isFixture(manifest) && (

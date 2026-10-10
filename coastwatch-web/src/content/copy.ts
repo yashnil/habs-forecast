@@ -7,7 +7,7 @@
 export const OFFICIAL_STATUS = {
   heading: "Official closures and advisories",
   notTracked:
-    "CoastWatch lists only notices a person has transcribed from CDFW and CDPH. The absence of a notice here does not mean an area is open or that seafood is safe.",
+    "CoastWatch lists notices transcribed from CDFW and CDPH pages. The list has not been checked by a person and may be incomplete. The absence of a notice here does not mean an area is open or that seafood is safe.",
   missingNotOpen:
     "No notice listed here does not mean an area is open or that seafood is safe. Always confirm with CDFW and CDPH.",
   instruction: "Before fishing or harvesting, check the official sources:",
@@ -112,4 +112,20 @@ export const FISHERIES_COPY = {
   portUnavailable: "Port-level values are not available",
   reviewPending: "Species tiers are CoastWatch's editorial grouping and await review by an independent HAB scientist.",
   unavailable: "Fisheries data are unavailable in this dataset.",
+} as const;
+
+/** Portfolio-preview introduction (src/components/DemoIntro.tsx). */
+export const DEMO_COPY = {
+  eyebrow: "Research preview",
+  heading: "Harmful algal blooms on the California coast, on one map",
+  lede:
+    "Pseudo-nitzschia blooms produce domoic acid, a toxin that builds up in shellfish and fish. It has delayed Dungeness crab seasons and closed razor clam harvests on this coast, which matters to fishermen, shellfish harvesters, and tribal and coastal communities. The forecasts, satellite data and notices that describe a bloom are published in different places. CoastWatch puts them on one map, each labelled with its source and date.",
+  layers: [
+    { kind: "model", badge: "Agency forecast", name: "C-HARM", text: "NOAA's modeled probability of a bloom and of domoic acid on a 3 km grid: a nowcast and days 1–3, dated by issue." },
+    { kind: "observation", badge: "Observation", name: "Satellite chlorophyll", text: "Sentinel-3 (300 m) and VIIRS (750 m), dated by the day each pixel was seen. Chlorophyll shows algae, not toxin." },
+    { kind: "official", badge: "Not verified", name: "Official notices", text: "CDPH and CDFW advisories and closures, transcribed by CoastWatch with links to the agencies. Not checked by a person." },
+  ],
+  caveat:
+    "An independent research project, not an advisory service. Not affiliated with or endorsed by NOAA, CDPH or CDFW, and not yet reviewed by an independent HAB scientist. CoastWatch does not decide whether seafood can be harvested or eaten:",
+  cta: "Explore Monterey Bay",
 } as const;

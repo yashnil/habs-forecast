@@ -26,6 +26,12 @@ const PATHS = {
       <path d="M12 8v5M12 16.2v.1" />
     </>
   ),
+  info: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 11v5.2M12 7.8v.1" />
+    </>
+  ),
   close: <path d="M6 6l12 12M18 6 6 18" />,
 } as const;
 

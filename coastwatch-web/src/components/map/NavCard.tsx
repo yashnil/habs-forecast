@@ -1,5 +1,6 @@
 "use client";
 
+import { DEMO } from "@/lib/demo";
 import { useState } from "react";
 import type { Palette } from "@/generated/schema";
 import type { PortIntel } from "@/generated/port_intel";
@@ -12,6 +13,8 @@ import type { CharmVariable } from "@/lib/layers";
 export type RegionDef = { id: string; label: string; bounds: [[number, number], [number, number]] };
 
 type Props = {
+  /** show the C-HARM forecast medians next to ports and regions (only while the forecast is on the map) */
+  showForecast?: boolean;
   regions: RegionDef[]; // first entry is statewide
   region: string;
   onRegion: (id: string) => void;
@@ -33,12 +36,13 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
  * and region views list places; with a port open the card shrinks to a breadcrumb because
  * the port inspector carries the detail. Never more than one full panel per side.
  */
-export function NavCard({ regions, region, onRegion, ports, portsError, port, onPort, variable, lead, palette, regionNotices }: Props) {
+export function NavCard({ regions, region, onRegion, ports, portsError, port, onPort, variable, lead, palette, regionNotices, showForecast = true }: Props) {
   const { openDrawer, count, verification, available } = useOfficialDrawer();
   const [q, setQ] = useState("");
   const statewide = regions[0];
   const current = regions.find((r) => r.id === region) ?? statewide;
-  const median = (p: PortIntel) => p.charm?.leads.find((l) => l.lead_days === lead)?.variables[variable]?.median ?? null;
+  // C-HARM forecast medians: shown only while the HAB forecast is on the map, so they are never read as chlorophyll or currents
+  const median = (p: PortIntel) => (showForecast ? (p.charm?.leads.find((l) => l.lead_days === lead)?.variables[variable]?.median ?? null) : null);
   const inRegion = (id: string) => ports.filter((p) => p.region === id);
   const hits = q.trim() ? ports.filter((p) => p.display_name.toLowerCase().includes(q.trim().toLowerCase())) : [];
   const selected = port != null ? ports.find((p) => p.port_code === port) : null;
@@ -52,13 +56,19 @@ export function NavCard({ regions, region, onRegion, ports, portsError, port, on
           onClick={() => onPort(p.port_code)}
           data-testid={`port-row-${p.port_code}`}
           aria-current={port === p.port_code ? "true" : undefined}
-          className={`grid w-full grid-cols-[1fr_72px_40px] items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[14px] ${port === p.port_code ? "bg-navy-900 text-white" : "text-ink hover:bg-surface-2"}`}
+          className={`grid w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[14px] ${showForecast ? "grid-cols-[1fr_72px_40px]" : "grid-cols-[1fr_auto]"} ${port === p.port_code ? "bg-navy-900 text-white" : "text-ink hover:bg-surface-2"}`}
         >
           <span className="truncate">{p.display_name}</span>
-          <span className="relative h-1.5 overflow-hidden rounded-full bg-surface-3" aria-hidden>
-            {m != null && palette && <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${m * 100}%`, background: colorAt(palette, m) }} />}
-          </span>
-          <span className="text-right font-semibold tabular">{m != null ? pct(m) : "—"}</span>
+          {showForecast ? (
+            <>
+              <span className="relative h-1.5 overflow-hidden rounded-full bg-surface-3" aria-hidden>
+                {m != null && palette && <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${m * 100}%`, background: colorAt(palette, m) }} />}
+              </span>
+              <span className="text-right font-semibold tabular">{m != null ? pct(m) : "—"}</span>
+            </>
+          ) : (
+            <span aria-hidden className="text-ink-3">›</span>
+          )}
         </button>
       </li>
     );
@@ -89,7 +99,7 @@ export function NavCard({ regions, region, onRegion, ports, portsError, port, on
                   <b className="font-semibold text-official-ink">
                     {count} official notice{count === 1 ? "" : "s"}
                   </b>{" "}
-                  active in California
+                  {DEMO ? "listed here (list incomplete)" : "active in California"}
                 </>
               )
             ) : (
@@ -129,7 +139,7 @@ export function NavCard({ regions, region, onRegion, ports, portsError, port, on
               {current.label}
             </h2>
             {portsError ? <p className="px-2.5 text-[13px] text-ink-3">Port summaries unavailable: {portsError}</p> : <ul data-testid="region-ports">{inRegion(region).map(portRow)}</ul>}
-            <p className="px-2.5 pt-1.5 text-[12px] leading-snug text-ink-3">Median of model cells within 15 km of each port, not conditions at the dock.</p>
+            {showForecast && <p className="px-2.5 pt-1.5 text-[12px] leading-snug text-ink-3">C-HARM forecast: median of model cells within 15 km of each port, not conditions at the dock.</p>}
           </>
         ) : (
           <>
@@ -148,14 +158,14 @@ export function NavCard({ regions, region, onRegion, ports, portsError, port, on
                       className="grid w-full grid-cols-[1fr_auto_auto] items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-surface-2"
                     >
                       <span className="text-[15px] font-medium">{r.label}</span>
-                      <span className="text-[13px] font-medium text-ink-2 tabular">{vals.length ? `${pct(Math.min(...vals))}–${pct(Math.max(...vals))}` : "—"}</span>
+                      <span className="text-[13px] font-medium text-ink-2 tabular">{showForecast ? (vals.length ? `${pct(Math.min(...vals))}–${pct(Math.max(...vals))}` : "—") : ""}</span>
                       <span aria-hidden className="text-ink-3">›</span>
                     </button>
                   </li>
                 );
               })}
             </ul>
-            <p className="px-2.5 pt-1 text-[12px] text-ink-3">Range of port medians for the selected forecast day.</p>
+            {showForecast && <p className="px-2.5 pt-1 text-[12px] text-ink-3">C-HARM forecast: range of port medians for the selected day.</p>}
           </>
         )}
       </div>

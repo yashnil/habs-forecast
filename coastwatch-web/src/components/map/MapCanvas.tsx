@@ -5,7 +5,7 @@ import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLa
 import { setWorkerUrl, type ExpressionSpecification, type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { PortsCollection } from "@/generated/schema";
-import { arrowImage, BASEMAP_STYLE, BEFORE_OVERLAY_ID, CA_BOUNDS, hatchImage } from "@/lib/basemap";
+import { ARROW_LENGTHS, arrowImage, BASEMAP_STYLE, BEFORE_OVERLAY_ID, CA_BOUNDS, hatchImage, SPEED_CLASSES } from "@/lib/basemap";
 import type { CurrentField } from "@/lib/currents";
 import FlowParticles from "./FlowParticles";
 
@@ -19,7 +19,7 @@ export type TileRaster = { id: string; template: string; minzoom: number; maxzoo
 
 export type MapPoint = { lat: number; lon: number };
 /** Observed currents for one hour (or the 24 h mean): arrows from the published grids, or particles. */
-export type CurrentsOverlay = { id: string; features: GeoJSON.FeatureCollection; field: CurrentField; mode: "arrows" | "particles" };
+export type CurrentsOverlay = { id: string; features: GeoJSON.FeatureCollection; field: CurrentField; mode: "arrows" | "particles"; coarser?: boolean };
 
 type Props = {
   forecast: ImageRaster | null;
@@ -50,9 +50,13 @@ const ARROW_ZOOMS: [number, number, number][] = [
   [2, 8.5, 9.6],
   [1, 9.6, 24],
 ];
-// length grows with speed (capped so a fast cell does not cover its neighbours); arrows are
-// drawn smaller when zoomed out so the statewide view stays readable
-const SPEED_SIZE: ExpressionSpecification = ["interpolate", ["linear"], ["get", "speed"], 0, 0.32, 0.25, 0.6, 0.5, 0.85, 1, 1.05];
+// one glyph per speed class (length grows with speed, same line width), matching the legend
+const ARROW_IMAGE = ["step", ["get", "speed"], "cw-arrow-0", ...SPEED_CLASSES.slice(1).flatMap((v, i) => [v, `cw-arrow-${i + 1}`])] as unknown as ExpressionSpecification;
+function addArrows(m: MlMap) {
+  ARROW_LENGTHS.forEach((len, i) => {
+    if (!m.hasImage(`cw-arrow-${i}`)) m.addImage(`cw-arrow-${i}`, arrowImage(len), { pixelRatio: 2 });
+  });
+}
 // Every data raster is opaque and nearest-sampled: a pixel is a real source cell, and the
 // legend colours are exactly the colours on the map (design reset rev. 2, §5.1).
 const RASTER_PAINT = { "raster-opacity": 1, "raster-resampling": "nearest", "raster-fade-duration": 0 } as const;
@@ -99,10 +103,10 @@ export default function MapCanvas(p: Props) {
       onLoad={(e) => {
         const m = e.target;
         if (!m.hasImage("hatch")) m.addImage("hatch", hatchImage());
-        if (!m.hasImage("cw-arrow")) m.addImage("cw-arrow", arrowImage(), { pixelRatio: 2 });
+        addArrows(m);
         m.on("styleimagemissing", (ev: { id: string }) => {
           if (ev.id === "hatch" && !m.hasImage("hatch")) m.addImage("hatch", hatchImage());
-          if (ev.id === "cw-arrow" && !m.hasImage("cw-arrow")) m.addImage("cw-arrow", arrowImage(), { pixelRatio: 2 });
+          if (ev.id.startsWith("cw-arrow-")) addArrows(m);
         });
         // exposed for end-to-end tests and debugging
         (window as unknown as { __cwMap?: unknown }).__cwMap = e.target;
@@ -153,16 +157,18 @@ export default function MapCanvas(p: Props) {
               type="symbol"
               minzoom={minzoom}
               maxzoom={maxzoom}
-              filter={[">=", ["get", "level"], level]}
+              // over chlorophyll (combined view) one level sparser, so the imagery stays readable
+              filter={[">=", ["get", "level"], p.currents?.coarser ? Math.min(16, level * 2) : level]}
               layout={{
-                "icon-image": "cw-arrow",
+                "icon-image": ARROW_IMAGE,
                 "icon-rotate": ["get", "dir"],
                 "icon-rotation-alignment": "map",
                 "icon-allow-overlap": true,
                 "icon-ignore-placement": true,
-                "icon-size": ["interpolate", ["linear"], ["zoom"], 5, ["*", 0.55, SPEED_SIZE], 8.5, SPEED_SIZE],
+                // drawn smaller when zoomed out so the statewide view stays readable
+                "icon-size": ["interpolate", ["linear"], ["zoom"], 5, 0.62, 8.5, 1, 11, 1.15],
               }}
-              paint={{ "icon-opacity": ["interpolate", ["linear"], ["get", "speed"], 0, 0.45, 0.2, 0.8, 0.4, 1] }}
+              paint={{ "icon-opacity": 1 }}
             />
           ))}
         </Source>
@@ -179,7 +185,7 @@ export default function MapCanvas(p: Props) {
             type="symbol"
             minzoom={7.4}
             filter={["==", ["get", "kind"], "lat_limit"]}
-            layout={{ "symbol-placement": "line-center", "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, -0.8], "text-allow-overlap": false }}
+            layout={{ "symbol-placement": "line-center", "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, -1.15], "text-allow-overlap": false }}
             paint={{ "text-color": OFFICIAL, "text-halo-color": "#06111e", "text-halo-width": 1.6 }}
           />
         </Source>

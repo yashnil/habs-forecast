@@ -11,12 +11,14 @@ const at = (iso: string) => new Date(iso);
 
 describe("freshness classification", () => {
   it.each([
-    ["2026-10-08T01:00:00Z", "current", 0],
-    ["2026-10-09T23:59:00Z", "current", 1],
-    ["2026-10-10T00:00:00Z", "stale", 2],
-    ["2026-10-15T12:00:00Z", "stale", 7],
-    ["2026-10-16T00:00:00Z", "historical", 8],
-    ["2027-01-01T00:00:00Z", "historical", 85],
+    // ages count California (Pacific) calendar days, like the "today"/"yesterday" labels
+    ["2026-10-08T08:00:00Z", "current", 0], // Oct 8, 01:00 PDT
+    ["2026-10-10T06:59:00Z", "current", 1], // Oct 9, 23:59 PDT
+    ["2026-10-10T01:00:00Z", "current", 1], // Oct 9, 18:00 PDT (UTC is already Oct 10)
+    ["2026-10-10T07:00:00Z", "stale", 2], // Oct 10, 00:00 PDT
+    ["2026-10-15T19:00:00Z", "stale", 7],
+    ["2026-10-16T07:00:00Z", "historical", 8],
+    ["2027-01-01T08:00:00Z", "historical", 85], // Jan 1, 00:00 PST
   ])("issued 2026-10-08 viewed at %s is %s", (now, state, age) => {
     const f = classifyDate(CHARM, "2026-10-08", at(now));
     expect(f.state).toBe(state);
@@ -37,7 +39,7 @@ describe("freshness classification", () => {
   });
 
   it("future dates (clock skew) count as current, age 0 or less", () => {
-    expect(ageInDays("2026-10-09", at("2026-10-08T12:00:00Z"))).toBe(-1);
+    expect(ageInDays("2026-10-09", at("2026-10-08T19:00:00Z"))).toBe(-1);
     expect(classifyDate(CHARM, "2026-10-09", at("2026-10-08T12:00:00Z")).state).toBe("current");
   });
 

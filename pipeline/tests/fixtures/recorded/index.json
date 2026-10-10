@@ -166,5 +166,9 @@
  "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx": {
   "content_type": "text/html; charset=utf-8",
   "file": "e368d8ebea12174f.html"
+ },
+ "https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/California_Coastal_Counties/FeatureServer/3/query?where=TITLE%20%3D%20%27Del%20Norte%20County%27&outFields=TITLE&outSR=4326&f=geojson": {
+  "content_type": "application/json; charset=utf-8",
+  "file": "4cbac48bde1372bd.bin"
  }
 }

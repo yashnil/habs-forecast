@@ -10,6 +10,9 @@ import { useNow } from "@/lib/useNow";
 import { Hotlines, NoticeCard, VerificationBadge, VerificationDetail } from "@/components/official/Official";
 import { SourceLink } from "@/components/ui/Primitives";
 import { Icon } from "@/components/ui/Icon";
+import { DemoAboutButton } from "@/components/DemoIntro";
+import { DEMO } from "@/lib/demo";
+import { RegulatoryGapCard } from "@/components/RegulatoryGap";
 
 /**
  * Official notices are global: every page shows their count and verification state in the
@@ -61,6 +64,57 @@ export function OfficialProvider({ official, status, children }: { official: Off
 /** Plain-text verification word for compact places (pill, tab badge). */
 export function verificationWord(v: Verification | null): string {
   return v ? OFFICIAL_STATUS.verification[v.state] : "Checking…";
+}
+
+const CDFW_URL = "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories";
+const CDPH_URL = "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx";
+
+/**
+ * Site-wide disclosure while the notice registry is not human-verified: says why (agency pages
+ * changed since the last review, with the unreviewed items, or never checked by a person), that
+ * the list may be incomplete, and links to the agencies. Driven by the verification state, so it
+ * appears for any future change too and disappears only after a recorded human review.
+ */
+export function RegistryDisclosure() {
+  const { ds, verification } = useOfficial();
+  const { openDrawer } = useOfficialDrawer();
+  if (!verification || verification.state === "verified") return null;
+  const changed = (ds?.watch ?? []).filter((w) => w.ok && (w.new_items?.length || w.matches_review === false));
+  const items = changed.flatMap((w) => w.new_items ?? []);
+  const lead = !ds
+    ? "Official notices could not be loaded."
+    : changed.length
+      ? `Agency pages have changed since this list was last reviewed${items.length ? ` (not yet reviewed: ${items.join(", ")})` : ""}. The list may be incomplete or out of date.`
+      : "This list was transcribed from the agency pages and has not been checked by a person. It may be incomplete.";
+  return (
+    <div role="status" data-testid="registry-disclosure" className="border-b border-official-line bg-official-bg px-4 py-1.5 text-[12.5px] leading-snug text-official-ink">
+      {/* phones: one short line; the drawer holds the detail */}
+      <p className="flex items-baseline gap-1.5 sm:hidden">
+        <Icon name="shield" className="h-3.5 w-3.5 shrink-0 translate-y-[2px] text-official" />
+        <span>
+          <b className="font-semibold">Notices not verified{changed.length ? ", may be incomplete" : ""}.</b> Check{" "}
+          <a href={CDFW_URL} target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-2">CDFW</a> and{" "}
+          <a href={CDPH_URL} target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-2">CDPH</a>.{" "}
+          <button type="button" onClick={(e) => openDrawer(e.currentTarget)} className="font-semibold underline underline-offset-2">
+            Why
+          </button>
+        </span>
+      </p>
+      <p className="mx-auto hidden max-w-[1400px] flex-wrap items-baseline gap-x-1.5 sm:flex">
+        <Icon name="shield" className="h-3.5 w-3.5 shrink-0 translate-y-[2px] text-official" />
+        <b className="font-semibold">Official notices are not verified.</b>
+        <span>{lead}</span>
+        <span>
+          Before harvesting or eating seafood, check{" "}
+          <a href={CDFW_URL} target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-2">CDFW</a> and{" "}
+          <a href={CDPH_URL} target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-2">CDPH</a>.
+        </span>
+        <button type="button" onClick={(e) => openDrawer(e.currentTarget)} className="font-semibold underline underline-offset-2">
+          See the list
+        </button>
+      </p>
+    </div>
+  );
 }
 
 /** Masthead control: count of active notices and the registry's verification state. */
@@ -142,7 +196,7 @@ export function OfficialDrawer() {
         <header className="relative border-b border-official-line bg-official-bg px-6 pb-4 pt-6">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-official">{OFFICIAL_STATUS.heading}</p>
           <h2 id="official-drawer-h" className="mt-1.5 font-display text-[24px] font-medium leading-tight">
-            {ds ? `${records.length} active notice${records.length === 1 ? "" : "s"} in California` : "Official notices unavailable"}
+            {ds ? (DEMO ? `${records.length} notice${records.length === 1 ? "" : "s"} listed` : `${records.length} active notice${records.length === 1 ? "" : "s"} in California`) : "Official notices unavailable"}
           </h2>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {ds && <VerificationBadge v={verification} />}
@@ -159,6 +213,7 @@ export function OfficialDrawer() {
           </button>
         </header>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-8 pt-4">
+          {DEMO && <RegulatoryGapCard official={ds} />}
           {verification && verification.state !== "verified" && ds && <VerificationDetail v={verification} />}
           {!ds && (
             <p className="text-[14px] text-ink-2">
@@ -212,11 +267,13 @@ export function OfficialDrawer() {
   );
 }
 
-const TABS = [
+const ALL_TABS = [
   { key: "map", href: "/", label: "Map", icon: "map" },
   { key: "bloom", href: "/bloom", label: "Blooms", icon: "bloom" },
   { key: "fisheries", href: "/fisheries", label: "Fisheries", icon: "fish" },
 ] as const;
+// the portfolio preview shows the map only; About takes the other slots' place
+const TABS = DEMO ? ALL_TABS.filter((t) => t.key === "map") : ALL_TABS;
 
 /** Mobile bottom navigation. Notices is a tab, so official information is one tap from anywhere. */
 export function TabBar({ active }: { active: string }) {
@@ -225,7 +282,7 @@ export function TabBar({ active }: { active: string }) {
     <nav
       aria-label="Primary"
       data-testid="tabbar"
-      className="fixed inset-x-0 bottom-0 z-40 grid h-[var(--cw-tabbar-h)] grid-cols-4 border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] text-ink-3 md:hidden"
+      className={`fixed inset-x-0 bottom-0 z-40 grid h-[var(--cw-tabbar-h)] ${DEMO ? "grid-cols-3" : "grid-cols-4"} border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] text-ink-3 md:hidden`}
       style={{ colorScheme: "light" }}
     >
       {TABS.map((t) => (
@@ -240,6 +297,12 @@ export function TabBar({ active }: { active: string }) {
           {t.label}
         </Link>
       ))}
+      {DEMO && (
+        <DemoAboutButton className="relative flex flex-col items-center justify-center gap-1 text-[12px] font-medium">
+          <Icon name="info" className="h-[22px] w-[22px]" />
+          About
+        </DemoAboutButton>
+      )}
       <button
         type="button"
         data-testid="tab-notices"

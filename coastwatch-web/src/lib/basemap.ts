@@ -129,31 +129,44 @@ export function hatchImage(): ImageData {
   return g.getImageData(0, 0, n, n);
 }
 
-/** Arrow glyph pointing north (rotated per feature): light fill with a dark outline so it
- *  reads over any sea colour. Drawn at 2x; register with pixelRatio 2. */
-export function arrowImage(): ImageData {
+/** Current-speed classes (m/s, lower bounds) and the arrow shaft length drawn for each.
+ *  Discrete classes: a reader can match an arrow to the legend exactly. */
+export const SPEED_CLASSES = [0, 0.1, 0.25, 0.5, 1] as const;
+export const ARROW_LENGTHS = [7, 11, 16, 22, 28] as const; // px at icon-size 1
+
+/** Arrow pointing north, centred on the image (and so on its cell when rotated), with a
+ *  constant line width and a light fill outlined in dark navy so it reads over the dark
+ *  sea and over bright chlorophyll alike. Drawn at 2x; register with pixelRatio 2. */
+export function arrowImage(length: number): ImageData {
   const k = 2;
-  const w = 20 * k;
-  const h = 30 * k;
+  const W = 16;
+  const H = 32;
   const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
+  c.width = W * k;
+  c.height = H * k;
   const g = c.getContext("2d")!;
   g.scale(k, k);
-  g.beginPath();
-  g.moveTo(10, 2);
-  g.lineTo(16.5, 12);
-  g.lineTo(11.6, 12);
-  g.lineTo(11.6, 28);
-  g.lineTo(8.4, 28);
-  g.lineTo(8.4, 12);
-  g.lineTo(3.5, 12);
-  g.closePath();
+  const cx = W / 2;
+  const top = H / 2 - length / 2;
+  const bottom = H / 2 + length / 2;
+  const head = Math.min(6, length * 0.45);
+  const path = () => {
+    g.beginPath();
+    g.moveTo(cx, bottom);
+    g.lineTo(cx, top + head * 0.6);
+    g.moveTo(cx - head * 0.62, top + head);
+    g.lineTo(cx, top);
+    g.lineTo(cx + head * 0.62, top + head);
+  };
+  g.lineCap = "round";
   g.lineJoin = "round";
-  g.lineWidth = 2.2;
-  g.strokeStyle = "rgba(6,17,30,0.9)";
+  path();
+  g.strokeStyle = "rgba(6,17,30,0.92)";
+  g.lineWidth = 4;
   g.stroke();
-  g.fillStyle = "#eef4fa";
-  g.fill();
-  return g.getImageData(0, 0, w, h);
+  path();
+  g.strokeStyle = "#f2f6fa";
+  g.lineWidth = 1.8;
+  g.stroke();
+  return g.getImageData(0, 0, W * k, H * k);
 }
