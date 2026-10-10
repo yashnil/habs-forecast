@@ -4,7 +4,7 @@ import { DemoAboutButton, DemoIntro } from "@/components/DemoIntro";
 import { SourceHealthDot } from "@/components/SourceHealthDot";
 import { DEMO } from "@/lib/demo";
 import { RegulatoryGapBanner } from "@/components/RegulatoryGap";
-import { OfficialDrawer, OfficialPill, OfficialProvider, TabBar } from "@/components/shell/OfficialShell";
+import { OfficialDrawer, OfficialPill, OfficialProvider, RegistryDisclosure, TabBar } from "@/components/shell/OfficialShell";
 import type { Manifest, SourceStatus } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 
@@ -89,7 +89,7 @@ export function AppShell({
             </div>
           </div>
         </header>
-        {DEMO && <RegulatoryGapBanner />}
+        {DEMO ? <RegulatoryGapBanner /> : <RegistryDisclosure />}
         {banner}
         <main className={`flex min-h-0 flex-1 flex-col ${scroll === "app" ? "theme-dark" : ""}`}>{children}</main>
         <TabBar active={active} />

@@ -133,6 +133,16 @@
      "note": "Applies along the whole California coast."
     },
     {
+     "record_id": "cdfw-2026-razor-clam-del-norte",
+     "relation": "same_county",
+     "note": "Port is in Del Norte County."
+    },
+    {
+     "record_id": "cdph-2026-sn26-020-razor-clam-del-norte",
+     "relation": "same_county",
+     "note": "Port is in Del Norte County."
+    },
+    {
      "record_id": "cdph-rock-crab-viscera-north-coast-nci",
      "relation": "port_latitude_within_stated_range",
      "note": "The port lies between the notice's official latitudes."
