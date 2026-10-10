@@ -34,10 +34,15 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # a normal run takes about 5 minutes; a hang fails (and is reported) instead of running for hours
+    timeout-minutes: 40
     permissions:
       contents: read
     outputs:
       official_changed: ${{ steps.watch.outputs.changed }}
+      alerts: ${{ steps.health.outputs.alerts }}
+      new_alerts: ${{ steps.health.outputs.new_alerts }}
+      cleared: ${{ steps.health.outputs.cleared }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -54,6 +59,8 @@ jobs:
             git reset -q
           fi
           ls -la publish || true
+          # how old the dataset this run starts from is (pipeline health: missed runs)
+          echo "PREV_GENERATED_AT=$(jq -r '.generated_at // empty' publish/v1/manifest.json 2>/dev/null)" >> "$GITHUB_ENV"
       - name: Run pipeline
         working-directory: pipeline
         run: uv sync && uv run cwp run --out ../publish/v1
@@ -67,9 +74,23 @@ jobs:
       - name: Verify new satellite chlorophyll against ERDDAP (values, cell centres, tiles, composite)
         working-directory: pipeline
         run: uv run cwp verify-satellite --only-if-updated --out ../publish/v1 --report ../publish/v1/verification/satellite-points.json
+      - name: Verify new HF-radar currents against ERDDAP (values, cell centres, dropped cells, 24 h mean)
+        working-directory: pipeline
+        run: uv run cwp verify-currents --only-if-updated --out ../publish/v1 --report ../publish/v1/verification/currents-points.json
       - name: Every manifest reference exists and decodes
         working-directory: pipeline
         run: uv run cwp check-published --base ../publish/v1
+      - name: Pipeline health (alerts for a person; never withholds valid data)
+        id: health
+        working-directory: pipeline
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: uv run cwp health --out ../publish/v1 --previous-generated-at "$PREV_GENERATED_AT" --markdown ../health-report.md --github-output "$GITHUB_OUTPUT" --run-url "$RUN_URL"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: health-report
+          path: health-report.md
+          retention-days: 7
       - name: Only pipeline artifacts may be published
         working-directory: pipeline
         run: uv run cwp guard-publish --root ../publish
@@ -95,6 +116,55 @@ jobs:
         run: |
           title="Official notices: sources changed since last review"
           body="The CoastWatch watcher detected changes (or could not read) official CDFW/CDPH pages since the last human review. The app shows official notices as NOT verified until a person checks every record in data/curated/official_notices.json against the sources and runs: cwp review-official --reviewer NAME --confirm. Details: ${RUN_URL} (job build, step 'Watch official pages')."
+          n=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ -n "$n" ]; then gh issue comment "$n" --repo "$GITHUB_REPOSITORY" --body "$body"; else gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"; fi
+
+  notify-health:
+    # Production only. One issue for pipeline health: opened when an alert appears, commented
+    # only when alerts change (new or cleared), closed when everything is clear again.
+    needs: [build, check]
+    if: (inputs.channel || 'production') == 'production'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: health-report
+      - name: Open, update or close the health issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ALERTS: ${{ needs.build.outputs.alerts }}
+          NEW: ${{ needs.build.outputs.new_alerts }}
+          CLEARED: ${{ needs.build.outputs.cleared }}
+        run: |
+          title="CoastWatch pipeline health"
+          n=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ "${ALERTS:-0}" -gt 0 ]; then
+            if [ -z "$n" ]; then gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file health-report.md
+            elif [ "${NEW:-0}" -gt 0 ] || [ "${CLEARED:-0}" -gt 0 ]; then gh issue comment "$n" --repo "$GITHUB_REPOSITORY" --body-file health-report.md
+            fi
+          elif [ -n "$n" ]; then
+            gh issue comment "$n" --repo "$GITHUB_REPOSITORY" --body-file health-report.md
+            gh issue close "$n" --repo "$GITHUB_REPOSITORY"
+          fi
+
+  notify-failure:
+    # Production only: the refresh itself failed (build, verification, publish or the public
+    # check). The previously published dataset stays live with its own dates.
+    needs: [build, publish, check]
+    if: failure() && (inputs.channel || 'production') == 'production'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="CoastWatch data refresh failed"
+          body="The data refresh failed at ${RUN_URL}. Nothing new was published; the previous dataset stays live with its own dates and the app shows its freshness. Check the failed job's log (verification failures block publication on purpose)."
           n=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
           if [ -n "$n" ]; then gh issue comment "$n" --repo "$GITHUB_REPOSITORY" --body "$body"; else gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"; fi
 

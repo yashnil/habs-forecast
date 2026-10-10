@@ -217,12 +217,25 @@ def scene_url(server: str, ds: str, var: str, t: str, target: Target, lon_lo: fl
     return f"{server}/griddap/{ds}.nc?" + quote(q, safe=",():")
 
 
+def no_matching_results(e: Exception) -> bool:
+    """ERDDAP's 404 'Your query produced no matching results' is an answer (nothing new);
+    its 404 'Currently unknown datasetID' (dataset reloading or down) is an outage."""
+    if "HTTP 404" not in str(e):
+        return False
+    detail = getattr(e, "detail", None)
+    text = detail or str(e)
+    if "unknown datasetid" in text.lower():
+        return False
+    return detail is None or "no matching results" in text.lower()
+
+
 def list_times(ctx: RunContext, server: str, ds: str, start: date) -> list[str]:
     try:
         r = ctx.fetcher(times_url(server, ds, start))
     except FetchError as e:
-        # ERDDAP answers 404 "Your query produced no matching results" when nothing is newer than start
-        if "404" in str(e):
+        # ERDDAP answers 404 "Your query produced no matching results" when nothing is newer
+        # than start; a 404 for "Currently unknown datasetID" is an outage, not "no data"
+        if no_matching_results(e):
             return []
         raise
     out = []
@@ -352,13 +365,22 @@ def coastal_mask(target: Target) -> np.ndarray:
 
 def coverage(values: np.ndarray, target: Target) -> Coverage:
     """Share of C-HARM ocean cells (3 km) that contain at least one valid pixel."""
-    mask, ocean, regions = _load_reference()
-    ref = SourceGrid(mask["lat_first"], mask["lat_step"], mask["lon_first"], mask["lon_step"], mask["height"], mask["width"])
     rr, cc = np.nonzero(np.isfinite(values))
-    observed = np.zeros_like(ocean)
     lat = target.lat_first - rr * target.step
     lon = target.lon_first + cc * target.step
-    if rr.size:
+    px_km2 = (target.step * 111.32) ** 2 * np.cos(np.radians(lat))
+    south, north = target.lat_first - target.step * (target.height - 1), target.lat_first
+    west, east = target.lon_first, target.lon_first + target.step * (target.width - 1)
+    return coverage_points(lat, lon, px_km2, (south, north, west, east))
+
+
+def coverage_points(lat: np.ndarray, lon: np.ndarray, px_km2: np.ndarray, bounds: tuple[float, float, float, float]) -> Coverage:
+    """Coverage from the centres (and areas) of valid cells of any regular grid;
+    `bounds` = (south, north, west, east) of the grid's cell centres."""
+    mask, ocean, regions = _load_reference()
+    ref = SourceGrid(mask["lat_first"], mask["lat_step"], mask["lon_first"], mask["lon_step"], mask["height"], mask["width"])
+    observed = np.zeros_like(ocean)
+    if lat.size:
         r3, c3 = ref.cell_index(lat, lon)
         ok = (r3 >= 0) & (c3 >= 0)
         observed[r3[ok], c3[ok]] = True
@@ -366,10 +388,8 @@ def coverage(values: np.ndarray, target: Target) -> Coverage:
     # restrict the reference to the target domain
     lats = mask["lat_first"] + mask["lat_step"] * np.arange(mask["height"])
     lons = mask["lon_first"] + mask["lon_step"] * np.arange(mask["width"])
-    south, north = target.lat_first - target.step * (target.height - 1), target.lat_first
-    west, east = target.lon_first, target.lon_first + target.step * (target.width - 1)
+    south, north, west, east = bounds
     in_dom = ((lats >= south) & (lats <= north))[:, None] & ((lons >= west) & (lons <= east))[None, :]
-    px_km2 = (target.step * 111.32) ** 2 * np.cos(np.radians(lat))
 
     def frac(sel: np.ndarray) -> tuple[float, int]:
         n = int((ocean & sel).sum())
@@ -389,10 +409,10 @@ def coverage(values: np.ndarray, target: Target) -> Coverage:
                 observed_km2=round(float(px_km2[in_reg].sum()), 1), reference_cells=n_ref,
             )
         )
-    f_dom, _ = frac(in_dom)
+    f_dom, n_dom = frac(in_dom)
     return Coverage(
         reference="C-HARM v3.1 ocean cells (0.03°, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
-        domain_observed_fraction=round(f_dom, 4),
+        domain_observed_fraction=round(f_dom, 4), domain_reference_cells=n_dom,
         regions=out_regions,
     )
 
@@ -656,7 +676,24 @@ def run(ctx: RunContext, prev_layers: list[LayerArtifact], domain: Domain | None
                 if kept:
                     res.layers = kept
                     notes.append(f"{p.title} unavailable this run: kept the previously published layers with their observation dates.")
-    if not res_o.layers:
+    if not res_o.layers and res_v.layers:
         notes.append("OLCI unavailable this run: the VIIRS 750 m latest clear view is the fallback.")
+    elif not res_o.layers:
+        notes.append("Neither OLCI nor VIIRS could be updated this run.")
+    extra: list[LayerArtifact] = []
+    nbytes = 0
+    o_latest = next((lyr for lyr in res_o.layers if lyr.layer_id == f"{OLCI.key}_chl_latest"), None)
+    v_latest = next((lyr for lyr in res_v.layers if lyr.layer_id == f"{VIIRS.key}_chl_latest"), None)
+    if o_latest and v_latest:
+        from . import multisensor
+
+        try:
+            days = [lyr for lyr in res_o.layers if lyr.layer_id.startswith(f"{OLCI.key}_chl_2")]
+            ms, nbytes = multisensor.build(ctx, o_latest, v_latest, days, range(5, 11))
+            extra.append(ms)
+        except Exception as e:  # the members stay published; only the display is missing
+            notes.append(f"multi-sensor view not built: {e}")
+    else:
+        notes.append("multi-sensor view needs both the Sentinel-3 and the VIIRS latest clear view; not built this run.")
     latest = max([d for d in (res_o.latest_date, res_v.latest_date) if d], default=None)
-    return SatelliteResult(res_o.layers + res_v.layers, res_o.errors + res_v.errors, notes, latest, res_o.bytes_written + res_v.bytes_written)
+    return SatelliteResult(res_o.layers + res_v.layers + extra, res_o.errors + res_v.errors, notes, latest, res_o.bytes_written + res_v.bytes_written + nbytes)

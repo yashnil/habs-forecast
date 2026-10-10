@@ -328,7 +328,21 @@ def test_verification_checks_only_this_runs_layers_and_names_an_unreachable_upst
     monkeypatch.setattr(vs, "fetch", refused)
     monkeypatch.setattr(vs.time, "sleep", lambda s: None)
     rep = verify_satellite(out, live=True, per_layer=2)
-    live_rows = [r for r in rep["rows"] if r.get("value") is not None]
+    live_rows = [r for r in rep["rows"] if r.get("value") is not None and r["layer_id"] != "multisensor_chl_latest"]
     assert live_rows and all(r["source_error"].startswith("UNVERIFIABLE, ERDDAP unreachable") for r in live_rows)
     assert rep["summary"]["unverifiable_upstream_unreachable"] == len(live_rows)
     assert not rep["summary"]["all_passed"]  # still blocks publication: new data must be checked
+
+
+def test_unknown_dataset_is_an_outage_not_an_empty_week(tmp_path):
+    # staging run 38008465866: all four OLCI sectors answered 404 "Currently unknown datasetID"
+    from coastwatch_pipeline.http import FetchError as FE
+
+    gone = lambda url: (_ for _ in ()).throw(FE(f"HTTP 404 for {url} (Error {{ code=404; message=\"Not Found: Currently unknown datasetID=x\"; }})", detail='Error { code=404; message="Not Found: Currently unknown datasetID=x"; }'))  # noqa: E731
+    out = tmp_path / "v1"
+    ctx = fixture_context(out, fetcher=FixtureFetcher(overrides={r"OLCIchla.*csv0": gone}))
+    res = satellite.run(ctx, [])
+    assert any("time listing failed" in e and "unknown datasetID" in e for e in res.errors)
+    assert not any("no scenes" in e for e in res.errors)
+    assert satellite.no_matching_results(FE("HTTP 404 for u", detail="Error { message=\"Your query produced no matching results.\" }"))
+    assert satellite.no_matching_results(FE("HTTP 404 for u"))

@@ -3,8 +3,8 @@
 Status:
 - **contract defined;**
 - **proof of concept run;**
-- **not published;**
-- **the map shows the group as "Next phase", disabled, drawing nothing.**
+- **P2 update:** HF-radar observed currents are implemented on draft PR #13 against this contract, and are not in production. WCOFS stays research only; see [../p2/wcofs-evaluation.md](../p2/wcofs-evaluation.md).
+- The map shows the group as "Next phase", disabled, whenever a dataset has no currents layers.
 
 ## 1. Sources
 
@@ -22,7 +22,7 @@ A currents layer is an ordinary `LayerArtifact` with `group_id = "currents"`. It
   - `u_grid`, `v_grid`: `ValueGrid`, eastward and northward velocity in m s⁻¹, quantized over a fixed −2.5…2.5 range;
   - `depth_m`: 0 for surface;
   - `speed_max`;
-  - `arrows_url`: thinned arrows GeoJSON for static display;
+  - `arrows_url`: optional thinned arrows GeoJSON. In P2 the browser builds arrows from the u/v grids instead: about 30 KB per hour, against about 1.4 MB for an arrows file;
   - `texture`: optional `RasterImage` with u and v packed into the R and G channels, for a WebGL particle layer.
 - **`time`**:
   - WCOFS: `issued_date` (run), `valid_time` (step) and `lead_days`;

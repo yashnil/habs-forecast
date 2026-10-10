@@ -1,0 +1,2562 @@
+{
+ "method": "For each WCOFS run (t03z) and each 3-hourly forecast step that HF radar has observed:\n- sample WCOFS surface currents (0.04 deg regular grid, nearest cell) at every valid HF-radar\n  2 km cell of a region, at the same hour;\n- score vector RMSE, complex correlation (magnitude and angle), mean speeds;\n- score two baselines at the same cells and hour:\n    persistence: the HF-radar field observed at the run's issue hour (03 UTC) carried forward\n                 (optimistic: real-time radar arrives hours late); for daily means, the radar's\n                 mean over the 24 h before issue;\n    zero:        predict no current;\n- skill = 1 - RMSE_model / RMSE_baseline (positive = better than the baseline).\nAlso the lead-day-1 24-hour means (8 WCOFS steps vs 24 radar hours), which suppress the tide\nand the daily sea breeze that HF radar resolves but a 3-hourly comparison aliases.",
+ "regions": {
+  "monterey_bay": [
+   36.45,
+   37.15,
+   -122.45,
+   -121.75
+  ],
+  "gulf_of_farallones": [
+   37.3,
+   38.1,
+   -123.4,
+   -122.45
+  ],
+  "central_coast_shelf": [
+   34.4,
+   35.6,
+   -121.4,
+   -120.55
+  ],
+  "socal_bight": [
+   33.3,
+   34.45,
+   -119.9,
+   -117.8
+  ]
+ },
+ "runs": [
+  {
+   "run": "20261006 t03z",
+   "steps": [
+    {
+     "lead_h": 3,
+     "valid": "2026-10-06T06:00Z",
+     "read_s": 6.0,
+     "regions": {
+      "monterey_bay": {
+       "n": 642,
+       "obs_speed": 0.213,
+       "model_speed": 0.168,
+       "rmse": 0.206,
+       "cc": 0.288,
+       "cc_angle_deg": 0.1,
+       "rmse_zero": 0.247,
+       "skill_vs_zero": 0.167,
+       "rmse_persistence": 0.139,
+       "skill_vs_persistence": -0.479
+      },
+      "gulf_of_farallones": {
+       "n": 723,
+       "obs_speed": 0.23,
+       "model_speed": 0.222,
+       "rmse": 0.22,
+       "cc": 0.341,
+       "cc_angle_deg": 15.6,
+       "rmse_zero": 0.255,
+       "skill_vs_zero": 0.136,
+       "rmse_persistence": 0.214,
+       "skill_vs_persistence": -0.029
+      },
+      "central_coast_shelf": {
+       "n": 1980,
+       "obs_speed": 0.322,
+       "model_speed": 0.284,
+       "rmse": 0.206,
+       "cc": 0.668,
+       "cc_angle_deg": -1.5,
+       "rmse_zero": 0.357,
+       "skill_vs_zero": 0.423,
+       "rmse_persistence": 0.136,
+       "skill_vs_persistence": -0.513
+      },
+      "socal_bight": {
+       "n": 2360,
+       "obs_speed": 0.235,
+       "model_speed": 0.24,
+       "rmse": 0.233,
+       "cc": 0.438,
+       "cc_angle_deg": 6.3,
+       "rmse_zero": 0.255,
+       "skill_vs_zero": 0.087,
+       "rmse_persistence": 0.165,
+       "skill_vs_persistence": -0.413
+      }
+     }
+    },
+    {
+     "lead_h": 6,
+     "valid": "2026-10-06T09:00Z",
+     "read_s": 4.9,
+     "regions": {
+      "monterey_bay": {
+       "n": 640,
+       "obs_speed": 0.177,
+       "model_speed": 0.175,
+       "rmse": 0.178,
+       "cc": 0.329,
+       "cc_angle_deg": 32.3,
+       "rmse_zero": 0.208,
+       "skill_vs_zero": 0.145,
+       "rmse_persistence": 0.16,
+       "skill_vs_persistence": -0.114
+      },
+      "gulf_of_farallones": {
+       "n": 681,
+       "obs_speed": 0.19,
+       "model_speed": 0.196,
+       "rmse": 0.235,
+       "cc": 0.443,
+       "cc_angle_deg": 20.6,
+       "rmse_zero": 0.225,
+       "skill_vs_zero": -0.043,
+       "rmse_persistence": 0.248,
+       "skill_vs_persistence": 0.054
+      },
+      "central_coast_shelf": {
+       "n": 1974,
+       "obs_speed": 0.301,
+       "model_speed": 0.259,
+       "rmse": 0.226,
+       "cc": 0.634,
+       "cc_angle_deg": 0.8,
+       "rmse_zero": 0.343,
+       "skill_vs_zero": 0.342,
+       "rmse_persistence": 0.188,
+       "skill_vs_persistence": -0.203
+      },
+      "socal_bight": {
+       "n": 2432,
+       "obs_speed": 0.247,
+       "model_speed": 0.218,
+       "rmse": 0.228,
+       "cc": 0.473,
+       "cc_angle_deg": 13.4,
+       "rmse_zero": 0.264,
+       "skill_vs_zero": 0.136,
+       "rmse_persistence": 0.229,
+       "skill_vs_persistence": 0.002
+      }
+     }
+    },
+    {
+     "lead_h": 9,
+     "valid": "2026-10-06T12:00Z",
+     "read_s": 5.5,
+     "regions": {
+      "monterey_bay": {
+       "n": 644,
+       "obs_speed": 0.176,
+       "model_speed": 0.153,
+       "rmse": 0.167,
+       "cc": 0.361,
+       "cc_angle_deg": -5.4,
+       "rmse_zero": 0.212,
+       "skill_vs_zero": 0.21,
+       "rmse_persistence": 0.167,
+       "skill_vs_persistence": -0.002
+      },
+      "gulf_of_farallones": {
+       "n": 694,
+       "obs_speed": 0.163,
+       "model_speed": 0.216,
+       "rmse": 0.179,
+       "cc": 0.262,
+       "cc_angle_deg": 14.6,
+       "rmse_zero": 0.182,
+       "skill_vs_zero": 0.015,
+       "rmse_persistence": 0.266,
+       "skill_vs_persistence": 0.326
+      },
+      "central_coast_shelf": {
+       "n": 1957,
+       "obs_speed": 0.305,
+       "model_speed": 0.294,
+       "rmse": 0.234,
+       "cc": 0.65,
+       "cc_angle_deg": 5.6,
+       "rmse_zero": 0.351,
+       "skill_vs_zero": 0.332,
+       "rmse_persistence": 0.185,
+       "skill_vs_persistence": -0.267
+      },
+      "socal_bight": {
+       "n": 2490,
+       "obs_speed": 0.258,
+       "model_speed": 0.219,
+       "rmse": 0.221,
+       "cc": 0.444,
+       "cc_angle_deg": 1.5,
+       "rmse_zero": 0.283,
+       "skill_vs_zero": 0.218,
+       "rmse_persistence": 0.276,
+       "skill_vs_persistence": 0.199
+      }
+     }
+    },
+    {
+     "lead_h": 12,
+     "valid": "2026-10-06T15:00Z",
+     "read_s": 5.4,
+     "regions": {
+      "monterey_bay": {
+       "n": 650,
+       "obs_speed": 0.179,
+       "model_speed": 0.138,
+       "rmse": 0.169,
+       "cc": 0.327,
+       "cc_angle_deg": -6.5,
+       "rmse_zero": 0.209,
+       "skill_vs_zero": 0.19,
+       "rmse_persistence": 0.164,
+       "skill_vs_persistence": -0.034
+      },
+      "gulf_of_farallones": {
+       "n": 654,
+       "obs_speed": 0.179,
+       "model_speed": 0.229,
+       "rmse": 0.219,
+       "cc": 0.467,
+       "cc_angle_deg": -18.9,
+       "rmse_zero": 0.215,
+       "skill_vs_zero": -0.019,
+       "rmse_persistence": 0.29,
+       "skill_vs_persistence": 0.245
+      },
+      "central_coast_shelf": {
+       "n": 1971,
+       "obs_speed": 0.336,
+       "model_speed": 0.306,
+       "rmse": 0.218,
+       "cc": 0.715,
+       "cc_angle_deg": 3.7,
+       "rmse_zero": 0.372,
+       "skill_vs_zero": 0.415,
+       "rmse_persistence": 0.15,
+       "skill_vs_persistence": -0.453
+      },
+      "socal_bight": {
+       "n": 2467,
+       "obs_speed": 0.243,
+       "model_speed": 0.228,
+       "rmse": 0.219,
+       "cc": 0.383,
+       "cc_angle_deg": 0.2,
+       "rmse_zero": 0.275,
+       "skill_vs_zero": 0.203,
+       "rmse_persistence": 0.296,
+       "skill_vs_persistence": 0.258
+      }
+     }
+    },
+    {
+     "lead_h": 15,
+     "valid": "2026-10-06T18:00Z",
+     "read_s": 9.5,
+     "regions": {
+      "monterey_bay": {
+       "n": 650,
+       "obs_speed": 0.167,
+       "model_speed": 0.14,
+       "rmse": 0.195,
+       "cc": 0.216,
+       "cc_angle_deg": 33.8,
+       "rmse_zero": 0.202,
+       "skill_vs_zero": 0.034,
+       "rmse_persistence": 0.163,
+       "skill_vs_persistence": -0.197
+      },
+      "gulf_of_farallones": {
+       "n": 652,
+       "obs_speed": 0.14,
+       "model_speed": 0.131,
+       "rmse": 0.174,
+       "cc": 0.423,
+       "cc_angle_deg": -4.0,
+       "rmse_zero": 0.156,
+       "skill_vs_zero": -0.115,
+       "rmse_persistence": 0.215,
+       "skill_vs_persistence": 0.191
+      },
+      "central_coast_shelf": {
+       "n": 1975,
+       "obs_speed": 0.321,
+       "model_speed": 0.256,
+       "rmse": 0.226,
+       "cc": 0.695,
+       "cc_angle_deg": -8.2,
+       "rmse_zero": 0.355,
+       "skill_vs_zero": 0.363,
+       "rmse_persistence": 0.163,
+       "skill_vs_persistence": -0.39
+      },
+      "socal_bight": {
+       "n": 1972,
+       "obs_speed": 0.185,
+       "model_speed": 0.2,
+       "rmse": 0.226,
+       "cc": 0.336,
+       "cc_angle_deg": -15.1,
+       "rmse_zero": 0.214,
+       "skill_vs_zero": -0.057,
+       "rmse_persistence": 0.278,
+       "skill_vs_persistence": 0.185
+      }
+     }
+    },
+    {
+     "lead_h": 18,
+     "valid": "2026-10-06T21:00Z",
+     "read_s": 8.7,
+     "regions": {
+      "monterey_bay": {
+       "n": 623,
+       "obs_speed": 0.139,
+       "model_speed": 0.142,
+       "rmse": 0.202,
+       "cc": 0.199,
+       "cc_angle_deg": 62.4,
+       "rmse_zero": 0.162,
+       "skill_vs_zero": -0.246,
+       "rmse_persistence": 0.18,
+       "skill_vs_persistence": -0.124
+      },
+      "gulf_of_farallones": {
+       "n": 621,
+       "obs_speed": 0.185,
+       "model_speed": 0.186,
+       "rmse": 0.232,
+       "cc": 0.474,
+       "cc_angle_deg": 11.2,
+       "rmse_zero": 0.213,
+       "skill_vs_zero": -0.09,
+       "rmse_persistence": 0.226,
+       "skill_vs_persistence": -0.028
+      },
+      "central_coast_shelf": {
+       "n": 1975,
+       "obs_speed": 0.299,
+       "model_speed": 0.215,
+       "rmse": 0.252,
+       "cc": 0.628,
+       "cc_angle_deg": -14.9,
+       "rmse_zero": 0.331,
+       "skill_vs_zero": 0.239,
+       "rmse_persistence": 0.222,
+       "skill_vs_persistence": -0.136
+      },
+      "socal_bight": {
+       "n": 1849,
+       "obs_speed": 0.169,
+       "model_speed": 0.197,
+       "rmse": 0.266,
+       "cc": 0.275,
+       "cc_angle_deg": 7.4,
+       "rmse_zero": 0.199,
+       "skill_vs_zero": -0.335,
+       "rmse_persistence": 0.252,
+       "skill_vs_persistence": -0.055
+      }
+     }
+    },
+    {
+     "lead_h": 21,
+     "valid": "2026-10-07T00:00Z",
+     "read_s": 5.0,
+     "regions": {
+      "monterey_bay": {
+       "n": 635,
+       "obs_speed": 0.138,
+       "model_speed": 0.13,
+       "rmse": 0.194,
+       "cc": 0.182,
+       "cc_angle_deg": -0.2,
+       "rmse_zero": 0.161,
+       "skill_vs_zero": -0.208,
+       "rmse_persistence": 0.155,
+       "skill_vs_persistence": -0.258
+      },
+      "gulf_of_farallones": {
+       "n": 693,
+       "obs_speed": 0.171,
+       "model_speed": 0.151,
+       "rmse": 0.231,
+       "cc": 0.222,
+       "cc_angle_deg": -11.7,
+       "rmse_zero": 0.214,
+       "skill_vs_zero": -0.077,
+       "rmse_persistence": 0.194,
+       "skill_vs_persistence": -0.191
+      },
+      "central_coast_shelf": {
+       "n": 1970,
+       "obs_speed": 0.298,
+       "model_speed": 0.236,
+       "rmse": 0.268,
+       "cc": 0.541,
+       "cc_angle_deg": -5.4,
+       "rmse_zero": 0.339,
+       "skill_vs_zero": 0.21,
+       "rmse_persistence": 0.206,
+       "skill_vs_persistence": -0.3
+      },
+      "socal_bight": {
+       "n": 1882,
+       "obs_speed": 0.179,
+       "model_speed": 0.212,
+       "rmse": 0.263,
+       "cc": 0.422,
+       "cc_angle_deg": 0.3,
+       "rmse_zero": 0.204,
+       "skill_vs_zero": -0.287,
+       "rmse_persistence": 0.206,
+       "skill_vs_persistence": -0.272
+      }
+     }
+    },
+    {
+     "lead_h": 24,
+     "valid": "2026-10-07T03:00Z",
+     "read_s": 5.6,
+     "regions": {
+      "monterey_bay": {
+       "n": 653,
+       "obs_speed": 0.166,
+       "model_speed": 0.121,
+       "rmse": 0.206,
+       "cc": 0.174,
+       "cc_angle_deg": -11.1,
+       "rmse_zero": 0.196,
+       "skill_vs_zero": -0.051,
+       "rmse_persistence": 0.127,
+       "skill_vs_persistence": -0.62
+      },
+      "gulf_of_farallones": {
+       "n": 751,
+       "obs_speed": 0.152,
+       "model_speed": 0.139,
+       "rmse": 0.186,
+       "cc": 0.534,
+       "cc_angle_deg": -3.1,
+       "rmse_zero": 0.17,
+       "skill_vs_zero": -0.094,
+       "rmse_persistence": 0.11,
+       "skill_vs_persistence": -0.696
+      },
+      "central_coast_shelf": {
+       "n": 1998,
+       "obs_speed": 0.33,
+       "model_speed": 0.287,
+       "rmse": 0.241,
+       "cc": 0.623,
+       "cc_angle_deg": 16.0,
+       "rmse_zero": 0.365,
+       "skill_vs_zero": 0.341,
+       "rmse_persistence": 0.145,
+       "skill_vs_persistence": -0.661
+      },
+      "socal_bight": {
+       "n": 1910,
+       "obs_speed": 0.22,
+       "model_speed": 0.217,
+       "rmse": 0.26,
+       "cc": 0.526,
+       "cc_angle_deg": -6.7,
+       "rmse_zero": 0.244,
+       "skill_vs_zero": -0.067,
+       "rmse_persistence": 0.186,
+       "skill_vs_persistence": -0.401
+      }
+     }
+    },
+    {
+     "lead_h": 27,
+     "valid": "2026-10-07T06:00Z",
+     "read_s": 5.8,
+     "regions": {
+      "monterey_bay": {
+       "n": 656,
+       "obs_speed": 0.2,
+       "model_speed": 0.128,
+       "rmse": 0.217,
+       "cc": 0.22,
+       "cc_angle_deg": 67.8,
+       "rmse_zero": 0.238,
+       "skill_vs_zero": 0.088,
+       "rmse_persistence": 0.14,
+       "skill_vs_persistence": -0.55
+      },
+      "gulf_of_farallones": {
+       "n": 715,
+       "obs_speed": 0.203,
+       "model_speed": 0.169,
+       "rmse": 0.142,
+       "cc": 0.36,
+       "cc_angle_deg": -14.7,
+       "rmse_zero": 0.217,
+       "skill_vs_zero": 0.346,
+       "rmse_persistence": 0.172,
+       "skill_vs_persistence": 0.175
+      },
+      "central_coast_shelf": {
+       "n": 1981,
+       "obs_speed": 0.324,
+       "model_speed": 0.282,
+       "rmse": 0.237,
+       "cc": 0.623,
+       "cc_angle_deg": 17.3,
+       "rmse_zero": 0.352,
+       "skill_vs_zero": 0.328,
+       "rmse_persistence": 0.196,
+       "skill_vs_persistence": -0.209
+      },
+      "socal_bight": {
+       "n": 2054,
+       "obs_speed": 0.211,
+       "model_speed": 0.238,
+       "rmse": 0.269,
+       "cc": 0.453,
+       "cc_angle_deg": 3.7,
+       "rmse_zero": 0.233,
+       "skill_vs_zero": -0.154,
+       "rmse_persistence": 0.199,
+       "skill_vs_persistence": -0.355
+      }
+     }
+    },
+    {
+     "lead_h": 30,
+     "valid": "2026-10-07T09:00Z",
+     "read_s": 5.9,
+     "regions": {
+      "monterey_bay": {
+       "n": 645,
+       "obs_speed": 0.181,
+       "model_speed": 0.138,
+       "rmse": 0.202,
+       "cc": 0.033,
+       "cc_angle_deg": 17.6,
+       "rmse_zero": 0.221,
+       "skill_vs_zero": 0.088,
+       "rmse_persistence": 0.138,
+       "skill_vs_persistence": -0.456
+      },
+      "gulf_of_farallones": {
+       "n": 644,
+       "obs_speed": 0.202,
+       "model_speed": 0.185,
+       "rmse": 0.233,
+       "cc": 0.501,
+       "cc_angle_deg": -0.7,
+       "rmse_zero": 0.242,
+       "skill_vs_zero": 0.039,
+       "rmse_persistence": 0.257,
+       "skill_vs_persistence": 0.095
+      },
+      "central_coast_shelf": {
+       "n": 1991,
+       "obs_speed": 0.277,
+       "model_speed": 0.238,
+       "rmse": 0.216,
+       "cc": 0.638,
+       "cc_angle_deg": -1.6,
+       "rmse_zero": 0.306,
+       "skill_vs_zero": 0.293,
+       "rmse_persistence": 0.224,
+       "skill_vs_persistence": 0.033
+      },
+      "socal_bight": {
+       "n": 2142,
+       "obs_speed": 0.212,
+       "model_speed": 0.235,
+       "rmse": 0.268,
+       "cc": 0.482,
+       "cc_angle_deg": 20.9,
+       "rmse_zero": 0.232,
+       "skill_vs_zero": -0.155,
+       "rmse_persistence": 0.222,
+       "skill_vs_persistence": -0.207
+      }
+     }
+    },
+    {
+     "lead_h": 33,
+     "valid": "2026-10-07T12:00Z",
+     "read_s": 6.3,
+     "regions": {
+      "monterey_bay": {
+       "n": 647,
+       "obs_speed": 0.165,
+       "model_speed": 0.139,
+       "rmse": 0.211,
+       "cc": 0.152,
+       "cc_angle_deg": -116.8,
+       "rmse_zero": 0.204,
+       "skill_vs_zero": -0.035,
+       "rmse_persistence": 0.153,
+       "skill_vs_persistence": -0.384
+      },
+      "gulf_of_farallones": {
+       "n": 656,
+       "obs_speed": 0.148,
+       "model_speed": 0.13,
+       "rmse": 0.155,
+       "cc": 0.373,
+       "cc_angle_deg": 15.8,
+       "rmse_zero": 0.165,
+       "skill_vs_zero": 0.06,
+       "rmse_persistence": 0.247,
+       "skill_vs_persistence": 0.371
+      },
+      "central_coast_shelf": {
+       "n": 1956,
+       "obs_speed": 0.312,
+       "model_speed": 0.246,
+       "rmse": 0.253,
+       "cc": 0.579,
+       "cc_angle_deg": -11.0,
+       "rmse_zero": 0.345,
+       "skill_vs_zero": 0.267,
+       "rmse_persistence": 0.212,
+       "skill_vs_persistence": -0.193
+      },
+      "socal_bight": {
+       "n": 2124,
+       "obs_speed": 0.208,
+       "model_speed": 0.213,
+       "rmse": 0.26,
+       "cc": 0.332,
+       "cc_angle_deg": 3.8,
+       "rmse_zero": 0.234,
+       "skill_vs_zero": -0.11,
+       "rmse_persistence": 0.254,
+       "skill_vs_persistence": -0.02
+      }
+     }
+    },
+    {
+     "lead_h": 36,
+     "valid": "2026-10-07T15:00Z",
+     "read_s": 7.1,
+     "regions": {
+      "monterey_bay": {
+       "n": 651,
+       "obs_speed": 0.152,
+       "model_speed": 0.135,
+       "rmse": 0.201,
+       "cc": 0.018,
+       "cc_angle_deg": -105.6,
+       "rmse_zero": 0.192,
+       "skill_vs_zero": -0.047,
+       "rmse_persistence": 0.147,
+       "skill_vs_persistence": -0.37
+      },
+      "gulf_of_farallones": {
+       "n": 622,
+       "obs_speed": 0.176,
+       "model_speed": 0.188,
+       "rmse": 0.226,
+       "cc": 0.442,
+       "cc_angle_deg": -6.8,
+       "rmse_zero": 0.21,
+       "skill_vs_zero": -0.076,
+       "rmse_persistence": 0.284,
+       "skill_vs_persistence": 0.204
+      },
+      "central_coast_shelf": {
+       "n": 1986,
+       "obs_speed": 0.341,
+       "model_speed": 0.281,
+       "rmse": 0.268,
+       "cc": 0.507,
+       "cc_angle_deg": -2.4,
+       "rmse_zero": 0.372,
+       "skill_vs_zero": 0.28,
+       "rmse_persistence": 0.188,
+       "skill_vs_persistence": -0.428
+      },
+      "socal_bight": {
+       "n": 2030,
+       "obs_speed": 0.24,
+       "model_speed": 0.233,
+       "rmse": 0.262,
+       "cc": 0.312,
+       "cc_angle_deg": -32.1,
+       "rmse_zero": 0.268,
+       "skill_vs_zero": 0.022,
+       "rmse_persistence": 0.288,
+       "skill_vs_persistence": 0.091
+      }
+     }
+    },
+    {
+     "lead_h": 39,
+     "valid": "2026-10-07T18:00Z",
+     "read_s": 4.9,
+     "regions": {
+      "monterey_bay": {
+       "n": 644,
+       "obs_speed": 0.174,
+       "model_speed": 0.131,
+       "rmse": 0.236,
+       "cc": 0.317,
+       "cc_angle_deg": 93.1,
+       "rmse_zero": 0.215,
+       "skill_vs_zero": -0.098,
+       "rmse_persistence": 0.162,
+       "skill_vs_persistence": -0.462
+      },
+      "gulf_of_farallones": {
+       "n": 612,
+       "obs_speed": 0.117,
+       "model_speed": 0.091,
+       "rmse": 0.149,
+       "cc": 0.288,
+       "cc_angle_deg": 8.0,
+       "rmse_zero": 0.128,
+       "skill_vs_zero": -0.161,
+       "rmse_persistence": 0.19,
+       "skill_vs_persistence": 0.218
+      },
+      "central_coast_shelf": {
+       "n": 1981,
+       "obs_speed": 0.32,
+       "model_speed": 0.261,
+       "rmse": 0.27,
+       "cc": 0.515,
+       "cc_angle_deg": 4.6,
+       "rmse_zero": 0.351,
+       "skill_vs_zero": 0.23,
+       "rmse_persistence": 0.203,
+       "skill_vs_persistence": -0.33
+      },
+      "socal_bight": {
+       "n": 2404,
+       "obs_speed": 0.203,
+       "model_speed": 0.221,
+       "rmse": 0.289,
+       "cc": 0.336,
+       "cc_angle_deg": -26.9,
+       "rmse_zero": 0.226,
+       "skill_vs_zero": -0.28,
+       "rmse_persistence": 0.27,
+       "skill_vs_persistence": -0.071
+      }
+     }
+    },
+    {
+     "lead_h": 42,
+     "valid": "2026-10-07T21:00Z",
+     "read_s": 4.9,
+     "regions": {
+      "monterey_bay": {
+       "n": 629,
+       "obs_speed": 0.161,
+       "model_speed": 0.125,
+       "rmse": 0.245,
+       "cc": 0.168,
+       "cc_angle_deg": 88.8,
+       "rmse_zero": 0.195,
+       "skill_vs_zero": -0.258,
+       "rmse_persistence": 0.163,
+       "skill_vs_persistence": -0.508
+      },
+      "gulf_of_farallones": {
+       "n": 626,
+       "obs_speed": 0.189,
+       "model_speed": 0.193,
+       "rmse": 0.24,
+       "cc": 0.46,
+       "cc_angle_deg": 10.5,
+       "rmse_zero": 0.224,
+       "skill_vs_zero": -0.073,
+       "rmse_persistence": 0.233,
+       "skill_vs_persistence": -0.034
+      },
+      "central_coast_shelf": {
+       "n": 1983,
+       "obs_speed": 0.275,
+       "model_speed": 0.208,
+       "rmse": 0.283,
+       "cc": 0.493,
+       "cc_angle_deg": 4.7,
+       "rmse_zero": 0.31,
+       "skill_vs_zero": 0.086,
+       "rmse_persistence": 0.242,
+       "skill_vs_persistence": -0.171
+      },
+      "socal_bight": {
+       "n": 2326,
+       "obs_speed": 0.146,
+       "model_speed": 0.264,
+       "rmse": 0.317,
+       "cc": 0.349,
+       "cc_angle_deg": -21.3,
+       "rmse_zero": 0.168,
+       "skill_vs_zero": -0.889,
+       "rmse_persistence": 0.234,
+       "skill_vs_persistence": -0.355
+      }
+     }
+    },
+    {
+     "lead_h": 45,
+     "valid": "2026-10-08T00:00Z",
+     "read_s": 5.1,
+     "regions": {
+      "monterey_bay": {
+       "n": 610,
+       "obs_speed": 0.149,
+       "model_speed": 0.121,
+       "rmse": 0.225,
+       "cc": 0.129,
+       "cc_angle_deg": -100.4,
+       "rmse_zero": 0.17,
+       "skill_vs_zero": -0.326,
+       "rmse_persistence": 0.193,
+       "skill_vs_persistence": -0.17
+      },
+      "gulf_of_farallones": {
+       "n": 648,
+       "obs_speed": 0.158,
+       "model_speed": 0.158,
+       "rmse": 0.185,
+       "cc": 0.275,
+       "cc_angle_deg": 20.9,
+       "rmse_zero": 0.175,
+       "skill_vs_zero": -0.058,
+       "rmse_persistence": 0.186,
+       "skill_vs_persistence": 0.006
+      },
+      "central_coast_shelf": {
+       "n": 1960,
+       "obs_speed": 0.275,
+       "model_speed": 0.216,
+       "rmse": 0.298,
+       "cc": 0.418,
+       "cc_angle_deg": 14.5,
+       "rmse_zero": 0.311,
+       "skill_vs_zero": 0.042,
+       "rmse_persistence": 0.235,
+       "skill_vs_persistence": -0.267
+      },
+      "socal_bight": {
+       "n": 2206,
+       "obs_speed": 0.173,
+       "model_speed": 0.267,
+       "rmse": 0.341,
+       "cc": 0.285,
+       "cc_angle_deg": -11.5,
+       "rmse_zero": 0.193,
+       "skill_vs_zero": -0.767,
+       "rmse_persistence": 0.215,
+       "skill_vs_persistence": -0.584
+      }
+     }
+    },
+    {
+     "lead_h": 48,
+     "valid": "2026-10-08T03:00Z",
+     "read_s": 6.5,
+     "regions": {
+      "monterey_bay": {
+       "n": 632,
+       "obs_speed": 0.175,
+       "model_speed": 0.136,
+       "rmse": 0.248,
+       "cc": 0.126,
+       "cc_angle_deg": -165.7,
+       "rmse_zero": 0.2,
+       "skill_vs_zero": -0.242,
+       "rmse_persistence": 0.189,
+       "skill_vs_persistence": -0.313
+      },
+      "gulf_of_farallones": {
+       "n": 694,
+       "obs_speed": 0.151,
+       "model_speed": 0.145,
+       "rmse": 0.238,
+       "cc": 0.424,
+       "cc_angle_deg": 7.8,
+       "rmse_zero": 0.175,
+       "skill_vs_zero": -0.363,
+       "rmse_persistence": 0.139,
+       "skill_vs_persistence": -0.713
+      },
+      "central_coast_shelf": {
+       "n": 1961,
+       "obs_speed": 0.304,
+       "model_speed": 0.274,
+       "rmse": 0.312,
+       "cc": 0.366,
+       "cc_angle_deg": 21.7,
+       "rmse_zero": 0.332,
+       "skill_vs_zero": 0.061,
+       "rmse_persistence": 0.228,
+       "skill_vs_persistence": -0.366
+      },
+      "socal_bight": {
+       "n": 2412,
+       "obs_speed": 0.21,
+       "model_speed": 0.244,
+       "rmse": 0.37,
+       "cc": 0.161,
+       "cc_angle_deg": -6.6,
+       "rmse_zero": 0.233,
+       "skill_vs_zero": -0.589,
+       "rmse_persistence": 0.199,
+       "skill_vs_persistence": -0.864
+      }
+     }
+    },
+    {
+     "lead_h": 51,
+     "valid": "2026-10-08T06:00Z",
+     "read_s": 5.4,
+     "regions": {
+      "monterey_bay": {
+       "n": 634,
+       "obs_speed": 0.193,
+       "model_speed": 0.136,
+       "rmse": 0.269,
+       "cc": 0.314,
+       "cc_angle_deg": 158.2,
+       "rmse_zero": 0.238,
+       "skill_vs_zero": -0.131,
+       "rmse_persistence": 0.159,
+       "skill_vs_persistence": -0.695
+      },
+      "gulf_of_farallones": {
+       "n": 743,
+       "obs_speed": 0.175,
+       "model_speed": 0.129,
+       "rmse": 0.2,
+       "cc": 0.125,
+       "cc_angle_deg": 94.4,
+       "rmse_zero": 0.203,
+       "skill_vs_zero": 0.012,
+       "rmse_persistence": 0.184,
+       "skill_vs_persistence": -0.092
+      },
+      "central_coast_shelf": {
+       "n": 1975,
+       "obs_speed": 0.289,
+       "model_speed": 0.281,
+       "rmse": 0.289,
+       "cc": 0.387,
+       "cc_angle_deg": 7.8,
+       "rmse_zero": 0.309,
+       "skill_vs_zero": 0.064,
+       "rmse_persistence": 0.229,
+       "skill_vs_persistence": -0.261
+      },
+      "socal_bight": {
+       "n": 2470,
+       "obs_speed": 0.231,
+       "model_speed": 0.244,
+       "rmse": 0.374,
+       "cc": 0.167,
+       "cc_angle_deg": 33.5,
+       "rmse_zero": 0.254,
+       "skill_vs_zero": -0.471,
+       "rmse_persistence": 0.204,
+       "skill_vs_persistence": -0.834
+      }
+     }
+    },
+    {
+     "lead_h": 54,
+     "valid": "2026-10-08T09:00Z",
+     "read_s": 4.6,
+     "regions": {
+      "monterey_bay": {
+       "n": 642,
+       "obs_speed": 0.211,
+       "model_speed": 0.138,
+       "rmse": 0.266,
+       "cc": 0.361,
+       "cc_angle_deg": -178.9,
+       "rmse_zero": 0.253,
+       "skill_vs_zero": -0.052,
+       "rmse_persistence": 0.168,
+       "skill_vs_persistence": -0.588
+      },
+      "gulf_of_farallones": {
+       "n": 649,
+       "obs_speed": 0.214,
+       "model_speed": 0.181,
+       "rmse": 0.251,
+       "cc": 0.483,
+       "cc_angle_deg": -2.5,
+       "rmse_zero": 0.254,
+       "skill_vs_zero": 0.011,
+       "rmse_persistence": 0.257,
+       "skill_vs_persistence": 0.024
+      },
+      "central_coast_shelf": {
+       "n": 1959,
+       "obs_speed": 0.24,
+       "model_speed": 0.236,
+       "rmse": 0.244,
+       "cc": 0.499,
+       "cc_angle_deg": 0.9,
+       "rmse_zero": 0.263,
+       "skill_vs_zero": 0.073,
+       "rmse_persistence": 0.24,
+       "skill_vs_persistence": -0.014
+      },
+      "socal_bight": {
+       "n": 2455,
+       "obs_speed": 0.229,
+       "model_speed": 0.249,
+       "rmse": 0.373,
+       "cc": 0.238,
+       "cc_angle_deg": 49.7,
+       "rmse_zero": 0.252,
+       "skill_vs_zero": -0.482,
+       "rmse_persistence": 0.229,
+       "skill_vs_persistence": -0.631
+      }
+     }
+    },
+    {
+     "lead_h": 57,
+     "valid": "2026-10-08T12:00Z",
+     "read_s": 4.6,
+     "regions": {
+      "monterey_bay": {
+       "n": 651,
+       "obs_speed": 0.203,
+       "model_speed": 0.147,
+       "rmse": 0.273,
+       "cc": 0.419,
+       "cc_angle_deg": -144.4,
+       "rmse_zero": 0.242,
+       "skill_vs_zero": -0.129,
+       "rmse_persistence": 0.192,
+       "skill_vs_persistence": -0.423
+      },
+      "gulf_of_farallones": {
+       "n": 680,
+       "obs_speed": 0.154,
+       "model_speed": 0.16,
+       "rmse": 0.2,
+       "cc": 0.342,
+       "cc_angle_deg": -4.2,
+       "rmse_zero": 0.175,
+       "skill_vs_zero": -0.141,
+       "rmse_persistence": 0.257,
+       "skill_vs_persistence": 0.223
+      },
+      "central_coast_shelf": {
+       "n": 1920,
+       "obs_speed": 0.296,
+       "model_speed": 0.232,
+       "rmse": 0.284,
+       "cc": 0.443,
+       "cc_angle_deg": -1.2,
+       "rmse_zero": 0.33,
+       "skill_vs_zero": 0.14,
+       "rmse_persistence": 0.24,
+       "skill_vs_persistence": -0.182
+      },
+      "socal_bight": {
+       "n": 2475,
+       "obs_speed": 0.235,
+       "model_speed": 0.225,
+       "rmse": 0.351,
+       "cc": 0.28,
+       "cc_angle_deg": 22.3,
+       "rmse_zero": 0.259,
+       "skill_vs_zero": -0.355,
+       "rmse_persistence": 0.255,
+       "skill_vs_persistence": -0.375
+      }
+     }
+    },
+    {
+     "lead_h": 60,
+     "valid": "2026-10-08T15:00Z",
+     "read_s": 4.6,
+     "regions": {
+      "monterey_bay": {
+       "n": 639,
+       "obs_speed": 0.165,
+       "model_speed": 0.155,
+       "rmse": 0.285,
+       "cc": 0.448,
+       "cc_angle_deg": -158.4,
+       "rmse_zero": 0.213,
+       "skill_vs_zero": -0.339,
+       "rmse_persistence": 0.181,
+       "skill_vs_persistence": -0.577
+      },
+      "gulf_of_farallones": {
+       "n": 707,
+       "obs_speed": 0.168,
+       "model_speed": 0.235,
+       "rmse": 0.246,
+       "cc": 0.308,
+       "cc_angle_deg": 7.7,
+       "rmse_zero": 0.201,
+       "skill_vs_zero": -0.224,
+       "rmse_persistence": 0.292,
+       "skill_vs_persistence": 0.159
+      },
+      "central_coast_shelf": {
+       "n": 1989,
+       "obs_speed": 0.349,
+       "model_speed": 0.287,
+       "rmse": 0.312,
+       "cc": 0.356,
+       "cc_angle_deg": 0.3,
+       "rmse_zero": 0.372,
+       "skill_vs_zero": 0.161,
+       "rmse_persistence": 0.268,
+       "skill_vs_persistence": -0.165
+      },
+      "socal_bight": {
+       "n": 2387,
+       "obs_speed": 0.241,
+       "model_speed": 0.234,
+       "rmse": 0.343,
+       "cc": 0.145,
+       "cc_angle_deg": -11.8,
+       "rmse_zero": 0.264,
+       "skill_vs_zero": -0.3,
+       "rmse_persistence": 0.284,
+       "skill_vs_persistence": -0.209
+      }
+     }
+    },
+    {
+     "lead_h": 63,
+     "valid": "2026-10-08T18:00Z",
+     "read_s": 4.6,
+     "regions": {
+      "monterey_bay": {
+       "n": 652,
+       "obs_speed": 0.182,
+       "model_speed": 0.15,
+       "rmse": 0.294,
+       "cc": 0.419,
+       "cc_angle_deg": 143.0,
+       "rmse_zero": 0.226,
+       "skill_vs_zero": -0.302,
+       "rmse_persistence": 0.188,
+       "skill_vs_persistence": -0.564
+      },
+      "gulf_of_farallones": {
+       "n": 650,
+       "obs_speed": 0.118,
+       "model_speed": 0.146,
+       "rmse": 0.207,
+       "cc": 0.216,
+       "cc_angle_deg": 8.0,
+       "rmse_zero": 0.137,
+       "skill_vs_zero": -0.51,
+       "rmse_persistence": 0.175,
+       "skill_vs_persistence": -0.182
+      },
+      "central_coast_shelf": {
+       "n": 1966,
+       "obs_speed": 0.346,
+       "model_speed": 0.289,
+       "rmse": 0.318,
+       "cc": 0.393,
+       "cc_angle_deg": 11.4,
+       "rmse_zero": 0.371,
+       "skill_vs_zero": 0.142,
+       "rmse_persistence": 0.231,
+       "skill_vs_persistence": -0.377
+      },
+      "socal_bight": {
+       "n": 2446,
+       "obs_speed": 0.2,
+       "model_speed": 0.251,
+       "rmse": 0.345,
+       "cc": 0.201,
+       "cc_angle_deg": -1.8,
+       "rmse_zero": 0.221,
+       "skill_vs_zero": -0.56,
+       "rmse_persistence": 0.261,
+       "skill_vs_persistence": -0.321
+      }
+     }
+    },
+    {
+     "lead_h": 66,
+     "valid": "2026-10-08T21:00Z",
+     "read_s": 4.9,
+     "regions": {
+      "monterey_bay": {
+       "n": 627,
+       "obs_speed": 0.17,
+       "model_speed": 0.152,
+       "rmse": 0.274,
+       "cc": 0.452,
+       "cc_angle_deg": 124.7,
+       "rmse_zero": 0.196,
+       "skill_vs_zero": -0.4,
+       "rmse_persistence": 0.199,
+       "skill_vs_persistence": -0.377
+      },
+      "gulf_of_farallones": {
+       "n": 660,
+       "obs_speed": 0.22,
+       "model_speed": 0.22,
+       "rmse": 0.268,
+       "cc": 0.436,
+       "cc_angle_deg": 4.5,
+       "rmse_zero": 0.243,
+       "skill_vs_zero": -0.104,
+       "rmse_persistence": 0.226,
+       "skill_vs_persistence": -0.187
+      },
+      "central_coast_shelf": {
+       "n": 1966,
+       "obs_speed": 0.252,
+       "model_speed": 0.234,
+       "rmse": 0.295,
+       "cc": 0.469,
+       "cc_angle_deg": 22.2,
+       "rmse_zero": 0.276,
+       "skill_vs_zero": -0.068,
+       "rmse_persistence": 0.245,
+       "skill_vs_persistence": -0.204
+      },
+      "socal_bight": {
+       "n": 2270,
+       "obs_speed": 0.162,
+       "model_speed": 0.324,
+       "rmse": 0.416,
+       "cc": 0.118,
+       "cc_angle_deg": 46.9,
+       "rmse_zero": 0.187,
+       "skill_vs_zero": -1.226,
+       "rmse_persistence": 0.252,
+       "skill_vs_persistence": -0.655
+      }
+     }
+    },
+    {
+     "lead_h": 69,
+     "valid": "2026-10-09T00:00Z",
+     "read_s": 5.8,
+     "regions": {
+      "monterey_bay": {
+       "n": 616,
+       "obs_speed": 0.144,
+       "model_speed": 0.127,
+       "rmse": 0.275,
+       "cc": 0.345,
+       "cc_angle_deg": 174.5,
+       "rmse_zero": 0.176,
+       "skill_vs_zero": -0.56,
+       "rmse_persistence": 0.183,
+       "skill_vs_persistence": -0.503
+      },
+      "gulf_of_farallones": {
+       "n": 647,
+       "obs_speed": 0.183,
+       "model_speed": 0.208,
+       "rmse": 0.245,
+       "cc": 0.35,
+       "cc_angle_deg": 10.1,
+       "rmse_zero": 0.205,
+       "skill_vs_zero": -0.196,
+       "rmse_persistence": 0.198,
+       "skill_vs_persistence": -0.237
+      },
+      "central_coast_shelf": {
+       "n": 1958,
+       "obs_speed": 0.25,
+       "model_speed": 0.216,
+       "rmse": 0.311,
+       "cc": 0.346,
+       "cc_angle_deg": 14.0,
+       "rmse_zero": 0.278,
+       "skill_vs_zero": -0.118,
+       "rmse_persistence": 0.272,
+       "skill_vs_persistence": -0.141
+      },
+      "socal_bight": {
+       "n": 2184,
+       "obs_speed": 0.187,
+       "model_speed": 0.331,
+       "rmse": 0.462,
+       "cc": 0.131,
+       "cc_angle_deg": 105.7,
+       "rmse_zero": 0.212,
+       "skill_vs_zero": -1.179,
+       "rmse_persistence": 0.245,
+       "skill_vs_persistence": -0.884
+      }
+     }
+    },
+    {
+     "lead_h": 72,
+     "valid": "2026-10-09T03:00Z",
+     "read_s": 5.0,
+     "regions": {
+      "monterey_bay": {
+       "n": 647,
+       "obs_speed": 0.212,
+       "model_speed": 0.154,
+       "rmse": 0.318,
+       "cc": 0.148,
+       "cc_angle_deg": 179.0,
+       "rmse_zero": 0.253,
+       "skill_vs_zero": -0.256,
+       "rmse_persistence": 0.22,
+       "skill_vs_persistence": -0.448
+      },
+      "gulf_of_farallones": {
+       "n": 660,
+       "obs_speed": 0.149,
+       "model_speed": 0.186,
+       "rmse": 0.259,
+       "cc": 0.371,
+       "cc_angle_deg": 0.5,
+       "rmse_zero": 0.171,
+       "skill_vs_zero": -0.514,
+       "rmse_persistence": 0.154,
+       "skill_vs_persistence": -0.682
+      },
+      "central_coast_shelf": {
+       "n": 1957,
+       "obs_speed": 0.296,
+       "model_speed": 0.268,
+       "rmse": 0.339,
+       "cc": 0.23,
+       "cc_angle_deg": -6.9,
+       "rmse_zero": 0.324,
+       "skill_vs_zero": -0.047,
+       "rmse_persistence": 0.246,
+       "skill_vs_persistence": -0.38
+      },
+      "socal_bight": {
+       "n": 2464,
+       "obs_speed": 0.229,
+       "model_speed": 0.272,
+       "rmse": 0.473,
+       "cc": 0.135,
+       "cc_angle_deg": 174.2,
+       "rmse_zero": 0.258,
+       "skill_vs_zero": -0.833,
+       "rmse_persistence": 0.235,
+       "skill_vs_persistence": -1.008
+      }
+     }
+    }
+   ],
+   "lead_day1_daily_mean": {
+    "monterey_bay": {
+     "n": 637,
+     "obs_speed": 0.131,
+     "model_speed": 0.101,
+     "rmse": 0.193,
+     "cc": 0.121,
+     "cc_angle_deg": 134.2,
+     "rmse_zero": 0.172,
+     "skill_vs_zero": -0.123,
+     "rmse_persistence": 0.092,
+     "skill_vs_persistence": -1.106
+    },
+    "gulf_of_farallones": {
+     "n": 502,
+     "obs_speed": 0.091,
+     "model_speed": 0.068,
+     "rmse": 0.101,
+     "cc": 0.39,
+     "cc_angle_deg": 52.8,
+     "rmse_zero": 0.097,
+     "skill_vs_zero": -0.038,
+     "rmse_persistence": 0.048,
+     "skill_vs_persistence": -1.1
+    },
+    "central_coast_shelf": {
+     "n": 1952,
+     "obs_speed": 0.283,
+     "model_speed": 0.231,
+     "rmse": 0.219,
+     "cc": 0.611,
+     "cc_angle_deg": 6.0,
+     "rmse_zero": 0.314,
+     "skill_vs_zero": 0.304,
+     "rmse_persistence": 0.138,
+     "skill_vs_persistence": -0.579
+    },
+    "socal_bight": {
+     "n": 1750,
+     "obs_speed": 0.155,
+     "model_speed": 0.195,
+     "rmse": 0.245,
+     "cc": 0.424,
+     "cc_angle_deg": -10.1,
+     "rmse_zero": 0.171,
+     "skill_vs_zero": -0.432,
+     "rmse_persistence": 0.156,
+     "skill_vs_persistence": -0.571
+    }
+   }
+  },
+  {
+   "run": "20261007 t03z",
+   "steps": [
+    {
+     "lead_h": 3,
+     "valid": "2026-10-07T06:00Z",
+     "read_s": 5.0,
+     "regions": {
+      "monterey_bay": {
+       "n": 693,
+       "obs_speed": 0.205,
+       "model_speed": 0.125,
+       "rmse": 0.2,
+       "cc": 0.242,
+       "cc_angle_deg": 60.9,
+       "rmse_zero": 0.241,
+       "skill_vs_zero": 0.17,
+       "rmse_persistence": 0.131,
+       "skill_vs_persistence": -0.53
+      },
+      "gulf_of_farallones": {
+       "n": 750,
+       "obs_speed": 0.201,
+       "model_speed": 0.172,
+       "rmse": 0.174,
+       "cc": 0.281,
+       "cc_angle_deg": -13.2,
+       "rmse_zero": 0.214,
+       "skill_vs_zero": 0.189,
+       "rmse_persistence": 0.213,
+       "skill_vs_persistence": 0.186
+      },
+      "central_coast_shelf": {
+       "n": 1989,
+       "obs_speed": 0.324,
+       "model_speed": 0.279,
+       "rmse": 0.238,
+       "cc": 0.597,
+       "cc_angle_deg": 15.1,
+       "rmse_zero": 0.352,
+       "skill_vs_zero": 0.324,
+       "rmse_persistence": 0.138,
+       "skill_vs_persistence": -0.721
+      },
+      "socal_bight": {
+       "n": 2051,
+       "obs_speed": 0.21,
+       "model_speed": 0.211,
+       "rmse": 0.241,
+       "cc": 0.435,
+       "cc_angle_deg": 2.9,
+       "rmse_zero": 0.231,
+       "skill_vs_zero": -0.043,
+       "rmse_persistence": 0.175,
+       "skill_vs_persistence": -0.377
+      }
+     }
+    },
+    {
+     "lead_h": 6,
+     "valid": "2026-10-07T09:00Z",
+     "read_s": 5.4,
+     "regions": {
+      "monterey_bay": {
+       "n": 679,
+       "obs_speed": 0.184,
+       "model_speed": 0.14,
+       "rmse": 0.183,
+       "cc": 0.118,
+       "cc_angle_deg": -8.7,
+       "rmse_zero": 0.223,
+       "skill_vs_zero": 0.177,
+       "rmse_persistence": 0.138,
+       "skill_vs_persistence": -0.327
+      },
+      "gulf_of_farallones": {
+       "n": 652,
+       "obs_speed": 0.204,
+       "model_speed": 0.176,
+       "rmse": 0.271,
+       "cc": 0.431,
+       "cc_angle_deg": -4.6,
+       "rmse_zero": 0.244,
+       "skill_vs_zero": -0.111,
+       "rmse_persistence": 0.302,
+       "skill_vs_persistence": 0.101
+      },
+      "central_coast_shelf": {
+       "n": 2000,
+       "obs_speed": 0.277,
+       "model_speed": 0.221,
+       "rmse": 0.213,
+       "cc": 0.651,
+       "cc_angle_deg": -3.4,
+       "rmse_zero": 0.306,
+       "skill_vs_zero": 0.303,
+       "rmse_persistence": 0.185,
+       "skill_vs_persistence": -0.154
+      },
+      "socal_bight": {
+       "n": 2122,
+       "obs_speed": 0.203,
+       "model_speed": 0.195,
+       "rmse": 0.238,
+       "cc": 0.484,
+       "cc_angle_deg": 21.1,
+       "rmse_zero": 0.223,
+       "skill_vs_zero": -0.069,
+       "rmse_persistence": 0.216,
+       "skill_vs_persistence": -0.101
+      }
+     }
+    },
+    {
+     "lead_h": 9,
+     "valid": "2026-10-07T12:00Z",
+     "read_s": 5.4,
+     "regions": {
+      "monterey_bay": {
+       "n": 691,
+       "obs_speed": 0.17,
+       "model_speed": 0.137,
+       "rmse": 0.192,
+       "cc": 0.223,
+       "cc_angle_deg": -79.7,
+       "rmse_zero": 0.208,
+       "skill_vs_zero": 0.076,
+       "rmse_persistence": 0.134,
+       "skill_vs_persistence": -0.435
+      },
+      "gulf_of_farallones": {
+       "n": 680,
+       "obs_speed": 0.15,
+       "model_speed": 0.147,
+       "rmse": 0.188,
+       "cc": 0.226,
+       "cc_angle_deg": -23.8,
+       "rmse_zero": 0.168,
+       "skill_vs_zero": -0.12,
+       "rmse_persistence": 0.25,
+       "skill_vs_persistence": 0.246
+      },
+      "central_coast_shelf": {
+       "n": 1964,
+       "obs_speed": 0.312,
+       "model_speed": 0.224,
+       "rmse": 0.243,
+       "cc": 0.608,
+       "cc_angle_deg": -8.1,
+       "rmse_zero": 0.346,
+       "skill_vs_zero": 0.297,
+       "rmse_persistence": 0.189,
+       "skill_vs_persistence": -0.284
+      },
+      "socal_bight": {
+       "n": 2105,
+       "obs_speed": 0.204,
+       "model_speed": 0.177,
+       "rmse": 0.228,
+       "cc": 0.372,
+       "cc_angle_deg": -0.6,
+       "rmse_zero": 0.23,
+       "skill_vs_zero": 0.011,
+       "rmse_persistence": 0.249,
+       "skill_vs_persistence": 0.087
+      }
+     }
+    },
+    {
+     "lead_h": 12,
+     "valid": "2026-10-07T15:00Z",
+     "read_s": 5.4,
+     "regions": {
+      "monterey_bay": {
+       "n": 693,
+       "obs_speed": 0.157,
+       "model_speed": 0.131,
+       "rmse": 0.183,
+       "cc": 0.081,
+       "cc_angle_deg": -8.5,
+       "rmse_zero": 0.196,
+       "skill_vs_zero": 0.067,
+       "rmse_persistence": 0.143,
+       "skill_vs_persistence": -0.283
+      },
+      "gulf_of_farallones": {
+       "n": 664,
+       "obs_speed": 0.177,
+       "model_speed": 0.188,
+       "rmse": 0.259,
+       "cc": 0.361,
+       "cc_angle_deg": -0.2,
+       "rmse_zero": 0.212,
+       "skill_vs_zero": -0.222,
+       "rmse_persistence": 0.237,
+       "skill_vs_persistence": -0.091
+      },
+      "central_coast_shelf": {
+       "n": 1995,
+       "obs_speed": 0.342,
+       "model_speed": 0.266,
+       "rmse": 0.251,
+       "cc": 0.535,
+       "cc_angle_deg": 0.7,
+       "rmse_zero": 0.372,
+       "skill_vs_zero": 0.324,
+       "rmse_persistence": 0.155,
+       "skill_vs_persistence": -0.625
+      },
+      "socal_bight": {
+       "n": 2025,
+       "obs_speed": 0.24,
+       "model_speed": 0.21,
+       "rmse": 0.235,
+       "cc": 0.378,
+       "cc_angle_deg": -30.9,
+       "rmse_zero": 0.268,
+       "skill_vs_zero": 0.125,
+       "rmse_persistence": 0.275,
+       "skill_vs_persistence": 0.146
+      }
+     }
+    },
+    {
+     "lead_h": 15,
+     "valid": "2026-10-07T18:00Z",
+     "read_s": 5.1,
+     "regions": {
+      "monterey_bay": {
+       "n": 675,
+       "obs_speed": 0.171,
+       "model_speed": 0.124,
+       "rmse": 0.222,
+       "cc": 0.265,
+       "cc_angle_deg": 83.7,
+       "rmse_zero": 0.211,
+       "skill_vs_zero": -0.054,
+       "rmse_persistence": 0.158,
+       "skill_vs_persistence": -0.408
+      },
+      "gulf_of_farallones": {
+       "n": 631,
+       "obs_speed": 0.119,
+       "model_speed": 0.09,
+       "rmse": 0.16,
+       "cc": 0.23,
+       "cc_angle_deg": -12.0,
+       "rmse_zero": 0.131,
+       "skill_vs_zero": -0.223,
+       "rmse_persistence": 0.172,
+       "skill_vs_persistence": 0.069
+      },
+      "central_coast_shelf": {
+       "n": 1992,
+       "obs_speed": 0.321,
+       "model_speed": 0.249,
+       "rmse": 0.254,
+       "cc": 0.523,
+       "cc_angle_deg": 4.7,
+       "rmse_zero": 0.352,
+       "skill_vs_zero": 0.277,
+       "rmse_persistence": 0.152,
+       "skill_vs_persistence": -0.669
+      },
+      "socal_bight": {
+       "n": 2069,
+       "obs_speed": 0.209,
+       "model_speed": 0.214,
+       "rmse": 0.246,
+       "cc": 0.396,
+       "cc_angle_deg": -27.9,
+       "rmse_zero": 0.231,
+       "skill_vs_zero": -0.064,
+       "rmse_persistence": 0.264,
+       "skill_vs_persistence": 0.069
+      }
+     }
+    },
+    {
+     "lead_h": 18,
+     "valid": "2026-10-07T21:00Z",
+     "read_s": 5.4,
+     "regions": {
+      "monterey_bay": {
+       "n": 662,
+       "obs_speed": 0.158,
+       "model_speed": 0.129,
+       "rmse": 0.246,
+       "cc": 0.221,
+       "cc_angle_deg": 72.4,
+       "rmse_zero": 0.193,
+       "skill_vs_zero": -0.277,
+       "rmse_persistence": 0.153,
+       "skill_vs_persistence": -0.614
+      },
+      "gulf_of_farallones": {
+       "n": 673,
+       "obs_speed": 0.187,
+       "model_speed": 0.2,
+       "rmse": 0.249,
+       "cc": 0.364,
+       "cc_angle_deg": 9.1,
+       "rmse_zero": 0.224,
+       "skill_vs_zero": -0.113,
+       "rmse_persistence": 0.28,
+       "skill_vs_persistence": 0.109
+      },
+      "central_coast_shelf": {
+       "n": 1994,
+       "obs_speed": 0.275,
+       "model_speed": 0.205,
+       "rmse": 0.267,
+       "cc": 0.499,
+       "cc_angle_deg": 4.8,
+       "rmse_zero": 0.31,
+       "skill_vs_zero": 0.139,
+       "rmse_persistence": 0.199,
+       "skill_vs_persistence": -0.344
+      },
+      "socal_bight": {
+       "n": 1983,
+       "obs_speed": 0.152,
+       "model_speed": 0.235,
+       "rmse": 0.274,
+       "cc": 0.359,
+       "cc_angle_deg": -9.5,
+       "rmse_zero": 0.176,
+       "skill_vs_zero": -0.554,
+       "rmse_persistence": 0.246,
+       "skill_vs_persistence": -0.112
+      }
+     }
+    },
+    {
+     "lead_h": 21,
+     "valid": "2026-10-08T00:00Z",
+     "read_s": 4.5,
+     "regions": {
+      "monterey_bay": {
+       "n": 638,
+       "obs_speed": 0.148,
+       "model_speed": 0.132,
+       "rmse": 0.227,
+       "cc": 0.142,
+       "cc_angle_deg": -82.4,
+       "rmse_zero": 0.168,
+       "skill_vs_zero": -0.351,
+       "rmse_persistence": 0.161,
+       "skill_vs_persistence": -0.414
+      },
+      "gulf_of_farallones": {
+       "n": 665,
+       "obs_speed": 0.158,
+       "model_speed": 0.157,
+       "rmse": 0.173,
+       "cc": 0.256,
+       "cc_angle_deg": 19.4,
+       "rmse_zero": 0.176,
+       "skill_vs_zero": 0.017,
+       "rmse_persistence": 0.202,
+       "skill_vs_persistence": 0.142
+      },
+      "central_coast_shelf": {
+       "n": 1966,
+       "obs_speed": 0.275,
+       "model_speed": 0.228,
+       "rmse": 0.287,
+       "cc": 0.413,
+       "cc_angle_deg": 12.8,
+       "rmse_zero": 0.311,
+       "skill_vs_zero": 0.078,
+       "rmse_persistence": 0.2,
+       "skill_vs_persistence": -0.433
+      },
+      "socal_bight": {
+       "n": 1840,
+       "obs_speed": 0.168,
+       "model_speed": 0.242,
+       "rmse": 0.298,
+       "cc": 0.322,
+       "cc_angle_deg": -16.3,
+       "rmse_zero": 0.189,
+       "skill_vs_zero": -0.578,
+       "rmse_persistence": 0.223,
+       "skill_vs_persistence": -0.339
+      }
+     }
+    },
+    {
+     "lead_h": 24,
+     "valid": "2026-10-08T03:00Z",
+     "read_s": 5.0,
+     "regions": {
+      "monterey_bay": {
+       "n": 664,
+       "obs_speed": 0.171,
+       "model_speed": 0.145,
+       "rmse": 0.247,
+       "cc": 0.155,
+       "cc_angle_deg": -161.7,
+       "rmse_zero": 0.197,
+       "skill_vs_zero": -0.254,
+       "rmse_persistence": 0.15,
+       "skill_vs_persistence": -0.642
+      },
+      "gulf_of_farallones": {
+       "n": 742,
+       "obs_speed": 0.151,
+       "model_speed": 0.147,
+       "rmse": 0.217,
+       "cc": 0.534,
+       "cc_angle_deg": 6.4,
+       "rmse_zero": 0.176,
+       "skill_vs_zero": -0.234,
+       "rmse_persistence": 0.097,
+       "skill_vs_persistence": -1.23
+      },
+      "central_coast_shelf": {
+       "n": 1966,
+       "obs_speed": 0.304,
+       "model_speed": 0.287,
+       "rmse": 0.294,
+       "cc": 0.385,
+       "cc_angle_deg": 22.9,
+       "rmse_zero": 0.333,
+       "skill_vs_zero": 0.118,
+       "rmse_persistence": 0.188,
+       "skill_vs_persistence": -0.558
+      },
+      "socal_bight": {
+       "n": 2072,
+       "obs_speed": 0.198,
+       "model_speed": 0.222,
+       "rmse": 0.321,
+       "cc": 0.203,
+       "cc_angle_deg": -24.4,
+       "rmse_zero": 0.221,
+       "skill_vs_zero": -0.454,
+       "rmse_persistence": 0.198,
+       "skill_vs_persistence": -0.621
+      }
+     }
+    },
+    {
+     "lead_h": 27,
+     "valid": "2026-10-08T06:00Z",
+     "read_s": 5.1,
+     "regions": {
+      "monterey_bay": {
+       "n": 675,
+       "obs_speed": 0.193,
+       "model_speed": 0.16,
+       "rmse": 0.253,
+       "cc": 0.248,
+       "cc_angle_deg": 141.1,
+       "rmse_zero": 0.238,
+       "skill_vs_zero": -0.062,
+       "rmse_persistence": 0.137,
+       "skill_vs_persistence": -0.847
+      },
+      "gulf_of_farallones": {
+       "n": 768,
+       "obs_speed": 0.174,
+       "model_speed": 0.13,
+       "rmse": 0.2,
+       "cc": 0.085,
+       "cc_angle_deg": 43.6,
+       "rmse_zero": 0.203,
+       "skill_vs_zero": 0.017,
+       "rmse_persistence": 0.198,
+       "skill_vs_persistence": -0.007
+      },
+      "central_coast_shelf": {
+       "n": 1982,
+       "obs_speed": 0.289,
+       "model_speed": 0.285,
+       "rmse": 0.269,
+       "cc": 0.41,
+       "cc_angle_deg": 4.1,
+       "rmse_zero": 0.31,
+       "skill_vs_zero": 0.131,
+       "rmse_persistence": 0.195,
+       "skill_vs_persistence": -0.383
+      },
+      "socal_bight": {
+       "n": 2128,
+       "obs_speed": 0.219,
+       "model_speed": 0.209,
+       "rmse": 0.313,
+       "cc": 0.231,
+       "cc_angle_deg": 5.5,
+       "rmse_zero": 0.239,
+       "skill_vs_zero": -0.308,
+       "rmse_persistence": 0.212,
+       "skill_vs_persistence": -0.474
+      }
+     }
+    },
+    {
+     "lead_h": 30,
+     "valid": "2026-10-08T09:00Z",
+     "read_s": 5.4,
+     "regions": {
+      "monterey_bay": {
+       "n": 673,
+       "obs_speed": 0.205,
+       "model_speed": 0.165,
+       "rmse": 0.252,
+       "cc": 0.328,
+       "cc_angle_deg": 177.0,
+       "rmse_zero": 0.245,
+       "skill_vs_zero": -0.029,
+       "rmse_persistence": 0.155,
+       "skill_vs_persistence": -0.625
+      },
+      "gulf_of_farallones": {
+       "n": 692,
+       "obs_speed": 0.214,
+       "model_speed": 0.17,
+       "rmse": 0.247,
+       "cc": 0.466,
+       "cc_angle_deg": -6.6,
+       "rmse_zero": 0.253,
+       "skill_vs_zero": 0.025,
+       "rmse_persistence": 0.306,
+       "skill_vs_persistence": 0.194
+      },
+      "central_coast_shelf": {
+       "n": 1966,
+       "obs_speed": 0.24,
+       "model_speed": 0.23,
+       "rmse": 0.222,
+       "cc": 0.522,
+       "cc_angle_deg": -2.2,
+       "rmse_zero": 0.264,
+       "skill_vs_zero": 0.158,
+       "rmse_persistence": 0.216,
+       "skill_vs_persistence": -0.03
+      },
+      "socal_bight": {
+       "n": 2121,
+       "obs_speed": 0.219,
+       "model_speed": 0.216,
+       "rmse": 0.318,
+       "cc": 0.262,
+       "cc_angle_deg": 34.9,
+       "rmse_zero": 0.239,
+       "skill_vs_zero": -0.331,
+       "rmse_persistence": 0.238,
+       "skill_vs_persistence": -0.334
+      }
+     }
+    },
+    {
+     "lead_h": 33,
+     "valid": "2026-10-08T12:00Z",
+     "read_s": 5.1,
+     "regions": {
+      "monterey_bay": {
+       "n": 684,
+       "obs_speed": 0.2,
+       "model_speed": 0.162,
+       "rmse": 0.278,
+       "cc": 0.404,
+       "cc_angle_deg": -156.3,
+       "rmse_zero": 0.238,
+       "skill_vs_zero": -0.167,
+       "rmse_persistence": 0.171,
+       "skill_vs_persistence": -0.62
+      },
+      "gulf_of_farallones": {
+       "n": 693,
+       "obs_speed": 0.154,
+       "model_speed": 0.119,
+       "rmse": 0.194,
+       "cc": 0.293,
+       "cc_angle_deg": -7.3,
+       "rmse_zero": 0.175,
+       "skill_vs_zero": -0.107,
+       "rmse_persistence": 0.264,
+       "skill_vs_persistence": 0.265
+      },
+      "central_coast_shelf": {
+       "n": 1927,
+       "obs_speed": 0.297,
+       "model_speed": 0.231,
+       "rmse": 0.251,
+       "cc": 0.489,
+       "cc_angle_deg": -5.4,
+       "rmse_zero": 0.331,
+       "skill_vs_zero": 0.24,
+       "rmse_persistence": 0.21,
+       "skill_vs_persistence": -0.196
+      },
+      "socal_bight": {
+       "n": 2147,
+       "obs_speed": 0.229,
+       "model_speed": 0.215,
+       "rmse": 0.295,
+       "cc": 0.369,
+       "cc_angle_deg": 11.0,
+       "rmse_zero": 0.253,
+       "skill_vs_zero": -0.165,
+       "rmse_persistence": 0.25,
+       "skill_vs_persistence": -0.18
+      }
+     }
+    },
+    {
+     "lead_h": 36,
+     "valid": "2026-10-08T15:00Z",
+     "read_s": 5.4,
+     "regions": {
+      "monterey_bay": {
+       "n": 676,
+       "obs_speed": 0.162,
+       "model_speed": 0.156,
+       "rmse": 0.288,
+       "cc": 0.451,
+       "cc_angle_deg": -166.5,
+       "rmse_zero": 0.21,
+       "skill_vs_zero": -0.372,
+       "rmse_persistence": 0.156,
+       "skill_vs_persistence": -0.844
+      },
+      "gulf_of_farallones": {
+       "n": 755,
+       "obs_speed": 0.166,
+       "model_speed": 0.193,
+       "rmse": 0.23,
+       "cc": 0.302,
+       "cc_angle_deg": 6.9,
+       "rmse_zero": 0.199,
+       "skill_vs_zero": -0.155,
+       "rmse_persistence": 0.245,
+       "skill_vs_persistence": 0.061
+      },
+      "central_coast_shelf": {
+       "n": 2002,
+       "obs_speed": 0.348,
+       "model_speed": 0.291,
+       "rmse": 0.271,
+       "cc": 0.427,
+       "cc_angle_deg": -0.4,
+       "rmse_zero": 0.372,
+       "skill_vs_zero": 0.272,
+       "rmse_persistence": 0.259,
+       "skill_vs_persistence": -0.045
+      },
+      "socal_bight": {
+       "n": 2064,
+       "obs_speed": 0.24,
+       "model_speed": 0.232,
+       "rmse": 0.294,
+       "cc": 0.241,
+       "cc_angle_deg": -20.8,
+       "rmse_zero": 0.261,
+       "skill_vs_zero": -0.125,
+       "rmse_persistence": 0.277,
+       "skill_vs_persistence": -0.061
+      }
+     }
+    },
+    {
+     "lead_h": 39,
+     "valid": "2026-10-08T18:00Z",
+     "read_s": 4.5,
+     "regions": {
+      "monterey_bay": {
+       "n": 697,
+       "obs_speed": 0.184,
+       "model_speed": 0.144,
+       "rmse": 0.293,
+       "cc": 0.423,
+       "cc_angle_deg": 143.8,
+       "rmse_zero": 0.226,
+       "skill_vs_zero": -0.296,
+       "rmse_persistence": 0.185,
+       "skill_vs_persistence": -0.585
+      },
+      "gulf_of_farallones": {
+       "n": 667,
+       "obs_speed": 0.119,
+       "model_speed": 0.119,
+       "rmse": 0.192,
+       "cc": 0.28,
+       "cc_angle_deg": 4.8,
+       "rmse_zero": 0.142,
+       "skill_vs_zero": -0.351,
+       "rmse_persistence": 0.14,
+       "skill_vs_persistence": -0.368
+      },
+      "central_coast_shelf": {
+       "n": 1971,
+       "obs_speed": 0.345,
+       "model_speed": 0.293,
+       "rmse": 0.274,
+       "cc": 0.459,
+       "cc_angle_deg": 8.4,
+       "rmse_zero": 0.371,
+       "skill_vs_zero": 0.262,
+       "rmse_persistence": 0.219,
+       "skill_vs_persistence": -0.249
+      },
+      "socal_bight": {
+       "n": 2121,
+       "obs_speed": 0.202,
+       "model_speed": 0.236,
+       "rmse": 0.291,
+       "cc": 0.276,
+       "cc_angle_deg": -4.1,
+       "rmse_zero": 0.223,
+       "skill_vs_zero": -0.306,
+       "rmse_persistence": 0.271,
+       "skill_vs_persistence": -0.076
+      }
+     }
+    },
+    {
+     "lead_h": 42,
+     "valid": "2026-10-08T21:00Z",
+     "read_s": 5.2,
+     "regions": {
+      "monterey_bay": {
+       "n": 667,
+       "obs_speed": 0.17,
+       "model_speed": 0.141,
+       "rmse": 0.267,
+       "cc": 0.436,
+       "cc_angle_deg": 123.3,
+       "rmse_zero": 0.197,
+       "skill_vs_zero": -0.356,
+       "rmse_persistence": 0.186,
+       "skill_vs_persistence": -0.439
+      },
+      "gulf_of_farallones": {
+       "n": 664,
+       "obs_speed": 0.221,
+       "model_speed": 0.203,
+       "rmse": 0.255,
+       "cc": 0.424,
+       "cc_angle_deg": 11.6,
+       "rmse_zero": 0.243,
+       "skill_vs_zero": -0.049,
+       "rmse_persistence": 0.28,
+       "skill_vs_persistence": 0.088
+      },
+      "central_coast_shelf": {
+       "n": 1977,
+       "obs_speed": 0.253,
+       "model_speed": 0.229,
+       "rmse": 0.249,
+       "cc": 0.506,
+       "cc_angle_deg": 15.0,
+       "rmse_zero": 0.277,
+       "skill_vs_zero": 0.102,
+       "rmse_persistence": 0.228,
+       "skill_vs_persistence": -0.091
+      },
+      "socal_bight": {
+       "n": 1924,
+       "obs_speed": 0.153,
+       "model_speed": 0.283,
+       "rmse": 0.341,
+       "cc": 0.22,
+       "cc_angle_deg": 11.4,
+       "rmse_zero": 0.175,
+       "skill_vs_zero": -0.946,
+       "rmse_persistence": 0.283,
+       "skill_vs_persistence": -0.204
+      }
+     }
+    },
+    {
+     "lead_h": 45,
+     "valid": "2026-10-09T00:00Z",
+     "read_s": 5.0,
+     "regions": {
+      "monterey_bay": {
+       "n": 647,
+       "obs_speed": 0.14,
+       "model_speed": 0.122,
+       "rmse": 0.26,
+       "cc": 0.278,
+       "cc_angle_deg": 173.1,
+       "rmse_zero": 0.172,
+       "skill_vs_zero": -0.513,
+       "rmse_persistence": 0.157,
+       "skill_vs_persistence": -0.654
+      },
+      "gulf_of_farallones": {
+       "n": 650,
+       "obs_speed": 0.186,
+       "model_speed": 0.188,
+       "rmse": 0.225,
+       "cc": 0.31,
+       "cc_angle_deg": 17.5,
+       "rmse_zero": 0.208,
+       "skill_vs_zero": -0.08,
+       "rmse_persistence": 0.24,
+       "skill_vs_persistence": 0.065
+      },
+      "central_coast_shelf": {
+       "n": 1964,
+       "obs_speed": 0.251,
+       "model_speed": 0.217,
+       "rmse": 0.276,
+       "cc": 0.385,
+       "cc_angle_deg": 5.9,
+       "rmse_zero": 0.279,
+       "skill_vs_zero": 0.011,
+       "rmse_persistence": 0.252,
+       "skill_vs_persistence": -0.095
+      },
+      "socal_bight": {
+       "n": 1798,
+       "obs_speed": 0.171,
+       "model_speed": 0.278,
+       "rmse": 0.366,
+       "cc": 0.115,
+       "cc_angle_deg": 35.1,
+       "rmse_zero": 0.192,
+       "skill_vs_zero": -0.904,
+       "rmse_persistence": 0.274,
+       "skill_vs_persistence": -0.333
+      }
+     }
+    },
+    {
+     "lead_h": 48,
+     "valid": "2026-10-09T03:00Z",
+     "read_s": 4.9,
+     "regions": {
+      "monterey_bay": {
+       "n": 692,
+       "obs_speed": 0.211,
+       "model_speed": 0.169,
+       "rmse": 0.315,
+       "cc": 0.178,
+       "cc_angle_deg": 164.6,
+       "rmse_zero": 0.25,
+       "skill_vs_zero": -0.258,
+       "rmse_persistence": 0.184,
+       "skill_vs_persistence": -0.711
+      },
+      "gulf_of_farallones": {
+       "n": 684,
+       "obs_speed": 0.146,
+       "model_speed": 0.155,
+       "rmse": 0.237,
+       "cc": 0.426,
+       "cc_angle_deg": -4.1,
+       "rmse_zero": 0.168,
+       "skill_vs_zero": -0.413,
+       "rmse_persistence": 0.115,
+       "skill_vs_persistence": -1.061
+      },
+      "central_coast_shelf": {
+       "n": 1963,
+       "obs_speed": 0.295,
+       "model_speed": 0.275,
+       "rmse": 0.3,
+       "cc": 0.311,
+       "cc_angle_deg": -7.5,
+       "rmse_zero": 0.324,
+       "skill_vs_zero": 0.074,
+       "rmse_persistence": 0.232,
+       "skill_vs_persistence": -0.293
+      },
+      "socal_bight": {
+       "n": 2147,
+       "obs_speed": 0.209,
+       "model_speed": 0.222,
+       "rmse": 0.379,
+       "cc": 0.08,
+       "cc_angle_deg": -132.3,
+       "rmse_zero": 0.235,
+       "skill_vs_zero": -0.612,
+       "rmse_persistence": 0.238,
+       "skill_vs_persistence": -0.592
+      }
+     }
+    },
+    {
+     "lead_h": 51,
+     "valid": "2026-10-09T06:00Z",
+     "read_s": 5.7,
+     "regions": {
+      "monterey_bay": {
+       "n": 686,
+       "obs_speed": 0.23,
+       "model_speed": 0.204,
+       "rmse": 0.319,
+       "cc": 0.345,
+       "cc_angle_deg": 137.3,
+       "rmse_zero": 0.279,
+       "skill_vs_zero": -0.143,
+       "rmse_persistence": 0.178,
+       "skill_vs_persistence": -0.796
+      },
+      "gulf_of_farallones": {
+       "n": 684,
+       "obs_speed": 0.136,
+       "model_speed": 0.142,
+       "rmse": 0.205,
+       "cc": 0.351,
+       "cc_angle_deg": -10.0,
+       "rmse_zero": 0.155,
+       "skill_vs_zero": -0.32,
+       "rmse_persistence": 0.126,
+       "skill_vs_persistence": -0.624
+      },
+      "central_coast_shelf": {
+       "n": 2003,
+       "obs_speed": 0.275,
+       "model_speed": 0.304,
+       "rmse": 0.283,
+       "cc": 0.361,
+       "cc_angle_deg": -14.6,
+       "rmse_zero": 0.296,
+       "skill_vs_zero": 0.043,
+       "rmse_persistence": 0.217,
+       "skill_vs_persistence": -0.309
+      },
+      "socal_bight": {
+       "n": 2159,
+       "obs_speed": 0.253,
+       "model_speed": 0.224,
+       "rmse": 0.381,
+       "cc": 0.079,
+       "cc_angle_deg": -91.3,
+       "rmse_zero": 0.275,
+       "skill_vs_zero": -0.386,
+       "rmse_persistence": 0.253,
+       "skill_vs_persistence": -0.509
+      }
+     }
+    },
+    {
+     "lead_h": 54,
+     "valid": "2026-10-09T09:00Z",
+     "read_s": 4.9,
+     "regions": {
+      "monterey_bay": {
+       "n": 682,
+       "obs_speed": 0.22,
+       "model_speed": 0.209,
+       "rmse": 0.31,
+       "cc": 0.378,
+       "cc_angle_deg": 143.0,
+       "rmse_zero": 0.271,
+       "skill_vs_zero": -0.146,
+       "rmse_persistence": 0.179,
+       "skill_vs_persistence": -0.73
+      },
+      "gulf_of_farallones": {
+       "n": 625,
+       "obs_speed": 0.182,
+       "model_speed": 0.168,
+       "rmse": 0.225,
+       "cc": 0.429,
+       "cc_angle_deg": -4.5,
+       "rmse_zero": 0.214,
+       "skill_vs_zero": -0.051,
+       "rmse_persistence": 0.275,
+       "skill_vs_persistence": 0.183
+      },
+      "central_coast_shelf": {
+       "n": 1950,
+       "obs_speed": 0.221,
+       "model_speed": 0.256,
+       "rmse": 0.238,
+       "cc": 0.482,
+       "cc_angle_deg": 11.1,
+       "rmse_zero": 0.247,
+       "skill_vs_zero": 0.035,
+       "rmse_persistence": 0.223,
+       "skill_vs_persistence": -0.068
+      },
+      "socal_bight": {
+       "n": 2190,
+       "obs_speed": 0.237,
+       "model_speed": 0.249,
+       "rmse": 0.401,
+       "cc": 0.125,
+       "cc_angle_deg": 83.3,
+       "rmse_zero": 0.264,
+       "skill_vs_zero": -0.521,
+       "rmse_persistence": 0.273,
+       "skill_vs_persistence": -0.468
+      }
+     }
+    },
+    {
+     "lead_h": 57,
+     "valid": "2026-10-09T12:00Z",
+     "read_s": 5.3,
+     "regions": {
+      "monterey_bay": {
+       "n": 672,
+       "obs_speed": 0.185,
+       "model_speed": 0.181,
+       "rmse": 0.31,
+       "cc": 0.519,
+       "cc_angle_deg": 174.0,
+       "rmse_zero": 0.236,
+       "skill_vs_zero": -0.312,
+       "rmse_persistence": 0.189,
+       "skill_vs_persistence": -0.638
+      },
+      "gulf_of_farallones": {
+       "n": 684,
+       "obs_speed": 0.137,
+       "model_speed": 0.143,
+       "rmse": 0.212,
+       "cc": 0.455,
+       "cc_angle_deg": 0.2,
+       "rmse_zero": 0.165,
+       "skill_vs_zero": -0.286,
+       "rmse_persistence": 0.271,
+       "skill_vs_persistence": 0.216
+      },
+      "central_coast_shelf": {
+       "n": 1951,
+       "obs_speed": 0.26,
+       "model_speed": 0.242,
+       "rmse": 0.257,
+       "cc": 0.45,
+       "cc_angle_deg": 13.8,
+       "rmse_zero": 0.297,
+       "skill_vs_zero": 0.134,
+       "rmse_persistence": 0.227,
+       "skill_vs_persistence": -0.136
+      },
+      "socal_bight": {
+       "n": 2181,
+       "obs_speed": 0.243,
+       "model_speed": 0.251,
+       "rmse": 0.394,
+       "cc": 0.159,
+       "cc_angle_deg": 80.5,
+       "rmse_zero": 0.271,
+       "skill_vs_zero": -0.454,
+       "rmse_persistence": 0.304,
+       "skill_vs_persistence": -0.297
+      }
+     }
+    },
+    {
+     "lead_h": 60,
+     "valid": "2026-10-09T15:00Z",
+     "read_s": 4.7,
+     "regions": {
+      "monterey_bay": {
+       "n": 685,
+       "obs_speed": 0.192,
+       "model_speed": 0.15,
+       "rmse": 0.322,
+       "cc": 0.359,
+       "cc_angle_deg": 168.6,
+       "rmse_zero": 0.258,
+       "skill_vs_zero": -0.25,
+       "rmse_persistence": 0.208,
+       "skill_vs_persistence": -0.55
+      },
+      "gulf_of_farallones": {
+       "n": 658,
+       "obs_speed": 0.177,
+       "model_speed": 0.203,
+       "rmse": 0.213,
+       "cc": 0.348,
+       "cc_angle_deg": 14.5,
+       "rmse_zero": 0.201,
+       "skill_vs_zero": -0.06,
+       "rmse_persistence": 0.247,
+       "skill_vs_persistence": 0.139
+      },
+      "central_coast_shelf": {
+       "n": 1991,
+       "obs_speed": 0.31,
+       "model_speed": 0.305,
+       "rmse": 0.277,
+       "cc": 0.384,
+       "cc_angle_deg": 11.3,
+       "rmse_zero": 0.341,
+       "skill_vs_zero": 0.188,
+       "rmse_persistence": 0.23,
+       "skill_vs_persistence": -0.204
+      },
+      "socal_bight": {
+       "n": 2078,
+       "obs_speed": 0.243,
+       "model_speed": 0.248,
+       "rmse": 0.339,
+       "cc": 0.079,
+       "cc_angle_deg": 37.4,
+       "rmse_zero": 0.267,
+       "skill_vs_zero": -0.269,
+       "rmse_persistence": 0.298,
+       "skill_vs_persistence": -0.139
+      }
+     }
+    }
+   ],
+   "lead_day1_daily_mean": {
+    "monterey_bay": {
+     "n": 642,
+     "obs_speed": 0.135,
+     "model_speed": 0.105,
+     "rmse": 0.232,
+     "cc": 0.417,
+     "cc_angle_deg": 167.1,
+     "rmse_zero": 0.18,
+     "skill_vs_zero": -0.291,
+     "rmse_persistence": 0.092,
+     "skill_vs_persistence": -1.536
+    },
+    "gulf_of_farallones": {
+     "n": 563,
+     "obs_speed": 0.1,
+     "model_speed": 0.067,
+     "rmse": 0.123,
+     "cc": 0.127,
+     "cc_angle_deg": 20.5,
+     "rmse_zero": 0.107,
+     "skill_vs_zero": -0.15,
+     "rmse_persistence": 0.06,
+     "skill_vs_persistence": -1.052
+    },
+    "central_coast_shelf": {
+     "n": 1945,
+     "obs_speed": 0.266,
+     "model_speed": 0.236,
+     "rmse": 0.217,
+     "cc": 0.521,
+     "cc_angle_deg": 8.3,
+     "rmse_zero": 0.29,
+     "skill_vs_zero": 0.252,
+     "rmse_persistence": 0.169,
+     "skill_vs_persistence": -0.286
+    },
+    "socal_bight": {
+     "n": 2144,
+     "obs_speed": 0.15,
+     "model_speed": 0.209,
+     "rmse": 0.296,
+     "cc": 0.255,
+     "cc_angle_deg": 3.5,
+     "rmse_zero": 0.168,
+     "skill_vs_zero": -0.762,
+     "rmse_persistence": 0.127,
+     "skill_vs_persistence": -1.322
+    }
+   }
+  }
+ ],
+ "seconds": 306
+}

@@ -29,12 +29,10 @@ const mapSource = (page: Page, id: string) =>
   }, id);
 
 test.describe("layer groups", () => {
-  test("HAB forecast, satellite and a clearly not-yet-live currents group", async ({ page }) => {
+  test("HAB forecast first; one group drawn at a time (currents only when chosen)", async ({ page }) => {
     await open(page, OK);
     await expect(page.getByTestId("group-forecast")).toHaveAttribute("aria-selected", "true");
-    const currents = page.getByTestId("group-currents");
-    await expect(currents).toBeDisabled();
-    await expect(currents).toContainText("Next phase");
+    // a dataset without currents keeps that tab disabled: tests/e2e/p2-currents.spec.ts
     expect(await mapSource(page, "currents")).toBeNull();
     // the C-HARM raster is opaque and nearest-sampled, over a hatched no-value sea
     const paint = await page.evaluate(() => {
@@ -102,8 +100,10 @@ test.describe("satellite observations", () => {
     const v = row.value >= 10 ? row.value.toFixed(0) : Number(row.value).toPrecision(2);
     await expect(near.getByTestId("satellite-near-value")).toHaveText(v);
     await expect(near.getByTestId("satellite-near-date")).toHaveText(fmt(row.observed_date));
-    await expect(near).toContainText("native 300 m");
-    await expect(near).not.toContainText("nearest clear pixel");
+    // with the multi-sensor layer published, the inspector names the sensor shown there;
+    // every OLCI date in the fixture is within 2 days of VIIRS's, so Sentinel-3 is shown
+    await expect(near.getByTestId("satellite-near-sensor")).toContainText("Sentinel-3 OLCI 300 m");
+    await expect(near).not.toContainText("Nearest clear pixel");
   });
 });
 

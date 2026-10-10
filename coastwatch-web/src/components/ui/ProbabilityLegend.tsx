@@ -1,5 +1,5 @@
 import type { Palette } from "@/generated/schema";
-import { AGE_COLOURS, gradientCss } from "@/lib/palette";
+import { AGE_COLOURS, gradientCss, SENSOR_COLOURS } from "@/lib/palette";
 
 export { AGE_COLOURS, colorAt, gradientCss } from "@/lib/palette";
 
@@ -80,6 +80,23 @@ export function AgeLegend({ maxDays }: { maxDays: number }) {
           </span>
         ))}
       </div>
+    </figure>
+  );
+}
+
+export function SensorLegend({ labels }: { labels: string[] }) {
+  return (
+    <figure data-testid="sensor-legend" className="space-y-1" aria-label="Legend: which sensor each pixel comes from">
+      <figcaption className="text-[13px] font-medium text-ink">Sensor shown at each pixel</figcaption>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {labels.map((l, i) => (
+          <span key={l} className="inline-flex items-center gap-1.5 text-[12px] text-ink-2">
+            <span className="block h-2.5 w-5 rounded-[2px]" style={{ background: SENSOR_COLOURS[i] }} aria-hidden />
+            {l}
+          </span>
+        ))}
+      </div>
+      <NoValueSwatch label="Neither sensor observed it in 7 days" />
     </figure>
   );
 }

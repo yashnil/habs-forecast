@@ -189,8 +189,11 @@ def test_http_retries_transient_403_but_not_404(monkeypatch):
         status = 200
         headers = {"Content-Type": "text/csv"}
 
-        def read(self):
-            return b"ok"
+        def __init__(self):
+            self.left = [b"ok"]
+
+        def read(self, n=-1):
+            return self.left.pop() if self.left else b""
 
         def __enter__(self):
             return self
@@ -296,7 +299,7 @@ def test_check_published_validates_every_tile_before_publishing(tmp_path):
     out = tmp_path / "v1"
     m = run_pipeline(fixture_context(out))
     rep = check_published(str(out))
-    expected = sum((t.n_tiles or 0) for lyr in m.layers for t in [lyr.tiles, lyr.composite.age_tiles if lyr.composite else None] if t and t.relative)
+    expected = sum((t.n_tiles or 0) for lyr in m.layers for _, t in lyr.tile_layers() if t.relative)
     assert rep["ok"] and expected > 0 and rep["tiles_validated"] == expected
     # one missing tile and one corrupt tile are both caught
     tiles = sorted((out / "satellite").rglob("*.png"))
@@ -305,3 +308,38 @@ def test_check_published_validates_every_tile_before_publishing(tmp_path):
     rep = check_published(str(out))
     assert not rep["ok"]
     assert any("!= n_tiles" in p for p in rep["problems"]) and any("bad tiles" in p for p in rep["problems"])
+
+
+def test_a_trickling_download_is_cut_off_and_retried(monkeypatch):
+    import urllib.request
+
+    from coastwatch_pipeline import http
+
+    t = {"now": 0.0}
+    monkeypatch.setattr(http.time, "monotonic", lambda: t["now"])
+    monkeypatch.setattr(http.time, "sleep", lambda s: None)
+
+    class Slow:
+        status = 200
+        headers = {"Content-Type": "application/x-netcdf"}
+
+        def read(self, n=-1):
+            t["now"] += 100.0  # each chunk takes 100 s: under the socket timeout, never done
+            return b"x" * 10
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    calls = {"n": 0}
+
+    def opener(req, timeout, context):
+        calls["n"] += 1
+        return Slow()
+
+    monkeypatch.setattr(urllib.request, "urlopen", opener)
+    with pytest.raises(http.FetchError, match="Failed after 2 attempts"):
+        http.fetch("https://example.test/slow", retries=1, max_seconds=240)
+    assert calls["n"] == 2

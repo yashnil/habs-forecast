@@ -29,7 +29,9 @@ def tls_context() -> ssl.SSLContext:
 
 
 class FetchError(RuntimeError):
-    pass
+    def __init__(self, message: str, detail: str | None = None):
+        super().__init__(message)
+        self.detail = detail  # start of the server's error message, when it sent one
 
 
 @dataclass
@@ -43,6 +45,19 @@ class Response:
 Fetcher = Callable[[str], Response]
 
 
+def _read_within(r, deadline: float, url: str) -> bytes:
+    """Read the whole body, but give up at `deadline` (monotonic seconds): the socket
+    timeout applies per read, so a server trickling bytes could otherwise stall a run."""
+    chunks = []
+    while True:
+        if time.monotonic() > deadline:
+            raise TimeoutError(f"download exceeded its time limit: {url}")
+        b = r.read(1 << 16)
+        if not b:
+            return b"".join(chunks)
+        chunks.append(b)
+
+
 def fetch(
     url: str,
     *,
@@ -52,30 +67,44 @@ def fetch(
     method: str = "GET",
     headers: dict[str, str] | None = None,
     data: bytes | None = None,
+    max_seconds: float = 240.0,
 ) -> Response:
     last: Exception | None = None
     for attempt in range(retries + 1):
         req = urllib.request.Request(url, data=data, method=method, headers={"User-Agent": USER_AGENT, **(headers or {})})
         try:
+            deadline = time.monotonic() + max_seconds
             with urllib.request.urlopen(req, timeout=timeout, context=tls_context()) as r:
                 return Response(
                     url=url,
                     status=r.status,
                     content_type=r.headers.get("Content-Type", ""),
-                    body=r.read() if method != "HEAD" else b"",
+                    body=_read_within(r, deadline, url) if method != "HEAD" else b"",
                 )
         except urllib.error.HTTPError as e:
             # 4xx other than 429 will not get better by retrying, except 403: NOAA's
             # ERDDAP intermittently answers 403 to cloud runners (seen in staging run
             # 37964087582, 2026-10-09) and serves the same request moments later
             if 400 <= e.code < 500 and e.code not in (403, 429):
-                raise FetchError(f"HTTP {e.code} for {url}") from e
+                # keep the start of the server's message: ERDDAP answers 404 both for "no
+                # matching results" (an answer) and "unknown datasetID" (an outage)
+                try:
+                    msg = " ".join(e.read(400).decode("utf-8", "replace").split())
+                except Exception:
+                    msg = ""
+                raise FetchError(f"HTTP {e.code} for {url}" + (f" ({msg[:240]})" if msg else ""), detail=msg[:240] or None) from e
             last = e
         except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
             last = e
         if attempt < retries:
             time.sleep(backoff * (2**attempt))
     raise FetchError(f"Failed after {retries + 1} attempts: {url} ({last})")
+
+
+def _log(msg: str) -> None:
+    import sys
+
+    print(f"[http] {msg}", file=sys.stderr, flush=True)
 
 
 class CircuitBreaker:
@@ -106,9 +135,13 @@ class CircuitBreaker:
         k = self.key(url)
         if k in self.opened:
             raise FetchError(f"circuit open for {k} after {self.threshold} consecutive failures this run (last: {self.opened[k]}): {url}")
+        t0 = time.monotonic()
         try:
             r = self.inner(url)
+            if time.monotonic() - t0 > 20:
+                _log(f"slow fetch {time.monotonic() - t0:.0f}s {len(r.body) / 1e6:.1f} MB {url[:160]}")
         except FetchError as e:
+            _log(f"fetch failed after {time.monotonic() - t0:.0f}s: {str(e)[:200]}")
             if "HTTP 404" in str(e):  # a definite answer, not an outage
                 raise
             self.failures[k] = self.failures.get(k, 0) + 1

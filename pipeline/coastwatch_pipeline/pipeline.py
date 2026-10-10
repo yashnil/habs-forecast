@@ -28,9 +28,9 @@ from .models import (
     SourceStatus,
 )
 from .publish.files import write_bytes, write_json
-from .sources import charm, fisheries, gibs, observations, official, port_intel, ports, satellite
+from .sources import charm, currents, fisheries, gibs, observations, official, port_intel, ports, satellite
 
-ALL_SOURCES = ("charm", "gibs_chl", "satellite_chl", "cdfw_ports", "official", "port_intel", "calhabmap", "foss_landings")
+ALL_SOURCES = ("charm", "gibs_chl", "satellite_chl", "hf_radar", "cdfw_ports", "official", "port_intel", "calhabmap", "foss_landings")
 
 OFFICIAL_FRESHNESS = FreshnessPolicy(
     basis="reviewed_date",
@@ -81,6 +81,20 @@ def _prev_layers(prev: Manifest | None, source_id: str) -> list[LayerArtifact]:
     return [lyr for lyr in prev.layers if lyr.provenance.source_id == source_id]
 
 
+_T0: list[float] = []
+
+
+def _progress(msg: str) -> None:
+    """Progress on stderr (CI logs show where a run spends its time); stdout stays the summary."""
+    import sys
+    import time
+
+    now = time.monotonic()
+    if not _T0:
+        _T0.append(now)
+    print(f"[cwp +{now - _T0[0]:6.1f}s] {msg}", file=sys.stderr, flush=True)
+
+
 def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manifest:
     ctx.out_dir.mkdir(parents=True, exist_ok=True)
     prev = load_previous(ctx.out_dir)
@@ -91,6 +105,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
 
     # ---- C-HARM
     if "charm" in only:
+        _progress(f"charm: start")
         res = charm.run(ctx)
         prev_s = _prev_status(prev, charm.SOURCE_ID)
         if res.layers:
@@ -130,6 +145,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
 
     # ---- GIBS satellite chlorophyll
     if "gibs_chl" in only:
+        _progress(f"gibs_chl: start")
         g = gibs.run(ctx)
         prev_s = _prev_status(prev, gibs.SOURCE_ID)
         if g.layers:
@@ -158,6 +174,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     # ---- high-resolution satellite chlorophyll (OLCI 300 m, VIIRS 750 m fallback)
     sat_title = "Satellite chlorophyll-a: Sentinel-3 OLCI 300 m (VIIRS 750 m fallback)"
     if "satellite_chl" in only:
+        _progress(f"satellite_chl: start")
         prev_sat = _prev_layers(prev, satellite.SOURCE_ID)
         sres = satellite.run(ctx, prev_sat)
         prev_s = _prev_status(prev, satellite.SOURCE_ID)
@@ -185,8 +202,39 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
         layers.extend(_prev_layers(prev, satellite.SOURCE_ID))
         _carry(statuses, prev, satellite.SOURCE_ID)
 
+    # ---- observed surface currents (HF radar 2 km, hourly + 24 h mean)
+    cur_title = "Observed surface currents: HF radar 2 km (HFRNet), hourly and 24-hour mean"
+    if "hf_radar" in only:
+        _progress(f"hf_radar: start")
+        prev_cur = _prev_layers(prev, currents.SOURCE_ID)
+        cres = currents.run(ctx, prev_cur)
+        prev_s = _prev_status(prev, currents.SOURCE_ID)
+        if cres.layers:
+            layers.extend(cres.layers)
+            statuses.append(
+                SourceStatus(
+                    source_id=currents.SOURCE_ID,
+                    title=cur_title,
+                    product_class="observation",
+                    last_attempt_at=ctx.now_iso,
+                    last_success_at=ctx.now_iso,
+                    outcome="partial" if cres.errors else "updated",
+                    error="; ".join(cres.errors)[:800] or None,
+                    notes=cres.notes[:40],
+                    latest_valid_date=cres.latest_time[:10] if cres.latest_time else None,
+                    freshness=currents.FRESHNESS,
+                )
+            )
+        else:
+            layers.extend(prev_cur)
+            statuses.append(_failed(ctx, currents.SOURCE_ID, cur_title, "observation", currents.FRESHNESS, prev_s, cres.errors + cres.notes))
+    else:
+        layers.extend(_prev_layers(prev, currents.SOURCE_ID))
+        _carry(statuses, prev, currents.SOURCE_ID)
+
     # ---- CDFW ports
     if "cdfw_ports" in only:
+        _progress(f"cdfw_ports: start")
         pr = ports.run(ctx)
         prev_s = _prev_status(prev, ports.SOURCE_ID)
         port_policy = _ports_freshness()
@@ -215,6 +263,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     official_url = prev.official_url if prev else None
     official_ds: OfficialDataset | None = _load(ctx, official_url, OfficialDataset)
     if "official" in only:
+        _progress(f"official: start")
         res = official.run(ctx)
         prev_s = _prev_status(prev, official.SOURCE_ID)
         if res.dataset:
@@ -245,6 +294,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     # ---- port intelligence (depends on the C-HARM layers, ports and official notices above)
     port_intel_url = prev.port_intel_url if prev else None
     if "port_intel" in only:
+        _progress(f"port_intel: start")
         ports_coll = _load(ctx, ports_url, PortsCollection)
         pi = port_intel.run(ctx, layers, ports_coll, official_ds)
         prev_s = _prev_status(prev, port_intel.SOURCE_ID)
@@ -275,6 +325,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     # ---- measured observations (CalHABMAP); uses ports and the C-HARM layers above
     observations_url = prev.observations_url if prev else None
     if "calhabmap" in only:
+        _progress(f"calhabmap: start")
         prev_obs = _load(ctx, observations_url, ObservationDataset)
         ob = observations.run(ctx, _load(ctx, ports_url, PortsCollection), layers, prev_obs)
         prev_s = _prev_status(prev, observations.SOURCE_ID)
@@ -304,6 +355,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     # ---- historical fisheries exposure (FOSS + BLS CPI); refreshed weekly
     fisheries_url = prev.fisheries_url if prev else None
     if "foss_landings" in only:
+        _progress(f"foss_landings: start")
         prev_s = _prev_status(prev, fisheries.SOURCE_ID)
         title = "Historical fisheries exposure (NOAA FOSS landings, BLS CPI-U)"
         prev_fish = _load(ctx, fisheries_url, FisheriesDataset)
@@ -411,9 +463,8 @@ def referenced_prefixes(m: Manifest | None) -> set[str]:
     """Directories a manifest references as a whole: tile pyramids and chunked grids."""
     out: set[str] = set()
     for lyr in m.layers if m else []:
-        tiles = [lyr.tiles] + ([lyr.composite.age_tiles] if lyr.composite and lyr.composite.age_tiles else [])
-        for t in tiles:
-            if t and t.relative:
+        for _, t in lyr.tile_layers():
+            if t.relative:
                 out.add(t.url_template.split("{z}")[0])
         grids = [lyr.grid] + ([lyr.composite.age_grid] if lyr.composite else [])
         for g in grids:
@@ -432,6 +483,10 @@ def referenced_paths(m: Manifest | None) -> set[str]:
             out.add(lyr.image.url)
         if lyr.grid and not lyr.grid.chunks:
             out.add(lyr.grid.url)
+        if lyr.vectors:
+            out |= {lyr.vectors.u_grid.url, lyr.vectors.v_grid.url}
+            if lyr.vectors.arrows_url:
+                out.add(lyr.vectors.arrows_url)
     for rel in (m.ports_url, m.official_url, m.port_intel_url, m.observations_url, m.fisheries_url):
         if rel:
             out.add(rel)
@@ -441,10 +496,10 @@ def referenced_paths(m: Manifest | None) -> set[str]:
 def prune(out_dir: Path, manifest: Manifest, previous: Manifest | None) -> None:
     """Keep files referenced by the new manifest and by the previous one (clients and CDN
     caches may still hold the previous manifest for a few minutes); delete everything
-    else the pipeline owns. Never touches files outside charm/, satellite/ and the hashed JSON/GeoJSON artifacts."""
+    else the pipeline owns. Never touches files outside charm/, satellite/, currents/ and the hashed JSON/GeoJSON artifacts."""
     keep = referenced_paths(manifest) | referenced_paths(previous)
     prefixes = tuple(referenced_prefixes(manifest) | referenced_prefixes(previous))
-    for root in ("charm", "satellite"):
+    for root in ("charm", "satellite", "currents"):
         base = out_dir / root
         if not base.exists():
             continue

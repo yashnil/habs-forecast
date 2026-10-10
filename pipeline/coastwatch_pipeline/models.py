@@ -182,6 +182,7 @@ class Coverage(_Model):
 
     reference: str = Field(description="What the fractions are a share of")
     domain_observed_fraction: float = Field(ge=0, le=1)
+    domain_reference_cells: int | None = None
     # explicit title: generated TypeScript names types by title, and "Regions" is the ports' type
     regions: list[RegionCoverage] = Field(title="Coverage Regions")
 
@@ -210,6 +211,64 @@ class CompositeInfo(_Model):
     age_histogram: list[AgeBin]
     age_grid: ValueGrid = Field(description="Age in whole days at each cell (raw code = days)")
     age_tiles: TileLayer | None = None
+
+
+class SensorMember(_Model):
+    """One sensor contributing to a multi-sensor display, drawn in `order` (0 = on top)."""
+
+    order: int
+    layer_id: str = Field(description="The member's own latest-clear-view layer (values, ages, tiles)")
+    label: str
+    native_resolution_m: float
+
+
+class SensorCoverage(_Model):
+    """Share of reference ocean cells observed by each sensor alone and together."""
+
+    region_id: str = Field(description="'domain' for the whole layer domain")
+    label: str
+    reference_cells: int
+    primary_fraction: float = Field(ge=0, le=1, description="Observed by the primary sensor (Sentinel-3 OLCI)")
+    secondary_fraction: float = Field(ge=0, le=1, description="Observed by the secondary sensor (VIIRS)")
+    combined_fraction: float = Field(ge=0, le=1, description="Observed by either sensor")
+    secondary_only_fraction: float = Field(ge=0, le=1, description="Observed only by the secondary sensor")
+
+
+class SensorAgreement(_Model):
+    """Same-day agreement between the two sensors where both observed a cell."""
+
+    region_id: str
+    label: str
+    n_cells: int
+    dates: list[str] = Field(title="Agreement Dates")
+    median_log10_ratio: float | None = Field(None, description="Median of log10(primary / secondary); 0.1 = primary 26% higher")
+    rmsd_log10: float | None = None
+    pearson_r_log10: float | None = None
+
+
+class SensorShown(_Model):
+    """How much of the display each sensor supplies, and how old those pixels are."""
+
+    order: int
+    pixels: int = Field(description="Pixels of the 300 m lattice showing this sensor")
+    median_age_days: float | None = None
+    max_age_days: int | None = None
+
+
+class MultiSensorInfo(_Model):
+    """A display that shows, at each pixel, one sensor's own published observation. No values
+    are averaged, blended or resampled; each member keeps its native grid, values and dates."""
+
+    reference_date: str
+    rule: str
+    prefer_primary_within_days: int = Field(description="Primary wins unless the secondary observation is newer by more than this many days")
+    members: list[SensorMember]
+    sensor_tiles: TileLayer = Field(description="Which sensor is shown at each pixel (categorical)")
+    age_tiles: TileLayer = Field(description="Age in days of the observation shown at each pixel")
+    coverage_comparison: list[SensorCoverage]
+    shown: list[SensorShown] = Field(default_factory=list, title="Sensor Shown")
+    agreement_method: str
+    agreement: list[SensorAgreement] = Field(title="Sensor Agreement")
 
 
 class VectorField(_Model):
@@ -251,6 +310,16 @@ class LayerArtifact(_Model):
     coverage: Coverage | None = None
     composite: CompositeInfo | None = None
     vectors: VectorField | None = None
+    multisensor: MultiSensorInfo | None = None
+
+    def tile_layers(self) -> list[tuple[str, TileLayer]]:
+        """Every tile pyramid this layer references, with a kind name (for prune and checks)."""
+        out = [("tiles", self.tiles)]
+        if self.composite and self.composite.age_tiles:
+            out.append(("age_tiles", self.composite.age_tiles))
+        if self.multisensor:
+            out += [("sensor_tiles", self.multisensor.sensor_tiles), ("age_tiles", self.multisensor.age_tiles)]
+        return [(k, t) for k, t in out if t is not None]
 
 
 class ForecastRun(_Model):

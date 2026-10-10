@@ -67,6 +67,20 @@ def render_tiles(
     """Write {z}/{x}/{y}.png under out_dir for every tile intersecting `bounds`
     (west, south, east, north) that has at least one valid pixel. `to_index` maps
     values to palette indices (0 = transparent); `colours` is the palette."""
+    return render_stack([(values, src, to_index)], bounds, zooms, colours, out_dir)
+
+
+def render_stack(
+    layers: list[tuple[np.ndarray, SourceGrid, Callable[[np.ndarray], np.ndarray]]],
+    bounds: tuple[float, float, float, float],
+    zooms: range,
+    colours: list[tuple[int, int, int]],
+    out_dir: Path,
+) -> TileSet:
+    """Like render_tiles for several grids drawn top to bottom: each tile pixel takes the
+    first layer with a non-transparent index at that pixel, each layer sampled on its own
+    lattice (nearest cell). Grids keep their native cell edges; nothing is resampled
+    between them."""
     west, south, east, north = bounds
     pal = [c for rgb in colours for c in rgb] + [0, 0, 0] * (256 - len(colours))
     ts = TileSet()
@@ -75,17 +89,24 @@ def render_tiles(
         y0, y1 = int(lat_to_y(north, z) // TILE), int(lat_to_y(south, z) // TILE)
         px = (np.arange(x0 * TILE, (x1 + 1) * TILE) + 0.5)
         lons = x_to_lon(px, z)
-        _, cols = src.cell_index(np.full_like(lons, src.lat_first), lons)
+        cols = [src.cell_index(np.full_like(lons, src.lat_first), lons)[1] for _, src, _ in layers]
         for ty in range(y0, y1 + 1):
             py = np.arange(ty * TILE, (ty + 1) * TILE) + 0.5
             lats = y_to_lat(py, z)
-            rows, _ = src.cell_index(lats, np.full_like(lats, src.lon_first))
-            ok = (rows[:, None] >= 0) & (cols[None, :] >= 0)
-            if not ok.any():
-                continue
-            strip = np.full(ok.shape, np.nan)
-            strip[ok] = values[np.broadcast_to(rows[:, None], ok.shape)[ok], np.broadcast_to(cols[None, :], ok.shape)[ok]]
-            idx = to_index(strip)
+            idx: np.ndarray | None = None
+            for (values, src, to_index), cl in zip(layers, cols):
+                rows, _ = src.cell_index(lats, np.full_like(lats, src.lon_first))
+                ok = (rows[:, None] >= 0) & (cl[None, :] >= 0)
+                strip = np.full(ok.shape, np.nan)
+                if ok.any():
+                    strip[ok] = values[np.broadcast_to(rows[:, None], ok.shape)[ok], np.broadcast_to(cl[None, :], ok.shape)[ok]]
+                li = to_index(strip).astype(np.uint8)
+                if idx is None:
+                    idx = li
+                else:
+                    gap = idx == 0
+                    idx[gap] = li[gap]
+            assert idx is not None
             for i, tx in enumerate(range(x0, x1 + 1)):
                 tile = idx[:, i * TILE : (i + 1) * TILE]
                 if not tile.any():

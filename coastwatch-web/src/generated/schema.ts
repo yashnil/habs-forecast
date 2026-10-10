@@ -145,6 +145,8 @@ export type ReferenceDate = string;
 export type WindowDays = number;
 
 export type DomainObservedFraction = number;
+
+export type DomainReferenceCells = number | null;
 /**
  * What the fractions are a share of
  */
@@ -208,11 +210,98 @@ export type Url1 = string;
 export type Width1 = number;
 
 export type LayerId = string;
+
+export type AgreementDates = string[];
+
+export type Label1 = string;
+/**
+ * Median of log10(primary / secondary); 0.1 = primary 26% higher
+ */
+
+export type MedianLog10Ratio = number | null;
+
+export type NCells = number;
+
+export type PearsonRLog10 = number | null;
+
+export type RegionId1 = string;
+
+export type RmsdLog10 = number | null;
+
+export type SensorAgreement = SensorAgreement1[];
+
+export type AgreementMethod = string;
+/**
+ * Observed by either sensor
+ */
+
+export type CombinedFraction = number;
+
+export type Label2 = string;
+/**
+ * Observed by the primary sensor (Sentinel-3 OLCI)
+ */
+
+export type PrimaryFraction = number;
+
+export type ReferenceCells1 = number;
+/**
+ * 'domain' for the whole layer domain
+ */
+
+export type RegionId2 = string;
+/**
+ * Observed by the secondary sensor (VIIRS)
+ */
+
+export type SecondaryFraction = number;
+/**
+ * Observed only by the secondary sensor
+ */
+
+export type SecondaryOnlyFraction = number;
+
+export type CoverageComparison = SensorCoverage[];
+
+export type Label3 = string;
+/**
+ * The member's own latest-clear-view layer (values, ages, tiles)
+ */
+
+export type LayerId1 = string;
+
+export type NativeResolutionM = number;
+
+export type Order = number;
+
+export type Members = SensorMember[];
+/**
+ * Primary wins unless the secondary observation is newer by more than this many days
+ */
+
+export type PreferPrimaryWithinDays = number;
+
+export type ReferenceDate1 = string;
+
+export type Rule = string;
+
+export type MaxAgeDays = number | null;
+
+export type MedianAgeDays = number | null;
+
+export type Order1 = number;
+/**
+ * Pixels of the 300 m lattice showing this sensor
+ */
+
+export type Pixels = number;
+
+export type SensorShown = SensorShown1[];
 /**
  * Approximate size of one source cell
  */
 
-export type NativeResolutionM = number | null;
+export type NativeResolutionM1 = number | null;
 /**
  * @minItems 2
  * @maxItems 2
@@ -289,7 +378,7 @@ export type Passed = boolean;
 
 export type Checks = QCCheck[];
 
-export type NCells = number;
+export type NCells1 = number;
 
 export type NValid = number;
 
@@ -436,7 +525,8 @@ export interface LayerArtifact {
   group_id: GroupId1;
   image?: RasterImage | null;
   layer_id: LayerId;
-  native_resolution_m?: NativeResolutionM;
+  multisensor?: MultiSensorInfo | null;
+  native_resolution_m?: NativeResolutionM1;
   palette?: Palette | null;
   platforms?: Platforms1;
   product_class: ProductClass;
@@ -536,6 +626,7 @@ export interface CompositeDay {
 
 export interface Coverage {
   domain_observed_fraction: DomainObservedFraction;
+  domain_reference_cells?: DomainReferenceCells;
   reference: Reference;
   regions: CoverageRegions;
 }
@@ -594,6 +685,105 @@ export interface RasterImage {
   url: Url1;
   width: Width1;
 }
+/**
+ * A display that shows, at each pixel, one sensor's own published observation. No values
+ * are averaged, blended or resampled; each member keeps its native grid, values and dates.
+ */
+
+export interface MultiSensorInfo {
+  age_tiles: TileLayer1;
+  agreement: SensorAgreement;
+  agreement_method: AgreementMethod;
+  coverage_comparison: CoverageComparison;
+  members: Members;
+  prefer_primary_within_days: PreferPrimaryWithinDays;
+  reference_date: ReferenceDate1;
+  rule: Rule;
+  sensor_tiles: TileLayer2;
+  shown?: SensorShown;
+}
+/**
+ * Pre-rendered XYZ (Web Mercator) tiles: third-party (NASA GIBS, absolute URL) or
+ * rendered by this pipeline (`relative`: the template is relative to the dataset base).
+ */
+
+export interface TileLayer1 {
+  bounds_lnglat?: BoundsLnglat;
+  date_selection: DateSelection;
+  legend_url: LegendUrl;
+  legend_verified: LegendVerified;
+  max_native_zoom: MaxNativeZoom;
+  min_zoom?: MinZoom;
+  n_tiles?: NTiles;
+  relative?: Relative;
+  sample_tiles?: SampleTiles;
+  tile_size?: TileSize;
+  url_template: UrlTemplate1;
+}
+/**
+ * Same-day agreement between the two sensors where both observed a cell.
+ */
+
+export interface SensorAgreement1 {
+  dates: AgreementDates;
+  label: Label1;
+  median_log10_ratio?: MedianLog10Ratio;
+  n_cells: NCells;
+  pearson_r_log10?: PearsonRLog10;
+  region_id: RegionId1;
+  rmsd_log10?: RmsdLog10;
+}
+/**
+ * Share of reference ocean cells observed by each sensor alone and together.
+ */
+
+export interface SensorCoverage {
+  combined_fraction: CombinedFraction;
+  label: Label2;
+  primary_fraction: PrimaryFraction;
+  reference_cells: ReferenceCells1;
+  region_id: RegionId2;
+  secondary_fraction: SecondaryFraction;
+  secondary_only_fraction: SecondaryOnlyFraction;
+}
+/**
+ * One sensor contributing to a multi-sensor display, drawn in `order` (0 = on top).
+ */
+
+export interface SensorMember {
+  label: Label3;
+  layer_id: LayerId1;
+  native_resolution_m: NativeResolutionM;
+  order: Order;
+}
+/**
+ * Pre-rendered XYZ (Web Mercator) tiles: third-party (NASA GIBS, absolute URL) or
+ * rendered by this pipeline (`relative`: the template is relative to the dataset base).
+ */
+
+export interface TileLayer2 {
+  bounds_lnglat?: BoundsLnglat;
+  date_selection: DateSelection;
+  legend_url: LegendUrl;
+  legend_verified: LegendVerified;
+  max_native_zoom: MaxNativeZoom;
+  min_zoom?: MinZoom;
+  n_tiles?: NTiles;
+  relative?: Relative;
+  sample_tiles?: SampleTiles;
+  tile_size?: TileSize;
+  url_template: UrlTemplate1;
+}
+/**
+ * How much of the display each sensor supplies, and how old those pixels are.
+ */
+
+export interface SensorShown1 {
+  max_age_days?: MaxAgeDays;
+  median_age_days?: MedianAgeDays;
+  order: Order1;
+  pixels: Pixels;
+}
 
 export interface Palette {
   domain: Domain;
@@ -634,7 +824,7 @@ export interface UpstreamMetadata {
 
 export interface QualityControl {
   checks: Checks;
-  n_cells: NCells;
+  n_cells: NCells1;
   n_valid: NValid;
   valid_fraction: ValidFraction;
   value_max: ValueMax;

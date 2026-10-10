@@ -55,6 +55,9 @@ CHLOROPHYLL = Palette(
 # Age of a composite pixel in days (0 = observed on the reference date). Categorical,
 # neutral greys-to-blue so it never reads as a value scale; index = age in days.
 AGE_COLOURS = ["#e8f1f8", "#bcd3e6", "#8fb2d0", "#6790b5", "#4a7097", "#365477", "#273d58", "#1c2c40"]
+# Which sensor a multi-sensor pixel comes from (categorical): Sentinel-3 OLCI, VIIRS.
+# Blue/orange stay distinct for the common colour-vision deficiencies.
+SENSOR_COLOURS = ["#2f6db5", "#e39a2d"]
 
 
 def _hex_to_rgb(h: str) -> tuple[int, int, int]:

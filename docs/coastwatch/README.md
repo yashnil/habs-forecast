@@ -21,6 +21,8 @@ Planning and architecture for turning `coastwatch-web/` and the HABs research in
 | [drafts/cdfw-landings-data-request.md](drafts/cdfw-landings-data-request.md) | **Draft, not sent:** request to CDFW for disclosure-safe port-area landings and display permission |
 | [redesign-p0/](redesign-p0/) | Screenshots of redesign phase P0 (published data, 2026-10-09) |
 | [p1/](p1/) | P1 screenshots (staging data, 2026-10-09), currents contract and evidence |
+| [15 — P2: currents, multi-sensor, health](15-p2-currents-multisensor.md) | P1 production publication; HF-radar observed currents (hourly, 24 h mean, arrows/flow); multi-sensor satellite view with coverage and agreement; WCOFS evaluation; pipeline health alerts; staging, screenshots |
+| [p2/](p2/) | P2 screenshots (staging data, 2026-10-10), WCOFS evaluation, evidence |
 | [m3/](m3/) | Screenshots of the M3 app (staging data, 2026-10-08) |
 | [m2/](m2/) | Screenshots of the M2 app (live data, 2026-10-08) |
 | [m1/](m1/) | Screenshots of the running app (live data, 2026-10-08) |
