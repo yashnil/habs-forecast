@@ -117,3 +117,15 @@ describe("generated types", () => {
     }
   });
 });
+
+describe("published research is cited accurately", () => {
+  it("names the paper and DOI, says CoastWatch does not run its models, and claims no review of the app", () => {
+    expect(copy.RESEARCH.doi).toBe("https://doi.org/10.33422/ccgconf.v2i2.1619");
+    expect(copy.RESEARCH.title).toBe("Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System");
+    expect(copy.RESEARCH.relation).toMatch(/does not run those research models/);
+    expect(copy.RESEARCH.relation).toMatch(/has not been reviewed by an independent HAB scientist/);
+    // the same-run evaluation does not show the PINN beating the ConvLSTM
+    expect(copy.RESEARCH.relation).not.toMatch(/outperform|beats|better than|improves on/i);
+  });
+});
+
