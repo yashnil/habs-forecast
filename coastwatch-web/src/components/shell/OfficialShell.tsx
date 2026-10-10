@@ -213,7 +213,7 @@ export function OfficialDrawer() {
           </button>
         </header>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-8 pt-4">
-          {DEMO && <RegulatoryGapCard />}
+          {DEMO && <RegulatoryGapCard official={ds} />}
           {verification && verification.state !== "verified" && ds && <VerificationDetail v={verification} />}
           {!ds && (
             <p className="text-[14px] text-ink-2">

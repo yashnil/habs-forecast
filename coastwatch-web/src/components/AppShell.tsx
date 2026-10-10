@@ -89,13 +89,13 @@ export function AppShell({
             </div>
           </div>
         </header>
-        {DEMO ? <RegulatoryGapBanner /> : <RegistryDisclosure />}
+        {DEMO ? <RegulatoryGapBanner official={official} /> : <RegistryDisclosure />}
         {banner}
         <main className={`flex min-h-0 flex-1 flex-col ${scroll === "app" ? "theme-dark" : ""}`}>{children}</main>
         <TabBar active={active} />
       </div>
       <OfficialDrawer />
-      {DEMO && <DemoIntro />}
+      {DEMO && <DemoIntro official={official} />}
     </OfficialProvider>
   );
 }
