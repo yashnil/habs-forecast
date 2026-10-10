@@ -181,3 +181,21 @@ def test_fixtures_are_genuine_erddap_files():
         _, _, g = parse_netcdf(body)
         assert "HFRNet" in " ".join(g.values()) or "hfrnet" in " ".join(g.values()).lower()
 
+
+
+def test_a_dataset_that_vanishes_during_verification_is_unverifiable_not_a_mismatch(tmp_path, monkeypatch):
+    # staging run 38009420295: ucsdHfrW2 became 'Currently unknown datasetID' mid-verification
+    from coastwatch_pipeline import verify_currents as vc
+
+    out = tmp_path / "v1"
+    run_pipeline(fixture_context(out))
+
+    def gone(url, **kw):
+        raise FetchError(f"HTTP 404 for {url} (unknown)", detail='Error { code=404; message="Not Found: Currently unknown datasetID=ucsdHfrW2"; }')
+
+    monkeypatch.setattr(vc, "fetch", gone)
+    monkeypatch.setattr(vc.time, "sleep", lambda s: None)
+    rep = verify_currents(out, live=True)
+    live = [r for r in rep["rows"] if r["kind"] in ("value", "no_value")]
+    assert live and all(r["status"] == "FAIL" and r["source_error"].startswith("UNVERIFIABLE") for r in live)
+    assert rep["summary"]["unverifiable_upstream_unreachable"] == len(live) and not rep["summary"]["all_passed"]

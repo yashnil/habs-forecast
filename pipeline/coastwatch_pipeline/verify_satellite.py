@@ -70,7 +70,7 @@ def _erddap(server: str, ds: str, var: str, t: str, lat: float, lon: float) -> t
     try:
         line = fetch(url, retries=3, backoff=3).body.decode().strip().splitlines()[-1].split(",")
     except FetchError as e:
-        if "HTTP 404" in str(e):  # no data at that time and place: a real answer
+        if satellite.no_matching_results(e):  # no data at that time and place: a real answer
             return None
         raise Unreachable(str(e)[:200]) from e
     v = float("nan") if line[-1] in ("NaN", "") else float(line[-1])

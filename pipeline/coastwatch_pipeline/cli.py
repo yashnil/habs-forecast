@@ -56,6 +56,8 @@ def cmd_verify(a: argparse.Namespace) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report["summary"], indent=2))
+    for row in [r for r in report["rows"] if r.get("status") == "FAIL"][:10]:
+        print("FAIL", json.dumps(row)[:400])
     print(f"report: {path}")
     return 0 if report["summary"]["all_passed"] else 1
 
@@ -89,6 +91,8 @@ def cmd_verify_currents(a: argparse.Namespace) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report["summary"], indent=2))
+    for row in [r for r in report["rows"] if r.get("status") == "FAIL"][:10]:
+        print("FAIL", json.dumps(row)[:400])
     print(f"report: {path}")
     return 0 if report["summary"]["all_passed"] else 1
 
@@ -108,6 +112,8 @@ def cmd_verify_satellite(a: argparse.Namespace) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report["summary"], indent=2))
+    for row in [r for r in report["rows"] if r.get("status") == "FAIL"][:10]:
+        print("FAIL", json.dumps(row)[:400])
     print(f"report: {path}")
     return 0 if report["summary"]["all_passed"] else 1
 

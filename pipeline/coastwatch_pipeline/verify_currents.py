@@ -38,7 +38,7 @@ def _erddap(t: str, lat: float, lon: float) -> dict | None:
     try:
         line = fetch(url, retries=3, backoff=3).body.decode().strip().splitlines()[-1].split(",")
     except FetchError as e:
-        if "HTTP 404" in str(e):
+        if cur.sat.no_matching_results(e):  # no data there: an answer
             return None
         raise RuntimeError(f"UNVERIFIABLE, ERDDAP unreachable: {str(e)[:160]}") from e
     num = lambda x: float("nan") if x in ("NaN", "") else float(x)  # noqa: E731
