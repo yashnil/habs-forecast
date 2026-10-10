@@ -88,9 +88,10 @@ test.describe("satellite observations", () => {
     await open(page, `${OK}/?layer=olci300`);
     await page.getByTestId("toggle-age").check();
     await expect(page.getByTestId("age-legend")).toBeVisible();
-    await page.waitForFunction(() => !!(window as unknown as { __cwMap: { getSource: (s: string) => unknown } }).__cwMap.getSource("satellite-age"));
+    const want = `${BASE}/${latest.composite!.age_tiles.url_template}`;
+    await page.waitForFunction((t) => (window as unknown as { __cwMap: { getSource: (s: string) => { tiles?: string[] } | undefined } }).__cwMap.getSource("satellite-age")?.tiles?.[0] === t, want);
     const src = await mapSource(page, "satellite-age");
-    expect(src!.tiles![0]).toBe(`${BASE}/${latest.composite!.age_tiles.url_template}`);
+    expect(src!.tiles![0]).toBe(want);
   });
 
   test("point readout: the published value and its observation date, at the source cell", async ({ page }) => {
