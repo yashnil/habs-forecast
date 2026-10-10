@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import { setWorkerUrl, type ExpressionSpecification, type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { PortsCollection } from "@/generated/schema";
-import { ARROW_LENGTHS, arrowImage, BASEMAP_STYLE, BEFORE_OVERLAY_ID, CA_BOUNDS, hatchImage, SPEED_CLASSES } from "@/lib/basemap";
+import { ARROW_LENGTHS, arrowImage, basemapStyle, BEFORE_OVERLAY_ID, CA_BOUNDS, NODATA_LAYER_ID, NODATA_VEIL_ID, noDataImage, SPEED_CLASSES, type NoDataStyle } from "@/lib/basemap";
 import type { CurrentField } from "@/lib/currents";
 import FlowParticles from "./FlowParticles";
 
@@ -38,6 +38,12 @@ type Props = {
   onPort: (portCode: number) => void;
   onPoint: (p: MapPoint) => void;
   onReady: (map: MlMap) => void;
+  /** basemap relief (land and seafloor shading, isobaths); default on */
+  relief?: boolean;
+  /** how water without a value is drawn under a raster layer */
+  noData?: NoDataStyle;
+  /** arrow density: "standard" thins arrows when zoomed out; "dense" keeps one level more */
+  arrowDensity?: "standard" | "dense";
 };
 
 const OFFICIAL = "#f6bb5c";
@@ -49,6 +55,12 @@ const ARROW_ZOOMS: [number, number, number][] = [
   [4, 7.3, 8.5],
   [2, 8.5, 9.6],
   [1, 9.6, 24],
+];
+const ARROW_ZOOMS_DENSE: [number, number, number][] = [
+  [8, 0, 6.3],
+  [4, 6.3, 7.3],
+  [2, 7.3, 8.5],
+  [1, 8.5, 24],
 ];
 // one glyph per speed class (length grows with speed, same line width), matching the legend
 const ARROW_IMAGE = ["step", ["get", "speed"], "cw-arrow-0", ...SPEED_CLASSES.slice(1).flatMap((v, i) => [v, `cw-arrow-${i + 1}`])] as unknown as ExpressionSpecification;
@@ -64,6 +76,41 @@ const RASTER_PAINT = { "raster-opacity": 1, "raster-resampling": "nearest", "ras
 export default function MapCanvas(p: Props) {
   const [wide] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const { onPort, onPoint } = p;
+  const [map, setMap] = useState<MlMap | null>(null);
+  const patternKind = useRef<"hatch" | "stipple">("stipple");
+  const relief = p.relief ?? true;
+  const noData = p.noData ?? "hatch";
+  const style = useMemo(() => basemapStyle({ relief }), [relief]);
+  const hasRaster = !!(p.forecast || p.satellite || p.satelliteAge);
+
+  // The no-data treatment shows only under a raster data layer: with currents alone (or
+  // nothing) there is no "value" for a gap to be confused with.
+  useEffect(() => {
+    if (!map) return;
+    // idempotent: only touches the style when something differs, because every style
+    // change fires "styledata" again
+    const apply = () => {
+      if (!map.getLayer(NODATA_LAYER_ID)) return;
+      const kind = noData === "veil" ? "stipple" : noData;
+      if (patternKind.current !== kind) {
+        patternKind.current = kind;
+        if (map.hasImage("nodata")) map.updateImage("nodata", noDataImage(kind));
+        else map.addImage("nodata", noDataImage(kind));
+      }
+      const set = (id: string, on: boolean) => {
+        const v = on ? "visible" : "none";
+        if (map.getLayoutProperty(id, "visibility") !== v) map.setLayoutProperty(id, "visibility", v);
+      };
+      set(NODATA_LAYER_ID, hasRaster && noData !== "veil");
+      set(NODATA_VEIL_ID, hasRaster && noData === "veil");
+    };
+    apply();
+    map.on("styledata", apply);
+    return () => {
+      map.off("styledata", apply);
+    };
+  }, [map, noData, hasRaster]);
+  const arrowZooms = p.arrowDensity === "dense" ? ARROW_ZOOMS_DENSE : ARROW_ZOOMS;
 
   const onClick = useCallback(
     (e: MapLayerMouseEvent) => {
@@ -91,7 +138,7 @@ export default function MapCanvas(p: Props) {
 
   return (
     <Map
-      mapStyle={BASEMAP_STYLE}
+      mapStyle={style}
       initialViewState={{ bounds: p.initialBounds, fitBoundsOptions: { padding: p.initialPadding } }}
       maxBounds={[CA_BOUNDS[0][0], CA_BOUNDS[0][1], CA_BOUNDS[1][0], CA_BOUNDS[1][1]]}
       minZoom={4.2}
@@ -102,12 +149,13 @@ export default function MapCanvas(p: Props) {
       onClick={onClick}
       onLoad={(e) => {
         const m = e.target;
-        if (!m.hasImage("hatch")) m.addImage("hatch", hatchImage());
+        if (!m.hasImage("nodata")) m.addImage("nodata", noDataImage("stipple"));
         addArrows(m);
         m.on("styleimagemissing", (ev: { id: string }) => {
-          if (ev.id === "hatch" && !m.hasImage("hatch")) m.addImage("hatch", hatchImage());
+          if (ev.id === "nodata" && !m.hasImage("nodata")) m.addImage("nodata", noDataImage("stipple"));
           if (ev.id.startsWith("cw-arrow-")) addArrows(m);
         });
+        setMap(m);
         // exposed for end-to-end tests and debugging
         (window as unknown as { __cwMap?: unknown }).__cwMap = e.target;
         p.onReady(e.target);
@@ -150,7 +198,7 @@ export default function MapCanvas(p: Props) {
 
       {p.currents && p.currents.mode === "arrows" && (
         <Source key={p.currents.id} id="currents" type="geojson" data={p.currents.features}>
-          {ARROW_ZOOMS.map(([level, minzoom, maxzoom]) => (
+          {arrowZooms.map(([level, minzoom, maxzoom]) => (
             <Layer
               key={level}
               id={`currents-arrows-${level}`}
@@ -166,7 +214,7 @@ export default function MapCanvas(p: Props) {
                 "icon-allow-overlap": true,
                 "icon-ignore-placement": true,
                 // drawn smaller when zoomed out so the statewide view stays readable
-                "icon-size": ["interpolate", ["linear"], ["zoom"], 5, 0.62, 8.5, 1, 11, 1.15],
+                "icon-size": p.arrowDensity === "dense" ? ["interpolate", ["linear"], ["zoom"], 5, 0.5, 8.5, 0.78, 11, 1] : ["interpolate", ["linear"], ["zoom"], 5, 0.62, 8.5, 1, 11, 1.15],
               }}
               paint={{ "icon-opacity": 1 }}
             />
@@ -185,7 +233,7 @@ export default function MapCanvas(p: Props) {
             type="symbol"
             minzoom={7.4}
             filter={["==", ["get", "kind"], "lat_limit"]}
-            layout={{ "symbol-placement": "line-center", "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, -0.8], "text-allow-overlap": false }}
+            layout={{ "symbol-placement": "line-center", "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, -1.15], "text-allow-overlap": false }}
             paint={{ "text-color": OFFICIAL, "text-halo-color": "#06111e", "text-halo-width": 1.6 }}
           />
         </Source>

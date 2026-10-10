@@ -1,0 +1,58 @@
+{
+  "corners_lnglat": [
+    [
+      -126.6,
+      42.6
+    ],
+    [
+      -116.4,
+      42.6
+    ],
+    [
+      -116.4,
+      32.0
+    ],
+    [
+      -126.6,
+      32.0
+    ]
+  ],
+  "width": 2448,
+  "height": 3208,
+  "isobaths_m": [
+    200,
+    500,
+    1000,
+    2000,
+    3000
+  ],
+  "source": "ETOPO 2022 v1, 15 arc-second (Ice Surface), NOAA National Centers for Environmental Information",
+  "source_url": "https://www.ncei.noaa.gov/products/etopo-global-relief-model",
+  "doi": "https://doi.org/10.25921/fd45-gt74",
+  "license": "Free to use and redistribute; not intended for legal use or navigation (NOAA NCEI).",
+  "rendering": "Seafloor and land hillshade (azimuth 315\u00b0, altitude 45\u00b0, vertical exaggeration 4x sea / 1.6x land); depth tone lightest on the shelf; isobaths from a 1.2-cell Gaussian-smoothed grid, simplified to about 400 m.",
+  "monterey_inset": {
+    "corners_lnglat": [
+      [
+        -122.72,
+        37.33
+      ],
+      [
+        -121.58,
+        37.33
+      ],
+      [
+        -121.58,
+        36.22
+      ],
+      [
+        -122.72,
+        36.22
+      ]
+    ],
+    "width": 1368,
+    "height": 1663,
+    "source": "NOAA NCEI U.S. Coastal Relief Model, volumes 6 and 7, 3 arc-second",
+    "source_url": "https://www.ncei.noaa.gov/products/coastal-relief-model"
+  }
+}
