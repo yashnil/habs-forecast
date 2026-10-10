@@ -113,3 +113,15 @@ export const FISHERIES_COPY = {
   reviewPending: "Species tiers are CoastWatch's editorial grouping and await review by an independent HAB scientist.",
   unavailable: "Fisheries data are unavailable in this dataset.",
 } as const;
+
+/** The published research behind the project, and how it relates to what the app shows. */
+export const RESEARCH = {
+  title: "Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System",
+  author: "Yashnil Mohanty",
+  venue: "Proceedings of the 6th World Conference on Climate Change and Global Warming, Vol. 2 No. 2 (2025)",
+  published: "Published January 29, 2026",
+  doi: "https://doi.org/10.33422/ccgconf.v2i2.1619",
+  relation:
+    "The paper develops physics-informed machine-learning forecasts of nearshore chlorophyll-a. CoastWatch does not run those research models: its forecast layer is NOAA's C-HARM, and its observations come from NOAA CoastWatch, HF-radar networks, CalHABMAP, NOAA Fisheries and the CDFW and CDPH notice pages. The publication covers the research, not this application, which has not been reviewed by an independent HAB scientist.",
+};
+
