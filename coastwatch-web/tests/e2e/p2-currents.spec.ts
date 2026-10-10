@@ -128,3 +128,18 @@ test("a dataset without currents keeps the tab disabled and draws nothing", asyn
   await expect(page.getByTestId("group-currents")).toBeDisabled();
   expect(await page.evaluate(() => !!(window as unknown as { __cwMap: { getSource: (s: string) => unknown } }).__cwMap.getSource("currents"))).toBe(false);
 });
+
+test("currents and multi-sensor panels: no serious or critical axe violations (desktop and phone)", async ({ browser }) => {
+  const { default: AxeBuilder } = await import("@axe-core/playwright");
+  for (const opts of [{ viewport: { width: 1440, height: 900 } }, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }]) {
+    const ctx = await browser.newContext(opts);
+    const page = await ctx.newPage();
+    for (const url of [`${OK}/?layer=currents`, `${OK}/?layer=multi&sensor=1`]) {
+      await open(page, url);
+      const r = await new AxeBuilder({ page }).exclude(".maplibregl-canvas").exclude(".maplibregl-ctrl-attrib").exclude("[data-testid=flow-particles]").analyze();
+      const bad = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+      expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`), url).toEqual([]);
+    }
+    await ctx.close();
+  }
+});

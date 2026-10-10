@@ -217,12 +217,25 @@ def scene_url(server: str, ds: str, var: str, t: str, target: Target, lon_lo: fl
     return f"{server}/griddap/{ds}.nc?" + quote(q, safe=",():")
 
 
+def no_matching_results(e: Exception) -> bool:
+    """ERDDAP's 404 'Your query produced no matching results' is an answer (nothing new);
+    its 404 'Currently unknown datasetID' (dataset reloading or down) is an outage."""
+    if "HTTP 404" not in str(e):
+        return False
+    detail = getattr(e, "detail", None)
+    text = detail or str(e)
+    if "unknown datasetid" in text.lower():
+        return False
+    return detail is None or "no matching results" in text.lower()
+
+
 def list_times(ctx: RunContext, server: str, ds: str, start: date) -> list[str]:
     try:
         r = ctx.fetcher(times_url(server, ds, start))
     except FetchError as e:
-        # ERDDAP answers 404 "Your query produced no matching results" when nothing is newer than start
-        if "404" in str(e):
+        # ERDDAP answers 404 "Your query produced no matching results" when nothing is newer
+        # than start; a 404 for "Currently unknown datasetID" is an outage, not "no data"
+        if no_matching_results(e):
             return []
         raise
     out = []

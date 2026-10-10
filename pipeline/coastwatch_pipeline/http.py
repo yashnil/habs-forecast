@@ -29,7 +29,9 @@ def tls_context() -> ssl.SSLContext:
 
 
 class FetchError(RuntimeError):
-    pass
+    def __init__(self, message: str, detail: str | None = None):
+        super().__init__(message)
+        self.detail = detail  # start of the server's error message, when it sent one
 
 
 @dataclass
@@ -84,7 +86,13 @@ def fetch(
             # ERDDAP intermittently answers 403 to cloud runners (seen in staging run
             # 37964087582, 2026-10-09) and serves the same request moments later
             if 400 <= e.code < 500 and e.code not in (403, 429):
-                raise FetchError(f"HTTP {e.code} for {url}") from e
+                # keep the start of the server's message: ERDDAP answers 404 both for "no
+                # matching results" (an answer) and "unknown datasetID" (an outage)
+                try:
+                    msg = " ".join(e.read(400).decode("utf-8", "replace").split())
+                except Exception:
+                    msg = ""
+                raise FetchError(f"HTTP {e.code} for {url}" + (f" ({msg[:240]})" if msg else ""), detail=msg[:240] or None) from e
             last = e
         except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
             last = e

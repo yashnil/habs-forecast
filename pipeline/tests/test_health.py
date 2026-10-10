@@ -105,3 +105,13 @@ def test_health_file_is_published_and_kept(tmp_path):
     assert h2["sources"]["charm"]["consecutive_failures"] == 1 and not h2["alerts"]
     assert guard_publish_tree(tmp_path) == []
     assert "All checks clear" in hl.markdown(h)
+
+
+def test_a_partly_failing_source_alerts_after_consecutive_runs(base):
+    part = base.model_copy(update={"sources": [s.model_copy(update={"outcome": "partial", "error": "Sentinel-3A ...: time listing failed: HTTP 404 (Currently unknown datasetID)"}) if s.source_id == "satellite_chl" else s for s in base.sources]})
+    h = None
+    for i in range(1, hl.MIN_CONSECUTIVE_FAILURES + 1):
+        h = hl.evaluate(part, h, NOW + timedelta(hours=6 * i))
+    assert "source_degraded:satellite_chl" in keys(h)
+    assert "source_degraded:satellite_chl" not in keys(hl.evaluate(part, None, NOW))
+

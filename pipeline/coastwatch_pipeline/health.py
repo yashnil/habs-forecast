@@ -7,6 +7,7 @@ in the published dataset like everything else). What alerts, and why that thresh
 - source_failing      a NOAA source failed MIN_CONSECUTIVE_FAILURES runs in a row (~18 h at
                       the 6-hourly schedule). NOAA's ERDDAP refuses single runs (HTTP 403/502)
                       and serves the next one; one failure is not news.
+- source_degraded     the same for a source that partly fails (e.g. Sentinel-3 down, VIIRS up).
 - satellite_stale     newest Sentinel-3 pixel older than OLCI_MAX_AGE_DAYS, or newest VIIRS
                       pixel older than VIIRS_MAX_AGE_DAYS. Both are latency-aware (OLCI ~1-2 d,
                       VIIRS ~5 d). Statewide some pixel is almost always clear, so this means
@@ -62,9 +63,13 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
     for st in manifest.sources:
         p = prev_sources.get(st.source_id, {})
         n = (p.get("consecutive_failures", 0) + 1) if st.outcome == "failed" else 0
-        sources[st.source_id] = {"outcome": st.outcome, "consecutive_failures": n, "last_success_at": st.last_success_at, "error": (st.error or "")[:300] or None}
+        # partial with an error: part of a source down (e.g. Sentinel-3 while VIIRS still updates)
+        d = (p.get("consecutive_degraded", 0) + 1) if st.outcome == "partial" and st.error else 0
+        sources[st.source_id] = {"outcome": st.outcome, "consecutive_failures": n, "consecutive_degraded": d, "last_success_at": st.last_success_at, "error": (st.error or "")[:300] or None}
         if st.source_id in NOAA_SOURCES and n >= MIN_CONSECUTIVE_FAILURES:
             alert(f"source_failing:{st.source_id}", "source_failing", f"{st.title}: failed {n} runs in a row (last success {st.last_success_at or 'never'}). Last error: {(st.error or '')[:200]}")
+        elif st.source_id in NOAA_SOURCES and d >= MIN_CONSECUTIVE_FAILURES:
+            alert(f"source_degraded:{st.source_id}", "source_degraded", f"{st.title}: partly failing {d} runs in a row; the rest still updates. Last error: {(st.error or '')[:200]}")
 
     layers = {lyr.layer_id: lyr for lyr in manifest.layers}
     today = now.date()

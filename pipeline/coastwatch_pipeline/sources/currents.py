@@ -118,7 +118,7 @@ def list_hours(ctx: RunContext) -> list[str]:
     try:
         ts = _csv(ctx, f"{SERVER}/griddap/{DATASET}.csv0?" + quote(q, safe=":(),"))
     except FetchError as e:
-        if "404" in str(e):
+        if sat.no_matching_results(e):
             return []
         raise
     ts = [t if t.endswith("Z") else t + "Z" for t in ts]
