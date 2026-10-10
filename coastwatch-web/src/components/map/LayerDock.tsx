@@ -193,62 +193,77 @@ export function LayerDock(p: Props) {
           />
         </button>
       )}
-      <div
-        role="tablist"
-        aria-label="Layer group"
-        className={`flex items-end gap-1 border-b border-hairline px-3 ${p.compact ? "" : "pt-2"}`}
-      >
-        {(
-          [
-            ["forecast", "HAB forecast", "Model"],
-            ["satellite", "Satellite", "Observation"],
-          ] as const
-        ).map(([g, label, kind]) => (
-          <button
-            key={g}
-            role="tab"
-            aria-selected={p.group === g}
-            data-testid={`group-${g}`}
-            onClick={() => p.onGroup(g)}
-            className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-2.5 py-2 text-[14px] font-medium ${p.group === g ? "border-accent text-ink" : "border-transparent text-ink-3 hover:text-ink"}`}
-          >
-            {p.compact && g === "forecast" ? "Forecast" : label}
-            <span
-              className={`hidden rounded-full px-1.5 text-[10.5px] font-semibold uppercase tracking-wider sm:inline ${g === "forecast" ? "bg-model-bg text-model-ink" : "bg-measured-bg text-measured"}`}
+      <div className={`flex items-end border-b border-hairline px-3 ${p.compact ? "" : "pt-2"}`}>
+        <div role="tablist" aria-label="Layer group" className="flex items-end gap-1">
+          {(
+            [
+              ["forecast", "HAB forecast", "Model"],
+              ["satellite", "Satellite", "Observation"],
+            ] as const
+          ).map(([g, label, kind]) => (
+            <button
+              key={g}
+              role="tab"
+              aria-selected={p.group === g}
+              data-testid={`group-${g}`}
+              onClick={() => p.onGroup(g)}
+              className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-2.5 py-2 text-[14px] font-medium ${p.group === g ? "border-accent text-ink" : "border-transparent text-ink-3 hover:text-ink"}`}
             >
-              {kind}
-            </span>
-          </button>
-        ))}
-        {DEMO ? null : currentsHourly(p.manifest).length > 0 ? (
-          <button
-            role="tab"
-            aria-selected={p.group === "currents"}
-            data-testid="group-currents"
-            onClick={() => p.onGroup("currents")}
-            className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-2.5 py-2 text-[14px] font-medium ${p.group === "currents" ? "border-accent text-ink" : "border-transparent text-ink-3 hover:text-ink"}`}
-          >
-            {p.compact ? "Currents" : "Ocean currents"}
-            <span className="hidden rounded-full bg-measured-bg px-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-measured sm:inline">
-              Observation
-            </span>
-          </button>
-        ) : (
-          <button
-            role="tab"
-            aria-selected={false}
-            aria-disabled="true"
-            disabled
-            data-testid="group-currents"
-            title="Observed currents are not in this dataset."
-            className="-mb-px flex cursor-not-allowed items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-2.5 py-2 text-[14px] font-medium text-ink-3/70"
-          >
-            {p.compact ? "Currents" : "Ocean currents"}{" "}
-            <span className="rounded-full border border-hairline-strong px-1.5 text-[10.5px] font-semibold uppercase tracking-wider">
-              {p.compact ? "Soon" : "Next phase"}
-            </span>
-          </button>
-        )}
+              {p.compact && g === "forecast" ? "Forecast" : label}
+              <span
+                className={`hidden rounded-full px-1.5 text-[10.5px] font-semibold uppercase tracking-wider sm:inline ${g === "forecast" ? "bg-model-bg text-model-ink" : "bg-measured-bg text-measured"}`}
+              >
+                {kind}
+              </span>
+            </button>
+          ))}
+          {DEMO ? null : currentsHourly(p.manifest).length > 0 ? (
+            <button
+              role="tab"
+              aria-selected={p.group === "currents"}
+              data-testid="group-currents"
+              onClick={() => p.onGroup("currents")}
+              className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-2.5 py-2 text-[14px] font-medium ${p.group === "currents" ? "border-accent text-ink" : "border-transparent text-ink-3 hover:text-ink"}`}
+            >
+              {p.compact ? "Currents" : "Ocean currents"}
+              <span className="hidden rounded-full bg-measured-bg px-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-measured sm:inline">
+                Observation
+              </span>
+            </button>
+          ) : (
+            <button
+              role="tab"
+              aria-selected={false}
+              aria-disabled="true"
+              disabled
+              data-testid="group-currents"
+              title="Observed currents are not in this dataset."
+              className="-mb-px flex cursor-not-allowed items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-2.5 py-2 text-[14px] font-medium text-ink-3/70"
+            >
+              {p.compact ? "Currents" : "Ocean currents"}{" "}
+              <span className="rounded-full border border-hairline-strong px-1.5 text-[10.5px] font-semibold uppercase tracking-wider">
+                {p.compact ? "Soon" : "Next phase"}
+              </span>
+            </button>
+          )}
+        </div>
+          {p.compact && p.group === "forecast" && (
+            <label className="mb-1.5 ml-auto flex h-9 items-center rounded-[9px] bg-surface-3 px-2 text-[13px] font-medium">
+              <span className="sr-only">Forecast quantity</span>
+              <select
+                value={p.variable}
+                onChange={(e) => p.onVariable(e.target.value as CharmVariable)}
+                className="bg-transparent outline-none"
+                data-testid="variable-select"
+              >
+                {CHARM_VARIABLES.map((v) => (
+                  <option key={v} value={v}>
+                    {VAR_SHORT[v]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
       </div>
       <div
         className={`space-y-2.5 px-3.5 pt-2.5 ${p.compact ? "pb-2" : "pb-3"}`}
@@ -303,24 +318,8 @@ function ForecastSection(p: Props) {
   }
   return (
     <div data-testid="forecast-panel" className="space-y-2.5">
-      <div className={`flex gap-2 ${p.compact ? "flex-col" : "items-center"}`}>
-        {p.compact ? (
-          <label className="flex h-9 items-center rounded-[9px] bg-surface-3 px-2 text-[13px] font-medium">
-            <span className="sr-only">Forecast quantity</span>
-            <select
-              value={p.variable}
-              onChange={(e) => p.onVariable(e.target.value as CharmVariable)}
-              className="w-full bg-transparent outline-none"
-              data-testid="variable-select"
-            >
-              {CHARM_VARIABLES.map((v) => (
-                <option key={v} value={v}>
-                  {VAR_SHORT[v]}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : (
+      <div className="flex items-center gap-2">
+        {p.compact ? null : (
           <Seg
             label="Forecast quantity"
             value={p.variable}
@@ -369,7 +368,9 @@ function ForecastSection(p: Props) {
                     ? "not issued"
                     : l === 0
                       ? "nowcast"
-                      : p.now && lyr.time.valid_date
+                      : p.compact
+                        ? `day ${l}`
+                        : p.now && lyr.time.valid_date
                         ? relativeDay(lyr.time.valid_date, p.now)
                         : leadLabel(l)}
                 </span>
@@ -395,7 +396,7 @@ function ForecastSection(p: Props) {
         <span className={p.compact ? "hidden" : ""}>C-HARM v3.1 · NOAA</span>
         <Res l={layer ?? anyLayer} />
         <span className="ml-auto">
-          <FreshnessBadge f={fresh} basis={anyLayer.freshness.basis} />
+          <FreshnessBadge f={fresh} basis={anyLayer.freshness.basis} compact={p.compact} />
         </span>
       </div>
       <div
@@ -426,7 +427,7 @@ function ForecastSection(p: Props) {
           )}
           <span className="text-ink-3"> · no forecast exists beyond day 3</span>
         </p>
-        {fresh?.state === "stale" && (
+        {fresh?.state === "stale" && (!p.compact || p.expanded) && (
           <p className="text-warning" data-testid="stale-note">
             No newer C-HARM run has been published. This is the newest available
             forecast; its dates are shown as issued.
@@ -661,7 +662,7 @@ function SatelliteSection(p: Props) {
           )}
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 border-t border-hairline pt-2 text-[12px] text-ink-3">
             <ProductClassBadge pc="observation" />
-            <span>
+            <span className={p.compact && !p.expanded ? "hidden" : ""}>
               {product === "viirs750"
                 ? "VIIRS · NOAA"
                 : product === "multi"
@@ -675,7 +676,8 @@ function SatelliteSection(p: Props) {
           </div>
           {product &&
             satelliteUpdateFailed(p.satStatus, product) &&
-            p.satStatus && (
+            p.satStatus &&
+            (!p.compact || p.expanded) && (
               <p
                 className="text-[12px] text-serious"
                 data-testid="sat-update-failed"

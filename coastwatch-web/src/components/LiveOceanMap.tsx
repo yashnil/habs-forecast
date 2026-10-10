@@ -453,6 +453,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
             </MobileSheet>
           ) : (
             <div ref={dockRef} className="absolute inset-x-0 bottom-0 z-20" data-testid="mobile-legend">
+              {!DEMO && (
               <button
                 type="button"
                 onClick={(e) => openDrawer(e.currentTarget)}
@@ -465,6 +466,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
                 </span>
                 <span className="text-[12px] font-medium text-official-ink">{verification ? OFFICIAL_STATUS.verification[verification.state] : "Checking…"} ›</span>
               </button>
+              )}
               <div className="[&>section]:max-h-[55vh] [&>section]:overflow-y-auto [&>section]:rounded-b-none">{dock}</div>
             </div>
           )}
