@@ -100,24 +100,49 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
                     except Exception as e:
                         ok, detail = False, f"not a PNG: {e}"
                 record(rel, kind, f, ok, detail)
+            if t.tile_size > 256:
+                # the index a client reads to skip absent tiles is served and lists the samples
+                rel = t.url_template.split("{z}", 1)[0] + "index.json"
+                f = _get(base, rel)
+                ok, detail = f.status == 200, f"HTTP {f.status}"
+                if ok:
+                    try:
+                        listed = set(json.loads(f.body))
+                        missing = [k for k in t.sample_tiles if k not in listed]
+                        ok, detail = not missing, f"index of {len(listed)} tiles" + (f"; samples missing: {missing}" if missing else "")
+                    except Exception as e:
+                        ok, detail = False, f"index not JSON: {e}"
+                record(rel, f"{kind}_index", f, ok, detail)
             if not remote:
                 # Before publishing, every tile is checked, not just the samples: the tile
-                # directory holds exactly n_tiles files and each one is a 256 px palette PNG.
+                # directory holds exactly n_tiles files and each one is a tile_size px palette PNG.
                 # (At the public URL the samples confirm serving; the content is the same commit.)
                 root = Path(base) / t.url_template.split("{z}", 1)[0]
                 files = sorted(root.rglob("*.png")) if root.is_dir() else []
                 bad = []
+                px = t.tile_size
                 for fp in files:
                     try:
                         with Image.open(fp) as im:
-                            if im.size != (t.tile_size, t.tile_size) or im.mode != "P":
+                            if im.size != (px, px) or im.mode != "P":
                                 bad.append(f"{fp.relative_to(root).as_posix()} {im.size} {im.mode}")
                     except Exception as e:
                         bad.append(f"{fp.relative_to(root).as_posix()}: {e}")
                 why = ([f"{len(files)} tile files != n_tiles {t.n_tiles}"] if t.n_tiles is not None and len(files) != t.n_tiles else []) + (
                     [f"{len(bad)} bad tiles, e.g. {bad[0]}"] if bad else [])
+                ip = root / "index.json"
+                if t.tile_size > 256 or ip.exists():
+                    # high-density tile sets publish an index; it must list exactly the tiles
+                    # on disk, or a client would skip real tiles
+                    on_disk = sorted(fp.relative_to(root).with_suffix("").as_posix() for fp in files)
+                    try:
+                        listed = sorted(json.loads(ip.read_text()))
+                        if listed != on_disk:
+                            why.append(f"index lists {len(listed)} tiles, {len(on_disk)} on disk")
+                    except Exception as e:
+                        why.append(f"tile index unreadable: {e}")
                 ok = not why
-                detail = f"all {len(files)} tiles decode as {t.tile_size} px palette PNGs" if ok else "; ".join(why)
+                detail = f"all {len(files)} tiles decode as {px} px palette PNGs" + (" and match the index" if ip.exists() else "") if ok else "; ".join(why)
                 tiles_validated += len(files) - len(bad)
                 record(t.url_template, f"{kind}_all", Fetched(200, b""), ok, detail)
         grids = [("grid", lyr.grid)] + ([("age_grid", lyr.composite.age_grid)] if lyr.composite else [])

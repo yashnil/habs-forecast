@@ -49,7 +49,7 @@ from ..models import (
 from ..process import grid as gridcodec
 from ..process.mercator import SourceGrid
 from ..process.palette import AGE_COLOURS, CHLOROPHYLL, palette_indices
-from ..process.tiles import render_tiles, write_chunks
+from ..process.tiles import render_tiles, write_chunks, write_index
 from .charm import parse_netcdf
 
 SOURCE_ID = "satellite_chl"
@@ -440,6 +440,14 @@ def _grid_meta(target: Target, base: str, present: list[str], log: bool) -> Valu
     )
 
 
+# Display tiles (M5 rendering audit): 512 px images in 256 px slots (@2x) and one zoom past
+# the cell size, so a 300 m Sentinel-3 cell (or 750 m VIIRS cell) spans an even number of
+# screen pixels when zoomed in. Values, georeferencing and no-data masks are unchanged.
+TILE_SCALE = 2
+OLCI_ZOOMS = range(5, 12)
+VIIRS_ZOOMS = range(5, 11)
+
+
 def _bounds(target: Target) -> tuple[float, float, float, float]:
     h = target.step / 2
     return (target.lon_first - h, target.lat_first - target.step * (target.height - 1) - h, target.lon_first + target.step * (target.width - 1) + h, target.lat_first + h)
@@ -454,10 +462,12 @@ def publish_values(ctx: RunContext, values: np.ndarray, target: Target, base: st
     ok = np.isfinite(values) & (values > 0)
     codes = np.clip(np.round((np.log10(values[ok]) - LOG_RANGE[0]) / grid.scale_factor), 0, gridcodec.MAX_CODE)
     q[ok] = 10 ** (codes * grid.scale_factor + LOG_RANGE[0])
-    ts = render_tiles(q, target.grid, _bounds(target), zooms, lambda v: palette_indices(v, CHLOROPHYLL)[0], palette_indices(np.array([1.0]), CHLOROPHYLL)[1], ctx.out_dir / base / "tiles")
+    ts = render_tiles(q, target.grid, _bounds(target), zooms, lambda v: palette_indices(v, CHLOROPHYLL)[0], palette_indices(np.array([1.0]), CHLOROPHYLL)[1], ctx.out_dir / base / "tiles", TILE_SCALE)
+    write_index(ts, ctx.out_dir / base / "tiles")
     w, s, e, n = _bounds(target)
     tiles = TileLayer(
         url_template=f"{base}/tiles/{{z}}/{{x}}/{{y}}.png", relative=True, max_native_zoom=zooms.stop - 1, min_zoom=zooms.start,
+        tile_size=256 * TILE_SCALE,
         legend_url=None, legend_verified=False, bounds_lnglat=[round(w, 5), round(s, 5), round(e, 5), round(n, 5)],
         n_tiles=ts.n_tiles, sample_tiles=ts.tiles[:: max(1, len(ts.tiles) // 5)][:5],
         date_selection="Rendered by CoastWatch from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
@@ -521,7 +531,8 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
     present, abytes = write_chunks(encode_age, age, CHUNK, CHUNK, ctx.out_dir / base / "age")
     age_grid = _grid_meta(target, f"{base}/age", present, log=False)
     colours = [(0, 0, 0)] + [tuple(int(c[i : i + 2], 16) for i in (1, 3, 5)) for c in AGE_COLOURS]
-    ats = render_tiles(age, target.grid, _bounds(target), range(zooms.start, zooms.stop), lambda v: np.where(np.isfinite(v), np.clip(np.nan_to_num(v), 0, len(AGE_COLOURS) - 1) + 1, 0).astype(np.uint8), colours, ctx.out_dir / base / "age-tiles")
+    ats = render_tiles(age, target.grid, _bounds(target), range(zooms.start, zooms.stop), lambda v: np.where(np.isfinite(v), np.clip(np.nan_to_num(v), 0, len(AGE_COLOURS) - 1) + 1, 0).astype(np.uint8), colours, ctx.out_dir / base / "age-tiles", TILE_SCALE)
+    write_index(ats, ctx.out_dir / base / "age-tiles")
     age_tiles = tiles.model_copy(update={"url_template": f"{base}/age-tiles/{{z}}/{{x}}/{{y}}.png", "n_tiles": ats.n_tiles, "sample_tiles": ats.tiles[:: max(1, len(ats.tiles) // 5)][:5], "date_selection": "Age in days of each pixel of the latest clear view (categorical)."})
     a = age[np.isfinite(age)]
     hist = [AgeBin(age_days=int(k), fraction=round(float((a == k).mean()), 4)) for k in range(WINDOW_DAYS + 1) if (a == k).any()]
@@ -663,8 +674,8 @@ def run(ctx: RunContext, prev_layers: list[LayerArtifact], domain: Domain | None
     """OLCI 300 m (primary) and VIIRS 750 m (fallback). Each runs independently: if OLCI is
     unavailable the VIIRS latest clear view is still published, and the reverse."""
     domain = domain or ctx.options.get("satellite_domain", CALIFORNIA)
-    res_o = run_product(ctx, OLCI, domain, prev_layers, range(5, 11), per_day=True)
-    res_v = run_product(ctx, VIIRS, domain, prev_layers, range(5, 10), per_day=False)
+    res_o = run_product(ctx, OLCI, domain, prev_layers, OLCI_ZOOMS, per_day=True)
+    res_v = run_product(ctx, VIIRS, domain, prev_layers, VIIRS_ZOOMS, per_day=False)
     notes = res_o.notes + res_v.notes
     # A product that failed this run keeps its previously published layers, with their real
     # observation dates, as long as the other product still updated (a total outage is
@@ -689,7 +700,7 @@ def run(ctx: RunContext, prev_layers: list[LayerArtifact], domain: Domain | None
 
         try:
             days = [lyr for lyr in res_o.layers if lyr.layer_id.startswith(f"{OLCI.key}_chl_2")]
-            ms, nbytes = multisensor.build(ctx, o_latest, v_latest, days, range(5, 11))
+            ms, nbytes = multisensor.build(ctx, o_latest, v_latest, days, OLCI_ZOOMS)
             extra.append(ms)
         except Exception as e:  # the members stay published; only the display is missing
             notes.append(f"multi-sensor view not built: {e}")

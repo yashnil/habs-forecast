@@ -159,3 +159,48 @@ def test_every_image_pixel_is_the_palette_colour_of_the_published_value(out):
         actual = np.asarray(Image.open(out / lyr.image.url).convert("RGBA"))
         assert actual.shape == expected.shape
         assert np.array_equal(actual, expected), lyr.layer_id
+
+
+def test_2x_tiles_keep_every_cell_and_mask(tmp_path):
+    """@2x display tiles (M5): each 512 px image pixel is the one source cell under its
+    centre, exactly as at 1x (every 1x pixel equals its 2x2 block), no-data stays
+    transparent, and the published index lists exactly the tiles written."""
+    import json
+
+    from PIL import Image
+
+    from coastwatch_pipeline.process.mercator import SourceGrid
+    from coastwatch_pipeline.process.tiles import TILE, lat_to_y, lon_to_x, render_tiles, write_index, x_to_lon, y_to_lat
+
+    g = SourceGrid(lat_first=37.0, lat_step=-0.0025, lon_first=-122.2, lon_step=0.0025, height=120, width=160)
+    rng = np.random.default_rng(1)
+    vals = rng.integers(1, 200, (g.height, g.width)).astype(float)
+    vals[40:60, 50:90] = np.nan  # a cloud gap
+    to_idx = lambda v: np.where(np.isfinite(v), v, 0).astype(np.uint8)  # noqa: E731
+    colours = [(i, i, i) for i in range(256)]
+    bounds = (g.west, g.south, g.east, g.north)
+    one = render_tiles(vals, g, bounds, range(11, 12), to_idx, colours, tmp_path / "x1", 1)
+    two = render_tiles(vals, g, bounds, range(11, 12), to_idx, colours, tmp_path / "x2", 2)
+    assert sorted(one.tiles) == sorted(two.tiles)
+    write_index(two, tmp_path / "x2")
+    assert sorted(json.loads((tmp_path / "x2" / "index.json").read_text())) == sorted(two.tiles)
+    for key in two.tiles:
+        a = np.asarray(Image.open(tmp_path / "x2" / f"{key}.png"))
+        assert a.shape == (2 * TILE, 2 * TILE)
+        z, tx, ty = map(int, key.split("/"))
+        # every 2x pixel is the cell under its own centre
+        py, px = np.mgrid[0 : 2 * TILE : 7, 0 : 2 * TILE : 7]
+        lats = y_to_lat(ty * TILE + (py + 0.5) / 2, z)
+        lons = x_to_lon(tx * TILE + (px + 0.5) / 2, z)
+        r, c = g.cell_index(lats.ravel(), lons.ravel())
+        ok = (r >= 0) & (c >= 0)
+        want = np.zeros(r.shape, np.uint8)
+        want[ok] = to_idx(vals[r[ok], c[ok]])
+        assert (a[py, px].ravel() == want).all()
+        # no new values: the 2x tile only uses values present in the 1x tile's source
+        assert set(np.unique(a)) <= set(np.unique(to_idx(vals))) | {0}
+    # the gap is transparent at 2x
+    lat, lon = 37.0 - 0.0025 * 50, -122.2 + 0.0025 * 70
+    x, y = float(lon_to_x(lon, 11)), float(lat_to_y(lat, 11))
+    a = np.asarray(Image.open(tmp_path / "x2" / f"11/{int(x // TILE)}/{int(y // TILE)}.png"))
+    assert a[int(y % TILE * 2), int(x % TILE * 2)] == 0
