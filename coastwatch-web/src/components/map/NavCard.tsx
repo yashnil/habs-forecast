@@ -1,5 +1,6 @@
 "use client";
 
+import { DEMO } from "@/lib/demo";
 import { useState } from "react";
 import type { Palette } from "@/generated/schema";
 import type { PortIntel } from "@/generated/port_intel";
@@ -98,7 +99,7 @@ export function NavCard({ regions, region, onRegion, ports, portsError, port, on
                   <b className="font-semibold text-official-ink">
                     {count} official notice{count === 1 ? "" : "s"}
                   </b>{" "}
-                  active in California
+                  {DEMO ? "listed here (list incomplete)" : "active in California"}
                 </>
               )
             ) : (

@@ -31,6 +31,7 @@ import { SatelliteNear } from "@/components/map/SatelliteNear";
 import { CurrentsNear } from "@/components/map/CurrentsNear";
 import { MapStamp } from "@/components/map/MapStamp";
 import { stampLines } from "@/lib/stamp";
+import { DEMO } from "@/lib/demo";
 import { currentsHourly, fieldFeatures, loadField, type CurrentField } from "@/lib/currents";
 import { OFFICIAL_STATUS } from "@/content/copy";
 import { useOfficialDrawer } from "@/components/shell/OfficialShell";
@@ -63,14 +64,14 @@ const VIEW: Record<string, [[number, number], [number, number]]> = {
 const DEFAULT_REGION = "monterey_bay";
 
 function parseCurrents(v: string | null): CurChoice | null {
-  if (!v || !v.startsWith("currents")) return null;
+  if (DEMO || !v || !v.startsWith("currents")) return null;
   const rest = v.split(":")[1] ?? null;
   return rest === "mean" ? { hour: null, mean: true } : { hour: rest && /^\d{8}T\d{2}Z$/.test(rest) ? rest : null, mean: false };
 }
 
 function parseLayer(v: string | null): { group: LayerGroup; sat: SatChoice } | null {
   if (!v || v === "forecast") return v ? { group: "forecast", sat: { product: "olci300", day: null } } : null;
-  if (v.startsWith("currents")) return { group: "currents", sat: { product: "olci300", day: null } };
+  if (v.startsWith("currents")) return DEMO ? null : { group: "currents", sat: { product: "olci300", day: null } };
   if (v.startsWith("imagery:")) return { group: "satellite", sat: { imagery: v.slice(8) } };
   const [prod, day] = v.split(":");
   if (prod === "olci300" || prod === "viirs750" || prod === "multi") return { group: "satellite", sat: { product: prod, day: prod === "multi" ? null : (day ?? null) } };
@@ -460,7 +461,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
               >
                 <Icon name="shield" className="h-4 w-4 text-official" />
                 <span className="flex-1 text-ink">
-                  <b className="font-semibold text-official-ink">{official ? official.registry.records.filter((r) => r.status === "active").length : "?"} official notices</b> in California
+                  <b className="font-semibold text-official-ink">{official ? official.registry.records.filter((r) => r.status === "active").length : "?"} official notices</b> {DEMO ? "listed · incomplete" : "in California"}
                 </span>
                 <span className="text-[12px] font-medium text-official-ink">{verification ? OFFICIAL_STATUS.verification[verification.state] : "Checking…"} ›</span>
               </button>

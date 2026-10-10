@@ -41,6 +41,7 @@ import {
 } from "@/lib/currents";
 import { combinedGapDays } from "@/lib/stamp";
 import { ARROW_LENGTHS, SPEED_CLASSES } from "@/lib/basemap";
+import { DEMO } from "@/lib/demo";
 
 export type LayerGroup = "forecast" | "satellite" | "currents";
 /** Currents: one observed hour (null = newest) or the 24-hour mean, drawn as arrows or particles. */
@@ -219,7 +220,7 @@ export function LayerDock(p: Props) {
             </span>
           </button>
         ))}
-        {currentsHourly(p.manifest).length > 0 ? (
+        {DEMO ? null : currentsHourly(p.manifest).length > 0 ? (
           <button
             role="tab"
             aria-selected={p.group === "currents"}

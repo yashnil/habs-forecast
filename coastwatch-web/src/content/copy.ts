@@ -113,3 +113,21 @@ export const FISHERIES_COPY = {
   reviewPending: "Species tiers are CoastWatch's editorial grouping and await review by an independent HAB scientist.",
   unavailable: "Fisheries data are unavailable in this dataset.",
 } as const;
+
+/** Portfolio-preview introduction (src/components/DemoIntro.tsx). */
+export const DEMO_COPY = {
+  eyebrow: "Research preview",
+  heading: "Harmful algal bloom outlooks for the California coast",
+  lede:
+    "Toxic algal blooms can load shellfish and fish with domoic acid, a natural toxin behind seafood health advisories and fishery closures along this coast. The information that describes them is scattered across agency models, satellites and notice pages. CoastWatch brings it onto one map and labels each piece for what it is.",
+  layers: [
+    { kind: "model", badge: "Agency forecast", name: "C-HARM", text: "NOAA's modeled bloom and domoic-acid probabilities, shown as published: the nowcast and days 1–3, with the issue date." },
+    { kind: "observation", badge: "Observation", name: "Satellite chlorophyll", text: "Sentinel-3 OLCI and VIIRS, dated by acquisition. Chlorophyll measures algae, not toxin." },
+    { kind: "official", badge: "Not verified", name: "Official notices", text: "CDPH and CDFW advisories transcribed with links to the agency pages. Unconfirmed and incomplete: the list is missing the Oct 9, 2026 Del Norte County razor clam closure and warning. Always check CDFW and CDPH." },
+  ],
+  audience:
+    "It is built for the people who have to read these signals together: fishing and shellfish-harvesting communities, tribal harvesters, coastal public-health and resource managers, and researchers.",
+  caveat:
+    "An independent research project, not an advisory service. CoastWatch is not affiliated with or endorsed by NOAA, CDPH or CDFW, has not been reviewed by an independent HAB scientist, and does not decide whether seafood can be harvested or eaten.",
+  cta: "Explore Monterey Bay",
+} as const;
