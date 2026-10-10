@@ -48,7 +48,8 @@ test("currents tab is live when the dataset has observed currents; arrows are th
   const panel = page.getByTestId("currents-panel");
   await expect(panel.getByTestId("cur-mode-arrows")).toHaveAttribute("aria-checked", "true");
   await expect(panel.getByTestId("native-resolution")).toHaveText("native 2 km");
-  await expect(panel.getByTestId("currents-legend")).toContainText("speed in m/s");
+  await expect(panel.getByTestId("currents-legend")).toContainText("speed, m/s");
+  await expect(panel.getByTestId("currents-legend-item")).toHaveCount(5); // one glyph per speed class
   await expect(panel.getByTestId("currents-legend")).toContainText("1 m/s ≈ 1.9 knots");
   await expect(panel.getByTestId("cur-time")).toContainText("(12:00 UTC)");
   await expect(panel.getByTestId("cur-age")).toHaveText("· 8 h ago");
