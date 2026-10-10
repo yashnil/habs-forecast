@@ -34,6 +34,8 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # a normal run takes about 5 minutes; a hang fails (and is reported) instead of running for hours
+    timeout-minutes: 40
     permissions:
       contents: read
     outputs:
