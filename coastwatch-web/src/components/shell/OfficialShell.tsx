@@ -196,7 +196,7 @@ export function OfficialDrawer() {
         <header className="relative border-b border-official-line bg-official-bg px-6 pb-4 pt-6">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-official">{OFFICIAL_STATUS.heading}</p>
           <h2 id="official-drawer-h" className="mt-1.5 font-display text-[24px] font-medium leading-tight">
-            {ds ? (DEMO ? `${records.length} notice${records.length === 1 ? "" : "s"} in this preview's list (incomplete)` : `${records.length} active notice${records.length === 1 ? "" : "s"} in California`) : "Official notices unavailable"}
+            {ds ? (DEMO ? `${records.length} notice${records.length === 1 ? "" : "s"} listed` : `${records.length} active notice${records.length === 1 ? "" : "s"} in California`) : "Official notices unavailable"}
           </h2>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {ds && <VerificationBadge v={verification} />}

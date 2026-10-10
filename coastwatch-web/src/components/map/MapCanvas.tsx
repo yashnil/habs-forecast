@@ -185,7 +185,7 @@ export default function MapCanvas(p: Props) {
             type="symbol"
             minzoom={7.4}
             filter={["==", ["get", "kind"], "lat_limit"]}
-            layout={{ "symbol-placement": "line-center", "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, -0.8], "text-allow-overlap": false }}
+            layout={{ "symbol-placement": "line-center", "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, -1.15], "text-allow-overlap": false }}
             paint={{ "text-color": OFFICIAL, "text-halo-color": "#06111e", "text-halo-width": 1.6 }}
           />
         </Source>
