@@ -29,6 +29,7 @@ import { NavCard, type RegionDef } from "@/components/map/NavCard";
 import { LayerDock, selectedCurrents, type CurChoice, type FlowMode, type LayerGroup, type SatChoice } from "@/components/map/LayerDock";
 import { SatelliteNear } from "@/components/map/SatelliteNear";
 import { CurrentsNear } from "@/components/map/CurrentsNear";
+import { DEMO } from "@/lib/demo";
 import { currentsHourly, fieldFeatures, loadField, type CurrentField } from "@/lib/currents";
 import { OFFICIAL_STATUS } from "@/content/copy";
 import { useOfficialDrawer } from "@/components/shell/OfficialShell";
@@ -61,14 +62,14 @@ const VIEW: Record<string, [[number, number], [number, number]]> = {
 const DEFAULT_REGION = "monterey_bay";
 
 function parseCurrents(v: string | null): CurChoice | null {
-  if (!v || !v.startsWith("currents")) return null;
+  if (DEMO || !v || !v.startsWith("currents")) return null;
   const rest = v.split(":")[1] ?? null;
   return rest === "mean" ? { hour: null, mean: true } : { hour: rest && /^\d{8}T\d{2}Z$/.test(rest) ? rest : null, mean: false };
 }
 
 function parseLayer(v: string | null): { group: LayerGroup; sat: SatChoice } | null {
   if (!v || v === "forecast") return v ? { group: "forecast", sat: { product: "olci300", day: null } } : null;
-  if (v.startsWith("currents")) return { group: "currents", sat: { product: "olci300", day: null } };
+  if (v.startsWith("currents")) return DEMO ? null : { group: "currents", sat: { product: "olci300", day: null } };
   if (v.startsWith("imagery:")) return { group: "satellite", sat: { imagery: v.slice(8) } };
   const [prod, day] = v.split(":");
   if (prod === "olci300" || prod === "viirs750" || prod === "multi") return { group: "satellite", sat: { product: prod, day: prod === "multi" ? null : (day ?? null) } };
