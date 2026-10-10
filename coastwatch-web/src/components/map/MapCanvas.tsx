@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLayerMouseEvent } from "react-map-gl/maplibre";
-import { setWorkerUrl, type Map as MlMap } from "maplibre-gl";
+import { setWorkerUrl, type ExpressionSpecification, type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { PortsCollection } from "@/generated/schema";
 import { arrowImage, BASEMAP_STYLE, BEFORE_OVERLAY_ID, CA_BOUNDS, hatchImage } from "@/lib/basemap";
@@ -44,11 +44,15 @@ const OFFICIAL = "#f6bb5c";
 // [level, minzoom, maxzoom]: zoomed out, only cells on every 8th row and column carry an
 // arrow; arrows never move between zooms, more appear. HF radar cells are about 2 km.
 const ARROW_ZOOMS: [number, number, number][] = [
-  [8, 0, 7],
-  [4, 7, 8.4],
-  [2, 8.4, 9.6],
+  [16, 0, 6.3],
+  [8, 6.3, 7.3],
+  [4, 7.3, 8.5],
+  [2, 8.5, 9.6],
   [1, 9.6, 24],
 ];
+// length grows with speed (capped so a fast cell does not cover its neighbours); arrows are
+// drawn smaller when zoomed out so the statewide view stays readable
+const SPEED_SIZE: ExpressionSpecification = ["interpolate", ["linear"], ["get", "speed"], 0, 0.32, 0.25, 0.6, 0.5, 0.85, 1, 1.05];
 // Every data raster is opaque and nearest-sampled: a pixel is a real source cell, and the
 // legend colours are exactly the colours on the map (design reset rev. 2, §5.1).
 const RASTER_PAINT = { "raster-opacity": 1, "raster-resampling": "nearest", "raster-fade-duration": 0 } as const;
@@ -156,8 +160,7 @@ export default function MapCanvas(p: Props) {
                 "icon-rotation-alignment": "map",
                 "icon-allow-overlap": true,
                 "icon-ignore-placement": true,
-                // length grows with speed; capped so a fast cell does not cover its neighbours
-                "icon-size": ["interpolate", ["linear"], ["get", "speed"], 0, 0.32, 0.25, 0.6, 0.5, 0.85, 1, 1.05],
+                "icon-size": ["interpolate", ["linear"], ["zoom"], 5, ["*", 0.55, SPEED_SIZE], 8.5, SPEED_SIZE],
               }}
               paint={{ "icon-opacity": ["interpolate", ["linear"], ["get", "speed"], 0, 0.45, 0.2, 0.8, 0.4, 1] }}
             />

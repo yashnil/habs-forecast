@@ -9,8 +9,8 @@ import { artifactUrl } from "@/lib/layers";
  */
 export const CURRENTS_GROUP = "currents";
 export const KNOTS_PER_MS = 1.943844;
-/** Arrow thinning levels (cells between arrows), coarse to fine: zoomed out, only every 8th cell has an arrow. */
-export const ARROW_LEVELS = [8, 4, 2, 1] as const;
+/** Arrow thinning levels (cells between arrows), coarse to fine: statewide, only every 16th cell (about 32 km) has an arrow. */
+export const ARROW_LEVELS = [16, 8, 4, 2, 1] as const;
 
 export function currentsHourly(m: Manifest): LayerArtifact[] {
   return m.layers

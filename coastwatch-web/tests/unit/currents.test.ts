@@ -27,7 +27,8 @@ describe("currents helpers", () => {
     const fc = fieldFeatures(f);
     expect(fc.features).toHaveLength(80);
     const at = (r: number, c: number) => fc.features.find((x) => x.geometry.coordinates[0] === g.lon_first + c * g.lon_step && x.geometry.coordinates[1] === g.lat_first + r * g.lat_step)!;
-    expect(at(0, 0).properties!.level).toBe(8);
+    expect(at(0, 0).properties!.level).toBe(16);
+    expect(at(0, 8).properties!.level).toBe(8);
     expect(at(0, 4).properties!.level).toBe(4);
     expect(at(2, 6).properties!.level).toBe(2);
     expect(at(1, 3).properties!.level).toBe(1);

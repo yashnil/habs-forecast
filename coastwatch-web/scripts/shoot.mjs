@@ -38,6 +38,16 @@ const SHOTS = [
     }
     await p.waitForTimeout(800);
   }],
+  // P2: multi-sensor satellite view and observed currents
+  ["11-map-multisensor", "/?layer=multi", ALL, false],
+  ["12-map-multisensor-sensor", "/?layer=multi&sensor=1", ["desktop-1440", "mobile-390"], false],
+  ["13-map-statewide-multisensor", "/?region=california&layer=multi", ["desktop-1440", "laptop-1280"], false],
+  ["14-map-currents", "/?layer=currents", ALL, false],
+  ["15-map-currents-mean", "/?layer=currents:mean", ["desktop-1440", "mobile-390"], false],
+  ["16-map-currents-flow", "/?layer=currents&flow=particles", ["desktop-1440", "laptop-1280"], false, async (p) => { await p.waitForTimeout(2500); }],
+  ["17-map-currents-statewide", "/?region=california&layer=currents", ["desktop-1440", "laptop-1280"], false],
+  ["18-map-currents-point", "/?region=monterey_bay&port=593&layer=currents", ALL, false],
+  ["19-map-currents-north-coast-gap", "/?region=north_coast&layer=currents", ["desktop-1440", "mobile-390"], false],
   ["07-bloom", "/bloom", ["desktop-1440", "mobile-390"], true],
   ["08-fisheries", "/fisheries", ["desktop-1440", "mobile-390"], true],
   ["09-official-drawer", "/", ["desktop-1440", "mobile-390"], false, drawer],
