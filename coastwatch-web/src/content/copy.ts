@@ -7,7 +7,7 @@
 export const OFFICIAL_STATUS = {
   heading: "Official closures and advisories",
   notTracked:
-    "CoastWatch lists only notices a person has transcribed from CDFW and CDPH. The absence of a notice here does not mean an area is open or that seafood is safe.",
+    "CoastWatch lists notices transcribed from CDFW and CDPH pages. The list has not been checked by a person and may be incomplete. The absence of a notice here does not mean an area is open or that seafood is safe.",
   missingNotOpen:
     "No notice listed here does not mean an area is open or that seafood is safe. Always confirm with CDFW and CDPH.",
   instruction: "Before fishing or harvesting, check the official sources:",
