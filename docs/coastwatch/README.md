@@ -2,6 +2,10 @@
 
 Planning and architecture for turning `coastwatch-web/` and the HABs research into a public coastal-intelligence platform for California fishing communities. Planning written 2026-10-08; Milestone 1 implemented the same day (see 07).
 
+**Related publication.** Mohanty, Y. (2025). *Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System.* Proceedings of the 6th World Conference on Climate Change and Global Warming, 2(2), published 29 January 2026. [doi:10.33422/ccgconf.v2i2.1619](https://doi.org/10.33422/ccgconf.v2i2.1619).
+
+The paper is about physics-informed chlorophyll forecasting (see the [root README](../../README.md)). CoastWatch does not run those models: its layers come from NOAA C-HARM, NOAA CoastWatch satellite products, HFRNet HF radar, CalHABMAP, NOAA Fisheries, and CDFW/CDPH notices. The publication does not review the CoastWatch application.
+
 | Doc | Contents |
 |---|---|
 | [01 — Codebase audit](01-codebase-audit.md) | Reusable assets, every synthetic/unsourced dataset, misleading logic, model artifacts and inference requirements, tech debt |
@@ -12,7 +16,7 @@ Planning and architecture for turning `coastwatch-web/` and the HABs research in
 | [06 — Development plan](06-development-plan.md) | Prioritized MVP list, milestones M0–M4 + P2/P3, testing & validation, deployment, risks, work not to do yet |
 | [07 — Milestone 1 implementation](07-m1-implementation.md) | What is built, verification results, tests, known issues, how to run |
 | [08 — Scientific review checklist](08-scientific-review-checklist.md) | 20-minute checklist for a HAB scientist reviewing the C-HARM layer |
-| [09 — Milestone 2 implementation](09-m2-implementation.md) | Official notices (human-reviewed), port intelligence, redesigned map; tests, screenshots, limits |
+| [09 — Milestone 2 implementation](09-m2-implementation.md) | Official notices (a human-review workflow; the records have not yet been reviewed by a person), port intelligence, redesigned map; tests, screenshots, limits |
 | [10 — M2 integration review](10-m2-integration-review.md) | Schema-compatibility fix, Node 24 actions, staging run, production-equivalent checks, merge decision |
 | [11 — Milestone 3 implementation](11-m3-implementation.md) | Source audit, CalHABMAP observations, Bloom Intelligence, statewide fisheries exposure (FOSS + CPI-U), UI refinement, compatibility with published M2 data, staging results, decisions awaiting approval |
 | [12 — M3 integration review](12-m3-integration-review.md) | Licence evidence per dataset, NOAA reconciliation (KSTR duplicate, FUS Table 4), deflator check, fixes, test and publication evidence, merge results |
@@ -25,6 +29,7 @@ Planning and architecture for turning `coastwatch-web/` and the HABs research in
 | [p2/](p2/) | P2 screenshots (staging data, 2026-10-10), WCOFS evaluation, evidence |
 | [16 — P3: map refinement, combined view](16-p3-map-refinement.md) | P2 production publication; speed-class arrows, on-map timestamps and gap notices, layout fixes; opt-in combined currents + chlorophyll with time-gap evidence; performance; screenshots |
 | [p3/](p3/) | P3 screenshots (production data, 2026-10-10), issue #12 human-review checklist, NOAA outreach draft, evidence |
+| [17 — Status, design audit, roadmap](17-roadmap-and-design-audit.md) | Demo protection, regulatory integration (#16), P3 review (#15), design-reset gap audit (Ocean Map, Bloom, Fisheries), prioritized plan M4–M9, next milestone M5 |
 | [m3/](m3/) | Screenshots of the M3 app (staging data, 2026-10-08) |
 | [m2/](m2/) | Screenshots of the M2 app (live data, 2026-10-08) |
 | [m1/](m1/) | Screenshots of the running app (live data, 2026-10-08) |

@@ -1,10 +1,84 @@
-# Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System
+# HAB forecasting for the California coast
+
+This repository holds two related pieces of work by Yashnil Mohanty:
+
+| | What it is | Where |
+|---|---|---|
+| **Published research** | Physics-guided neural forecasts of nearshore chlorophyll-a (an algal-bloom proxy) in the California Current System: data pipeline, models, trained artifacts and diagnostics | repository root, `convLSTM/`, `pinn/`, `tft/`, `paper_results/`, `Diagnostics_*` |
+| **CoastWatch** | A coastal-conditions map for California fishing communities that brings together agency HAB forecasts, satellite and HF-radar observations, and official notices, each labelled for what it is | `pipeline/`, `coastwatch-web/`, `docs/coastwatch/` |
+
+> **Publication.** Mohanty, Y. (2025). Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System. *Proceedings of the 6th World Conference on Climate Change and Global Warming*, 2(2). Published 29 January 2026. [doi:10.33422/ccgconf.v2i2.1619](https://doi.org/10.33422/ccgconf.v2i2.1619) · [publisher page](https://www.dpublication.com/conference-proceedings/index.php/CCGCONF/article/view/1619) (CC BY 4.0)
+
+**How the two relate.** The paper concerns forecasting chlorophyll-a with physics-informed machine learning. CoastWatch does **not** run those research models: its forecast layer is NOAA's C-HARM v3.1, and its observations come from NOAA CoastWatch, IOOS/HFRNet and the agencies listed below. The research models would need retraining on operational (VIIRS-era) inputs and fresh validation before they could appear in CoastWatch ([development plan](docs/coastwatch/06-development-plan.md)). The publication covers the research only; CoastWatch itself has not been peer reviewed or reviewed by an independent HAB scientist.
+
+**Research result in one line.** Evaluated with the same diagnostics pipeline, the physics-informed ConvLSTM (PINN) **matches but does not beat** the ConvLSTM baseline at 8-day lead: test RMSE 0.801 for both, in log chlorophyll, against 0.889 for persistence. It modestly improves spatial fidelity and training stability ([§4.1](#41-global-skill-at-8-day-lead), [§5](#5-discussion)).
+
+---
+
+## CoastWatch
+
+**Research preview:** <https://coastwatch-demo.vercel.app>. This is a map-only demonstration, not an advisory service. The full application is not deployed yet.
+
+### What it shows
+
+| Layer | Source | What it is, and what it is not |
+|---|---|---|
+| HAB forecast | **NOAA C-HARM v3.1** (CoastWatch West Coast ERDDAP) | Modelled probability of *Pseudo-nitzschia* and domoic acid at 3 km: nowcast and days 1–3, with the issue date. Not a toxin measurement, not a closure decision |
+| Satellite chlorophyll | **Sentinel-3 OLCI** 300 m and **VIIRS** 750 m (NOAA CoastWatch) | Observed ocean colour (algae biomass, not toxin). Shown as a 7-day latest clear view with each pixel's own date. An optional two-sensor view never averages the two sensors |
+| Surface currents | **HF radar**, HFRNet 2 km hourly (via NOAA CoastWatch ERDDAP) | Observed surface motion over the last 24 hours, plus a 24-hour mean. Not a forecast |
+| Monitoring stations | **CalHABMAP** shore stations (SCCOOS ERDDAP) | Measured domoic acid, *Pseudo-nitzschia* and chlorophyll, dated by sample |
+| Fisheries context | **NOAA Fisheries** landings, CDFW ports | Historical landed value. Not a forecast of losses |
+| Official notices | **CDFW and CDPH** pages, transcribed | **Not verified.** Transcribed from the agency pages and never checked by a person; may be incomplete. Every page says so and links to the agencies |
+
+### How it works
+
+```
+NOAA / IOOS / CDFW / CDPH ──► pipeline/ (Python)
+                               ingest → validate → render tiles and grids → verify against
+                               upstream (point checks) → check every file → health alerts
+                                        │  single atomic commit, every 6 h (GitHub Actions)
+                                        ▼
+                              coastwatch-data branch ──► GitHub Pages (data only)
+                                        │
+                                        ▼
+                              coastwatch-web/ (Next.js, MapLibre) reads the published data
+```
+
+- **Contracts:** the data contract is typed: Pydantic models export JSON Schema, which generates the web app's TypeScript types.
+- **Verification:** new data is published only if it passes verification against the upstream servers. When a source fails, the previous data stay up with their original dates, and the app shows their age.
+- **Details:** [docs/coastwatch/](docs/coastwatch/README.md) has the architecture, data-source register, [science and safety rules](docs/coastwatch/05-science-and-safety.md), milestone reports and the [roadmap](docs/coastwatch/17-roadmap-and-design-audit.md).
+
+### Develop and test
+
+```bash
+# pipeline (Python 3.11+, uv)
+cd pipeline && uv sync
+uv run pytest                          # offline tests on recorded upstream responses
+uv run cwp fixture --out /tmp/cw-fixture   # deterministic dataset, no network
+uv run cwp run --out ../coastwatch-web/public/data/v1   # live run against the agency servers
+
+# web app (Node 22, as in CI)
+cd coastwatch-web && npm ci
+npm run data:fixture && CW_DATA_BASE_URL=/data/fixture/v1 npm run dev   # http://localhost:3000 on recorded data
+CW_DATA_BASE_URL=https://yashnil.github.io/habs-forecast/v1 npm run dev  # on the published data
+npm run typecheck && npm run lint && npm test
+npm run test:e2e                       # production build + Playwright on fixture data
+```
+
+### Status and limitations
+
+- **Running today:** the data pipeline runs on `main` and publishes to GitHub Pages every 6 hours. The full web application is not deployed; the research preview above is a separate, manually deployed build.
+- **Official notices:** awaiting a person's review against the agency pages.
+- **No validated week-ahead HAB forecast exists for this coast:** C-HARM goes to day 3 only, and NOAA's WCOFS current forecasts did not beat persistence in a two-run evaluation ([details](docs/coastwatch/p2/wcofs-evaluation.md)).
+- **Coverage gaps:** fog limits 300 m satellite coverage; HF radar has no North Coast coverage at present; NOAA's servers sometimes drop datasets or refuse automated clients. Each case is shown as a gap or as stale data, never filled in.
+
+---
+
+# Research: physics-guided neural forecasts of nearshore chlorophyll-a
 
 Code, trained artifacts and diagnostics for an 8-day-ahead forecast of nearshore chlorophyll-a along the California coast. The forecast is posed as a spatiotemporal regression on a 4 km grid, and three neural architectures are compared: a recurrent convolutional baseline (ConvLSTM), a Temporal Fusion Transformer (TFT) and a physics-informed ConvLSTM (PINN) regularized by a two-dimensional advection–diffusion residual.
 
 **Research question.** Do physics-guided neural networks improve coastal bloom forecast skill and spatial fidelity compared to purely statistical models?
-
----
 
 ## Contents
 
@@ -15,7 +89,7 @@ Code, trained artifacts and diagnostics for an 8-day-ahead forecast of nearshore
 5. [Discussion](#5-discussion)
 6. [Reproducing the Experiments](#6-reproducing-the-experiments)
 7. [Repository Structure](#7-repository-structure)
-8. [Decision-Support Applications](#8-decision-support-applications)
+8. [Decision-Support Application](#8-decision-support-application)
 9. [Computational Requirements](#9-computational-requirements)
 10. [Limitations and Future Work](#10-limitations-and-future-work)
 11. [Citation, License and Contact](#11-citation-license-and-contact)
@@ -395,18 +469,9 @@ habs-forecast/
 
 ---
 
-## 8. Decision-Support Application (CoastWatch)
+## 8. Decision-Support Application
 
-**CoastWatch** (`coastwatch-web/` + `pipeline/`) is a public-facing coastal map for California fishing communities. It is **decision support only**, not a regulatory or public-health product; closures and advisories from CDFW, CDPH and OEHHA always take precedence.
-
-The current release (Milestone 1) shows the official **C-HARM v3.1** harmful-algal-bloom and domoic-acid forecast probabilities from NOAA CoastWatch West Coast, satellite chlorophyll from NASA GIBS as a separate observation layer, and CDFW landing ports. **The research models in this repository are not used by CoastWatch yet**; they need retraining on operational (VIIRS-era) inputs and fresh validation first (see `docs/coastwatch/06-development-plan.md`).
-
-```bash
-cd pipeline && uv sync && uv run cwp run          # fetch + validate + publish to coastwatch-web/public/data/v1
-cd ../coastwatch-web && npm install && npm run dev  # http://localhost:3000
-```
-
-See [`docs/coastwatch/`](docs/coastwatch/README.md) for the architecture, data-source register and the scientific safety rules. The earlier Streamlit dashboard, which displayed a synthetic demo field, has been retired.
+The research models are not part of CoastWatch. See [CoastWatch](#coastwatch) above for what the application shows and where its data come from.
 
 ---
 
@@ -440,19 +505,27 @@ The physics constraint adds minimal overhead (~10–15% inference time), making 
 
 ## 11. Citation, License and Contact
 
-**Citation.** If you use this work, please cite:
+**Citation.** If you use this work, please cite the published paper:
 
-> Mohanty, Y. (2025). *Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System*. (In Review).
+> Mohanty, Y. (2025). Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System. *Proceedings of the 6th World Conference on Climate Change and Global Warming*, 2(2). Published 29 January 2026. https://doi.org/10.33422/ccgconf.v2i2.1619
 
 ```bibtex
-@unpublished{mohanty2025habs,
-  author = {Mohanty, Yashnil},
-  title  = {Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System},
-  year   = {2025},
-  note   = {In review}
+@inproceedings{mohanty2025habs,
+  author    = {Mohanty, Yashnil},
+  title     = {Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System},
+  booktitle = {Proceedings of the 6th World Conference on Climate Change and Global Warming},
+  volume    = {2},
+  number    = {2},
+  year      = {2025},
+  issn      = {3030-0703},
+  doi       = {10.33422/ccgconf.v2i2.1619},
+  url       = {https://www.dpublication.com/conference-proceedings/index.php/CCGCONF/article/view/1619},
+  note      = {Published 29 January 2026}
 }
 ```
 
-**License.** MIT; see [`LICENSE`](LICENSE).
+The article is published under CC BY 4.0. The numbers in this README are copied from the result files in this repository (each table names its source); the paper is the reference for the published analysis.
 
-**Contact.** Yashnil Mohanty, yashnilmohanty@gmail.com, GitHub: [yashnil](https://github.com/yashnil).
+**License.** Code: MIT; see [`LICENSE`](LICENSE).
+
+**Contact.** Yashnil Mohanty, GitHub: [yashnil](https://github.com/yashnil).

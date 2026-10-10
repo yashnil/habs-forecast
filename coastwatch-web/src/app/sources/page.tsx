@@ -2,7 +2,7 @@ import { AppShell } from "@/components/AppShell";
 import { DataBanners } from "@/components/Banners";
 import { OfficialStatusCard } from "@/components/panels/OfficialStatusCard";
 import { SourceTable } from "@/components/SourceTable";
-import { DISCLAIMER } from "@/content/copy";
+import { DISCLAIMER, RESEARCH } from "@/content/copy";
 import { loadData } from "@/lib/data";
 import { sourceStatus } from "@/lib/layers";
 
@@ -30,6 +30,18 @@ export default async function SourcesPage() {
         ) : (
           <p className="text-ink-2">Source status cannot be shown because the data manifest is unavailable.</p>
         )}
+        <section aria-labelledby="research-h" data-testid="research" className="space-y-2 border-t border-hairline pt-5 text-[13px] leading-relaxed text-ink-2">
+          <h2 id="research-h" className="text-[15px] font-semibold text-ink">Research behind CoastWatch</h2>
+          <p className="max-w-2xl">
+            <span className="font-display text-[17px] leading-snug text-ink">{RESEARCH.title}</span>
+            <br />
+            {RESEARCH.author} · {RESEARCH.venue} · {RESEARCH.published} ·{" "}
+            <a href={RESEARCH.doi} target="_blank" rel="noreferrer" className="font-medium text-accent underline underline-offset-2">
+              doi:10.33422/ccgconf.v2i2.1619
+            </a>
+          </p>
+          <p className="max-w-2xl">{RESEARCH.relation}</p>
+        </section>
         <section className="space-y-2 text-[13px] leading-relaxed text-ink-2">
           <h2 className="text-[15px] font-semibold text-ink">How freshness is decided</h2>
           <p>
