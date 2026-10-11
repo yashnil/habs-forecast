@@ -1,0 +1,184 @@
+{
+ "live": {
+  "cases": {
+   "forecast": {
+    "tileRequests": 0,
+    "ok": 0,
+    "notOk": 0,
+    "w512": 0,
+    "w256": 0,
+    "index": [],
+    "pageErrors": 0,
+    "consoleErrors": 0,
+    "sampleConsole": [],
+    "unavailable": false,
+    "satellite": null
+   },
+   "multi-z9": {
+    "tileRequests": 57,
+    "ok": 34,
+    "notOk": 23,
+    "w512": 34,
+    "w256": 0,
+    "index": [],
+    "pageErrors": 0,
+    "consoleErrors": 23,
+    "sampleConsole": [
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "unavailable": false,
+    "satellite": "https://yashnil.github.io/habs-forecast/v1/satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/tiles/{z}/{x}/{y}.png"
+   },
+   "multi-z11": {
+    "tileRequests": 59,
+    "ok": 40,
+    "notOk": 19,
+    "w512": 40,
+    "w256": 0,
+    "index": [],
+    "pageErrors": 0,
+    "consoleErrors": 19,
+    "sampleConsole": [
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "unavailable": false,
+    "satellite": "https://yashnil.github.io/habs-forecast/v1/satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/tiles/{z}/{x}/{y}.png"
+   },
+   "olci-z10": {
+    "tileRequests": 97,
+    "ok": 27,
+    "notOk": 70,
+    "w512": 27,
+    "w256": 0,
+    "index": [],
+    "pageErrors": 0,
+    "consoleErrors": 70,
+    "sampleConsole": [
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "unavailable": false,
+    "satellite": "https://yashnil.github.io/habs-forecast/v1/satellite/olci300/latest-2026-10-11-5e11130c1a/tiles/{z}/{x}/{y}.png"
+   },
+   "olci-z11.5": {
+    "tileRequests": 68,
+    "ok": 22,
+    "notOk": 46,
+    "w512": 22,
+    "w256": 0,
+    "index": [],
+    "pageErrors": 0,
+    "consoleErrors": 46,
+    "sampleConsole": [
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "unavailable": false,
+    "satellite": "https://yashnil.github.io/habs-forecast/v1/satellite/olci300/latest-2026-10-11-5e11130c1a/tiles/{z}/{x}/{y}.png"
+   },
+   "olci-day-10-09": {
+    "tileRequests": 67,
+    "ok": 9,
+    "notOk": 58,
+    "w512": 0,
+    "w256": 9,
+    "index": [],
+    "pageErrors": 0,
+    "consoleErrors": 58,
+    "sampleConsole": [
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "unavailable": false,
+    "satellite": "https://yashnil.github.io/habs-forecast/v1/satellite/olci300/day-2026-10-09-ef77b75b8e/tiles/{z}/{x}/{y}.png"
+   },
+   "olci-day-10-05": {
+    "tileRequests": 62,
+    "ok": 16,
+    "notOk": 46,
+    "w512": 0,
+    "w256": 16,
+    "index": [],
+    "pageErrors": 0,
+    "consoleErrors": 46,
+    "sampleConsole": [
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "unavailable": false,
+    "satellite": "https://yashnil.github.io/habs-forecast/v1/satellite/olci300/day-2026-10-05-ce1cf20bad/tiles/{z}/{x}/{y}.png"
+   },
+   "viirs-z9": {
+    "tileRequests": 26,
+    "ok": 16,
+    "notOk": 10,
+    "w512": 0,
+    "w256": 16,
+    "index": [],
+    "pageErrors": 0,
+    "consoleErrors": 10,
+    "sampleConsole": [
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "unavailable": false,
+    "satellite": "https://yashnil.github.io/habs-forecast/v1/satellite/viirs750/latest-2026-10-10-f55d473ad0/tiles/{z}/{x}/{y}.png"
+   },
+   "statewide-multi": {
+    "tileRequests": 71,
+    "ok": 46,
+    "notOk": 25,
+    "w512": 46,
+    "w256": 0,
+    "index": [],
+    "pageErrors": 0,
+    "consoleErrors": 25,
+    "sampleConsole": [
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()",
+     "Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "unavailable": false,
+    "satellite": "https://yashnil.github.io/habs-forecast/v1/satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/tiles/{z}/{x}/{y}.png"
+   }
+  },
+  "ports": {
+   "201": {
+    "notices": [
+     "cdfw-2026-razor-clam-del-norte",
+     "cdph-2026-annual-mussel-quarantine",
+     "cdph-2026-sn26-020-razor-clam-del-norte",
+     "cdph-rock-crab-viscera-north-coast-nci"
+    ],
+    "notVerifiedShown": true,
+    "pageErrors": 0
+   },
+   "550": {
+    "notices": [
+     "cdfw-2026-anchovy-take-restriction-monterey-bay",
+     "cdph-2026-annual-mussel-quarantine",
+     "cdph-2026-sn26-018-monterey-bivalves",
+     "cdph-2026-sn26-019-anchovy-central-coast"
+    ],
+    "notVerifiedShown": true,
+    "pageErrors": 0
+   },
+   "880": {
+    "notices": [
+     "cdph-2026-annual-mussel-quarantine"
+    ],
+    "notVerifiedShown": true,
+    "pageErrors": 0
+   }
+  }
+ }
+}

@@ -79,7 +79,7 @@ Do not ask the user to run routine Git or `gh` commands that Claude can safely r
 - **One session per checkout.** Do development in a dedicated `git worktree` per branch. Never switch
   the branch of a checkout another session may be using, and stage explicit paths, never `git add -A`
   in a shared tree.
-- **BASES demo:** <https://coastwatch-demo.vercel.app>.
+- **Research Preview (demo release):** <https://coastwatch-demo.vercel.app>.
   - It is a separately managed release in the Vercel project `coastwatch-demo`.
   - Git auto-deploys are disconnected; it deploys only by a manual `vercel deploy --prod`, and **only
     with the user's explicit approval each time**.

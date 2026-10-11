@@ -177,8 +177,8 @@ describe("measured nearby", () => {
   });
 });
 
-describe("published data stays readable by the released web (BASES demo, main before M5)", () => {
-  // The demo at coastwatch-demo.vercel.app reads the live production dataset and validates it
+describe("published data stays readable by the released web (Research Preview demo, main before M5)", () => {
+  // The Research Preview at coastwatch-demo.vercel.app reads the live production dataset and validates it
   // with this schema (identical in demo-release/2026-10-09-submitted, demo-release/2026-10-10
   // and main before M5). It rejects unknown fields, so new pipeline output must still pass.
   it.each([

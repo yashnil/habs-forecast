@@ -1,6 +1,6 @@
 # 20 — M5: Ocean Map
 
-**Status:** built on `feat/coastwatch-p5-map-experience` (draft PR #20). Not merged or deployed. No production data has been published, and the BASES demo has not been touched.
+**Status:** merged to `main` on 2026-10-11 (PR #20, merge commit `e039914`), and the first production data refresh was published (§13). The web is not deployed; the Research Preview demo was not redeployed.
 
 **Starting points:**
 - Images: [m5/review/](m5/review/). Start with [1440-opening-forecast](m5/review/1440-opening-forecast.jpg), then [390-opening-forecast](m5/review/390-opening-forecast.jpg) and [satellite-cells-z11](m5/review/satellite-cells-z11.png).
@@ -71,7 +71,7 @@ On the live data at the time of writing, C-HARM was issued 2026-10-10, so the ma
 - each image pixel takes the one source cell under its centre, so values, georeferencing and no-data masks are unchanged;
 - each tile set also writes `index.json`, listing the tiles that exist.
 
-**Compatibility, found while testing.** The first version added two manifest fields. The deployed web and the BASES demo validate the manifest with a schema that rejects unknown fields. Publishing that version would have made the demo show "Live data unavailable", because the demo reads the production dataset.
+**Compatibility, found while testing.** The first version added two manifest fields. The deployed web and the Research Preview demo validate the manifest with a schema that rejects unknown fields. Publishing that version would have made the demo show "Live data unavailable", because the demo reads the production dataset.
 
 The format was changed so that no field is added:
 - the existing `tile_size` field says 512;
@@ -257,10 +257,10 @@ The phone at 390 × 844 @3x shows the same pattern.
 
 **GO, after the final review (§12)**, in this order:
 
-1. **Merge PR #20 to main** with your approval. Scheduled data runs use main's code; the next one publishes 512 px tiles and their indexes. The released web, including the BASES demo, reads them (§12.1).
+1. **Merge PR #20 to main** with your approval. Scheduled data runs use main's code; the next one publishes 512 px tiles and their indexes. The released web, including the Research Preview demo, reads them (§12.1).
 2. **Watch the first scheduled production run:** the satellite verification, the publish check and the served-index checks. If it fails, nothing is published and the current dataset stays live (§12.2); fix and let the next run publish.
 3. **Deploy the web** that reads the indexes and the opening policy, with separate approval.
-4. **Do not redeploy the BASES demo** as part of this. It keeps working on the new data as it is, and its current deployment stays the rollback.
+4. **Do not redeploy the Research Preview demo** as part of this. It keeps working on the new data as it is, and its current deployment stays the rollback.
 
 ## 11. Recommendations for M6
 
@@ -274,9 +274,9 @@ The phone at 390 × 844 @3x shows the same pattern.
 
 ## 12. Final integration review (Oct 11)
 
-Run before merging, on the final staged dataset (staging run 38103638833) and the exact code of the live BASES demo. Evidence: [m5/evidence/](m5/evidence/) (`final-*.json`); images: [m5/final-review/](m5/final-review/).
+Run before merging, on the final staged dataset (staging run 38103638833) and the exact code of the live Research Preview demo. Evidence: [m5/evidence/](m5/evidence/) (`final-*.json`); images: [m5/final-review/](m5/final-review/).
 
-### 12.1 The live BASES demo on the staged M5 data
+### 12.1 The live Research Preview demo on the staged M5 data
 
 - **Which code.** coastwatch-demo.vercel.app serves deployment `dpl_GpFfbFP42QGBM3XwvT6FfikWw4jm`, tag `demo-release/2026-10-10` (commit 372a80c). That commit was built locally with the demo's build settings and pointed at the staging channel. Nothing on Vercel was touched.
 - **Same build, same behaviour.** On production data the local build and the live site gave identical tile counts in all 9 views tested (requests, successes and 404s).
@@ -343,4 +343,50 @@ The policy ran on the real staged dataset, with no layer in the link, at three c
 - **C-HARM cell edges.** At z9–10 they read as a faint grid over uniform pink; acceptable, but worth a look on a real screen.
 - **Refresh hangs are silent** (§12.2): a timed-out run opens no issue. Fix before relying on alerts.
 - **Production HF radar is failing.** The last success was Oct 10, 05:55 UTC. NOAA's ERDDAP now answers "unknown datasetID=ucsdHfrW2". The app shows the last good currents with their dates and says the update failed. This is unrelated to M5, but the first post-merge run will meet it too; it does not block publication of the other sources.
+
+## 13. Integration (Oct 11)
+
+**Merge.**
+- PR #20 was merged into `main` with a merge commit (`e039914`) after the owner's approval. CI was green on the head commit `462bb97`.
+- `main`'s tree is identical to that commit. No demo code and no demo branch is in `main`.
+
+**First production refresh:** run 38119843030, dispatched on `main`.
+- Build, all verification steps, publish and the public check passed. The Pages deployment (run 38120526382) served the new manifest at 07:12 UTC.
+- `check-published` against GitHub Pages: 280 files OK, including 5 tile indexes and 45 sample tiles ([report](m5/evidence/production-check-published.json)).
+- Tile sampling ([results](m5/evidence/production-tiles-check.txt)): every 512 px tile set on Pages agrees with its index. 80 of 80 listed tiles are 512 px PNGs with CORS; 20 of 20 unlisted tiles return 404.
+- Layers carried over unchanged stay at 256 px without an index and render as before: VIIRS, and the Sentinel-3 days from Oct 4–9.
+- The manifest validates against both the current schema and the released schema the Research Preview uses.
+
+**Source failures in this run.** NOAA's ERDDAP at coastwatch.pfeg.noaa.gov did not answer for three sources; each kept its last good data with its own dates:
+
+| Source | Outcome | What is published |
+|---|---|---|
+| C-HARM | `failed` (probe timed out) | The run issued Oct 10, `last_success_at` Oct 10 21:46 UTC. Its ERDDAP verification report (156 comparisons, 0 failures) stays paired with it. |
+| VIIRS (satellite) | `partial` | Sentinel-3 updated with 512 px tiles; VIIRS carried over. |
+| HF radar | `failed` | Last good hours from Oct 10 05:55 UTC. The dataset `ucsdHfrW2` has been reported unknown since Oct 10. |
+
+CalHABMAP (SCCOOS), GIBS, ports, the official-notices watch, port summaries and landings all updated. Nothing incomplete was published.
+
+**Official notices.**
+- 10 records, all active.
+- The registry is unchanged and still `pending_human_review`; no record is marked verified.
+- The watcher again flagged CDPH SN26-020 for review (issue #12).
+
+**Research Preview demo**, https://coastwatch-demo.vercel.app, not redeployed, on the new production data ([image](m5/final-review/production-preview-live.jpg), [results](m5/evidence/production-preview-live.json)):
+- Loads with no page errors and no "Live data unavailable".
+- Renders 512 px multi-sensor and Sentinel-3 tiles, and 256 px carried-over layers.
+- Shows the same notices, marked "not verified": Monterey 4, Crescent City 4, San Diego 1.
+- Says plainly that the latest C-HARM update failed and shows the Oct 10 run with its date.
+- It still requests absent tiles, which 404 in the console only.
+
+**Follow-ups.**
+- **Refresh monitoring:** a cancelled refresh opened no alert. The fix, with per-source time budgets, is PR #24.
+- **Model history lost in the outage:** this run published no C-HARM nowcast history for ports and stations, where the previous dataset had 146 days. The history is fetched afresh each run and returns once NOAA answers. PR #24 keeps a recent history through such outages.
+- **Research Preview MapLibre load issue:** documented for a future targeted demo release in issue #22. No change to the deployment.
+- **Web deploy:** the M5 web is not deployed; that needs its own approval.
+
+**Repository housekeeping** (same day):
+- `demo/bases-rc` deleted after PR #18 was closed; its tip is the protected tag `demo-release/2026-10-10`.
+- The remote `demo/bases-preview` deleted; its tip is preserved by `archive/pr14-research-preview` and is an ancestor of `demo-release/2026-10-10`.
+- PR titles and descriptions use neutral names.
 
