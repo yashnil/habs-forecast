@@ -35,6 +35,7 @@ The paper is about physics-informed chlorophyll forecasting (see the [root READM
 | [20 — M5: Ocean Map](20-m5-ocean-map.md) | Opening-layer policy, 512 px satellite tiles (backward compatible), map-area measurements, inspector and readouts, two review passes, tests, performance, integration plan |
 | [21 — M6: Bloom Intelligence plan](21-m6-bloom-intelligence-plan.md) | Spec §3.2 gap table, data already published, components, commit order, tests, review standard, decisions D1–D4 |
 | [22 — M6: Bloom Intelligence](22-m6-bloom-intelligence.md) | One station, one timeline: before/after, measurements, tests, §6 rules, limitations |
+| [24 — C-HARM at the coastline](24-charm-coastline.md) | Coastline investigation: rendering artifacts vs genuine coverage limits, the coastal land cover, readout reasons, before/after |
 | [m5/](m5/) | M5 comparison (decision stage), review before/after images and evidence |
 | [m3/](m3/) | Screenshots of the M3 app (staging data, 2026-10-08) |
 | [m2/](m2/) | Screenshots of the M2 app (live data, 2026-10-08) |
