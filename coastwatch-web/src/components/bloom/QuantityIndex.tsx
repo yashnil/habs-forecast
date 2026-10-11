@@ -17,8 +17,8 @@ export const QUANTITY_NOTE: Record<SelectorVar, string> = {
 };
 export const QUANTITY_SHORT: Record<SelectorVar, string> = {
   pDA: "Particulate domoic acid",
-  pn_seriata: "Pseudo-nitzschia, seriata group",
-  pn_delicatissima: "Pseudo-nitzschia, delicatissima group",
+  pn_seriata: "Pseudo‑nitzschia, seriata group",
+  pn_delicatissima: "Pseudo‑nitzschia, delicatissima group",
   chl_extracted: "Chlorophyll-a",
   temp: "Water temperature",
 };
@@ -66,7 +66,6 @@ export function QuantityIndex({
           <Column key={id} id={id} v={vars[id]} station={station} active={id === selected} onSelect={onSelect} policy={policy} now={now} x0={x0} x1={x1} />
         ))}
       </div>
-      <p className="text-[13px] text-ink-3">A Pseudo-nitzschia count is a size group of cells; not every Pseudo-nitzschia produces toxin. Chlorophyll measures algae biomass, not toxin.</p>
     </section>
   );
 }
@@ -105,12 +104,13 @@ function Column({
       onClick={() => onSelect(id)}
       data-testid={`quantity-${id}`}
       data-headline={h?.kind}
-      className={`group relative w-[72vw] max-w-[260px] shrink-0 snap-start border-r border-hairline px-3 pb-3 pt-2.5 text-left transition-colors last:border-r-0 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent sm:w-auto sm:max-w-none ${active ? "bg-measured-bg/60" : ""}`}
+      className={`group relative w-[72vw] max-w-[260px] shrink-0 snap-start border-r border-hairline px-3 pb-2.5 pt-2.5 text-left transition-colors last:border-r-0 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent sm:w-auto sm:max-w-none ${active ? "bg-measured-bg/60" : ""}`}
     >
       <span className={`absolute inset-x-0 bottom-0 h-[3px] ${active ? "bg-measured" : "bg-transparent"}`} aria-hidden />
-      <span className="block text-[13px] font-medium leading-tight text-ink">{QUANTITY_SHORT[id]}</span>
+      {/* a fixed two-line name block keeps every value on one baseline */}
+      <span className="block min-h-[2.5em] text-[13.5px] font-medium leading-[1.25] text-ink">{QUANTITY_SHORT[id]}</span>
       <span className="block text-[13px] leading-tight text-ink-3">{QUANTITY_NOTE[id]}</span>
-      <span className="mt-2 block min-h-[54px]">
+      <span className="mt-1.5 block min-h-[50px]">
         {!h || h.kind === "never" ? (
           <span className="block text-[14px] font-medium leading-snug text-ink-2">Never measured here</span>
         ) : h.kind === "old" ? (
@@ -141,7 +141,7 @@ function Column({
 
 function Preview({ pts, axisLog, domain, x0, x1 }: { pts: ReturnType<typeof previewPoints>; axisLog: boolean; domain: [number, number]; x0: number; x1: number }) {
   const W = 200;
-  const H = 36;
+  const H = 30;
   const x = (t: number) => 2 + ((t - x0) / Math.max(1, x1 - x0)) * (W - 4);
   const y = (v: number) => {
     const f = axisLog ? (Math.log10(v) - Math.log10(domain[0])) / (Math.log10(domain[1]) - Math.log10(domain[0])) : (v - domain[0]) / (domain[1] - domain[0]);

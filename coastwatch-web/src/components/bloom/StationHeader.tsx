@@ -25,34 +25,37 @@ export function StationHeader({ station, policy, now, portCode }: { station: Obs
   const mapHref = `/?region=${station.region ?? "california"}${portCode != null ? `&port=${portCode}` : ""}`;
 
   return (
-    <header className="grid gap-x-10 gap-y-5 lg:grid-cols-[minmax(0,1fr)_340px]" data-testid="station-header">
+    <header className="grid gap-x-10 gap-y-4 lg:grid-cols-[minmax(0,1fr)_320px]" data-testid="station-header">
       <div className="min-w-0 space-y-2">
         <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-measured">Shore station · {region} · CalHABMAP</p>
-        <h1 id="station-h" className="font-display text-[34px] font-medium leading-[1.08] text-ink sm:text-[44px]">
+        <h1 id="station-h" className="font-display text-[34px] font-medium leading-[1.08] text-ink sm:text-[42px]">
           {station.name}
         </h1>
-        <p className="flex flex-wrap gap-x-2 text-[13px] text-ink-3">
+        <p className="max-w-[62ch] text-[15.5px] leading-snug text-ink-2" data-testid="station-lede">
+          {stationLede(station)}
+        </p>
+        {/* wrap-safe: items separated by space, never a line that starts with a dot */}
+        <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[13px] text-ink-3">
           {station.lat != null && station.lon != null && (
             <span className="font-mono">
               {station.lat.toFixed(3)}°N {Math.abs(station.lon).toFixed(3)}°W
             </span>
           )}
-          {station.location_code && <span className="font-mono">· {station.location_code}</span>}
+          {station.location_code && <span className="font-mono">{station.location_code}</span>}
           {station.nearest_port_name && (
             <span>
-              · {station.nearest_port_km} km from {station.nearest_port_name}
+              {station.nearest_port_km} km from {station.nearest_port_name}
             </span>
           )}
-
+          <Link href={mapHref} className="text-[14px] font-medium text-accent underline-offset-2 hover:underline" data-testid="station-map-link">
+            View on the Ocean Map →
+          </Link>
         </p>
-        <Link href={mapHref} className="inline-block text-[14px] font-medium text-accent underline-offset-2 hover:underline" data-testid="station-map-link">
-          View on the Ocean Map →
-        </Link>
       </div>
 
-      <div className="space-y-2 border-t-2 pt-2 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0" style={{ borderColor: f?.state === "current" ? "#17704a" : f?.state === "stale" ? "#86590a" : "var(--cw-hairline-strong)" }} data-testid="freshness">
+      <div className="space-y-1.5 border-t-2 pt-2 lg:space-y-2 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0" style={{ borderColor: f?.state === "current" ? "#17704a" : f?.state === "stale" ? "#86590a" : "var(--cw-hairline-strong)" }} data-testid="freshness">
         <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">Latest sample</p>
-        <p className="font-display text-[26px] font-medium leading-tight text-ink" data-testid="last-sample">
+        <p className="font-display text-[22px] font-medium leading-tight text-ink sm:text-[26px]" data-testid="last-sample">
           {last ? fmtDate(Date.parse(last), { month: "long", day: "numeric", year: "numeric" }) : "No samples"}
         </p>
         {f && (
@@ -80,6 +83,19 @@ export function StationHeader({ station, policy, now, portCode }: { station: Obs
       )}
     </header>
   );
+}
+
+/** What this pier's samples measure, from its own record; never claims a quantity it does not measure. */
+export function stationLede(station: ObsStation): string {
+  const has = (id: string) => (station.summaries.find((x) => x.variable === id)?.n_measured ?? 0) > 0;
+  const parts: string[] = [];
+  if (has("pDA")) parts.push("the toxin domoic acid");
+  if (has("pn_seriata") || has("pn_delicatissima")) parts.push(has("pDA") ? "the Pseudo‑nitzschia algae that can produce it" : "Pseudo‑nitzschia, the algae that can produce the toxin domoic acid");
+  if (has("chl_extracted")) parts.push("chlorophyll");
+  if (has("temp")) parts.push("temperature");
+  const list = parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}` : (parts[0] ?? "");
+  const tail = has("pDA") ? "" : " Domoic acid itself is not measured here.";
+  return parts.length ? `Water samples from this pier, tested for ${list}.${tail}` : "No measurements have been published for this pier.";
 }
 
 function SamplingStrip({ strip }: { strip: ReturnType<typeof samplingStrip> }) {

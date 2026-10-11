@@ -5,6 +5,7 @@ import type { ObsVariableSummary } from "@/generated/observations";
 import type { FreshnessPolicy } from "@/generated/schema";
 import {
   AXES,
+  axisPosition,
   SELECTOR_VARS,
   binOf,
   decadeTicks,
@@ -103,7 +104,14 @@ describe("previews and the primary chart", () => {
   });
   it("a reported zero never goes on the log axis; lines break at gaps over 21 days", () => {
     const seg = segments(ss, AXES.pDA, x0, x1);
-    expect(seg.map((s) => s.map((x) => x.index))).toEqual([[0, 3], [4, 6]]);
+    // index 6 (300 ng/mL) is above the 100 ng/mL axis top: an edge marker, not part of the line
+    expect(seg.map((s) => s.map((x) => x.index))).toEqual([[0, 3], [4]]);
+  });
+  it("a value below the axis floor is a marker, not a point on the line, and breaks the line (real case: 4.6e-5 ng/mL)", () => {
+    const low = [S("2016-11-02", 0.002, null, 0), S("2016-11-09", 0.003, null, 1), S("2016-11-16", 4.6e-5, null, 2), S("2016-11-23", 0.004, null, 3)];
+    expect(axisPosition(4.6e-5, AXES.pDA)).toBe("below");
+    expect(axisPosition(150, AXES.pDA)).toBe("above");
+    expect(segments(low, AXES.pDA, T("2016-11-01"), T("2016-12-01")).map((sg) => sg.map((x) => x.index))).toEqual([[0, 1], [3]]);
   });
   it("highest in view and the summary line", () => {
     expect(highestInView(ss, AXES.pDA, x0, x1)?.index).toBe(6);

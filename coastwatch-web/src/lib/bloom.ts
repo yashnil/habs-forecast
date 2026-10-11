@@ -45,6 +45,12 @@ export function onAxis(s: Sample, axis: Axis): boolean {
 
 export const inView = (s: { t: number }, x0: number, x1: number) => s.t >= x0 && s.t <= x1;
 
+/** Where an on-axis value falls against the fixed domain. A value outside it is drawn as a marker
+ *  at the edge (never silently clamped onto a gridline) and breaks the line. */
+export function axisPosition(v: number, axis: Axis): "in" | "below" | "above" {
+  return v < axis.domain[0] ? "below" : v > axis.domain[1] ? "above" : "in";
+}
+
 // ---------------------------------------------------------------- freshness card
 
 export type SamplingStrip = {
@@ -116,14 +122,21 @@ export function previewPoints(ss: Sample[], axis: Axis, x0: number, x1: number):
 
 // ---------------------------------------------------------------- primary chart
 
-/** Consecutive on-axis samples joined by a line; a gap longer than `gapDays` breaks it (§5.2). */
+/** Consecutive on-axis samples joined by a line; a gap longer than `gapDays` breaks it (§5.2), and
+ *  so does a value outside the fixed axis (it is a marker at the edge, not a point on the line). */
 export function segments(ss: Sample[], axis: Axis, x0: number, x1: number, gapDays = 21): Sample[][] {
-  const pts = ss.filter((s) => inView(s, x0, x1) && onAxis(s, axis));
   const out: Sample[][] = [];
-  for (const p of pts) {
+  let open = false;
+  for (const p of ss) {
+    if (!inView(p, x0, x1) || !onAxis(p, axis)) continue;
+    if (axisPosition(p.value!, axis) !== "in") {
+      open = false;
+      continue;
+    }
     const cur = out.at(-1);
-    if (cur && p.t - cur[cur.length - 1].t <= gapDays * DAY) cur.push(p);
+    if (open && cur && p.t - cur[cur.length - 1].t <= gapDays * DAY) cur.push(p);
     else out.push([p]);
+    open = true;
   }
   return out;
 }

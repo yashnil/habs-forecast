@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ObsStation } from "@/generated/observations";
 import type { FreshnessPolicy } from "@/generated/schema";
 import { REGION_LABEL } from "@/content/copy";
@@ -50,6 +50,7 @@ export function StationRail({
   now,
   showMap = true,
   testid = "station-list",
+  scrollBox = "rail",
 }: {
   stations: ObsStation[];
   selected: ObsStation;
@@ -58,18 +59,34 @@ export function StationRail({
   now: Date | null;
   showMap?: boolean;
   testid?: string;
+  /** which box scrolls: the desktop rail's list, or the phone picker dialog */
+  scrollBox?: "rail" | "dialog";
 }) {
   const groups = groupStations(stations);
+  // The rail (and its map) is only displayed from 1280 px. MapLibre must not start inside a hidden
+  // rail: on a throttled phone that cost ~340 ms of main-thread time for a map nobody sees.
+  const [mapVisible, setMapVisible] = useState(false);
+  useEffect(() => {
+    if (!showMap) return;
+    const mq = window.matchMedia("(min-width: 1280px)");
+    const on = () => setMapVisible(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, [showMap]);
   // bring the selected station into view inside the rail's own scroll box (never the page)
   const navRef = useRef<HTMLElement>(null);
   useEffect(() => {
     const nav = navRef.current;
-    const box = nav?.closest<HTMLElement>("[data-rail-scroll]") ?? null;
+    const box = scrollBox === "dialog" ? (nav?.closest<HTMLElement>('[role="dialog"]') ?? null) : (nav?.closest<HTMLElement>("[data-rail-scroll]") ?? null);
     const el = nav?.querySelector<HTMLElement>('[aria-current="page"]');
     if (!box || !el) return;
-    const top = el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
-    if (top < box.scrollTop || top > box.scrollTop + box.clientHeight - 60) box.scrollTop = Math.max(0, top - box.clientHeight / 3);
-  }, [selected.station_id]);
+    // align the selected station's region heading with the top of the list, never mid-row
+    const group = el.closest<HTMLElement>("[data-region]") ?? el;
+    const top = group.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+    const bottom = el.getBoundingClientRect().bottom - box.getBoundingClientRect().top + box.scrollTop;
+    if (top < box.scrollTop || bottom > box.scrollTop + box.clientHeight) box.scrollTop = Math.max(0, top - 4);
+  }, [selected.station_id, scrollBox]);
   const points: StationPoint[] = stations
     .filter((s) => s.lat != null && s.lon != null)
     .map((s) => ({ id: s.station_id, name: s.name, lat: s.lat!, lon: s.lon!, recency: stationFreshness(s, policy, now)?.state ?? "unavailable" }));
@@ -78,7 +95,7 @@ export function StationRail({
       {showMap && (
         <div className="shrink-0 overflow-hidden rounded-lg border border-hairline bg-[#0b1d33]" data-testid="station-map">
           <div className="h-[220px]">
-            <StationMap stations={points} selected={selected.station_id} bounds={REGION_BOUNDS[selected.region ?? ""] ?? CALIFORNIA_BOUNDS} onSelect={onSelect} />
+            {mapVisible && <StationMap stations={points} selected={selected.station_id} bounds={REGION_BOUNDS[selected.region ?? ""] ?? CALIFORNIA_BOUNDS} onSelect={onSelect} />}
           </div>
         </div>
       )}
@@ -99,7 +116,7 @@ export function StationRail({
         </p>
         <div className="space-y-3">
           {groups.map((g) => (
-            <div key={g.region}>
+            <div key={g.region} data-region={g.region}>
               <p className="px-1 pb-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">{REGION_LABEL[g.region] ?? "Other"}</p>
               <ul>
                 {g.stations.map((s) => {

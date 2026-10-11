@@ -19,7 +19,7 @@ export function OfficialStrip({ official, error, relations, place, compact = fal
   const rel = relations.filter((r) => records.get(r.record_id)?.status === "active");
   const unverified = verification?.state !== "verified";
   return (
-    <section className="rounded-lg border border-official-line bg-official-bg px-4 py-3" aria-labelledby="bloom-official-h" data-testid="bloom-official">
+    <section className="rounded-lg border border-official-line bg-official-bg px-4 py-2.5" aria-labelledby="bloom-official-h" data-testid="bloom-official">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 id="bloom-official-h" className="flex items-center gap-2 text-[14px] font-semibold text-official-ink">
           <Icon name="shield" className="h-4 w-4 text-official" />
@@ -42,8 +42,8 @@ export function OfficialStrip({ official, error, relations, place, compact = fal
       ) : (
         <p className="mt-1 text-[13.5px] text-ink-2">No active notice in CoastWatch&apos;s list names this area.</p>
       )}
-      <p className="mt-1.5 text-[13px] text-ink-3">
-        {compact ? "" : `These take precedence over everything on this page. ${unverified ? "The list is not yet verified and may be incomplete. " : ""}`}A missing notice does not mean an area is open or seafood is safe.
+      <p className="mt-1 text-[13px] text-ink-3">
+        {compact || !unverified ? "" : "Transcribed from CDFW and CDPH, not yet checked by a person. "}A missing notice does not mean an area is open or seafood is safe.
       </p>
     </section>
   );
@@ -51,7 +51,7 @@ export function OfficialStrip({ official, error, relations, place, compact = fal
 
 function NoticeList({ rel, records }: { rel: PortOfficialRelation[]; records: Map<string, NonNullable<OfficialDataset["registry"]["records"]>[number]> }) {
   return (
-    <ul className="mt-1.5 grid gap-x-6 gap-y-1 text-[13.5px] leading-snug text-ink md:grid-cols-2" data-testid="bloom-official-list">
+    <ul className="mt-1 grid gap-x-6 gap-y-0.5 text-[13.5px] leading-snug text-ink md:grid-cols-2" data-testid="bloom-official-list">
       {rel.map((x) => {
         const r = records.get(x.record_id)!;
         return (

@@ -9,6 +9,8 @@ const FIX = path.resolve(__dirname, "../fixture-data/v1");
 const obs = JSON.parse(readFileSync(path.join(FIX, readdirSync(FIX).find((f) => f.startsWith("observations-"))!), "utf8"));
 const NOW = "2026-10-08T20:00:00Z";
 const DAY = 86_400_000;
+const manifest = JSON.parse(readFileSync(path.join(FIX, "manifest.json"), "utf8"));
+const threshold = (v: string) => manifest.layers.find((l: { group_id: string; variable: string; threshold_text?: string }) => l.group_id === "charm" && l.variable === v && l.threshold_text).threshold_text as string;
 const SC = obs.stations.find((s: { station_id: string }) => s.station_id === "HABs-SantaCruzWharf");
 
 async function open(page: Page, url: string) {
@@ -50,6 +52,15 @@ test.describe("primary chart", () => {
     await expect(label).toContainText(new Date(top.t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Los_Angeles" }));
   });
 
+  test("values below the fixed axis are edge markers with their exact value in the readout, never placed on a gridline", async ({ page }) => {
+    // the published record holds five pDA values under 0.0001 ng/mL (e.g. 4.6e-5 on 2016-11-16)
+    await open(page, `${OK}/bloom?year=2016`);
+    const low = pda(Date.UTC(2016, 0, 1, 8), Date.UTC(2017, 0, 1, 8)).filter((r: { v: number | null; q?: string }) => r.v != null && r.v > 0 && r.v < 1e-4 && r.q !== "reported_zero");
+    expect(low.length).toBeGreaterThan(0);
+    expect(await page.locator('[data-testid="chart-measured"] [data-q="below-axis"]').count()).toBe(low.length);
+    await expect(page.getByTestId("legend-off-axis")).toContainText(`${low.length} value`);
+  });
+
   test("the model band shares the time axis and the crosshair, on its own 0–100 % axis", async ({ page }) => {
     await open(page, `${OK}/bloom?range=3m`);
     await page.getByTestId("model-track").scrollIntoViewIfNeeded();
@@ -58,6 +69,11 @@ test.describe("primary chart", () => {
     expect(Math.abs(measured!.x - model!.x)).toBeLessThan(1);
     expect(Math.abs(measured!.width - model!.width)).toBeLessThan(1);
     await expect(page.getByTestId("model-track")).toContainText("100%");
+    // the producer's threshold is quoted verbatim, as on the Ocean Map, for each model quantity
+    await expect(page.getByTestId("model-section")).toContainText(threshold("particulate_domoic"));
+    await page.getByTestId("model-var-pseudo_nitzschia").click();
+    await expect(page.getByTestId("model-section")).toContainText(threshold("pseudo_nitzschia"));
+    await page.getByTestId("model-var-particulate_domoic").click();
     await page.mouse.move(model!.x + model!.width * 0.8, model!.y + model!.height / 2);
     await expect(page.getByTestId("chart-tooltip")).toContainText("Model");
   });
@@ -107,7 +123,14 @@ test.describe("season heatmap", () => {
     const legend = page.getByTestId("heat-legend");
     await expect(legend).toContainText("reported 0 only");
     await expect(legend).toContainText("not sampled");
-    expect(await page.locator('[data-testid="season-heatmap"] [data-kind="zero"]').count()).toBeGreaterThan(0);
+    const grid = page.locator('[data-testid="heat-grid"] svg');
+    expect(Number(await grid.getAttribute("data-zero-cells"))).toBeGreaterThan(0);
+    expect(Number(await grid.getAttribute("data-bin-cells"))).toBeGreaterThan(0);
+    // pointing at a cell describes it in words (week, highest value and date, or why there is none)
+    await grid.scrollIntoViewIfNeeded();
+    const bx = await grid.boundingBox();
+    await page.mouse.move(bx!.x + bx!.width * 0.4, bx!.y + bx!.height - 7);
+    await expect(page.getByTestId("heat-detail")).toContainText(/Week of .*: (highest|reported 0 only|not sampled)/);
   });
 });
 
@@ -121,6 +144,12 @@ test.describe("phone", () => {
     await expect(page.getByTestId("season-section")).toContainText("How this season compares");
     await expect(page.getByTestId("model-section")).toBeVisible();
     await expect(page.getByTestId("bloom-official")).toContainText("A missing notice does not mean");
+    // a tap on the chart reads the nearest value (no hover on touch screens)
+    const svg = page.getByTestId("chart-measured");
+    await svg.scrollIntoViewIfNeeded();
+    const bx = await svg.boundingBox();
+    await page.touchscreen.tap(bx!.x + bx!.width * 0.6, bx!.y + bx!.height * 0.4);
+    await expect(page.getByTestId("chart-tooltip")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
     const r = await new AxeBuilder({ page }).analyze();
     const bad = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");

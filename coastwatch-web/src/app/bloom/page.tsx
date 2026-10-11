@@ -53,6 +53,9 @@ export default async function BloomPage({ searchParams }: { searchParams: Promis
           officialError={data.officialError}
           relations={relations}
           portCode={station.nearest_port_code ?? null}
+          modelTitles={Object.fromEntries(
+            data.manifest.layers.filter((l) => l.group_id === "charm" && l.threshold_text).map((l) => [l.variable, l.threshold_text as string]),
+          )}
           initial={{ variable: str(sp.var), range: str(sp.range), year: str(sp.year) }}
         />
     </AppShell>

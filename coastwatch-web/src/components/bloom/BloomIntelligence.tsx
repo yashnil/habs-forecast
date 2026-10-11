@@ -28,7 +28,7 @@ type RangeId = (typeof RANGES)[number]["id"];
 
 const MODEL_VARS = [
   { id: "particulate_domoic", label: "Particulate DA", title: "Probability that particulate domoic acid exceeds the model threshold" },
-  { id: "pseudo_nitzschia", label: "Pseudo-nitzschia", title: "Probability of a Pseudo-nitzschia bloom" },
+  { id: "pseudo_nitzschia", label: "Pseudo-nitzschia", title: "Probability that Pseudo-nitzschia exceeds the model threshold" },
   { id: "cellular_domoic", label: "Cellular DA", title: "Probability that cellular domoic acid exceeds the model threshold" },
 ] as const;
 type ModelVarId = (typeof MODEL_VARS)[number]["id"];
@@ -48,6 +48,8 @@ export type BloomProps = {
   relations: PortOfficialRelation[];
   portCode?: number | null;
   initial?: BloomInitial;
+  /** the producer's threshold sentence per C-HARM variable, verbatim from the manifest (as on the Ocean Map) */
+  modelTitles?: Record<string, string>;
 };
 
 /**
@@ -64,7 +66,7 @@ export function defaultView(station: ObsStation, now: number): { variable: Selec
   return { variable, range: recent(variable) ? "1y" : "all" };
 }
 
-export function BloomIntelligence({ stations, station, dataset, status, official, officialError, relations, portCode = null, initial = {} }: BloomProps) {
+export function BloomIntelligence({ stations, station, dataset, status, official, officialError, relations, portCode = null, initial = {}, modelTitles = {} }: BloomProps) {
   const now = useNow();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -176,14 +178,14 @@ export function BloomIntelligence({ stations, station, dataset, status, official
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 pb-16 pt-5 sm:px-8" data-testid="bloom-page" aria-busy={pending}>
+    <div className="mx-auto w-full max-w-[1440px] space-y-5 px-4 pb-16 pt-4 sm:px-8" data-testid="bloom-page" aria-busy={pending}>
       <OfficialStrip official={official} error={officialError} relations={relations} place={station.nearest_port_name ?? null} compact={narrow} />
 
       {/* phone: the station picker replaces the rail and map */}
       <button
         type="button"
         onClick={() => setPickerOpen(true)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-hairline-strong bg-surface px-4 py-3 text-left lg:hidden"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-hairline-strong bg-surface px-4 py-3 text-left xl:hidden"
         aria-haspopup="dialog"
         data-testid="station-select"
       >
@@ -196,25 +198,25 @@ export function BloomIntelligence({ stations, station, dataset, status, official
         <span className="shrink-0 text-[13.5px] font-medium text-accent">Change</span>
       </button>
       {pickerOpen && (
-        <div role="dialog" aria-modal="true" aria-label="Choose a shore station" className="fixed inset-0 z-50 overflow-y-auto bg-page px-4 pb-10 pt-4 lg:hidden" data-testid="station-picker">
+        <div role="dialog" aria-modal="true" aria-label="Choose a shore station" className="fixed inset-0 z-50 overflow-y-auto bg-page px-4 pb-10 pt-4 xl:hidden" data-testid="station-picker">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-display text-[24px] font-medium text-ink">Shore stations</h2>
             <button type="button" onClick={() => setPickerOpen(false)} className="rounded-md px-3 py-2 text-[14px] font-medium text-accent" autoFocus>
               Close
             </button>
           </div>
-          <StationRail stations={stations} selected={station} onSelect={selectStation} policy={policy} now={now} showMap={false} testid="station-list-mobile" />
+          <StationRail stations={stations} selected={station} onSelect={selectStation} policy={policy} now={now} showMap={false} testid="station-list-mobile" scrollBox="dialog" />
         </div>
       )}
 
-      <div className="grid gap-x-10 gap-y-6 lg:grid-cols-[296px_minmax(0,1fr)]">
-        <aside className="hidden lg:block" aria-label="Stations">
+      <div className="grid gap-x-10 gap-y-6 xl:grid-cols-[296px_minmax(0,1fr)]">
+        <aside className="hidden xl:block" aria-label="Stations">
           <div className="sticky top-[76px] flex max-h-[calc(100dvh-96px)] flex-col">
             <StationRail stations={stations} selected={station} onSelect={selectStation} policy={policy} now={now} />
           </div>
         </aside>
 
-        <article className="min-w-0 space-y-9" aria-labelledby="station-h" data-testid="station-detail" data-station={station.station_id}>
+        <article className="min-w-0 space-y-7" aria-labelledby="station-h" data-testid="station-detail" data-station={station.station_id}>
           <StationHeader station={station} policy={policy} now={now} portCode={portCode} />
 
           <QuantityIndex station={station} vars={vars} selected={variable} onSelect={setVariable} policy={policy} now={now} x0={x0} x1={x1} />
@@ -250,11 +252,19 @@ export function BloomIntelligence({ stations, station, dataset, status, official
               );
             })()}
             controls={rangeControls}
-            note={variable === "pDA" ? <span>Toxin in seawater is not toxin in seafood.</span> : variable === "chl_extracted" ? <span>Algae biomass, not toxin.</span> : null}
+            note={
+              variable === "pDA" ? (
+                <span>Toxin in seawater is not toxin in seafood.</span>
+              ) : variable === "chl_extracted" ? (
+                <span>Chlorophyll measures algae biomass, not toxin.</span>
+              ) : variable === "pn_seriata" || variable === "pn_delicatissima" ? (
+                <span>A Pseudo‑nitzschia count is a size group of cells; not every Pseudo‑nitzschia produces toxin.</span>
+              ) : null
+            }
             model={{
               variable: modelVar,
               label: mv.label,
-              title: mv.title,
+              title: modelTitles[modelVar] ?? mv.title,
               history: station.charm?.history?.[modelVar],
               error: station.charm?.error,
               radiusKm: station.charm?.radius_km ?? 15,
@@ -269,7 +279,7 @@ export function BloomIntelligence({ stations, station, dataset, status, official
                 <div>
                   <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-measured">Every {narrow ? "month" : "week"} since {station.sample_times[0]?.slice(0, 4) ?? "2014"}</p>
                   <h2 id="season-h" className="font-display text-[24px] font-medium leading-tight text-ink">
-                    How this season compares: {QUANTITY_SHORT[variable].toLowerCase().replace("pseudo-nitzschia", "Pseudo-nitzschia")}
+                    How this season compares: {QUANTITY_SHORT[variable].toLowerCase().replace("pseudo‑nitzschia", "Pseudo‑nitzschia")}
                     <span className="ml-2 align-middle text-[14px] text-accent group-open:hidden lg:hidden">Show</span>
                   </h2>
                 </div>

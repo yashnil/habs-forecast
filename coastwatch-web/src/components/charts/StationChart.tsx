@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { ObsVariable, SeriesPoint } from "@/generated/observations";
-import { decadeTicks, highestInView, inView, modelOnAxis, modelSegments, onAxis, segments, viewSummary, type Axis, type ModelPoint } from "@/lib/bloom";
+import { axisPosition, decadeTicks, highestInView, inView, modelOnAxis, modelSegments, onAxis, segments, viewSummary, type Axis, type ModelPoint } from "@/lib/bloom";
 import { DAY, formatObs, formatTick, unitLabel, type Sample } from "@/lib/observations";
 
 /**
@@ -27,8 +27,14 @@ const BAND = 104;
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const PT = "America/Los_Angeles";
 
-export const fmtDate = (t: number, opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" }) =>
-  new Date(t).toLocaleDateString("en-US", { ...opts, timeZone: PT });
+// one formatter per option set, reused: toLocaleDateString builds a new one on every call
+const DATE_FMT = new Map<string, Intl.DateTimeFormat>();
+export const fmtDate = (t: number, opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" }) => {
+  const key = JSON.stringify(opts);
+  let f = DATE_FMT.get(key);
+  if (!f) DATE_FMT.set(key, (f = new Intl.DateTimeFormat("en-US", { ...opts, timeZone: PT })));
+  return f.format(new Date(t));
+};
 
 export function timeTicks(x0: number, x1: number): { t: number; label: string }[] {
   const spanDays = (x1 - x0) / DAY;
@@ -140,6 +146,10 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
     const t = tFromEvent(e);
     setHoverT(t < x0 || t > x1 ? null : t);
   };
+  // a mouse leaving clears the readout; a finger lifting keeps it, so a tap reads a value on touch screens
+  const onLeave = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") setHoverT(null);
+  };
   const onKey = (e: React.KeyboardEvent) => {
     if (!win.length) return;
     const i = hovered ? win.indexOf(hovered) : -1;
@@ -158,7 +168,10 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
   const unit = unitLabel(variable.units);
   const notMeasured = sum.visits - sum.measured - sum.rejected;
   // "Highest in view" sits beside its point but always inside the chart (about 6.6 px per character)
-  const topLabel = top ? `Highest in view: ${formatObs(variable, top.value, top.q)} · ${fmtDate(top.t)}` : "";
+  const topLabel = top ? `Highest in view: ${formatObs(variable, top.value, top.q)}${top.q === "flag_high" ? " (flagged for review)" : ""} · ${fmtDate(top.t)}` : "";
+  // rings shrink as visits crowd the lane, so a long record of zeros stays a lane, not a band
+  const zeroR = sum.visits > 240 ? 1.7 : sum.visits > 120 ? 2.1 : 2.6;
+  const offAxis = win.filter((s2) => onAxis(s2, axis) && axisPosition(s2.value!, axis) !== "in");
   const labelW = topLabel.length * 6.6;
   const labelX = top ? Math.round(Math.max(4, Math.min(x(top.t) + (x(top.t) > PAD.l + iw * 0.62 ? -labelW - 6 : 6), width - labelW - 4))) : 0;
   const desc = top
@@ -182,10 +195,17 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
               "No sampling visits in this period."
             ) : (
               <>
-                {sum.visits} sampling visits in view: <b className="font-semibold text-ink">{sum.measured - sum.zeros}</b> measured value{sum.measured - sum.zeros === 1 ? "" : "s"}
-                {sum.zeros > 0 && <>, <b className="font-semibold text-ink">{sum.zeros}</b> reported 0</>}
-                {notMeasured > 0 && <>, {notMeasured} not measured</>}
-                {sum.rejected > 0 && <>, {sum.rejected} rejected in QC</>}
+                <span className="whitespace-nowrap">{sum.visits} sampling visits in view:</span>{" "}
+                <span className="whitespace-nowrap">
+                  <b className="font-semibold text-ink">{sum.measured - sum.zeros}</b> measured value{sum.measured - sum.zeros === 1 ? "" : "s"}
+                </span>
+                {sum.zeros > 0 && (
+                  <>
+                    , <span className="whitespace-nowrap"><b className="font-semibold text-ink">{sum.zeros}</b> reported 0</span>
+                  </>
+                )}
+                {notMeasured > 0 && <>, <span className="whitespace-nowrap">{notMeasured} not measured</span></>}
+                {sum.rejected > 0 && <>, <span className="whitespace-nowrap">{sum.rejected} rejected in QC</span></>}
               </>
             )}
           </p>
@@ -202,7 +222,8 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
           tabIndex={0}
           onKeyDown={onKey}
           onPointerMove={onMove}
-          onPointerLeave={() => setHoverT(null)}
+          onPointerDown={onMove}
+          onPointerLeave={onLeave}
           style={{ maxWidth: "100%" }}
           className="block touch-pan-y outline-none focus-visible:ring-2 focus-visible:ring-accent"
           data-testid="chart-measured"
@@ -245,7 +266,21 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
             <path key={i} d={sg.map((s, k) => `${k ? "L" : "M"}${x(s.t)},${y(s.value!)}`).join("")} fill="none" stroke="var(--cw-chl)" strokeWidth={1.6} strokeLinejoin="round" />
           ))}
           {win.map((s) =>
-            onAxis(s, axis) ? (
+            onAxis(s, axis) && axisPosition(s.value!, axis) !== "in" ? (
+              // beyond the fixed axis: a marker at the edge, exact value in the readout
+              <path
+                key={s.index}
+                d={
+                  axisPosition(s.value!, axis) === "below"
+                    ? `M${x(s.t) - 4},${PLOT_T + plotH - 7}h8l-4,7z`
+                    : `M${x(s.t) - 4},${PLOT_T + 7}h8l-4,-7z`
+                }
+                fill="var(--cw-surface)"
+                stroke="var(--cw-chl)"
+                strokeWidth={1.3}
+                data-q={axisPosition(s.value!, axis) === "below" ? "below-axis" : "above-axis"}
+              />
+            ) : onAxis(s, axis) ? (
               <circle
                 key={s.index}
                 cx={x(s.t)}
@@ -257,7 +292,7 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
                 data-q={s.q ?? "value"}
               />
             ) : s.value != null && (s.q === "reported_zero" || (axis.scale === "log" && s.value <= 0)) ? (
-              <circle key={s.index} cx={x(s.t)} cy={laneY} r={s === hovered ? 4 : 2.6} fill="var(--cw-surface)" stroke="var(--cw-chl)" strokeWidth={1.3} data-q="reported_zero" />
+              <circle key={s.index} cx={x(s.t)} cy={laneY} r={s === hovered ? 4 : zeroR} fill="var(--cw-surface)" stroke="var(--cw-chl)" strokeWidth={1.3} data-q="reported_zero" />
             ) : s.q === "rejected_negative" ? (
               <path key={s.index} d={`M${x(s.t) - 2.6},${laneY - 2.6}l5.2,5.2m0,-5.2l-5.2,5.2`} stroke="var(--cw-ink-3)" strokeWidth={1.3} data-q="rejected" />
             ) : null,
@@ -268,6 +303,7 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
               <line x1={x(top.t)} x2={x(top.t)} y1={14} y2={y(top.value!) - 6} stroke="var(--cw-ink-2)" strokeWidth={1} />
               <text x={labelX} y={12} textAnchor="start" className="fill-[var(--cw-ink)] text-[12.5px] font-semibold">
                 Highest in view: {formatObs(variable, top.value, top.q)}
+                {top.q === "flag_high" ? " (flagged for review)" : ""}
                 <tspan className="fill-[var(--cw-ink-3)] font-normal"> · {fmtDate(top.t)}</tspan>
               </text>
             </g>
@@ -296,7 +332,15 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
             </svg>
             sampling visit (faint: not measured)
           </span>
-          <span>Gaps are not zeros: lines break where samples are more than 21 days apart.</span>
+          {offAxis.length > 0 && (
+          <span className="inline-flex items-center gap-1.5" data-testid="legend-off-axis">
+            <svg width="10" height="10" aria-hidden>
+              <path d="M1,2h8l-4,7z" fill="var(--cw-surface)" stroke="var(--cw-chl)" strokeWidth="1.2" />
+            </svg>
+            {offAxis.length} value{offAxis.length > 1 ? "s" : ""} beyond the axis, drawn at its edge (exact value in the readout)
+          </span>
+        )}
+        <span>Gaps are not zeros: lines break where samples are more than 21 days apart.</span>
           {note}
         </div>
 
@@ -321,10 +365,15 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
           </div>
           {noHistory ? (
             <p className="px-3 pb-3 pt-2 text-[13px] text-ink-2" data-testid="model-unavailable">
-              No model history is in this dataset for this station. NOAA&apos;s server did not answer when it was last retrieved; this says nothing about bloom conditions.
+              {model.nearestCellKm == null
+                ? "C-HARM has no model cells near this station, so there is no model history here."
+                : model.error && /unavailable|failed|circuit|timed out/i.test(model.error)
+                  ? "The model history could not be retrieved from NOAA in the latest update; it returns when NOAA's server answers."
+                  : "No model history has been published for this station."}{" "}
+              This says nothing about bloom conditions.
             </p>
           ) : (
-            <svg width={width} height={BAND} style={{ maxWidth: "100%" }} className="block" onPointerMove={onMove} onPointerLeave={() => setHoverT(null)} data-testid="model-track" aria-label={`${model.title}: ${m.points.length} days in view.`} role="img">
+            <svg width={width} height={BAND} style={{ maxWidth: "100%" }} className="block" onPointerMove={onMove} onPointerDown={onMove} onPointerLeave={onLeave} data-testid="model-track" aria-label={`${model.title}: ${m.points.length} days in view.`} role="img">
               <defs>
                 <pattern id="cw-model-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
                   <line x1="0" y1="0" x2="0" y2="6" stroke="var(--cw-model-line)" strokeWidth="2" />
@@ -343,7 +392,7 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
                   <rect x={PAD.l} y={yM(1)} width={Math.max(0, x(Math.min(histStart, x1)) - PAD.l)} height={yM(0) - yM(1)} fill="url(#cw-model-hatch)" opacity={0.7} />
                   {x(Math.min(histStart, x1)) - PAD.l > 150 && (
                     <text x={PAD.l + 8} y={yM(0.5) + 4} className="fill-[var(--cw-model-ink)] text-[12px]">
-                      No model history kept before {fmtDate(histStart)}
+                      Model history starts {fmtDate(histStart)}
                     </text>
                   )}
                 </g>
@@ -363,7 +412,7 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
 
         {crossT != null && (hovered || hoveredModel) && (
           <div
-            className="pointer-events-none absolute top-0 z-10 w-max max-w-[260px] rounded-md bg-navy-900 px-2.5 py-1.5 text-[13px] leading-snug text-on-navy shadow-lg"
+            className="pointer-events-none absolute top-[22px] z-10 w-max max-w-[260px] rounded-md bg-navy-900 px-2.5 py-1.5 text-[13px] leading-snug text-on-navy shadow-lg"
             style={{ left: Math.min(Math.max(x(crossT) + 10, 0), width - 250) }}
             data-testid="chart-tooltip"
             role="status"
