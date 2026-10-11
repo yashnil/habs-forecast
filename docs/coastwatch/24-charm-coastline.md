@@ -1,96 +1,124 @@
-# C-HARM at the coastline: investigation and refinement
+# C-HARM on the Ocean Map: coastline and georeferencing
 
-**Status:** draft for review. The change is to the web app only: no pipeline change, and no change to published or production data. The Research Preview and its deployment are untouched.
+**Status:** draft for review (PR #28). The change is to the web app only: published data and production images are unchanged, and the Research Preview is not touched.
 
-**Data:** production run 38140958238; C-HARM v3.1 issued 2026-10-10, lead 1. Before and after use the same data, viewport and URL.
+**Data:** production run 38140958238; C-HARM v3.1 issued 2026-10-10. Before and after use the same data, viewports and URLs. Staging (run 38158950779, a later C-HARM issue) was used as a second dataset.
 
-## 1. The question
+## 1. Questions
 
-Where the C-HARM forecast meets the coast, the map looks pixelated, stair-stepped and disconnected from the geography. Which parts are rendering artifacts that can honestly be fixed, and which are real limits of a 0.03° (about 3 km) model?
+1. Where C-HARM meets the coast, which parts of the crude look are rendering artifacts, and which are real coverage limits?
+2. Are the forecast's cell edges drawn where the source grid puts them, and if not, why?
 
-## 2. What the data are
+## 2. Coverage: what is real
 
-- **Value grid:** the published grid is 351 × 391 cells at 0.03°.
-  - It is published as uint16 values for exact readouts.
-  - It is also published as a Web Mercator PNG (1,404 × 1,970 px, 4 px per cell east–west), drawn as one image source with nearest-neighbour sampling.
-- **ETOPO 2022 15″ comparison.** Every cell was classified against ETOPO land and sea:
+Every cell of the 351 × 391, 0.03° grid was classified against ETOPO 2022 15″ land and sea:
 
-| Cells | Count | What it is | Treatment |
-|---|---|---|---|
-| Forecast cells that straddle the shore | 432 (168 mostly land) | A 3 km square is drawn whole, so its colour covers land | **Rendering artifact: fixed** (§3) |
-| Water cells with no value in any variable | 486 (383 one cell from shore; two regions of 105 and 142 cells, mostly enclosed bays such as San Francisco Bay) | Outside C-HARM's ocean cells | **Genuine coverage limit:** keeps the no-data hatch |
-| Cells with a *Pseudo-nitzschia* value but no toxin value | 347 | C-HARM's documented toxin mask ("not provided for many cells within about 3–6 km of shore") | **Genuine:** keeps the hatch, and the readout now says why (§4) |
-| The model-domain rectangle (31.3–43.0° N, 127.5–117.0° W) | — | It lies outside the map's California bounds | Not visible |
-
-[Classification method and figures](#5-method-and-reproducibility).
-
-## 3. Fix: data rasters stop at the drawn shoreline
-
-**The layer.** A new basemap layer, `coastal-land`, sits **above** the data rasters and **below** the coastline line and labels.
-- It is the same land relief that lies beneath (`relief-land.webp`, same pixel grid), opaque over land and clear over water.
-- It covers only a band about 10 km wide along the ocean coast.
-
-**Its coastline.** The shoreline is the basemap's own: OpenFreeMap / OpenMapTiles water polygons (© OpenStreetMap contributors, ODbL) at zoom 10, from 177 coastal tiles. Coverage is computed at 4 × 4 sub-pixels, so the edge is anti-aliased rather than stair-stepped. It adds 62 kB (relief) or 27 kB (flat, relief off).
-
-**Why it is honest:**
-- No value changes.
-- The forecast keeps full opacity and nearest-neighbour sampling.
-- The part of a cell over water is drawn exactly as before; only the part over land is covered.
-- Cells without a value keep their hatch, so gaps are not hidden.
-- Inland, the land looks identical, because the pixels underneath are the same.
-- True-colour imagery is drawn above the cover (it shows land too).
-- The satellite chlorophyll layers benefit in the same way.
-
-**Before and after** (left: main; right: this branch; same data and viewport):
-
-| View | Comparison | What changes |
+| Cells | Count | Verdict |
 |---|---|---|
-| Statewide, 1440 | [statewide-1440](charm-coastline/statewide-1440.jpg) | The sawtooth of forecast colour over land along the whole coast is gone, and San Francisco Bay reads as "no value" |
-| Statewide, *Pseudo-nitzschia* | [statewide-pseudo-nitzschia-1440](charm-coastline/statewide-pseudo-nitzschia-1440.jpg) | The same, on the layer that reaches the shore |
-| Phone, statewide | [statewide-390](charm-coastline/statewide-390.jpg) | The same, on a phone |
-| Default (Monterey Bay), 1440 and phone | [default-1440](charm-coastline/default-1440.jpg), [default-390](charm-coastline/default-390.jpg) | Overhanging cells at Moss Landing and on the north bay shore stop at the coast |
-| Selected port: Santa Cruz | [port-santa-cruz-1440](charm-coastline/port-santa-cruz-1440.jpg) | Small: at this zoom the edge is mostly the toxin mask, which is genuine |
-| Selected port: Morro Bay | [port-morro-bay-1440](charm-coastline/port-morro-bay-1440.jpg) | Small, for the same reason |
-| Coast detail, *Pseudo-nitzschia* | [coast-detail-monterey](charm-coastline/coast-detail-monterey.jpg), [close-zoom-santa-cruz](charm-coastline/close-zoom-santa-cruz.jpg) | Cells clipped at the shoreline; the hatch and the 3 km steps remain |
+| Forecast cells straddling the shore, drawn as whole 3 km squares over land | 432 (168 mostly land) | **Rendering artifact** |
+| Water with no value in any variable: next to the shore, and enclosed bays such as San Francisco Bay | 486 | **Genuine limit:** keeps the no-data hatch |
+| *Pseudo-nitzschia* value but no toxin value (C-HARM's documented toxin mask, "within about 3–6 km of shore") | 347 | **Genuine:** keeps the hatch; the readout says why |
+| The model-domain rectangle | — | Outside the map's bounds |
 
-## 4. Explaining genuine gaps
+## 3. Georeferencing: verified, and two real causes found
 
-Hovering or clicking a cell without a value now says which case it is:
-- **"No toxin probability in this cell: C-HARM does not provide toxin probabilities for many cells within about 3–6 km of shore. The same run has a *Pseudo-nitzschia* value here."** This is shown only when the same run's *Pseudo-nitzschia* layer has a value in that cell ([screenshot](charm-coastline/readout-toxin-mask.jpg)).
-- **"No forecast value: land, or water C-HARM does not model (such as enclosed bays and some cells next to the shore)."**
-- **"Outside the C-HARM model area."**
+The published PNG (1,404 × 1,970 px) was checked against the source grid:
 
-## 5. What cannot be improved honestly, and what could be with approval
+| Check | Result |
+|---|---|
+| Image corners vs outer cell edges (centres ± half a step) | **0.0°** |
+| PNG rebuilt from the value grid (pixel-centre sampling, Mercator-uniform rows) | No-data mask 100% equal; **0 of 1,536,220** valued pixels with the wrong class colour |
+| Readout and cell outlines in the web app | Same convention (`floor((v − first)/step + 0.5)`; edges at centre ± step/2) |
 
-**Unavoidable at 3 km:**
-- The forecast is 3 km squares. Their edges against no-value cells are steps of one cell, and nearshore water within one or two cells of the coast (and, for toxins, about 3–6 km) has no value.
-- Smoothing, interpolating or extending values to the shore would invent a forecast that C-HARM does not make. The map keeps the steps, and the faint cell outlines from zoom 8.5 show them as cells.
+There is no pixel-centre or pixel-edge convention error, and no transform or reprojection bug. The offsets have two distinct, real causes:
 
-**A rendering limit that needs a pipeline change (not done here):**
-- The published image has whole-pixel Mercator rows, so north–south cell edges sit on average 164 m (at most 355 m) from the true cell boundaries:
-  - invisible statewide;
-  - about 1 px at zoom 8.5 and 3 px at zoom 10;
-  - 6–12 px at zoom 11–12, where they show against the exact cell outlines and readouts.
-- Fixes:
-  - render the images at 8 px per cell, which halves the offset;
-  - or publish them in latitude bands of about 10 cells, which brings the offset to about 16 m.
-- Either changes published production images. Because the Research Preview reads production data, its map would change too, so this needs your approval.
+1. **The PNG's row resolution (pipeline image).**
+   - East–west is exact at 4.00 px per cell. North–south, a cell is 4.7–5.5 rows, so each boundary lands on the nearest row.
+   - Measured over all 390 boundaries: mean |offset| **164 m**, max **355 m**, signed mean **+9 m**. It is unbiased rounding, not a shift.
+2. **MapLibre's image-source placement (renderer).**
+   - MapLibre 6.13 (`image_source.ts`) converts an image's corners to coordinates in one tile, at zoom ⌊−log₂ extent⌋ = 4, and rounds them to that tile's 8,192-step grid (305.7 m).
+   - Our corners moved: north +47 m, south −77 m, west −63 m, east −19 m (Mercator). This is a small systematic squeeze and shift.
+   - The predicted shift matched the measured on-screen residual at 12 boundaries to within 0.9 px at zoom 12.
 
-**Considered and rejected:**
-- **Linear (blurred) resampling of the forecast:** it mixes colours into values that are not in the legend.
-- **Drawing the cells as vector shapes:** 11–19k shapes per layer, a large architectural change with real phone cost.
-- **A flat land overlay:** it would erase the coastal relief.
+**Total effect on screen** (production, zoom 12, 12 boundaries): drawn edges are a mean of 11.9 px and at most 20 px from the true boundaries. That is where they disagree with the exact cell outlines and with the readout.
 
-**Method and reproducibility.**
-- `pipeline/scripts/build_coastal_land.py` rebuilds the cover. It needs the ETOPO extract used by `build_relief.py` and network access to the OpenFreeMap tiles, which it caches.
-- The cell classification used the published grid and ETOPO 2022 15″ (land = elevation ≥ 0 m) for each cell's land fraction.
+## 4. What changed
 
-## 6. Tests
+**The forecast is drawn from the published value grid, tile by tile (`src/lib/gridTiles.ts`):**
+- Every tile pixel takes the grid cell containing its centre, which is the pipeline's own rule, at the zoom being viewed.
+- Colours come from the layer's published palette, using the pipeline's step rule over all 65,535 codes.
+- No value means transparent. Nothing is interpolated.
+- Both causes above disappear:
+  - **Production:** 12/12 boundaries drawn exactly on the true boundary (0.0 px at zoom 12).
+  - **Staging:** the same, on a different C-HARM issue.
+  - **Fixture:** the tiles equal the published PNG at the centre of every cell.
 
-- **Browser tests (`tests/e2e/coastline.spec.ts`):**
-  - layer order: data, then land cover, then coastline and labels;
-  - the forecast stays opaque and nearest-neighbour;
-  - the land-cover assets are served and attributed, on the same grid as the relief;
-  - the readout reasons on fixture cells.
-- **Unit test:** the run-matched *Pseudo-nitzschia* sibling is used only for toxin layers.
-- **Results:** full suite 132/132 (local Chrome and CI mode); web unit tests 137/137.
+**Every data tile is clipped to the basemap's own water (`src/lib/waterMask.ts`):**
+- For each forecast or satellite tile, the basemap's vector tile for the same z/x/y (OpenMapTiles water; usually already in the browser cache) is rasterised at the data tile's resolution.
+- Data are kept only over water, with an anti-aliased edge where the basemap draws the shore.
+- If the basemap tile cannot be read, the data tile is drawn unclipped, so data are never hidden by a basemap failure.
+
+**Readout:** an empty cell says why ([screenshot](charm-coastline/readout-toxin-mask.jpg)). Either it is the toxin mask (named only when the same run's *Pseudo-nitzschia* layer has a value there), or land or water C-HARM does not model, or it is outside the model area.
+
+**A first approach was rejected.** A raster "land cover" above the data (relief-land, clear over water) was validated and failed at close zoom. Its ~370 m pixels blurred the edge: it hid near-shore water, including no-value hatching, up to about 400 m out, and left forecast showing ~300 m inland. It was replaced by the per-tile clip and is not in this PR.
+
+## 5. Validation (production data; 6 coastal places × zoom 8, 10, 12)
+
+For every screen pixel, the exact grid says whether it lies in a valued cell, and the basemap's own water render says water or land. Pixels within 2 px of a shoreline or a cell edge are excluded, since anti-aliasing and pixel rounding live there. Then:
+
+| Measure (worst view) | `main` | This PR |
+|---|---|---|
+| Forecast drawn over land | 61,652 px, up to ~3 km inland | **0** in all 18 views |
+| Forecast drawn over water with no value (hiding a real gap) | 2,882 px | **0** in all 18 views |
+| Ocean values not drawn | 3,509 px | ≤ 13 px of ~266,000 (≤ 0.005%) |
+
+Places: Santa Cruz, Moss Landing, Half Moon Bay, Golden Gate, Morro Bay, Point Arena. The 0–13 px residual sits next to tiny water features the basemap draws differently from one zoom's tiles to the next.
+
+**Performance** (phone with CPU slowed 4×, median of 3; the transfer column of the measuring script reads 0 for these cross-origin files):
+
+| | `main` | This PR |
+|---|---|---|
+| Map ready | 1,096 ms | 1,182 ms |
+| Blocking time | 137 ms | 124 ms |
+| Re-zoom | 834 ms | 836 ms |
+| Download | 64 kB image | 150 kB grid (also used by the readout) |
+
+## 6. Before and after (left `main`, right this PR)
+
+| View | Comparison |
+|---|---|
+| Statewide, 1440 | [statewide-1440](charm-coastline/statewide-1440.jpg) |
+| Statewide, *Pseudo-nitzschia* | [statewide-pseudo-nitzschia-1440](charm-coastline/statewide-pseudo-nitzschia-1440.jpg) |
+| Phone, statewide | [statewide-390](charm-coastline/statewide-390.jpg) |
+| Default, desktop and phone | [default-1440](charm-coastline/default-1440.jpg), [default-390](charm-coastline/default-390.jpg) |
+| Selected port: Santa Cruz, desktop and phone | [port-santa-cruz-1440](charm-coastline/port-santa-cruz-1440.jpg), [port-santa-cruz-390](charm-coastline/port-santa-cruz-390.jpg) |
+| Selected port: Morro Bay | [port-morro-bay-1440](charm-coastline/port-morro-bay-1440.jpg) |
+| Coast detail and close zoom | [coast-detail-monterey](charm-coastline/coast-detail-monterey.jpg), [close-zoom-santa-cruz](charm-coastline/close-zoom-santa-cruz.jpg) |
+
+## 7. Unavoidable at 3 km
+
+- The forecast is 3 km squares. Their edges against no-value cells are one-cell steps, and water within a cell or two of the coast (and, for toxins, about 3–6 km) has no value.
+- These are shown honestly: the steps stay, the gaps keep their hatch, and the cell outlines from zoom 8.5 now coincide with the drawn edges.
+
+## 8. Compatibility and deployment
+
+- **Published data:** no change. The pipeline still writes the PNG, which the Research Preview and older clients use, and the value grid this PR draws from.
+- **No production publication is needed for this correction.** The web app falls back to the PNG for any layer whose grid it cannot draw (missing grid, chunked grid, non-step palette).
+- **Deployment:** this changes the full website only when it is deployed, which needs your approval.
+- **Dependencies:** `@mapbox/vector-tile` 3.0.0 and `pbf` 5.1.2 (BSD-3-Clause), the versions MapLibre already ships. They are now direct dependencies.
+- **External dependency:** the clip reads OpenFreeMap tiles, which the basemap already depends on. If they fail, data are drawn unclipped.
+
+## 9. Tests
+
+- **Unit tests (`gridtiles.test.ts`):**
+  - colours equal the pipeline's step rule for every code;
+  - tiles equal the published PNG at every fixture cell centre;
+  - north–south and east–west edges within half a tile pixel of the true boundary at zoom 12;
+  - an outside tile is transparent;
+  - the clip arithmetic, and a failed mask leaving data unclipped.
+- **Browser tests:**
+  - the forecast source is the grid;
+  - drawn edges lie within 1 px of the true boundaries, and the readout matches the drawn cell on both sides;
+  - straddling cells are drawn on water and never on land;
+  - the readout reasons.
+- **Full results:** 132/132 browser tests in local Chrome and CI mode; 145 unit tests.
