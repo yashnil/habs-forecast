@@ -1,0 +1,98 @@
+{
+ "schema": "coastwatch-health-1",
+ "evaluated_at": "2026-10-11T02:10:46Z",
+ "pipeline_run_id": "38103638833",
+ "thresholds": {
+  "min_consecutive_failures": 3,
+  "olci_max_age_days": 4,
+  "viirs_max_age_days": 8,
+  "charm_max_age_days": 2,
+  "hfr_max_age_hours": 18,
+  "hfr_coverage_drop": 0.5,
+  "publish_max_age_hours": 14
+ },
+ "sources": {
+  "charm": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-11T01:59:14Z",
+   "error": null
+  },
+  "gibs_chl": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-11T01:59:14Z",
+   "error": null
+  },
+  "satellite_chl": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-11T01:59:14Z",
+   "error": null
+  },
+  "hf_radar": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-11T01:59:14Z",
+   "error": null
+  },
+  "cdfw_ports": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-11T01:59:14Z",
+   "error": null
+  },
+  "official": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-11T01:59:14Z",
+   "error": null
+  },
+  "port_intel": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-11T01:59:14Z",
+   "error": null
+  },
+  "calhabmap": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-11T01:59:14Z",
+   "error": null
+  },
+  "foss_landings": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-11T01:59:14Z",
+   "error": null
+  }
+ },
+ "hfr_regions_last_covered": {
+  "mendocino_sonoma": "2026-10-11T02:10:46Z",
+  "sf_bay_farallones": "2026-10-11T02:10:46Z",
+  "monterey_bay": "2026-10-11T02:10:46Z",
+  "central_coast": "2026-10-11T02:10:46Z",
+  "southern_california": "2026-10-11T02:10:46Z"
+ },
+ "alerts": [
+  {
+   "key": "publish_stale",
+   "kind": "publish_stale",
+   "message": "The previously published dataset was 25 h old when this run started (runs are every 6 h).",
+   "since": "2026-10-11T02:10:46Z"
+  }
+ ],
+ "new_alerts": [
+  "publish_stale"
+ ],
+ "cleared_alerts": []
+}

@@ -1,0 +1,533 @@
+{
+  "schema_version": 1,
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -124.20398,
+          41.74901
+        ]
+      },
+      "properties": {
+        "port_code": 201,
+        "name": "CRESCENT CITY",
+        "display_name": "Crescent City",
+        "port_area": "EUREKA",
+        "port_area_code": 1,
+        "county": "Del Norte",
+        "region": "north_coast"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -124.14314,
+          41.0593
+        ]
+      },
+      "properties": {
+        "port_code": 231,
+        "name": "TRINIDAD",
+        "display_name": "Trinidad",
+        "port_area": "EUREKA",
+        "port_area_code": 1,
+        "county": "Humboldt",
+        "region": "north_coast"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -124.16376,
+          40.79834
+        ]
+      },
+      "properties": {
+        "port_code": 220,
+        "name": "EUREKA",
+        "display_name": "Eureka",
+        "port_area": "EUREKA",
+        "port_area_code": 1,
+        "county": "Humboldt",
+        "region": "north_coast"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -124.0664,
+          40.0255
+        ]
+      },
+      "properties": {
+        "port_code": 215,
+        "name": "SHELTER COVE",
+        "display_name": "Shelter Cove",
+        "port_area": "EUREKA",
+        "port_area_code": 1,
+        "county": "Humboldt",
+        "region": "north_coast"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -123.80376,
+          39.42518
+        ]
+      },
+      "properties": {
+        "port_code": 223,
+        "name": "FORT BRAGG",
+        "display_name": "Fort Bragg",
+        "port_area": "FORT BRAGG",
+        "port_area_code": 2,
+        "county": "Mendocino",
+        "region": "mendocino_sonoma"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -123.69308,
+          38.9088
+        ]
+      },
+      "properties": {
+        "port_code": 213,
+        "name": "POINT ARENA",
+        "display_name": "Point Arena",
+        "port_area": "FORT BRAGG",
+        "port_area_code": 2,
+        "county": "Mendocino",
+        "region": "mendocino_sonoma"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -123.04807,
+          38.33325
+        ]
+      },
+      "properties": {
+        "port_code": 473,
+        "name": "BODEGA BAY",
+        "display_name": "Bodega Bay",
+        "port_area": "BODEGA BAY",
+        "port_area_code": 3,
+        "county": "Sonoma",
+        "region": "mendocino_sonoma"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.41551,
+          37.80865
+        ]
+      },
+      "properties": {
+        "port_code": 440,
+        "name": "SAN FRANCISCO",
+        "display_name": "San Francisco",
+        "port_area": "SAN FRANCISCO",
+        "port_area_code": 4,
+        "county": "San Francisco",
+        "region": "sf_bay_farallones"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.48185,
+          37.5037
+        ]
+      },
+      "properties": {
+        "port_code": 452,
+        "name": "PRINCETON-HALF MOON",
+        "display_name": "Princeton / Half Moon Bay",
+        "port_area": "SAN FRANCISCO",
+        "port_area_code": 4,
+        "county": "San Mateo",
+        "region": "sf_bay_farallones"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.03081,
+          36.97412
+        ]
+      },
+      "properties": {
+        "port_code": 593,
+        "name": "SANTA CRUZ",
+        "display_name": "Santa Cruz",
+        "port_area": "MONTEREY",
+        "port_area_code": 5,
+        "county": "Santa Cruz",
+        "region": "monterey_bay"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.78691,
+          36.8044
+        ]
+      },
+      "properties": {
+        "port_code": 592,
+        "name": "MOSS LANDING",
+        "display_name": "Moss Landing",
+        "port_area": "MONTEREY",
+        "port_area_code": 5,
+        "county": "Monterey",
+        "region": "monterey_bay"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.89469,
+          36.60024
+        ]
+      },
+      "properties": {
+        "port_code": 550,
+        "name": "MONTEREY",
+        "display_name": "Monterey",
+        "port_area": "MONTEREY",
+        "port_area_code": 5,
+        "county": "Monterey",
+        "region": "monterey_bay"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -120.84991,
+          35.36581
+        ]
+      },
+      "properties": {
+        "port_code": 606,
+        "name": "MORRO BAY",
+        "display_name": "Morro Bay",
+        "port_area": "MORRO BAY",
+        "port_area_code": 6,
+        "county": "San Luis Obispo",
+        "region": "central_coast"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -120.75519,
+          35.17498
+        ]
+      },
+      "properties": {
+        "port_code": 602,
+        "name": "AVILA/PORT SAN LUIS",
+        "display_name": "Avila / Port San Luis",
+        "port_area": "MORRO BAY",
+        "port_area_code": 6,
+        "county": "San Luis Obispo",
+        "region": "central_coast"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -119.68876,
+          34.40722
+        ]
+      },
+      "properties": {
+        "port_code": 611,
+        "name": "SANTA BARBARA HARBOR",
+        "display_name": "Santa Barbara",
+        "port_area": "SANTA BARBARA",
+        "port_area_code": 7,
+        "county": "Santa Barbara",
+        "region": "southern_california"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -119.29318,
+          34.27834
+        ]
+      },
+      "properties": {
+        "port_code": 613,
+        "name": "VENTURA",
+        "display_name": "Ventura",
+        "port_area": "SANTA BARBARA",
+        "port_area_code": 7,
+        "county": "Ventura",
+        "region": "southern_california"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -119.19512,
+          34.14779
+        ]
+      },
+      "properties": {
+        "port_code": 605,
+        "name": "PORT HUENEME",
+        "display_name": "Port Hueneme",
+        "port_area": "SANTA BARBARA",
+        "port_area_code": 7,
+        "county": "Ventura",
+        "region": "southern_california"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -118.2923,
+          33.73586
+        ]
+      },
+      "properties": {
+        "port_code": 770,
+        "name": "SAN PEDRO",
+        "display_name": "San Pedro",
+        "port_area": "LOS ANGELES",
+        "port_area_code": 8,
+        "county": "Los Angeles",
+        "region": "southern_california"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -117.93063,
+          33.61546
+        ]
+      },
+      "properties": {
+        "port_code": 748,
+        "name": "NEWPORT BEACH",
+        "display_name": "Newport Beach",
+        "port_area": "LOS ANGELES",
+        "port_area_code": 8,
+        "county": "Orange",
+        "region": "southern_california"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -117.69812,
+          33.46698
+        ]
+      },
+      "properties": {
+        "port_code": 767,
+        "name": "DANA POINT",
+        "display_name": "Dana Point",
+        "port_area": "LOS ANGELES",
+        "port_area_code": 8,
+        "county": "Orange",
+        "region": "southern_california"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -117.38484,
+          33.19536
+        ]
+      },
+      "properties": {
+        "port_code": 883,
+        "name": "OCEANSIDE",
+        "display_name": "Oceanside",
+        "port_area": "SAN DIEGO",
+        "port_area_code": 9,
+        "county": "San Diego",
+        "region": "southern_california"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -117.13414,
+          32.71512
+        ]
+      },
+      "properties": {
+        "port_code": 880,
+        "name": "SAN DIEGO",
+        "display_name": "San Diego",
+        "port_area": "SAN DIEGO",
+        "port_area_code": 9,
+        "county": "San Diego",
+        "region": "southern_california"
+      }
+    }
+  ],
+  "regions": [
+    {
+      "id": "north_coast",
+      "label": "North Coast",
+      "bounds": [
+        [
+          -124.75,
+          39.9
+        ],
+        [
+          -123.6,
+          42.05
+        ]
+      ]
+    },
+    {
+      "id": "mendocino_sonoma",
+      "label": "Mendocino\u2013Sonoma",
+      "bounds": [
+        [
+          -124.0,
+          38.2
+        ],
+        [
+          -122.8,
+          39.95
+        ]
+      ]
+    },
+    {
+      "id": "sf_bay_farallones",
+      "label": "San Francisco & Farallones",
+      "bounds": [
+        [
+          -123.35,
+          37.25
+        ],
+        [
+          -122.2,
+          38.15
+        ]
+      ]
+    },
+    {
+      "id": "monterey_bay",
+      "label": "Monterey Bay",
+      "bounds": [
+        [
+          -122.45,
+          36.45
+        ],
+        [
+          -121.72,
+          37.15
+        ]
+      ]
+    },
+    {
+      "id": "central_coast",
+      "label": "Central Coast",
+      "bounds": [
+        [
+          -121.6,
+          34.4
+        ],
+        [
+          -120.4,
+          36.1
+        ]
+      ]
+    },
+    {
+      "id": "southern_california",
+      "label": "Southern California",
+      "bounds": [
+        [
+          -120.6,
+          32.45
+        ],
+        [
+          -117.05,
+          34.55
+        ]
+      ]
+    }
+  ],
+  "caveats": [
+    "Port points are CDFW reference locations for landing records; CDFW notes a point may not represent the exact harbour location."
+  ],
+  "provenance": {
+    "source_id": "cdfw_ports",
+    "source_name": "CDFW Marine Landing Data System Ports [ds3081]",
+    "source_url": "https://www.arcgis.com/home/item.html?id=9a8ab5ffa69e4cbeb8e7a4bd9a3a0dac",
+    "dataset_id": "ds3081",
+    "product_version": null,
+    "institution": "California Department of Fish and Wildlife, Marine Region",
+    "license": "CDFW BIOS public dataset; attribute CDFW.",
+    "citation": null,
+    "retrieved_at": "2026-10-11T01:59:14Z",
+    "request_urls": [
+      "https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3081_fpu/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=json&resultRecordCount=2000"
+    ],
+    "upstream_metadata": {
+      "curated_list": "data/curated/ports.json",
+      "curated_last_reviewed": "2026-10-08"
+    },
+    "pipeline_version": "02ed83717324",
+    "pipeline_run_id": "38103638833"
+  }
+}
