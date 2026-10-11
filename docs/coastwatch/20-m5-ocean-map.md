@@ -92,7 +92,20 @@ A unit test validates new manifests against the released schema. That schema is 
 - Live comparison: **408 of 408 checks** pass (values, cell centres and 512 px tiles, including 384 multi-sensor pixels) ([evidence](m5/evidence/staging-local-satellite-verification.json)).
 - The publish check validated **8,203 tiles** against their indexes, with no problems ([evidence](m5/evidence/staging-local-check-published.txt)).
 
-**GitHub staging channel.** The first workflow run failed in currents verification because NOAA's HF-radar dataset `ucsdHfrW2` was offline (HTTP 404). Its satellite verification had already passed. The second run is recorded in the PR.
+**GitHub staging channel** ([run 38103638833](https://github.com/yashnil/habs-forecast/actions/runs/38103638833)). Published to `coastwatch-data-staging` on 2026-10-11. The two earlier runs stopped in currents verification while NOAA's HF-radar dataset `ucsdHfrW2` was offline.
+
+| Check | Result |
+|---|---|
+| C-HARM against ERDDAP | 13 points × 12 layers, 0 failures |
+| Satellite against ERDDAP | 420 / 420 |
+| HF radar against ERDDAP | 32 / 32 |
+| Manifest references | 8,499 tiles validated |
+| Public URL | Served, complete and CORS-enabled |
+
+The staged data has 512 px tiles for all three latest views, with their indexes served. Further checks on the staged data:
+- the staged manifest validates against the released (demo) schema;
+- in a browser, M5 on staging makes no 404 requests and logs no console errors;
+- P3, standing in for the deployed demo code, loads the same staging data and draws the 512 px tiles correctly. It still requests absent tiles, as it does today.
 
 **Storage**, measured on the staging build:
 - satellite tiles grow from 14.9 MB to 35.2 MB;
