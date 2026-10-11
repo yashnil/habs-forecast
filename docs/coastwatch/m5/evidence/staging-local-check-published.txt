@@ -1,0 +1,7 @@
+{
+  "base": "<local staging>/v1",
+  "ok": true,
+  "files_checked": 295,
+  "tiles_validated": 8203,
+  "problems": []
+}

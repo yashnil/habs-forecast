@@ -1,6 +1,6 @@
-# 19 — M5: rendering audit and map direction (decision needed)
+# 19 — M5: rendering audit and map direction
 
-**Status:** comparison stage, before the cartographic system is finalised. All screenshots use one build on the **live production dataset** (2026-10-10). Images are in [m5/comparison/](m5/comparison/).
+**Status:** decided. All five recommendations in §7 were approved and are built; see [20 — M5: Ocean Map](20-m5-ocean-map.md). The review switches described below have been removed. What follows is the decision record, written at the comparison stage. All screenshots use one build on the **live production dataset** (2026-10-10). Images are in [m5/comparison/](m5/comparison/).
 
 **What is built so far:**
 - The new layout: a full-bleed map, a control rail, a compact layer dock, a snap-point sheet on phones, and one status line.

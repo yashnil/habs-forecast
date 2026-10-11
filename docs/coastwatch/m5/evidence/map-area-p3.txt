@@ -1,0 +1,9 @@
+1280x720 /?layer=currents                  {"mapW":1280,"mapH":579,"unobstructedOfMap":0.566,"visibleMapOfViewport":0.455,"zoom":8.76,"bounds":"-123.56,36.43,-121.48,37.18"}
+1440x900 /                                 {"mapW":1440,"mapH":776,"unobstructedOfMap":0.697,"visibleMapOfViewport":0.601,"zoom":9.24,"bounds":"-123.22,36.44,-121.54,37.17"}
+1440x900 /?layer=multi                     {"mapW":1440,"mapH":776,"unobstructedOfMap":0.636,"visibleMapOfViewport":0.549,"zoom":9.24,"bounds":"-123.22,36.44,-121.54,37.17"}
+1440x900 /?layer=currents                  {"mapW":1440,"mapH":776,"unobstructedOfMap":0.623,"visibleMapOfViewport":0.537,"zoom":9.24,"bounds":"-123.22,36.44,-121.54,37.17"}
+1280x720 /                                 {"mapW":1280,"mapH":579,"unobstructedOfMap":0.626,"visibleMapOfViewport":0.503,"zoom":8.76,"bounds":"-123.56,36.43,-121.48,37.18"}
+1280x720 /?layer=multi                     {"mapW":1280,"mapH":579,"unobstructedOfMap":0.568,"visibleMapOfViewport":0.457,"zoom":8.76,"bounds":"-123.56,36.43,-121.48,37.18"}
+390x844 /                                  {"mapW":390,"mapH":605,"unobstructedOfMap":0.265,"visibleMapOfViewport":0.19,"zoom":7.21,"bounds":"-122.87,35.12,-121.02,37.43"}
+390x844 /?layer=multi                      {"mapW":390,"mapH":605,"unobstructedOfMap":0.171,"visibleMapOfViewport":0.123,"zoom":7.21,"bounds":"-122.87,35.12,-121.02,37.43"}
+390x844 /?layer=currents                   {"mapW":390,"mapH":605,"unobstructedOfMap":0.059,"visibleMapOfViewport":0.042,"zoom":7.21,"bounds":"-122.87,35.12,-121.02,37.43"}
