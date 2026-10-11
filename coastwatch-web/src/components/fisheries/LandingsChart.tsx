@@ -69,8 +69,10 @@ export function LandingsChart({
 
   return (
     <div ref={ref} className="relative select-none" data-testid="landings-chart" data-unit={unit} data-focus={focus ?? ""} data-groups={groups.map((g) => g.id).join(",")}>
+      {/* sized to the container from the first paint: before the width is measured the drawing
+          scales, so nothing overflows a phone */}
       <svg
-        width={W}
+        width="100%"
         height={H}
         viewBox={`0 0 ${W} ${H}`}
         className="block max-w-full touch-pan-y"
@@ -129,7 +131,11 @@ export function LandingsChart({
                 </text>
               )}
               {totals[i] != null && (!narrow || y === active) && (
-                <text x={Math.min(cx, W - MR - 26)} y={yS(totals[i]!) - 6} textAnchor="middle" className={`tabular ${y === active ? "fill-[var(--cw-ink)] font-semibold" : "fill-[var(--cw-ink-2)]"} text-[12px]`} data-testid={`bar-total-${y}`}>
+                <text
+                  x={Math.min(cx, W - MR - 26)}
+                  // on a phone the label is wider than a bar: lift it clear of the neighbouring bars
+                  y={yS(narrow ? Math.max(totals[i]!, totals[i - 1] ?? 0, totals[i + 1] ?? 0) : totals[i]!) - 6}
+                  textAnchor="middle" className={`tabular ${y === active ? "fill-[var(--cw-ink)] font-semibold" : "fill-[var(--cw-ink-2)]"} text-[12px]`} data-testid={`bar-total-${y}`}>
                   {formatValue(totals[i], unit)}
                 </text>
               )}
@@ -175,7 +181,7 @@ export function LandingsChart({
                 (e.currentTarget.parentElement?.children[j] as HTMLElement | undefined)?.focus();
               }}
               className={`absolute top-0 flex flex-col items-center rounded-md pb-0.5 pt-1 leading-tight ${sel ? "text-ink" : "text-ink-2 hover:text-ink"}`}
-              style={{ left: xL(i), width: band }}
+              style={{ left: `${(xL(i) / W) * 100}%`, width: `${(band / W) * 100}%` }}
               data-testid={`year-${y}`}
             >
               <span className={`tabular text-[13px] ${sel ? "font-semibold underline decoration-2 underline-offset-[5px]" : ""}`}>{narrow ? `’${String(y).slice(2)}` : y}</span>
@@ -185,7 +191,7 @@ export function LandingsChart({
         })}
       </div>
       {!narrow && (
-        <p className="text-[12px] text-ink-3" style={{ paddingLeft: ML }}>
+        <p className="text-[12px] text-ink-3" style={{ paddingLeft: `${(ML / W) * 100}%` }}>
           % under each year: share of all California commercial landings that year (NOAA&apos;s state total), in the same unit.
         </p>
       )}

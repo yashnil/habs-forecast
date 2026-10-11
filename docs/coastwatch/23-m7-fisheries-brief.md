@@ -248,6 +248,8 @@ Captures: [m7/after/](m7/after/) at 1440×900, 1280×720, 1024×768 and 390×844
    - A non-breaking hyphen keeps "toxin‑affected" on one line.
    - The share caption is shorter.
    - Bloom's 20-check interaction audit still passes.
+- **CI found a real bug, now fixed.** The first CI run caught a phone overflow in the moments before the chart measured its width (the year row was placed in pixels from a 900 px guess). The chart is now sized to its container from the first paint and the years are placed in percentages. A new test loads the page with JavaScript off, which is that unmeasured state; it fails without the fix.
+- On a phone, the selected year's total is lifted clear of the neighbouring bars.
 
 **User journeys walked in a real browser:**
 - a first-time visitor reading top to bottom;
@@ -262,7 +264,7 @@ Captures: [m7/after/](m7/after/) at 1440×900, 1280×720, 1024×768 and 390×844
 | Check | Result |
 |---|---|
 | Web unit (vitest) | 157 passed (21 new in `m7.test.ts`; the M3 copy test now also checks the new list copy) |
-| Browser (Playwright, local Chrome) | 142 passed (13 new in `m7.spec.ts`; the M3 Fisheries test ported to the new structure with the same or stricter checks) |
+| Browser (Playwright, local Chrome and CI mode) | 143 passed (14 new in `m7.spec.ts`; the M3 Fisheries test ported to the new structure with the same or stricter checks) |
 | Pipeline (pytest) | 196 passed; `build_fisheries_geo.py` passes ruff |
 | Typecheck, lint, production build | Clean; 0 build warnings |
 | Axe (1440, 1024, 390; detail open; pounds) | No violations of any severity |

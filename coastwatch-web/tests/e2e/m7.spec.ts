@@ -212,3 +212,16 @@ test.describe("Fisheries (M7) on a phone", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   });
 });
+
+test.describe("Fisheries (M7) before the chart is measured", () => {
+  // Without JavaScript the chart never measures its width, which is the state every phone sees for
+  // the first moments of a visit: nothing may overflow, and the server-rendered story is all there.
+  test.use({ viewport: { width: 390, height: 844 }, javaScriptEnabled: false });
+  test("the server-rendered page fits a phone and carries the story", async ({ page }) => {
+    await page.goto(`${OK}/fisheries`);
+    await expect(page.getByTestId("landings-chart")).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+    await expect(page.getByTestId("exposure-definition")).toContainText("not a prediction of losses");
+    await expect(page.getByTestId("figure-year")).toContainText("$");
+  });
+});
