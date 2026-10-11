@@ -6,8 +6,8 @@ import type { ObsStation } from "@/generated/observations";
 import type { FreshnessPolicy } from "@/generated/schema";
 import { REGION_LABEL } from "@/content/copy";
 import { fmtDate } from "@/components/charts/StationChart";
-import { headline } from "@/lib/bloom";
-import { CALIFORNIA_BOUNDS, REGION_BOUNDS, monthYear, stationFreshness, summaryOf } from "@/lib/observations";
+import { pdaLine } from "@/lib/bloom";
+import { CALIFORNIA_BOUNDS, REGION_BOUNDS, stationFreshness } from "@/lib/observations";
 import type { StationPoint } from "./StationMap";
 import { FreshGlyph } from "./FreshDot";
 
@@ -27,19 +27,6 @@ export function groupStations(stations: ObsStation[]): { region: string; station
     byRegion.set(r, [...(byRegion.get(r) ?? []), s]);
   }
   return order.filter((r) => byRegion.has(r)).map((r) => ({ region: r, stations: byRegion.get(r)!.sort((a, b) => (b.lat ?? 0) - (a.lat ?? 0)) }));
-}
-
-/** Two significant figures, trailing zeros kept (0.20, not 0.2), as spec §5.2. */
-const sig2 = (v: number) => (v >= 100 ? v.toFixed(0) : v.toPrecision(2));
-
-/** One plain line about particulate domoic acid at a station (spec §3.2 item 2). Never implies absence. */
-export function pdaLine(s: ObsStation, policy: FreshnessPolicy | null, now: Date | null): string {
-  const sm = summaryOf(s, "pDA");
-  if (!sm || sm.n_measured === 0) return "pDA not measured here";
-  const h = policy && now ? headline(sm, policy, now) : null;
-  if (h?.kind === "old") return `pDA last measured ${monthYear(sm.last_date!)}`;
-  if (sm.last_qualifier === "reported_zero") return `pDA reported 0 · ${fmtDate(Date.parse(`${sm.last_date}T12:00:00Z`), { month: "short", day: "numeric" })}`;
-  return `pDA ${sm.last_value != null ? sig2(sm.last_value) : "—"} ng/mL`;
 }
 
 export function StationRail({

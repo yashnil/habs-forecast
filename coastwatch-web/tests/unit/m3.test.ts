@@ -6,7 +6,8 @@ import type { ObservationDataset } from "@/generated/observations";
 import type { FisheriesDataset } from "@/generated/fisheries";
 import * as copy from "@/content/copy";
 import { checkFisheries, checkManifest, checkObservations } from "@/lib/data";
-import { REGION_BOUNDS, cadenceLabel, coverage, formatObs, logDomain, samples, stationFreshness, summaryOf, toxinStatus } from "@/lib/observations";
+import { REGION_BOUNDS, cadenceLabel, formatObs, samples, stationFreshness, summaryOf } from "@/lib/observations";
+import { AXES, pdaLine, viewSummary } from "@/lib/bloom";
 import { fisheriesValue, selectedTotal } from "@/lib/fisheries";
 
 const DIR = path.resolve(__dirname, "../fixture-data/v1");
@@ -49,17 +50,20 @@ describe("observation semantics", () => {
     const zeros = samples(st("HABs-SantaCruzWharf"), "pDA").filter((s) => s.q === "reported_zero");
     expect(zeros.every((s) => s.value === 0)).toBe(true);
   });
-  it("coverage counts visits, measurements and zeros in a window", () => {
+  it("the view summary counts visits, measurements and zeros in a window (M6: replaces coverage)", () => {
     const ss = samples(st("HABs-SantaCruzWharf"), "pDA");
-    const c = coverage(ss, 0, Date.parse("2100-01-01"));
+    const c = viewSummary(ss, 0, Date.parse("2100-01-01"));
     expect(c.visits).toBe(ss.length);
     expect(c.measured).toBe(summaryOf(st("HABs-SantaCruzWharf"), "pDA")!.n_measured);
     expect(c.zeros).toBe(summaryOf(st("HABs-SantaCruzWharf"), "pDA")!.n_reported_zero);
   });
-  it("long absence is described as absence", () => {
-    const sm = summaryOf(st("HABs-MontereyWharf"), "pDA");
-    expect(toxinStatus(v("pDA"), sm)).toMatch(/^pDA last measured \w{3} 2022$/);
-    expect(toxinStatus(v("pDA"), { ...sm!, n_measured: 0 })).toContain("not measured");
+  it("long absence is described as absence (M6: the station rail's line)", () => {
+    const policy = manifest.sources.find((s: { source_id: string }) => s.source_id === "calhabmap").freshness;
+    const now = new Date("2026-10-08T18:00:00Z");
+    expect(pdaLine(st("HABs-MontereyWharf"), policy, now)).toMatch(/^pDA last measured \w{3} 2022$/);
+    const mw = st("HABs-MontereyWharf") as ObservationDataset["stations"][number];
+    const never = { ...mw, summaries: mw.summaries.map((x) => (x.variable === "pDA" ? { ...x, n_measured: 0 } : x)) };
+    expect(pdaLine(never, policy, now)).toContain("not measured");
   });
   it("station freshness comes from the newest sample and the published policy", () => {
     const policy = manifest.sources.find((s: { source_id: string }) => s.source_id === "calhabmap").freshness;
@@ -67,8 +71,8 @@ describe("observation semantics", () => {
     expect(stationFreshness(st("HABs-TrinidadPier"), policy, new Date("2026-10-08T18:00:00Z"))?.state).toBe("historical");
   });
   it("helpers", () => {
-    expect(logDomain([0.003, 12])).toEqual([0.001, 100]);
-    expect(logDomain([0, 0])).toBeNull();
+    // M6 replaced data-fitted log axes (logDomain) with fixed whole decades: the axis never moves with the data
+    expect(AXES.pDA.domain).toEqual([1e-4, 1e2]);
     expect(cadenceLabel(7)).toBe("about weekly");
     expect(cadenceLabel(null)).toContain("no regular sampling");
   });

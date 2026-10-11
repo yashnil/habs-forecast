@@ -1,7 +1,7 @@
-import type { ObsVariableSummary, SeriesPoint } from "@/generated/observations";
+import type { ObsStation, ObsVariableSummary, SeriesPoint } from "@/generated/observations";
 import type { FreshnessPolicy } from "@/generated/schema";
 import { ageInDays, classifyDate, type Freshness } from "@/lib/freshness";
-import { DAY, type ObsVariableId, type Sample } from "@/lib/observations";
+import { DAY, monthYear, summaryOf, type ObsVariableId, type Sample } from "@/lib/observations";
 import { pacificToday } from "@/lib/time";
 
 /**
@@ -255,4 +255,22 @@ export function modelSegments(points: ModelPoint[]): ModelPoint[][] {
     else out.push([p]);
   }
   return out.filter((s) => s.length);
+}
+
+// ---------------------------------------------------------------- station rail
+
+const SHORT_DAY = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const shortDay = (date: string) => SHORT_DAY.format(new Date(`${date.slice(0, 10)}T12:00:00Z`));
+
+/** Two significant figures, trailing zeros kept (0.20, not 0.2), as spec §5.2. */
+const sig2 = (v: number) => (v >= 100 ? v.toFixed(0) : v.toPrecision(2));
+
+/** One plain line about particulate domoic acid at a station (spec §3.2 item 2). Never implies absence. */
+export function pdaLine(s: ObsStation, policy: FreshnessPolicy | null, now: Date | null): string {
+  const sm = summaryOf(s, "pDA");
+  if (!sm || sm.n_measured === 0) return "pDA not measured here";
+  const h = policy && now ? headline(sm, policy, now) : null;
+  if (h?.kind === "old") return `pDA last measured ${monthYear(sm.last_date!)}`;
+  if (sm.last_qualifier === "reported_zero") return `pDA reported 0 · ${shortDay(sm.last_date!)}`;
+  return `pDA ${sm.last_value != null ? sig2(sm.last_value) : "—"} ng/mL`;
 }
