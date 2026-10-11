@@ -1,6 +1,6 @@
 # M7: Fisheries & Economic Exposure — brief and implementation record
 
-**Status:** implemented on this branch (§8–§13); awaiting the owner's review before merge. §1–§7 are the original brief, kept as written; where the implementation departs from it, §9 says why.
+**Status:** implemented on this branch (§8–§14); awaiting the owner's review before merge. §1–§7 are the original brief, kept as written; where the implementation departs from it, §9 says why.
 
 **Baseline:**
 - the approved design-reset spec §3.3 ([design-spec.md](https://github.com/yashnil/habs-forecast/blob/archive/pr7-design-reset/docs/coastwatch/design-reset/design-spec.md#33-fisheries--economic-exposure));
@@ -173,9 +173,11 @@ The recommended option is in bold.
 
 Later season delays, such as those for whale entanglement risk, are not HAB events and are not marked. Nothing on the page attributes a change in landings to an event. Unit tests forbid causal wording in event text, and the browser tests check every sentence with all disclosures open.
 
-**Findings in published data, deferred.** These are pipeline text; changing them would change the production dataset, which needs separate approval.
-1. **The `withheld[].note` string is wrong.** It says the withheld amount is "not included in group or statewide values". The pipeline includes it in the statewide total (its `method.withheld` says so, and the code does). The page never shows that note; it states the correct relationship. Proposed fix: one string in `pipeline/coastwatch_pipeline/sources/fisheries.py`.
-2. **The rock crab `tier_basis` says the closure is "north of 40° N".** The official record's title is "40°00′ N to 40°30′ N". The page shows both: the basis as published, and the notice title from the registry.
+**Two errors in the published text, now corrected** (approved 2026-10-11). Only the text changed; the numbers are identical, as the regenerated fixtures confirm.
+1. **The `withheld[].note`** said confidential landings are "not included in group or statewide values". NOAA's FOSS caveats say "Total landings by state include confidential data and will be accurate", and the pipeline's totals already include them. The note now reads: included in the statewide total, not attributable to any species or group.
+2. **The rock crab `tier_basis`** said "north of 40° N". CDFW's health-advisories page (checked 2026-10-11) gives the commercial closure as "from the Mendocino/Humboldt county line (40° 00.00' N. lat.) to Cape Mendocino, Humboldt County (40° 30.00' N. lat.)". The basis now quotes those limits.
+
+Pipeline tests tie both texts to how the totals are built and to the notice limits. A staging run from this branch checks the result on real data. The production dataset changes only at the first scheduled refresh after the merge.
 
 ## 10. What was built
 
@@ -264,7 +266,7 @@ Captures: [m7/after/](m7/after/) at 1440×900, 1280×720, 1024×768 and 390×844
 | Check | Result |
 |---|---|
 | Web unit (vitest) | 157 passed (21 new in `m7.test.ts`; the M3 copy test now also checks the new list copy) |
-| Browser (Playwright, local Chrome and CI mode) | 143 passed (14 new in `m7.spec.ts`; the M3 Fisheries test ported to the new structure with the same or stricter checks) |
+| Browser (Playwright, local Chrome and CI mode) | 144 passed (15 new in `m7.spec.ts`; the M3 Fisheries test ported to the new structure with the same or stricter checks) |
 | Pipeline (pytest) | 196 passed; `build_fisheries_geo.py` passes ruff |
 | Typecheck, lint, production build | Clean; 0 build warnings |
 | Axe (1440, 1024, 390; detail open; pounds) | No violations of any severity |
@@ -281,10 +283,20 @@ Captures: [m7/after/](m7/after/) at 1440×900, 1280×720, 1024×768 and 390×844
 
 The map and its CDFW points load only near the screen, and the 80-cell values table is built only when opened. No chart or map library is added.
 
-## 13. Remaining limitations
+## 13. Final review (2026-10-11)
 
-- **The phone chart** sits about two screens down, after the notices, the opening and the three figures. A shorter phone opening is possible but would drop figures.
-- **The two deferred pipeline text corrections** in §9.
+- **The phone opening is compact, with nothing dropped** ([before](m7/review/phone-first-screen-before.jpg), [after](m7/review/phone-first-screen-after.jpg)).
+  - The three figures sit in one row with short captions; their full sentences are one tap away.
+  - The notices heading leads with the count, and the "Not verified" badge stays on one line.
+  - The meta line still says the species tiers await review.
+  - The legend is one row that scrolls sideways.
+  - The figures and the chart title are on the first screen. The chart starts at 995 px instead of 1,273 and is fully visible after one scroll.
+- **The Bloom audit failure** (one run of 18/20 right after a server restart) did not recur in 14 runs, 10 of them from a cold start.
+  - The audit now saves a screenshot, the URL, console errors, failed requests and timing for any failed check.
+  - The browser test suite keeps a trace and screenshot for every failure, and CI uploads them.
+
+## 14. Remaining limitations
+
 - **Port-area values** wait on CDFW's answer to the F3 request.
 - **Tiers** await independent HAB scientific review.
 - **NOAA revises** recent years.
