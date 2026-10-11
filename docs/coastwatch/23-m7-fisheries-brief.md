@@ -1,6 +1,6 @@
-# M7: Fisheries & Economic Exposure — redesign brief
+# M7: Fisheries & Economic Exposure — brief and implementation record
 
-**Status:** brief only, for review. Nothing is implemented.
+**Status:** implemented on this branch (§8–§13); awaiting the owner's review before merge. §1–§7 are the original brief, kept as written; where the implementation departs from it, §9 says why.
 
 **Baseline:**
 - the approved design-reset spec §3.3 ([design-spec.md](https://github.com/yashnil/habs-forecast/blob/archive/pr7-design-reset/docs/coastwatch/design-reset/design-spec.md#33-fisheries--economic-exposure));
@@ -107,7 +107,7 @@ The page should read like a well-made data article. M7 keeps the spec §3.3 stru
 - Bivalve values include aquaculture.
 - NOAA revises recent years, and annual summaries are preliminary.
 
-## 6. Decisions for you
+## 6. Decisions (asked in the brief; answered 2026-10-11, see §8)
 
 The recommended option is in bold.
 
@@ -136,3 +136,153 @@ The recommended option is in bold.
 - no forecasts or loss estimates;
 - no deployment;
 - no change to the Research Preview demo.
+
+## 8. Decisions as approved (2026-10-11)
+
+- **F1 — approved.** Pounds alongside revenue. The page names the unit everywhere and never adjusts pounds or implies price adjustment beyond the CPI-U rescaling it states.
+- **F2 — approved with geographic verification.** CDFW publishes its landing ports as **points**, not port-area boundaries. The source is "Marine Landing Data System Ports" (BIOS ds3081, CDFW Marine Region, CC BY 4.0): 112 ports, each assigned to one of 11 port areas, geocoded with a note that "the point may not represent the exact port location". The page therefore draws points, labelled by port area, and **no areas and no values** ([where-landings-are-reported](m7/after/where-landings-are-reported.jpg)).
+- **F3 — approved.** The draft request is [m7/cdfw-data-request-draft.md](m7/cdfw-data-request-draft.md). It has not been sent.
+- **F4 — deferred.** The series stays 2015–2024, with no pipeline change.
+
+## 9. Pre-build audit: the old page and the data
+
+**The old page** ([before](m7/before/1440-fisheries-full.jpg)):
+- two caveat boxes before any data;
+- KPI cards;
+- one single-colour series with no annotation;
+- three small charts, each on its own scale;
+- no pounds;
+- the absence of port data took more space than the data.
+
+**The data, checked against each proposed encoding:**
+
+| Data property | Consequence for the design |
+|---|---|
+| 6 groups × 10 calendar years × 3 measures (2024 $, nominal $, pounds) | One stacked annual bar chart, one measure at a time; never two axes |
+| Dungeness crab is 80–96% of Tier 1 revenue; the smallest groups are under 1% | A stack cannot compare small groups: choosing a group shows it **alone on its own scale** (the brief's "focused group at the base" was tried and dropped in pass 1, [evidence](m7/review/pass1-rock-crab-sliver.jpg)) |
+| In pounds, anchovy and sardine dominate; in dollars, crab and lobster do | Pounds is a first-class unit; the group detail shows revenue and pounds side by side, each on its own scale, with the sentence "separate measures on separate scales" |
+| Annual values are **calendar years**; crab seasons span two | The 2015–16 events are dated brackets placed by day within the year slots, and the chart notes say so |
+| Bivalve pounds are meat weight and mostly aquaculture | Flagged in the legend, detail and notes when pounds are shown |
+| The withheld amount is in NOAA's state total but in no group | Shares are labelled lower bounds; the withheld row stays in the full table |
+| Rows without a published value (bivalves, some years) | Left out and counted, never zero; listed in the detail and starred in the table |
+| No port-level values | One quiet line plus a disclosure with the published reasons; no split |
+
+**Documented events.** The page marks only the 2015–16 domoic acid closures, from an official state record: the California Legislature's Joint Committee on Fisheries and Aquaculture, *2015–16 Commercial Crab Fishing Timeline* (July 2016).
+- **Dungeness crab:** delayed 6 Nov 2015, reopened in stages, statewide 26 May 2016.
+- **Rock crab:** closed 6 Nov 2015; on 21 July 2016 it was still closed north of Pigeon Point, so its bracket has an open, dashed end.
+
+Later season delays, such as those for whale entanglement risk, are not HAB events and are not marked. Nothing on the page attributes a change in landings to an event. Unit tests forbid causal wording in event text, and the browser tests check every sentence with all disclosures open.
+
+**Findings in published data, deferred.** These are pipeline text; changing them would change the production dataset, which needs separate approval.
+1. **The `withheld[].note` string is wrong.** It says the withheld amount is "not included in group or statewide values". The pipeline includes it in the statewide total (its `method.withheld` says so, and the code does). The page never shows that note; it states the correct relationship. Proposed fix: one string in `pipeline/coastwatch_pipeline/sources/fisheries.py`.
+2. **The rock crab `tier_basis` says the closure is "north of 40° N".** The official record's title is "40°00′ N to 40°30′ N". The page shows both: the basis as published, and the notice title from the registry.
+
+## 10. What was built
+
+1. **Official notices first.** The five notices the species groups reference, collapsed to one line with the "Not verified" badge. This is the same strip as Bloom, now shared.
+2. **Opening.**
+   - The serif headline "What California's toxin‑affected fisheries have landed".
+   - The published terminology as the lede.
+   - Freshness, the data window ("2025 not yet published by NOAA") and "tiers await independent scientific review".
+   - Beside it, three typographic figures, without cards:
+     - the selected year's total;
+     - the 10-year average, with its lowest and highest years;
+     - the share of all California commercial landings, labelled a lower bound.
+3. **The primary figure.**
+   - Stacked annual bars, in Tier 1 blues and Tier 2 stone. Teal, violet and amber stay reserved for measured, model and official.
+   - Totals on the bars, and the share of the state total under each year.
+   - The dated 2015–16 brackets.
+   - Year buttons that work by pointer, touch and keyboard (arrows, Home, End).
+   - The legend doubles as the group chooser.
+   - Controls: Tier 1 or Tiers 1 + 2; 2024 $, nominal $ or pounds.
+   - **The year beside the chart:** each group, the total, the state total, the share and the withheld amount. When 2015 or 2016 is selected, it adds the dated record and its source.
+   - "Reading this chart" explains calendar years and that the brackets do not say how much of any change the closures explain, with a unit-specific note.
+4. **By species group.**
+   - One sortable table (`aria-sort`): the selected year, its share, the 10-year average, and a 10-year strip on the group's own scale.
+   - Tier 2 rows are dimmed, not hidden.
+   - A row opens in place:
+     - the published basis;
+     - the referenced notices (not verified), linked to the drawer;
+     - revenue and pounds side by side;
+     - NOAA's market categories;
+     - rows without values.
+5. **What these figures can and cannot tell you.**
+   - **They do not show:** harm (a change is not a loss, and overlap is not cause), profit or income, fishing effort, or anything about a port, county or the current season.
+   - **They do show:** what was landed, how large the fisheries are, and when documented events fell.
+6. **Where landings are reported.** CDFW's 112 ports by port area on a 14 kB static outline (Natural Earth, public domain). It needs no map library, and it loads only when the section nears the screen. Port-level values are explained in one line plus a disclosure.
+7. **How these numbers are made.**
+   - Four short columns: source, dollars, confidentiality, species groups.
+   - Disclosures:
+     - every value, including the state total and the withheld row (built only when opened);
+     - the inflation index;
+     - the duplicate rows;
+     - all caveats;
+     - the processing steps.
+   - Sources with retrieval times, the 2015–16 source, and the citation and licence.
+8. **Link state:** `unit`, `tiers`, `group`, `year`. Unknown values fall back to defaults, and a Tier 2 group in the link brings Tier 2 into the chart.
+
+**Shared changes, safe for all pages:**
+- `OfficialStrip` takes record ids and a heading, so Bloom and Fisheries share it.
+- `useWidth` moved to `lib/`.
+- The unused `BarChart` was removed.
+- The header no longer overflows at 768 px.
+- At tablet widths, the "not verified" banner had truncated away its "See the list" button; it now has a short tablet line.
+
+## 11. Review passes (production data, run 38140958238)
+
+Captures: [m7/after/](m7/after/) at 1440×900, 1280×720, 1024×768 and 390×844, including filter and table states.
+
+1. **Composition and story** ([pass 1](m7/review/pass1-1440-full.jpg)).
+   - The chart was below the first screen, so the figures moved beside the opening and the lede and the "at stake" sentence merged.
+   - The geography text column had collapsed; the grid was fixed.
+   - Focusing a small group drew a sliver, so a chosen group is now shown alone on its own scale.
+   - The rock crab closure was missing from the bracket, so the event became two dated records.
+2. **Charts, interaction, accessibility and science.**
+   - Phone axis labels and the last total were clipped; fixed.
+   - Pale group colours fell under 3:1 in single-group strips, so those use a strong tier colour.
+   - The "lower bound" wording now names both reasons: withheld landings and generic categories.
+   - Axe flagged nested landmarks and an unfocusable scrolling table; both fixed.
+   - The 768 px overflow and the hidden banner button were fixed.
+3. **Final desktop and phone review, and regressions.**
+   - The notices strip is compact (one line plus a disclosure).
+   - A non-breaking hyphen keeps "toxin‑affected" on one line.
+   - The share caption is shorter.
+   - Bloom's 20-check interaction audit still passes.
+
+**User journeys walked in a real browser:**
+- a first-time visitor reading top to bottom;
+- one species (rock crab: legend, then its own scale, its row and its notices);
+- a researcher comparing years (keyboard through the years, nominal versus 2024 $, pounds, the full table);
+- a phone visitor (tap a bar, open a row, no overflow).
+
+**Interaction audit:** 30/30: years, hover, keyboard, legend, Tier 2 rows, sorting, units, the drawer, deep links, garbage parameters, phone tap, reduced motion, and no overflow at 1440, 1280, 1024 and 768 px.
+
+## 12. Tests and performance
+
+| Check | Result |
+|---|---|
+| Web unit (vitest) | 157 passed (21 new in `m7.test.ts`; the M3 copy test now also checks the new list copy) |
+| Browser (Playwright, local Chrome) | 142 passed (13 new in `m7.spec.ts`; the M3 Fisheries test ported to the new structure with the same or stricter checks) |
+| Pipeline (pytest) | 196 passed; `build_fisheries_geo.py` passes ruff |
+| Typecheck, lint, production build | Clean; 0 build warnings |
+| Axe (1440, 1024, 390; detail open; pounds) | No violations of any severity |
+
+**Performance:** Fisheries page, production data, local production servers, median of 3; the phone has its CPU slowed 4×.
+
+| | Old page (main) | M7 |
+|---|---|---|
+| Phone: blocking time | 48 ms | 53 ms |
+| Phone: unit switch to visible change | 176 ms | **110 ms** |
+| Phone: transfer | 337 KB | 354 KB |
+| Phone: page elements | 604 | 613 |
+| Desktop: unit switch | 59 ms | 57 ms |
+
+The map and its CDFW points load only near the screen, and the 80-cell values table is built only when opened. No chart or map library is added.
+
+## 13. Remaining limitations
+
+- **The phone chart** sits about two screens down, after the notices, the opening and the three figures. A shorter phone opening is possible but would drop figures.
+- **The two deferred pipeline text corrections** in §9.
+- **Port-area values** wait on CDFW's answer to the F3 request.
+- **Tiers** await independent HAB scientific review.
+- **NOAA revises** recent years.
