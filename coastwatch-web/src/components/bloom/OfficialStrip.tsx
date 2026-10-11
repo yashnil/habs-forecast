@@ -24,7 +24,7 @@ export function OfficialStrip({
   official: OfficialDataset | null;
   error: string | null;
   recordIds: string[];
-  /** the heading before the count, e.g. "Official notices for waters near Santa Cruz" */
+  /** the heading before the count, e.g. "Official notices for waters near Santa Cruz"; "{n}" places the count inside it */
   heading: string;
   emptyText?: string;
   compact?: boolean;
@@ -37,9 +37,9 @@ export function OfficialStrip({
   return (
     <section className="rounded-lg border border-official-line bg-official-bg px-4 py-2.5" aria-labelledby={`${testid}-h`} data-testid={testid}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id={`${testid}-h`} className="flex items-center gap-2 text-[14px] font-semibold text-official-ink">
+        <h2 id={`${testid}-h`} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold text-official-ink">
           <Icon name="shield" className="h-4 w-4 text-official" />
-          {!official ? "Official notices unavailable" : `${heading}: ${rel.length}`}
+          {!official ? "Official notices unavailable" : heading.includes("{n}") ? heading.replace("{n}", String(rel.length)) : `${heading}: ${rel.length}`}
           {official && <VerificationBadge v={verification ?? null} />}
         </h2>
         <button type="button" onClick={(e) => openDrawer(e.currentTarget)} className="text-[13.5px] font-medium text-official-ink underline-offset-2 hover:underline" data-testid={`${testid}-all`}>

@@ -201,12 +201,13 @@ export function LandingsChart({
 
 export function Legend({ groups, focus, onFocus, unit }: { groups: SpeciesGroup[]; focus: string | null; onFocus: (id: string | null) => void; unit: Unit }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-1 gap-y-1" role="group" aria-label="Species groups: choose one to see it alone on its own scale" data-testid="chart-legend">
+    // phones: one row that scrolls sideways, so the legend never pushes the chart down
+    <div className="-mx-4 flex items-center gap-x-1 gap-y-1 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0" role="group" aria-label="Species groups: choose one to see it alone on its own scale" data-testid="chart-legend">
       <button
         type="button"
         aria-pressed={focus == null}
         onClick={() => onFocus(null)}
-        className={`rounded-full px-2.5 py-1 text-[13px] transition-colors duration-150 ${focus == null ? "bg-surface font-semibold text-ink ring-1 ring-hairline-strong" : "text-ink-2 hover:text-ink"}`}
+        className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[13px] transition-colors duration-150 ${focus == null ? "bg-surface font-semibold text-ink ring-1 ring-hairline-strong" : "text-ink-2 hover:text-ink"}`}
         data-testid="legend-all"
       >
         All, stacked
@@ -219,7 +220,7 @@ export function Legend({ groups, focus, onFocus, unit }: { groups: SpeciesGroup[
             type="button"
             aria-pressed={on}
             onClick={() => onFocus(on ? null : g.id)}
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] transition-colors duration-150 ${on ? "bg-surface font-semibold text-ink ring-1 ring-hairline-strong" : "text-ink-2 hover:text-ink"}`}
+            className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[13px] transition-colors duration-150 ${on ? "bg-surface font-semibold text-ink ring-1 ring-hairline-strong" : "text-ink-2 hover:text-ink"}`}
             data-testid={`legend-${g.id}`}
             title={unit === "pounds" && g.id === "bivalves" ? "Bivalve pounds are meat weight (without shell)" : undefined}
           >

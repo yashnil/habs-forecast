@@ -198,6 +198,22 @@ test.describe("Fisheries (M7)", () => {
 
 test.describe("Fisheries (M7) on a phone", () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  test("the opening is compact: figures and the chart title on the first screen, nothing dropped", async ({ page }) => {
+    await open(page, `${OK}/fisheries`);
+    // the three figures with short captions, and the chart heading, above the fold
+    for (const id of ["figure-year", "figure-mean", "figure-share"]) expect((await page.getByTestId(id).boundingBox())!.y).toBeLessThan(844);
+    expect((await page.locator("#chart-h").boundingBox())!.y).toBeLessThan(844);
+    await expect(page.getByTestId("science-review-pending")).toBeVisible();
+    await expect(page.getByTestId("exposure-definition")).toContainText("not a prediction of losses");
+    // the full sentences behind the short captions are one tap away
+    const more = page.getByTestId("figures-detail");
+    await more.locator("summary").tap();
+    await expect(more).toContainText("a lower bound, since confidential landings and generic categories belong to no group");
+    await expect(more).toContainText(/lowest \d{4}/);
+    await expect(page.getByTestId("fisheries-official")).toContainText("5 notices name these species");
+    await expect(page.getByTestId("fisheries-official").getByTestId("official-verification")).toContainText("Not verified");
+  });
+
   test("tap a bar to choose its year; rows open in place; nothing overflows", async ({ page }) => {
     await open(page, `${OK}/fisheries`);
     const svg = page.getByTestId("landings-chart").locator("svg");

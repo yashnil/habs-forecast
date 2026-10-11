@@ -47,7 +47,7 @@ function Seg<T extends string>({ label, value, options, onChange, testid }: { la
             aria-checked={on}
             onClick={() => onChange(o.value)}
             data-testid={`${testid}-${o.value}`}
-            className={`flex-1 whitespace-nowrap rounded-[8px] px-3 py-1.5 text-[13.5px] font-medium transition-colors duration-150 ${on ? "bg-surface text-ink shadow-[0_1px_2px_rgba(13,27,42,0.12)] ring-1 ring-hairline-strong" : "text-ink-2 hover:text-ink"}`}
+            className={`flex-1 whitespace-nowrap rounded-[8px] px-3 py-1 text-[13.5px] sm:py-1.5 font-medium transition-colors duration-150 ${on ? "bg-surface text-ink shadow-[0_1px_2px_rgba(13,27,42,0.12)] ring-1 ring-hairline-strong" : "text-ink-2 hover:text-ink"}`}
           >
             {o.label}
           </button>
@@ -109,48 +109,65 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
   const unitShort = unit === "real" ? `${base} dollars` : unit === "nominal" ? "nominal dollars" : "pounds";
   const recordIds = ds.groups.flatMap((g) => g.official_record_ids ?? []);
   const unavailable = ds.years_requested_unavailable ?? [];
+  const meanText = `a year on average, ${ds.years[0]}–${latest}; lowest ${sp.low?.year} (${formatValue(sp.low?.v ?? null, unit)}), highest ${sp.high?.year} (${formatValue(sp.high?.v ?? null, unit)})`;
+  const shareText = `of all California commercial landings in ${year} (${formatValue(state, unit)}); a lower bound, since confidential landings and generic categories belong to no group`;
   const focusG = focus ? ds.groups.find((g) => g.id === focus) : undefined;
   const focusLabel = focusG?.label ?? null;
   const focusShort = focusG ? groupShort(focusG) : null;
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] space-y-9 px-4 pb-16 pt-4 sm:px-8" data-testid="fisheries-page">
-      <OfficialStrip official={official} error={null} recordIds={recordIds} heading="Official notices that name these species" emptyText="No active notice in CoastWatch’s list names these species." compact testid="fisheries-official" />
+    <div className="mx-auto w-full max-w-[1280px] space-y-7 px-4 pb-16 pt-4 sm:space-y-9 sm:px-8" data-testid="fisheries-page">
+      <OfficialStrip official={official} error={null} recordIds={recordIds} heading={narrow ? "{n} notices name these species" : "Official notices that name these species"} emptyText="No active notice in CoastWatch’s list names these species." compact testid="fisheries-official" />
 
       {/* the story's opening, in the published terminology, beside the three figures (no cards) */}
       <div className="grid gap-x-12 gap-y-6 xl:grid-cols-[minmax(0,1fr)_400px]">
-        <header className="space-y-3">
+        <header className="space-y-2.5 sm:space-y-3">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-history">
             Historical context · Statewide<span className="hidden sm:inline"> · NOAA Fisheries landings</span>
           </p>
-          <h1 className="text-balance font-display text-[31px] font-medium leading-[1.08] text-ink sm:text-[44px]">{FISHERIES_COPY.title}</h1>
-          <p className="max-w-[70ch] text-[16px] leading-relaxed text-ink-2" data-testid="exposure-definition">
+          <h1 className="text-balance font-display text-[29px] font-medium leading-[1.08] text-ink sm:text-[44px]">{FISHERIES_COPY.title}</h1>
+          <p className="max-w-[70ch] text-[15.5px] leading-normal text-ink-2 sm:text-[16px] sm:leading-relaxed" data-testid="exposure-definition">
             {ds.terminology} {FISHERIES_COPY.atStake.split(". ")[0]}.
           </p>
-          <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-3">
+          <p className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[12.5px] text-ink-3 sm:text-[13px]">
             {fresh && <FreshDot f={fresh} />}
             <span data-testid="data-through">
               Annual data {ds.years[0]}–{latest}
-              {unavailable.length ? `; ${unavailable.join(", ")} not yet published by NOAA` : ""}
+              <span className="max-sm:hidden">{unavailable.length ? `; ${unavailable.join(", ")} not yet published by NOAA` : ""}</span>
             </span>
-            <span data-testid="science-review-pending">Species tiers await independent scientific review</span>
+            <span data-testid="science-review-pending">
+              Species tiers await independent scientific review
+            </span>
           </p>
         </header>
 
         <section
           aria-label={`${setName} species in ${year}`}
-          className="grid gap-x-8 gap-y-4 border-y border-hairline py-4 md:grid-cols-3 xl:grid-cols-1 xl:gap-y-0 xl:divide-y xl:divide-hairline xl:border-y-0 xl:border-l xl:py-0 xl:pl-8"
+          className="grid grid-cols-3 gap-x-4 gap-y-4 border-y border-hairline py-3 sm:gap-x-8 sm:py-4 xl:grid-cols-1 xl:gap-y-0 xl:divide-y xl:divide-hairline xl:border-y-0 xl:border-l xl:py-0 xl:pl-8"
           data-testid="fisheries-figures"
         >
-          <Figure value={formatValue(total, unit)} testid="figure-year">
+          <Figure value={formatValue(total, unit)} short={`in ${year}`} testid="figure-year">
             landed by {setName} species in {year}, in {unitShort}
           </Figure>
-          <Figure value={formatValue(sp.mean, unit)} testid="figure-mean">
-            a year on average, {ds.years[0]}–{latest}; lowest {sp.low?.year} ({formatValue(sp.low?.v ?? null, unit)}), highest {sp.high?.year} ({formatValue(sp.high?.v ?? null, unit)})
+          <Figure value={formatValue(sp.mean, unit)} short="a year on average" testid="figure-mean">
+            {meanText}
           </Figure>
-          <Figure value={pct(shareOfState(total, state))} testid="figure-share">
-            of all California commercial landings in {year} ({formatValue(state, unit)}); a lower bound (see the year beside the chart)
+          <Figure value={pct(shareOfState(total, state))} short="of the state total" testid="figure-share">
+            {shareText}
           </Figure>
+          {/* phones: the short captions above; the full sentences one tap away */}
+          <details className="col-span-3 text-[13px] text-ink-2 sm:hidden" data-testid="figures-detail">
+            <summary className="cursor-pointer font-medium text-ink">
+              {setName} species, {unitShort}: what these figures include
+            </summary>
+            <ul className="mt-1.5 space-y-1">
+              <li>
+                {formatValue(total, unit)} landed in {year}.
+              </li>
+              <li>{formatValue(sp.mean, unit)} {meanText}.</li>
+              <li>{pct(shareOfState(total, state))} {shareText}.</li>
+            </ul>
+          </details>
         </section>
       </div>
 
@@ -158,11 +175,11 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
       <section aria-labelledby="chart-h" className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
           <div>
-            <h2 id="chart-h" className="font-display text-[26px] font-medium leading-tight text-ink">
+            <h2 id="chart-h" className="font-display text-[23px] sm:text-[26px] font-medium leading-tight text-ink">
               {focusLabel ? `${focusShort}: ${unit === "pounds" ? "pounds landed" : "landed value"} by year` : `${unit === "pounds" ? "Pounds landed" : "Landed value"}, by year and species group`}
             </h2>
             <p className="text-[13.5px] text-ink-2" data-testid="chart-unit">
-              {focusLabel ? `${focusLabel} alone, on its own scale` : `${setName} species`}, statewide, {unitLabel(unit, base)}. Past landings only, not a forecast.
+              {focusLabel ? `${focusLabel} alone, on its own scale` : `${setName} species`}, statewide, {unitLabel(unit, base)}. Past landings<span className="max-sm:hidden"> only</span>, not a forecast.
             </p>
           </div>
           <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center" data-testid="fisheries-filters">
@@ -290,11 +307,12 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
   );
 }
 
-function Figure({ value, children, testid }: { value: string; children: React.ReactNode; testid: string }) {
+function Figure({ value, short, children, testid }: { value: string; short: string; children: React.ReactNode; testid: string }) {
   return (
-    <div className="flex min-w-0 items-baseline gap-4 md:block xl:flex xl:py-3" data-testid={testid}>
-      <p className="w-[7.2rem] shrink-0 font-display text-[34px] font-medium leading-none tracking-tight text-ink tabular md:w-auto xl:w-[8rem] xl:text-[36px]">{value}</p>
-      <p className="mt-0 text-[13.5px] leading-snug text-ink-2 md:mt-2 xl:mt-0">{children}</p>
+    <div className="min-w-0 items-baseline gap-4 xl:flex xl:py-3" data-testid={testid}>
+      <p className="shrink-0 font-display text-[25px] font-medium leading-none tracking-tight text-ink tabular sm:text-[34px] xl:w-[8rem] xl:text-[36px]">{value}</p>
+      <p className="mt-1 text-[12.5px] leading-snug text-ink-2 sm:hidden">{short}</p>
+      <p className="mt-2 hidden text-[13.5px] leading-snug text-ink-2 sm:block xl:mt-0">{children}</p>
     </div>
   );
 }
