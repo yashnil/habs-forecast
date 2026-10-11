@@ -150,11 +150,19 @@ jobs:
           fi
 
   notify-failure:
-    # Production only: the refresh itself failed (build, verification, publish or the public
-    # check). The previously published dataset stays live with its own dates.
+    # Production only: the refresh failed (build, verification, publish or the public check)
+    # or was cancelled, which is how a run that hits its time limit ends (run 38116032798 hung
+    # on an upstream server and was cancelled silently before this covered cancellations).
+    # The previously published dataset stays live with its own dates.
+    #
+    # One open issue for all failures. A repeat of the same failure (same job and result) is
+    # not commented again within 24 hours, so a 6-hourly schedule stuck on one outage adds at
+    # most one comment a day; a different failure is reported at once. notify-recovered
+    # closes the issue when a refresh publishes again.
     needs: [build, publish, check]
-    if: failure() && (inputs.channel || 'production') == 'production'
+    if: (failure() || cancelled()) && (inputs.channel || 'production') == 'production'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       issues: write
     steps:
@@ -162,11 +170,64 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+          BUILD: ${{ needs.build.result }}
+          PUBLISH: ${{ needs.publish.result }}
+          CHECK: ${{ needs.check.result }}
         run: |
           title="CoastWatch data refresh failed"
-          body="The data refresh failed at ${RUN_URL}. Nothing new was published; the previous dataset stays live with its own dates and the app shows its freshness. Check the failed job's log (verification failures block publication on purpose)."
+          # the first job that did not succeed, and how it ended
+          kind=""
+          for j in "build:$BUILD" "publish:$PUBLISH" "check:$CHECK"; do
+            case "${j#*:}" in failure|cancelled) kind="$j"; break ;; esac
+          done
+          [ -n "$kind" ] || kind="run:cancelled"
+          case "$kind" in
+            *:cancelled) what="was cancelled in the ${kind%%:*} job (it hit its time limit, or someone stopped it)" ;;
+            *) what="failed in the ${kind%%:*} job" ;;
+          esac
+          marker="<!-- cw-refresh-failure: $kind -->"
+          body="The data refresh ($EVENT) $what: ${RUN_URL}
+
+          Nothing new was published; the previous dataset stays live with its own dates and the app shows its freshness. Check the job's log (verification failures block publication on purpose).
+
+          $marker"
           n=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
-          if [ -n "$n" ]; then gh issue comment "$n" --repo "$GITHUB_REPOSITORY" --body "$body"; else gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"; fi
+          if [ -z "$n" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+            exit 0
+          fi
+          # the latest report on the issue: its last comment, else the issue itself
+          last=$(gh api "repos/$GITHUB_REPOSITORY/issues/$n/comments?per_page=100" --jq 'last // empty | {created_at, body}')
+          [ -n "$last" ] || last=$(gh api "repos/$GITHUB_REPOSITORY/issues/$n" --jq '{created_at, body}')
+          last_at=$(jq -r .created_at <<<"$last")
+          age=$(( $(date +%s) - $(date -d "$last_at" +%s) ))
+          if jq -r .body <<<"$last" | grep -qF "$marker" && [ "$age" -lt 86400 ]; then
+            echo "Same failure ($kind) already reported $((age / 3600)) h ago on #$n; not commenting again."
+          else
+            gh issue comment "$n" --repo "$GITHUB_REPOSITORY" --body "$body"
+          fi
+
+  notify-recovered:
+    # Production only: a refresh published and was served again; close the failure issue.
+    needs: [check]
+    if: success() && (inputs.channel || 'production') == 'production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Close the failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="CoastWatch data refresh failed"
+          n=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ -n "$n" ]; then
+            gh issue comment "$n" --repo "$GITHUB_REPOSITORY" --body "Recovered: ${RUN_URL} published a new dataset and it is served at the public URL."
+            gh issue close "$n" --repo "$GITHUB_REPOSITORY"
+          fi
 
   publish:
     needs: build
