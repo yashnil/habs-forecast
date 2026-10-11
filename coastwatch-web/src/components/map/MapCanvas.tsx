@@ -131,6 +131,12 @@ export default function MapCanvas(p: Props) {
       onClick={onClick}
       onMouseMove={onHover ? (e) => onHover({ lat: e.lngLat.lat, lon: e.lngLat.lng }, { x: e.point.x, y: e.point.y }) : undefined}
       onMouseOut={onHover ? () => onHover(null, null) : undefined}
+      // any other failed request (a tile server error) is reported without a repaint; ask for
+      // one so the map still reaches its load event and renders what did arrive
+      onError={(e) => {
+        console.error(e.error);
+        e.target.triggerRepaint();
+      }}
       onLoad={(e) => {
         const m = e.target;
         if (!m.hasImage("nodata")) m.addImage("nodata", noDataImage(), { pixelRatio: 2 });

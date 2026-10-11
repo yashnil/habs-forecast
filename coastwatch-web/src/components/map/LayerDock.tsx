@@ -41,6 +41,8 @@ type Props = {
   onGroup: (g: LayerGroup) => void;
   /** why the map opened as it did, when that needs saying (no current data, or forecast stale) */
   opening?: Opening | null;
+  /** the place the opening's coverage refers to (the region in the link, or the whole coast) */
+  openingRegionLabel?: string;
   run: ForecastRun | null;
   charmStatus: SourceStatus | null;
   satStatus: SourceStatus | null;
@@ -903,7 +905,7 @@ function NothingCurrent(p: Props) {
       <p>
         {run ? `The newest C-HARM forecast was issued ${formatDate(run.issued_date)}. ` : "No C-HARM forecast could be loaded. "}
         {sat && satDate
-          ? `Satellites last saw ${sat.coverage != null ? `${Math.round(sat.coverage * 100)}% of ${p.regionLabel}` : p.regionLabel} (newest ${formatDate(satDate)}).`
+          ? `Satellites last saw ${sat.coverage != null ? `${Math.round(sat.coverage * 100)}% of ${p.openingRegionLabel ?? p.regionLabel}` : (p.openingRegionLabel ?? p.regionLabel)} (newest ${formatDate(satDate)}).`
           : "No recent satellite observation was published."}{" "}
         The map shows the coast and seafloor only. This does not mean conditions are normal.
       </p>

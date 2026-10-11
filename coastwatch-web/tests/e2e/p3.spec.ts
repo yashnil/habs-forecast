@@ -60,7 +60,7 @@ test("combined view is opt-in and says what the two layers are and are not", asy
   await page.getByTestId("toggle-combined").check();
   await expect(page).toHaveURL(/chl=1/);
   await page.waitForFunction(() => !!(window as unknown as { __cwMap: { getSource: (s: string) => unknown } }).__cwMap.getSource("satellite"));
-  expect(tileSource(await source(page, "satellite")).template).toBe(`${BASE}/${olci.tiles.url_template}`); // the published 300 m tiles, unchanged
+  await expect.poll(async () => tileSource(await source(page, "satellite")).template).toBe(`${BASE}/${olci.tiles.url_template}`); // the published 300 m tiles, unchanged
   const notes = page.getByTestId("combined-notes");
   await expect(notes).toContainText("not toxin");
   await expect(notes).toContainText("observed surface motion, not a forecast");

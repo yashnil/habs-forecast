@@ -20,7 +20,7 @@ export function PlaceChip({
   label: string;
   open: boolean;
   onToggle: () => void;
-  /** notices that may apply in the region on view; null statewide */
+  /** notices that may apply in the place on view (the selected port, else the region); null statewide */
   regionNotices: number | null;
   statewide: boolean;
 }) {

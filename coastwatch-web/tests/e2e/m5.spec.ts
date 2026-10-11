@@ -60,6 +60,13 @@ test.describe("opening layer", () => {
     await expect(page).toHaveURL(/layer=forecast/);
   });
 
+  test("statewide, the message reports whole-coast coverage under that name", async ({ page }) => {
+    await open(page, `${OK}/?region=california`, "2026-10-12T20:00:00Z");
+    const msg = page.getByTestId("nothing-current");
+    await expect(msg).toContainText(/Satellites last saw \d+% of the California coast/);
+    await expect(msg).not.toContainText("Monterey Bay");
+  });
+
   test("a layer named in the link always wins", async ({ page }) => {
     await open(page, `${OK}/?layer=olci300`, "2026-10-12T20:00:00Z");
     await expect(page.getByTestId("satellite-panel")).toBeVisible();
@@ -106,6 +113,16 @@ test.describe("map area and layout", () => {
     await open(page, `${OK}/?region=monterey_bay&port=593`);
     await expect(page.getByTestId("place-chip")).toContainText("Not verified");
     await expect(page.getByTestId("registry-disclosure")).toBeVisible();
+    // in the inspector's dense list each notice keeps its whole title and its dates
+    const notices = page.getByTestId("detail-panel").locator("article[data-testid^=notice-]");
+    expect(await notices.count()).toBeGreaterThan(0);
+    // the chip next to the port's name counts that port's notices, not its region's
+    await expect(page.getByTestId("place-chip")).toContainText(new RegExp(`(^|\\D)${await notices.count()} notices?\\b`));
+    for (const n of await notices.all()) {
+      const clipped = await n.locator("button span span").evaluateAll((els) => els.some((e) => e.scrollWidth > e.clientWidth + 1 || getComputedStyle(e).display === "none"));
+      expect(clipped).toBe(false);
+      await expect(n.locator("button")).toContainText(/Since|Start date not published/);
+    }
     await page.getByTestId("official-summary").click();
     await expect(page.getByTestId("official-drawer")).toBeVisible();
   });
@@ -218,6 +235,19 @@ test.describe("rasters and motion", () => {
     expect(ms.tiles.tile_size).toBe(512);
     expect(ms.tiles.max_native_zoom).toBe(11);
   });
+
+  for (const status of [404, 500])
+    test(`tiles failing with ${status} (index missing, as while a publication propagates): the map still loads`, async ({ page }) => {
+      // the failed tiles settle last; MapLibre does not repaint after a failed tile, so its load
+      // event never fired and the map stayed half-initialised until someone moved it
+      await page.route(/\/tiles\/index\.json$/, (r) => r.fulfill({ status: 404, body: "" }));
+      await page.route(/\/(tiles|age-tiles|sensor-tiles)\/\d+\/\d+\/\d+\.png$/, async (r) => {
+        await new Promise((res) => setTimeout(res, 1500));
+        await r.fulfill({ status, body: "" });
+      });
+      await open(page, `${OK}/?layer=multi`); // waits for the map's load event
+      await expect(page.getByTestId("satellite-panel")).toBeVisible();
+    });
 });
 
 test.describe("readouts and inspector", () => {

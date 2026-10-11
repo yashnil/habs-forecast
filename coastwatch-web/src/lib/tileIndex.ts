@@ -1,4 +1,4 @@
-import { addProtocol } from "maplibre-gl";
+import { AJAXError, addProtocol } from "maplibre-gl";
 import { EMPTY_TILE_PNG_BASE64 } from "@/lib/emptyTile";
 
 /**
@@ -41,7 +41,12 @@ function register() {
       if (set && !set.has(`${zxy[1]}/${zxy[2]}/${zxy[3]}`)) return { data: EMPTY.slice(0) }; // a copy: MapLibre may transfer (detach) the buffer
     }
     const r = await fetch(url, { signal: abort.signal });
-    if (!r.ok) throw new Error(`tile ${r.status}: ${url}`);
+    // A tile that is not there (no index yet, or the manifest ahead of its tiles while a
+    // publication propagates) is drawn as no data, like a tile the index leaves out. Thrown
+    // instead, the failure is the last thing to settle and MapLibre never repaints, so its
+    // load event (and everything waiting on it) can hang until someone moves the map.
+    if (r.status === 404) return { data: EMPTY.slice(0) };
+    if (!r.ok) throw new AJAXError(r.status, r.statusText, url, await r.blob());
     return { data: await r.arrayBuffer() };
   });
 }

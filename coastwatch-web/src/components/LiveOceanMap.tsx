@@ -440,6 +440,16 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     return ids.size;
   }, [portIntel, region, official]);
   const regionLabel = regions.find((r) => r.id === region)?.label ?? STATEWIDE.label;
+  // the place chip counts the notices of the place it names: the selected port's own list
+  // (as its inspector shows it), else the region's
+  const portNotices = useMemo(() => {
+    if (!intel) return null;
+    const active = new Set((official?.registry.records ?? []).filter((r) => r.status === "active").map((r) => r.id));
+    return new Set(intel.official_relations.filter((x) => active.has(x.record_id)).map((x) => x.record_id)).size;
+  }, [intel, official]);
+  const placeNotices = portNotices ?? regionNotices;
+  const placeStatewide = portNotices == null && region === STATEWIDE.id;
+  const placeLabel = port != null ? (intel?.display_name ?? "Port") : regionLabel;
 
   const near = (lat: number, lon: number, place: string) => (
     <>
@@ -517,6 +527,8 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     },
     regionId: region === STATEWIDE.id ? "monterey_bay" : region,
     regionLabel: region === STATEWIDE.id ? "Monterey Bay" : regionLabel,
+    // the opening was decided for the region in the link (statewide: whole-coast coverage)
+    openingRegionLabel: initialRegion.id === STATEWIDE.id ? "the California coast" : initialRegion.label,
     now,
     stamp,
   };
@@ -578,7 +590,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
         <>
           <ControlRail manifest={manifest} group={group} onGroup={setGroup} placesOpen={placesOpen} onPlaces={() => setPlacesOpen(!placesOpen)} />
           <div className="absolute top-3 z-20" style={{ left: RAIL + 12, maxWidth: `calc(100% - ${RAIL + 24}px - ${detailOpen ? INSPECTOR + 16 : 0}px)` }}>
-            <PlaceChip label={port != null ? (intel?.display_name ?? "Port") : regionLabel} open={placesOpen} onToggle={() => setPlacesOpen(!placesOpen)} regionNotices={regionNotices} statewide={region === STATEWIDE.id} />
+            <PlaceChip label={placeLabel} open={placesOpen} onToggle={() => setPlacesOpen(!placesOpen)} regionNotices={placeNotices} statewide={placeStatewide} />
           </div>
           {placesOpen && (
             <div className="cw-pop-in absolute z-20 flex w-[320px]" style={{ left: RAIL + 12, top: 60, maxHeight: `calc(100% - ${Math.round(dockH) + 84}px)` }}>
@@ -612,11 +624,11 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
             className="theme-paper absolute left-3 top-2.5 z-10 flex h-10 max-w-[calc(100%-24px)] items-center gap-2 rounded-full bg-surface pl-3.5 pr-1 text-left text-[15px] font-medium text-ink shadow-[0_6px_20px_rgba(6,17,30,0.3)]"
           >
             <Icon name="search" className="h-4 w-4 text-ink-3" />
-            <span className="min-w-0 truncate pr-1">{port != null ? (intel?.display_name ?? "Port") : regionLabel}</span>
+            <span className="min-w-0 truncate pr-1">{placeLabel}</span>
             <span data-testid="mobile-official" className="flex h-8 shrink-0 items-center gap-1 rounded-full border border-official-line bg-official-bg px-2.5 text-[12.5px] font-semibold text-official-ink">
               <Icon name="shield" className="h-3.5 w-3.5 text-official" />
-              {region !== STATEWIDE.id && regionNotices != null ? regionNotices : (activeCount ?? "?")}
-              <span className="sr-only"> official notices{region !== STATEWIDE.id ? ` may apply in ${regionLabel}` : " in California"},</span>
+              {!placeStatewide && placeNotices != null ? placeNotices : (activeCount ?? "?")}
+              <span className="sr-only"> official notices{!placeStatewide ? ` may apply in ${placeLabel}` : " in California"},</span>
               {verification && verification.state !== "verified" && <span className="font-medium">{verification.state === "aging" ? "· ageing" : "· unverified"}</span>}
               <span className="sr-only"> {verWord}</span>
             </span>

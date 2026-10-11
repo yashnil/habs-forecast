@@ -88,11 +88,12 @@ export function NoticeCard({ r, now, relationNote, compact = false, dense = fals
       >
         <AgencyChip agency={r.agency} />
         <span className="min-w-0 flex-1">
-          <span className={`block text-[10.5px] font-semibold uppercase tracking-wide text-official-ink ${dense && !open ? "truncate" : ""}`}>
+          <span className="block text-[10.5px] font-semibold uppercase tracking-wide text-official-ink">
             {ACTION_LABEL[r.action]} · {FISHERY_LABEL[r.fishery]}
           </span>
-          <span className={`block text-[12.5px] font-semibold leading-snug text-ink ${dense && !open ? "truncate" : ""}`}>{r.title}</span>
-          <span className={`mt-0.5 block text-[11px] text-ink-3 ${dense && !open ? "hidden" : ""}`}>
+          {/* the title and dates of an official notice are never cut, however dense the list */}
+          <span className="block text-[12.5px] font-semibold leading-snug text-ink">{r.title}</span>
+          <span className="mt-0.5 block text-[11px] text-ink-3">
             {r.effective_date ? `Since ${formatDate(r.effective_date, { year: true })}` : "Start date not published"}
             {r.expected_end_date ? ` · through at least ${formatDate(r.expected_end_date)}` : ""}
             {relationNote ? ` · ${relationNote}` : ""}
