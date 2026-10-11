@@ -1,12 +1,13 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { OK } from "./ports";
+import { openDockDetails, openPlaces, tileSource } from "./helpers";
 
 /** P3 map refinement: values next to ports belong to the forecast only, the map states what
  *  it shows and when, speed-class arrows, and the opt-in combined currents + chlorophyll view. */
 const FIX = path.resolve(__dirname, "../fixture-data/v1");
 const manifest = JSON.parse(readFileSync(path.join(FIX, "manifest.json"), "utf8"));
-const OK = "http://localhost:3200";
 const BASE = "/data/fixture/v1";
 const olci = manifest.layers.find((l: { layer_id: string }) => l.layer_id === "olci300_chl_latest");
 
@@ -21,6 +22,7 @@ const source = (page: Page, id: string) =>
 
 test("forecast percentages next to ports appear only while the forecast is on the map", async ({ page }) => {
   await open(page, `${OK}/?region=monterey_bay`);
+  await openPlaces(page);
   await expect(page.getByTestId("port-row-593")).toContainText("%");
   await expect(page.getByTestId("region-ports").locator("..")).toContainText("C-HARM forecast");
   await page.getByTestId("group-satellite").click();
@@ -54,10 +56,11 @@ test("arrows are drawn per speed class, matching the legend", async ({ page }) =
 test("combined view is opt-in and says what the two layers are and are not", async ({ page }) => {
   await open(page, `${OK}/?layer=currents`);
   expect(await source(page, "satellite")).toBeNull(); // currents alone by default
+  await openDockDetails(page); // an option, one step deeper (M5)
   await page.getByTestId("toggle-combined").check();
   await expect(page).toHaveURL(/chl=1/);
   await page.waitForFunction(() => !!(window as unknown as { __cwMap: { getSource: (s: string) => unknown } }).__cwMap.getSource("satellite"));
-  expect(await source(page, "satellite")).toBe(`${BASE}/${olci.tiles.url_template}`); // the published 300 m tiles, unchanged
+  expect(tileSource(await source(page, "satellite")).template).toBe(`${BASE}/${olci.tiles.url_template}`); // the published 300 m tiles, unchanged
   const notes = page.getByTestId("combined-notes");
   await expect(notes).toContainText("not toxin");
   await expect(notes).toContainText("observed surface motion, not a forecast");

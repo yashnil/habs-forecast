@@ -2,13 +2,13 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
 import { expect, test, type Page } from "@playwright/test";
+import { M2, OK } from "./ports";
+import { openDockDetails } from "./helpers";
 
 /** Observed HF-radar currents: hourly selection, 24 h mean, arrows default, particles optional,
  *  units, freshness, inspector values equal to the published grids, honest empty states. */
 const FIX = path.resolve(__dirname, "../fixture-data/v1");
 const manifest = JSON.parse(readFileSync(path.join(FIX, "manifest.json"), "utf8"));
-const OK = "http://localhost:3200";
-const M2 = "http://localhost:3203";
 type G = { url: string; width: number; height: number; lat_first: number; lat_step: number; lon_first: number; lon_step: number; scale_factor: number; add_offset: number };
 type L = { layer_id: string; time: { valid_time: string; observed_times: string[] }; vectors: { u_grid: G; v_grid: G } };
 const hourly: L[] = manifest.layers.filter((l: L) => l.layer_id.startsWith("hfr2km_currents_2")).sort((a: L, b: L) => a.time.valid_time.localeCompare(b.time.valid_time));
@@ -41,7 +41,7 @@ test("currents tab is live when the dataset has observed currents; arrows are th
   await open(page, OK);
   const tab = page.getByTestId("group-currents");
   await expect(tab).toBeEnabled();
-  await expect(tab).toContainText("Observation");
+  await expect(tab).toContainText(/observation/i);
   await tab.click();
   await expect(page).toHaveURL(/layer=currents/);
   await arrowsLoaded(page);
@@ -50,6 +50,7 @@ test("currents tab is live when the dataset has observed currents; arrows are th
   await expect(panel.getByTestId("native-resolution")).toHaveText("native 2 km");
   await expect(panel.getByTestId("currents-legend")).toContainText("speed, m/s");
   await expect(panel.getByTestId("currents-legend-item")).toHaveCount(5); // one glyph per speed class
+  await openDockDetails(page); // conversions and method, one step deeper (M5)
   await expect(panel.getByTestId("currents-legend")).toContainText("1 m/s ≈ 1.9 knots");
   await expect(panel.getByTestId("cur-time")).toContainText("(12:00 UTC)");
   await expect(panel.getByTestId("cur-age")).toHaveText("· 8 h ago");
@@ -82,7 +83,7 @@ test("animated flow is optional and draws only over observed cells", async ({ pa
   await open(page, `${OK}/?layer=currents`);
   await page.getByTestId("cur-mode-particles").click();
   await expect(page.locator("[data-testid=flow-particles]")).toHaveCount(1);
-  await expect(page.getByTestId("currents-legend")).toContainText("Particles move with the observed current");
+  await expect(page.getByTestId("currents-legend")).toContainText("Particles drift through this one observed field");
   await expect(page.getByTestId("currents-legend")).toContainText("Not a trajectory");
   await expect(page).toHaveURL(/flow=particles/);
   expect(await page.evaluate(() => !!(window as unknown as { __cwMap: { getLayer: (l: string) => unknown } }).__cwMap.getLayer("currents-arrows-1"))).toBe(false);
