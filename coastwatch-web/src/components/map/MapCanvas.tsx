@@ -5,8 +5,9 @@ import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLa
 import { setWorkerUrl, type ExpressionSpecification, type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { PortsCollection } from "@/generated/schema";
-import { ABOVE_LAND_ID, ARROW_LENGTHS, arrowImage, BASEMAP_STYLE, BEFORE_OVERLAY_ID, CA_BOUNDS, NODATA_LAYER_ID, noDataImage, SPEED_CLASSES } from "@/lib/basemap";
+import { ARROW_LENGTHS, arrowImage, BASEMAP_STYLE, BEFORE_OVERLAY_ID, CA_BOUNDS, NODATA_LAYER_ID, noDataImage, SPEED_CLASSES } from "@/lib/basemap";
 import type { CurrentField } from "@/lib/currents";
+import { GRID_TILE_SIZE } from "@/lib/gridTiles";
 import { indexedTiles } from "@/lib/tileIndex";
 import FlowParticles from "./FlowParticles";
 
@@ -14,7 +15,13 @@ import FlowParticles from "./FlowParticles";
 setWorkerUrl("/vendor/maplibre/maplibre-gl-worker.mjs");
 
 /** C-HARM: one Mercator image placed by its corners. */
-export type ImageRaster = { id: string; url: string; corners: number[][] };
+export type ImageRaster = {
+  id: string;
+  url: string;
+  corners: number[][];
+  /** drawn from the value grid when present (exact cell edges); the published image otherwise */
+  tiles?: { template: string; bounds: [number, number, number, number] } | null;
+};
 /** XYZ tiles: CoastWatch-rendered satellite tiles or third-party imagery. */
 export type TileRaster = { id: string; template: string; minzoom: number; maxzoom: number; bounds?: number[] | null; indexUrl?: string | null };
 
@@ -156,7 +163,12 @@ export default function MapCanvas(p: Props) {
       <NavigationControl position="bottom-right" showCompass={false} />
       {wide && <ScaleControl position="bottom-right" unit="metric" />}
 
-      {p.forecast && (
+      {p.forecast && p.forecast.tiles && (
+        <Source key={`${p.forecast.id}-grid`} id="forecast" type="raster" tiles={[p.forecast.tiles.template]} tileSize={GRID_TILE_SIZE} bounds={p.forecast.tiles.bounds} minzoom={0} maxzoom={13}>
+          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
+        </Source>
+      )}
+      {p.forecast && !p.forecast.tiles && (
         <Source key={p.forecast.id} id="forecast" type="image" url={p.forecast.url} coordinates={p.forecast.corners as [[number, number], [number, number], [number, number], [number, number]]}>
           <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
         </Source>
@@ -193,7 +205,7 @@ export default function MapCanvas(p: Props) {
       )}
       {p.imagery && (
         <Source key={p.imagery.id} id="observation" type="raster" tiles={[p.imagery.template]} tileSize={256} maxzoom={p.imagery.maxzoom}>
-          <Layer id="observation-raster" type="raster" beforeId={ABOVE_LAND_ID} paint={{ "raster-opacity": 1, "raster-fade-duration": 0 }} />
+          <Layer id="observation-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={{ "raster-opacity": 1, "raster-fade-duration": 0 }} />
         </Source>
       )}
 

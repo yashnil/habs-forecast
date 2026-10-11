@@ -1,5 +1,6 @@
 import { AJAXError, addProtocol } from "maplibre-gl";
 import { EMPTY_TILE_PNG_BASE64 } from "@/lib/emptyTile";
+import { clipToWater, waterMask } from "@/lib/waterMask";
 
 /**
  * Skip tiles that do not exist (M5). CoastWatch tile sets publish tiles/index.json listing
@@ -8,7 +9,8 @@ import { EMPTY_TILE_PNG_BASE64 } from "@/lib/emptyTile";
  * missing tile is answered locally with a transparent image and never requested.
  *
  * Tile sets without an index (published before M5, or third-party imagery) are fetched
- * directly, as before.
+ * directly, as before. Tiles that go through here are clipped to the basemap's water
+ * (lib/waterMask), so ocean data stop at the drawn shoreline.
  */
 const PROTOCOL = "cwtile";
 const SEP = "#cw-index=";
@@ -47,7 +49,26 @@ function register() {
     // load event (and everything waiting on it) can hang until someone moves the map.
     if (r.status === 404) return { data: EMPTY.slice(0) };
     if (!r.ok) throw new AJAXError(r.status, r.statusText, url, await r.blob());
-    return { data: await r.arrayBuffer() };
+    const buf = await r.arrayBuffer();
+    // satellite data are ocean products: clip them to the basemap's water, like the forecast
+    if (zxy && typeof OffscreenCanvas !== "undefined") {
+      try {
+        const bmp = await createImageBitmap(new Blob([buf]));
+        const water = await waterMask(Number(zxy[1]), Number(zxy[2]), Number(zxy[3]), bmp.width);
+        if (water && bmp.width === bmp.height) {
+          const c = new OffscreenCanvas(bmp.width, bmp.height);
+          const g = c.getContext("2d")!;
+          g.drawImage(bmp, 0, 0);
+          const img = g.getImageData(0, 0, bmp.width, bmp.height);
+          clipToWater(img.data, water);
+          g.putImageData(img, 0, 0);
+          return { data: c.transferToImageBitmap() };
+        }
+      } catch {
+        // drawn unclipped: data is never hidden because the basemap could not be read
+      }
+    }
+    return { data: buf };
   });
 }
 

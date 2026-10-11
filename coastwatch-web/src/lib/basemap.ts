@@ -10,20 +10,14 @@ import type { StyleSpecification } from "maplibre-gl";
  *   every data colour and lies *under* every data layer, so it is never read as a value;
  * - the no-data hatch, shown only while a raster data layer is on (MapCanvas toggles it),
  *   so a gap in the data never looks like a low value;
- * - data layers, inserted before `coastal-land`;
- * - coastal land cover: the same land relief, clear over water, in a band along the ocean coast
- *   (pipeline/scripts/build_coastal_land.py). Data rasters are drawn as whole cells, so a 3 km
- *   cell that straddles the shore would paint over land; this stops every data layer at the drawn
- *   shoreline without changing a value. Cells with no value keep their no-data hatch;
+ * - data layers, inserted before `coastline`;
  * - coastline, rivers, roads, boundaries and labels, which stay above the data.
  * Label hierarchy: ports (MapCanvas) above towns above water names above roads. If the
  * tiles are unreachable the background still renders and the data still draws.
  */
 export const SEA = "#0b1d33";
 export const LAND = "#2a3646";
-export const BEFORE_OVERLAY_ID = "coastal-land";
-/** Layers that must not be clipped to the water (true-colour imagery shows land too). */
-export const ABOVE_LAND_ID = "coastline";
+export const BEFORE_OVERLAY_ID = "coastline";
 /** Layer ids of the no-data hatch, which MapCanvas shows only under a raster data layer. */
 export const NODATA_LAYER_ID = "water-nodata";
 
@@ -48,7 +42,6 @@ export const MONTEREY_INSET_CORNERS: [[number, number], [number, number], [numbe
 ];
 
 const RELIEF_LAYER_IDS = new Set(["relief-land", "relief-sea", "relief-sea-monterey", "isobaths", "isobath-labels"]);
-const COASTAL_LAND_CORNERS = RELIEF_CORNERS; // same pixel grid as relief-land (coastal-land.json)
 
 /** The marine basemap with or without the relief (land and seafloor shading, isobaths). */
 export function basemapStyle({ relief }: { relief: boolean }): StyleSpecification {
@@ -58,8 +51,6 @@ export function basemapStyle({ relief }: { relief: boolean }): StyleSpecificatio
   delete sources["relief-sea"];
   delete sources["relief-sea-monterey"];
   delete sources.isobaths;
-  // without relief, the land cover is the flat land tone with the same coastline
-  sources["coastal-land"] = { type: "image", url: "/basemap/coastal-land-flat.webp", coordinates: COASTAL_LAND_CORNERS };
   return { ...BASEMAP_STYLE, sources, layers: BASEMAP_STYLE.layers.filter((l) => !RELIEF_LAYER_IDS.has(l.id)) };
 }
 
@@ -78,7 +69,6 @@ export const BASEMAP_STYLE: StyleSpecification = {
     // Monterey Bay at 3 arc-second from the NOAA Coastal Relief Model, over the ETOPO relief
     "relief-sea-monterey": { type: "image", url: "/basemap/relief-sea-monterey.webp", coordinates: MONTEREY_INSET_CORNERS },
     isobaths: { type: "geojson", data: "/basemap/isobaths.geojson", attribution: RELIEF_ATTRIBUTION },
-    "coastal-land": { type: "image", url: "/basemap/coastal-land.webp", coordinates: RELIEF_CORNERS },
   },
   layers: [
     { id: "land", type: "background", paint: { "background-color": LAND } },
@@ -121,8 +111,6 @@ export const BASEMAP_STYLE: StyleSpecification = {
     // no data: fine dots on the water, shown by MapCanvas only under a raster data layer
     // (image "nodata", registered by MapCanvas); the data rasters cover them where a value exists
     { id: NODATA_LAYER_ID, type: "fill", source: "omt", "source-layer": "water", layout: { visibility: "none" }, paint: { "fill-pattern": "nodata" } },
-    // data rasters sit below this; it clips them to the drawn shoreline (linear: an anti-aliased edge)
-    { id: "coastal-land", type: "raster", source: "coastal-land", paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
     {
       id: "coastline",
       type: "line",
