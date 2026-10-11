@@ -173,7 +173,7 @@ Both passes used live data at 1440 × 900, 1280 × 720 and 390 × 844 (57 views 
 | Pipeline (pytest, offline fixtures) | 186 passed, including a test that each 512 px pixel is the cell under its centre, the mask holds, and the index lists the tiles written |
 | JSON Schema in sync, web fixtures reproducible | Regenerated and committed |
 | Web unit (vitest) | 118 passed (16 new: opening policy, cell edges, transparent tile, nearby stations, released-schema compatibility) |
-| Browser (Playwright, 4 fixture servers) | 117 passed, including 23 new M5 tests |
+| Browser (Playwright, 4 fixture servers) | 120 passed, including 26 new M5 tests (3 added in the final review, §12) |
 | Accessibility (axe, in the browser suite) | No serious or critical violations: map with place list and inspector open; phone map and Bloom |
 | Typecheck, lint, production build | Clean |
 | Live C-HARM verification | First staging run: 13 points × 12 layers passed |
@@ -184,13 +184,14 @@ Both passes used live data at 1440 × 900, 1280 × 720 and 390 × 844 (57 views 
 - the opening layer (current, nothing current, link wins);
 - map area: ≥ 75 % at 1440 for each layer, and ≥ 55 % of a phone screen;
 - no overlap at 1280 and 1440;
-- notice access in every state;
+- notice access in every state, with whole notice titles and dates, and the chip counting the selected port's notices;
 - Escape and the keyboard rail;
 - phone sheet snap points from the keyboard;
 - reduced motion;
 - time steps cut, layer switches fade;
 - C-HARM cell edges, and no-data dots only under data;
 - no 404 tile requests;
+- the map still finishes loading when tiles or the index are missing (404 or 500);
 - hover value equals the published C-HARM cell;
 - the four-day strip sets the map day;
 - Measured nearby;
@@ -254,14 +255,12 @@ The phone at 390 × 844 @3x shows the same pattern.
 
 ## 10. Integration recommendation
 
-**Recommend merging M5 after your review of the images**, in this order:
+**GO, after the final review (§12)**, in this order:
 
-1. **Review the PR, then merge to main.** Scheduled data runs use main's code. The next run publishes 512 px tiles. The released web, including the BASES demo, still reads them; this was tested.
-2. **Watch the first scheduled production run:** satellite verification, the publish check and the served-index checks.
-3. **Deploy the web** that reads the indexes and opening policy, with separate approval.
-4. **Do not redeploy the BASES demo** as part of this; it keeps working on the new data as it is.
-
-**Before merging, if you want extra margin:** dispatch one more staging run and open the M5 preview against `coastwatch-data-staging`.
+1. **Merge PR #20 to main** with your approval. Scheduled data runs use main's code; the next one publishes 512 px tiles and their indexes. The released web, including the BASES demo, reads them (§12.1).
+2. **Watch the first scheduled production run:** the satellite verification, the publish check and the served-index checks. If it fails, nothing is published and the current dataset stays live (§12.2); fix and let the next run publish.
+3. **Deploy the web** that reads the indexes and the opening policy, with separate approval.
+4. **Do not redeploy the BASES demo** as part of this. It keeps working on the new data as it is, and its current deployment stays the rollback.
 
 ## 11. Recommendations for M6
 
@@ -272,3 +271,76 @@ The phone at 390 × 844 @3x shows the same pattern.
 5. **Offline-tolerant phone mode:** cache the last dataset and say so.
 6. **Curated water-body labels** (Monterey Canyon, Gulf of the Farallones, Santa Barbara Channel) from NOAA charts, with source credit.
 7. **Bloom and Fisheries pages** brought to the Ocean Map's layout and density (doc 17 audit).
+
+## 12. Final integration review (Oct 11)
+
+Run before merging, on the final staged dataset (staging run 38103638833) and the exact code of the live BASES demo. Evidence: [m5/evidence/](m5/evidence/) (`final-*.json`); images: [m5/final-review/](m5/final-review/).
+
+### 12.1 The live BASES demo on the staged M5 data
+
+- **Which code.** coastwatch-demo.vercel.app serves deployment `dpl_GpFfbFP42QGBM3XwvT6FfikWw4jm`, tag `demo-release/2026-10-10` (commit 372a80c). That commit was built locally with the demo's build settings and pointed at the staging channel. Nothing on Vercel was touched.
+- **Same build, same behaviour.** On production data the local build and the live site gave identical tile counts in all 9 views tested (requests, successes and 404s).
+- **On the staged data:**
+  - no page errors;
+  - no "Live data unavailable";
+  - 512 px tiles load and are drawn in place, coastlines aligned (images: [Sentinel-3 at z11.5](m5/final-review/demo-staged-sentinel3-z11.5.jpg), [multi-sensor](m5/final-review/demo-staged-multisensor.jpg); production on top, staged below).
+  - Day layers carried over from earlier runs stay at 256 px and also render.
+- **Notices.** The official notices file is identical apart from run ids and check times: 10 records, all active, review still `pending_human_review`. The demo shows the same notices at Monterey (4), Crescent City (4) and San Diego (1) on production and staged data, with "not verified" on screen each time.
+- **Console noise.** The demo does not read the tile index, so it still requests tiles that do not exist. The extra zoom level adds some 404s per view (Sentinel-3 at z10: 66 instead of 42). This is console noise only; the demo already logs 404s on every view today.
+
+### 12.2 Production-transition risks
+
+Simulated in the browser over the staged dataset, for M5 and the demo code (raw results: `final-transition-scenarios.json`).
+
+| Scenario | M5 | Live demo code |
+|---|---|---|
+| Baseline: staged data | Loads; 0 tile 404s; 0 console errors | Loads; absent tiles 404 as today |
+| Half the satellite tiles not yet served | Loads; the rest render | Loads; the rest render |
+| Day layer cached at 256 px under a manifest that says 512 (same URL across the format change) | Loads; renders the cached tiles | Draws the tiles; sometimes misses its load event (below) |
+| `index.json` not yet served | Requests tiles directly; loads | Not applicable (no index) |
+| Manifest ahead of all its tiles | Loads; no satellite pixels; panels and notices intact | Same, sometimes without the load event |
+
+**Bug found and fixed in M5.** When failed tile requests were the last to settle, the map never fired its `load` event, so hover, arrows and the map handle stayed off until someone moved the map. MapLibre does not repaint after a failed tile. Fixes:
+- the tile protocol answers a 404 with the transparent tile, as for a tile the index leaves out;
+- the map's error handler asks for a repaint.
+
+Two new browser tests (404 and 500) failed before the fix and pass after it.
+
+**The same behaviour in the live demo is pre-existing.** The demo's map uses MapLibre's own requests and shows the same stall in the cache scenarios above, 3 of 8 runs. In that state the panels, notices, tiles that arrived and port links all work. What is lost: the no-data hatch, and panning to a chosen port. This can happen today, since the demo already gets 404s for absent tiles on every view. Fixing it needs a demo re-release, which is not part of this change.
+
+**A failed first refresh.**
+- **Verification failure.** Two of the three M5 staging runs failed in HF-radar verification (NOAA's dataset went offline during the run). Both times verification blocked publication and the previous staged dataset stayed served unchanged. Production behaves the same way: the last good data stays live with its own dates, and the app shows its age.
+- **A hang.** The scheduled production run of Oct 11 05:49 UTC (main's code) was cancelled at the 40-minute job limit. SCCOOS's ERDDAP hung on CalHABMAP station requests, about 400 s per failed fetch, repeated per station. Nothing was published, and the Oct 10 21:46 dataset stayed live, as designed.
+- **No alert for a hang.** The failure issue is raised on `failure()`, which is false for a cancelled run, so this hang opened no issue. This is pre-existing and not changed by M5. Recommended follow-ups, outside this PR:
+  - raise the issue on `failure() || cancelled()`;
+  - give each source a time budget, so one slow upstream cannot hold the whole run past its limit.
+
+**Caches.**
+- GitHub Pages serves the data with `max-age=600`. The demo's server caches the manifest for 300 s.
+- Each publication keeps the previous run's `latest-*` tile directories, so a manifest up to one run old still finds its tiles.
+- A day directory that keeps its URL across the format change can be served as 256 px or 512 px tiles for up to 10 minutes. Both draw in the same 256 px grid, and values are identical.
+
+### 12.3 Opening layer in three regions
+
+The policy ran on the real staged dataset, with no layer in the link, at three clock times ([image](m5/final-review/opening-three-regions.jpg)). The dataset: C-HARM issued Oct 10. Satellite views to Oct 9, with multi-sensor coverage of 46 % in Monterey Bay, 81 % on the North Coast and 99.8 % in Southern California.
+
+| Time | Monterey Bay | North Coast | Southern California | Statewide |
+|---|---|---|---|---|
+| Oct 10, C-HARM current | C-HARM | C-HARM | C-HARM | C-HARM |
+| Oct 12, C-HARM 2 days old | Seafloor map, "nothing current" (the bay was 46 % observed) | Multi-sensor satellite, "C-HARM not current" | Multi-sensor satellite | Multi-sensor satellite (61 % of the coast) |
+| Oct 14, all 4 days or more old | Seafloor map, "nothing current" | Seafloor map, "nothing current" | Seafloor map, "nothing current" | Seafloor map, "nothing current" |
+
+**Fixed:** statewide, the message said "Satellites last saw 61 % of Monterey Bay", but 61 % is the whole-coast figure. It now says "of the California coast", with a test.
+
+### 12.4 Visual fixes from the final pass
+
+- **Inspector notice titles and dates are never cut.** The dense notice list truncated titles ("Annual quarantine of sport-harvested …") and hid the "Since … through at least …" line. Both are always shown now ([1440](m5/review/1440-port-inspector.jpg), [phone](m5/review/390-port.jpg), M5 side re-shot).
+- **The place chip counts the selected port's notices.** It said "Santa Cruz · 4 notices", the Monterey Bay count, while the Santa Cruz inspector lists 3.
+
+### 12.5 Remaining concerns
+
+- **Phone port sheet.** The sheet opens at the port header and the "not verified" note; the notice cards start just below the fold. The count and verification state stay on the place button.
+- **C-HARM cell edges.** At z9–10 they read as a faint grid over uniform pink; acceptable, but worth a look on a real screen.
+- **Refresh hangs are silent** (§12.2): a timed-out run opens no issue. Fix before relying on alerts.
+- **Production HF radar is failing.** The last success was Oct 10, 05:55 UTC. NOAA's ERDDAP now answers "unknown datasetID=ucsdHfrW2". The app shows the last good currents with their dates and says the update failed. This is unrelated to M5, but the first post-merge run will meet it too; it does not block publication of the other sources.
+
