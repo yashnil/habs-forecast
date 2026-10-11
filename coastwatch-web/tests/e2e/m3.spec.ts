@@ -48,14 +48,15 @@ test.describe("Bloom Intelligence", () => {
     expect(order).toBeTruthy();
     await expect(page.getByTestId("bloom-official").getByTestId("official-verification")).toHaveAttribute("data-state", "unverified");
     await expect(page.getByTestId("science-review-pending")).toBeVisible();
-    await expect(page.getByTestId("latest-pDA")).toContainText("0.20 ng/mL");
-    await expect(page.getByTestId("latest-pn_delicatissima")).toContainText("Not measured at this station");
-    const chart = page.getByTestId("chart-pDA");
+    await expect(page.getByTestId("quantity-pDA")).toContainText("0.20");
+    await expect(page.getByTestId("quantity-pDA")).toContainText("ng/mL");
+    await expect(page.getByTestId("quantity-pn_delicatissima")).toContainText("Never measured here");
+    const chart = page.getByTestId("primary-chart");
     await expect(chart).toHaveAttribute("data-measured", String(measuredIn("HABs-SantaCruzWharf", "pDA", Date.parse(NOW) - 365 * DAY)));
-    await expect(page.getByTestId("chart-pDA-legend")).toContainText("reported 0 (not quantified, not absent)");
-    await expect(page.getByTestId("measured-vs-model")).toContainText("never compared numerically");
+    await expect(page.getByTestId("chart-legend")).toContainText("reported 0 (not quantified, not absent)");
+    await expect(page.getByTestId("model-section")).toContainText("never compared with the measurements");
     await expect(page.getByTestId("model-section").getByTestId("model-track")).toBeVisible();
-    await expect(page.getByTestId("model-section")).toContainText("model, not a measurement");
+    await expect(page.getByTestId("model-section")).toContainText("Model, not a measurement");
     await assertNoUnsafeClaims(page);
   });
 
@@ -64,18 +65,34 @@ test.describe("Bloom Intelligence", () => {
     await page.getByTestId("station-row-HABs-MontereyWharf").click();
     await expect(page).toHaveURL(/station=HABs-MontereyWharf/);
     await expect(page.getByTestId("station-detail")).toHaveAttribute("data-station", "HABs-MontereyWharf");
-    await expect(page.getByTestId("latest-pDA")).toContainText("2022");
-    await expect(page.getByTestId("latest-pDA").getByTestId("freshness")).toHaveAttribute("data-state", "historical");
-    await expect(page.getByTestId("chart-pDA-coverage")).toContainText("Not measured in this period. No measurement is not the same as no toxin");
-    await expect(page.getByTestId("latest-temp")).toContainText("°C");
+    // an old value is never a headline (rule 8)
+    await expect(page.getByTestId("quantity-pDA")).toHaveAttribute("data-headline", "old");
+    await expect(page.getByTestId("quantity-pDA")).toContainText("Not measured since");
+    await expect(page.getByTestId("quantity-pDA")).toContainText("2022");
+    // nothing in the last 12 months, so it opens on the whole record, which ends in 2022
+    await expect(page.getByTestId("range-all")).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByTestId("primary-chart")).not.toHaveAttribute("data-measured", "0");
+    // a recent window says plainly that nothing was measured, never a zero
+    await page.getByTestId("range-1y").click();
+    await expect(page.getByTestId("chart-empty")).toContainText("Not measured in this period. Last measured Aug 2022");
+    await page.getByTestId("chart-empty-widen").click();
+    await expect(page.getByTestId("range-all")).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByTestId("quantity-temp")).toContainText("°C");
   });
 
-  test("the time range widens every chart together", async ({ page }) => {
+  test("the time range changes the time window only; the axis never rescales", async ({ page }) => {
     await open(page, `${OK}/bloom`);
+    const chart = page.getByTestId("primary-chart");
+    await expect(chart).toHaveAttribute("data-domain", "0.0001,100");
     await page.getByTestId("range-all").click();
     const first = Date.parse(station("HABs-SantaCruzWharf").sample_times[0]);
-    await expect(page.getByTestId("chart-pDA")).toHaveAttribute("data-measured", String(measuredIn("HABs-SantaCruzWharf", "pDA", first)));
-    await expect(page.getByTestId("chart-pn_seriata")).toHaveAttribute("data-measured", String(measuredIn("HABs-SantaCruzWharf", "pn_seriata", first)));
+    await expect(chart).toHaveAttribute("data-measured", String(measuredIn("HABs-SantaCruzWharf", "pDA", first)));
+    await expect(chart).toHaveAttribute("data-domain", "0.0001,100");
+    await page.getByTestId("quantity-pn_seriata").click();
+    await expect(chart).toHaveAttribute("data-variable", "pn_seriata");
+    await expect(chart).toHaveAttribute("data-measured", String(measuredIn("HABs-SantaCruzWharf", "pn_seriata", first)));
+    await expect(chart).toHaveAttribute("data-domain", "1,10000000");
+    await expect(page).toHaveURL(/var=pn_seriata/);
   });
 
   test("model history unavailable is explicit and neutral", async ({ page }) => {
@@ -88,16 +105,17 @@ test.describe("Bloom Intelligence", () => {
     await expect(page.getByTestId("station-historical")).toContainText("do not describe current conditions");
   });
 
-  test("keyboard: stations are buttons and charts can be read with arrow keys", async ({ page }) => {
+  test("keyboard: stations are buttons and the chart can be read with arrow keys", async ({ page }) => {
     await open(page, `${OK}/bloom`);
     const row = page.getByTestId("station-row-HABs-StearnsWharf");
     await row.focus();
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/station=HABs-StearnsWharf/);
-    const svg = page.getByTestId("chart-pDA-svg");
+    await expect(page.getByTestId("station-detail")).toHaveAttribute("data-station", "HABs-StearnsWharf");
+    const svg = page.getByTestId("chart-measured");
     await svg.focus();
     await page.keyboard.press("End");
-    const tip = page.getByTestId("chart-pDA-tooltip");
+    const tip = page.getByTestId("chart-tooltip");
     await expect(tip).toBeVisible();
     await page.keyboard.press("ArrowLeft");
     await expect(tip).toBeVisible();
@@ -152,7 +170,7 @@ test.describe("published M2 data (before any M3 artifact exists)", () => {
 test.describe("failed update scenario", () => {
   test("four days later the bloom page still shows the data with their real dates", async ({ page }) => {
     await open(page, `${FAILED}/bloom`, "2026-10-12T20:00:00Z");
-    await expect(page.getByTestId("last-sample")).toContainText("Sep 30, 2026");
+    await expect(page.getByTestId("last-sample")).toContainText("September 30, 2026");
   });
 });
 
@@ -177,8 +195,11 @@ test.describe("mobile", () => {
   test.use({ viewport: { width: 390, height: 844 } });
   test("bloom: station picker works and nothing overflows horizontally", async ({ page }) => {
     await open(page, `${OK}/bloom`);
-    await page.getByTestId("station-select").selectOption("HABs-ScrippsPier");
+    await page.getByTestId("station-select").click();
+    await expect(page.getByTestId("station-picker")).toBeVisible();
+    await page.getByTestId("station-list-mobile").getByTestId("station-row-HABs-ScrippsPier").click();
     await expect(page).toHaveURL(/station=HABs-ScrippsPier/);
+    await expect(page.getByTestId("station-picker")).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   });
   test("fisheries: nothing overflows horizontally", async ({ page }) => {

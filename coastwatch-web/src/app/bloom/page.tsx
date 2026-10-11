@@ -9,6 +9,8 @@ import { sourceStatus } from "@/lib/layers";
 import { DEFAULT_STATION } from "@/lib/observations";
 
 export const dynamic = "force-dynamic";
+
+const str = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
 export const metadata = { title: "Bloom Intelligence — CoastWatch" };
 
 export default async function BloomPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -41,6 +43,7 @@ export default async function BloomPage({ searchParams }: { searchParams: Promis
   return (
     <AppShell active="bloom" manifest={manifest} official={data.ok ? data.official : null} officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null} banner={banner} scroll="page">
       <BloomIntelligence
+          key={station.station_id}
           stations={lite}
           station={station}
           dataset={{ variables, method, caveats, provenance, generated_at, window_start, program }}
@@ -49,6 +52,8 @@ export default async function BloomPage({ searchParams }: { searchParams: Promis
           officialStatus={sourceStatus(data.manifest, "official")}
           officialError={data.officialError}
           relations={relations}
+          portCode={station.nearest_port_code ?? null}
+          initial={{ variable: str(sp.var), range: str(sp.range), year: str(sp.year) }}
         />
     </AppShell>
   );

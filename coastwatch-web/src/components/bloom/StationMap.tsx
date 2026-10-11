@@ -74,6 +74,8 @@ export default function StationMap({
       cursor="pointer"
       onLoad={(e) => {
         (window as unknown as { __cwStationMap?: unknown }).__cwStationMap = e.target;
+        // a small locator: the credits start folded behind their (i) button, one tap away
+        e.target.getContainer().querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
       }}
       style={{ width: "100%", height: "100%" }}
     >
