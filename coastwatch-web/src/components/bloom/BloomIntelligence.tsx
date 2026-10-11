@@ -179,7 +179,13 @@ export function BloomIntelligence({ stations, station, dataset, status, official
 
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-5 px-4 pb-16 pt-4 sm:px-8" data-testid="bloom-page" aria-busy={pending}>
-      <OfficialStrip official={official} error={officialError} relations={relations} place={station.nearest_port_name ?? null} compact={narrow} />
+      <OfficialStrip
+        official={official}
+        error={officialError}
+        recordIds={relations.map((r) => r.record_id)}
+        heading={`Official notices for waters near ${station.nearest_port_name ?? "this station"}`}
+        compact={narrow}
+      />
 
       {/* phone: the station picker replaces the rail and map */}
       <button

@@ -23,7 +23,7 @@ export function VerificationBadge({ v }: { v: Verification | null }) {
     <span
       data-testid="official-verification"
       data-state={v ? state : "checking"}
-      className="inline-flex items-center gap-1.5 rounded border border-hairline-strong bg-surface-2 px-1.5 py-0.5 text-[11px] font-semibold text-ink"
+      className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded border border-hairline-strong bg-surface-2 px-1.5 py-0.5 text-[11px] font-semibold text-ink"
     >
       <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden style={{ color: st.color }}>
         <circle cx="6" cy="6" r="5.3" fill="none" stroke="currentColor" strokeWidth="1.2" />

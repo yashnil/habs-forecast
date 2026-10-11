@@ -130,20 +130,24 @@ test.describe("Bloom Intelligence", () => {
 });
 
 test.describe("Fisheries & Economic Exposure", () => {
-  test("tiles match the published data; real/nominal and tiers switch; port level unavailable", async ({ page }) => {
+  test("figures match the published data; units and tiers switch; port level unavailable", async ({ page }) => {
     await open(page, `${OK}/fisheries`);
     await expect(page.getByTestId("exposure-definition")).toContainText("not a prediction of losses");
-    await expect(page.getByTestId("port-level-unavailable")).toContainText("permission");
+    await expect(page.getByTestId("port-level-unavailable")).toContainText("Port-level values are not available");
+    await page.getByTestId("port-level-why").locator("summary").click();
+    await expect(page.getByTestId("port-level-why")).toContainText("permission");
     const y = fish.years.at(-1);
     const t1 = fish.groups.filter((g: { tier: number }) => g.tier === 1);
     const total = (gs: typeof t1, k: string) => gs.reduce((s: number, g: { annual: { year: number }[] }) => s + ((g.annual.find((a) => a.year === y) as Record<string, number>)[k] ?? 0), 0);
-    const fmt = (v: number) => `$${(v / 1e6).toFixed(v >= 1e7 ? 0 : 1)}M`;
-    await expect(page.getByTestId("tile-latest")).toContainText(fmt(total(t1, "dollars_real")));
+    const fmt = (v: number) => `$${(v / 1e6).toFixed(1)}M`;
+    await expect(page.getByTestId("figure-year")).toContainText(fmt(total(t1, "dollars_real")));
     await page.getByTestId("tier-12").click();
-    await expect(page.getByTestId("tile-latest")).toContainText(fmt(total(fish.groups, "dollars_real")));
-    await page.getByTestId("dollars-nominal").click();
-    await expect(page.getByTestId("tile-latest")).toContainText(fmt(total(fish.groups, "dollars_nominal")));
+    await expect(page.getByTestId("figure-year")).toContainText(fmt(total(fish.groups, "dollars_real")));
+    await page.getByTestId("unit-nominal").click();
+    await expect(page.getByTestId("figure-year")).toContainText(fmt(total(fish.groups, "dollars_nominal")));
+    await page.getByTestId("values-disclosure").locator("summary").click();
     await expect(page.getByTestId("withheld-row")).toContainText("not attributed");
+    await page.getByTestId("deflator").locator("summary").click();
     await expect(page.getByTestId("deflator")).toContainText("missing M10");
     await expect(page.getByTestId("data-through")).toContainText(String(y));
     await assertNoUnsafeClaims(page);
@@ -204,7 +208,8 @@ test.describe("mobile", () => {
   });
   test("fisheries: nothing overflows horizontally", async ({ page }) => {
     await open(page, `${OK}/fisheries`);
-    await expect(page.getByTestId("fisheries-tiles")).toBeVisible();
+    await expect(page.getByTestId("fisheries-figures")).toBeVisible();
+    await expect(page.getByTestId("landings-chart")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   });
   test("map: legend is reachable on the map", async ({ page }) => {

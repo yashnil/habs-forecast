@@ -71,7 +71,7 @@ GROUPS: list[dict] = [
         "id": "rock_crab",
         "label": "Rock crabs",
         "tier": 1,
-        "basis": "A CDFW commercial rock crab closure for domoic acid is active north of 40° N (see the official notice).",
+        "basis": "CDFW closed the commercial rock crab fishery because of domoic acid in past seasons (for example 2015–16), and lists a commercial closure from the Mendocino/Humboldt county line (40°00′ N) to Cape Mendocino (40°30′ N); see the official notice.",
         "records": ["cdfw-rock-crab-commercial-40n"],
         "names": [r"CRAB, (RED|YELLOW|BROWN) ROCK", r"CRABS?, ROCK.*"],
     },
@@ -266,7 +266,7 @@ def aggregate(rows_by_year: dict[int, list[dict]], cpi: Deflator):
                 pounds=v.pounds,
                 dollars_nominal=v.dollars_nominal,
                 dollars_real=v.dollars_real,
-                note="Landings FOSS withholds for confidentiality, aggregated across species by FOSS. Not attributable to any species or group and not included in group or statewide values.",
+                note="Landings FOSS withholds for confidentiality, combined across species by FOSS. Included in the statewide total, as in NOAA's state totals ('Total landings by state include confidential data'), but not attributable to any species or group, so group values exclude them.",
             )
         )
     excluded = [
