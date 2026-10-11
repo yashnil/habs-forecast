@@ -421,12 +421,16 @@ def build_station(ctx: RunContext, key: str, body: bytes, url: str, ports: Ports
     )
 
 
-def station_charm(ctx: RunContext, st: ObsStation, layers: list[LayerArtifact]) -> StationCharm:
+def station_charm(ctx: RunContext, st: ObsStation, layers: list[LayerArtifact], previous: StationCharm | None = None) -> StationCharm:
     out = StationCharm(radius_km=port_intel.RADIUS_KM, nearest_cell_km=None, history_days=CHARM_HISTORY_DAYS)
     grids = port_intel.load_grids(ctx, layers)
     nowcast = grids.get(("pseudo_nitzschia", 0))
     if not nowcast:
-        out.error = "No C-HARM run available in this dataset."
+        kept = port_intel.carried_history(previous.history if previous else None, ctx.now.date())
+        if kept:
+            out.history = kept  # no nowcast this run (e.g. lead 0 failed): keep the recent history
+        else:
+            out.error = "No C-HARM run available in this dataset."
         return out
     assert st.lat is not None and st.lon is not None
     near = port_intel.charm_near(grids, st.lat, st.lon)
@@ -435,7 +439,11 @@ def station_charm(ctx: RunContext, st: ObsStation, layers: list[LayerArtifact]) 
     try:
         out.history = port_intel.charm_history(ctx, st.lat, st.lon, end, days=CHARM_HISTORY_DAYS)
     except Exception as e:
-        out.error = f"C-HARM nowcast history unavailable: {e}"[:300]
+        kept = port_intel.carried_history(previous.history if previous else None, end)
+        if kept:
+            out.history = kept  # the previous history, with its own dates (see carried_history)
+        else:
+            out.error = f"C-HARM nowcast history unavailable: {e}"[:300]
     return out
 
 
@@ -477,7 +485,8 @@ def run(
                     sample_times=[], depths_m=[], series=[], summaries=[], qc=[],
                 )  # fmt: skip
         else:
-            st.charm = station_charm(ctx, st, layers)
+            prev = prev_by_id.get(st.station_id)
+            st.charm = station_charm(ctx, st, layers, prev.charm if prev else None)
             if st.charm.error:
                 notes.append(f"{st.name}: {st.charm.error}")
         stations.append(st)
