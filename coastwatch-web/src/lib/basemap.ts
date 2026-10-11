@@ -173,7 +173,9 @@ export const BASEMAP_STYLE: StyleSpecification = {
         "text-letter-spacing": 0.12,
         "text-max-width": 7,
       },
-      paint: { "text-color": "rgba(142,178,212,0.78)", "text-halo-color": SEA, "text-halo-width": 1 },
+      // light text on a soft, translucent halo: readable over the dark sea and over the
+      // forecast and chlorophyll colours without a hard outline
+      paint: { "text-color": "rgba(222,234,246,0.9)", "text-halo-color": "rgba(6,17,30,0.5)", "text-halo-width": 1.2, "text-halo-blur": 0.8 },
     },
     {
       id: "place-city",

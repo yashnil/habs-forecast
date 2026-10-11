@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { FAILED, OK } from "./ports";
-import { openPlaces, tileSource } from "./helpers";
+import { openDockDetails, openPlaces, tileSource } from "./helpers";
 
 /** P1 Ocean Map: layer groups, satellite observations, dates, coverage, alignment, layout. */
 const FIX = path.resolve(__dirname, "../fixture-data/v1");
@@ -60,6 +60,7 @@ test.describe("satellite observations", () => {
     await page.getByTestId("group-satellite").click();
     const panel = page.getByTestId("satellite-panel");
     await expect(panel.getByTestId("native-resolution")).toHaveText("native 300 m");
+    await openDockDetails(page); // per-sensor dates and coverage: one step deeper (M5)
     await expect(panel.getByTestId("sat-dates")).toContainText(`Pixels observed ${fmt(latest.composite!.oldest_observed_date)}–${fmt(latest.composite!.newest_observed_date)}`);
     await expect(panel.getByTestId("sat-dates")).toContainText("% of Monterey Bay ocean observed in the last 7 days");
     await expect(panel).toContainText("not toxin");
@@ -81,6 +82,7 @@ test.describe("satellite observations", () => {
     await expect(page.getByTestId("sat-dates")).toContainText("No clear observation on Wed, Oct 7");
     await page.waitForFunction(() => !(window as unknown as { __cwMap: { getSource: (s: string) => unknown } }).__cwMap.getSource("satellite"));
     await page.getByTestId("sat-day-2026-10-06").click();
+    await openDockDetails(page);
     await expect(page.getByTestId("sat-dates")).toContainText("Overpass");
     await expect(page).toHaveURL(/layer=olci300%3A2026-10-06|layer=olci300:2026-10-06/);
   });
@@ -129,6 +131,7 @@ test.describe("old or failed satellite data never reads as recent", () => {
     const viirs = failed.layers.find((l: Layer) => l.layer_id === "viirs750_chl_latest");
     await open(page, `${FAILED}/?layer=viirs750`, "2026-10-12T20:00:00Z");
     await expect(page.getByTestId("sat-update-failed")).toContainText("did not refresh this product");
+    await openDockDetails(page);
     await expect(page.getByTestId("sat-dates")).toContainText(`Pixels observed ${fmt(viirs.composite.oldest_observed_date)}–${fmt(viirs.composite.newest_observed_date)}`);
     // OLCI did update in that run: no failure note there
     await page.getByTestId("sat-olci300").click();

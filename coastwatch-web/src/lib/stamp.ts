@@ -45,7 +45,7 @@ export function stampLines(p: {
     const ms = sat.multisensor;
     const comp = sat.composite;
     const text = ms
-      ? `Chlorophyll, ${multiSensorLabel(sat)} · newest pixel ${short(sat.time.observed_date ?? "")}; each pixel has its own date`
+      ? `Chlorophyll, ${multiSensorLabel(sat)} · each pixel dated, newest ${short(sat.time.observed_date ?? "")}`
       : comp
         ? `Chlorophyll, ${sensorLabel(sat)} · pixels observed ${short(comp.oldest_observed_date)}–${short(comp.newest_observed_date)}`
         : sat.time.observed_date

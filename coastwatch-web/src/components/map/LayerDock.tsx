@@ -184,9 +184,9 @@ export function LayerDock(p: Props) {
           <GroupTabs manifest={p.manifest} group={p.group} onGroup={p.onGroup} />
         </div>
       )}
-      <header className={`flex items-start gap-2 ${desktop ? "px-3.5 pt-2.5" : ""}`}>
+      <header className={`flex items-start gap-2 ${desktop ? "px-3.5 pt-2.5" : ""} ${p.group == null ? "hidden" : ""}`}>
         <MapStamp lines={p.stamp} className="min-w-0 flex-1" />
-        {desktop && p.onExpanded && (
+        {desktop && p.onExpanded && p.group != null && (
           <button
             type="button"
             onClick={() => p.onExpanded!(!p.expanded)}
@@ -202,7 +202,7 @@ export function LayerDock(p: Props) {
           </button>
         )}
       </header>
-      <div className={`min-h-0 space-y-2.5 overflow-y-auto overscroll-contain [scrollbar-width:thin] ${desktop ? "px-3.5 pb-3 pt-2" : "pt-2"}`}>
+      <div className={`min-h-0 space-y-2.5 overflow-y-auto overscroll-contain [scrollbar-width:thin] ${desktop ? `px-3.5 pb-2.5 ${p.group == null ? "pt-3" : "pt-1.5"}` : "pt-2"}`}>
         {p.group == null ? <NothingCurrent {...p} /> : p.group === "forecast" ? <ForecastSection {...p} /> : p.group === "currents" ? <CurrentsSection {...p} /> : <SatelliteSection {...p} />}
       </div>
     </section>
@@ -257,7 +257,7 @@ function ForecastSection(p: Props) {
   );
   const sheet = p.variant === "sheet";
   return (
-    <div data-testid="forecast-panel" className="space-y-2.5">
+    <div data-testid="forecast-panel" className="space-y-2">
       {sheet && legend}
       <div className="flex flex-wrap items-stretch gap-2">
         <label className="flex h-[42px] min-w-[176px] flex-1 basis-[176px] items-center rounded-[9px] bg-surface-3 pl-2.5 pr-1.5 text-[13px] font-medium sm:flex-none">
@@ -411,7 +411,7 @@ function SatelliteSection(p: Props) {
             </div>
           );
   return (
-    <div data-testid="satellite-panel" className="space-y-2.5">
+    <div data-testid="satellite-panel" className="space-y-2">
       {sheet && !isImagery && latest && legendBlock}
       {o && !isImagery && product === o.product && (
         <p data-testid="opening-note" className="text-[12px] leading-snug text-ink-2">
@@ -490,12 +490,15 @@ function SatelliteSection(p: Props) {
           </MetaRow>
           {/* what chlorophyll is and what a gap means: always visible, never clamped */}
           <p className="text-[12px] font-medium leading-snug text-ink" data-testid="sat-caveat">
-            Chlorophyll is algae biomass, not toxin. Gaps are cloud or missing passes, not low chlorophyll.
+            Algae biomass, not toxin. Gaps are cloud or missing passes, not low chlorophyll.
           </p>
-          <p className={`text-[12px] leading-snug text-ink-2 ${p.expanded ? "" : "line-clamp-1"}`} data-testid="sat-dates">
+          {/* the header already gives the date range; the per-sensor dates and coverage are one
+              step deeper, except a day with nothing to show, which is always said */}
+          {(p.expanded || (layer && !layer.grid && !layer.tiles)) && (
+          <p className="text-[12px] leading-snug text-ink-2" data-testid="sat-dates">
             {ms ? (
               <MultiDates ms={ms} primary={mPrimary} secondary={mSecondary} regionId={p.regionId} regionLabel={p.regionLabel} />
-            ) : layer && !layer.grid ? (
+            ) : layer && !layer.grid && !layer.tiles ? (
               <>No clear observation on {formatDate(layer.time.observed_date!)}: clouds, fog or no overpass. Nothing is shown for that day.</>
             ) : comp ? (
               <>
@@ -509,6 +512,7 @@ function SatelliteSection(p: Props) {
               </>
             ) : null}
           </p>
+          )}
           <Details open={p.expanded}>
             {ms && (
               <p data-testid="multi-label" className="text-[12px] leading-snug text-ink-2">
@@ -689,10 +693,11 @@ function CurrentsSection(p: Props) {
   const particles = p.flow === "particles" && !p.reducedMotion;
   const sheet = p.variant === "sheet";
   return (
-    <div data-testid="currents-panel" className="space-y-2.5">
+    <div data-testid="currents-panel" className="space-y-2">
       {sheet && <CurrentsLegend particles={particles} detail={p.expanded} short />}
-      <div className="flex flex-wrap gap-2">
-        <div className="min-w-[200px] flex-1">
+      {/* one row: which field (an hour or the 24-hour mean) and, for hours, when */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="w-[208px] shrink-0 max-sm:w-full">
           <Seg
             label="Currents view"
             value={p.cur.mean ? "mean" : "hourly"}
@@ -703,47 +708,49 @@ function CurrentsSection(p: Props) {
             onChange={(v) => p.onCur({ hour: p.cur.hour, mean: v === "mean" })}
           />
         </div>
-        <div className="min-w-[180px] flex-1">
-          <Seg
-            label="Currents drawing"
-            value={p.reducedMotion ? "arrows" : p.flow}
-            options={[
-              { value: "arrows", label: "Arrows", testid: "cur-mode-arrows" },
-              {
-                value: "particles",
-                label: "Flow",
-                disabled: p.reducedMotion,
-                testid: "cur-mode-particles",
-                title: p.reducedMotion ? "Off because your system asks for reduced motion" : "Particles moving through this one observed field",
-              },
-            ]}
-            onChange={(v) => p.onFlow(v as FlowMode)}
-          />
-        </div>
+        {!p.cur.mean && hours.length > 0 && (
+          <div className="flex min-w-[200px] flex-1 items-center gap-1.5">
+            <button type="button" onClick={() => go(idx - 1)} disabled={idx <= 0} aria-label="Previous hour" data-testid="cur-hour-prev" className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-hairline text-[15px] disabled:opacity-40 max-lg:h-10 max-lg:w-10">
+              ‹
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={hours.length - 1}
+              step={1}
+              value={Math.max(0, idx)}
+              onChange={(e) => go(Number(e.target.value))}
+              aria-label="Observation hour"
+              aria-valuetext={t ? formatDateTimePT(t) : ""}
+              data-testid="cur-hour-slider"
+              className="min-w-0 flex-1 accent-[var(--color-accent)]"
+            />
+            <button type="button" onClick={() => go(idx + 1)} disabled={idx >= hours.length - 1} aria-label="Next hour" data-testid="cur-hour-next" className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-hairline text-[15px] disabled:opacity-40 max-lg:h-10 max-lg:w-10">
+              ›
+            </button>
+          </div>
+        )}
       </div>
-      {!p.cur.mean && hours.length > 0 && (
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => go(idx - 1)} disabled={idx <= 0} aria-label="Previous hour" data-testid="cur-hour-prev" className="grid h-8 w-8 place-items-center rounded-md border border-hairline text-[15px] disabled:opacity-40 max-lg:h-10 max-lg:w-10">
-            ‹
-          </button>
-          <input
-            type="range"
-            min={0}
-            max={hours.length - 1}
-            step={1}
-            value={Math.max(0, idx)}
-            onChange={(e) => go(Number(e.target.value))}
-            aria-label="Observation hour"
-            aria-valuetext={t ? formatDateTimePT(t) : ""}
-            data-testid="cur-hour-slider"
-            className="min-w-0 flex-1 accent-[var(--color-accent)]"
-          />
-          <button type="button" onClick={() => go(idx + 1)} disabled={idx >= hours.length - 1} aria-label="Next hour" data-testid="cur-hour-next" className="grid h-8 w-8 place-items-center rounded-md border border-hairline text-[15px] disabled:opacity-40 max-lg:h-10 max-lg:w-10">
-            ›
-          </button>
-        </div>
+      {/* arrows or animated flow: a display option (Details), shown while flow is on so it can be turned off */}
+      {(p.expanded || p.variant === "sheet" || p.flow === "particles") && (
+        <Seg
+          label="Currents drawing"
+          value={p.reducedMotion ? "arrows" : p.flow}
+          options={[
+            { value: "arrows", label: "Arrows", testid: "cur-mode-arrows" },
+            {
+              value: "particles",
+              label: "Animated flow",
+              disabled: p.reducedMotion,
+              testid: "cur-mode-particles",
+              title: p.reducedMotion ? "Off because your system asks for reduced motion" : "Particles moving through this one observed field",
+            },
+          ]}
+          onChange={(v) => p.onFlow(v as FlowMode)}
+        />
       )}
-      <p className="text-[12.5px] text-ink-2" data-testid="cur-time">
+      {/* the header gives the hour; UTC and position in the series are one step deeper (still read out) */}
+      <p className={p.expanded || p.variant === "sheet" ? "text-[12.5px] text-ink-2" : "sr-only"} data-testid="cur-time">
         {layer ? (
           p.cur.mean ? (
             <>

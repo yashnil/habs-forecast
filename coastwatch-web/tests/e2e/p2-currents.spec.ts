@@ -46,11 +46,11 @@ test("currents tab is live when the dataset has observed currents; arrows are th
   await expect(page).toHaveURL(/layer=currents/);
   await arrowsLoaded(page);
   const panel = page.getByTestId("currents-panel");
+  await openDockDetails(page); // drawing options and conversions: one step deeper (M5)
   await expect(panel.getByTestId("cur-mode-arrows")).toHaveAttribute("aria-checked", "true");
   await expect(panel.getByTestId("native-resolution")).toHaveText("native 2 km");
   await expect(panel.getByTestId("currents-legend")).toContainText("speed, m/s");
   await expect(panel.getByTestId("currents-legend-item")).toHaveCount(5); // one glyph per speed class
-  await openDockDetails(page); // conversions and method, one step deeper (M5)
   await expect(panel.getByTestId("currents-legend")).toContainText("1 m/s ≈ 1.9 knots");
   await expect(panel.getByTestId("cur-time")).toContainText("(12:00 UTC)");
   await expect(panel.getByTestId("cur-age")).toHaveText("· 8 h ago");
@@ -81,6 +81,7 @@ test("hourly selection walks real hours; the 24-hour mean is labelled as such", 
 
 test("animated flow is optional and draws only over observed cells", async ({ page }) => {
   await open(page, `${OK}/?layer=currents`);
+  await openDockDetails(page);
   await page.getByTestId("cur-mode-particles").click();
   await expect(page.locator("[data-testid=flow-particles]")).toHaveCount(1);
   await expect(page.getByTestId("currents-legend")).toContainText("Particles drift through this one observed field");
