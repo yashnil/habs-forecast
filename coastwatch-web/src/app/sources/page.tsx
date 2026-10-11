@@ -21,17 +21,12 @@ export default async function SourcesPage() {
       banner={<DataBanners manifest={manifest} error={data.ok ? null : data.error} />} scroll="page">
       <div className="mx-auto w-full max-w-4xl space-y-6 overflow-y-auto px-4 py-6">
         <header className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Data & sources</h1>
+          <h1 className="font-display text-[34px] font-medium leading-tight text-ink">Data &amp; sources</h1>
           <p className="max-w-2xl text-[14px] leading-relaxed text-ink-2">{DISCLAIMER}</p>
         </header>
         <OfficialStatusCard />
-        {manifest ? (
-          <SourceTable manifest={manifest} official={data.ok ? data.official : null} />
-        ) : (
-          <p className="text-ink-2">Source status cannot be shown because the data manifest is unavailable.</p>
-        )}
-        <section aria-labelledby="research-h" data-testid="research" className="space-y-2 border-t border-hairline pt-5 text-[13px] leading-relaxed text-ink-2">
-          <h2 id="research-h" className="text-[15px] font-semibold text-ink">Research behind CoastWatch</h2>
+        <section aria-labelledby="research-h" data-testid="research" className="space-y-2 text-[14px] leading-relaxed text-ink-2">
+          <h2 id="research-h" className="font-display text-[22px] font-medium leading-tight text-ink">The research behind CoastWatch</h2>
           <p className="max-w-2xl">
             <span className="font-display text-[17px] leading-snug text-ink">{RESEARCH.title}</span>
             <br />
@@ -42,6 +37,12 @@ export default async function SourcesPage() {
           </p>
           <p className="max-w-2xl">{RESEARCH.relation}</p>
         </section>
+        <h2 className="pt-2 font-display text-[22px] font-medium leading-tight text-ink">Source status</h2>
+        {manifest ? (
+          <SourceTable manifest={manifest} official={data.ok ? data.official : null} />
+        ) : (
+          <p className="text-ink-2">Source status cannot be shown because the data manifest is unavailable.</p>
+        )}
         <section className="space-y-2 text-[13px] leading-relaxed text-ink-2">
           <h2 className="text-[15px] font-semibold text-ink">How freshness is decided</h2>
           <p>

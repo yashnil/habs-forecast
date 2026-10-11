@@ -33,6 +33,8 @@ The paper is about physics-informed chlorophyll forecasting (see the [root READM
 | [18 — M5 plan: Ocean Map](18-m5-ocean-map-plan.md) | Scope, layout targets, cartography, layers, inspector and acceptance criteria for M5 |
 | [19 — M5 rendering audit and map direction](19-m5-map-direction.md) | Sentinel-3 pipeline-to-screen audit, three matched treatments, no-data and opening-state comparisons, decisions (approved) |
 | [20 — M5: Ocean Map](20-m5-ocean-map.md) | Opening-layer policy, 512 px satellite tiles (backward compatible), map-area measurements, inspector and readouts, two review passes, tests, performance, integration plan |
+| [21 — M6: Bloom Intelligence plan](21-m6-bloom-intelligence-plan.md) | Spec §3.2 gap table, data already published, components, commit order, tests, review standard, decisions D1–D4 |
+| [22 — M6: Bloom Intelligence](22-m6-bloom-intelligence.md) | One station, one timeline: before/after, measurements, tests, §6 rules, limitations |
 | [m5/](m5/) | M5 comparison (decision stage), review before/after images and evidence |
 | [m3/](m3/) | Screenshots of the M3 app (staging data, 2026-10-08) |
 | [m2/](m2/) | Screenshots of the M2 app (live data, 2026-10-08) |

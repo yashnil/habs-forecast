@@ -61,10 +61,24 @@ export function SourceTable({ manifest, official }: { manifest: Manifest; offici
               </dl>
               <p className="mt-2 text-[12px] text-ink-3">{s.freshness.note}</p>
               {s.error && (
-                <p className="mt-2 break-words rounded-md border border-serious/40 bg-surface-2 p-2 text-[12px] text-ink-2">
-                  <span className="font-semibold text-serious">Error: </span>
-                  <span className="font-mono text-[11px]">{s.error}</span>
-                </p>
+                // a plain statement first; the upstream error text is for whoever maintains the pipeline
+                <div className="mt-2 rounded-md border border-serious/30 bg-surface-2 px-2.5 py-2 text-[13px] text-ink-2" data-testid={`source-error-${s.source_id}`}>
+                  <p>
+                    {s.outcome === "failed" ? (
+                      <>
+                        <span className="font-semibold text-serious">The latest update could not reach this source.</span> The last successful data stays on screen with its real dates.
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-serious">Part of the latest update did not complete.</span> What did update is shown; the rest keeps its last successful data and dates.
+                      </>
+                    )}
+                  </p>
+                  <details className="mt-1">
+                    <summary className="cursor-pointer text-ink-3">Technical detail</summary>
+                    <p className="mt-1 break-words font-mono text-[12px]">{s.error}</p>
+                  </details>
+                </div>
               )}
               {s.notes && s.notes.length > 0 && (
                 <details className="mt-2 text-[12px] text-ink-2">

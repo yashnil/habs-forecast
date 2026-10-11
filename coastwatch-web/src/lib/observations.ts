@@ -1,4 +1,4 @@
-import type { ObsStation, ObsVariable, ObsVariableSummary, ObservationDataset } from "@/generated/observations";
+import type { ObsStation, ObsVariable, ObsVariableSummary } from "@/generated/observations";
 import type { FreshnessPolicy } from "@/generated/schema";
 import { classifyDate, type Freshness } from "@/lib/freshness";
 
@@ -10,14 +10,6 @@ export type Sample = { t: number; time: string; value: number | null; q: Qualifi
 
 export const DAY = 86_400_000;
 export const DEFAULT_STATION = "HABs-SantaCruzWharf";
-export const FLAGSHIP_REGION = "monterey_bay";
-
-export const RANGES = [
-  { id: "1y", label: "12 months", days: 365 },
-  { id: "3y", label: "3 years", days: 3 * 365 },
-  { id: "all", label: "Since 2014", days: null },
-] as const;
-export type RangeId = (typeof RANGES)[number]["id"];
 
 export function samples(st: ObsStation, variable: ObsVariableId): Sample[] {
   const s = st.series.find((x) => x.variable === variable);
@@ -44,11 +36,6 @@ export function stationFreshness(st: ObsStation, policy: FreshnessPolicy | null,
   if (!now || !policy) return null;
   if (st.status === "failed") return { state: "unavailable", basisDate: null, ageDays: null };
   return classifyDate(policy, lastSampleDate(st), now);
-}
-
-export function variableFreshness(sm: ObsVariableSummary | null, policy: FreshnessPolicy | null, now: Date | null): Freshness | null {
-  if (!now || !policy) return null;
-  return classifyDate(policy, sm?.last_date ?? null, now);
 }
 
 /** Readable value with units; a reported zero is never shown as a bare "0". */
@@ -79,57 +66,12 @@ export function formatTick(v: number): string {
   return String(Number(v.toPrecision(1)));
 }
 
-export function logDomain(values: number[]): [number, number] | null {
-  const pos = values.filter((v) => v > 0);
-  if (!pos.length) return null;
-  const lo = 10 ** Math.floor(Math.log10(Math.min(...pos)));
-  let hi = 10 ** Math.ceil(Math.log10(Math.max(...pos)));
-  if (hi <= lo) hi = lo * 10;
-  return [lo, hi];
-}
-
-export function windowStart(range: RangeId, end: number, firstSample: number | null): number {
-  const r = RANGES.find((x) => x.id === range)!;
-  if (r.days == null) return firstSample ?? end - 365 * DAY;
-  return end - r.days * DAY;
-}
-
-/** Sampling coverage of one variable inside a window: how often it was sampled vs measured. */
-export function coverage(ss: Sample[], t0: number, t1: number) {
-  const inWin = ss.filter((s) => s.t >= t0 && s.t <= t1);
-  const measured = inWin.filter((s) => s.value != null);
-  const zeros = measured.filter((s) => s.q === "reported_zero").length;
-  const rejected = inWin.filter((s) => s.q === "rejected_negative").length;
-  const gaps = measured.slice(1).map((s, i) => (s.t - measured[i].t) / DAY);
-  const sorted = [...gaps].sort((a, b) => a - b);
-  const median = sorted.length ? sorted[Math.floor(sorted.length / 2)] : null;
-  const longest = sorted.length ? sorted[sorted.length - 1] : null;
-  return { visits: inWin.length, measured: measured.length, zeros, rejected, medianGapDays: median, longestGapDays: longest };
-}
-
 export function cadenceLabel(days: number | null | undefined): string {
   if (days == null) return "no regular sampling in the last 12 months";
   if (days <= 8) return "about weekly";
   if (days <= 16) return "about every 2 weeks";
   if (days <= 35) return "about monthly";
   return `about every ${Math.round(days)} days`;
-}
-
-export function stationsByRegion(ds: ObservationDataset, regionOrder: string[]): { region: string; stations: ObsStation[] }[] {
-  const groups = new Map<string, ObsStation[]>();
-  for (const st of ds.stations) {
-    const r = st.region ?? "other";
-    groups.set(r, [...(groups.get(r) ?? []), st]);
-  }
-  const order = [FLAGSHIP_REGION, ...regionOrder.filter((r) => r !== FLAGSHIP_REGION), "other"];
-  return order.filter((r) => groups.has(r)).map((r) => ({ region: r, stations: groups.get(r)! }));
-}
-
-/** Plain-language status of a toxin measurement for list rows; never implies absence. */
-export function toxinStatus(v: ObsVariable, sm: ObsVariableSummary | null): string {
-  if (!sm || sm.n_measured === 0) return `${v.id} not measured here since 2014`;
-  if ((sm.days_since_last ?? 0) > 90) return `${v.id} last measured ${monthYear(sm.last_date!)}`;
-  return `${v.id} ${formatObs(v, sm.last_value ?? null, sm.last_qualifier ?? null)}`;
 }
 
 export function monthYear(date: string): string {

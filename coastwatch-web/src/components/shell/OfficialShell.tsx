@@ -96,13 +96,15 @@ export function OfficialPill() {
       aria-haspopup="dialog"
       aria-expanded={open}
       onClick={(e) => openDrawer(e.currentTarget)}
-      className="flex h-8 items-center gap-2 rounded-full border border-official-on-navy/45 bg-official-on-navy/10 pl-2.5 pr-3 text-[13px] font-medium text-official-on-navy hover:bg-official-on-navy/15 md:h-[34px] md:text-[14px]"
+      className="flex h-8 items-center gap-2 whitespace-nowrap rounded-full border border-official-on-navy/45 bg-official-on-navy/10 pl-2.5 pr-3 text-[13px] font-medium text-official-on-navy hover:bg-official-on-navy/15 md:h-[34px] md:text-[14px]"
     >
       <Icon name="shield" className="h-4 w-4" />
       {ds ? (
         <>
           <b className="font-semibold text-white tabular">{records.length}</b>
-          <span className="hidden sm:inline">official notice{records.length === 1 ? "" : "s"}</span>
+          {/* the words show only where the masthead has room; screen readers always hear them */}
+          <span className="hidden xl:inline">official notice{records.length === 1 ? "" : "s"}</span>
+          <span className="sr-only xl:hidden">official notice{records.length === 1 ? "" : "s"}</span>
         </>
       ) : (
         <span>Official notices</span>
