@@ -73,7 +73,7 @@ export function AppShell({
                 className={`flex items-center gap-2 rounded-md px-1.5 py-1.5 text-[14px] ${active === "sources" ? "text-white" : "text-on-navy-2 hover:text-on-navy"}`}
               >
                 <SourceHealthDot manifest={manifest} />
-                <span className="hidden sm:inline">Data status</span>
+                <span className="hidden whitespace-nowrap sm:inline">Data status</span>
                 <span className="sr-only sm:hidden">Data status</span>
               </Link>
             </div>

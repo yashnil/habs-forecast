@@ -27,9 +27,12 @@ export function formatDateTimePT(iso: string): string {
 }
 
 /** Today's calendar date in Pacific time, YYYY-MM-DD. */
+// Building an Intl.DateTimeFormat is expensive (tens of microseconds); it is called once per sample
+// when binning a station's record by Pacific date, so the formatter is built once and reused.
+const PT_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: PT, year: "numeric", month: "2-digit", day: "2-digit" });
+
 export function pacificToday(now: Date): string {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: PT, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
-  return parts; // en-CA yields YYYY-MM-DD
+  return PT_DAY.format(now); // en-CA yields YYYY-MM-DD
 }
 
 /** "today", "tomorrow", "yesterday", "in 2 days", "3 days ago" relative to Pacific today. */
