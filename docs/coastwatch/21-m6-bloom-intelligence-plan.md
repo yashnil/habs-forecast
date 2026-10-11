@@ -1,6 +1,6 @@
 # M6: Bloom Intelligence redesign — implementation plan
 
-**Status:** plan only, on `feat/coastwatch-p6-bloom` (draft PR). No implementation has started.
+**Status:** approved with defaults D1–D4 (2026-10-11). The design review in §0 was done before coding and refines the spec where it falls short. Implementation is in progress on `feat/coastwatch-p6-bloom`.
 
 **Baseline:** the approved design-reset specification, revision 2 ([design-spec.md §3.2](https://github.com/yashnil/habs-forecast/blob/archive/pr7-design-reset/docs/coastwatch/design-reset/design-spec.md#32-bloom-intelligence)), with:
 - its conventions (§2 type and colour, §4 layout, §5.2–5.6 charts, §6 rules, §7 mobile);
@@ -13,6 +13,74 @@ Where the spec and the prototype differ, the spec wins.
 - no new data source or pipeline output;
 - no Fisheries work (M7);
 - no deployment.
+
+## 0. Design review before coding
+
+The owner asked for an exceptional redesign, not a literal implementation of the spec. Before coding, I reviewed the current page and the approved prototype on production data (run 38119843030), against two standards:
+- the M5 Ocean Map's design language;
+- practice in professional scientific visualisation.
+
+Screenshots of today's page are in [m6/before/](m6/before/).
+
+### 0.1 What today's page gets wrong
+
+| Area | Problem | Evidence |
+|---|---|---|
+| **Hierarchy** | Nothing leads. The heaviest elements are, in order: a 270 px official block, a badge row, five equal cards, then five equal charts. The station name is the same size as a chart title. | [1440](m6/before/1440-santa-cruz-full.jpg) |
+| **Repetition** | Four charts repeat the same legend, the same "Measured in 49 of 49 sampling visits" line and the same "Data table" control. "Current" appears 6 times above the fold. The rail repeats "Historical — not current" 13 times. | same |
+| **Composition** | The model sits about 1,500 px below the measurements it is meant to be read beside, on its own axis, in a grey box. P-n delicatissima takes half a row to say it was never measured. | same |
+| **Unreliable map** | On first load at Santa Cruz Wharf the station map rendered almost entirely black; at Monterey Wharf it rendered normally. The cause was not pinned down. | [1440, Santa Cruz](m6/before/1440-santa-cruz-full.jpg) |
+| **Axes** | Log axes are fitted to the data in view. A quiet year and a bloom year look the same, and the axis jumps when the range changes. | `logDomain()` |
+| **Zeros** | Most results are "reported 0": 341 of 621 at Santa Cruz, 617 of 657 at Scripps Pier. On a log axis they shrink to a faint row of rings, so a mostly-zero record reads as "almost no data". | data |
+| **Copy** | Technical and defensive before it is useful: "newest sample in the network; each station shows its own", bullet walls of caveats, raw error strings. | — |
+| **Phone** | 4,720 px tall. The official block and the station map come before anything about the station. | [390](m6/before/390-santa-cruz-full.jpg) |
+
+### 0.2 Where the approved prototype still falls short
+
+The prototype fixes most of 0.1. Four weaknesses remain, and M6 improves on them:
+
+1. **Measured and model are far apart.** The spec puts the heatmap between the chart and the model band, so "same time axis" is never visible at once. *M6:* the model band sits **directly under the primary chart, on the same x-scale**, with a shared crosshair. It stays a separate violet panel with its own 0–100 % axis, labelled "Model, not a measurement", so the two are never mixed (rule 5).
+2. **Dashboard cards.** Five bordered cards with big numbers still read as a KPI dashboard. *M6:* the selector becomes a **quantity index**: one hairline-ruled strip, a column per quantity (name, latest value, date with its freshness dot, preview on the chart's axis). The selection shows as a teal underline.
+3. **A separate freshness card.** It competes with the station name. *M6:* the latest sample date and the 120-day sampling strip sit **in the title block**. The station name, when it was last sampled and how regularly then read as one statement.
+4. **The heatmap is a picture, not a tool.** *M6:* it becomes the page's **navigation through time**:
+   - hovering a week shows its highest value and date;
+   - selecting a year sets the primary chart to that year (range "2015", for example);
+   - the current week and year are marked.
+
+### 0.3 Direction: one station, one timeline
+
+The page reads top to bottom as one exploration of one pier:
+- where it is;
+- what was last measured, and how fresh that is;
+- the record of the chosen quantity;
+- what the model estimated over the same days;
+- how this season compares with every year since 2014;
+- what the numbers mean.
+
+**Principles:**
+- **One hero chart** at about 360 px. Everything else supports it, and range, quantity and year all drive it.
+- **Fixed whole-decade axes** (§5.2).
+- **The zero lane is first-class:** it is labelled with its count ("341 reported 0"). The summary line splits visits into measured values, reported 0 and not measured.
+- **No decorative chrome:**
+  - no badge row;
+  - freshness is a dot and a word, once per item;
+  - one data table, behind a disclosure, for the primary chart;
+  - borders only where a container means something: official amber, model violet.
+- **Plain copy, written for a harvester or a coastal manager.** Caveats sit next to what they qualify ("Toxin in seawater, not in seafood" under pDA). Methods come last, in three short columns.
+- **Real data only, with provenance:** each panel credits its source (CalHABMAP via SCCOOS ERDDAP; C-HARM v3.1, NOAA), and the page shows when the data were retrieved.
+- **Uncertainty is stated, not invented.**
+  - The laboratories publish no measurement uncertainty or detection limit, and the page says so.
+  - The model band shows a median over N cells, and days with partial coverage are open markers.
+  - Nothing is smoothed, interpolated or averaged across samples.
+- **Motion:** M5 timings, 150–200 ms for panel changes and none for data. Off under reduced motion.
+
+**The station map stays (D1)** as a small locator above the rail, with the canvas resize fixed. It is hidden on the phone, where the station picker sheet replaces it.
+
+**Data facts that shape the design**, from the production dataset:
+- **Santa Cruz Wharf:** 630 samples since January 2014. The highest pDA in the last 12 months was 11.2 ng/mL on May 27, 2026; the highest since 2014 was 16.2 ng/mL on June 4, 2014.
+- **Monterey Wharf:** pDA last measured Aug 2022.
+- **Morro Bay:** pDA never measured.
+- **Model history:** today's dataset carries none (NOAA outage; issue #26). The empty state is therefore a first-class design case, not an afterthought.
 
 ## 1. Where the page is today
 
@@ -65,11 +133,11 @@ New in `src/components/bloom/` unless noted:
 | `OfficialStrip` (official/) | One line: notices related to the station's nearest port, "Not verified", "All N notices" | Reuses the M5 `NoticeCard` and drawer; never truncates titles (M5 rule) |
 | `StationRail`, `StationRow` | Grouped list with glyph and status line; keyboard navigable | `toxinStatus()` already produces the lines |
 | `StationHeader` | Eyebrow, serif name, mono coordinates, nearest port and distance, "Open on map" | |
-| `FreshnessCard`, `SamplingStrip` | Latest sample in display type, freshness word and age, 120-day strip (one tick per visit, gap since last shaded, today marked), cadence and lab-latency sentence; top rule in the freshness colour; historical banner | Pacific calendar days (rule 6) |
-| `MeasurementSelector`, `SelectorCard`, `MiniPreview` | Five cards (pDA, *P-n* seriata, *P-n* delicatissima, chlorophyll, temperature); preview on the chart's period and fixed axis; reported zeros as open dots on the baseline; "Not measured since …" with the value in small text when stale; "Never measured here" | Selection lives in the URL (`?var=`) |
+| `StationHeader` + `SamplingStrip` (title block, §0.2 item 3) | Latest sample in display type, freshness word and age, 120-day strip (one tick per visit, gap since last shaded, today marked), cadence and lab-latency sentence; top rule in the freshness colour; historical banner | Pacific calendar days (rule 6) |
+| `QuantityIndex` (§0.2 item 2): a hairline strip, a column per quantity, with a preview | Five cards (pDA, *P-n* seriata, *P-n* delicatissima, chlorophyll, temperature); preview on the chart's period and fixed axis; reported zeros as open dots on the baseline; "Not measured since …" with the value in small text when stale; "Never measured here" | Selection lives in the URL (`?var=`) |
 | `ObservationChart` (charts/, rebuilt) | §5.2: fixed axes, 21-day breaks, `0*` lane, visit ticks, flagged-high open markers, "Highest in view", crosshair tooltip, range presets 3 mo / 1 yr / 3 yr / Since 2014, summary line | Keyboard: arrows and Escape (M3 behaviour) |
-| `SeasonHeatmap` | Years × weeks (desktop) or × months (mobile); highest value per period; teal decade bins; separate swatches for reported-0-only and unsampled | Caption: "Decade bins, not risk levels" |
-| `ModelBand` | Violet band, `MODEL, NOT A MEASUREMENT`, C-HARM v3.1 · NOAA chip, the same x-scale as the primary chart (capped at 12 months), pre-history hatched, partial runs open, "never compared numerically" | Variable switch for the three C-HARM quantities |
+| `SeasonHeatmap` (interactive, §0.2 item 4) | Years × weeks (desktop) or × months (mobile); highest value per period; teal decade bins; separate swatches for reported-0-only and unsampled | Caption: "Decade bins, not risk levels" |
+| `ModelBand` (directly under the chart, shared crosshair, §0.2 item 1) | Violet band, `MODEL, NOT A MEASUREMENT`, C-HARM v3.1 · NOAA chip, the same x-scale as the primary chart (capped at 12 months), pre-history hatched, partial runs open, "never compared numerically" | Variable switch for the three C-HARM quantities |
 | `AboutData` | Three columns (what a value means, blanks and zeros, seawater is not seafood), then disclosures, source, licence, review-pending note | |
 | `StationPickerSheet` (mobile) | Full-screen station list from a picker button | M5 sheet patterns |
 
@@ -86,19 +154,23 @@ New in `src/components/bloom/` unless noted:
 - `modelOnAxis(history, x0, x1)`;
 - `staleHeadline(summary, policy, now)`.
 
-## 4. Order of work (commits)
+## 4. Order of work
 
-1. **`lib/` helpers and fixed axes**, with unit tests. Nothing visual yet.
-2. **Page skeleton:** the official strip, rail and header restyled to spec; `/bloom?station=&var=&range=` URL state.
-3. **Freshness card and sampling strip.**
-4. **Selector cards with previews**, replacing the five medium charts.
-5. **The primary chart** rebuilt to §5.2, with range presets, crosshair and keyboard.
-6. **Season heatmap.**
-7. **Model band** on the shared axis.
-8. **About these data**, and the mobile structure: picker sheet, swipeable selector, collapsed heatmap.
-9. **Visual review passes 1 and 2**, with fixes and the report (`docs/coastwatch/22-m6-bloom-intelligence.md`).
+The whole milestone should come to about 7 substantive commits. Each is a tested unit; intermediate iterations are not committed.
 
-Each step leaves the page working. The commits are squashed into logical units before the PR is ready.
+1. The plan and design review (this document).
+2. `lib/bloom.ts`: fixed axes, sampling strip, headlines, previews, segments, summary counts, heatmap, model band, year ranges, with unit tests.
+3. The page rebuilt, as one coherent unit:
+   - the title block with sampling strip;
+   - the rail and the fixed locator map;
+   - the quantity index;
+   - the primary chart with the zero lane and crosshair;
+   - the model band underneath.
+4. The interactive season heatmap, "About these data", and the phone structure (picker sheet, swipeable index).
+5. Browser and accessibility tests for the new page, with the M3 Bloom tests updated.
+6. Visual review passes 1 and 2 with their fixes, measurements, and the report (`22-m6-bloom-intelligence.md`) with before/after images.
+
+The PR is squash-merged unless you want the steps kept.
 
 ## 5. Tests
 
@@ -161,7 +233,7 @@ Each step leaves the page working. The commits are squashed into logical units b
 - **Review notice:** "Not yet reviewed by an independent HAB scientist" stays.
 - **Attribution:** CalHABMAP via SCCOOS ERDDAP with the licence; C-HARM v3.1 · NOAA on the band.
 
-## 8. Decisions for you
+## 8. Decisions (approved 2026-10-11 with the defaults)
 
 The recommended default for each is in bold.
 
