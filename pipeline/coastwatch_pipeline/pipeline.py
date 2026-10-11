@@ -25,6 +25,7 @@ from .models import (
     FisheriesDataset,
     ObservationDataset,
     OfficialDataset,
+    PortIntelCollection,
     PortsCollection,
     SourceStatus,
 )
@@ -329,7 +330,7 @@ def _run(ctx: RunContext, only: tuple[str, ...]) -> Manifest:
     if "port_intel" in only:
         _source("port_intel")
         ports_coll = _load(ctx, ports_url, PortsCollection)
-        pi = port_intel.run(ctx, layers, ports_coll, official_ds)
+        pi = port_intel.run(ctx, layers, ports_coll, official_ds, previous=_load(ctx, port_intel_url, PortIntelCollection))
         prev_s = _prev_status(prev, port_intel.SOURCE_ID)
         if pi.collection:
             port_intel_url = _write_hashed(ctx, "port-intel", pi.collection.model_dump(mode="json"))

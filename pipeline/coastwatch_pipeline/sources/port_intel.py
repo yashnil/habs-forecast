@@ -115,6 +115,23 @@ def charm_near(grids: dict[tuple[str, int], Grid], lat: float, lon: float) -> Po
     )
 
 
+# A nowcast history that could not be refreshed keeps the previously published one when it
+# reaches to within this many days of the current run (a missed 6-hourly refresh or two), so
+# a NOAA outage does not blank it. An older history is not shown as recent: the error stands.
+CARRY_HISTORY_MAX_GAP_DAYS = 2
+
+
+def carried_history(prev: dict[str, list[SeriesPoint]] | None, end: date) -> dict[str, list[SeriesPoint]] | None:
+    """The previous history, if it is recent enough to stand in for one that failed to refresh.
+    Points keep their own dates; nothing is extended or filled."""
+    if not prev:
+        return None
+    last = max((p.date for pts in prev.values() for p in pts if p.value is not None), default=None)
+    if last is None or date.fromisoformat(last[:10]) < end - timedelta(days=CARRY_HISTORY_MAX_GAP_DAYS):
+        return None
+    return prev
+
+
 def charm_history(ctx: RunContext, lat: float, lon: float, end: date, days: int = HISTORY_DAYS) -> dict[str, list[SeriesPoint]]:
     from .charm import parse_netcdf
 
@@ -257,6 +274,7 @@ def run(
     ports: PortsCollection | None,
     official: OfficialDataset | None,
     fetch_history: bool = True,
+    previous: PortIntelCollection | None = None,
 ) -> PortIntelResult:
     if not ports:
         return PortIntelResult(None, ["no ports available"], [])
@@ -264,6 +282,7 @@ def run(
     nowcast = grids.get(("pseudo_nitzschia", 0))
     end = date.fromisoformat(nowcast.layer.time.valid_date) if nowcast and nowcast.layer.time.valid_date else ctx.now.date()
     notes: list[str] = []
+    prev_hist = {q.port_code: q.charm.history for q in previous.ports if q.charm and q.charm.history} if previous else {}
     out = []
     for f in ports.features:
         p = f.properties
@@ -273,8 +292,13 @@ def run(
             try:
                 ch.history = charm_history(ctx, lat, lon, end)
             except Exception as e:
-                ch.history_error = f"nowcast history unavailable: {e}"[:300]
-                notes.append(f"{p.display_name}: {ch.history_error}")
+                kept = carried_history(prev_hist.get(p.port_code), end)
+                if kept:
+                    ch.history = kept
+                    notes.append(f"{p.display_name}: nowcast history not refreshed ({str(e)[:160]}); previous history kept with its own dates")
+                else:
+                    ch.history_error = f"nowcast history unavailable: {e}"[:300]
+                    notes.append(f"{p.display_name}: {ch.history_error}")
         chl = chlorophyll_near(ctx, lat, lon, ctx.now.date()) if fetch_history else None
         if chl and chl.error:
             notes.append(f"{p.display_name}: {chl.error}")

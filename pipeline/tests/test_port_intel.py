@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 
 import numpy as np
 
@@ -104,3 +105,46 @@ def test_port_caveats_state_spatial_limits(out):
         joined = " ".join(p.caveats)
         assert "do not describe conditions at the dock" in joined
         assert "not toxins" in joined
+
+
+def test_failed_history_refresh_keeps_the_recent_previous_history(out):
+    """A NOAA outage during the history requests keeps the previously published histories
+    (ports and stations), with their own dates, instead of publishing none."""
+    from coastwatch_pipeline.fixtures import FixtureFetcher, fixture_context
+    from coastwatch_pipeline.http import FetchError
+    from coastwatch_pipeline.models import ObservationDataset
+
+    m0 = run_pipeline(fixture_context(out))
+    ports0 = {p.display_name: p.charm.history for p in PortIntelCollection.model_validate_json((out / m0.port_intel_url).read_text()).ports if p.charm}
+    obs0 = {s.station_id: s.charm.history for s in ObservationDataset.model_validate_json((out / m0.observations_url).read_text()).stations if s.charm}
+
+    class Outage(FixtureFetcher):
+        def __call__(self, url):
+            # the history requests span many days; the run's own nowcast asks for one, (t):(t)
+            t = re.search(r"%5B\(([^)]+)\):\(([^)]+)\)%5D", url)
+            if "wvcharmV3_0day.nc?" in url and t and t.group(1) != t.group(2):
+                raise FetchError(f"Failed after 4 attempts: {url} (timed out)", hang=True)
+            return super().__call__(url)
+
+    m = run_pipeline(fixture_context(out, fetcher=Outage()))
+    coll = PortIntelCollection.model_validate_json((out / m.port_intel_url).read_text())
+    obs = ObservationDataset.model_validate_json((out / m.observations_url).read_text())
+
+    mo = port(coll, "Monterey")
+    assert ports0["Monterey"] and mo.charm.history == ports0["Monterey"] and mo.charm.history_error is None
+    assert port(coll, "San Diego").charm.history_error  # never had one: still unavailable
+    kept = [s for s in obs.stations if s.charm and obs0.get(s.station_id)]
+    assert kept and all(s.charm.history == obs0[s.station_id] and s.charm.error is None for s in kept)
+    st = next(s for s in m.sources if s.source_id == port_intel.SOURCE_ID)
+    assert any("previous history kept with its own dates" in n for n in st.notes)
+
+def test_carried_history_is_never_older_than_two_days_before_the_run():
+    from datetime import date
+
+    from coastwatch_pipeline.models import SeriesPoint
+
+    h = {"particulate_domoic": [SeriesPoint(date="2026-10-05", value=0.4, n=20), SeriesPoint(date="2026-10-07", value=0.5, n=20)]}
+    assert port_intel.carried_history(h, date(2026, 10, 9)) == h
+    assert port_intel.carried_history(h, date(2026, 10, 10)) is None  # 3 days: the error stands
+    assert port_intel.carried_history({}, date(2026, 10, 8)) is None
+    assert port_intel.carried_history({"x": [SeriesPoint(date="2026-10-08", value=None, n=0)]}, date(2026, 10, 8)) is None
