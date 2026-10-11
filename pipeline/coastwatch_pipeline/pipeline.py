@@ -15,6 +15,7 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from . import http
 from .context import RunContext
 from .models import (
     ForecastRun,
@@ -83,6 +84,30 @@ def _prev_layers(prev: Manifest | None, source_id: str) -> list[LayerArtifact]:
 
 _T0: list[float] = []
 
+# How long each source may spend waiting on its servers, and the whole run (seconds). Normal
+# runs take 0.3 s (ports) to about 5 min (satellite) per source and about 9 min in all
+# (runs 38081801472, 38103638833); these allow several times that. The run budget leaves the
+# verification steps about 15 minutes of the job's 40-minute limit. A source that runs out
+# fails like any outage: its last good data stays published with its own dates.
+SOURCE_BUDGET_S = {
+    "charm": 600,
+    "gibs_chl": 180,
+    "satellite_chl": 900,
+    "hf_radar": 300,
+    "cdfw_ports": 180,
+    "official": 240,
+    "port_intel": 420,
+    "calhabmap": 300,
+    "foss_landings": 300,
+}
+RUN_BUDGET_S = 25 * 60
+
+
+def _source(name: str) -> None:
+    """A source starts: log it and give it its own time budget."""
+    _progress(f"{name}: start")
+    http.start_budget(name, SOURCE_BUDGET_S[name])
+
 
 def _progress(msg: str) -> None:
     """Progress on stderr (CI logs show where a run spends its time); stdout stays the summary."""
@@ -97,6 +122,14 @@ def _progress(msg: str) -> None:
 
 def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manifest:
     ctx.out_dir.mkdir(parents=True, exist_ok=True)
+    http.start_budget("run", RUN_BUDGET_S, scope="run")
+    try:
+        return _run(ctx, only)
+    finally:
+        http.clear_budgets()
+
+
+def _run(ctx: RunContext, only: tuple[str, ...]) -> Manifest:
     prev = load_previous(ctx.out_dir)
     layers: list[LayerArtifact] = []
     runs: list[ForecastRun] = []
@@ -105,7 +138,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
 
     # ---- C-HARM
     if "charm" in only:
-        _progress(f"charm: start")
+        _source("charm")
         res = charm.run(ctx)
         prev_s = _prev_status(prev, charm.SOURCE_ID)
         if res.layers:
@@ -145,7 +178,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
 
     # ---- GIBS satellite chlorophyll
     if "gibs_chl" in only:
-        _progress(f"gibs_chl: start")
+        _source("gibs_chl")
         g = gibs.run(ctx)
         prev_s = _prev_status(prev, gibs.SOURCE_ID)
         if g.layers:
@@ -174,7 +207,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     # ---- high-resolution satellite chlorophyll (OLCI 300 m, VIIRS 750 m fallback)
     sat_title = "Satellite chlorophyll-a: Sentinel-3 OLCI 300 m (VIIRS 750 m fallback)"
     if "satellite_chl" in only:
-        _progress(f"satellite_chl: start")
+        _source("satellite_chl")
         prev_sat = _prev_layers(prev, satellite.SOURCE_ID)
         sres = satellite.run(ctx, prev_sat)
         prev_s = _prev_status(prev, satellite.SOURCE_ID)
@@ -205,7 +238,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     # ---- observed surface currents (HF radar 2 km, hourly + 24 h mean)
     cur_title = "Observed surface currents: HF radar 2 km (HFRNet), hourly and 24-hour mean"
     if "hf_radar" in only:
-        _progress(f"hf_radar: start")
+        _source("hf_radar")
         prev_cur = _prev_layers(prev, currents.SOURCE_ID)
         cres = currents.run(ctx, prev_cur)
         prev_s = _prev_status(prev, currents.SOURCE_ID)
@@ -234,7 +267,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
 
     # ---- CDFW ports
     if "cdfw_ports" in only:
-        _progress(f"cdfw_ports: start")
+        _source("cdfw_ports")
         pr = ports.run(ctx)
         prev_s = _prev_status(prev, ports.SOURCE_ID)
         port_policy = _ports_freshness()
@@ -263,7 +296,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     official_url = prev.official_url if prev else None
     official_ds: OfficialDataset | None = _load(ctx, official_url, OfficialDataset)
     if "official" in only:
-        _progress(f"official: start")
+        _source("official")
         res = official.run(ctx)
         prev_s = _prev_status(prev, official.SOURCE_ID)
         if res.dataset:
@@ -294,7 +327,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     # ---- port intelligence (depends on the C-HARM layers, ports and official notices above)
     port_intel_url = prev.port_intel_url if prev else None
     if "port_intel" in only:
-        _progress(f"port_intel: start")
+        _source("port_intel")
         ports_coll = _load(ctx, ports_url, PortsCollection)
         pi = port_intel.run(ctx, layers, ports_coll, official_ds)
         prev_s = _prev_status(prev, port_intel.SOURCE_ID)
@@ -325,7 +358,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     # ---- measured observations (CalHABMAP); uses ports and the C-HARM layers above
     observations_url = prev.observations_url if prev else None
     if "calhabmap" in only:
-        _progress(f"calhabmap: start")
+        _source("calhabmap")
         prev_obs = _load(ctx, observations_url, ObservationDataset)
         ob = observations.run(ctx, _load(ctx, ports_url, PortsCollection), layers, prev_obs)
         prev_s = _prev_status(prev, observations.SOURCE_ID)
@@ -355,7 +388,7 @@ def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manife
     # ---- historical fisheries exposure (FOSS + BLS CPI); refreshed weekly
     fisheries_url = prev.fisheries_url if prev else None
     if "foss_landings" in only:
-        _progress(f"foss_landings: start")
+        _source("foss_landings")
         prev_s = _prev_status(prev, fisheries.SOURCE_ID)
         title = "Historical fisheries exposure (NOAA FOSS landings, BLS CPI-U)"
         prev_fish = _load(ctx, fisheries_url, FisheriesDataset)
