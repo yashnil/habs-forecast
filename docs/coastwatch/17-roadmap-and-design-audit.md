@@ -51,7 +51,7 @@
 
 ## 4. Design audit against the design reset
 
-The design-reset spec ([design-reset/design-spec.md](https://github.com/yashnil/habs-forecast/blob/design/coastwatch-design-reset/docs/coastwatch/design-reset/design-spec.md)) is the baseline. The bar you set today is higher: an immersive, portfolio-grade product. Screenshots: [map 390](roadmap/audit-map-390.png), [Bloom 1440](roadmap/audit-bloom-1440.png), [Fisheries 1440](roadmap/audit-fisheries-1440.png).
+The design-reset spec ([design-reset/design-spec.md](https://github.com/yashnil/habs-forecast/blob/archive/pr7-design-reset/docs/coastwatch/design-reset/design-spec.md)) is the baseline. The bar you set today is higher: an immersive, portfolio-grade product. Screenshots: [map 390](roadmap/audit-map-390.png), [Bloom 1440](roadmap/audit-bloom-1440.png), [Fisheries 1440](roadmap/audit-fisheries-1440.png).
 
 ### 4.1 Ocean Map
 

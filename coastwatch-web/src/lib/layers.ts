@@ -1,4 +1,4 @@
-import type { ForecastRun, LayerArtifact, Manifest, SourceStatus } from "@/generated/schema";
+import type { ForecastRun, LayerArtifact, Manifest, SourceStatus, TileLayer } from "@/generated/schema";
 
 export const CHARM_VARIABLES = ["pseudo_nitzschia", "particulate_domoic", "cellular_domoic"] as const;
 export type CharmVariable = (typeof CHARM_VARIABLES)[number];
@@ -73,4 +73,11 @@ export function satelliteUpdateFailed(status: SourceStatus | null | undefined, p
   if (!status) return false;
   if (status.outcome === "failed") return true;
   return status.outcome === "partial" && PRODUCT_ERROR[p].test(status.error ?? "");
+}
+
+/** High-density CoastWatch tile sets (512 px images, M5) publish index.json beside the zoom
+ *  folders, listing every tile written; earlier and third-party tile sets have none. */
+export function tileIndexUrl(base: string, t: TileLayer): string | null {
+  if (!t.relative || (t.tile_size ?? 256) <= 256) return null;
+  return artifactUrl(base, `${t.url_template.split("{z}")[0]}index.json`);
 }

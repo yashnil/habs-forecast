@@ -13,6 +13,8 @@ const start = (port: number, base: string) => ({
   env: { CW_DATA_BASE_URL: base },
 });
 
+const BASE = Number(process.env.CW_E2E_PORT_BASE ?? 3200); // tests/e2e/ports.ts
+
 export default defineConfig({
   testDir: "tests/e2e",
   timeout: 45_000,
@@ -24,9 +26,9 @@ export default defineConfig({
     channel: process.env.CI ? undefined : "chrome",
   },
   webServer: [
-    start(3200, "/data/fixture/v1"),
-    start(3201, "/data/fixture-failed/v1"),
-    start(3202, "/data/does-not-exist/v1"),
-    start(3203, "/data/compat-m2/v1"),
+    start(BASE + 0, "/data/fixture/v1"),
+    start(BASE + 1, "/data/fixture-failed/v1"),
+    start(BASE + 2, "/data/does-not-exist/v1"),
+    start(BASE + 3, "/data/compat-m2/v1"),
   ],
 });

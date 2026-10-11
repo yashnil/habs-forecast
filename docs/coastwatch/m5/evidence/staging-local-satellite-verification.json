@@ -1,0 +1,13 @@
+{
+  "summary": {
+    "layers": 2,
+    "multisensor_pixels_checked": 384,
+    "layers_from_earlier_runs_not_rechecked": 6,
+    "checks": 408,
+    "failures": 0,
+    "unverifiable_upstream_unreachable": 0,
+    "all_passed": true
+  },
+  "manifest_generated_at": "2026-10-11T00:24:19Z",
+  "live_source_comparison": true
+}

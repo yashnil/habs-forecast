@@ -217,6 +217,23 @@ a {
   background-color: transparent !important;
 }
 
+/* Panels and sheets arrive with a short ease-out; reduced motion turns this off (below). */
+@keyframes cw-sheet-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cw-sheet-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+.cw-sheet-in { animation: cw-sheet-in 180ms ease-out both; }
+.cw-sheet-up { animation: cw-sheet-up 200ms ease-out both; }
+@keyframes cw-pop-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+.cw-pop-in { animation: cw-pop-in 140ms ease-out both; }
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

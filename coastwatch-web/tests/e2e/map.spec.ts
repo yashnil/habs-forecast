@@ -1,14 +1,13 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { FAILED, NODATA, OK } from "./ports";
+import { openDockDetails } from "./helpers";
 
 const FIX = path.resolve(__dirname, "../fixture-data/v1");
 const manifest = JSON.parse(readFileSync(path.join(FIX, "manifest.json"), "utf8"));
 const report = JSON.parse(readFileSync(path.join(FIX, "verification/charm-points.json"), "utf8"));
 
-const OK = "http://localhost:3200";
-const FAILED = "http://localhost:3201";
-const NODATA = "http://localhost:3202";
 
 async function open(page: Page, url: string, now = "2026-10-08T20:00:00Z") {
   await page.clock.setFixedTime(new Date(now));
@@ -47,8 +46,9 @@ test.describe("information hierarchy and labelling", () => {
     await expect(panel.getByTestId("product-class")).toHaveText("Agency forecast");
     await expect(panel.getByTestId("freshness").first()).toContainText("issued today");
     // the essential qualifiers are always visible; every published caveat is one click away
-    await expect(panel).toContainText("not a closure decision");
+    await expect(panel).toContainText(/not a toxin measurement or a closure decision/i);
     await expect(panel).toContainText("does not mean an area is safe");
+    await openDockDetails(page);
     await panel.getByText("About this forecast").click();
     const layer = manifest.layers.find((l: { layer_id: string }) => l.layer_id === "charm_particulate_domoic_lead1");
     for (const c of layer.caveats) await expect(panel.getByTestId("forecast-caveats")).toContainText(c);
@@ -90,27 +90,30 @@ test.describe("freshness", () => {
     await expect(page.getByTestId("forecast-panel").getByTestId("freshness").first()).toHaveAttribute("data-state", "current");
   });
 
+  // the layer is named in the link: the opening policy (below) does not apply
   test("four days later with no new run: stale, dates unchanged", async ({ page }) => {
-    await open(page, OK, "2026-10-12T20:00:00Z");
+    await open(page, `${OK}/?layer=forecast`, "2026-10-12T20:00:00Z");
     const panel = page.getByTestId("forecast-panel");
     await expect(panel.getByTestId("freshness").first()).toHaveAttribute("data-state", "stale");
     await expect(panel.getByTestId("stale-note")).toBeVisible();
+    await openDockDetails(page);
     await expect(panel.getByTestId("run-line")).toContainText("Oct 8, 2026");
     await expect(page.getByTestId("lead-1")).toContainText("4 days ago");
   });
 
   test("two weeks later: historical, explicitly not current", async ({ page }) => {
-    await open(page, OK, "2026-10-22T20:00:00Z");
+    await open(page, `${OK}/?layer=forecast`, "2026-10-22T20:00:00Z");
     const panel = page.getByTestId("forecast-panel");
     await expect(panel.getByTestId("freshness").first()).toHaveAttribute("data-state", "historical");
     await expect(panel.getByTestId("historical-note")).toContainText("does not describe current conditions");
   });
 
   test("a failed update keeps the last good run with its real dates and says so", async ({ page }) => {
-    await open(page, FAILED, "2026-10-12T20:00:00Z");
+    await open(page, `${FAILED}/?layer=forecast`, "2026-10-12T20:00:00Z");
     await expect(page.getByTestId("source-failure-banner")).toContainText("Latest update failed");
     const panel = page.getByTestId("forecast-panel");
     await expect(panel.getByTestId("update-failed")).toBeVisible();
+    await openDockDetails(page);
     await expect(panel.getByTestId("run-line")).toContainText("Issued Thu, Oct 8, 2026");
     await expect(page.getByTestId("source-health")).toHaveAttribute("data-state", /stale|historical/);
   });

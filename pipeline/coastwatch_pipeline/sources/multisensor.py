@@ -41,7 +41,7 @@ from ..models import (
     ValueGrid,
 )
 from ..process.palette import AGE_COLOURS, CHLOROPHYLL, SENSOR_COLOURS, palette_indices
-from ..process.tiles import render_stack
+from ..process.tiles import render_stack, write_index
 from . import satellite as sat
 
 LAYER_ID = "multisensor_chl_latest"
@@ -190,20 +190,24 @@ def build(ctx: RunContext, olci: LayerArtifact, viirs: LayerArtifact, olci_days:
     bounds = sat._bounds(t_o)
     chl_idx = lambda v: palette_indices(v, CHLOROPHYLL)[0]  # noqa: E731
     _, chl_colours = palette_indices(np.array([1.0]), CHLOROPHYLL)
-    ts = render_stack([(top, t_o.grid, chl_idx), (v_val, t_v.grid, chl_idx)], bounds, zooms, chl_colours, out / base / "tiles")
+    ts = render_stack([(top, t_o.grid, chl_idx), (v_val, t_v.grid, chl_idx)], bounds, zooms, chl_colours, out / base / "tiles", sat.TILE_SCALE)
+    write_index(ts, out / base / "tiles")
     one = lambda k: (lambda v: np.where(np.isfinite(v), k, 0).astype(np.uint8))  # noqa: E731
     sensor_colours = [(0, 0, 0)] + [tuple(int(c[i : i + 2], 16) for i in (1, 3, 5)) for c in SENSOR_COLOURS]
-    sts = render_stack([(top, t_o.grid, one(1)), (v_val, t_v.grid, one(2))], bounds, zooms, sensor_colours, out / base / "sensor-tiles")
+    sts = render_stack([(top, t_o.grid, one(1)), (v_val, t_v.grid, one(2))], bounds, zooms, sensor_colours, out / base / "sensor-tiles", sat.TILE_SCALE)
+    write_index(sts, out / base / "sensor-tiles")
     age_top, age_v = np.where(code == 1, ref - o_date, np.nan), ref - v_date
     age_idx = lambda v: np.where(np.isfinite(v), np.clip(np.nan_to_num(v), 0, len(AGE_COLOURS) - 1) + 1, 0).astype(np.uint8)  # noqa: E731
     age_colours = [(0, 0, 0)] + [tuple(int(c[i : i + 2], 16) for i in (1, 3, 5)) for c in AGE_COLOURS]
-    ats = render_stack([(age_top, t_o.grid, age_idx), (age_v, t_v.grid, age_idx)], bounds, zooms, age_colours, out / base / "age-tiles")
+    ats = render_stack([(age_top, t_o.grid, age_idx), (age_v, t_v.grid, age_idx)], bounds, zooms, age_colours, out / base / "age-tiles", sat.TILE_SCALE)
+    write_index(ats, out / base / "age-tiles")
 
     w, s, e, n = bounds
 
     def tl(sub: str, t, what: str) -> TileLayer:
         return TileLayer(
             url_template=f"{base}/{sub}/{{z}}/{{x}}/{{y}}.png", relative=True, max_native_zoom=zooms.stop - 1, min_zoom=zooms.start,
+            tile_size=256 * sat.TILE_SCALE,
             legend_url=None, legend_verified=False, bounds_lnglat=[round(w, 5), round(s, 5), round(e, 5), round(n, 5)],
             n_tiles=t.n_tiles, sample_tiles=t.tiles[:: max(1, len(t.tiles) // 5)][:5], date_selection=what,
         )

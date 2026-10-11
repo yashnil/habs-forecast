@@ -30,6 +30,10 @@ The paper is about physics-informed chlorophyll forecasting (see the [root READM
 | [16 — P3: map refinement, combined view](16-p3-map-refinement.md) | P2 production publication; speed-class arrows, on-map timestamps and gap notices, layout fixes; opt-in combined currents + chlorophyll with time-gap evidence; performance; screenshots |
 | [p3/](p3/) | P3 screenshots (production data, 2026-10-10), issue #12 human-review checklist, NOAA outreach draft, evidence |
 | [17 — Status, design audit, roadmap](17-roadmap-and-design-audit.md) | Demo protection, regulatory integration (#16), P3 review (#15), design-reset gap audit (Ocean Map, Bloom, Fisheries), prioritized plan M4–M9, next milestone M5 |
+| [18 — M5 plan: Ocean Map](18-m5-ocean-map-plan.md) | Scope, layout targets, cartography, layers, inspector and acceptance criteria for M5 |
+| [19 — M5 rendering audit and map direction](19-m5-map-direction.md) | Sentinel-3 pipeline-to-screen audit, three matched treatments, no-data and opening-state comparisons, decisions (approved) |
+| [20 — M5: Ocean Map](20-m5-ocean-map.md) | Opening-layer policy, 512 px satellite tiles (backward compatible), map-area measurements, inspector and readouts, two review passes, tests, performance, integration plan |
+| [m5/](m5/) | M5 comparison (decision stage), review before/after images and evidence |
 | [m3/](m3/) | Screenshots of the M3 app (staging data, 2026-10-08) |
 | [m2/](m2/) | Screenshots of the M2 app (live data, 2026-10-08) |
 | [m1/](m1/) | Screenshots of the running app (live data, 2026-10-08) |

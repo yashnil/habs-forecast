@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { OK } from "./ports";
 
 /** While the notice registry is not human-verified, every page says so and links to the agencies;
  *  the Del Norte razor clam records (2026-10-09) are listed, unverified. */
-const OK = "http://localhost:3200";
 
 for (const path of ["/", "/bloom", "/fisheries", "/sources"]) {
   test(`${path}: the unverified-notices disclosure is on the page with agency links`, async ({ page }) => {

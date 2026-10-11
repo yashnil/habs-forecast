@@ -7,9 +7,10 @@ import { FORECAST_COPY, OFFICIAL_STATUS } from "@/content/copy";
 import { ACTION_LABEL, officialAt, type Verification } from "@/lib/official";
 import { VerificationBadge } from "@/components/official/Official";
 import { loadGrid, sample, type Sample } from "@/lib/grid";
-import { CHARM_VARIABLES, artifactUrl, charmLayer, leadLabel } from "@/lib/layers";
+import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, leadLabel, type CharmVariable } from "@/lib/layers";
 import { formatDate } from "@/lib/time";
 import { gradientCss } from "@/components/ui/ProbabilityLegend";
+import { LeadStrip, type LeadItem } from "./LeadStrip";
 
 export type InspectPoint = { lat: number; lon: number };
 
@@ -20,6 +21,8 @@ export function Inspector({
   baseUrl,
   point,
   lead,
+  onLead,
+  variable,
   onClose,
   official,
   verification,
@@ -28,6 +31,8 @@ export function Inspector({
   baseUrl: string;
   point: InspectPoint;
   lead: number;
+  onLead: (l: number) => void;
+  variable: CharmVariable;
   onClose: () => void;
   official: OfficialDataset | null;
   verification: Verification | null;
@@ -58,6 +63,26 @@ export function Inspector({
   }, [manifest, baseUrl, point.lat, point.lon, lead]);
 
   const palette = first?.palette;
+
+  // the map variable at this point for every issued day (exact cell, never the nearest)
+  const [strip, setStrip] = useState<LeadItem[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all(
+      CHARM_LEADS.map(async (l): Promise<LeadItem> => {
+        const lyr = charmLayer(manifest, variable, l);
+        if (!lyr?.grid) return { lead: l, date: lyr?.time.valid_date ?? null, value: null, issued: !!lyr };
+        const s = sample(lyr.grid, await loadGrid(artifactUrl(baseUrl, lyr.grid.url)), point.lat, point.lon, 0);
+        return { lead: l, date: lyr.time.valid_date ?? null, value: s.kind === "value" ? s.value : null, issued: true };
+      }),
+    )
+      .then((x) => !cancelled && setStrip(x))
+      .catch(() => !cancelled && setStrip(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [manifest, baseUrl, point.lat, point.lon, variable]);
+  const stripLayer = charmLayer(manifest, variable, lead) ?? first;
 
   return (
     <section
@@ -102,12 +127,29 @@ export function Inspector({
         <p className="text-[11px] text-ink-3">{OFFICIAL_STATUS.missingNotOpen}</p>
       </div>
 
+      <div className="mt-4 space-y-1.5" data-testid="inspect-strip">
+        <div className="flex items-baseline justify-between gap-2">
+          <h4 className="text-[13px] font-semibold text-ink">{stripLayer?.short_title ?? "C-HARM forecast"} here</h4>
+          <span className="rounded border border-hairline-strong px-1 text-[10px] font-semibold uppercase tracking-wider text-model-ink">Model</span>
+        </div>
+        {strip && strip.some((x) => x.issued) ? (
+          <>
+            <LeadStrip items={strip} lead={lead} onLead={onLead} palette={palette} label="Forecast day at this point" testidPrefix="inspect-lead" />
+            {strip.every((x) => x.value == null) && <p className="text-[11.5px] text-ink-3">No forecast value in this cell on any day: land, or a nearshore cell C-HARM does not cover. The other quantities below may show the nearest cell, with its distance.</p>}
+          </>
+        ) : strip ? (
+          <p className="text-[12px] text-ink-3">No C-HARM run is available.</p>
+        ) : (
+          <p className="text-[12px] text-ink-3">Reading forecast values…</p>
+        )}
+      </div>
+
       {!first ? (
         <p className="mt-3 text-[12.5px] text-ink-2">No forecast is available for this valid day.</p>
       ) : !rows ? (
         <p className="mt-3 text-[12px] text-ink-3">Reading forecast values…</p>
       ) : (
-        <ul className="mt-3 space-y-2.5">
+        <ul className="mt-3 space-y-2.5" aria-label={`All C-HARM quantities, ${leadLabel(lead).toLowerCase()}`}>
           {rows.map((r) => (
             <li key={r.variable} data-testid={`inspect-${r.variable}`}>
               <div className="flex items-baseline justify-between gap-2">

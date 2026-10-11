@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { NODATA, OK } from "./ports";
 
 /** P0 shell: masthead, official pill and drawer, mobile tab bar, fonts, light/dark themes. */
 const FIX = path.resolve(__dirname, "../fixture-data/v1");
@@ -9,8 +10,6 @@ const manifest = JSON.parse(readFileSync(path.join(FIX, "manifest.json"), "utf8"
 const official = JSON.parse(readFileSync(path.join(FIX, manifest.official_url), "utf8"));
 const active = official.registry.records.filter((r: { status: string }) => r.status === "active");
 
-const OK = "http://localhost:3200";
-const NODATA = "http://localhost:3202";
 const PAGES = [
   ["map", "/"],
   ["bloom", "/bloom"],
@@ -112,7 +111,8 @@ test.describe("mobile shell", () => {
   test("map: the layer dock and the port sheet sit above the tab bar", async ({ page }) => {
     await open(page, `${OK}/`);
     const bar = await page.getByTestId("tabbar").boundingBox();
-    const dock = await page.getByTestId("layer-dock").boundingBox();
+    // the layer dock is the sheet's content (it scrolls inside it): the sheet is what must clear the bar
+    const dock = await page.getByTestId("mobile-sheet").boundingBox();
     expect(dock!.y + dock!.height).toBeLessThanOrEqual(bar!.y + 1);
     await open(page, `${OK}/?region=monterey_bay&port=593`);
     const sheet = await page.getByTestId("mobile-sheet").boundingBox();

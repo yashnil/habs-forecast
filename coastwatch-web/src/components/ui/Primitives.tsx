@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { safeHref } from "@/lib/links";
 
 export function Panel({ children, className = "", testid, labelledBy }: { children: ReactNode; className?: string; testid?: string; labelledBy?: string }) {
   return (
@@ -84,7 +85,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
 
 export function SourceLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <a href={href} target="_blank" rel="noreferrer" className="text-accent underline-offset-2 hover:underline">
+    <a href={safeHref(href)} target="_blank" rel="noopener noreferrer" className="text-accent underline-offset-2 hover:underline">
       {children}
     </a>
   );

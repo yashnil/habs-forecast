@@ -50,13 +50,13 @@ def _sample(values: np.ndarray, n: int) -> list[tuple[int, int]]:
 def _tile_index(out_dir: Path, lyr: LayerArtifact, lat: float, lon: float) -> int | None:
     t = lyr.tiles
     assert t
-    z = t.max_native_zoom
+    z, r = t.max_native_zoom, t.tile_size // TILE
     x, y = float(lon_to_x(lon, z)), float(lat_to_y(lat, z))
     p = out_dir / t.url_template.format(z=z, x=int(x // TILE), y=int(y // TILE))
     if not p.exists():
         return None
     with Image.open(p) as im:
-        return int(np.asarray(im)[int(y % TILE), int(x % TILE)])
+        return int(np.asarray(im)[int(y % TILE * r), int(x % TILE * r)])
 
 
 class Unreachable(Exception):
@@ -211,9 +211,10 @@ def verify_multisensor(out_dir: Path, per_tile: int = 64) -> list[dict]:
             age_p = out_dir / info.age_tiles.url_template.format(z=z, x=tx, y=ty)
             sens = np.asarray(Image.open(sens_p)) if sens_p.exists() else np.zeros_like(chl)
             agt = np.asarray(Image.open(age_p)) if age_p.exists() else np.zeros_like(chl)
-            py, px = rng.integers(0, TILE, per_tile), rng.integers(0, TILE, per_tile)
-            lats = y_to_lat(ty * TILE + py + 0.5, z)
-            lons = x_to_lon(tx * TILE + px + 0.5, z)
+            ratio = t.tile_size // TILE
+            py, px = rng.integers(0, TILE * ratio, per_tile), rng.integers(0, TILE * ratio, per_tile)
+            lats = y_to_lat(ty * TILE + (py + 0.5) / ratio, z)
+            lons = x_to_lon(tx * TILE + (px + 0.5) / ratio, z)
             got = []
             for vals, dates, g in grids:
                 r, c = g.cell_index(lats, lons)

@@ -1,0 +1,110 @@
+[
+ {
+  "time": "Oct 10 (today)",
+  "region": "monterey_bay",
+  "opened": "C-HARM forecast",
+  "url": "/?region=monterey_bay&var=particulate_domoic&lead=1",
+  "stamp": "Model forecast: C-HARM forecast for Sat, Oct 10 · issued Oct 10",
+  "note": "",
+  "msg": ""
+ },
+ {
+  "time": "Oct 10 (today)",
+  "region": "north_coast",
+  "opened": "C-HARM forecast",
+  "url": "/?region=north_coast&var=particulate_domoic&lead=1",
+  "stamp": "Model forecast: C-HARM forecast for Sat, Oct 10 · issued Oct 10",
+  "note": "",
+  "msg": ""
+ },
+ {
+  "time": "Oct 10 (today)",
+  "region": "southern_california",
+  "opened": "C-HARM forecast",
+  "url": "/?region=southern_california&var=particulate_domoic&lead=1",
+  "stamp": "Model forecast: C-HARM forecast for Sat, Oct 10 · issued Oct 10",
+  "note": "",
+  "msg": ""
+ },
+ {
+  "time": "Oct 10 (today)",
+  "region": "california",
+  "opened": "C-HARM forecast",
+  "url": "/?region=california&var=particulate_domoic&lead=1",
+  "stamp": "Model forecast: C-HARM forecast for Sat, Oct 10 · issued Oct 10",
+  "note": "",
+  "msg": ""
+ },
+ {
+  "time": "Oct 12 (C-HARM 2 days old)",
+  "region": "monterey_bay",
+  "opened": "seafloor map + 'nothing current'",
+  "url": "/?region=monterey_bay&var=particulate_domoic&lead=1",
+  "stamp": "",
+  "note": "",
+  "msg": "No current forecast or recent satellite view The newest C-HARM forecast was issued Sat, Oct 10. Satellites last saw 46% of Monterey Bay (newest Fri, Oct 9). The map shows the coast and seafloor only. This does not mean c"
+ },
+ {
+  "time": "Oct 12 (C-HARM 2 days old)",
+  "region": "north_coast",
+  "opened": "satellite (multisensor)",
+  "url": "/?region=north_coast&var=particulate_domoic&lead=1",
+  "stamp": "Observation: Chlorophyll, Sentinel-3 300 m + VIIRS 750 m · each pixel dated, newest Oct 9",
+  "note": "Opened on satellite chlorophyll because the C-HARM forecast is not current (issued Sat, Oct 10). Show the forecast",
+  "msg": ""
+ },
+ {
+  "time": "Oct 12 (C-HARM 2 days old)",
+  "region": "southern_california",
+  "opened": "satellite (multisensor)",
+  "url": "/?region=southern_california&var=particulate_domoic&lead=1",
+  "stamp": "Observation: Chlorophyll, Sentinel-3 300 m + VIIRS 750 m · each pixel dated, newest Oct 9",
+  "note": "Opened on satellite chlorophyll because the C-HARM forecast is not current (issued Sat, Oct 10). Show the forecast",
+  "msg": ""
+ },
+ {
+  "time": "Oct 12 (C-HARM 2 days old)",
+  "region": "california",
+  "opened": "satellite (multisensor)",
+  "url": "/?region=california&var=particulate_domoic&lead=1",
+  "stamp": "Observation: Chlorophyll, Sentinel-3 300 m + VIIRS 750 m · each pixel dated, newest Oct 9",
+  "note": "Opened on satellite chlorophyll because the C-HARM forecast is not current (issued Sat, Oct 10). Show the forecast",
+  "msg": ""
+ },
+ {
+  "time": "Oct 14 (all 4+ days old)",
+  "region": "monterey_bay",
+  "opened": "seafloor map + 'nothing current'",
+  "url": "/?region=monterey_bay&var=particulate_domoic&lead=1",
+  "stamp": "",
+  "note": "",
+  "msg": "No current forecast or recent satellite view The newest C-HARM forecast was issued Sat, Oct 10. Satellites last saw 46% of Monterey Bay (newest Fri, Oct 9). The map shows the coast and seafloor only. This does not mean c"
+ },
+ {
+  "time": "Oct 14 (all 4+ days old)",
+  "region": "north_coast",
+  "opened": "seafloor map + 'nothing current'",
+  "url": "/?region=north_coast&var=particulate_domoic&lead=1",
+  "stamp": "",
+  "note": "",
+  "msg": "No current forecast or recent satellite view The newest C-HARM forecast was issued Sat, Oct 10. Satellites last saw 81% of North Coast (newest Fri, Oct 9). The map shows the coast and seafloor only. This does not mean co"
+ },
+ {
+  "time": "Oct 14 (all 4+ days old)",
+  "region": "southern_california",
+  "opened": "seafloor map + 'nothing current'",
+  "url": "/?region=southern_california&var=particulate_domoic&lead=1",
+  "stamp": "",
+  "note": "",
+  "msg": "No current forecast or recent satellite view The newest C-HARM forecast was issued Sat, Oct 10. Satellites last saw 100% of Southern California (newest Fri, Oct 9). The map shows the coast and seafloor only. This does no"
+ },
+ {
+  "time": "Oct 14 (all 4+ days old)",
+  "region": "california",
+  "opened": "seafloor map + 'nothing current'",
+  "url": "/?region=california&var=particulate_domoic&lead=1",
+  "stamp": "",
+  "note": "",
+  "msg": "No current forecast or recent satellite view The newest C-HARM forecast was issued Sat, Oct 10. Satellites last saw 61% of Monterey Bay (newest Fri, Oct 9). The map shows the coast and seafloor only. This does not mean c"
+ }
+]

@@ -2,14 +2,13 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { FAILED, M2, OK } from "./ports";
+import { openPlaces } from "./helpers";
 
 const FIX = path.resolve(__dirname, "../fixture-data/v1");
 const read = (prefix: string) => JSON.parse(readFileSync(path.join(FIX, readdirSync(FIX).find((f) => f.startsWith(prefix))!), "utf8"));
 const obs = read("observations-");
 const fish = read("fisheries-");
-const OK = "http://localhost:3200";
-const FAILED = "http://localhost:3201";
-const M2 = "http://localhost:3203";
 const NOW = "2026-10-08T20:00:00Z";
 const DAY = 86_400_000;
 
@@ -142,6 +141,7 @@ test.describe("published M2 data (before any M3 artifact exists)", () => {
     await expect(page.getByTestId("fisheries-unavailable")).toContainText("published before fisheries data were added");
     await open(page, `${M2}/`);
     await expect(page.getByTestId("official-summary")).toBeVisible();
+    await openPlaces(page);
     await expect(page.getByTestId("region-ports")).toBeVisible();
     // M2 data has no satellite layers: the satellite group says so instead of drawing anything
     await page.getByTestId("group-satellite").click();

@@ -1,0 +1,6 @@
+m5-512px-off-z11.5     cell 20.60 px | rows 44 edges  477 | mean |error| 1.22 px | off by >2 px  21.2% | single-cell widths: [19, 20, 22, 23]
+m5-512px-off-z11       cell 14.56 px | rows 44 edges  717 | mean |error| 0.79 px | off by >2 px   0.0% | single-cell widths: [14, 16]
+m5-512px-off-z12       cell 29.13 px | rows 19 edges  153 | mean |error| 1.54 px | off by >2 px  33.3% | single-cell widths: [28, 32]
+p3-256px-off-z11.5     cell 20.60 px | rows 44 edges  490 | mean |error| 4.77 px | off by >2 px  86.1% | single-cell widths: [11, 12, 22, 23]
+p3-256px-off-z11       cell 14.56 px | rows 44 edges  697 | mean |error| 3.31 px | off by >2 px  76.9% | single-cell widths: [8, 16]
+p3-256px-off-z12       cell 29.13 px | rows 23 edges  180 | mean |error| 6.57 px | off by >2 px  95.0% | single-cell widths: [16, 32]

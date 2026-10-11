@@ -1,12 +1,13 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { OK } from "./ports";
+import { openDockDetails } from "./helpers";
 
 /** Multi-sensor satellite view: labelled, one sensor per pixel, members kept, inspectable. */
 const FIX = path.resolve(__dirname, "../fixture-data/v1");
 const manifest = JSON.parse(readFileSync(path.join(FIX, "manifest.json"), "utf8"));
 const report = JSON.parse(readFileSync(path.join(FIX, "verification/satellite-points.json"), "utf8"));
-const OK = "http://localhost:3200";
 const BASE = "/data/fixture/v1";
 type Row = { layer_id: string; sensor?: string; lat: number; lon: number; value: number | null };
 const ms = manifest.layers.find((l: { layer_id: string }) => l.layer_id === "multisensor_chl_latest");
@@ -22,13 +23,17 @@ async function open(page: Page, url: string, now = "2026-10-08T20:00:00Z") {
 const source = (page: Page, id: string) =>
   page.evaluate((sid) => {
     const s = (window as unknown as { __cwMap: { getSource: (s: string) => { tiles?: string[] } | undefined } }).__cwMap.getSource(sid);
-    return s?.tiles?.[0] ?? null;
+    // the published template (CoastWatch tile sets are requested through their index)
+    return s?.tiles?.[0]?.replace(/^cwtile:\/\//, "").split("#cw-index=")[0] ?? null;
   }, id);
 
 test("multi-sensor view is offered, clearly labelled, and draws its own tiles", async ({ page }) => {
   await open(page, `${OK}/?layer=olci300`);
   await page.getByTestId("sat-multi").click();
   const panel = page.getByTestId("satellite-panel");
+  // the stamp names both sensors; the rule itself is one step deeper (M5)
+  await expect(page.getByTestId("stamp-satellite")).toContainText("Sentinel-3 300 m + VIIRS 750 m");
+  await openDockDetails(page);
   await expect(panel.getByTestId("multi-label")).toContainText("Multi-sensor display");
   await expect(panel.getByTestId("multi-label")).toContainText("nothing is averaged");
   await expect(panel.getByTestId("native-resolution")).toHaveText("native 300 m + 750 m");
@@ -38,7 +43,7 @@ test("multi-sensor view is offered, clearly labelled, and draws its own tiles", 
   await expect(page).toHaveURL(/layer=multi/);
   // wait for the multi-sensor tiles themselves (the previous product's source can linger a frame)
   const want = `${BASE}/${ms.tiles.url_template}`;
-  await page.waitForFunction((t) => (window as unknown as { __cwMap: { getSource: (s: string) => { tiles?: string[] } | undefined } }).__cwMap.getSource("satellite")?.tiles?.[0] === t, want);
+  await page.waitForFunction((t) => (window as unknown as { __cwMap: { getSource: (s: string) => { tiles?: string[] } | undefined } }).__cwMap.getSource("satellite")?.tiles?.[0]?.replace(/^cwtile:\/\//, "").split("#cw-index=")[0] === t, want);
   expect(await source(page, "satellite")).toBe(want);
 });
 
@@ -47,13 +52,13 @@ test("which sensor and how old: categorical overlays replace the colours, one at
   await page.getByTestId("toggle-sensor").check();
   await expect(page.getByTestId("sensor-legend")).toContainText("Sentinel-3 OLCI 300 m");
   await expect(page.getByTestId("sensor-legend")).toContainText("VIIRS 750 m");
-  await page.waitForFunction(() => !!(window as unknown as { __cwMap: { getSource: (s: string) => unknown } }).__cwMap.getSource("satellite-age"));
-  expect(await source(page, "satellite-age")).toBe(`${BASE}/${ms.multisensor.sensor_tiles.url_template}`);
+  const sensorTiles = `${BASE}/${ms.multisensor.sensor_tiles.url_template}`;
+  await expect.poll(() => source(page, "satellite-age")).toBe(sensorTiles);
   await expect(page).toHaveURL(/sensor=1/);
   await page.getByTestId("toggle-age").check();
   await expect(page.getByTestId("toggle-sensor")).not.toBeChecked();
   await expect(page.getByTestId("age-legend")).toBeVisible();
-  await page.waitForFunction((t) => (window as unknown as { __cwMap: { getSource: (s: string) => { tiles?: string[] } | undefined } }).__cwMap.getSource("satellite-age")?.tiles?.[0] === t, `${BASE}/${ms.multisensor.age_tiles.url_template}`);
+  await page.waitForFunction((t) => (window as unknown as { __cwMap: { getSource: (s: string) => { tiles?: string[] } | undefined } }).__cwMap.getSource("satellite-age")?.tiles?.[0]?.replace(/^cwtile:\/\//, "").split("#cw-index=")[0] === t, `${BASE}/${ms.multisensor.age_tiles.url_template}`);
 });
 
 test("the single-sensor layers stay available", async ({ page }) => {

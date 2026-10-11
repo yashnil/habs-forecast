@@ -1,0 +1,10 @@
+1280x720 /?layer=currents                  {"mapW":1280,"mapH":630,"unobstructedOfMap":0.75,"visibleMapOfViewport":0.656,"zoom":8.86,"bounds":"-123.46,36.45,-121.53,37.21"}
+1440x900 /                                 {"mapW":1440,"mapH":810,"unobstructedOfMap":0.826,"visibleMapOfViewport":0.743,"zoom":9.28,"bounds":"-123.19,36.45,-121.56,37.19"}
+1440x900 /?layer=multi                     {"mapW":1440,"mapH":810,"unobstructedOfMap":0.819,"visibleMapOfViewport":0.736,"zoom":9.28,"bounds":"-123.19,36.45,-121.56,37.19"}
+1440x900 /?layer=currents                  {"mapW":1440,"mapH":810,"unobstructedOfMap":0.817,"visibleMapOfViewport":0.735,"zoom":9.28,"bounds":"-123.19,36.45,-121.56,37.19"}
+1440x900 /?region=monterey_bay&port=593    {"mapW":1440,"mapH":810,"unobstructedOfMap":0.59,"visibleMapOfViewport":0.53,"zoom":8.78,"bounds":"-122.91,36.17,-120.60,37.21"}
+1280x720 /                                 {"mapW":1280,"mapH":630,"unobstructedOfMap":0.764,"visibleMapOfViewport":0.668,"zoom":8.86,"bounds":"-123.46,36.45,-121.53,37.21"}
+1280x720 /?layer=multi                     {"mapW":1280,"mapH":630,"unobstructedOfMap":0.753,"visibleMapOfViewport":0.658,"zoom":8.86,"bounds":"-123.46,36.45,-121.53,37.21"}
+390x844 /                                  {"mapW":390,"mapH":683,"unobstructedOfMap":0.744,"visibleMapOfViewport":0.601,"zoom":8.45,"bounds":"-122.41,36.17,-121.63,37.27"}
+390x844 /?layer=multi                      {"mapW":390,"mapH":683,"unobstructedOfMap":0.714,"visibleMapOfViewport":0.578,"zoom":8.45,"bounds":"-122.41,36.16,-121.63,37.26"}
+390x844 /?layer=currents                   {"mapW":390,"mapH":683,"unobstructedOfMap":0.714,"visibleMapOfViewport":0.578,"zoom":8.45,"bounds":"-122.41,36.15,-121.63,37.26"}

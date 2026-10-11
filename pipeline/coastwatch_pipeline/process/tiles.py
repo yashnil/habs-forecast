@@ -1,4 +1,5 @@
-"""Render a regular lat/lon grid as Web Mercator XYZ tiles (256 px, palette PNGs).
+"""Render a regular lat/lon grid as Web Mercator XYZ tiles (256 px, palette PNGs; or
+512 px images for a 256 px slot at `scale=2`, so a high-density screen draws them 1:1).
 
 Every tile pixel takes the value of the source cell containing the pixel centre
 (nearest neighbour), so a pixel is always one real cell: nothing is interpolated or
@@ -63,11 +64,12 @@ def render_tiles(
     to_index: Callable[[np.ndarray], np.ndarray],
     colours: list[tuple[int, int, int]],
     out_dir: Path,
+    scale: int = 1,
 ) -> TileSet:
     """Write {z}/{x}/{y}.png under out_dir for every tile intersecting `bounds`
     (west, south, east, north) that has at least one valid pixel. `to_index` maps
     values to palette indices (0 = transparent); `colours` is the palette."""
-    return render_stack([(values, src, to_index)], bounds, zooms, colours, out_dir)
+    return render_stack([(values, src, to_index)], bounds, zooms, colours, out_dir, scale)
 
 
 def render_stack(
@@ -76,22 +78,25 @@ def render_stack(
     zooms: range,
     colours: list[tuple[int, int, int]],
     out_dir: Path,
+    scale: int = 1,
 ) -> TileSet:
     """Like render_tiles for several grids drawn top to bottom: each tile pixel takes the
     first layer with a non-transparent index at that pixel, each layer sampled on its own
     lattice (nearest cell). Grids keep their native cell edges; nothing is resampled
-    between them."""
+    between them. At `scale` 2 each tile image has twice the pixels per side; every pixel
+    still takes the one cell under its centre."""
     west, south, east, north = bounds
+    T = TILE * scale
     pal = [c for rgb in colours for c in rgb] + [0, 0, 0] * (256 - len(colours))
     ts = TileSet()
     for z in zooms:
         x0, x1 = int(lon_to_x(west, z) // TILE), int(lon_to_x(east, z) // TILE)
         y0, y1 = int(lat_to_y(north, z) // TILE), int(lat_to_y(south, z) // TILE)
-        px = (np.arange(x0 * TILE, (x1 + 1) * TILE) + 0.5)
+        px = (np.arange(x0 * T, (x1 + 1) * T) + 0.5) / scale
         lons = x_to_lon(px, z)
         cols = [src.cell_index(np.full_like(lons, src.lat_first), lons)[1] for _, src, _ in layers]
         for ty in range(y0, y1 + 1):
-            py = np.arange(ty * TILE, (ty + 1) * TILE) + 0.5
+            py = (np.arange(ty * T, (ty + 1) * T) + 0.5) / scale
             lats = y_to_lat(py, z)
             idx: np.ndarray | None = None
             for (values, src, to_index), cl in zip(layers, cols):
@@ -108,7 +113,7 @@ def render_stack(
                     idx[gap] = li[gap]
             assert idx is not None
             for i, tx in enumerate(range(x0, x1 + 1)):
-                tile = idx[:, i * TILE : (i + 1) * TILE]
+                tile = idx[:, i * T : (i + 1) * T]
                 if not tile.any():
                     continue
                 im = Image.fromarray(np.ascontiguousarray(tile), mode="P")
@@ -141,3 +146,13 @@ def write_chunks(codes_blob_fn: Callable[[np.ndarray], bytes], values: np.ndarra
             present.append(f"{r}_{c}")
             total += len(blob)
     return present, total
+
+
+def write_index(ts: TileSet, out_dir: Path) -> str:
+    """tiles/index.json: every tile written, so a client never requests an empty one."""
+    import json
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    p = out_dir / "index.json"
+    p.write_text(json.dumps(sorted(ts.tiles), separators=(",", ":")))
+    return p.name

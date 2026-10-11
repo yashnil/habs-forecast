@@ -28,9 +28,43 @@ export type DataLoad =
       officialError: string | null;
       portIntel: PortIntelCollection | null;
       portIntelError: string | null;
+      /** measured monitoring stations, latest value per variable only (map inspector) */
+      stations: StationLite[] | null;
+      stationsError: string | null;
       baseUrl: string;
     }
   | { ok: false; error: string; baseUrl: string };
+
+/** What the map inspector needs from the measured observations: where each station is and its
+ *  latest value per variable with the sample date. The full series stay on the Bloom page. */
+export type StationLite = {
+  station_id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  status: string;
+  source_url: string;
+  latest: { variable: string; label: string; units: string; kind: string; value: number | null; date: string; qualifier: string | null; n_last_365d: number }[];
+};
+const MAP_VARIABLES = ["pDA", "pn_seriata", "pn_delicatissima"];
+
+export function slimStations(obs: ObservationDataset): StationLite[] {
+  const meta = new Map(obs.variables.map((v) => [v.id, v]));
+  return obs.stations.flatMap((st) => (st.lat == null || st.lon == null ? [] : [{
+    station_id: st.station_id,
+    name: st.name,
+    lat: st.lat,
+    lon: st.lon,
+    status: st.status,
+    source_url: st.source_url,
+    latest: st.summaries
+      .filter((sm) => MAP_VARIABLES.includes(sm.variable) && sm.last_date)
+      .map((sm) => {
+        const v = meta.get(sm.variable);
+        return { variable: sm.variable, label: v?.label ?? sm.variable, units: v?.units ?? "", kind: v?.kind ?? "", value: sm.last_value ?? null, date: sm.last_date!, qualifier: sm.last_qualifier ?? null, n_last_365d: sm.n_last_365d };
+      }),
+  }]));
+}
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 const validateManifest = ajv.compile<Manifest>(manifestSchema);
@@ -132,7 +166,10 @@ export async function loadData(): Promise<DataLoad> {
   }
   const [official, officialError] = await optional<OfficialDataset>(baseUrl, m.manifest.official_url, checkOfficial, "official");
   const [portIntel, portIntelError] = await optional<PortIntelCollection>(baseUrl, m.manifest.port_intel_url, checkPortIntel, "portIntel");
-  return { ok: true, manifest: m.manifest, ports, portsError, official, officialError, portIntel, portIntelError, baseUrl };
+  // manifests written before M3 have no observations; the inspector then says so
+  const [observations, stationsError] = await optional<ObservationDataset>(baseUrl, m.manifest.observations_url, checkObservations, "observations");
+  const stations = observations ? slimStations(observations) : null;
+  return { ok: true, manifest: m.manifest, ports, portsError, official, officialError, portIntel, portIntelError, stations, stationsError, baseUrl };
 }
 
 /** Manifest plus selected artifacts, for pages that do not need everything. */

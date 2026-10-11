@@ -1,13 +1,13 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { FAILED, OK } from "./ports";
+import { openDockDetails, openPlaces, tileSource } from "./helpers";
 
 /** P1 Ocean Map: layer groups, satellite observations, dates, coverage, alignment, layout. */
 const FIX = path.resolve(__dirname, "../fixture-data/v1");
 const manifest = JSON.parse(readFileSync(path.join(FIX, "manifest.json"), "utf8"));
 const satReport = JSON.parse(readFileSync(path.join(FIX, "verification/satellite-points.json"), "utf8"));
-const OK = "http://localhost:3200";
-const FAILED = "http://localhost:3201";
 const BASE = "/data/fixture/v1";
 
 type Layer = { layer_id: string; palette?: { stops: { color: string }[] }; tiles?: { url_template: string; sample_tiles: string[] }; composite?: { oldest_observed_date: string; newest_observed_date: string; window_days: number; age_tiles: { url_template: string } } };
@@ -44,10 +44,12 @@ test.describe("layer groups", () => {
 
   test("legend colours are exactly the published palette classes", async ({ page }) => {
     await open(page, OK);
-    const bar = page.getByTestId("probability-legend").locator("div").first();
+    const bar = page.getByTestId("probability-legend").locator("[style*=gradient]").first();
     const style = (await bar.getAttribute("style")) ?? "";
     const charm = manifest.layers.find((l: Layer) => l.layer_id === "charm_particulate_domoic_lead1");
-    for (const s of charm.palette.stops) expect(style.toLowerCase()).toContain(s.color);
+    // the browser may serialise the colours as rgb(); compare channel values
+    const rgb = (h: string) => `rgb(${parseInt(h.slice(1, 3), 16)}, ${parseInt(h.slice(3, 5), 16)}, ${parseInt(h.slice(5, 7), 16)})`;
+    for (const s of charm.palette.stops) expect([style.toLowerCase().includes(s.color), style.includes(rgb(s.color))]).toContain(true);
     expect(charm.palette.id).toBe("cw-probability-classes-v1");
   });
 });
@@ -58,13 +60,13 @@ test.describe("satellite observations", () => {
     await page.getByTestId("group-satellite").click();
     const panel = page.getByTestId("satellite-panel");
     await expect(panel.getByTestId("native-resolution")).toHaveText("native 300 m");
+    await openDockDetails(page); // per-sensor dates and coverage: one step deeper (M5)
     await expect(panel.getByTestId("sat-dates")).toContainText(`Pixels observed ${fmt(latest.composite!.oldest_observed_date)}–${fmt(latest.composite!.newest_observed_date)}`);
     await expect(panel.getByTestId("sat-dates")).toContainText("% of Monterey Bay ocean observed in the last 7 days");
     await expect(panel).toContainText("not toxin");
     await expect(panel).toContainText("not low chlorophyll");
-    await page.waitForFunction(() => !!(window as unknown as { __cwMap: { getSource: (s: string) => unknown } }).__cwMap.getSource("satellite"));
-    const src = await mapSource(page, "satellite");
-    expect(src!.tiles![0]).toBe(`${BASE}/${latest.tiles!.url_template}`);
+    // the published tiles, requested through their index (M5: 512 px images, absent tiles skipped)
+    await expect.poll(async () => tileSource((await mapSource(page, "satellite"))?.tiles?.[0])).toEqual({ template: `${BASE}/${latest.tiles!.url_template}`, index: `${BASE}/${latest.tiles!.url_template.split("{z}")[0]}index.json` });
     expect(await mapSource(page, "forecast")).toBeNull(); // one product per legend
     const [z, x, y] = latest.tiles!.sample_tiles[0].split("/");
     const r = await page.request.get(`${OK}${BASE}/${latest.tiles!.url_template.replace("{z}", z).replace("{x}", x).replace("{y}", y)}`);
@@ -80,6 +82,7 @@ test.describe("satellite observations", () => {
     await expect(page.getByTestId("sat-dates")).toContainText("No clear observation on Wed, Oct 7");
     await page.waitForFunction(() => !(window as unknown as { __cwMap: { getSource: (s: string) => unknown } }).__cwMap.getSource("satellite"));
     await page.getByTestId("sat-day-2026-10-06").click();
+    await openDockDetails(page);
     await expect(page.getByTestId("sat-dates")).toContainText("Overpass");
     await expect(page).toHaveURL(/layer=olci300%3A2026-10-06|layer=olci300:2026-10-06/);
   });
@@ -89,9 +92,8 @@ test.describe("satellite observations", () => {
     await page.getByTestId("toggle-age").check();
     await expect(page.getByTestId("age-legend")).toBeVisible();
     const want = `${BASE}/${latest.composite!.age_tiles.url_template}`;
-    await page.waitForFunction((t) => (window as unknown as { __cwMap: { getSource: (s: string) => { tiles?: string[] } | undefined } }).__cwMap.getSource("satellite-age")?.tiles?.[0] === t, want);
-    const src = await mapSource(page, "satellite-age");
-    expect(src!.tiles![0]).toBe(want);
+    // the source's tile list is filled in asynchronously after it is added
+    await expect.poll(async () => tileSource((await mapSource(page, "satellite-age"))?.tiles?.[0]).template).toBe(want);
   });
 
   test("point readout: the published value and its observation date, at the source cell", async ({ page }) => {
@@ -129,6 +131,7 @@ test.describe("old or failed satellite data never reads as recent", () => {
     const viirs = failed.layers.find((l: Layer) => l.layer_id === "viirs750_chl_latest");
     await open(page, `${FAILED}/?layer=viirs750`, "2026-10-12T20:00:00Z");
     await expect(page.getByTestId("sat-update-failed")).toContainText("did not refresh this product");
+    await openDockDetails(page);
     await expect(page.getByTestId("sat-dates")).toContainText(`Pixels observed ${fmt(viirs.composite.oldest_observed_date)}–${fmt(viirs.composite.newest_observed_date)}`);
     // OLCI did update in that run: no failure note there
     await page.getByTestId("sat-olci300").click();
@@ -140,11 +143,14 @@ test.describe("layout", () => {
   test("no inspector until a port is selected; then official notices come first", async ({ page }) => {
     await open(page, OK);
     await expect(page.getByTestId("detail-panel")).toHaveCount(0);
+    await openPlaces(page);
     await page.getByTestId("port-row-593").click();
     const panel = page.getByTestId("detail-panel");
     await expect(panel).toBeVisible();
-    await expect(page.getByTestId("official-summary")).toHaveCount(0); // the nav card shrinks to a breadcrumb
-    await expect(page.getByTestId("nav-crumb")).toContainText("Monterey Bay");
+    // the place list closes; the chip keeps the place and its notices on screen
+    await expect(page.getByTestId("nav-card")).toHaveCount(0);
+    await expect(page.getByTestId("place-chip")).toContainText("Santa Cruz");
+    await expect(page.getByTestId("official-summary")).toBeVisible();
     const first = await panel.getByTestId("port-official").evaluate(
       (o, f) => !!(o.compareDocumentPosition(f as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
       await panel.getByTestId("port-forecast").elementHandle(),
@@ -152,21 +158,5 @@ test.describe("layout", () => {
     expect(first).toBe(true);
     await expect(panel.getByTestId("satellite-near")).toBeVisible();
   });
-
-  for (const vp of [
-    { width: 1280, height: 720 },
-    { width: 1440, height: 900 },
-  ]) {
-    test(`at ${vp.width}x${vp.height} the dock, navigation and inspector never overlap`, async ({ page }) => {
-      await page.setViewportSize(vp);
-      await open(page, `${OK}/?region=monterey_bay&port=593`);
-      await expect(page.getByTestId("detail-panel")).toBeVisible();
-      const [dock, nav, ins] = await Promise.all(["layer-dock", "nav-card", "detail-panel"].map((id) => page.getByTestId(id).boundingBox()));
-      const overlap = (a: typeof dock, b: typeof dock) => !!a && !!b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
-      expect(overlap(dock, ins)).toBe(false);
-      expect(overlap(nav, ins)).toBe(false);
-      expect(overlap(nav, dock)).toBe(false);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
-    });
-  }
+  // overlap and map-area checks for the M5 layout: m5.spec.ts
 });
