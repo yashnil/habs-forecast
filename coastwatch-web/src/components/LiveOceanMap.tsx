@@ -32,7 +32,7 @@ import type { CurrentsOverlay, ImageRaster, MapPoint, TileRaster } from "@/compo
 import { NavCard, type RegionDef } from "@/components/map/NavCard";
 import { PlaceChip } from "@/components/map/PlaceChip";
 import { HoverReadout, type HoverSource } from "@/components/map/HoverReadout";
-import { gridTiles, supportsGridTiles } from "@/lib/gridTiles";
+import { supportsGridTiles } from "@/lib/gridTiles";
 import { MeasuredNearby } from "@/components/map/MeasuredNearby";
 import { LayerDock, selectedCurrents, type CurChoice, type FlowMode, type LayerGroup, type SatChoice } from "@/components/map/LayerDock";
 import { ControlRail } from "@/components/map/ControlRail";
@@ -350,7 +350,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
             url: artifactUrl(baseUrl, forecastLayer.image.url),
             corners: forecastLayer.image.corners_lnglat,
             // exact cell edges from the published value grid (lib/gridTiles); the image is the fallback
-            tiles: typeof window !== "undefined" && supportsGridTiles(forecastLayer) ? gridTiles(forecastLayer, artifactUrl(baseUrl, forecastLayer.grid!.url)) : null,
+            grid: supportsGridTiles(forecastLayer) ? { layer: forecastLayer, url: artifactUrl(baseUrl, forecastLayer.grid!.url) } : null,
           }
         : null,
     [group, forecastLayer, baseUrl],

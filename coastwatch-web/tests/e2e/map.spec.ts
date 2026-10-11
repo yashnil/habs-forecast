@@ -148,20 +148,27 @@ test.describe("values and georeferencing", () => {
     await expect(v).toHaveText(/\d+% at \d+\.\d km/);
   });
 
-  test("forecast raster is placed at the manifest's Mercator corners and follows the selection", async ({ page }) => {
+  test("forecast raster is drawn from the selected layer's value grid, within the manifest's corners", async ({ page }) => {
+    // the forecast is drawn tile by tile from the published value grid (lib/gridTiles: exact cell
+    // edges); its tiles are bounded by the grid's outer cell edges, which are the image's corners
     await open(page, `${OK}/?var=cellular_domoic&lead=2`);
     await page.waitForFunction(() => {
       const m = (window as unknown as { __cwMap?: { getSource: (id: string) => unknown } }).__cwMap;
       return !!m && !!m.getSource("forecast");
     });
     const src = await page.evaluate(() => {
-      const m = (window as unknown as { __cwMap: { getSource: (id: string) => { coordinates: number[][]; url: string } } }).__cwMap;
+      const m = (window as unknown as { __cwMap: { getSource: (id: string) => { type: string; tiles: string[]; bounds: number[] } } }).__cwMap;
       const s = m.getSource("forecast");
-      return { coordinates: s.coordinates, url: s.url };
+      return { type: s.type, tiles: s.tiles, bounds: s.bounds };
     });
     const layer = manifest.layers.find((l: { layer_id: string }) => l.layer_id === "charm_cellular_domoic_lead2");
-    expect(src.coordinates).toEqual(layer.image.corners_lnglat);
-    expect(src.url).toBe(`/data/fixture/v1/${layer.image.url}`);
+    const [[w, n], , [e, s]] = layer.image.corners_lnglat;
+    expect(src.type).toBe("raster");
+    expect(src.bounds.map((v: number) => +v.toFixed(6))).toEqual([w, s, e, n].map((v: number) => +v.toFixed(6)));
+    const tpl = decodeURIComponent(src.tiles[0]);
+    expect(tpl).toContain("charm_cellular_domoic_lead2@");
+    expect(tpl).toContain(`/data/fixture/v1/${layer.grid.url}`);
+    expect(layer.image.bounds_lnglat).toEqual([w, s, e, n]);
   });
 
   test("selecting satellite chlorophyll replaces the forecast raster (one product per legend)", async ({ page }) => {

@@ -5,9 +5,11 @@ import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLa
 import { setWorkerUrl, type ExpressionSpecification, type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { PortsCollection } from "@/generated/schema";
+import type { LayerArtifact } from "@/generated/schema";
 import { ARROW_LENGTHS, arrowImage, BASEMAP_STYLE, BEFORE_OVERLAY_ID, CA_BOUNDS, NODATA_LAYER_ID, noDataImage, SPEED_CLASSES } from "@/lib/basemap";
 import type { CurrentField } from "@/lib/currents";
 import { GRID_TILE_SIZE } from "@/lib/gridTiles";
+import { gridTiles } from "@/lib/gridTileProtocol";
 import { indexedTiles } from "@/lib/tileIndex";
 import FlowParticles from "./FlowParticles";
 
@@ -20,7 +22,7 @@ export type ImageRaster = {
   url: string;
   corners: number[][];
   /** drawn from the value grid when present (exact cell edges); the published image otherwise */
-  tiles?: { template: string; bounds: [number, number, number, number] } | null;
+  grid?: { layer: LayerArtifact; url: string } | null;
 };
 /** XYZ tiles: CoastWatch-rendered satellite tiles or third-party imagery. */
 export type TileRaster = { id: string; template: string; minzoom: number; maxzoom: number; bounds?: number[] | null; indexUrl?: string | null };
@@ -82,6 +84,8 @@ export default function MapCanvas(p: Props) {
   const [map, setMap] = useState<MlMap | null>(null);
   const hasRaster = !!(p.forecast || p.satellite || p.satelliteAge);
   const paint = p.fade ? RASTER_FADE : RASTER_PAINT;
+  const fg = p.forecast?.grid;
+  const forecastTiles = useMemo(() => (fg ? gridTiles(fg.layer, fg.url) : null), [fg]);
 
   // The no-data dots show only under a raster data layer: with currents alone (or nothing)
   // there is no "value" for a gap to be confused with.
@@ -163,12 +167,12 @@ export default function MapCanvas(p: Props) {
       <NavigationControl position="bottom-right" showCompass={false} />
       {wide && <ScaleControl position="bottom-right" unit="metric" />}
 
-      {p.forecast && p.forecast.tiles && (
-        <Source key={`${p.forecast.id}-grid`} id="forecast" type="raster" tiles={[p.forecast.tiles.template]} tileSize={GRID_TILE_SIZE} bounds={p.forecast.tiles.bounds} minzoom={0} maxzoom={13}>
+      {p.forecast && forecastTiles && (
+        <Source key={`${p.forecast.id}-grid`} id="forecast" type="raster" tiles={[forecastTiles.template]} tileSize={GRID_TILE_SIZE} bounds={forecastTiles.bounds} minzoom={0} maxzoom={13}>
           <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
         </Source>
       )}
-      {p.forecast && !p.forecast.tiles && (
+      {p.forecast && !forecastTiles && (
         <Source key={p.forecast.id} id="forecast" type="image" url={p.forecast.url} coordinates={p.forecast.corners as [[number, number], [number, number], [number, number], [number, number]]}>
           <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
         </Source>

@@ -78,9 +78,10 @@ Places: Santa Cruz, Moss Landing, Half Moon Bay, Golden Gate, Morro Bay, Point A
 
 | | `main` | This PR |
 |---|---|---|
-| Map ready | 1,096 ms | 1,182 ms |
-| Blocking time | 137 ms | 124 ms |
-| Re-zoom | 834 ms | 836 ms |
+| Map ready | 1,099 ms | 1,201 ms |
+| Blocking time | 107 ms | 93 ms |
+| Re-zoom | 835 ms | 833 ms |
+| Ocean Map first-load JavaScript | 159 kB | 159 kB (MapLibre stays in the lazily loaded map chunk) |
 | Download | 64 kB image | 150 kB grid (also used by the readout) |
 
 ## 6. Before and after (left `main`, right this PR)
@@ -121,4 +122,5 @@ Places: Santa Cruz, Moss Landing, Half Moon Bay, Golden Gate, Morro Bay, Point A
   - drawn edges lie within 1 px of the true boundaries, and the readout matches the drawn cell on both sides;
   - straddling cells are drawn on water and never on land;
   - the readout reasons.
-- **Full results:** 132/132 browser tests in local Chrome and CI mode; 145 unit tests.
+- **Full results:** 133/133 browser tests in local Chrome and CI mode; 145 unit tests.
+- **Ported test:** the old map test asserting an image source at the PNG corners now asserts a grid-tile source bounded by the same corners and tied to the selected layer and grid.

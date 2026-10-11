@@ -1,7 +1,4 @@
-import { addProtocol } from "maplibre-gl";
 import type { LayerArtifact, Palette, ValueGrid } from "@/generated/schema";
-import { loadGrid } from "@/lib/grid";
-import { clipToWater, waterMask } from "@/lib/waterMask";
 
 /**
  * C-HARM drawn from its published value grid, tile by tile (exact georeferencing).
@@ -23,9 +20,6 @@ import { clipToWater, waterMask } from "@/lib/waterMask";
  */
 
 export const GRID_TILE_SIZE = 512;
-const PROTOCOL = "cwgrid";
-type Entry = { grid: ValueGrid; url: string; lut: Promise<Uint32Array> };
-const entries = new Map<string, Entry>();
 
 const hexRgb = (h: string): [number, number, number] => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 /** RGBA packed for a little-endian Uint32Array view (bytes R, G, B, A in memory). */
@@ -89,37 +83,4 @@ export function renderGridTile(g: ValueGrid, codes: Uint16Array, lut: Uint32Arra
     }
   }
   return new Uint8ClampedArray(out.buffer);
-}
-
-let registered = false;
-function register() {
-  if (registered) return;
-  registered = true;
-  addProtocol(PROTOCOL, async (params) => {
-    const m = /^cwgrid:\/\/([^/]+)\/(\d+)\/(\d+)\/(\d+)$/.exec(params.url);
-    const e = m && entries.get(decodeURIComponent(m[1]));
-    if (!m || !e) throw new Error(`unknown grid tile ${params.url}`);
-    const [z, x, y] = [Number(m[2]), Number(m[3]), Number(m[4])];
-    const [codes, lut, water] = await Promise.all([loadGrid(e.url), e.lut, waterMask(z, x, y, GRID_TILE_SIZE)]);
-    const px = renderGridTile(e.grid, codes, lut, z, x, y);
-    // ocean only, at the basemap's shoreline (lib/waterMask); unclipped if the basemap tile is unreadable
-    if (water) clipToWater(px, water);
-    const bitmap = await createImageBitmap(new ImageData(px as Uint8ClampedArray<ArrayBuffer>, GRID_TILE_SIZE, GRID_TILE_SIZE));
-    return { data: bitmap };
-  });
-}
-
-/** The tile URL template for a layer's grid, and the grid's outer cell edges [w, s, e, n]. */
-export function gridTiles(layer: LayerArtifact, gridUrl: string): { template: string; bounds: [number, number, number, number] } {
-  register();
-  const g = layer.grid!;
-  const key = `${layer.layer_id}@${gridUrl}`;
-  if (!entries.has(key)) entries.set(key, { grid: g, url: gridUrl, lut: Promise.resolve().then(() => codeColours(g, layer.palette!)) });
-  const lonFirst = g.lon_first > 180 ? g.lon_first - 360 : g.lon_first;
-  const lon0 = lonFirst - Math.abs(g.lon_step) / 2;
-  const lat0 = Math.min(g.lat_first, g.lat_first + g.lat_step * (g.height - 1)) - Math.abs(g.lat_step) / 2;
-  return {
-    template: `${PROTOCOL}://${encodeURIComponent(key)}/{z}/{x}/{y}`,
-    bounds: [lon0, lat0, lon0 + Math.abs(g.lon_step) * g.width, lat0 + Math.abs(g.lat_step) * g.height],
-  };
 }
