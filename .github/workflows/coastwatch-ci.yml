@@ -74,3 +74,12 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Production build + end-to-end tests on fixture data
         run: npm run test:e2e
+      - name: Keep the browser-test evidence when a test fails
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report
+          path: |
+            coastwatch-web/playwright-report
+            coastwatch-web/test-results
+          retention-days: 14

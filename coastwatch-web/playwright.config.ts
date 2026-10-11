@@ -19,9 +19,12 @@ export default defineConfig({
   testDir: "tests/e2e",
   timeout: 45_000,
   fullyParallel: true,
-  reporter: [["list"]],
+  // a failure keeps its evidence: the HTML report, a trace (DOM, network, console) and a screenshot
+  reporter: [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
   use: {
     viewport: { width: 1440, height: 900 },
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
     // Local runs use installed Chrome (GPU WebGL renders the vector basemap); CI uses bundled Chromium.
     channel: process.env.CI ? undefined : "chrome",
   },
