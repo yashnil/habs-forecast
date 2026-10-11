@@ -827,7 +827,7 @@ function CurrentsLegend({ particles, detail, short = false }: { particles: boole
         {particles ? "Particles drift through this one observed field. Not a trajectory." : "Arrows point where the surface water is moving"}
         <span className="font-normal text-ink-3"> · speed, m/s</span>
       </figcaption>
-      <div className="flex items-center gap-1 rounded-lg bg-navy-900 px-2 py-0.5">
+      <div className="flex items-center gap-1 rounded-lg bg-navy-900 px-2 py-0.5" data-peek="end">
         {ARROW_LENGTHS.map((len, i) => (
           <span key={len} className="flex flex-1 items-center justify-center gap-1 text-[11px] leading-tight text-on-navy-2 tabular" data-testid="currents-legend-item">
             {particles ? (

@@ -34,7 +34,7 @@ The five decisions approved after doc 19, as built:
   - 30-day nowcast history and 60-day chlorophyll collapse behind a sparkline summary.
 - **C-HARM cell edges:** drawn faintly from z8.5. Geometry only; no value is changed or smoothed.
 - **Transitions:** switching layer fades the new layer in over 220 ms. A new time step of the same layer cuts, never cross-fades. Reduced motion turns both off.
-- **Phone:** the sheet peek shows the layer tabs, what is drawn and when, and the legend. The port sheet opens at the peek so the map stays visible.
+- **Phone:** the sheet peek is just tall enough for the layer tabs, what is drawn and when, and the whole legend; it grows when the stamp wraps. The place button is only as wide as its text. The port sheet opens at the peek so the map stays visible.
 - **Tile index:** tiles that were never written are answered locally and never requested, so a 512 px tile set causes no 404s.
 - **Keyboard:** Escape closes the place list, then the inspector. The rail is a tab list driven by the arrow keys.
 
@@ -113,7 +113,7 @@ Unobstructed share of the map, measured on a 4 px grid against the boxes of ever
 | 1280 × 720, forecast | 63 % | **76.4 %** | ≥ 75 % |
 | 1280 × 720, multi-sensor | 57 % | **75.3 %** | ≥ 75 % |
 | 1280 × 720, currents | 57 % | **75.0 %** | ≥ 75 % |
-| 390 × 844, share of the screen showing map | 19 % | **56.1 %** | ≥ 55 % |
+| 390 × 844, share of the screen showing map (forecast / satellite / currents) | 19 % | **60.1 / 57.8 / 57.8 %** | ≥ 55 % |
 
 **Not weakened to reach these numbers:**
 - the unverified-notices disclosure, its agency links and the notices count with verification state;
@@ -146,6 +146,7 @@ Both passes used live data at 1440 × 900, 1280 × 720 and 390 × 844 (57 views 
 - **Animated flow.** The flow legend now says "Not a trajectory" without expanding.
 - **1280 × 720 below 75 %.** Satellite and currents were under the target. The time slider now shares a row with Hourly / 24-hour mean, display options moved under Details, and repeated lines were removed. All six desktop cases now meet the target.
 - **Empty header.** The nothing-current dock showed an empty header; hidden.
+- **Phone margin.** CI measured the phone at 53.8 %, against 56.1 % locally, because Linux fonts wrap differently. The peek now fits its content (136–184 px) and the place button is only as wide as its text, so the phone is 60.1 % locally, with margin for font differences.
 
 **Images** in [m5/review/](m5/review/):
 - 16 before/after pairs across the three viewports;

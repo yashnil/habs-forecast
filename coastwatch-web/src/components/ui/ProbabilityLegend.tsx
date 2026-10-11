@@ -25,7 +25,7 @@ export function ProbabilityLegend({ palette, threshold, compact = false }: { pal
   return (
     <figure data-testid="probability-legend" className={compact ? "space-y-0.5" : "space-y-1"} aria-label={`Legend: ${threshold ?? "probability"}, 0 to 100 percent${stepped ? " in 10-point display steps" : ""}`}>
       {threshold && <figcaption className={`font-medium leading-snug text-ink ${compact ? "text-[12px]" : "text-[13px] max-sm:text-[12px]"}`}>{threshold}</figcaption>}
-      <div className={compact ? "flex items-center gap-3" : ""}>
+      <div className={compact ? "flex items-center gap-3" : ""} data-peek="end">
         <div className="min-w-0 flex-1">
           <div className={`${compact ? "h-2" : "h-2.5"} rounded-[3px]`} style={{ background: gradientCss(palette) }} />
           <div className="relative h-3.5 text-[11px] text-ink-3 tabular" aria-hidden>
@@ -67,7 +67,7 @@ export function ChlorophyllLegend({ palette, compact = false }: { palette: Palet
       <figcaption className={`font-medium leading-snug text-ink ${compact ? "text-[12px]" : "text-[13px]"}`}>
         Chlorophyll-a <span className="font-normal text-ink-3">mg/m³ · log scale{compact ? "" : " · algae biomass, not toxin"}</span>
       </figcaption>
-      <div className={compact ? "flex items-center gap-3" : ""}>
+      <div className={compact ? "flex items-center gap-3" : ""} data-peek="end">
         <div className="min-w-0 flex-1">
           <div className={`${compact ? "h-2" : "h-2.5"} rounded-[3px]`} style={{ background: gradientCss(palette) }} />
           <div className="relative h-3.5 text-[11px] text-ink-3 tabular" aria-hidden>
@@ -89,7 +89,7 @@ export function AgeLegend({ maxDays }: { maxDays: number }) {
   return (
     <figure data-testid="age-legend" className="space-y-1" aria-label="Legend: days since each pixel was observed">
       <figcaption className="text-[13px] font-medium text-ink">Days since each pixel was observed</figcaption>
-      <div className="flex gap-0.5">
+      <div className="flex gap-0.5" data-peek="end">
         {AGE_COLOURS.slice(0, maxDays + 1).map((c, i) => (
           <span key={c} className="flex-1 text-center text-[11px] text-ink-3 tabular">
             <span className="mb-0.5 block h-2.5 rounded-[2px]" style={{ background: c }} aria-hidden />

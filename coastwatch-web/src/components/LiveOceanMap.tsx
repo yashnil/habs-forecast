@@ -230,14 +230,32 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  // phone sheet: the peek keeps most of the map visible (≥ 55 % of the screen at 390 × 844)
+  // phone sheet: the peek is just tall enough for the layer tabs, what is shown and the whole
+  // legend (it grows when the stamp wraps), so most of the screen stays map (≥ 55 % at 390 × 844)
+  const [peekH, setPeekH] = useState(152);
+  const legendBox = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const box = legendBox.current;
+    if (!box || typeof ResizeObserver === "undefined") return;
+    const fit = () => {
+      // the legend's ramp (or arrow key) and its numbers; notes below it show on expanding
+      const lg = box.querySelector("[data-peek=end]") ?? box.querySelector("[data-testid$=-legend]");
+      if (!lg) return;
+      const need = 24 + (lg.getBoundingClientRect().bottom - box.getBoundingClientRect().top) + 4; // handle + content + a hair of margin
+      setPeekH(Math.round(Math.min(184, Math.max(136, need))));
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [wide, detailOpen, group]);
   const snaps: SnapPoint[] = detailOpen
     ? [
         { id: "peek", height: 196 },
         { id: "full", height: Math.max(260, mapH - 12) },
       ]
     : [
-        { id: "peek", height: 168 },
+        { id: "peek", height: peekH },
         { id: "half", height: Math.round(mapH * 0.58) },
         { id: "full", height: Math.max(260, mapH - 12) },
       ];
@@ -271,7 +289,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       const z = (q: typeof beside) => m.cameraForBounds(b, { padding: q })?.zoom ?? 0;
       return z(above) > z(beside) ? above : beside;
     }
-    return { top: 72, bottom: sheetH + 16, left: 16, right: 16 };
+    return { top: 64, bottom: sheetH + 16, left: 16, right: 16 };
   }, [detailOpen, placesOpen, regions, region, sheetH]);
 
   useEffect(() => {
@@ -517,7 +535,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       selectedPort={port}
       inspect={inspect}
       initialBounds={initialRegion.bounds}
-      initialPadding={wide ? { top: 64, bottom: 28, left: 660, right: 28 } : { top: 72, bottom: 184, left: 16, right: 16 }}
+      initialPadding={wide ? { top: 64, bottom: 28, left: 660, right: 28 } : { top: 64, bottom: 168, left: 16, right: 16 }}
       cellEdges={group === "forecast" && edges && edges.id === forecastLayer?.layer_id ? edges.fc : null}
       fade={fade}
       onHover={wide && canHover ? onHover : undefined}
@@ -591,11 +609,11 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
           <button
             onClick={() => setNavOpen(true)}
             data-testid="place-button"
-            className="theme-paper absolute left-3 right-3 top-3 z-10 flex h-11 items-center gap-2 rounded-full bg-surface pl-4 pr-1.5 text-left text-[15px] font-medium text-ink shadow-[0_6px_20px_rgba(6,17,30,0.3)]"
+            className="theme-paper absolute left-3 top-2.5 z-10 flex h-10 max-w-[calc(100%-24px)] items-center gap-2 rounded-full bg-surface pl-3.5 pr-1 text-left text-[15px] font-medium text-ink shadow-[0_6px_20px_rgba(6,17,30,0.3)]"
           >
             <Icon name="search" className="h-4 w-4 text-ink-3" />
-            <span className="min-w-0 flex-1 truncate">{port != null ? (intel?.display_name ?? "Port") : regionLabel}</span>
-            <span data-testid="mobile-official" className="flex h-8 items-center gap-1 rounded-full border border-official-line bg-official-bg px-2.5 text-[12.5px] font-semibold text-official-ink">
+            <span className="min-w-0 truncate pr-1">{port != null ? (intel?.display_name ?? "Port") : regionLabel}</span>
+            <span data-testid="mobile-official" className="flex h-8 shrink-0 items-center gap-1 rounded-full border border-official-line bg-official-bg px-2.5 text-[12.5px] font-semibold text-official-ink">
               <Icon name="shield" className="h-3.5 w-3.5 text-official" />
               {region !== STATEWIDE.id && regionNotices != null ? regionNotices : (activeCount ?? "?")}
               <span className="sr-only"> official notices{region !== STATEWIDE.id ? ` may apply in ${regionLabel}` : " in California"},</span>
@@ -628,7 +646,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
               </MobileSheet>
             ) : (
               <MobileSheet key="explore" snaps={snaps} snap={sheetSnap} onSnap={setSheetSnap} label="Map layers" header={null}>
-                <div data-testid="mobile-legend">
+                <div data-testid="mobile-legend" ref={legendBox}>
                   <LayerDock {...dockProps} variant="sheet" expanded={sheetSnap !== "peek"} />
                 </div>
               </MobileSheet>
