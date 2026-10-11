@@ -1,0 +1,2522 @@
+{
+  "base": "https://yashnil.github.io/habs-forecast/v1",
+  "manifest_generated_at": "2026-10-11T06:59:32Z",
+  "pipeline_run_id": "38119843030",
+  "ok": true,
+  "files_checked": 280,
+  "tiles_validated": 0,
+  "problems": [],
+  "checked": [
+    {
+      "path": "charm/2026-10-10/lead0-8dc4b0f3e8/pseudo_nitzschia.png",
+      "kind": "image",
+      "status": 200,
+      "bytes": 64530,
+      "cors": "*",
+      "ok": true,
+      "detail": "PNG 1404x1970"
+    },
+    {
+      "path": "charm/2026-10-10/lead0-8dc4b0f3e8/pseudo_nitzschia.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 141368,
+      "cors": "*",
+      "ok": true,
+      "detail": "274482 bytes decoded"
+    },
+    {
+      "path": "charm/2026-10-10/lead0-8dc4b0f3e8/particulate_domoic.png",
+      "kind": "image",
+      "status": 200,
+      "bytes": 46683,
+      "cors": "*",
+      "ok": true,
+      "detail": "PNG 1404x1970"
+    },
+    {
+      "path": "charm/2026-10-10/lead0-8dc4b0f3e8/particulate_domoic.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 151003,
+      "cors": "*",
+      "ok": true,
+      "detail": "274482 bytes decoded"
+    },
+    {
+      "path": "charm/2026-10-10/lead0-8dc4b0f3e8/cellular_domoic.png",
+      "kind": "image",
+      "status": 200,
+      "bytes": 35363,
+      "cors": "*",
+      "ok": true,
+      "detail": "PNG 1404x1970"
+    },
+    {
+      "path": "charm/2026-10-10/lead0-8dc4b0f3e8/cellular_domoic.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 146152,
+      "cors": "*",
+      "ok": true,
+      "detail": "274482 bytes decoded"
+    },
+    {
+      "path": "charm/2026-10-10/lead1-b080949a49/pseudo_nitzschia.png",
+      "kind": "image",
+      "status": 200,
+      "bytes": 63506,
+      "cors": "*",
+      "ok": true,
+      "detail": "PNG 1404x1970"
+    },
+    {
+      "path": "charm/2026-10-10/lead1-b080949a49/pseudo_nitzschia.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 150127,
+      "cors": "*",
+      "ok": true,
+      "detail": "274482 bytes decoded"
+    },
+    {
+      "path": "charm/2026-10-10/lead1-b080949a49/particulate_domoic.png",
+      "kind": "image",
+      "status": 200,
+      "bytes": 45773,
+      "cors": "*",
+      "ok": true,
+      "detail": "PNG 1404x1970"
+    },
+    {
+      "path": "charm/2026-10-10/lead1-b080949a49/particulate_domoic.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 150903,
+      "cors": "*",
+      "ok": true,
+      "detail": "274482 bytes decoded"
+    },
+    {
+      "path": "charm/2026-10-10/lead1-b080949a49/cellular_domoic.png",
+      "kind": "image",
+      "status": 200,
+      "bytes": 36276,
+      "cors": "*",
+      "ok": true,
+      "detail": "PNG 1404x1970"
+    },
+    {
+      "path": "charm/2026-10-10/lead1-b080949a49/cellular_domoic.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 146835,
+      "cors": "*",
+      "ok": true,
+      "detail": "274482 bytes decoded"
+    },
+    {
+      "path": "charm/2026-10-10/lead2-d58808fab8/pseudo_nitzschia.png",
+      "kind": "image",
+      "status": 200,
+      "bytes": 64295,
+      "cors": "*",
+      "ok": true,
+      "detail": "PNG 1404x1970"
+    },
+    {
+      "path": "charm/2026-10-10/lead2-d58808fab8/pseudo_nitzschia.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 150055,
+      "cors": "*",
+      "ok": true,
+      "detail": "274482 bytes decoded"
+    },
+    {
+      "path": "charm/2026-10-10/lead2-d58808fab8/particulate_domoic.png",
+      "kind": "image",
+      "status": 200,
+      "bytes": 45735,
+      "cors": "*",
+      "ok": true,
+      "detail": "PNG 1404x1970"
+    },
+    {
+      "path": "charm/2026-10-10/lead2-d58808fab8/particulate_domoic.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 150750,
+      "cors": "*",
+      "ok": true,
+      "detail": "274482 bytes decoded"
+    },
+    {
+      "path": "charm/2026-10-10/lead2-d58808fab8/cellular_domoic.png",
+      "kind": "image",
+      "status": 200,
+      "bytes": 37020,
+      "cors": "*",
+      "ok": true,
+      "detail": "PNG 1404x1970"
+    },
+    {
+      "path": "charm/2026-10-10/lead2-d58808fab8/cellular_domoic.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 147222,
+      "cors": "*",
+      "ok": true,
+      "detail": "274482 bytes decoded"
+    },
+    {
+      "path": "charm/2026-10-10/lead3-ee1da00db3/pseudo_nitzschia.png",
+      "kind": "image",
+      "status": 200,
+      "bytes": 64058,
+      "cors": "*",
+      "ok": true,
+      "detail": "PNG 1404x1970"
+    },
+    {
+      "path": "charm/2026-10-10/lead3-ee1da00db3/pseudo_nitzschia.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 149808,
+      "cors": "*",
+      "ok": true,
+      "detail": "274482 bytes decoded"
+    },
+    {
+      "path": "charm/2026-10-10/lead3-ee1da00db3/particulate_domoic.png",
+      "kind": "image",
+      "status": 200,
+      "bytes": 45916,
+      "cors": "*",
+      "ok": true,
+      "detail": "PNG 1404x1970"
+    },
+    {
+      "path": "charm/2026-10-10/lead3-ee1da00db3/particulate_domoic.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 150838,
+      "cors": "*",
+      "ok": true,
+      "detail": "274482 bytes decoded"
+    },
+    {
+      "path": "charm/2026-10-10/lead3-ee1da00db3/cellular_domoic.png",
+      "kind": "image",
+      "status": 200,
+      "bytes": 37589,
+      "cors": "*",
+      "ok": true,
+      "detail": "PNG 1404x1970"
+    },
+    {
+      "path": "charm/2026-10-10/lead3-ee1da00db3/cellular_domoic.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 147132,
+      "cors": "*",
+      "ok": true,
+      "detail": "274482 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/tiles/5/4/11.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 3632,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/tiles/10/160/391.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 2041,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/tiles/11/312/764.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 3650,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/tiles/11/337/810.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 4243,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/tiles/11/346/823.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 6603,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/tiles/index.json",
+      "kind": "tiles_index",
+      "status": 200,
+      "bytes": 11713,
+      "cors": "*",
+      "ok": true,
+      "detail": "index of 924 tiles"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age-tiles/5/4/11.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 1366,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age-tiles/10/160/391.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 1396,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age-tiles/11/312/764.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 1944,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age-tiles/11/337/810.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 2125,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age-tiles/11/346/823.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 1712,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age-tiles/index.json",
+      "kind": "age_tiles_index",
+      "status": 200,
+      "bytes": 11713,
+      "cors": "*",
+      "ok": true,
+      "detail": "index of 924 tiles"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/0_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 224120,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 0_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/0_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 878,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 0_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/1_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 189241,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/1_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 53742,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/2_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 130985,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/2_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 16893,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/3_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 1565,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 3_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/3_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 617,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 3_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/3_2.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 4894,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 3_2: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/4_2.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 24549,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 4_2: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/4_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 4255,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 4_3: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/5_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 26259,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 5_3: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/5_4.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 6631,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 5_4: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/6_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 31412,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/6_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 814,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/6_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 117075,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_3: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/6_4.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 351908,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_4: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/6_5.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 217508,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_5: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/6_6.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 30460,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_6: 335872 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/7_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 203972,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_0: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/7_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 2524,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_1: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/7_2.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 5720,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_2: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/7_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 138591,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_3: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/7_4.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 210205,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_4: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/7_5.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 187311,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_5: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/grid/7_6.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 105636,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_6: 194176 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/0_0.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 3138,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 0_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/0_1.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 638,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 0_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/1_0.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 3741,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/1_1.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 1645,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/2_0.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 3665,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/2_1.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 1516,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/3_0.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 758,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 3_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/3_1.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 582,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 3_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/3_2.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 1355,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 3_2: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/4_2.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 2005,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 4_2: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/4_3.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 864,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 4_3: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/5_3.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 3255,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 5_3: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/5_4.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 747,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 5_4: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/6_0.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 4771,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/6_1.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 623,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/6_3.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 7983,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_3: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/6_4.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 4807,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_4: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/6_5.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 3844,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_5: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/6_6.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 1168,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_6: 335872 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/7_0.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 3897,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_0: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/7_1.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 1045,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_1: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/7_2.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 880,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_2: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/7_3.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 5284,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_3: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/7_4.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 1160,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_4: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/7_5.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 1771,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_5: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/latest-2026-10-11-5e11130c1a/age/7_6.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 2568,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_6: 194176 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-04-eda7c50a8b/tiles/5/4/12.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1450,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-04-eda7c50a8b/tiles/8/39/103.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 15466,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-04-eda7c50a8b/tiles/9/79/206.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 4735,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-04-eda7c50a8b/tiles/10/155/411.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 4678,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-04-eda7c50a8b/tiles/10/157/412.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 15008,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-04-eda7c50a8b/grid/6_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 22609,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-04-eda7c50a8b/grid/6_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 814,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-04-eda7c50a8b/grid/7_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 202779,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_0: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/tiles/5/4/12.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1205,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/tiles/8/42/103.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1272,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/tiles/9/83/206.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1051,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/tiles/10/167/403.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1771,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/tiles/10/171/411.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1284,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/0_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 611,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 0_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/1_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 12132,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/1_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 48541,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/2_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 6795,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/3_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 617,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 3_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/3_2.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 2373,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 3_2: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/4_2.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 26546,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 4_2: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/4_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 4255,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 4_3: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/5_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 13044,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 5_3: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/5_4.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 2840,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 5_4: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/6_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 4052,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/6_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 51259,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_3: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/6_4.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 38654,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_4: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/6_5.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 204324,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_5: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/6_6.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 13702,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_6: 335872 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/7_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 3072,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_0: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/7_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 2524,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_1: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/7_2.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 5720,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_2: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/7_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 2814,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_3: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/7_4.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 54630,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_4: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/7_5.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 221605,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_5: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-05-ce1cf20bad/grid/7_6.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 2614,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_6: 194176 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/tiles/5/5/12.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 4097,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/tiles/9/84/203.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 7725,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/tiles/10/163/395.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1072,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/tiles/10/174/409.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 13917,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/tiles/10/171/412.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 12466,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/grid/3_2.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 1395,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 3_2: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/grid/4_2.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 13615,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 4_2: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/grid/5_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 17487,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 5_3: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/grid/5_4.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 5493,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 5_4: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/grid/6_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 81139,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_3: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/grid/6_4.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 346103,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_4: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/grid/6_5.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 231329,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_5: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/grid/6_6.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 32421,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_6: 335872 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/grid/7_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 137358,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_3: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/grid/7_4.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 208991,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_4: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/grid/7_5.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 225845,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_5: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-06-5e07071d56/grid/7_6.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 123315,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_6: 194176 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-07-47f4bf7cc2/tiles/5/5/12.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1600,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-07-47f4bf7cc2/tiles/8/44/103.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 14700,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-07-47f4bf7cc2/tiles/9/89/206.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 7299,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-07-47f4bf7cc2/tiles/10/177/410.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1320,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-07-47f4bf7cc2/tiles/10/177/412.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1499,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-07-47f4bf7cc2/grid/6_5.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 32474,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_5: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-07-47f4bf7cc2/grid/6_6.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 4890,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_6: 335872 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-07-47f4bf7cc2/grid/7_5.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 79887,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_5: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-07-47f4bf7cc2/grid/7_6.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 42190,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_6: 194176 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-08-ee0d8a6710/tiles/5/4/11.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1151,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-08-ee0d8a6710/tiles/8/39/94.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1586,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-08-ee0d8a6710/tiles/9/78/191.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 3782,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-08-ee0d8a6710/tiles/10/158/379.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1473,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-08-ee0d8a6710/tiles/10/157/383.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 4548,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-08-ee0d8a6710/grid/0_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 53865,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 0_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-08-ee0d8a6710/grid/0_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 834,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 0_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-08-ee0d8a6710/grid/1_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 1291,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-08-ee0d8a6710/grid/1_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 634,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-08-ee0d8a6710/grid/2_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 662,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-08-ee0d8a6710/grid/3_2.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 2828,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 3_2: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/tiles/5/4/11.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1640,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/tiles/8/43/103.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 962,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/tiles/9/85/205.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 2330,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/tiles/10/158/386.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 5164,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/tiles/10/172/408.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 2728,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/0_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 223626,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 0_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/1_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 183634,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/1_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 9851,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/2_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 130985,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/2_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 10718,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/3_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 1565,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 3_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/3_2.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 1025,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 3_2: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/4_2.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 577,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 4_2: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/5_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 6763,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 5_3: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/5_4.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 6467,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 5_4: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/6_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 7643,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/6_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 1012,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_3: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/6_4.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 43287,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_4: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/6_5.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 4017,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 6_5: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/7_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 4270,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_0: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/7_3.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 5165,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_3: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/7_4.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 5654,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_4: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/7_5.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 1873,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_5: 303104 bytes decoded"
+    },
+    {
+      "path": "satellite/olci300/day-2026-10-09-ef77b75b8e/grid/7_6.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 3118,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 7_6: 194176 bytes decoded"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/tiles/5/4/12.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 4022,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/tiles/8/39/100.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 8434,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/tiles/9/79/196.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1325,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/tiles/9/82/202.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 6431,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/tiles/9/82/205.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 6775,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/age-tiles/5/4/12.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 1518,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/age-tiles/8/39/100.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 2337,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/age-tiles/9/79/196.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 1123,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/age-tiles/9/82/202.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 1191,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/age-tiles/9/82/205.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 1162,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 256x256 mode P"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/grid/0_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 19593,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 0_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/grid/1_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 229080,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/grid/1_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 31088,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/grid/2_0.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 194742,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_0: 275456 bytes decoded"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/grid/2_1.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 195999,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_1: 275456 bytes decoded"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/grid/2_2.u16.gz",
+      "kind": "grid",
+      "status": 200,
+      "bytes": 17087,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_2: 58642 bytes decoded"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/age/0_0.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 1776,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 0_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/age/1_0.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 9112,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_0: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/age/1_1.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 1931,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 1_1: 524288 bytes decoded"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/age/2_0.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 7530,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_0: 275456 bytes decoded"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/age/2_1.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 2069,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_1: 275456 bytes decoded"
+    },
+    {
+      "path": "satellite/viirs750/latest-2026-10-10-f55d473ad0/age/2_2.u16.gz",
+      "kind": "age_grid",
+      "status": 200,
+      "bytes": 497,
+      "cors": "*",
+      "ok": true,
+      "detail": "chunk 2_2: 58642 bytes decoded"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/tiles/5/4/11.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 3633,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/tiles/10/167/406.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1195,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/tiles/11/321/784.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 2550,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/tiles/11/317/811.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 2510,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/tiles/11/321/821.png",
+      "kind": "tiles",
+      "status": 200,
+      "bytes": 1995,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/tiles/index.json",
+      "kind": "tiles_index",
+      "status": 200,
+      "bytes": 23174,
+      "cors": "*",
+      "ok": true,
+      "detail": "index of 1813 tiles"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/sensor-tiles/5/4/11.png",
+      "kind": "sensor_tiles",
+      "status": 200,
+      "bytes": 1355,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/sensor-tiles/10/167/406.png",
+      "kind": "sensor_tiles",
+      "status": 200,
+      "bytes": 1186,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/sensor-tiles/11/321/784.png",
+      "kind": "sensor_tiles",
+      "status": 200,
+      "bytes": 1875,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/sensor-tiles/11/317/811.png",
+      "kind": "sensor_tiles",
+      "status": 200,
+      "bytes": 1711,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/sensor-tiles/11/321/821.png",
+      "kind": "sensor_tiles",
+      "status": 200,
+      "bytes": 1948,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/sensor-tiles/index.json",
+      "kind": "sensor_tiles_index",
+      "status": 200,
+      "bytes": 23174,
+      "cors": "*",
+      "ok": true,
+      "detail": "index of 1813 tiles"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/age-tiles/5/4/11.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 1372,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/age-tiles/10/167/406.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 1186,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/age-tiles/11/321/784.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 1876,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/age-tiles/11/317/811.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 1712,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/age-tiles/11/321/821.png",
+      "kind": "age_tiles",
+      "status": 200,
+      "bytes": 1948,
+      "cors": "*",
+      "ok": true,
+      "detail": "tile 512x512 mode P"
+    },
+    {
+      "path": "satellite/multisensor/latest-2026-10-11-dd6bb1c7bb/age-tiles/index.json",
+      "kind": "age_tiles_index",
+      "status": 200,
+      "bytes": 23174,
+      "cors": "*",
+      "ok": true,
+      "detail": "index of 1813 tiles"
+    },
+    {
+      "path": "currents/hfr2km/20261009T05Z-b31b8d64ec/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14849,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T05Z-b31b8d64ec/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 15108,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T06Z-1cb6caa29b/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14908,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T06Z-1cb6caa29b/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 14990,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T07Z-11983b97f8/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 15365,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T07Z-11983b97f8/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 15360,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T08Z-e247af6b62/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 15290,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T08Z-e247af6b62/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 15314,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T09Z-99f47d1087/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 15121,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T09Z-99f47d1087/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 15280,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T10Z-a835633192/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 15174,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T10Z-a835633192/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 15153,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T11Z-c34e673ece/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 15165,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T11Z-c34e673ece/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 15336,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T12Z-384f716dd8/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 15337,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T12Z-384f716dd8/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 15489,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T13Z-a580ffdef0/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14951,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T13Z-a580ffdef0/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 15072,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T14Z-e6ccaa1e2c/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14772,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T14Z-e6ccaa1e2c/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 15183,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T15Z-294b551c65/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14830,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T15Z-294b551c65/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 15358,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T16Z-776ff182d5/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14636,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T16Z-776ff182d5/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 15238,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T17Z-1a72f6df99/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14346,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T17Z-1a72f6df99/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 14770,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T18Z-8cf7df8199/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14120,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T18Z-8cf7df8199/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 14575,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T19Z-41a7ed4ea3/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14113,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T19Z-41a7ed4ea3/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 14362,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T20Z-1a458ac71f/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14681,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T20Z-1a458ac71f/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 14855,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T21Z-be3e4235b0/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14769,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T21Z-be3e4235b0/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 14917,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T22Z-5d050bac96/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14570,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T22Z-5d050bac96/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 14733,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T23Z-df21b3e8f8/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14944,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261009T23Z-df21b3e8f8/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 15105,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261010T00Z-42cd5c6777/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14601,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261010T00Z-42cd5c6777/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 14940,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261010T01Z-622a359378/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14693,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261010T01Z-622a359378/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 14957,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261010T02Z-f27de75143/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14569,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261010T02Z-f27de75143/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 14625,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261010T03Z-7519d55b33/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 14830,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261010T03Z-7519d55b33/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 14927,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261010T04Z-0e1770baef/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 13431,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/20261010T04Z-0e1770baef/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 13691,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/mean24h-20261010T04Z-b38cb09fae/u.u16.gz",
+      "kind": "u_grid",
+      "status": 200,
+      "bytes": 18858,
+      "cors": "*",
+      "ok": true,
+      "detail": "u_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "currents/hfr2km/mean24h-20261010T04Z-b38cb09fae/v.u16.gz",
+      "kind": "v_grid",
+      "status": 200,
+      "bytes": 18904,
+      "cors": "*",
+      "ok": true,
+      "detail": "v_grid: 440640 bytes decoded"
+    },
+    {
+      "path": "ports-92a6f94ff4.geojson",
+      "kind": "ports",
+      "status": 200,
+      "bytes": 11814,
+      "cors": "*",
+      "ok": true,
+      "detail": "22 ports"
+    },
+    {
+      "path": "official-1c93cbab12.json",
+      "kind": "official",
+      "status": 200,
+      "bytes": 74496,
+      "cors": "*",
+      "ok": true,
+      "detail": "schema valid"
+    },
+    {
+      "path": "port-intel-6e19ee1658.json",
+      "kind": "port_intel",
+      "status": 200,
+      "bytes": 93439,
+      "cors": "*",
+      "ok": true,
+      "detail": "schema valid"
+    },
+    {
+      "path": "observations-4bc78029b5.json",
+      "kind": "observations",
+      "status": 200,
+      "bytes": 616487,
+      "cors": "*",
+      "ok": true,
+      "detail": "schema valid"
+    },
+    {
+      "path": "fisheries-f6d97d308e.json",
+      "kind": "fisheries",
+      "status": 200,
+      "bytes": 28840,
+      "cors": "*",
+      "ok": true,
+      "detail": "schema valid"
+    }
+  ]
+}

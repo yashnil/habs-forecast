@@ -14,7 +14,7 @@ Status:
 - the map's style and its basemap assets.
 
 **Rules for the other refs:**
-- **Demo:** the demo branch `demo/bases-rc` (PR #18) and the tag `demo-release/2026-10-10` are frozen. Nothing is merged into them or from them.
+- **Demo:** the demo release candidate (PR #18, archived as the tag `demo-release/2026-10-10`) is frozen. Nothing is merged into them or from them.
 - **Responsive fixes from the RC:** port `a96ec1f` ("give the map most of a phone screen") and the label part of `15fe6e2` by hand, as the first commit. Leave out the preview-only code (`NEXT_PUBLIC_CW_DEMO`, `DemoIntro`, `RegulatoryGap`).
 
 ## 1. Scope, in build order

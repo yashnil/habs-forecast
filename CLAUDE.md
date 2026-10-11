@@ -2,10 +2,7 @@
 
 ## Git / commit hygiene
 
-Do not commit every small edit, test fix, formatting change, or intermediate step.
-
-For substantial work, group related changes into meaningful logical commits. A large day of work should
-usually result in roughly 5–15 meaningful commits, and often fewer, rather than dozens of microcommits.
+Commit coherent, tested units of work, not every edit or iteration.
 
 Good commit boundaries are things like:
 - complete one feature or page;
@@ -14,6 +11,11 @@ Good commit boundaries are things like:
 - add a coherent test suite;
 - fix one distinct bug;
 - finish one documentation/provenance milestone.
+
+Each commit should build and pass the tests that cover it.
+
+A major feature milestone usually ends up as roughly 5–15 substantive commits, often fewer. There is
+**no daily commit quota**: the count follows the work, not the calendar.
 
 Bad reasons to create a new commit:
 - tiny CSS/layout tweak;
@@ -24,22 +26,24 @@ Bad reasons to create a new commit:
 - every individual file edit;
 - intermediate WIP state that has no independent value.
 
-Before pushing:
+Before the first push of a branch:
 1. inspect `git log --oneline`;
 2. identify obvious WIP/fixup/microcommits;
-3. squash those into the logical commit they belong to;
+3. squash those into the logical commit they belong to (rebase freely while the branch is unpushed);
 4. preserve genuinely distinct milestones rather than flattening everything into one giant commit.
 
-Prefer a clean, understandable history over maximizing commit count.
+**Pushed branches.** Do not rewrite a pushed branch (amend, rebase, squash, force-push, even with
+`--force-with-lease`) without the user's explicit approval for that branch. Add a new commit instead.
 
-If the branch has NOT been pushed yet, freely use interactive rebase to clean it up.
+**Never** rewrite `main` or move/delete release and archive references (`demo-release/*`, `archive/*`),
+and never alter commit timestamps.
 
-If the branch has already been pushed, only rewrite history if it is an isolated feature branch and doing
-so is safe. Use `git push --force-with-lease`, never plain `--force`.
-
-Never rewrite `main` or another shared branch.
-
-For PRs, leave the branch history readable. We do not need one commit per tiny action.
+**Merging PRs** (always with the user's approval):
+- **Squash merge** ordinary feature PRs by default, so `main` gets one well-described commit per PR.
+- Use a **merge commit** only when the individual commits matter, for example several independently
+  revertible fixes. Say which method you intend in the PR description.
+- Avoid back-merges of `main` into feature branches ("Merge origin/main into …"). Rebase while the branch
+  is unpushed; once pushed, merge `main` in only when a conflict or a needed change requires it.
 
 ## GitHub workflow
 
@@ -48,7 +52,7 @@ full workflow without asking, unless an action is destructive or needs a product
 
 Allowed without asking:
 - inspect git status/history; create and switch feature branches; stage; make meaningful commits;
-- clean up obvious WIP/microcommits before pushing (see commit hygiene above);
+- clean up obvious WIP/microcommits before the first push (see commit hygiene above);
 - push feature branches;
 - use the authenticated `gh` CLI: `gh pr create`, `gh pr edit`, `gh pr view`, `gh pr diff`,
   `gh pr checks`, `gh pr comment`;
@@ -69,7 +73,7 @@ Do not ask the user to run routine Git or `gh` commands that Claude can safely r
 
 - merging into `main`;
 - deleting important remote branches;
-- force-pushing a branch other people may be using;
+- rewriting or force-pushing any pushed branch;
 - changing production infrastructure;
 - deploying;
 - irreversible or destructive changes.
@@ -79,7 +83,7 @@ Do not ask the user to run routine Git or `gh` commands that Claude can safely r
 - **One session per checkout.** Do development in a dedicated `git worktree` per branch. Never switch
   the branch of a checkout another session may be using, and stage explicit paths, never `git add -A`
   in a shared tree.
-- **BASES demo:** <https://coastwatch-demo.vercel.app>.
+- **Research Preview (demo release):** <https://coastwatch-demo.vercel.app>.
   - It is a separately managed release in the Vercel project `coastwatch-demo`.
   - Git auto-deploys are disconnected; it deploys only by a manual `vercel deploy --prod`, and **only
     with the user's explicit approval each time**.

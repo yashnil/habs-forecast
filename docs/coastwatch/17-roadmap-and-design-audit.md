@@ -4,7 +4,7 @@
 
 | Item | State |
 |---|---|
-| BASES demo, <https://coastwatch-demo.vercel.app> | **Released 2026-10-10 with the user's approval:** PR #18's release candidate (`372a80c`), deployment `dpl_GpFfbFP42QGBM3XwvT6FfikWw4jm`. Its notice strip reads the published registry, so it stays true before and after the Del Norte records are published. The Vercel project's Git auto-deploys are disconnected (manual deploys only). Release refs are protected tags: `demo-release/2026-10-09-submitted` (the build submitted to BASES, the rollback) and `demo-release/2026-10-10`. |
+| Research Preview (demo release), <https://coastwatch-demo.vercel.app> | **Released 2026-10-10 with the user's approval:** PR #18's release candidate (`372a80c`), deployment `dpl_GpFfbFP42QGBM3XwvT6FfikWw4jm`. Its notice strip reads the published registry, so it stays true before and after the Del Norte records are published. The Vercel project's Git auto-deploys are disconnected (manual deploys only). Release refs are protected tags: `demo-release/2026-10-09-submitted` (the first release, the rollback) and `demo-release/2026-10-10`. |
 | Production data, GitHub Pages | P0–P3 on `main`, publishing every 6 h with all verification gates. NOAA dataset reloads ("Currently unknown datasetID") recur. The previous data stay up with their own dates. |
 | Full website | Not deployed. |
 | PR #16, regulatory | **Merged** (`4b603fd`). The Del Norte CDFW closure and CDPH SN26-020 warning are in the registry, **unverified**, with the site-wide disclosure and the corrected "not checked by a person" wording. |

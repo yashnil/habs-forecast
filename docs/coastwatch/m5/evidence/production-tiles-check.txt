@@ -1,0 +1,12 @@
+olci300_chl_latest           tiles        512 px  index   924 tiles z5-11  listed 20/20 ok  unlisted 404 5/5
+olci300_chl_2026-10-04       tiles        256 px (no index, carried over)
+olci300_chl_2026-10-05       tiles        256 px (no index, carried over)
+olci300_chl_2026-10-06       tiles        256 px (no index, carried over)
+olci300_chl_2026-10-07       tiles        256 px (no index, carried over)
+olci300_chl_2026-10-08       tiles        256 px (no index, carried over)
+olci300_chl_2026-10-09       tiles        256 px (no index, carried over)
+viirs750_chl_latest          tiles        256 px (no index, carried over)
+multisensor_chl_latest       tiles        512 px  index  1813 tiles z5-11  listed 20/20 ok  unlisted 404 5/5
+multisensor_chl_latest       age_tiles    512 px  index  1813 tiles z5-11  listed 20/20 ok  unlisted 404 5/5
+multisensor_chl_latest       sensor_tiles 512 px  index  1813 tiles z5-11  listed 20/20 ok  unlisted 404 5/5
+{'sets': 4, 'listed_ok': 80, 'listed_bad': 0, 'unlisted_404': 20, 'unlisted_other': 0}
