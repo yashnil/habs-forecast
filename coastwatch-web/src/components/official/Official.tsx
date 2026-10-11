@@ -257,7 +257,7 @@ export function OfficialForPort({ ds, v, port, now }: { ds: OfficialDataset | nu
       ) : rel.length ? (
         <div className="space-y-1.5">
           {rel.map((x) => (
-            <NoticeCard key={x.record_id} r={byId.get(x.record_id)!} now={now} relationNote={x.note} compact />
+            <NoticeCard key={x.record_id} r={byId.get(x.record_id)!} now={now} relationNote={x.note} compact dense />
           ))}
         </div>
       ) : (

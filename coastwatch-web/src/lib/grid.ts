@@ -152,3 +152,42 @@ export async function sampleChunked(baseUrl: string, g: ValueGrid, lat: number, 
     ageDays: ageCode == null || ageCode === (age?.nodata ?? 65535) ? null : ageCode,
   };
 }
+
+/**
+ * Cell edges of a full (unchunked) grid, for drawing the model's own cells (M5): every edge
+ * that borders at least one cell with a value, merged into runs. Purely the grid's geometry;
+ * no value is drawn or changed. Cells are centred on the lattice, so edges fall half a step
+ * either side of each centre.
+ */
+export function cellEdges(g: ValueGrid, codes: Uint16Array): GeoJSON.FeatureCollection<GeoJSON.MultiLineString> {
+  const nodata = g.nodata ?? 65535;
+  const ok = (r: number, c: number) => r >= 0 && r < g.height && c >= 0 && c < g.width && codes[r * g.width + c] !== nodata;
+  const latE = (r: number) => +(g.lat_first + (r - 0.5) * g.lat_step).toFixed(5); // edge above row r
+  const lonE = (c: number) => +(g.lon_first + (c - 0.5) * g.lon_step).toFixed(5); // edge left of col c
+  const lines: number[][][] = [];
+  // horizontal edges: between row r-1 and row r
+  for (let r = 0; r <= g.height; r++) {
+    let start = -1;
+    for (let c = 0; c <= g.width; c++) {
+      const on = c < g.width && (ok(r - 1, c) || ok(r, c));
+      if (on && start < 0) start = c;
+      if (!on && start >= 0) {
+        lines.push([[lonE(start), latE(r)], [lonE(c), latE(r)]]);
+        start = -1;
+      }
+    }
+  }
+  // vertical edges: between col c-1 and col c
+  for (let c = 0; c <= g.width; c++) {
+    let start = -1;
+    for (let r = 0; r <= g.height; r++) {
+      const on = r < g.height && (ok(r, c - 1) || ok(r, c));
+      if (on && start < 0) start = r;
+      if (!on && start >= 0) {
+        lines.push([[lonE(c), latE(start)], [lonE(c), latE(r)]]);
+        start = -1;
+      }
+    }
+  }
+  return { type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: lines } }] };
+}

@@ -25,6 +25,7 @@ import { currentsHourly, currentsMean, hourStamp, hoursAgo, KNOTS_PER_MS } from 
 import { combinedGapDays } from "@/lib/stamp";
 import { ARROW_LENGTHS, SPEED_CLASSES } from "@/lib/basemap";
 import { safeHref } from "@/lib/links";
+import type { Opening } from "@/lib/opening";
 import { MapStamp, type StampLine } from "./MapStamp";
 
 export type LayerGroup = "forecast" | "satellite" | "currents";
@@ -35,8 +36,11 @@ export type SatChoice = { product: SatProduct; day: string | null } | { imagery:
 
 type Props = {
   manifest: Manifest;
-  group: LayerGroup;
+  /** null: no data layer (the opening found nothing current; see lib/opening) */
+  group: LayerGroup | null;
   onGroup: (g: LayerGroup) => void;
+  /** why the map opened as it did, when that needs saying (no current data, or forecast stale) */
+  opening?: Opening | null;
   run: ForecastRun | null;
   charmStatus: SourceStatus | null;
   satStatus: SourceStatus | null;
@@ -199,7 +203,7 @@ export function LayerDock(p: Props) {
         )}
       </header>
       <div className={`min-h-0 space-y-2.5 overflow-y-auto overscroll-contain [scrollbar-width:thin] ${desktop ? "px-3.5 pb-3 pt-2" : "pt-2"}`}>
-        {p.group === "forecast" ? <ForecastSection {...p} /> : p.group === "currents" ? <CurrentsSection {...p} /> : <SatelliteSection {...p} />}
+        {p.group == null ? <NothingCurrent {...p} /> : p.group === "forecast" ? <ForecastSection {...p} /> : p.group === "currents" ? <CurrentsSection {...p} /> : <SatelliteSection {...p} />}
       </div>
     </section>
   );
@@ -243,8 +247,18 @@ function ForecastSection(p: Props) {
       </div>
     );
   }
+  const legend = layer?.palette && (
+    <>
+      <ProbabilityLegend palette={layer.palette} threshold={layer.threshold_text} compact />
+      <p data-testid="valid-line" className="sr-only">
+        {VAR_NAME[p.variable]} · valid {formatDate(layer.time.valid_date!, { year: true })}
+      </p>
+    </>
+  );
+  const sheet = p.variant === "sheet";
   return (
     <div data-testid="forecast-panel" className="space-y-2.5">
+      {sheet && legend}
       <div className="flex flex-wrap items-stretch gap-2">
         <label className="flex h-[42px] min-w-[176px] flex-1 basis-[176px] items-center rounded-[9px] bg-surface-3 pl-2.5 pr-1.5 text-[13px] font-medium sm:flex-none">
           <span className="sr-only">Forecast quantity</span>
@@ -286,28 +300,17 @@ function ForecastSection(p: Props) {
           })}
         </div>
       </div>
-      {layer?.palette && (
-        <>
-          <ProbabilityLegend palette={layer.palette} threshold={layer.threshold_text} compact />
-          <p data-testid="valid-line" className="sr-only">
-            {VAR_NAME[p.variable]} · valid {formatDate(layer.time.valid_date!, { year: true })}
-          </p>
-        </>
-      )}
-      {/* freshness problems are never hidden behind "Details" */}
-      {fresh?.state === "stale" && (
-        <p className="text-[12px] leading-snug text-warning" data-testid="stale-note">
-          No newer C-HARM run has been published. This is the newest forecast; its dates are as issued.
-        </p>
-      )}
-      {fresh?.state === "historical" && (
-        <p className="text-[12px] font-medium leading-snug text-serious" data-testid="historical-note">
-          This forecast is out of date. It is shown for reference only and does not describe current conditions.
-        </p>
-      )}
-      {p.charmStatus?.outcome === "failed" && (
-        <p className="text-[12px] leading-snug text-serious" data-testid="update-failed">
-          The last update attempt failed ({formatDateTimePT(p.charmStatus.last_attempt_at)}). Showing the last successful run.
+      {!sheet && legend}
+      {/* freshness problems are never hidden behind "Details": one line, beside the badge */}
+      {(fresh?.state === "stale" || fresh?.state === "historical" || p.charmStatus?.outcome === "failed") && (
+        <p className={`text-[12px] leading-snug ${fresh?.state === "historical" || p.charmStatus?.outcome === "failed" ? "text-serious" : "text-warning"}`} data-testid="forecast-warning">
+          {fresh?.state === "stale" && <span data-testid="stale-note">No newer C-HARM run has been published; this is the newest, with its dates as issued. </span>}
+          {fresh?.state === "historical" && (
+            <span data-testid="historical-note" className="font-medium">
+              Out of date: shown for reference only; it does not describe current conditions.{" "}
+            </span>
+          )}
+          {p.charmStatus?.outcome === "failed" && <span data-testid="update-failed">Last update failed ({formatDateTimePT(p.charmStatus.last_attempt_at)}); showing the last successful run.</span>}
         </p>
       )}
       <MetaRow fresh={fresh} basis={anyLayer.freshness.basis}>
@@ -316,7 +319,7 @@ function ForecastSection(p: Props) {
         <Res l={layer ?? anyLayer} />
       </MetaRow>
       <p className="text-[12px] leading-snug text-ink-2">
-        {p.expanded ? `${FORECAST_COPY.notA} ` : "Not a closure decision. "}
+        {p.expanded ? `${FORECAST_COPY.notA} ` : "Not a toxin measurement or a closure decision. "}
         {FORECAST_COPY.lowNotSafe}
       </p>
       <Details open={p.expanded}>
@@ -365,8 +368,60 @@ function SatelliteSection(p: Props) {
   const value = isImagery ? "imagery" : (product as string);
   const colour = p.showAge && (comp || ms) ? "age" : p.showSensor && ms ? "sensor" : "value";
 
+  const o = p.opening?.group === "satellite" ? p.opening : null;
+  const sheet = p.variant === "sheet";
+  const legendBlock = layer?.palette && (
+            <div className="space-y-1.5">
+              {colour === "age" ? <AgeLegend maxDays={comp?.window_days ?? 7} /> : colour === "sensor" && ms ? <SensorLegend labels={ms.members.map((m) => m.label)} /> : <ChlorophyllLegend palette={layer.palette} compact />}
+              {(comp || ms) && (
+                <div className="flex items-center gap-2 text-[12px] text-ink-3">
+                  <span id="colour-shows">Colour shows</span>
+                  <div role="radiogroup" aria-labelledby="colour-shows" className="flex gap-1">
+                    {(
+                      [
+                        ["value", "Chlorophyll", "toggle-value", true],
+                        ["age", "Observation date", "toggle-age", true],
+                        ["sensor", "Sensor", "toggle-sensor", !!ms],
+                      ] as const
+                    )
+                      .filter((o) => o[3])
+                      .map(([k, label, tid]) => (
+                        <button
+                          key={k}
+                          type="button"
+                          role="radio"
+                          aria-checked={colour === k}
+                          data-testid={tid}
+                          onClick={() => {
+                            if (k === "age") p.onShowAge(true);
+                            else if (k === "sensor") p.onShowSensor(true);
+                            else {
+                              p.onShowAge(false);
+                              p.onShowSensor(false);
+                            }
+                          }}
+                          className={`rounded-full border px-2 py-0.5 text-[12px] transition-colors duration-150 max-lg:py-1 ${colour === k ? "border-navy-900 bg-navy-900 text-white" : "border-hairline text-ink-2 hover:border-hairline-strong"}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
   return (
     <div data-testid="satellite-panel" className="space-y-2.5">
+      {sheet && !isImagery && latest && legendBlock}
+      {o && !isImagery && product === o.product && (
+        <p data-testid="opening-note" className="text-[12px] leading-snug text-ink-2">
+          <span className="font-medium text-ink">Opened on satellite chlorophyll</span> because{" "}
+          {o.reason === "forecast-stale" && o.forecast.basisDate ? `the C-HARM forecast is not current (issued ${formatDate(o.forecast.basisDate)}).` : "no C-HARM forecast is available."}{" "}
+          <button type="button" className="font-medium text-accent underline-offset-2 hover:underline" onClick={() => p.onGroup("forecast")} data-testid="opening-show-forecast">
+            Show the forecast
+          </button>
+        </p>
+      )}
       <Seg
         label="Satellite product"
         value={value}
@@ -422,46 +477,7 @@ function SatelliteSection(p: Props) {
               })}
             </div>
           )}
-          {layer?.palette && (
-            <div className="space-y-1.5">
-              {colour === "age" ? <AgeLegend maxDays={comp?.window_days ?? 7} /> : colour === "sensor" && ms ? <SensorLegend labels={ms.members.map((m) => m.label)} /> : <ChlorophyllLegend palette={layer.palette} compact />}
-              {(comp || ms) && (
-                <div className="flex items-center gap-2 text-[12px] text-ink-3">
-                  <span id="colour-shows">Colour shows</span>
-                  <div role="radiogroup" aria-labelledby="colour-shows" className="flex gap-1">
-                    {(
-                      [
-                        ["value", "Chlorophyll", "toggle-value", true],
-                        ["age", "Observation date", "toggle-age", true],
-                        ["sensor", "Sensor", "toggle-sensor", !!ms],
-                      ] as const
-                    )
-                      .filter((o) => o[3])
-                      .map(([k, label, tid]) => (
-                        <button
-                          key={k}
-                          type="button"
-                          role="radio"
-                          aria-checked={colour === k}
-                          data-testid={tid}
-                          onClick={() => {
-                            if (k === "age") p.onShowAge(true);
-                            else if (k === "sensor") p.onShowSensor(true);
-                            else {
-                              p.onShowAge(false);
-                              p.onShowSensor(false);
-                            }
-                          }}
-                          className={`rounded-full border px-2 py-0.5 text-[12px] transition-colors duration-150 max-lg:py-1 ${colour === k ? "border-navy-900 bg-navy-900 text-white" : "border-hairline text-ink-2 hover:border-hairline-strong"}`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {!sheet && legendBlock}
           {product && satelliteUpdateFailed(p.satStatus, product) && p.satStatus && (
             <p className="text-[12px] leading-snug text-serious" data-testid="sat-update-failed">
               The latest update ({formatDateTimePT(p.satStatus.last_attempt_at)}) did not refresh this product. Showing the last published observations, with their own dates.
@@ -472,7 +488,11 @@ function SatelliteSection(p: Props) {
             <span className={p.expanded ? "" : "hidden"}>{product === "viirs750" ? "VIIRS · NOAA" : product === "multi" ? "Sentinel-3 OLCI + VIIRS · NOAA CoastWatch" : "Sentinel-3 OLCI · NOAA CoastWatch"}</span>
             <Res l={layer} />
           </MetaRow>
-          <p className={`text-[12px] leading-snug text-ink-2 ${p.expanded ? "" : "line-clamp-2"}`} data-testid="sat-dates">
+          {/* what chlorophyll is and what a gap means: always visible, never clamped */}
+          <p className="text-[12px] font-medium leading-snug text-ink" data-testid="sat-caveat">
+            Chlorophyll is algae biomass, not toxin. Gaps are cloud or missing passes, not low chlorophyll.
+          </p>
+          <p className={`text-[12px] leading-snug text-ink-2 ${p.expanded ? "" : "line-clamp-1"}`} data-testid="sat-dates">
             {ms ? (
               <MultiDates ms={ms} primary={mPrimary} secondary={mSecondary} regionId={p.regionId} regionLabel={p.regionLabel} />
             ) : layer && !layer.grid ? (
@@ -487,8 +507,7 @@ function SatelliteSection(p: Props) {
                 Overpass {(layer.time.observed_times ?? []).map((t) => formatDateTimePT(t)).join(", ")}.{" "}
                 {cov ? `${Math.round(cov.observed_fraction * 100)}% of ${p.regionLabel} ocean observed.` : ""}
               </>
-            ) : null}{" "}
-            {CHLOROPHYLL_COPY.biomass.split(".")[0]}. {CHLOROPHYLL_COPY.gaps}
+            ) : null}
           </p>
           <Details open={p.expanded}>
             {ms && (
@@ -668,8 +687,10 @@ function CurrentsSection(p: Props) {
   const t = layer?.time.valid_time;
   const failed = p.curStatus?.outcome === "failed";
   const particles = p.flow === "particles" && !p.reducedMotion;
+  const sheet = p.variant === "sheet";
   return (
     <div data-testid="currents-panel" className="space-y-2.5">
+      {sheet && <CurrentsLegend particles={particles} detail={p.expanded} short />}
       <div className="flex flex-wrap gap-2">
         <div className="min-w-[200px] flex-1">
           <Seg
@@ -745,13 +766,14 @@ function CurrentsSection(p: Props) {
           "No observed currents in this dataset."
         )}
       </p>
-      <CurrentsLegend particles={particles} detail={p.expanded} />
+      {!sheet && <CurrentsLegend particles={particles} detail={p.expanded} />}
       {failed && p.curStatus && (
         <p className="text-[12px] leading-snug text-serious" data-testid="cur-update-failed">
-          The latest update ({formatDateTimePT(p.curStatus.last_attempt_at)}) did not refresh currents. Showing the last published hours, with their own times.
+          Latest update failed ({formatDateTimePT(p.curStatus.last_attempt_at)}); showing the last published hours.
         </p>
       )}
-      <CombinedSection {...p} currents={layer} />
+      {/* the combined view is an option (Details), but once on, its statements always show */}
+      {(p.underlay || p.expanded || p.variant === "sheet") && <CombinedSection {...p} currents={layer} />}
       <MetaRow fresh={fresh} compactAge>
         <ProductClassBadge pc="observation" />
         <span className={p.expanded ? "" : "hidden"}>HF radar · HFRNet / NOAA CoastWatch</span>
@@ -772,6 +794,8 @@ function CurrentsSection(p: Props) {
 }
 
 const CLASS_LABELS = ["< 0.1", "0.1–0.25", "0.25–0.5", "0.5–1", "≥ 1"];
+// phone width: same classes, shorter numbers (m/s)
+const CLASS_SHORT = ["<.1", ".1–.25", ".25–.5", ".5–1", "≥1"];
 
 /** The map's arrow glyph for a speed class (same geometry as lib/basemap arrowImage). */
 function ArrowGlyph({ length }: { length: number }) {
@@ -789,11 +813,11 @@ function ArrowGlyph({ length }: { length: number }) {
   );
 }
 
-function CurrentsLegend({ particles, detail }: { particles: boolean; detail: boolean }) {
+function CurrentsLegend({ particles, detail, short = false }: { particles: boolean; detail: boolean; short?: boolean }) {
   return (
     <figure data-testid="currents-legend" className="space-y-1" aria-label="Legend: current speed classes">
       <figcaption className="text-[12px] font-medium text-ink">
-        {particles ? "Particles move with the observed current" : "Arrows point where the surface water is moving"}
+        {particles ? "Particles drift through this one observed field. Not a trajectory." : "Arrows point where the surface water is moving"}
         <span className="font-normal text-ink-3"> · speed, m/s</span>
       </figcaption>
       <div className="flex items-center gap-1 rounded-lg bg-navy-900 px-2 py-0.5">
@@ -808,7 +832,7 @@ function CurrentsLegend({ particles, detail }: { particles: boolean; detail: boo
                 <ArrowGlyph length={len} />
               </span>
             )}
-            {CLASS_LABELS[i]}
+            {(short ? CLASS_SHORT : CLASS_LABELS)[i]}
           </span>
         ))}
       </div>
@@ -854,6 +878,48 @@ function CombinedSection(p: Props & { currents: LayerArtifact | null }) {
           </ul>
         </>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- nothing current (opening policy)
+/** The map opened without a data layer because neither the forecast nor a satellite view is
+ *  current (lib/opening). Says what is missing and offers the latest of each, with its date. */
+function NothingCurrent(p: Props) {
+  const o = p.opening && p.opening.group == null ? p.opening : null;
+  const run = p.run;
+  const sat = o?.satellite ?? null;
+  const satDate = sat?.layer.time.observed_date ?? null;
+  return (
+    <div data-testid="nothing-current" className="space-y-2 text-[12.5px] leading-snug text-ink-2">
+      <p className="text-[13px] font-semibold text-ink">No current forecast or recent satellite view</p>
+      <p>
+        {run ? `The newest C-HARM forecast was issued ${formatDate(run.issued_date)}. ` : "No C-HARM forecast could be loaded. "}
+        {sat && satDate
+          ? `Satellites last saw ${sat.coverage != null ? `${Math.round(sat.coverage * 100)}% of ${p.regionLabel}` : p.regionLabel} (newest ${formatDate(satDate)}).`
+          : "No recent satellite observation was published."}{" "}
+        The map shows the coast and seafloor only. This does not mean conditions are normal.
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {run && (
+          <button type="button" data-testid="show-latest-forecast" onClick={() => p.onGroup("forecast")} className="rounded-lg border border-hairline-strong px-2.5 py-1 text-[12.5px] font-medium text-ink hover:bg-surface-2">
+            Show the last forecast ({formatDate(run.issued_date).replace(/^\w+, /, "")})
+          </button>
+        )}
+        {sat && (
+          <button
+            type="button"
+            data-testid="show-latest-satellite"
+            onClick={() => {
+              p.onSat({ product: sat.product, day: null });
+              p.onGroup("satellite");
+            }}
+            className="rounded-lg border border-hairline-strong px-2.5 py-1 text-[12.5px] font-medium text-ink hover:bg-surface-2"
+          >
+            Show the latest satellite view
+          </button>
+        )}
+      </div>
     </div>
   );
 }

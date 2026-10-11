@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import { setWorkerUrl, type ExpressionSpecification, type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { PortsCollection } from "@/generated/schema";
-import { ARROW_LENGTHS, arrowImage, basemapStyle, BEFORE_OVERLAY_ID, CA_BOUNDS, NODATA_LAYER_ID, NODATA_VEIL_ID, noDataImage, SPEED_CLASSES, type NoDataStyle } from "@/lib/basemap";
+import { ARROW_LENGTHS, arrowImage, BASEMAP_STYLE, BEFORE_OVERLAY_ID, CA_BOUNDS, NODATA_LAYER_ID, noDataImage, SPEED_CLASSES } from "@/lib/basemap";
 import type { CurrentField } from "@/lib/currents";
+import { indexedTiles } from "@/lib/tileIndex";
 import FlowParticles from "./FlowParticles";
 
 // MapLibre's module worker is copied to public/ by scripts/copy-maplibre-worker.mjs
@@ -15,7 +16,7 @@ setWorkerUrl("/vendor/maplibre/maplibre-gl-worker.mjs");
 /** C-HARM: one Mercator image placed by its corners. */
 export type ImageRaster = { id: string; url: string; corners: number[][] };
 /** XYZ tiles: CoastWatch-rendered satellite tiles or third-party imagery. */
-export type TileRaster = { id: string; template: string; minzoom: number; maxzoom: number; bounds?: number[] | null };
+export type TileRaster = { id: string; template: string; minzoom: number; maxzoom: number; bounds?: number[] | null; indexUrl?: string | null };
 
 export type MapPoint = { lat: number; lon: number };
 /** Observed currents for one hour (or the 24 h mean): arrows from the published grids, or particles. */
@@ -38,25 +39,19 @@ type Props = {
   onPort: (portCode: number) => void;
   onPoint: (p: MapPoint) => void;
   onReady: (map: MlMap) => void;
-  /** basemap relief (land and seafloor shading, isobaths); default on */
-  relief?: boolean;
-  /** how water without a value is drawn under a raster layer */
-  noData?: NoDataStyle;
-  /** arrow density: "standard" thins arrows when zoomed out; "dense" keeps one level more */
-  arrowDensity?: "standard" | "dense";
+  /** pointer over the map (desktop hover readout); null when it leaves */
+  onHover?: (p: MapPoint | null, screen: { x: number; y: number } | null) => void;
+  /** C-HARM model cell edges, drawn faintly from z8.5 so its 3 km cells read as cells */
+  cellEdges?: GeoJSON.FeatureCollection | null;
+  /** fade new data rasters in (switching layer); time steps always cut, never cross-fade */
+  fade?: boolean;
 };
 
 const OFFICIAL = "#f6bb5c";
-// [level, minzoom, maxzoom]: zoomed out, only cells on every 8th row and column carry an
-// arrow; arrows never move between zooms, more appear. HF radar cells are about 2 km.
+// [level, minzoom, maxzoom]: one arrow per observed 2 km radar cell from z8.5 (M5); zoomed
+// out, only cells on every 2nd, 4th or 8th row and column carry one. Arrows never move
+// between zooms, more appear.
 const ARROW_ZOOMS: [number, number, number][] = [
-  [16, 0, 6.3],
-  [8, 6.3, 7.3],
-  [4, 7.3, 8.5],
-  [2, 8.5, 9.6],
-  [1, 9.6, 24],
-];
-const ARROW_ZOOMS_DENSE: [number, number, number][] = [
   [8, 0, 6.3],
   [4, 6.3, 7.3],
   [2, 7.3, 8.5],
@@ -72,45 +67,32 @@ function addArrows(m: MlMap) {
 // Every data raster is opaque and nearest-sampled: a pixel is a real source cell, and the
 // legend colours are exactly the colours on the map (design reset rev. 2, §5.1).
 const RASTER_PAINT = { "raster-opacity": 1, "raster-resampling": "nearest", "raster-fade-duration": 0 } as const;
+const RASTER_FADE = { ...RASTER_PAINT, "raster-fade-duration": 220 } as const;
 
 export default function MapCanvas(p: Props) {
   const [wide] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const { onPort, onPoint } = p;
   const [map, setMap] = useState<MlMap | null>(null);
-  const patternKind = useRef<"hatch" | "stipple">("stipple");
-  const relief = p.relief ?? true;
-  const noData = p.noData ?? "hatch";
-  const style = useMemo(() => basemapStyle({ relief }), [relief]);
   const hasRaster = !!(p.forecast || p.satellite || p.satelliteAge);
+  const paint = p.fade ? RASTER_FADE : RASTER_PAINT;
 
-  // The no-data treatment shows only under a raster data layer: with currents alone (or
-  // nothing) there is no "value" for a gap to be confused with.
+  // The no-data dots show only under a raster data layer: with currents alone (or nothing)
+  // there is no "value" for a gap to be confused with.
   useEffect(() => {
     if (!map) return;
-    // idempotent: only touches the style when something differs, because every style
-    // change fires "styledata" again
+    // idempotent: every style change fires "styledata" again
     const apply = () => {
       if (!map.getLayer(NODATA_LAYER_ID)) return;
-      const kind = noData === "veil" ? "stipple" : noData;
-      if (patternKind.current !== kind) {
-        patternKind.current = kind;
-        if (map.hasImage("nodata")) map.updateImage("nodata", noDataImage(kind));
-        else map.addImage("nodata", noDataImage(kind));
-      }
-      const set = (id: string, on: boolean) => {
-        const v = on ? "visible" : "none";
-        if (map.getLayoutProperty(id, "visibility") !== v) map.setLayoutProperty(id, "visibility", v);
-      };
-      set(NODATA_LAYER_ID, hasRaster && noData !== "veil");
-      set(NODATA_VEIL_ID, hasRaster && noData === "veil");
+      const v = hasRaster ? "visible" : "none";
+      if (map.getLayoutProperty(NODATA_LAYER_ID, "visibility") !== v) map.setLayoutProperty(NODATA_LAYER_ID, "visibility", v);
     };
     apply();
     map.on("styledata", apply);
     return () => {
       map.off("styledata", apply);
     };
-  }, [map, noData, hasRaster]);
-  const arrowZooms = p.arrowDensity === "dense" ? ARROW_ZOOMS_DENSE : ARROW_ZOOMS;
+  }, [map, hasRaster]);
+  const { onHover } = p;
 
   const onClick = useCallback(
     (e: MapLayerMouseEvent) => {
@@ -138,7 +120,7 @@ export default function MapCanvas(p: Props) {
 
   return (
     <Map
-      mapStyle={style}
+      mapStyle={BASEMAP_STYLE}
       initialViewState={{ bounds: p.initialBounds, fitBoundsOptions: { padding: p.initialPadding } }}
       maxBounds={[CA_BOUNDS[0][0], CA_BOUNDS[0][1], CA_BOUNDS[1][0], CA_BOUNDS[1][1]]}
       minZoom={4.2}
@@ -147,12 +129,14 @@ export default function MapCanvas(p: Props) {
       attributionControl={{ compact: true }}
       interactiveLayerIds={interactive}
       onClick={onClick}
+      onMouseMove={onHover ? (e) => onHover({ lat: e.lngLat.lat, lon: e.lngLat.lng }, { x: e.point.x, y: e.point.y }) : undefined}
+      onMouseOut={onHover ? () => onHover(null, null) : undefined}
       onLoad={(e) => {
         const m = e.target;
-        if (!m.hasImage("nodata")) m.addImage("nodata", noDataImage("stipple"));
+        if (!m.hasImage("nodata")) m.addImage("nodata", noDataImage(), { pixelRatio: 2 });
         addArrows(m);
         m.on("styleimagemissing", (ev: { id: string }) => {
-          if (ev.id === "nodata" && !m.hasImage("nodata")) m.addImage("nodata", noDataImage("stipple"));
+          if (ev.id === "nodata" && !m.hasImage("nodata")) m.addImage("nodata", noDataImage(), { pixelRatio: 2 });
           if (ev.id.startsWith("cw-arrow-")) addArrows(m);
         });
         setMap(m);
@@ -168,7 +152,18 @@ export default function MapCanvas(p: Props) {
 
       {p.forecast && (
         <Source key={p.forecast.id} id="forecast" type="image" url={p.forecast.url} coordinates={p.forecast.corners as [[number, number], [number, number], [number, number], [number, number]]}>
-          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={RASTER_PAINT} />
+          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
+        </Source>
+      )}
+      {p.forecast && p.cellEdges && (
+        <Source key={`${p.forecast.id}-edges`} id="forecast-edges" type="geojson" data={p.cellEdges}>
+          <Layer
+            id="forecast-cell-edges"
+            type="line"
+            minzoom={8.5}
+            beforeId={BEFORE_OVERLAY_ID}
+            paint={{ "line-color": "#06111e", "line-width": 0.5, "line-opacity": ["interpolate", ["linear"], ["zoom"], 8.5, 0, 9.6, 0.1, 11, 0.16] }}
+          />
         </Source>
       )}
       {p.satellite && (
@@ -176,18 +171,18 @@ export default function MapCanvas(p: Props) {
           key={p.satellite.id}
           id="satellite"
           type="raster"
-          tiles={[p.satellite.template]}
+          tiles={[indexedTiles(p.satellite.template, p.satellite.indexUrl)]}
           tileSize={256}
           minzoom={p.satellite.minzoom}
           maxzoom={p.satellite.maxzoom}
           bounds={p.satellite.bounds as [number, number, number, number] | undefined}
         >
-          <Layer id="satellite-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={RASTER_PAINT} />
+          <Layer id="satellite-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
         </Source>
       )}
       {p.satelliteAge && (
-        <Source key={p.satelliteAge.id} id="satellite-age" type="raster" tiles={[p.satelliteAge.template]} tileSize={256} minzoom={p.satelliteAge.minzoom} maxzoom={p.satelliteAge.maxzoom} bounds={p.satelliteAge.bounds as [number, number, number, number] | undefined}>
-          <Layer id="satellite-age-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={RASTER_PAINT} />
+        <Source key={p.satelliteAge.id} id="satellite-age" type="raster" tiles={[indexedTiles(p.satelliteAge.template, p.satelliteAge.indexUrl)]} tileSize={256} minzoom={p.satelliteAge.minzoom} maxzoom={p.satelliteAge.maxzoom} bounds={p.satelliteAge.bounds as [number, number, number, number] | undefined}>
+          <Layer id="satellite-age-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
         </Source>
       )}
       {p.imagery && (
@@ -196,9 +191,10 @@ export default function MapCanvas(p: Props) {
         </Source>
       )}
 
-      {p.currents && p.currents.mode === "arrows" && (
+      {/* after load, once the arrow glyphs are registered */}
+      {map && p.currents && p.currents.mode === "arrows" && (
         <Source key={p.currents.id} id="currents" type="geojson" data={p.currents.features}>
-          {arrowZooms.map(([level, minzoom, maxzoom]) => (
+          {ARROW_ZOOMS.map(([level, minzoom, maxzoom]) => (
             <Layer
               key={level}
               id={`currents-arrows-${level}`}
@@ -213,8 +209,8 @@ export default function MapCanvas(p: Props) {
                 "icon-rotation-alignment": "map",
                 "icon-allow-overlap": true,
                 "icon-ignore-placement": true,
-                // drawn smaller when zoomed out so the statewide view stays readable
-                "icon-size": p.arrowDensity === "dense" ? ["interpolate", ["linear"], ["zoom"], 5, 0.5, 8.5, 0.78, 11, 1] : ["interpolate", ["linear"], ["zoom"], 5, 0.62, 8.5, 1, 11, 1.15],
+                // smaller when zoomed out, and at one per cell small enough not to touch
+                "icon-size": ["interpolate", ["linear"], ["zoom"], 5, 0.5, 8.5, 0.78, 11, 1],
               }}
               paint={{ "icon-opacity": 1 }}
             />
@@ -234,7 +230,7 @@ export default function MapCanvas(p: Props) {
             minzoom={7.4}
             filter={["==", ["get", "kind"], "lat_limit"]}
             layout={{ "symbol-placement": "line-center", "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, -1.15], "text-allow-overlap": false }}
-            paint={{ "text-color": OFFICIAL, "text-halo-color": "#06111e", "text-halo-width": 1.6 }}
+            paint={{ "text-color": OFFICIAL, "text-halo-color": "#06111e", "text-halo-width": 1.2, "text-halo-blur": 0.4 }}
           />
         </Source>
       )}

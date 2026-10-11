@@ -21,7 +21,7 @@ function multiSensorLabel(l: LayerArtifact): string {
 
 /** One line per layer on the map: what it is and when it was observed or is valid for. */
 export function stampLines(p: {
-  group: "forecast" | "satellite" | "currents";
+  group: "forecast" | "satellite" | "currents" | null;
   forecast?: LayerArtifact | null;
   run?: ForecastRun | null;
   satellite?: LayerArtifact | null;

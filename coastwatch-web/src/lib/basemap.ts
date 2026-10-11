@@ -20,7 +20,6 @@ export const LAND = "#2a3646";
 export const BEFORE_OVERLAY_ID = "coastline";
 /** Layer ids of the no-data hatch, which MapCanvas shows only under a raster data layer. */
 export const NODATA_LAYER_ID = "water-nodata";
-export const NODATA_VEIL_ID = "water-nodata-veil";
 
 const FONT = ["Noto Sans Regular"];
 const FONT_ITALIC = ["Noto Sans Italic"];
@@ -109,10 +108,9 @@ export const BASEMAP_STYLE: StyleSpecification = {
       },
       paint: { "text-color": "rgba(170,196,222,0.62)", "text-halo-color": SEA, "text-halo-width": 1.2 },
     },
-    // no-data treatments, shown by MapCanvas only under a raster data layer: a pattern
-    // (image "nodata", registered by MapCanvas) or a pale veil, like haze over the water
+    // no data: fine dots on the water, shown by MapCanvas only under a raster data layer
+    // (image "nodata", registered by MapCanvas); the data rasters cover them where a value exists
     { id: NODATA_LAYER_ID, type: "fill", source: "omt", "source-layer": "water", layout: { visibility: "none" }, paint: { "fill-pattern": "nodata" } },
-    { id: NODATA_VEIL_ID, type: "fill", source: "omt", "source-layer": "water", layout: { visibility: "none" }, paint: { "fill-color": "rgba(196,212,230,0.17)" } },
     {
       id: "coastline",
       type: "line",
@@ -240,34 +238,23 @@ export const CA_BOUNDS: [[number, number], [number, number]] = [
   [-112.5, 44.8],
 ];
 
-/** How water without a data value is drawn under a raster layer. All three are colourless
- *  (no hue from any data palette), so a gap never reads as a low value. */
-export type NoDataStyle = "hatch" | "stipple" | "veil";
-
-/** Pattern image for the no-data fill: an 8 px diagonal hatch, or a sparse 1 px stipple. */
-export function noDataImage(kind: "hatch" | "stipple"): ImageData {
-  const n = kind === "hatch" ? 8 : 6;
-  const c = document.createElement("canvas");
-  c.width = c.height = n;
-  const g = c.getContext("2d")!;
-  if (kind === "stipple") {
-    g.fillStyle = "rgba(170,196,224,0.42)";
-    g.fillRect(0, 0, 1, 1);
-    g.fillRect(3, 3, 1, 1);
-    return g.getImageData(0, 0, n, n);
-  }
-  g.strokeStyle = "rgba(150,178,210,0.26)";
-  g.lineWidth = 1;
-  g.beginPath();
-  g.moveTo(0, n);
-  g.lineTo(n, 0);
-  g.moveTo(-1, 1);
-  g.lineTo(1, -1);
-  g.moveTo(n - 1, n + 1);
-  g.lineTo(n + 1, n - 1);
-  g.stroke();
-  return g.getImageData(0, 0, n, n);
+/** No-data dots (M5): a 1 px dot on a 3 px diagonal lattice in a colour no data palette uses,
+ *  so a gap reads as texture, never as a low value, and the seafloor relief shows through.
+ *  Drawn at 2x for sharp dots on high-density screens. */
+export function noDataImage(): { width: number; height: number; data: Uint8Array } {
+  const n = 12; // 6 css px at pixelRatio 2
+  const data = new Uint8Array(n * n * 4);
+  const dot = (x: number, y: number) => {
+    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+      const i = ((y + dy) * n + (x + dx)) * 4;
+      data.set([170, 196, 224, 120], i);
+    }
+  };
+  dot(0, 0);
+  dot(6, 6);
+  return { width: n, height: n, data };
 }
+
 /** Current-speed classes (m/s, lower bounds) and the arrow shaft length drawn for each.
  *  Discrete classes: a reader can match an arrow to the legend exactly. */
 export const SPEED_CLASSES = [0, 0.1, 0.25, 0.5, 1] as const;

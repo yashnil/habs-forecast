@@ -26,6 +26,8 @@ type Props = {
   palette: Palette | null | undefined;
   /** official notices that may apply in the selected region (record ids) */
   regionNotices: number | null;
+  /** the notices row at the top; off where the place chip already shows it (desktop) */
+  showOfficial?: boolean;
 };
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
@@ -35,7 +37,7 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
  * and region views list places; with a port open the card shrinks to a breadcrumb because
  * the port inspector carries the detail. Never more than one full panel per side.
  */
-export function NavCard({ regions, region, onRegion, ports, portsError, port, onPort, variable, lead, palette, regionNotices, showForecast = true }: Props) {
+export function NavCard({ regions, region, onRegion, ports, portsError, port, onPort, variable, lead, palette, regionNotices, showForecast = true, showOfficial = true }: Props) {
   const { openDrawer, count, verification, available } = useOfficialDrawer();
   const [q, setQ] = useState("");
   const statewide = regions[0];
@@ -74,8 +76,8 @@ export function NavCard({ regions, region, onRegion, ports, portsError, port, on
   };
 
   return (
-    <section data-testid="nav-card" aria-label="Official notices and places" className="theme-paper flex max-h-full flex-col overflow-hidden rounded-2xl bg-surface text-ink shadow-[0_1px_2px_rgba(6,17,30,0.12),0_8px_24px_rgba(6,17,30,0.18)]">
-      {port == null && (
+    <section data-testid="nav-card" id="places-panel" aria-label={showOfficial ? "Official notices and places" : "Places"} className="theme-paper flex max-h-full flex-col overflow-hidden rounded-2xl bg-surface text-ink shadow-[0_1px_2px_rgba(6,17,30,0.12),0_8px_24px_rgba(6,17,30,0.18)]">
+      {port == null && showOfficial && (
         <button
           type="button"
           data-testid="official-summary"

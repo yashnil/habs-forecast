@@ -9,8 +9,8 @@ import { GROUPS, type LayerGroup } from "./LayerDock";
 const GROUP_ICON: Record<LayerGroup, IconName> = { forecast: "forecast", satellite: "satellite", currents: "currents" };
 
 /**
- * Desktop control rail (M5): a slim column on the map's left edge. Places shows or hides the
- * place card; the three layer buttons switch what the map draws. Model and observation keep
+ * Desktop control rail (M5): a slim column on the map's left edge. Places opens the place
+ * list; the three layer buttons switch what the map draws. Model and observation keep
  * their colours (violet, teal) on a small marker under each label. Arrow keys move between
  * layers, as in any tab list.
  */
@@ -22,7 +22,7 @@ export function ControlRail({
   onPlaces,
 }: {
   manifest: Manifest;
-  group: LayerGroup;
+  group: LayerGroup | null;
   onGroup: (g: LayerGroup) => void;
   placesOpen: boolean;
   onPlaces: () => void;
@@ -31,7 +31,7 @@ export function ControlRail({
   const enabled = GROUPS.filter((g) => g.id !== "currents" || hasCurrents);
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
   const onKey = (e: React.KeyboardEvent) => {
-    const i = enabled.findIndex((g) => g.id === group);
+    const i = Math.max(0, enabled.findIndex((g) => g.id === group));
     const next = e.key === "ArrowDown" ? i + 1 : e.key === "ArrowUp" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? enabled.length - 1 : null;
     if (next == null) return;
     e.preventDefault();
@@ -56,7 +56,7 @@ export function ControlRail({
               type="button"
               role="tab"
               aria-selected={on}
-              tabIndex={on ? 0 : -1}
+              tabIndex={on || (group == null && g.id === enabled[0]?.id) ? 0 : -1}
               disabled={off}
               aria-disabled={off || undefined}
               title={off ? "Observed currents are not in this dataset." : `${g.label} (${g.kind.toLowerCase()})`}
