@@ -1,321 +1,300 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FisheriesDataset } from "@/generated/fisheries";
 import type { OfficialDataset } from "@/generated/official";
 import type { SourceStatus } from "@/generated/schema";
-import { FISHERIES_COPY, OFFICIAL_STATUS } from "@/content/copy";
-import { BarChart, money } from "@/components/charts/BarChart";
-import { FreshnessBadge, ProductClassBadge } from "@/components/ui/Badges";
-import { Notice, Segmented, SourceLink } from "@/components/ui/Primitives";
+import { FISHERIES_COPY } from "@/content/copy";
+import { OfficialStrip } from "@/components/bloom/OfficialStrip";
+import { FreshDot } from "@/components/bloom/FreshDot";
 import { classifySource } from "@/lib/freshness";
-import { formatDateTimePT } from "@/lib/time";
 import { useNow } from "@/lib/useNow";
-import { fisheriesValue, selectedTotal, type Dollars } from "@/lib/fisheries";
+import { formatValue, groupShort, groupsInTier, pct, selectedTotal, shareOfState, span, stateTotal, unitLabel, viewQuery, type FisheriesView, type TierSet, type Unit } from "@/lib/fisheries";
+import { FisheriesMethods } from "./FisheriesMethods";
+import { Legend, LandingsChart } from "./LandingsChart";
+import dynamic from "next/dynamic";
+import { SpeciesTable } from "./SpeciesTable";
+import { YearPanel } from "./YearPanel";
 
-type TierSel = "1" | "12";
-const BAR = "var(--cw-series-bar)";
+// the reference map (and its 14 kB of CDFW points) loads only when its section nears the screen
+const PortAreaMap = dynamic(() => import("./PortAreaMap").then((m) => m.PortAreaMap), { ssr: false, loading: () => <MapSpace /> });
+function MapSpace() {
+  return <div className="aspect-[329/251] w-full max-w-[329px] rounded-md bg-surface-3/60" aria-hidden />;
+}
+function NearScreen({ children }: { children: React.ReactNode }) {
+  const [near, setNear] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || near) return;
+    const io = new IntersectionObserver(([e]) => e.isIntersecting && setNear(true), { rootMargin: "600px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near]);
+  return <div ref={ref}>{near ? children : <MapSpace />}</div>;
+}
 
-export function FisheriesExposure({ ds, status, official }: { ds: FisheriesDataset; status: SourceStatus | null; official: OfficialDataset | null }) {
-  const now = useNow();
-  const [dollars, setDollars] = useState<Dollars>("real");
-  const [tier, setTier] = useState<TierSel>("1");
-  const base = ds.deflator.base_year;
-  const unit = dollars === "real" ? `${base} dollars (CPI-U adjusted)` : "nominal dollars (as reported)";
-  const groups = ds.groups.filter((g) => (tier === "1" ? g.tier === 1 : true));
-  const latest = ds.years[ds.years.length - 1];
-  const latestTotal = selectedTotal(groups, latest, dollars);
-  const avg = ds.years.map((y) => selectedTotal(groups, y, dollars)).filter((v): v is number => v != null);
-  const mean = avg.length ? avg.reduce((a, b) => a + b, 0) / avg.length : null;
-  const state = ds.statewide_total.find((t) => t.year === latest);
-  const stateV = state ? fisheriesValue(state, dollars) : null;
-  const withheld = ds.withheld.find((w) => w.year === latest);
-  const records = new Map((official?.registry.records ?? []).map((r) => [r.id, r]));
-  const fresh = status && now ? classifySource(status, now) : null;
-
+function Seg<T extends string>({ label, value, options, onChange, testid }: { label: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; testid: string }) {
   return (
-    <div className="mx-auto w-full max-w-[1200px] space-y-4 px-4 py-5" data-testid="fisheries-page">
-      <header className="max-w-3xl space-y-1.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <ProductClassBadge pc="historical_context" />
-          <FreshnessBadge f={fresh} compact />
-          <span className="text-[11.5px] text-ink-3" data-testid="data-through">
-            Annual data through {latest}
-          </span>
-          <span className="rounded-md border border-dashed border-hairline-strong px-1.5 py-px text-[10px] font-semibold uppercase tracking-wider text-ink-3" data-testid="science-review-pending">
-            Scientific review pending
-          </span>
-        </div>
-        <h1 className="text-[22px] font-semibold tracking-tight text-ink">{FISHERIES_COPY.heading}</h1>
-        <p className="text-[13.5px] leading-relaxed text-ink-2">{FISHERIES_COPY.lede}</p>
-      </header>
-
-      <section className="rounded-lg border border-accent/30 bg-accent/[0.05] px-4 py-3" data-testid="exposure-definition">
-        <p className="text-[13px] leading-relaxed text-ink">
-          <span className="font-semibold">What “exposure” means here. </span>
-          {ds.terminology}
-        </p>
-      </section>
-
-      <Notice tone="warning" title={FISHERIES_COPY.portUnavailable} testid="port-level-unavailable">
-        <ul className="mt-1 list-disc space-y-0.5 pl-4">
-          {ds.port_level.reasons.map((r) => (
-            <li key={r}>{r}</li>
-          ))}
-        </ul>
-        <details className="mt-1.5 text-[11.5px] text-ink-2">
-          <summary className="cursor-pointer">Port-level sources considered</summary>
-          <ul className="mt-1 space-y-0.5">
-            {ds.port_level.adapters.map((a) => (
-              <li key={a.id}>
-                <span className="font-mono text-ink-3">{a.id}</span> — <span className="font-medium">{a.status}</span>: {a.note}
-              </li>
-            ))}
-          </ul>
-        </details>
-      </Notice>
-
-      <div className="flex flex-wrap items-end gap-3" data-testid="fisheries-filters">
-        <div className="w-[280px]">
-          <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink-3">Species</p>
-          <Segmented
-            label="Species tiers"
-            value={tier}
-            onChange={setTier}
-            testidPrefix="tier"
-            options={[
-              { value: "1", label: "Tier 1", sub: "toxin closures" },
-              { value: "12", label: "Tiers 1 + 2", sub: "+ advisories" },
-            ]}
-          />
-        </div>
-        <div className="w-[280px]">
-          <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink-3">Dollars</p>
-          <Segmented
-            label="Dollar basis"
-            value={dollars}
-            onChange={setDollars}
-            testidPrefix="dollars"
-            options={[
-              { value: "real", label: `Real (${base} $)`, sub: "inflation-adjusted" },
-              { value: "nominal", label: "Nominal", sub: "as reported" },
-            ]}
-          />
-        </div>
-        <p className="pb-1 text-[11.5px] text-ink-3">
-          Statewide, {ds.years[0]}–{latest}. {(ds.years_requested_unavailable ?? []).length > 0 && `${(ds.years_requested_unavailable ?? []).join(", ")} not yet published by NOAA.`}
-        </p>
-      </div>
-
-      <section className="grid gap-3 sm:grid-cols-3" aria-label="Summary" data-testid="fisheries-tiles">
-        <Tile label={`Historical exposure, ${latest}`} value={latestTotal != null ? money(latestTotal) : "no value"} sub={`${groups.length} species groups · ${unit}`} testid="tile-latest" />
-        <Tile label={`Average per year, ${ds.years[0]}–${latest}`} value={mean != null ? money(mean) : "no value"} sub={unit} testid="tile-mean" />
-        <Tile
-          label={`Share of all California commercial landings, ${latest}`}
-          value={latestTotal != null && stateV ? `${Math.round((latestTotal / stateV) * 100)}%` : "—"}
-          sub={`of ${stateV != null ? money(stateV) : "—"} statewide (NOAA's state total, which includes ${withheld?.dollars_nominal != null ? money(withheld.dollars_nominal) : "the"} withheld as confidential)`}
-          testid="tile-share"
-        />
-      </section>
-
-      <section className="space-y-2 rounded-lg border border-hairline bg-surface p-4" aria-labelledby="total-h">
-        <h2 id="total-h" className="text-[13.5px] font-semibold text-ink">
-          Landed value of {tier === "1" ? "Tier 1" : "Tier 1 and 2"} species, by year
-        </h2>
-        <p className="text-[11.5px] text-ink-3">{unit}. Past landings only — not a forecast.</p>
-        <BarChart
-          testid="chart-total"
-          label={`Landed value of selected species by year, ${unit}`}
-          color={BAR}
-          format={money}
-          height={190}
-          bars={ds.years.map((y) => ({ key: String(y), label: String(y), value: selectedTotal(groups, y, dollars) }))}
-        />
-      </section>
-
-      <section className="space-y-3" aria-labelledby="groups-h">
-        <h2 id="groups-h" className="text-[13.5px] font-semibold text-ink">
-          By species group <span className="font-normal text-ink-3">(each chart has its own scale)</span>
-        </h2>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {groups.map((g) => (
-            <article key={g.id} className="min-w-0 space-y-2 rounded-lg border border-hairline bg-surface p-3.5" data-testid={`group-${g.id}`}>
-              <header>
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-[13px] font-semibold text-ink">{g.label}</h3>
-                  <span className="rounded border border-hairline-strong px-1.5 text-[10px] font-semibold uppercase tracking-wider text-ink-2">Tier {g.tier}</span>
-                </div>
-                <p className="mt-1 text-[11.5px] leading-snug text-ink-2">{g.tier_basis}</p>
-              </header>
-              <BarChart
-                label={`${g.label}, ${unit}`}
-                color={BAR}
-                format={money}
-                height={120}
-                bars={g.annual.map((a) => ({
-                  key: String(a.year),
-                  label: String(a.year),
-                  value: fisheriesValue(a, dollars),
-                  note: a.n_rows_without_value ? `${a.n_rows_without_value} source row(s) without a published value` : undefined,
-                }))}
-              />
-              {(g.official_record_ids ?? []).length > 0 && (
-                <ul className="space-y-0.5 text-[11.5px]">
-                  {(g.official_record_ids ?? []).map((id) => {
-                    const r = records.get(id);
-                    return (
-                      <li key={id} className="text-official-ink">
-                        Official: {r ? `${r.agency} — ${r.title}` : id}
-                        {r?.status && r.status !== "active" ? ` (${r.status})` : ""}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              <p className="text-[10.5px] text-ink-3">NOAA categories: {g.source_names.join(", ") || "none in these years"}</p>
-            </article>
-          ))}
-        </div>
-        <p className="text-[11.5px] text-ink-3">
-          {FISHERIES_COPY.reviewPending} Official notices take precedence and are listed on the{" "}
-          <Link href="/" className="text-accent hover:underline">
-            Live Ocean Map
-          </Link>
-          . {OFFICIAL_STATUS.missingNotOpen}
-        </p>
-      </section>
-
-      <section className="space-y-2 rounded-lg border border-hairline bg-surface p-4" aria-labelledby="table-h">
-        <h2 id="table-h" className="text-[13.5px] font-semibold text-ink">
-          Values table <span className="font-normal text-ink-3">({unit})</span>
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-right text-[11.5px] tabular" data-testid="fisheries-table">
-            <thead className="text-ink-3">
-              <tr>
-                <th className="py-1 pr-2 text-left font-medium">Group</th>
-                {ds.years.map((y) => (
-                  <th key={y} className="px-1.5 py-1 font-medium">
-                    {y}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {ds.groups.map((g) => (
-                <tr key={g.id} className="border-t border-hairline">
-                  <td className="py-1 pr-2 text-left text-ink">
-                    {g.label} <span className="text-ink-3">· T{g.tier}</span>
-                  </td>
-                  {ds.years.map((y) => {
-                    const a = g.annual.find((x) => x.year === y);
-                    const v = a ? fisheriesValue(a, dollars) : null;
-                    return (
-                      <td key={y} className="px-1.5 py-1 text-ink-2">
-                        {v == null ? "no value" : money(v)}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-              <tr className="border-t-2 border-hairline-strong">
-                <td className="py-1 pr-2 text-left font-medium text-ink">All CA commercial landings (NOAA state total)</td>
-                {ds.years.map((y) => {
-                  const t = ds.statewide_total.find((x) => x.year === y);
-                  const v = t ? fisheriesValue(t, dollars) : null;
-                  return (
-                    <td key={y} className="px-1.5 py-1 text-ink">
-                      {v == null ? "no value" : money(v)}
-                    </td>
-                  );
-                })}
-              </tr>
-              <tr className="border-t border-hairline" data-testid="withheld-row">
-                <td className="py-1 pr-2 text-left text-ink-2">Withheld for confidentiality (not attributed)</td>
-                {ds.years.map((y) => {
-                  const w = ds.withheld.find((x) => x.year === y);
-                  const v = w ? (dollars === "real" ? w.dollars_real : w.dollars_nominal) : null;
-                  return (
-                    <td key={y} className="px-1.5 py-1 text-ink-3">
-                      {v == null ? "—" : money(v)}
-                    </td>
-                  );
-                })}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p className="text-[11px] text-ink-3">
-          Confidential landings are aggregated by NOAA into one withheld value per year. They are part of the statewide total, as in NOAA&apos;s published state totals, but CoastWatch never assigns them to a species or group. Rows without a published value are shown as “no value”, never as $0. Species groups leave out generic categories (for example unspecified crabs), so they are lower bounds.
-        </p>
-        {ds.excluded_rows.length > 0 && (
-          <details className="text-[11.5px] text-ink-2" data-testid="excluded-rows">
-            <summary className="cursor-pointer">
-              {ds.excluded_rows.length} duplicate source rows counted once
-            </summary>
-            <ul className="mt-1 space-y-0.5">
-              {ds.excluded_rows.map((e) => (
-                <li key={`${e.year}-${e.source_name}`}>
-                  {e.year}: “{e.source_name}” duplicates “{e.duplicate_of}” ({e.dollars_nominal != null ? money(e.dollars_nominal) : "no value"} nominal). {e.reason}
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
-      </section>
-
-      <section className="grid gap-3 md:grid-cols-2">
-        <div className="space-y-1.5 rounded-lg border border-hairline bg-surface p-4 text-[12px] text-ink-2" data-testid="deflator">
-          <h2 className="text-[13.5px] font-semibold text-ink">Inflation adjustment</h2>
-          <p>{ds.deflator.title}.</p>
-          <p>{ds.deflator.method}</p>
-          {(ds.deflator.notes ?? []).map((n) => (
-            <p key={n} className="text-warning">
-              {n}
-            </p>
-          ))}
-          <p className="tabular text-[11px] text-ink-3">
-            Annual index: {Object.entries(ds.deflator.annual_index).map(([y, v]) => `${y} ${v}`).join(" · ")}
-          </p>
-          <SourceLink href={ds.deflator.source_url}>BLS series {ds.deflator.series_id} ↗</SourceLink>
-        </div>
-        <div className="space-y-1.5 rounded-lg border border-hairline bg-surface p-4 text-[12px] text-ink-2">
-          <h2 className="text-[13.5px] font-semibold text-ink">Methods, limits and sources</h2>
-          <ul className="list-disc space-y-1 pl-4" data-testid="fisheries-caveats">
-            {ds.caveats.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-          </ul>
-          <details>
-            <summary className="cursor-pointer font-medium text-ink">Processing steps</summary>
-            <dl className="mt-1 space-y-1 text-[11.5px]">
-              {Object.entries(ds.method).map(([k, v]) => (
-                <div key={k}>
-                  <dt className="inline capitalize text-ink-3">{k}: </dt>
-                  <dd className="inline">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </details>
-          {ds.provenance.map((p) => (
-            <p key={p.source_id} className="text-[11px] text-ink-3">
-              <SourceLink href={p.source_url}>{p.source_name} ↗</SourceLink> · retrieved {formatDateTimePT(p.retrieved_at)}
-              {p.citation ? ` · ${p.citation}` : ""}
-            </p>
-          ))}
-        </div>
-      </section>
+    <div role="radiogroup" aria-label={label} className="flex rounded-[10px] bg-surface-3 p-[3px]">
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => onChange(o.value)}
+            data-testid={`${testid}-${o.value}`}
+            className={`flex-1 whitespace-nowrap rounded-[8px] px-3 py-1.5 text-[13.5px] font-medium transition-colors duration-150 ${on ? "bg-surface text-ink shadow-[0_1px_2px_rgba(13,27,42,0.12)] ring-1 ring-hairline-strong" : "text-ink-2 hover:text-ink"}`}
+          >
+            {o.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-function Tile({ label, value, sub, testid }: { label: string; value: string; sub: string; testid: string }) {
+/**
+ * Fisheries & Economic Exposure (M7): what California's toxin-affected fisheries have landed, told as
+ * one data story. Official notices first; the definition as the lede; three figures for the selected
+ * year; one stacked annual chart with the year beside it; one table by species group that opens in
+ * place; what the figures can and cannot establish; where landings are reported; how the numbers are
+ * made. Everything is statewide NOAA data: history, never a forecast or a loss estimate.
+ */
+export function FisheriesExposure({ ds, status, official, initial }: { ds: FisheriesDataset; status: SourceStatus | null; official: OfficialDataset | null; initial: FisheriesView }) {
+  const now = useNow();
+  const latest = ds.years[ds.years.length - 1];
+  const base = ds.deflator.base_year;
+  const [unit, setUnit] = useState<Unit>(initial.unit);
+  const [tiers, setTiers] = useState<TierSet>(initial.tiers);
+  const [focus, setFocus] = useState<string | null>(initial.group);
+  const [year, setYear] = useState<number>(initial.year);
+  const [hover, setHover] = useState<number | null>(null);
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 720px)");
+    const on = () => setNarrow(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+
+  // the view lives in the link
+  useEffect(() => {
+    const q = viewQuery({ unit, tiers, group: focus, year }, latest);
+    const next = `${window.location.pathname}${q ? `?${q}` : ""}`;
+    if (next !== `${window.location.pathname}${window.location.search}`) window.history.replaceState(null, "", next);
+  }, [unit, tiers, focus, year, latest]);
+
+  const groups = useMemo(() => groupsInTier(ds.groups, tiers), [ds.groups, tiers]);
+  const inSet = useMemo(() => new Set(groups.map((g) => g.id)), [groups]);
+  const focusGroup = (id: string | null) => {
+    // a Tier 2 group can only be focused while Tier 2 is in the chart
+    if (id && !inSet.has(id)) setTiers("12");
+    setFocus(id);
+  };
+  const changeTiers = (t: TierSet) => {
+    setTiers(t);
+    if (t === "1" && focus && ds.groups.find((g) => g.id === focus)?.tier === 2) setFocus(null);
+  };
+
+  const total = selectedTotal(groups, year, unit);
+  const state = stateTotal(ds, year, unit);
+  const sp = span(ds.years, (y) => selectedTotal(groups, y, unit));
+  const fresh = status && now ? classifySource(status, now) : null;
+  const setName = tiers === "1" ? "Tier 1" : "Tier 1 and 2";
+  const unitShort = unit === "real" ? `${base} dollars` : unit === "nominal" ? "nominal dollars" : "pounds";
+  const recordIds = ds.groups.flatMap((g) => g.official_record_ids ?? []);
+  const unavailable = ds.years_requested_unavailable ?? [];
+  const focusG = focus ? ds.groups.find((g) => g.id === focus) : undefined;
+  const focusLabel = focusG?.label ?? null;
+  const focusShort = focusG ? groupShort(focusG) : null;
+
   return (
-    <div className="rounded-lg border border-hairline bg-surface p-3.5" data-testid={testid}>
-      <p className="text-[11.5px] text-ink-3">{label}</p>
-      <p className="mt-0.5 text-[24px] font-semibold tracking-tight text-ink tabular">{value}</p>
-      <p className="text-[11px] text-ink-3">{sub}</p>
+    <div className="mx-auto w-full max-w-[1280px] space-y-9 px-4 pb-16 pt-4 sm:px-8" data-testid="fisheries-page">
+      <OfficialStrip official={official} error={null} recordIds={recordIds} heading="Official notices that name these species" emptyText="No active notice in CoastWatch’s list names these species." compact testid="fisheries-official" />
+
+      {/* the story's opening, in the published terminology, beside the three figures (no cards) */}
+      <div className="grid gap-x-12 gap-y-6 xl:grid-cols-[minmax(0,1fr)_400px]">
+        <header className="space-y-3">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-history">
+            Historical context · Statewide<span className="hidden sm:inline"> · NOAA Fisheries landings</span>
+          </p>
+          <h1 className="text-balance font-display text-[31px] font-medium leading-[1.08] text-ink sm:text-[44px]">{FISHERIES_COPY.title}</h1>
+          <p className="max-w-[70ch] text-[16px] leading-relaxed text-ink-2" data-testid="exposure-definition">
+            {ds.terminology} {FISHERIES_COPY.atStake.split(". ")[0]}.
+          </p>
+          <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-3">
+            {fresh && <FreshDot f={fresh} />}
+            <span data-testid="data-through">
+              Annual data {ds.years[0]}–{latest}
+              {unavailable.length ? `; ${unavailable.join(", ")} not yet published by NOAA` : ""}
+            </span>
+            <span data-testid="science-review-pending">Species tiers await independent scientific review</span>
+          </p>
+        </header>
+
+        <section
+          aria-label={`${setName} species in ${year}`}
+          className="grid gap-x-8 gap-y-4 border-y border-hairline py-4 md:grid-cols-3 xl:grid-cols-1 xl:gap-y-0 xl:divide-y xl:divide-hairline xl:border-y-0 xl:border-l xl:py-0 xl:pl-8"
+          data-testid="fisheries-figures"
+        >
+          <Figure value={formatValue(total, unit)} testid="figure-year">
+            landed by {setName} species in {year}, in {unitShort}
+          </Figure>
+          <Figure value={formatValue(sp.mean, unit)} testid="figure-mean">
+            a year on average, {ds.years[0]}–{latest}; lowest {sp.low?.year} ({formatValue(sp.low?.v ?? null, unit)}), highest {sp.high?.year} ({formatValue(sp.high?.v ?? null, unit)})
+          </Figure>
+          <Figure value={pct(shareOfState(total, state))} testid="figure-share">
+            of all California commercial landings in {year} ({formatValue(state, unit)}); a lower bound (see the year beside the chart)
+          </Figure>
+        </section>
+      </div>
+
+      {/* the primary figure */}
+      <section aria-labelledby="chart-h" className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+          <div>
+            <h2 id="chart-h" className="font-display text-[26px] font-medium leading-tight text-ink">
+              {focusLabel ? `${focusShort}: ${unit === "pounds" ? "pounds landed" : "landed value"} by year` : `${unit === "pounds" ? "Pounds landed" : "Landed value"}, by year and species group`}
+            </h2>
+            <p className="text-[13.5px] text-ink-2" data-testid="chart-unit">
+              {focusLabel ? `${focusLabel} alone, on its own scale` : `${setName} species`}, statewide, {unitLabel(unit, base)}. Past landings only, not a forecast.
+            </p>
+          </div>
+          <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center" data-testid="fisheries-filters">
+            <Seg label="Species tiers" value={tiers} onChange={changeTiers} testid="tier" options={[{ value: "1", label: "Tier 1" }, { value: "12", label: "Tiers 1 + 2" }]} />
+            <Seg
+              label="Measure"
+              value={unit}
+              onChange={setUnit}
+              testid="unit"
+              options={[
+                { value: "real", label: `${base} $` },
+                { value: "nominal", label: "Nominal $" },
+                { value: "pounds", label: "Pounds" },
+              ]}
+            />
+          </div>
+        </div>
+        <Legend groups={groups} focus={focus} onFocus={focusGroup} unit={unit} />
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="min-w-0">
+            <LandingsChart
+              ds={ds}
+              groups={groups}
+              unit={unit}
+              focus={focus}
+              year={year}
+              hover={hover}
+              onHover={setHover}
+              onYear={setYear}
+              label={`${unit === "pounds" ? "Pounds landed" : "Landed value"} of ${focusLabel ?? `${setName} species`} by year, ${unitLabel(unit, base)}`}
+            />
+          </div>
+          <div className="lg:border-l lg:border-hairline lg:pl-8">
+            <YearPanel ds={ds} groups={groups} unit={unit} year={hover ?? year} focus={focus} previewing={hover != null && hover !== year} />
+          </div>
+        </div>
+        <div className="max-w-[92ch] space-y-1.5 text-[13.5px] leading-relaxed text-ink-2" data-testid="chart-notes">
+          <p>
+            <b className="font-semibold text-ink">Reading this chart.</b> Each bar is one calendar year, January to December. Crab seasons run from late autumn into the next year, so one season&apos;s landings fall into two bars. The brackets mark when the 2015–16 domoic acid closures happened (select 2015 or 2016 for the record); they do not say how much of any change between years the closures explain.
+          </p>
+          {unit === "pounds" ? (
+            <p>Pounds are weight, not value or effort: a pound of anchovy and a pound of crab earn very different amounts. Bivalve pounds are meat weight (without shell), unlike the other groups.</p>
+          ) : unit === "real" ? (
+            <p>
+              {base} dollars rescale each year&apos;s revenue by consumer prices (CPI-U), so years can be compared in purchasing power; they are not adjusted for seafood prices or costs. In {base} itself the two are equal.
+            </p>
+          ) : (
+            <p>Nominal dollars are as reported each year, without adjusting for inflation, so earlier years look smaller than they were in purchasing power.</p>
+          )}
+        </div>
+      </section>
+
+      {/* the inspector */}
+      <section aria-labelledby="species-h" className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-w-0 space-y-3">
+          <h2 id="species-h" className="font-display text-[26px] font-medium leading-tight text-ink">
+            By species group <span className="text-[17px] text-ink-3">{year}, {unitShort}</span>
+          </h2>
+          <SpeciesTable ds={ds} unit={unit} year={year} inSet={inSet} open={focus} onOpen={focusGroup} official={official} />
+        </div>
+        <div className="space-y-3 text-[13.5px] leading-relaxed text-ink-2 lg:border-l lg:border-hairline lg:pl-8 lg:pt-12" data-testid="tier-definitions">
+          <p>
+            <b className="font-semibold text-ink">Tier 1</b>: fisheries with commercial closures or take restrictions for marine toxins, now or in the past.
+          </p>
+          <p>
+            <b className="font-semibold text-ink">Tier 2</b>: species under consumption advisories, sport-harvest quarantines or toxin monitoring.
+            {tiers === "1" ? " Dimmed while the chart shows Tier 1; choosing one adds Tier 2." : ""}
+          </p>
+          <p className="text-ink-3">Tiers are CoastWatch&apos;s grouping and await independent scientific review. Choose a group to see its revenue and weight side by side, and the notices it references.</p>
+        </div>
+      </section>
+
+      {/* what the figures can and cannot establish */}
+      <section aria-labelledby="limits-h" className="grid gap-x-10 gap-y-4 border-t border-hairline pt-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1.2fr)]" data-testid="fisheries-limits">
+        <h2 id="limits-h" className="font-display text-[26px] font-medium leading-tight text-ink">
+          What these figures can and cannot tell you
+        </h2>
+        <div>
+          <h3 className="mb-1.5 text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">They show</h3>
+          <ul className="space-y-2 text-[14.5px] leading-relaxed text-ink-2">
+            {FISHERIES_COPY.can.map((t) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h3 className="mb-1.5 text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">They do not show</h3>
+          <ul className="space-y-2 text-[14.5px] leading-relaxed text-ink-2">
+            {FISHERIES_COPY.cannot.map((t) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* geography, only as far as the data allow */}
+      <section aria-labelledby="geo-h" className="grid gap-x-12 gap-y-6 border-t border-hairline pt-8 md:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
+        <div className="max-w-[60ch] space-y-3 text-[14.5px] leading-relaxed text-ink-2">
+          <h2 id="geo-h" className="font-display text-[26px] font-medium leading-tight text-ink">
+            Where landings are reported
+          </h2>
+          <p>Commercial catches are reported to CDFW at more than a hundred ports, which CDFW groups into port areas from Eureka to San Diego. The figures on this page add all of them together.</p>
+          <p data-testid="port-level-unavailable">
+            <b className="font-semibold text-ink">{FISHERIES_COPY.portUnavailable}</b>, so CoastWatch does not split the statewide totals among ports or areas: any split would be an estimate, and confidential values cannot be redistributed.
+          </p>
+          <details className="text-[13.5px]" data-testid="port-level-why">
+            <summary className="cursor-pointer font-medium text-ink">Why port-level values are missing</summary>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {ds.port_level.reasons.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+            <p className="mt-2 text-ink-3">Sources considered: {ds.port_level.adapters.map((a) => `${a.id} (${a.status})`).join(", ")}.</p>
+          </details>
+        </div>
+        <NearScreen>
+          <PortAreaMap />
+        </NearScreen>
+      </section>
+
+      <div className="border-t border-hairline pt-8">
+        <FisheriesMethods ds={ds} unit={unit} compact={narrow} />
+      </div>
+    </div>
+  );
+}
+
+function Figure({ value, children, testid }: { value: string; children: React.ReactNode; testid: string }) {
+  return (
+    <div className="flex min-w-0 items-baseline gap-4 md:block xl:flex xl:py-3" data-testid={testid}>
+      <p className="w-[7.2rem] shrink-0 font-display text-[34px] font-medium leading-none tracking-tight text-ink tabular md:w-auto xl:w-[8rem] xl:text-[36px]">{value}</p>
+      <p className="mt-0 text-[13.5px] leading-snug text-ink-2 md:mt-2 xl:mt-0">{children}</p>
     </div>
   );
 }
