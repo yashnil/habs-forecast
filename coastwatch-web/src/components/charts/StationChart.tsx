@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { ObsVariable, SeriesPoint } from "@/generated/observations";
 import { axisPosition, decadeTicks, highestInView, inView, modelOnAxis, modelSegments, onAxis, segments, viewSummary, type Axis, type ModelPoint } from "@/lib/bloom";
 import { DAY, formatObs, formatTick, unitLabel, type Sample } from "@/lib/observations";
+import { useWidth } from "@/lib/useWidth";
 
 /**
  * The page's one primary chart (design spec §3.2 item 6, M6 §0): the measured record of one
@@ -52,19 +53,6 @@ export function timeTicks(x0: number, x1: number): { t: number; label: string }[
     out.push({ t, label: step === 12 || mm === 0 ? String(yy) : step === 6 ? `${mon} ’${String(yy).slice(2)}` : mon });
   }
   return out;
-}
-
-function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, number] {
-  const ref = useRef<T>(null);
-  const [w, setW] = useState(720);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([e]) => setW(Math.max(280, Math.round(e.contentRect.width))));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  return [ref, w];
 }
 
 export type ModelInput = {
