@@ -5,7 +5,7 @@ import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLa
 import { setWorkerUrl, type ExpressionSpecification, type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { PortsCollection } from "@/generated/schema";
-import { ARROW_LENGTHS, arrowImage, BASEMAP_STYLE, BEFORE_OVERLAY_ID, CA_BOUNDS, NODATA_LAYER_ID, noDataImage, SPEED_CLASSES } from "@/lib/basemap";
+import { ABOVE_LAND_ID, ARROW_LENGTHS, arrowImage, BASEMAP_STYLE, BEFORE_OVERLAY_ID, CA_BOUNDS, NODATA_LAYER_ID, noDataImage, SPEED_CLASSES } from "@/lib/basemap";
 import type { CurrentField } from "@/lib/currents";
 import { indexedTiles } from "@/lib/tileIndex";
 import FlowParticles from "./FlowParticles";
@@ -193,7 +193,7 @@ export default function MapCanvas(p: Props) {
       )}
       {p.imagery && (
         <Source key={p.imagery.id} id="observation" type="raster" tiles={[p.imagery.template]} tileSize={256} maxzoom={p.imagery.maxzoom}>
-          <Layer id="observation-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={{ "raster-opacity": 1, "raster-fade-duration": 0 }} />
+          <Layer id="observation-raster" type="raster" beforeId={ABOVE_LAND_ID} paint={{ "raster-opacity": 1, "raster-fade-duration": 0 }} />
         </Source>
       )}
 
