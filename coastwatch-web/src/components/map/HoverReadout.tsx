@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { LayerArtifact, Manifest } from "@/generated/schema";
 import type { CurrentField } from "@/lib/currents";
-import { currentsAt, forecastAt, satelliteAt, type Readout } from "@/lib/readout";
+import { currentsAt, forecastAt, pnSibling, satelliteAt, type Readout } from "@/lib/readout";
 
 export type HoverSource =
   | { kind: "forecast"; layer: LayerArtifact }
@@ -27,7 +27,7 @@ export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds 
       return;
     }
     const run = async (): Promise<Readout> => {
-      if (source.kind === "forecast") return forecastAt(baseUrl, source.layer, point.lat, point.lon);
+      if (source.kind === "forecast") return forecastAt(baseUrl, source.layer, point.lat, point.lon, pnSibling(manifest, source.layer));
       if (source.kind === "satellite") return satelliteAt(manifest, baseUrl, source.layer, point.lat, point.lon);
       return currentsAt(source.field, source.layer, point.lat, point.lon);
     };
