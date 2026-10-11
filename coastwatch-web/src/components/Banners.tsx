@@ -45,7 +45,16 @@ export function DataBanners({ manifest, error }: { manifest: Manifest | null; er
                 <a href={CDFW_URL} target="_blank" rel="noopener noreferrer" className={link}>CDFW</a> and{" "}
                 <a href={CDPH_URL} target="_blank" rel="noopener noreferrer" className={link}>CDPH</a>.
               </span>
-              <span className="max-sm:hidden md:truncate">
+              {/* tablets: short enough that "See the list" is never truncated away */}
+              <span className="hidden sm:inline lg:hidden">
+                <b className="font-semibold">Official notices are not verified.</b> Check{" "}
+                <a href={CDFW_URL} target="_blank" rel="noopener noreferrer" className={link}>CDFW</a> and{" "}
+                <a href={CDPH_URL} target="_blank" rel="noopener noreferrer" className={link}>CDPH</a>.{" "}
+                <button type="button" onClick={(e) => reg.openDrawer(e.currentTarget)} className={link}>
+                  See the list
+                </button>
+              </span>
+              <span className="max-lg:hidden lg:truncate">
                 <b className="font-semibold">Official notices are not verified.</b> The list may be incomplete. Before harvesting or eating seafood, check{" "}
                 <a href={CDFW_URL} target="_blank" rel="noopener noreferrer" className={link}>CDFW</a> and{" "}
                 <a href={CDPH_URL} target="_blank" rel="noopener noreferrer" className={link}>CDPH</a>.{" "}
