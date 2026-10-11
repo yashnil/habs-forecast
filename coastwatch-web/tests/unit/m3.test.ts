@@ -98,7 +98,7 @@ describe("fisheries semantics", () => {
 });
 
 describe("M3 copy", () => {
-  const texts = [copy.BLOOM_COPY, copy.FISHERIES_COPY].flatMap((o) => Object.values(o) as string[]);
+  const texts = [copy.BLOOM_COPY, copy.FISHERIES_COPY].flatMap((o) => Object.values(o)).flat() as string[];
   it("never presents exposure as predicted loss", () => {
     for (const t of [...texts, fish.terminology, ...fish.caveats])
       for (const s of t.split(/(?<=[.;])\s+/)) if (/\blosse?s?\b/i.test(s)) expect(s).toMatch(/\bnot\b/);

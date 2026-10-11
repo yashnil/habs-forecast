@@ -106,13 +106,65 @@ export const BLOOM_COPY = {
 
 export const FISHERIES_COPY = {
   heading: "Fisheries & Economic Exposure",
+  title: "What California’s toxin‑affected fisheries have landed",
   lede: "How much California's commercial fisheries for toxin-affected species have landed in past years, from NOAA Fisheries landings data.",
   definition:
     "Historical fisheries exposure is the reported value of past commercial landings of species that marine toxins can affect. It is not a prediction of losses, not an estimate of harm, and says nothing about any current or future season.",
+  atStake: "Past landings show what was at stake in earlier seasons. They are not losses, not a forecast of losses, and say nothing about the current season.",
   portUnavailable: "Port-level values are not available",
   reviewPending: "Species tiers are CoastWatch's editorial grouping and await review by an independent HAB scientist.",
   unavailable: "Fisheries data are unavailable in this dataset.",
+  /** what the figures can and cannot establish (M7 §5) */
+  can: [
+    "How much revenue and weight each species group landed statewide in each calendar year since 2015, as NOAA reports it.",
+    "How large these fisheries are compared with each other and with all California commercial landings.",
+    "When documented regulatory events, such as the 2015–16 domoic acid closures, fell relative to the annual totals.",
+  ],
+  cannot: [
+    "Harm from algal blooms. A change between years is not a loss, and an overlap in time does not show a cause: markets, regulations, ocean conditions, weather and fishing effort all move landings.",
+    "Profit or income. Ex-vessel revenue is what buyers paid at the dock, before costs, and it excludes processing, retail and tourism.",
+    "Fishing effort. Pounds landed say nothing about trips, traps or time spent fishing.",
+    "Anything about a port, county or the current season. The figures are statewide annual totals.",
+  ],
 } as const;
+
+/**
+ * Documented regulatory events marked on the Fisheries chart as historical context only. Each needs
+ * an official source; the chart never attributes a change in landings to one.
+ */
+const CRAB_TIMELINE = {
+  label: "California Legislature, Joint Committee on Fisheries and Aquaculture: 2015–16 Commercial Crab Fishing Timeline (July 2016)",
+  url: "https://fisheries.legislature.ca.gov/sites/fisheries.legislature.ca.gov/files/u8/2015-16%20Commercial%20Crab%20Fishing%20Timeline%20.pdf",
+};
+
+export const FISHERIES_EVENTS = [
+  {
+    id: "dungeness-2015-16",
+    start: "2015-11-06",
+    end: "2016-05-26",
+    continues: false,
+    label: "Dungeness crab season delayed for domoic acid",
+    short: "Dungeness delayed",
+    period: "Nov 2015 – May 2016",
+    detail:
+      "On 6 November 2015 CDFW delayed the commercial Dungeness crab season, scheduled for 15 November, after domoic acid was found in crab. It reopened south of the Sonoma–Mendocino county line on 26 March 2016 and along the whole coast on 26 May 2016.",
+    source: CRAB_TIMELINE,
+    groups: ["dungeness_crab"],
+  },
+  {
+    id: "rock-crab-2015-16",
+    start: "2015-11-06",
+    end: "2016-07-21",
+    continues: true,
+    label: "commercial rock crab closed for domoic acid",
+    short: "Rock crab closed",
+    period: "From Nov 2015",
+    detail:
+      "On 6 November 2015 CDFW closed the commercial rock crab fishery, which usually runs all year, after domoic acid was found in crab. It reopened in stages from 31 December 2015; on 21 July 2016 it was still closed north of Pigeon Point (San Mateo County).",
+    source: CRAB_TIMELINE,
+    groups: ["rock_crab"],
+  },
+] as const;
 
 /** The published research behind the project, and how it relates to what the app shows. */
 export const RESEARCH = {
