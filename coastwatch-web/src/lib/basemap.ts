@@ -1,18 +1,58 @@
 import type { StyleSpecification } from "maplibre-gl";
 
 /**
- * Dark-sea basemap on OpenFreeMap vector tiles (OpenMapTiles schema; free, no key).
- * Design reset rev. 2: land is a lighter slate than the sea so the coast reads first;
- * water carries a faint hatch that only shows where an opaque data layer has no value
- * (so "no value" never looks like a low value); data is inserted before `coastline`, so
- * the shoreline, roads and labels stay on top. If tiles are unreachable the background
- * still renders and overlays still draw.
+ * Marine basemap: OpenFreeMap vector tiles (OpenMapTiles schema; free, no key) over a relief
+ * built from NOAA NCEI ETOPO 2022 (pipeline/scripts/build_relief.py, public/basemap/).
+ *
+ * Drawing order, bottom to top:
+ * - land tone, then land hillshade (clipped to the real coastline by the vector water);
+ * - the sea, then seafloor shading and isobaths. The seafloor is a neutral tone darker than
+ *   every data colour and lies *under* every data layer, so it is never read as a value;
+ * - the no-data hatch, shown only while a raster data layer is on (MapCanvas toggles it),
+ *   so a gap in the data never looks like a low value;
+ * - data layers, inserted before `coastline`;
+ * - coastline, rivers, roads, boundaries and labels, which stay above the data.
+ * Label hierarchy: ports (MapCanvas) above towns above water names above roads. If the
+ * tiles are unreachable the background still renders and the data still draws.
  */
 export const SEA = "#0b1d33";
 export const LAND = "#2a3646";
 export const BEFORE_OVERLAY_ID = "coastline";
+/** Layer ids of the no-data hatch, which MapCanvas shows only under a raster data layer. */
+export const NODATA_LAYER_ID = "water-nodata";
 
 const FONT = ["Noto Sans Regular"];
+const FONT_ITALIC = ["Noto Sans Italic"];
+
+/** Corners of the relief images (public/basemap/relief.json). */
+export const RELIEF_CORNERS: [[number, number], [number, number], [number, number], [number, number]] = [
+  [-126.6, 42.6],
+  [-116.4, 42.6],
+  [-116.4, 32.0],
+  [-126.6, 32.0],
+];
+export const RELIEF_ATTRIBUTION =
+  'Relief: <a href="https://doi.org/10.25921/fd45-gt74" target="_blank" rel="noopener noreferrer">NOAA NCEI ETOPO 2022</a> and <a href="https://www.ncei.noaa.gov/products/coastal-relief-model" target="_blank" rel="noopener noreferrer">Coastal Relief Model</a>';
+
+export const MONTEREY_INSET_CORNERS: [[number, number], [number, number], [number, number], [number, number]] = [
+  [-122.72, 37.33],
+  [-121.58, 37.33],
+  [-121.58, 36.22],
+  [-122.72, 36.22],
+];
+
+const RELIEF_LAYER_IDS = new Set(["relief-land", "relief-sea", "relief-sea-monterey", "isobaths", "isobath-labels"]);
+
+/** The marine basemap with or without the relief (land and seafloor shading, isobaths). */
+export function basemapStyle({ relief }: { relief: boolean }): StyleSpecification {
+  if (relief) return BASEMAP_STYLE;
+  const sources = { ...BASEMAP_STYLE.sources };
+  delete sources["relief-land"];
+  delete sources["relief-sea"];
+  delete sources["relief-sea-monterey"];
+  delete sources.isobaths;
+  return { ...BASEMAP_STYLE, sources, layers: BASEMAP_STYLE.layers.filter((l) => !RELIEF_LAYER_IDS.has(l.id)) };
+}
 
 export const BASEMAP_STYLE: StyleSpecification = {
   version: 8,
@@ -22,19 +62,17 @@ export const BASEMAP_STYLE: StyleSpecification = {
       type: "vector",
       url: "https://tiles.openfreemap.org/planet",
       attribution:
-        '<a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',
+        '<a href="https://openfreemap.org" target="_blank" rel="noopener noreferrer">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>',
     },
+    "relief-land": { type: "image", url: "/basemap/relief-land.webp", coordinates: RELIEF_CORNERS },
+    "relief-sea": { type: "image", url: "/basemap/relief-sea.webp", coordinates: RELIEF_CORNERS },
+    // Monterey Bay at 3 arc-second from the NOAA Coastal Relief Model, over the ETOPO relief
+    "relief-sea-monterey": { type: "image", url: "/basemap/relief-sea-monterey.webp", coordinates: MONTEREY_INSET_CORNERS },
+    isobaths: { type: "geojson", data: "/basemap/isobaths.geojson", attribution: RELIEF_ATTRIBUTION },
   },
   layers: [
     { id: "land", type: "background", paint: { "background-color": LAND } },
-    {
-      id: "landcover-wood",
-      type: "fill",
-      source: "omt",
-      "source-layer": "landcover",
-      filter: ["==", ["get", "class"], "wood"],
-      paint: { "fill-color": "#2f3d4f", "fill-opacity": 0.8 },
-    },
+    { id: "relief-land", type: "raster", source: "relief-land", paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
     {
       id: "water",
       type: "fill",
@@ -42,8 +80,37 @@ export const BASEMAP_STYLE: StyleSpecification = {
       "source-layer": "water",
       paint: { "fill-color": SEA },
     },
-    // pattern image "hatch" is registered by MapCanvas when the style asks for it
-    { id: "water-nodata", type: "fill", source: "omt", "source-layer": "water", paint: { "fill-pattern": "hatch" } },
+    { id: "relief-sea", type: "raster", source: "relief-sea", paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
+    { id: "relief-sea-monterey", type: "raster", source: "relief-sea-monterey", minzoom: 7, paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
+    {
+      id: "isobaths",
+      type: "line",
+      source: "isobaths",
+      minzoom: 5,
+      paint: {
+        // the shelf break (200 m) slightly stronger than deeper contours
+        "line-color": ["case", ["==", ["get", "depth_m"], 200], "rgba(150,182,214,0.30)", "rgba(150,182,214,0.16)"],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.5, 10, 1],
+      },
+    },
+    {
+      id: "isobath-labels",
+      type: "symbol",
+      source: "isobaths",
+      minzoom: 8,
+      layout: {
+        "symbol-placement": "line",
+        "symbol-spacing": 420,
+        "text-field": ["get", "label"],
+        "text-font": FONT_ITALIC,
+        "text-size": 10,
+        "text-max-angle": 30,
+      },
+      paint: { "text-color": "rgba(170,196,222,0.62)", "text-halo-color": SEA, "text-halo-width": 1.2 },
+    },
+    // no data: fine dots on the water, shown by MapCanvas only under a raster data layer
+    // (image "nodata", registered by MapCanvas); the data rasters cover them where a value exists
+    { id: NODATA_LAYER_ID, type: "fill", source: "omt", "source-layer": "water", layout: { visibility: "none" }, paint: { "fill-pattern": "nodata" } },
     {
       id: "coastline",
       type: "line",
@@ -51,7 +118,8 @@ export const BASEMAP_STYLE: StyleSpecification = {
       "source-layer": "water",
       paint: {
         "line-color": "#d3dfeb",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 9, 1.2, 12, 1.8],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 4, 0.7, 8, 0.9],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.5, 8, 0.9, 10, 1.3, 12, 1.8],
       },
     },
     {
@@ -59,7 +127,8 @@ export const BASEMAP_STYLE: StyleSpecification = {
       type: "line",
       source: "omt",
       "source-layer": "waterway",
-      minzoom: 7,
+      minzoom: 8,
+      filter: ["in", ["get", "class"], ["literal", ["river", "canal"]]],
       paint: { "line-color": "#3c5574", "line-width": 0.8 },
     },
     {
@@ -67,9 +136,18 @@ export const BASEMAP_STYLE: StyleSpecification = {
       type: "line",
       source: "omt",
       "source-layer": "transportation",
-      minzoom: 6,
+      minzoom: 6.5,
       filter: ["in", ["get", "class"], ["literal", ["motorway", "trunk"]]],
-      paint: { "line-color": "#3a4859", "line-width": ["interpolate", ["linear"], ["zoom"], 6, 0.4, 12, 1.4] },
+      paint: { "line-color": "#3e4c5e", "line-width": ["interpolate", ["linear"], ["zoom"], 6.5, 0.4, 12, 1.4] },
+    },
+    {
+      id: "roads-primary",
+      type: "line",
+      source: "omt",
+      "source-layer": "transportation",
+      minzoom: 9.5,
+      filter: ["==", ["get", "class"], "primary"],
+      paint: { "line-color": "#384658", "line-width": ["interpolate", ["linear"], ["zoom"], 9.5, 0.3, 12, 1] },
     },
     {
       id: "boundary-state",
@@ -81,21 +159,73 @@ export const BASEMAP_STYLE: StyleSpecification = {
       paint: { "line-color": "#5a6b80", "line-width": 0.8, "line-dasharray": [3, 2] },
     },
     {
+      // ocean, bay and strait names: italic, letter-spaced, in the colour of the water labels on charts
+      id: "water-name",
+      type: "symbol",
+      source: "omt",
+      "source-layer": "water_name",
+      minzoom: 5,
+      filter: ["in", ["get", "class"], ["literal", ["ocean", "sea", "bay", "strait", "gulf"]]],
+      layout: {
+        "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]],
+        "text-font": FONT_ITALIC,
+        "text-size": ["interpolate", ["linear"], ["zoom"], 5, 11, 10, 14],
+        "text-letter-spacing": 0.12,
+        "text-max-width": 7,
+      },
+      // light text on a soft, translucent halo: readable over the dark sea and over the
+      // forecast and chlorophyll colours without a hard outline
+      paint: { "text-color": "rgba(222,234,246,0.9)", "text-halo-color": "rgba(6,17,30,0.5)", "text-halo-width": 1.2, "text-halo-blur": 0.8 },
+    },
+    {
       id: "place-city",
       type: "symbol",
       source: "omt",
       "source-layer": "place",
-      minzoom: 7,
-      filter: ["in", ["get", "class"], ["literal", ["city", "town"]]],
+      minzoom: 5.5,
+      filter: ["==", ["get", "class"], "city"],
       layout: {
         "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]],
         "text-font": FONT,
-        "text-size": ["interpolate", ["linear"], ["zoom"], 5, 10, 10, 13],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 5.5, 11, 10, 14],
         "text-anchor": "left",
         "text-offset": [0.4, 0],
         "symbol-sort-key": ["get", "rank"],
       },
-      paint: { "text-color": "#aab8c8", "text-halo-color": LAND, "text-halo-width": 1.2 },
+      paint: { "text-color": "#c3cfdc", "text-halo-color": LAND, "text-halo-width": 1.2 },
+    },
+    {
+      id: "place-town",
+      type: "symbol",
+      source: "omt",
+      "source-layer": "place",
+      minzoom: 8,
+      filter: ["==", ["get", "class"], "town"],
+      layout: {
+        "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]],
+        "text-font": FONT,
+        "text-size": ["interpolate", ["linear"], ["zoom"], 8, 11, 11, 13],
+        "text-anchor": "left",
+        "text-offset": [0.4, 0],
+        "symbol-sort-key": ["get", "rank"],
+      },
+      paint: { "text-color": "#a3b2c3", "text-halo-color": LAND, "text-halo-width": 1.2 },
+    },
+    {
+      id: "place-village",
+      type: "symbol",
+      source: "omt",
+      "source-layer": "place",
+      minzoom: 10.5,
+      filter: ["==", ["get", "class"], "village"],
+      layout: {
+        "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]],
+        "text-font": FONT,
+        "text-size": 11,
+        "text-anchor": "left",
+        "text-offset": [0.4, 0],
+      },
+      paint: { "text-color": "#8e9db0", "text-halo-color": LAND, "text-halo-width": 1.1 },
     },
   ],
 };
@@ -110,23 +240,21 @@ export const CA_BOUNDS: [[number, number], [number, number]] = [
   [-112.5, 44.8],
 ];
 
-/** 8 px diagonal hatch for water without a data value (registered on demand). */
-export function hatchImage(): ImageData {
-  const n = 8;
-  const c = document.createElement("canvas");
-  c.width = c.height = n;
-  const g = c.getContext("2d")!;
-  g.strokeStyle = "rgba(150,178,210,0.26)";
-  g.lineWidth = 1;
-  g.beginPath();
-  g.moveTo(0, n);
-  g.lineTo(n, 0);
-  g.moveTo(-1, 1);
-  g.lineTo(1, -1);
-  g.moveTo(n - 1, n + 1);
-  g.lineTo(n + 1, n - 1);
-  g.stroke();
-  return g.getImageData(0, 0, n, n);
+/** No-data dots (M5): a 1 px dot on a 3 px diagonal lattice in a colour no data palette uses,
+ *  so a gap reads as texture, never as a low value, and the seafloor relief shows through.
+ *  Drawn at 2x for sharp dots on high-density screens. */
+export function noDataImage(): { width: number; height: number; data: Uint8Array } {
+  const n = 12; // 6 css px at pixelRatio 2
+  const data = new Uint8Array(n * n * 4);
+  const dot = (x: number, y: number) => {
+    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+      const i = ((y + dy) * n + (x + dx)) * 4;
+      data.set([170, 196, 224, 120], i);
+    }
+  };
+  dot(0, 0);
+  dot(6, 6);
+  return { width: n, height: n, data };
 }
 
 /** Current-speed classes (m/s, lower bounds) and the arrow shaft length drawn for each.

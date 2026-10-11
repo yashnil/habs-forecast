@@ -3367,8 +3367,8 @@
       },
       "tiles": {
         "url_template": "satellite/olci300/latest-2026-10-12-ee65221c28/tiles/{z}/{x}/{y}.png",
-        "tile_size": 256,
-        "max_native_zoom": 10,
+        "tile_size": 512,
+        "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
         "date_selection": "Rendered by CoastWatch from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
@@ -3380,13 +3380,13 @@
           -121.75,
           37.2025
         ],
-        "n_tiles": 14,
+        "n_tiles": 26,
         "sample_tiles": [
           "5/5/12",
-          "6/10/25",
-          "7/20/50",
-          "8/41/100",
-          "9/82/200"
+          "8/41/99",
+          "10/165/398",
+          "11/328/797",
+          "11/330/798"
         ]
       },
       "palette": {
@@ -3651,8 +3651,8 @@
         },
         "age_tiles": {
           "url_template": "satellite/olci300/latest-2026-10-12-ee65221c28/age-tiles/{z}/{x}/{y}.png",
-          "tile_size": 256,
-          "max_native_zoom": 10,
+          "tile_size": 512,
+          "max_native_zoom": 11,
           "legend_url": null,
           "legend_verified": false,
           "date_selection": "Age in days of each pixel of the latest clear view (categorical).",
@@ -3664,13 +3664,13 @@
             -121.75,
             37.2025
           ],
-          "n_tiles": 14,
+          "n_tiles": 26,
           "sample_tiles": [
             "5/5/12",
-            "6/10/25",
-            "7/20/50",
-            "8/41/100",
-            "9/82/200"
+            "8/41/99",
+            "10/165/398",
+            "11/328/797",
+            "11/330/798"
           ]
         }
       },
@@ -3733,8 +3733,8 @@
       },
       "tiles": {
         "url_template": "satellite/olci300/day-2026-10-05-950c454a96/tiles/{z}/{x}/{y}.png",
-        "tile_size": 256,
-        "max_native_zoom": 10,
+        "tile_size": 512,
+        "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
         "date_selection": "Rendered by CoastWatch from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
@@ -3746,13 +3746,13 @@
           -121.75,
           37.2025
         ],
-        "n_tiles": 14,
+        "n_tiles": 26,
         "sample_tiles": [
           "5/5/12",
-          "6/10/25",
-          "7/20/50",
-          "8/41/100",
-          "9/82/200"
+          "8/41/99",
+          "10/165/398",
+          "11/328/797",
+          "11/330/798"
         ]
       },
       "palette": {
@@ -3946,8 +3946,8 @@
       },
       "tiles": {
         "url_template": "satellite/olci300/day-2026-10-06-3bfe3a01c2/tiles/{z}/{x}/{y}.png",
-        "tile_size": 256,
-        "max_native_zoom": 10,
+        "tile_size": 512,
+        "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
         "date_selection": "Rendered by CoastWatch from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
@@ -3959,13 +3959,13 @@
           -121.75,
           37.2025
         ],
-        "n_tiles": 9,
+        "n_tiles": 17,
         "sample_tiles": [
           "5/5/12",
-          "6/10/24",
-          "7/20/49",
           "8/41/99",
-          "9/82/199"
+          "10/165/398",
+          "11/328/796",
+          "11/330/797"
         ]
       },
       "palette": {
@@ -4328,8 +4328,8 @@
       },
       "tiles": {
         "url_template": "satellite/viirs750/latest-2026-10-08-a0bd363d43/tiles/{z}/{x}/{y}.png",
-        "tile_size": 256,
-        "max_native_zoom": 9,
+        "tile_size": 512,
+        "max_native_zoom": 10,
         "legend_url": null,
         "legend_verified": false,
         "date_selection": "Rendered by CoastWatch from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
@@ -4341,13 +4341,13 @@
           -121.7475,
           37.2
         ],
-        "n_tiles": 14,
+        "n_tiles": 24,
         "sample_tiles": [
           "5/5/12",
-          "6/10/25",
           "7/20/50",
-          "8/41/99",
-          "8/41/100"
+          "8/41/100",
+          "9/81/200",
+          "10/164/398"
         ]
       },
       "palette": {
@@ -4657,8 +4657,8 @@
         },
         "age_tiles": {
           "url_template": "satellite/viirs750/latest-2026-10-08-a0bd363d43/age-tiles/{z}/{x}/{y}.png",
-          "tile_size": 256,
-          "max_native_zoom": 9,
+          "tile_size": 512,
+          "max_native_zoom": 10,
           "legend_url": null,
           "legend_verified": false,
           "date_selection": "Age in days of each pixel of the latest clear view (categorical).",
@@ -4670,13 +4670,13 @@
             -121.7475,
             37.2
           ],
-          "n_tiles": 14,
+          "n_tiles": 24,
           "sample_tiles": [
             "5/5/12",
-            "6/10/25",
             "7/20/50",
-            "8/41/99",
-            "8/41/100"
+            "8/41/100",
+            "9/81/200",
+            "10/164/398"
           ]
         }
       },
@@ -4720,8 +4720,8 @@
       "grid": null,
       "tiles": {
         "url_template": "satellite/multisensor/latest-2026-10-12-b3d78d76f6/tiles/{z}/{x}/{y}.png",
-        "tile_size": 256,
-        "max_native_zoom": 10,
+        "tile_size": 512,
+        "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
         "date_selection": "Rendered by CoastWatch: each tile pixel shows one sensor's published value on that sensor's own grid (nearest cell); Sentinel-3 over VIIRS by the rule.",
@@ -4733,13 +4733,13 @@
           -121.75,
           37.2025
         ],
-        "n_tiles": 24,
+        "n_tiles": 57,
         "sample_tiles": [
           "5/5/12",
-          "7/20/50",
-          "8/41/100",
-          "9/81/200",
-          "10/164/398"
+          "9/82/199",
+          "10/164/400",
+          "11/330/797",
+          "11/329/799"
         ]
       },
       "palette": {
@@ -4876,8 +4876,8 @@
         ],
         "sensor_tiles": {
           "url_template": "satellite/multisensor/latest-2026-10-12-b3d78d76f6/sensor-tiles/{z}/{x}/{y}.png",
-          "tile_size": 256,
-          "max_native_zoom": 10,
+          "tile_size": 512,
+          "max_native_zoom": 11,
           "legend_url": null,
           "legend_verified": false,
           "date_selection": "Which sensor is shown at each pixel (categorical).",
@@ -4889,19 +4889,19 @@
             -121.75,
             37.2025
           ],
-          "n_tiles": 24,
+          "n_tiles": 57,
           "sample_tiles": [
             "5/5/12",
-            "7/20/50",
-            "8/41/100",
-            "9/81/200",
-            "10/164/398"
+            "9/82/199",
+            "10/164/400",
+            "11/330/797",
+            "11/329/799"
           ]
         },
         "age_tiles": {
           "url_template": "satellite/multisensor/latest-2026-10-12-b3d78d76f6/age-tiles/{z}/{x}/{y}.png",
-          "tile_size": 256,
-          "max_native_zoom": 10,
+          "tile_size": 512,
+          "max_native_zoom": 11,
           "legend_url": null,
           "legend_verified": false,
           "date_selection": "Age in days of the observation shown at each pixel (categorical).",
@@ -4913,13 +4913,13 @@
             -121.75,
             37.2025
           ],
-          "n_tiles": 24,
+          "n_tiles": 57,
           "sample_tiles": [
             "5/5/12",
-            "7/20/50",
-            "8/41/100",
-            "9/81/200",
-            "10/164/398"
+            "9/82/199",
+            "10/164/400",
+            "11/330/797",
+            "11/329/799"
           ]
         },
         "coverage_comparison": [

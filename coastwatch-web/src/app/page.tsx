@@ -28,6 +28,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
           officialError={data.officialError}
           portIntel={data.portIntel}
           portIntelError={data.portIntelError}
+          stations={data.stations}
+          stationsError={data.stationsError}
           baseUrl={data.baseUrl}
           initialParams={initialParams}
         />

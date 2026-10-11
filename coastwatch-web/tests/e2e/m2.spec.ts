@@ -1,13 +1,13 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { FAILED, OK } from "./ports";
+import { openPlaces, openPortHistory } from "./helpers";
 
 const FIX = path.resolve(__dirname, "../fixture-data/v1");
 const manifest = JSON.parse(readFileSync(path.join(FIX, "manifest.json"), "utf8"));
 const intel = JSON.parse(readFileSync(path.join(FIX, manifest.port_intel_url), "utf8"));
 const official = JSON.parse(readFileSync(path.join(FIX, manifest.official_url), "utf8"));
-const OK = "http://localhost:3200";
-const FAILED = "http://localhost:3201";
 
 async function open(page: Page, url: string, now = "2026-10-08T20:00:00Z") {
   await page.clock.setFixedTime(new Date(now));
@@ -78,6 +78,7 @@ test.describe("official notices", () => {
 test.describe("ports", () => {
   test("Monterey Bay is the default region with its ports listed", async ({ page }) => {
     await open(page, OK);
+    await openPlaces(page);
     await expect(page.getByTestId("nav-region-title")).toHaveText("Monterey Bay");
     await expect(page.getByTestId("official-summary")).toContainText("may apply in Monterey Bay");
     for (const code of [593, 592, 550]) await expect(page.getByTestId(`port-row-${code}`)).toBeVisible();
@@ -85,6 +86,7 @@ test.describe("ports", () => {
 
   test("selecting Monterey shows notices first, then forecast values that match the pipeline", async ({ page }) => {
     await open(page, `${OK}/?region=monterey_bay&var=particulate_domoic&lead=1`);
+    await openPlaces(page);
     await page.getByTestId("port-row-550").click();
     const panel = page.getByTestId("port-panel");
     await expect(panel).toContainText("Monterey County");
@@ -102,6 +104,8 @@ test.describe("ports", () => {
       await expect(panel.getByTestId(`port-median-${v}`)).toHaveText(`${Math.round(lead1.variables[v].median * 100)}%`);
     }
     await expect(panel).toContainText("do not describe conditions at the dock");
+    // history and the 60-day chlorophyll sit one step deeper (M5 progressive disclosure)
+    await openPortHistory(panel);
     await expect(panel.getByTestId("port-history").getByTestId("timeseries")).toBeVisible();
     await expect(panel.getByTestId("chl-port-latest")).toHaveText(p.chlorophyll.latest.median.toFixed(2));
     await expect(page).toHaveURL(/port=550/);
@@ -112,6 +116,7 @@ test.describe("ports", () => {
     await open(page, `${OK}/?region=southern_california&port=880`);
     const panel = page.getByTestId("port-panel");
     await expect(panel.getByTestId("port-no-cells")).toBeVisible();
+    await openPortHistory(panel);
     await expect(panel.getByTestId("history-unavailable")).toBeVisible();
     await expect(panel.getByTestId("chl-port-unavailable")).toBeVisible();
   });
@@ -119,6 +124,7 @@ test.describe("ports", () => {
   test("region navigation moves the map", async ({ page }) => {
     await open(page, OK);
     await page.waitForFunction(() => !!(window as unknown as { __cwMap?: unknown }).__cwMap);
+    await openPlaces(page);
     await page.getByTestId("nav-all").click();
     await page.getByTestId("region-north_coast").click();
     // the North Coast is framed in view (above the layer dock) and Monterey Bay is not
@@ -145,7 +151,8 @@ test.describe("mobile", () => {
   test("slide-up sheet shows the selected port and can be expanded", async ({ page }) => {
     await open(page, `${OK}/?region=monterey_bay&port=592&lead=1`);
     const sheet = page.getByTestId("mobile-sheet");
-    await expect(sheet).toHaveAttribute("data-snap", "half");
+    // M5: the port opens at the peek, so the map around it stays in view
+    await expect(sheet).toHaveAttribute("data-snap", "peek");
     await expect(sheet.getByTestId("port-panel")).toContainText("Moss Landing");
     await page.getByTestId("sheet-handle").click();
     await expect(sheet).toHaveAttribute("data-snap", "full");

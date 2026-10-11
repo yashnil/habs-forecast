@@ -154,10 +154,16 @@ class ValueGrid(_Model):
 
 class TileLayer(_Model):
     """Pre-rendered XYZ (Web Mercator) tiles: third-party (NASA GIBS, absolute URL) or
-    rendered by this pipeline (`relative`: the template is relative to the dataset base)."""
+    rendered by this pipeline (`relative`: the template is relative to the dataset base).
+
+    Every tile covers a standard 256 px slot of the Web Mercator grid. `tile_size` is the
+    pixel size of each image: 512 for the high-density tiles this pipeline renders since M5
+    (drawn 1:1 on 2x screens), which also publish `index.json` beside the zoom folders listing
+    every tile written. No field was added for either, so a client built for the earlier
+    schema (which rejects unknown fields) still reads these manifests."""
 
     url_template: str
-    tile_size: int = 256
+    tile_size: int = Field(256, description="Pixel size of each tile image (256, or 512 for high-density tiles in the same 256 px grid)")
     max_native_zoom: int
     legend_url: str | None
     legend_verified: bool

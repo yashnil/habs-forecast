@@ -8,9 +8,11 @@ import { OfficialForPort } from "@/components/official/Official";
 import { TimeSeriesChart } from "@/components/charts/TimeSeriesChart";
 import { Notice, Segmented, SourceLink } from "@/components/ui/Primitives";
 import { colorAt } from "@/components/ui/ProbabilityLegend";
-import { charmLayer, leadLabel, CHARM_VARIABLES, type CharmVariable } from "@/lib/layers";
+import { charmLayer, CHARM_VARIABLES, type CharmVariable } from "@/lib/layers";
 import type { Verification } from "@/lib/official";
 import { formatDate, formatDateTimePT } from "@/lib/time";
+import { LeadStrip } from "@/components/map/LeadStrip";
+import { Sparkline } from "@/components/charts/Sparkline";
 
 const VAR_LABEL: Record<CharmVariable, string> = {
   pseudo_nitzschia: "Pseudo-nitzschia bloom",
@@ -32,9 +34,11 @@ type Props = {
   onVariable: (v: CharmVariable) => void;
   now: Date | null;
   onClose: () => void;
+  /** current observations near the port (satellite, currents, stations), placed after the forecast */
+  children?: React.ReactNode;
 };
 
-export function PortPanel({ port, coll, manifest, official, verification, lead, onLead, variable, onVariable, now, onClose }: Props) {
+export function PortPanel({ port, coll, manifest, official, verification, lead, onLead, variable, onVariable, now, onClose, children }: Props) {
   const ch = port.charm;
   const leadSummary = ch?.leads.find((l) => l.lead_days === lead) ?? null;
   const palette = charmLayer(manifest, variable, lead)?.palette ?? charmLayer(manifest, "pseudo_nitzschia", 0)?.palette;
@@ -72,13 +76,23 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
           <Notice tone="neutral">No forecast available.</Notice>
         ) : (
           <>
-            <Segmented
-              label="Forecast valid day"
-              value={lead}
-              onChange={onLead}
-              testidPrefix="port-lead"
-              options={ch.leads.map((l) => ({ value: l.lead_days, label: leadLabel(l.lead_days), sub: formatDate(l.valid_date).replace(/^\w+, /, "") }))}
-            />
+            <div className="space-y-1">
+              <p className="text-[12px] text-ink-2">
+                {VAR_LABEL[variable]}, median of cells within {ch.radius_km} km
+              </p>
+              <LeadStrip
+                items={[0, 1, 2, 3].map((d) => {
+                  const l = ch.leads.find((x) => x.lead_days === d);
+                  return { lead: d, date: l?.valid_date ?? null, value: l?.variables[variable]?.median ?? null, issued: !!l };
+                })}
+                lead={lead}
+                onLead={onLead}
+                palette={palette}
+                label="Forecast day near this port"
+                testidPrefix="port-lead"
+                valueNote="median"
+              />
+            </div>
             {ch.cells_in_radius === 0 ? (
               <Notice tone="neutral" testid="port-no-cells">
                 No C-HARM forecast cells within {ch.radius_km} km of this port.
@@ -121,44 +135,52 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
         )}
       </section>
 
-      <section className="space-y-2" data-testid="port-history" aria-labelledby="ph-h">
-        <div className="flex items-baseline justify-between gap-2">
-          <h3 id="ph-h" className="text-[13px] font-semibold text-ink">
-            Last 30 days of nowcasts
-          </h3>
-        </div>
-        <Segmented
-          label="History variable"
-          value={variable}
-          onChange={onVariable}
-          options={CHARM_VARIABLES.map((v) => ({ value: v, label: VAR_SHORT[v] }))}
-        />
-        {ch?.history_error ? (
-          <Notice tone="warning" title="History unavailable" testid="history-unavailable">
-            {ch.history_error}
-          </Notice>
-        ) : (
-          <TimeSeriesChart
-            label={`${VAR_LABEL[variable]} near ${port.display_name}, last 30 days`}
-            points={hist}
-            domain={[0, 1]}
-            ticks={[0, 0.5, 1]}
-            format={pct}
-            unit={threshold ? `Median probability · ${threshold.replace(/^Probability that /, "")}` : "Median probability"}
-            color="var(--cw-forecast)"
-            maxGapDays={1}
-          />
-        )}
-        <p className="text-[11px] text-ink-3">{PORT_COPY.history}</p>
-      </section>
+      {children}
 
-      <section className="space-y-2" data-testid="port-chlorophyll" aria-labelledby="pc-h">
-        <div className="flex items-baseline justify-between gap-2">
-          <h3 id="pc-h" className="text-[13px] font-semibold text-ink">
-            Satellite chlorophyll near this port
-          </h3>
-          <span className="rounded border border-hairline-strong px-1 text-[10px] font-semibold uppercase tracking-wider text-ink-2">Observation</span>
+      <details className="group rounded-lg border border-hairline" data-testid="port-history">
+        <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2 [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 flex-1">
+            <span id="ph-h" className="block text-[13px] font-semibold text-ink">
+              Last 30 days of nowcasts
+            </span>
+            <span className="block text-[11.5px] text-ink-3">{VAR_SHORT[variable]}, median near the port</span>
+          </span>
+          {!ch?.history_error && <Sparkline points={hist} domain={[0, 1]} label={`${VAR_LABEL[variable]} near ${port.display_name}, last 30 days`} />}
+          <span aria-hidden className="text-ink-3 transition-transform duration-150 group-open:rotate-90">›</span>
+        </summary>
+        <div className="space-y-2 border-t border-hairline px-3 pb-3 pt-2">
+          <Segmented label="History variable" value={variable} onChange={onVariable} options={CHARM_VARIABLES.map((v) => ({ value: v, label: VAR_SHORT[v] }))} />
+          {ch?.history_error ? (
+            <Notice tone="warning" title="History unavailable" testid="history-unavailable">
+              {ch.history_error}
+            </Notice>
+          ) : (
+            <TimeSeriesChart
+              label={`${VAR_LABEL[variable]} near ${port.display_name}, last 30 days`}
+              points={hist}
+              domain={[0, 1]}
+              ticks={[0, 0.5, 1]}
+              format={pct}
+              unit={threshold ? `Median probability · ${threshold.replace(/^Probability that /, "")}` : "Median probability"}
+              color="var(--cw-forecast)"
+              maxGapDays={1}
+            />
+          )}
+          <p className="text-[11px] text-ink-3">{PORT_COPY.history}</p>
         </div>
+      </details>
+
+      <details className="group rounded-lg border border-hairline" data-testid="port-chlorophyll">
+        <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2 [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 flex-1">
+            <span id="pc-h" className="block text-[13px] font-semibold text-ink">
+              Chlorophyll near this port, last 60 days
+            </span>
+            <span className="block text-[11.5px] text-ink-3">8-day satellite composites, median of clear pixels</span>
+          </span>
+          <span aria-hidden className="text-ink-3 transition-transform duration-150 group-open:rotate-90">›</span>
+        </summary>
+        <div className="space-y-2 border-t border-hairline px-3 pb-3 pt-2">
         {!chl ? (
           <Notice tone="neutral">Not available.</Notice>
         ) : chl.error && !chl.latest ? (
@@ -196,7 +218,8 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
           </>
         )}
         <p className="text-[11px] text-ink-3">{PORT_COPY.chlorophyll}</p>
-      </section>
+        </div>
+      </details>
 
       <details className="rounded-md border border-hairline px-3 py-2 text-[11.5px] text-ink-2">
         <summary className="cursor-pointer font-medium text-ink">How these numbers are made</summary>
