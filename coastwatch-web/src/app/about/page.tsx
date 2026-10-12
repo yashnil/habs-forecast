@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { DataBanners } from "@/components/Banners";
 import { KindChip, type Kind } from "@/components/ui/Kinds";
+import { PurposeSwitch } from "@/components/welcome/PurposeSwitch";
 import { ABOUT, RESEARCH } from "@/content/copy";
 import { loadData } from "@/lib/data";
 import { sourceStatus } from "@/lib/layers";
@@ -36,6 +37,14 @@ export default async function AboutPage() {
             </Link>
           </p>
         </header>
+
+        <section aria-labelledby="purpose-h" className="mt-10 max-w-[760px] space-y-2" data-testid="about-purpose">
+          <h2 id="purpose-h" className="text-[13px] font-semibold uppercase tracking-[0.08em] text-ink-3">
+            What CoastWatch is set up for on this device
+          </h2>
+          <PurposeSwitch showReset />
+          <p className="text-[14px] text-ink-3">It changes only where you start and what comes first. Every page, value, caveat and official notice is the same for everyone. Nothing is sent anywhere.</p>
+        </section>
 
         <section aria-labelledby="kinds-h" className="mt-12 border-t border-hairline pt-8">
           <h2 id="kinds-h" className="font-display text-[26px] font-medium leading-tight text-ink">

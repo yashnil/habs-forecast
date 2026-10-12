@@ -195,6 +195,10 @@ body {
   outline-offset: 2px;
   border-radius: 6px;
 }
+/* an input whose container draws the focus ring (focus-within) does not draw a second one */
+[data-ring="container"]:focus-visible {
+  outline: none;
+}
 
 /* MapLibre chrome tuned to the dark map theme */
 .maplibregl-ctrl-group {

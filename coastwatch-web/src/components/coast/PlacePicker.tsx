@@ -78,7 +78,7 @@ export function PlacePicker({
       <label htmlFor={`${id}-in`} className="sr-only">
         {label}
       </label>
-      <div className="flex items-center gap-2 rounded-xl border border-hairline-strong bg-surface px-3 shadow-[0_1px_2px_rgba(6,17,30,0.06)] focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25">
+      <div className="flex items-center gap-2 rounded-xl border border-hairline-strong bg-surface px-3 shadow-[0_1px_2px_rgba(6,17,30,0.06)] focus-within:border-accent focus-within:ring-2 focus-within:ring-accent">
         <Icon name="search" className="h-[18px] w-[18px] shrink-0 text-ink-3" />
         <input
           ref={input}
@@ -97,6 +97,7 @@ export function PlacePicker({
           onFocus={() => setOpen(true)}
           onKeyDown={onKey}
           className="h-12 min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-3"
+          data-ring="container"
           data-testid="place-input"
         />
         {onPickOnMap && (
