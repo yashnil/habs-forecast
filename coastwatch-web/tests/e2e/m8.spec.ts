@@ -70,9 +70,11 @@ test.describe("first visit", () => {
     await expect(card).toContainText("not an official source");
     for (const k of ["Model", "Measured", "Official"]) await expect(card).toContainText(k, { ignoreCase: true });
     await expect(card.getByTestId("intro-about")).toHaveAttribute("href", "/about");
-    // official information keeps its place above it
-    const chip = await page.getByTestId("place-chip").boundingBox();
-    expect((await card.boundingBox())!.y).toBeGreaterThan(chip!.y + chip!.height - 1);
+    // never in front of official information: the card does not overlap the place chip and its notices
+    const chip = (await page.getByTestId("place-chip").boundingBox())!;
+    const c = (await card.boundingBox())!;
+    const overlaps = c.x < chip.x + chip.width && c.x + c.width > chip.x && c.y < chip.y + chip.height && c.y + c.height > chip.y;
+    expect(overlaps).toBe(false);
     await card.getByTestId("intro-dismiss").click();
     await expect(card).toHaveCount(0);
     await page.reload();

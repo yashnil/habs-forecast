@@ -32,6 +32,8 @@ import { useNow } from "@/lib/useNow";
 import { useOfficialDrawer } from "@/components/shell/OfficialShell";
 import { Icon } from "@/components/ui/Icon";
 import { PlacePicker } from "./PlacePicker";
+import { PurposeSwitch } from "@/components/welcome/PurposeSwitch";
+import { defaultAudience, sectionOrder, usePurpose } from "@/lib/purpose";
 import { MeasuredSection, ModelSection, ObservedSection, OfficialSection, UnknownsSection, modelHeadline, useModel } from "./CoastSections";
 import type { SatelliteResult } from "@/components/map/SatelliteNear";
 
@@ -73,7 +75,9 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   const sp = useSearchParams();
   const now = useNow();
   const placeKey = sp.get("place");
-  const audience = parseAudience(sp.get("for"));
+  // a link's own filter wins; otherwise the saved purpose's default (only a default: nothing is hidden)
+  const [purpose, , purposeRead] = usePurpose();
+  const audience = sp.get("for") ? parseAudience(sp.get("for")) : defaultAudience(purpose);
   const homeParam = sp.get("home");
   const [homeStored, setHomeStored] = useState<string | null>(null);
   useEffect(() => setHomeStored(readHome()), []);
@@ -360,11 +364,20 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
         {landing}
         {place && (
           <>
-            <OfficialSection official={official} assocs={assocs} audience={audience} place={place} verification={verification} onAudience={(a) => go({ for: a }, "replace")} />
-            <MeasuredSection near={st.near} nearestBeyond={st.nearestBeyond} now={now} />
-            <ModelSection manifest={manifest} model={model} lead={leadNow} onLead={setLead} now={now} />
-            <ObservedSection manifest={manifest} baseUrl={baseUrl} place={place} onSat={setSat} />
+            {/* sections wait for the saved purpose (read on this device), so a researcher's order appears once instead of jumping */}
+            {(purposeRead ? sectionOrder(purpose) : []).map((k) =>
+              k === "official" ? (
+                <OfficialSection key={k} official={official} assocs={assocs} audience={audience} place={place} verification={verification} onAudience={(a) => go({ for: a }, "replace")} />
+              ) : k === "measured" ? (
+                <MeasuredSection key={k} near={st.near} nearestBeyond={st.nearestBeyond} now={now} />
+              ) : k === "model" ? (
+                <ModelSection key={k} manifest={manifest} model={model} lead={leadNow} onLead={setLead} now={now} />
+              ) : (
+                <ObservedSection key={k} manifest={manifest} baseUrl={baseUrl} place={place} onSat={setSat} />
+              ),
+            )}
             <UnknownsSection items={unknowns} />
+            <PurposeSwitch />
             <p className="border-t border-hairline pt-4 text-[13px] leading-relaxed text-ink-3">
               Sources: CDFW and CDPH notices (transcribed, not verified); CalHABMAP via SCCOOS ERDDAP; NOAA C-HARM v3.1; NOAA CoastWatch satellite chlorophyll; HF-radar
               currents. {pathname === "/coast" ? "This page's link reproduces this view." : ""}

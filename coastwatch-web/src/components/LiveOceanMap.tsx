@@ -32,6 +32,7 @@ import type { CurrentsOverlay, ImageRaster, MapPoint, TileRaster } from "@/compo
 import { NavCard, type RegionDef } from "@/components/map/NavCard";
 import { PlaceChip } from "@/components/map/PlaceChip";
 import { IntroCard } from "@/components/map/IntroCard";
+import { portPlaces, sitePlaces } from "@/lib/coast";
 import { MapTour, type TourActions } from "@/components/map/Tour";
 import { HoverReadout, type HoverSource } from "@/components/map/HoverReadout";
 import { supportsGridTiles } from "@/lib/gridTiles";
@@ -154,6 +155,9 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   const [reducedMotion, setReducedMotion] = useState(false);
   // the guided tour: from the first-visit card, the Tour control, or a link with ?tour=1
   const [tourOpen, setTourOpen] = useState(initialQ.get("tour") === "1");
+  // a link with any parameter (a place, port, layer or the tour) takes precedence over the welcome
+  const deepLinked = Object.keys(initialParams).length > 0;
+  const welcomePlaces = useMemo(() => [...portPlaces(ports), ...sitePlaces()], [ports]);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReducedMotion(mq.matches);
@@ -627,8 +631,9 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
             <PlaceChip label={placeLabel} open={placesOpen} onToggle={() => setPlacesOpen(!placesOpen)} regionNotices={placeNotices} statewide={placeStatewide} />
           </div>
           {!placesOpen && !detailOpen && !tourOpen && (
-            <div className="absolute z-20 w-[340px]" style={{ left: RAIL + 12, top: 60 }}>
-              <IntroCard onTour={() => setTourOpen(true)} />
+            // the welcome sits in the free top-right of the map, clear of the place chip and the layer panel
+            <div className="absolute right-3 top-3 z-20 w-[360px] overflow-y-auto overscroll-contain rounded-xl [scrollbar-width:thin]" style={{ maxHeight: "calc(100% - 132px)" }}>
+              <IntroCard onTour={() => setTourOpen(true)} places={welcomePlaces} suppressed={deepLinked} />
             </div>
           )}
           {placesOpen && (
@@ -683,8 +688,11 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
             <Icon name="info" className="h-5 w-5" />
           </button>
           {!navOpen && !detail && !tourOpen && (
-            <div className="absolute inset-x-3 top-[58px] z-10">
-              <IntroCard onTour={() => setTourOpen(true)} />
+            // in front of the layer sheet (it returns when the welcome closes), down to the tab bar, so every
+            // choice fits a small phone; on a very short screen the card scrolls. The notices stay in the
+            // masthead and the tab bar, which the card never covers.
+            <div className="absolute inset-x-3 top-[58px] z-30 overflow-y-auto overscroll-contain rounded-xl [scrollbar-width:thin]" style={{ maxHeight: "calc(100% - 70px)" }}>
+              <IntroCard onTour={() => setTourOpen(true)} places={welcomePlaces} suppressed={deepLinked} />
             </div>
           )}
           {navOpen && (
