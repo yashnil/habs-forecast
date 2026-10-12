@@ -56,7 +56,7 @@ The existing first-visit card on the Ocean Map becomes a two-step welcome. It is
 - link precedence over the welcome and the saved purpose;
 - change and reset;
 - the phone shellfish path;
-- on a short phone, the welcome staying above the layer sheet;
+- on 360 and 320 px phones, every choice on screen in front of the layer sheet (it scrolls on a 640 px-tall screen), with the notices still one tap away;
 - axe on both steps on desktop and phone.
 
 **Unit:** `purpose.test.ts`.

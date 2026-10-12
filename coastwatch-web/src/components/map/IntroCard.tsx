@@ -155,7 +155,7 @@ export function IntroCard({ className = "", onTour, places, suppressed = false }
           <h3 className="mt-3 text-[14px] font-semibold text-ink" id="intro-q">
             What brings you here? <span className="font-normal text-ink-3">(optional)</span>
           </h3>
-          <ul className="mt-2 space-y-1.5" aria-labelledby="intro-q">
+          <ul className="mt-2 space-y-1 sm:space-y-1.5" aria-labelledby="intro-q">
             {PURPOSES.map((p) => (
               <li key={p.id}>
                 <button
@@ -167,7 +167,7 @@ export function IntroCard({ className = "", onTour, places, suppressed = false }
                 >
                   <span>
                     <span className="block text-[15px] font-medium leading-snug text-ink">{p.label}</span>
-                    <span id={`intro-hint-${p.id}`} className={p.id === "exploring" ? "block text-[13px] text-ink-3" : "sr-only"}>
+                    <span id={`intro-hint-${p.id}`} className={p.id === "exploring" ? "block text-[13px] text-ink-3 max-[389px]:sr-only" : "sr-only"}>
                       {p.hint}
                     </span>
                   </span>
