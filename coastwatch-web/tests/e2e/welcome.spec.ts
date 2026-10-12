@@ -138,6 +138,18 @@ test.describe("welcome", () => {
     await ctx.close();
   });
 
+  test("short phone: the welcome stays above the layer sheet and scrolls to its last choice", async ({ browser }) => {
+    const { ctx, page } = await fresh(browser, { ...PHONE, viewport: { width: 360, height: 640 } });
+    await expect(page.getByTestId("intro-card")).toBeVisible();
+    const sheet = (await page.getByTestId("mobile-sheet").boundingBox())!;
+    const box = (await page.getByTestId("intro-card").locator("xpath=..").boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(sheet.y);
+    // the last choice is reachable by scrolling the card, never covered by the sheet
+    await page.getByTestId("intro-tour").click();
+    await expect(page.getByTestId("tour")).toBeVisible();
+    await ctx.close();
+  });
+
   for (const [name, opts] of [["desktop", DESKTOP], ["phone", PHONE]] as const) {
     test(`${name}: axe finds nothing in either step of the welcome`, async ({ browser }) => {
       const { ctx, page } = await fresh(browser, opts);

@@ -688,7 +688,8 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
             <Icon name="info" className="h-5 w-5" />
           </button>
           {!navOpen && !detail && !tourOpen && (
-            <div className="absolute inset-x-3 top-[58px] z-10">
+            // bounded above the sheet: on a short screen (or larger fonts) the welcome scrolls instead of running under it
+            <div className="absolute inset-x-3 top-[58px] z-10 overflow-y-auto overscroll-contain rounded-xl [scrollbar-width:thin]" style={{ maxHeight: `calc(100% - ${58 + sheetH + 12}px)` }}>
               <IntroCard onTour={() => setTourOpen(true)} places={welcomePlaces} suppressed={deepLinked} />
             </div>
           )}
