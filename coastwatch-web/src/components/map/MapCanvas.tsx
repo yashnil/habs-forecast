@@ -197,6 +197,7 @@ export default function MapCanvas(p: Props) {
     setMap(m);
     // exposed for end-to-end tests and debugging
     (window as unknown as { __cwMap?: unknown }).__cwMap = m;
+    p.onReady(m);
   };
 
   return (
@@ -220,12 +221,10 @@ export default function MapCanvas(p: Props) {
         e.target.triggerRepaint();
       }}
       // set up as soon as the style is ready, not at "load": that waits for every basemap tile,
-      // and the data layers, no-data dots and bundled water must not wait for a slow tile server
+      // and the data layers, no-data dots, bundled water and navigation must not wait for a slow
+      // tile server
       onStyleData={(e) => init(e.target)}
-      onLoad={(e) => {
-        init(e.target);
-        p.onReady(e.target);
-      }}
+      onLoad={(e) => init(e.target)}
       cursor="crosshair"
       style={{ width: "100%", height: "100%" }}
     >

@@ -152,9 +152,10 @@ test.describe("values and georeferencing", () => {
     // the forecast is drawn tile by tile from the published value grid (lib/gridTiles: exact cell
     // edges); its tiles are bounded by the grid's outer cell edges, which are the image's corners
     await open(page, `${OK}/?var=cellular_domoic&lead=2`);
+    // the source's bounds are set once MapLibre has read its options (the map handle exists earlier)
     await page.waitForFunction(() => {
-      const m = (window as unknown as { __cwMap?: { getSource: (id: string) => unknown } }).__cwMap;
-      return !!m && !!m.getSource("forecast");
+      const m = (window as unknown as { __cwMap?: { getSource: (id: string) => { bounds?: unknown } | undefined } }).__cwMap;
+      return !!m?.getSource("forecast")?.bounds;
     });
     const src = await page.evaluate(() => {
       const m = (window as unknown as { __cwMap: { getSource: (id: string) => { type: string; tiles: string[]; bounds: number[] } } }).__cwMap;
