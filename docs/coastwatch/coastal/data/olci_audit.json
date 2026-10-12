@@ -1,0 +1,404 @@
+{
+ "days": [
+  "2026-10-05",
+  "2026-10-06",
+  "2026-10-07",
+  "2026-10-08",
+  "2026-10-09",
+  "2026-10-10"
+ ],
+ "rows": [
+  {
+   "region": "North Coast",
+   "band_km": "0-1",
+   "valid_%_by_day": [
+    13.8,
+    0.0,
+    0.0,
+    2.6,
+    4.5,
+    0.0
+   ],
+   "median_day_%": 1.3,
+   "never_valid_in_6_days_%": 83.1
+  },
+  {
+   "region": "North Coast",
+   "band_km": "1-3",
+   "valid_%_by_day": [
+    18.1,
+    0.0,
+    0.0,
+    1.5,
+    13.6,
+    0.0
+   ],
+   "median_day_%": 0.75,
+   "never_valid_in_6_days_%": 72.9
+  },
+  {
+   "region": "North Coast",
+   "band_km": "3-10",
+   "valid_%_by_day": [
+    10.9,
+    0.0,
+    0.0,
+    1.4,
+    29.5,
+    0.0
+   ],
+   "median_day_%": 0.7,
+   "never_valid_in_6_days_%": 60.9
+  },
+  {
+   "region": "North Coast",
+   "band_km": "0-10",
+   "valid_%_by_day": [
+    12.8,
+    0.0,
+    0.0,
+    1.5,
+    23.5,
+    0.0
+   ],
+   "median_day_%": 0.75,
+   "never_valid_in_6_days_%": 65.8
+  },
+  {
+   "region": "Mendocino/Sonoma",
+   "band_km": "0-1",
+   "valid_%_by_day": [
+    30.6,
+    0.0,
+    0.0,
+    0.4,
+    0.0,
+    0.6
+   ],
+   "median_day_%": 0.2,
+   "never_valid_in_6_days_%": 68.5
+  },
+  {
+   "region": "Mendocino/Sonoma",
+   "band_km": "1-3",
+   "valid_%_by_day": [
+    36.2,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.7
+   ],
+   "median_day_%": 0.0,
+   "never_valid_in_6_days_%": 62.1
+  },
+  {
+   "region": "Mendocino/Sonoma",
+   "band_km": "3-10",
+   "valid_%_by_day": [
+    31.1,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    2.4
+   ],
+   "median_day_%": 0.0,
+   "never_valid_in_6_days_%": 66.5
+  },
+  {
+   "region": "Mendocino/Sonoma",
+   "band_km": "0-10",
+   "valid_%_by_day": [
+    32.1,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    2.1
+   ],
+   "median_day_%": 0.0,
+   "never_valid_in_6_days_%": 65.8
+  },
+  {
+   "region": "San Francisco Bay area",
+   "band_km": "0-1",
+   "valid_%_by_day": [
+    6.2,
+    2.9,
+    0.0,
+    11.3,
+    0.0,
+    8.5
+   ],
+   "median_day_%": 4.55,
+   "never_valid_in_6_days_%": 76.1
+  },
+  {
+   "region": "San Francisco Bay area",
+   "band_km": "1-3",
+   "valid_%_by_day": [
+    0.1,
+    0.0,
+    0.0,
+    6.0,
+    0.0,
+    40.5
+   ],
+   "median_day_%": 0.05,
+   "never_valid_in_6_days_%": 55.3
+  },
+  {
+   "region": "San Francisco Bay area",
+   "band_km": "3-10",
+   "valid_%_by_day": [
+    0.0,
+    0.0,
+    0.0,
+    0.9,
+    0.0,
+    75.9
+   ],
+   "median_day_%": 0.0,
+   "never_valid_in_6_days_%": 24.0
+  },
+  {
+   "region": "San Francisco Bay area",
+   "band_km": "0-10",
+   "valid_%_by_day": [
+    0.5,
+    0.2,
+    0.0,
+    2.7,
+    0.0,
+    63.9
+   ],
+   "median_day_%": 0.35,
+   "never_valid_in_6_days_%": 34.0
+  },
+  {
+   "region": "Monterey Bay",
+   "band_km": "0-1",
+   "valid_%_by_day": [
+    43.6,
+    22.3,
+    0.0,
+    0.0,
+    0.0,
+    2.2
+   ],
+   "median_day_%": 1.1,
+   "never_valid_in_6_days_%": 48.0
+  },
+  {
+   "region": "Monterey Bay",
+   "band_km": "1-3",
+   "valid_%_by_day": [
+    53.6,
+    43.6,
+    0.0,
+    0.0,
+    0.0,
+    33.4
+   ],
+   "median_day_%": 16.7,
+   "never_valid_in_6_days_%": 28.9
+  },
+  {
+   "region": "Monterey Bay",
+   "band_km": "3-10",
+   "valid_%_by_day": [
+    38.6,
+    31.1,
+    0.0,
+    0.0,
+    0.0,
+    39.7
+   ],
+   "median_day_%": 15.55,
+   "never_valid_in_6_days_%": 44.2
+  },
+  {
+   "region": "Monterey Bay",
+   "band_km": "0-10",
+   "valid_%_by_day": [
+    42.3,
+    32.9,
+    0.0,
+    0.0,
+    0.0,
+    34.7
+   ],
+   "median_day_%": 16.45,
+   "never_valid_in_6_days_%": 41.3
+  },
+  {
+   "region": "Central Coast",
+   "band_km": "0-1",
+   "valid_%_by_day": [
+    33.4,
+    16.4,
+    0.0,
+    0.0,
+    17.7,
+    4.8
+   ],
+   "median_day_%": 10.6,
+   "never_valid_in_6_days_%": 49.9
+  },
+  {
+   "region": "Central Coast",
+   "band_km": "1-3",
+   "valid_%_by_day": [
+    33.3,
+    23.0,
+    0.0,
+    0.0,
+    13.6,
+    23.3
+   ],
+   "median_day_%": 18.3,
+   "never_valid_in_6_days_%": 38.5
+  },
+  {
+   "region": "Central Coast",
+   "band_km": "3-10",
+   "valid_%_by_day": [
+    9.3,
+    9.7,
+    0.0,
+    0.0,
+    3.4,
+    25.1
+   ],
+   "median_day_%": 6.3500000000000005,
+   "never_valid_in_6_days_%": 59.3
+  },
+  {
+   "region": "Central Coast",
+   "band_km": "0-10",
+   "valid_%_by_day": [
+    16.8,
+    13.2,
+    0.0,
+    0.0,
+    7.0,
+    22.7
+   ],
+   "median_day_%": 10.1,
+   "never_valid_in_6_days_%": 53.9
+  },
+  {
+   "region": "Southern California",
+   "band_km": "0-1",
+   "valid_%_by_day": [
+    31.9,
+    79.3,
+    5.9,
+    0.0,
+    16.4,
+    0.1
+   ],
+   "median_day_%": 11.149999999999999,
+   "never_valid_in_6_days_%": 15.2
+  },
+  {
+   "region": "Southern California",
+   "band_km": "1-3",
+   "valid_%_by_day": [
+    40.9,
+    99.5,
+    22.9,
+    0.0,
+    17.7,
+    0.1
+   ],
+   "median_day_%": 20.299999999999997,
+   "never_valid_in_6_days_%": 0.3
+  },
+  {
+   "region": "Southern California",
+   "band_km": "3-10",
+   "valid_%_by_day": [
+    39.5,
+    100.0,
+    18.1,
+    0.0,
+    10.6,
+    0.0
+   ],
+   "median_day_%": 14.350000000000001,
+   "never_valid_in_6_days_%": 0.0
+  },
+  {
+   "region": "Southern California",
+   "band_km": "0-10",
+   "valid_%_by_day": [
+    39.1,
+    98.3,
+    18.0,
+    0.0,
+    12.4,
+    0.0
+   ],
+   "median_day_%": 15.2,
+   "never_valid_in_6_days_%": 1.3
+  },
+  {
+   "region": "All California",
+   "band_km": "0-1",
+   "valid_%_by_day": [
+    22.7,
+    30.3,
+    2.0,
+    1.2,
+    8.7,
+    1.6
+   ],
+   "median_day_%": 5.35,
+   "never_valid_in_6_days_%": 54.8
+  },
+  {
+   "region": "All California",
+   "band_km": "1-3",
+   "valid_%_by_day": [
+    29.1,
+    43.7,
+    8.8,
+    0.7,
+    10.4,
+    8.9
+   ],
+   "median_day_%": 9.65,
+   "never_valid_in_6_days_%": 38.2
+  },
+  {
+   "region": "All California",
+   "band_km": "3-10",
+   "valid_%_by_day": [
+    26.3,
+    49.9,
+    8.5,
+    0.3,
+    9.0,
+    13.4
+   ],
+   "median_day_%": 11.2,
+   "never_valid_in_6_days_%": 28.7
+  },
+  {
+   "region": "All California",
+   "band_km": "0-10",
+   "valid_%_by_day": [
+    26.6,
+    46.6,
+    7.9,
+    0.4,
+    9.3,
+    11.2
+   ],
+   "median_day_%": 10.25,
+   "never_valid_in_6_days_%": 33.3
+  }
+ ]
+}

@@ -1,0 +1,252 @@
+{
+ "Crescent City": {
+  "county": "Del Norte",
+  "lat": 41.74901,
+  "lon": -124.20398,
+  "notices": [
+   {
+    "id": "cdph-2026-annual-mussel-quarantine",
+    "agency": "CDPH",
+    "action": "quarantine",
+    "fishery": "sport_harvest",
+    "title": "Annual quarantine of sport-harvested mussels",
+    "effective_date": "2026-05-01",
+    "species": [
+     "mussels (all species)"
+    ],
+    "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-008.aspx",
+    "area": "Along the California coast, including all bays and estuaries"
+   },
+   {
+    "id": "cdfw-2026-razor-clam-del-norte",
+    "agency": "CDFW",
+    "action": "fishery_closure",
+    "fishery": "recreational",
+    "title": "Recreational razor clam fishery closed in Del Norte County",
+    "effective_date": "2026-10-09",
+    "species": [
+     "razor clam"
+    ],
+    "src": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+    "area": "Del Norte County"
+   },
+   {
+    "id": "cdph-2026-sn26-020-razor-clam-del-norte",
+    "agency": "CDPH",
+    "action": "consumption_advisory",
+    "fishery": "sport_harvest",
+    "title": "Do not eat sport-harvested razor clams from Del Norte County",
+    "effective_date": "2026-10-09",
+    "species": [
+     "razor clams"
+    ],
+    "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-020.aspx",
+    "area": "Del Norte County"
+   }
+  ],
+  "stations": [],
+  "charm": {
+   "issued": "2026-10-11",
+   "valid": "2026-10-11",
+   "radius_km": 15.0,
+   "pda": {
+    "n": 40,
+    "median": 0.007752,
+    "min": 0.0,
+    "max": 0.191107
+   },
+   "pn": {
+    "n": 51,
+    "median": 0.98999,
+    "min": 0.387646,
+    "max": 0.993133
+   },
+   "nearest_toxin_cell_km": 2.4,
+   "nearest_bloom_cell_km": 2.4
+  },
+  "satellite": null
+ },
+ "Santa Cruz": {
+  "county": "Santa Cruz",
+  "lat": 36.97412,
+  "lon": -122.03081,
+  "notices": [
+   {
+    "id": "cdph-2026-annual-mussel-quarantine",
+    "agency": "CDPH",
+    "action": "quarantine",
+    "fishery": "sport_harvest",
+    "title": "Annual quarantine of sport-harvested mussels",
+    "effective_date": "2026-05-01",
+    "species": [
+     "mussels (all species)"
+    ],
+    "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-008.aspx",
+    "area": "Along the California coast, including all bays and estuaries"
+   },
+   {
+    "id": "cdph-2026-sn26-019-anchovy-central-coast",
+    "agency": "CDPH",
+    "action": "consumption_advisory",
+    "fishery": "consumption",
+    "title": "Do not eat northern anchovies from Pigeon Point to Point Lobos",
+    "effective_date": "2026-09-14",
+    "species": [
+     "northern anchovy"
+    ],
+    "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-019.aspx",
+    "area": "Waters between Pigeon Point, San Mateo County (37\u00b0 11.00\u2019 N) and Point Lobos, Monterey County (36\u00b0 31.46\u2019 N)"
+   },
+   {
+    "id": "cdfw-2026-anchovy-take-restriction-monterey-bay",
+    "agency": "CDFW",
+    "action": "take_restriction",
+    "fishery": "commercial_and_recreational",
+    "title": "Northern anchovy: no take for human consumption, Pigeon Point to Point Lobos",
+    "effective_date": "2026-09-11",
+    "species": [
+     "northern anchovy"
+    ],
+    "src": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+    "area": "Monterey Bay: Pigeon Point, San Mateo County (37\u00b0 11.000\u2019 N) to Point Lobos, Monterey County (36\u00b0 31.461\u2019 N)"
+   }
+  ],
+  "stations": [
+   {
+    "name": "Santa Cruz Wharf",
+    "km": 2.2,
+    "last_sample": "2026-09-30",
+    "pDA": {
+     "last_value": 0.202094,
+     "last_date": "2026-09-30",
+     "last_qualifier": null,
+     "max_last_365d": 11.1919,
+     "n_last_365d": 49
+    },
+    "pn_ser": {
+     "last_value": 4900.0,
+     "last_date": "2026-09-30"
+    },
+    "pn_del": null
+   }
+  ],
+  "charm": {
+   "issued": "2026-10-11",
+   "valid": "2026-10-11",
+   "radius_km": 15.0,
+   "pda": {
+    "n": 24,
+    "median": 0.748733,
+    "min": 0.492157,
+    "max": 0.793497
+   },
+   "pn": {
+    "n": 25,
+    "median": 0.900204,
+    "min": 0.034089,
+    "max": 0.976852
+   },
+   "nearest_toxin_cell_km": 7.2,
+   "nearest_bloom_cell_km": 4.2
+  },
+  "satellite": {
+   "date": "2026-10-10",
+   "median_mg_m3": 1.41,
+   "pixels": 136
+  }
+ },
+ "Morro Bay": {
+  "county": "San Luis Obispo",
+  "lat": 35.36581,
+  "lon": -120.84991,
+  "notices": [
+   {
+    "id": "cdph-2026-annual-mussel-quarantine",
+    "agency": "CDPH",
+    "action": "quarantine",
+    "fishery": "sport_harvest",
+    "title": "Annual quarantine of sport-harvested mussels",
+    "effective_date": "2026-05-01",
+    "species": [
+     "mussels (all species)"
+    ],
+    "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-008.aspx",
+    "area": "Along the California coast, including all bays and estuaries"
+   }
+  ],
+  "stations": [
+   {
+    "name": "Morro Bay, front bay",
+    "km": 1.0,
+    "last_sample": "2026-09-01",
+    "pDA": null,
+    "pn_ser": {
+     "last_value": 4264.614,
+     "last_date": "2026-09-01"
+    },
+    "pn_del": {
+     "last_value": 17591.53,
+     "last_date": "2026-09-01"
+    }
+   },
+   {
+    "name": "Morro Bay, back bay",
+    "km": 4.0,
+    "last_sample": "2026-09-01",
+    "pDA": null,
+    "pn_ser": {
+     "last_value": 0.0,
+     "last_date": "2026-09-01"
+    },
+    "pn_del": {
+     "last_value": 0.0,
+     "last_date": "2026-09-01"
+    }
+   },
+   {
+    "name": "Cal Poly Pier (Avila Beach)",
+    "km": 23.9,
+    "last_sample": "2026-10-04",
+    "pDA": {
+     "last_value": 0.0,
+     "last_date": "2026-08-03",
+     "last_qualifier": "reported_zero",
+     "max_last_365d": 0.5715,
+     "n_last_365d": 43
+    },
+    "pn_ser": {
+     "last_value": 0.0,
+     "last_date": "2026-10-04"
+    },
+    "pn_del": {
+     "last_value": 0.0,
+     "last_date": "2026-10-04"
+    }
+   }
+  ],
+  "charm": {
+   "issued": "2026-10-11",
+   "valid": "2026-10-11",
+   "radius_km": 15.0,
+   "pda": {
+    "n": 18,
+    "median": 0.799104,
+    "min": 0.637898,
+    "max": 0.826579
+   },
+   "pn": {
+    "n": 23,
+    "median": 0.719596,
+    "min": 0.609851,
+    "max": 0.950148
+   },
+   "nearest_toxin_cell_km": 4.8,
+   "nearest_bloom_cell_km": 2.5
+  },
+  "satellite": {
+   "date": "2026-10-10",
+   "median_mg_m3": 3.24,
+   "pixels": 19
+  }
+ }
+}

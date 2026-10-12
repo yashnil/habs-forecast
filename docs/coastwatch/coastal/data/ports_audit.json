@@ -1,0 +1,524 @@
+[
+ {
+  "port": "Crescent City",
+  "county": "Del Norte",
+  "region": "north_coast",
+  "nearest_station": "Trinidad Pier",
+  "station_km": 77.3,
+  "last_toxin_sample": "2026-04-17",
+  "age_days": 178,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 2.4,
+  "nearest_bloom_cell_km": 2.4,
+  "charm_nearest_cell_km_portintel": 2.38,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine",
+   "cdfw-2026-razor-clam-del-norte",
+   "cdph-2026-sn26-020-razor-clam-del-norte"
+  ]
+ },
+ {
+  "port": "Trinidad",
+  "county": "Humboldt",
+  "region": "north_coast",
+  "nearest_station": "Trinidad Pier",
+  "station_km": 0.6,
+  "last_toxin_sample": "2026-04-17",
+  "age_days": 178,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 2.5,
+  "nearest_bloom_cell_km": 1.1,
+  "charm_nearest_cell_km_portintel": 1.07,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine",
+   "cdfw-2024-razor-clam-humboldt",
+   "cdfw-rock-crab-commercial-40n"
+  ]
+ },
+ {
+  "port": "Eureka",
+  "county": "Humboldt",
+  "region": "north_coast",
+  "nearest_station": "Humboldt Bay",
+  "station_km": 3.6,
+  "last_toxin_sample": "2026-04-07",
+  "age_days": 188,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 7.2,
+  "nearest_bloom_cell_km": 3.3,
+  "charm_nearest_cell_km_portintel": 3.32,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine",
+   "cdfw-2024-razor-clam-humboldt",
+   "cdfw-rock-crab-commercial-40n"
+  ]
+ },
+ {
+  "port": "Shelter Cove",
+  "county": "Humboldt",
+  "region": "north_coast",
+  "nearest_station": "Humboldt Bay, South Bay",
+  "station_km": 78.7,
+  "last_toxin_sample": "2026-03-30",
+  "age_days": 196,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 4.7,
+  "nearest_bloom_cell_km": 1.3,
+  "charm_nearest_cell_km_portintel": 1.26,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine",
+   "cdfw-2024-razor-clam-humboldt",
+   "cdfw-rock-crab-commercial-40n"
+  ]
+ },
+ {
+  "port": "Fort Bragg",
+  "county": "Mendocino",
+  "region": "mendocino_sonoma",
+  "nearest_station": "Bodega Marine Lab buoy",
+  "station_km": 138.6,
+  "last_toxin_sample": null,
+  "age_days": null,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 4.2,
+  "nearest_bloom_cell_km": 0.8,
+  "charm_nearest_cell_km_portintel": 0.76,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine",
+   "cdfw-rock-crab-commercial-40n",
+   "cdph-rock-crab-viscera-north-coast-nci"
+  ]
+ },
+ {
+  "port": "Point Arena",
+  "county": "Mendocino",
+  "region": "mendocino_sonoma",
+  "nearest_station": "Bodega Marine Lab buoy",
+  "station_km": 84.9,
+  "last_toxin_sample": null,
+  "age_days": null,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 5.1,
+  "nearest_bloom_cell_km": 2.6,
+  "charm_nearest_cell_km_portintel": 2.64,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine",
+   "cdfw-rock-crab-commercial-40n",
+   "cdph-rock-crab-viscera-north-coast-nci"
+  ]
+ },
+ {
+  "port": "Bodega Bay",
+  "county": "Sonoma",
+  "region": "mendocino_sonoma",
+  "nearest_station": "Bodega Marine Lab",
+  "station_km": 2.7,
+  "last_toxin_sample": null,
+  "age_days": null,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 3.9,
+  "nearest_bloom_cell_km": 1.8,
+  "charm_nearest_cell_km_portintel": 1.81,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine",
+   "cdph-rock-crab-viscera-north-coast-nci"
+  ]
+ },
+ {
+  "port": "San Francisco",
+  "county": "San Francisco",
+  "region": "sf_bay_farallones",
+  "nearest_station": "Inner Tomales Bay",
+  "station_km": 52.4,
+  "last_toxin_sample": null,
+  "age_days": null,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 11.8,
+  "nearest_bloom_cell_km": 11.3,
+  "charm_nearest_cell_km_portintel": 11.27,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine"
+  ]
+ },
+ {
+  "port": "Princeton / Half Moon Bay",
+  "county": "San Mateo",
+  "region": "sf_bay_farallones",
+  "nearest_station": "Santa Cruz Wharf",
+  "station_km": 73.3,
+  "last_toxin_sample": "2026-09-30",
+  "age_days": 12,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 6.0,
+  "nearest_bloom_cell_km": 2.7,
+  "charm_nearest_cell_km_portintel": 2.73,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine",
+   "cdph-2026-sn26-019-anchovy-central-coast",
+   "cdfw-2026-anchovy-take-restriction-monterey-bay"
+  ]
+ },
+ {
+  "port": "Santa Cruz",
+  "county": "Santa Cruz",
+  "region": "monterey_bay",
+  "nearest_station": "Santa Cruz Wharf",
+  "station_km": 2.2,
+  "last_toxin_sample": "2026-09-30",
+  "age_days": 12,
+  "stations_25km_sampled_14d": 1,
+  "stations_25km_sampled_30d": 1,
+  "toxin_25km_30d": [
+   "Santa Cruz Wharf"
+  ],
+  "pn_25km_30d": [
+   "Santa Cruz Wharf"
+  ],
+  "any_25km_30d": [
+   "Santa Cruz Wharf"
+  ],
+  "toxin_25km_90d": [
+   "Santa Cruz Wharf"
+  ],
+  "nearest_toxin_cell_km": 7.2,
+  "nearest_bloom_cell_km": 4.2,
+  "charm_nearest_cell_km_portintel": 4.23,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine",
+   "cdph-nci-bivalve-special-advisory"
+  ]
+ },
+ {
+  "port": "Moss Landing",
+  "county": "Monterey",
+  "region": "monterey_bay",
+  "nearest_station": "Monterey Wharf",
+  "station_km": 24.1,
+  "last_toxin_sample": "2022-08-31",
+  "age_days": 1503,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [
+   "Monterey Wharf"
+  ],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 2.0,
+  "nearest_bloom_cell_km": 2.0,
+  "charm_nearest_cell_km_portintel": 1.98,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine",
+   "cdph-2026-sn26-018-monterey-bivalves",
+   "cdph-2026-sn26-019-anchovy-central-coast",
+   "cdfw-2026-anchovy-take-restriction-monterey-bay"
+  ]
+ },
+ {
+  "port": "Monterey",
+  "county": "Monterey",
+  "region": "monterey_bay",
+  "nearest_station": "Monterey Wharf",
+  "station_km": 0.6,
+  "last_toxin_sample": "2022-08-31",
+  "age_days": 1503,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [
+   "Monterey Wharf"
+  ],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 6.6,
+  "nearest_bloom_cell_km": 1.2,
+  "charm_nearest_cell_km_portintel": 1.16,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine",
+   "cdph-2026-sn26-018-monterey-bivalves",
+   "cdph-2026-sn26-019-anchovy-central-coast",
+   "cdfw-2026-anchovy-take-restriction-monterey-bay"
+  ]
+ },
+ {
+  "port": "Morro Bay",
+  "county": "San Luis Obispo",
+  "region": "central_coast",
+  "nearest_station": "Morro Bay, front bay",
+  "station_km": 1.0,
+  "last_toxin_sample": null,
+  "age_days": null,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [
+   "Cal Poly Pier (Avila Beach)"
+  ],
+  "any_25km_30d": [
+   "Cal Poly Pier (Avila Beach)"
+  ],
+  "toxin_25km_90d": [
+   "Cal Poly Pier (Avila Beach)"
+  ],
+  "nearest_toxin_cell_km": 4.8,
+  "nearest_bloom_cell_km": 2.5,
+  "charm_nearest_cell_km_portintel": 2.53,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine"
+  ]
+ },
+ {
+  "port": "Avila / Port San Luis",
+  "county": "San Luis Obispo",
+  "region": "central_coast",
+  "nearest_station": "Cal Poly Pier (Avila Beach)",
+  "station_km": 1.4,
+  "last_toxin_sample": "2026-08-03",
+  "age_days": 70,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [
+   "Cal Poly Pier (Avila Beach)"
+  ],
+  "any_25km_30d": [
+   "Cal Poly Pier (Avila Beach)"
+  ],
+  "toxin_25km_90d": [
+   "Cal Poly Pier (Avila Beach)"
+  ],
+  "nearest_toxin_cell_km": 4.5,
+  "nearest_bloom_cell_km": 4.5,
+  "charm_nearest_cell_km_portintel": 4.5,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine"
+  ]
+ },
+ {
+  "port": "Santa Barbara",
+  "county": "Santa Barbara",
+  "region": "southern_california",
+  "nearest_station": "Stearns Wharf (Santa Barbara)",
+  "station_km": 0.4,
+  "last_toxin_sample": "2026-08-03",
+  "age_days": 70,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [
+   "Stearns Wharf (Santa Barbara)"
+  ],
+  "any_25km_30d": [
+   "Stearns Wharf (Santa Barbara)"
+  ],
+  "toxin_25km_90d": [
+   "Stearns Wharf (Santa Barbara)"
+  ],
+  "nearest_toxin_cell_km": 2.6,
+  "nearest_bloom_cell_km": 2.2,
+  "charm_nearest_cell_km_portintel": 2.18,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine"
+  ]
+ },
+ {
+  "port": "Ventura",
+  "county": "Ventura",
+  "region": "southern_california",
+  "nearest_station": "Stearns Wharf (Santa Barbara)",
+  "station_km": 38.7,
+  "last_toxin_sample": "2026-08-03",
+  "age_days": 70,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 4.5,
+  "nearest_bloom_cell_km": 4.5,
+  "charm_nearest_cell_km_portintel": 4.54,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine"
+  ]
+ },
+ {
+  "port": "Port Hueneme",
+  "county": "Ventura",
+  "region": "southern_california",
+  "nearest_station": "Stearns Wharf (Santa Barbara)",
+  "station_km": 53.5,
+  "last_toxin_sample": "2026-08-03",
+  "age_days": 70,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 3.1,
+  "nearest_bloom_cell_km": 0.5,
+  "charm_nearest_cell_km_portintel": 0.53,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine"
+  ]
+ },
+ {
+  "port": "San Pedro",
+  "county": "Los Angeles",
+  "region": "southern_california",
+  "nearest_station": "Santa Monica Pier",
+  "station_km": 35.8,
+  "last_toxin_sample": "2026-08-03",
+  "age_days": 70,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 4.7,
+  "nearest_bloom_cell_km": 4.7,
+  "charm_nearest_cell_km_portintel": 4.74,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine"
+  ]
+ },
+ {
+  "port": "Newport Beach",
+  "county": "Orange",
+  "region": "southern_california",
+  "nearest_station": "Newport Beach Pier",
+  "station_km": 1.0,
+  "last_toxin_sample": "2026-08-10",
+  "age_days": 63,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [
+   "Newport Beach Pier"
+  ],
+  "nearest_toxin_cell_km": 3.9,
+  "nearest_bloom_cell_km": 2.8,
+  "charm_nearest_cell_km_portintel": 2.79,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine"
+  ]
+ },
+ {
+  "port": "Dana Point",
+  "county": "Orange",
+  "region": "southern_california",
+  "nearest_station": "Newport Beach Pier",
+  "station_km": 26.6,
+  "last_toxin_sample": "2026-08-10",
+  "age_days": 63,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 2.2,
+  "nearest_bloom_cell_km": 2.2,
+  "charm_nearest_cell_km_portintel": 2.18,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine"
+  ]
+ },
+ {
+  "port": "Oceanside",
+  "county": "San Diego",
+  "region": "southern_california",
+  "nearest_station": "Scripps Pier (La Jolla)",
+  "station_km": 38.4,
+  "last_toxin_sample": "2026-08-10",
+  "age_days": 63,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [],
+  "any_25km_30d": [],
+  "toxin_25km_90d": [],
+  "nearest_toxin_cell_km": 3.3,
+  "nearest_bloom_cell_km": 0.8,
+  "charm_nearest_cell_km_portintel": 0.77,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine"
+  ]
+ },
+ {
+  "port": "San Diego",
+  "county": "San Diego",
+  "region": "southern_california",
+  "nearest_station": "Scripps Pier (La Jolla)",
+  "station_km": 20.4,
+  "last_toxin_sample": "2026-08-10",
+  "age_days": 63,
+  "stations_25km_sampled_14d": 0,
+  "stations_25km_sampled_30d": 0,
+  "toxin_25km_30d": [],
+  "pn_25km_30d": [
+   "Scripps Pier (La Jolla)"
+  ],
+  "any_25km_30d": [
+   "Scripps Pier (La Jolla)"
+  ],
+  "toxin_25km_90d": [
+   "Scripps Pier (La Jolla)"
+  ],
+  "nearest_toxin_cell_km": 8.4,
+  "nearest_bloom_cell_km": 7.4,
+  "charm_nearest_cell_km_portintel": 7.4,
+  "county_or_statewide_notices": [
+   "cdph-2026-annual-mussel-quarantine"
+  ]
+ }
+]
