@@ -102,6 +102,12 @@ export const BLOOM_COPY = {
   chlNotToxin: "Chlorophyll measures algae biomass. High chlorophyll is not a toxic bloom; low chlorophyll does not rule one out.",
   reviewPending: "These pages have not yet been reviewed by an independent HAB scientist.",
   unavailable: "Measured observations are unavailable in this dataset.",
+  /** the source CSV link (original upstream data, not CoastWatch's chart) */
+  csvLabel: "Download source data (CSV)",
+  csvWhat:
+    "The original CalHABMAP measurements for this station since 2014, exactly as SCCOOS ERDDAP serves them: not a copy of the chart above. Units are in the second row, NaN means not measured, and a 0 is a reported 0 (not quantified).",
+  csvOutage: "If SCCOOS is unavailable the file will not load; try again later, or open the station's dataset page.",
+  csvStale: "SCCOOS did not respond when CoastWatch last checked this station, so the download may fail too.",
 } as const;
 
 export const FISHERIES_COPY = {
