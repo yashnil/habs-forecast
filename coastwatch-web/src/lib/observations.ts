@@ -88,3 +88,32 @@ export const REGION_BOUNDS: Record<string, [[number, number], [number, number]]>
   southern_california: [[-120.6, 32.45], [-117.05, 34.55]],
 };
 export const CALIFORNIA_BOUNDS: [[number, number], [number, number]] = [[-124.6, 32.4], [-117.0, 42.0]];
+
+const SOURCE_HOST = "erddap.sccoos.org";
+
+/**
+ * The station's original CalHABMAP data as CSV: the exact SCCOOS ERDDAP query the pipeline ran
+ * (`request_url`), re-encoded so every constraint character is percent-encoded. Returns null unless
+ * the query is an https tabledap CSV request on SCCOOS for this very station, so a malformed or
+ * unexpected URL never becomes a download link.
+ */
+export function sourceCsvUrl(st: Pick<ObsStation, "station_id" | "request_url">): string | null {
+  if (!st.request_url || !/^HABs-[A-Za-z0-9-]+$/.test(st.station_id)) return null;
+  let u: URL;
+  try {
+    u = new URL(st.request_url);
+  } catch {
+    return null;
+  }
+  if (u.protocol !== "https:" || u.hostname !== SOURCE_HOST || u.pathname !== `/erddap/tabledap/${st.station_id}.csv`) return null;
+  const raw = st.request_url.slice(st.request_url.indexOf("?") + 1);
+  if (!raw || raw === st.request_url) return null;
+  let parts: string[];
+  try {
+    parts = raw.split("&").map((p) => encodeURIComponent(decodeURIComponent(p)).replace(/%2C/g, ","));
+  } catch {
+    return null;
+  }
+  if (!parts[0].split(",").includes("time")) return null;
+  return `https://${SOURCE_HOST}${u.pathname}?${parts.join("&")}`;
+}

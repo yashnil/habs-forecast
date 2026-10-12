@@ -40,8 +40,8 @@ export function AppShell({
       </a>
       <div className={`flex min-h-dvh flex-col bg-page pb-[var(--cw-tabbar-h)] md:pb-0 ${scroll === "app" ? "lg:h-dvh" : ""}`}>
         <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-navy-950 text-on-navy">
-          <div className="flex h-[52px] items-center gap-6 px-4 md:h-[var(--cw-masthead-h)] md:gap-5 md:px-6 lg:gap-8">
-            <Link href="/" className="flex items-center gap-2.5" aria-label="CoastWatch home">
+          <div className="flex h-[52px] min-w-0 items-center gap-3 px-3 min-[360px]:gap-6 min-[360px]:px-4 md:h-[var(--cw-masthead-h)] md:gap-5 md:px-6 lg:gap-8">
+            <Link href="/" className="flex shrink-0 items-center gap-2 min-[360px]:gap-2.5" aria-label="CoastWatch home">
               <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden>
                 <rect width="32" height="32" rx="8" fill="#10263e" />
                 <path d="M6 19c3.2-2.6 6.4-2.6 9.6 0s6.6 2.6 10.4-.2" fill="none" stroke="#6cc6dc" strokeWidth="2.2" strokeLinecap="round" />
@@ -72,7 +72,7 @@ export function AppShell({
                 })}
               </ul>
             </nav>
-            <div className="ml-auto flex items-center gap-3">
+            <div className="ml-auto flex items-center gap-2 min-[360px]:gap-3">
               <Link
                 href="/about"
                 data-testid="nav-about"
