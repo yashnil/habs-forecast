@@ -205,7 +205,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   );
 
   const header = (
-    <header className="space-y-4" data-testid="coast-header">
+    <header className="space-y-3 sm:space-y-4" data-testid="coast-header">
       <div>
         <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-accent">{COAST_COPY.title}</p>
         <div className="mt-1 flex items-start justify-between gap-3">
@@ -348,7 +348,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
 
   return (
     <div className="lg:grid lg:grid-cols-[minmax(0,620px)_minmax(0,1fr)]" data-testid="my-coast">
-      <div className="min-w-0 space-y-8 px-4 pb-24 pt-6 sm:px-8 lg:pb-16">
+      <div className="min-w-0 space-y-5 px-4 pb-24 pt-4 sm:space-y-8 sm:px-8 sm:pt-6 lg:pb-16">
         {header}
         {glance}
         <div className="h-[42vh] min-h-[260px] overflow-hidden rounded-2xl lg:hidden" data-testid="coast-map-mobile">
@@ -395,7 +395,7 @@ function MapSlot({ wide, children }: { wide: boolean; children: React.ReactNode 
 
 function GlanceRow({ href, dot, label, testid, children }: { href: string; dot: string; label: string; testid: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[92px_1fr] items-baseline gap-3 px-4 py-2.5 sm:grid-cols-[110px_1fr]" data-testid={testid}>
+    <div className="grid grid-cols-[92px_1fr] items-baseline gap-3 px-4 py-2 sm:grid-cols-[110px_1fr] sm:py-2.5" data-testid={testid}>
       <dt className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">
         <span aria-hidden className={`h-2 w-2 rounded-full ${dot}`} />
         {label}
