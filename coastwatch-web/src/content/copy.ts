@@ -77,6 +77,7 @@ export const DISCLAIMER =
 /** Primary navigation. Only built experiences appear: unbuilt features are not navigation. */
 export const EXPERIENCES = [
   { key: "map", label: "Ocean Map", short: "Map", href: "/" },
+  { key: "coast", label: "My Coast", short: "Coast", href: "/coast" },
   { key: "bloom", label: "Bloom Intelligence", short: "Blooms", href: "/bloom" },
   { key: "fisheries", label: "Fisheries", short: "Fisheries", href: "/fisheries" },
 ] as const;

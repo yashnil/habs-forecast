@@ -64,7 +64,7 @@ test.describe("masthead at narrow widths", () => {
         expect(m.statusLinks, `${p} agency links`).toEqual(expect.arrayContaining(["CDFW", "CDPH"]));
         expect(m.offscreen, `${p} header controls off screen`).toEqual([]);
         if (phone) {
-          expect(m.tabs, `${p} tabs`).toBe(5);
+          expect(m.tabs, `${p} tabs`).toBe(6);
           expect(m.tabsInside, `${p} tabs inside`).toBe(true);
         } else {
           await expect(page.getByTestId("nav-about")).toBeVisible();

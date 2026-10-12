@@ -74,13 +74,15 @@ test.describe("information hierarchy and labelling", () => {
     await expect(page).toHaveURL(/lead=3/);
   });
 
-  test("primary navigation links the three built experiences and nothing unbuilt", async ({ page }) => {
+  test("primary navigation links the four built experiences and nothing unbuilt", async ({ page }) => {
     await open(page, OK);
     const nav = page.getByRole("navigation", { name: "Primary" }).first();
     await expect(page.getByTestId("nav-map")).toHaveAttribute("aria-current", "page");
+    await expect(page.getByTestId("nav-coast")).toHaveAttribute("href", "/coast");
     await expect(page.getByTestId("nav-bloom")).toHaveAttribute("href", "/bloom");
     await expect(page.getByTestId("nav-fisheries")).toHaveAttribute("href", "/fisheries");
-    await expect(nav).not.toContainText(/My Coast|Upcoming/i);
+    await expect(nav).toContainText("My Coast");
+    await expect(nav).not.toContainText(/Upcoming|coming soon/i);
   });
 });
 

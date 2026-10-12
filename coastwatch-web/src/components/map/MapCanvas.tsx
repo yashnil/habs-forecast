@@ -70,6 +70,12 @@ type Props = {
   cellEdges?: GeoJSON.FeatureCollection | null;
   /** fade new data rasters in (switching layer); time steps always cut, never cross-fade */
   fade?: boolean;
+  /**
+   * My Coast: where each fact was obtained. Features carry properties.kind: "target" (the chosen
+   * waters), "station" (a monitoring station, with name), "cell" (a C-HARM cell with a value) and
+   * "link" (from the waters to that cell). Drawn above the data, below the ports.
+   */
+  overlay?: GeoJSON.FeatureCollection | null;
 };
 
 const OFFICIAL = "#f6bb5c";
@@ -325,6 +331,24 @@ export default function MapCanvas(p: Props) {
             layout={{ "symbol-placement": "line-center", "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, -1.15], "text-allow-overlap": false }}
             paint={{ "text-color": OFFICIAL, "text-halo-color": "#06111e", "text-halo-width": 1.2, "text-halo-blur": 0.4 }}
           />
+        </Source>
+      )}
+
+      {p.overlay && (
+        <Source id="coast-overlay" type="geojson" data={p.overlay}>
+          <Layer id="coast-cell-fill" type="fill" filter={["==", ["get", "kind"], "cell"]} paint={{ "fill-color": "#b9a6f5", "fill-opacity": 0.22 }} />
+          <Layer id="coast-cell-line" type="line" filter={["==", ["get", "kind"], "cell"]} paint={{ "line-color": "#d9ccff", "line-width": 2 }} />
+          <Layer id="coast-link" type="line" filter={["==", ["get", "kind"], "link"]} paint={{ "line-color": "#e8eef5", "line-width": 1.6, "line-dasharray": [2, 2], "line-opacity": 0.9 }} />
+          <Layer id="coast-station" type="circle" filter={["==", ["get", "kind"], "station"]} paint={{ "circle-radius": 6, "circle-color": "#3fbfa6", "circle-stroke-color": "#06111e", "circle-stroke-width": 2 }} />
+          <Layer
+            id="coast-station-label"
+            type="symbol"
+            filter={["==", ["get", "kind"], "station"]}
+            layout={{ "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 12, "text-offset": [0.9, 0], "text-anchor": "left", "text-optional": true }}
+            paint={{ "text-color": "#cdeee6", "text-halo-color": "#06111e", "text-halo-width": 1.6 }}
+          />
+          <Layer id="coast-target-halo" type="circle" filter={["==", ["get", "kind"], "target"]} paint={{ "circle-radius": 14, "circle-color": "rgba(246,187,92,0.18)", "circle-stroke-color": "#f6bb5c", "circle-stroke-width": 2 }} />
+          <Layer id="coast-target" type="circle" filter={["==", ["get", "kind"], "target"]} paint={{ "circle-radius": 4, "circle-color": "#f6bb5c" }} />
         </Source>
       )}
 

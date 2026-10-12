@@ -2,7 +2,7 @@
  * Scientific-safety invariants for user-facing copy and code
  * (docs/coastwatch/05-science-and-safety.md).
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import * as copy from "@/content/copy";
@@ -80,9 +80,14 @@ describe("hierarchy and labelling", () => {
     for (const l of manifest.layers) if (l.product_class === "official_forecast") expect(l.group_id).toBe("charm");
   });
   it("primary navigation lists only built experiences (no placeholder entries)", () => {
-    expect(copy.EXPERIENCES.map((e) => e.key)).toEqual(["map", "bloom", "fisheries"]);
-    for (const e of copy.EXPERIENCES) expect(e.href).toMatch(/^\//);
-    expect(JSON.stringify(copy.EXPERIENCES)).not.toMatch(/my coast|upcoming/i);
+    expect(copy.EXPERIENCES.map((e) => e.key)).toEqual(["map", "coast", "bloom", "fisheries"]);
+    for (const e of copy.EXPERIENCES) {
+      expect(e.href).toMatch(/^\//);
+      // every entry has a real page behind it
+      const page = e.href === "/" ? "src/app/page.tsx" : `src/app${e.href}/page.tsx`;
+      expect(existsSync(path.resolve(__dirname, "../..", page)), page).toBe(true);
+    }
+    expect(JSON.stringify(copy.EXPERIENCES)).not.toMatch(/upcoming|coming soon/i);
   });
 });
 
