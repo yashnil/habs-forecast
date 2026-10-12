@@ -20,12 +20,16 @@ export function ControlRail({
   onGroup,
   placesOpen,
   onPlaces,
+  tourOpen,
+  onTour,
 }: {
   manifest: Manifest;
   group: LayerGroup | null;
   onGroup: (g: LayerGroup) => void;
   placesOpen: boolean;
   onPlaces: () => void;
+  tourOpen: boolean;
+  onTour: () => void;
 }) {
   const hasCurrents = currentsHourly(manifest).length > 0;
   const enabled = GROUPS.filter((g) => g.id !== "currents" || hasCurrents);
@@ -72,6 +76,9 @@ export function ControlRail({
             </button>
           );
         })}
+      </div>
+      <div className="mt-auto">
+        <RailButton icon="info" label="Tour" active={tourOpen} onClick={onTour} testid="tour-open" aria-expanded={tourOpen} aria-label="Take the tour of the map" />
       </div>
     </nav>
   );

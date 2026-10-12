@@ -32,6 +32,7 @@ import type { CurrentsOverlay, ImageRaster, MapPoint, TileRaster } from "@/compo
 import { NavCard, type RegionDef } from "@/components/map/NavCard";
 import { PlaceChip } from "@/components/map/PlaceChip";
 import { IntroCard } from "@/components/map/IntroCard";
+import { MapTour, type TourActions } from "@/components/map/Tour";
 import { HoverReadout, type HoverSource } from "@/components/map/HoverReadout";
 import { supportsGridTiles } from "@/lib/gridTiles";
 import { MeasuredNearby } from "@/components/map/MeasuredNearby";
@@ -151,6 +152,8 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   // combined view (opt-in): satellite chlorophyll under the observed currents
   const [underlay, setUnderlay] = useState(initialQ.get("chl") === "1");
   const [reducedMotion, setReducedMotion] = useState(false);
+  // the guided tour: from the first-visit card, the Tour control, or a link with ?tour=1
+  const [tourOpen, setTourOpen] = useState(initialQ.get("tour") === "1");
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReducedMotion(mq.matches);
@@ -341,6 +344,23 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       }
     },
     [ports, padding, regions, reducedMotion],
+  );
+
+  // The tour uses the same controls a visitor would: the layer switch and a port in view.
+  const tourActions = useMemo<TourActions>(
+    () => ({
+      showForecast: () => setGroup("forecast"),
+      showSatellite: () => setGroup("satellite"),
+      showPort: () => {
+        const fs = ports?.features ?? [];
+        const inRegion = fs.filter((f) => f.properties.region === region);
+        const pick = fs.find((f) => f.properties.display_name === "Santa Cruz" && (region === STATEWIDE.id || f.properties.region === region)) ?? inRegion[0] ?? fs[0];
+        if (!pick) return false;
+        if (port !== pick.properties.port_code) selectPort(pick.properties.port_code);
+        return true;
+      },
+    }),
+    [ports, region, port, selectPort, setGroup],
   );
 
   // ---------------------------------------------------------------- what the map draws
@@ -602,13 +622,13 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       {wide && hover && detailOpen && hover.s.x < (rootRef.current?.clientWidth ?? 1440) - INSPECTOR - 16 && <HoverReadout manifest={manifest} baseUrl={baseUrl} source={hoverSource} point={hover.p} screen={hover.s} bounds={{ w: (rootRef.current?.clientWidth ?? 1440) - INSPECTOR - 16, h: mapH }} />}
       {wide == null || !decided ? null : wide ? (
         <>
-          <ControlRail manifest={manifest} group={group} onGroup={setGroup} placesOpen={placesOpen} onPlaces={() => setPlacesOpen(!placesOpen)} />
+          <ControlRail manifest={manifest} group={group} onGroup={setGroup} placesOpen={placesOpen} onPlaces={() => setPlacesOpen(!placesOpen)} tourOpen={tourOpen} onTour={() => setTourOpen(true)} />
           <div className="absolute top-3 z-20" style={{ left: RAIL + 12, maxWidth: `calc(100% - ${RAIL + 24}px - ${detailOpen ? INSPECTOR + 16 : 0}px)` }}>
             <PlaceChip label={placeLabel} open={placesOpen} onToggle={() => setPlacesOpen(!placesOpen)} regionNotices={placeNotices} statewide={placeStatewide} />
           </div>
-          {!placesOpen && !detailOpen && (
+          {!placesOpen && !detailOpen && !tourOpen && (
             <div className="absolute z-20 w-[340px]" style={{ left: RAIL + 12, top: 60 }}>
-              <IntroCard />
+              <IntroCard onTour={() => setTourOpen(true)} />
             </div>
           )}
           {placesOpen && (
@@ -640,7 +660,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
           <button
             onClick={() => setNavOpen(true)}
             data-testid="place-button"
-            className="theme-paper absolute left-3 top-2.5 z-10 flex h-10 max-w-[calc(100%-24px)] items-center gap-2 rounded-full bg-surface pl-3.5 pr-1 text-left text-[15px] font-medium text-ink shadow-[0_6px_20px_rgba(6,17,30,0.3)]"
+            className="theme-paper absolute left-3 top-2.5 z-10 flex h-10 max-w-[calc(100%-72px)] items-center gap-2 rounded-full bg-surface pl-3.5 pr-1 text-left text-[15px] font-medium text-ink shadow-[0_6px_20px_rgba(6,17,30,0.3)]"
           >
             <Icon name="search" className="h-4 w-4 text-ink-3" />
             <span className="min-w-0 truncate pr-1">{placeLabel}</span>
@@ -652,9 +672,19 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
               <span className="sr-only"> {verWord}</span>
             </span>
           </button>
-          {!navOpen && !detail && (
+          <button
+            type="button"
+            onClick={() => setTourOpen(true)}
+            aria-label="Take the tour of the map"
+            aria-expanded={tourOpen}
+            data-testid="tour-open"
+            className="theme-paper absolute right-3 top-2.5 z-10 grid h-10 w-10 place-items-center rounded-full bg-surface text-ink-2 shadow-[0_6px_20px_rgba(6,17,30,0.3)]"
+          >
+            <Icon name="info" className="h-5 w-5" />
+          </button>
+          {!navOpen && !detail && !tourOpen && (
             <div className="absolute inset-x-3 top-[58px] z-10">
-              <IntroCard />
+              <IntroCard onTour={() => setTourOpen(true)} />
             </div>
           )}
           {navOpen && (
@@ -688,6 +718,16 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
               </MobileSheet>
             ))}
         </>
+      )}
+      {wide != null && decided && (
+        <MapTour
+          open={tourOpen}
+          onClose={() => setTourOpen(false)}
+          actions={tourActions}
+          phone={!wide}
+          reducedMotion={reducedMotion}
+          dockTop={(rootRef.current?.getBoundingClientRect().top ?? 88) + 58}
+        />
       )}
       {officialError && !official && <p className="sr-only">Official notices unavailable: {officialError}</p>}
       {portsError && !ports && <p className="sr-only">Ports unavailable: {portsError}</p>}
