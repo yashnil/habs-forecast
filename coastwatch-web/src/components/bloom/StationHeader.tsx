@@ -98,7 +98,8 @@ export function StationHeader({
         {strip && <SamplingStrip strip={strip} />}
         <p className="text-[13px] leading-snug text-ink-3">
           {best && best.n_last_365d ? `Sampled ${cadenceLabel(best.median_interval_days_365d)} (${best.n_last_365d} samples in 12 months). ` : "No samples in the last 12 months. "}
-          Lab results arrive days to weeks after sampling.
+          {/* on phones the lab delay is in "About these data", so the values stay on the first screen */}
+          <span className="max-sm:hidden">Lab results arrive days to weeks after sampling.</span>
         </p>
       </div>
 

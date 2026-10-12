@@ -205,7 +205,7 @@ export function BloomIntelligence({ stations, station, dataset, status, official
           </div>
         </aside>
 
-        <article className="min-w-0 space-y-7" aria-labelledby="station-h" data-testid="station-detail" data-station={station.station_id}>
+        <article className="min-w-0 space-y-5 sm:space-y-7" aria-labelledby="station-h" data-testid="station-detail" data-station={station.station_id}>
           <StationHeader station={station} policy={policy} now={now} portCode={portCode} onChange={() => setPickerOpen(true)} stationCount={stations.length} />
 
           <QuantityIndex station={station} vars={vars} selected={variable} onSelect={setVariable} policy={policy} now={now} x0={x0} x1={x1} />
