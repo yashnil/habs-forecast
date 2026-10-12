@@ -1,5 +1,7 @@
 # California county boundaries for CoastWatch: sources, download, and marine-jurisdiction caveats
 
+> **Link check (2026-10-12):** of 143 cited URLs, 110 returned HTTP 200. 21 returned 403 or 429 to automated requests (NOAA Institutional Repository, SCCOOS, OPC, MDPI, bioRxiv) and open in a browser. Five returned 404 and are marked "(link returned 404 on 2026-10-12)"; their claims rest on the other sources cited beside them or are marked UNVERIFIED.
+
 Research date: 2026-10-12. Scratch only; no repository was edited.
 
 ## TL;DR

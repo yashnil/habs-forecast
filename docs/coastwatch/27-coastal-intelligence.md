@@ -141,7 +141,7 @@ This needs **no new data and no prediction**. §4 sets out the design.
 ### Track 3: novel nearshore prediction (research proposal; not built)
 
 **Is there enough labelled data?** It's marginal ([appendix A §2.4](coastal/appendix-a-sources-and-literature.md), ERDDAP counts):
-- CalHABMAP has **4,268 pDA samples at 10 stations** since 2014, but only **155 at or above 0.5 ng/mL**, clustered in 2014–17 and 2025.
+- CalHABMAP has **4,267 pDA samples at 10 stations** since 2014 in CoastWatch's published series (4,268 upstream; one duplicate-time row at Humboldt Bay), but only **155 at or above 0.5 ng/mL**, recounted from the production data. They cluster in 2014–17 and 2025.
 - Monterey Wharf stopped reporting pDA in 2022.
 - Drivers differ by region (Sandoval-Belmar 2023) and by event (Trapp 2025).
 

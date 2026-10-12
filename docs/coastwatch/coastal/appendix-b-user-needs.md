@@ -1,5 +1,7 @@
 # CoastWatch "My Coast": who fishes where, what they decide, and what they need
 
+> **Link check (2026-10-12):** of 143 cited URLs, 110 returned HTTP 200. 21 returned 403 or 429 to automated requests (NOAA Institutional Repository, SCCOOS, OPC, MDPI, bioRxiv) and open in a browser. Five returned 404 and are marked "(link returned 404 on 2026-10-12)"; their claims rest on the other sources cited beside them or are marked UNVERIFIED.
+
 *Desk research, 12 Oct 2026. Every factual claim has a URL. **[D]** marks a need documented in a published source. **[H]** marks a hypothesis that needs stakeholder interviews before it shapes the product. Status statements about current closures are as fetched on 12 Oct 2026 and will go stale. They illustrate the kinds of notice CoastWatch must handle; they are not content to reuse.*
 
 ---
@@ -59,7 +61,7 @@ Sources: [CDFW](https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories); [PSMFC
 
 Sources: [CWPA account of 28 Apr 2016 hearing](https://californiawetfish.org/cwpa-blog/2016/05/03/one-north-coast-hot-crab-pushes-californias-fishery-officials-to-reconsider-opening-protocols); [hearing agenda](https://fisheries.legislature.ca.gov/sites/fisheries.legislature.ca.gov/files/u8/2016-4-28%20public%20agenda%20LL.pdf). A single "hot crab" at Trinidad kept the North Coast closed in April 2016 (same source).
 
-**Evisceration is not a neutral fix.** It favours the fishermen and few buyers who have the capacity to eviscerate. Most rock crab handlers lack that capacity, rock crab is sold mostly live, and some buyers reject eviscerated product ([Pomeroy & Culver 2026](https://www.frontiersin.org/journals/sustainable-food-systems/articles/10.3389/fsufs.2026.1881090/abstract)). Processors may eviscerate pre‑emptively on rumour ([PSMFC 2016 CA protocols](https://www.psmfc.org/crab/2016-2017%20files/calif%20protocols.pdf)).
+**Evisceration is not a neutral fix.** It favours the fishermen and few buyers who have the capacity to eviscerate. Most rock crab handlers lack that capacity, rock crab is sold mostly live, and some buyers reject eviscerated product ([Pomeroy & Culver 2026](https://www.frontiersin.org/journals/sustainable-food-systems/articles/10.3389/fsufs.2026.1881090/abstract)). Processors may eviscerate pre‑emptively on rumour ([PSMFC 2016 CA protocols](https://www.psmfc.org/crab/2016-2017%20files/calif%20protocols.pdf) (link returned 404 on 2026-10-12)).
 
 **Testing capacity limits granularity.** The state has one lab and testing costs about $100 per crab. Better testing "could enable smaller closures, but could also lead to more closures" ([Pomeroy & Culver 2026](https://www.frontiersin.org/journals/sustainable-food-systems/articles/10.3389/fsufs.2026.1881090/abstract)). Six crabs per site gives high statistical power, and denser sampling lets managers respond faster with less disruption to fishing ([Free, Moore & Trainer 2022](https://pubmed.ncbi.nlm.nih.gov/35550293/)).
 
@@ -97,7 +99,7 @@ Sources: [CWPA account of 28 Apr 2016 hearing](https://californiawetfish.org/cwp
 ## 3. Shellfish harvesters
 
 ### Recreational [D]
-- The mussel quarantine is statewide and seasonal, but dates can change, and **separate county or species advisories run all year**. Examples include razor clams in Humboldt and bivalves around the Northern Channel Islands ([SLO County](https://www.slocounty.ca.gov/departments/health-agency/public-health/environmental-health-services/division-articles/annual-quarantine-of-sport-harvested-mussels-ends-october-31); [Ventura County 2024](https://news.venturacounty.gov/en/20240502-press-release-2/)).
+- The mussel quarantine is statewide and seasonal, but dates can change, and **separate county or species advisories run all year**. Examples include razor clams in Humboldt and bivalves around the Northern Channel Islands ([SLO County](https://www.slocounty.ca.gov/departments/health-agency/public-health/environmental-health-services/division-articles/annual-quarantine-of-sport-harvested-mussels-ends-october-31) (link returned 404 on 2026-10-12); [Ventura County 2024](https://news.venturacounty.gov/en/20240502-press-release-2/)).
 - Razor clam fisheries close by county. On the fetch date, Humboldt had been closed since May 2024 and Del Norte closed on 9 Oct 2026 ([CDFW](https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories)).
 - The PSP and DA risk includes symptoms within 30 minutes to 24 hours, toxins that cooking does not reliably destroy, and no antidote ([CDPH](https://www.cdph.ca.gov/Programs/CEH/DRSEM/Pages/EMB/Shellfish/Annual-Mussel-Quarantine.aspx)). **PSP is out of CoastWatch's data scope.** A "My Coast" shellfish view built on DA and Pseudo‑nitzschia data alone would therefore be misleadingly incomplete.
 
@@ -130,7 +132,7 @@ Sources: [CWPA account of 28 Apr 2016 hearing](https://californiawetfish.org/cwp
 ## 5. HAB researchers and monitoring organisations
 
 ### Documented [D]
-- CalHABMAP shore‑station data are served via the SCCOOS ERDDAP. Metadata are inconsistent across data.ioos.us, data.gov and ERDDAP, and SPATT toxin data is catalogued separately ([data.ioos.us](https://data.ioos.us/dataset/calhabmap-habs-humboldt-data); [ERDDAP](https://erddap.sccoos.org/erddap/tabledap/HABs-HumboldtSouthBay.fgdc)).
+- CalHABMAP shore‑station data are served via the SCCOOS ERDDAP. Metadata are inconsistent across data.ioos.us, data.gov and ERDDAP, and SPATT toxin data is catalogued separately ([data.ioos.us](https://data.ioos.us/dataset/calhabmap-habs-humboldt-data) (link returned 404 on 2026-10-12); [ERDDAP](https://erddap.sccoos.org/erddap/tabledap/HABs-HumboldtSouthBay.fgdc)).
 - The CA IFCB network has 12 instruments, ML classification, and a dashboard at ifcb.caloos.org ([UCSD Library](https://library.ucsd.edu/dc/collection/bb38016322); [SCCWRP](https://www.sccwrp.org/news/statewide-habs-early-warning-system-being-developed/)).
 - Program leads stress standardised methods, products that end users can interpret, coverage beyond a few stations, and a scope beyond Pseudo‑nitzschia ([Kudela et al. 2021](https://tos.org/oceanography/article/the-california-harmful-algal-bloom-monitoring-and-alert-program-a-success-story-for-coordinated-ocean-observing)).
 - The PNW analogue: the bulletin helped managers decide on sampling and on harvest openings, extensions and closures. Crab DA lags razor clam DA by "a couple of weeks" ([McCabe, Hickey & Trainer 2023](https://repository.library.noaa.gov/view/noaa/56421)). That lag is a useful lead‑time principle, but it is not a validated California rule.
