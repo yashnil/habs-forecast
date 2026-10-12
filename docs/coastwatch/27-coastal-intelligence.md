@@ -222,11 +222,13 @@ What the design leaves out on purpose:
 - green or "safe" states;
 - composite scores;
 - "low risk" wording;
-- any notice-to-port matching by string. The prototype showed why: a county-name match put the Northern Channel Islands advisory on Santa Cruz, because Santa Cruz Island is named in its area. Matching must use a reviewed table.
+- any notice-to-port matching by text. A first draft of these mockups matched notices to ports by county name in the text. That attached the Northern Channel Islands advisory to Santa Cruz (Santa Cruz Island is named in it), attached the 40°00′–40°30′ N rock crab closure to Eureka (at 40.80° N, outside it), and missed the North Coast rock crab viscera advisory at Crescent City and Eureka.
+  - The production pipeline already relates notices to ports by structured rules (statewide; the port's county; port latitude within the notice's official limits; official polygon within 60 km). The mockups now use those rules.
+  - Those rules are still unreviewed, and they miss cases such as the Channel Islands part of the rock crab viscera advisory. A reviewed applicability table is proposed in doc 28.
 
 **High-fidelity mockups (production data, 2026-10-12):**
 - **Crescent City** ([desktop](coastal/img/mycoast-crescent-city-1280.jpg), [phone](coastal/img/mycoast-crescent-city-390.jpg)):
-  - razor clam closure and do-not-eat advisory;
+  - razor clam closure and do-not-eat advisory, and the North Coast rock crab viscera advisory;
   - **no station within 40 km**;
   - C-HARM median pDA probability **1%**;
   - no clear satellite view.
@@ -239,6 +241,8 @@ What the design leaves out on purpose:
 
   The measurement and the model disagree, and both are shown, uncompared.
 - **Morro Bay** ([desktop](coastal/img/mycoast-morro-bay-1280.jpg), [phone](coastal/img/mycoast-morro-bay-390.jpg)): the piers measure PN only, with no toxin.
+- **Monterey** ([desktop](coastal/img/mycoast-monterey-1280.jpg), [phone](coastal/img/mycoast-monterey-390.jpg)): the pier 0.6 km away has measured no toxin since Aug 2022 and no PN since Aug 2025, and the page says so.
+- **Eureka** ([desktop](coastal/img/mycoast-eureka-1280.jpg), [phone](coastal/img/mycoast-eureka-390.jpg)): Humboldt Bay piers last sampled in April 2026; no clear satellite view in 6 days.
 
 **Journeys:**
 - A commercial crabber at Crescent City opens the port and sees, in order:

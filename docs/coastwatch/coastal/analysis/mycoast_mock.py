@@ -17,12 +17,12 @@ def age(d):
 
 
 def fdate(d):
-    return date.fromisoformat(d).strftime("%b %-d, %Y")
+    return date.fromisoformat(d).strftime("%b %-d, %Y") if d else "start date not published"
 
 
 WHO = {"sport_harvest": "Recreational (sport) harvest", "recreational": "Recreational fishery", "commercial": "Commercial fishery", "commercial_and_recreational": "Commercial and recreational", "consumption": "Anyone eating it"}
 ACT = {"quarantine": "Quarantine", "fishery_closure": "Fishery closure", "consumption_advisory": "Do-not-eat advisory", "take_restriction": "Take restriction"}
-GROUP = {"razor clam": "Shellfish", "razor clams": "Shellfish", "mussels (all species)": "Shellfish", "northern anchovy": "Finfish"}
+GROUP_UNUSED = {"razor clam": "Shellfish", "razor clams": "Shellfish", "mussels (all species)": "Shellfish", "northern anchovy": "Finfish"}
 
 
 def notice(n):
@@ -30,7 +30,8 @@ def notice(n):
     return f"""<li class="notice">
   <div class="nrow"><span class="agency">{e(n['agency'])}</span><span class="act">{e(ACT.get(n['action'], n['action']))}</span><span class="who">{e(who)}</span><span class="badge">Not verified</span></div>
   <p class="ntitle">{e(n['title'])}</p>
-  <p class="nmeta">Since {fdate(n['effective_date'])} · {e(n['area'])} · <a href="{e(n['src'])}">Agency source ↗</a></p>
+  <p class="nmeta">{"Since " + fdate(n['effective_date']) if n['effective_date'] else "Start date not published"} · {e(n['area'])} · <a href="{e(n['src'])}">Agency source ↗</a></p>
+  <p class="why">Listed because: {e(n.get('relation_note') or n.get('relation', ''))}</p>
 </li>"""
 
 
@@ -39,13 +40,15 @@ def station(s):
     if s["pDA"]:
         v = s["pDA"]
         val = "reported 0 (not quantified)" if v["last_qualifier"] == "reported_zero" or v["last_value"] == 0 else f"{v['last_value']:.2f} ng/mL"
-        rows.append(f"<tr><th>Particulate domoic acid</th><td><b>{val}</b></td><td>{fdate(v['last_date'])} <span class='age'>({age(v['last_date'])})</span></td></tr>")
+        old = (TODAY - date.fromisoformat(v['last_date'])).days > 365
+        rows.append(f"<tr><th>Particulate domoic acid</th><td><b>{val}</b></td><td>{fdate(v['last_date'])} <span class='age'>({age(v['last_date'])})</span>{'<br><span class=stale>No longer measured here</span>' if old else ''}</td></tr>")
     else:
         rows.append("<tr><th>Particulate domoic acid</th><td colspan=2 class='muted'>not measured at this station</td></tr>")
     for key, lab in (("pn_ser", "Pseudo-nitzschia, large (seriata)"), ("pn_del", "Pseudo-nitzschia, small (delicatissima)")):
         v = s[key]
         if v and v["last_date"]:
-            rows.append(f"<tr><th>{lab}</th><td><b>{v['last_value']:,.0f} cells/L</b></td><td>{fdate(v['last_date'])} <span class='age'>({age(v['last_date'])})</span></td></tr>")
+            old = (TODAY - date.fromisoformat(v['last_date'])).days > 365
+            rows.append(f"<tr><th>{lab}</th><td><b>{v['last_value']:,.0f} cells/L</b></td><td>{fdate(v['last_date'])} <span class='age'>({age(v['last_date'])})</span>{'<br><span class=stale>No measurement in the last year</span>' if old else ''}</td></tr>")
     return f"""<div class="station"><p class="sname">{e(s['name'])} <span class="muted">· {s['km']} km from the port · water sample at the pier</span></p><table>{''.join(rows)}</table></div>"""
 
 
@@ -54,7 +57,8 @@ def page(name):
     c = p["charm"]
     n_note = "".join(notice(n) for n in p["notices"])
     stmts = "".join(f"<li>“{e(s['statement'])}” <span class='muted'>— {e(s['agency'])}, <a href='{e(s['source']['url'])}'>source ↗</a></span></li>" for s in REG["statements"])
-    st = "".join(station(s) for s in p["stations"]) if p["stations"] else """<div class="empty"><b>No CalHABMAP shore station within 40 km.</b> The nearest, Trinidad Pier (77 km south), was last sampled Apr 17, 2026 (178 days ago). There is no recent toxin measurement near this port.</div>"""
+    na = p["nearest_any"]
+    st = "".join(station(s) for s in p["stations"]) if p["stations"] else f"""<div class="empty"><b>No CalHABMAP shore station within 40 km.</b> The nearest, {e(na['name'])} ({na['km']} km away), was last sampled {fdate(na['last_sample'])} ({age(na['last_sample'])}). There is no recent toxin measurement near this port.</div>"""
     sat = p["satellite"]
     sat_html = (f"<p><b>Last clear view {fdate(sat['date'])}</b> ({age(sat['date'])}): median chlorophyll {sat['median_mg_m3']} mg/m³ within 5 km (Sentinel-3 OLCI, 300 m). Chlorophyll is algae biomass, not toxin.</p>"
                 if sat else "<p><b>No clear satellite view within 5 km in the last 6 days</b> (cloud, fog or no overpass). Nothing is filled in.</p>")
@@ -96,7 +100,7 @@ CSS = """
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block}.dot.o{background:#e3a33b}.dot.m{background:var(--meas)}.dot.v{background:var(--model)}
 .official{background:var(--offbg);border-color:var(--offline)}.nlist{list-style:none;margin:0;padding:0}.notice{border-top:1px solid var(--offline);padding:10px 0}.notice:first-child{border-top:0;padding-top:0}
 .nrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}.agency{border:1px solid var(--off);color:var(--off);border-radius:5px;padding:1px 6px}.act{color:var(--off)}.who{color:var(--ink2)}.badge{margin-left:auto;border:1px solid #d9a3a3;color:#9b2c2c;border-radius:6px;padding:1px 6px;text-transform:none;letter-spacing:0}
-.ntitle{font-weight:600;margin:4px 0 2px}.nmeta{color:var(--ink2);font-size:14px;margin:0}.warn{font-size:14px;color:var(--ink2);margin:10px 0 0}details{margin-top:8px;font-size:14px}.stmts{padding-left:18px;color:var(--ink2)}
+.why{font-size:13px;color:var(--ink3);margin:2px 0 0}.stale{color:#9b2c2c;font-size:13px}.ntitle{font-weight:600;margin:4px 0 2px}.nmeta{color:var(--ink2);font-size:14px;margin:0}.warn{font-size:14px;color:var(--ink2);margin:10px 0 0}details{margin-top:8px;font-size:14px}.stmts{padding-left:18px;color:var(--ink2)}
 .station .sname{font-weight:600;margin:0 0 6px}table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;font-weight:500;color:var(--ink2);padding:5px 8px 5px 0;width:44%}td{padding:5px 8px 5px 0;border-top:1px solid var(--line)}th{border-top:1px solid var(--line)}
 .age,.muted{color:var(--ink3)}.empty{background:#f3f1ec;border-radius:10px;padding:10px 12px;font-size:14px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid2 .card{margin-top:14px}
 .model{border-left:4px solid var(--model)}.measured{border-left:4px solid var(--meas)}.gapline{background:#f2eefb;border-radius:8px;padding:8px 10px;font-size:14px}.next ol{margin:0;padding-left:20px}a{color:#0e6a7e}

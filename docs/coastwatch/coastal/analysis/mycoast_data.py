@@ -36,7 +36,7 @@ def sat(lat, lon, rad=5):
             return {"date": d, "median_mg_m3": round(float(np.median(v)), 2), "pixels": int(v.size)}
     return None
 out = {}
-for name in ["Crescent City", "Santa Cruz", "Morro Bay"]:
+for name in ["Crescent City", "Santa Cruz", "Morro Bay", "Monterey", "Eureka"]:
     p = pi[name]; la, lo = p["lat"], p["lon"]
     st = []
     for s in obs["stations"]:
@@ -49,12 +49,16 @@ for name in ["Crescent City", "Santa Cruz", "Morro Bay"]:
                    "pn_ser": {k: sm["pn_seriata"][k] for k in ("last_value", "last_date")} if sm.get("pn_seriata") and sm["pn_seriata"]["n_measured"] else None,
                    "pn_del": {k: sm["pn_delicatissima"][k] for k in ("last_value", "last_date")} if sm.get("pn_delicatissima") and sm["pn_delicatissima"]["n_measured"] else None})
     st.sort(key=lambda x: x["km"])
+    allst = sorted(((km(la, lo, s["lat"], s["lon"]), s) for s in obs["stations"] if s["lat"] is not None), key=lambda x: x[0])
+    nearest_any = {"name": allst[0][1]["name"], "km": round(allst[0][0], 1), "last_sample": allst[0][1]["sample_times"][-1][:10]}
     county = p["county"]
-    notes = [{k: r[k] for k in ("id", "agency", "action", "fishery", "title", "effective_date", "species")} | {"src": r["sources"][0]["url"], "area": r["area"]["description"]}
-             for r in off["records"] if r["area"].get("type") == "statewide" or county.lower() in (r["area"]["description"] + " " + r["title"]).lower()
-             or (name == "Santa Cruz" and "Pigeon Point" in r["area"]["description"])]
+    # the production pipeline's structured relations (statewide; same county; port latitude within the
+    # notice's official limits; official polygon within 60 km), never text matching
+    rel = {x["record_id"]: x for x in p.get("official_relations", [])}
+    notes = [{k: r[k] for k in ("id", "agency", "action", "fishery", "title", "effective_date", "species")} | {"src": r["sources"][0]["url"], "area": r["area"]["description"], "relation": rel[r["id"]]["relation"], "relation_note": rel[r["id"]].get("note")}
+             for r in off["records"] if r["id"] in rel]
     lead1 = next(l for l in p["charm"]["leads"] if l["lead_days"] == 1)
-    out[name] = {"county": county, "lat": la, "lon": lo, "notices": notes, "stations": st[:3], "charm": {"issued": p["charm"]["issued_date"], "valid": lead1["valid_date"], "radius_km": p["charm"]["radius_km"], "pda": lead1["variables"]["particulate_domoic"], "pn": lead1["variables"]["pseudo_nitzschia"], "nearest_toxin_cell_km": pa[name]["nearest_toxin_cell_km"], "nearest_bloom_cell_km": pa[name]["nearest_bloom_cell_km"]}, "satellite": sat(la, lo)}
+    out[name] = {"nearest_any": nearest_any, "county": county, "lat": la, "lon": lo, "notices": notes, "stations": st[:3], "charm": {"issued": p["charm"]["issued_date"], "valid": lead1["valid_date"], "radius_km": p["charm"]["radius_km"], "pda": lead1["variables"]["particulate_domoic"], "pn": lead1["variables"]["pseudo_nitzschia"], "nearest_toxin_cell_km": pa[name]["nearest_toxin_cell_km"], "nearest_bloom_cell_km": pa[name]["nearest_bloom_cell_km"]}, "satellite": sat(la, lo)}
 (H / "out/mycoast.json").write_text(json.dumps(out, indent=1))
 for k, v in out.items():
     print(k, v["county"], "notices", [n["id"] for n in v["notices"]]); print("  stations", [(s["name"], s["km"], s["pDA"] and (s["pDA"]["last_value"], s["pDA"]["last_date"])) for s in v["stations"]]); print("  charm", v["charm"]["nearest_toxin_cell_km"], v["charm"]["pda"]); print("  sat", v["satellite"])

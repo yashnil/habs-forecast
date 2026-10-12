@@ -1,5 +1,10 @@
 {
  "Crescent City": {
+  "nearest_any": {
+   "name": "Trinidad Pier",
+   "km": 77.3,
+   "last_sample": "2026-04-17"
+  },
   "county": "Del Norte",
   "lat": 41.74901,
   "lon": -124.20398,
@@ -15,7 +20,9 @@
      "mussels (all species)"
     ],
     "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-008.aspx",
-    "area": "Along the California coast, including all bays and estuaries"
+    "area": "Along the California coast, including all bays and estuaries",
+    "relation": "statewide",
+    "relation_note": "Applies along the whole California coast."
    },
    {
     "id": "cdfw-2026-razor-clam-del-norte",
@@ -28,7 +35,9 @@
      "razor clam"
     ],
     "src": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
-    "area": "Del Norte County"
+    "area": "Del Norte County",
+    "relation": "same_county",
+    "relation_note": "Port is in Del Norte County."
    },
    {
     "id": "cdph-2026-sn26-020-razor-clam-del-norte",
@@ -41,7 +50,24 @@
      "razor clams"
     ],
     "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-020.aspx",
-    "area": "Del Norte County"
+    "area": "Del Norte County",
+    "relation": "same_county",
+    "relation_note": "Port is in Del Norte County."
+   },
+   {
+    "id": "cdph-rock-crab-viscera-north-coast-nci",
+    "agency": "CDPH",
+    "action": "consumption_advisory",
+    "fishery": "consumption",
+    "title": "Do not eat rock crab internal organs: CA/OR border to Mendocino/Sonoma line, and Northern Channel Islands",
+    "effective_date": null,
+    "species": [
+     "rock crab (internal organs)"
+    ],
+    "src": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+    "area": "California/Oregon border to the Mendocino/Sonoma county line; and waters off Santa Rosa Island and the Northern Channel Islands",
+    "relation": "port_latitude_within_stated_range",
+    "relation_note": "The port lies between the notice's official latitudes."
    }
   ],
   "stations": [],
@@ -67,6 +93,11 @@
   "satellite": null
  },
  "Santa Cruz": {
+  "nearest_any": {
+   "name": "Santa Cruz Wharf",
+   "km": 2.2,
+   "last_sample": "2026-09-30"
+  },
   "county": "Santa Cruz",
   "lat": 36.97412,
   "lon": -122.03081,
@@ -82,7 +113,9 @@
      "mussels (all species)"
     ],
     "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-008.aspx",
-    "area": "Along the California coast, including all bays and estuaries"
+    "area": "Along the California coast, including all bays and estuaries",
+    "relation": "statewide",
+    "relation_note": "Applies along the whole California coast."
    },
    {
     "id": "cdph-2026-sn26-019-anchovy-central-coast",
@@ -95,7 +128,9 @@
      "northern anchovy"
     ],
     "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-019.aspx",
-    "area": "Waters between Pigeon Point, San Mateo County (37\u00b0 11.00\u2019 N) and Point Lobos, Monterey County (36\u00b0 31.46\u2019 N)"
+    "area": "Waters between Pigeon Point, San Mateo County (37\u00b0 11.00\u2019 N) and Point Lobos, Monterey County (36\u00b0 31.46\u2019 N)",
+    "relation": "port_latitude_within_stated_range",
+    "relation_note": "The port lies between the notice's official latitudes."
    },
    {
     "id": "cdfw-2026-anchovy-take-restriction-monterey-bay",
@@ -108,7 +143,9 @@
      "northern anchovy"
     ],
     "src": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
-    "area": "Monterey Bay: Pigeon Point, San Mateo County (37\u00b0 11.000\u2019 N) to Point Lobos, Monterey County (36\u00b0 31.461\u2019 N)"
+    "area": "Monterey Bay: Pigeon Point, San Mateo County (37\u00b0 11.000\u2019 N) to Point Lobos, Monterey County (36\u00b0 31.461\u2019 N)",
+    "relation": "port_latitude_within_stated_range",
+    "relation_note": "The port lies between the notice's official latitudes."
    }
   ],
   "stations": [
@@ -156,6 +193,11 @@
   }
  },
  "Morro Bay": {
+  "nearest_any": {
+   "name": "Morro Bay, front bay",
+   "km": 1.0,
+   "last_sample": "2026-09-01"
+  },
   "county": "San Luis Obispo",
   "lat": 35.36581,
   "lon": -120.84991,
@@ -171,7 +213,9 @@
      "mussels (all species)"
     ],
     "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-008.aspx",
-    "area": "Along the California coast, including all bays and estuaries"
+    "area": "Along the California coast, including all bays and estuaries",
+    "relation": "statewide",
+    "relation_note": "Applies along the whole California coast."
    }
   ],
   "stations": [
@@ -248,5 +292,247 @@
    "median_mg_m3": 3.24,
    "pixels": 19
   }
+ },
+ "Monterey": {
+  "nearest_any": {
+   "name": "Monterey Wharf",
+   "km": 0.6,
+   "last_sample": "2026-10-07"
+  },
+  "county": "Monterey",
+  "lat": 36.60024,
+  "lon": -121.89469,
+  "notices": [
+   {
+    "id": "cdph-2026-annual-mussel-quarantine",
+    "agency": "CDPH",
+    "action": "quarantine",
+    "fishery": "sport_harvest",
+    "title": "Annual quarantine of sport-harvested mussels",
+    "effective_date": "2026-05-01",
+    "species": [
+     "mussels (all species)"
+    ],
+    "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-008.aspx",
+    "area": "Along the California coast, including all bays and estuaries",
+    "relation": "statewide",
+    "relation_note": "Applies along the whole California coast."
+   },
+   {
+    "id": "cdph-2026-sn26-018-monterey-bivalves",
+    "agency": "CDPH",
+    "action": "consumption_advisory",
+    "fishery": "sport_harvest",
+    "title": "Do not eat sport-harvested bivalve shellfish from Monterey County",
+    "effective_date": "2026-09-14",
+    "species": [
+     "mussels",
+     "clams",
+     "scallops",
+     "oysters"
+    ],
+    "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-018.aspx",
+    "area": "Monterey County",
+    "relation": "same_county",
+    "relation_note": "Port is in Monterey County."
+   },
+   {
+    "id": "cdph-2026-sn26-019-anchovy-central-coast",
+    "agency": "CDPH",
+    "action": "consumption_advisory",
+    "fishery": "consumption",
+    "title": "Do not eat northern anchovies from Pigeon Point to Point Lobos",
+    "effective_date": "2026-09-14",
+    "species": [
+     "northern anchovy"
+    ],
+    "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-019.aspx",
+    "area": "Waters between Pigeon Point, San Mateo County (37\u00b0 11.00\u2019 N) and Point Lobos, Monterey County (36\u00b0 31.46\u2019 N)",
+    "relation": "port_latitude_within_stated_range",
+    "relation_note": "The port lies between the notice's official latitudes."
+   },
+   {
+    "id": "cdfw-2026-anchovy-take-restriction-monterey-bay",
+    "agency": "CDFW",
+    "action": "take_restriction",
+    "fishery": "commercial_and_recreational",
+    "title": "Northern anchovy: no take for human consumption, Pigeon Point to Point Lobos",
+    "effective_date": "2026-09-11",
+    "species": [
+     "northern anchovy"
+    ],
+    "src": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+    "area": "Monterey Bay: Pigeon Point, San Mateo County (37\u00b0 11.000\u2019 N) to Point Lobos, Monterey County (36\u00b0 31.461\u2019 N)",
+    "relation": "port_latitude_within_stated_range",
+    "relation_note": "The port lies between the notice's official latitudes."
+   }
+  ],
+  "stations": [
+   {
+    "name": "Monterey Wharf",
+    "km": 0.6,
+    "last_sample": "2026-10-07",
+    "pDA": {
+     "last_value": 0.05220236,
+     "last_date": "2022-08-31",
+     "last_qualifier": null,
+     "max_last_365d": null,
+     "n_last_365d": 0
+    },
+    "pn_ser": {
+     "last_value": 27100.0,
+     "last_date": "2025-08-27"
+    },
+    "pn_del": {
+     "last_value": 17900.0,
+     "last_date": "2025-08-27"
+    }
+   }
+  ],
+  "charm": {
+   "issued": "2026-10-11",
+   "valid": "2026-10-11",
+   "radius_km": 15.0,
+   "pda": {
+    "n": 27,
+    "median": 0.733528,
+    "min": 0.540742,
+    "max": 0.800913
+   },
+   "pn": {
+    "n": 46,
+    "median": 0.919385,
+    "min": 0.387646,
+    "max": 0.984558
+   },
+   "nearest_toxin_cell_km": 6.6,
+   "nearest_bloom_cell_km": 1.2
+  },
+  "satellite": {
+   "date": "2026-10-05",
+   "median_mg_m3": 0.79,
+   "pixels": 193
+  }
+ },
+ "Eureka": {
+  "nearest_any": {
+   "name": "Humboldt Bay",
+   "km": 3.6,
+   "last_sample": "2026-04-07"
+  },
+  "county": "Humboldt",
+  "lat": 40.79834,
+  "lon": -124.16376,
+  "notices": [
+   {
+    "id": "cdph-2026-annual-mussel-quarantine",
+    "agency": "CDPH",
+    "action": "quarantine",
+    "fishery": "sport_harvest",
+    "title": "Annual quarantine of sport-harvested mussels",
+    "effective_date": "2026-05-01",
+    "species": [
+     "mussels (all species)"
+    ],
+    "src": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-008.aspx",
+    "area": "Along the California coast, including all bays and estuaries",
+    "relation": "statewide",
+    "relation_note": "Applies along the whole California coast."
+   },
+   {
+    "id": "cdfw-2024-razor-clam-humboldt",
+    "agency": "CDFW",
+    "action": "fishery_closure",
+    "fishery": "recreational",
+    "title": "Recreational razor clam fishery closed in Humboldt County",
+    "effective_date": "2024-05-02",
+    "species": [
+     "razor clam"
+    ],
+    "src": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+    "area": "Humboldt County",
+    "relation": "same_county",
+    "relation_note": "Port is in Humboldt County."
+   },
+   {
+    "id": "cdph-rock-crab-viscera-north-coast-nci",
+    "agency": "CDPH",
+    "action": "consumption_advisory",
+    "fishery": "consumption",
+    "title": "Do not eat rock crab internal organs: CA/OR border to Mendocino/Sonoma line, and Northern Channel Islands",
+    "effective_date": null,
+    "species": [
+     "rock crab (internal organs)"
+    ],
+    "src": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+    "area": "California/Oregon border to the Mendocino/Sonoma county line; and waters off Santa Rosa Island and the Northern Channel Islands",
+    "relation": "port_latitude_within_stated_range",
+    "relation_note": "The port lies between the notice's official latitudes."
+   }
+  ],
+  "stations": [
+   {
+    "name": "Humboldt Bay",
+    "km": 3.6,
+    "last_sample": "2026-04-07",
+    "pDA": {
+     "last_value": 0.0,
+     "last_date": "2026-04-07",
+     "last_qualifier": "reported_zero",
+     "max_last_365d": 0.01076593,
+     "n_last_365d": 4
+    },
+    "pn_ser": null,
+    "pn_del": null
+   },
+   {
+    "name": "Humboldt Bay, South Bay",
+    "km": 9.7,
+    "last_sample": "2026-03-30",
+    "pDA": {
+     "last_value": 0.0,
+     "last_date": "2026-03-30",
+     "last_qualifier": "reported_zero",
+     "max_last_365d": 0.004765275,
+     "n_last_365d": 4
+    },
+    "pn_ser": null,
+    "pn_del": null
+   },
+   {
+    "name": "Trinidad Pier",
+    "km": 28.6,
+    "last_sample": "2026-04-17",
+    "pDA": {
+     "last_value": 0.00567032,
+     "last_date": "2026-04-17",
+     "last_qualifier": null,
+     "max_last_365d": 0.00567032,
+     "n_last_365d": 8
+    },
+    "pn_ser": null,
+    "pn_del": null
+   }
+  ],
+  "charm": {
+   "issued": "2026-10-11",
+   "valid": "2026-10-11",
+   "radius_km": 15.0,
+   "pda": {
+    "n": 21,
+    "median": 0.059664,
+    "min": 0.000992,
+    "max": 0.252724
+   },
+   "pn": {
+    "n": 41,
+    "median": 0.988952,
+    "min": 0.670263,
+    "max": 0.992965
+   },
+   "nearest_toxin_cell_km": 7.2,
+   "nearest_bloom_cell_km": 3.3
+  },
+  "satellite": null
  }
 }
