@@ -291,6 +291,11 @@
      "note": "Port is in Humboldt County."
     },
     {
+     "record_id": "cdph-2024-sn24-003-razor-clam-humboldt",
+     "relation": "same_county",
+     "note": "Port is in Humboldt County."
+    },
+    {
      "record_id": "cdph-rock-crab-viscera-north-coast-nci",
      "relation": "port_latitude_within_stated_range",
      "note": "The port lies between the notice's official latitudes."
@@ -439,6 +444,11 @@
      "note": "Port is in Humboldt County."
     },
     {
+     "record_id": "cdph-2024-sn24-003-razor-clam-humboldt",
+     "relation": "same_county",
+     "note": "Port is in Humboldt County."
+    },
+    {
      "record_id": "cdph-rock-crab-viscera-north-coast-nci",
      "relation": "port_latitude_within_stated_range",
      "note": "The port lies between the notice's official latitudes."
@@ -583,6 +593,11 @@
     },
     {
      "record_id": "cdfw-2024-razor-clam-humboldt",
+     "relation": "same_county",
+     "note": "Port is in Humboldt County."
+    },
+    {
+     "record_id": "cdph-2024-sn24-003-razor-clam-humboldt",
      "relation": "same_county",
      "note": "Port is in Humboldt County."
     },
