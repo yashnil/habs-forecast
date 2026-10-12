@@ -1,6 +1,6 @@
 # Proposal: station observation CSV export
 
-**Status:** proposal only; nothing has been implemented. It addresses the M8 outstanding concern "researchers can see every value but cannot download it" (doc 25 §8, journey 3).
+**Status:** option 1 (a source CSV link on Bloom) is implemented in PR #32; options 2 and 3 are proposals only. It addresses the M8 outstanding concern "researchers can see every value but cannot download it" (doc 25 §8, journey 3).
 
 ## What a researcher needs
 

@@ -1,20 +1,20 @@
 # 26 — Release readiness
 
-**Status (2026-10-12):** M8 is merged (`main` 69d0d6e8). The full website exists only as a private Vercel preview behind a login. The public Research Preview (coastwatch-demo) is unchanged. **The full website is not ready for a public release** until every blocker in §1 is closed.
+**Status (2026-10-12):** M8 is merged (`main` 69d0d6e8); the 320 px fix and the source CSV link are in PR #32. The full website exists only as a private Vercel preview behind a login. The public Research Preview (coastwatch-demo) is unchanged. **The full website is not ready for a public release** until every blocker in §1 is closed.
 
 Working materials:
-- [Official-notice review worksheet](release/notice-review-2026-10-12.md) (blocker B1)
+- [Official-notice review checklist](release/notice-review-2026-10-12.md) (blocker B1)
 - [Independent scientific review: request draft and reviewer checklist](release/scientific-review-request.md) (blocker B2)
-- [Proposal: station observation CSV export](release/station-csv-export-proposal.md) (not a blocker)
+- [Proposal: station observation CSV export](release/station-csv-export-proposal.md) (not a blocker; option 1 is in PR #32)
 
 ## 1. Blockers (all must be closed before any public release)
 
 | # | Blocker | Who | How it is closed |
 |---|---|---|---|
-| B1 | **Official notices have never been checked by a person.** The 10 records were transcribed by an AI assistant; issue #12 has stayed open since 2026-10-10. | Owner | Work through the [worksheet](release/notice-review-2026-10-12.md), edit the registry where needed, then run `cwp review-official --reviewer "<your name>" --confirm`. Close #12 only after the next watcher run matches. |
+| B1 | **Official notices have never been checked by a person.** The 10 records were transcribed by an AI assistant; issue #12 has stayed open since 2026-10-10. Open questions: (1) the CDFW page still links CDPH's *lifted* sardine and anchovy advisory (SN26-013, lifted by SN26-016), and the current advisory (SN26-019) names anchovies only; (2) CDPH's Humboldt razor clam advisory (SN24-003, still in effect per SN26-020) is missing from the registry; (3) the mussel quarantine runs "through at least October 31". | Owner | Work through the [checklist](release/notice-review-2026-10-12.md), edit the registry where needed, then run `cwp review-official --reviewer "<your name>" --confirm`. Close #12 only after the next watcher run matches. |
 | B2 | **No independent HAB scientist has reviewed the application.** This covers how C-HARM is described, how station observations are read, the fisheries species tiers and the scientific wording. | External reviewer | Send the [request](release/scientific-review-request.md); record the findings and the changes made. The About page's "Review status" is updated only after the review has happened. |
 | B3 | **No real screen-reader test.** axe and the accessibility tree are clean (0 violations in 16 states, doc 25 §5), but no person has used the site with VoiceOver. | Owner or tester | Do the [VoiceOver pass](#3-voiceover-test-script) on macOS Safari and iOS Safari, and fix anything that blocks a task. |
-| B4 | **At 320 px wide the masthead overflows by 28 px.** The page scrolls sideways and the notices pill is clipped at the right edge ([screenshot](release/w320-map.png)). WCAG 1.4.10 (Reflow) requires 320 px. | Claude, small fix | Let the masthead pill shrink (count only) below 360 px; add 320 px to the phone tests. |
+| B4 | **At 320 px wide the masthead overflowed by 28 px.** The page scrolled sideways and the notices pill was clipped at the right edge ([before](release/w320-map.png)). WCAG 1.4.10 (Reflow) requires 320 px. | Claude | **Fixed in PR #32** (open; closes when merged). Below 360 px the pill drops its icon and keeps the count and "Not verified". Tested at 320, 360, 375, 390, 1024 and 1440 px on five pages; axe finds 0 violations. |
 
 ## 2. Should be done before a public release (not blocking)
 
@@ -22,7 +22,7 @@ Working materials:
 |---|---|---|
 | S1 | **The status line wraps at 375 px.** | Checked 2026-10-12, **acceptable**: it wraps to 2 lines (46 px instead of 35 px). "Notices not verified. Check CDFW and CDPH." and the More button stay fully visible. More opens the full reason and the link to the list, and nothing is clipped. No page scrolls sideways at 390, 375 or 360 px ([375 px](release/w375-map.png), [More open](release/w375-status-more.png)). The More button is 58 × 26 px, which meets WCAG 2.2 target size (24 px) but not the 44 px guidance; consider enlarging it. |
 | S2 | **The mussel quarantine is due to end.** CDPH says it continues "through at least October 31". After that date the record needs a human decision, based on the next CDPH release. Never let it expire automatically. | Recheck on 2026-11-01. |
-| S3 | **Data download for researchers.** | [Proposal](release/station-csv-export-proposal.md): link to the source CSV first, then add an in-page CSV. |
+| S3 | **Data download for researchers.** | Option 1 (a source CSV link on Bloom) is **in PR #32**. Option 2 (an in-page CSV with qualifiers) waits for the scientific review; see the [proposal](release/station-csv-export-proposal.md). |
 | S4 | **Public URL, name and contact.** | Decide on a public domain, check the "CoastWatch" name against NOAA CoastWatch (NOAA's program uses the same word), and set up a contact for corrections. |
 | S5 | **Privacy note** for the one item kept in browser storage (the first-visit card dismissal) and for any analytics. | The site has no analytics today. |
 
@@ -64,9 +64,25 @@ These are already on the site, and must stay there in any public release.
 - Fisheries figures are historical landings, not losses, forecasts or a judgment about any fishery. The species tiers are an editorial grouping that awaits review (B2).
 - The research publication concerns chlorophyll forecasting. CoastWatch does not run those models, and the publication does not validate this application.
 
-## 6. Decisions for the owner
+## 6. Public deployment plan (prepared, not executed)
 
-1. **Reviewer:** who to approach for B2 (the draft leaves the recipient blank), and whether to send it before or after B1.
-2. **Data download (S3):** approve the proposal's step 1 (a source-CSV link) as a small follow-up PR, or wait for the scientific review.
-3. **B4 fix:** approve the small masthead change for 320 px.
-4. **Public release shape:** a new public Vercel project and domain for the full website, separate from coastwatch-demo, or replacing the demo later. Either way, only after B1–B4.
+The full website gets its **own public Vercel project**. The Research Preview (`coastwatch-demo`) and its deployments stay exactly as they are, and the private review project (`coastwatch-preview`) stays private and keeps being used for previews.
+
+| Step | What | Gate |
+|---|---|---|
+| 1 | Create a new Vercel project, for example `coastwatch-site`. Use framework Next.js and root `coastwatch-web`. **Disconnect Git auto-deploys**, as for the demo. Set `CW_DATA_BASE_URL=https://yashnil.github.io/habs-forecast/v1` for production and preview. Keep deployment protection on until launch. | Owner approves creating the project |
+| 2 | Choose a domain and name. The word "CoastWatch" is also NOAA's program name, so consider a distinct public name or subtitle. Set up a contact address for corrections. | Owner decision |
+| 3 | Add response headers in `next.config.ts`: a Content-Security-Policy allowing the map tile host (OpenFreeMap), ERDDAP links and the data host, plus `Referrer-Policy` and `X-Content-Type-Options`. The app sets none today. Add `robots` metadata that allows indexing only from launch. | Small PR, with tests |
+| 4 | **Release candidate:** tag the reviewed commit `site-release/YYYY-MM-DD-rc`. Deploy it to `coastwatch-preview` (private) from a clean `git archive` export. Run the e2e suite, axe and `cwp check-published` against it. The owner walks the six journeys. | B1–B4 closed; CI green |
+| 5 | **Launch:** deploy the same tag to the new project with `vercel deploy --prod`, then remove deployment protection. Record the deployment id and the tag in this file. | Owner's explicit go, given at that time |
+| 6 | **Rollback:** promote the previous production deployment (`vercel promote <dpl>` or `vercel rollback`). Release tags are never moved or deleted (as with `demo-release/*`). | — |
+| 7 | **After launch:** the existing data-health alerts and the official-page watcher keep running. Add an uptime check on the home page and `manifest.json`. Recheck the notices after each watcher alert, and recheck the mussel quarantine each autumn. | — |
+
+Nothing in this plan changes the data pipeline or the `coastwatch-data` branch. The site reads the same published data as the private preview.
+
+## 7. Decisions for the owner
+
+1. **Reviewer:** choose from the shortlist (kept outside this public repository because it names individuals) and decide whether to contact them before or after B1.
+2. **Notices:** whether to add the CDPH Humboldt razor clam advisory (SN24-003) as a record; and whether to tell CDFW that its page links the lifted sardine and anchovy advisory.
+3. **PR #32:** merge after review (B4 and the source CSV link).
+4. **Public release:** the project and domain (§6 steps 1–2), and when, only after B1–B4 are closed.
