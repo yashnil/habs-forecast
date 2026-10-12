@@ -43,13 +43,17 @@ test.describe("My Coast", () => {
     await open(page, `${OK}/coast?place=port-593`);
     const pda = page.getByTestId("coast-model-pda");
     await expect(pda).toBeVisible();
-    const here = pda.getByTestId("coast-model-here");
+    // Santa Cruz's own cell has no C-HARM value: the section and the summary lead with that
+    await expect(page.getByTestId("coast-model-none")).toContainText("No C-HARM forecast for these waters");
+    await expect(page.getByTestId("glance-model")).toContainText("No C-HARM forecast for these waters");
+    await expect(pda.getByTestId("coast-model-here")).toContainText("No forecast for these waters");
+    // the nearest value is set apart, with its distance, the cell's location and its valid date
     const nearest = pda.getByTestId("coast-model-nearest");
-    if (await nearest.count()) {
-      await expect(here).toContainText("No model value");
-      await expect(nearest).toContainText("at that cell, not here");
-      await expect(nearest).toContainText("km");
-    }
+    await expect(nearest).toContainText("not a forecast for these waters");
+    await expect(nearest).toContainText(/\d+\.\d km [NSEW]+ of here/);
+    await expect(nearest).toContainText(/\d+\.\d{3}°N \d+\.\d{3}°W/);
+    await expect(nearest).toContainText(/valid \w{3}, \w{3} \d+, 2026/);
+    await expect(nearest).toContainText("C-HARM does not model them");
     await expect
       .poll(() =>
         page.evaluate(() => {
@@ -58,6 +62,30 @@ test.describe("My Coast", () => {
         }),
       )
       .toEqual(expect.arrayContaining(["target", "cell"]));
+  });
+
+  test("official geography decides: outside its area is folded and never listed as applying; unresolved is shown as such", async ({ page }) => {
+    await open(page, `${OK}/coast?place=port-593`);
+    const mb = "coast-notice-cdph-2026-sn26-018-monterey-bivalves";
+    await expect(page.getByTestId("coast-notices-geo").getByTestId(mb)).toHaveCount(0);
+    const outside = page.getByTestId("coast-notices-outside");
+    await expect(outside).toContainText("outside its official area");
+    await expect(outside.getByTestId(mb)).toBeHidden();
+    await outside.locator("summary").click();
+    await expect(outside.getByTestId(mb)).toHaveAttribute("data-tier", "outside");
+    await expect(outside.getByTestId(mb)).toContainText("Outside the agency's outline of Monterey County");
+    // the agencies' complete lists are always offered, with CoastWatch's whole list one click away
+    await expect(page.getByTestId("coast-agencies-complete")).toContainText("may miss one");
+    await page.getByTestId("coast-all-notices").click();
+    await expect(page.getByTestId("official-drawer")).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await page.goto(`${OK}/coast?place=port-605`);
+    const un = page.getByTestId("coast-notices-unresolved");
+    await expect(un.getByTestId("coast-notice-cdph-rock-crab-viscera-north-coast-nci")).toContainText("gives no boundary for those waters");
+    await expect(page.getByTestId("glance-official")).toContainText("may apply (unresolved)");
+    await expect(page.getByTestId("coast-notices-geo").getByTestId("coast-notice-cdph-nci-bivalve-special-advisory")).toHaveCount(0);
+    await assertNoUnsafeClaims(page);
   });
 
   test("choosing waters with the keyboard updates the link; Back returns to the previous waters", async ({ page }) => {

@@ -17,6 +17,7 @@ import { formatDate } from "@/lib/time";
 import { VerificationBadge } from "@/components/official/Official";
 import { SatelliteNear, type SatelliteResult } from "@/components/map/SatelliteNear";
 import { CurrentsNear } from "@/components/map/CurrentsNear";
+import { useRegistryDisclosure } from "@/components/shell/OfficialShell";
 import { currentsHourly } from "@/lib/currents";
 
 // ---------------------------------------------------------------- shared bits
@@ -64,7 +65,7 @@ function NoticeItem({ a, muted = false }: { a: Association; muted?: boolean }) {
         )}
       </p>
       <p className="mt-1.5 text-[14px] leading-snug text-ink-2" data-testid="coast-notice-basis">
-        <span className="font-medium text-ink">Why it is listed: </span>
+        <span className="font-medium text-ink">{a.tier === "geographic" ? "Why it applies here: " : a.tier === "unresolved" ? "Why it is unresolved: " : "Why it is listed: "}</span>
         {a.basis}
       </p>
       {a.caveats.map((c) => (
@@ -104,7 +105,10 @@ export function OfficialSection({
 }) {
   const fits = (a: Association) => audience === "all" || AUDIENCE[a.record.fishery].groups.includes(audience);
   const geo = assocs.filter((a) => a.tier === "geographic");
-  const possible = assocs.filter((a) => a.tier === "possible");
+  const unresolved = assocs.filter((a) => a.tier === "unresolved");
+  const outside = assocs.filter((a) => a.tier === "outside");
+  const reg = useRegistryDisclosure();
+  const active = official?.registry.records.filter((r) => r.status === "active").length ?? 0;
   const geoFit = geo.filter(fits);
   const geoOther = geo.filter((a) => !fits(a));
   const regions = cdfwRegionsAt(place.lat);
@@ -132,11 +136,16 @@ export function OfficialSection({
         </div>
       </div>
       <p className="text-[14px] text-ink-2">{COAST_COPY.unreviewed} The notices themselves are transcribed from the agencies&apos; pages and not verified.</p>
+      {reg.changed && (
+        <p className="rounded-lg bg-official-bg px-3 py-2 text-[14px] text-official-ink" role="note" data-testid="coast-registry-changed">
+          {reg.reason} A notice may have been issued or lifted since; the agency pages below decide.
+        </p>
+      )}
       {!official ? (
         <p className="text-[15px] text-ink-2">The list of official notices is unavailable right now. Check CDFW and CDPH directly (below).</p>
       ) : (
         <div className="rounded-2xl border border-official-line bg-official-bg px-4 py-4 sm:px-5">
-          <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-official-ink">Notices whose official geography includes these waters</h3>
+          <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-official-ink">Apply here by their official geography</h3>
           {geoFit.length ? (
             <ul className="mt-3" data-testid="coast-notices-geo">
               {geoFit.map((a) => (
@@ -164,16 +173,30 @@ export function OfficialSection({
         </div>
       )}
 
-      {possible.length > 0 && (
-        <div className="rounded-2xl border border-hairline bg-surface px-4 py-4 sm:px-5" data-testid="coast-notices-possible">
-          <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-ink-2">Possibly relevant: not resolved by the notices&apos; geography</h3>
-          <p className="mt-1 text-[14px] text-ink-3">Nearby areas, limits close by, or an offshore reach the notice does not state. Check the agency source.</p>
+      {unresolved.length > 0 && (
+        <div className="rounded-2xl border border-official-line/70 bg-surface px-4 py-4 sm:px-5" data-testid="coast-notices-unresolved">
+          <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-official-ink">May apply: not settled by their official geography</h3>
+          <p className="mt-1 text-[14px] text-ink-2">Their stated area does not show whether they cover these waters. Check each notice&apos;s agency source before fishing or harvesting here.</p>
           <ul className="mt-3">
-            {possible.map((a) => (
+            {unresolved.map((a) => (
               <NoticeItem key={a.record.id} a={a} muted />
             ))}
           </ul>
         </div>
+      )}
+
+      {outside.length > 0 && (
+        <details className="rounded-2xl border border-hairline bg-surface px-4 py-3 sm:px-5" data-testid="coast-notices-outside">
+          <summary className="cursor-pointer text-[15px] font-medium text-ink">
+            {outside.length} nearby notice{outside.length === 1 ? "" : "s"} outside {outside.length === 1 ? "its" : "their"} official area
+          </summary>
+          <p className="mt-2 text-[14px] text-ink-2">By their stated boundaries these do not cover these waters. They are listed because they are close, for anyone who also fishes or harvests there.</p>
+          <ul className="mt-3">
+            {outside.map((a) => (
+              <NoticeItem key={a.record.id} a={a} muted />
+            ))}
+          </ul>
+        </details>
       )}
 
       {statements.length > 0 && (
@@ -194,6 +217,14 @@ export function OfficialSection({
 
       <div className="rounded-2xl border border-hairline bg-surface px-4 py-4 sm:px-5" data-testid="coast-agencies">
         <h3 className="text-[16px] font-semibold text-ink">Check the rules with the agencies</h3>
+        <p className="mt-1 text-[14px] text-ink-2" data-testid="coast-agencies-complete">
+          CoastWatch matches notices to places automatically and may miss one. The agencies&apos; own lists are complete; CoastWatch&apos;s list has {active} active notice{active === 1 ? "" : "s"} statewide
+          {" "}(
+          <button type="button" onClick={(e) => reg.openDrawer(e.currentTarget)} className={`${linkCls} font-medium`} data-testid="coast-all-notices">
+            see all
+          </button>
+          ).
+        </p>
         <ul className="mt-2 space-y-1.5 text-[15px] text-ink-2">
           <li>
             <a href={AGENCY_LINKS.cdfwAdvisories.url} {...ext} className={linkCls}>
@@ -371,29 +402,58 @@ export function useModel(manifest: Manifest, baseUrl: string, lat: number | null
   return r;
 }
 
-function AvailRow({ title, threshold, a }: { title: string; threshold: string | null; a: Availability }) {
+const fmtCell = (lat: number, lon: number) => `${lat.toFixed(3)}°N ${Math.abs(lon).toFixed(3)}°W`;
+
+/**
+ * One line on what C-HARM says about the chosen waters themselves (the summary and the section's
+ * lead). Toxin and bloom grids are masked differently, so a cell can have one and not the other.
+ */
+export function modelHeadline(model: ModelRead | null): string {
+  if (!model) return "Reading…";
+  if (model.error) return "No C-HARM run available";
+  const tox = !!model.pda?.here;
+  const bloom = !!model.pn?.here;
+  if (tox && bloom) return "C-HARM has values for these waters";
+  if (bloom) return "No C-HARM toxin forecast for these waters; the bloom forecast has a value for their cell";
+  if (tox) return "No C-HARM bloom forecast for these waters; the toxin forecast has a value for their cell";
+  return "No C-HARM forecast for these waters";
+}
+
+function AvailRow({ title, threshold, a, valid }: { title: string; threshold: string | null; a: Availability; valid: string | null }) {
   return (
     <div className="py-3" data-testid={`coast-model-${title.startsWith("Particulate") ? "pda" : "pn"}`}>
       <h3 className="text-[15px] font-semibold text-ink">{title}</h3>
       {threshold && <p className="text-[13px] text-ink-3">{threshold}</p>}
-      <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[14px]">
-        <dt className="text-ink-3">At these waters</dt>
-        <dd className="text-ink" data-testid="coast-model-here">
-          {a.here ? <span className="font-semibold tabular">{fmtPct(a.here.value)}</span> : <span className="text-ink-2">No model value. The model does not cover this location.</span>}
-        </dd>
-        {a.nearest && (
-          <>
-            <dt className="text-ink-3">Nearest cell with a value</dt>
-            <dd className="text-ink-2" data-testid="coast-model-nearest">
-              {a.nearest.km.toFixed(1)} km {a.nearest.bearing} (cell centre): <span className="font-medium text-ink tabular">{fmtPct(a.nearest.value)}</span> <span className="text-ink-3">at that cell, not here</span>
-            </dd>
-          </>
-        )}
+      {a.here ? (
+        <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[14px]">
+          <dt className="text-ink-3">At these waters</dt>
+          <dd className="text-ink" data-testid="coast-model-here">
+            <span className="font-semibold tabular">{fmtPct(a.here.value)}</span> <span className="text-ink-3">in the 3 km cell that contains them{valid ? `, valid ${valid}` : ""}</span>
+          </dd>
+        </dl>
+      ) : (
+        <>
+          <p className="mt-1.5 text-[14px] text-ink" data-testid="coast-model-here">
+            <b className="font-semibold">No forecast for these waters.</b> <span className="text-ink-2">The model has no value in the cell that contains them.</span>
+          </p>
+          {a.nearest && (
+            <div className="mt-2 rounded-lg bg-model-bg/60 px-3 py-2.5 text-[14px]" data-testid="coast-model-nearest">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-model-ink">Nearest cell with a value: not a forecast for these waters</p>
+              <p className="mt-1 text-ink-2">
+                <span className="font-semibold text-ink tabular">{fmtPct(a.nearest.value)}</span> at the cell centred {a.nearest.km.toFixed(1)} km {a.nearest.bearing} of here (
+                <span className="tabular">{fmtCell(a.nearest.cell.lat, a.nearest.cell.lon)}</span>){valid ? `, valid ${valid}` : ""}.
+              </p>
+              <p className="mt-1 text-ink-3">It describes that 3 km cell of open water only. Conditions at the shore, in harbors and at piers can differ, and C-HARM does not model them.</p>
+            </div>
+          )}
+        </>
+      )}
+      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[14px]">
         <dt className="text-ink-3">Within {a.region?.radiusKm ?? 15} km</dt>
         <dd className="text-ink-2" data-testid="coast-model-region">
           {a.region ? (
             <>
-              median <span className="font-medium text-ink tabular">{fmtPct(a.region.median)}</span>, range {fmtPct(a.region.min)}–{fmtPct(a.region.max)} over {a.region.n} cells
+              median <span className="font-medium text-ink tabular">{fmtPct(a.region.median)}</span>, range {fmtPct(a.region.min)}–{fmtPct(a.region.max)} over {a.region.n} cells{a.here ? "" : ", none of them these waters"}
             </>
           ) : (
             "no cells with a value"
@@ -403,6 +463,8 @@ function AvailRow({ title, threshold, a }: { title: string; threshold: string | 
     </div>
   );
 }
+
+const validLabel = (l: LayerArtifact | null | undefined) => (l?.time.valid_date ? formatDate(l.time.valid_date, { year: true }) : null);
 
 export function ModelSection({ manifest, model, lead, onLead, now }: { manifest: Manifest; model: ModelRead | null; lead: number; onLead: (l: number) => void; now: Date | null }) {
   const layers = CHARM_LEADS.map((l) => charmLayer(manifest, "particulate_domoic", l));
@@ -451,8 +513,13 @@ export function ModelSection({ manifest, model, lead, onLead, now }: { manifest:
           </p>
         ) : (
           <div className="divide-y divide-hairline">
-            {model.pda && <AvailRow title="Particulate domoic acid" threshold={layer?.threshold_text ?? null} a={model.pda} />}
-            {model.pn && <AvailRow title="Pseudo-nitzschia bloom" threshold={pnLayer?.threshold_text ?? null} a={model.pn} />}
+            {!(model.pda?.here && model.pn?.here) && (
+              <p className="py-3 font-display text-[19px] font-medium leading-snug text-ink" data-testid="coast-model-none">
+                {modelHeadline(model)}.
+              </p>
+            )}
+            {model.pda && <AvailRow title="Particulate domoic acid" threshold={layer?.threshold_text ?? null} a={model.pda} valid={validLabel(layer)} />}
+            {model.pn && <AvailRow title="Pseudo-nitzschia bloom" threshold={pnLayer?.threshold_text ?? null} a={model.pn} valid={validLabel(pnLayer)} />}
           </div>
         )}
       </div>
