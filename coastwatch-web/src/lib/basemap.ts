@@ -81,7 +81,8 @@ export const BASEMAP_STYLE: StyleSpecification = {
     { id: "land", type: "background", paint: { "background-color": LAND } },
     { id: "relief-land", type: "raster", source: "relief-land", paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
     // under the basemap's water, which covers it wherever the basemap's tiles did arrive
-    { id: "water-fallback", type: "fill", source: WATER_FALLBACK_SOURCE, layout: { visibility: "none" }, paint: { "fill-color": SEA } },
+    // (its polygons are cut along a tile grid: no anti-aliased outline, so the cuts never show)
+    { id: "water-fallback", type: "fill", source: WATER_FALLBACK_SOURCE, filter: ["==", ["geometry-type"], "Polygon"], layout: { visibility: "none" }, paint: { "fill-color": SEA, "fill-antialias": false } },
     {
       id: "water",
       type: "fill",
@@ -120,7 +121,14 @@ export const BASEMAP_STYLE: StyleSpecification = {
     // no data: fine dots on the water, shown by MapCanvas only under a raster data layer
     // (image "nodata", registered by MapCanvas); the data rasters cover them where a value exists
     { id: NODATA_LAYER_ID, type: "fill", source: "omt", "source-layer": "water", layout: { visibility: "none" }, paint: { "fill-pattern": "nodata" } },
-    { id: NODATA_FALLBACK_LAYER_ID, type: "fill", source: WATER_FALLBACK_SOURCE, layout: { visibility: "none" }, paint: { "fill-pattern": "nodata" } },
+    {
+      id: NODATA_FALLBACK_LAYER_ID,
+      type: "fill",
+      source: WATER_FALLBACK_SOURCE,
+      filter: ["==", ["geometry-type"], "Polygon"],
+      layout: { visibility: "none" },
+      paint: { "fill-pattern": "nodata", "fill-antialias": false },
+    },
     {
       id: "coastline",
       type: "line",
@@ -136,6 +144,7 @@ export const BASEMAP_STYLE: StyleSpecification = {
       id: "coastline-fallback",
       type: "line",
       source: WATER_FALLBACK_SOURCE,
+      filter: ["==", ["geometry-type"], "LineString"],
       layout: { visibility: "none" },
       paint: {
         "line-color": "#d3dfeb",

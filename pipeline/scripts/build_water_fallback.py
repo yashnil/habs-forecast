@@ -20,8 +20,11 @@ Method:
 - the ocean within one cell of a C-HARM ocean cell (data/reference/charm_ocean_mask.json) is
   simplified to NEAR_TOLERANCE_M, elsewhere (inner bays beyond the model, the map's margins) to
   FAR_TOLERANCE_M, which is enough for the sea drawn while the basemap is unavailable and for
-  satellite pixels (750 m and coarser). Douglas-Peucker with topology kept; stored as Web
-  Mercator integers (QUANT units per world width), ring by ring, delta encoded.
+  satellite pixels (750 m and coarser). Douglas-Peucker with topology kept;
+- the result is cut along the zoom-SPLIT_Z tile grid (the domain is widened to whole tiles), so a
+  data tile only ever reads the coastline near it; the cuts lie exactly on tile edges, where the
+  web app leaves them out of the drawn coastline. Stored as Web Mercator integers (QUANT units
+  per world width), ring by ring, delta encoded.
 
 Output (committed; it changes only when this script or the domain changes):
 coastwatch-web/public/basemap/water-fallback.json
@@ -53,6 +56,7 @@ TILEJSON = "https://tiles.openfreemap.org/planet"
 DOMAIN = (-131.5, 29.5, -112.5, 44.8)
 DETECT_Z = 10
 DETAIL_Z = 11
+SPLIT_Z = 8
 NEAR_TOLERANCE_M = 8.0
 FAR_TOLERANCE_M = 40.0
 OCEAN_CELLS = Path(__file__).resolve().parents[2] / "data" / "reference" / "charm_ocean_mask.json"
@@ -165,7 +169,11 @@ def main() -> None:
     for (x, y), b in zip(children, blobs):
         ocean.append(to_world(water(b, ocean_only=True)[0], DETAIL_Z, x, y, 4096))
 
+    # the domain, widened to whole zoom-SPLIT_Z tiles
+    k = 2**SPLIT_Z
     (x0, y0), (x1, y1) = merc(DOMAIN[0], DOMAIN[3]), merc(DOMAIN[2], DOMAIN[1])
+    tx0, ty0, tx1, ty1 = math.floor(x0 * k), math.floor(y0 * k), math.ceil(x1 * k), math.ceil(y1 * k)
+    x0, y0, x1, y1 = tx0 / k, ty0 / k, tx1 / k, ty1 / k
     dom = box(x0, y0, x1, y1)
     near = near_forecast().intersection(dom)
     ocean_all = polygonal(shapely.unary_union(ocean).intersection(dom))
@@ -183,7 +191,12 @@ def main() -> None:
             ]
         )
     )
-    polys = list(simple.geoms)
+    polys = [
+        p
+        for tx in range(tx0, tx1)
+        for ty in range(ty0, ty1)
+        for p in polygonal(simple.intersection(box(tx / k, ty / k, (tx + 1) / k, (ty + 1) / k))).geoms
+    ]
 
     def ring(coords) -> list[int]:
         pts = [(round(cx * QUANT), round(cy * QUANT)) for cx, cy in list(coords)[:-1]]
@@ -202,11 +215,13 @@ def main() -> None:
         "method": (
             f"zoom-{DETECT_Z} tiles all ocean are water, tiles without ocean are land; tiles with both read at zoom {DETAIL_Z}. "
             f"Ocean class only. Within one cell of a C-HARM ocean cell simplified to {NEAR_TOLERANCE_M:g} m, "
-            f"elsewhere to {FAR_TOLERANCE_M:g} m. Cut to the domain."
+            f"elsewhere to {FAR_TOLERANCE_M:g} m. Cut to the domain and along the zoom-{SPLIT_Z} tile grid."
         ),
         "domain_lnglat": list(DOMAIN),
+        "domain_merc_q": [round(v * QUANT) for v in (x0, y0, x1, y1)],
+        "split_zoom": SPLIT_Z,
         "quant": QUANT,
-        "encoding": "polygons -> rings (outer ring, then holes) -> [x0, y0, dx1, dy1, ...] in Web Mercator units of 1/quant world width, y down",
+        "encoding": "polygons -> rings (outer ring, then holes) -> [x0, y0, dx1, dy1, ...] in Web Mercator units of 1/quant world width, y down; domain_merc_q is the covered area [x0, y0, x1, y1] in the same units (domain_lnglat widened to whole zoom-split_zoom tiles)",
         "stats": {
             "detect_tiles": len(detect),
             "ocean_tiles": n_ocean,

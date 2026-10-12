@@ -1,7 +1,8 @@
 /**
  * The bundled water geometry (public/basemap/water-fallback.json, built by
- * pipeline/scripts/build_water_fallback.py): the basemap's own OpenMapTiles water over the C-HARM
- * domain, simplified to 8 m within one cell of a C-HARM ocean cell and 40 m elsewhere.
+ * pipeline/scripts/build_water_fallback.py): the basemap's own OpenMapTiles ocean over the map's
+ * pannable area, simplified to 8 m within one cell of a C-HARM ocean cell and 40 m elsewhere, and
+ * cut along the zoom-8 tile grid so that a data tile only reads the coastline near it.
  *
  * It stands in for the basemap's vector tiles when they cannot be read (lib/waterMask), so data
  * rasters are still drawn over water only, and it fills the sea while the basemap is unavailable.
@@ -10,7 +11,7 @@
  */
 export const WATER_FALLBACK_URL = "/basemap/water-fallback.json";
 
-type FallbackFile = { quant: number; domain_lnglat: [number, number, number, number]; polygons: number[][][] };
+type FallbackFile = { quant: number; domain_merc_q: [number, number, number, number]; split_zoom: number; polygons: number[][][] };
 
 /** Rings in normalised Web Mercator (0..1, y down), each with its bounding box. */
 export type WaterGeometry = {
@@ -19,7 +20,10 @@ export type WaterGeometry = {
   bbox: Float64Array;
   /** ring indices of each polygon: outer ring first, then holes */
   polygons: number[][];
+  /** the area the geometry covers, [x0, y0, x1, y1] in normalised Mercator */
   domain: [number, number, number, number];
+  /** the zoom whose tile edges the polygons are cut along (not coastline) */
+  splitZoom: number;
 };
 
 export function decodeWaterFallback(f: FallbackFile): WaterGeometry {
@@ -52,7 +56,8 @@ export function decodeWaterFallback(f: FallbackFile): WaterGeometry {
     }
     bbox.set([x0, y0, x1, y1], k * 4);
   });
-  return { rings, bbox, polygons, domain: f.domain_lnglat };
+  const [dx0, dy0, dx1, dy1] = f.domain_merc_q.map((v) => v / f.quant);
+  return { rings, bbox, polygons, domain: [dx0, dy0, dx1, dy1], splitZoom: f.split_zoom };
 }
 
 let loading: Promise<WaterGeometry | null> | null = null;
@@ -156,39 +161,54 @@ export function rasterWater(g: WaterGeometry, z: number, x: number, y: number, s
 }
 
 function outsideDomainIsWater(g: WaterGeometry, out: Uint8ClampedArray, tx0: number, ty0: number, s: number, size: number) {
-  const [w, so, e, n] = g.domain;
-  const px = (lng: number) => ((lng + 180) / 360 - tx0) * s;
-  const py = (lat: number) => (0.5 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / (2 * Math.PI) - ty0) * s;
-  const [c0, c1, r0, r1] = [px(w), px(e), py(n), py(so)];
+  const [c0, r0, c1, r1] = [(g.domain[0] - tx0) * s, (g.domain[1] - ty0) * s, (g.domain[2] - tx0) * s, (g.domain[3] - ty0) * s];
   if (c0 <= 0 && c1 >= size && r0 <= 0 && r1 >= size) return out;
   for (let r = 0; r < size; r++)
     for (let c = 0; c < size; c++) if (c + 0.5 < c0 || c + 0.5 > c1 || r + 0.5 < r0 || r + 0.5 > r1) out[r * size + c] = 255;
   return out;
 }
 
-/** The bundled water as GeoJSON (longitude, latitude), for the sea drawn while the basemap is unavailable. */
+/**
+ * The bundled water as GeoJSON (longitude, latitude), for drawing while the basemap is
+ * unavailable: the sea as polygons, and the coastline as lines, without the cuts along the tile
+ * grid and the domain's edges.
+ */
 export function waterGeoJSON(g: WaterGeometry): GeoJSON.FeatureCollection {
   const lng = (x: number) => x * 360 - 180;
   const lat = (y: number) => (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI;
+  const k = 2 ** g.splitZoom;
+  const onGrid = (v: number) => Number.isInteger(v * k);
+  const lines: number[][][] = [];
+  for (const r of g.rings) {
+    const n = r.length / 2;
+    let run: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const [ax, ay, bx, by] = [r[2 * i], r[2 * i + 1], r[2 * j], r[2 * j + 1]];
+      const cut = (ax === bx && onGrid(ax)) || (ay === by && onGrid(ay));
+      if (cut) {
+        if (run.length > 1) lines.push(run);
+        run = [];
+        continue;
+      }
+      if (!run.length) run.push([lng(ax), lat(ay)]);
+      run.push([lng(bx), lat(by)]);
+    }
+    if (run.length > 1) lines.push(run);
+  }
+  // one feature per zoom-8 piece, so the map's tiler only cuts the pieces near each tile
+  const ring = (id: number) => {
+    const r = g.rings[id];
+    const pts: number[][] = [];
+    for (let i = 0; i < r.length; i += 2) pts.push([lng(r[i]), lat(r[i + 1])]);
+    pts.push(pts[0]);
+    return pts;
+  };
   return {
     type: "FeatureCollection",
     features: [
-      {
-        type: "Feature",
-        properties: {},
-        geometry: {
-          type: "MultiPolygon",
-          coordinates: g.polygons.map((ids) =>
-            ids.map((id) => {
-              const r = g.rings[id];
-              const pts: number[][] = [];
-              for (let i = 0; i < r.length; i += 2) pts.push([lng(r[i]), lat(r[i + 1])]);
-              pts.push(pts[0]);
-              return pts;
-            }),
-          ),
-        },
-      },
+      ...g.polygons.map((ids): GeoJSON.Feature => ({ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: ids.map(ring) } })),
+      ...lines.map((l): GeoJSON.Feature => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: l } })),
     ],
   };
 }

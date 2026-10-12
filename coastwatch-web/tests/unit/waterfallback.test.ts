@@ -4,7 +4,7 @@ import { VectorTile } from "@mapbox/vector-tile";
 import { PbfReader } from "pbf";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CA_BOUNDS } from "@/lib/basemap";
-import { decodeWaterFallback, rasterWater, WATER_FALLBACK_URL, type WaterGeometry } from "@/lib/waterFallback";
+import { decodeWaterFallback, rasterWater, WATER_FALLBACK_URL, waterGeoJSON, type WaterGeometry } from "@/lib/waterFallback";
 
 /** The bundled water: the fallback for the basemap's own water when its tiles cannot be read, so
  *  data rasters still stay off land (lib/waterFallback, lib/waterMask). */
@@ -12,14 +12,15 @@ const Q = 2 ** 26;
 const file = JSON.parse(readFileSync(path.resolve(__dirname, "../../public/basemap/water-fallback.json"), "utf8"));
 const bundled = decodeWaterFallback(file);
 
-/** A fallback file from rings in normalised Mercator (0..1, y down). */
-function geometry(polygons: number[][][][], domain: [number, number, number, number] = [-180, -85.06, 180, 85.06]) {
+/** A fallback file from rings in normalised Mercator (0..1, y down); domain likewise. */
+function geometry(polygons: number[][][][], domain: [number, number, number, number] = [0, 0, 1, 1]) {
   const enc = (ring: number[][]) => {
     const q = ring.map(([x, y]) => [Math.round(x * Q), Math.round(y * Q)]);
     return q.flatMap(([x, y], i) => (i ? [x - q[i - 1][0], y - q[i - 1][1]] : [x, y]));
   };
-  return { quant: Q, domain_lnglat: domain, polygons: polygons.map((p) => p.map(enc)) };
+  return { quant: Q, domain_merc_q: domain.map((v) => Math.round(v * Q)) as [number, number, number, number], split_zoom: 8, polygons: polygons.map((p) => p.map(enc)) };
 }
+const merc = (lon: number, lat: number) => [(lon + 180) / 360, 0.5 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / (2 * Math.PI)];
 const square = (x0: number, y0: number, x1: number, y1: number) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
 
 /** Tile z/x/y and pixel (column, row) of a point, 512 px tiles. */
@@ -55,8 +56,8 @@ describe("rasterising the bundled water", () => {
     expect(rasterWater(g, 1, 0, 1, 512).every((v) => v === 0)).toBe(true);
   });
   it("leaves data unclipped (water) outside its domain, where it has no coastline", () => {
-    // domain: the western hemisphere only; no water in it
-    const g = decodeWaterFallback(geometry([], [-180, -85, 0, 85]));
+    // domain: the western half of the world only; no water in it
+    const g = decodeWaterFallback(geometry([], [0, 0, 0.5, 1]));
     const m = rasterWater(g, 0, 0, 0, 8);
     expect([...m.slice(0, 8)]).toEqual([0, 0, 0, 0, 255, 255, 255, 255]);
   });
@@ -64,9 +65,36 @@ describe("rasterising the bundled water", () => {
 
 describe("the bundled water file", () => {
   it("covers the map's whole pannable area and is ocean-only OpenMapTiles water", () => {
-    expect(file.domain_lnglat).toEqual([CA_BOUNDS[0][0], CA_BOUNDS[0][1], CA_BOUNDS[1][0], CA_BOUNDS[1][1]]);
+    const [[w, so], [e, n]] = CA_BOUNDS;
+    const [x0, y0, x1, y1] = bundled.domain;
+    const [cx0, cy1] = merc(w, so), [cx1, cy0] = merc(e, n);
+    expect(x0 <= cx0 && y0 <= cy0 && x1 >= cx1 && y1 >= cy1).toBe(true);
     expect(file.source).toMatch(/OpenMapTiles/);
     expect(file.method).toMatch(/Ocean class only/);
+  });
+  it("is cut along the zoom-8 tile grid, so a data tile reads only the coastline near it", () => {
+    const k = 2 ** bundled.splitZoom;
+    for (const ids of bundled.polygons) {
+      const b = bundled.bbox.subarray(ids[0] * 4, ids[0] * 4 + 4);
+      expect(Math.floor(b[0] * k + 1e-9), "one zoom-8 tile wide").toBe(Math.ceil(b[2] * k - 1e-9) - 1);
+      expect(Math.floor(b[1] * k + 1e-9), "one zoom-8 tile tall").toBe(Math.ceil(b[3] * k - 1e-9) - 1);
+    }
+  });
+  it("draws the coastline without the tile-grid cuts or the domain's edges", () => {
+    const fc = waterGeoJSON(bundled);
+    const lines = fc.features.filter((f) => f.geometry.type === "LineString").map((f) => (f.geometry as GeoJSON.LineString).coordinates);
+    expect(fc.features.filter((f) => f.geometry.type === "Polygon").length).toBe(bundled.polygons.length);
+    const k = 2 ** bundled.splitZoom;
+    let segs = 0;
+    for (const l of lines)
+      for (let i = 1; i < l.length; i++) {
+        const [a, b] = [merc(l[i - 1][0], l[i - 1][1]), merc(l[i][0], l[i][1])];
+        segs++;
+        const onX = Math.abs(a[0] - b[0]) < 1e-12 && Math.abs(a[0] * k - Math.round(a[0] * k)) < 1e-9;
+        const onY = Math.abs(a[1] - b[1]) < 1e-12 && Math.abs(a[1] * k - Math.round(a[1] * k)) < 1e-9;
+        expect(onX || onY, `segment on the tile grid at ${l[i - 1]}`).toBe(false);
+      }
+    expect(segs).toBeGreaterThan(40_000);
   });
   it("is water at sea, land inland, and keeps small islands", () => {
     const water = (lon: number, lat: number) => {
