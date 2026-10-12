@@ -44,6 +44,18 @@ The existing first-visit card on the Ocean Map becomes a two-step welcome. It is
 | Research: where to start | [1440](welcome/d1440-6-research.jpg) | [390](welcome/m390-6-research.jpg) |
 | Research: My Coast, measurements first | [1440, full page](welcome/d1440-7-research-coast.jpg) | [390](welcome/m390-7-research-coast.jpg) |
 | About: change or reset | [1440](welcome/d1440-8-about-switch.jpg) | [390](welcome/m390-8-about-switch.jpg) |
+| Small screens: welcome | [1024](welcome/d1024-1-welcome.jpg) | [360](welcome/m360-1-welcome.jpg) · [320](welcome/m320-1-welcome.jpg) (the card scrolls on a 640 px-tall screen) · [360, step 2](welcome/m360-2-commercial-waters.jpg) |
+| "Just exploring" opens the nine-step tour | [1024](welcome/d1024-9-tour.jpg) | [390](welcome/m390-9-tour.jpg) |
+
+**Final review (2026-10-12, production data, after My Coast merged):** at 320, 360, 390, 1024 and 1440 px:
+- the notices pill or tab stays uncovered and opens the notices while the welcome is showing, and the welcome is still there afterwards;
+- the last choice is never covered;
+- nothing scrolls sideways;
+- "Just exploring" starts step 1 of 9;
+- a deep link (`/?region=…&port=…`) shows no welcome;
+- on My Coast, a link's `for=` wins over a saved purpose, the saved purpose's default applies without one, and "Set up for" is visible.
+
+The phone's 390 px welcome and step 2 images above were retaken after the small-phone change.
 
 ## Tests
 

@@ -244,7 +244,7 @@ export function IntroCard({ className = "", onTour, places, suppressed = false }
                     className="min-h-[40px] rounded-md bg-navy-900 px-3.5 text-[14px] font-medium text-white hover:bg-navy-800"
                     data-testid="intro-to-coast"
                   >
-                    {place ? `Show ${place.name}` : "Open My Coast"}
+                    {place ? `Show ${place.name}` : "Go to My Coast"}
                   </button>
                 </div>
               </div>
