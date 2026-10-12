@@ -352,9 +352,9 @@ The North Coast piers last sampled in March and April 2026. Southern California 
 |---|---|---|---|
 | **#32** | unit 183, e2e 178 (incl. 10 release tests), lint | — | Green |
 | **#33** | unit 182, e2e 176, lint | Map first-load JS 161 → 164 kB | Green |
-| **#34** | unit 183, e2e 171, lint | +72 kB gzip data, fetched once; map JS unchanged | Running at the time of writing |
+| **#34** | unit 183, e2e 171, lint | +72 kB gzip data, fetched once; map JS unchanged | Green |
 
-**Overlap:** #33 and #34 both append to `content/copy.ts`, so the second to merge needs a trivial conflict resolution.
+**Merged 2026-10-12, in order:** #32, #33 and #34, each retested against the updated `main` (unit 190, e2e 189 after the last). The `copy.ts` conflict between #33 and #34 was resolved by keeping both blocks.
 
 ## 12. Recommended roadmap
 
