@@ -40,6 +40,8 @@ type MapLike = {
 };
 
 test("forecast cells that straddle the shore are drawn over water only, at the basemap's shoreline", async ({ page }) => {
+  // renders up to 40 cells at zoom 12 twice (software WebGL in CI, two workers)
+  test.setTimeout(120_000);
   const layer = manifest.layers.find((l: { layer_id: string }) => l.layer_id === "charm_pseudo_nitzschia_lead1");
   const g = layer.grid;
   const codes = new Uint16Array(new Uint8Array(gunzipSync(readFileSync(path.join(FIX, g.url)))).buffer);

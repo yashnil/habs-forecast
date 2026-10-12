@@ -180,7 +180,7 @@ Correction: the earlier re-zoom figures (835 vs 833 ms) included the measuring s
 - Unit (`waterfallback.test.ts`): the rasteriser (edges, anti-aliasing, holes, outside the domain); the file covers the pannable area, is ocean-only, is cut along the zoom-8 grid, and its drawn coastline has no grid cuts; sea, land and islands at known points; agreement with the recorded basemap tile; and the choice of water when the tile server is unreachable, slow (3 s, fake timers), the browser cannot read vector tiles, or nothing can be read.
 - Browser (`coastline-fallback.spec.ts`), truth from a normal session:
   - tile server unreachable: no forecast on land and forecast on all ocean points in straddling cells; the bundled sea is shown;
-  - tiles 20 s late: the same, checked before the tiles arrive; then the bundled sea gives way to the basemap;
+  - tiles 45 s late: the same, checked before the tiles arrive; then the bundled sea gives way to the basemap;
   - unreachable: toxin-mask and unmodelled cells on the sea keep the no-data dots and no forecast colour, land has neither, valued cells are coloured, and the readout still names the toxin mask.
 
 **Limits.**

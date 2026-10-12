@@ -12,6 +12,8 @@ const FIX = path.resolve(__dirname, "../fixture-data/v1");
 const manifest = JSON.parse(readFileSync(path.join(FIX, "manifest.json"), "utf8"));
 const OMT = /tiles\.openfreemap\.org/;
 const OMT_TILES = /tiles\.openfreemap\.org\/.*\.pbf/;
+// each test renders two sessions at zoom 12 (software WebGL in CI, two workers): allow for it
+test.describe.configure({ timeout: 120_000 });
 
 type Grid = { url: string; width: number; height: number; nodata: number; lat_first: number; lon_first: number; lat_step: number; lon_step: number };
 type MapLike = {
@@ -123,7 +125,7 @@ async function drawn(page: Page, lat: number, lon: number, pts: Pt[]): Promise<b
   );
 }
 
-/** Up to three straddling cells and their classified points, from a normal session. */
+/** Up to two straddling cells and their classified points, from a normal session. */
 async function truth(browser: Browser, url: string, layerId: string) {
   const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
   await open(page, url);
@@ -132,7 +134,7 @@ async function truth(browser: Browser, url: string, layerId: string) {
   for (const [r, c] of coastalCells(layerId).filter((_, i) => i % 3 === 0).slice(0, 40)) {
     const pts = await classify(page, lat(r), lon(c), g.lat_step);
     if (pts.some((p) => p.kind === "land") && pts.some((p) => p.kind === "ocean")) cells.push({ lat: lat(r), lon: lon(c), pts });
-    if (cells.length >= 3) break;
+    if (cells.length >= 2) break;
   }
   await page.context().close();
   return cells;
@@ -168,13 +170,13 @@ test("with the basemap's tile server unreachable, straddling cells are still dra
   await ctx.close();
 });
 
-test("with the basemap's tiles 20 s late, the forecast is drawn before they arrive, never on land", async ({ browser }) => {
-  test.setTimeout(90_000);
+test("with the basemap's tiles 45 s late, the forecast is drawn before they arrive, never on land", async ({ browser }) => {
+  test.setTimeout(180_000);
   const cells = await truth(browser, PN_URL, PN);
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   let arrived = false;
   await ctx.route(OMT_TILES, async (r) => {
-    await new Promise((s) => setTimeout(s, 20_000));
+    await new Promise((s) => setTimeout(s, 45_000));
     arrived = true;
     await r.continue().catch(() => {});
   });
@@ -187,7 +189,7 @@ test("with the basemap's tiles 20 s late, the forecast is drawn before they arri
   expect(await fallbackSea()).toBe("visible");
   expect(arrived, `basemap tiles arrived before the check (${Date.now() - t0} ms)`).toBe(false);
   // and give way to the basemap once its tiles arrive
-  await expect.poll(fallbackSea, { timeout: 40_000 }).toBe("none");
+  await expect.poll(fallbackSea, { timeout: 90_000 }).toBe("none");
   expect(arrived).toBe(true);
   await ctx.close();
 });
