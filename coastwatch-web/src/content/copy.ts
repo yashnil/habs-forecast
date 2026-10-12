@@ -247,3 +247,10 @@ export const ABOUT = {
   ],
 };
 
+
+/** County reference layer (CA Department of Technology boundaries, public domain). */
+export const COUNTIES = {
+  attribution: "County boundaries: CA Dept. of Technology / CDTFA",
+  note: "Reference only, drawn on land. County lines do not define fishery closures, crab fishing zones, state waters, or how far a health advisory reaches offshore.",
+  source: "California Department of Technology, California County Boundaries and Identifiers (boundaries from CDTFA; public domain), simplified to about 100 m.",
+} as const;

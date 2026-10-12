@@ -27,6 +27,7 @@ import { indexedTiles } from "@/lib/tileIndex";
 import { loadWaterFallback, waterGeoJSON } from "@/lib/waterFallback";
 import { onBasemapSlow } from "@/lib/waterMask";
 import FlowParticles from "./FlowParticles";
+import { CountyControl, CountyLayers, useCountyPrefs } from "./Counties";
 
 // MapLibre's module worker is copied to public/ by scripts/copy-maplibre-worker.mjs
 setWorkerUrl("/vendor/maplibre/maplibre-gl-worker.mjs");
@@ -101,6 +102,7 @@ export default function MapCanvas(p: Props) {
   const paint = p.fade ? RASTER_FADE : RASTER_PAINT;
   const fg = p.forecast?.grid;
   const forecastTiles = useMemo(() => (fg ? gridTiles(fg.layer, fg.url) : null), [fg]);
+  const [counties, setCounties] = useCountyPrefs();
 
   // When the basemap's tiles fail (tile server down, offline) or are late (a data tile stopped
   // waiting for them), draw the bundled water instead, so the sea, the coastline and the no-data
@@ -232,6 +234,9 @@ export default function MapCanvas(p: Props) {
     >
       <NavigationControl position="bottom-right" showCompass={false} />
       {wide && <ScaleControl position="bottom-right" unit="metric" />}
+      <CountyControl prefs={counties} onChange={setCounties} />
+      {/* county reference lines and names: under town names, above nothing that holds data on land */}
+      <CountyLayers prefs={counties} beforeId="place-city" />
 
       {p.forecast && forecastTiles && (
         <Source key={`${p.forecast.id}-grid`} id="forecast" type="raster" tiles={[forecastTiles.template]} tileSize={GRID_TILE_SIZE} bounds={forecastTiles.bounds} minzoom={0} maxzoom={13}>
