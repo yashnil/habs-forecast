@@ -22,7 +22,7 @@ export function AppShell({
   /** "app": fixed-height viewport on the dark map theme; "page": the document scrolls, on paper */
   scroll?: "app" | "page";
   children: React.ReactNode;
-  active: "map" | "bloom" | "fisheries" | "sources" | "about";
+  active: "map" | "coast" | "bloom" | "fisheries" | "sources" | "about";
   manifest: Manifest | null;
   official?: OfficialDataset | null;
   officialStatus?: SourceStatus | null;
@@ -65,7 +65,9 @@ export function AppShell({
                           current ? "border-accent-on-navy text-white" : "border-transparent text-on-navy-2 hover:text-on-navy"
                         }`}
                       >
-                        {e.label}
+                        {/* full names where the masthead has room; the short ones below 1280 px */}
+                        <span className="hidden xl:inline">{e.label}</span>
+                        <span className="xl:hidden">{e.short}</span>
                       </Link>
                     </li>
                   );

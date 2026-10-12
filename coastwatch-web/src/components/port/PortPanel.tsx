@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { Manifest } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 import type { PortIntel, PortIntelCollection } from "@/generated/port_intel";
@@ -57,6 +58,9 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
           <p className="text-[13px] text-ink-3">
             {port.county} County · {port.lat.toFixed(3)}°N, {Math.abs(port.lon).toFixed(3)}°W · CDFW port code {port.port_code}
           </p>
+          <Link href={`/coast?place=port-${port.port_code}`} className="mt-1 inline-block text-[14px] font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent" data-testid="port-open-coast">
+            View in My Coast →
+          </Link>
         </div>
         <button onClick={onClose} aria-label="Close port details" className="rounded px-2 py-1 text-[13px] text-ink-3 hover:bg-surface-3 hover:text-ink">
           ✕

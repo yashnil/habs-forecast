@@ -13,11 +13,15 @@ import { multiSensorLayer, multiSensorMembers, multiSensorPick, observedDate, ty
  * cloud covers the point, within about 1 km of) a location, with the date that pixel was
  * observed. OLCI 300 m first; the VIIRS 750 m fallback only if OLCI is not published.
  */
-export function SatelliteNear(props: { manifest: Manifest; baseUrl: string; lat: number; lon: number; place: string }) {
+/** What the component found, for a summary elsewhere on the page (one rule, one answer). */
+export type SatelliteResult = { date: string; nearestKm: null } | { date: null; nearestKm: number | null } | null;
+type NearProps = { manifest: Manifest; baseUrl: string; lat: number; lon: number; place: string; onRead?: (r: SatelliteResult) => void };
+
+export function SatelliteNear(props: NearProps) {
   return multiSensorLayer(props.manifest) ? <MultiSensorNear {...props} /> : <SingleSensorNear {...props} />;
 }
 
-function SingleSensorNear({ manifest, baseUrl, lat, lon, place }: { manifest: Manifest; baseUrl: string; lat: number; lon: number; place: string }) {
+function SingleSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearProps) {
   const olci = satelliteLatest(manifest, "olci300");
   const layer = olci ?? satelliteLatest(manifest, "viirs750");
   const product: SatProduct | null = olci ? "olci300" : layer ? "viirs750" : null;
@@ -36,9 +40,14 @@ function SingleSensorNear({ manifest, baseUrl, lat, lon, place }: { manifest: Ma
     };
   }, [baseUrl, layer, lat, lon, product]);
 
-  if (!layer) return null;
-  const ref = layer.composite?.reference_date;
+  const ref = layer?.composite?.reference_date;
   const observed = s && s !== "error" && s.kind === "value" && ref && s.ageDays != null ? new Date(Date.parse(`${ref}T12:00:00Z`) - s.ageDays * 86400000).toISOString().slice(0, 10) : null;
+  useEffect(() => {
+    if (!onRead || s === null) return;
+    if (s === "error" || s.kind !== "value") onRead({ date: null, nearestKm: null });
+    else if (observed) onRead(s.nearest ? { date: null, nearestKm: s.distanceKm } : { date: observed, nearestKm: null });
+  }, [s, observed, onRead]);
+  if (!layer) return null;
   return (
     <section data-testid="satellite-near" className="space-y-1.5" aria-labelledby="sat-near-h">
       <div className="flex items-baseline justify-between gap-2">
@@ -94,7 +103,7 @@ const fmtV = (v: number) => (v >= 10 ? v.toFixed(0) : v.toPrecision(2));
  * value, resolution and observation date, and what the other sensor has at the same place.
  * Values come from the members' published grids; the rule is the pipeline's.
  */
-function MultiSensorNear({ manifest, baseUrl, lat, lon, place }: { manifest: Manifest; baseUrl: string; lat: number; lon: number; place: string }) {
+function MultiSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearProps) {
   const layer = multiSensorLayer(manifest)!;
   const ms = layer.multisensor!;
   const [primary, secondary] = multiSensorMembers(manifest, layer);
@@ -116,6 +125,12 @@ function MultiSensorNear({ manifest, baseUrl, lat, lon, place }: { manifest: Man
   const shown = r && r !== "error" && pick ? r[pick - 1].obs : null;
   const other = r && r !== "error" && pick ? r[2 - pick].obs : null;
   const nearest = r && r !== "error" && !pick ? (r[0].nearest ?? r[1].nearest) : null;
+  useEffect(() => {
+    if (!onRead || r === null) return;
+    if (r === "error") onRead({ date: null, nearestKm: null });
+    else if (shown) onRead({ date: shown.date, nearestKm: null });
+    else onRead({ date: null, nearestKm: nearest && nearest.kind === "value" ? nearest.distanceKm : null });
+  }, [r, shown, nearest, onRead]);
   return (
     <section data-testid="satellite-near" className="space-y-1.5" aria-labelledby="sat-near-h">
       <div className="flex items-baseline justify-between gap-2">

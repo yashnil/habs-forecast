@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Manifest } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
@@ -101,6 +102,9 @@ export function Inspector({
               C-HARM {leadLabel(lead).toLowerCase()} · valid {formatDate(first.time.valid_date, { year: true })}
             </p>
           )}
+          <Link href={`/coast?place=point-${point.lat.toFixed(3)},${point.lon.toFixed(3)}`} className="mt-1 inline-block text-[13px] font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent" data-testid="inspect-open-coast">
+            View these waters in My Coast →
+          </Link>
         </div>
         <button onClick={onClose} className="rounded-md px-2 py-1 text-[13px] text-ink-3 hover:bg-surface-3 hover:text-ink" aria-label="Close point details">
           ✕

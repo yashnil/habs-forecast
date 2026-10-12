@@ -241,6 +241,7 @@ export function OfficialDrawer() {
 
 const TABS = [
   { key: "map", href: "/", label: "Map", icon: "map" },
+  { key: "coast", href: "/coast", label: "My Coast", icon: "pin" },
   { key: "bloom", href: "/bloom", label: "Blooms", icon: "bloom" },
   { key: "fisheries", href: "/fisheries", label: "Fisheries", icon: "fish" },
 ] as const;
@@ -252,7 +253,7 @@ export function TabBar({ active }: { active: string }) {
     <nav
       aria-label="Primary"
       data-testid="tabbar"
-      className="fixed inset-x-0 bottom-0 z-40 grid h-[var(--cw-tabbar-h)] grid-cols-5 border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] text-ink-3 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 grid h-[var(--cw-tabbar-h)] grid-cols-6 border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] text-ink-3 md:hidden"
       style={{ colorScheme: "light" }}
     >
       {TABS.map((t) => (
@@ -261,10 +262,16 @@ export function TabBar({ active }: { active: string }) {
           href={t.href}
           data-testid={`tab-${t.key}`}
           aria-current={active === t.key ? "page" : undefined}
-          className={`relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium ${active === t.key ? "text-accent before:absolute before:inset-x-[30%] before:top-0 before:h-0.5 before:rounded-b before:bg-accent" : ""}`}
+          className={`relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium max-[379px]:text-[12px] ${active === t.key ? "text-accent before:absolute before:inset-x-[30%] before:top-0 before:h-0.5 before:rounded-b before:bg-accent" : ""}`}
         >
           <Icon name={t.icon} className="h-[22px] w-[22px]" />
-          {t.label}
+          {t.key === "coast" ? (
+            <span className="whitespace-nowrap">
+              <span className="max-[379px]:hidden">My </span>Coast
+            </span>
+          ) : (
+            t.label
+          )}
         </Link>
       ))}
       <button
@@ -273,7 +280,7 @@ export function TabBar({ active }: { active: string }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={(e) => openDrawer(e.currentTarget)}
-        className="relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium text-official"
+        className="relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium text-official max-[379px]:text-[12px]"
       >
         <Icon name="shield" className="h-[22px] w-[22px]" />
         {ds && (
@@ -288,7 +295,7 @@ export function TabBar({ active }: { active: string }) {
         href="/about"
         data-testid="tab-about"
         aria-current={active === "about" ? "page" : undefined}
-        className={`relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium ${active === "about" ? "text-accent before:absolute before:inset-x-[30%] before:top-0 before:h-0.5 before:rounded-b before:bg-accent" : ""}`}
+        className={`relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium max-[379px]:text-[12px] ${active === "about" ? "text-accent before:absolute before:inset-x-[30%] before:top-0 before:h-0.5 before:rounded-b before:bg-accent" : ""}`}
       >
         <Icon name="info" className="h-[22px] w-[22px]" />
         About

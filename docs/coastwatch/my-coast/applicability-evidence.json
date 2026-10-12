@@ -1,0 +1,3929 @@
+{
+ "generated": "2026-10-12T21:59:12.343Z",
+ "data": {
+  "manifest_generated": "2026-10-12T15:29:18Z",
+  "official": "official-1c255cd103.json",
+  "ports": "ports-df0c846037.geojson",
+  "observations": "observations-fc015ed79e.json"
+ },
+ "locations": [
+  {
+   "location": "port-201",
+   "name": "Crescent City",
+   "kind": "port",
+   "lat": 41.74901,
+   "lon": -124.20398,
+   "cdfw_region": [
+    "Northern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2026-razor-clam-del-norte",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Del Norte County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-020-razor-clam-del-norte",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Del Norte County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.4,
+       "bearing": "WSW",
+       "cell": [
+        41.74,
+        -124.23
+       ],
+       "value": 0.003
+      },
+      "region_n": 40
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.4,
+       "bearing": "WSW",
+       "cell": [
+        41.74,
+        -124.23
+       ],
+       "value": 0.991
+      },
+      "region_n": 51
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.4,
+       "bearing": "WSW",
+       "cell": [
+        41.74,
+        -124.23
+       ],
+       "value": 0.006
+      },
+      "region_n": 40
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.4,
+       "bearing": "WSW",
+       "cell": [
+        41.74,
+        -124.23
+       ],
+       "value": 0.991
+      },
+      "region_n": 51
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.4,
+       "bearing": "WSW",
+       "cell": [
+        41.74,
+        -124.23
+       ],
+       "value": 0.006
+      },
+      "region_n": 39
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.4,
+       "bearing": "WSW",
+       "cell": [
+        41.74,
+        -124.23
+       ],
+       "value": 0.991
+      },
+      "region_n": 51
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.4,
+       "bearing": "WSW",
+       "cell": [
+        41.74,
+        -124.23
+       ],
+       "value": 0.006
+      },
+      "region_n": 39
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.4,
+       "bearing": "WSW",
+       "cell": [
+        41.74,
+        -124.23
+       ],
+       "value": 0.991
+      },
+      "region_n": 51
+     }
+    }
+   ],
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Trinidad Pier",
+    "km": 77
+   }
+  },
+  {
+   "location": "port-231",
+   "name": "Trinidad",
+   "kind": "port",
+   "lat": 41.0593,
+   "lon": -124.14314,
+   "cdfw_region": [
+    "Northern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2024-razor-clam-humboldt",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Humboldt County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.5,
+       "bearing": "WSW",
+       "cell": [
+        41.05,
+        -124.17
+       ],
+       "value": 0.214
+      },
+      "region_n": 36
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.986,
+      "nearest": null,
+      "region_n": 49
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.5,
+       "bearing": "WSW",
+       "cell": [
+        41.05,
+        -124.17
+       ],
+       "value": 0.254
+      },
+      "region_n": 36
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.986,
+      "nearest": null,
+      "region_n": 49
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.5,
+       "bearing": "WSW",
+       "cell": [
+        41.05,
+        -124.17
+       ],
+       "value": 0.218
+      },
+      "region_n": 36
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.986,
+      "nearest": null,
+      "region_n": 49
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.5,
+       "bearing": "WSW",
+       "cell": [
+        41.05,
+        -124.17
+       ],
+       "value": 0.263
+      },
+      "region_n": 36
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.986,
+      "nearest": null,
+      "region_n": 49
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Trinidad Pier",
+    "km": 0.6,
+    "date": "2026-04-17"
+   },
+   "stations_within_40km": 3,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-220",
+   "name": "Eureka",
+   "kind": "port",
+   "lat": 40.79834,
+   "lon": -124.16376,
+   "cdfw_region": [
+    "Northern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2024-razor-clam-humboldt",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Humboldt County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 7.3,
+       "bearing": "NW",
+       "cell": [
+        40.84,
+        -124.23
+       ],
+       "value": 0.203
+      },
+      "region_n": 21
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.3,
+       "bearing": "WNW",
+       "cell": [
+        40.81,
+        -124.2
+       ],
+       "value": 0.986
+      },
+      "region_n": 41
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 7.3,
+       "bearing": "NW",
+       "cell": [
+        40.84,
+        -124.23
+       ],
+       "value": 0.07
+      },
+      "region_n": 21
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.3,
+       "bearing": "WNW",
+       "cell": [
+        40.81,
+        -124.2
+       ],
+       "value": 0.986
+      },
+      "region_n": 41
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 7.3,
+       "bearing": "NW",
+       "cell": [
+        40.84,
+        -124.23
+       ],
+       "value": 0.208
+      },
+      "region_n": 21
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.3,
+       "bearing": "WNW",
+       "cell": [
+        40.81,
+        -124.2
+       ],
+       "value": 0.986
+      },
+      "region_n": 41
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 7.3,
+       "bearing": "NW",
+       "cell": [
+        40.84,
+        -124.23
+       ],
+       "value": 0.221
+      },
+      "region_n": 21
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.3,
+       "bearing": "WNW",
+       "cell": [
+        40.81,
+        -124.2
+       ],
+       "value": 0.986
+      },
+      "region_n": 41
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Trinidad Pier",
+    "km": 28.6,
+    "date": "2026-04-17"
+   },
+   "stations_within_40km": 3,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-215",
+   "name": "Shelter Cove",
+   "kind": "port",
+   "lat": 40.0255,
+   "lon": -124.0664,
+   "cdfw_region": [
+    "Mendocino"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2024-razor-clam-humboldt",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Humboldt County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-rock-crab-commercial-40n",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (40°00.00′ N to 40°30.00′ N).",
+     "caveats": [
+      "Its south limit (40°00.00′ N) is 2.8 km south of here; check which side you are on.",
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.7,
+       "bearing": "SW",
+       "cell": [
+        40,
+        -124.11
+       ],
+       "value": 0.649
+      },
+      "region_n": 31
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.975,
+      "nearest": null,
+      "region_n": 37
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.7,
+       "bearing": "SW",
+       "cell": [
+        40,
+        -124.11
+       ],
+       "value": 0.616
+      },
+      "region_n": 31
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.975,
+      "nearest": null,
+      "region_n": 37
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.7,
+       "bearing": "SW",
+       "cell": [
+        40,
+        -124.11
+       ],
+       "value": 0.719
+      },
+      "region_n": 31
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.975,
+      "nearest": null,
+      "region_n": 37
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.7,
+       "bearing": "SW",
+       "cell": [
+        40,
+        -124.11
+       ],
+       "value": 0.665
+      },
+      "region_n": 31
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.975,
+      "nearest": null,
+      "region_n": 37
+     }
+    }
+   ],
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Humboldt Bay, South Bay",
+    "km": 79
+   }
+  },
+  {
+   "location": "port-223",
+   "name": "Fort Bragg",
+   "kind": "port",
+   "lat": 39.42518,
+   "lon": -123.80376,
+   "cdfw_region": [
+    "Mendocino"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.2,
+       "bearing": "SW",
+       "cell": [
+        39.4,
+        -123.84
+       ],
+       "value": 0.645
+      },
+      "region_n": 33
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.992,
+      "nearest": null,
+      "region_n": 45
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.2,
+       "bearing": "SW",
+       "cell": [
+        39.4,
+        -123.84
+       ],
+       "value": 0.647
+      },
+      "region_n": 33
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.992,
+      "nearest": null,
+      "region_n": 46
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.2,
+       "bearing": "SW",
+       "cell": [
+        39.4,
+        -123.84
+       ],
+       "value": 0.65
+      },
+      "region_n": 33
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.992,
+      "nearest": null,
+      "region_n": 46
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.2,
+       "bearing": "SW",
+       "cell": [
+        39.4,
+        -123.84
+       ],
+       "value": 0.649
+      },
+      "region_n": 33
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.992,
+      "nearest": null,
+      "region_n": 46
+     }
+    }
+   ],
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Bodega Marine Lab buoy",
+    "km": 139
+   }
+  },
+  {
+   "location": "port-213",
+   "name": "Point Arena",
+   "kind": "port",
+   "lat": 38.9088,
+   "lon": -123.69308,
+   "cdfw_region": [
+    "San Francisco"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 5.1,
+       "bearing": "WNW",
+       "cell": [
+        38.92,
+        -123.75
+       ],
+       "value": 0.722
+      },
+      "region_n": 35
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.6,
+       "bearing": "WNW",
+       "cell": [
+        38.92,
+        -123.72
+       ],
+       "value": 0.972
+      },
+      "region_n": 44
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 5.1,
+       "bearing": "WNW",
+       "cell": [
+        38.92,
+        -123.75
+       ],
+       "value": 0.7
+      },
+      "region_n": 35
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.6,
+       "bearing": "WNW",
+       "cell": [
+        38.92,
+        -123.72
+       ],
+       "value": 0.972
+      },
+      "region_n": 44
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 5.1,
+       "bearing": "WNW",
+       "cell": [
+        38.92,
+        -123.75
+       ],
+       "value": 0.737
+      },
+      "region_n": 35
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.6,
+       "bearing": "WNW",
+       "cell": [
+        38.92,
+        -123.72
+       ],
+       "value": 0.972
+      },
+      "region_n": 44
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 5.1,
+       "bearing": "WNW",
+       "cell": [
+        38.92,
+        -123.75
+       ],
+       "value": 0.767
+      },
+      "region_n": 35
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.6,
+       "bearing": "WNW",
+       "cell": [
+        38.92,
+        -123.72
+       ],
+       "value": 0.972
+      },
+      "region_n": 44
+     }
+    }
+   ],
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Bodega Marine Lab buoy",
+    "km": 85
+   }
+  },
+  {
+   "location": "port-473",
+   "name": "Bodega Bay",
+   "kind": "port",
+   "lat": 38.33325,
+   "lon": -123.04807,
+   "cdfw_region": [
+    "San Francisco"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.9,
+       "bearing": "WSW",
+       "cell": [
+        38.32,
+        -123.09
+       ],
+       "value": 0.67
+      },
+      "region_n": 36
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.985,
+      "nearest": null,
+      "region_n": 39
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.9,
+       "bearing": "WSW",
+       "cell": [
+        38.32,
+        -123.09
+       ],
+       "value": 0.516
+      },
+      "region_n": 36
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.985,
+      "nearest": null,
+      "region_n": 39
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.9,
+       "bearing": "WSW",
+       "cell": [
+        38.32,
+        -123.09
+       ],
+       "value": 0.572
+      },
+      "region_n": 36
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.985,
+      "nearest": null,
+      "region_n": 39
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.9,
+       "bearing": "WSW",
+       "cell": [
+        38.32,
+        -123.09
+       ],
+       "value": 0.427
+      },
+      "region_n": 36
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.985,
+      "nearest": null,
+      "region_n": 39
+     }
+    }
+   ],
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 5,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-440",
+   "name": "San Francisco",
+   "kind": "port",
+   "lat": 37.80865,
+   "lon": -122.41551,
+   "cdfw_region": [
+    "San Francisco"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 11.8,
+       "bearing": "W",
+       "cell": [
+        37.81,
+        -122.55
+       ],
+       "value": 0.958
+      },
+      "region_n": 4
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 11.3,
+       "bearing": "SW",
+       "cell": [
+        37.75,
+        -122.52
+       ],
+       "value": 0.98
+      },
+      "region_n": 7
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 11.8,
+       "bearing": "W",
+       "cell": [
+        37.81,
+        -122.55
+       ],
+       "value": 0.96
+      },
+      "region_n": 4
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 11.3,
+       "bearing": "SW",
+       "cell": [
+        37.75,
+        -122.52
+       ],
+       "value": 0.98
+      },
+      "region_n": 7
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 11.8,
+       "bearing": "W",
+       "cell": [
+        37.81,
+        -122.55
+       ],
+       "value": 0.959
+      },
+      "region_n": 4
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 11.3,
+       "bearing": "SW",
+       "cell": [
+        37.75,
+        -122.52
+       ],
+       "value": 0.98
+      },
+      "region_n": 7
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 11.8,
+       "bearing": "W",
+       "cell": [
+        37.81,
+        -122.55
+       ],
+       "value": 0.96
+      },
+      "region_n": 4
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 11.3,
+       "bearing": "SW",
+       "cell": [
+        37.75,
+        -122.52
+       ],
+       "value": 0.98
+      },
+      "region_n": 7
+     }
+    }
+   ],
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Inner Tomales Bay",
+    "km": 52
+   }
+  },
+  {
+   "location": "port-452",
+   "name": "Princeton / Half Moon Bay",
+   "kind": "port",
+   "lat": 37.5037,
+   "lon": -122.48185,
+   "cdfw_region": [
+    "San Francisco"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 6,
+       "bearing": "S",
+       "cell": [
+        37.45,
+        -122.49
+       ],
+       "value": 0.654
+      },
+      "region_n": 30
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.7,
+       "bearing": "SSW",
+       "cell": [
+        37.48,
+        -122.49
+       ],
+       "value": 0.976
+      },
+      "region_n": 41
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 6,
+       "bearing": "S",
+       "cell": [
+        37.45,
+        -122.49
+       ],
+       "value": 0.636
+      },
+      "region_n": 30
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.7,
+       "bearing": "SSW",
+       "cell": [
+        37.48,
+        -122.49
+       ],
+       "value": 0.976
+      },
+      "region_n": 41
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 6,
+       "bearing": "S",
+       "cell": [
+        37.45,
+        -122.49
+       ],
+       "value": 0.65
+      },
+      "region_n": 30
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.7,
+       "bearing": "SSW",
+       "cell": [
+        37.48,
+        -122.49
+       ],
+       "value": 0.976
+      },
+      "region_n": 41
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 6,
+       "bearing": "S",
+       "cell": [
+        37.45,
+        -122.49
+       ],
+       "value": 0.654
+      },
+      "region_n": 30
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.7,
+       "bearing": "SSW",
+       "cell": [
+        37.48,
+        -122.49
+       ],
+       "value": 0.976
+      },
+      "region_n": 41
+     }
+    }
+   ],
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Santa Cruz Wharf",
+    "km": 73
+   }
+  },
+  {
+   "location": "port-593",
+   "name": "Santa Cruz",
+   "kind": "port",
+   "lat": 36.97412,
+   "lon": -122.03081,
+   "cdfw_region": [
+    "Central"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-019-anchovy-central-coast",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (36°31.46′ N to 37°11.00′ N).",
+     "caveats": [
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2026-anchovy-take-restriction-monterey-bay",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (36°31.46′ N to 37°11.00′ N).",
+     "caveats": [
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-018-monterey-bivalves",
+     "tier": "outside",
+     "basis": "Outside the agency's outline of Monterey County, which is 23 km away.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 7.2,
+       "bearing": "S",
+       "cell": [
+        36.91,
+        -122.04
+       ],
+       "value": 0.755
+      },
+      "region_n": 24
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.2,
+       "bearing": "SSE",
+       "cell": [
+        36.94,
+        -122.01
+       ],
+       "value": 0.96
+      },
+      "region_n": 25
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 7.2,
+       "bearing": "S",
+       "cell": [
+        36.91,
+        -122.04
+       ],
+       "value": 0.741
+      },
+      "region_n": 24
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.2,
+       "bearing": "SSE",
+       "cell": [
+        36.94,
+        -122.01
+       ],
+       "value": 0.96
+      },
+      "region_n": 25
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 7.2,
+       "bearing": "S",
+       "cell": [
+        36.91,
+        -122.04
+       ],
+       "value": 0.733
+      },
+      "region_n": 24
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.2,
+       "bearing": "SSE",
+       "cell": [
+        36.94,
+        -122.01
+       ],
+       "value": 0.96
+      },
+      "region_n": 25
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 7.2,
+       "bearing": "S",
+       "cell": [
+        36.91,
+        -122.04
+       ],
+       "value": 0.764
+      },
+      "region_n": 24
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.2,
+       "bearing": "SSE",
+       "cell": [
+        36.94,
+        -122.01
+       ],
+       "value": 0.96
+      },
+      "region_n": 25
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Santa Cruz Wharf",
+    "km": 2.2,
+    "date": "2026-09-30"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-592",
+   "name": "Moss Landing",
+   "kind": "port",
+   "lat": 36.8044,
+   "lon": -121.78691,
+   "cdfw_region": [
+    "Central"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-018-monterey-bivalves",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Monterey County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-019-anchovy-central-coast",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (36°31.46′ N to 37°11.00′ N).",
+     "caveats": [
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2026-anchovy-take-restriction-monterey-bay",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (36°31.46′ N to 37°11.00′ N).",
+     "caveats": [
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": 0.731,
+      "nearest": null,
+      "region_n": 28
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.901,
+      "nearest": null,
+      "region_n": 36
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": 0.743,
+      "nearest": null,
+      "region_n": 28
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.901,
+      "nearest": null,
+      "region_n": 36
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": 0.75,
+      "nearest": null,
+      "region_n": 28
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.901,
+      "nearest": null,
+      "region_n": 36
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": 0.754,
+      "nearest": null,
+      "region_n": 28
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.901,
+      "nearest": null,
+      "region_n": 36
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Santa Cruz Wharf",
+    "km": 26.7,
+    "date": "2026-09-30"
+   },
+   "stations_within_40km": 2,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-550",
+   "name": "Monterey",
+   "kind": "port",
+   "lat": 36.60024,
+   "lon": -121.89469,
+   "cdfw_region": [
+    "Central"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-018-monterey-bivalves",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Monterey County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-019-anchovy-central-coast",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (36°31.46′ N to 37°11.00′ N).",
+     "caveats": [
+      "Its south limit (36°31.46′ N) is 8.4 km south of here; check which side you are on.",
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2026-anchovy-take-restriction-monterey-bay",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (36°31.46′ N to 37°11.00′ N).",
+     "caveats": [
+      "Its south limit (36°31.46′ N) is 8.4 km south of here; check which side you are on.",
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 6.6,
+       "bearing": "NW",
+       "cell": [
+        36.64,
+        -121.95
+       ],
+       "value": 0.751
+      },
+      "region_n": 27
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.971,
+      "nearest": null,
+      "region_n": 46
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 6.6,
+       "bearing": "NW",
+       "cell": [
+        36.64,
+        -121.95
+       ],
+       "value": 0.801
+      },
+      "region_n": 27
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.971,
+      "nearest": null,
+      "region_n": 46
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 6.6,
+       "bearing": "NW",
+       "cell": [
+        36.64,
+        -121.95
+       ],
+       "value": 0.799
+      },
+      "region_n": 27
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.971,
+      "nearest": null,
+      "region_n": 46
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 6.6,
+       "bearing": "NW",
+       "cell": [
+        36.64,
+        -121.95
+       ],
+       "value": 0.684
+      },
+      "region_n": 27
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.971,
+      "nearest": null,
+      "region_n": 46
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Monterey Wharf",
+    "km": 0.6,
+    "date": "2022-08-31"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-606",
+   "name": "Morro Bay",
+   "kind": "port",
+   "lat": 35.36581,
+   "lon": -120.84991,
+   "cdfw_region": [
+    "Central"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.8,
+       "bearing": "WNW",
+       "cell": [
+        35.38,
+        -120.9
+       ],
+       "value": 0.801
+      },
+      "region_n": 18
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.5,
+       "bearing": "SW",
+       "cell": [
+        35.35,
+        -120.87
+       ],
+       "value": 0.757
+      },
+      "region_n": 23
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.8,
+       "bearing": "WNW",
+       "cell": [
+        35.38,
+        -120.9
+       ],
+       "value": 0.638
+      },
+      "region_n": 18
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.5,
+       "bearing": "SW",
+       "cell": [
+        35.35,
+        -120.87
+       ],
+       "value": 0.757
+      },
+      "region_n": 23
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.8,
+       "bearing": "WNW",
+       "cell": [
+        35.38,
+        -120.9
+       ],
+       "value": 0.386
+      },
+      "region_n": 18
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.5,
+       "bearing": "SW",
+       "cell": [
+        35.35,
+        -120.87
+       ],
+       "value": 0.757
+      },
+      "region_n": 23
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.8,
+       "bearing": "WNW",
+       "cell": [
+        35.38,
+        -120.9
+       ],
+       "value": 0.251
+      },
+      "region_n": 18
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.5,
+       "bearing": "SW",
+       "cell": [
+        35.35,
+        -120.87
+       ],
+       "value": 0.757
+      },
+      "region_n": 23
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Cal Poly Pier (Avila Beach)",
+    "km": 23.9,
+    "date": "2026-08-03"
+   },
+   "stations_within_40km": 3,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-602",
+   "name": "Avila / Port San Luis",
+   "kind": "port",
+   "lat": 35.17498,
+   "lon": -120.75519,
+   "cdfw_region": [
+    "Central"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        35.14,
+        -120.78
+       ],
+       "value": 0.787
+      },
+      "region_n": 30
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        35.14,
+        -120.78
+       ],
+       "value": 0.944
+      },
+      "region_n": 34
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        35.14,
+        -120.78
+       ],
+       "value": 0.817
+      },
+      "region_n": 30
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        35.14,
+        -120.78
+       ],
+       "value": 0.899
+      },
+      "region_n": 34
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        35.14,
+        -120.78
+       ],
+       "value": 0.829
+      },
+      "region_n": 30
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        35.14,
+        -120.78
+       ],
+       "value": 0.839
+      },
+      "region_n": 34
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        35.14,
+        -120.78
+       ],
+       "value": 0.821
+      },
+      "region_n": 30
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        35.14,
+        -120.78
+       ],
+       "value": 0.759
+      },
+      "region_n": 34
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Cal Poly Pier (Avila Beach)",
+    "km": 1.4,
+    "date": "2026-08-03"
+   },
+   "stations_within_40km": 3,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-611",
+   "name": "Santa Barbara",
+   "kind": "port",
+   "lat": 34.40722,
+   "lon": -119.68876,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "unresolved",
+     "basis": "The notice also covers the Northern Channel Islands (\"and from the waters off Santa Rosa Island and the Northern Channel Islands\"), about 28 km away. It gives no boundary for those waters, so whether they reach here is not stated.",
+     "caveats": [
+      "CoastWatch's outline for the Northern Channel Islands is borrowed from another CDPH notice and is approximate for this one."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-nci-bivalve-special-advisory",
+     "tier": "outside",
+     "basis": "Outside the agency's outline of Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, San Miguel), which is 28 km away.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.6,
+       "bearing": "SE",
+       "cell": [
+        34.39,
+        -119.67
+       ],
+       "value": 0.829
+      },
+      "region_n": 29
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "SSW",
+       "cell": [
+        34.39,
+        -119.7
+       ],
+       "value": 0.737
+      },
+      "region_n": 32
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.6,
+       "bearing": "SE",
+       "cell": [
+        34.39,
+        -119.67
+       ],
+       "value": 0.48
+      },
+      "region_n": 29
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "SSW",
+       "cell": [
+        34.39,
+        -119.7
+       ],
+       "value": 0.737
+      },
+      "region_n": 32
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.6,
+       "bearing": "SE",
+       "cell": [
+        34.39,
+        -119.67
+       ],
+       "value": 0.39
+      },
+      "region_n": 29
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "SSW",
+       "cell": [
+        34.39,
+        -119.7
+       ],
+       "value": 0.57
+      },
+      "region_n": 32
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.6,
+       "bearing": "SE",
+       "cell": [
+        34.39,
+        -119.67
+       ],
+       "value": 0.456
+      },
+      "region_n": 29
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "SSW",
+       "cell": [
+        34.39,
+        -119.7
+       ],
+       "value": 0.343
+      },
+      "region_n": 32
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Stearns Wharf (Santa Barbara)",
+    "km": 0.4,
+    "date": "2026-08-03"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-613",
+   "name": "Ventura",
+   "kind": "port",
+   "lat": 34.27834,
+   "lon": -119.29318,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "unresolved",
+     "basis": "The notice also covers the Northern Channel Islands (\"and from the waters off Santa Rosa Island and the Northern Channel Islands\"), about 14 km away. It gives no boundary for those waters, so whether they reach here is not stated.",
+     "caveats": [
+      "CoastWatch's outline for the Northern Channel Islands is borrowed from another CDPH notice and is approximate for this one."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-nci-bivalve-special-advisory",
+     "tier": "outside",
+     "basis": "Outside the agency's outline of Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, San Miguel), which is 14 km away.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        34.24,
+        -119.31
+       ],
+       "value": 0.896
+      },
+      "region_n": 24
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        34.24,
+        -119.31
+       ],
+       "value": 0.77
+      },
+      "region_n": 25
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        34.24,
+        -119.31
+       ],
+       "value": 0.818
+      },
+      "region_n": 24
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        34.24,
+        -119.31
+       ],
+       "value": 0.227
+      },
+      "region_n": 25
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        34.24,
+        -119.31
+       ],
+       "value": 0.829
+      },
+      "region_n": 24
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        34.24,
+        -119.31
+       ],
+       "value": 0.188
+      },
+      "region_n": 25
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        34.24,
+        -119.31
+       ],
+       "value": 0.84
+      },
+      "region_n": 24
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.5,
+       "bearing": "SSW",
+       "cell": [
+        34.24,
+        -119.31
+       ],
+       "value": 0.332
+      },
+      "region_n": 25
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Stearns Wharf (Santa Barbara)",
+    "km": 38.8,
+    "date": "2026-08-03"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-605",
+   "name": "Port Hueneme",
+   "kind": "port",
+   "lat": 34.14779,
+   "lon": -119.19512,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "unresolved",
+     "basis": "The notice also covers the Northern Channel Islands (\"and from the waters off Santa Rosa Island and the Northern Channel Islands\"), about 8.5 km away. It gives no boundary for those waters, so whether they reach here is not stated.",
+     "caveats": [
+      "CoastWatch's outline for the Northern Channel Islands is borrowed from another CDPH notice and is approximate for this one."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-nci-bivalve-special-advisory",
+     "tier": "outside",
+     "basis": "Outside the agency's outline of Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, San Miguel), which is 8.5 km away.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.1,
+       "bearing": "S",
+       "cell": [
+        34.12,
+        -119.19
+       ],
+       "value": 0.862
+      },
+      "region_n": 37
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.731,
+      "nearest": null,
+      "region_n": 40
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.1,
+       "bearing": "S",
+       "cell": [
+        34.12,
+        -119.19
+       ],
+       "value": 0.79
+      },
+      "region_n": 37
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.731,
+      "nearest": null,
+      "region_n": 40
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.1,
+       "bearing": "S",
+       "cell": [
+        34.12,
+        -119.19
+       ],
+       "value": 0.83
+      },
+      "region_n": 37
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.731,
+      "nearest": null,
+      "region_n": 40
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.1,
+       "bearing": "S",
+       "cell": [
+        34.12,
+        -119.19
+       ],
+       "value": 0.842
+      },
+      "region_n": 37
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.731,
+      "nearest": null,
+      "region_n": 40
+     }
+    }
+   ],
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Stearns Wharf (Santa Barbara)",
+    "km": 54
+   }
+  },
+  {
+   "location": "port-770",
+   "name": "San Pedro",
+   "kind": "port",
+   "lat": 33.73586,
+   "lon": -118.2923,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.7,
+       "bearing": "SSW",
+       "cell": [
+        33.7,
+        -118.32
+       ],
+       "value": 0.855
+      },
+      "region_n": 32
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.7,
+       "bearing": "SSW",
+       "cell": [
+        33.7,
+        -118.32
+       ],
+       "value": 0.66
+      },
+      "region_n": 41
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.7,
+       "bearing": "SSW",
+       "cell": [
+        33.7,
+        -118.32
+       ],
+       "value": 0.875
+      },
+      "region_n": 32
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.7,
+       "bearing": "SSW",
+       "cell": [
+        33.7,
+        -118.32
+       ],
+       "value": 0.326
+      },
+      "region_n": 41
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.7,
+       "bearing": "SSW",
+       "cell": [
+        33.7,
+        -118.32
+       ],
+       "value": 0.868
+      },
+      "region_n": 32
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.7,
+       "bearing": "SSW",
+       "cell": [
+        33.7,
+        -118.32
+       ],
+       "value": 0.354
+      },
+      "region_n": 41
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.7,
+       "bearing": "SSW",
+       "cell": [
+        33.7,
+        -118.32
+       ],
+       "value": 0.835
+      },
+      "region_n": 32
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.7,
+       "bearing": "SSW",
+       "cell": [
+        33.7,
+        -118.32
+       ],
+       "value": 0.302
+      },
+      "region_n": 41
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Newport Beach Pier",
+    "km": 36.4,
+    "date": "2026-08-10"
+   },
+   "stations_within_40km": 2,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-748",
+   "name": "Newport Beach",
+   "kind": "port",
+   "lat": 33.61546,
+   "lon": -117.93063,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.9,
+       "bearing": "S",
+       "cell": [
+        33.58,
+        -117.93
+       ],
+       "value": 0.84
+      },
+      "region_n": 30
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.8,
+       "bearing": "WSW",
+       "cell": [
+        33.61,
+        -117.96
+       ],
+       "value": 0.628
+      },
+      "region_n": 34
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.9,
+       "bearing": "S",
+       "cell": [
+        33.58,
+        -117.93
+       ],
+       "value": 0.845
+      },
+      "region_n": 30
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.8,
+       "bearing": "WSW",
+       "cell": [
+        33.61,
+        -117.96
+       ],
+       "value": 0.628
+      },
+      "region_n": 34
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.9,
+       "bearing": "S",
+       "cell": [
+        33.58,
+        -117.93
+       ],
+       "value": 0.831
+      },
+      "region_n": 30
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.8,
+       "bearing": "WSW",
+       "cell": [
+        33.61,
+        -117.96
+       ],
+       "value": 0.628
+      },
+      "region_n": 34
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.9,
+       "bearing": "S",
+       "cell": [
+        33.58,
+        -117.93
+       ],
+       "value": 0.792
+      },
+      "region_n": 30
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.8,
+       "bearing": "WSW",
+       "cell": [
+        33.61,
+        -117.96
+       ],
+       "value": 0.628
+      },
+      "region_n": 34
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Newport Beach Pier",
+    "km": 1,
+    "date": "2026-08-10"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-767",
+   "name": "Dana Point",
+   "kind": "port",
+   "lat": 33.46698,
+   "lon": -117.69812,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "WSW",
+       "cell": [
+        33.46,
+        -117.72
+       ],
+       "value": 0.915
+      },
+      "region_n": 34
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "WSW",
+       "cell": [
+        33.46,
+        -117.72
+       ],
+       "value": 0.728
+      },
+      "region_n": 36
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "WSW",
+       "cell": [
+        33.46,
+        -117.72
+       ],
+       "value": 0.838
+      },
+      "region_n": 34
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "WSW",
+       "cell": [
+        33.46,
+        -117.72
+       ],
+       "value": 0.289
+      },
+      "region_n": 36
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "WSW",
+       "cell": [
+        33.46,
+        -117.72
+       ],
+       "value": 0.815
+      },
+      "region_n": 34
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "WSW",
+       "cell": [
+        33.46,
+        -117.72
+       ],
+       "value": 0.297
+      },
+      "region_n": 36
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "WSW",
+       "cell": [
+        33.46,
+        -117.72
+       ],
+       "value": 0.807
+      },
+      "region_n": 34
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "WSW",
+       "cell": [
+        33.46,
+        -117.72
+       ],
+       "value": 0.31
+      },
+      "region_n": 36
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Newport Beach Pier",
+    "km": 26.6,
+    "date": "2026-08-10"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-883",
+   "name": "Oceanside",
+   "kind": "port",
+   "lat": 33.19536,
+   "lon": -117.38484,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.3,
+       "bearing": "W",
+       "cell": [
+        33.19,
+        -117.42
+       ],
+       "value": 0.894
+      },
+      "region_n": 34
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.769,
+      "nearest": null,
+      "region_n": 37
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.3,
+       "bearing": "W",
+       "cell": [
+        33.19,
+        -117.42
+       ],
+       "value": 0.842
+      },
+      "region_n": 34
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.769,
+      "nearest": null,
+      "region_n": 37
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.3,
+       "bearing": "W",
+       "cell": [
+        33.19,
+        -117.42
+       ],
+       "value": 0.849
+      },
+      "region_n": 34
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.769,
+      "nearest": null,
+      "region_n": 37
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 3.3,
+       "bearing": "W",
+       "cell": [
+        33.19,
+        -117.42
+       ],
+       "value": 0.826
+      },
+      "region_n": 34
+     },
+     "pseudo_nitzschia": {
+      "value_here": 0.769,
+      "nearest": null,
+      "region_n": 37
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Scripps Pier (La Jolla)",
+    "km": 38.5,
+    "date": "2026-08-10"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-880",
+   "name": "San Diego",
+   "kind": "port",
+   "lat": 32.71512,
+   "lon": -117.13414,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 8.4,
+       "bearing": "SSW",
+       "cell": [
+        32.65,
+        -117.18
+       ],
+       "value": 0.927
+      },
+      "region_n": 13
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 7.4,
+       "bearing": "SSW",
+       "cell": [
+        32.65,
+        -117.15
+       ],
+       "value": 0.911
+      },
+      "region_n": 21
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 8.4,
+       "bearing": "SSW",
+       "cell": [
+        32.65,
+        -117.18
+       ],
+       "value": 0.688
+      },
+      "region_n": 13
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 7.4,
+       "bearing": "SSW",
+       "cell": [
+        32.65,
+        -117.15
+       ],
+       "value": 0.913
+      },
+      "region_n": 21
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 8.4,
+       "bearing": "SSW",
+       "cell": [
+        32.65,
+        -117.18
+       ],
+       "value": 0.159
+      },
+      "region_n": 13
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 7.4,
+       "bearing": "SSW",
+       "cell": [
+        32.65,
+        -117.15
+       ],
+       "value": 0.911
+      },
+      "region_n": 21
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 8.4,
+       "bearing": "SSW",
+       "cell": [
+        32.65,
+        -117.18
+       ],
+       "value": 0.159
+      },
+      "region_n": 13
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 7.4,
+       "bearing": "SSW",
+       "cell": [
+        32.65,
+        -117.15
+       ],
+       "value": 0.911
+      },
+      "region_n": 21
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Scripps Pier (La Jolla)",
+    "km": 20.4,
+    "date": "2026-08-10"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "site-crescent-beach",
+   "name": "Crescent Beach, Crescent City",
+   "kind": "site",
+   "lat": 41.71,
+   "lon": -124.143,
+   "cdfw_region": [
+    "Northern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2026-razor-clam-del-norte",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Del Norte County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-020-razor-clam-del-norte",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Del Norte County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2024-razor-clam-humboldt",
+     "tier": "outside",
+     "basis": "Outside the agency's outline of Humboldt County, which is 28 km away.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "W",
+       "cell": [
+        41.71,
+        -124.17
+       ],
+       "value": 0.019
+      },
+      "region_n": 27
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "W",
+       "cell": [
+        41.71,
+        -124.17
+       ],
+       "value": 0.99
+      },
+      "region_n": 36
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "W",
+       "cell": [
+        41.71,
+        -124.17
+       ],
+       "value": 0
+      },
+      "region_n": 27
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "W",
+       "cell": [
+        41.71,
+        -124.17
+       ],
+       "value": 0.984
+      },
+      "region_n": 36
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4,
+       "bearing": "SW",
+       "cell": [
+        41.68,
+        -124.17
+       ],
+       "value": 0.007
+      },
+      "region_n": 26
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "W",
+       "cell": [
+        41.71,
+        -124.17
+       ],
+       "value": 0.981
+      },
+      "region_n": 36
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4,
+       "bearing": "SW",
+       "cell": [
+        41.68,
+        -124.17
+       ],
+       "value": 0.007
+      },
+      "region_n": 26
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.2,
+       "bearing": "W",
+       "cell": [
+        41.71,
+        -124.17
+       ],
+       "value": 0.98
+      },
+      "region_n": 36
+     }
+    }
+   ],
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Trinidad Pier",
+    "km": 73
+   }
+  },
+  {
+   "location": "site-clam-beach",
+   "name": "Clam Beach, Humboldt",
+   "kind": "site",
+   "lat": 41.008,
+   "lon": -124.115,
+   "cdfw_region": [
+    "Northern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2024-razor-clam-humboldt",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Humboldt County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.8,
+       "bearing": "WNW",
+       "cell": [
+        41.02,
+        -124.17
+       ],
+       "value": 0.02
+      },
+      "region_n": 28
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.5,
+       "bearing": "WNW",
+       "cell": [
+        41.02,
+        -124.14
+       ],
+       "value": 0.99
+      },
+      "region_n": 42
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.8,
+       "bearing": "WNW",
+       "cell": [
+        41.02,
+        -124.17
+       ],
+       "value": 0.248
+      },
+      "region_n": 28
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.5,
+       "bearing": "WNW",
+       "cell": [
+        41.02,
+        -124.14
+       ],
+       "value": 0.99
+      },
+      "region_n": 42
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.8,
+       "bearing": "WNW",
+       "cell": [
+        41.02,
+        -124.17
+       ],
+       "value": 0.177
+      },
+      "region_n": 28
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.5,
+       "bearing": "WNW",
+       "cell": [
+        41.02,
+        -124.14
+       ],
+       "value": 0.99
+      },
+      "region_n": 42
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 4.8,
+       "bearing": "WNW",
+       "cell": [
+        41.02,
+        -124.17
+       ],
+       "value": 0.269
+      },
+      "region_n": 28
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.5,
+       "bearing": "WNW",
+       "cell": [
+        41.02,
+        -124.14
+       ],
+       "value": 0.99
+      },
+      "region_n": 42
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Trinidad Pier",
+    "km": 5.9,
+    "date": "2026-04-17"
+   },
+   "stations_within_40km": 3,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "site-tomales-bay",
+   "name": "Tomales Bay",
+   "kind": "site",
+   "lat": 38.205,
+   "lon": -122.931,
+   "cdfw_region": [
+    "San Francisco"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 5.2,
+       "bearing": "SW",
+       "cell": [
+        38.17,
+        -122.97
+       ],
+       "value": 0.04
+      },
+      "region_n": 21
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 5.2,
+       "bearing": "SW",
+       "cell": [
+        38.17,
+        -122.97
+       ],
+       "value": 0.99
+      },
+      "region_n": 26
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 5.2,
+       "bearing": "SW",
+       "cell": [
+        38.17,
+        -122.97
+       ],
+       "value": 0.042
+      },
+      "region_n": 21
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 5.2,
+       "bearing": "SW",
+       "cell": [
+        38.17,
+        -122.97
+       ],
+       "value": 0.99
+      },
+      "region_n": 26
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 5.2,
+       "bearing": "SW",
+       "cell": [
+        38.17,
+        -122.97
+       ],
+       "value": 0.044
+      },
+      "region_n": 21
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 5.2,
+       "bearing": "SW",
+       "cell": [
+        38.17,
+        -122.97
+       ],
+       "value": 0.99
+      },
+      "region_n": 26
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 5.2,
+       "bearing": "SW",
+       "cell": [
+        38.17,
+        -122.97
+       ],
+       "value": 0.046
+      },
+      "region_n": 21
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 5.2,
+       "bearing": "SW",
+       "cell": [
+        38.17,
+        -122.97
+       ],
+       "value": 0.99
+      },
+      "region_n": 26
+     }
+    }
+   ],
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 5,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "site-goleta-pier",
+   "name": "Goleta Pier",
+   "kind": "site",
+   "lat": 34.413,
+   "lon": -119.828,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "unresolved",
+     "basis": "The notice also covers the Northern Channel Islands (\"and from the waters off Santa Rosa Island and the Northern Channel Islands\"), about 29 km away. It gives no boundary for those waters, so whether they reach here is not stated.",
+     "caveats": [
+      "CoastWatch's outline for the Northern Channel Islands is borrowed from another CDPH notice and is approximate for this one."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-nci-bivalve-special-advisory",
+     "tier": "outside",
+     "basis": "Outside the agency's outline of Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, San Miguel), which is 29 km away.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm": [
+    {
+     "lead": 0,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-10",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.7,
+       "bearing": "SSE",
+       "cell": [
+        34.39,
+        -119.82
+       ],
+       "value": 0.812
+      },
+      "region_n": 31
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.7,
+       "bearing": "SSE",
+       "cell": [
+        34.39,
+        -119.82
+       ],
+       "value": 0.459
+      },
+      "region_n": 32
+     }
+    },
+    {
+     "lead": 1,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-11",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.7,
+       "bearing": "SSE",
+       "cell": [
+        34.39,
+        -119.82
+       ],
+       "value": 0.802
+      },
+      "region_n": 31
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.7,
+       "bearing": "SSE",
+       "cell": [
+        34.39,
+        -119.82
+       ],
+       "value": 0.14
+      },
+      "region_n": 32
+     }
+    },
+    {
+     "lead": 2,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-12",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.7,
+       "bearing": "SSE",
+       "cell": [
+        34.39,
+        -119.82
+       ],
+       "value": 0.795
+      },
+      "region_n": 31
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.7,
+       "bearing": "SSE",
+       "cell": [
+        34.39,
+        -119.82
+       ],
+       "value": 0.096
+      },
+      "region_n": 32
+     }
+    },
+    {
+     "lead": 3,
+     "run_issued": "2026-10-11",
+     "valid": "2026-10-13",
+     "particulate_domoic": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.7,
+       "bearing": "SSE",
+       "cell": [
+        34.39,
+        -119.82
+       ],
+       "value": 0.818
+      },
+      "region_n": 31
+     },
+     "pseudo_nitzschia": {
+      "value_here": null,
+      "nearest": {
+       "km": 2.7,
+       "bearing": "SSE",
+       "cell": [
+        34.39,
+        -119.82
+       ],
+       "value": 0.019
+      },
+      "region_n": 32
+     }
+    }
+   ],
+   "nearest_toxin_sample": {
+    "station": "Stearns Wharf (Santa Barbara)",
+    "km": 13.2,
+    "date": "2026-08-03"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  }
+ ]
+}
