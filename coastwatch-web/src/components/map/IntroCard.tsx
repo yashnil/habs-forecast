@@ -4,15 +4,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { KindChip } from "@/components/ui/Kinds";
 
-const KEY = "cw-intro-dismissed-v1";
+import { TOUR_SEEN_KEY as KEY } from "./Tour";
 
 /**
  * First visit only: what this map is, in two sentences, with the three kinds of information it
- * shows, and the way to the About page. Dismissed once (remembered on this device); never a modal,
- * never in front of official information. Hidden until mounted so it never flashes for returning
- * visitors.
+ * shows, and the start of the guided tour. Dismissed once (remembered on this device); never a
+ * modal, never in front of official information. Hidden until mounted so it never flashes for
+ * returning visitors. The tour itself can be reopened at any time from the map's Tour control.
  */
-export function IntroCard({ className = "" }: { className?: string }) {
+export function IntroCard({ className = "", onTour }: { className?: string; onTour: () => void }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
     let seen = false;
@@ -49,13 +49,26 @@ export function IntroCard({ className = "" }: { className?: string }) {
         <KindChip kind="measured" />
         <KindChip kind="official" />
       </p>
-      <div className="mt-3 flex items-center justify-between gap-3">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <Link href="/about" className="text-[14px] font-medium text-accent underline-offset-2 hover:underline" data-testid="intro-about">
           About CoastWatch
         </Link>
-        <button type="button" onClick={close} className="rounded-md bg-navy-900 px-3 py-2 text-[14px] font-medium text-white hover:bg-navy-800" data-testid="intro-dismiss">
-          Got it
-        </button>
+        <div className="flex gap-2">
+          <button type="button" onClick={close} className="min-h-[40px] rounded-md px-3 text-[14px] font-medium text-ink-2 hover:text-ink" data-testid="intro-dismiss">
+            Not now
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShow(false);
+              onTour();
+            }}
+            className="min-h-[40px] rounded-md bg-navy-900 px-3.5 text-[14px] font-medium text-white hover:bg-navy-800"
+            data-testid="intro-tour"
+          >
+            Take the tour
+          </button>
+        </div>
       </div>
     </section>
   );

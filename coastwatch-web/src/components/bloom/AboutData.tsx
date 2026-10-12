@@ -2,7 +2,7 @@ import type { ObsStation, ObservationDataset } from "@/generated/observations";
 import { BLOOM_COPY } from "@/content/copy";
 import { fmtDate } from "@/components/charts/StationChart";
 import { SourceLink } from "@/components/ui/Primitives";
-import { formatObs, summaryOf, unitLabel } from "@/lib/observations";
+import { formatObs, sourceCsvUrl, summaryOf, unitLabel } from "@/lib/observations";
 import { formatDateTimePT } from "@/lib/time";
 
 const NOTES: { title: string; body: string }[] = [
@@ -137,6 +137,8 @@ export function AboutData({ station, dataset, compact = false }: { station: ObsS
         </details>
       </div>
 
+      <SourceCsv station={station} />
+
       <p className="text-[13px] leading-relaxed text-ink-3" data-testid="bloom-provenance">
         {station.lat != null && station.lon != null && (
           <>
@@ -160,5 +162,35 @@ export function AboutData({ station, dataset, compact = false }: { station: ObsS
         {BLOOM_COPY.reviewPending}
       </p>
     </section>
+  );
+}
+
+/**
+ * The station's original data, straight from SCCOOS ERDDAP (the query the pipeline ran). Opens in a
+ * new tab, so a source outage shows ERDDAP's error there and leaves this page as it was.
+ */
+function SourceCsv({ station }: { station: ObsStation }) {
+  const href = sourceCsvUrl(station);
+  return (
+    <div className="space-y-1.5 text-[14px] leading-relaxed text-ink-2" data-testid="source-csv">
+      {href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-hairline-strong bg-surface px-3.5 font-medium text-ink hover:border-accent hover:text-accent"
+          data-testid="source-csv-link"
+        >
+          <span aria-hidden>↓</span> {BLOOM_COPY.csvLabel}
+          <span className="sr-only"> for {station.name}, from SCCOOS ERDDAP (opens in a new tab)</span>
+        </a>
+      ) : null}
+      <p className="max-w-[72ch] text-[13px] text-ink-3">
+        {href ? `${BLOOM_COPY.csvWhat} ` : null}
+        {station.status !== "updated" ? `${BLOOM_COPY.csvStale} ` : null}
+        {href ? BLOOM_COPY.csvOutage : "The source data for this station are on its dataset page."}{" "}
+        <SourceLink href={station.source_url}>Dataset page ↗</SourceLink>
+      </p>
+    </div>
   );
 }

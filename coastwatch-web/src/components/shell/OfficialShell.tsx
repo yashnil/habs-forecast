@@ -98,9 +98,10 @@ export function OfficialPill() {
       aria-haspopup="dialog"
       aria-expanded={open}
       onClick={(e) => openDrawer(e.currentTarget)}
-      className="flex h-8 items-center gap-2 whitespace-nowrap rounded-full border border-official-on-navy/45 bg-official-on-navy/10 pl-2.5 pr-3 text-[13px] font-medium text-official-on-navy hover:bg-official-on-navy/15 md:h-[34px] md:text-[14px]"
+      className="flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-official-on-navy/45 bg-official-on-navy/10 pl-3 pr-3 min-[360px]:pl-2.5 text-[13px] font-medium text-official-on-navy hover:bg-official-on-navy/15 md:h-[34px] md:text-[14px]"
     >
-      <Icon name="shield" className="h-4 w-4" />
+      {/* below 360 px the masthead keeps the count and the verification word, not the icon */}
+      <Icon name="shield" className="h-4 w-4 max-[359px]:hidden" />
       {ds ? (
         <>
           <b className="font-semibold text-white tabular">{records.length}</b>
