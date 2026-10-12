@@ -84,6 +84,8 @@ test.describe("welcome", () => {
     await page.getByTestId("intro-research-coast").click();
     await expect(page).toHaveURL(/\/coast$/);
     await page.goto(`${OK}/coast?place=port-593`);
+    // the sections appear once, already in the researcher's order (never the default order first)
+    await expect(page.getByTestId("coast-official")).toBeVisible();
     const order = await page.locator('section[data-testid^="coast-"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
     expect(order.slice(0, 4)).toEqual(["coast-measured", "coast-model", "coast-observed", "coast-official"]);
     await expect(page.getByTestId("glance-official")).toBeVisible(); // official information stays at the top
@@ -164,10 +166,14 @@ test.describe("welcome", () => {
   for (const [name, opts] of [["desktop", DESKTOP], ["phone", PHONE]] as const) {
     test(`${name}: axe finds nothing in either step of the welcome`, async ({ browser }) => {
       const { ctx, page } = await fresh(browser, opts);
+      // measure the settled card: mid fade-in, text contrast is not what a reader sees
+      const settled = () => page.getByTestId("intro-card").evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
       await expect(page.getByTestId("intro-card")).toBeVisible();
+      await settled();
       let r = await new AxeBuilder({ page }).include('[data-testid="intro-card"]').analyze();
       expect(r.violations.map((v) => v.id)).toEqual([]);
       await page.getByTestId("intro-purpose-commercial").click();
+      await settled();
       r = await new AxeBuilder({ page }).include('[data-testid="intro-card"]').analyze();
       expect(r.violations.map((v) => v.id)).toEqual([]);
       await ctx.close();

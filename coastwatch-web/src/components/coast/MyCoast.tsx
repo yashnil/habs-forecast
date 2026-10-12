@@ -76,7 +76,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   const now = useNow();
   const placeKey = sp.get("place");
   // a link's own filter wins; otherwise the saved purpose's default (only a default: nothing is hidden)
-  const [purpose] = usePurpose();
+  const [purpose, , purposeRead] = usePurpose();
   const audience = sp.get("for") ? parseAudience(sp.get("for")) : defaultAudience(purpose);
   const homeParam = sp.get("home");
   const [homeStored, setHomeStored] = useState<string | null>(null);
@@ -364,7 +364,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
         {landing}
         {place && (
           <>
-            {sectionOrder(purpose).map((k) =>
+            {/* sections wait for the saved purpose (read on this device), so a researcher's order appears once instead of jumping */}
+            {(purposeRead ? sectionOrder(purpose) : []).map((k) =>
               k === "official" ? (
                 <OfficialSection key={k} official={official} assocs={assocs} audience={audience} place={place} verification={verification} onAudience={(a) => go({ for: a }, "replace")} />
               ) : k === "measured" ? (
