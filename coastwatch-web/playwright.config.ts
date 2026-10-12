@@ -15,6 +15,13 @@ const start = (port: number, base: string) => ({
 
 const BASE = Number(process.env.CW_E2E_PORT_BASE ?? 3200); // tests/e2e/ports.ts
 
+// Returning-visitor state for every test server: the first-visit introduction on the map is
+// already dismissed, so it never covers what a test clicks. tests/e2e/m8.spec.ts opens fresh contexts.
+const dismissedIntro = {
+  cookies: [],
+  origins: [0, 1, 2, 3].map((i) => ({ origin: `http://localhost:${BASE + i}`, localStorage: [{ name: "cw-intro-dismissed-v1", value: "1" }] })),
+};
+
 export default defineConfig({
   testDir: "tests/e2e",
   timeout: 45_000,
@@ -22,6 +29,7 @@ export default defineConfig({
   // a failure keeps its evidence: the HTML report, a trace (DOM, network, console) and a screenshot
   reporter: [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
   use: {
+    storageState: dismissedIntro,
     viewport: { width: 1440, height: 900 },
     trace: "retain-on-failure",
     screenshot: "only-on-failure",

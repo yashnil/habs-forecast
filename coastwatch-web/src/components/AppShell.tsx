@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { EXPERIENCES } from "@/content/copy";
+import { EXPERIENCES, RESEARCH } from "@/content/copy";
 import { SourceHealthDot } from "@/components/SourceHealthDot";
 import { OfficialDrawer, OfficialPill, OfficialProvider, TabBar } from "@/components/shell/OfficialShell";
 import type { Manifest, SourceStatus } from "@/generated/schema";
@@ -22,7 +22,7 @@ export function AppShell({
   /** "app": fixed-height viewport on the dark map theme; "page": the document scrolls, on paper */
   scroll?: "app" | "page";
   children: React.ReactNode;
-  active: "map" | "bloom" | "fisheries" | "sources";
+  active: "map" | "bloom" | "fisheries" | "sources" | "about";
   manifest: Manifest | null;
   official?: OfficialDataset | null;
   officialStatus?: SourceStatus | null;
@@ -65,6 +65,14 @@ export function AppShell({
               </ul>
             </nav>
             <div className="ml-auto flex items-center gap-3">
+              <Link
+                href="/about"
+                data-testid="nav-about"
+                aria-current={active === "about" ? "page" : undefined}
+                className={`hidden px-1.5 text-[14px] md:block ${active === "about" ? "text-white" : "text-on-navy-2 hover:text-on-navy"}`}
+              >
+                About
+              </Link>
               <OfficialPill />
               <Link
                 href="/sources"
@@ -81,6 +89,19 @@ export function AppShell({
         </header>
         {banner}
         <main className={`flex min-h-0 flex-1 flex-col ${scroll === "app" ? "theme-dark" : ""}`}>{children}</main>
+        {scroll === "page" && (
+          <footer className="border-t border-hairline bg-page" data-testid="site-footer">
+            <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6 text-[14px] text-ink-2 sm:px-8">
+              <span className="font-semibold text-ink">CoastWatch</span>
+              <span className="text-ink-3">Not an official source. Closures and advisories come from CDFW and CDPH.</span>
+              <nav aria-label="About CoastWatch" className="flex flex-wrap gap-x-5 gap-y-2 sm:ml-auto">
+                <Link href="/about" className="font-medium text-accent hover:underline">About</Link>
+                <Link href="/sources" className="font-medium text-accent hover:underline">Data &amp; sources</Link>
+                <a href={RESEARCH.doi} target="_blank" rel="noreferrer" className="font-medium text-accent hover:underline">Research paper ↗</a>
+              </nav>
+            </div>
+          </footer>
+        )}
         <TabBar active={active} />
       </div>
       <OfficialDrawer />

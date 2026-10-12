@@ -204,11 +204,11 @@ export function OfficialDrawer() {
           {ds && ds.registry.statements.length > 0 && (
             <details className="rounded-md border border-hairline px-3 py-2 text-[13px] text-ink-2">
               <summary className="cursor-pointer font-medium text-ink">{OFFICIAL_STATUS.statementsHeading}</summary>
-              <p className="mt-1 text-[12px] text-ink-3">{OFFICIAL_STATUS.statementsNote}</p>
+              <p className="mt-1 text-[13px] text-ink-3">{OFFICIAL_STATUS.statementsNote}</p>
               <ul className="mt-1.5 space-y-1.5">
                 {ds.registry.statements.map((s) => (
                   <li key={s.id}>
-                    <p className="text-[12px] text-ink-3">
+                    <p className="text-[13px] text-ink-3">
                       {s.agency} · {s.topic}
                     </p>
                     <p>
@@ -242,14 +242,14 @@ const TABS = [
   { key: "fisheries", href: "/fisheries", label: "Fisheries", icon: "fish" },
 ] as const;
 
-/** Mobile bottom navigation. Notices is a tab, so official information is one tap from anywhere. */
+/** Mobile bottom navigation. Notices is a tab, so official information is one tap from anywhere; About carries the research and the limits. */
 export function TabBar({ active }: { active: string }) {
   const { ds, records, open, openDrawer } = useOfficial();
   return (
     <nav
       aria-label="Primary"
       data-testid="tabbar"
-      className="fixed inset-x-0 bottom-0 z-40 grid h-[var(--cw-tabbar-h)] grid-cols-4 border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] text-ink-3 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 grid h-[var(--cw-tabbar-h)] grid-cols-5 border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] text-ink-3 md:hidden"
       style={{ colorScheme: "light" }}
     >
       {TABS.map((t) => (
@@ -258,7 +258,7 @@ export function TabBar({ active }: { active: string }) {
           href={t.href}
           data-testid={`tab-${t.key}`}
           aria-current={active === t.key ? "page" : undefined}
-          className={`relative flex flex-col items-center justify-center gap-1 text-[12px] font-medium ${active === t.key ? "text-accent before:absolute before:inset-x-[30%] before:top-0 before:h-0.5 before:rounded-b before:bg-accent" : ""}`}
+          className={`relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium ${active === t.key ? "text-accent before:absolute before:inset-x-[30%] before:top-0 before:h-0.5 before:rounded-b before:bg-accent" : ""}`}
         >
           <Icon name={t.icon} className="h-[22px] w-[22px]" />
           {t.label}
@@ -270,17 +270,26 @@ export function TabBar({ active }: { active: string }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={(e) => openDrawer(e.currentTarget)}
-        className="relative flex flex-col items-center justify-center gap-1 text-[12px] font-medium text-official"
+        className="relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium text-official"
       >
         <Icon name="shield" className="h-[22px] w-[22px]" />
         {ds && (
-          <span className="absolute left-[calc(50%+6px)] top-2 min-w-[18px] rounded-full bg-official px-1.5 text-center text-[11px] font-semibold leading-[18px] text-white tabular">
+          <span className="absolute left-[calc(50%+6px)] top-2 min-w-[18px] rounded-full bg-official px-1.5 text-center text-[13px] font-semibold leading-[18px] text-white tabular">
             {records.length}
             <span className="sr-only"> active</span>
           </span>
         )}
         Notices
       </button>
+      <Link
+        href="/about"
+        data-testid="tab-about"
+        aria-current={active === "about" ? "page" : undefined}
+        className={`relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium ${active === "about" ? "text-accent before:absolute before:inset-x-[30%] before:top-0 before:h-0.5 before:rounded-b before:bg-accent" : ""}`}
+      >
+        <Icon name="info" className="h-[22px] w-[22px]" />
+        About
+      </Link>
     </nav>
   );
 }
