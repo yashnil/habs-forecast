@@ -185,13 +185,13 @@ export function LandingsChart({
               data-testid={`year-${y}`}
             >
               <span className={`tabular text-[13px] ${sel ? "font-semibold underline decoration-2 underline-offset-[5px]" : ""}`}>{narrow ? `’${String(y).slice(2)}` : y}</span>
-              {!narrow && <span className="tabular text-[12px] text-ink-3" data-testid={`share-${y}`}>{pct(shares[i])}</span>}
+              {!narrow && <span className="tabular text-[13px] text-ink-3" data-testid={`share-${y}`}>{pct(shares[i])}</span>}
             </button>
           );
         })}
       </div>
       {!narrow && (
-        <p className="text-[12px] text-ink-3" style={{ paddingLeft: `${(ML / W) * 100}%` }}>
+        <p className="text-[13px] text-ink-3" style={{ paddingLeft: `${(ML / W) * 100}%` }}>
           % under each year: share of all California commercial landings that year (NOAA&apos;s state total), in the same unit.
         </p>
       )}

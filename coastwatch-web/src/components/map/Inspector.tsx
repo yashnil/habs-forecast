@@ -92,30 +92,30 @@ export function Inspector({
     >
       <header className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-accent">Point</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-accent">Point</p>
           <h3 className="text-[14px] font-semibold text-ink tabular">
             {point.lat.toFixed(3)}°N, {Math.abs(point.lon).toFixed(3)}°W
           </h3>
           {first?.time.valid_date && (
-            <p className="mt-0.5 text-[11.5px] text-ink-2">
+            <p className="mt-0.5 text-[13px] text-ink-2">
               C-HARM {leadLabel(lead).toLowerCase()} · valid {formatDate(first.time.valid_date, { year: true })}
             </p>
           )}
         </div>
-        <button onClick={onClose} className="rounded-md px-2 py-1 text-[12px] text-ink-3 hover:bg-surface-3 hover:text-ink" aria-label="Close point details">
+        <button onClick={onClose} className="rounded-md px-2 py-1 text-[13px] text-ink-3 hover:bg-surface-3 hover:text-ink" aria-label="Close point details">
           ✕
         </button>
       </header>
 
       <div className="mt-3 space-y-1.5 rounded-md border border-[#ffb547]/30 bg-[#ffb547]/[0.04] p-2.5" data-testid="inspect-official">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[12px] font-semibold text-ink">Official notices here</p>
+          <p className="text-[13px] font-semibold text-ink">Official notices here</p>
           <VerificationBadge v={verification} />
         </div>
         {!official ? (
-          <p className="text-[11.5px] text-ink-2">Official notices unavailable; check CDFW and CDPH.</p>
+          <p className="text-[13px] text-ink-2">Official notices unavailable; check CDFW and CDPH.</p>
         ) : (
-          <ul className="space-y-1 text-[11.5px] text-ink-2">
+          <ul className="space-y-1 text-[13px] text-ink-2">
             {here.map(({ record: r, reason }) => (
               <li key={r.id} data-testid={`inspect-notice-${r.id}`}>
                 <span className="font-medium text-ink">{ACTION_LABEL[r.action]}:</span> {r.title} <span className="text-ink-3">({reason})</span>
@@ -124,38 +124,38 @@ export function Inspector({
             {here.some((h) => h.reason !== "statewide") && <li className="text-ink-3">{OFFICIAL_STATUS.areaNote}</li>}
           </ul>
         )}
-        <p className="text-[11px] text-ink-3">{OFFICIAL_STATUS.missingNotOpen}</p>
+        <p className="text-[13px] text-ink-3">{OFFICIAL_STATUS.missingNotOpen}</p>
       </div>
 
       <div className="mt-4 space-y-1.5" data-testid="inspect-strip">
         <div className="flex items-baseline justify-between gap-2">
           <h4 className="text-[13px] font-semibold text-ink">{stripLayer?.short_title ?? "C-HARM forecast"} here</h4>
-          <span className="rounded border border-hairline-strong px-1 text-[10px] font-semibold uppercase tracking-wider text-model-ink">Model</span>
+          <span className="rounded border border-hairline-strong px-1 text-[12px] font-semibold uppercase tracking-wider text-model-ink">Model</span>
         </div>
         {strip && strip.some((x) => x.issued) ? (
           <>
             <LeadStrip items={strip} lead={lead} onLead={onLead} palette={palette} label="Forecast day at this point" testidPrefix="inspect-lead" />
-            {strip.every((x) => x.value == null) && <p className="text-[11.5px] text-ink-3">No forecast value in this cell on any day: land, or a nearshore cell C-HARM does not cover. The other quantities below may show the nearest cell, with its distance.</p>}
+            {strip.every((x) => x.value == null) && <p className="text-[13px] text-ink-3">No forecast value in this cell on any day: land, or a nearshore cell C-HARM does not cover. The other quantities below may show the nearest cell, with its distance.</p>}
           </>
         ) : strip ? (
-          <p className="text-[12px] text-ink-3">No C-HARM run is available.</p>
+          <p className="text-[13px] text-ink-3">No C-HARM run is available.</p>
         ) : (
-          <p className="text-[12px] text-ink-3">Reading forecast values…</p>
+          <p className="text-[13px] text-ink-3">Reading forecast values…</p>
         )}
       </div>
 
       {!first ? (
-        <p className="mt-3 text-[12.5px] text-ink-2">No forecast is available for this valid day.</p>
+        <p className="mt-3 text-[13px] text-ink-2">No forecast is available for this valid day.</p>
       ) : !rows ? (
-        <p className="mt-3 text-[12px] text-ink-3">Reading forecast values…</p>
+        <p className="mt-3 text-[13px] text-ink-3">Reading forecast values…</p>
       ) : (
         <ul className="mt-3 space-y-2.5" aria-label={`All C-HARM quantities, ${leadLabel(lead).toLowerCase()}`}>
           {rows.map((r) => (
             <li key={r.variable} data-testid={`inspect-${r.variable}`}>
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[12.5px] text-ink-2">{r.title}</span>
+                <span className="text-[13px] text-ink-2">{r.title}</span>
                 {r.sample?.kind === "value" && r.sample.nearest ? (
-                  <span className="text-[12px] text-ink-3 tabular" data-testid={`inspect-value-${r.variable}`} data-nearest="true">
+                  <span className="text-[13px] text-ink-3 tabular" data-testid={`inspect-value-${r.variable}`} data-nearest="true">
                     {`${(r.sample.value * 100).toFixed(0)}% at ${r.sample.distanceKm.toFixed(1)} km`}
                   </span>
                 ) : (
@@ -169,7 +169,7 @@ export function Inspector({
                   <div className="h-full" style={{ width: `${Math.max(2, r.sample.value * 100)}%`, background: gradientCss(palette), backgroundSize: `${100 / Math.max(0.02, r.sample.value)}% 100%` }} />
                 </div>
               )}
-              <p className="mt-0.5 text-[11px] text-ink-3">
+              <p className="mt-0.5 text-[13px] text-ink-3">
                 {r.error
                   ? r.error === "not issued"
                     ? "Not issued in this run."
@@ -184,7 +184,7 @@ export function Inspector({
           ))}
         </ul>
       )}
-      <p className="mt-3 border-t border-hairline pt-2 text-[11px] leading-snug text-ink-3">
+      <p className="mt-3 border-t border-hairline pt-2 text-[13px] leading-snug text-ink-3">
         {FORECAST_COPY.notA} {FORECAST_COPY.lowNotSafe}
       </p>
     </section>

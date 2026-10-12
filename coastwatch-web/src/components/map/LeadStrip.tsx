@@ -30,8 +30,8 @@ export function LeadStrip({ items, lead, onLead, palette, label, testidPrefix, v
             className={`flex flex-col items-stretch gap-1 rounded-lg border px-1.5 pb-1.5 pt-1 text-left transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${on ? "border-navy-900 ring-1 ring-navy-900" : "border-hairline hover:border-hairline-strong"}`}
           >
             <span className="flex items-baseline justify-between gap-1">
-              <span className="text-[11px] font-medium text-ink-3">{it.lead === 0 ? "Now" : `+${it.lead}d`}</span>
-              <span className="text-[11px] text-ink-3 tabular">{it.date ? formatDate(it.date).replace(/^\w+, /, "") : "—"}</span>
+              <span className="text-[13px] font-medium text-ink-3">{it.lead === 0 ? "Now" : `+${it.lead}d`}</span>
+              <span className="text-[13px] text-ink-3 tabular">{it.date ? formatDate(it.date).replace(/^\w+, /, "") : "—"}</span>
             </span>
             <span className="text-[17px] font-semibold leading-none text-ink tabular">{v != null ? `${Math.round(v * 100)}%` : "—"}</span>
             <span className="h-1.5 overflow-hidden rounded-full bg-surface-3" aria-hidden>

@@ -178,8 +178,12 @@ body {
   font-feature-settings: "tnum" 1, "lnum" 1;
 }
 
-a {
-  color: inherit;
+/* in the base layer, so a link's colour class (text-accent, text-white) wins: unlayered rules
+   outrank every Tailwind utility */
+@layer base {
+  a {
+    color: inherit;
+  }
 }
 
 .tabular {

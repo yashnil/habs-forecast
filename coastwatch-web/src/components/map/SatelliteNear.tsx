@@ -45,20 +45,20 @@ function SingleSensorNear({ manifest, baseUrl, lat, lon, place }: { manifest: Ma
         <h3 id="sat-near-h" className="text-[13px] font-semibold text-ink">
           Satellite chlorophyll, latest clear view
         </h3>
-        <span className="text-[11px] text-ink-3">
+        <span className="text-[13px] text-ink-3">
           {product === "olci300" ? "Sentinel-3 OLCI" : "VIIRS"} · native {nativeLabel(layer)}
         </span>
       </div>
       {s === null ? (
-        <p className="text-[12px] text-ink-3">Reading the satellite grid…</p>
+        <p className="text-[13px] text-ink-3">Reading the satellite grid…</p>
       ) : s === "error" ? (
-        <p className="text-[12px] text-ink-3">The satellite grid could not be read.</p>
+        <p className="text-[13px] text-ink-3">The satellite grid could not be read.</p>
       ) : s.kind === "none" ? (
-        <p className="text-[12.5px] text-ink-2" data-testid="satellite-near-none">
+        <p className="text-[13px] text-ink-2" data-testid="satellite-near-none">
           No clear observation near {place} in the last {layer.composite?.window_days ?? 7} days. Cloud or fog, not low chlorophyll.
         </p>
       ) : (
-        <p className="text-[12.5px] text-ink-2">
+        <p className="text-[13px] text-ink-2">
           <span className="text-[20px] font-semibold text-ink tabular" data-testid="satellite-near-value">
             {s.value >= 10 ? s.value.toFixed(0) : s.value.toPrecision(2)}
           </span>{" "}
@@ -72,7 +72,7 @@ function SingleSensorNear({ manifest, baseUrl, lat, lon, place }: { manifest: Ma
           {s.nearest && <span className="text-ink-3"> · nearest clear pixel {s.distanceKm.toFixed(1)} km away</span>}
         </p>
       )}
-      <p className="text-[11.5px] text-ink-3">{CHLOROPHYLL_COPY.biomass}</p>
+      <p className="text-[13px] text-ink-3">{CHLOROPHYLL_COPY.biomass}</p>
     </section>
   );
 }
@@ -122,14 +122,14 @@ function MultiSensorNear({ manifest, baseUrl, lat, lon, place }: { manifest: Man
         <h3 id="sat-near-h" className="text-[13px] font-semibold text-ink">
           Satellite chlorophyll, latest view
         </h3>
-        <span className="text-[11px] text-ink-3">multi-sensor display</span>
+        <span className="text-[13px] text-ink-3">multi-sensor display</span>
       </div>
       {r === null ? (
-        <p className="text-[12px] text-ink-3">Reading the satellite grids…</p>
+        <p className="text-[13px] text-ink-3">Reading the satellite grids…</p>
       ) : r === "error" ? (
-        <p className="text-[12px] text-ink-3">The satellite grids could not be read.</p>
+        <p className="text-[13px] text-ink-3">The satellite grids could not be read.</p>
       ) : !pick || !shown ? (
-        <p className="text-[12.5px] text-ink-2" data-testid="satellite-near-none">
+        <p className="text-[13px] text-ink-2" data-testid="satellite-near-none">
           Neither sensor observed {place} in the last 7 days. Cloud or fog, not low chlorophyll.
           {nearest && nearest.kind === "value" && (
             <span className="text-ink-3"> Nearest clear pixel {nearest.distanceKm.toFixed(1)} km away: {fmtV(nearest.value)} mg/m³.</span>
@@ -137,25 +137,25 @@ function MultiSensorNear({ manifest, baseUrl, lat, lon, place }: { manifest: Man
         </p>
       ) : (
         <>
-          <p className="text-[12.5px] text-ink-2">
+          <p className="text-[13px] text-ink-2">
             <span className="text-[20px] font-semibold text-ink tabular" data-testid="satellite-near-value">
               {fmtV(shown.value)}
             </span>{" "}
             mg/m³ · observed <span className="font-medium text-ink" data-testid="satellite-near-date">{formatDate(shown.date)}</span>
           </p>
-          <p className="text-[12px] text-ink-2" data-testid="satellite-near-sensor">
+          <p className="text-[13px] text-ink-2" data-testid="satellite-near-sensor">
             Shown: <span className="font-medium text-ink">{labels[pick - 1]}</span>
             {pick === 2 && r[0].obs && <> (Sentinel-3&apos;s pixel here is older: {formatDate(r[0].obs.date)})</>}
             {pick === 2 && !r[0].obs && <> (no Sentinel-3 observation here in 7 days)</>}
           </p>
           {other && (
-            <p className="text-[12px] text-ink-3" data-testid="satellite-near-other">
+            <p className="text-[13px] text-ink-3" data-testid="satellite-near-other">
               {labels[2 - pick]} here: {fmtV(other.value)} mg/m³ · observed {formatDate(other.date)}
             </p>
           )}
         </>
       )}
-      <p className="text-[11.5px] text-ink-3">{CHLOROPHYLL_COPY.biomass}</p>
+      <p className="text-[13px] text-ink-3">{CHLOROPHYLL_COPY.biomass}</p>
     </section>
   );
 }

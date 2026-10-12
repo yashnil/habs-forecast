@@ -5,7 +5,7 @@ export { AGE_COLOURS, colorAt, gradientCss } from "@/lib/palette";
 
 export function NoValueSwatch({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[12px] text-ink-2">
+    <span className="inline-flex items-center gap-1.5 text-[13px] text-ink-2">
       <span
         className="inline-block h-[11px] w-4 shrink-0 rounded-[2px] border border-[#3a5070]"
         // the map's no-data dots: 1 px on a 3 px diagonal lattice over the sea colour
@@ -24,11 +24,11 @@ export function ProbabilityLegend({ palette, threshold, compact = false }: { pal
   const stepped = palette.interpolation === "step";
   return (
     <figure data-testid="probability-legend" className={compact ? "space-y-0.5" : "space-y-1"} aria-label={`Legend: ${threshold ?? "probability"}, 0 to 100 percent${stepped ? " in 10-point display steps" : ""}`}>
-      {threshold && <figcaption className={`font-medium leading-snug text-ink ${compact ? "text-[12px]" : "text-[13px] max-sm:text-[12px]"}`}>{threshold}</figcaption>}
+      {threshold && <figcaption className={`font-medium leading-snug text-ink ${compact ? "text-[13px]" : "text-[13px] max-sm:text-[13px]"}`}>{threshold}</figcaption>}
       <div className={compact ? "flex items-center gap-3" : ""} data-peek="end">
         <div className="min-w-0 flex-1">
           <div className={`${compact ? "h-2" : "h-2.5"} rounded-[3px]`} style={{ background: gradientCss(palette) }} />
-          <div className="relative h-3.5 text-[11px] text-ink-3 tabular" aria-hidden>
+          <div className="relative h-3.5 text-[13px] text-ink-3 tabular" aria-hidden>
             {ticks.map((t) => (
               <span key={t} className="absolute -translate-x-1/2 first:translate-x-0 last:-translate-x-full" style={{ left: `${t}%` }}>
                 {t}
@@ -40,12 +40,12 @@ export function ProbabilityLegend({ palette, threshold, compact = false }: { pal
         {compact && <NoValueSwatch label="No value" />}
       </div>
       {compact ? (
-        stepped && <p className="text-[11px] leading-tight text-ink-3">10-point colour steps for display, not risk levels.</p>
+        stepped && <p className="text-[13px] leading-tight text-ink-3">10-point colour steps for display, not risk levels.</p>
       ) : (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <NoValueSwatch label="No model value" />
           {stepped && (
-            <span className="text-[12px] text-ink-3">
+            <span className="text-[13px] text-ink-3">
               <span className="sm:hidden">Display steps, not risk levels.</span>
               <span className="max-sm:hidden">10-point colour steps for display, not risk levels.</span>
             </span>
@@ -64,13 +64,13 @@ export function ChlorophyllLegend({ palette, compact = false }: { palette: Palet
   const ticks = compact ? [0.1, 1, 10] : CHL_TICKS;
   return (
     <figure data-testid="chl-scale-legend" className={compact ? "space-y-0.5" : "space-y-1"} aria-label="Legend: chlorophyll-a, 0.05 to 50 milligrams per cubic metre, log scale">
-      <figcaption className={`font-medium leading-snug text-ink ${compact ? "text-[12px]" : "text-[13px]"}`}>
+      <figcaption className={`font-medium leading-snug text-ink ${compact ? "text-[13px]" : "text-[13px]"}`}>
         Chlorophyll-a <span className="font-normal text-ink-3">mg/m³ · log scale{compact ? "" : " · algae biomass, not toxin"}</span>
       </figcaption>
       <div className={compact ? "flex items-center gap-3" : ""} data-peek="end">
         <div className="min-w-0 flex-1">
           <div className={`${compact ? "h-2" : "h-2.5"} rounded-[3px]`} style={{ background: gradientCss(palette) }} />
-          <div className="relative h-3.5 text-[11px] text-ink-3 tabular" aria-hidden>
+          <div className="relative h-3.5 text-[13px] text-ink-3 tabular" aria-hidden>
             {ticks.map((t) => (
               <span key={t} className="absolute -translate-x-1/2" style={{ left: `${((Math.log10(t) - lo) / (hi - lo)) * 100}%` }}>
                 {t}
@@ -91,7 +91,7 @@ export function AgeLegend({ maxDays }: { maxDays: number }) {
       <figcaption className="text-[13px] font-medium text-ink">Days since each pixel was observed</figcaption>
       <div className="flex gap-0.5" data-peek="end">
         {AGE_COLOURS.slice(0, maxDays + 1).map((c, i) => (
-          <span key={c} className="flex-1 text-center text-[11px] text-ink-3 tabular">
+          <span key={c} className="flex-1 text-center text-[13px] text-ink-3 tabular">
             <span className="mb-0.5 block h-2.5 rounded-[2px]" style={{ background: c }} aria-hidden />
             {i}
           </span>
@@ -107,7 +107,7 @@ export function SensorLegend({ labels }: { labels: string[] }) {
       <figcaption className="text-[13px] font-medium text-ink">Sensor shown at each pixel</figcaption>
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         {labels.map((l, i) => (
-          <span key={l} className="inline-flex items-center gap-1.5 text-[12px] text-ink-2">
+          <span key={l} className="inline-flex items-center gap-1.5 text-[13px] text-ink-2">
             <span className="block h-2.5 w-5 rounded-[2px]" style={{ background: SENSOR_COLOURS[i] }} aria-hidden />
             {l}
           </span>

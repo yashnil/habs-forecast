@@ -21,8 +21,8 @@ export function OfficialStatusCard() {
           <h2 id="official-status-h" className="text-[13px] font-semibold text-ink">
             {OFFICIAL_STATUS.heading}
           </h2>
-          <p className="text-[12.5px] leading-relaxed text-ink-2">{OFFICIAL_STATUS.notTracked}</p>
-          <p className="text-[12.5px] text-ink-2">{OFFICIAL_STATUS.instruction}</p>
+          <p className="text-[13px] leading-relaxed text-ink-2">{OFFICIAL_STATUS.notTracked}</p>
+          <p className="text-[13px] text-ink-2">{OFFICIAL_STATUS.instruction}</p>
           <ul className="space-y-1">
             {OFFICIAL_STATUS.links.map((l) => (
               <li key={l.href}>
@@ -30,14 +30,14 @@ export function OfficialStatusCard() {
                   href={l.href}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[12.5px] font-medium text-accent underline-offset-2 hover:underline"
+                  className="text-[13px] font-medium text-accent underline-offset-2 hover:underline"
                 >
                   {l.label} ↗
                 </a>
               </li>
             ))}
           </ul>
-          <dl className="grid gap-1 border-t border-hairline pt-2 text-[12px]">
+          <dl className="grid gap-1 border-t border-hairline pt-2 text-[13px]">
             {OFFICIAL_STATUS.hotlines.map((h) => (
               <div key={h.tel} className="flex flex-wrap justify-between gap-x-3">
                 <dt className="text-ink-3">{h.label}</dt>

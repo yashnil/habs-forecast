@@ -10,7 +10,7 @@ export function Panel({ children, className = "", testid, labelledBy }: { childr
 }
 
 export function Eyebrow({ children }: { children: ReactNode }) {
-  return <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ink-3">{children}</p>;
+  return <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">{children}</p>;
 }
 
 export function SectionTitle({ id, children, aside }: { id?: string; children: ReactNode; aside?: ReactNode }) {
@@ -33,7 +33,7 @@ const TONE: Record<string, string> = {
 
 export function Notice({ tone = "neutral", title, children, testid }: { tone?: keyof typeof TONE; title?: ReactNode; children?: ReactNode; testid?: string }) {
   return (
-    <div data-testid={testid} role={tone === "serious" ? "alert" : undefined} className={`rounded-md border px-3 py-2 text-[12px] leading-snug ${TONE[tone]}`}>
+    <div data-testid={testid} role={tone === "serious" ? "alert" : undefined} className={`rounded-md border px-3 py-2 text-[13px] leading-snug ${TONE[tone]}`}>
       {title && <p className="mb-0.5 font-semibold text-ink">{title}</p>}
       {children}
     </div>
@@ -66,12 +66,12 @@ export function Segmented<T extends string | number>({
             title={o.title}
             data-testid={testidPrefix ? `${testidPrefix}-${o.value}` : undefined}
             onClick={() => onChange(o.value)}
-            className={`rounded-[7px] px-1.5 py-1.5 text-left text-[12px] transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
+            className={`rounded-[7px] px-1.5 py-1.5 text-left text-[13px] transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
               active ? "bg-surface text-ink shadow-[0_1px_2px_rgba(13,27,42,0.12)] ring-1 ring-hairline-strong" : "text-ink-2 hover:text-ink"
             }`}
           >
             <span className="block font-medium leading-tight">{o.label}</span>
-            {o.sub && <span className="block text-[10.5px] leading-tight text-ink-3">{o.sub}</span>}
+            {o.sub && <span className="block text-[13px] leading-tight text-ink-3">{o.sub}</span>}
           </button>
         );
       })}
@@ -85,7 +85,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
 
 export function SourceLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <a href={safeHref(href)} target="_blank" rel="noopener noreferrer" className="text-accent underline-offset-2 hover:underline">
+    <a href={safeHref(href)} target="_blank" rel="noopener noreferrer" className="text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent">
       {children}
     </a>
   );

@@ -62,7 +62,7 @@ export function ControlRail({
               title={off ? "Observed currents are not in this dataset." : `${g.label} (${g.kind.toLowerCase()})`}
               data-testid={`group-${g.id}`}
               onClick={() => onGroup(g.id)}
-              className={`group relative flex w-14 flex-col items-center gap-0.5 rounded-lg pb-1.5 pt-2 text-[11px] font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-35 ${on ? "bg-white/[0.09] text-white" : "hover:bg-white/[0.05] hover:text-on-navy"}`}
+              className={`group relative flex w-14 flex-col items-center gap-0.5 rounded-lg pb-1.5 pt-2 text-[13px] font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-35 ${on ? "bg-white/[0.09] text-white" : "hover:bg-white/[0.05] hover:text-on-navy"}`}
             >
               {on && <span className="absolute inset-y-2 -left-1 w-[3px] rounded-r bg-accent-on-navy" aria-hidden />}
               <Icon name={GROUP_ICON[g.id]} className="h-[22px] w-[22px]" />
@@ -83,7 +83,7 @@ function RailButton({ icon, label, active, onClick, testid, ...rest }: { icon: I
       type="button"
       onClick={onClick}
       data-testid={testid}
-      className={`flex w-14 flex-col items-center gap-0.5 rounded-lg pb-1.5 pt-2 text-[11px] font-medium transition-colors duration-150 ${active ? "text-white" : "hover:bg-white/[0.05] hover:text-on-navy"}`}
+      className={`flex w-14 flex-col items-center gap-0.5 rounded-lg pb-1.5 pt-2 text-[13px] font-medium transition-colors duration-150 ${active ? "text-white" : "hover:bg-white/[0.05] hover:text-on-navy"}`}
       {...rest}
     >
       <Icon name={icon} className="h-[22px] w-[22px]" />

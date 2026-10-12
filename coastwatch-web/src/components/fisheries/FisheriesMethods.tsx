@@ -122,7 +122,7 @@ export function FisheriesMethods({ ds, unit, compact }: { ds: FisheriesDataset; 
             </table>
           </div>
           )}
-          <p className="mt-1.5 text-[12.5px] text-ink-3">* A source row in this group and year had no published value; it is left out, never counted as zero.</p>
+          <p className="mt-1.5 text-[13px] text-ink-3">* A source row in this group and year had no published value; it is left out, never counted as zero.</p>
         </details>
         <details className="py-2.5" data-testid="deflator">
           <summary className="cursor-pointer font-medium text-ink">Inflation adjustment ({ds.deflator.series_id})</summary>
@@ -133,7 +133,7 @@ export function FisheriesMethods({ ds, unit, compact }: { ds: FisheriesDataset; 
             {(ds.deflator.notes ?? []).map((n) => (
               <p key={n}>{n}</p>
             ))}
-            <p className="tabular text-[12.5px] text-ink-3">
+            <p className="tabular text-[13px] text-ink-3">
               Annual index:{" "}
               {Object.entries(ds.deflator.annual_index)
                 .map(([y, v]) => `${y} ${v}`)

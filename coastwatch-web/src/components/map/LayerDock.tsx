@@ -95,7 +95,7 @@ function Res({ l }: { l: LayerArtifact | null | undefined }) {
     ? l.multisensor.members.map((m) => nativeLabel({ native_resolution_m: m.native_resolution_m } as LayerArtifact)).join(" + ")
     : nativeLabel(l);
   return n ? (
-    <span data-testid="native-resolution" className="rounded bg-surface-3 px-1.5 py-px font-mono text-[11px] text-ink-2">
+    <span data-testid="native-resolution" className="rounded bg-surface-3 px-1.5 py-px font-mono text-[12px] text-ink-2">
       native {n}
     </span>
   ) : null;
@@ -128,7 +128,7 @@ export function Seg<T extends string | number>({
           title={o.title}
           data-testid={o.testid}
           onClick={() => onChange(o.value)}
-          className={`flex-1 whitespace-nowrap rounded-[7px] font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${size === "sm" ? "px-2 py-0.5 text-[12px]" : "px-2.5 py-1 text-[13px] max-lg:py-1.5"} ${o.value === value ? "bg-surface text-ink shadow-[0_1px_2px_rgba(13,27,42,0.12)] ring-1 ring-hairline-strong" : "text-ink-2 hover:text-ink"}`}
+          className={`flex-1 whitespace-nowrap rounded-[7px] font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${size === "sm" ? "px-2 py-0.5 text-[13px]" : "px-2.5 py-1 text-[13px] max-lg:py-1.5"} ${o.value === value ? "bg-surface text-ink shadow-[0_1px_2px_rgba(13,27,42,0.12)] ring-1 ring-hairline-strong" : "text-ink-2 hover:text-ink"}`}
         >
           {o.label}
         </button>
@@ -158,7 +158,7 @@ function GroupTabs({ manifest, group, onGroup }: Pick<Props, "manifest" | "group
             className={`flex h-10 flex-col items-center justify-center rounded-[9px] leading-tight transition-colors duration-150 disabled:opacity-40 ${group === g.id ? "bg-surface text-ink shadow-[0_1px_2px_rgba(13,27,42,0.12)] ring-1 ring-hairline-strong" : "text-ink-2"}`}
           >
             <span className="text-[13.5px] font-semibold">{g.short}</span>
-            <span className={`text-[10px] font-semibold uppercase tracking-wider ${g.kind === "Model" ? "text-model-ink" : "text-measured"}`}>{g.kind}</span>
+            <span className={`text-[12px] font-semibold uppercase tracking-wider ${g.kind === "Model" ? "text-model-ink" : "text-measured"}`}>{g.kind}</span>
           </button>
         );
       })}
@@ -195,7 +195,7 @@ export function LayerDock(p: Props) {
             aria-expanded={p.expanded}
             aria-controls="layer-details"
             data-testid="dock-details"
-            className="-mr-1 -mt-0.5 flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium text-accent hover:bg-surface-3"
+            className="-mr-1 -mt-0.5 flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[13px] font-medium text-accent hover:bg-surface-3"
           >
             {p.expanded ? "Less" : "Details"}
             <svg viewBox="0 0 12 12" className={`h-3 w-3 transition-transform duration-200 ${p.expanded ? "rotate-180" : ""}`} aria-hidden>
@@ -223,7 +223,7 @@ function Details({ open, children }: { open: boolean; children: React.ReactNode 
 
 function MetaRow({ children, fresh, basis, compactAge }: { children: React.ReactNode; fresh: Freshness | null; basis?: string; compactAge?: boolean }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[12px] text-ink-3">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-ink-3">
       {children}
       <span className="ml-auto">
         <FreshnessBadge f={fresh} basis={basis} compact={compactAge} />
@@ -244,7 +244,7 @@ function ForecastSection(p: Props) {
         <div data-testid="forecast-unavailable" className="space-y-1 rounded-lg border border-dashed border-hairline-strong p-3 text-[13px] text-ink-2">
           <p className="font-medium text-ink">Forecast unavailable</p>
           <p>No C-HARM forecast could be loaded, so none is shown. This does not mean conditions are normal.</p>
-          {p.charmStatus?.error && <p className="break-words text-[12px] text-ink-3">Last error: {p.charmStatus.error}</p>}
+          {p.charmStatus?.error && <p className="break-words text-[13px] text-ink-3">Last error: {p.charmStatus.error}</p>}
         </div>
       </div>
     );
@@ -294,7 +294,7 @@ function ForecastSection(p: Props) {
                 className={`rounded-lg border px-1.5 py-1 text-left transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${active ? "border-navy-900 bg-navy-900 text-white" : "border-hairline hover:border-hairline-strong"}`}
               >
                 <span className="block text-[13px] font-semibold leading-tight tabular">{lyr?.time.valid_date ? formatDate(lyr.time.valid_date).replace(/^\w+, /, "") : "—"}</span>
-                <span className={`block truncate text-[11px] leading-tight ${active ? "text-on-navy-2" : "text-ink-3"}`}>
+                <span className={`block truncate text-[13px] leading-tight ${active ? "text-on-navy-2" : "text-ink-3"}`}>
                   {!lyr ? "not issued" : l === 0 ? "nowcast" : p.now && lyr.time.valid_date ? relativeDay(lyr.time.valid_date, p.now) : leadLabel(l)}
                 </span>
               </button>
@@ -305,7 +305,7 @@ function ForecastSection(p: Props) {
       {!sheet && legend}
       {/* freshness problems are never hidden behind "Details": one line, beside the badge */}
       {(fresh?.state === "stale" || fresh?.state === "historical" || p.charmStatus?.outcome === "failed") && (
-        <p className={`text-[12px] leading-snug ${fresh?.state === "historical" || p.charmStatus?.outcome === "failed" ? "text-serious" : "text-warning"}`} data-testid="forecast-warning">
+        <p className={`text-[13px] leading-snug ${fresh?.state === "historical" || p.charmStatus?.outcome === "failed" ? "text-serious" : "text-warning"}`} data-testid="forecast-warning">
           {fresh?.state === "stale" && <span data-testid="stale-note">No newer C-HARM run has been published; this is the newest, with its dates as issued. </span>}
           {fresh?.state === "historical" && (
             <span data-testid="historical-note" className="font-medium">
@@ -320,12 +320,12 @@ function ForecastSection(p: Props) {
         <span>C-HARM v3.1 · NOAA</span>
         <Res l={layer ?? anyLayer} />
       </MetaRow>
-      <p className="text-[12px] leading-snug text-ink-2">
+      <p className="text-[13px] leading-snug text-ink-2">
         {p.expanded ? `${FORECAST_COPY.notA} ` : "Not a toxin measurement or a closure decision. "}
         {FORECAST_COPY.lowNotSafe}
       </p>
       <Details open={p.expanded}>
-        <p className="text-[12px] leading-snug text-ink-2" data-testid="run-line">
+        <p className="text-[13px] leading-snug text-ink-2" data-testid="run-line">
           Issued <span className="font-medium text-ink tabular">{formatDate(p.run.issued_date, { year: true })}</span>
           {p.run.issued_date_derived && <span className="text-ink-3"> (inferred)</span>}
           {layer?.time.valid_date && (
@@ -376,7 +376,7 @@ function SatelliteSection(p: Props) {
             <div className="space-y-1.5">
               {colour === "age" ? <AgeLegend maxDays={comp?.window_days ?? 7} /> : colour === "sensor" && ms ? <SensorLegend labels={ms.members.map((m) => m.label)} /> : <ChlorophyllLegend palette={layer.palette} compact />}
               {(comp || ms) && (
-                <div className="flex items-center gap-2 text-[12px] text-ink-3">
+                <div className="flex items-center gap-2 text-[13px] text-ink-3">
                   <span id="colour-shows">Colour shows</span>
                   <div role="radiogroup" aria-labelledby="colour-shows" className="flex gap-1">
                     {(
@@ -402,7 +402,7 @@ function SatelliteSection(p: Props) {
                               p.onShowSensor(false);
                             }
                           }}
-                          className={`rounded-full border px-2 py-0.5 text-[12px] transition-colors duration-150 max-lg:py-1 ${colour === k ? "border-navy-900 bg-navy-900 text-white" : "border-hairline text-ink-2 hover:border-hairline-strong"}`}
+                          className={`rounded-full border px-2 py-0.5 text-[13px] transition-colors duration-150 max-lg:py-1 ${colour === k ? "border-navy-900 bg-navy-900 text-white" : "border-hairline text-ink-2 hover:border-hairline-strong"}`}
                         >
                           {label}
                         </button>
@@ -416,7 +416,7 @@ function SatelliteSection(p: Props) {
     <div data-testid="satellite-panel" className="space-y-2">
       {sheet && !isImagery && latest && legendBlock}
       {o && !isImagery && product === o.product && (
-        <p data-testid="opening-note" className="text-[12px] leading-snug text-ink-2">
+        <p data-testid="opening-note" className="text-[13px] leading-snug text-ink-2">
           <span className="font-medium text-ink">Opened on satellite chlorophyll</span> because{" "}
           {o.reason === "forecast-stale" && o.forecast.basisDate ? `the C-HARM forecast is not current (issued ${formatDate(o.forecast.basisDate)}).` : "no C-HARM forecast is available."}{" "}
           <button type="button" className="font-medium text-accent underline-offset-2 hover:underline" onClick={() => p.onGroup("forecast")} data-testid="opening-show-forecast">
@@ -452,7 +452,7 @@ function SatelliteSection(p: Props) {
                 className={`min-w-[84px] rounded-lg border px-2 py-1 text-left transition-colors duration-150 ${day == null ? "border-navy-900 bg-navy-900 text-white" : "border-hairline hover:border-hairline-strong"}`}
               >
                 <span className="block text-[13px] font-semibold leading-tight">Latest</span>
-                <span className={`block text-[11px] leading-tight ${day == null ? "text-on-navy-2" : "text-ink-3"}`}>clear view, {comp?.window_days ?? 7} d</span>
+                <span className={`block text-[13px] leading-tight ${day == null ? "text-on-navy-2" : "text-ink-3"}`}>clear view, {comp?.window_days ?? 7} d</span>
               </button>
               {days.map((d) => {
                 const c = regionCoverage(d, p.regionId)?.observed_fraction ?? d.coverage?.domain_observed_fraction ?? 0;
@@ -473,7 +473,7 @@ function SatelliteSection(p: Props) {
                     <span className="relative h-5 w-3/4 overflow-hidden rounded-[3px] bg-surface-3" aria-hidden>
                       <span className="absolute inset-x-0 bottom-0 bg-measured" style={{ height: `${Math.max(c > 0 ? 8 : 0, c * 100)}%` }} />
                     </span>
-                    <span className="text-[11px] font-medium text-ink-2 tabular">{d.time.observed_date!.slice(8)}</span>
+                    <span className="text-[13px] font-medium text-ink-2 tabular">{d.time.observed_date!.slice(8)}</span>
                   </button>
                 );
               })}
@@ -481,7 +481,7 @@ function SatelliteSection(p: Props) {
           )}
           {!sheet && legendBlock}
           {product && satelliteUpdateFailed(p.satStatus, product) && p.satStatus && (
-            <p className="text-[12px] leading-snug text-serious" data-testid="sat-update-failed">
+            <p className="text-[13px] leading-snug text-serious" data-testid="sat-update-failed">
               The latest update ({formatDateTimePT(p.satStatus.last_attempt_at)}) did not refresh this product. Showing the last published observations, with their own dates.
             </p>
           )}
@@ -491,13 +491,13 @@ function SatelliteSection(p: Props) {
             <Res l={layer} />
           </MetaRow>
           {/* what chlorophyll is and what a gap means: always visible, never clamped */}
-          <p className="text-[12px] font-medium leading-snug text-ink" data-testid="sat-caveat">
+          <p className="text-[13px] font-medium leading-snug text-ink" data-testid="sat-caveat">
             Algae biomass, not toxin. Gaps are cloud or missing passes, not low chlorophyll.
           </p>
           {/* the header already gives the date range; the per-sensor dates and coverage are one
               step deeper, except a day with nothing to show, which is always said */}
           {(p.expanded || (layer && !layer.grid && !layer.tiles)) && (
-          <p className="text-[12px] leading-snug text-ink-2" data-testid="sat-dates">
+          <p className="text-[13px] leading-snug text-ink-2" data-testid="sat-dates">
             {ms ? (
               <MultiDates ms={ms} primary={mPrimary} secondary={mSecondary} regionId={p.regionId} regionLabel={p.regionLabel} />
             ) : layer && !layer.grid && !layer.tiles ? (
@@ -517,7 +517,7 @@ function SatelliteSection(p: Props) {
           )}
           <Details open={p.expanded}>
             {ms && (
-              <p data-testid="multi-label" className="text-[12px] leading-snug text-ink-2">
+              <p data-testid="multi-label" className="text-[13px] leading-snug text-ink-2">
                 <span className="font-medium text-ink">Multi-sensor display.</span> Sentinel-3 300 m where it has an observation in the last {comp?.window_days ?? 7} days; VIIRS 750 m elsewhere, or where VIIRS is more than {ms.prefer_primary_within_days} days newer. Each pixel is one sensor&apos;s own value and date; nothing is averaged.
               </p>
             )}
@@ -556,7 +556,7 @@ function ImagerySection(p: Props & { imagery: LayerArtifact[] }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={active.tiles.legend_url} alt={`NASA colour legend for ${active.title} (mg per cubic metre)`} className="w-full rounded bg-white p-0.5" loading="lazy" />
           ) : (
-            <p className="text-[12px] text-serious">Legend unavailable: colours cannot be read quantitatively.</p>
+            <p className="text-[13px] text-serious">Legend unavailable: colours cannot be read quantitatively.</p>
           )}
         </div>
       )}
@@ -564,7 +564,7 @@ function ImagerySection(p: Props & { imagery: LayerArtifact[] }) {
         <ProductClassBadge pc="observation" />
         <span>NASA GIBS pictures · values cannot be read from them</span>
       </MetaRow>
-      <p className="text-[12px] text-ink-2">{CHLOROPHYLL_COPY.biomass}</p>
+      <p className="text-[13px] text-ink-2">{CHLOROPHYLL_COPY.biomass}</p>
     </div>
   );
 }
@@ -572,7 +572,7 @@ function ImagerySection(p: Props & { imagery: LayerArtifact[] }) {
 // ---------------------------------------------------------------- disclosure
 function AboutLayer({ layer, title, testid }: { layer: LayerArtifact; title: string; testid: string }) {
   return (
-    <details className="group text-[12px] text-ink-2">
+    <details className="group text-[13px] text-ink-2">
       <summary className="cursor-pointer list-none font-medium text-accent [&::-webkit-details-marker]:hidden">
         <span className="inline-block transition-transform duration-150 group-open:rotate-90" aria-hidden>
           ▸
@@ -585,7 +585,7 @@ function AboutLayer({ layer, title, testid }: { layer: LayerArtifact; title: str
             <li key={c}>{c}</li>
           ))}
         </ul>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[11.5px]">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[13px]">
           <dt className="text-ink-3">Source</dt>
           <dd>
             <a className="text-accent hover:underline" href={safeHref(layer.provenance.source_url)} target="_blank" rel="noopener noreferrer">
@@ -752,7 +752,7 @@ function CurrentsSection(p: Props) {
         />
       )}
       {/* the header gives the hour; UTC and position in the series are one step deeper (still read out) */}
-      <p className={p.expanded || p.variant === "sheet" ? "text-[12.5px] text-ink-2" : "sr-only"} data-testid="cur-time">
+      <p className={p.expanded || p.variant === "sheet" ? "text-[13px] text-ink-2" : "sr-only"} data-testid="cur-time">
         {layer ? (
           p.cur.mean ? (
             <>
@@ -777,7 +777,7 @@ function CurrentsSection(p: Props) {
       </p>
       {!sheet && <CurrentsLegend particles={particles} detail={p.expanded} />}
       {failed && p.curStatus && (
-        <p className="text-[12px] leading-snug text-serious" data-testid="cur-update-failed">
+        <p className="text-[13px] leading-snug text-serious" data-testid="cur-update-failed">
           Latest update failed ({formatDateTimePT(p.curStatus.last_attempt_at)}); showing the last published hours.
         </p>
       )}
@@ -788,7 +788,7 @@ function CurrentsSection(p: Props) {
         <span className={p.expanded ? "" : "hidden"}>HF radar · HFRNet / NOAA CoastWatch</span>
         <Res l={layer} />
       </MetaRow>
-      <p className={`text-[12px] leading-snug text-ink-2 ${p.expanded ? "" : "line-clamp-2"}`} data-testid="cur-notes">
+      <p className={`text-[13px] leading-snug text-ink-2 ${p.expanded ? "" : "line-clamp-2"}`} data-testid="cur-notes">
         {cov && (
           <span data-testid="cur-coverage">
             {Math.round(cov.observed_fraction * 100)}% of {p.regionLabel} ocean observed {p.cur.mean ? "in the mean" : "this hour"}.{" "}
@@ -825,13 +825,13 @@ function ArrowGlyph({ length }: { length: number }) {
 function CurrentsLegend({ particles, detail, short = false }: { particles: boolean; detail: boolean; short?: boolean }) {
   return (
     <figure data-testid="currents-legend" className="space-y-1" aria-label="Legend: current speed classes">
-      <figcaption className="text-[12px] font-medium text-ink">
+      <figcaption className="text-[13px] font-medium text-ink">
         {particles ? "Particles drift through this one observed field. Not a trajectory." : "Arrows point where the surface water is moving"}
         <span className="font-normal text-ink-3"> · speed, m/s</span>
       </figcaption>
       <div className="flex items-center gap-1 rounded-lg bg-navy-900 px-2 py-0.5" data-peek="end">
         {ARROW_LENGTHS.map((len, i) => (
-          <span key={len} className="flex flex-1 items-center justify-center gap-1 text-[11px] leading-tight text-on-navy-2 tabular" data-testid="currents-legend-item">
+          <span key={len} className="flex flex-1 items-center justify-center gap-1 text-[13px] leading-tight text-on-navy-2 tabular" data-testid="currents-legend-item">
             {particles ? (
               <svg width={30} height={24} viewBox="0 0 30 24" aria-hidden>
                 <line x1={15 - len / 2} y1={12} x2={15 + len / 2} y2={12} stroke="#eef4fa" strokeWidth={1.6} strokeLinecap="round" strokeOpacity={Math.min(0.95, 0.35 + SPEED_CLASSES[i] * 1.6 + 0.1)} />
@@ -846,7 +846,7 @@ function CurrentsLegend({ particles, detail, short = false }: { particles: boole
         ))}
       </div>
       {detail && (
-        <p className="text-[11.5px] text-ink-3">
+        <p className="text-[13px] text-ink-3">
           1 m/s ≈ {KNOTS_PER_MS.toFixed(1)} knots.{" "}
           {particles ? "Screen speed shows relative speed at every zoom; particles stop where there is no observation. Not a trajectory." : "One arrow per 2 km radar cell when zoomed in; fewer when zoomed out."}
         </p>
@@ -876,7 +876,7 @@ function CombinedSection(p: Props & { currents: LayerArtifact | null }) {
             </div>
           )}
           {/* the four statements that make the combined view honest; always shown with it */}
-          <ul data-testid="combined-notes" className="list-disc space-y-0.5 pl-4 text-[12px] leading-snug text-ink-2">
+          <ul data-testid="combined-notes" className="list-disc space-y-0.5 pl-4 text-[13px] leading-snug text-ink-2">
             <li>Chlorophyll is ocean colour (algae biomass), not toxin.</li>
             <li>Currents are observed surface motion, not a forecast.</li>
             <li data-testid="combined-times">
@@ -900,7 +900,7 @@ function NothingCurrent(p: Props) {
   const sat = o?.satellite ?? null;
   const satDate = sat?.layer.time.observed_date ?? null;
   return (
-    <div data-testid="nothing-current" className="space-y-2 text-[12.5px] leading-snug text-ink-2">
+    <div data-testid="nothing-current" className="space-y-2 text-[13px] leading-snug text-ink-2">
       <p className="text-[13px] font-semibold text-ink">No current forecast or recent satellite view</p>
       <p>
         {run ? `The newest C-HARM forecast was issued ${formatDate(run.issued_date)}. ` : "No C-HARM forecast could be loaded. "}
@@ -911,7 +911,7 @@ function NothingCurrent(p: Props) {
       </p>
       <div className="flex flex-wrap gap-1.5">
         {run && (
-          <button type="button" data-testid="show-latest-forecast" onClick={() => p.onGroup("forecast")} className="rounded-lg border border-hairline-strong px-2.5 py-1 text-[12.5px] font-medium text-ink hover:bg-surface-2">
+          <button type="button" data-testid="show-latest-forecast" onClick={() => p.onGroup("forecast")} className="rounded-lg border border-hairline-strong px-2.5 py-1 text-[13px] font-medium text-ink hover:bg-surface-2">
             Show the last forecast ({formatDate(run.issued_date).replace(/^\w+, /, "")})
           </button>
         )}
@@ -923,7 +923,7 @@ function NothingCurrent(p: Props) {
               p.onSat({ product: sat.product, day: null });
               p.onGroup("satellite");
             }}
-            className="rounded-lg border border-hairline-strong px-2.5 py-1 text-[12.5px] font-medium text-ink hover:bg-surface-2"
+            className="rounded-lg border border-hairline-strong px-2.5 py-1 text-[13px] font-medium text-ink hover:bg-surface-2"
           >
             Show the latest satellite view
           </button>

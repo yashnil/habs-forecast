@@ -23,11 +23,11 @@ export function ObservationPanel({ layers, status, selected, onSelect, now }: Pr
         <h2 id="obs-h" className="text-[15px] font-semibold tracking-tight text-ink">
           {CHLOROPHYLL_COPY.heading}
         </h2>
-        <p className="text-[12px] leading-snug text-ink-2">{CHLOROPHYLL_COPY.biomass}</p>
+        <p className="text-[13px] leading-snug text-ink-2">{CHLOROPHYLL_COPY.biomass}</p>
       </header>
 
       {layers.length === 0 ? (
-        <p data-testid="chl-unavailable" className="rounded-lg border border-dashed border-hairline-strong p-3 text-[12.5px] text-ink-2">
+        <p data-testid="chl-unavailable" className="rounded-lg border border-dashed border-hairline-strong p-3 text-[13px] text-ink-2">
           Satellite chlorophyll unavailable{status?.error ? `: ${status.error}` : "."}
         </p>
       ) : (
@@ -42,7 +42,7 @@ export function ObservationPanel({ layers, status, selected, onSelect, now }: Pr
                 role="radio"
                 aria-checked={checked}
                 onClick={() => onSelect(id)}
-                className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-[12.5px] transition-colors ${
+                className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-[13px] transition-colors ${
                   checked ? "border-accent/60 bg-surface-3 text-ink" : "border-hairline bg-surface-2 text-ink-2 hover:border-hairline-strong"
                 }`}
               >
@@ -69,14 +69,14 @@ export function ObservationPanel({ layers, status, selected, onSelect, now }: Pr
               loading="lazy"
             />
           ) : (
-            <p className="text-[12px] text-serious">Legend unavailable — colours cannot be read quantitatively.</p>
+            <p className="text-[13px] text-serious">Legend unavailable — colours cannot be read quantitatively.</p>
           )}
-          <ul data-testid="chl-caveats" className="list-disc space-y-1 pl-4 text-[12px] leading-snug text-ink-2">
+          <ul data-testid="chl-caveats" className="list-disc space-y-1 pl-4 text-[13px] leading-snug text-ink-2">
             {active.caveats.map((c) => (
               <li key={c}>{c}</li>
             ))}
           </ul>
-          <details className="rounded-lg border border-hairline px-3 py-2 text-[11.5px] text-ink-2">
+          <details className="rounded-lg border border-hairline px-3 py-2 text-[13px] text-ink-2">
             <summary className="cursor-pointer font-medium text-ink">How the date was chosen</summary>
             <p className="mt-1.5">{active.tiles.date_selection}</p>
             <p className="mt-1.5 text-ink-3">
