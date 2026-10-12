@@ -174,11 +174,13 @@ function GroupTabs({ manifest, group, onGroup }: Pick<Props, "manifest" | "group
  */
 export function LayerDock(p: Props) {
   const desktop = p.variant === "desktop";
+  const Region = desktop ? "section" : "div";
   return (
-    <section
+    // a labelled region on desktop; on phones the sheet around it is that region
+    <Region
       data-testid="layer-dock"
       data-expanded={p.expanded}
-      aria-label="Map layers"
+      aria-label={desktop ? "Map layers" : undefined}
       className={desktop ? "theme-paper flex max-h-full flex-col rounded-xl bg-surface text-ink shadow-[0_1px_2px_rgba(6,17,30,0.14),0_10px_30px_rgba(6,17,30,0.22)]" : "text-ink"}
     >
       {!desktop && (
@@ -207,7 +209,7 @@ export function LayerDock(p: Props) {
       <div className={`min-h-0 space-y-2.5 overflow-y-auto overscroll-contain [scrollbar-width:thin] ${desktop ? `px-3.5 pb-2.5 ${p.group == null ? "pt-3" : "pt-1.5"}` : "pt-2"}`}>
         {p.group == null ? <NothingCurrent {...p} /> : p.group === "forecast" ? <ForecastSection {...p} /> : p.group === "currents" ? <CurrentsSection {...p} /> : <SatelliteSection {...p} />}
       </div>
-    </section>
+    </Region>
   );
 }
 
