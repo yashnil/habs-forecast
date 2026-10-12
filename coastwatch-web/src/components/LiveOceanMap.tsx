@@ -311,7 +311,9 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       setRegion(id);
       setPort(null);
       setInspect(null);
-      setNavOpen(false);
+      // going up to All California keeps the phone's Places sheet open on the list of regions;
+      // choosing a region closes it and shows that region on the map
+      if (id !== regions[0]?.id) setNavOpen(false);
       const r = regions.find((x) => x.id === id);
       if (r && mapRef.current) mapRef.current.fitBounds(r.bounds, { padding: { ...padding(), right: (window.innerWidth >= 1024 ? 0 : 16) + 28 }, duration: reducedMotion ? 0 : 800 });
     },
@@ -594,6 +596,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   // desktop and mobile never re-creates it.
   return (
     <div ref={rootRef} className="relative min-h-0 flex-1 overflow-hidden" data-testid="map">
+      <h1 className="sr-only">Ocean Map: harmful algal bloom forecasts, measurements and official notices for {placeLabel}</h1>
       <div className="absolute inset-0">{map}</div>
       {wide && hover && !detailOpen && <HoverReadout manifest={manifest} baseUrl={baseUrl} source={hoverSource} point={hover.p} screen={hover.s} bounds={{ w: rootRef.current?.clientWidth ?? 1440, h: mapH }} />}
       {wide && hover && detailOpen && hover.s.x < (rootRef.current?.clientWidth ?? 1440) - INSPECTOR - 16 && <HoverReadout manifest={manifest} baseUrl={baseUrl} source={hoverSource} point={hover.p} screen={hover.s} bounds={{ w: (rootRef.current?.clientWidth ?? 1440) - INSPECTOR - 16, h: mapH }} />}

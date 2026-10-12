@@ -43,7 +43,6 @@ export default async function SourcesPage() {
             </Link>
           </p>
         </section>
-        <h2 className="pt-2 font-display text-[22px] font-medium leading-tight text-ink">Source status</h2>
         {manifest ? (
           <SourceTable manifest={manifest} official={data.ok ? data.official : null} />
         ) : (

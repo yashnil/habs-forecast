@@ -52,7 +52,7 @@ test.describe("information hierarchy and labelling", () => {
     await panel.getByText("About this forecast").click();
     const layer = manifest.layers.find((l: { layer_id: string }) => l.layer_id === "charm_particulate_domoic_lead1");
     for (const c of layer.caveats) await expect(panel.getByTestId("forecast-caveats")).toContainText(c);
-    await expect(panel.getByTestId("run-line")).toContainText("Issued Thu, Oct 8, 2026 (inferred)");
+    await expect(panel.getByTestId("run-line")).toContainText("Issued Thu, Oct 8, 2026 (date inferred)");
     await expect(panel.getByTestId("run-line")).toContainText("showing Thu, Oct 8, forecast +1 day");
     await expect(panel.getByTestId("run-line")).toContainText("no forecast exists beyond day 3");
     await expect(panel).toContainText("particulate domoic acid exceeds 500 ng per litre");
@@ -192,5 +192,5 @@ test.describe("values and georeferencing", () => {
 test("sources page lists every source with status and provenance", async ({ page }) => {
   await open(page, `${OK}/sources`);
   for (const id of ["charm", "gibs_chl", "cdfw_ports"]) await expect(page.getByTestId(`source-${id}`)).toBeVisible();
-  await expect(page.getByTestId("source-charm")).toContainText("Run issued Thu, Oct 8, 2026 (inferred)");
+  await expect(page.getByTestId("source-charm")).toContainText("Run issued Thu, Oct 8, 2026 (date inferred: NOAA does not publish it)");
 });

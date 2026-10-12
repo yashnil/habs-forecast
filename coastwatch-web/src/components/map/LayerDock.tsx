@@ -327,7 +327,7 @@ function ForecastSection(p: Props) {
       <Details open={p.expanded}>
         <p className="text-[13px] leading-snug text-ink-2" data-testid="run-line">
           Issued <span className="font-medium text-ink tabular">{formatDate(p.run.issued_date, { year: true })}</span>
-          {p.run.issued_date_derived && <span className="text-ink-3"> (inferred)</span>}
+          {p.run.issued_date_derived && <span className="text-ink-3" title="NOAA does not publish the issue date; CoastWatch infers it from the forecast's own dates."> (date inferred)</span>}
           {layer?.time.valid_date && (
             <span className="text-ink-3">
               {" "}

@@ -150,3 +150,30 @@ test.describe("phone layouts", () => {
     await ctx.close();
   });
 });
+
+test.describe("keyboard and structure", () => {
+  for (const path of ["/", "/bloom", "/fisheries", "/sources", "/about"]) {
+    test(`${path}: one h1, and the first Tab offers a skip to the main content`, async ({ page }) => {
+      await open(page, `${OK}${path}`);
+      await expect(page.locator("h1")).toHaveCount(1);
+      await page.keyboard.press("Tab");
+      const skip = page.getByTestId("skip-link");
+      await expect(skip).toBeFocused();
+      await expect(skip).toBeVisible();
+      await page.keyboard.press("Enter");
+      await expect(page.locator("#main")).toBeFocused();
+    });
+  }
+});
+
+test("phone: 'All California' in Places keeps the sheet open on the list of regions", async ({ browser }) => {
+  const ctx = await browser.newContext(PHONE);
+  const page = await ctx.newPage();
+  await open(page, OK);
+  await page.waitForFunction(() => !!(window as unknown as { __cwMap?: unknown }).__cwMap);
+  await page.getByTestId("place-button").click();
+  await page.getByTestId("nav-all").click();
+  await page.getByTestId("region-sf_bay_farallones").click();
+  await expect(page.getByTestId("place-button")).toContainText("San Francisco");
+  await ctx.close();
+});

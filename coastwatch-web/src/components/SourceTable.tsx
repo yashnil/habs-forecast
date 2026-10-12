@@ -23,7 +23,7 @@ export function SourceTable({ manifest, official }: { manifest: Manifest; offici
   return (
     <section className="space-y-3" aria-labelledby="src-h">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="src-h" className="text-[15px] font-semibold text-ink">
+        <h2 id="src-h" className="pt-2 font-display text-[22px] font-medium leading-tight text-ink">
           Source status
         </h2>
         <p className="text-[13px] text-ink-3">
@@ -93,7 +93,7 @@ export function SourceTable({ manifest, official }: { manifest: Manifest; offici
               {s.source_id === "charm" && run && (
                 <p className="mt-2 text-[13px] text-ink-2">
                   Run issued {formatDate(run.issued_date, { year: true })}
-                  {run.issued_date_derived ? " (inferred)" : ""}: {run.leads_available.map(leadLabel).join(", ")} available
+                  {run.issued_date_derived ? " (date inferred: NOAA does not publish it)" : ""}: {run.leads_available.map(leadLabel).join(", ")} available
                   {run.leads_missing.length ? `; ${run.leads_missing.map(leadLabel).join(", ")} missing` : ""}.
                 </p>
               )}

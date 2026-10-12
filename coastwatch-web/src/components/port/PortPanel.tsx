@@ -70,7 +70,7 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
           <h3 id="pf-h" className="text-[13px] font-semibold text-ink">
             Agency forecast near this port
           </h3>
-          <span className="text-[13px] text-ink-3">C-HARM v3.1{ch?.issued_date ? ` · issued ${formatDate(ch.issued_date)} (inferred)` : ""}</span>
+          <span className="text-[13px] text-ink-3">C-HARM v3.1{ch?.issued_date ? ` · issued ${formatDate(ch.issued_date)} (date inferred)` : ""}</span>
         </div>
         {!ch || !ch.leads.length ? (
           <Notice tone="neutral">No forecast available.</Notice>

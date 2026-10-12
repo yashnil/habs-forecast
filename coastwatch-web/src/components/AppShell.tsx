@@ -30,6 +30,14 @@ export function AppShell({
 }) {
   return (
     <OfficialProvider official={official} status={officialStatus}>
+      {/* keyboard users skip the masthead and the status line */}
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-md bg-surface px-3 py-2 text-[14px] font-medium text-accent shadow focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
+        data-testid="skip-link"
+      >
+        Skip to main content
+      </a>
       <div className={`flex min-h-dvh flex-col bg-page pb-[var(--cw-tabbar-h)] md:pb-0 ${scroll === "app" ? "lg:h-dvh" : ""}`}>
         <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-navy-950 text-on-navy">
           <div className="flex h-[52px] items-center gap-6 px-4 md:h-[var(--cw-masthead-h)] md:gap-5 md:px-6 lg:gap-8">
@@ -88,7 +96,9 @@ export function AppShell({
           </div>
         </header>
         {banner}
-        <main className={`flex min-h-0 flex-1 flex-col ${scroll === "app" ? "theme-dark" : ""}`}>{children}</main>
+        <main id="main" tabIndex={-1} className={`flex min-h-0 flex-1 flex-col outline-none ${scroll === "app" ? "theme-dark" : ""}`}>
+          {children}
+        </main>
         {scroll === "page" && (
           <footer className="border-t border-hairline bg-page" data-testid="site-footer">
             <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6 text-[14px] text-ink-2 sm:px-8">
