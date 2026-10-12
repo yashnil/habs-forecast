@@ -253,7 +253,6 @@ export const ABOUT = {
   ],
 };
 
-
 /** The guided tour of the Ocean Map (one short step per control; never a safety statement). */
 export const TOUR = {
   steps: {
@@ -313,4 +312,11 @@ export const TOUR = {
       ],
     },
   },
+} as const;
+
+/** County reference layer (CA Department of Technology boundaries, public domain). */
+export const COUNTIES = {
+  attribution: "County boundaries: CA Dept. of Technology / CDTFA",
+  note: "Reference only, drawn on land. County lines do not define fishery closures, crab fishing zones, state waters, or how far a health advisory reaches offshore.",
+  source: "California Department of Technology, California County Boundaries and Identifiers (boundaries from CDTFA; public domain), simplified to about 100 m.",
 } as const;
