@@ -22,7 +22,17 @@ export function DataBanners({ manifest, error }: { manifest: Manifest | null; er
   const unavailable = !!error || !manifest;
   const failed = manifest ? manifest.sources.filter((s) => s.outcome === "failed") : [];
   const fixture = !!manifest && isFixture(manifest);
-  if (!reg.show && !unavailable && !failed.length && !fixture) return null;
+  if (!reg.show && !unavailable && !failed.length && !fixture) {
+    // same box as the line below, with an invisible line of text: no jump when the line appears
+    return reg.pending ? (
+      <div aria-hidden className="relative z-20 border-b border-official-line bg-official-bg text-[13px] leading-snug" data-testid="status-line-pending">
+        {/* the line's one-row height: its "More" button sets it */}
+        <div className="mx-auto flex min-h-[33.875px] max-w-[1600px] items-center px-4 py-1">
+          <span className="invisible">Official notices</span>
+        </div>
+      </div>
+    ) : null;
+  }
 
   const failedNames = failed.map((s) => s.title.split(":")[0].replace(/ harmful algal bloom forecast$/, ""));
   const hasMore = reg.show || failed.length > 0 || fixture;

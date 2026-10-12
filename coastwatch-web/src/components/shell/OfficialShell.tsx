@@ -73,7 +73,7 @@ export const CDPH_URL = "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Ad
  * future change too and disappears only after a recorded human review. Rendered by the
  * status line (components/Banners.tsx).
  */
-export function useRegistryDisclosure(): { show: boolean; changed: boolean; reason: string; openDrawer: (el?: HTMLElement | null) => void } {
+export function useRegistryDisclosure(): { show: boolean; pending: boolean; changed: boolean; reason: string; openDrawer: (el?: HTMLElement | null) => void } {
   const { ds, verification, openDrawer } = useOfficial();
   const changed = (ds?.watch ?? []).filter((w) => w.ok && (w.new_items?.length || w.matches_review === false));
   const items = changed.flatMap((w) => w.new_items ?? []);
@@ -82,7 +82,9 @@ export function useRegistryDisclosure(): { show: boolean; changed: boolean; reas
     : changed.length
       ? `Agency pages have changed since this list was last reviewed${items.length ? ` (not yet reviewed: ${items.join(", ")})` : ""}. The list may be incomplete or out of date.`
       : "This list was transcribed from the agency pages and has not been checked by a person. It may be incomplete.";
-  return { show: !!verification && verification.state !== "verified", changed: changed.length > 0, reason, openDrawer };
+  // pending: the state is computed in the browser (it depends on today's date); until then the
+  // status line keeps its place so the page does not jump when it appears
+  return { show: !!verification && verification.state !== "verified", pending: !verification, changed: changed.length > 0, reason, openDrawer };
 }
 
 /** Masthead control: count of active notices and the registry's verification state. */
