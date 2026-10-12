@@ -8,16 +8,28 @@ import { activeRecords, pointInGeometry } from "@/lib/official";
  * Only the notices' own published geography is used: statewide scope, official latitude limits,
  * and the agencies' area outlines. No place name or county name is ever matched as text.
  *
+ * Three tiers, so that being near a notice's area is never presented as the notice applying:
+ *
  * - "geographic": the notice's official geography includes the location (statewide; inside its
- *   official latitudes; inside, or on the shore of, its area outline).
- * - "possible": the notice may matter but its geography does not settle it — a separate area or a
- *   latitude limit nearby, an offshore point beyond a shore-defined area (the notice does not say
- *   how far offshore it reaches), or geography that CoastWatch has only approximately.
+ *   official latitudes; inside, or on the shore of, the agency's outline of its area).
+ * - "unresolved": the notice may apply, but its official geography does not settle it: a point on
+ *   the water off a county- or area-defined notice (no notice states how far offshore it reaches),
+ *   a shore location within a few km of a generalized outline's edge, or a part of a notice whose
+ *   area has no official outline (borrowed and approximate, see `noticeParts`).
+ * - "outside": the documented boundary excludes the location: beyond the notice's official
+ *   latitude limit, or a shore location clearly outside the agency's outline (another county, the
+ *   islands seen from the mainland). Listed only because it is nearby, for people who also fish or
+ *   harvest there; never shown as applying here.
+ *
+ * Shore locations (ports, harvest sites) and points on the water are treated differently because
+ * county and area notices are drawn on land and say nothing about their offshore reach.
  *
  * Every association is "not reviewed" unless a person's review is recorded in content/coast.ts.
  */
 
-export type Tier = "geographic" | "possible";
+export type Tier = "geographic" | "unresolved" | "outside";
+/** a port or a harvest site is on the shore; a point chosen on the map is on the water */
+export type LocationKind = "shore" | "water";
 export type Review = { state: "not_reviewed" } | { state: "confirmed" | "rejected"; reviewer: string; reviewedAt: string; note: string };
 
 export type Association = {
@@ -88,6 +100,7 @@ export function associationsAt(
   lat: number,
   lon: number,
   model: { noticeParts: NoticePart[]; reviews: AssociationReview[] } = APPLICABILITY,
+  kind: LocationKind = "shore",
 ): Association[] {
   if (!ds) return [];
   const out: Association[] = [];
@@ -115,8 +128,8 @@ export function associationsAt(
         if (d <= APPLICABILITY_KM.nearby)
           out.push({
             record: r,
-            tier: "possible",
-            basis: `Just outside the notice's official latitudes: its ${lat > a.lat_north ? "north" : "south"} limit is ${fmtKm(d)} km ${lat > a.lat_north ? "south" : "north"} of here.`,
+            tier: "outside",
+            basis: `Outside the notice's official latitudes: its ${lat > a.lat_north ? "north" : "south"} limit (${latLabel(lat > a.lat_north ? a.lat_north : a.lat_south)}) is ${fmtKm(d)} km ${lat > a.lat_north ? "south" : "north"} of here.`,
             caveats: [],
             distanceKm: d,
             review,
@@ -126,17 +139,19 @@ export function associationsAt(
     if (a.type === "county" || a.type === "named_area") {
       const outlines = outlinesFor(ds, r.id);
       if (!outlines.length) {
-        out.push({ record: r, tier: "possible", basis: "CoastWatch has no outline for this notice's area, so whether it applies here cannot be resolved.", caveats: [], distanceKm: null, review });
+        out.push({ record: r, tier: "unresolved", basis: "CoastWatch has no outline for this notice's area, so whether it applies here cannot be resolved.", caveats: [], distanceKm: null, review });
         continue;
       }
       const d = Math.min(...outlines.map((f) => distanceToPolygonKm(lon, lat, f.geometry)));
       const name = a.description;
       if (d === 0 || d <= APPLICABILITY_KM.shore)
         out.push({ record: r, tier: "geographic", basis: d === 0 ? `Inside the agency's outline of ${name}.` : `On the shore of ${name} (${fmtKm(d)} km from the agency's generalized outline).`, caveats: [], distanceKm: d === 0 ? null : d, review });
-      else if (d <= APPLICABILITY_KM.offshoreUnresolved)
-        out.push({ record: r, tier: "possible", basis: `${fmtKm(d)} km from ${name}. The notice does not say how far offshore it applies, so this is unresolved.`, caveats: [], distanceKm: d, review });
+      else if (kind === "water" && d <= APPLICABILITY_KM.nearby)
+        out.push({ record: r, tier: "unresolved", basis: `${fmtKm(d)} km off the agency's outline of ${name}. The notice does not say how far offshore it applies, so whether it reaches these waters is unresolved.`, caveats: [], distanceKm: d, review });
+      else if (kind === "shore" && d <= APPLICABILITY_KM.edge)
+        out.push({ record: r, tier: "unresolved", basis: `${fmtKm(d)} km from the agency's generalized outline of ${name}; at this distance the outline cannot settle which side these waters are on.`, caveats: [], distanceKm: d, review });
       else if (d <= APPLICABILITY_KM.nearby)
-        out.push({ record: r, tier: "possible", basis: `A separate area nearby: ${name} is ${fmtKm(d)} km away.`, caveats: [], distanceKm: d, review });
+        out.push({ record: r, tier: "outside", basis: `Outside the agency's outline of ${name}, which is ${fmtKm(d)} km away.`, caveats: [], distanceKm: d, review });
     }
   }
   // stated geography the registry does not encode, from the reviewable model: approximate only
@@ -148,10 +163,14 @@ export function associationsAt(
     const d = Math.min(...outlines.map((f) => distanceToPolygonKm(lon, lat, f.geometry)));
     if (d > APPLICABILITY_KM.nearby) continue;
     const prev = out.findIndex((x) => x.record.id === r.id);
+    // the part has no official boundary, so neither "applies" nor "outside" can be shown
     const assoc: Association = {
       record: r,
-      tier: "possible",
-      basis: d === 0 ? `The notice also covers the ${part.part} ("${part.quote}"); this location is inside CoastWatch's approximate outline of that area.` : `The notice also covers the ${part.part}, ${fmtKm(d)} km away ("${part.quote}").`,
+      tier: "unresolved",
+      basis:
+        d === 0
+          ? `The notice also covers the ${part.part} ("${part.quote}"); these waters are inside CoastWatch's approximate outline of that area.`
+          : `The notice also covers the ${part.part} ("${part.quote}"), about ${fmtKm(d)} km away. It gives no boundary for those waters, so whether they reach here is not stated.`,
       caveats: [`CoastWatch's outline for the ${part.part} is borrowed from another CDPH notice and is approximate for this one.`],
       distanceKm: d === 0 ? null : d,
       review: reviewOf(location, r.id, model.reviews),
@@ -159,7 +178,7 @@ export function associationsAt(
     if (prev >= 0) out.splice(prev, 1, assoc);
     else out.push(assoc);
   }
-  const order = (x: Association) => (x.tier === "geographic" ? 0 : 1) * 1000 + (x.distanceKm ?? 0);
+  const order = (x: Association) => ({ geographic: 0, unresolved: 1, outside: 2 })[x.tier] * 1000 + (x.distanceKm ?? 0);
   return out.sort((a, b) => order(a) - order(b));
 }
 

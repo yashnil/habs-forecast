@@ -34,7 +34,7 @@ import { Icon } from "@/components/ui/Icon";
 import { PlacePicker } from "./PlacePicker";
 import { PurposeSwitch } from "@/components/welcome/PurposeSwitch";
 import { defaultAudience, sectionOrder, usePurpose } from "@/lib/purpose";
-import { MeasuredSection, ModelSection, ObservedSection, OfficialSection, UnknownsSection, useModel } from "./CoastSections";
+import { MeasuredSection, ModelSection, ObservedSection, OfficialSection, UnknownsSection, modelHeadline, useModel } from "./CoastSections";
 import type { SatelliteResult } from "@/components/map/SatelliteNear";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), {
@@ -109,7 +109,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
 
   // ------------------------------------------------------------ facts for the chosen waters
   const verification = useMemo(() => (official && now ? officialVerification(official, sourceStatus(manifest, "official"), now) : null), [official, manifest, now]);
-  const assocs = useMemo(() => (place ? associationsAt(official, place.key, place.lat, place.lon) : []), [official, place]);
+  const assocs = useMemo(() => (place ? associationsAt(official, place.key, place.lat, place.lon, undefined, place.kind === "point" ? "water" : "shore") : []), [official, place]);
   const st = useMemo(() => (place ? stationsNear(stations, place.lat, place.lon) : { near: [], nearestBeyond: null }), [stations, place]);
   const leads = CHARM_LEADS.map((l) => charmLayer(manifest, "particulate_domoic", l));
   const today = now ? pacificToday(now) : null;
@@ -168,7 +168,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     const tied = assocs.filter((a) => a.tier === "geographic" && a.record.area.type !== "statewide");
     if (!tied.length) out.push("No notice in CoastWatch's list is tied to these waters by its geography. The list may be incomplete; check the agencies.");
     out.push("Whether each notice applies here was worked out from the notices' official geography; no person has reviewed these associations, and the notices themselves are not verified.");
-    if (assocs.some((a) => a.tier === "possible")) out.push(`Whether ${assocs.filter((a) => a.tier === "possible").length === 1 ? "one nearby notice applies" : `${assocs.filter((a) => a.tier === "possible").length} nearby notices apply`} to these waters is not resolved by their geography.`);
+    const nUnresolved = assocs.filter((a) => a.tier === "unresolved").length;
+    if (nUnresolved) out.push(`Whether ${nUnresolved === 1 ? "one notice applies" : `${nUnresolved} notices apply`} to these waters is not settled by ${nUnresolved === 1 ? "its" : "their"} official geography.`);
     const recentToxin = st.near.some((s) => s.station.latest.some((m) => m.variable === "pDA" && now && ageDays(m.date, now) <= 30));
     if (!recentToxin) out.push("There is no toxin measurement from the last 30 days within 40 km.");
     if (model?.pda && !model.pda.here) out.push(`C-HARM gives no toxin probability for these waters${model.pda.nearest ? `; its nearest value is ${model.pda.nearest.km.toFixed(1)} km away and is not a forecast here` : ""}.`);
@@ -265,7 +266,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
 
   const tied = assocs.filter((a) => a.tier === "geographic" && a.record.area.type !== "statewide").length;
   const statewide = assocs.filter((a) => a.record.area.type === "statewide").length;
-  const possible = assocs.filter((a) => a.tier === "possible").length;
+  const unresolved = assocs.filter((a) => a.tier === "unresolved").length;
   const lastToxin = st.near
     .flatMap((s) => s.station.latest.filter((m) => m.variable === "pDA").map((m) => ({ s, m })))
     .sort((a, b) => b.m.date.localeCompare(a.m.date))[0];
@@ -278,7 +279,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
             <>
               {tied ? `${tied} notice${tied === 1 ? "" : "s"} tied to these waters` : "No notice tied to these waters"}
               {statewide ? `, ${statewide} statewide` : ""}
-              {possible ? `; ${possible} possibly relevant` : ""} · <span className="text-official-ink">not verified</span>
+              {unresolved ? `; ${unresolved} may apply (unresolved)` : ""} · <span className="text-official-ink">not verified</span>
             </>
           ) : (
             "Unavailable: check CDFW and CDPH"
@@ -297,7 +298,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
           )}
         </GlanceRow>
         <GlanceRow href="#coast-model-h" dot="bg-model" label="Forecast" testid="glance-model">
-          {!model ? "Reading…" : model.error ? "No C-HARM run available" : model.pda?.here ? "C-HARM has a value for these waters" : model.pda?.nearest ? `No C-HARM value here · nearest ${model.pda.nearest.km.toFixed(1)} km ${model.pda.nearest.bearing}` : "No C-HARM value within 60 km"}
+          {modelHeadline(model)}
+          {model && !model.error && !model.pda?.here && !model.pn?.here && (model.pda?.nearest ? ` · nearest value ${model.pda.nearest.km.toFixed(1)} km ${model.pda.nearest.bearing}, not a forecast here` : " or within 60 km")}
           {model?.layer && now && classifyTime(model.layer.freshness, model.layer.time, now).state !== "current" && <span className="text-[#9b2c2c]"> · stale run</span>}
         </GlanceRow>
         <GlanceRow href="#coast-observed-h" dot="bg-measured" label="Satellite" testid="glance-satellite">

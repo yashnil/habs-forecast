@@ -10,9 +10,9 @@
 
 | Question | Where | Source |
 |---|---|---|
-| What official information is relevant? | **Official information**: notices whose official geography includes the waters; "possibly relevant" notices kept apart; why each is listed; agency links | CDFW/CDPH registry (not verified); CDFW region pages; CDPH map and results PDFs |
+| What official information is relevant? | **Official information**: three groups, by the notices' own geography: *apply here*; *may apply, not settled* (shown open); *nearby, outside the official area* (folded). Why each is listed; a note when agency pages have changed since the last review; agency links, which are always shown and described as the complete record | CDFW/CDPH registry (not verified); CDFW region pages; CDPH map and results PDFs |
 | What was measured nearby, and how recently? | **Measured nearby**: stations within 40 km, value, unit, sample date, age, "no sample in the last year" | CalHABMAP via SCCOOS ERDDAP |
-| Is a regional C-HARM forecast available? How far offshore are the nearest values? | **Forecast availability**: value only if the waters' own 3 km cell has one; otherwise the nearest real cell, distance, direction, "at that cell, not here"; 15 km summary; run dates; stale flag | NOAA C-HARM v3.1 |
+| Is a regional C-HARM forecast available? How far offshore are the nearest values? | **Forecast availability**: value only if the waters' own 3 km cell has one. Otherwise it leads with "No C-HARM forecast for these waters" (or names the one variable that is missing), then sets the nearest real cell apart as "not a forecast for these waters", with its distance, direction, centre coordinates, valid date and limits; 15 km summary; run dates; stale flag | NOAA C-HARM v3.1 |
 | Recent satellite and current observations? | **Recent observations** | NOAA CoastWatch OLCI/VIIRS; HF radar |
 | What does CoastWatch not know? | **What CoastWatch does not know here** (computed for the place) | — |
 | Where to check the rules? | Agency list: CDFW advisories, CDFW regulations for the region (and the neighbour near a limit), commercial fishing, MPAs, CDPH advisories, map and test results, OEHHA, phone lines | Agency pages (checked by title) |
@@ -55,31 +55,44 @@ All five were exercised in a browser at 1440 × 900 and 390 × 844. Interview va
   - The Northern Channel Islands advisory names Santa Cruz Island and is never matched to Santa Cruz port.
 - **C-HARM is never interpolated.**
   - The value "at these waters" is the value of the 3 km cell containing them, if any.
-  - Otherwise the nearest real cell is reported with its distance and direction to the cell centre, and labelled "at that cell, not here".
+  - Otherwise the section and the summary lead with "No C-HARM forecast for these waters". The nearest real cell is set apart as "not a forecast for these waters", with its distance and direction to the cell centre, the centre's coordinates, the valid date and its limits.
+  - The toxin and bloom grids are masked differently. At 7 ports (Trinidad, Shelter Cove, Fort Bragg, Bodega Bay, Monterey, Port Hueneme, Oceanside) the cell has a bloom probability but no toxin value, and the lead says exactly that.
+  - Checked in a browser on production data at all 22 ports and 4 harvest sites for all four forecast days: only Moss Landing's cell has a toxin value; every other place leads with the missing forecast, and the notice groups match the evidence file.
   - The 15 km summary counts real cells only.
   - Unit tests use a synthetic grid with an empty cell, a valued cell, and no cell within the radius.
-- **Agreement with the existing app.** For all 22 ports, on production data and in a unit test on the fixtures, the geographic tier matches exactly (0 mismatches) the pipeline's own port-to-notice relations (`port_intel`). The possible tier adds what those relations miss: Monterey County's advisory 23 km from Santa Cruz, and the islands part of the rock crab advisory near Ventura, Port Hueneme, Santa Barbara and Goleta.
+- **Agreement with the existing app.** For all 22 ports, on production data and in a unit test on the fixtures, the geographic tier matches exactly (0 mismatches) the pipeline's own port-to-notice relations (`port_intel`). Beyond those relations, the outside tier lists Monterey County's advisory 23 km from Santa Cruz, and the unresolved tier lists the islands part of the rock crab advisory near Ventura, Port Hueneme, Santa Barbara and Goleta.
 - **Stations** come from the validated observations dataset, with real sample dates. A sample over a year old reads "over N years ago (date)" and "no sample in the last year".
 - **Freshness:** the stale-run test uses the failed-update fixture and shows "Stale" in the forecast section, in the summary and in what is not known.
 
-## 4. Applicability model and unresolved associations
+## 4. Applicability model and the association audit
 
-**Model (content/coast.ts):**
-- **Distances:** shore tolerance 1 km; an offshore point is unresolved up to 5 km; separate areas and limits are "nearby" up to 30 km; a limit is called out within 10 km.
-- **`noticeParts`:** one reviewable candidate. The rock crab viscera advisory also covers the Northern Channel Islands. The outline for that part is borrowed from CDPH's islands advisory, so associations from it are only ever "possible".
-- **`reviews`:** empty. No association is marked confirmed or rejected, and no reviewer name exists by default.
+**Three tiers (lib/applicability.ts).** Being near a notice's area is never shown as the notice applying.
 
-**Associations needing a person's review** (from the evidence file):
+| Tier | Meaning | Shown as |
+|---|---|---|
+| `geographic` | The notice's official geography includes the location: statewide; inside its official latitudes; inside, or within 1 km of, the agency's outline of its area | "Apply here by their official geography" |
+| `unresolved` | The official geography does not settle it: a point on the water off a county- or area-defined notice (no notice states its offshore reach); a shore place within 5 km of a generalized outline's edge; a part of a notice with no official boundary | "May apply: not settled by their official geography", shown open |
+| `outside` | A documented boundary excludes the location: beyond an official latitude limit, or a shore place clearly outside the agency's outline. Listed only because it is within 30 km | "N nearby notices outside their official area", folded |
 
-| Location | Notice | Current tier | Why it needs review |
-|---|---|---|---|
-| Santa Cruz | CDPH Monterey County bivalve advisory | possible (23 km) | Do Santa Cruz harvesters use Monterey County waters? |
-| Ventura, Port Hueneme, Santa Barbara, Goleta Pier | CDPH NCI bivalve special advisory | possible (8–29 km) | Boats from these ports reach the islands |
-| same four | Rock crab viscera advisory, NCI part | possible (borrowed outline) | The islands part has no outline of its own |
-| Monterey | Both anchovy notices | geographic, limit 8.4 km | Fishing south of Point Lobos is outside |
-| Shelter Cove | CDFW commercial rock crab closure | geographic, limit 2.8 km | Close to 40°00′ N |
-| Crescent Beach | CDFW Humboldt razor clam closure | possible (28 km) | A separate county's beach |
-| Every county notice at an offshore point | — | possible | The notices do not state how far offshore they apply |
+Ports and harvest sites are shore locations; a point chosen on the map is on the water, so a county notice near it is unresolved, never outside.
+
+**`noticeParts`:** one reviewable candidate. The rock crab viscera advisory also covers "the waters off Santa Rosa Island and the Northern Channel Islands", which no official boundary defines. Its outline is borrowed from CDPH's islands advisory, so associations from it are only ever unresolved. **`reviews`:** empty. No association is confirmed or rejected, and no reviewer name exists by default.
+
+**Audit of the associations raised for review** (official wording checked on 2026-10-12 against the CDFW Health Advisories page and the CDPH releases; production data):
+
+| Location | Notice | Official geography (verbatim) | Tier | Finding |
+|---|---|---|---|---|
+| Santa Cruz | CDPH SN26-018, Monterey County bivalves | "gathered from Monterey County" | **outside** (23 km) | Santa Cruz is in Santa Cruz County. The advisory does not cover it; it stays visible for harvesters who also go to Monterey County. **CDPH lifted SN26-018 on 2026-10-12 (SN26-021)**; the registry still lists it until a person records the lift |
+| Santa Barbara, Ventura, Port Hueneme, Goleta Pier | CDPH Northern Channel Islands bivalve special advisory | CDPH map polygon of Anacapa, Santa Cruz, Santa Rosa and San Miguel islands | **outside** (8–29 km) | The polygon is official and excludes the mainland. Boats from these ports reach the islands, so it stays listed |
+| same four | Rock crab viscera advisory, islands part | "from the waters off Santa Rosa Island and the Northern Channel Islands" | **unresolved** | "Waters off" the islands has no stated boundary. CoastWatch cannot say whether it reaches the mainland side of the channel. The North Coast part (CA/OR border to the Mendocino/Sonoma line) is far away |
+| Monterey | CDPH SN26-019 and CDFW anchovy restriction | "between Pigeon Point (37° 11.00′ N) and Point Lobos (36° 31.46′ N)"; CDFW: "in Monterey Bay" | **applies**, with "south limit 8.4 km south; check which side you are on" and "offshore extent not stated" | Inside the official latitudes and in Monterey Bay. Fishing south of Point Lobos is outside |
+| Shelter Cove | CDFW commercial rock crab closure | "from the Mendocino/Humboldt county line (40° 00.00′ N) to Cape Mendocino (40° 30.00′ N)" | **applies**, with "south limit 2.8 km south" | The port is at 40.026° N. Waters south of 40° 00′ N are outside |
+| Crescent Beach | CDFW Humboldt razor clam closure (and CDPH SN24-003, once published) | "remains closed in Humboldt County" | **outside** (28 km) | Crescent Beach is in Del Norte County. The Del Norte closure and CDPH SN26-020 apply there instead |
+| Any point on the water | County and area notices | No offshore limit stated | **unresolved** | Unchanged: unresolved up to 30 km |
+
+**Counts across the 26 locations:** 51 apply, 4 unresolved, 6 outside. The geographic tier still matches the pipeline's own port relations for all 22 ports (0 mismatches), and its "nearby" relations are exactly the outside tier.
+
+**Omission safeguard:** the agency box always lists CDFW's and CDPH's own pages and says that automatic matching may miss a notice. It links to all active notices in CoastWatch's list. When agency pages have changed since the last review, a note at the top of the section says a notice may have been issued or lifted since.
 
 ## 5. Screenshots and the three review passes
 
@@ -114,6 +127,11 @@ All five were exercised in a browser at 1440 × 900 and 390 × 844. Interview va
 | Clam Beach (harvest site) | [1440](my-coast/img/site-clam-beach-1440.jpg) | [390](my-coast/img/site-clam-beach-390.jpg) · [full page](my-coast/img/site-clam-beach-390-full.jpg) |
 | Point in Monterey Bay (model value in its own cell) | [1440](my-coast/img/point-36.900_-121.950-1440.jpg) | [390](my-coast/img/point-36.900_-121.950-390.jpg) |
 | Stale forecast (test data) | [1440](my-coast/img/stale-port-593-1440.jpg) | — |
+| Shelter Cove (closure limit 2.8 km away) | [1440](my-coast/img/port-215-1440.jpg) | [390](my-coast/img/port-215-390.jpg) · [official section](my-coast/img/port-215-390-coast-official.jpg) |
+| Crescent Beach (Humboldt closure outside its area) | [1440](my-coast/img/site-crescent-beach-1440.jpg) | [390](my-coast/img/site-crescent-beach-390.jpg) |
+| Moss Landing (the only port with a toxin value in its own cell) | [1440](my-coast/img/port-592-1440.jpg) | [390](my-coast/img/port-592-390.jpg) |
+
+**After the association audit (2026-10-12, production data):** the three notice groups at Port Hueneme ([official section, 390](my-coast/img/port-605-390-coast-official.jpg)). Forecast availability where only the bloom grid has a value: Monterey ([1440](my-coast/img/port-550-1440-coast-model.jpg)). Where neither has a value: Santa Cruz ([390](my-coast/img/port-593-390-coast-model.jpg)). The Santa Cruz, Monterey, Port Hueneme, Crescent City and Clam Beach images above were retaken after the audit.
 
 Every location was also captured at 1280, 1024 and 320 px. No page error occurred and nothing scrolls sideways at any size.
 
@@ -168,8 +186,8 @@ First-load JavaScript: `/coast` 145 kB; the map page grows from 164 kB to 166 kB
 
 ## 8. Needs human review
 
-1. The notices themselves: the registry is still unverified (`cwp review-official`, by the owner).
-2. The associations in §4: none is reviewed.
+1. The notices themselves: the registry is still unverified (`cwp review-official`, by the owner). **Urgent:** CDPH lifted SN26-018 (Monterey County bivalves) on 2026-10-12 in SN26-021; CoastWatch shows it as active until the lift is recorded. The next data refresh will flag SN26-021 as an unreviewed item.
+2. The associations in §4: none is reviewed. The audit above is CoastWatch's reading of the official wording, not a review.
 3. The species tiers and wording: independent scientist review (outreach drafts are ready and not sent).
 4. Stakeholder interviews for the hypotheses in §2.
 

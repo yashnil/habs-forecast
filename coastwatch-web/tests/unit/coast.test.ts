@@ -37,12 +37,12 @@ describe("notice applicability (from the notices' own geography only)", () => {
     expect(anchovy.caveats.join(" ")).toMatch(/does not say how far offshore/);
   });
 
-  it("Santa Cruz: Monterey County's bivalve advisory is a separate area nearby, never applied by name", () => {
+  it("Santa Cruz: Monterey County's bivalve advisory is outside its official area, never applied by name", () => {
     const { lat, lon } = port(593);
     const a = associationsAt(official, "port-593", lat, lon);
     const mb = a.find((x) => x.record.id === "cdph-2026-sn26-018-monterey-bivalves")!;
-    expect(mb.tier).toBe("possible");
-    expect(mb.basis).toMatch(/separate area nearby/);
+    expect(mb.tier).toBe("outside");
+    expect(mb.basis).toMatch(/^Outside the agency's outline of Monterey County, which is 2\d km away\.$/);
     // the Northern Channel Islands advisory names "Santa Cruz" (island) in its area text: never matched to Santa Cruz port
     expect(ids(a)).not.toContain("cdph-nci-bivalve-special-advisory");
   });
@@ -60,24 +60,36 @@ describe("notice applicability (from the notices' own geography only)", () => {
     const ds = structuredClone(official);
     const rec = ds.registry.records.find((x) => x.id === "cdph-2026-sn26-018-monterey-bivalves")!;
     (ds.geometry as { features: unknown[] }).features = [{ type: "Feature", geometry: poly, properties: { kind: "county", record_ids: [rec.id] } }];
-    const at = (lonKm: number) => {
+    const at = (lonKm: number, kind: "shore" | "water" = "shore") => {
       const lon = -122 - lonKm / (111.32 * Math.cos((36.5 * Math.PI) / 180));
-      return associationsAt(ds, "x", 36.5, lon).find((x) => x.record.id === rec.id);
+      return associationsAt(ds, "x", 36.5, lon, APPLICABILITY, kind).find((x) => x.record.id === rec.id);
     };
+    // a shore place: on the shore, near a generalized edge (unresolved), or clearly elsewhere (outside)
     expect(at(0.5)?.tier).toBe("geographic");
     expect(at(0.5)?.basis).toMatch(/On the shore of/);
-    expect(at(3)?.tier).toBe("possible");
-    expect(at(3)?.basis).toMatch(/does not say how far offshore/);
-    expect(at(20)?.basis).toMatch(/separate area nearby/);
+    expect(at(3)?.tier).toBe("unresolved");
+    expect(at(3)?.basis).toMatch(/cannot settle which side/);
+    expect(at(20)?.tier).toBe("outside");
     expect(at(APPLICABILITY_KM.nearby + 5)).toBeUndefined();
+    // a point on the water: the notice states no offshore reach, so nearby is unresolved, never "outside"
+    expect(at(0.5, "water")?.tier).toBe("geographic");
+    expect(at(3, "water")?.tier).toBe("unresolved");
+    expect(at(20, "water")?.tier).toBe("unresolved");
+    expect(at(20, "water")?.basis).toMatch(/does not say how far offshore/);
+    expect(at(APPLICABILITY_KM.nearby + 5, "water")).toBeUndefined();
     expect(distanceToPolygonKm(-121.5, 36.5, poly)).toBe(0);
   });
 
-  it("a notice part borrowed from another outline is only ever 'possible', with its caveat", () => {
-    const a = associationsAt(official, "port-605", ...(Object.values(port(605)) as [number, number]));
-    const rc = a.find((x) => x.record.id === "cdph-rock-crab-viscera-north-coast-nci");
-    expect(rc?.tier).toBe("possible");
-    expect(rc?.caveats.join(" ")).toMatch(/borrowed from another CDPH notice/);
+  it("a notice part with no official boundary is only ever 'unresolved', with its caveat", () => {
+    for (const code of [611, 613, 605]) {
+      const a = associationsAt(official, `port-${code}`, ...(Object.values(port(code)) as [number, number]));
+      const rc = a.find((x) => x.record.id === "cdph-rock-crab-viscera-north-coast-nci");
+      expect(rc?.tier, `port ${code}`).toBe("unresolved");
+      expect(rc?.basis).toMatch(/gives no boundary for those waters/);
+      expect(rc?.caveats.join(" ")).toMatch(/borrowed from another CDPH notice/);
+      // the islands' own bivalve advisory has an official outline that excludes the mainland ports
+      expect(a.find((x) => x.record.id === "cdph-nci-bivalve-special-advisory")?.tier, `port ${code}`).toBe("outside");
+    }
     expect(APPLICABILITY.noticeParts.every((p) => p.status === "candidate")).toBe(true);
   });
 
@@ -90,13 +102,32 @@ describe("notice applicability (from the notices' own geography only)", () => {
     expect(r.review).toMatchObject({ state: "confirmed", reviewer: "Reviewer" });
   });
 
-  it("agrees with the pipeline's own port relations for every port (its nearby areas stay 'possible')", () => {
+  it("audited cases: Monterey anchovy, Shelter Cove rock crab, Crescent Beach razor clams", () => {
+    const mo = associationsAt(official, "port-550", ...(Object.values(port(550)) as [number, number]));
+    for (const id of ["cdph-2026-sn26-019-anchovy-central-coast", "cdfw-2026-anchovy-take-restriction-monterey-bay"]) {
+      const x = mo.find((y) => y.record.id === id)!;
+      expect(x.tier).toBe("geographic");
+      expect(x.caveats.join(" ")).toMatch(/south limit \(36°31\.\d\d′ N\) is 8\.\d km south/);
+    }
+    const sc = associationsAt(official, "port-215", ...(Object.values(port(215)) as [number, number])).find((y) => y.record.id === "cdfw-rock-crab-commercial-40n")!;
+    expect(sc.tier).toBe("geographic");
+    expect(sc.caveats.join(" ")).toMatch(/south limit \(40°00\.00′ N\) is 2\.\d km south/);
+    const cb = HARVEST_SITES.find((s) => s.id === "crescent-beach")!;
+    const a = associationsAt(official, "site-crescent-beach", cb.lat, cb.lon);
+    expect(ids(a, "geographic")).toEqual(expect.arrayContaining(["cdfw-2026-razor-clam-del-norte", "cdph-2026-sn26-020-razor-clam-del-norte"]));
+    expect(a.find((y) => y.record.id === "cdfw-2024-razor-clam-humboldt")?.tier).toBe("outside");
+    expect(a.find((y) => y.record.id === "cdph-2024-sn24-003-razor-clam-humboldt")?.tier).toBe("outside");
+    const clam = HARVEST_SITES.find((s) => s.id === "clam-beach")!;
+    expect(ids(associationsAt(official, "site-clam-beach", clam.lat, clam.lon), "geographic")).toEqual(expect.arrayContaining(["cdfw-2024-razor-clam-humboldt", "cdph-2024-sn24-003-razor-clam-humboldt"]));
+  });
+
+  it("agrees with the pipeline's own port relations for every port (its nearby areas are 'outside')", () => {
     const intel = file("port-intel-") as { ports: { port_code: number; lat: number; lon: number; official_relations: { record_id: string; relation: string }[] }[] };
     for (const p of intel.ports) {
       const a = associationsAt(official, `port-${p.port_code}`, p.lat, p.lon);
       const pipe = p.official_relations.filter((r) => r.relation !== "named_area_nearby").map((r) => r.record_id).sort();
       expect(ids(a, "geographic").sort(), `port ${p.port_code}`).toEqual(pipe);
-      for (const r of p.official_relations.filter((x) => x.relation === "named_area_nearby")) expect(ids(a, "possible"), `port ${p.port_code}`).toContain(r.record_id);
+      for (const r of p.official_relations.filter((x) => x.relation === "named_area_nearby")) expect(ids(a, "outside"), `port ${p.port_code}`).toContain(r.record_id);
     }
   });
 

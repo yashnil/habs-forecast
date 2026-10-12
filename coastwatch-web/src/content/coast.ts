@@ -112,8 +112,8 @@ export const APPLICABILITY: { noticeParts: NoticePart[]; reviews: AssociationRev
 export const APPLICABILITY_KM = {
   /** a shore location this close to an area outline counts as on that area's shore (outlines are generalized) */
   shore: 1,
-  /** beyond the shore tolerance, up to this distance offshore the notice's offshore reach is unresolved */
-  offshoreUnresolved: 5,
+  /** a shore location this close to an outline's edge (beyond the shore tolerance) is unresolved, not outside */
+  edge: 5,
   /** a separate area or a latitude limit within this distance is listed as nearby */
   nearby: 30,
   /** a latitude limit within this distance of a location inside the band is called out */
