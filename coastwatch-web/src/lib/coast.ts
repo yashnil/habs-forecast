@@ -85,6 +85,15 @@ export const RECENCY_LABEL: Record<Recency, string> = {
   none_this_year: "no sample in the last year",
 };
 
+/** "today", "12 days ago", "over 4 years ago": exact for recent samples, rounded down past a year. */
+export function ageWords(days: number): string {
+  if (days === 0) return "today";
+  if (days === 1) return "1 day ago";
+  if (days < 365) return `${days} days ago`;
+  const y = Math.floor(days / 365);
+  return y === 1 ? "over a year ago" : `over ${y} years ago`;
+}
+
 export function ageDays(date: string, now: Date): number {
   return Math.max(0, Math.floor((now.getTime() - Date.parse(`${date.slice(0, 10)}T12:00:00Z`)) / 86_400_000));
 }

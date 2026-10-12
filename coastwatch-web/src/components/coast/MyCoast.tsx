@@ -12,6 +12,7 @@ import { COAST_COPY } from "@/content/coast";
 import { associationsAt } from "@/lib/applicability";
 import {
   ageDays,
+  ageWords,
   cellPolygon,
   coastHref,
   parseAudience,
@@ -196,6 +197,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
       onPoint={(p) => go({ place: pointKey(p.lat, p.lon) })}
       onReady={(m) => {
         mapRef.current = m;
+        // on a small map the credits start folded (the (i) button opens them), as on Bloom's map
+        if (!window.matchMedia("(min-width: 1024px)").matches) m.getContainer().querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
         fit(m);
       }}
     />
@@ -215,7 +218,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
           <p className="mt-1.5 text-[15px] text-ink-2" data-testid="coast-subtitle">
             {place.note}
             {place.county ? ` · ${place.county} County` : ""}
-            <span className="tabular max-sm:hidden">
+            <span className={`tabular max-sm:hidden ${place.kind === "point" ? "hidden" : ""}`}>
               {" "}
               · {place.lat.toFixed(3)}°N {Math.abs(place.lon).toFixed(3)}°W
             </span>
@@ -280,7 +283,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
         <GlanceRow href="#coast-measured-h" dot="bg-measured" label="Measured" testid="glance-measured">
           {lastToxin && now ? (
             <>
-              Toxin sampled {ageDays(lastToxin.m.date, now) === 0 ? "today" : `${ageDays(lastToxin.m.date, now)} days ago`} at {lastToxin.s.station.name}, {lastToxin.s.km.toFixed(lastToxin.s.km < 10 ? 1 : 0)} km away
+              Toxin last sampled {ageWords(ageDays(lastToxin.m.date, now))}
+              {ageDays(lastToxin.m.date, now) > 90 ? ` (${formatDate(lastToxin.m.date, { year: true })})` : ""} at {lastToxin.s.station.name}, {lastToxin.s.km.toFixed(lastToxin.s.km < 10 ? 1 : 0)} km away
             </>
           ) : stationsError ? (
             "Station data unavailable"
@@ -293,7 +297,13 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
           {model?.layer && now && classifyTime(model.layer.freshness, model.layer.time, now).state !== "current" && <span className="text-[#9b2c2c]"> · stale run</span>}
         </GlanceRow>
         <GlanceRow href="#coast-observed-h" dot="bg-measured" label="Satellite" testid="glance-satellite">
-          {sat === null ? "Reading…" : sat.date && now ? `Clear view ${formatDate(sat.date)} (${ageDays(sat.date, now) === 0 ? "today" : `${ageDays(sat.date, now)} days ago`})` : `No clear view here in the last week${sat.nearestKm != null ? ` · nearest clear pixel ${sat.nearestKm.toFixed(1)} km` : ""}`}
+          {sat === null
+            ? "Reading…"
+            : sat.date && now
+              ? `Clear view ${formatDate(sat.date)} (${ageWords(ageDays(sat.date, now))})`
+              : sat.nearestKm != null
+                ? `No clear pixel at these waters this week; the nearest is ${sat.nearestKm.toFixed(1)} km away`
+                : "No clear view of these waters in the last week"}
         </GlanceRow>
       </dl>
       <p className="border-t border-hairline px-4 py-2.5 text-[13px] text-ink-3">

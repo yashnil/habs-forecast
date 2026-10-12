@@ -31,7 +31,10 @@ export function PlacePicker({
   const box = useRef<HTMLDivElement>(null);
   const shown = useMemo(() => {
     const t = q.trim().toLowerCase();
-    return t ? places.filter((p) => p.name.toLowerCase().includes(t) || (p.county ?? "").toLowerCase().includes(t)) : places;
+    if (!t) return places;
+    // names that start with the text first, then names containing it, then county matches
+    const rank = (p: CoastPlace) => (p.name.toLowerCase().startsWith(t) ? 0 : p.name.toLowerCase().includes(t) ? 1 : (p.county ?? "").toLowerCase().includes(t) ? 2 : 3);
+    return places.filter((p) => rank(p) < 3).sort((a, b) => rank(a) - rank(b));
   }, [q, places]);
   useEffect(() => setActive(0), [q]);
   useEffect(() => {

@@ -64,7 +64,9 @@ test.describe("My Coast", () => {
     await open(page, `${OK}/coast`);
     await expect(page.getByTestId("coast-landing")).toBeVisible();
     await page.getByTestId("place-input").fill("Monterey");
-    await page.keyboard.press("ArrowDown");
+    // "Monterey" ranks first (Moss Landing, in Monterey County, follows); Enter picks it
+    await expect(page.locator('[role="option"]').first()).toHaveText(/Monterey/);
+    await expect(page.locator('[role="option"][aria-selected="true"]')).toContainText("Monterey");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/coast\?place=port-550$/);
     await expect(page.getByTestId("coast-title")).toHaveText("Monterey");

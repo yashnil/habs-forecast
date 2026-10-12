@@ -8,7 +8,7 @@ import { AGENCY_LINKS, COAST_COPY } from "@/content/coast";
 import { FORECAST_COPY, OFFICIAL_STATUS } from "@/content/copy";
 import { ACTION_LABEL, type Verification } from "@/lib/official";
 import { AUDIENCE, cdfwRegionsAt, type Association } from "@/lib/applicability";
-import { AUDIENCES, ageDays, availability, RECENCY_LABEL, recency, type Audience, type Availability, type CoastPlace, type StationNear } from "@/lib/coast";
+import { AUDIENCES, ageDays, ageWords, availability, RECENCY_LABEL, recency, type Audience, type Availability, type CoastPlace, type StationNear } from "@/lib/coast";
 import { CHARM_LEADS, artifactUrl, charmLayer, leadLabel } from "@/lib/layers";
 import { loadGrid } from "@/lib/grid";
 import { classifyTime } from "@/lib/freshness";
@@ -37,7 +37,7 @@ export function SectionHead({ id, kind, title, aside }: { id: string; kind: "off
 const ext = { target: "_blank", rel: "noopener noreferrer" } as const;
 const linkCls = "text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent";
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
-const dayWord = (n: number) => (n === 0 ? "today" : n === 1 ? "1 day ago" : `${n} days ago`);
+const dayWord = ageWords;
 
 // ---------------------------------------------------------------- official
 
