@@ -125,6 +125,27 @@ def test_withheld_kept_separate_and_never_attributed(out):
     assert any("aquaculture" in c for c in ds.caveats) and any("meat weight" in c for c in ds.caveats)
 
 
+def test_withheld_note_matches_how_totals_are_built(out):
+    """The withheld amount is in the statewide total (NOAA FOSS: 'Total landings by state include
+    confidential data') and in no group; the published note must say exactly that."""
+    _, ds = run(out)
+    for y in ds.years:
+        sv = next(s for s in ds.withheld if s.year == y)
+        assert "Included in the statewide total" in sv.note and "not attributable to any species or group" in sv.note
+        assert "not included in group or statewide" not in sv.note
+        rows = [r for r in foss_rows(y) if r.get("dollars")]
+        st = next(t for t in ds.statewide_total if t.year == y)
+        dup = sum(e.dollars_nominal or 0 for e in ds.excluded_rows if e.year == y)
+        assert st.dollars_nominal == pytest.approx(sum(r["dollars"] for r in rows) - dup, abs=0.05)
+
+
+def test_rock_crab_basis_quotes_the_notice_limits():
+    """CDFW's notice: Mendocino/Humboldt county line (40° 00.00' N) to Cape Mendocino (40° 30.00' N)."""
+    basis = next(g["basis"] for g in fish.GROUPS if g["id"] == "rock_crab")
+    assert "40°00′ N" in basis and "40°30′ N" in basis and "Cape Mendocino" in basis
+    assert "north of 40° N" not in basis
+
+
 def test_rows_without_value_are_not_zero():
     cpi = fish.Deflator(series_id="x", title="x", source_url="x", base_year=2024, annual_index={"2024": 100.0}, months_used={"2024": 12}, method="x")
     rows = {2024: [{"ts_afs_name": "CRAB, DUNGENESS", "year": 2024, "pounds": None, "dollars": None}]}
