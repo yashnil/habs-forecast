@@ -194,3 +194,16 @@ describe("published data stays readable by the released web (Research Preview de
     expect(tiles.some((t) => t.tile_size === 512)).toBe(true);
   });
 });
+
+describe("C-HARM readout: why a cell is empty", () => {
+  it("names the toxin mask only from the same run's Pseudo-nitzschia layer", async () => {
+    const { NO_FORECAST, pnSibling } = await import("@/lib/readout");
+    const m = manifestJson as unknown as Manifest;
+    const da = m.layers.find((l) => l.layer_id === "charm_particulate_domoic_lead1")!;
+    const pn = pnSibling(m, da)!;
+    expect(pn.layer_id).toBe("charm_pseudo_nitzschia_lead1");
+    expect(pnSibling(m, pn)).toBeNull();
+    expect(NO_FORECAST.toxinMask).toContain("within about 3–6 km of shore");
+    expect(NO_FORECAST.notModelled).toMatch(/does not model/);
+  });
+});

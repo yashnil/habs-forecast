@@ -16,15 +16,38 @@ export type Readout = { kind: "model" | "observation"; value: string | null; uni
 const short = (d: string) => formatDate(d).replace(/^\w+, /, "");
 export const fmtChl = (v: number) => (v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(2));
 
-export async function forecastAt(baseUrl: string, l: LayerArtifact, lat: number, lon: number): Promise<Readout> {
+/** Why a C-HARM cell has no value, in the words of the published caveats. */
+export const NO_FORECAST = {
+  outside: "Outside the C-HARM model area",
+  toxinMask:
+    "No toxin probability in this cell: C-HARM does not provide toxin probabilities for many cells within about 3–6 km of shore. The same run has a Pseudo-nitzschia value here.",
+  notModelled: "No forecast value: land, or water C-HARM does not model (such as enclosed bays and some cells next to the shore)",
+} as const;
+
+/** `sibling`: the same run's Pseudo-nitzschia layer, used only to say why a toxin cell is empty. */
+export async function forecastAt(baseUrl: string, l: LayerArtifact, lat: number, lon: number, sibling: LayerArtifact | null = null): Promise<Readout> {
   const what = (l.threshold_text ?? l.short_title).replace(/^Probability (that|of) /i, "chance ");
   const when = `C-HARM ${l.time.lead_days ? "forecast" : "nowcast"} · valid ${short(l.time.valid_date ?? "")}`;
   if (!l.grid) return { kind: "model", value: null, unit: "", what, when, none: "No forecast grid published" };
   const codes = await loadGrid(artifactUrl(baseUrl, l.grid.url));
   const c = cellAt(l.grid, lat, lon);
-  const v = c ? valueOf(l.grid, codes, c) : null;
-  if (v == null) return { kind: "model", value: null, unit: "", what, when, none: "No forecast value: land, or a nearshore cell C-HARM does not cover" };
+  if (!c) return { kind: "model", value: null, unit: "", what, when, none: NO_FORECAST.outside };
+  const v = valueOf(l.grid, codes, c);
+  if (v == null) {
+    if (sibling?.grid && sibling.layer_id !== l.layer_id) {
+      const sc = cellAt(sibling.grid, lat, lon);
+      const sv = sc ? valueOf(sibling.grid, await loadGrid(artifactUrl(baseUrl, sibling.grid.url)), sc) : null;
+      if (sv != null) return { kind: "model", value: null, unit: "", what, when, none: NO_FORECAST.toxinMask };
+    }
+    return { kind: "model", value: null, unit: "", what, when, none: NO_FORECAST.notModelled };
+  }
   return { kind: "model", value: `${Math.round(v * 100)}%`, unit: "", what, when };
+}
+
+/** The Pseudo-nitzschia layer of the same C-HARM run and lead as `l`, if published. */
+export function pnSibling(manifest: Manifest | null, l: LayerArtifact): LayerArtifact | null {
+  if (!manifest || l.variable === "pseudo_nitzschia") return null;
+  return manifest.layers.find((x) => x.variable === "pseudo_nitzschia" && x.group_id === l.group_id && x.time.lead_days === l.time.lead_days && x.time.issued_date === l.time.issued_date) ?? null;
 }
 
 async function member(baseUrl: string, l: LayerArtifact | null, lat: number, lon: number): Promise<SensorObs> {

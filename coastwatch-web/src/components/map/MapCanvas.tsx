@@ -1,20 +1,43 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLayerMouseEvent } from "react-map-gl/maplibre";
-import { setWorkerUrl, type ExpressionSpecification, type Map as MlMap } from "maplibre-gl";
+import { setWorkerUrl, type ExpressionSpecification, type GeoJSONSource, type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { PortsCollection } from "@/generated/schema";
-import { ARROW_LENGTHS, arrowImage, BASEMAP_STYLE, BEFORE_OVERLAY_ID, CA_BOUNDS, NODATA_LAYER_ID, noDataImage, SPEED_CLASSES } from "@/lib/basemap";
+import type { LayerArtifact } from "@/generated/schema";
+import {
+  ARROW_LENGTHS,
+  arrowImage,
+  BASEMAP_STYLE,
+  BEFORE_OVERLAY_ID,
+  CA_BOUNDS,
+  NODATA_FALLBACK_LAYER_ID,
+  NODATA_LAYER_ID,
+  noDataImage,
+  SPEED_CLASSES,
+  WATER_FALLBACK_LAYER_IDS,
+  WATER_FALLBACK_SOURCE,
+} from "@/lib/basemap";
 import type { CurrentField } from "@/lib/currents";
+import { GRID_TILE_SIZE } from "@/lib/gridTiles";
+import { gridTiles } from "@/lib/gridTileProtocol";
 import { indexedTiles } from "@/lib/tileIndex";
+import { loadWaterFallback, waterGeoJSON } from "@/lib/waterFallback";
+import { onBasemapSlow } from "@/lib/waterMask";
 import FlowParticles from "./FlowParticles";
 
 // MapLibre's module worker is copied to public/ by scripts/copy-maplibre-worker.mjs
 setWorkerUrl("/vendor/maplibre/maplibre-gl-worker.mjs");
 
 /** C-HARM: one Mercator image placed by its corners. */
-export type ImageRaster = { id: string; url: string; corners: number[][] };
+export type ImageRaster = {
+  id: string;
+  url: string;
+  corners: number[][];
+  /** drawn from the value grid when present (exact cell edges); the published image otherwise */
+  grid?: { layer: LayerArtifact; url: string } | null;
+};
 /** XYZ tiles: CoastWatch-rendered satellite tiles or third-party imagery. */
 export type TileRaster = { id: string; template: string; minzoom: number; maxzoom: number; bounds?: number[] | null; indexUrl?: string | null };
 
@@ -75,23 +98,66 @@ export default function MapCanvas(p: Props) {
   const [map, setMap] = useState<MlMap | null>(null);
   const hasRaster = !!(p.forecast || p.satellite || p.satelliteAge);
   const paint = p.fade ? RASTER_FADE : RASTER_PAINT;
+  const fg = p.forecast?.grid;
+  const forecastTiles = useMemo(() => (fg ? gridTiles(fg.layer, fg.url) : null), [fg]);
+
+  // When the basemap's tiles fail (tile server down, offline) or are late (a data tile stopped
+  // waiting for them), draw the bundled water instead, so the sea, the coastline and the no-data
+  // dots still read (lib/waterFallback); data rasters are clipped to the same water by
+  // lib/waterMask. "slow" returns to "ok" once the basemap's tiles for the view have arrived.
+  const [basemap, setBasemap] = useState<"ok" | "slow" | "down">("ok");
+  const [fallbackReady, setFallbackReady] = useState(false);
+  useEffect(() => onBasemapSlow(() => setBasemap((b) => (b === "ok" ? "slow" : b))), []);
+  useEffect(() => {
+    if (!map || basemap !== "slow") return;
+    const arrived = (e: { sourceId?: string }) => {
+      if (e.sourceId === "omt" && map.isSourceLoaded("omt")) setBasemap((b) => (b === "slow" ? "ok" : b));
+    };
+    map.on("sourcedata", arrived);
+    return () => {
+      map.off("sourcedata", arrived);
+    };
+  }, [map, basemap]);
+  const fallbackOn = basemap !== "ok";
+  useEffect(() => {
+    if (!map || !fallbackOn) return;
+    let live = true;
+    loadWaterFallback().then((g) => {
+      const src = map.getSource(WATER_FALLBACK_SOURCE) as GeoJSONSource | undefined;
+      if (!live || !g || !src) return;
+      if (!fallbackReady) src.setData(waterGeoJSON(g));
+      setFallbackReady(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, [map, fallbackOn, fallbackReady]);
+  const showFallback = fallbackOn && fallbackReady;
 
   // The no-data dots show only under a raster data layer: with currents alone (or nothing)
-  // there is no "value" for a gap to be confused with.
+  // there is no "value" for a gap to be confused with. The bundled-water layers show only while
+  // the basemap is slow or down.
   useEffect(() => {
     if (!map) return;
     // idempotent: every style change fires "styledata" again
     const apply = () => {
-      if (!map.getLayer(NODATA_LAYER_ID)) return;
-      const v = hasRaster ? "visible" : "none";
-      if (map.getLayoutProperty(NODATA_LAYER_ID, "visibility") !== v) map.setLayoutProperty(NODATA_LAYER_ID, "visibility", v);
+      const want: [string, boolean][] = [
+        [NODATA_LAYER_ID, hasRaster],
+        [NODATA_FALLBACK_LAYER_ID, hasRaster && showFallback],
+        ...WATER_FALLBACK_LAYER_IDS.map((id): [string, boolean] => [id, showFallback]),
+      ];
+      for (const [id, on] of want) {
+        if (!map.getLayer(id)) continue;
+        const v = on ? "visible" : "none";
+        if (map.getLayoutProperty(id, "visibility") !== v) map.setLayoutProperty(id, "visibility", v);
+      }
     };
     apply();
     map.on("styledata", apply);
     return () => {
       map.off("styledata", apply);
     };
-  }, [map, hasRaster]);
+  }, [map, hasRaster, showFallback]);
   const { onHover } = p;
 
   const onClick = useCallback(
@@ -117,6 +183,22 @@ export default function MapCanvas(p: Props) {
     [p.ports],
   );
   const interactive = p.showPorts && portsData ? ["ports-hit", "ports-circle"] : [];
+  const inited = useRef<MlMap | null>(null);
+  const init = (m: MlMap) => {
+    // the style's layers exist (isStyleLoaded would also wait for the tiles)
+    if (inited.current === m || !m.getLayer("land")) return;
+    inited.current = m;
+    if (!m.hasImage("nodata")) m.addImage("nodata", noDataImage(), { pixelRatio: 2 });
+    addArrows(m);
+    m.on("styleimagemissing", (ev: { id: string }) => {
+      if (ev.id === "nodata" && !m.hasImage("nodata")) m.addImage("nodata", noDataImage(), { pixelRatio: 2 });
+      if (ev.id.startsWith("cw-arrow-")) addArrows(m);
+    });
+    setMap(m);
+    // exposed for end-to-end tests and debugging
+    (window as unknown as { __cwMap?: unknown }).__cwMap = m;
+    p.onReady(m);
+  };
 
   return (
     <Map
@@ -135,28 +217,26 @@ export default function MapCanvas(p: Props) {
       // one so the map still reaches its load event and renders what did arrive
       onError={(e) => {
         console.error(e.error);
+        if ((e as { sourceId?: string }).sourceId === "omt") setBasemap("down");
         e.target.triggerRepaint();
       }}
-      onLoad={(e) => {
-        const m = e.target;
-        if (!m.hasImage("nodata")) m.addImage("nodata", noDataImage(), { pixelRatio: 2 });
-        addArrows(m);
-        m.on("styleimagemissing", (ev: { id: string }) => {
-          if (ev.id === "nodata" && !m.hasImage("nodata")) m.addImage("nodata", noDataImage(), { pixelRatio: 2 });
-          if (ev.id.startsWith("cw-arrow-")) addArrows(m);
-        });
-        setMap(m);
-        // exposed for end-to-end tests and debugging
-        (window as unknown as { __cwMap?: unknown }).__cwMap = e.target;
-        p.onReady(e.target);
-      }}
+      // set up as soon as the style is ready, not at "load": that waits for every basemap tile,
+      // and the data layers, no-data dots, bundled water and navigation must not wait for a slow
+      // tile server
+      onStyleData={(e) => init(e.target)}
+      onLoad={(e) => init(e.target)}
       cursor="crosshair"
       style={{ width: "100%", height: "100%" }}
     >
       <NavigationControl position="bottom-right" showCompass={false} />
       {wide && <ScaleControl position="bottom-right" unit="metric" />}
 
-      {p.forecast && (
+      {p.forecast && forecastTiles && (
+        <Source key={`${p.forecast.id}-grid`} id="forecast" type="raster" tiles={[forecastTiles.template]} tileSize={GRID_TILE_SIZE} bounds={forecastTiles.bounds} minzoom={0} maxzoom={13}>
+          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
+        </Source>
+      )}
+      {p.forecast && !forecastTiles && (
         <Source key={p.forecast.id} id="forecast" type="image" url={p.forecast.url} coordinates={p.forecast.corners as [[number, number], [number, number], [number, number], [number, number]]}>
           <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
         </Source>

@@ -19,9 +19,11 @@
     "shots": "node scripts/shoot.mjs"
   },
   "dependencies": {
+    "@mapbox/vector-tile": "3.0.0",
     "ajv": "^8.20.0",
     "maplibre-gl": "^6.13.0",
     "next": "15.5.14",
+    "pbf": "5.1.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-map-gl": "^8.1.3"

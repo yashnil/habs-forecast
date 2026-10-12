@@ -36,6 +36,7 @@ The paper is about physics-informed chlorophyll forecasting (see the [root READM
 | [21 — M6: Bloom Intelligence plan](21-m6-bloom-intelligence-plan.md) | Spec §3.2 gap table, data already published, components, commit order, tests, review standard, decisions D1–D4 |
 | [22 — M6: Bloom Intelligence](22-m6-bloom-intelligence.md) | One station, one timeline: before/after, measurements, tests, §6 rules, limitations |
 | [23 — M7: Fisheries & Economic Exposure](23-m7-fisheries-brief.md) | Brief, approved decisions F1–F4, data audit, what was built, review passes, tests, limits; [CDFW request draft](m7/cdfw-data-request-draft.md) |
+| [24 — C-HARM coastline and georeferencing](24-charm-coastline.md) | Coverage vs rendering artifacts; two verified causes of cell-edge offsets; grid tiles clipped to the basemap water, with a bundled fallback when its tiles fail or are slow; validation, before/after |
 | [m5/](m5/) | M5 comparison (decision stage), review before/after images and evidence |
 | [m3/](m3/) | Screenshots of the M3 app (staging data, 2026-10-08) |
 | [m2/](m2/) | Screenshots of the M2 app (live data, 2026-10-08) |
