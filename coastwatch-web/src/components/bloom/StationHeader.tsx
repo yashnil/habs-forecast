@@ -15,7 +15,22 @@ import { FreshDot } from "./FreshDot";
  * read as one statement. The 120-day strip has one tick per sampling visit, shades the gap since the
  * last visit, and marks today, so "how fresh is this" is visible before any number.
  */
-export function StationHeader({ station, policy, now, portCode }: { station: ObsStation; policy: FreshnessPolicy | null; now: Date | null; portCode: number | null }) {
+export function StationHeader({
+  station,
+  policy,
+  now,
+  portCode,
+  onChange,
+  stationCount,
+}: {
+  station: ObsStation;
+  policy: FreshnessPolicy | null;
+  now: Date | null;
+  portCode: number | null;
+  /** below xl the rail is hidden: the header carries the station picker */
+  onChange?: () => void;
+  stationCount?: number;
+}) {
   const f = stationFreshness(station, policy, now);
   const last = station.sample_times.at(-1) ?? null;
   const strip = now ? samplingStrip(station.sample_times, now) : null;
@@ -27,7 +42,23 @@ export function StationHeader({ station, policy, now, portCode }: { station: Obs
   return (
     <header className="grid gap-x-10 gap-y-4 lg:grid-cols-[minmax(0,1fr)_320px]" data-testid="station-header">
       <div className="min-w-0 space-y-2">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-measured">Shore station · {region} · CalHABMAP</p>
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-measured">
+            Shore station · {region}
+            <span className="max-sm:hidden"> · CalHABMAP</span>
+          </p>
+          {onChange && (
+            <button
+              type="button"
+              onClick={onChange}
+              aria-haspopup="dialog"
+              data-testid="station-select"
+              className="-my-2 shrink-0 rounded-md px-2 py-2 text-[14px] font-medium text-accent hover:underline xl:hidden"
+            >
+              Change<span className="sr-only"> station: {station.name} is one of {stationCount} stations</span>
+            </button>
+          )}
+        </div>
         <h1 id="station-h" className="font-display text-[34px] font-medium leading-[1.08] text-ink sm:text-[42px]">
           {station.name}
         </h1>
@@ -37,11 +68,11 @@ export function StationHeader({ station, policy, now, portCode }: { station: Obs
         {/* wrap-safe: items separated by space, never a line that starts with a dot */}
         <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[13px] text-ink-3">
           {station.lat != null && station.lon != null && (
-            <span className="font-mono">
+            <span className="font-mono max-sm:hidden">
               {station.lat.toFixed(3)}°N {Math.abs(station.lon).toFixed(3)}°W
             </span>
           )}
-          {station.location_code && <span className="font-mono">{station.location_code}</span>}
+          {station.location_code && <span className="font-mono max-sm:hidden">{station.location_code}</span>}
           {station.nearest_port_name && (
             <span>
               {station.nearest_port_km} km from {station.nearest_port_name}

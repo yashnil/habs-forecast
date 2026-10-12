@@ -129,7 +129,7 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
           <p className="max-w-[70ch] text-[15.5px] leading-normal text-ink-2 sm:text-[16px] sm:leading-relaxed" data-testid="exposure-definition">
             {ds.terminology} {FISHERIES_COPY.atStake.split(". ")[0]}.
           </p>
-          <p className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[12.5px] text-ink-3 sm:text-[13px]">
+          <p className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[13px] text-ink-3 sm:text-[13px]">
             {fresh && <FreshDot f={fresh} />}
             <span data-testid="data-through">
               Annual data {ds.years[0]}–{latest}
@@ -171,8 +171,27 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
         </section>
       </div>
 
+      {/* phones and tablets: the page's parts, one tap away */}
+      <nav aria-label="On this page" className="-mx-4 -my-3 overflow-x-auto px-4 sm:-my-4 lg:hidden" data-testid="fisheries-jump">
+        <ul className="flex gap-2 whitespace-nowrap text-[14px]">
+          {[
+            ["chart-h", "By year"],
+            ["species-h", "By species"],
+            ["limits-h", "Can and cannot"],
+            ["geo-h", "Ports"],
+            ["methods-h", "Methods"],
+          ].map(([id, label]) => (
+            <li key={id}>
+              <a href={`#${id}`} className="inline-flex min-h-[36px] items-center rounded-full border border-hairline-strong bg-surface px-3.5 font-medium text-ink hover:border-accent">
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
       {/* the primary figure */}
-      <section aria-labelledby="chart-h" className="space-y-4">
+      <section aria-labelledby="chart-h" className="scroll-mt-24 space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
           <div>
             <h2 id="chart-h" className="font-display text-[23px] sm:text-[26px] font-medium leading-tight text-ink">
@@ -216,7 +235,7 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
             <YearPanel ds={ds} groups={groups} unit={unit} year={hover ?? year} focus={focus} previewing={hover != null && hover !== year} />
           </div>
         </div>
-        <div className="max-w-[92ch] space-y-1.5 text-[13.5px] leading-relaxed text-ink-2" data-testid="chart-notes">
+        <ChartNotes narrow={narrow}>
           <p>
             <b className="font-semibold text-ink">Reading this chart.</b> Each bar is one calendar year, January to December. Crab seasons run from late autumn into the next year, so one season&apos;s landings fall into two bars. The brackets mark when the 2015–16 domoic acid closures happened (select 2015 or 2016 for the record); they do not say how much of any change between years the closures explain.
           </p>
@@ -229,11 +248,11 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
           ) : (
             <p>Nominal dollars are as reported each year, without adjusting for inflation, so earlier years look smaller than they were in purchasing power.</p>
           )}
-        </div>
+        </ChartNotes>
       </section>
 
       {/* the inspector */}
-      <section aria-labelledby="species-h" className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <section aria-labelledby="species-h" className="scroll-mt-24 grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-3">
           <h2 id="species-h" className="font-display text-[26px] font-medium leading-tight text-ink">
             By species group <span className="text-[17px] text-ink-3">{year}, {unitShort}</span>
@@ -253,18 +272,29 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
       </section>
 
       {/* what the figures can and cannot establish */}
-      <section aria-labelledby="limits-h" className="grid gap-x-10 gap-y-4 border-t border-hairline pt-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1.2fr)]" data-testid="fisheries-limits">
+      <section aria-labelledby="limits-h" className="scroll-mt-24 grid gap-x-10 gap-y-4 border-t border-hairline pt-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1.2fr)]" data-testid="fisheries-limits">
         <h2 id="limits-h" className="font-display text-[26px] font-medium leading-tight text-ink">
           What these figures can and cannot tell you
         </h2>
-        <div>
-          <h3 className="mb-1.5 text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">They show</h3>
-          <ul className="space-y-2 text-[14.5px] leading-relaxed text-ink-2">
-            {FISHERIES_COPY.can.map((t) => (
-              <li key={t}>{t}</li>
-            ))}
-          </ul>
-        </div>
+        {narrow ? (
+          <details className="group order-last border-t border-hairline pt-3" data-testid="limits-can">
+            <summary className="cursor-pointer text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">They show</summary>
+            <ul className="mt-1.5 space-y-2 text-[14.5px] leading-relaxed text-ink-2">
+              {FISHERIES_COPY.can.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+          </details>
+        ) : (
+          <div data-testid="limits-can">
+            <h3 className="mb-1.5 text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">They show</h3>
+            <ul className="space-y-2 text-[14.5px] leading-relaxed text-ink-2">
+              {FISHERIES_COPY.can.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div>
           <h3 className="mb-1.5 text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">They do not show</h3>
           <ul className="space-y-2 text-[14.5px] leading-relaxed text-ink-2">
@@ -276,7 +306,7 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
       </section>
 
       {/* geography, only as far as the data allow */}
-      <section aria-labelledby="geo-h" className="grid gap-x-12 gap-y-6 border-t border-hairline pt-8 md:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
+      <section aria-labelledby="geo-h" className="scroll-mt-24 grid gap-x-12 gap-y-6 border-t border-hairline pt-8 md:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
         <div className="max-w-[60ch] space-y-3 text-[14.5px] leading-relaxed text-ink-2">
           <h2 id="geo-h" className="font-display text-[26px] font-medium leading-tight text-ink">
             Where landings are reported
@@ -300,10 +330,23 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
         </NearScreen>
       </section>
 
-      <div className="border-t border-hairline pt-8">
+      <div className="scroll-mt-24 border-t border-hairline pt-8" id="methods">
         <FisheriesMethods ds={ds} unit={unit} compact={narrow} />
       </div>
     </div>
+  );
+}
+
+/** How to read the chart: open beside the chart on wide screens, one tap away on phones. */
+function ChartNotes({ narrow, children }: { narrow: boolean; children: React.ReactNode }) {
+  const body = <div className="max-w-[92ch] space-y-1.5 text-[13.5px] leading-relaxed text-ink-2">{children}</div>;
+  return narrow ? (
+    <details className="border-y border-hairline py-2.5" data-testid="chart-notes">
+      <summary className="cursor-pointer text-[14px] font-medium text-ink">How to read this chart</summary>
+      <div className="mt-2">{body}</div>
+    </details>
+  ) : (
+    <div data-testid="chart-notes">{body}</div>
   );
 }
 
@@ -311,7 +354,7 @@ function Figure({ value, short, children, testid }: { value: string; short: stri
   return (
     <div className="min-w-0 items-baseline gap-4 xl:flex xl:py-3" data-testid={testid}>
       <p className="shrink-0 font-display text-[25px] font-medium leading-none tracking-tight text-ink tabular sm:text-[34px] xl:w-[8rem] xl:text-[36px]">{value}</p>
-      <p className="mt-1 text-[12.5px] leading-snug text-ink-2 sm:hidden">{short}</p>
+      <p className="mt-1 text-[13px] leading-snug text-ink-2 sm:hidden">{short}</p>
       <p className="mt-2 hidden text-[13.5px] leading-snug text-ink-2 sm:block xl:mt-0">{children}</p>
     </div>
   );

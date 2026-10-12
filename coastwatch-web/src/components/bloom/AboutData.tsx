@@ -138,6 +138,15 @@ export function AboutData({ station, dataset, compact = false }: { station: ObsS
       </div>
 
       <p className="text-[13px] leading-relaxed text-ink-3" data-testid="bloom-provenance">
+        {station.lat != null && station.lon != null && (
+          <>
+            Station <span className="font-mono">{station.location_code ?? station.station_id}</span> at{" "}
+            <span className="font-mono">
+              {station.lat.toFixed(3)}°N {Math.abs(station.lon).toFixed(3)}°W
+            </span>
+            .{" "}
+          </>
+        )}
         Source: <SourceLink href={station.source_url}>{station.station_id} on SCCOOS ERDDAP ↗</SourceLink> · <SourceLink href={dataset.provenance.source_url}>CalHABMAP ↗</SourceLink>. Retrieved{" "}
         {formatDateTimePT(dataset.generated_at)}. C-HARM v3.1 model history: NOAA CoastWatch ERDDAP.
       </p>
