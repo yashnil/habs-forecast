@@ -33,34 +33,37 @@ export function OfficialStrip({
   const { openDrawer, count, verification } = useOfficialDrawer();
   const records = new Map((official?.registry.records ?? []).map((r) => [r.id, r]));
   const rel = [...new Set(recordIds)].filter((id) => records.get(id)?.status === "active");
-  const unverified = verification?.state !== "verified";
+  const missing = "A missing notice does not mean an area is open or seafood is safe.";
   return (
-    <section className="rounded-lg border border-official-line bg-official-bg px-4 py-2.5" aria-labelledby={`${testid}-h`} data-testid={testid}>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id={`${testid}-h`} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold text-official-ink">
-          <Icon name="shield" className="h-4 w-4 text-official" />
+    <section className="rounded-lg border border-official-line bg-official-bg px-4 py-2" aria-labelledby={`${testid}-h`} data-testid={testid}>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <h2 id={`${testid}-h`} className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold text-official-ink">
+          <Icon name="shield" className="h-4 w-4 shrink-0 text-official" />
           {!official ? "Official notices unavailable" : heading.includes("{n}") ? heading.replace("{n}", String(rel.length)) : `${heading}: ${rel.length}`}
           {official && <VerificationBadge v={verification ?? null} />}
         </h2>
-        <button type="button" onClick={(e) => openDrawer(e.currentTarget)} className="text-[13.5px] font-medium text-official-ink underline-offset-2 hover:underline" data-testid={`${testid}-all`}>
-          All {count} notices ›
+        <button type="button" onClick={(e) => openDrawer(e.currentTarget)} className="text-[14px] font-medium text-official-ink underline-offset-2 hover:underline" data-testid={`${testid}-all`}>
+          All {count}<span className="max-sm:hidden"> notices</span> ›
         </button>
       </div>
       {!official ? (
-        <p className="mt-1 text-[13.5px] text-ink-2">{error ? `${error}. ` : ""}Check CDFW and CDPH directly before harvesting or eating seafood.</p>
+        <p className="mt-0.5 text-[13px] text-ink-2">{error ? `${error}. ` : ""}Check CDFW and CDPH directly before harvesting or eating seafood.</p>
       ) : rel.length && compact ? (
-        <details className="mt-1.5 text-[13.5px]">
-          <summary className="cursor-pointer font-medium text-official-ink">Show the {rel.length} notices</summary>
+        // one line until opened: the count, the state and the safety sentence stay visible
+        <details className="group mt-0.5 text-[13px]">
+          <summary className="flex cursor-pointer list-none flex-wrap items-baseline gap-x-3 [&::-webkit-details-marker]:hidden">
+            <span className="font-medium text-official-ink underline-offset-2 group-open:hidden hover:underline">Show the {rel.length}</span>
+            <span className="hidden font-medium text-official-ink group-open:inline">Hide</span>
+            <span className="text-ink-3">{missing}</span>
+          </summary>
           <NoticeList rel={rel} records={records} testid={`${testid}-list`} />
         </details>
-      ) : rel.length ? (
-        <NoticeList rel={rel} records={records} testid={`${testid}-list`} />
       ) : (
-        <p className="mt-1 text-[13.5px] text-ink-2">{emptyText}</p>
+        <>
+          {rel.length ? <NoticeList rel={rel} records={records} testid={`${testid}-list`} /> : <p className="mt-0.5 text-[13px] text-ink-2">{emptyText}</p>}
+          <p className="mt-0.5 text-[13px] text-ink-3">{missing}</p>
+        </>
       )}
-      <p className="mt-1 text-[13px] text-ink-3">
-        {compact || !unverified ? "" : "Transcribed from CDFW and CDPH, not yet checked by a person. "}A missing notice does not mean an area is open or seafood is safe.
-      </p>
     </section>
   );
 }

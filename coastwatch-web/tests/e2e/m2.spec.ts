@@ -96,7 +96,8 @@ test.describe("ports", () => {
       await panel.getByTestId("port-forecast").elementHandle(),
     );
     expect(officialFirst).toBe(true);
-    await expect(panel.getByTestId("official-not-verified-brief")).toBeVisible();
+    await expect(panel.getByTestId("port-official").getByTestId("official-verification")).toHaveAttribute("data-state", "unverified");
+    await expect(panel.getByTestId("port-official").getByTestId("official-verification")).toBeVisible();
     const p = intel.ports.find((x: { port_code: number }) => x.port_code === 550);
     for (const rel of p.official_relations) await expect(panel.getByTestId(`notice-${rel.record_id}`)).toBeVisible();
     const lead1 = p.charm.leads.find((l: { lead_days: number }) => l.lead_days === 1);
