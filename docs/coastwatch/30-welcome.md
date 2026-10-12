@@ -47,7 +47,7 @@ The existing first-visit card on the Ocean Map becomes a two-step welcome. It is
 
 ## Tests
 
-**Browser:** `welcome.spec.ts`, 9 tests. They cover:
+**Browser:** `welcome.spec.ts`, 10 tests. They cover:
 - choose, Back, choose again, pick waters, then land filtered;
 - the return link;
 - Skip and X saving nothing;
@@ -56,10 +56,11 @@ The existing first-visit card on the Ocean Map becomes a two-step welcome. It is
 - link precedence over the welcome and the saved purpose;
 - change and reset;
 - the phone shellfish path;
+- on a short phone, the welcome staying above the layer sheet;
 - axe on both steps on desktop and phone.
 
 **Unit:** `purpose.test.ts`.
 
-The full suite passes: 210 browser and 211 unit tests.
+The full suite passes: 211 browser and 211 unit tests.
 
 **Changed existing test:** the M8 first-visit test now checks that the card never overlaps the place chip, instead of sitting below it. On desktop the welcome sits in the free top right of the map.
