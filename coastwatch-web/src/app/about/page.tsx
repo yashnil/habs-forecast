@@ -30,6 +30,11 @@ export default async function AboutPage() {
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">About CoastWatch</p>
           <h1 className="text-balance font-display text-[34px] font-medium leading-[1.08] text-ink sm:text-[46px]">{ABOUT.title}</h1>
           <p className="font-display text-[19px] leading-[1.5] text-ink-2 sm:text-[21px]">{ABOUT.lede}</p>
+          <p className="text-[16px]">
+            <Link href="/?tour=1" className="font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent" data-testid="about-tour">
+              Take the tour of the Ocean Map →
+            </Link>
+          </p>
         </header>
 
         <section aria-labelledby="kinds-h" className="mt-12 border-t border-hairline pt-8">

@@ -247,3 +247,64 @@ export const ABOUT = {
   ],
 };
 
+
+/** The guided tour of the Ocean Map (one short step per control; never a safety statement). */
+export const TOUR = {
+  steps: {
+    what: {
+      title: "What CoastWatch shows",
+      body: [
+        "Harmful algal bloom information for the California coast in one place: NOAA's C-HARM model, satellite and shore-station measurements, and official notices. Each is labelled for what it is.",
+        "CoastWatch is not an official source. Closures and advisories come from CDFW and CDPH.",
+      ],
+    },
+    place: {
+      title: "Choose a place",
+      body: ["Search for a region, port or shore station here. The shield counts the official notices that may apply to the place you choose."],
+    },
+    forecast: {
+      title: "The forecast is a model",
+      body: [
+        "C-HARM gives the probability that Pseudo-nitzschia or domoic acid exceeds a threshold, today and up to three days ahead, on a 3 km grid. Choose the quantity and the day here.",
+        "It is a probability, not a measurement of toxin in water or seafood, and a low probability does not mean an area is safe.",
+      ],
+    },
+    satellite: {
+      title: "What satellites saw",
+      body: [
+        "Satellite chlorophyll shows where algae were seen on a given day. Chlorophyll is not toxin, and clouds or fog often leave the coast without data.",
+      ],
+    },
+    gaps: {
+      title: "Empty water is missing data",
+      body: [
+        "Hatched or empty water has no value. C-HARM has no toxin values for many cells within about 3–6 km of shore, or for bays such as San Francisco Bay; satellites miss cloudy days. CoastWatch never fills these in.",
+        "Click or tap any spot on the water to see why it is empty.",
+      ],
+    },
+    port: {
+      title: "A port and what was measured nearby",
+      body: [
+        "A port shows its official notices first, then the forecast near it and the nearest shore-station measurements, each with its date. Measurements describe the water at one pier on one day.",
+      ],
+    },
+    official: {
+      title: "Official restrictions",
+      body: [
+        "Closures and advisories come only from CDFW and CDPH. CoastWatch lists them with links to the agencies; it has not verified them, and the list may be incomplete. This button opens the list from any page.",
+      ],
+    },
+    pages: {
+      title: "Bloom Intelligence and Fisheries",
+      body: [
+        "Bloom Intelligence follows one shore station's measurements over time. Fisheries shows past landings of species that marine toxins can affect.",
+      ],
+    },
+    limits: {
+      title: "Not a safety clearance",
+      body: [
+        "CoastWatch does not say that seafood is safe or that an area is open, and a missing notice is not an all-clear. Before you fish or harvest, check CDFW and CDPH, or call the CDPH shellfish line at 1 (800) 553-4133.",
+      ],
+    },
+  },
+} as const;
