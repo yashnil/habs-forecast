@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated_at": "2026-10-12T18:00:00Z",
+ "generated_at": "2026-10-08T18:00:00Z",
  "registry": {
   "schema_version": 1,
   "records": [
@@ -244,6 +244,62 @@
     "uncertainties": []
    },
    {
+    "id": "cdph-2024-sn24-003-razor-clam-humboldt",
+    "agency": "CDPH",
+    "action": "consumption_advisory",
+    "status": "active",
+    "title": "Do not eat sport-harvested razor clams from Humboldt County",
+    "summary": "CDPH advises not eating sport-harvested razor clams from Humboldt County because of dangerous levels of domoic acid. The warning applies only to razor clams in Humboldt County. It is separate from CDFW's closure of the recreational razor clam fishery there.",
+    "official_text": "CDPH is advising the public not to consume sport-harvested razor clams gathered from Humboldt County due to high levels of Domoic Acid. For Humboldt County, this warning only applies to razor clams as they are known to concentrate and retain domoic acid toxin in their meat and tissues at higher levels and for much longer than other species of bivalve shellfish.",
+    "fishery": "sport_harvest",
+    "species": [
+     "razor clams"
+    ],
+    "toxins": [
+     "domoic_acid"
+    ],
+    "area": {
+     "type": "county",
+     "description": "Humboldt County",
+     "counties": [
+      "Humboldt"
+     ],
+     "lat_north": null,
+     "lat_south": null,
+     "geometry_basis": "official_polygon",
+     "geometry_note": "CDPH county polygon (the 'Razor Clam Health Advisory Boundaries' layer of the CDPH Coastal Shellfish Advisories map shows Humboldt County); the warning applies to razor clams gathered from the county."
+    },
+    "effective_date": "2024-05-02",
+    "effective_date_note": "Issued in CDPH SN24-003 (May 2, 2024). CDPH restated that it remains in effect in SN25-024 (Oct 6, 2025), SN25-025 (Oct 24, 2025) and SN26-020 (Oct 9, 2026).",
+    "expected_end_date": null,
+    "expected_end_note": null,
+    "lifted_date": null,
+    "sources": [
+     {
+      "label": "CDPH SN24-003: CDPH Warns Against Consuming Razor Clams from Humboldt County",
+      "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN24-003.aspx",
+      "kind": "press_release",
+      "published_date": "2024-05-02"
+     },
+     {
+      "label": "CDPH SN26-020 (refers to 'the razor clam advisory for Humboldt County')",
+      "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-020.aspx",
+      "kind": "press_release",
+      "published_date": "2026-10-09"
+     },
+     {
+      "label": "CDPH Coastal Shellfish Advisories map (Razor Clam Health Advisory: Humboldt and Del Norte counties)",
+      "url": "https://experience.arcgis.com/experience/394836318cfe4f7494e1c09097a43559",
+      "kind": "status_page",
+      "published_date": null
+     }
+    ],
+    "uncertainties": [
+     "Status confirmed from CDPH's published releases and its advisory map data on 2026-10-12, not by telephone with CDPH; not checked by a person.",
+     "The release does not state how far offshore the warning applies; it concerns razor clams gathered from the county."
+    ]
+   },
+   {
     "id": "cdfw-2026-razor-clam-del-norte",
     "agency": "CDFW",
     "action": "fishery_closure",
@@ -326,7 +382,7 @@
      }
     ],
     "uncertainties": [
-     "SN26-020 says it is 'in addition to the razor clam advisory for Humboldt County'; that CDPH advisory is not a separate record in this registry and needs checking."
+     "SN26-020 says it is 'in addition to the razor clam advisory for Humboldt County'; that advisory is the record cdph-2024-sn24-003-razor-clam-humboldt."
     ]
    },
    {
@@ -588,7 +644,7 @@
   {
    "source_id": "cdph_release_list",
    "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx",
-   "checked_at": "2026-10-12T18:00:00Z",
+   "checked_at": "2026-10-08T18:00:00Z",
    "ok": true,
    "http_status": 200,
    "error": null,
@@ -620,7 +676,7 @@
   {
    "source_id": "cdfw_health_advisories",
    "url": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
-   "checked_at": "2026-10-12T18:00:00Z",
+   "checked_at": "2026-10-08T18:00:00Z",
    "ok": true,
    "http_status": 200,
    "error": null,
@@ -632,7 +688,7 @@
   {
    "source_id": "cdfw_whale_safe",
    "url": "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries",
-   "checked_at": "2026-10-12T18:00:00Z",
+   "checked_at": "2026-10-08T18:00:00Z",
    "ok": true,
    "http_status": 200,
    "error": null,
@@ -2606,7 +2662,8 @@
     },
     "properties": {
      "record_ids": [
-      "cdfw-2024-razor-clam-humboldt"
+      "cdfw-2024-razor-clam-humboldt",
+      "cdph-2024-sn24-003-razor-clam-humboldt"
      ],
      "basis": "official_polygon",
      "note": "Humboldt County (CDPH advisory map county polygon)",
@@ -3818,7 +3875,7 @@
   "institution": "Records: California Department of Fish and Wildlife; California Department of Public Health",
   "license": "Official notices are public information from CDFW and CDPH; the agencies' own pages control.",
   "citation": null,
-  "retrieved_at": "2026-10-12T18:00:00Z",
+  "retrieved_at": "2026-10-08T18:00:00Z",
   "request_urls": [
    "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx",
    "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",

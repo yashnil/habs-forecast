@@ -197,6 +197,8 @@ def test_official_geometry_and_failures(out):
     assert ("county", ("cdph-2026-sn26-018-monterey-bivalves",)) in kinds
     # Del Norte (2026-10-09): the CDFW closure and the CDPH warning share the county polygon
     assert ("county", ("cdfw-2026-razor-clam-del-norte", "cdph-2026-sn26-020-razor-clam-del-norte")) in kinds
+    # Humboldt: the CDFW closure (2024) and CDPH's razor clam advisory SN24-003 share the county polygon
+    assert ("county", ("cdfw-2024-razor-clam-humboldt", "cdph-2024-sn24-003-razor-clam-humboldt")) in kinds
     assert ("named_area", ("cdph-nci-bivalve-special-advisory",)) in kinds
     assert ("lat_limit", ("cdph-2026-sn26-019-anchovy-central-coast", "cdfw-2026-anchovy-take-restriction-monterey-bay")) in kinds
     # latitude-defined notices are drawn as their limits only, never as shaded areas
