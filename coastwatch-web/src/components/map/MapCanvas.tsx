@@ -18,6 +18,7 @@ import {
   SPEED_CLASSES,
   WATER_FALLBACK_LAYER_IDS,
   WATER_FALLBACK_SOURCE,
+  transformRequest,
 } from "@/lib/basemap";
 import type { CurrentField } from "@/lib/currents";
 import { GRID_TILE_SIZE } from "@/lib/gridTiles";
@@ -203,6 +204,7 @@ export default function MapCanvas(p: Props) {
   return (
     <Map
       mapStyle={BASEMAP_STYLE}
+      transformRequest={transformRequest}
       initialViewState={{ bounds: p.initialBounds, fitBoundsOptions: { padding: p.initialPadding } }}
       maxBounds={[CA_BOUNDS[0][0], CA_BOUNDS[0][1], CA_BOUNDS[1][0], CA_BOUNDS[1][1]]}
       minZoom={4.2}

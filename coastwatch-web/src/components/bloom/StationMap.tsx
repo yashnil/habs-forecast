@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import Map, { Layer, NavigationControl, Source, type MapLayerMouseEvent, type MapRef } from "react-map-gl/maplibre";
 import { setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { BASEMAP_STYLE, CA_BOUNDS } from "@/lib/basemap";
+import { BASEMAP_STYLE, CA_BOUNDS, transformRequest } from "@/lib/basemap";
 
 setWorkerUrl("/vendor/maplibre/maplibre-gl-worker.mjs");
 
@@ -63,6 +63,7 @@ export default function StationMap({
     <Map
       ref={ref}
       mapStyle={BASEMAP_STYLE}
+      transformRequest={transformRequest}
       initialViewState={{ bounds, fitBoundsOptions: { padding: 28 } }}
       maxBounds={[CA_BOUNDS[0][0], CA_BOUNDS[0][1], CA_BOUNDS[1][0], CA_BOUNDS[1][1]]}
       minZoom={4.2}
