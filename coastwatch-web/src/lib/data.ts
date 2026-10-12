@@ -44,6 +44,8 @@ export type StationLite = {
   lon: number;
   status: string;
   source_url: string;
+  /** the station's original-data request on SCCOOS ERDDAP (lib/observations sourceCsvUrl) */
+  request_url?: string | null;
   latest: { variable: string; label: string; units: string; kind: string; value: number | null; date: string; qualifier: string | null; n_last_365d: number }[];
 };
 const MAP_VARIABLES = ["pDA", "pn_seriata", "pn_delicatissima"];
@@ -57,6 +59,7 @@ export function slimStations(obs: ObservationDataset): StationLite[] {
     lon: st.lon,
     status: st.status,
     source_url: st.source_url,
+    request_url: st.request_url ?? null,
     latest: st.summaries
       .filter((sm) => MAP_VARIABLES.includes(sm.variable) && sm.last_date)
       .map((sm) => {
