@@ -1,0 +1,1121 @@
+{
+ "generated": "2026-10-12T20:00:00.000Z",
+ "data": {
+  "manifest_generated": "2026-10-12T15:29:18Z",
+  "official": "official-1c255cd103.json"
+ },
+ "locations": [
+  {
+   "location": "port-201",
+   "name": "Crescent City",
+   "lat": 41.74901,
+   "lon": -124.20398,
+   "cdfw_region": [
+    "Northern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2026-razor-clam-del-norte",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Del Norte County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-020-razor-clam-del-norte",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Del Norte County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 2.4,
+    "nearest_bearing": "WSW",
+    "region_n": 40
+   },
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Trinidad Pier",
+    "km": 77
+   }
+  },
+  {
+   "location": "port-231",
+   "name": "Trinidad",
+   "lat": 41.0593,
+   "lon": -124.14314,
+   "cdfw_region": [
+    "Northern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2024-razor-clam-humboldt",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Humboldt County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 2.5,
+    "nearest_bearing": "WSW",
+    "region_n": 36
+   },
+   "nearest_toxin_sample": {
+    "station": "Trinidad Pier",
+    "km": 0.6,
+    "date": "2026-04-17"
+   },
+   "stations_within_40km": 3,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-220",
+   "name": "Eureka",
+   "lat": 40.79834,
+   "lon": -124.16376,
+   "cdfw_region": [
+    "Northern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2024-razor-clam-humboldt",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Humboldt County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 7.3,
+    "nearest_bearing": "NW",
+    "region_n": 21
+   },
+   "nearest_toxin_sample": {
+    "station": "Trinidad Pier",
+    "km": 28.6,
+    "date": "2026-04-17"
+   },
+   "stations_within_40km": 3,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-215",
+   "name": "Shelter Cove",
+   "lat": 40.0255,
+   "lon": -124.0664,
+   "cdfw_region": [
+    "Mendocino"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2024-razor-clam-humboldt",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Humboldt County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-rock-crab-commercial-40n",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (40°00.00′ N to 40°30.00′ N).",
+     "caveats": [
+      "Its south limit (40°00.00′ N) is 2.8 km south of here; check which side you are on.",
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 4.7,
+    "nearest_bearing": "SW",
+    "region_n": 31
+   },
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Humboldt Bay, South Bay",
+    "km": 79
+   }
+  },
+  {
+   "location": "port-223",
+   "name": "Fort Bragg",
+   "lat": 39.42518,
+   "lon": -123.80376,
+   "cdfw_region": [
+    "Mendocino"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 4.2,
+    "nearest_bearing": "SW",
+    "region_n": 33
+   },
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Bodega Marine Lab buoy",
+    "km": 139
+   }
+  },
+  {
+   "location": "port-213",
+   "name": "Point Arena",
+   "lat": 38.9088,
+   "lon": -123.69308,
+   "cdfw_region": [
+    "San Francisco"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 5.1,
+    "nearest_bearing": "WNW",
+    "region_n": 35
+   },
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Bodega Marine Lab buoy",
+    "km": 85
+   }
+  },
+  {
+   "location": "port-473",
+   "name": "Bodega Bay",
+   "lat": 38.33325,
+   "lon": -123.04807,
+   "cdfw_region": [
+    "San Francisco"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 3.9,
+    "nearest_bearing": "WSW",
+    "region_n": 36
+   },
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 5,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-440",
+   "name": "San Francisco",
+   "lat": 37.80865,
+   "lon": -122.41551,
+   "cdfw_region": [
+    "San Francisco"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 11.8,
+    "nearest_bearing": "W",
+    "region_n": 4
+   },
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Inner Tomales Bay",
+    "km": 52
+   }
+  },
+  {
+   "location": "port-452",
+   "name": "Princeton / Half Moon Bay",
+   "lat": 37.5037,
+   "lon": -122.48185,
+   "cdfw_region": [
+    "San Francisco"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 6,
+    "nearest_bearing": "S",
+    "region_n": 30
+   },
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Santa Cruz Wharf",
+    "km": 73
+   }
+  },
+  {
+   "location": "port-593",
+   "name": "Santa Cruz",
+   "lat": 36.97412,
+   "lon": -122.03081,
+   "cdfw_region": [
+    "Central"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-019-anchovy-central-coast",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (36°31.46′ N to 37°11.00′ N).",
+     "caveats": [
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2026-anchovy-take-restriction-monterey-bay",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (36°31.46′ N to 37°11.00′ N).",
+     "caveats": [
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-018-monterey-bivalves",
+     "tier": "possible",
+     "basis": "A separate area nearby: Monterey County is 23 km away.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 7.2,
+    "nearest_bearing": "S",
+    "region_n": 24
+   },
+   "nearest_toxin_sample": {
+    "station": "Santa Cruz Wharf",
+    "km": 2.2,
+    "date": "2026-09-30"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-592",
+   "name": "Moss Landing",
+   "lat": 36.8044,
+   "lon": -121.78691,
+   "cdfw_region": [
+    "Central"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-018-monterey-bivalves",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Monterey County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-019-anchovy-central-coast",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (36°31.46′ N to 37°11.00′ N).",
+     "caveats": [
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2026-anchovy-take-restriction-monterey-bay",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (36°31.46′ N to 37°11.00′ N).",
+     "caveats": [
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": 0.743,
+    "nearest_km": null,
+    "nearest_bearing": null,
+    "region_n": 28
+   },
+   "nearest_toxin_sample": {
+    "station": "Santa Cruz Wharf",
+    "km": 26.7,
+    "date": "2026-09-30"
+   },
+   "stations_within_40km": 2,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-550",
+   "name": "Monterey",
+   "lat": 36.60024,
+   "lon": -121.89469,
+   "cdfw_region": [
+    "Central"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-018-monterey-bivalves",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Monterey County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-019-anchovy-central-coast",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (36°31.46′ N to 37°11.00′ N).",
+     "caveats": [
+      "Its south limit (36°31.46′ N) is 8.4 km south of here; check which side you are on.",
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2026-anchovy-take-restriction-monterey-bay",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (36°31.46′ N to 37°11.00′ N).",
+     "caveats": [
+      "Its south limit (36°31.46′ N) is 8.4 km south of here; check which side you are on.",
+      "The notice does not say how far offshore it applies."
+     ],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 6.6,
+    "nearest_bearing": "NW",
+    "region_n": 27
+   },
+   "nearest_toxin_sample": {
+    "station": "Monterey Wharf",
+    "km": 0.6,
+    "date": "2022-08-31"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-606",
+   "name": "Morro Bay",
+   "lat": 35.36581,
+   "lon": -120.84991,
+   "cdfw_region": [
+    "Central"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 4.8,
+    "nearest_bearing": "WNW",
+    "region_n": 18
+   },
+   "nearest_toxin_sample": {
+    "station": "Cal Poly Pier (Avila Beach)",
+    "km": 23.9,
+    "date": "2026-08-03"
+   },
+   "stations_within_40km": 3,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-602",
+   "name": "Avila / Port San Luis",
+   "lat": 35.17498,
+   "lon": -120.75519,
+   "cdfw_region": [
+    "Central"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 4.5,
+    "nearest_bearing": "SSW",
+    "region_n": 30
+   },
+   "nearest_toxin_sample": {
+    "station": "Cal Poly Pier (Avila Beach)",
+    "km": 1.4,
+    "date": "2026-08-03"
+   },
+   "stations_within_40km": 3,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-611",
+   "name": "Santa Barbara",
+   "lat": 34.40722,
+   "lon": -119.68876,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-nci-bivalve-special-advisory",
+     "tier": "possible",
+     "basis": "A separate area nearby: Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, San Miguel) is 28 km away.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "possible",
+     "basis": "The notice also covers the Northern Channel Islands, 28 km away (\"and from the waters off Santa Rosa Island and the Northern Channel Islands\").",
+     "caveats": [
+      "CoastWatch's outline for the Northern Channel Islands is borrowed from another CDPH notice and is approximate for this one."
+     ],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 2.6,
+    "nearest_bearing": "SE",
+    "region_n": 29
+   },
+   "nearest_toxin_sample": {
+    "station": "Stearns Wharf (Santa Barbara)",
+    "km": 0.4,
+    "date": "2026-08-03"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-613",
+   "name": "Ventura",
+   "lat": 34.27834,
+   "lon": -119.29318,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-nci-bivalve-special-advisory",
+     "tier": "possible",
+     "basis": "A separate area nearby: Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, San Miguel) is 14 km away.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "possible",
+     "basis": "The notice also covers the Northern Channel Islands, 14 km away (\"and from the waters off Santa Rosa Island and the Northern Channel Islands\").",
+     "caveats": [
+      "CoastWatch's outline for the Northern Channel Islands is borrowed from another CDPH notice and is approximate for this one."
+     ],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 4.5,
+    "nearest_bearing": "SSW",
+    "region_n": 24
+   },
+   "nearest_toxin_sample": {
+    "station": "Stearns Wharf (Santa Barbara)",
+    "km": 38.8,
+    "date": "2026-08-03"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-605",
+   "name": "Port Hueneme",
+   "lat": 34.14779,
+   "lon": -119.19512,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-nci-bivalve-special-advisory",
+     "tier": "possible",
+     "basis": "A separate area nearby: Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, San Miguel) is 8.5 km away.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "possible",
+     "basis": "The notice also covers the Northern Channel Islands, 8.5 km away (\"and from the waters off Santa Rosa Island and the Northern Channel Islands\").",
+     "caveats": [
+      "CoastWatch's outline for the Northern Channel Islands is borrowed from another CDPH notice and is approximate for this one."
+     ],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 3.1,
+    "nearest_bearing": "S",
+    "region_n": 37
+   },
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Stearns Wharf (Santa Barbara)",
+    "km": 54
+   }
+  },
+  {
+   "location": "port-770",
+   "name": "San Pedro",
+   "lat": 33.73586,
+   "lon": -118.2923,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 4.7,
+    "nearest_bearing": "SSW",
+    "region_n": 32
+   },
+   "nearest_toxin_sample": {
+    "station": "Newport Beach Pier",
+    "km": 36.4,
+    "date": "2026-08-10"
+   },
+   "stations_within_40km": 2,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-748",
+   "name": "Newport Beach",
+   "lat": 33.61546,
+   "lon": -117.93063,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 3.9,
+    "nearest_bearing": "S",
+    "region_n": 30
+   },
+   "nearest_toxin_sample": {
+    "station": "Newport Beach Pier",
+    "km": 1,
+    "date": "2026-08-10"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-767",
+   "name": "Dana Point",
+   "lat": 33.46698,
+   "lon": -117.69812,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 2.2,
+    "nearest_bearing": "WSW",
+    "region_n": 34
+   },
+   "nearest_toxin_sample": {
+    "station": "Newport Beach Pier",
+    "km": 26.6,
+    "date": "2026-08-10"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-883",
+   "name": "Oceanside",
+   "lat": 33.19536,
+   "lon": -117.38484,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 3.3,
+    "nearest_bearing": "W",
+    "region_n": 34
+   },
+   "nearest_toxin_sample": {
+    "station": "Scripps Pier (La Jolla)",
+    "km": 38.5,
+    "date": "2026-08-10"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "port-880",
+   "name": "San Diego",
+   "lat": 32.71512,
+   "lon": -117.13414,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 8.4,
+    "nearest_bearing": "SSW",
+    "region_n": 13
+   },
+   "nearest_toxin_sample": {
+    "station": "Scripps Pier (La Jolla)",
+    "km": 20.4,
+    "date": "2026-08-10"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "site-crescent-beach",
+   "name": "Crescent Beach, Crescent City",
+   "lat": 41.71,
+   "lon": -124.143,
+   "cdfw_region": [
+    "Northern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2026-razor-clam-del-norte",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Del Norte County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-2026-sn26-020-razor-clam-del-norte",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Del Norte County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2024-razor-clam-humboldt",
+     "tier": "possible",
+     "basis": "A separate area nearby: Humboldt County is 28 km away.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 2.2,
+    "nearest_bearing": "W",
+    "region_n": 27
+   },
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 0,
+   "nearest_station_beyond": {
+    "name": "Trinidad Pier",
+    "km": 73
+   }
+  },
+  {
+   "location": "site-clam-beach",
+   "name": "Clam Beach, Humboldt",
+   "lat": 41.008,
+   "lon": -124.115,
+   "cdfw_region": [
+    "Northern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdfw-2024-razor-clam-humboldt",
+     "tier": "geographic",
+     "basis": "Inside the agency's outline of Humboldt County.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "geographic",
+     "basis": "Inside the notice's official latitudes (38°46.12′ N to 42°00.00′ N).",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 4.8,
+    "nearest_bearing": "WNW",
+    "region_n": 28
+   },
+   "nearest_toxin_sample": {
+    "station": "Trinidad Pier",
+    "km": 5.9,
+    "date": "2026-04-17"
+   },
+   "stations_within_40km": 3,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "site-tomales-bay",
+   "name": "Tomales Bay",
+   "lat": 38.205,
+   "lon": -122.931,
+   "cdfw_region": [
+    "San Francisco"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 5.2,
+    "nearest_bearing": "SW",
+    "region_n": 21
+   },
+   "nearest_toxin_sample": null,
+   "stations_within_40km": 5,
+   "nearest_station_beyond": null
+  },
+  {
+   "location": "site-goleta-pier",
+   "name": "Goleta Pier",
+   "lat": 34.413,
+   "lon": -119.828,
+   "cdfw_region": [
+    "Southern"
+   ],
+   "associations": [
+    {
+     "notice": "cdph-2026-annual-mussel-quarantine",
+     "tier": "geographic",
+     "basis": "Applies along the whole California coast.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-nci-bivalve-special-advisory",
+     "tier": "possible",
+     "basis": "A separate area nearby: Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, San Miguel) is 29 km away.",
+     "caveats": [],
+     "review": "not_reviewed"
+    },
+    {
+     "notice": "cdph-rock-crab-viscera-north-coast-nci",
+     "tier": "possible",
+     "basis": "The notice also covers the Northern Channel Islands, 29 km away (\"and from the waters off Santa Rosa Island and the Northern Channel Islands\").",
+     "caveats": [
+      "CoastWatch's outline for the Northern Channel Islands is borrowed from another CDPH notice and is approximate for this one."
+     ],
+     "review": "not_reviewed"
+    }
+   ],
+   "charm_pda": {
+    "run_issued": "2026-10-11",
+    "valid": "2026-10-11",
+    "value_here": null,
+    "nearest_km": 2.7,
+    "nearest_bearing": "SSE",
+    "region_n": 31
+   },
+   "nearest_toxin_sample": {
+    "station": "Stearns Wharf (Santa Barbara)",
+    "km": 13.2,
+    "date": "2026-08-03"
+   },
+   "stations_within_40km": 1,
+   "nearest_station_beyond": null
+  }
+ ]
+}

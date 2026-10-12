@@ -40,6 +40,7 @@ The paper is about physics-informed chlorophyll forecasting (see the [root READM
 | [25 — M8: final polish and release readiness](25-m8-polish.md) | Audit, one notice treatment, About and the research, phone layouts, self-hosted glyphs, journeys, accessibility, performance, before/after ([m8/](m8/)) |
 | [26 — Release readiness](26-release-readiness.md) | Blockers before any public release, VoiceOver script, operational state, public limitations, public deployment plan, owner decisions; [notice review checklist](release/notice-review-2026-10-12.md), [scientific review request](release/scientific-review-request.md), [CSV export proposal](release/station-csv-export-proposal.md) |
 | [27 — Coastal intelligence](27-coastal-intelligence.md) | Nearshore C-HARM coverage audit (by distance, region, date), data-source comparison, nearshore prediction tracks, fishermen-first "My Coast" design with mockups, onboarding and county layer summaries, missing-data presentation alternatives, risks and roadmap; data, scripts and appendices in [coastal/](coastal/) |
+| [29 — My Coast MVP](29-my-coast.md) | What it does, stakeholder workflows, correctness evidence for 26 locations, applicability model and unresolved associations, three review passes, tests and performance, limits ([my-coast/](my-coast/)) |
 | [m5/](m5/) | M5 comparison (decision stage), review before/after images and evidence |
 | [m3/](m3/) | Screenshots of the M3 app (staging data, 2026-10-08) |
 | [m2/](m2/) | Screenshots of the M2 app (live data, 2026-10-08) |

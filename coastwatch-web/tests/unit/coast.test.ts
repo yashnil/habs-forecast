@@ -90,6 +90,16 @@ describe("notice applicability (from the notices' own geography only)", () => {
     expect(r.review).toMatchObject({ state: "confirmed", reviewer: "Reviewer" });
   });
 
+  it("agrees with the pipeline's own port relations for every port (its nearby areas stay 'possible')", () => {
+    const intel = file("port-intel-") as { ports: { port_code: number; lat: number; lon: number; official_relations: { record_id: string; relation: string }[] }[] };
+    for (const p of intel.ports) {
+      const a = associationsAt(official, `port-${p.port_code}`, p.lat, p.lon);
+      const pipe = p.official_relations.filter((r) => r.relation !== "named_area_nearby").map((r) => r.record_id).sort();
+      expect(ids(a, "geographic").sort(), `port ${p.port_code}`).toEqual(pipe);
+      for (const r of p.official_relations.filter((x) => x.relation === "named_area_nearby")) expect(ids(a, "possible"), `port ${p.port_code}`).toContain(r.record_id);
+    }
+  });
+
   it("CDFW regulation regions follow CDFW's stated limits, with the neighbour near a boundary", () => {
     expect(cdfwRegionsAt(41.75).at.map((r) => r.id)).toEqual(["northern"]);
     expect(cdfwRegionsAt(36.97).at.map((r) => r.id)).toEqual(["central"]);
