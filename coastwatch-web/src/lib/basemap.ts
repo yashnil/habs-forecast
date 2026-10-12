@@ -13,13 +13,19 @@ import type { StyleSpecification } from "maplibre-gl";
  * - data layers, inserted before `coastline`;
  * - coastline, rivers, roads, boundaries and labels, which stay above the data.
  * Label hierarchy: ports (MapCanvas) above towns above water names above roads. If the
- * tiles are unreachable the background still renders and the data still draws.
+ * tiles are unreachable the background still renders and the data still draws, and MapCanvas
+ * shows the bundled water (lib/waterFallback) instead: the sea, its no-data hatch and the
+ * coastline (the `*-fallback` layers, hidden otherwise).
  */
 export const SEA = "#0b1d33";
 export const LAND = "#2a3646";
 export const BEFORE_OVERLAY_ID = "coastline";
 /** Layer ids of the no-data hatch, which MapCanvas shows only under a raster data layer. */
 export const NODATA_LAYER_ID = "water-nodata";
+/** The bundled water drawn while the basemap's tiles are unavailable (MapCanvas fills the source). */
+export const WATER_FALLBACK_SOURCE = "water-fallback";
+export const NODATA_FALLBACK_LAYER_ID = "water-nodata-fallback";
+export const WATER_FALLBACK_LAYER_IDS = ["water-fallback", "coastline-fallback"];
 
 const FONT = ["Noto Sans Regular"];
 const FONT_ITALIC = ["Noto Sans Italic"];
@@ -69,10 +75,13 @@ export const BASEMAP_STYLE: StyleSpecification = {
     // Monterey Bay at 3 arc-second from the NOAA Coastal Relief Model, over the ETOPO relief
     "relief-sea-monterey": { type: "image", url: "/basemap/relief-sea-monterey.webp", coordinates: MONTEREY_INSET_CORNERS },
     isobaths: { type: "geojson", data: "/basemap/isobaths.geojson", attribution: RELIEF_ATTRIBUTION },
+    [WATER_FALLBACK_SOURCE]: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
   },
   layers: [
     { id: "land", type: "background", paint: { "background-color": LAND } },
     { id: "relief-land", type: "raster", source: "relief-land", paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
+    // under the basemap's water, which covers it wherever the basemap's tiles did arrive
+    { id: "water-fallback", type: "fill", source: WATER_FALLBACK_SOURCE, layout: { visibility: "none" }, paint: { "fill-color": SEA } },
     {
       id: "water",
       type: "fill",
@@ -111,11 +120,23 @@ export const BASEMAP_STYLE: StyleSpecification = {
     // no data: fine dots on the water, shown by MapCanvas only under a raster data layer
     // (image "nodata", registered by MapCanvas); the data rasters cover them where a value exists
     { id: NODATA_LAYER_ID, type: "fill", source: "omt", "source-layer": "water", layout: { visibility: "none" }, paint: { "fill-pattern": "nodata" } },
+    { id: NODATA_FALLBACK_LAYER_ID, type: "fill", source: WATER_FALLBACK_SOURCE, layout: { visibility: "none" }, paint: { "fill-pattern": "nodata" } },
     {
       id: "coastline",
       type: "line",
       source: "omt",
       "source-layer": "water",
+      paint: {
+        "line-color": "#d3dfeb",
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 4, 0.7, 8, 0.9],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.5, 8, 0.9, 10, 1.3, 12, 1.8],
+      },
+    },
+    {
+      id: "coastline-fallback",
+      type: "line",
+      source: WATER_FALLBACK_SOURCE,
+      layout: { visibility: "none" },
       paint: {
         "line-color": "#d3dfeb",
         "line-opacity": ["interpolate", ["linear"], ["zoom"], 4, 0.7, 8, 0.9],

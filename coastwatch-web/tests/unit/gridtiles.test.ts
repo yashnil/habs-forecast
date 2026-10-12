@@ -179,9 +179,5 @@ describe("ocean-only clipping", () => {
     clipToWater(px, new Uint8ClampedArray([255, 128, 0, 255]));
     expect([...px]).toEqual([10, 20, 30, 255, 10, 20, 30, 128, 10, 20, 30, 0, 0, 0, 0, 0]);
   });
-  it("is skipped (data drawn unclipped) where the basemap tile cannot be read", async () => {
-    const { waterMask } = await import("@/lib/waterMask");
-    // no OffscreenCanvas in the test runtime: the mask is unavailable, never an all-land mask
-    expect(await waterMask(10, 163, 396, 512)).toBeNull();
-  });
+  // where the basemap tile cannot be read: tests/unit/waterfallback.test.ts
 });

@@ -23,7 +23,8 @@ function register() {
     const [z, x, y] = [Number(m[2]), Number(m[3]), Number(m[4])];
     const [codes, lut, water] = await Promise.all([loadGrid(e.url), e.lut, waterMask(z, x, y, GRID_TILE_SIZE)]);
     const px = renderGridTile(e.grid, codes, lut, z, x, y);
-    // ocean only, at the basemap's shoreline (lib/waterMask); unclipped if the basemap tile is unreadable
+    // ocean only, at the basemap's shoreline, or the bundled water if the basemap is unavailable
+    // or slow (lib/waterMask); unclipped only if neither can be read
     if (water) clipToWater(px, water);
     const bitmap = await createImageBitmap(new ImageData(px as Uint8ClampedArray<ArrayBuffer>, GRID_TILE_SIZE, GRID_TILE_SIZE));
     return { data: bitmap };
