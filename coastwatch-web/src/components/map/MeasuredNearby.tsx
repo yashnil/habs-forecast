@@ -26,12 +26,12 @@ export function MeasuredNearby({ stations, error, lat, lon, now }: { stations: S
         <h3 id="measured-h" className="text-[13px] font-semibold text-ink">
           Measured nearby
         </h3>
-        <span className="text-[11px] text-ink-3">CalHABMAP water samples</span>
+        <span className="text-[13px] text-ink-3">CalHABMAP water samples</span>
       </div>
       {!stations ? (
-        <p className="text-[12px] text-ink-3">Station measurements are unavailable{error && error !== "not published" ? ` (${error})` : ""}.</p>
+        <p className="text-[13px] text-ink-3">Station measurements are unavailable{error && error !== "not published" ? ` (${error})` : ""}.</p>
       ) : !near.length ? (
-        <p className="text-[12px] text-ink-2" data-testid="measured-none">
+        <p className="text-[13px] text-ink-2" data-testid="measured-none">
           No monitoring station within {NEARBY_KM} km.
         </p>
       ) : (
@@ -46,18 +46,18 @@ export function MeasuredNearby({ stations, error, lat, lon, now }: { stations: S
                   <a href={`/bloom?station=${encodeURIComponent(s.station_id)}`} className="text-[13px] font-medium text-accent hover:underline">
                     {s.name}
                   </a>
-                  <span className="text-[11px] text-ink-3 tabular">{km < 1 ? "< 1" : km.toFixed(0)} km</span>
+                  <span className="text-[13px] text-ink-3 tabular">{km < 1 ? "< 1" : km.toFixed(0)} km</span>
                 </div>
                 {pda ? (
-                  <p className="text-[12px] text-ink-2">
+                  <p className="text-[13px] text-ink-2">
                     Particulate domoic acid <span className="font-semibold text-ink tabular">{fmt(pda)}</span> · sampled {formatDate(pda.date, { year: true })}
                     {age != null && age > 30 && <span className="text-warning"> ({age} days ago)</span>}
                   </p>
                 ) : (
-                  <p className="text-[12px] text-ink-3">No domoic acid measurement published.</p>
+                  <p className="text-[13px] text-ink-3">No domoic acid measurement published.</p>
                 )}
                 {pn.length > 0 && (
-                  <p className="text-[11.5px] text-ink-3">
+                  <p className="text-[13px] text-ink-3">
                     {pn.map((l, i) => (
                       <span key={l.variable}>
                         {i ? " · " : ""}
@@ -71,7 +71,7 @@ export function MeasuredNearby({ stations, error, lat, lon, now }: { stations: S
           })}
         </ul>
       )}
-      <p className="text-[11.5px] text-ink-3">Measured at the station on the date shown, not today and not at this point.</p>
+      <p className="text-[13px] text-ink-3">Measured at the station on the date shown, not today and not at this point.</p>
     </section>
   );
 }

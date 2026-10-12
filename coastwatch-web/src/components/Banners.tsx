@@ -22,13 +22,23 @@ export function DataBanners({ manifest, error }: { manifest: Manifest | null; er
   const unavailable = !!error || !manifest;
   const failed = manifest ? manifest.sources.filter((s) => s.outcome === "failed") : [];
   const fixture = !!manifest && isFixture(manifest);
-  if (!reg.show && !unavailable && !failed.length && !fixture) return null;
+  if (!reg.show && !unavailable && !failed.length && !fixture) {
+    // same box as the line below, with an invisible line of text: no jump when the line appears
+    return reg.pending ? (
+      <div aria-hidden className="relative z-20 border-b border-official-line bg-official-bg text-[13px] leading-snug" data-testid="status-line-pending">
+        {/* the line's one-row height: its "More" button sets it */}
+        <div className="mx-auto flex min-h-[33.875px] max-w-[1600px] items-center px-4 py-1">
+          <span className="invisible">Official notices</span>
+        </div>
+      </div>
+    ) : null;
+  }
 
   const failedNames = failed.map((s) => s.title.split(":")[0].replace(/ harmful algal bloom forecast$/, ""));
   const hasMore = reg.show || failed.length > 0 || fixture;
 
   return (
-    <div className="relative z-20 border-b border-official-line bg-official-bg text-[12.5px] leading-snug text-official-ink" data-testid="status-line">
+    <div className="relative z-20 border-b border-official-line bg-official-bg text-[13px] leading-snug text-official-ink" data-testid="status-line">
       <div className="mx-auto flex min-h-8 max-w-[1600px] items-center gap-x-3 px-4 py-1">
         <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-0.5 md:flex-nowrap">
           {unavailable && (
@@ -73,7 +83,7 @@ export function DataBanners({ manifest, error }: { manifest: Manifest | null; er
             </p>
           )}
           {fixture && (
-            <p role="status" data-testid="fixture-banner" className="shrink-0 rounded-full border border-warning/50 px-2 text-[11.5px] font-semibold text-warning">
+            <p role="status" data-testid="fixture-banner" className="shrink-0 rounded-full border border-warning/50 px-2 text-[13px] font-semibold text-warning">
               Test data<span className="sr-only">: recorded fixture data, not a live feed</span>
             </p>
           )}
@@ -85,10 +95,10 @@ export function DataBanners({ manifest, error }: { manifest: Manifest | null; er
             aria-controls={id}
             onClick={() => setOpen(!open)}
             data-testid="status-more"
-            className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[12px] font-semibold hover:bg-official-line/20"
+            className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[13px] font-semibold hover:bg-official-line/20"
           >
             {failed.length > 0 && (
-              <span className="rounded-full bg-warning/15 px-1.5 text-[11px] text-warning md:hidden" aria-hidden>
+              <span className="rounded-full bg-warning/15 px-1.5 text-[13px] text-warning md:hidden" aria-hidden>
                 +{failed.length}
               </span>
             )}

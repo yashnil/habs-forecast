@@ -21,7 +21,7 @@ export function YearPanel({ ds, groups, unit, year, focus, previewing }: { ds: F
     <div className="space-y-3" data-testid="year-panel" data-year={year} aria-live="polite">
       <div className="flex items-baseline justify-between gap-3 border-b border-hairline pb-2">
         <p className="font-display text-[30px] font-medium leading-none text-ink">{year}</p>
-        <p className="text-[12px] text-ink-3">{previewing ? "Pointing at" : "Selected year"}</p>
+        <p className="text-[13px] text-ink-3">{previewing ? "Pointing at" : "Selected year"}</p>
       </div>
       <table className="w-full text-[13.5px] tabular">
         <caption className="sr-only">

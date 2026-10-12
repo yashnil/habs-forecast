@@ -31,19 +31,19 @@ export function CurrentsNear({ layer, baseUrl, lat, lon, place }: { layer: Layer
         <h3 id="cur-near-h" className="text-[13px] font-semibold text-ink">
           Observed surface current
         </h3>
-        <span className="text-[11px] text-ink-3">HF radar · native 2 km</span>
+        <span className="text-[13px] text-ink-3">HF radar · native 2 km</span>
       </div>
       {s === null ? (
-        <p className="text-[12px] text-ink-3">Reading the current field…</p>
+        <p className="text-[13px] text-ink-3">Reading the current field…</p>
       ) : s === "error" ? (
-        <p className="text-[12px] text-ink-3">The current field could not be read.</p>
+        <p className="text-[13px] text-ink-3">The current field could not be read.</p>
       ) : s === "none" ? (
-        <p className="text-[12.5px] text-ink-2" data-testid="currents-near-none">
+        <p className="text-[13px] text-ink-2" data-testid="currents-near-none">
           No radar observation near {place} for this {mean ? "24-hour mean" : "hour"}. No data, not calm water.
         </p>
       ) : (
         <>
-          <p className="text-[12.5px] text-ink-2">
+          <p className="text-[13px] text-ink-2">
             <span className="text-[20px] font-semibold text-ink tabular" data-testid="currents-near-speed">
               {s.speed.toFixed(2)}
             </span>{" "}
@@ -52,13 +52,13 @@ export function CurrentsNear({ layer, baseUrl, lat, lon, place }: { layer: Layer
               {compass(s.dir)} ({Math.round(s.dir)}°)
             </span>
           </p>
-          <p className="text-[12px] text-ink-3" data-testid="currents-near-time">
+          <p className="text-[13px] text-ink-3" data-testid="currents-near-time">
             Observed, {when}
             {s.distanceKm > 0 && <> · nearest radar cell {s.distanceKm.toFixed(1)} km away</>}
           </p>
         </>
       )}
-      <p className="text-[11.5px] text-ink-3">Surface water movement observed in the past. Not a forecast, and not where a bloom will go.</p>
+      <p className="text-[13px] text-ink-3">Surface water movement observed in the past. Not a forecast, and not where a bloom will go.</p>
     </section>
   );
 }

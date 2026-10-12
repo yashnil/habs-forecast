@@ -44,7 +44,7 @@ export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds 
     <div
       aria-hidden
       data-testid="hover-readout"
-      className="pointer-events-none absolute z-30 rounded-lg bg-navy-950/[0.93] px-2.5 py-1.5 text-[12px] leading-snug text-on-navy-2 shadow-[0_6px_18px_rgba(4,11,23,0.4)] ring-1 ring-white/10 backdrop-blur-sm"
+      className="pointer-events-none absolute z-30 rounded-lg bg-navy-950/[0.93] px-2.5 py-1.5 text-[13px] leading-snug text-on-navy-2 shadow-[0_6px_18px_rgba(4,11,23,0.4)] ring-1 ring-white/10 backdrop-blur-sm"
       style={{ left, top, width: W }}
     >
       {r.value != null ? (
@@ -53,20 +53,20 @@ export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds 
             <span className="text-[16px] font-semibold tabular" data-testid="hover-value">
               {r.value}
             </span>
-            {r.unit && <span className="text-[12px] text-on-navy-2">{r.unit}</span>}
+            {r.unit && <span className="text-[13px] text-on-navy-2">{r.unit}</span>}
           </p>
-          <p className="text-[12px] leading-snug text-white/85">{r.what}</p>
+          <p className="text-[13px] leading-snug text-white/85">{r.what}</p>
         </>
       ) : (
-        <p className="text-[12px] text-white" data-testid="hover-none">
+        <p className="text-[13px] text-white" data-testid="hover-none">
           {r.none}
         </p>
       )}
-      <p className="truncate text-[11.5px]">
+      <p className="truncate text-[13px]">
         <span aria-hidden className={`mr-1 inline-block h-1.5 w-1.5 -translate-y-px rounded-full ${r.kind === "model" ? "bg-[#b9a6f5]" : "bg-[#7fd4c1]"}`} />
         {r.when}
       </p>
-      <p className="text-[11px] text-on-navy-2/70 tabular">
+      <p className="text-[13px] text-on-navy-2/70 tabular">
         {point.lat.toFixed(3)}°N {Math.abs(point.lon).toFixed(3)}°W · click for details
       </p>
     </div>

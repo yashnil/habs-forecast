@@ -127,5 +127,15 @@ describe("published research is cited accurately", () => {
     // the same-run evaluation does not show the PINN beating the ConvLSTM
     expect(copy.RESEARCH.relation).not.toMatch(/outperform|beats|better than|improves on/i);
   });
+  it("the About page states the same-pipeline result and does not let the paper vouch for the app", () => {
+    expect(copy.ABOUT.research.result).toMatch(/matches, but does not beat/);
+    expect(copy.ABOUT.research.relation).toMatch(/does not run those research models/);
+    expect(copy.ABOUT.research.relation).toMatch(/not been peer reviewed or reviewed by an independent HAB scientist/);
+    const all = JSON.stringify(copy.ABOUT);
+    expect(all).not.toMatch(/outperform|\bbeats\b|better than|improves on|validat/i);
+    // the limits a first-time visitor must see
+    expect(copy.ABOUT.cannot.join(" ")).toMatch(/does not mean an area is open or seafood is safe/);
+    expect(copy.ABOUT.cannot.join(" ")).toMatch(/chlorophyll, which is algae, not toxin/);
+  });
 });
 

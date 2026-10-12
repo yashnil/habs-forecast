@@ -107,7 +107,7 @@ export function NavCard({ regions, region, onRegion, ports, portsError, port, on
               <b className="font-semibold text-official-ink">Official notices unavailable: check CDFW and CDPH</b>
             )}
           </span>
-          <span className="flex items-center gap-1 text-[12px] font-medium text-official-ink">
+          <span className="flex items-center gap-1 text-[13px] font-medium text-official-ink">
             {available ? verWord : ""}
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
               <path d="m9 6 6 6-6 6" />
@@ -129,7 +129,7 @@ export function NavCard({ regions, region, onRegion, ports, portsError, port, on
         ) : selected ? (
           <button onClick={() => onRegion(selected.region ?? statewide.id)} data-testid="nav-crumb" className="flex w-full items-center gap-1.5 px-2.5 py-2 text-left text-[14px] font-medium text-accent">
             <span aria-hidden>‹</span> {regions.find((r) => r.id === selected.region)?.label ?? statewide.label}
-            <span className="ml-auto text-[12px] font-normal text-ink-3">{inRegion(selected.region ?? "").length} ports</span>
+            <span className="ml-auto text-[13px] font-normal text-ink-3">{inRegion(selected.region ?? "").length} ports</span>
           </button>
         ) : region !== statewide.id ? (
           <>
@@ -140,11 +140,11 @@ export function NavCard({ regions, region, onRegion, ports, portsError, port, on
               {current.label}
             </h2>
             {portsError ? <p className="px-2.5 text-[13px] text-ink-3">Port summaries unavailable: {portsError}</p> : <ul data-testid="region-ports">{inRegion(region).map(portRow)}</ul>}
-            {showForecast && <p className="px-2.5 pt-1.5 text-[12px] leading-snug text-ink-3">C-HARM forecast: median of model cells within 15 km of each port, not conditions at the dock.</p>}
+            {showForecast && <p className="px-2.5 pt-1.5 text-[13px] leading-snug text-ink-3">C-HARM forecast: median of model cells within 15 km of each port, not conditions at the dock.</p>}
           </>
         ) : (
           <>
-            <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-3">Coast, north to south</p>
+            <p className="px-2.5 pb-1 pt-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">Coast, north to south</p>
             <ul>
               {regions.slice(1).map((r) => {
                 const vals = inRegion(r.id)
@@ -166,7 +166,7 @@ export function NavCard({ regions, region, onRegion, ports, portsError, port, on
                 );
               })}
             </ul>
-            {showForecast && <p className="px-2.5 pt-1 text-[12px] text-ink-3">C-HARM forecast: range of port medians for the selected day.</p>}
+            {showForecast && <p className="px-2.5 pt-1 text-[13px] text-ink-3">C-HARM forecast: range of port medians for the selected day.</p>}
           </>
         )}
       </div>

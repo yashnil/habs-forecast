@@ -51,7 +51,7 @@ export function SpeciesTable({
           data-testid={`sort-${key}`}
         >
           {label}
-          <span aria-hidden className="w-2 text-[10px]">
+          <span aria-hidden className="w-2 text-[13px]">
             {on ? (sort.dir === 1 ? "▲" : "▼") : ""}
           </span>
         </button>
@@ -101,7 +101,7 @@ export function SpeciesTable({
                     <span className="h-3 w-3 shrink-0 rounded-[3px]" style={{ background: groupColor(g.id), opacity: dim ? 0.5 : 1 }} aria-hidden />
                     <span className="min-w-0">
                       <span className={`block font-medium ${dim ? "" : "text-ink"}`}>{groupShort(g)}</span>
-                      <span className="block text-[12px] text-ink-3">
+                      <span className="block text-[13px] text-ink-3">
                         Tier {g.tier} · {g.tier === 1 ? "toxin closures" : "advisories"}
                         {dim ? " · not in chart" : ""}
                       </span>
@@ -217,12 +217,12 @@ function MiniSeries({ g, years, unit, year, title, testid }: { g: SpeciesGroup; 
           <div key={years[i]} className="flex flex-col items-stretch" title={`${years[i]}: ${formatValue(v, unit)}`}>
             <div className="relative" style={{ height: H }}>
               {v == null ? (
-                <span className="absolute inset-x-0 bottom-0 text-center text-[10px] text-ink-3">n/a</span>
+                <span className="absolute inset-x-0 bottom-0 text-center text-[13px] text-ink-3">n/a</span>
               ) : (
                 <div className="absolute inset-x-0 bottom-0 rounded-t-[2px]" style={{ height: max ? Math.max(1, (v / max) * H) : 0, background: tierInk(g.tier), opacity: years[i] === year ? 1 : 0.45 }} />
               )}
             </div>
-            <span className={`mt-0.5 text-center text-[11px] tabular ${years[i] === year ? "font-semibold text-ink" : "text-ink-3"}`}>’{String(years[i]).slice(2)}</span>
+            <span className={`mt-0.5 text-center text-[13px] tabular ${years[i] === year ? "font-semibold text-ink" : "text-ink-3"}`}>’{String(years[i]).slice(2)}</span>
           </div>
         ))}
       </div>

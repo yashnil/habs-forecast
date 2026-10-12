@@ -23,10 +23,10 @@ export function SourceTable({ manifest, official }: { manifest: Manifest; offici
   return (
     <section className="space-y-3" aria-labelledby="src-h">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="src-h" className="text-[15px] font-semibold text-ink">
+        <h2 id="src-h" className="pt-2 font-display text-[22px] font-medium leading-tight text-ink">
           Source status
         </h2>
-        <p className="text-[12px] text-ink-3">
+        <p className="text-[13px] text-ink-3">
           Pipeline run <span className="font-mono">{manifest.pipeline_run_id}</span> · version{" "}
           <span className="font-mono">{manifest.pipeline_version}</span> · generated {formatDateTimePT(manifest.generated_at)}
         </p>
@@ -48,7 +48,7 @@ export function SourceTable({ manifest, official }: { manifest: Manifest; offici
                   )}
                 </span>
               </div>
-              <dl className="mt-2 grid gap-x-6 gap-y-1 text-[12.5px] sm:grid-cols-2">
+              <dl className="mt-2 grid gap-x-6 gap-y-1 text-[13px] sm:grid-cols-2">
                 <Row k="Last attempt" v={`${formatDateTimePT(s.last_attempt_at)} — ${OUTCOME[s.outcome]}`} />
                 <Row k="Last success" v={s.last_success_at ? formatDateTimePT(s.last_success_at) : "never"} />
                 {s.latest_issued_date && <Row k="Latest issued" v={formatDate(s.latest_issued_date, { year: true })} />}
@@ -59,7 +59,7 @@ export function SourceTable({ manifest, official }: { manifest: Manifest; offici
                   />
                 )}
               </dl>
-              <p className="mt-2 text-[12px] text-ink-3">{s.freshness.note}</p>
+              <p className="mt-2 text-[13px] text-ink-3">{s.freshness.note}</p>
               {s.error && (
                 // a plain statement first; the upstream error text is for whoever maintains the pipeline
                 <div className="mt-2 rounded-md border border-serious/30 bg-surface-2 px-2.5 py-2 text-[13px] text-ink-2" data-testid={`source-error-${s.source_id}`}>
@@ -81,9 +81,9 @@ export function SourceTable({ manifest, official }: { manifest: Manifest; offici
                 </div>
               )}
               {s.notes && s.notes.length > 0 && (
-                <details className="mt-2 text-[12px] text-ink-2">
+                <details className="mt-2 text-[13px] text-ink-2">
                   <summary className="cursor-pointer text-ink-3">Processing notes ({s.notes.length})</summary>
-                  <ul className="mt-1 list-disc space-y-0.5 pl-4 font-mono text-[11px]">
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4 font-mono text-[12px]">
                     {s.notes.map((n) => (
                       <li key={n}>{n}</li>
                     ))}
@@ -91,9 +91,9 @@ export function SourceTable({ manifest, official }: { manifest: Manifest; offici
                 </details>
               )}
               {s.source_id === "charm" && run && (
-                <p className="mt-2 text-[12px] text-ink-2">
+                <p className="mt-2 text-[13px] text-ink-2">
                   Run issued {formatDate(run.issued_date, { year: true })}
-                  {run.issued_date_derived ? " (inferred)" : ""}: {run.leads_available.map(leadLabel).join(", ")} available
+                  {run.issued_date_derived ? " (date inferred: NOAA does not publish it)" : ""}: {run.leads_available.map(leadLabel).join(", ")} available
                   {run.leads_missing.length ? `; ${run.leads_missing.map(leadLabel).join(", ")} missing` : ""}.
                 </p>
               )}

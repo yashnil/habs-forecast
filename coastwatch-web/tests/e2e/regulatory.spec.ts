@@ -4,7 +4,7 @@ import { OK } from "./ports";
 /** While the notice registry is not human-verified, every page says so and links to the agencies;
  *  the Del Norte razor clam records (2026-10-09) are listed, unverified. */
 
-for (const path of ["/", "/bloom", "/fisheries", "/sources"]) {
+for (const path of ["/", "/bloom", "/fisheries", "/sources", "/about"]) {
   test(`${path}: the unverified-notices disclosure is on the page with agency links`, async ({ page }) => {
     await page.goto(`${OK}${path}`);
     const d = page.getByTestId("registry-disclosure");

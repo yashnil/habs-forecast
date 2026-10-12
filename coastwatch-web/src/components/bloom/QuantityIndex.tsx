@@ -54,7 +54,7 @@ export function QuantityIndex({
         <h2 id="index-h" className="text-[14px] font-semibold text-ink">
           Latest measurement of each quantity
         </h2>
-        <p className="text-[13px] text-ink-3">Choose one to chart it. Previews show the chart&apos;s period on its axis.</p>
+        <p className="text-[13px] text-ink-3 max-sm:hidden">Choose one to chart it. Previews show the chart&apos;s period on its axis.</p>
       </div>
       <div
         role="tablist"

@@ -15,6 +15,7 @@ const PAGES = [
   ["bloom", "/bloom"],
   ["fisheries", "/fisheries"],
   ["sources", "/sources"],
+  ["about", "/about"],
 ] as const;
 
 async function open(page: Page, url: string) {

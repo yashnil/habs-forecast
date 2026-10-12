@@ -50,11 +50,11 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
     <article data-testid="port-panel" aria-labelledby="port-h" className="space-y-4">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-accent">Port</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-accent">Port</p>
           <h2 id="port-h" className="font-display text-[28px] font-medium leading-tight text-ink">
             {port.display_name}
           </h2>
-          <p className="text-[12px] text-ink-3">
+          <p className="text-[13px] text-ink-3">
             {port.county} County · {port.lat.toFixed(3)}°N, {Math.abs(port.lon).toFixed(3)}°W · CDFW port code {port.port_code}
           </p>
         </div>
@@ -70,14 +70,14 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
           <h3 id="pf-h" className="text-[13px] font-semibold text-ink">
             Agency forecast near this port
           </h3>
-          <span className="text-[11px] text-ink-3">C-HARM v3.1{ch?.issued_date ? ` · issued ${formatDate(ch.issued_date)} (inferred)` : ""}</span>
+          <span className="text-[13px] text-ink-3">C-HARM v3.1{ch?.issued_date ? ` · issued ${formatDate(ch.issued_date)} (date inferred)` : ""}</span>
         </div>
         {!ch || !ch.leads.length ? (
           <Notice tone="neutral">No forecast available.</Notice>
         ) : (
           <>
             <div className="space-y-1">
-              <p className="text-[12px] text-ink-2">
+              <p className="text-[13px] text-ink-2">
                 {VAR_LABEL[variable]}, median of cells within {ch.radius_km} km
               </p>
               <LeadStrip
@@ -104,7 +104,7 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
                   return (
                     <li key={v} data-testid={`port-stat-${v}`}>
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-[12.5px] text-ink-2">{VAR_LABEL[v]}</span>
+                        <span className="text-[13px] text-ink-2">{VAR_LABEL[v]}</span>
                         <span className="text-[14px] font-semibold text-ink tabular" data-testid={`port-median-${v}`}>
                           {s?.median != null ? pct(s.median) : "—"}
                         </span>
@@ -119,7 +119,7 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
                           <div className="absolute top-1/2 h-3 w-1 -translate-x-1/2 -translate-y-1/2 rounded-sm" style={{ left: `${s.median * 100}%`, background: palette ? colorAt(palette, s.median) : "var(--cw-ink)" }} aria-hidden />
                         </div>
                       )}
-                      <p className="mt-0.5 text-[11px] text-ink-3">
+                      <p className="mt-0.5 text-[13px] text-ink-3">
                         {s && s.n > 0 ? `Median of ${s.n} cells; range ${pct(s.min!)}–${pct(s.max!)}` : "No cells with a value within 15 km"}
                       </p>
                     </li>
@@ -127,7 +127,7 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
                 })}
               </ul>
             )}
-            <p className="text-[11.5px] text-ink-3">
+            <p className="text-[13px] text-ink-3">
               {PORT_COPY.spatial}
               {ch.nearest_cell_km != null ? ` Nearest forecast cell: ${ch.nearest_cell_km.toFixed(1)} km.` : ""} {PORT_COPY.nearshore}
             </p>
@@ -143,7 +143,7 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
             <span id="ph-h" className="block text-[13px] font-semibold text-ink">
               Last 30 days of nowcasts
             </span>
-            <span className="block text-[11.5px] text-ink-3">{VAR_SHORT[variable]}, median near the port</span>
+            <span className="block text-[13px] text-ink-3">{VAR_SHORT[variable]}, median near the port</span>
           </span>
           {!ch?.history_error && <Sparkline points={hist} domain={[0, 1]} label={`${VAR_LABEL[variable]} near ${port.display_name}, last 30 days`} />}
           <span aria-hidden className="text-ink-3 transition-transform duration-150 group-open:rotate-90">›</span>
@@ -166,7 +166,7 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
               maxGapDays={1}
             />
           )}
-          <p className="text-[11px] text-ink-3">{PORT_COPY.history}</p>
+          <p className="text-[13px] text-ink-3">{PORT_COPY.history}</p>
         </div>
       </details>
 
@@ -176,7 +176,7 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
             <span id="pc-h" className="block text-[13px] font-semibold text-ink">
               Chlorophyll near this port, last 60 days
             </span>
-            <span className="block text-[11.5px] text-ink-3">8-day satellite composites, median of clear pixels</span>
+            <span className="block text-[13px] text-ink-3">8-day satellite composites, median of clear pixels</span>
           </span>
           <span aria-hidden className="text-ink-3 transition-transform duration-150 group-open:rotate-90">›</span>
         </summary>
@@ -197,9 +197,9 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
               <span className="text-[20px] font-semibold text-ink tabular" data-testid="chl-port-latest">
                 {chl.latest.median!.toFixed(2)}
               </span>
-              <span className="text-[12px] text-ink-2">mg m⁻³ median</span>
+              <span className="text-[13px] text-ink-2">mg m⁻³ median</span>
             </div>
-            <p className="text-[11.5px] text-ink-3">
+            <p className="text-[13px] text-ink-3">
               8-day composite centred on {formatDate(chl.latest_center_date!, { year: true })} · {chl.latest.n} clear pixels (
               {Math.round((chl.latest_valid_fraction ?? 0) * 100)}% of pixels within {chl.radius_km} km; land and cloud excluded) · range{" "}
               {chl.latest.min!.toFixed(2)}–{chl.latest.max!.toFixed(2)}
@@ -217,11 +217,11 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
             />
           </>
         )}
-        <p className="text-[11px] text-ink-3">{PORT_COPY.chlorophyll}</p>
+        <p className="text-[13px] text-ink-3">{PORT_COPY.chlorophyll}</p>
         </div>
       </details>
 
-      <details className="rounded-md border border-hairline px-3 py-2 text-[11.5px] text-ink-2">
+      <details className="rounded-md border border-hairline px-3 py-2 text-[13px] text-ink-2">
         <summary className="cursor-pointer font-medium text-ink">How these numbers are made</summary>
         <ul className="mt-1.5 list-disc space-y-1 pl-4">
           {Object.entries(coll.method).map(([k, v]) => (

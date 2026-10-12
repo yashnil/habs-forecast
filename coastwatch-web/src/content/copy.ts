@@ -177,3 +177,73 @@ export const RESEARCH = {
     "The paper develops physics-informed machine-learning forecasts of nearshore chlorophyll-a. CoastWatch does not run those research models: its forecast layer is NOAA's C-HARM, and its observations come from NOAA CoastWatch, HF-radar networks, CalHABMAP, NOAA Fisheries and the CDFW and CDPH notice pages. The publication covers the research, not this application, which has not been reviewed by an independent HAB scientist.",
 };
 
+/** The About page (M8): what CoastWatch is, the kinds of information, its limits, the research, providers. */
+export const ABOUT = {
+  title: "Harmful algal blooms on the California coast, in one place",
+  lede:
+    "CoastWatch is an independent research project. It brings together the public information about harmful algal blooms along California’s coast: official notices, NOAA’s bloom forecast, satellite and shore-station measurements, and past fisheries landings. Each is labelled for what it is.",
+  kindsIntro:
+    "Every page uses the same four colours, and they never stand for anything else. A forecast is never shown as a measurement, chlorophyll is never shown as toxin, and history is never shown as a prediction.",
+  kinds: [
+    {
+      kind: "official",
+      name: "Notices from CDFW and CDPH",
+      text: "Closures, advisories and quarantines, quoted from the agencies’ pages. They come first on every page. They are transcribed and not yet checked by a person, so the agency pages are always the authority.",
+      where: "See the notices on the map",
+      href: "/",
+    },
+    {
+      kind: "model",
+      name: "NOAA’s C-HARM forecast",
+      text: "The modelled probability of Pseudo-nitzschia and of domoic acid, the toxin it can produce, at 3 km, for today and the next three days. A probability, not a measurement and not a closure decision.",
+      where: "Ocean Map",
+      href: "/",
+    },
+    {
+      kind: "measured",
+      name: "Satellite and shore-station measurements",
+      text: "Chlorophyll seen from space (algae biomass, not toxin), surface currents from HF radar, and water samples from CalHABMAP piers tested for domoic acid and Pseudo-nitzschia, each with its own date.",
+      where: "Bloom Intelligence",
+      href: "/bloom",
+    },
+    {
+      kind: "historical",
+      name: "Past fisheries landings",
+      text: "What California’s toxin-affected fisheries landed each year since 2015, from NOAA Fisheries, beside the 2015–16 domoic acid closures. History, not a forecast of losses.",
+      where: "Fisheries",
+      href: "/fisheries",
+    },
+  ],
+  cannot: [
+    "It does not decide whether seafood can be eaten or an area is open to fishing or harvest: only CDFW, CDPH and OEHHA do, and a missing notice here does not mean an area is open or seafood is safe.",
+    "How much toxin is in seafood. Shore stations measure toxin in seawater; satellites measure chlorophyll, which is algae, not toxin.",
+    "What will happen. C-HARM forecasts are probabilities for the next three days, and past landings say nothing about any current or future season.",
+    "Anything finer than its sources: forecast cells are 3 km, water next to the shore is often not modelled, and port-level landings are not published.",
+  ],
+  research: {
+    what:
+      "The paper studies forecasting nearshore chlorophyll-a, a proxy for algal blooms, eight days ahead along the California coast with neural networks, including one constrained by the physics of advection and diffusion.",
+    result:
+      "Evaluated with the same diagnostics, the physics-informed model matches, but does not beat, a standard ConvLSTM baseline; it modestly improves spatial fidelity and training stability.",
+    relation:
+      "CoastWatch does not run those research models. Its forecast is NOAA’s operational C-HARM, and its observations come from the agencies below. The publication covers the research, not this application: CoastWatch has not been peer reviewed or reviewed by an independent HAB scientist.",
+  },
+  providersIntro:
+    "CoastWatch reads public data from these providers every six hours, checks it against the source, and shows the last good data with its own dates when a source fails.",
+  providers: [
+    { name: "NOAA C-HARM v3.1", what: "Bloom and domoic acid forecast (NOAA CoastWatch West Coast ERDDAP)" },
+    { name: "NOAA CoastWatch, NASA GIBS", what: "Satellite chlorophyll: Sentinel-3 OLCI 300 m, VIIRS 750 m" },
+    { name: "HFRNet (IOOS)", what: "HF-radar surface currents, 2 km, hourly" },
+    { name: "CalHABMAP (SCCOOS ERDDAP)", what: "Shore-station domoic acid, Pseudo-nitzschia, chlorophyll and temperature" },
+    { name: "NOAA Fisheries FOSS, BLS CPI-U", what: "Commercial landings since 2015, and the inflation index for constant dollars" },
+    { name: "CDFW, CDPH", what: "Official closures, advisories and landing ports" },
+    { name: "OpenFreeMap, OpenMapTiles, OpenStreetMap; NOAA NCEI", what: "Basemap, coastline and seafloor relief" },
+  ],
+  repo: "https://github.com/yashnil/habs-forecast",
+  review: [
+    "The official notices are transcribed from the agency pages and have not been checked by a person. They may be incomplete.",
+    "The species tiers on the Fisheries page are CoastWatch’s grouping and await independent scientific review.",
+    "The application has not been reviewed by an independent HAB scientist.",
+  ],
+};
+

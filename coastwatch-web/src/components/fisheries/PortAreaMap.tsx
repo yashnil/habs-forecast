@@ -86,7 +86,7 @@ export function PortAreaMap() {
           );
         })}
       </svg>
-      <figcaption className="text-[12.5px] leading-snug text-ink-3">
+      <figcaption className="text-[13px] leading-snug text-ink-3">
         Dots: {geo.ports.length} ports where commercial landings are reported to CDFW, labelled by CDFW port area; {areas.inland.map((a) => a.name).join(" and ")} (lighter) are inland. CDFW publishes these as approximate points and no area boundaries, so none are drawn. Data:{" "}
         <a href={geo.ports_source.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink">
           CDFW Marine Region, BIOS ds3081

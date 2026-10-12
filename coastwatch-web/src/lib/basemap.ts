@@ -27,6 +27,22 @@ export const WATER_FALLBACK_SOURCE = "water-fallback";
 export const NODATA_FALLBACK_LAYER_ID = "water-nodata-fallback";
 export const WATER_FALLBACK_LAYER_IDS = ["water-fallback", "coastline-fallback"];
 
+/**
+ * Map label glyphs are self-hosted (public/fonts/): place names, port labels and the port markers
+ * (MapLibre holds a source's tiles until their labels' glyphs arrive) never wait on the font
+ * server. Ranges not held locally still come from OpenFreeMap. Pass as the map's transformRequest.
+ */
+const LOCAL_GLYPH_FONTS = new Set(["Noto Sans Regular", "Noto Sans Italic"]);
+const LOCAL_GLYPH_RANGES = new Set(["0-255", "256-511", "512-767", "768-1023", "7680-7935", "8192-8447", "8448-8703", "8704-8959"]);
+export function transformRequest(url: string, resourceType?: string): { url: string } | undefined {
+  if (resourceType !== "Glyphs" || typeof window === "undefined") return undefined;
+  const m = /\/fonts\/([^/]+)\/(\d+-\d+)\.pbf$/.exec(url);
+  if (!m) return undefined;
+  const stack = decodeURIComponent(m[1]);
+  if (!LOCAL_GLYPH_FONTS.has(stack) || !LOCAL_GLYPH_RANGES.has(m[2])) return undefined;
+  return { url: `${window.location.origin}/fonts/${encodeURIComponent(stack)}/${m[2]}.pbf` };
+}
+
 const FONT = ["Noto Sans Regular"];
 const FONT_ITALIC = ["Noto Sans Italic"];
 

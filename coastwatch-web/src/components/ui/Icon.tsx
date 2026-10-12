@@ -68,6 +68,12 @@ const PATHS = {
     </>
   ),
   chevron: <path d="m9 6 6 6-6 6" />,
+  info: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 11v5.5M12 7.6v.2" />
+    </>
+  ),
 } as const;
 
 export type IconName = keyof typeof PATHS;

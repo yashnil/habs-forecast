@@ -184,6 +184,7 @@ test.describe("accessibility", () => {
     ["bloom", "/bloom"],
     ["fisheries", "/fisheries"],
     ["sources", "/sources"],
+    ["about", "/about"],
   ] as const) {
     test(`${name}: no serious or critical axe violations`, async ({ page }) => {
       await open(page, `${OK}${url}`);

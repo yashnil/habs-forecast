@@ -6,7 +6,6 @@ import type { ObsStation, ObsVariable, ObservationDataset } from "@/generated/ob
 import type { OfficialDataset } from "@/generated/official";
 import type { PortOfficialRelation } from "@/generated/port_intel";
 import type { SourceStatus } from "@/generated/schema";
-import { REGION_LABEL } from "@/content/copy";
 import { StationChart } from "@/components/charts/StationChart";
 import { AXES, SELECTOR_VARS, type SelectorVar } from "@/lib/bloom";
 import { DAY, monthYear, samples, summaryOf } from "@/lib/observations";
@@ -183,26 +182,10 @@ export function BloomIntelligence({ stations, station, dataset, status, official
         official={official}
         error={officialError}
         recordIds={relations.map((r) => r.record_id)}
-        heading={`Official notices for waters near ${station.nearest_port_name ?? "this station"}`}
+        heading={narrow ? `{n} notices near ${station.nearest_port_name ?? "this station"}` : `Official notices for waters near ${station.nearest_port_name ?? "this station"}`}
         compact={narrow}
       />
 
-      {/* phone: the station picker replaces the rail and map */}
-      <button
-        type="button"
-        onClick={() => setPickerOpen(true)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-hairline-strong bg-surface px-4 py-3 text-left xl:hidden"
-        aria-haspopup="dialog"
-        data-testid="station-select"
-      >
-        <span className="min-w-0">
-          <span className="block truncate text-[15px] font-semibold text-ink">{station.name}</span>
-          <span className="block text-[13px] text-ink-3">
-            {REGION_LABEL[station.region ?? "other"]} · {stations.length} stations
-          </span>
-        </span>
-        <span className="shrink-0 text-[13.5px] font-medium text-accent">Change</span>
-      </button>
       {pickerOpen && (
         <div role="dialog" aria-modal="true" aria-label="Choose a shore station" className="fixed inset-0 z-50 overflow-y-auto bg-page px-4 pb-10 pt-4 xl:hidden" data-testid="station-picker">
           <div className="mb-3 flex items-center justify-between">
@@ -222,8 +205,8 @@ export function BloomIntelligence({ stations, station, dataset, status, official
           </div>
         </aside>
 
-        <article className="min-w-0 space-y-7" aria-labelledby="station-h" data-testid="station-detail" data-station={station.station_id}>
-          <StationHeader station={station} policy={policy} now={now} portCode={portCode} />
+        <article className="min-w-0 space-y-5 sm:space-y-7" aria-labelledby="station-h" data-testid="station-detail" data-station={station.station_id}>
+          <StationHeader station={station} policy={policy} now={now} portCode={portCode} onChange={() => setPickerOpen(true)} stationCount={stations.length} />
 
           <QuantityIndex station={station} vars={vars} selected={variable} onSelect={setVariable} policy={policy} now={now} x0={x0} x1={x1} />
 

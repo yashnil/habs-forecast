@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { DataBanners } from "@/components/Banners";
 import { OfficialStatusCard } from "@/components/panels/OfficialStatusCard";
@@ -36,8 +37,12 @@ export default async function SourcesPage() {
             </a>
           </p>
           <p className="max-w-2xl">{RESEARCH.relation}</p>
+          <p>
+            <Link href="/about" className="font-medium text-accent underline underline-offset-2">
+              About CoastWatch: what it shows, what it cannot tell you, and the research
+            </Link>
+          </p>
         </section>
-        <h2 className="pt-2 font-display text-[22px] font-medium leading-tight text-ink">Source status</h2>
         {manifest ? (
           <SourceTable manifest={manifest} official={data.ok ? data.official : null} />
         ) : (

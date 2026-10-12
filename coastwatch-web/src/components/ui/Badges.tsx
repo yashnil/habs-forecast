@@ -36,7 +36,7 @@ export function FreshnessBadge({ f, compact = false, basis }: { f: Freshness | n
     <span
       data-testid="freshness"
       data-state={state}
-      className="inline-flex items-center gap-1.5 rounded-full border border-hairline-strong bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-ink"
+      className="inline-flex items-center gap-1.5 rounded-full border border-hairline-strong bg-surface-2 px-2 py-0.5 text-[13px] font-medium text-ink"
     >
       <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden style={{ color: s.color }}>
         {s.icon}
@@ -78,7 +78,7 @@ export function ProductClassBadge({ pc }: { pc: ProductClass }) {
   return (
     <span
       data-testid="product-class"
-      className={`inline-flex items-center rounded-full border px-2 py-px text-[10.5px] font-semibold uppercase tracking-wider ${CLASS_STYLE[pc]}`}
+      className={`inline-flex items-center rounded-full border px-2 py-px text-[12px] font-semibold uppercase tracking-wider ${CLASS_STYLE[pc]}`}
     >
       {CLASS_LABEL[pc]}
     </span>
@@ -88,7 +88,7 @@ export function ProductClassBadge({ pc }: { pc: ProductClass }) {
 /** Issuing agency of an official notice (CDFW, CDPH, …), always in the official amber family. */
 export function AgencyChip({ agency }: { agency: string }) {
   return (
-    <span className="mt-px inline-flex shrink-0 items-center rounded border border-official-line bg-surface px-1 text-[10.5px] font-semibold tracking-wide text-official-ink">
+    <span className="mt-px inline-flex shrink-0 items-center rounded border border-official-line bg-surface px-1 text-[12px] font-semibold tracking-wide text-official-ink">
       {agency}
     </span>
   );

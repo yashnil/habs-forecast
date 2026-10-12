@@ -23,7 +23,7 @@ export function VerificationBadge({ v }: { v: Verification | null }) {
     <span
       data-testid="official-verification"
       data-state={v ? state : "checking"}
-      className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded border border-hairline-strong bg-surface-2 px-1.5 py-0.5 text-[11px] font-semibold text-ink"
+      className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded border border-hairline-strong bg-surface-2 px-1.5 py-0.5 text-[13px] font-semibold text-ink"
     >
       <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden style={{ color: st.color }}>
         <circle cx="6" cy="6" r="5.3" fill="none" stroke="currentColor" strokeWidth="1.2" />
@@ -37,7 +37,7 @@ export function VerificationBadge({ v }: { v: Verification | null }) {
 export function VerificationDetail({ v, brief = false }: { v: Verification; brief?: boolean }) {
   if (brief && v.state !== "verified") {
     return (
-      <details className="rounded-md border border-serious/40 bg-serious/[0.06] px-2.5 py-1.5 text-[11.5px] text-ink-2" data-testid="official-not-verified-brief">
+      <details className="rounded-md border border-serious/40 bg-serious/[0.06] px-2.5 py-1.5 text-[13px] text-ink-2" data-testid="official-not-verified-brief">
         <summary className="cursor-pointer text-ink">
           <span className="font-semibold">{OFFICIAL_STATUS.verification[v.state]}:</span> {OFFICIAL_STATUS.notVerifiedLead}
         </summary>
@@ -51,7 +51,7 @@ export function VerificationDetail({ v, brief = false }: { v: Verification; brie
   }
   if (v.state === "verified") {
     return (
-      <p className="text-[11.5px] text-ink-3">
+      <p className="text-[13px] text-ink-3">
         Reviewed by {v.reviewedBy} on {formatDateTimePT(v.reviewedAt!)}.
       </p>
     );
@@ -64,7 +64,7 @@ export function VerificationDetail({ v, brief = false }: { v: Verification; brie
         ))}
       </ul>
       {v.reviewedAt && (
-        <p className="mt-1 text-[11px] text-ink-3">
+        <p className="mt-1 text-[13px] text-ink-3">
           Records last {v.state === "aging" ? "reviewed" : "transcribed"} {formatDateTimePT(v.reviewedAt)} by {v.reviewedBy}.
           {v.lastCheckedAt ? ` Official pages last checked ${formatDateTimePT(v.lastCheckedAt)}.` : ""}
         </p>
@@ -88,12 +88,12 @@ export function NoticeCard({ r, now, relationNote, compact = false, dense = fals
       >
         <AgencyChip agency={r.agency} />
         <span className="min-w-0 flex-1">
-          <span className="block text-[10.5px] font-semibold uppercase tracking-wide text-official-ink">
+          <span className="block text-[12px] font-semibold uppercase tracking-wide text-official-ink">
             {ACTION_LABEL[r.action]} · {FISHERY_LABEL[r.fishery]}
           </span>
           {/* the title and dates of an official notice are never cut, however dense the list */}
-          <span className="block text-[12.5px] font-semibold leading-snug text-ink">{r.title}</span>
-          <span className="mt-0.5 block text-[11px] text-ink-3">
+          <span className="block text-[13px] font-semibold leading-snug text-ink">{r.title}</span>
+          <span className="mt-0.5 block text-[13px] text-ink-3">
             {r.effective_date ? `Since ${formatDate(r.effective_date, { year: true })}` : "Start date not published"}
             {r.expected_end_date ? ` · through at least ${formatDate(r.expected_end_date)}` : ""}
             {relationNote ? ` · ${relationNote}` : ""}
@@ -104,19 +104,19 @@ export function NoticeCard({ r, now, relationNote, compact = false, dense = fals
         </svg>
       </button>
       {critical.length > 0 && (
-        <ul className="space-y-0.5 px-2.5 pb-2 text-[11.5px] font-medium text-warning" data-testid="notice-critical">
+        <ul className="space-y-0.5 px-2.5 pb-2 text-[13px] font-medium text-warning" data-testid="notice-critical">
           {critical.map((f) => (
             <li key={f}>⚠ {f}</li>
           ))}
         </ul>
       )}
       {open && (
-        <div className="space-y-2 border-t border-official-line px-2.5 py-2 text-[12px] text-ink-2">
+        <div className="space-y-2 border-t border-official-line px-2.5 py-2 text-[13px] text-ink-2">
           <p>{r.summary}</p>
           <blockquote className="border-l-2 border-official-line pl-2 text-ink" data-testid="official-text">
             “{r.official_text}”
           </blockquote>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[11.5px]">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[13px]">
             <dt className="text-ink-3">Species</dt>
             <dd>{r.species.join(", ")}</dd>
             <dt className="text-ink-3">Toxin</dt>
@@ -133,15 +133,15 @@ export function NoticeCard({ r, now, relationNote, compact = false, dense = fals
               </>
             )}
           </dl>
-          {r.expected_end_note && <p className="text-[11.5px] text-ink-3">{r.expected_end_note}</p>}
+          {r.expected_end_note && <p className="text-[13px] text-ink-3">{r.expected_end_note}</p>}
           {flags.length > 0 && (
-            <ul className="space-y-0.5 text-[11.5px] text-warning" data-testid="notice-flags">
+            <ul className="space-y-0.5 text-[13px] text-warning" data-testid="notice-flags">
               {flags.map((f) => (
                 <li key={f}>⚠ {f}</li>
               ))}
             </ul>
           )}
-          <ul className="space-y-0.5 text-[11.5px]">
+          <ul className="space-y-0.5 text-[13px]">
             {r.sources.map((s) => (
               <li key={s.url}>
                 <SourceLink href={s.url}>{s.label} ↗</SourceLink>
@@ -156,7 +156,7 @@ export function NoticeCard({ r, now, relationNote, compact = false, dense = fals
 
 export function Hotlines() {
   return (
-    <dl className="grid gap-1 text-[12px]">
+    <dl className="grid gap-1 text-[13px]">
       {OFFICIAL_STATUS.hotlines.map((h) => (
         <div key={h.tel} className="flex flex-wrap justify-between gap-x-3">
           <dt className="text-ink-3">{h.label}</dt>
@@ -191,7 +191,7 @@ export function OfficialSummary({ ds, v, now, error }: { ds: OfficialDataset | n
       ) : (
         <>
           {v && <VerificationDetail v={v} brief />}
-          <p className="text-[12px] text-ink-2">
+          <p className="text-[13px] text-ink-2">
             <span className="font-semibold text-ink tabular">{records.length}</span> active notices statewide from CDFW and CDPH. Select one for the agency&apos;s wording.
           </p>
           <div className="space-y-1">
@@ -200,18 +200,18 @@ export function OfficialSummary({ ds, v, now, error }: { ds: OfficialDataset | n
             ))}
           </div>
           {records.length > 3 && (
-            <button onClick={() => setShowAll(!showAll)} className="w-full rounded-md border border-hairline py-1.5 text-[12px] text-ink-2 hover:text-ink" data-testid="official-show-all">
+            <button onClick={() => setShowAll(!showAll)} className="w-full rounded-md border border-hairline py-1.5 text-[13px] text-ink-2 hover:text-ink" data-testid="official-show-all">
               {showAll ? "Show fewer" : `Show all ${records.length} notices`}
             </button>
           )}
           {ds.registry.statements.length > 0 && (
-            <details className="rounded-md border border-hairline px-3 py-2 text-[12px] text-ink-2">
+            <details className="rounded-md border border-hairline px-3 py-2 text-[13px] text-ink-2">
               <summary className="cursor-pointer font-medium text-ink">{OFFICIAL_STATUS.statementsHeading}</summary>
-              <p className="mt-1 text-[11px] text-ink-3">{OFFICIAL_STATUS.statementsNote}</p>
+              <p className="mt-1 text-[13px] text-ink-3">{OFFICIAL_STATUS.statementsNote}</p>
               <ul className="mt-1.5 space-y-1.5">
                 {ds.registry.statements.map((s) => (
                   <li key={s.id}>
-                    <p className="text-[11px] text-ink-3">
+                    <p className="text-[13px] text-ink-3">
                       {s.agency} · {s.topic}
                     </p>
                     <p>“{s.statement}” <SourceLink href={s.source.url}>source ↗</SourceLink></p>
@@ -222,10 +222,10 @@ export function OfficialSummary({ ds, v, now, error }: { ds: OfficialDataset | n
           )}
         </>
       )}
-      <p className="text-[11.5px] leading-snug text-ink-3" data-testid="missing-not-open">
+      <p className="text-[13px] leading-snug text-ink-3" data-testid="missing-not-open">
         {OFFICIAL_STATUS.missingNotOpen}
       </p>
-      <details className="text-[12px] text-ink-2">
+      <details className="text-[13px] text-ink-2">
         <summary className="cursor-pointer font-medium text-ink">Official sources and hotlines</summary>
         <ul className="mt-1.5 space-y-1">
           {OFFICIAL_STATUS.links.map((l) => (
@@ -250,9 +250,9 @@ export function OfficialForPort({ ds, v, port, now }: { ds: OfficialDataset | nu
     <section data-testid="port-official" className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-[13px] font-semibold text-ink">Official notices for nearby waters</h3>
+        {/* the reasons are in the status line and the notices drawer: one badge here, not a second box */}
         <VerificationBadge v={v} />
       </div>
-      {v && v.state !== "verified" && <VerificationDetail v={v} brief />}
       {!ds ? (
         <Notice tone="serious" title="Official notices unavailable">Check CDFW and CDPH directly.</Notice>
       ) : rel.length ? (
@@ -266,7 +266,7 @@ export function OfficialForPort({ ds, v, port, now }: { ds: OfficialDataset | nu
           No active notices in CoastWatch&apos;s list mention this port&apos;s county or latitude.
         </Notice>
       )}
-      <p className="text-[11.5px] text-ink-3">{OFFICIAL_STATUS.missingNotOpen}</p>
+      <p className="text-[13px] text-ink-3">{OFFICIAL_STATUS.missingNotOpen}</p>
     </section>
   );
 }

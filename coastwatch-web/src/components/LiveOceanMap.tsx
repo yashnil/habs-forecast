@@ -31,6 +31,7 @@ import { MobileSheet, type SnapId, type SnapPoint } from "@/components/MobileShe
 import type { CurrentsOverlay, ImageRaster, MapPoint, TileRaster } from "@/components/map/MapCanvas";
 import { NavCard, type RegionDef } from "@/components/map/NavCard";
 import { PlaceChip } from "@/components/map/PlaceChip";
+import { IntroCard } from "@/components/map/IntroCard";
 import { HoverReadout, type HoverSource } from "@/components/map/HoverReadout";
 import { supportsGridTiles } from "@/lib/gridTiles";
 import { MeasuredNearby } from "@/components/map/MeasuredNearby";
@@ -310,7 +311,9 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       setRegion(id);
       setPort(null);
       setInspect(null);
-      setNavOpen(false);
+      // going up to All California keeps the phone's Places sheet open on the list of regions;
+      // choosing a region closes it and shows that region on the map
+      if (id !== regions[0]?.id) setNavOpen(false);
       const r = regions.find((x) => x.id === id);
       if (r && mapRef.current) mapRef.current.fitBounds(r.bounds, { padding: { ...padding(), right: (window.innerWidth >= 1024 ? 0 : 16) + 28 }, duration: reducedMotion ? 0 : 800 });
     },
@@ -593,6 +596,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   // desktop and mobile never re-creates it.
   return (
     <div ref={rootRef} className="relative min-h-0 flex-1 overflow-hidden" data-testid="map">
+      <h1 className="sr-only">Ocean Map: harmful algal bloom forecasts, measurements and official notices for {placeLabel}</h1>
       <div className="absolute inset-0">{map}</div>
       {wide && hover && !detailOpen && <HoverReadout manifest={manifest} baseUrl={baseUrl} source={hoverSource} point={hover.p} screen={hover.s} bounds={{ w: rootRef.current?.clientWidth ?? 1440, h: mapH }} />}
       {wide && hover && detailOpen && hover.s.x < (rootRef.current?.clientWidth ?? 1440) - INSPECTOR - 16 && <HoverReadout manifest={manifest} baseUrl={baseUrl} source={hoverSource} point={hover.p} screen={hover.s} bounds={{ w: (rootRef.current?.clientWidth ?? 1440) - INSPECTOR - 16, h: mapH }} />}
@@ -602,6 +606,11 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
           <div className="absolute top-3 z-20" style={{ left: RAIL + 12, maxWidth: `calc(100% - ${RAIL + 24}px - ${detailOpen ? INSPECTOR + 16 : 0}px)` }}>
             <PlaceChip label={placeLabel} open={placesOpen} onToggle={() => setPlacesOpen(!placesOpen)} regionNotices={placeNotices} statewide={placeStatewide} />
           </div>
+          {!placesOpen && !detailOpen && (
+            <div className="absolute z-20 w-[340px]" style={{ left: RAIL + 12, top: 60 }}>
+              <IntroCard />
+            </div>
+          )}
           {placesOpen && (
             <div className="cw-pop-in absolute z-20 flex w-[320px]" style={{ left: RAIL + 12, top: 60, maxHeight: `calc(100% - ${Math.round(dockH) + 84}px)` }}>
               {/* the place chip above already shows the notices, so the list starts with places */}
@@ -635,7 +644,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
           >
             <Icon name="search" className="h-4 w-4 text-ink-3" />
             <span className="min-w-0 truncate pr-1">{placeLabel}</span>
-            <span data-testid="mobile-official" className="flex h-8 shrink-0 items-center gap-1 rounded-full border border-official-line bg-official-bg px-2.5 text-[12.5px] font-semibold text-official-ink">
+            <span data-testid="mobile-official" className="flex h-8 shrink-0 items-center gap-1 rounded-full border border-official-line bg-official-bg px-2.5 text-[13px] font-semibold text-official-ink">
               <Icon name="shield" className="h-3.5 w-3.5 text-official" />
               {!placeStatewide && placeNotices != null ? placeNotices : (activeCount ?? "?")}
               <span className="sr-only"> official notices{!placeStatewide ? ` may apply in ${placeLabel}` : " in California"},</span>
@@ -643,6 +652,11 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
               <span className="sr-only"> {verWord}</span>
             </span>
           </button>
+          {!navOpen && !detail && (
+            <div className="absolute inset-x-3 top-[58px] z-10">
+              <IntroCard />
+            </div>
+          )}
           {navOpen && (
             <div className="theme-paper cw-sheet-up absolute inset-0 z-30 flex flex-col overflow-hidden bg-surface text-ink" role="dialog" aria-modal="true" aria-label="Places">
               <div className="flex items-center justify-between px-4 pb-1 pt-2.5">
