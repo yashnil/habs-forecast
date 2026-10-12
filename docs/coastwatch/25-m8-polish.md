@@ -1,6 +1,6 @@
 # 25 — M8: final product polish and release readiness
 
-**Status:** draft PR for review; not merged, not deployed publicly. Web only: no pipeline, data or forecast change. The Research Preview is untouched.
+**Status:** merged to `main` as 69d0d6e8 (PR #30, 2026-10-12); not deployed publicly (private preview only). Release blockers and next steps: [26 — Release readiness](26-release-readiness.md). Web only: no pipeline, data or forecast change. The Research Preview is untouched.
 
 **Method:** the integrated site (M5 Ocean Map, M6 Bloom, M7 Fisheries, #28 coastline) was reviewed in a real browser on production data. The private preview requires a Vercel login and its bypass token could not be created in this session, so every screenshot and measurement comes from a local production build of the same commits reading the same production data (`https://yashnil.github.io/habs-forecast/v1`). The baseline is `main` at 9802a4a7.
 
