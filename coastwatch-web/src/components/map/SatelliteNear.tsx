@@ -5,6 +5,7 @@ import type { LayerArtifact, Manifest } from "@/generated/schema";
 import { CHLOROPHYLL_COPY } from "@/content/copy";
 import { sampleChunked, type ChunkedSample } from "@/lib/grid";
 import { nativeLabel, satelliteLatest, type SatProduct } from "@/lib/layers";
+import { viirsPlatformLabel } from "@/lib/stamp";
 import { formatDate } from "@/lib/time";
 import { multiSensorLayer, multiSensorMembers, multiSensorPick, observedDate, type SensorObs } from "@/lib/multisensor";
 
@@ -55,7 +56,7 @@ function SingleSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearPr
           Satellite chlorophyll, latest clear view
         </h3>
         <span className="text-[13px] text-ink-3">
-          {product === "olci300" ? "Sentinel-3 OLCI" : "VIIRS"} · native {nativeLabel(layer)}
+          {product === "olci300" ? "Sentinel-3 OLCI" : viirsPlatformLabel(layer)} · native {nativeLabel(layer)}
         </span>
       </div>
       {s === null ? (
