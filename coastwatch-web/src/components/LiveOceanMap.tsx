@@ -45,6 +45,10 @@ import { CurrentsNear } from "@/components/map/CurrentsNear";
 import { stampLines } from "@/lib/stamp";
 import { currentsHourly, fieldFeatures, loadField, type CurrentField } from "@/lib/currents";
 import { OFFICIAL_STATUS } from "@/content/copy";
+import { useModel } from "@/components/coast/CoastSections";
+import { cellPolygon, stationsNear } from "@/lib/coast";
+import { provenanceFeatures } from "@/lib/provenance";
+import { journeyTo } from "@/lib/camera";
 import { Icon } from "@/components/ui/Icon";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), {
@@ -331,7 +335,8 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       // choosing a region closes it and shows that region on the map
       if (id !== regions[0]?.id) setNavOpen(false);
       const r = regions.find((x) => x.id === id);
-      if (r && mapRef.current) mapRef.current.fitBounds(r.bounds, { padding: { ...padding(), right: (window.innerWidth >= 1024 ? 0 : 16) + 28 }, duration: reducedMotion ? 0 : 800 });
+      // a journey along the coast, suited to the device (lib/camera); any input stops it
+      if (r && mapRef.current) journeyTo(mapRef.current, { bounds: r.bounds, padding: { ...padding(), right: (window.innerWidth >= 1024 ? 0 : 16) + 28 } });
     },
     [regions, padding, reducedMotion],
   );
@@ -348,10 +353,10 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
         const r = regions.find((x) => x.id === f.properties.region);
         // the inspector opens with the port: fit beside it (desktop) or above its peek (phone)
         const pad = window.innerWidth >= 1024 ? { ...padding(), right: INSPECTOR + 44 } : { ...padding(), bottom: 196 + 16 };
-        if (r && mapRef.current) mapRef.current.fitBounds(r.bounds, { padding: pad, duration: reducedMotion ? 0 : 800 });
-        else {
+        if (r && mapRef.current) journeyTo(mapRef.current, { bounds: r.bounds, padding: pad });
+        else if (mapRef.current) {
           const [lon, lat] = f.geometry.coordinates as number[];
-          mapRef.current?.flyTo({ center: [lon, lat], zoom: Math.max(mapRef.current.getZoom(), 9), padding: pad, duration: reducedMotion ? 0 : 800 });
+          journeyTo(mapRef.current, { center: [lon, lat], zoom: Math.max(mapRef.current.getZoom(), 9), padding: pad });
         }
         pendingFly.current = mapRef.current ? null : code;
       }
@@ -579,6 +584,23 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     stamp,
   };
 
+  // provenance threads for the inspected point: its model cell (or the nearest cell with a value),
+  // the nearest shore station and the nearest official limit (lib/provenance)
+  const inspectModel = useModel(manifest, baseUrl, inspect?.lat ?? null, inspect?.lon ?? null, lead);
+  const threads = useMemo(() => {
+    if (!inspect) return null;
+    const g = inspectModel?.layer?.grid;
+    const used = inspectModel?.pda?.here ?? inspectModel?.pda?.nearest ?? null;
+    const st = stationsNear(stations, inspect.lat, inspect.lon);
+    const s = st.near[0] ?? st.nearestBeyond;
+    return provenanceFeatures({
+      target: inspect,
+      cell: g && used ? { polygon: cellPolygon(g, used.cell), lat: used.cell.lat, lon: used.cell.lon, own: !!inspectModel?.pda?.here } : null,
+      stations: s ? [{ lat: s.station.lat, lon: s.station.lon, name: s.station.name, km: s.km }] : [],
+      official: (official?.geometry as unknown as GeoJSON.FeatureCollection) ?? null,
+    });
+  }, [inspect, inspectModel, stations, official]);
+
   const map = (
     <MapCanvas
       forecast={forecast}
@@ -592,6 +614,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       showOfficial
       selectedPort={port}
       inspect={inspect}
+      overlay={threads}
       initialBounds={initialRegion.bounds}
       initialPadding={wide ? { top: 64, bottom: 28, left: 660, right: 28 } : { top: 64, bottom: 168, left: 16, right: 16 }}
       cellEdges={group === "forecast" && edges && edges.id === forecastLayer?.layer_id ? edges.fc : null}

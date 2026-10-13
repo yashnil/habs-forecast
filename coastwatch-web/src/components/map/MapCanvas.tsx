@@ -80,6 +80,23 @@ type Props = {
 };
 
 const OFFICIAL = "#f6bb5c";
+const MODEL_MARK = "#b58cf0";
+const MEASURED_MARK = "#4fd1ae";
+// provenance threads: one layer per source so they draw out one after another (model, measured,
+// official), 520 ms each with a 90 ms stagger; white, never a data colour
+const THREADS = [
+  { to: "cell", color: "rgba(233,239,246,0.9)" },
+  { to: "station", color: "rgba(233,239,246,0.9)" },
+  { to: "limit", color: "rgba(246,187,92,0.95)" },
+] as const;
+const THREAD_MS = 520;
+const THREAD_STAGGER = 90;
+/** A line drawn from its start up to `p` (0..1) of its length. */
+function threadGradient(p: number, color: string): ExpressionSpecification {
+  if (p >= 1) return ["interpolate", ["linear"], ["line-progress"], 0, color, 1, color];
+  const q = Math.max(0.0001, p);
+  return ["interpolate", ["linear"], ["line-progress"], 0, color, q, color, Math.min(1, q + 0.0001), "rgba(0,0,0,0)"];
+}
 // [level, minzoom, maxzoom]: one arrow per observed 2 km radar cell from z8.5 (M5); zoomed
 // out, only cells on every 2nd, 4th or 8th row and column carry one. Arrows never move
 // between zooms, more appear.
@@ -207,6 +224,36 @@ export default function MapCanvas(p: Props) {
     };
   }, [map, hasRaster, fieldReady, showFallback]);
   const { onHover } = p;
+
+  // threads draw out once per selection (reduced motion: drawn at once); a new selection restarts
+  const overlay = p.overlay;
+  useEffect(() => {
+    if (!map || !overlay) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+    const set = (t: number) => {
+      THREADS.forEach(({ to, color }, i) => {
+        const id = `coast-thread-${to}`;
+        if (!map.getLayer(id)) return;
+        const k = reduce ? 1 : Math.min(1, Math.max(0, (t - i * THREAD_STAGGER) / THREAD_MS));
+        // ease-out, so each thread lands softly at its source
+        map.setPaintProperty(id, "line-gradient", threadGradient(1 - (1 - k) ** 3, color));
+      });
+    };
+    if (reduce) {
+      set(Infinity);
+      return;
+    }
+    const t0 = performance.now();
+    const step = (now: number) => {
+      const t = now - t0;
+      set(t);
+      if (t < THREAD_MS + THREAD_STAGGER * (THREADS.length - 1)) raf = requestAnimationFrame(step);
+    };
+    // the layers exist after this render; start on the next frame
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [map, overlay]);
 
   const onClick = useCallback(
     (e: MapLayerMouseEvent) => {
@@ -374,20 +421,44 @@ export default function MapCanvas(p: Props) {
       )}
 
       {p.overlay && (
-        <Source id="coast-overlay" type="geojson" data={p.overlay}>
-          <Layer id="coast-cell-fill" type="fill" filter={["==", ["get", "kind"], "cell"]} paint={{ "fill-color": "#b9a6f5", "fill-opacity": 0.22 }} />
-          <Layer id="coast-cell-line" type="line" filter={["==", ["get", "kind"], "cell"]} paint={{ "line-color": "#d9ccff", "line-width": 2 }} />
-          <Layer id="coast-link" type="line" filter={["==", ["get", "kind"], "link"]} paint={{ "line-color": "#e8eef5", "line-width": 1.6, "line-dasharray": [2, 2], "line-opacity": 0.9 }} />
-          <Layer id="coast-station" type="circle" filter={["==", ["get", "kind"], "station"]} paint={{ "circle-radius": 6, "circle-color": "#3fbfa6", "circle-stroke-color": "#06111e", "circle-stroke-width": 2 }} />
+        // provenance (lib/provenance): exact cell edges, threads from the point to each source, a dot
+        // in the source's mark colour at each end. Threads are connectors, never data colours.
+        <Source id="coast-overlay" type="geojson" data={p.overlay} lineMetrics>
+          <Layer id="coast-cell-fill" type="fill" filter={["==", ["get", "kind"], "cell"]} paint={{ "fill-color": MODEL_MARK, "fill-opacity": 0.12 }} />
+          <Layer id="coast-cell-line" type="line" filter={["==", ["get", "kind"], "cell"]} paint={{ "line-color": "#d9ccff", "line-width": 1.6 }} />
+          {THREADS.map(({ to, color }) => (
+            <Layer
+              key={to}
+              id={`coast-thread-${to}`}
+              type="line"
+              filter={["all", ["==", ["get", "kind"], "thread"], ["==", ["get", "to"], to]]}
+              layout={{ "line-cap": "round" }}
+              paint={{ "line-width": 1.4, "line-opacity": ["case", ["boolean", ["get", "far"], false], 0.5, 1], "line-gradient": threadGradient(1, color) }}
+            />
+          ))}
+          <Layer
+            id="coast-thread-end"
+            type="circle"
+            filter={["==", ["get", "kind"], "end"]}
+            paint={{
+              "circle-radius": 4,
+              "circle-color": ["match", ["get", "to"], "cell", MODEL_MARK, "station", MEASURED_MARK, OFFICIAL],
+              "circle-stroke-color": "#06111e",
+              "circle-stroke-width": 1.5,
+              "circle-opacity": ["case", ["boolean", ["get", "far"], false], 0.55, 1],
+              "circle-stroke-opacity": ["case", ["boolean", ["get", "far"], false], 0.55, 1],
+            }}
+          />
+          <Layer id="coast-station" type="circle" filter={["==", ["get", "kind"], "station"]} paint={{ "circle-radius": 6, "circle-color": MEASURED_MARK, "circle-stroke-color": "#06111e", "circle-stroke-width": 2 }} />
           <Layer
             id="coast-station-label"
             type="symbol"
             filter={["==", ["get", "kind"], "station"]}
             layout={{ "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 12, "text-offset": [0.9, 0], "text-anchor": "left", "text-optional": true }}
-            paint={{ "text-color": "#cdeee6", "text-halo-color": "#06111e", "text-halo-width": 1.6 }}
+            paint={{ "text-color": "#cdeee6", "text-halo-color": "rgba(6,17,30,0.7)", "text-halo-width": 1.6 }}
           />
-          <Layer id="coast-target-halo" type="circle" filter={["==", ["get", "kind"], "target"]} paint={{ "circle-radius": 14, "circle-color": "rgba(246,187,92,0.18)", "circle-stroke-color": "#f6bb5c", "circle-stroke-width": 2 }} />
-          <Layer id="coast-target" type="circle" filter={["==", ["get", "kind"], "target"]} paint={{ "circle-radius": 4, "circle-color": "#f6bb5c" }} />
+          <Layer id="coast-target-halo" type="circle" filter={["==", ["get", "kind"], "target"]} paint={{ "circle-radius": 11, "circle-color": "rgba(255,255,255,0.08)", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 }} />
+          <Layer id="coast-target" type="circle" filter={["==", ["get", "kind"], "target"]} paint={{ "circle-radius": 3.5, "circle-color": "#ffffff", "circle-stroke-color": "#06111e", "circle-stroke-width": 1.5 }} />
         </Source>
       )}
 
@@ -425,7 +496,7 @@ export default function MapCanvas(p: Props) {
         </div>
       )}
 
-      {p.inspect && (
+      {p.inspect && !p.overlay && (
         <Marker longitude={p.inspect.lon} latitude={p.inspect.lat} anchor="center">
           <span className="block h-4 w-4 rounded-full border-2 border-white shadow-[0_0_0_2px_rgba(4,11,23,0.85)]" aria-hidden />
         </Marker>

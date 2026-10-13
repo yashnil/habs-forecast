@@ -101,6 +101,7 @@ test.describe("My Coast", () => {
     // once waters are chosen, the picker is one tap away, after the answer
     await expect(page.getByTestId("place-input")).toHaveCount(0);
     await page.getByTestId("coast-change").click();
+    await expect(page.getByTestId("place-input")).toBeFocused();
     await page.getByTestId("place-input").fill("Clam");
     await page.getByTestId("place-option-site-clam-beach").click();
     await expect(page).toHaveURL(/place=site-clam-beach/);

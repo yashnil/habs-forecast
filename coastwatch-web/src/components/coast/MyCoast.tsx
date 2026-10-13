@@ -9,6 +9,8 @@ import type { Manifest, PortsCollection } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 import type { StationLite } from "@/lib/data";
 import { COAST_COPY } from "@/content/coast";
+import { provenanceFeatures } from "@/lib/provenance";
+import { journeyTo } from "@/lib/camera";
 import { associationsAt } from "@/lib/applicability";
 import {
   ageDays,
@@ -144,16 +146,17 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   // ------------------------------------------------------------ the map shows where each fact came from
   const overlay = useMemo<GeoJSON.FeatureCollection | null>(() => {
     if (!place) return null;
-    const f: GeoJSON.Feature[] = [{ type: "Feature", properties: { kind: "target" }, geometry: { type: "Point", coordinates: [place.lon, place.lat] } }];
-    for (const s of st.near.slice(0, 4)) f.push({ type: "Feature", properties: { kind: "station", name: s.station.name }, geometry: { type: "Point", coordinates: [s.station.lon, s.station.lat] } });
     const g = model?.layer?.grid;
     const used = model?.pda?.here ?? model?.pda?.nearest ?? null;
-    if (g && used) {
-      f.push({ type: "Feature", properties: { kind: "cell" }, geometry: cellPolygon(g, used.cell) });
-      if (!model?.pda?.here) f.push({ type: "Feature", properties: { kind: "link" }, geometry: { type: "LineString", coordinates: [[place.lon, place.lat], [used.cell.lon, used.cell.lat]] } });
-    }
-    return { type: "FeatureCollection", features: f };
-  }, [place, st, model]);
+    // the nearest station: the one the answer line names
+    const near = st.near.length ? st.near.slice(0, 1) : st.nearestBeyond ? [st.nearestBeyond] : [];
+    return provenanceFeatures({
+      target: { lat: place.lat, lon: place.lon },
+      cell: g && used ? { polygon: cellPolygon(g, used.cell), lat: used.cell.lat, lon: used.cell.lon, own: !!model?.pda?.here } : null,
+      stations: near.map((s) => ({ lat: s.station.lat, lon: s.station.lon, name: s.station.name, km: s.km })),
+      official: (official?.geometry as unknown as GeoJSON.FeatureCollection) ?? null,
+    });
+  }, [place, st, model, official]);
 
   const mapRef = useRef<MlMap | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -168,7 +171,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
       const lons = pts.map((p) => p[0]);
       const lats = pts.map((p) => p[1]);
       const pad = 0.06;
-      m.fitBounds([[Math.min(...lons) - pad, Math.min(...lats) - pad], [Math.max(...lons) + pad, Math.max(...lats) + pad]], { padding: 48, maxZoom: 11, duration: reducedMotion ? 0 : 600 });
+      journeyTo(m, { bounds: [[Math.min(...lons) - pad, Math.min(...lats) - pad], [Math.max(...lons) + pad, Math.max(...lats) + pad]], padding: 48, maxZoom: 11 });
     },
     [place, model, st, reducedMotion],
   );
@@ -245,7 +248,17 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
               {place.note}
               {place.county ? ` · ${place.county} County` : ""}
             </span>
-            <button type="button" aria-expanded={picking} onClick={() => setPicking(!picking)} className={actionLink} data-testid="coast-change">
+            <button
+              type="button"
+              aria-expanded={picking}
+              onClick={() => {
+                setPicking(!picking);
+                // focus moves into the search it opens
+                if (!picking) requestAnimationFrame(() => document.querySelector<HTMLInputElement>('[data-testid="place-input"]')?.focus());
+              }}
+              className={actionLink}
+              data-testid="coast-change"
+            >
               {picking ? "Close" : "Change place"}
             </button>
           </p>
