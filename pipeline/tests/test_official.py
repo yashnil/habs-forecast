@@ -277,3 +277,21 @@ def test_del_norte_razor_clam_records_are_transcribed_not_verified():
     # the registry as a whole is still awaiting a person; SN26-020 is not marked reviewed
     assert reg.review.status != "human_verified"
     assert "SN26-020" not in reg.review.cdph_release_ids_reviewed
+
+
+def test_agency_pages_are_fetched_as_coastwatch_not_a_browser(monkeypatch):
+    """The watcher identifies itself honestly: the shared CoastWatch User-Agent, no browser string."""
+    from coastwatch_pipeline import http
+
+    sent: list[dict] = []
+
+    def fake_fetch(url, *, headers=None, **_):
+        sent.append({"User-Agent": http.USER_AGENT, **(headers or {})})
+        return Response(url=url, status=200, body=b"<html></html>", content_type="text/html")
+
+    monkeypatch.setattr(http, "fetch", fake_fetch)
+    official._page_fetch(None, "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories")
+    ua = sent[0]["User-Agent"]
+    assert ua.startswith("CoastWatch") and "github.com/yashnil/habs-forecast" in ua
+    assert not re.search(r"Mozilla|Chrome|Safari|AppleWebKit", ua)
+    assert not hasattr(official, "BROWSER_UA")

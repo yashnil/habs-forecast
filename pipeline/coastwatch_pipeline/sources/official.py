@@ -38,10 +38,6 @@ SOURCE_ID = "official"
 REPO_ROOT = Path(__file__).resolve().parents[3]
 REGISTRY = REPO_ROOT / "data" / "curated" / "official_notices.json"
 OCEAN_MASK = REPO_ROOT / "data" / "reference" / "charm_ocean_mask.json"
-BROWSER_UA = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/141.0 Safari/537.36 CoastWatch-watcher"
-)
 CDPH_LAYERS = "https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services"
 COUNTY_LAYER = f"{CDPH_LAYERS}/California_Coastal_Counties/FeatureServer/3"
 NCI_LAYER = f"{CDPH_LAYERS}/All_Bivalve_Shellfish_Health_Advisory_Special_Advisory/FeatureServer/3"
@@ -263,7 +259,7 @@ def watch(ctx: RunContext, reg: OfficialRegistry, discrepancies: list[str] | Non
     out = []
     for src in reg.watched_sources:
         try:
-            r = ctx.fetcher(src.url) if not _uses_default_fetch(ctx) else _browser_fetch(ctx, src.url)
+            r = ctx.fetcher(src.url) if not _uses_default_fetch(ctx) else _page_fetch(ctx, src.url)
             raw = r.body.decode("utf-8", "replace")
             if src.parser == "cdph_release_list":
                 items = cdph_release_items(raw)
@@ -307,10 +303,11 @@ def _uses_default_fetch(ctx: RunContext) -> bool:
     return f is fetch or (isinstance(f, CircuitBreaker) and f.inner is fetch)
 
 
-def _browser_fetch(ctx: RunContext, url: str):
+def _page_fetch(ctx: RunContext, url: str):
+    """Agency pages, fetched as CoastWatch (the shared honest User-Agent in http.py), never as a browser."""
     from ..http import fetch
 
-    return fetch(url, headers={"User-Agent": BROWSER_UA, "Accept": "text/html"})
+    return fetch(url, headers={"Accept": "text/html"})
 
 
 # ---------------------------------------------------------------- geometry
