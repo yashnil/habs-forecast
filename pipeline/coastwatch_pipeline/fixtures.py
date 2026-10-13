@@ -232,8 +232,10 @@ def build_fixture_dataset(out: Path, now: str = FIXTURE_NOW, scenario: str = "no
         shutil.rmtree(out)
     m = run_pipeline(fixture_context(out, now))
     if scenario == "charm-failed":
+        # a later run: every C-HARM request fails, and CDPH has meanwhile published a release that
+        # appears to lift an active record (published as a discrepancy, the record left unchanged)
         later = (datetime.fromisoformat(now.replace("Z", "+00:00")) + timedelta(days=4)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        fetcher = FixtureFetcher(overrides={r"wvcharmV3_": _fail_502})
+        fetcher = FixtureFetcher(overrides={r"wvcharmV3_": _fail_502, re.escape(CDPH_RELEASES): _with_lift_release})
         m = run_pipeline(fixture_context(out, later, fetcher))
     elif scenario != "normal":
         raise ValueError(f"unknown scenario {scenario}")
@@ -245,6 +247,16 @@ def build_fixture_dataset(out: Path, now: str = FIXTURE_NOW, scenario: str = "no
     sat = verify_satellite(out, live=False)
     (out / "verification" / "satellite-points.json").write_text(json.dumps(sat, indent=2) + "\n")
     return m
+
+
+CDPH_RELEASES = "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx"
+
+
+def _with_lift_release(url: str) -> Response:
+    body = FixtureFetcher()(url).body.decode()
+    link = '<a href="/Programs/OPA/Pages/SN26-021.aspx">CDPH Lifts Warnings about Sport-Harvested Bivalve Shellfish from Monterey County</a>'
+    body = body.replace("<body", link + "<body", 1) if "<body" in body else link + body
+    return Response(url=url, status=200, content_type="text/html", body=body.encode())
 
 
 def _fail_502(url: str) -> Response:

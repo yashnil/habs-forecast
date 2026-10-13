@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { OfficialDataset } from "@/generated/official";
 import type { SourceStatus } from "@/generated/schema";
-import { criticalFlags, officialAt, officialVerification, recordFlags } from "@/lib/official";
+import { criticalFlags, currentRecords, disputedRecords, disputes, officialAt, officialVerification, recordFlags } from "@/lib/official";
 import manifestJson from "../fixture-data/v1/manifest.json";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -105,5 +105,42 @@ describe("notices at a point", () => {
   it("outside every notice, only statewide notices apply (and that is not 'open')", () => {
     const hits = officialAt(ds, -117.4, 32.8);
     expect(hits.map((h) => h.record.id)).toEqual(["cdph-2026-annual-mussel-quarantine"]);
+  });
+});
+
+describe("agency source discrepancies (a release appears to lift an active record)", () => {
+  const FAILED_FIX = path.resolve(__dirname, "../fixture-data-failed/v1");
+  const failed = (): OfficialDataset => {
+    const m = JSON.parse(readFileSync(path.join(FAILED_FIX, "manifest.json"), "utf8")) as { official_url: string };
+    return JSON.parse(readFileSync(path.join(FAILED_FIX, m.official_url), "utf8"));
+  };
+
+  it("parses the published discrepancy and sets the record apart from the current notices", () => {
+    const ds = failed();
+    expect(disputes(ds)).toEqual([
+      {
+        agency: "CDPH",
+        release: "SN26-021",
+        title: "CDPH Lifts Warnings about Sport-Harvested Bivalve Shellfish from Monterey County",
+        url: "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx",
+        recordId: "cdph-2026-sn26-018-monterey-bivalves",
+      },
+    ]);
+    // the registry still says active (only a person changes that) ...
+    expect(ds.registry.records.find((r) => r.id === "cdph-2026-sn26-018-monterey-bivalves")?.status).toBe("active");
+    // ... but it is not presented as a current notice, and the reason is stated
+    expect(currentRecords(ds).map((r) => r.id)).not.toContain("cdph-2026-sn26-018-monterey-bivalves");
+    expect(disputedRecords(ds).map((d) => d.record.id)).toEqual(["cdph-2026-sn26-018-monterey-bivalves"]);
+    const r = disputedRecords(ds)[0];
+    expect(criticalFlags(r.record, at("2026-10-12T20:00:00Z"), r.dispute)[0]).toMatch(/SN26-021 .* appears to lift this notice\. CoastWatch has not reviewed it yet/);
+    expect(officialVerification(ds, null, at("2026-10-12T20:00:00Z")).reasons.join(" ")).toMatch(/release SN26-021 appears to lift a notice the list still shows as active/);
+  });
+
+  it("ordinary conflicts are not mistaken for discrepancies, and none means none", () => {
+    const ds = base();
+    expect(disputes(ds)).toEqual([]);
+    expect(currentRecords(ds)).toHaveLength(ds.registry.records.filter((r) => r.status === "active").length);
+    ds.conflicts = ["Active 'reopening' record a overlaps active 'fishery_closure' record b for ['crab']; both cannot be current."];
+    expect(disputes(ds)).toEqual([]);
   });
 });

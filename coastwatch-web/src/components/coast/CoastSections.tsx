@@ -6,7 +6,7 @@ import type { LayerArtifact, Manifest } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 import { AGENCY_LINKS, COAST_COPY } from "@/content/coast";
 import { FORECAST_COPY, OFFICIAL_STATUS } from "@/content/copy";
-import { ACTION_LABEL, type Verification } from "@/lib/official";
+import { ACTION_LABEL, currentRecords, type Verification } from "@/lib/official";
 import { AUDIENCE, cdfwRegionsAt, type Association } from "@/lib/applicability";
 import { AUDIENCES, ageDays, ageWords, availability, RECENCY_LABEL, recency, type Audience, type Availability, type CoastPlace, type StationNear } from "@/lib/coast";
 import { CHARM_LEADS, artifactUrl, charmLayer, leadLabel } from "@/lib/layers";
@@ -104,11 +104,13 @@ export function OfficialSection({
   onAudience: (a: Audience) => void;
 }) {
   const fits = (a: Association) => audience === "all" || AUDIENCE[a.record.fishery].groups.includes(audience);
-  const geo = assocs.filter((a) => a.tier === "geographic");
-  const unresolved = assocs.filter((a) => a.tier === "unresolved");
-  const outside = assocs.filter((a) => a.tier === "outside");
+  // a notice an agency release appears to lift is set apart, never listed as applying
+  const disputed = assocs.filter((a) => a.dispute);
+  const geo = assocs.filter((a) => a.tier === "geographic" && !a.dispute);
+  const unresolved = assocs.filter((a) => a.tier === "unresolved" && !a.dispute);
+  const outside = assocs.filter((a) => a.tier === "outside" && !a.dispute);
   const reg = useRegistryDisclosure();
-  const active = official?.registry.records.filter((r) => r.status === "active").length ?? 0;
+  const active = currentRecords(official).length;
   const geoFit = geo.filter(fits);
   const geoOther = geo.filter((a) => !fits(a));
   const regions = cdfwRegionsAt(place.lat);
@@ -140,6 +142,27 @@ export function OfficialSection({
         <p className="rounded-lg bg-official-bg px-3 py-2 text-[14px] text-official-ink" role="note" data-testid="coast-registry-changed">
           {reg.reason} A notice may have been issued or lifted since; the agency pages below decide.
         </p>
+      )}
+      {disputed.length > 0 && (
+        <div className="rounded-2xl border-2 border-dashed border-warning/60 bg-surface px-4 py-4 sm:px-5" data-testid="coast-notices-disputed" role="note">
+          <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-warning">Reported lifted by the agency · awaiting review</h3>
+          <p className="mt-1 text-[14px] text-ink-2">
+            The agency has published a release that appears to lift {disputed.length === 1 ? "this notice" : "these notices"}. Until a person reviews it, CoastWatch does not show {disputed.length === 1 ? "it" : "them"} as in effect. Read the release.
+          </p>
+          <ul className="mt-3">
+            {disputed.map((a) => (
+              <li key={a.record.id} className="py-1" data-testid={`coast-disputed-${a.record.id}`}>
+                <p className="text-[15px] font-semibold text-ink">{a.record.title}</p>
+                <p className="mt-0.5 text-[14px] text-ink-2">
+                  {a.dispute!.agency} release{" "}
+                  <a href={a.dispute!.url} {...ext} className={linkCls}>
+                    {a.dispute!.release}: “{a.dispute!.title}” ↗
+                  </a>
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       {!official ? (
         <p className="text-[15px] text-ink-2">The list of official notices is unavailable right now. Check CDFW and CDPH directly (below).</p>

@@ -648,9 +648,10 @@
    "ok": true,
    "http_status": 200,
    "error": null,
-   "content_hash": "sha256:e65d32b04974b23b4aaff462e1429236a6de5a2a4f25253e5bd257ae80cc4b59",
-   "matches_review": true,
+   "content_hash": "sha256:69df12c94d66e4a3dc05ed155c0eb10680262070ad2e4669af41261e06189dfb",
+   "matches_review": false,
    "items_seen": [
+    "SN26-021",
     "SN26-019",
     "SN26-018",
     "SN26-017",
@@ -671,7 +672,9 @@
     "SN26-002",
     "SN26-001"
    ],
-   "new_items": []
+   "new_items": [
+    "SN26-021"
+   ]
   },
   {
    "source_id": "cdfw_health_advisories",
@@ -698,7 +701,9 @@
    "new_items": []
   }
  ],
- "conflicts": [],
+ "conflicts": [
+  "Agency source discrepancy: CDPH release SN26-021 (\"CDPH Lifts Warnings about Sport-Harvested Bivalve Shellfish from Monterey County\", https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx) appears to lift active record cdph-2026-sn26-018-monterey-bivalves. Not yet reviewed by a person: the record is shown as disputed, not as confirmed active."
+ ],
  "geometry": {
   "type": "FeatureCollection",
   "features": [

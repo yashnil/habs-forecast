@@ -165,10 +165,11 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   const unknowns = useMemo(() => {
     if (!place) return [];
     const out: string[] = [];
-    const tied = assocs.filter((a) => a.tier === "geographic" && a.record.area.type !== "statewide");
+    const tied = assocs.filter((a) => a.tier === "geographic" && !a.dispute && a.record.area.type !== "statewide");
+    for (const a of assocs.filter((x) => x.dispute)) out.push(`${a.dispute!.agency} release ${a.dispute!.release} appears to lift “${a.record.title}”; no person has reviewed it yet.`);
     if (!tied.length) out.push("No notice in CoastWatch's list is tied to these waters by its geography. The list may be incomplete; check the agencies.");
     out.push("Whether each notice applies here was worked out from the notices' official geography; no person has reviewed these associations, and the notices themselves are not verified.");
-    const nUnresolved = assocs.filter((a) => a.tier === "unresolved").length;
+    const nUnresolved = assocs.filter((a) => a.tier === "unresolved" && !a.dispute).length;
     if (nUnresolved) out.push(`Whether ${nUnresolved === 1 ? "one notice applies" : `${nUnresolved} notices apply`} to these waters is not settled by ${nUnresolved === 1 ? "its" : "their"} official geography.`);
     const recentToxin = st.near.some((s) => s.station.latest.some((m) => m.variable === "pDA" && now && ageDays(m.date, now) <= 30));
     if (!recentToxin) out.push("There is no toxin measurement from the last 30 days within 40 km.");
@@ -264,9 +265,10 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     </header>
   );
 
-  const tied = assocs.filter((a) => a.tier === "geographic" && a.record.area.type !== "statewide").length;
-  const statewide = assocs.filter((a) => a.record.area.type === "statewide").length;
-  const unresolved = assocs.filter((a) => a.tier === "unresolved").length;
+  const tied = assocs.filter((a) => a.tier === "geographic" && !a.dispute && a.record.area.type !== "statewide").length;
+  const statewide = assocs.filter((a) => a.record.area.type === "statewide" && !a.dispute).length;
+  const unresolved = assocs.filter((a) => a.tier === "unresolved" && !a.dispute).length;
+  const reportedLifted = assocs.filter((a) => a.dispute).length;
   const lastToxin = st.near
     .flatMap((s) => s.station.latest.filter((m) => m.variable === "pDA").map((m) => ({ s, m })))
     .sort((a, b) => b.m.date.localeCompare(a.m.date))[0];
@@ -279,7 +281,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
             <>
               {tied ? `${tied} notice${tied === 1 ? "" : "s"} tied to these waters` : "No notice tied to these waters"}
               {statewide ? `, ${statewide} statewide` : ""}
-              {unresolved ? `; ${unresolved} may apply (unresolved)` : ""} · <span className="text-official-ink">not verified</span>
+              {unresolved ? `; ${unresolved} may apply (unresolved)` : ""}
+              {reportedLifted ? `; ${reportedLifted} reported lifted, awaiting review` : ""} · <span className="text-official-ink">not verified</span>
             </>
           ) : (
             "Unavailable: check CDFW and CDPH"

@@ -5,7 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { SourceStatus } from "@/generated/schema";
 import type { OfficialDataset, OfficialRecord } from "@/generated/official";
 import { OFFICIAL_STATUS } from "@/content/copy";
-import { activeRecords, officialVerification, type Verification } from "@/lib/official";
+import { currentRecords, disputedRecords, officialVerification, type Verification } from "@/lib/official";
 import { useNow } from "@/lib/useNow";
 import { Hotlines, NoticeCard, VerificationBadge, VerificationDetail } from "@/components/official/Official";
 import { SourceLink } from "@/components/ui/Primitives";
@@ -43,7 +43,8 @@ export function OfficialProvider({ official, status, children }: { official: Off
   const now = useNow();
   const [open, setOpen] = useState(false);
   const opener = useRef<HTMLElement | null>(null);
-  const records = useMemo(() => activeRecords(official), [official]);
+  // a record that an agency release appears to lift is not counted as a current notice
+  const records = useMemo(() => currentRecords(official), [official]);
   const verification = useMemo(() => (now ? officialVerification(official, status, now) : null), [official, status, now]);
   const openDrawer = useCallback((el?: HTMLElement | null) => {
     opener.current = el ?? (document.activeElement as HTMLElement | null);
@@ -191,6 +192,16 @@ export function OfficialDrawer() {
             <p className="text-[14px] text-ink-2">
               {OFFICIAL_STATUS.notTracked} {OFFICIAL_STATUS.instruction}
             </p>
+          )}
+          {disputedRecords(ds).length > 0 && (
+            <section aria-labelledby="drawer-disputed" className="space-y-1.5" data-testid="drawer-disputed">
+              <h3 id="drawer-disputed" className="text-[12px] font-semibold uppercase tracking-[0.08em] text-warning">
+                Reported lifted by the agency · awaiting review · {disputedRecords(ds).length}
+              </h3>
+              {disputedRecords(ds).map(({ record, dispute }) => (
+                <NoticeCard key={record.id} r={record} now={now} dispute={dispute} compact />
+              ))}
+            </section>
           )}
           {agencies.map((a) => (
             <section key={a} aria-labelledby={`drawer-${a}`} className="space-y-1.5">
