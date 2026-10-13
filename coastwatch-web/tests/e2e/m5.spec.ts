@@ -42,7 +42,7 @@ test.describe("opening layer", () => {
   test("current C-HARM run: opens on the forecast, and the link does not pin the layer", async ({ page }) => {
     await open(page, OK);
     await expect(page.getByTestId("forecast-panel")).toBeVisible();
-    await expect(page.getByTestId("group-forecast")).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByTestId("group-forecast")).toHaveAttribute("aria-checked", "true");
     await expect(page).not.toHaveURL(/layer=/);
   });
 
@@ -54,7 +54,7 @@ test.describe("opening layer", () => {
     await expect(msg).toContainText("does not mean conditions are normal");
     expect(await mapCall(page, "getSource", "forecast")).toBeFalsy();
     expect(await mapCall(page, "getSource", "satellite")).toBeFalsy();
-    await expect(page.getByTestId("group-forecast")).toHaveAttribute("aria-selected", "false");
+    await expect(page.getByTestId("group-forecast")).toHaveAttribute("aria-checked", "false");
     await page.getByTestId("show-latest-forecast").click();
     await expect(page.getByTestId("stale-note")).toBeVisible();
     await expect(page).toHaveURL(/layer=forecast/);
@@ -96,12 +96,12 @@ test.describe("map area and layout", () => {
     { width: 1280, height: 720 },
     { width: 1440, height: 900 },
   ]) {
-    test(`${vp.width} x ${vp.height}: rail, place chip, place list, dock and inspector never overlap`, async ({ page }) => {
+    test(`${vp.width} x ${vp.height}: layer switch, place chip, place list, dock and inspector never overlap`, async ({ page }) => {
       await page.setViewportSize(vp);
       await open(page, `${OK}/?region=monterey_bay&port=593`);
       await expect(page.getByTestId("detail-panel")).toBeVisible();
       await openPlaces(page);
-      const ids = ["control-rail", "place-chip", "nav-card", "layer-dock", "detail-panel"];
+      const ids = ["layer-switch", "place-chip", "nav-card", "layer-dock", "detail-panel"];
       const boxes = await Promise.all(ids.map((id) => page.getByTestId(id).boundingBox()));
       const overlap = (a: (typeof boxes)[0], b: (typeof boxes)[0]) => !!a && !!b && a.x < b.x + b.width - 0.5 && b.x < a.x + a.width - 0.5 && a.y < b.y + b.height - 0.5 && b.y < a.y + a.height - 0.5;
       for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) expect(overlap(boxes[i], boxes[j]), `${ids[i]} / ${ids[j]}`).toBe(false);
@@ -137,12 +137,12 @@ test.describe("map area and layout", () => {
     await expect(page.getByTestId("detail-panel")).toHaveCount(0);
   });
 
-  test("the layer rail is a keyboard tab list", async ({ page }) => {
+  test("the layer switch is a keyboard radio group (seafloor, forecast, satellite, currents)", async ({ page }) => {
     await open(page, OK);
     await page.getByTestId("group-forecast").focus();
-    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowRight");
     await expect(page.getByTestId("group-satellite")).toBeFocused();
-    await expect(page.getByTestId("group-satellite")).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByTestId("group-satellite")).toHaveAttribute("aria-checked", "true");
     await expect(page.getByTestId("satellite-panel")).toBeVisible();
   });
 });
@@ -282,7 +282,7 @@ test.describe("readouts and inspector", () => {
     await page.mouse.move(box.x + pt.x, box.y + pt.y);
     await expect(page.getByTestId("hover-value")).toHaveText(`${Math.round(row.grid_value * 100)}%`);
     await expect(page.getByTestId("hover-readout")).toContainText("valid");
-    await page.mouse.move(box.x + 30, box.y + 400); // over the rail: the readout goes
+    await page.mouse.move(box.x + 40, box.y + 22); // over the map's top bar: the readout goes
     await expect(page.getByTestId("hover-readout")).toHaveCount(0);
   });
 

@@ -10,6 +10,7 @@ import { useNow } from "@/lib/useNow";
 import { Hotlines, NoticeCard, VerificationBadge, VerificationDetail } from "@/components/official/Official";
 import { SourceLink } from "@/components/ui/Primitives";
 import { Icon } from "@/components/ui/Icon";
+import { Glide } from "@/components/motion/Glide";
 
 /**
  * Official notices are global: every page shows their count and verification state in the
@@ -280,20 +281,24 @@ const TABS = [
 /** Mobile bottom navigation: five places (signature P10). Notices is a tab, so official information is one tap from anywhere; About is in the masthead menu. */
 export function TabBar({ active }: { active: string }) {
   const { ds, records, open, openDrawer } = useOfficial();
+  const bar = useRef<HTMLElement>(null);
   return (
     <nav
+      ref={bar}
       aria-label="Primary"
       data-testid="tabbar"
       className="fixed inset-x-0 bottom-0 z-40 grid h-[var(--cw-tabbar-h)] grid-cols-5 border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] text-ink-3 md:hidden"
       style={{ colorScheme: "light" }}
     >
+      {/* the active marker glides from the previous page's tab */}
+      <Glide id="tabbar" container={bar} activeSelector='a[aria-current="page"]' className="pointer-events-none absolute top-0 h-0.5 rounded-b bg-accent" />
       {TABS.map((t) => (
         <Link
           key={t.key}
           href={t.href}
           data-testid={`tab-${t.key}`}
           aria-current={active === t.key ? "page" : undefined}
-          className={`relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium max-[379px]:text-[12px] ${active === t.key ? "text-accent before:absolute before:inset-x-[30%] before:top-0 before:h-0.5 before:rounded-b before:bg-accent" : ""}`}
+          className={`relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium max-[379px]:text-[12px] ${active === t.key ? "text-accent" : ""} cw-press`}
         >
           <Icon name={t.icon} className="h-[22px] w-[22px]" />
           {t.key === "coast" ? (

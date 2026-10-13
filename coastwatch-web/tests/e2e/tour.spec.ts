@@ -23,11 +23,16 @@ async function inViewport(page: Page, testid: string) {
 }
 
 const progress = (page: Page) => page.getByTestId("tour-progress");
+/** A first visit: skip the welcome, then the tour from the map's help button. */
+async function startTour(page: Page) {
+  await page.getByTestId("intro-dismiss").click();
+  await page.getByTestId("tour-open").click();
+}
 
 test.describe("guided tour", () => {
-  test("starts from the first-visit card and walks all nine steps with the real controls", async ({ browser }) => {
+  test("starts from the map's help button after the welcome and walks all nine steps with the real controls", async ({ browser }) => {
     const { ctx, page } = await fresh(browser, DESKTOP);
-    await page.getByTestId("intro-tour").click();
+    await startTour(page);
     const tour = page.getByTestId("tour");
     await expect(tour).toBeVisible();
     await expect(page.getByTestId("intro-card")).toHaveCount(0);
@@ -42,17 +47,17 @@ test.describe("guided tour", () => {
 
     await next.click();
     await expect(tour).toHaveAttribute("data-step", "forecast");
-    await expect(page.getByTestId("group-forecast").first()).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByTestId("group-forecast").first()).toHaveAttribute("aria-checked", "true");
     await expect(tour).toContainText("a low probability does not mean an area is safe");
 
     await next.click();
     await expect(tour).toHaveAttribute("data-step", "satellite");
-    await expect(page.getByTestId("group-satellite").first()).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByTestId("group-satellite").first()).toHaveAttribute("aria-checked", "true");
     await expect(tour).toContainText("Chlorophyll is not toxin");
 
     await next.click();
     await expect(tour).toHaveAttribute("data-step", "gaps");
-    await expect(page.getByTestId("group-forecast").first()).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByTestId("group-forecast").first()).toHaveAttribute("aria-checked", "true");
     await expect(tour).toContainText("never fills these in");
 
     await next.click();
@@ -89,7 +94,7 @@ test.describe("guided tour", () => {
 
   test("never traps: the notices stay one click away, and Escape or X closes it at any step", async ({ browser }) => {
     const { ctx, page } = await fresh(browser, DESKTOP);
-    await page.getByTestId("intro-tour").click();
+    await startTour(page);
     await page.getByTestId("tour-next").click();
     // the masthead's notices pill is still usable while the tour is open
     await page.getByTestId("official-pill").click();
@@ -138,7 +143,7 @@ test.describe("guided tour", () => {
 
   test("phone: docked under the place button, every step in view, tabs still usable", async ({ browser }) => {
     const { ctx, page } = await fresh(browser, PHONE);
-    await page.getByTestId("intro-tour").click();
+    await startTour(page);
     for (let k = 1; k <= 9; k++) {
       await expect(progress(page)).toHaveText(`Step ${k} of 9`);
       await page.waitForTimeout(250);

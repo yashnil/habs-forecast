@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRef } from "react";
+import { motion } from "motion/react";
+import { Glide } from "@/components/motion/Glide";
 import { EXPERIENCES } from "@/content/copy";
 import { MODE_LABEL, useMode, type Mode } from "@/lib/mode";
 
@@ -15,9 +18,12 @@ const ORDER: Record<Mode, Key[]> = {
 export function PrimaryNav({ active }: { active: string }) {
   const [mode] = useMode();
   const items = ORDER[mode].map((k) => EXPERIENCES.find((e) => e.key === k)!);
+  const ul = useRef<HTMLUListElement>(null);
   return (
     <nav aria-label="Primary" className="hidden h-full md:flex">
-      <ul className="flex h-full gap-1">
+      <ul ref={ul} className="relative flex h-full gap-1">
+        {/* the active underline glides from the previous page's item */}
+        <Glide id={`nav-${mode}`} container={ul} activeSelector='a[aria-current="page"]' className="pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-accent-on-navy" />
         {items.map((e) => {
           const current = active === e.key;
           return (
@@ -27,7 +33,7 @@ export function PrimaryNav({ active }: { active: string }) {
                 aria-current={current ? "page" : undefined}
                 data-testid={`nav-${e.key}`}
                 className={`-mb-px flex h-full items-center whitespace-nowrap border-b-2 px-3 text-[15px] font-medium ${
-                  current ? "border-accent-on-navy text-white" : "border-transparent text-on-navy-2 hover:text-on-navy"
+                  current ? "border-transparent text-white" : "border-transparent text-on-navy-2 hover:text-on-navy"
                 }`}
               >
                 {/* full names where the masthead has room (with the presentation switch beside them); short ones below 1536 px */}
@@ -66,11 +72,12 @@ export function ModeSwitch({ tone = "navy", className = "" }: { tone?: "navy" | 
             title={MODE_LABEL[m].hint}
             onClick={() => setMode(m)}
             data-testid={`mode-${m}`}
-            className={`min-h-[30px] rounded-full px-3 ${
-              on ? (navy ? "bg-white text-navy-950" : "bg-navy-900 text-white") : navy ? "text-on-navy-2 hover:text-white" : "text-ink-2 hover:text-ink"
+            className={`cw-press relative min-h-[30px] rounded-full px-3 transition-colors duration-200 ${
+              on ? (navy ? "text-navy-950" : "text-white") : navy ? "text-on-navy-2 hover:text-white" : "text-ink-2 hover:text-ink"
             }`}
           >
-            {MODE_LABEL[m].label}
+            {on && <motion.span layoutId={`mode-pill-${tone}`} className={`absolute inset-0 rounded-full ${navy ? "bg-white" : "bg-navy-900"}`} transition={{ type: "spring", stiffness: 420, damping: 34 }} aria-hidden />}
+            <span className="relative">{MODE_LABEL[m].label}</span>
           </button>
         );
       })}

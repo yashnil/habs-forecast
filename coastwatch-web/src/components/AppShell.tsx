@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { MotionConfig } from "motion/react";
+import { PageIn } from "@/components/motion/PageIn";
 import { RESEARCH } from "@/content/copy";
 import { ModeSwitch, PrimaryNav } from "@/components/shell/ModeNav";
 import { SourceHealthDot } from "@/components/SourceHealthDot";
@@ -31,6 +33,8 @@ export function AppShell({
   banner?: React.ReactNode;
 }) {
   return (
+    // every animation follows the device's reduced-motion setting
+    <MotionConfig reducedMotion="user">
     <OfficialProvider official={official} status={officialStatus}>
       {/* keyboard users skip the masthead and the status line */}
       <a
@@ -84,7 +88,7 @@ export function AppShell({
           {banner}
         </header>
         <main id="main" tabIndex={-1} className={`flex min-h-0 flex-1 flex-col outline-none ${scroll === "app" ? "theme-dark" : ""}`}>
-          {children}
+          <PageIn kind={scroll}>{children}</PageIn>
         </main>
         {scroll === "page" && (
           <footer className="border-t border-hairline bg-page" data-testid="site-footer">
@@ -103,5 +107,6 @@ export function AppShell({
       </div>
       <OfficialDrawer />
     </OfficialProvider>
+    </MotionConfig>
   );
 }

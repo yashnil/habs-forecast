@@ -286,6 +286,30 @@ body {
   line-height: 1.3;
 }
 
+/* Page arrival (components/motion/PageIn) */
+@keyframes cw-page-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cw-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.cw-page-in { animation: cw-page-in 420ms var(--cw-ease-standard) both; }
+.cw-fade-in { animation: cw-fade 300ms linear both; }
+
+/* A chosen point on the map: one ring that expands and fades, once (never a loop) */
+@keyframes cw-ping {
+  from { transform: scale(0.35); opacity: 0.95; }
+  to { transform: scale(2.6); opacity: 0; }
+}
+.cw-ping { animation: cw-ping 900ms var(--cw-ease-standard) both; }
+@keyframes cw-settle {
+  from { transform: scale(1.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.cw-settle { animation: cw-settle 420ms var(--cw-ease-settle) both; }
+
 /* Loading words appear only after 400 ms of real waiting, so a fast answer never flickers */
 @keyframes cw-late {
   from { opacity: 0; }

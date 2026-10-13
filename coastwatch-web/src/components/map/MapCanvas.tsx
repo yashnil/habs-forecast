@@ -503,9 +503,13 @@ export default function MapCanvas(p: Props) {
         </div>
       )}
 
-      {p.inspect && !p.overlay && (
-        <Marker longitude={p.inspect.lon} latitude={p.inspect.lat} anchor="center">
-          <span className="block h-4 w-4 rounded-full border-2 border-white shadow-[0_0_0_2px_rgba(4,11,23,0.85)]" aria-hidden />
+      {/* the chosen water: a ring settles onto the point and one pulse goes out from it, once */}
+      {p.inspect && (
+        <Marker key={`${p.inspect.lat},${p.inspect.lon}`} longitude={p.inspect.lon} latitude={p.inspect.lat} anchor="center">
+          <span className="relative block h-5 w-5" aria-hidden data-testid="map-selection">
+            <span className="cw-ping absolute inset-0 rounded-full border-2 border-white" />
+            {!p.overlay && <span className="cw-settle absolute inset-0.5 rounded-full border-2 border-white shadow-[0_0_0_2px_rgba(4,11,23,0.85)]" />}
+          </span>
         </Marker>
       )}
     </Map>

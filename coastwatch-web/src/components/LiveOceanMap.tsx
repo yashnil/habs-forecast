@@ -32,14 +32,15 @@ import { MobileSheet, type SnapId, type SnapPoint } from "@/components/MobileShe
 import type { CurrentsOverlay, ImageRaster, MapPoint, TileRaster } from "@/components/map/MapCanvas";
 import { NavCard, type RegionDef } from "@/components/map/NavCard";
 import { PlaceChip } from "@/components/map/PlaceChip";
-import { IntroCard } from "@/components/map/IntroCard";
+import { Welcome } from "@/components/entry/Welcome";
+import { LayerSwitch } from "@/components/map/LayerSwitch";
+import { AnimatePresence, motion } from "motion/react";
 import { portPlaces, sitePlaces } from "@/lib/coast";
 import { MapTour, type TourActions } from "@/components/map/Tour";
 import { HoverReadout, type HoverSource } from "@/components/map/HoverReadout";
 import { supportsGridTiles } from "@/lib/gridTiles";
 import { MeasuredNearby } from "@/components/map/MeasuredNearby";
 import { LayerDock, selectedCurrents, type CurChoice, type FlowMode, type LayerGroup, type SatChoice } from "@/components/map/LayerDock";
-import { ControlRail } from "@/components/map/ControlRail";
 import { SatelliteNear } from "@/components/map/SatelliteNear";
 import { CurrentsNear } from "@/components/map/CurrentsNear";
 import { stampLines } from "@/lib/stamp";
@@ -168,6 +169,15 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   const [reducedMotion, setReducedMotion] = useState(false);
   // the guided tour: from the first-visit card, the Tour control, or a link with ?tour=1
   const [tourOpen, setTourOpen] = useState(initialQ.get("tour") === "1");
+  // "Explore coastal conditions" from the welcome: a journey to the default waters and one line on
+  // how to use the map, which leaves by itself
+  const [hint, setHint] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  useEffect(() => {
+    if (!hint) return;
+    const t = setTimeout(() => setHint(false), 7000);
+    return () => clearTimeout(t);
+  }, [hint]);
   // a link with any parameter (a place, port, layer or the tour) takes precedence over the welcome
   const deepLinked = Object.keys(initialParams).length > 0;
   const welcomePlaces = useMemo(() => [...portPlaces(ports), ...sitePlaces()], [ports]);
@@ -292,7 +302,8 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     ro.observe(el);
     return () => ro.disconnect();
   }, [wide]);
-  const RAIL = 64;
+  // no rail: the map's controls float in one bar at the top (LayerSwitch)
+  const RAIL = 0;
   const INSPECTOR = 380;
   /** Free map area for fitting a region: right of the rail, below the place chip, clear of the
    *  inspector, and either beside the dock (and the place list, when open) or above the dock,
@@ -302,7 +313,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     if (window.innerWidth >= 1024) {
       const right = (detailOpen ? INSPECTOR + 16 : 0) + 28;
       const r = dockRef.current?.getBoundingClientRect();
-      const dH = r?.height ?? 200;
+      const dH = group == null ? 0 : (r?.height ?? 200);
       const dW = r?.width ?? 560;
       const beside = { top: 64, bottom: 28, left: RAIL + 12 + Math.max(dW, placesOpen ? 320 : 0) + 20, right };
       const above = { top: 64, bottom: dH + 28, left: RAIL + 28, right };
@@ -312,7 +323,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       return z(above) > z(beside) ? above : beside;
     }
     return { top: 64, bottom: sheetH + 16, left: 16, right: 16 };
-  }, [detailOpen, placesOpen, regions, region, sheetH]);
+  }, [detailOpen, placesOpen, regions, region, sheetH, group]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -635,7 +646,13 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       }}
       onReady={(m) => {
         mapRef.current = m;
-        m.fitBounds(initialRegion.bounds, { padding: padding(), duration: 0 });
+        let first = false;
+        try {
+          first = !deepLinked && window.localStorage.getItem("cw-intro-dismissed-v1") !== "1";
+        } catch {
+          // storage blocked: open as usual
+        }
+        m.fitBounds(first ? STATEWIDE.bounds : initialRegion.bounds, { padding: padding(), duration: 0 });
         const code = pendingFly.current;
         if (code != null) {
           pendingFly.current = null;
@@ -656,41 +673,81 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       <div className="absolute inset-0">{map}</div>
       {wide && hover && !detailOpen && <HoverReadout manifest={manifest} baseUrl={baseUrl} source={hoverSource} point={hover.p} screen={hover.s} bounds={{ w: rootRef.current?.clientWidth ?? 1440, h: mapH }} />}
       {wide && hover && detailOpen && hover.s.x < (rootRef.current?.clientWidth ?? 1440) - INSPECTOR - 16 && <HoverReadout manifest={manifest} baseUrl={baseUrl} source={hoverSource} point={hover.p} screen={hover.s} bounds={{ w: (rootRef.current?.clientWidth ?? 1440) - INSPECTOR - 16, h: mapH }} />}
-      {wide == null || !decided ? null : wide ? (
+      {wide == null || !decided || welcomeOpen ? null : wide ? (
         <>
-          <ControlRail manifest={manifest} group={group} onGroup={setGroup} placesOpen={placesOpen} onPlaces={() => setPlacesOpen(!placesOpen)} tourOpen={tourOpen} onTour={() => setTourOpen(true)} />
-          <div className="absolute top-3 z-20" style={{ left: RAIL + 12, maxWidth: `calc(100% - ${RAIL + 24}px - ${detailOpen ? INSPECTOR + 16 : 0}px)` }}>
+          <div className="absolute left-3 top-3 z-20 flex items-start gap-2.5" style={{ maxWidth: `calc(100% - 24px - ${detailOpen ? INSPECTOR + 16 : 0}px)` }}>
             <PlaceChip label={placeLabel} open={placesOpen} onToggle={() => setPlacesOpen(!placesOpen)} regionNotices={placeNotices} statewide={placeStatewide} />
+            <LayerSwitch manifest={manifest} group={group} onGroup={setGroup} />
+            <button
+              type="button"
+              onClick={() => setTourOpen(true)}
+              aria-label="Take the tour of the map"
+              aria-expanded={tourOpen}
+              data-testid="tour-open"
+              className="cw-press grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[rgba(11,26,43,0.86)] text-[#c9d6e3] shadow-[0_8px_28px_rgba(6,17,30,0.35)] ring-1 ring-white/10 backdrop-blur-md hover:text-white"
+            >
+              <Icon name="info" className="h-5 w-5" />
+            </button>
           </div>
-          {!placesOpen && !detailOpen && !tourOpen && (
-            // the welcome sits in the free top-right of the map, clear of the place chip and the layer panel
-            <div className="absolute right-3 top-3 z-20 w-[360px] overflow-y-auto overscroll-contain rounded-xl [scrollbar-width:thin]" style={{ maxHeight: "calc(100% - 132px)" }}>
-              <IntroCard onTour={() => setTourOpen(true)} places={welcomePlaces} suppressed={deepLinked} />
-            </div>
-          )}
+          <AnimatePresence>
+            {hint && (
+              <motion.p
+                key="hint"
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute left-3 top-[64px] z-20 rounded-xl bg-[rgba(11,26,43,0.9)] px-3.5 py-2 text-[14px] text-[#e9eff6] shadow-[0_8px_28px_rgba(6,17,30,0.35)] backdrop-blur-md"
+                role="status"
+                data-testid="map-hint"
+              >
+                Choose what the map shows above. Tap the water to see what is known there.
+              </motion.p>
+            )}
+          </AnimatePresence>
           {placesOpen && (
-            <div className="cw-pop-in absolute z-20 flex w-[320px]" style={{ left: RAIL + 12, top: 60, maxHeight: `calc(100% - ${Math.round(dockH) + 84}px)` }}>
+            <div className="cw-pop-in absolute z-20 flex w-[320px]" style={{ left: 12, top: 64, maxHeight: `calc(100% - ${group == null ? 24 : Math.round(dockH) + 84}px)` }}>
               {/* the place chip above already shows the notices, so the list starts with places */}
               <NavCard {...navProps} showOfficial={false} />
             </div>
           )}
-          <div
-            ref={dockRef}
-            className="absolute bottom-3 z-10 flex max-h-[calc(100%-24px)] flex-col"
-            style={{ left: RAIL + 12, width: `min(${dockOpen ? 600 : 560}px, calc(100% - ${RAIL + 24}px - ${detailOpen ? INSPECTOR + 16 : 0}px))` }}
-          >
-            <LayerDock {...dockProps} variant="desktop" expanded={dockOpen} onExpanded={setDockOpen} />
-          </div>
-          {detail && (
-            <aside
-              aria-label="Selected place"
-              data-testid="detail-panel"
-              className="theme-paper cw-sheet-in absolute bottom-3 right-3 top-3 z-20 overflow-y-auto overscroll-contain rounded-xl bg-surface p-5 text-ink shadow-[0_1px_2px_rgba(6,17,30,0.14),0_10px_30px_rgba(6,17,30,0.25)] [scrollbar-width:thin]"
-              style={{ width: INSPECTOR - 12 }}
-            >
-              {detail}
-            </aside>
-          )}
+          <AnimatePresence>
+            {(group != null || opening) && (
+              <motion.div
+                key="dock"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 16, transition: { duration: 0.18 } }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                ref={dockRef}
+                className="absolute bottom-3 z-10 flex max-h-[calc(100%-84px)] flex-col"
+                style={{ left: 12, width: `min(${dockOpen ? 600 : 520}px, calc(100% - 24px - ${detailOpen ? INSPECTOR + 16 : 0}px))` }}
+              >
+                <LayerDock {...dockProps} variant="desktop" expanded={dockOpen} onExpanded={setDockOpen} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {detail && (
+              <motion.aside
+                key="detail"
+                aria-label="Selected place"
+                data-testid="detail-panel"
+                initial={{ opacity: 0, x: 28 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 28, transition: { duration: 0.18 } }}
+                transition={{ type: "spring", stiffness: 320, damping: 32 }}
+                className="theme-paper absolute bottom-3 right-3 top-3 z-20 overflow-y-auto overscroll-contain rounded-2xl bg-surface p-5 text-ink shadow-[0_1px_2px_rgba(6,17,30,0.14),0_14px_40px_rgba(6,17,30,0.32)] [scrollbar-width:thin]"
+                style={{ width: INSPECTOR - 12 }}
+              >
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div key={port != null ? `p${port}` : inspect ? `${inspect.lat},${inspect.lon}` : "x"} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}>
+                    {detail}
+                  </motion.div>
+                </AnimatePresence>
+              </motion.aside>
+            )}
+          </AnimatePresence>
         </>
       ) : (
         <>
@@ -719,14 +776,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
           >
             <Icon name="info" className="h-5 w-5" />
           </button>
-          {!navOpen && !detail && !tourOpen && (
-            // in front of the layer sheet (it returns when the welcome closes), down to the tab bar, so every
-            // choice fits a small phone; on a very short screen the card scrolls. The notices stay in the
-            // masthead and the tab bar, which the card never covers.
-            <div className="absolute inset-x-3 top-[58px] z-30 overflow-y-auto overscroll-contain rounded-xl [scrollbar-width:thin]" style={{ maxHeight: "calc(100% - 70px)" }}>
-              <IntroCard onTour={() => setTourOpen(true)} places={welcomePlaces} suppressed={deepLinked} />
-            </div>
-          )}
+
           {navOpen && (
             <div className="theme-paper cw-sheet-up absolute inset-0 z-30 flex flex-col overflow-hidden bg-surface text-ink" role="dialog" aria-modal="true" aria-label="Places">
               <div className="flex items-center justify-between px-4 pb-1 pt-2.5">
@@ -758,6 +808,20 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
               </MobileSheet>
             ))}
         </>
+      )}
+      {wide != null && (
+        <div className="pointer-events-none absolute inset-0 z-40">
+          <Welcome
+            places={welcomePlaces}
+            suppressed={deepLinked}
+            pillClass={wide ? "right-3 top-3" : "left-3 top-[58px]"}
+            onOpenChange={setWelcomeOpen}
+            onConditions={() => {
+              goRegion(DEFAULT_REGION);
+              setHint(true);
+            }}
+          />
+        </div>
       )}
       {wide != null && decided && (
         <MapTour
