@@ -26,18 +26,29 @@ async function noUnsafeClaims(page: Page) {
   expect(bad, bad.join(" | ")).toEqual([]);
 }
 
+/** My Coast in Coastal mode is a trip plan in chapters; open one as a reader would. */
+async function openChapter(page: import("@playwright/test").Page, id: "target" | "official" | "conditions" | "before") {
+  const ch = page.getByTestId(`chapter-${id}`);
+  if ((await ch.getAttribute("data-open")) == null) await page.getByTestId(`chapter-head-${id}`).click();
+  await expect(ch).toHaveAttribute("data-open", "true");
+}
+
 /** Next steps show five rows; the rest are one tap away. */
 async function moreSteps(page: import("@playwright/test").Page) {
+  await openChapter(page, "before");
   await expect(page.getByTestId("next-steps")).toBeVisible();
   const more = page.getByTestId("next-steps-more");
   if (await more.count()) await more.click();
 }
 
 test.describe("Coastal mode", () => {
-  test("My Coast is a briefing: official status, next steps, conditions; the science is one tap away", async ({ browser }) => {
+  test("My Coast is a trip plan: what you are after, what officially applies, conditions, before you go; the science is one tap away", async ({ browser }) => {
     const { ctx, page } = await coastal(browser);
     await page.goto(`${OK}/coast?place=port-550&for=recreational&species=anchovy-sardine`);
     await expect(page.getByTestId("mode-switch-navy").getByTestId("mode-coastal")).toHaveAttribute("aria-pressed", "true");
+    // a link that names the activity opens on what officially applies; the other chapters keep their answers
+    await expect(page.getByTestId("chapter-official")).toHaveAttribute("data-open", "true");
+    await expect(page.getByTestId("chapter-target")).toContainText("Recreational · Anchovy or sardine");
     // official status for the chosen species, each notice with its agency source
     await expect(page.getByTestId("brief-official-headline")).toHaveText("2 notices cover these waters for anchovy or sardine");
     // the answer comes first, one line per kind of knowing, each led by its mark
@@ -46,6 +57,7 @@ test.describe("Coastal mode", () => {
     await expect(page.getByTestId("answer-model")).toHaveAttribute("data-kind", "gap");
     await expect(page.getByTestId("brief-notice-cdfw-2026-anchovy-take-restriction-monterey-bay").getByRole("link", { name: /CDFW source/ })).toHaveAttribute("href", /^https:\/\/wildlife\.ca\.gov\//);
     // next steps: every step has a source; regulation, species and conditions steps are there
+    await openChapter(page, "before");
     const steps = page.getByTestId("next-steps").locator('[data-testid^="step-"]');
     // the first five show as rows; the rest are one tap away (conditions readings stay in their card)
     await expect(steps).toHaveCount(5);
@@ -58,7 +70,9 @@ test.describe("Coastal mode", () => {
     await expect(page.getByTestId("step-read-notices")).toContainText("Read the 2 notices that cover these waters");
     await expect(page.getByTestId("step-species-rules")).toContainText("anchovy or sardine");
     await expect(page.getByTestId("step-region-central")).toContainText("Central region");
-    // conditions from NOAA, each with its source and time
+    // conditions from NOAA, each with its source and time; the folded chapter already says the forecast
+    await expect(page.getByTestId("chapter-conditions")).toContainText("W wind 10 to 15 kt");
+    await openChapter(page, "conditions");
     await expect(page.getByTestId("cond-marine")).toContainText("W wind 10 to 15 kt");
     await expect(page.getByTestId("cond-marine")).toContainText("NWS PZZ535");
     await expect(page.getByTestId("cond-tides")).toContainText("Monterey");
@@ -76,8 +90,12 @@ test.describe("Coastal mode", () => {
   test("choosing a species re-orders, never hides, and goes in the link", async ({ browser }) => {
     const { ctx, page } = await coastal(browser);
     await page.goto(`${OK}/coast?place=port-201`);
-    await page.getByTestId("coast-species").selectOption("razor-clam");
+    // no activity in the link: the plan starts with what you are after
+    await expect(page.getByTestId("chapter-target")).toHaveAttribute("data-open", "true");
+    await page.getByTestId("coast-species-razor-clam").click();
     await expect(page).toHaveURL(/species=razor-clam/);
+    await expect(page.getByTestId("answer-official")).toContainText("razor clams");
+    await page.getByTestId("journey-next").click();
     await expect(page.getByTestId("brief-official-headline")).toHaveText(/notices? covers? these waters for razor clams/);
     // notices for other species are one tap away, not gone
     await expect(page.getByTestId("brief-others")).toContainText("more for other species here");
@@ -87,6 +105,7 @@ test.describe("Coastal mode", () => {
   test("an honest gap: no station within 60 km at Shelter Cove; the step says what is not known", async ({ browser }) => {
     const { ctx, page } = await coastal(browser);
     await page.goto(`${OK}/coast?place=port-215`);
+    await openChapter(page, "conditions");
     await expect(page.getByTestId("cond-buoy")).toContainText("No NDBC station reports within 60 km");
     await expect(page.getByTestId("cond-buoy")).toHaveAttribute("data-state", "none");
     await moreSteps(page);
@@ -98,6 +117,7 @@ test.describe("Coastal mode", () => {
     // a point on the water with no recorded NOAA responses: every live request fails like an outage
     const { ctx, page } = await coastal(browser);
     await page.goto(`${OK}/coast?place=point-36.700,-122.300`);
+    await openChapter(page, "conditions");
     const marine = page.getByTestId("cond-marine");
     await expect(marine).toContainText("did not answer just now");
     await expect(marine).toHaveAttribute("title", /HTTP 503/);
@@ -167,8 +187,10 @@ test.describe("Coastal mode", () => {
     test(`${name}: axe finds nothing on the Coastal briefing`, async ({ browser }) => {
       const { ctx, page } = await coastal(browser, opts);
       await page.goto(`${OK}/coast?place=site-clam-beach&for=shellfish&species=razor-clam`);
-      await expect(page.getByTestId("next-steps")).toBeVisible();
+      await expect(page.getByTestId("brief-official")).toBeVisible();
+      await openChapter(page, "conditions");
       await expect(page.getByTestId("cond-marine")).not.toContainText("Loading");
+      await page.waitForTimeout(600);
       const r = await new AxeBuilder({ page }).include("main").analyze();
       expect(r.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
       await ctx.close();

@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import { useMemo, useState, type ReactNode } from "react";
 import type { ObsVariable, SeriesPoint } from "@/generated/observations";
 import { axisPosition, decadeTicks, highestInView, inView, modelOnAxis, modelSegments, onAxis, segments, viewSummary, type Axis, type ModelPoint } from "@/lib/bloom";
@@ -273,8 +274,20 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
             ))}
           </g>
           {/* joined runs of samples ≤ 21 days apart */}
+          {/* lines fade in after the points arrive: a morphing line would pass through values no one
+              measured, so lines are never tweened (signature §10) */}
           {segs.map((sg, i) => (
-            <path key={i} d={sg.map((s, k) => `${k ? "L" : "M"}${x(s.t)},${y(s.value!)}`).join("")} fill="none" stroke="var(--cw-chl)" strokeWidth={1.6} strokeLinejoin="round" />
+            <motion.path
+              key={`${variable.id}-${x0}-${x1}-${i}`}
+              d={sg.map((s, k) => `${k ? "L" : "M"}${x(s.t)},${y(s.value!)}`).join("")}
+              fill="none"
+              stroke="var(--cw-chl)"
+              strokeWidth={1.6}
+              strokeLinejoin="round"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.35, delay: 0.32 }}
+            />
           ))}
           {win.map((s) =>
             onAxis(s, axis) && axisPosition(s.value!, axis) !== "in" ? (
@@ -292,11 +305,13 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
                 data-q={axisPosition(s.value!, axis) === "below" ? "below-axis" : "above-axis"}
               />
             ) : onAxis(s, axis) ? (
-              <circle
+              // each sample keeps its identity: on a new range it slides along time, on a new quantity it
+              // moves to its value at the same date (never between dates); new samples fade in where they are
+              <motion.circle
                 key={s.index}
-                cx={x(s.t)}
-                cy={y(s.value!)}
-                r={s === hovered ? 4.5 : 2.8}
+                initial={{ cx: x(s.t), cy: y(s.value!), opacity: 0, r: 2.8 }}
+                animate={{ cx: x(s.t), cy: y(s.value!), opacity: 1, r: s === hovered ? 5 : 2.8 }}
+                transition={{ cx: { type: "spring", stiffness: 170, damping: 26 }, cy: { type: "spring", stiffness: 170, damping: 26 }, r: { type: "spring", stiffness: 500, damping: 24 }, opacity: { duration: 0.25 } }}
                 fill={s.q === "flag_high" ? "var(--cw-surface)" : "var(--cw-chl)"}
                 stroke={s.q === "flag_high" ? "var(--cw-warning)" : s === hovered ? "var(--cw-surface)" : "none"}
                 strokeWidth={s.q === "flag_high" ? 1.6 : 1.5}
@@ -365,7 +380,7 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
 
           {sum.measured === 0 && empty && (
           <div className="absolute inset-x-0 flex justify-center" style={{ top: PLOT_T + plotH / 2 - 40 }} data-testid="chart-empty">
-            <div className="max-w-[420px] rounded-lg border border-hairline bg-surface px-4 py-3 text-center text-[14px] text-ink-2 shadow-sm">{empty}</div>
+            <div className="cw-page-in max-w-[420px] rounded-lg border border-hairline bg-surface px-4 py-3 text-center text-[14px] text-ink-2 shadow-sm">{empty}</div>
           </div>
         )}
         {/* the model, directly beneath: same time axis, its own 0–100 % axis, never compared numerically */}
@@ -430,9 +445,12 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
         </section>
 
         {crossT != null && (hovered || hoveredModel) && (
-          <div
-            className="pointer-events-none absolute top-[22px] z-10 w-max max-w-[260px] rounded-md bg-navy-900 px-2.5 py-1.5 text-[13px] leading-snug text-on-navy shadow-lg"
-            style={{ left: Math.min(Math.max(x(crossT) + 10, 0), width - 250) }}
+          // the readout follows the pointer on a spring and names where the value came from
+          <motion.div
+            className="pointer-events-none absolute top-[22px] z-10 w-max max-w-[260px] rounded-xl bg-navy-900/95 px-3 py-2 text-[13px] leading-snug text-on-navy shadow-[0_10px_30px_rgba(6,17,30,0.35)] backdrop-blur"
+            initial={{ opacity: 0, y: 4, left: Math.min(Math.max(x(crossT) + 10, 0), width - 250) }}
+            animate={{ opacity: 1, y: 0, left: Math.min(Math.max(x(crossT) + 10, 0), width - 250) }}
+            transition={{ left: { type: "spring", stiffness: 500, damping: 40 }, opacity: { duration: 0.12 } }}
             data-testid="chart-tooltip"
             role="status"
           >
@@ -445,6 +463,12 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
                     ? "Reported 0 (not quantified, not absent)"
                     : formatObs(variable, hovered.value, hovered.q)}
                 {hovered.q === "flag_high" && <span className="block text-official-on-navy">Above the plausibility check: kept, flagged for review</span>}
+                <span className="mt-0.5 flex items-center gap-1.5 text-[12px] text-[#a7b6c8]">
+                  <svg width="8" height="8" aria-hidden>
+                    <circle cx="4" cy="4" r="3.2" fill="#4fd1ae" />
+                  </svg>
+                  Water sample at this pier, lab result (CalHABMAP)
+                </span>
               </div>
             )}
             {hoveredModel && (
@@ -452,7 +476,7 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
                 Model {Math.round(hoveredModel.v * 100)}% ({hoveredModel.n} cells{hoveredModel.partial ? ", partial coverage" : ""})
               </div>
             )}
-          </div>
+          </motion.div>
         )}
       </div>
 

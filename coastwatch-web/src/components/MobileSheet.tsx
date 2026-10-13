@@ -128,7 +128,7 @@ export function MobileSheet({
       >
         <span className="h-1 w-10 rounded-full bg-hairline-strong" aria-hidden />
       </button>
-      <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4" style={{ paddingBottom: 20 + full - target }}>
+      <div ref={body} className="cw-fade-in min-h-0 flex-1 overflow-y-auto overscroll-contain px-4" style={{ paddingBottom: 20 + full - target }}>
         {header}
         {children}
       </div>

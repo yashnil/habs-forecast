@@ -12,6 +12,7 @@ import { formatDate, formatDateTimePT } from "@/lib/time";
 import { ageWords } from "@/lib/coast";
 import { leadLabel } from "@/lib/layers";
 import { Mark } from "@/components/ui/Mark";
+import { AnimatePresence, motion } from "motion/react";
 
 /**
  * My Coast's briefing (Coastal mode): the place's official status, next steps and conditions,
@@ -104,6 +105,69 @@ export function PlanBar({
   );
 }
 
+/**
+ * "What are you after?" (the trip plan's first chapter): the kind of fishing as one row of chips
+ * with a sliding pill, then the species that kind of fishing involves, as chips. Both go in the link.
+ */
+export function TargetPicker({ audience, onAudience, species, onSpecies }: { audience: Audience; onAudience: (a: Audience) => void; species: Species; onSpecies: (s: SpeciesId) => void }) {
+  const options = SPECIES.filter((s) => s.id === "any" || audience === "all" || s.activities.includes(audience === "shellfish" ? "shellfish" : audience));
+  const label: Record<Audience, string> = { all: "Any activity", commercial: "Commercial", recreational: "Recreational", shellfish: "Shellfish" };
+  return (
+    <div className="space-y-4" data-testid="coast-plan">
+      <div>
+        <p className="mb-2 text-[13px] font-medium text-ink-3">Kind of fishing</p>
+        <div role="radiogroup" aria-label="Kind of fishing" className="grid grid-cols-2 gap-1 rounded-2xl bg-surface-3 p-1 sm:inline-flex sm:flex-wrap" data-testid="coast-audience">
+          {AUDIENCES.map((x) => {
+            const on = audience === x.id;
+            return (
+              <button
+                key={x.id}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => onAudience(x.id)}
+                className={`cw-press relative min-h-[40px] rounded-xl px-3.5 text-[14px] font-medium transition-colors ${on ? "text-white" : "text-ink-2 hover:text-ink"}`}
+                data-testid={`coast-for-${x.id}`}
+              >
+                {on && <motion.span layoutId="audience-pill" className="absolute inset-0 rounded-xl bg-navy-900" transition={{ type: "spring", stiffness: 420, damping: 34 }} aria-hidden />}
+                <span className="relative">{label[x.id]}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div>
+        <p className="mb-2 text-[13px] font-medium text-ink-3">Target species</p>
+        <motion.div layout role="radiogroup" aria-label="Target species" className="flex flex-wrap gap-1.5" data-testid="coast-species">
+          <AnimatePresence initial={false}>
+            {options.map((s) => {
+              const on = species.id === s.id;
+              return (
+                <motion.button
+                  layout
+                  key={s.id}
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.92 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => onSpecies(s.id as SpeciesId)}
+                  data-testid={`coast-species-${s.id}`}
+                  className={`cw-press min-h-[38px] rounded-full border px-3 text-[14px] transition-colors ${on ? "border-navy-900 bg-navy-900 text-white" : "border-hairline-strong bg-surface text-ink-2 hover:border-ink-3 hover:text-ink"}`}
+                >
+                  {s.label}
+                </motion.button>
+              );
+            })}
+          </AnimatePresence>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- the answer (Level 1)
 
 export type AnswerClause = { kind: "official" | "measured" | "model" | "gap"; text: string; aged?: boolean; testid: string };
@@ -114,11 +178,16 @@ export type AnswerClause = { kind: "official" | "measured" | "model" | "gap"; te
  */
 export function AnswerLine({ clauses }: { clauses: AnswerClause[] }) {
   return (
-    <ul className="max-w-[62ch] space-y-1.5 text-[16px] leading-snug text-ink sm:text-[17px]" data-testid="coast-answer">
-      {clauses.map((c) => (
+    <ul className="max-w-[62ch] space-y-2 text-[16px] leading-snug text-ink sm:text-[17px]" data-testid="coast-answer">
+      {clauses.map((c, i) => (
         <li key={c.testid} className="grid grid-cols-[16px_1fr] items-baseline gap-x-2" data-testid={c.testid} data-kind={c.kind}>
           <Mark kind={c.kind} aged={c.aged} className="translate-y-px" />
-          <span>{c.text}</span>
+          {/* when the answer changes (new waters, species or day) the line shows that it did */}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span key={c.text} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0, transition: { delay: i * 0.05, duration: 0.28, ease: [0.2, 0, 0, 1] } }} exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
+              {c.text}
+            </motion.span>
+          </AnimatePresence>
         </li>
       ))}
     </ul>
@@ -334,7 +403,15 @@ function Tile({ label, value, sub, state, testid, href, detail }: { label: strin
         <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${dot}`} />
         {label}
       </p>
-      <p className="mt-0.5 text-[16px] font-medium leading-snug text-ink">{value}</p>
+      {value === "Loading…" ? (
+        // a skeleton the size of the answer (no shimmer loop); the words stay for screen readers
+        <p className="mt-1.5" aria-live="polite">
+          <span className="block h-[18px] w-[min(220px,80%)] rounded-md bg-surface-3" aria-hidden />
+          <span className="sr-only">Loading</span>
+        </p>
+      ) : (
+        <p className="cw-fade-in mt-0.5 text-[16px] font-medium leading-snug text-ink">{value}</p>
+      )}
       <p className="mt-0.5 text-[12.5px] leading-snug text-ink-3">
         {sub}
         {href && (

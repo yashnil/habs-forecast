@@ -38,7 +38,9 @@ import { PurposeSwitch } from "@/components/welcome/PurposeSwitch";
 import { defaultAudience, sectionOrder, usePurpose } from "@/lib/purpose";
 import { MeasuredSection, ModelSection, ObservedSection, OfficialSection, UnknownsSection, useModel } from "./CoastSections";
 import type { SatelliteResult } from "@/components/map/SatelliteNear";
-import { AnswerLine, ConditionsCard, NextSteps, OfficialBrief, PlanBar, fmtWhen, officialAnswer, useConditions, type AnswerClause } from "./Briefing";
+import { Journey } from "./Journey";
+import { marineHeadline } from "@/lib/conditions";
+import { AnswerLine, TargetPicker, ConditionsCard, NextSteps, OfficialBrief, PlanBar, fmtWhen, officialAnswer, useConditions, type AnswerClause } from "./Briefing";
 import { MEASURED_RECENT_DAYS } from "@/components/ui/Mark";
 import { speciesById, type SpeciesId } from "@/content/species";
 import { useMode } from "@/lib/mode";
@@ -228,6 +230,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     />
   );
 
+  const [chapter, setChapter] = useState<string>(() => (sp.get("for") || sp.get("species") ? "official" : "target"));
   const [picking, setPicking] = useState(false);
   useEffect(() => setPicking(false), [place?.key]);
   const actionLink = "min-h-[32px] font-medium text-accent hover:underline";
@@ -406,9 +409,71 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     <div className="lg:grid lg:grid-cols-[minmax(0,620px)_minmax(0,1fr)]" data-testid="my-coast">
       <div className="min-w-0 space-y-5 px-4 pb-24 pt-4 sm:space-y-8 sm:px-8 sm:pt-6 lg:pb-16">
         {header()}
-        {place && <PlanBar audience={audience} onAudience={(a) => go({ for: a }, "replace")} species={species} onSpecies={(x) => go({ species: x }, "replace")} />}
-        {place && modeRead && (
+        {place && modeRead && viewMode === "coastal" && (
+          // Coastal: a trip plan in chapters (what you are after → what officially applies →
+          // conditions → before you go), one open at a time, each folded to its answer
+          <Journey
+            active={chapter}
+            onActive={setChapter}
+            chapters={[
+              {
+                id: "target",
+                title: "What are you after?",
+                summary: `${{ all: "Any activity", commercial: "Commercial", recreational: "Recreational", shellfish: "Shellfish harvest" }[audience]} · ${species.label}`,
+                content: <TargetPicker audience={audience} onAudience={(a) => go({ for: a }, "replace")} species={species} onSpecies={(x) => go({ species: x }, "replace")} />,
+                cta: "See what officially applies",
+              },
+              {
+                id: "official",
+                title: "What officially applies",
+                summary: official1.headline + (official1.disputed.length ? ` · ${official1.disputed.length} reported lifted` : ""),
+                content: (
+                  <OfficialBrief
+                    assocs={assocs}
+                    audience={audience}
+                    species={species}
+                    verification={verification}
+                    totalActive={currentRecords(official).length}
+                    onAll={(el) => openDrawer(el)}
+                    onDetails={openDetails}
+                  />
+                ),
+                cta: "Check the conditions",
+              },
+              {
+                id: "conditions",
+                title: "Conditions at sea",
+                summary: cond.data?.marine.status === "ok" ? `${cond.data.marine.data.periods[0].name}: ${marineHeadline(cond.data.marine.data.periods[0])}` : cond.loading ? "Reading NOAA's forecast…" : "Wind, waves, tides and the nearest buoy, from NOAA",
+                content: (
+                  <ConditionsCard
+                    conditions={cond.data}
+                    loading={cond.loading}
+                    error={cond.error}
+                    toxin={toxin}
+                    toxinError={stationsError}
+                    forecastLine={forecastLine}
+                    forecastSub={forecastSub}
+                    satelliteLine={satelliteLine}
+                    now={now}
+                    leads={leads}
+                    lead={leadNow}
+                    onLead={setLead}
+                  />
+                ),
+                cta: "What to check before you go",
+              },
+              {
+                id: "before",
+                title: "Before you go",
+                summary: steps.length ? `${steps.filter((x) => x.kind !== "conditions").length} things to check, starting with: ${steps[0].title}` : "What to check before you go",
+                content: <NextSteps steps={steps} conditionsShown />,
+              },
+            ]}
+          />
+        )}
+        {place && modeRead && viewMode === "research" && (
           <>
+            <PlanBar audience={audience} onAudience={(a) => go({ for: a }, "replace")} species={species} onSpecies={(x) => go({ species: x }, "replace")} />
             <OfficialBrief
               assocs={assocs}
               audience={audience}
@@ -418,7 +483,6 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
               onAll={(el) => openDrawer(el)}
               onDetails={openDetails}
             />
-            {viewMode === "coastal" && <NextSteps steps={steps} conditionsShown />}
           </>
         )}
         <div className={`h-[38vh] min-h-[240px] overflow-hidden rounded-2xl lg:hidden ${place ? "" : "hidden"}`} data-testid="coast-map-mobile">
@@ -428,20 +492,22 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
         {landing}
         {place && modeRead && (
           <>
-            <ConditionsCard
-              conditions={cond.data}
-              loading={cond.loading}
-              error={cond.error}
-              toxin={toxin}
-              toxinError={stationsError}
-              forecastLine={forecastLine}
-              forecastSub={forecastSub}
-              satelliteLine={satelliteLine}
-              now={now}
-              leads={leads}
-              lead={leadNow}
-              onLead={setLead}
-            />
+            {viewMode === "research" && (
+              <ConditionsCard
+                conditions={cond.data}
+                loading={cond.loading}
+                error={cond.error}
+                toxin={toxin}
+                toxinError={stationsError}
+                forecastLine={forecastLine}
+                forecastSub={forecastSub}
+                satelliteLine={satelliteLine}
+                now={now}
+                leads={leads}
+                lead={leadNow}
+                onLead={setLead}
+              />
+            )}
             {viewMode === "coastal" ? (
               <details ref={detailsRef} className="group rounded-[18px] border border-hairline bg-surface" data-testid="coast-details">
                 <summary className="flex min-h-[52px] cursor-pointer items-center justify-between gap-3 px-4 text-[15px] font-medium text-ink sm:px-5">
