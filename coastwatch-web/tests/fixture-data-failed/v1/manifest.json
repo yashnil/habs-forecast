@@ -3387,7 +3387,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
@@ -3753,7 +3753,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
@@ -3966,7 +3966,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
@@ -4179,7 +4179,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": null,
@@ -4329,7 +4329,7 @@
       "variable": "chlorophyll_a",
       "units": "mg m-3",
       "threshold_text": null,
-      "description": "Most recent valid chlorophyll-a observation from VIIRS on NOAA-21, with NOAA-20 in cells NOAA-21 has no value for at each pixel within 7 days, with the date of each pixel.",
+      "description": "Most recent valid chlorophyll-a observation from VIIRS on NOAA-21, with NOAA-20 in cells NOAA-21 has no value for at each pixel within 10 days, with the date of each pixel.",
       "resolution_deg": 0.0075,
       "time": {
         "issued_date": null,
@@ -4340,8 +4340,6 @@
         "observed_date": "2026-10-04",
         "lead_days": null,
         "observed_times": [
-          "2026-10-01T19:02:52Z",
-          "2026-10-01T19:06:26Z",
           "2026-10-02T19:28:03Z",
           "2026-10-02T19:35:10Z",
           "2026-10-03T19:11:16Z",
@@ -4354,11 +4352,11 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
-        "url": "satellite/viirs750/latest-2026-10-08-3af56abd1a/grid/{row}_{col}.u16.gz",
+        "url": "satellite/viirs750/latest-2026-10-12-1aff2b14dc/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 114,
         "height": 107,
@@ -4374,14 +4372,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/viirs750/latest-2026-10-12-1aff2b14dc/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/viirs750/latest-2026-10-12-1aff2b14dc/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 10,
         "legend_url": null,
@@ -4453,7 +4451,7 @@
         "nodata": "transparent"
       },
       "caveats": [
-        "Latest clear view: each pixel shows its most recent valid observation within 7 days; neighbouring pixels can come from different days. Check the observation date in the readout.",
+        "Latest clear view: each pixel shows its most recent valid observation within 10 days; neighbouring pixels can come from different days. Check the observation date in the readout.",
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
@@ -4461,61 +4459,6 @@
       ],
       "qc": {
         "checks": [
-          {
-            "name": "noaacwN21VIIRSchlaSectorUSDaily:required_variables",
-            "passed": true,
-            "detail": "all present"
-          },
-          {
-            "name": "noaacwN21VIIRSchlaSectorUSDaily:time_matches_listing",
-            "passed": true,
-            "detail": "file 2026-10-01T19:02:52Z, listed 2026-10-01T19:02:52Z"
-          },
-          {
-            "name": "noaacwN21VIIRSchlaSectorUSDaily:coordinates_on_lattice",
-            "passed": true,
-            "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
-          },
-          {
-            "name": "noaacwN21VIIRSchlaSectorUSDaily:within_domain",
-            "passed": true,
-            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
-          },
-          {
-            "name": "noaacwN21VIIRSchlaSectorUSDaily:plausible_values",
-            "passed": true,
-            "detail": "0.0000% of values > 200.0 mg m-3"
-          },
-          {
-            "name": "noaacwN20VIIRSchlaSectorUSDaily:required_variables",
-            "passed": true,
-            "detail": "all present"
-          },
-          {
-            "name": "noaacwN20VIIRSchlaSectorUSDaily:time_matches_listing",
-            "passed": true,
-            "detail": "file 2026-10-01T19:06:26Z, listed 2026-10-01T19:06:26Z"
-          },
-          {
-            "name": "noaacwN20VIIRSchlaSectorUSDaily:coordinates_on_lattice",
-            "passed": true,
-            "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
-          },
-          {
-            "name": "noaacwN20VIIRSchlaSectorUSDaily:within_domain",
-            "passed": true,
-            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
-          },
-          {
-            "name": "noaacwN20VIIRSchlaSectorUSDaily:plausible_values",
-            "passed": true,
-            "detail": "0.0000% of values > 200.0 mg m-3"
-          },
-          {
-            "name": "coastal_scope",
-            "passed": true,
-            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
-          },
           {
             "name": "noaacwN21VIIRSchlaSectorUSDaily:required_variables",
             "passed": true,
@@ -4697,10 +4640,8 @@
         "institution": "NOAA CoastWatch",
         "license": "NOAA CoastWatch: may be used and redistributed for free but is not intended for legal use.",
         "citation": null,
-        "retrieved_at": "2026-10-08T18:00:00Z",
+        "retrieved_at": "2026-10-12T18:00:00Z",
         "request_urls": [
-          "https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-01T19:02:52Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
-          "https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-01T19:06:26Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-02T19:28:03Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-02T19:35:10Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-03T19:11:16Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
@@ -4709,10 +4650,10 @@
           "https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-04T19:02:17Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D"
         ],
         "upstream_metadata": {
-          "days": "2026-10-01, 2026-10-02, 2026-10-03, 2026-10-04",
+          "days": "2026-10-02, 2026-10-03, 2026-10-04",
           "processing": "satellite-processing-3",
-          "scenes": "NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-01T19:02:52Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-01T19:06:26Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-02T19:28:03Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-02T19:35:10Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-03T19:11:16Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-03T19:20:30Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-04T19:37:51Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-04T19:02:17Z",
-          "platform_grid": "satellite/viirs750/latest-2026-10-08-3af56abd1a/platform/{row}_{col}.u16.gz",
+          "scenes": "NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-02T19:28:03Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-02T19:35:10Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-03T19:11:16Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-03T19:20:30Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-04T19:37:51Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-04T19:02:17Z",
+          "platform_grid": "satellite/viirs750/latest-2026-10-12-1aff2b14dc/platform/{row}_{col}.u16.gz",
           "platform_codes": "1=NOAA-21, 2=NOAA-20; a cell without a value has no code. Same chunks (512 x 512 cells) and lattice as the value grid; one platform per cell, never averaged.",
           "platform_rule": "NOAA-21 first; NOAA-20 only in cells the platforms before it have no value for. No averaging, no bias correction.",
           "pixels_by_platform": "NOAA-21 5048, NOAA-20 3365",
@@ -4742,10 +4683,10 @@
         ]
       },
       "composite": {
-        "window_days": 7,
-        "reference_date": "2026-10-08",
+        "window_days": 10,
+        "reference_date": "2026-10-12",
         "newest_observed_date": "2026-10-04",
-        "oldest_observed_date": "2026-10-01",
+        "oldest_observed_date": "2026-10-02",
         "days": [
           {
             "date": "2026-10-04",
@@ -4785,37 +4726,24 @@
               "2026-10-02T19:35:10Z"
             ],
             "pixels_used": 6
-          },
-          {
-            "date": "2026-10-01",
-            "platforms": [
-              "VIIRS",
-              "NOAA-21",
-              "NOAA-20"
-            ],
-            "observed_times": [
-              "2026-10-01T19:02:52Z",
-              "2026-10-01T19:06:26Z"
-            ],
-            "pixels_used": 0
           }
         ],
         "age_histogram": [
           {
-            "age_days": 4,
+            "age_days": 8,
             "fraction": 0.4197
           },
           {
-            "age_days": 5,
+            "age_days": 9,
             "fraction": 0.5796
           },
           {
-            "age_days": 6,
+            "age_days": 10,
             "fraction": 0.0007
           }
         ],
         "age_grid": {
-          "url": "satellite/viirs750/latest-2026-10-08-3af56abd1a/age/{row}_{col}.u16.gz",
+          "url": "satellite/viirs750/latest-2026-10-12-1aff2b14dc/age/{row}_{col}.u16.gz",
           "encoding": "uint16le+gzip",
           "width": 114,
           "height": 107,
@@ -4831,14 +4759,14 @@
           "chunks": {
             "rows": 512,
             "cols": 512,
-            "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/age/{row}_{col}.u16.gz",
+            "url_template": "satellite/viirs750/latest-2026-10-12-1aff2b14dc/age/{row}_{col}.u16.gz",
             "present": [
               "0_0"
             ]
           }
         },
         "age_tiles": {
-          "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/viirs750/latest-2026-10-12-1aff2b14dc/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 10,
           "legend_url": null,
@@ -4886,8 +4814,6 @@
         "observed_date": "2026-10-06",
         "lead_days": null,
         "observed_times": [
-          "2026-10-01T19:02:52Z",
-          "2026-10-01T19:06:26Z",
           "2026-10-02T19:28:03Z",
           "2026-10-02T19:35:10Z",
           "2026-10-03T19:11:16Z",
@@ -4902,12 +4828,12 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": null,
       "tiles": {
-        "url_template": "satellite/multisensor/latest-2026-10-12-994e6b2302/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/multisensor/latest-2026-10-12-00cbc07701/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -4980,7 +4906,7 @@
       },
       "caveats": [
         "Multi-sensor display: Sentinel-3 300 m where available, VIIRS 750 m elsewhere. The two sensors use different algorithms and can differ at the same place and day (see the agreement figures); a colour change at a sensor boundary may be the sensors, not the water.",
-        "Latest clear view: each pixel shows its most recent valid observation within 7 days; neighbouring pixels can come from different days. Check the observation date in the readout.",
+        "Latest clear view: each pixel shows its most recent valid observation within 7 (VIIRS: 10) days; neighbouring pixels can come from different days. Check the observation date in the readout.",
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
@@ -5065,7 +4991,7 @@
           }
         ],
         "sensor_tiles": {
-          "url_template": "satellite/multisensor/latest-2026-10-12-994e6b2302/sensor-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/multisensor/latest-2026-10-12-00cbc07701/sensor-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
@@ -5089,7 +5015,7 @@
           ]
         },
         "age_tiles": {
-          "url_template": "satellite/multisensor/latest-2026-10-12-994e6b2302/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/multisensor/latest-2026-10-12-00cbc07701/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
@@ -8945,14 +8871,14 @@
       "product_class": "observation",
       "last_attempt_at": "2026-10-12T18:00:00Z",
       "last_success_at": "2026-10-12T18:00:00Z",
-      "outcome": "partial",
-      "error": "viirs750: no scenes in the last 7 days; S-NPP fallback: viirs750: no scenes in the last 7 days",
+      "outcome": "updated",
+      "error": null,
       "notes": [
         "olci300 2026-10-05: same overpasses as the published day; reused it.",
         "olci300 2026-10-06: same overpasses as the published day; reused it.",
         "olci300 2026-10-07: same overpasses as the published day; reused it.",
         "olci300: 3 day(s) in window; newest observed 2026-10-06.",
-        "Satellite chlorophyll-a, VIIRS 750 m unavailable this run: kept the previously published layers with their observation dates."
+        "viirs750: 3 day(s) in window; newest observed 2026-10-04."
       ],
       "latest_issued_date": null,
       "latest_valid_date": "2026-10-06",
@@ -8960,7 +8886,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
       }
     },
     {

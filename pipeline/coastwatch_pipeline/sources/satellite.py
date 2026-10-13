@@ -64,6 +64,12 @@ GROUP_ID = "satellite_chlorophyll_hr"
 REPO = Path(__file__).resolve().parents[3]
 
 WINDOW_DAYS = 7
+# VIIRS 750 m from NOAA-21/NOAA-20 is published 3-8 days after observation (8 on 2026-10-13):
+# with 7 days, a run would often hold no NOAA pass at all and fall back to S-NPP, which would
+# make S-NPP, not NOAA-21, the primary in practice. Its window is the observed maximum latency
+# plus two days (the same 10 days as health.VIIRS_MAX_AGE_DAYS). Ages above 7 days share the
+# last age colour.
+VIIRS_WINDOW_DAYS = 10
 # Bump whenever processing changes what a published day contains (scope, masks, encoding, source):
 # published days are reused across runs only when made by the same processing version.
 # 3: VIIRS from NOAA-21/NOAA-20 (per-cell platform grid) instead of S-NPP; no S-NPP day is
@@ -91,6 +97,7 @@ FRESHNESS = FreshnessPolicy(
     note=(
         "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. "
         "Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. "
+        "The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. "
         "In a 'latest clear view' every pixel also carries its own date."
     ),
 )
@@ -145,6 +152,8 @@ class Product:
     platform_grid: bool = False
     # Offsets measured against other platforms, stated in provenance (never applied)
     offsets: str | None = None
+    # Latest clear view: days back from the run date
+    window_days: int = WINDOW_DAYS
 
 
 SPLIT = -120.0
@@ -195,6 +204,7 @@ VIIRS_JPSS = Product(
     sensor="VIIRS",
     platform_grid=True,
     offsets=VIIRS_OFFSETS,
+    window_days=VIIRS_WINDOW_DAYS,
 )
 # Suomi-NPP: fallback only, until its data end (2026-11-02, 13:00 UTC).
 VIIRS_SNPP = Product(
@@ -213,6 +223,7 @@ VIIRS_SNPP = Product(
     sensor_text="VIIRS on Suomi-NPP (daily composite of available passes)",
     sensor="VIIRS",
     offsets=VIIRS_OFFSETS,
+    window_days=VIIRS_WINDOW_DAYS,
 )
 VIIRS = VIIRS_JPSS
 PRODUCTS = (OLCI, VIIRS_JPSS, VIIRS_SNPP)
@@ -615,7 +626,7 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
     write_index(ats, ctx.out_dir / base / "age-tiles")
     age_tiles = tiles.model_copy(update={"url_template": f"{base}/age-tiles/{{z}}/{{x}}/{{y}}.png", "n_tiles": ats.n_tiles, "sample_tiles": ats.tiles[:: max(1, len(ats.tiles) // 5)][:5], "date_selection": "Age in days of each pixel of the latest clear view (categorical)."})
     a = age[np.isfinite(age)]
-    hist = [AgeBin(age_days=int(k), fraction=round(float((a == k).mean()), 4)) for k in range(WINDOW_DAYS + 1) if (a == k).any()]
+    hist = [AgeBin(age_days=int(k), fraction=round(float((a == k).mean()), 4)) for k in range(p.window_days + 1) if (a == k).any()]
     order = [pl for pl, _ in p.platforms]
     platforms = [pl for pl in order if any(pl in d.platforms for d in observed_days)]
     meta = {"days": ", ".join(sorted(d.date.isoformat() for d in days)), "processing": PROCESSING_VERSION}
@@ -629,14 +640,14 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
     layer = LayerArtifact(
         layer_id=f"{p.key}_chl_latest", group_id=GROUP_ID, product_class="observation",
         title=f"{p.title}, latest clear view", short_title=p.short_title, variable="chlorophyll_a", units="mg m-3",
-        description=f"Most recent valid chlorophyll-a observation from {p.sensor_text} at each pixel within {WINDOW_DAYS} days, with the date of each pixel.",
+        description=f"Most recent valid chlorophyll-a observation from {p.sensor_text} at each pixel within {p.window_days} days, with the date of each pixel.",
         resolution_deg=p.step, native_resolution_m=p.native_m, platforms=platform_labels(p, platforms),
         time=TimeInfo(observed_date=newest.isoformat(), valid_date=newest.isoformat(), observed_times=sorted(t for d in observed_days for t in d.observed_times)),
         freshness=FRESHNESS, grid=grid, tiles=tiles, palette=CHLOROPHYLL,
-        caveats=[CAVEAT_COMPOSITE.format(n=WINDOW_DAYS)] + list(CAVEATS), qc=_qc(comp, [c for d in days for c in d.checks]),
+        caveats=[CAVEAT_COMPOSITE.format(n=p.window_days)] + list(CAVEATS), qc=_qc(comp, [c for d in days for c in d.checks]),
         coverage=coverage(comp, target),
         composite=CompositeInfo(
-            window_days=WINDOW_DAYS, reference_date=ref.isoformat(), newest_observed_date=newest.isoformat(),
+            window_days=p.window_days, reference_date=ref.isoformat(), newest_observed_date=newest.isoformat(),
             oldest_observed_date=oldest.isoformat(), days=used, age_histogram=hist, age_grid=age_grid, age_tiles=age_tiles,
         ),
         provenance=_provenance(ctx, p, [s.url for d in days for s in d.scenes], meta, platforms),
@@ -708,7 +719,7 @@ class SatelliteResult:
 def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[LayerArtifact], zooms: range, per_day: bool) -> SatelliteResult:
     errors: list[str] = []
     notes: list[str] = []
-    start = ctx.now.date() - timedelta(days=WINDOW_DAYS)
+    start = ctx.now.date() - timedelta(days=p.window_days)
     listings: dict[tuple[str, str], list[str]] = {}
     for plat, sectors in p.platforms:
         for ds, _, _, _ in sectors:
@@ -769,7 +780,7 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
                   platforms=[pl for pl in order if any(s.platform == pl for s in scenes)], checks=checks, source=src)
         days.append(day)
     if not days or target is None:
-        return SatelliteResult([], errors or [f"{p.key}: no scenes in the last {WINDOW_DAYS} days"], notes, None)
+        return SatelliteResult([], errors or [f"{p.key}: no scenes in the last {p.window_days} days"], notes, None)
 
     layers: list[LayerArtifact] = []
     nbytes = 0

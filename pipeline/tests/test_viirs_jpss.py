@@ -317,3 +317,22 @@ def test_port_history_reuses_complete_windows_and_fetches_two_weeks(tmp_path):
     one = a.model_copy(update={"dataset_id": N20})
     chl, _ = port_intel.chlorophyll_jpss(fixture_context(tmp_path / "x"), _port(first, "Monterey").lat, _port(first, "Monterey").lon, datetime(2026, 10, 8).date(), one)
     assert chl.history == a.history  # full fetch, same values
+
+
+def test_noaa_stays_primary_when_it_lags_more_than_a_week(tmp_path):
+    """Staging, 2026-10-13: NOAA-21/NOAA-20 newest 10-05, S-NPP newest 10-08. With a 7-day
+    window NOAA had no pass in reach and the S-NPP fallback became the layer. The VIIRS window
+    covers NOAA's latency, so NOAA-21 stays primary and S-NPP is not even asked."""
+    f = FixtureFetcher()
+    ctx = fixture_context(tmp_path / "v1", "2026-10-12T18:00:00Z", f)  # fixture NOAA days 10-01..04: 8-11 days old
+    res = sat.run(ctx, [])
+    lyr = viirs(res)
+    assert lyr.platforms[:2] == ["VIIRS", "NOAA-21"] and lyr.provenance.dataset_id.startswith(N21)
+    assert lyr.composite.window_days == sat.VIIRS_WINDOW_DAYS == 10
+    assert lyr.composite.oldest_observed_date >= "2026-10-02"
+    assert max(b.age_days for b in lyr.composite.age_histogram) <= 10
+    assert abs(sum(b.fraction for b in lyr.composite.age_histogram) - 1) < 1e-3
+    assert not [u for u in f.calls if SNPP in u]
+    # OLCI keeps its own 7-day window
+    olci = next(x for x in res.layers if x.layer_id == "olci300_chl_latest")
+    assert olci.composite.window_days == sat.WINDOW_DAYS == 7
