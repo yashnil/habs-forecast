@@ -5,14 +5,13 @@ name: CoastWatch CI
 # the PR). There is deliberately no `pull_request` trigger: with both, every push to a PR branch
 # ran the whole suite twice on the same commit and sent two failure emails ("Run failed" for the
 # push run, "PR run failed" for the pull_request run). Check names stay `pipeline` and `web`.
+#
+# Which commits need the full checks is decided by the `scope` job, not a `paths:` filter: a push
+# filter only sees the files in that push, so a docs-only commit on top of a code branch would
+# leave the PR's head without checks. `scope` compares the whole branch with main (as a
+# pull_request run would); main compares with the previous main commit.
 on:
   push:
-    paths:
-      - "pipeline/**"
-      - "coastwatch-web/**"
-      - "schemas/**"
-      - "data/curated/**"
-      - ".github/workflows/coastwatch-ci.yml"
   workflow_dispatch:
 
 # Read-only token: CI never writes to the repository.
@@ -26,7 +25,37 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: diff
+        env:
+          BEFORE: ${{ github.event.before }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then echo "code=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            base="$BEFORE"; git cat-file -e "$base^{commit}" 2>/dev/null || base="HEAD~1"
+          else
+            base=$(git merge-base origin/main HEAD)
+          fi
+          changed=$(git diff --name-only "$base" HEAD)
+          echo "Files changed since $base:"; echo "$changed" | head -50
+          if echo "$changed" | grep -qE '^(pipeline/|coastwatch-web/|schemas/|data/curated/|\.github/workflows/coastwatch-ci\.yml$)'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"; echo "No pipeline, web, schema or registry change: the full checks are not needed."
+          fi
+
   pipeline:
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -55,6 +84,8 @@ jobs:
 
   web-static:
     # generated types, lint, typecheck and unit tests (fast; runs beside the browser shards)
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -79,6 +110,8 @@ jobs:
 
   web-e2e:
     # the browser suite in two halves on two runners (each builds once)
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -122,13 +155,17 @@ jobs:
     # The stable check name for the web: passes only if the static checks and every browser
     # shard passed. It always runs (if: always()), so a failed or cancelled part is a failure
     # here, never a "skipped" check that could read as passing.
-    needs: [web-static, web-e2e]
+    needs: [scope, web-static, web-e2e]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: All web checks passed
         env:
-          RESULTS: ${{ join(needs.*.result, ' ') }}
+          CODE: ${{ needs.scope.outputs.code }}
+          SCOPE: ${{ needs.scope.result }}
+          RESULTS: ${{ needs.web-static.result }} ${{ needs.web-e2e.result }}
         run: |
+          [ "$SCOPE" = "success" ] || { echo "the scope check did not run ($SCOPE)"; exit 1; }
+          if [ "$CODE" != "true" ]; then echo "No web change on this branch; nothing to check."; exit 0; fi
           echo "web-static and web-e2e: $RESULTS"
           for r in $RESULTS; do [ "$r" = "success" ] || { echo "a web check did not pass ($r)"; exit 1; }; done
