@@ -265,7 +265,8 @@ def fixture_context(out: Path, now: str = FIXTURE_NOW, fetcher: FixtureFetcher |
 
 def build_fixture_dataset(out: Path, now: str = FIXTURE_NOW, scenario: str = "normal") -> Manifest:
     """Scenarios: 'normal' (all sources succeed) or 'charm-failed' (a later run in which
-    every C-HARM request fails, so the previous run is kept and the failure recorded)."""
+    every C-HARM request and every VIIRS daily request fails, so the previous C-HARM run and VIIRS
+    layer are kept and the failures recorded; Sentinel-3 still updates)."""
     import json
 
     from .verify import verify_charm
@@ -274,10 +275,18 @@ def build_fixture_dataset(out: Path, now: str = FIXTURE_NOW, scenario: str = "no
         shutil.rmtree(out)
     m = run_pipeline(fixture_context(out, now))
     if scenario == "charm-failed":
-        # a later run: every C-HARM request fails, and CDPH has meanwhile published a release that
-        # appears to lift an active record (published as a discrepancy, the record left unchanged)
+        # a later run: every C-HARM request fails, the VIIRS daily products fail too (an explicit
+        # failure: with a 10-day VIIRS window the four-day-later run would otherwise still find
+        # scenes), and CDPH has meanwhile published a release that appears to lift an active record
+        # (published as a discrepancy, the record left unchanged)
         later = (datetime.fromisoformat(now.replace("Z", "+00:00")) + timedelta(days=4)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        fetcher = FixtureFetcher(overrides={r"wvcharmV3_": _fail_502, re.escape(CDPH_RELEASES): _with_lift_release})
+        fetcher = FixtureFetcher(
+            overrides={
+                r"wvcharmV3_": _fail_502,
+                r"/griddap/(noaacwN2[01]VIIRSchlaSectorUSDaily|erdVHNchla1day)\.": _fail_502,
+                re.escape(CDPH_RELEASES): _with_lift_release,
+            }
+        )
         m = run_pipeline(fixture_context(out, later, fetcher))
     elif scenario != "normal":
         raise ValueError(f"unknown scenario {scenario}")
