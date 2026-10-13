@@ -106,12 +106,12 @@ export function StationHeader({
       </div>
 
       {station.status === "carried_forward" && (
-        <p className="rounded-md border border-warning/40 bg-[#fff7e6] px-3 py-2 text-[13px] text-ink-2 lg:col-span-2" data-testid="station-carried">
+        <p className="rounded-md border border-hairline border-l-[3px] border-l-ink-3/60 bg-surface px-3 py-2 text-[13px] text-ink-2 lg:col-span-2" data-testid="station-carried">
           <b className="font-semibold text-ink">The latest update could not reach this station&apos;s data.</b> Showing what was retrieved {station.retrieved_at ? formatDateTimePT(station.retrieved_at) : "earlier"}, with the original sample dates; newer samples may exist.
         </p>
       )}
       {f?.state === "historical" && (
-        <p className="rounded-md border border-serious/40 bg-[#fdeeee] px-3 py-2 text-[13px] text-ink-2 lg:col-span-2" data-testid="station-historical">
+        <p className="rounded-md border border-hairline border-l-[3px] border-l-ink-3/60 bg-surface px-3 py-2 text-[13px] text-ink-2 lg:col-span-2" data-testid="station-historical">
           <b className="font-semibold text-ink">No recent samples.</b> The newest is {f.ageDays} days old, so these values do not describe current conditions.
         </p>
       )}

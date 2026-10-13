@@ -112,7 +112,7 @@ export function Inspector({
         </button>
       </header>
 
-      <div className="mt-3 space-y-1.5 rounded-md border border-[#ffb547]/30 bg-[#ffb547]/[0.04] p-2.5" data-testid="inspect-official">
+      <div className="mt-3 space-y-1.5 rounded-md border border-hairline border-l-[3px] border-l-official-line bg-surface p-2.5" data-testid="inspect-official">
         <div className="flex items-center justify-between gap-2">
           <p className="text-[13px] font-semibold text-ink">Official notices here</p>
           <VerificationBadge v={verification} />

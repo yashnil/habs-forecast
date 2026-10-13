@@ -101,12 +101,13 @@ export function DataBanners({ manifest, error }: { manifest: Manifest | null; er
             data-testid="status-more"
             className="cw-press ml-auto flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[13px] font-semibold text-on-navy hover:bg-white/[0.07]"
           >
-            {failed.length > 0 && (
+            {/* failed updates are counted in Research; Coastal keeps them under "More" (and on each layer) */}
+            {failed.length > 0 && mode === "research" && (
               <span className="rounded-full bg-white/10 px-1.5 text-[13px] text-on-navy md:hidden" aria-hidden>
                 +{failed.length}
               </span>
             )}
-            {open ? "Less" : "More"}
+            <span className="max-[400px]:sr-only">{open ? "Less" : "More"}</span>
             <svg viewBox="0 0 12 12" className={`h-3 w-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`} aria-hidden>
               <path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>

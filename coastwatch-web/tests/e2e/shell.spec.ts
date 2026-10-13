@@ -113,12 +113,22 @@ test.describe("mobile shell", () => {
   test("map: the layer dock and the port sheet sit above the tab bar", async ({ page }) => {
     await open(page, `${OK}/`);
     const bar = await page.getByTestId("tabbar").boundingBox();
-    // the layer dock is the sheet's content (it scrolls inside it): the sheet is what must clear the bar
-    const dock = await page.getByTestId("mobile-sheet").boundingBox();
-    expect(dock!.y + dock!.height).toBeLessThanOrEqual(bar!.y + 1);
+    // the layer dock is the sheet's content (it scrolls inside it): the sheet is what must clear the
+    // bar. The sheet slides (transform-only) inside the map, which clips it: what shows is the part
+    // above the map's bottom edge, and that edge is at or above the tab bar.
+    const map = (await page.getByTestId("map").boundingBox())!;
+    expect(map.y + map.height).toBeLessThanOrEqual(bar!.y + 1);
+    const visibleBottom = async () => {
+      const s = (await page.getByTestId("mobile-sheet").boundingBox())!;
+      return { top: s.y, bottom: Math.min(s.y + s.height, map.y + map.height) };
+    };
+    let v = await visibleBottom();
+    expect(v.bottom).toBeLessThanOrEqual(bar!.y + 1);
+    expect(v.top).toBeLessThan(bar!.y - 100);
     await open(page, `${OK}/?region=monterey_bay&port=593`);
-    const sheet = await page.getByTestId("mobile-sheet").boundingBox();
-    expect(sheet!.y + sheet!.height).toBeLessThanOrEqual(bar!.y + 1);
+    v = await visibleBottom();
+    expect(v.bottom).toBeLessThanOrEqual(bar!.y + 1);
+    expect(v.top).toBeLessThan(bar!.y - 100);
     await expect(page.getByTestId("sheet-handle")).toBeVisible();
   });
 });

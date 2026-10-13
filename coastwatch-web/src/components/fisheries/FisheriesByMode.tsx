@@ -55,14 +55,19 @@ export function FisheriesByMode({ official, children }: { official: OfficialData
       <section className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]" aria-label={s.label}>
         <div className="rounded-[18px] border border-hairline border-l-[3px] border-l-official-line bg-surface px-4 py-4 sm:px-5" data-testid="fish-notices">
           <p className="cw-kind text-official-ink"><Mark kind="official" />Official notices naming {speciesPhrase(s)} · California</p>
-          <h2 className="mt-1 font-display text-[22px] font-medium text-ink">
-            {notices.length ? `${notices.length} active notice${notices.length === 1 ? "" : "s"}` : "None in CoastWatch's list"}
-          </h2>
-          {!notices.length && <p className="mt-1 text-[14px] text-ink-2">That is not an all-clear: the list may be incomplete and is not verified. Check the agency.</p>}
-          <ul className="mt-2 divide-y divide-official-line/50">
+          {/* an absence is a statement about the list's limits, never set larger than a finding (signature P6) */}
+          {notices.length ? (
+            <h2 className="mt-1 font-display text-[22px] font-medium text-ink">{`${notices.length} active notice${notices.length === 1 ? "" : "s"}`}</h2>
+          ) : (
+            <h2 className="mt-1 text-[16px] font-medium text-ink" data-testid="fish-notices-none">
+              No notice in CoastWatch&apos;s list names {speciesPhrase(s)}
+            </h2>
+          )}
+          {!notices.length && <p className="mt-1 text-[14px] text-ink-2">That is not the same as safe or open: the list may be incomplete and is not verified. Check the agency.</p>}
+          <ul className="mt-2 divide-y divide-hairline">
             {disputed.map(({ record, dispute }) => (
               <li key={record.id} className="py-2.5">
-                <p className="text-[12px] font-semibold text-warning">Reported lifted by {dispute.agency} · awaiting review</p>
+                <p className="text-[13px] font-medium text-warning">Reported lifted by {dispute.agency} · awaiting review</p>
                 <p className="text-[15px] font-medium text-ink">{record.title}</p>
                 <a href={dispute.url} {...ext} className={`${link} text-[13px]`}>{dispute.agency} {dispute.release} ↗</a>
               </li>
@@ -71,7 +76,7 @@ export function FisheriesByMode({ official, children }: { official: OfficialData
               const src = r.sources.find((x) => x.url.startsWith("https://"));
               return (
                 <li key={r.id} className="py-2.5" data-testid={`fish-notice-${r.id}`}>
-                  <p className="text-[12px] font-semibold text-official-ink">{r.agency} · {ACTION_LABEL[r.action]}</p>
+                  <p className="text-[13px] font-medium text-official-ink">{r.agency} · {ACTION_LABEL[r.action]}</p>
                   <p className="text-[15px] font-medium leading-snug text-ink">{r.title}</p>
                   <p className="text-[13px] text-ink-3">
                     {r.area.description} · {r.effective_date ? `since ${formatDate(r.effective_date, { year: true })}` : "start date not published"}

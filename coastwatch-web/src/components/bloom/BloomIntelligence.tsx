@@ -14,6 +14,8 @@ import { DAY, monthYear, samples, summaryOf } from "@/lib/observations";
 import { useNow } from "@/lib/useNow";
 import { AboutData } from "./AboutData";
 import { OfficialStrip } from "./OfficialStrip";
+import type { ChartNotice } from "@/components/charts/StationChart";
+import { ACTION_LABEL, disputeOf } from "@/lib/official";
 import { QUANTITY_SHORT, QuantityIndex } from "./QuantityIndex";
 import { SeasonHeatmap } from "./SeasonHeatmap";
 import { StationHeader } from "./StationHeader";
@@ -180,6 +182,18 @@ export function BloomIntelligence({ stations, station, dataset, status, official
     </div>
   );
 
+  // the notices for waters near this pier, on the chart's time axis at their own effective dates
+  const chartNotices: ChartNotice[] = (() => {
+    const recs = new Map((official?.registry.records ?? []).map((r) => [r.id, r]));
+    const out: ChartNotice[] = [];
+    for (const id of new Set(relations.map((r) => r.record_id))) {
+      const r = recs.get(id);
+      if (!r || r.status !== "active" || !r.effective_date || disputeOf(official, id)) continue;
+      out.push({ id, t: Date.parse(`${r.effective_date}T12:00:00Z`), label: `${r.agency} ${ACTION_LABEL[r.action].toLowerCase()}` });
+    }
+    return out.sort((a, b) => a.t - b.t);
+  })();
+
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-5 px-4 pb-16 pt-4 sm:px-8" data-testid="bloom-page" aria-busy={pending}>
       <OfficialStrip
@@ -221,6 +235,7 @@ export function BloomIntelligence({ stations, station, dataset, status, official
 
           <StationChart
             variable={v}
+            notices={chartNotices}
             samples={series}
             visits={visits}
             axis={axis}

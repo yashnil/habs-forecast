@@ -7,7 +7,7 @@ import { Mark, type MarkKind } from "@/components/ui/Mark";
 export type Kind = "official" | "model" | "measured" | "historical";
 
 export const KIND: Record<Kind, { label: string; chip: string; dot: string }> = {
-  official: { label: "Official", chip: "border-official-line bg-official-bg text-official-ink", dot: "bg-official" },
+  official: { label: "Official", chip: "border-official-line text-official-ink", dot: "bg-official" },
   model: { label: "Model", chip: "border-model-line bg-model-bg text-model-ink", dot: "bg-model" },
   measured: { label: "Measured", chip: "border-measured-line bg-measured-bg text-measured", dot: "bg-measured" },
   historical: { label: "Historical", chip: "border-history-line bg-history-bg text-history", dot: "bg-history" },
