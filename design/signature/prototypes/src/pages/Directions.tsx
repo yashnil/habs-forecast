@@ -31,7 +31,7 @@ export function Directions() {
   if (frame) return <div className="dir-root dir-frame">{view}</div>;
   const order: D[] = ["a", "b", "c"];
   return (
-    <div className="dir-root">
+    <main className="dir-root" aria-label="Visual directions">
       <div className="dir-switch" role="radiogroup" aria-label="Visual direction">
         {order.map((k) => (
           <button key={k} role="radio" aria-checked={d === k} tabIndex={d === k ? 0 : -1} onClick={() => setD(k)}
@@ -56,6 +56,6 @@ export function Directions() {
           <iframe key={d} title={`${NAMES[d].name}, phone`} src={`#/directions?d=${d}&frame=mobile`} width={390} height={844} />
         </div>
       )}
-    </div>
+    </main>
   );
 }

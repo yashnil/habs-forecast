@@ -1,0 +1,817 @@
+[
+  {
+    "name": "map-first",
+    "viewport": "1440x900",
+    "ms": 3907,
+    "overflowX": 0,
+    "cls": 0.0223,
+    "longTasks": [
+      148,
+      117,
+      129,
+      116,
+      175,
+      168,
+      52,
+      576
+    ],
+    "lcp": 376,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 3,
+    "axe": [],
+    "errors": []
+  },
+  {
+    "name": "map-first",
+    "viewport": "1280x720",
+    "ms": 3877,
+    "overflowX": 0,
+    "cls": 0.0381,
+    "longTasks": [
+      101,
+      71,
+      89,
+      88,
+      154,
+      157,
+      558
+    ],
+    "lcp": 364,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 3,
+    "axe": [],
+    "errors": []
+  },
+  {
+    "name": "map-first",
+    "viewport": "1024x768",
+    "ms": 3883,
+    "overflowX": 0,
+    "cls": 0.0337,
+    "longTasks": [
+      98,
+      73,
+      78,
+      84,
+      143,
+      157,
+      521
+    ],
+    "lcp": 356,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 3,
+    "axe": [],
+    "errors": []
+  },
+  {
+    "name": "map-first",
+    "viewport": "390x844",
+    "ms": 3872,
+    "overflowX": 0,
+    "cls": 0.004,
+    "longTasks": [
+      95,
+      73,
+      79,
+      78,
+      139,
+      152,
+      508
+    ],
+    "lcp": 380,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 2,
+    "axe": [],
+    "errors": []
+  },
+  {
+    "name": "map-first",
+    "viewport": "320x640",
+    "ms": 3878,
+    "overflowX": 0,
+    "cls": 0.0026,
+    "longTasks": [
+      96,
+      73,
+      77,
+      80,
+      138,
+      146,
+      160,
+      454
+    ],
+    "lcp": 380,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 2,
+    "axe": [],
+    "errors": []
+  },
+  {
+    "name": "map-selected",
+    "viewport": "1440x900",
+    "ms": 3974,
+    "overflowX": 0,
+    "cls": 0.1045,
+    "longTasks": [
+      97,
+      81,
+      111,
+      213,
+      155,
+      447,
+      414,
+      91,
+      160,
+      277,
+      50
+    ],
+    "lcp": 364,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 5,
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "article:nth-child(1) > h4"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "map-selected",
+    "viewport": "1280x720",
+    "ms": 3955,
+    "overflowX": 0,
+    "cls": 0.082,
+    "longTasks": [
+      97,
+      76,
+      111,
+      211,
+      157,
+      397,
+      386,
+      82,
+      140,
+      261
+    ],
+    "lcp": 364,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 5,
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "article:nth-child(1) > h4"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "map-selected",
+    "viewport": "1024x768",
+    "ms": 3950,
+    "overflowX": 0,
+    "cls": 0.0833,
+    "longTasks": [
+      101,
+      77,
+      104,
+      350,
+      400,
+      384,
+      81,
+      141,
+      256
+    ],
+    "lcp": 396,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 5,
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "article:nth-child(1) > h4"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "map-selected",
+    "viewport": "390x844",
+    "ms": 3941,
+    "overflowX": 0,
+    "cls": 0.004,
+    "longTasks": [
+      98,
+      73,
+      76,
+      204,
+      141,
+      288,
+      373,
+      66,
+      369
+    ],
+    "lcp": 388,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 3,
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "article:nth-child(1) > h4"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "map-selected",
+    "viewport": "320x640",
+    "ms": 3924,
+    "overflowX": 0,
+    "cls": 0,
+    "longTasks": [
+      94,
+      69,
+      71,
+      336,
+      286,
+      367,
+      187,
+      117
+    ],
+    "lcp": 396,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 4,
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "article:nth-child(1) > h4"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "map-research",
+    "viewport": "1440x900",
+    "ms": 4509,
+    "overflowX": 0,
+    "cls": 0.2114,
+    "longTasks": [
+      100,
+      86,
+      118,
+      231,
+      166,
+      54,
+      52,
+      64,
+      57,
+      447,
+      437,
+      241,
+      316,
+      334
+    ],
+    "lcp": 372,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 6,
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "article:nth-child(1) > h4"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "map-research",
+    "viewport": "1280x720",
+    "ms": 3985,
+    "overflowX": 0,
+    "cls": 0.3145,
+    "longTasks": [
+      96,
+      86,
+      117,
+      220,
+      157,
+      50,
+      429,
+      416,
+      87,
+      145,
+      278
+    ],
+    "lcp": 364,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 6,
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "article:nth-child(1) > h4"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "map-research",
+    "viewport": "1024x768",
+    "ms": 3996,
+    "overflowX": 0,
+    "cls": 0.3594,
+    "longTasks": [
+      94,
+      79,
+      107,
+      212,
+      148,
+      419,
+      388,
+      79,
+      136,
+      254
+    ],
+    "lcp": 364,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 6,
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "article:nth-child(1) > h4"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "map-research",
+    "viewport": "390x844",
+    "ms": 3984,
+    "overflowX": 0,
+    "cls": 0.004,
+    "longTasks": [
+      96,
+      70,
+      77,
+      341,
+      315,
+      380,
+      113,
+      371
+    ],
+    "lcp": 396,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 4,
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "article:nth-child(1) > h4"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "map-research",
+    "viewport": "320x640",
+    "ms": 3977,
+    "overflowX": 0,
+    "cls": 0.0026,
+    "longTasks": [
+      96,
+      68,
+      72,
+      204,
+      141,
+      301,
+      367,
+      60,
+      249
+    ],
+    "lcp": 392,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 0,
+    "targetsUnder24px": 5,
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "article:nth-child(1) > h4"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "station",
+    "viewport": "1440x900",
+    "ms": 3919,
+    "overflowX": 0,
+    "cls": 0.1301,
+    "longTasks": [],
+    "lcp": 360,
+    "placeTitleVisible": true,
+    "officialLinkVisible": false,
+    "textUnder12px": 0,
+    "targetsUnder24px": 6,
+    "axe": [
+      {
+        "id": "landmark-one-main",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "html"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "station",
+    "viewport": "1280x720",
+    "ms": 3923,
+    "overflowX": 0,
+    "cls": 0.0724,
+    "longTasks": [],
+    "lcp": 360,
+    "placeTitleVisible": true,
+    "officialLinkVisible": false,
+    "textUnder12px": 0,
+    "targetsUnder24px": 6,
+    "axe": [
+      {
+        "id": "landmark-one-main",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "html"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "station",
+    "viewport": "1024x768",
+    "ms": 3931,
+    "overflowX": 0,
+    "cls": 0.2213,
+    "longTasks": [],
+    "lcp": 360,
+    "placeTitleVisible": true,
+    "officialLinkVisible": false,
+    "textUnder12px": 0,
+    "targetsUnder24px": 6,
+    "axe": [
+      {
+        "id": "landmark-one-main",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "html"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "station",
+    "viewport": "390x844",
+    "ms": 3932,
+    "overflowX": 0,
+    "cls": 0,
+    "longTasks": [],
+    "lcp": 360,
+    "placeTitleVisible": true,
+    "officialLinkVisible": false,
+    "textUnder12px": 0,
+    "targetsUnder24px": 6,
+    "axe": [
+      {
+        "id": "landmark-one-main",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "html"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "station",
+    "viewport": "320x640",
+    "ms": 3924,
+    "overflowX": 0,
+    "cls": 0,
+    "longTasks": [],
+    "lcp": 360,
+    "placeTitleVisible": true,
+    "officialLinkVisible": false,
+    "textUnder12px": 0,
+    "targetsUnder24px": 6,
+    "axe": [
+      {
+        "id": "landmark-one-main",
+        "impact": "moderate",
+        "n": 1,
+        "sample": "html"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "states",
+    "viewport": "1440x900",
+    "ms": 3921,
+    "overflowX": 0,
+    "cls": 0.0004,
+    "longTasks": [],
+    "lcp": 360,
+    "placeTitleVisible": true,
+    "officialLinkVisible": false,
+    "textUnder12px": 0,
+    "targetsUnder24px": 6,
+    "axe": [],
+    "errors": []
+  },
+  {
+    "name": "states",
+    "viewport": "1280x720",
+    "ms": 4015,
+    "overflowX": 0,
+    "cls": 0.0004,
+    "longTasks": [],
+    "lcp": 360,
+    "placeTitleVisible": true,
+    "officialLinkVisible": false,
+    "textUnder12px": 0,
+    "targetsUnder24px": 6,
+    "axe": [],
+    "errors": []
+  },
+  {
+    "name": "states",
+    "viewport": "1024x768",
+    "ms": 4102,
+    "overflowX": 0,
+    "cls": 0.002,
+    "longTasks": [],
+    "lcp": 388,
+    "placeTitleVisible": true,
+    "officialLinkVisible": false,
+    "textUnder12px": 0,
+    "targetsUnder24px": 6,
+    "axe": [],
+    "errors": []
+  },
+  {
+    "name": "states",
+    "viewport": "390x844",
+    "ms": 4053,
+    "overflowX": 0,
+    "cls": 0,
+    "longTasks": [],
+    "lcp": 372,
+    "placeTitleVisible": true,
+    "officialLinkVisible": false,
+    "textUnder12px": 0,
+    "targetsUnder24px": 5,
+    "axe": [],
+    "errors": []
+  },
+  {
+    "name": "states",
+    "viewport": "320x640",
+    "ms": 3988,
+    "overflowX": 16,
+    "cls": 0,
+    "longTasks": [],
+    "lcp": 368,
+    "placeTitleVisible": true,
+    "officialLinkVisible": false,
+    "textUnder12px": 0,
+    "targetsUnder24px": 4,
+    "axe": [],
+    "errors": []
+  },
+  {
+    "name": "directions-c",
+    "viewport": "1440x900",
+    "ms": 3916,
+    "overflowX": 0,
+    "cls": 0.042,
+    "longTasks": [
+      194,
+      123,
+      80,
+      67,
+      450,
+      249,
+      109,
+      93,
+      167,
+      326,
+      371,
+      281,
+      127
+    ],
+    "lcp": 556,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 3,
+    "targetsUnder24px": 2,
+    "axe": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "n": 10,
+        "sample": ".dir-switch"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "directions-c",
+    "viewport": "1280x720",
+    "ms": 3874,
+    "overflowX": 0,
+    "cls": 0.0582,
+    "longTasks": [
+      106,
+      147,
+      53,
+      101,
+      160,
+      388,
+      105,
+      120,
+      531,
+      350,
+      228,
+      167
+    ],
+    "lcp": 408,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 3,
+    "targetsUnder24px": 2,
+    "axe": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "n": 10,
+        "sample": ".dir-switch"
+      },
+      {
+        "id": "scrollable-region-focusable",
+        "impact": "serious",
+        "n": 1,
+        "sample": "article"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "directions-c",
+    "viewport": "1024x768",
+    "ms": 3936,
+    "overflowX": 0,
+    "cls": 0.0742,
+    "longTasks": [
+      151,
+      164,
+      60,
+      313,
+      434,
+      66,
+      102,
+      288,
+      502,
+      331,
+      131,
+      157
+    ],
+    "lcp": 436,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 3,
+    "targetsUnder24px": 2,
+    "axe": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "n": 10,
+        "sample": ".dir-switch"
+      },
+      {
+        "id": "scrollable-region-focusable",
+        "impact": "serious",
+        "n": 1,
+        "sample": "article"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "directions-c",
+    "viewport": "390x844",
+    "ms": 3886,
+    "overflowX": 0,
+    "cls": 0.0012,
+    "longTasks": [
+      135,
+      116,
+      68,
+      66,
+      364,
+      509,
+      59,
+      105,
+      411,
+      234,
+      190,
+      63
+    ],
+    "lcp": 416,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 3,
+    "targetsUnder24px": 2,
+    "axe": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "n": 10,
+        "sample": ".dir-switch"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "directions-c",
+    "viewport": "320x640",
+    "ms": 3879,
+    "overflowX": 0,
+    "cls": 0.0024,
+    "longTasks": [
+      173,
+      199,
+      52,
+      514,
+      70,
+      78,
+      611,
+      51
+    ],
+    "lcp": 436,
+    "placeTitleVisible": true,
+    "officialLinkVisible": true,
+    "textUnder12px": 3,
+    "targetsUnder24px": 2,
+    "axe": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "n": 10,
+        "sample": ".dir-switch"
+      }
+    ],
+    "errors": []
+  }
+]

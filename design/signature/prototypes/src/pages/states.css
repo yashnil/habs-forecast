@@ -13,7 +13,7 @@
 .wf-fill[data-done="true"] { background: var(--cw-accent); }
 .wf-fill[data-ok="false"] { background: repeating-linear-gradient(135deg, var(--cw-gap-hatch) 0 2px, transparent 2px 5px); outline: 1px solid var(--cw-gap); }
 .wf-t { text-align: right; }
-.st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 16px; }
 .spec { display: grid; gap: 10px; align-content: start; padding: 20px; border-radius: var(--cw-r-lg); background: var(--cw-surface); border: 1px solid var(--cw-hairline); }
 .spec-demo { border-top: 1px solid var(--cw-hairline); border-bottom: 1px solid var(--cw-hairline); }
 .spec-row { border-bottom: 0; }
@@ -22,6 +22,9 @@
 .st-rules { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 760px; }
 .st-probe { display: grid; gap: 8px; max-width: 320px; }
 @media (max-width: 640px) {
+  .wf-row > * { min-width: 0; }
+  .wf-l { overflow-wrap: anywhere; }
+  .st-profiles .chip { padding: 0 10px; }
   .st { padding: 24px 16px 64px; }
   .wf-row { grid-template-columns: 22px 1fr 56px; }
   .wf-bar { grid-column: 2 / 4; }

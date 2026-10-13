@@ -68,11 +68,12 @@ function StationView({ station, off }: { station: StationWithModel | undefined; 
   const loading = !station;
 
   return (
-    <div className="st-page">
+    <main className="st-page">
       <nav className="st-crumbs t-meta" aria-label="Breadcrumb">
         <a href="#/">Prototypes</a> <span aria-hidden="true">/</span> Blooms <span aria-hidden="true">/</span> <span aria-current="page">{station?.name ?? "Station"}</span>
       </nav>
 
+      <p className="st-status t-meta"><span className="mark mark-rule" aria-hidden="true" /> Official notices may be incomplete. Before harvesting or eating seafood, check <a className="ext" href="https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories" target="_blank" rel="noopener">CDFW</a> and <a className="ext" href="https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx" target="_blank" rel="noopener">CDPH</a>.</p>
       <header className="st-head">
         <div>
           <p className="st-kind t-label"><span className="mark mark-sample" aria-hidden="true" /> Shore station, measured about weekly</p>
@@ -174,7 +175,7 @@ function StationView({ station, off }: { station: StationWithModel | undefined; 
           )}
         </aside>
       </div>
-    </div>
+    </main>
   );
 }
 

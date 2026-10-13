@@ -37,7 +37,7 @@ export function Atlas({ st, mobile }: { st: DirState; mobile: boolean }) {
       </header>
       <StatusLine className="at-status" />
       <div className="at-body">
-        <article className="at-col">
+        <article className="at-col" tabIndex={0} aria-label="Reading column">
           <p className="at-dateline">{fmtDay(f.validFor, { weekday: true, year: true })} · Monterey Bay</p>
           <h1 className="at-head">{f.nCoverWord} notices cover the water off Santa Cruz. The nearest sample is {f.station.ageDays} days old.</h1>
           {mobile && plate}
@@ -47,10 +47,10 @@ export function Atlas({ st, mobile }: { st: DirState; mobile: boolean }) {
             <li value={3}><span className="mark mark-field" aria-hidden="true" /><p><b>{f.cls ? `${f.cls.lo}–${f.cls.hi} % chance` : "No value"}</b> in this cell for {fmtDay(f.validFor)}: {f.threshold.toLowerCase()}. A forecast of the water, not a test of seafood.</p></li>
             <li value={4}><span className="mark mark-rule" aria-hidden="true" /><p><b>Official limit</b> {f.limitText}. Check which side you are on.</p></li>
           </ol>
-          <aside className="at-margin">
+          <section className="at-margin" aria-label="Margin notes">
             <p><span className="mark mark-gap" aria-hidden="true" /> <b>Not known.</b> {f.gaps.join(". ")}.</p>
             {f.disputed && <p><span className="mark mark-rule mark-rule-broken" aria-hidden="true" /> <b>Under review.</b> {f.disputed.by.agency} {f.disputed.by.release} appears to lift “{f.disputed.record.title}”; not shown as in effect.</p>}
-          </aside>
+          </section>
         </article>
         {!mobile && plate}
       </div>

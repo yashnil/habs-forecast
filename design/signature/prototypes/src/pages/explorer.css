@@ -70,7 +70,8 @@
 .place-head .t-coord { margin-top: 6px; }
 .place-head { margin-bottom: 14px; }
 
-.oneline { font: var(--cw-t-lead); color: var(--cw-ink); margin: 0 0 16px; text-wrap: pretty; }
+.oneline { font: var(--cw-t-lead); color: var(--cw-ink); margin: 0 0 16px; text-wrap: pretty; min-height: calc(3 * 1.5em); }
+.ledger-body .ledger-disputed { margin: 4px 0 0; }
 .ol-part .mark { margin-right: 7px; }
 .ol-part + .ol-part { margin-left: 2px; }
 
@@ -303,3 +304,5 @@
 .lrow-note { color: var(--cw-official); font-weight: 500; }
 .legend-ramp-smooth { display: block; }
 .legend .mark-pixel { --cw-measured: #4fd1ae; }
+.ledger-hold { min-height: 720px; background: linear-gradient(var(--cw-hairline), var(--cw-hairline)) 0 0 / 100% 1px no-repeat; }
+.mh-notices .num { min-width: 2ch; text-align: center; }

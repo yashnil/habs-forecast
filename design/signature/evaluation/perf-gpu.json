@@ -1,0 +1,18 @@
+{
+ "journeyFrames": 206,
+ "frameP50": "16.7",
+ "frameP95": "16.7",
+ "frameMax": "16.8",
+ "over33ms": 0,
+ "dayLatencyMs": [
+  13,
+  58,
+  84,
+  48
+ ],
+ "selectLatencyMs": [
+  17,
+  12,
+  9
+ ]
+}

@@ -15,7 +15,7 @@ for (const spec of specs) {
   if (!m) { console.error("bad spec", spec); continue; }
   const [, name, hash, w, h, acts] = m;
   const reduced = name.includes("reduced");
-  const ctx = await browser.newContext({ viewport: { width: +w, height: +h }, deviceScaleFactor: 2, reducedMotion: reduced ? "reduce" : "no-preference", hasTouch: +w < 700, isMobile: +w < 700 });
+  const ctx = await browser.newContext({ viewport: { width: +w, height: +h }, deviceScaleFactor: +(process.env.DPR ?? 2), reducedMotion: reduced ? "reduce" : "no-preference", hasTouch: +w < 700, isMobile: +w < 700 });
   const page = await ctx.newPage();
   const errors = [];
   page.on("console", (msg) => { if (msg.type() === "error") errors.push(msg.text().slice(0, 300)); });
@@ -37,7 +37,7 @@ for (const spec of specs) {
   await page.waitForTimeout(700);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   const file = path.join(out, `${name}.jpg`);
-  await page.screenshot({ path: file, fullPage: full, type: "jpeg", quality: 82 });
+  await page.screenshot({ path: file, fullPage: full, type: "jpeg", quality: +(process.env.Q ?? 82) });
   report.push({ name, hash, viewport: `${w}x${h}`, overflow, errors });
   console.log(`${name}: overflow=${overflow} errors=${errors.length}${errors.length ? " — " + errors[0] : ""}`);
   await ctx.close();

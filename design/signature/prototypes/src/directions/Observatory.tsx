@@ -38,7 +38,7 @@ export function Observatory({ st, mobile }: { st: DirState; mobile: boolean }) {
             {ticks.y.map((t) => <span key={"y" + t.label} className="obs-ty" style={{ top: t.pos }}>{t.label}</span>)}
           </div>
         )}
-        <aside className="obs-rail" aria-label="Inspector">
+        <section className="obs-rail" aria-label="Inspector">
           <h1 className="obs-place">{f.place}</h1>
           <section className="obs-sec">
             <p className="obs-k"><span className="mark mark-field" aria-hidden="true" />Modelled · C-HARM particulate domoic acid</p>
@@ -65,7 +65,7 @@ export function Observatory({ st, mobile }: { st: DirState; mobile: boolean }) {
             <ul className="obs-gaps">{f.gaps.map((g) => <li key={g}>{g}</li>)}</ul>
           </section>
           <p className="obs-foot t-coord">nearest limit {f.limit ? fmtKm(f.limit.km) : "—"} · station {fmtKm(f.station.km)}</p>
-        </aside>
+        </section>
         <div className="obs-legend" aria-hidden="true">
           <span>class lines</span>
           {Array.from({ length: 10 }, (_, i) => <i key={i} style={{ background: `var(--cw-p${i})` }} />)}

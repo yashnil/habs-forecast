@@ -114,3 +114,8 @@
 
 .seg-short { display: none; }
 @media (max-width: 520px) { .seg-long { display: none; } .seg-short { display: inline; } .seg { flex-wrap: nowrap; } .seg-opt { padding: 0 11px; } }
+
+.st-status { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin: 4px 0 18px; padding: 8px 12px; border-radius: 10px; background: var(--cw-surface); box-shadow: inset 3px 0 0 var(--cw-official-line); color: var(--cw-ink-2); }
+
+/* reserve the loaded header height so the chart does not jump when data arrives */
+@media (min-width: 900px) { .st-head { min-height: 209px; } }

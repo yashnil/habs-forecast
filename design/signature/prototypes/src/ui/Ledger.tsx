@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { OFFICIAL_LINKS } from "../content/links";
 import type { Res } from "../data/store";
 import type { Manifest } from "../data/types";
@@ -29,6 +29,13 @@ export function Ledger(props: {
 }) {
   const { reading: r, research } = props;
   const [open, setOpen] = useState<RowKind | null>(research ? "model" : null);
+  // Research opens every row (Level 3). Rows that open as data arrives would push each other
+  // down, so the expanded ledger waits for its sources to settle (at most 800 ms) behind a
+  // skeleton of the same size, then appears at once.
+  const settled = [props.official, props.observations, props.forecast].every((x) => x.status !== "loading");
+  const [waited, setWaited] = useState(false);
+  useEffect(() => { if (!research) return; const t = setTimeout(() => setWaited(true), 800); return () => clearTimeout(t); }, [research]);
+  if (research && !settled && !waited) return <div className="ledger ledger-hold" aria-busy="true"><span className="sr-only">Loading</span></div>;
   const saved = (k: RowKind) => ((k === "official" ? props.official : k === "measured" ? props.observations : k === "model" ? props.forecast : null)?.status === "cached" ? "saved copy on this device" : undefined);
   const row = (kind: RowKind, mark: string, title: React.ReactNode, meta: React.ReactNode, body: React.ReactNode, state: "ready" | "loading" | "failed" = "ready") => (
     <LedgerRow key={kind} kind={kind} note={saved(kind)} mark={mark} title={title} meta={meta} state={state} open={open === kind || research}
@@ -47,7 +54,8 @@ export function Ledger(props: {
   const officialTitle = offState === "failed" ? "Notices could not be loaded" : applies.length
     ? `${applies.length} ${applies.length === 1 ? "notice covers" : "notices cover"} these waters${props.species ? ` for ${props.species}` : ""}`
     : may.length ? `${may.length} ${may.length === 1 ? "notice" : "notices"} may cover these waters` : "No notice's official limits include these waters";
-  const officialMeta = offState === "failed" ? "Check the agencies directly" : applies.length || may.length ? "From CDFW and CDPH · not verified by CoastWatch" : "That is not the same as safe or open";
+  const disputedNote = r?.disputed.length ? ` · ${r.disputed.length} reported lifted, awaiting review` : "";
+  const officialMeta = (offState === "failed" ? "Check the agencies directly" : applies.length || may.length ? "From CDFW and CDPH · not verified by CoastWatch" : "That is not the same as safe or open") + disputedNote;
 
   /* ------------------------------------------------ measured (station) */
   const st = r?.station;
@@ -86,7 +94,15 @@ export function Ledger(props: {
 
   return (
     <div className="ledger" data-level={research ? 3 : undefined}>
-      {r?.disputed.length ? (
+      <h2 className="sr-only">What is known about these waters</h2>
+      {row("official", "mark-rule", officialTitle, officialMeta, (
+        <div className="ledger-body">
+          {[...applies, ...may].map((n) => <NoticeLine key={n.record.id} n={n} research={research} />)}
+          {!applies.length && !may.length && <p className="t-meta">Statewide and nearby notices are in the full list. A missing notice does not mean an area is open or that seafood is safe.</p>}
+          {nearbyOutside.length > 0 && (
+            <p className="t-meta">Nearby but outside its official limits: {nearbyOutside.map((n) => `${n.record.agency} ${shortTitle(n.record.title)} (limit ${fmtKm(n.nearestLimit!.km)} ${n.nearestLimit!.which === "south" ? "north" : "south"} of here)`).join("; ")}.</p>
+          )}
+          {r?.disputed.length ? (
         <div className="ledger-disputed enter">
           <span className="mark mark-rule mark-rule-broken" aria-hidden="true" />
           <div>
@@ -95,14 +111,7 @@ export function Ledger(props: {
             <p className="t-micro">Prototype fixture mirroring PR #40</p>
           </div>
         </div>
-      ) : null}
-      {row("official", "mark-rule", officialTitle, officialMeta, (
-        <div className="ledger-body">
-          {[...applies, ...may].map((n) => <NoticeLine key={n.record.id} n={n} research={research} />)}
-          {!applies.length && !may.length && <p className="t-meta">Statewide and nearby notices are in the full list. A missing notice does not mean an area is open or that seafood is safe.</p>}
-          {nearbyOutside.length > 0 && (
-            <p className="t-meta">Nearby but outside its official limits: {nearbyOutside.map((n) => `${n.record.agency} ${shortTitle(n.record.title)} (limit ${fmtKm(n.nearestLimit!.km)} ${n.nearestLimit!.which === "south" ? "north" : "south"} of here)`).join("; ")}.</p>
-          )}
+          ) : null}
           <OfficialActions />
         </div>
       ), offState)}
@@ -166,7 +175,7 @@ function LedgerRow({ kind, mark, title, meta, state, open, onToggle, onHover, ch
         <span className="lrow-chev" aria-hidden="true" />
       </button>
       <div className="reveal" data-open={open} id={id}>
-        <div>{state === "ready" ? children : state === "failed" ? <div className="ledger-body"><p className="t-meta">This part could not be loaded. Everything else on this page is unaffected.</p><OfficialActions /></div> : null}</div>
+        <div>{state === "loading" ? <div className="ledger-body" aria-hidden="true"><span className="skel skel-line" style={{ width: "90%" }} /><span className="skel skel-line" style={{ width: "60%" }} /></div> : state === "ready" ? children : state === "failed" ? <div className="ledger-body"><p className="t-meta">This part could not be loaded. Everything else on this page is unaffected.</p><OfficialActions /></div> : null}</div>
       </div>
     </section>
   );
@@ -179,7 +188,7 @@ function NoticeLine({ n, research }: { n: NoticeGeo; research: boolean }) {
   return (
     <article className="notice">
       <p className="t-micro notice-agency">{r.agency} · {ACTION[r.action] ?? r.action}{n.tier === "unresolved" ? " · may apply" : ""}</p>
-      <h4 className="notice-title">{r.title}</h4>
+      <h3 className="notice-title">{r.title}</h3>
       <p className="t-meta">
         {r.effective_date && <>Since {fmtDay(r.effective_date, { weekday: true })} · </>}
         {r.sources[0] && <a href={r.sources[0].url} target="_blank" rel="noopener" className="ext">{r.sources[0].label}</a>}
