@@ -53,7 +53,8 @@ jobs:
           uv run cwp fixture --scenario charm-failed --out ../coastwatch-web/tests/fixture-data-failed/v1
           git diff --exit-code -- '../coastwatch-web/tests/*.json' '../coastwatch-web/tests/*.geojson'
 
-  web:
+  web-static:
+    # generated types, lint, typecheck and unit tests (fast; runs beside the browser shards)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -75,6 +76,29 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+
+  web-e2e:
+    # the browser suite in two halves on two runners (each builds once)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    defaults:
+      run:
+        working-directory: coastwatch-web
+    env:
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: coastwatch-web/package-lock.json
+      - run: npm ci
       - run: npx playwright install --with-deps chromium
       - name: Reuse the Next.js build cache (keyed on the lockfile and the sources)
         uses: actions/cache@v4
@@ -82,14 +106,29 @@ jobs:
           path: coastwatch-web/.next/cache
           key: nextjs-${{ hashFiles('coastwatch-web/package-lock.json') }}-${{ hashFiles('coastwatch-web/src/**') }}
           restore-keys: nextjs-${{ hashFiles('coastwatch-web/package-lock.json') }}-
-      - name: Production build + end-to-end tests on fixture data
-        run: npm run test:e2e
+      - name: Production build + end-to-end tests on fixture data (shard ${{ matrix.shard }} of 2)
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/2
       - name: Keep the browser-test evidence when a test fails
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: |
             coastwatch-web/playwright-report
             coastwatch-web/test-results
           retention-days: 14
+
+  web:
+    # The stable check name for the web: passes only if the static checks and every browser
+    # shard passed. It always runs (if: always()), so a failed or cancelled part is a failure
+    # here, never a "skipped" check that could read as passing.
+    needs: [web-static, web-e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: All web checks passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "web-static and web-e2e: $RESULTS"
+          for r in $RESULTS; do [ "$r" = "success" ] || { echo "a web check did not pass ($r)"; exit 1; }; done
