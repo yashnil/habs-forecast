@@ -19,6 +19,7 @@ import { SatelliteNear, type SatelliteResult } from "@/components/map/SatelliteN
 import { CurrentsNear } from "@/components/map/CurrentsNear";
 import { useRegistryDisclosure } from "@/components/shell/OfficialShell";
 import { currentsHourly } from "@/lib/currents";
+import { Mark } from "@/components/ui/Mark";
 
 // ---------------------------------------------------------------- shared bits
 
@@ -47,7 +48,7 @@ function NoticeItem({ a, muted = false }: { a: Association; muted?: boolean }) {
   const src = r.sources[0];
   return (
     <li className={`border-t border-official-line/60 py-3 first:border-t-0 first:pt-0 ${muted ? "opacity-[0.92]" : ""}`} data-testid={`coast-notice-${r.id}`} data-tier={a.tier}>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] font-semibold uppercase tracking-[0.06em]">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium">
         <span className="rounded border border-official-line px-1.5 py-px text-official-ink">{r.agency}</span>
         <span className="text-official-ink">{ACTION_LABEL[r.action]}</span>
         <span className="text-ink-2">{AUDIENCE[r.fishery].label}</span>
@@ -118,13 +119,13 @@ export function OfficialSection({
       <SectionHead id="coast-official-h" kind="official" title="Official information" aside={<VerificationBadge v={verification} />} />
       <p className="text-[14px] text-ink-2">{COAST_COPY.unreviewed} The notices themselves are transcribed from the agencies&apos; pages and not verified.</p>
       {reg.changed && (
-        <p className="rounded-lg bg-official-bg px-3 py-2 text-[14px] text-official-ink" role="note" data-testid="coast-registry-changed">
+        <p className="rounded-lg border border-hairline border-l-[3px] border-l-official-line bg-surface px-3 py-2 text-[14px] text-official-ink" role="note" data-testid="coast-registry-changed">
           {reg.reason} A notice may have been issued or lifted since; the agency pages below decide.
         </p>
       )}
       {disputed.length > 0 && (
         <div className="rounded-2xl border-2 border-dashed border-warning/60 bg-surface px-4 py-4 sm:px-5" data-testid="coast-notices-disputed" role="note">
-          <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-warning">Reported lifted by the agency · awaiting review</h3>
+          <h3 className="text-[13.5px] font-semibold text-warning">Reported lifted by the agency · awaiting review</h3>
           <p className="mt-1 text-[14px] text-ink-2">
             The agency has published a release that appears to lift {disputed.length === 1 ? "this notice" : "these notices"}. Until a person reviews it, CoastWatch does not show {disputed.length === 1 ? "it" : "them"} as in effect. Read the release.
           </p>
@@ -146,8 +147,8 @@ export function OfficialSection({
       {!official ? (
         <p className="text-[15px] text-ink-2">The list of official notices is unavailable right now. Check CDFW and CDPH directly (below).</p>
       ) : (
-        <div className="rounded-2xl border border-official-line bg-official-bg px-4 py-4 sm:px-5">
-          <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-official-ink">Apply here by their official geography</h3>
+        <div className="rounded-2xl border border-hairline border-l-[3px] border-l-official-line bg-surface px-4 py-4 sm:px-5">
+          <h3 className="cw-kind text-[13.5px] font-semibold text-official-ink"><Mark kind="official" />Apply here by their official geography</h3>
           {geoFit.length ? (
             <ul className="mt-3" data-testid="coast-notices-geo">
               {geoFit.map((a) => (
@@ -177,7 +178,7 @@ export function OfficialSection({
 
       {unresolved.length > 0 && (
         <div className="rounded-2xl border border-official-line/70 bg-surface px-4 py-4 sm:px-5" data-testid="coast-notices-unresolved">
-          <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-official-ink">May apply: not settled by their official geography</h3>
+          <h3 className="cw-kind text-[13.5px] font-semibold text-official-ink"><Mark kind="official" />May apply: not settled by their official geography</h3>
           <p className="mt-1 text-[14px] text-ink-2">Their stated area does not show whether they cover these waters. Check each notice&apos;s agency source before fishing or harvesting here.</p>
           <ul className="mt-3">
             {unresolved.map((a) => (
@@ -439,8 +440,8 @@ function AvailRow({ title, threshold, a, valid }: { title: string; threshold: st
             <b className="font-semibold">No forecast for these waters.</b> <span className="text-ink-2">The model has no value in the cell that contains them.</span>
           </p>
           {a.nearest && (
-            <div className="mt-2 rounded-lg bg-model-bg/60 px-3 py-2.5 text-[14px]" data-testid="coast-model-nearest">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-model-ink">Nearest cell with a value: not a forecast for these waters</p>
+            <div className="mt-2 rounded-lg border border-hairline px-3 py-2.5 text-[14px]" data-testid="coast-model-nearest">
+              <p className="cw-kind text-model-ink"><Mark kind="model" />Nearest cell with a value: not a forecast for these waters</p>
               <p className="mt-1 text-ink-2">
                 <span className="font-semibold text-ink tabular">{fmtPct(a.nearest.value)}</span> at the cell centred {a.nearest.km.toFixed(1)} km {a.nearest.bearing} of here (
                 <span className="tabular">{fmtCell(a.nearest.cell.lat, a.nearest.cell.lon)}</span>){valid ? `, valid ${valid}` : ""}.

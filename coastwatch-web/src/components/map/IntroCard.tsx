@@ -136,7 +136,7 @@ export function IntroCard({ className = "", onTour, places, suppressed = false }
       className={`theme-paper cw-pop-in rounded-xl bg-surface p-4 text-ink shadow-[0_1px_2px_rgba(6,17,30,0.14),0_6px_18px_rgba(6,17,30,0.24)] ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3" data-testid="intro-progress">
+        <p className="text-[13px] font-medium text-ink-3" data-testid="intro-progress">
           Welcome · {step} of 2
         </p>
         <button type="button" onClick={done} aria-label="Close the welcome" className="-mr-2 -mt-2 grid h-10 w-10 shrink-0 place-items-center rounded-md text-ink-3 hover:bg-surface-3 hover:text-ink" data-testid="intro-close">

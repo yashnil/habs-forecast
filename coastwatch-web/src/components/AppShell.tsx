@@ -3,6 +3,7 @@ import { RESEARCH } from "@/content/copy";
 import { ModeSwitch, PrimaryNav } from "@/components/shell/ModeNav";
 import { SourceHealthDot } from "@/components/SourceHealthDot";
 import { OfficialDrawer, OfficialPill, OfficialProvider, TabBar } from "@/components/shell/OfficialShell";
+import { MastheadMenu } from "@/components/shell/MastheadMenu";
 import type { Manifest, SourceStatus } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 
@@ -41,7 +42,7 @@ export function AppShell({
       </a>
       <div className={`flex min-h-dvh flex-col bg-page pb-[var(--cw-tabbar-h)] md:pb-0 ${scroll === "app" ? "lg:h-dvh" : ""}`}>
         <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-navy-950 text-on-navy">
-          <div className="flex h-[52px] min-w-0 items-center gap-3 px-3 min-[360px]:gap-6 min-[360px]:px-4 md:h-[var(--cw-masthead-h)] md:gap-5 md:px-6 lg:gap-8">
+          <div className="flex h-[52px] min-w-0 items-center gap-3 px-3 min-[360px]:px-4 min-[400px]:gap-6 md:h-[var(--cw-masthead-h)] md:gap-5 md:px-6 lg:gap-8">
             <Link href="/" className="flex shrink-0 items-center gap-2 min-[360px]:gap-2.5" aria-label="CoastWatch home">
               <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden>
                 <rect width="32" height="32" rx="8" fill="#10263e" />
@@ -70,16 +71,18 @@ export function AppShell({
                 href="/sources"
                 data-testid="data-status-link"
                 aria-current={active === "sources" ? "page" : undefined}
-                className={`flex items-center gap-2 rounded-md px-1.5 py-1.5 text-[14px] ${active === "sources" ? "text-white" : "text-on-navy-2 hover:text-on-navy"}`}
+                className={`items-center gap-2 rounded-md px-1.5 py-1.5 text-[14px] max-md:hidden md:flex ${active === "sources" ? "text-white" : "text-on-navy-2 hover:text-on-navy"}`}
               >
                 <SourceHealthDot manifest={manifest} />
                 <span className="hidden whitespace-nowrap lg:inline">Data status</span>
                 <span className="sr-only lg:hidden">Data status</span>
               </Link>
+              <MastheadMenu active={active} />
             </div>
           </div>
+          {/* the status line is part of the masthead: one navy band, not a second cream bar (signature P1) */}
+          {banner}
         </header>
-        {banner}
         <main id="main" tabIndex={-1} className={`flex min-h-0 flex-1 flex-col outline-none ${scroll === "app" ? "theme-dark" : ""}`}>
           {children}
         </main>

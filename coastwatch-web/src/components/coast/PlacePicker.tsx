@@ -121,7 +121,7 @@ export function PlacePicker({
             if (!items.length) return null;
             return (
               <div key={g.kind} role="group" aria-label={g.title}>
-                <p className="px-3 pb-1 pt-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3" aria-hidden>
+                <p className="px-3 pb-1 pt-2 text-[13px] font-medium text-ink-3" aria-hidden>
                   {g.title}
                 </p>
                 {items.map((p) => {

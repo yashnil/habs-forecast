@@ -36,7 +36,8 @@ import { PurposeSwitch } from "@/components/welcome/PurposeSwitch";
 import { defaultAudience, sectionOrder, usePurpose } from "@/lib/purpose";
 import { MeasuredSection, ModelSection, ObservedSection, OfficialSection, UnknownsSection, useModel } from "./CoastSections";
 import type { SatelliteResult } from "@/components/map/SatelliteNear";
-import { ConditionsCard, NextSteps, OfficialBrief, PlanBar, fmtWhen, useConditions } from "./Briefing";
+import { AnswerLine, ConditionsCard, NextSteps, OfficialBrief, PlanBar, fmtWhen, officialAnswer, useConditions, type AnswerClause } from "./Briefing";
+import { MEASURED_RECENT_DAYS } from "@/components/ui/Mark";
 import { speciesById, type SpeciesId } from "@/content/species";
 import { useMode } from "@/lib/mode";
 import { ModeSwitch } from "@/components/shell/ModeNav";
@@ -224,10 +225,14 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     />
   );
 
-  const header = (
+  const [picking, setPicking] = useState(false);
+  useEffect(() => setPicking(false), [place?.key]);
+  const actionLink = "min-h-[32px] font-medium text-accent hover:underline";
+  // a function: the answer line below it is computed further down
+  const header = () => (
     <header className="space-y-3 sm:space-y-4" data-testid="coast-header">
       <div>
-        <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-accent">{COAST_COPY.title}</p>
+        <p className="text-[13px] font-medium text-accent">{COAST_COPY.title}</p>
         <div className="mt-1 flex items-start justify-between gap-3">
           <h1 className="text-balance font-display text-[30px] font-medium leading-[1.08] text-ink sm:text-[40px]" data-testid="coast-title">
             {place ? place.name : "Choose the waters you care about"}
@@ -235,44 +240,52 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
           {place && <CopyLink />}
         </div>
         {place ? (
-          <p className="mt-1.5 text-[15px] text-ink-2" data-testid="coast-subtitle">
-            {place.note}
-            {place.county ? ` · ${place.county} County` : ""}
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[15px] text-ink-2" data-testid="coast-subtitle">
+            <span>
+              {place.note}
+              {place.county ? ` · ${place.county} County` : ""}
+            </span>
+            <button type="button" aria-expanded={picking} onClick={() => setPicking(!picking)} className={actionLink} data-testid="coast-change">
+              {picking ? "Close" : "Change place"}
+            </button>
           </p>
         ) : (
           <p className="mt-2 max-w-[60ch] text-[17px] leading-relaxed text-ink-2">{COAST_COPY.lede}</p>
         )}
         {!place && placeKey && (
-          <p className="mt-2 rounded-lg bg-official-bg px-3 py-2 text-[14px] text-official-ink" role="status" data-testid="coast-unknown-place">
+          <p className="mt-2 rounded-lg border border-hairline border-l-[3px] border-l-official-line bg-surface px-3 py-2 text-[14px] text-official-ink" role="status" data-testid="coast-unknown-place">
             The place in this link (“{placeKey}”) is not one CoastWatch knows. Choose a port, a harvest site or a point on the map.
           </p>
         )}
       </div>
-      <PlacePicker places={allPlaces} current={place} onPick={pick} />
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px]" data-testid="coast-home">
-        {home ? (
-          <>
-            <span className="text-ink-2">
-              Home port: <b className="font-semibold text-ink">{home.name}</b>
-            </span>
-            {place?.key !== home.key && (
-              <button type="button" onClick={() => pick(home)} className="min-h-[32px] font-medium text-accent hover:underline" data-testid="coast-home-open">
-                Show home port
-              </button>
-            )}
-            <button type="button" onClick={() => setHome(null)} className="min-h-[32px] text-ink-3 hover:text-ink" data-testid="coast-home-clear">
-              Clear
-            </button>
-          </>
-        ) : place?.kind === "port" ? (
-          <button type="button" onClick={() => setHome(place.key)} className="min-h-[32px] font-medium text-accent hover:underline" data-testid="coast-home-set">
-            Make {place.name} my home port
-          </button>
-        ) : (
-          <span className="text-ink-3">Save a home port to return to it; it is kept on this device only.</span>
-        )}
-      </div>
+      {(!place || picking) && <PlacePicker places={allPlaces} current={place} onPick={pick} />}
+      {place && answer && <AnswerLine clauses={answer} />}
     </header>
+  );
+  const homeLine = (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px]" data-testid="coast-home">
+      {home ? (
+        <>
+          <span className="text-ink-2">
+            Home port: <b className="font-semibold text-ink">{home.name}</b>
+          </span>
+          {place?.key !== home.key && (
+            <button type="button" onClick={() => pick(home)} className={actionLink} data-testid="coast-home-open">
+              Show home port
+            </button>
+          )}
+          <button type="button" onClick={() => setHome(null)} className="min-h-[32px] text-ink-3 hover:text-ink" data-testid="coast-home-clear">
+            Clear
+          </button>
+        </>
+      ) : place?.kind === "port" ? (
+        <button type="button" onClick={() => setHome(place.key)} className={actionLink} data-testid="coast-home-set">
+          Make {place.name} my home port
+        </button>
+      ) : (
+        <span className="text-ink-3">Save a home port to return to it; it is kept on this device only.</span>
+      )}
+    </div>
   );
 
   const lastToxin = st.near
@@ -297,6 +310,24 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     : "NOAA C-HARM";
   const satelliteLine =
     sat === null ? "Reading…" : sat.date && now ? `Clear view ${formatDate(sat.date)} (${ageWords(ageDays(sat.date, now))})` : "No clear view this week (cloud, fog or no overpass)";
+  const official1 = officialAnswer(assocs, audience, species);
+  const answer: AnswerClause[] | null =
+    place && modeRead
+      ? [
+          {
+            kind: "official",
+            testid: "answer-official",
+            text:
+              official1.headline + (official1.disputed.length ? ` · ${official1.disputed.length} more reported lifted, awaiting review` : ""),
+          },
+          toxin
+            ? { kind: "measured", testid: "answer-measured", aged: toxin.ageDays > MEASURED_RECENT_DAYS, text: `Toxin last measured at ${toxin.station} (${toxin.km < 10 ? toxin.km.toFixed(1) : Math.round(toxin.km)} km), ${ageWords(toxin.ageDays)}` }
+            : { kind: "gap", testid: "answer-measured", text: stationsError ? "Shore measurements could not be loaded" : "No toxin sample within 40 km" },
+          model?.pda?.here
+            ? { kind: "model", testid: "answer-model", text: `Model: ${Math.round(model.pda.here.value * 100)}% probability that toxin in the water exceeds the model threshold (this 3 km cell${model.layer?.time.valid_date ? `, ${formatDate(model.layer.time.valid_date)}` : ""})` }
+            : { kind: "gap", testid: "answer-model", text: !model ? "Reading the toxin forecast" : model.error ? "No toxin forecast run is available" : "No toxin forecast for these waters: the model leaves out many nearshore cells" },
+        ]
+      : null;
   const steps = useMemo(
     () =>
       place
@@ -329,7 +360,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
 
   const landing = !place && (
     <section aria-labelledby="coast-start-h" className="space-y-3" data-testid="coast-landing">
-      <h2 id="coast-start-h" className="text-[13px] font-semibold uppercase tracking-[0.08em] text-ink-3">
+      <h2 id="coast-start-h" className="text-[13.5px] font-semibold text-ink-3">
         Start with
       </h2>
       <ul className="grid gap-2 sm:grid-cols-2">
@@ -361,18 +392,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   return (
     <div className="lg:grid lg:grid-cols-[minmax(0,620px)_minmax(0,1fr)]" data-testid="my-coast">
       <div className="min-w-0 space-y-5 px-4 pb-24 pt-4 sm:space-y-8 sm:px-8 sm:pt-6 lg:pb-16">
-        {header}
-        {place && (
-          <PlanBar
-            audience={audience}
-            onAudience={(a) => go({ for: a }, "replace")}
-            species={species}
-            onSpecies={(x) => go({ species: x }, "replace")}
-            leads={leads}
-            lead={leadNow}
-            onLead={setLead}
-          />
-        )}
+        {header()}
+        {place && <PlanBar audience={audience} onAudience={(a) => go({ for: a }, "replace")} species={species} onSpecies={(x) => go({ species: x }, "replace")} />}
         {place && modeRead && (
           <>
             <OfficialBrief
@@ -384,7 +405,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
               onAll={(el) => openDrawer(el)}
               onDetails={openDetails}
             />
-            {viewMode === "coastal" && <NextSteps steps={steps} />}
+            {viewMode === "coastal" && <NextSteps steps={steps} conditionsShown />}
           </>
         )}
         <div className={`h-[38vh] min-h-[240px] overflow-hidden rounded-2xl lg:hidden ${place ? "" : "hidden"}`} data-testid="coast-map-mobile">
@@ -404,6 +425,9 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
               forecastSub={forecastSub}
               satelliteLine={satelliteLine}
               now={now}
+              leads={leads}
+              lead={leadNow}
+              onLead={setLead}
             />
             {viewMode === "coastal" ? (
               <details ref={detailsRef} className="group rounded-[18px] border border-hairline bg-surface" data-testid="coast-details">
@@ -427,6 +451,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
               </>
             )}
             {viewMode === "research" && <UnknownsSection items={unknowns} />}
+            {homeLine}
             <div className="flex flex-wrap items-center gap-3">
               <ModeSwitch tone="paper" />
               <PurposeSwitch compact />

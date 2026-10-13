@@ -4,6 +4,7 @@ import type { ObsStation, ObsVariable } from "@/generated/observations";
 import { summaryOf } from "@/lib/observations";
 import { ageWords, ageDays } from "@/lib/coast";
 import { formatDate } from "@/lib/time";
+import { Mark } from "@/components/ui/Mark";
 
 /**
  * Bloom Intelligence in Coastal mode: what this station's latest samples say, in plain words,
@@ -22,7 +23,7 @@ export function PlainReading({ station, vars, now }: { station: ObsStation; vars
   const rows = ROWS.map((r) => ({ ...r, s: summaryOf(station, r.id), v: vars[r.id] })).filter((r) => r.s && r.s.n_measured > 0 && r.s.last_date && r.v);
   return (
     <section aria-labelledby="plain-h" className="rounded-[18px] border border-hairline bg-surface px-4 py-4 sm:px-5" data-testid="plain-reading">
-      <p className="text-[12px] font-semibold uppercase tracking-[0.09em] text-measured">Measured at this pier · about weekly</p>
+      <p className="cw-kind text-measured"><Mark kind="measured" />Measured at this pier, about weekly</p>
       <h2 id="plain-h" className="mt-1 font-display text-[22px] font-medium leading-snug text-ink">
         What the latest samples show
       </h2>

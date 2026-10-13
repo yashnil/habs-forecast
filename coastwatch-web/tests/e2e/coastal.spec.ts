@@ -26,17 +26,34 @@ async function noUnsafeClaims(page: Page) {
   expect(bad, bad.join(" | ")).toEqual([]);
 }
 
+/** Next steps show five rows; the rest are one tap away. */
+async function moreSteps(page: import("@playwright/test").Page) {
+  await expect(page.getByTestId("next-steps")).toBeVisible();
+  const more = page.getByTestId("next-steps-more");
+  if (await more.count()) await more.click();
+}
+
 test.describe("Coastal mode", () => {
   test("My Coast is a briefing: official status, next steps, conditions; the science is one tap away", async ({ browser }) => {
     const { ctx, page } = await coastal(browser);
     await page.goto(`${OK}/coast?place=port-550&for=recreational&species=anchovy-sardine`);
     await expect(page.getByTestId("mode-switch-navy").getByTestId("mode-coastal")).toHaveAttribute("aria-pressed", "true");
     // official status for the chosen species, each notice with its agency source
-    await expect(page.getByTestId("brief-official-headline")).toHaveText("2 notices apply here for anchovy or sardine");
+    await expect(page.getByTestId("brief-official-headline")).toHaveText("2 notices cover these waters for anchovy or sardine");
+    // the answer comes first, one line per kind of knowing, each led by its mark
+    await expect(page.getByTestId("answer-official")).toContainText("2 notices cover these waters for anchovy or sardine");
+    await expect(page.getByTestId("answer-official").locator("[data-mark=official]")).toHaveCount(1);
+    await expect(page.getByTestId("answer-model")).toHaveAttribute("data-kind", "gap");
     await expect(page.getByTestId("brief-notice-cdfw-2026-anchovy-take-restriction-monterey-bay").getByRole("link", { name: /CDFW source/ })).toHaveAttribute("href", /^https:\/\/wildlife\.ca\.gov\//);
     // next steps: every step has a source; regulation, species and conditions steps are there
     const steps = page.getByTestId("next-steps").locator('[data-testid^="step-"]');
+    // the first five show as rows; the rest are one tap away (conditions readings stay in their card)
+    await expect(steps).toHaveCount(5);
+    await page.getByTestId("next-steps-more").click();
     expect(await steps.count()).toBeGreaterThanOrEqual(5);
+    // why each step is suggested opens in place
+    await page.getByTestId("why-read-notices").click();
+    await expect(page.getByTestId("step-read-notices")).toContainText("Read the 2 notices that apply here");
     for (const s of await steps.all()) await expect(s.locator('a[href^="https://"], a[href^="tel:"]')).toHaveCount(1);
     await expect(page.getByTestId("step-read-notices")).toContainText("Read the 2 notices that apply here");
     await expect(page.getByTestId("step-species-rules")).toContainText("anchovy or sardine");
@@ -61,7 +78,7 @@ test.describe("Coastal mode", () => {
     await page.goto(`${OK}/coast?place=port-201`);
     await page.getByTestId("coast-species").selectOption("razor-clam");
     await expect(page).toHaveURL(/species=razor-clam/);
-    await expect(page.getByTestId("brief-official-headline")).toHaveText(/notices? appl(y|ies) here for razor clams/);
+    await expect(page.getByTestId("brief-official-headline")).toHaveText(/notices? covers? these waters for razor clams/);
     // notices for other species are one tap away, not gone
     await expect(page.getByTestId("brief-others")).toContainText("more for other species here");
     await ctx.close();
@@ -72,6 +89,7 @@ test.describe("Coastal mode", () => {
     await page.goto(`${OK}/coast?place=port-215`);
     await expect(page.getByTestId("cond-buoy")).toContainText("No NDBC station reports within 60 km");
     await expect(page.getByTestId("cond-buoy")).toHaveAttribute("data-state", "none");
+    await moreSteps(page);
     await expect(page.getByTestId("step-toxin-gap")).toBeVisible();
     await ctx.close();
   });
@@ -84,6 +102,7 @@ test.describe("Coastal mode", () => {
     await expect(marine).toContainText("did not answer just now");
     await expect(marine).toHaveAttribute("title", /HTTP 503/);
     await expect(marine).not.toContainText("HTTP 503");
+    await moreSteps(page);
     await expect(page.getByTestId("step-marine-gap")).toContainText("Check the NWS marine forecast directly");
     await ctx.close();
   });

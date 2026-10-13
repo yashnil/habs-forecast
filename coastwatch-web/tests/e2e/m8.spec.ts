@@ -47,13 +47,17 @@ test.describe("About CoastWatch", () => {
     }
   });
 
-  test("on a phone About is a tab", async ({ browser }) => {
+  test("on a phone About is in the masthead menu, with the presentation switch; five tabs remain", async ({ browser }) => {
     const ctx = await browser.newContext(PHONE);
     const page = await ctx.newPage();
     await open(page, `${OK}/fisheries`);
-    await page.getByTestId("tab-about").click();
+    await expect(page.getByTestId("tabbar").locator("a, button")).toHaveCount(5);
+    await page.getByTestId("masthead-menu").click();
+    await expect(page.getByTestId("masthead-menu-panel").getByTestId("mode-research")).toBeVisible();
+    await page.getByTestId("menu-about").click();
     await expect(page).toHaveURL(/\/about$/);
-    await expect(page.getByTestId("tab-about")).toHaveAttribute("aria-current", "page");
+    await page.getByTestId("masthead-menu").click();
+    await expect(page.getByTestId("menu-about")).toHaveAttribute("aria-current", "page");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
     await ctx.close();
   });

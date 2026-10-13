@@ -12,6 +12,7 @@ import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, leadLabel, type 
 import { formatDate } from "@/lib/time";
 import { gradientCss } from "@/components/ui/ProbabilityLegend";
 import { LeadStrip, type LeadItem } from "./LeadStrip";
+import { Mark } from "@/components/ui/Mark";
 
 export type InspectPoint = { lat: number; lon: number };
 
@@ -93,7 +94,7 @@ export function Inspector({
     >
       <header className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-accent">Point</p>
+          <p className="text-[13px] font-medium text-accent">Point</p>
           <h3 className="text-[14px] font-semibold text-ink tabular">
             {point.lat.toFixed(3)}°N, {Math.abs(point.lon).toFixed(3)}°W
           </h3>
@@ -134,7 +135,7 @@ export function Inspector({
       <div className="mt-4 space-y-1.5" data-testid="inspect-strip">
         <div className="flex items-baseline justify-between gap-2">
           <h4 className="text-[13px] font-semibold text-ink">{stripLayer?.short_title ?? "C-HARM forecast"} here</h4>
-          <span className="rounded border border-hairline-strong px-1 text-[12px] font-semibold uppercase tracking-wider text-model-ink">Model</span>
+          <span className="cw-kind text-model-ink"><Mark kind="model" />Model</span>
         </div>
         {strip && strip.some((x) => x.issued) ? (
           <>

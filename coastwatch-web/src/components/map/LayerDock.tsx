@@ -27,6 +27,7 @@ import { ARROW_LENGTHS, SPEED_CLASSES } from "@/lib/basemap";
 import { safeHref } from "@/lib/links";
 import type { Opening } from "@/lib/opening";
 import { MapStamp, type StampLine } from "./MapStamp";
+import { Mark } from "@/components/ui/Mark";
 
 export type LayerGroup = "forecast" | "satellite" | "currents";
 /** Currents: one observed hour (null = newest) or the 24-hour mean, drawn as arrows or particles. */
@@ -158,7 +159,7 @@ function GroupTabs({ manifest, group, onGroup }: Pick<Props, "manifest" | "group
             className={`flex h-10 flex-col items-center justify-center rounded-[9px] leading-tight transition-colors duration-150 disabled:opacity-40 ${group === g.id ? "bg-surface text-ink shadow-[0_1px_2px_rgba(13,27,42,0.12)] ring-1 ring-hairline-strong" : "text-ink-2"}`}
           >
             <span className="text-[13.5px] font-semibold">{g.short}</span>
-            <span className={`text-[12px] font-semibold uppercase tracking-wider ${g.kind === "Model" ? "text-model-ink" : "text-measured"}`}>{g.kind}</span>
+            <span className={`cw-kind ${g.kind === "Model" ? "text-model-ink" : "text-measured"}`}><Mark kind={g.kind === "Model" ? "model" : "measured"} />{g.kind}</span>
           </button>
         );
       })}

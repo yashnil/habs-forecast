@@ -98,6 +98,9 @@ test.describe("My Coast", () => {
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/coast\?place=port-550$/);
     await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
+    // once waters are chosen, the picker is one tap away, after the answer
+    await expect(page.getByTestId("place-input")).toHaveCount(0);
+    await page.getByTestId("coast-change").click();
     await page.getByTestId("place-input").fill("Clam");
     await page.getByTestId("place-option-site-clam-beach").click();
     await expect(page).toHaveURL(/place=site-clam-beach/);
@@ -119,7 +122,7 @@ test.describe("My Coast", () => {
 
   test("the fishing filter folds other notices without hiding them, and keeps the link", async ({ page }) => {
     await open(page, `${OK}/coast?place=port-201`);
-    await page.getByTestId("coast-for-commercial").click();
+    await page.getByTestId("coast-audience").selectOption("commercial");
     await expect(page).toHaveURL(/for=commercial/);
     await expect(page.getByTestId("coast-notices-other")).toContainText("more for other kinds of fishing");
     const total = await page.locator('[data-testid^="coast-notice-"][data-tier]').count();

@@ -678,7 +678,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
           >
             <Icon name="search" className="h-4 w-4 text-ink-3" />
             <span className="min-w-0 truncate pr-1">{placeLabel}</span>
-            <span data-testid="mobile-official" className="flex h-8 shrink-0 items-center gap-1 rounded-full border border-official-line bg-official-bg px-2.5 text-[13px] font-semibold text-official-ink">
+            <span data-testid="mobile-official" className="flex h-8 shrink-0 items-center gap-1 rounded-full border border-official-line bg-surface px-2.5 text-[13px] font-semibold text-official-ink">
               <Icon name="shield" className="h-3.5 w-3.5 text-official" />
               {!placeStatewide && placeNotices != null ? placeNotices : (activeCount ?? "?")}
               <span className="sr-only"> official notices{!placeStatewide ? ` may apply in ${placeLabel}` : " in California"},</span>

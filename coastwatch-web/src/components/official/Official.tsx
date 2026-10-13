@@ -94,7 +94,7 @@ export function NoticeCard({
   const critical = dispute ? criticalFlags(r, now ?? new Date(), dispute) : now ? criticalFlags(r, now) : [];
   const flags = now ? recordFlags(r, now, dispute).filter((f) => !critical.includes(f)) : [];
   return (
-    <article data-testid={`notice-${r.id}`} data-disputed={dispute ? "true" : undefined} className={`rounded-md border ${dispute ? "border-dashed border-warning/70 bg-surface" : "border-official-line bg-official-bg"}`}>
+    <article data-testid={`notice-${r.id}`} data-disputed={dispute ? "true" : undefined} className={`rounded-md border ${dispute ? "border-dashed border-warning/70 bg-surface" : "border-hairline border-l-[3px] border-l-official-line bg-surface"}`}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -103,7 +103,7 @@ export function NoticeCard({
       >
         <AgencyChip agency={r.agency} />
         <span className="min-w-0 flex-1">
-          <span className="block text-[12px] font-semibold uppercase tracking-wide text-official-ink">
+          <span className="block text-[13px] font-medium text-official-ink">
             {ACTION_LABEL[r.action]} · {FISHERY_LABEL[r.fishery]}
           </span>
           {/* the title and dates of an official notice are never cut, however dense the list */}

@@ -38,7 +38,7 @@ export default async function FisheriesPage({ searchParams }: { searchParams: Pr
         </FisheriesByMode>
       ) : (
         <div className="mx-auto w-full max-w-2xl space-y-4 px-4 py-8" data-testid="fisheries-unavailable">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-history">Historical context · Statewide</p>
+          <p className="text-[13px] font-medium text-history">Historical context · Statewide</p>
           <h1 className="font-display text-[34px] font-medium leading-tight text-ink">{FISHERIES_COPY.heading}</h1>
           <p className="text-[15px] leading-relaxed text-ink-2">{FISHERIES_COPY.definition}</p>
           <Notice tone="warning" title={FISHERIES_COPY.unavailable}>

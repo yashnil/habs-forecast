@@ -11,6 +11,7 @@ import { ACTION_LABEL, type Verification } from "@/lib/official";
 import { formatDate, formatDateTimePT } from "@/lib/time";
 import { ageWords } from "@/lib/coast";
 import { leadLabel } from "@/lib/layers";
+import { Mark } from "@/components/ui/Mark";
 
 /**
  * My Coast's briefing (Coastal mode): the place's official status, next steps and conditions,
@@ -21,9 +22,16 @@ const ext = { target: "_blank", rel: "noopener noreferrer" } as const;
 const link = "text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent";
 export const fmtWhen = (s: string) => (/^\d{4}-\d{2}-\d{2}$/.test(s) ? formatDate(s, { year: true }) : formatDateTimePT(s));
 
+/** A kind label: the mark of how it is known, then sentence-case words (signature P5). */
 function Eyebrow({ children, tone = "ink" }: { children: React.ReactNode; tone?: "ink" | "official" | "accent" }) {
   const c = { ink: "text-ink-3", official: "text-official-ink", accent: "text-accent" }[tone];
-  return <p className={`text-[12px] font-semibold uppercase tracking-[0.09em] ${c}`}>{children}</p>;
+  const mark = tone === "official" ? "official" : tone === "accent" ? "conditions" : null;
+  return (
+    <p className={`cw-kind ${c}`}>
+      {mark && <Mark kind={mark} />}
+      <span>{children}</span>
+    </p>
+  );
 }
 
 // ---------------------------------------------------------------- conditions (live, from NOAA)
@@ -45,79 +53,87 @@ export function useConditions(lat: number | null, lon: number | null): { data: C
   return s;
 }
 
-// ---------------------------------------------------------------- plan: activity, species, day
+// ---------------------------------------------------------------- plan: activity and species
 
+/**
+ * What the reader is after: two compact selects in one row, after the answer (signature P2: the
+ * plan refines the answer; it is not a gate before it). The forecast day lives with the forecast
+ * (ConditionsCard), the one place it changes anything.
+ */
 export function PlanBar({
   audience,
   onAudience,
   species,
   onSpecies,
-  leads,
-  lead,
-  onLead,
 }: {
   audience: Audience;
   onAudience: (a: Audience) => void;
   species: Species;
   onSpecies: (s: SpeciesId) => void;
-  leads: (LayerArtifact | null)[];
-  lead: number;
-  onLead: (l: number) => void;
 }) {
   const options = SPECIES.filter((s) => s.id === "any" || audience === "all" || s.activities.includes(audience === "shellfish" ? "shellfish" : audience));
+  const box = "flex min-h-[44px] min-w-0 items-center gap-2 rounded-xl border border-hairline-strong bg-surface pl-3 pr-1.5 text-[14px] text-ink-3 focus-within:border-ink-3";
   return (
-    <div className="space-y-2.5" data-testid="coast-plan">
-      <div role="group" aria-label="Activity" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5 sm:mx-0 sm:flex-wrap sm:px-0" data-testid="coast-audience">
-        {AUDIENCES.map((x) => (
-          <button
-            key={x.id}
-            type="button"
-            aria-pressed={audience === x.id}
-            onClick={() => onAudience(x.id)}
-            className={`min-h-[40px] shrink-0 rounded-full border px-3.5 text-[14px] ${audience === x.id ? "border-navy-900 bg-navy-900 text-white" : "border-hairline-strong bg-surface text-ink-2 hover:border-ink-3"}`}
-            data-testid={`coast-for-${x.id}`}
-          >
-            {{ all: "Any activity", commercial: "Commercial", recreational: "Recreational", shellfish: "Shellfish" }[x.id]}
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="flex min-h-[40px] items-center gap-2 rounded-full border border-hairline-strong bg-surface pl-3.5 pr-2 text-[14px] text-ink-2">
-          <span>Species</span>
-          <select
-            value={species.id}
-            onChange={(e) => onSpecies(e.target.value as SpeciesId)}
-            className="min-h-[36px] max-w-[52vw] bg-transparent pr-1 font-medium text-ink outline-none"
-            data-testid="coast-species"
-          >
-            {options.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div role="group" aria-label="Toxin forecast day" className="flex items-center gap-1" data-testid="coast-day">
-          <span className="mr-1 text-[13px] text-ink-3 max-[420px]:sr-only">Forecast day</span>
-          {leads.map((l, i) =>
-            l?.time.valid_date ? (
-              <button
-                key={i}
-                type="button"
-                aria-pressed={lead === i}
-                onClick={() => onLead(i)}
-                title={leadLabel(i)}
-                className={`min-h-[40px] rounded-full border px-3 text-[13px] ${lead === i ? "border-navy-900 bg-navy-900 text-white" : "border-hairline-strong bg-surface text-ink-2 hover:border-ink-3"}`}
-                data-testid={`coast-day-${i}`}
-              >
-                {formatDate(l.time.valid_date).replace(/^\w+, /, "")}
-              </button>
-            ) : null,
-          )}
-        </div>
-      </div>
+    <div className="grid grid-cols-2 gap-2" data-testid="coast-plan">
+      <label className={box}>
+        <span className="shrink-0 max-[520px]:sr-only">Activity</span>
+        <select
+          value={audience}
+          onChange={(e) => onAudience(e.target.value as Audience)}
+          className="min-h-[40px] min-w-0 flex-1 bg-transparent font-medium text-ink outline-none"
+          data-testid="coast-audience"
+        >
+          {AUDIENCES.map((x) => (
+            <option key={x.id} value={x.id}>
+              {{ all: "Any activity", commercial: "Commercial", recreational: "Recreational", shellfish: "Shellfish" }[x.id]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={box}>
+        <span className="shrink-0 max-[520px]:sr-only">Species</span>
+        <select value={species.id} onChange={(e) => onSpecies(e.target.value as SpeciesId)} className="min-h-[40px] min-w-0 flex-1 bg-transparent font-medium text-ink outline-none" data-testid="coast-species">
+          {options.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </label>
     </div>
   );
+}
+
+// ---------------------------------------------------------------- the answer (Level 1)
+
+export type AnswerClause = { kind: "official" | "measured" | "model" | "gap"; text: string; aged?: boolean; testid: string };
+
+/**
+ * The answer under the place name, one short line per kind of knowing, each led by its mark
+ * (signature §6 Level 1): the first screen answers before it asks anything.
+ */
+export function AnswerLine({ clauses }: { clauses: AnswerClause[] }) {
+  return (
+    <ul className="max-w-[62ch] space-y-1.5 text-[16px] leading-snug text-ink sm:text-[17px]" data-testid="coast-answer">
+      {clauses.map((c) => (
+        <li key={c.testid} className="grid grid-cols-[16px_1fr] items-baseline gap-x-2" data-testid={c.testid} data-kind={c.kind}>
+          <Mark kind={c.kind} aged={c.aged} className="translate-y-px" />
+          <span>{c.text}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** The official answer for these waters, shared by the answer line and the official card. */
+export function officialAnswer(assocs: Association[], audience: Audience, species: Species) {
+  const live = assocs.filter((a) => !a.dispute);
+  const applies = live.filter((a) => a.tier === "geographic" && fits(a, audience));
+  const mine = applies.filter((a) => recordNamesSpecies(a.record.species, species));
+  const forWhat = species.id === "any" ? (audience === "all" ? "" : ` for ${AUDIENCES.find((x) => x.id === audience)!.label.toLowerCase()}`) : ` for ${speciesPhrase(species)}`;
+  const disputed = assocs.filter((a) => a.dispute);
+  const headline = mine.length ? `${mine.length} notice${mine.length === 1 ? " covers" : "s cover"} these waters${forWhat}` : `No notice in CoastWatch's list covers these waters${forWhat}`;
+  return { live, applies, mine, forWhat, disputed, headline };
 }
 
 // ---------------------------------------------------------------- official status
@@ -141,33 +157,28 @@ export function OfficialBrief({
   onAll: (el: HTMLElement) => void;
   onDetails: () => void;
 }) {
-  const live = assocs.filter((a) => !a.dispute);
-  const applies = live.filter((a) => a.tier === "geographic" && fits(a, audience));
-  const mine = applies.filter((a) => recordNamesSpecies(a.record.species, species));
+  const { live, applies, mine, disputed, headline } = officialAnswer(assocs, audience, species);
   const others = applies.filter((a) => !mine.includes(a));
   const unresolved = live.filter((a) => a.tier === "unresolved" && fits(a, audience) && recordNamesSpecies(a.record.species, species));
   const outside = live.filter((a) => a.tier === "outside").length;
-  const disputed = assocs.filter((a) => a.dispute);
-  const forWhat = species.id === "any" ? (audience === "all" ? "" : ` for ${AUDIENCES.find((x) => x.id === audience)!.label.toLowerCase()}`) : ` for ${speciesPhrase(species)}`;
   return (
-    <section aria-labelledby="brief-official-h" className="rounded-[18px] border border-official-line bg-official-bg/60 px-4 py-4 sm:px-5" data-testid="brief-official">
+    <section aria-labelledby="brief-official-h" className="rounded-[18px] border border-hairline border-l-[3px] border-l-official-line bg-surface px-4 py-4 sm:px-5" data-testid="brief-official">
       <div className="flex items-center justify-between gap-3">
-        <Eyebrow tone="official">Official notices · these waters</Eyebrow>
+        <Eyebrow tone="official">Official notices for these waters</Eyebrow>
         <span className="shrink-0 whitespace-nowrap rounded-full border border-official-line px-2 py-0.5 text-[12px] font-medium text-official-ink" data-testid="brief-verification">
           {verification?.state === "verified" ? "Checked by a person" : "Not verified"}
         </span>
       </div>
       <h2 id="brief-official-h" className="mt-2 font-display text-[22px] font-medium leading-snug text-ink sm:text-[24px]" data-testid="brief-official-headline">
-        {mine.length
-          ? `${mine.length} notice${mine.length === 1 ? " applies" : "s apply"} here${forWhat}`
-          : `No notice in CoastWatch's list applies here${forWhat}`}
+        {headline}
       </h2>
-      {!mine.length && <p className="mt-1 text-[14px] text-ink-2">That is not an all-clear: the list may be incomplete. Check the agencies (next steps).</p>}
+      {/* an absence states the limit of the claim, never an all-clear (signature P6) */}
+      {!mine.length && <p className="mt-1 text-[14px] text-ink-2">That is not the same as safe or open: the list may be incomplete. Check the agencies (next steps).</p>}
       {(mine.length > 0 || disputed.length > 0) && (
-        <ul className="mt-3 divide-y divide-official-line/50">
+        <ul className="mt-3 divide-y divide-hairline">
           {disputed.map((a) => (
             <li key={a.record.id} className="py-2.5" data-testid={`brief-disputed-${a.record.id}`}>
-              <p className="text-[12px] font-semibold text-warning">Reported lifted by {a.dispute!.agency} · awaiting review</p>
+              <p className="text-[13px] font-medium text-warning">Reported lifted by {a.dispute!.agency} · awaiting review</p>
               <p className="text-[15px] font-medium leading-snug text-ink">{a.record.title}</p>
               <a href={a.dispute!.url} {...ext} className={`${link} text-[13px]`}>
                 {a.dispute!.agency} {a.dispute!.release} ↗
@@ -184,7 +195,7 @@ export function OfficialBrief({
           <span className="font-medium text-official-ink">May apply, not settled by its stated area:</span> {unresolved.map((a) => a.record.title).join("; ")}.
         </p>
       )}
-      <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-official-line/50 pt-2.5 text-[13px] text-ink-2">
+      <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-hairline pt-2.5 text-[13px] text-ink-2">
         {others.length > 0 && (
           <button type="button" onClick={onDetails} className={link} data-testid="brief-others">
             {others.length} more for other species here
@@ -208,7 +219,7 @@ function BriefRow({ a }: { a: Association }) {
   const src = r.sources.find((s) => s.url.startsWith("https://"));
   return (
     <li className="py-2.5" data-testid={`brief-notice-${r.id}`}>
-      <p className="text-[12px] font-semibold text-official-ink">
+      <p className="text-[13px] font-medium text-official-ink">
         {r.agency} · {ACTION_LABEL[r.action]} · {AUDIENCE[r.fishery].label}
       </p>
       <p className="text-[15px] font-medium leading-snug text-ink">{r.title}</p>
@@ -230,14 +241,23 @@ function BriefRow({ a }: { a: Association }) {
 
 // ---------------------------------------------------------------- next steps
 
-const KIND: Record<Step["kind"], { dot: string; label: string }> = {
-  official: { dot: "bg-official", label: "Official" },
-  conditions: { dot: "bg-accent", label: "Conditions" },
-  gap: { dot: "bg-ink-3", label: "Not known here" },
+const STEP_MARK: Record<Step["kind"], { mark: "official" | "conditions" | "gap"; label: string }> = {
+  official: { mark: "official", label: "Official" },
+  conditions: { mark: "conditions", label: "Conditions" },
+  gap: { mark: "gap", label: "Not known here" },
 };
 
-export function NextSteps({ steps, max = 7 }: { steps: Step[]; max?: number }) {
+/**
+ * Next steps as rows (signature P8: eight right steps had become a document): each row is the
+ * step and its source, led by its mark; why it is suggested opens in place. The first `max` show;
+ * on a phone they fit beside the official answer instead of a wall of text. Conditions readings are
+ * left to the conditions card when it is on the same page.
+ */
+export function NextSteps({ steps: given, max = 5, conditionsShown = false }: { steps: Step[]; max?: number; conditionsShown?: boolean }) {
   const [all, setAll] = useState(false);
+  const [open, setOpen] = useState<string | null>(null);
+  // where the conditions card sits right below, its readings are not repeated as steps
+  const steps = conditionsShown ? given.filter((s) => s.kind !== "conditions") : given;
   const shown = all ? steps : steps.slice(0, max);
   return (
     <section aria-labelledby="next-h" className="rounded-[18px] border border-hairline bg-surface px-4 py-4 sm:px-5" data-testid="next-steps">
@@ -245,42 +265,46 @@ export function NextSteps({ steps, max = 7 }: { steps: Step[]; max?: number }) {
       <h2 id="next-h" className="mt-1 font-display text-[22px] font-medium leading-snug text-ink">
         Next steps
       </h2>
-      <ol className="mt-3 space-y-3.5">
-        {shown.map((s) => (
-          <li key={s.id} className="grid grid-cols-[14px_1fr] gap-x-2.5" data-testid={`step-${s.id}`} data-kind={s.kind}>
-            <span aria-hidden className={`mt-[7px] h-2 w-2 rounded-full ${KIND[s.kind].dot}`} />
-            <div>
-              <p className="text-[15px] font-medium leading-snug text-ink">
-                <span className="sr-only">{KIND[s.kind].label}: </span>
-                {s.title}
-              </p>
-              <p className="mt-0.5 text-[13px] leading-snug text-ink-2">{s.reason}</p>
-              <p className="mt-0.5 text-[13px] text-ink-3">
-                {s.when ? `${s.when} · ` : ""}
-                {"url" in s.source ? (
-                  <a href={s.source.url} {...ext} className={link}>
-                    {s.source.label} ↗
-                  </a>
-                ) : (
-                  <a href={`tel:${s.source.tel}`} className={`${link} tabular`}>
-                    {s.source.label}
-                  </a>
-                )}
-              </p>
-            </div>
-          </li>
-        ))}
+      <ol className="mt-2 divide-y divide-hairline">
+        {shown.map((s) => {
+          const isOpen = open === s.id;
+          const rid = `step-why-${s.id}`;
+          return (
+            <li key={s.id} className="grid grid-cols-[16px_1fr] gap-x-2.5 py-2.5" data-testid={`step-${s.id}`} data-kind={s.kind}>
+              <Mark kind={STEP_MARK[s.kind].mark} className="mt-[5px]" />
+              <div className="min-w-0">
+                <p className="text-[15px] font-medium leading-snug text-ink">
+                  <span className="sr-only">{STEP_MARK[s.kind].label}: </span>
+                  {s.title}
+                </p>
+                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-3">
+                  {"url" in s.source ? (
+                    <a href={s.source.url} {...ext} className={`${link} font-medium`}>
+                      {s.source.label} ↗
+                    </a>
+                  ) : (
+                    <a href={`tel:${s.source.tel}`} className={`${link} font-medium tabular`}>
+                      {s.source.label}
+                    </a>
+                  )}
+                  {s.when && <span>{s.when}</span>}
+                  <button type="button" aria-expanded={isOpen} aria-controls={rid} onClick={() => setOpen(isOpen ? null : s.id)} className="min-h-[28px] text-ink-3 underline decoration-ink-3/40 underline-offset-2 hover:text-ink" data-testid={`why-${s.id}`}>
+                    {isOpen ? "Less" : "Why"}
+                  </button>
+                </p>
+                <p id={rid} hidden={!isOpen} className="mt-1 text-[14px] leading-snug text-ink-2">
+                  {s.reason}
+                </p>
+              </div>
+            </li>
+          );
+        })}
       </ol>
       {steps.length > max && (
-        <button type="button" onClick={() => setAll(!all)} className="mt-3 text-[14px] font-medium text-accent hover:underline" data-testid="next-steps-more">
-          {all ? "Fewer steps" : `${steps.length - max} more steps`}
+        <button type="button" onClick={() => setAll(!all)} className="cw-press mt-1 min-h-[36px] text-[14px] font-medium text-accent hover:underline" data-testid="next-steps-more">
+          {all ? "Fewer steps" : `${steps.length - max} more step${steps.length - max === 1 ? "" : "s"}`}
         </button>
       )}
-      <p className="mt-3 border-t border-hairline pt-2.5 text-[13px] text-ink-3">
-        <span className="mr-3 inline-flex items-center gap-1.5"><span aria-hidden className="h-2 w-2 rounded-full bg-official" />Official</span>
-        <span className="mr-3 inline-flex items-center gap-1.5"><span aria-hidden className="h-2 w-2 rounded-full bg-accent" />Conditions</span>
-        <span className="inline-flex items-center gap-1.5"><span aria-hidden className="h-2 w-2 rounded-full bg-ink-3" />Not known here</span>
-      </p>
     </section>
   );
 }
@@ -336,6 +360,9 @@ export function ConditionsCard({
   forecastSub,
   satelliteLine,
   now,
+  leads,
+  lead,
+  onLead,
 }: {
   conditions: Conditions | null;
   loading: boolean;
@@ -346,6 +373,9 @@ export function ConditionsCard({
   forecastSub: string;
   satelliteLine: string;
   now: Date | null;
+  leads?: (LayerArtifact | null)[];
+  lead?: number;
+  onLead?: (l: number) => void;
 }) {
   const c = conditions;
   const wait = loading ? "Loading…" : error ? "Unavailable right now" : "—";
@@ -362,10 +392,14 @@ export function ConditionsCard({
   };
   return (
     <section aria-labelledby="cond-h" className="rounded-[18px] border border-hairline bg-surface px-4 py-4 sm:px-5" data-testid="conditions">
-      <Eyebrow>Context for planning · not a toxin or fishing forecast</Eyebrow>
+      <Eyebrow tone="accent">Context for planning, from NOAA</Eyebrow>
       <h2 id="cond-h" className="mt-1 font-display text-[22px] font-medium leading-snug text-ink">
         Conditions
       </h2>
+      {/* a disclaimer that changes the meaning is body text, not a micro label (signature P5) */}
+      <p className="mt-0.5 text-[14px] text-ink-2" data-testid="cond-not-forecast">
+        Wind, waves and tides only: not a toxin or fishing forecast.
+      </p>
       {c?.alerts.status === "ok" && c.alerts.data.length > 0 && (
         <p className="mt-2 rounded-lg bg-warning/10 px-3 py-2 text-[14px] font-medium text-warning" data-testid="cond-alert">
           {c.alerts.data[0].event}
@@ -423,7 +457,23 @@ export function ConditionsCard({
           state={!toxin ? "none" : toxin.ageDays > 30 ? "old" : "ok"}
           testid="cond-toxin"
         />
-        <Tile label="Toxin forecast" value={forecastLine} sub={forecastSub} state={/^No /.test(forecastLine) ? "none" : "ok"} testid="cond-forecast" />
+        <div className="min-w-0">
+          <Tile label="Toxin forecast · model" value={forecastLine} sub={forecastSub} state={/^No /.test(forecastLine) ? "none" : "ok"} testid="cond-forecast" />
+          {leads && onLead && (
+            <label className="mt-1.5 inline-flex min-h-[36px] items-center gap-2 rounded-lg border border-hairline-strong px-2.5 text-[13px] text-ink-3">
+              For
+              <select value={lead} onChange={(e) => onLead(Number(e.target.value))} className="min-h-[32px] bg-transparent font-medium text-ink outline-none" data-testid="coast-day">
+                {leads.map((l, i) =>
+                  l?.time.valid_date ? (
+                    <option key={i} value={i}>
+                      {formatDate(l.time.valid_date)} ({leadLabel(i)})
+                    </option>
+                  ) : null,
+                )}
+              </select>
+            </label>
+          )}
+        </div>
         <Tile label="Satellite view of the water" value={satelliteLine} sub="NOAA CoastWatch chlorophyll (algae, not toxin)" state={/^Clear/.test(satelliteLine) ? "ok" : "none"} testid="cond-satellite" />
       </div>
     </section>

@@ -104,7 +104,7 @@ export function StationRail({
         <div className="space-y-3">
           {groups.map((g) => (
             <div key={g.region} data-region={g.region}>
-              <p className="px-1 pb-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">{REGION_LABEL[g.region] ?? "Other"}</p>
+              <p className="px-1 pb-1 text-[13px] font-medium text-ink-3">{REGION_LABEL[g.region] ?? "Other"}</p>
               <ul>
                 {g.stations.map((s) => {
                   const f = stationFreshness(s, policy, now);

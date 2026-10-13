@@ -51,7 +51,7 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
     <article data-testid="port-panel" aria-labelledby="port-h" className="space-y-4">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-accent">Port</p>
+          <p className="text-[13px] font-medium text-accent">Port</p>
           <h2 id="port-h" className="font-display text-[28px] font-medium leading-tight text-ink">
             {port.display_name}
           </h2>

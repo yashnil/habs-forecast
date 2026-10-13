@@ -93,7 +93,8 @@ test.describe("mobile shell", () => {
       const bar = page.getByTestId("tabbar");
       await expect(bar).toBeVisible();
       await expect(page.getByRole("navigation", { name: "Primary" }).filter({ visible: true })).toHaveCount(1);
-      if (name !== "sources") await expect(page.getByTestId(`tab-${name}`)).toHaveAttribute("aria-current", "page");
+      // About and the sources are in the masthead menu, not tabs (five tabs)
+      if (name !== "sources" && name !== "about") await expect(page.getByTestId(`tab-${name}`)).toHaveAttribute("aria-current", "page");
       await expect(page.getByTestId("tab-notices")).toContainText(String(active.length));
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
       await page.getByTestId("tab-notices").click();

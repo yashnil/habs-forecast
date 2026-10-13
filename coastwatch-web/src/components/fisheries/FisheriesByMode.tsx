@@ -8,6 +8,7 @@ import { coastHref } from "@/lib/coast";
 import { ACTION_LABEL, currentRecords, disputedRecords } from "@/lib/official";
 import { useMode } from "@/lib/mode";
 import { formatDate } from "@/lib/time";
+import { Mark } from "@/components/ui/Mark";
 
 const ext = { target: "_blank", rel: "noopener noreferrer" } as const;
 const link = "text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent";
@@ -33,7 +34,7 @@ export function FisheriesByMode({ official, children }: { official: OfficialData
       {!research && (
       <>
       <header className="space-y-2">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-accent">Fisheries</p>
+        <p className="text-[13px] font-medium text-accent">Fisheries</p>
         <h1 className="font-display text-[32px] font-medium leading-tight text-ink sm:text-[40px]">Your fishery, now</h1>
         <p className="max-w-[62ch] text-[16px] text-ink-2">Official notices that name a species, what the agency says about it, and where its rules are. The history of landed value is below.</p>
       </header>
@@ -52,8 +53,8 @@ export function FisheriesByMode({ official, children }: { official: OfficialData
         ))}
       </div>
       <section className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]" aria-label={s.label}>
-        <div className="rounded-[18px] border border-official-line bg-official-bg/60 px-4 py-4 sm:px-5" data-testid="fish-notices">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.09em] text-official-ink">Official notices naming {speciesPhrase(s)} · California</p>
+        <div className="rounded-[18px] border border-hairline border-l-[3px] border-l-official-line bg-surface px-4 py-4 sm:px-5" data-testid="fish-notices">
+          <p className="cw-kind text-official-ink"><Mark kind="official" />Official notices naming {speciesPhrase(s)} · California</p>
           <h2 className="mt-1 font-display text-[22px] font-medium text-ink">
             {notices.length ? `${notices.length} active notice${notices.length === 1 ? "" : "s"}` : "None in CoastWatch's list"}
           </h2>
@@ -89,7 +90,7 @@ export function FisheriesByMode({ official, children }: { official: OfficialData
         <div className="space-y-4">
           {statements.length > 0 && (
             <div className="rounded-[18px] border border-hairline bg-surface px-4 py-4 sm:px-5" data-testid="fish-statements">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.09em] text-ink-3">What the agency says</p>
+              <p className="text-[13px] font-medium text-ink-3">What the agency says</p>
               <ul className="mt-2 space-y-2 text-[15px] text-ink">
                 {statements.map((x) => (
                   <li key={x.id}>
@@ -100,7 +101,7 @@ export function FisheriesByMode({ official, children }: { official: OfficialData
             </div>
           )}
           <div className="rounded-[18px] border border-hairline bg-surface px-4 py-4 sm:px-5">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.09em] text-ink-3">Before you go</p>
+            <p className="text-[13px] font-medium text-ink-3">Before you go</p>
             <ul className="mt-2 space-y-2 text-[15px]">
               {s.link && (
                 <li>

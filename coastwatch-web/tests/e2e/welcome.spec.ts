@@ -33,7 +33,7 @@ test.describe("welcome", () => {
     await page.keyboard.press("Enter");
     await page.getByTestId("intro-to-coast").click();
     await expect(page).toHaveURL(/\/coast\?place=port-593&for=commercial$/);
-    await expect(page.getByTestId("coast-for-commercial")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("coast-audience")).toHaveValue("commercial");
     expect(JSON.parse((await stored(page, "cw-purpose-v1"))!)).toEqual({ purpose: "commercial" });
     // the map on a later plain visit: no welcome, one link back to those waters
     await page.goto(`${OK}/`);
@@ -100,9 +100,9 @@ test.describe("welcome", () => {
     await expect(page.getByTestId("intro-card")).toHaveCount(0);
     await page.evaluate(() => localStorage.setItem("cw-purpose-v1", JSON.stringify({ purpose: "commercial" })));
     await page.goto(`${OK}/coast?place=port-201&for=recreational`);
-    await expect(page.getByTestId("coast-for-recreational")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("coast-audience")).toHaveValue("recreational");
     await page.goto(`${OK}/coast?place=port-201`);
-    await expect(page.getByTestId("coast-for-commercial")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("coast-audience")).toHaveValue("commercial");
     await expect(page.getByTestId("coast-title")).toHaveText("Crescent City");
     await ctx.close();
   });
@@ -113,9 +113,9 @@ test.describe("welcome", () => {
     await page.goto(`${OK}/about`);
     await page.getByTestId("purpose-select").selectOption("recreational:shellfish");
     await page.goto(`${OK}/coast?place=site-clam-beach`);
-    await expect(page.getByTestId("coast-for-shellfish")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("coast-audience")).toHaveValue("shellfish");
     await page.getByTestId("purpose-select").selectOption("none");
-    await expect(page.getByTestId("coast-for-all")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("coast-audience")).toHaveValue("all");
     await page.goto(`${OK}/about`);
     await page.getByTestId("purpose-reset").click();
     // the map then writes its view into the address; the welcome is back either way

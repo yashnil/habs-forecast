@@ -5,6 +5,7 @@ import type { ObsVariable, SeriesPoint } from "@/generated/observations";
 import { axisPosition, decadeTicks, highestInView, inView, modelOnAxis, modelSegments, onAxis, segments, viewSummary, type Axis, type ModelPoint } from "@/lib/bloom";
 import { DAY, formatObs, formatTick, unitLabel, type Sample } from "@/lib/observations";
 import { useWidth } from "@/lib/useWidth";
+import { Mark } from "@/components/ui/Mark";
 
 /**
  * The page's one primary chart (design spec §3.2 item 6, M6 §0): the measured record of one
@@ -341,7 +342,7 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
         <section className="mt-2 rounded-lg bg-model-bg/70 outline outline-1 -outline-offset-1 outline-model-line" data-testid="model-section" aria-labelledby="model-h">
           <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-3 pt-2.5">
             <div className="min-w-0">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-model-ink">Model, not a measurement · C-HARM v3.1, NOAA</p>
+              <p className="cw-kind text-model-ink"><Mark kind="model" />Model, not a measurement · C-HARM v3.1, NOAA</p>
               <h3 id="model-h" className="text-[14px] font-semibold leading-snug text-ink">
                 {model.title}
               </h3>

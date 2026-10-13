@@ -5,7 +5,8 @@ import "./globals.css";
 // Self-hosted by next/font at build time: no runtime request to Google.
 const plexSans = IBM_Plex_Sans({ variable: "--font-plex-sans", subsets: ["latin"], weight: ["400", "500", "600"] });
 const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "500"] });
-const newsreader = Newsreader({ variable: "--font-newsreader", subsets: ["latin"], weight: ["400", "500"], style: ["normal"] });
+// variable, with optical sizing: sharper display sizes, steadier small headlines (signature §typography)
+const newsreader = Newsreader({ variable: "--font-newsreader", subsets: ["latin"], axes: ["opsz"], style: ["normal"] });
 
 export const metadata: Metadata = {
   title: "CoastWatch — California coastal bloom forecasts",

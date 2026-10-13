@@ -25,8 +25,9 @@
 
   /* paper surfaces */
   --cw-page: #f5f3ee;
-  --cw-surface: #ffffff;
-  --cw-surface-2: #faf9f6;
+  /* a sheet laid on the paper: warm, never stark white, so cards do not glare (signature §surfaces) */
+  --cw-surface: #fbfaf7;
+  --cw-surface-2: #f8f6f1;
   --cw-surface-3: #f0ede6;
   --cw-hairline: #e4e0d7;
   --cw-hairline-strong: #cbc4b6;
@@ -81,6 +82,28 @@
   --cw-p8: #d39cb3;
   --cw-p9: #e5abbc;
 
+  /* not known: the gap mark (hatching), never a colour from any data palette */
+  --cw-gap: #5f6b79;
+  --cw-gap-hatch: rgba(95, 107, 121, 0.38);
+
+  /* marks on the dark sea (map): line = official, point = measured, cells = model */
+  --cw-map-official: #f2b04c;
+  --cw-map-measured: #4fd1ae;
+  --cw-map-model: #b58cf0;
+  --cw-map-select: #ffffff;
+  --cw-map-thread: rgba(233, 239, 246, 0.85);
+
+  /* motion (signature §motion). Data never animates between values: swaps dip through the
+     basemap; nothing is interpolated between two days or two observations. */
+  --cw-d-micro: 110ms;
+  --cw-d-short: 180ms;
+  --cw-d-medium: 280ms;
+  --cw-d-long: 460ms;
+  --cw-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --cw-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  /* a lightly damped spring (about 3 % overshoot): sheets and the selection ring only, never data */
+  --cw-ease-settle: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 18.1%, 1.017 23.8%, 1.031 28.6%, 1.022 35.7%, 1.004 47.6%, 0.998 59.5%, 1);
+
   --cw-masthead-h: 56px;
   --cw-tabbar-h: 64px;
 }
@@ -117,6 +140,8 @@
   --cw-serious: #ec835a;
   --cw-critical: #d03b3b;
   --cw-neutral: #8193ac;
+  --cw-gap: #8797ab;
+  --cw-gap-hatch: rgba(176, 196, 220, 0.3);
   --cw-series-toxin: #c9a7ff;
   --cw-series-cells: #7cc4ff;
   --cw-series-temp: #b4c2d6;
@@ -146,6 +171,7 @@
   --color-serious: var(--cw-serious);
   --color-critical: var(--cw-critical);
   --color-neutral: var(--cw-neutral);
+  --color-gap: var(--cw-gap);
   --color-chl: var(--cw-chl);
   --color-measured: var(--cw-chl);
   --color-measured-bg: var(--cw-measured-bg);
@@ -241,6 +267,33 @@ body {
   to { opacity: 1; transform: none; }
 }
 .cw-pop-in { animation: cw-pop-in 140ms ease-out both; }
+
+/* Press feedback: buttons give a little under the finger (signature §11) */
+.cw-press {
+  transition: transform var(--cw-d-micro) var(--cw-ease-standard);
+}
+.cw-press:active {
+  transform: scale(0.97);
+}
+
+/* Kind labels: sentence case led by the matching mark, never tracked capitals (signature P5) */
+.cw-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* Loading words appear only after 400 ms of real waiting, so a fast answer never flickers */
+@keyframes cw-late {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.cw-late {
+  animation: cw-late 160ms linear 400ms both;
+}
 
 @media (prefers-reduced-motion: reduce) {
   * {

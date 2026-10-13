@@ -18,6 +18,7 @@ import { QUANTITY_SHORT, QuantityIndex } from "./QuantityIndex";
 import { SeasonHeatmap } from "./SeasonHeatmap";
 import { StationHeader } from "./StationHeader";
 import { StationRail } from "./StationRail";
+import { Mark } from "@/components/ui/Mark";
 
 const RANGES = [
   { id: "3m", label: "3 mo", days: 91 },
@@ -274,7 +275,7 @@ export function BloomIntelligence({ stations, station, dataset, status, official
             <details open={!narrow} className="group space-y-3" data-testid="season-section" key={narrow ? "n" : "w"}>
               <summary className="flex cursor-pointer list-none flex-wrap items-baseline justify-between gap-x-6 gap-y-1 [&::-webkit-details-marker]:hidden">
                 <div>
-                  <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-measured">Every {narrow ? "month" : "week"} since {station.sample_times[0]?.slice(0, 4) ?? "2014"}</p>
+                  <p className="cw-kind text-measured"><Mark kind="measured" />Every {narrow ? "month" : "week"} since {station.sample_times[0]?.slice(0, 4) ?? "2014"}</p>
                   <h2 id="season-h" className="font-display text-[24px] font-medium leading-tight text-ink">
                     How this season compares: {QUANTITY_SHORT[variable].toLowerCase().replace("pseudo‑nitzschia", "Pseudo‑nitzschia")}
                     <span className="ml-2 align-middle text-[14px] text-accent group-open:hidden lg:hidden">Show</span>
