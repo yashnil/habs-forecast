@@ -53,7 +53,7 @@ describe("next steps", () => {
   it("one step points to the notices that apply, for the chosen species, with the limit nearby", () => {
     const steps = nextSteps(input({ species: speciesById("anchovy-sardine"), audience: "recreational" }));
     const read = steps.find((s) => s.id === "read-notices")!;
-    expect(read.title).toBe("Read the 2 notices that apply here, in the agencies' own words");
+    expect(read.title).toBe("Read the 2 notices that cover these waters, in the agencies' own words");
     expect(read.reason).toMatch(/south limit .* 8\.\d km south/);
   });
 

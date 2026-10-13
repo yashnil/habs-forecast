@@ -53,9 +53,9 @@ test.describe("Coastal mode", () => {
     expect(await steps.count()).toBeGreaterThanOrEqual(5);
     // why each step is suggested opens in place
     await page.getByTestId("why-read-notices").click();
-    await expect(page.getByTestId("step-read-notices")).toContainText("Read the 2 notices that apply here");
+    await expect(page.getByTestId("step-read-notices")).toContainText("Read the 2 notices that cover these waters");
     for (const s of await steps.all()) await expect(s.locator('a[href^="https://"], a[href^="tel:"]')).toHaveCount(1);
-    await expect(page.getByTestId("step-read-notices")).toContainText("Read the 2 notices that apply here");
+    await expect(page.getByTestId("step-read-notices")).toContainText("Read the 2 notices that cover these waters");
     await expect(page.getByTestId("step-species-rules")).toContainText("anchovy or sardine");
     await expect(page.getByTestId("step-region-central")).toContainText("Central region");
     // conditions from NOAA, each with its source and time

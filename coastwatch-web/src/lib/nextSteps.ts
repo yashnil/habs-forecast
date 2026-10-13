@@ -70,7 +70,7 @@ export function nextSteps(x: StepInput): Step[] {
     out.push({
       id: "read-notices",
       kind: "official",
-      title: all.length === 1 ? `Read the notice that applies here: ${first.record.title}` : `Read the ${all.length} notices that apply here, in the agencies' own words`,
+      title: all.length === 1 ? `Read the notice that covers these waters: ${first.record.title}` : `Read the ${all.length} notices that cover these waters, in the agencies' own words`,
       reason: limit ?? (all.length === 1 ? first.basis : all.map((a) => a.record.title).join("; ") + "."),
       when: all.length === 1 && first.record.effective_date ? `since ${x.fmt(first.record.effective_date)}` : undefined,
       source: s ? { label: `${first.record.agency} source`, url: s.url } : { label: AGENCY_LINKS.cdfwAdvisories.label, url: AGENCY_LINKS.cdfwAdvisories.url },
