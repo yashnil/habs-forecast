@@ -62,7 +62,10 @@ def test_satellite_age_alerts_follow_latency_not_clouds(base):
 def test_missing_charm_runs_and_stale_hf_radar(base):
     run = next(r for r in base.forecast_runs if r.group_id == "charm")
     issued = datetime.fromisoformat(run.issued_date + "T12:00:00+00:00")
-    assert "charm_missing" in keys(hl.evaluate(base, None, issued + timedelta(days=hl.CHARM_MAX_AGE_DAYS + 1)))
+    # what the app labels "Stale" alerts (data_stale supersedes the older 3-day charm_missing)
+    assert "data_stale:charm" in keys(hl.evaluate(base, None, issued + timedelta(days=2)))
+    assert "charm_missing" not in keys(hl.evaluate(base, None, issued + timedelta(days=hl.CHARM_MAX_AGE_DAYS + 1)))
+    assert not any(k.endswith(":charm") for k in keys(hl.evaluate(base, None, issued + timedelta(days=1))))
     assert "hfr_stale" in keys(hl.evaluate(base, None, NOW + timedelta(hours=hl.HFR_MAX_AGE_HOURS)))  # newest hour 12:00, now 18:00 + 18 h
     assert "hfr_stale" not in keys(hl.evaluate(base, None, NOW))
 
@@ -115,3 +118,51 @@ def test_a_partly_failing_source_alerts_after_consecutive_runs(base):
     assert "source_degraded:satellite_chl" in keys(h)
     assert "source_degraded:satellite_chl" not in keys(hl.evaluate(part, None, NOW))
 
+
+
+# ---------------------------------------------------------------- 2026-10-13: three failures, no alert
+
+
+def failing_on(m: Manifest, ids: tuple[str, ...], host: str = "coastwatch.pfeg.noaa.gov") -> Manifest:
+    """The 00:42Z run: several sources refused by one host in the same run."""
+    return m.model_copy(update={"sources": [
+        s.model_copy(update={"outcome": "failed", "error": f"probe failed: https://{host}/erddap/griddap/x.csv0 (HTTP Error 403: )"}) if s.source_id in ids else s
+        for s in m.sources
+    ]})
+
+
+def test_one_host_failing_for_several_sources_alerts_on_the_second_run_once(base):
+    m = failing_on(base, ("charm", "hf_radar", "satellite_chl"))
+    h1 = hl.evaluate(m, None, NOW)
+    assert not any(k.startswith("upstream_outage") for k in keys(h1))  # one run: NOAA often refuses a single run
+    assert h1["failing_hosts"] == {"coastwatch.pfeg.noaa.gov": ["charm", "hf_radar", "satellite_chl"]}
+    h2 = hl.evaluate(m, h1, NOW + timedelta(hours=8))
+    assert "upstream_outage:coastwatch.pfeg.noaa.gov" in h2["new_alerts"]
+    # one alert for the host, not one per source
+    assert not any(k.startswith(("source_failing", "source_not_updating", "source_degraded")) for k in keys(h2))
+    h3 = hl.evaluate(m, h2, NOW + timedelta(hours=16))
+    assert h3["new_alerts"] == [] or all(not k.startswith("upstream_outage") for k in h3["new_alerts"])
+    # a single source failing does not count as a host outage
+    one = failing_on(base, ("charm",))
+    assert not any(k.startswith("upstream_outage") for k in keys(hl.evaluate(one, hl.evaluate(one, None, NOW), NOW + timedelta(hours=6))))
+
+
+def test_no_success_for_too_long_alerts_by_time_even_when_runs_drift(base):
+    m = failing_on(base, ("hf_radar",))
+    last = next(s.last_success_at for s in base.sources if s.source_id == "hf_radar")
+    t0 = datetime.fromisoformat(last.replace("Z", "+00:00"))
+    # two failed runs 10 h apart: under the 3-in-a-row count, but over the 18 h budget
+    h1 = hl.evaluate(m, None, t0 + timedelta(hours=10))
+    h2 = hl.evaluate(m, h1, t0 + timedelta(hours=20))
+    assert any(a["key"].endswith(":hf_radar") or a["kind"] == "hfr_stale" for a in h2["alerts"])
+    assert len([a for a in h2["alerts"] if a["key"].endswith(":hf_radar") or a["kind"].startswith("hfr")]) == 1  # one per source
+
+
+def test_every_run_writes_a_freshness_and_coverage_table_with_the_sources_own_dates(base):
+    h = hl.evaluate(base, None, NOW)
+    f = h["freshness"]
+    assert set(f) == {s.source_id for s in base.sources}
+    charm = f["charm"]
+    assert charm["basis"] == "issued_date" and charm["newest_date"] == next(s.latest_issued_date for s in base.sources if s.source_id == "charm")
+    assert 0 < charm["coverage"]["valid_fraction"] <= 1
+    assert "| Source | Last attempt |" in hl.markdown(h)
