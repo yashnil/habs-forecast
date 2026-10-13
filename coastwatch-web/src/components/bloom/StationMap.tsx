@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import Map, { Layer, NavigationControl, Source, type MapLayerMouseEvent, type MapRef } from "react-map-gl/maplibre";
 import { setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { BASEMAP_STYLE, CA_BOUNDS, transformRequest } from "@/lib/basemap";
+import { BASEMAP_STYLE, CA_BOUNDS, TINT_LAYER_IDS, transformRequest } from "@/lib/basemap";
 
 setWorkerUrl("/vendor/maplibre/maplibre-gl-worker.mjs");
 
@@ -77,6 +77,8 @@ export default function StationMap({
         (window as unknown as { __cwStationMap?: unknown }).__cwStationMap = e.target;
         // a small locator: the credits start folded behind their (i) button, one tap away
         e.target.getContainer().querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
+        // a locator with no data colours: the depth-tinted seafloor
+        for (const id of TINT_LAYER_IDS) if (e.target.getLayer(id)) e.target.setLayoutProperty(id, "visibility", "visible");
       }}
       style={{ width: "100%", height: "100%" }}
     >

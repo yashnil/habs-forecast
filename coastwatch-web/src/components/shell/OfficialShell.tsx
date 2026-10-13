@@ -119,11 +119,20 @@ export function OfficialPill() {
   );
 }
 
-const AGENCY_NAME: Record<string, string> = {
-  CDFW: "California Department of Fish and Wildlife",
-  CDPH: "California Department of Public Health",
-  OEHHA: "Office of Environmental Health Hazard Assessment",
-};
+/** The drawer groups notices by what people harvest, from each record's own species list. */
+const GROUPS = [
+  { id: "shellfish", label: "Shellfish: mussels, clams, oysters, scallops" },
+  { id: "crab", label: "Crab" },
+  { id: "fish", label: "Fish" },
+  { id: "other", label: "Other" },
+] as const;
+function groupOf(r: OfficialRecord): (typeof GROUPS)[number]["id"] {
+  const s = r.species.join(" ").toLowerCase();
+  if (/mussel|clam|oyster|scallop|bivalve/.test(s)) return "shellfish";
+  if (/crab|lobster/.test(s)) return "crab";
+  if (/anchov|sardine|salmon|rockfish|halibut|fish|squid/.test(s)) return "fish";
+  return "other";
+}
 
 /** Full list of official notices, opened from the pill or the Notices tab. Paper surface on every page. */
 export function OfficialDrawer() {
@@ -155,7 +164,6 @@ export function OfficialDrawer() {
 
   // Not rendered while closed, so notice ids and test hooks exist once on the page.
   if (!open) return null;
-  const agencies = [...new Set(records.map((r) => r.agency))];
   return (
     <>
       <div className="fixed inset-0 z-50 bg-navy-950/45" onClick={closeDrawer} aria-hidden data-testid="official-drawer-scrim" />
@@ -187,7 +195,17 @@ export function OfficialDrawer() {
           </button>
         </div>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-8 pt-4">
-          {verification && verification.state !== "verified" && ds && <VerificationDetail v={verification} />}
+          {verification && verification.state !== "verified" && ds && (
+            // one line, the reasons one tap away: the list itself comes first
+            <details className="rounded-lg border border-official-line bg-official-bg/60 px-3 py-2 text-[13px]" data-testid="drawer-why">
+              <summary className="cursor-pointer text-official-ink">
+                <b className="font-semibold">Transcribed from agency pages, not verified by a person.</b> Why?
+              </summary>
+              <div className="mt-2">
+                <VerificationDetail v={verification} />
+              </div>
+            </details>
+          )}
           {!ds && (
             <p className="text-[14px] text-ink-2">
               {OFFICIAL_STATUS.notTracked} {OFFICIAL_STATUS.instruction}
@@ -203,18 +221,20 @@ export function OfficialDrawer() {
               ))}
             </section>
           )}
-          {agencies.map((a) => (
-            <section key={a} aria-labelledby={`drawer-${a}`} className="space-y-1.5">
-              <h3 id={`drawer-${a}`} className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">
-                {AGENCY_NAME[a] ?? a} · {records.filter((r) => r.agency === a).length}
-              </h3>
-              {records
-                .filter((r) => r.agency === a)
-                .map((r) => (
+          {GROUPS.map((g) => {
+            const rs = records.filter((r) => groupOf(r) === g.id);
+            if (!rs.length) return null;
+            return (
+              <section key={g.id} aria-labelledby={`drawer-${g.id}`} className="space-y-1.5" data-testid={`drawer-group-${g.id}`}>
+                <h3 id={`drawer-${g.id}`} className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">
+                  {g.label} · {rs.length}
+                </h3>
+                {rs.map((r) => (
                   <NoticeCard key={r.id} r={r} now={now} compact />
                 ))}
-            </section>
-          ))}
+              </section>
+            );
+          })}
           {ds && ds.registry.statements.length > 0 && (
             <details className="rounded-md border border-hairline px-3 py-2 text-[13px] text-ink-2">
               <summary className="cursor-pointer font-medium text-ink">{OFFICIAL_STATUS.statementsHeading}</summary>

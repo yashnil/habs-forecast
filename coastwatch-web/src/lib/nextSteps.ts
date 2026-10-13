@@ -1,6 +1,6 @@
 import type { OfficialDataset } from "@/generated/official";
 import { AGENCY_LINKS } from "@/content/coast";
-import { recordNamesSpecies, type Species } from "@/content/species";
+import { recordNamesSpecies, speciesPhrase, type Species } from "@/content/species";
 import { AUDIENCE, cdfwRegionsAt, type Association } from "@/lib/applicability";
 import type { Audience } from "@/lib/coast";
 import { compass, marineHeadline, type Conditions } from "@/lib/conditions";
@@ -86,13 +86,16 @@ export function nextSteps(x: StepInput): Step[] {
 
   // 4. CDFW statewide statements about this species, quoted
   if (x.species.statementTopic && x.official) {
-    for (const st of x.official.registry.statements.filter((s) => s.topic.toLowerCase().includes(x.species.statementTopic!))) {
+    // statements for the chosen activity (a commercial fisher sees the commercial statement), plus season status
+    const forActivity = (topic: string) =>
+      x.audience === "all" || x.audience === "shellfish" || !/\b(commercial|recreational)\b/i.test(topic) || topic.toLowerCase().includes(x.audience);
+    for (const st of x.official.registry.statements.filter((s) => s.topic.toLowerCase().includes(x.species.statementTopic!) && forActivity(s.topic))) {
       out.push({ id: `statement-${st.id}`, kind: "official", title: `${st.agency}: “${st.statement}”`, reason: st.topic, source: { label: `${st.agency} page`, url: st.source.url } });
     }
   }
 
   // 5. the regulations for this species and region
-  if (x.species.link) out.push({ id: "species-rules", kind: "official", title: `Check the rules for ${x.species.label.toLowerCase()}`, reason: "Seasons, size and bag limits, and gear rules are set by CDFW and can change during a season.", source: x.species.link });
+  if (x.species.link) out.push({ id: "species-rules", kind: "official", title: `Check the rules for ${speciesPhrase(x.species)}`, reason: "Seasons, size and bag limits, and gear rules are set by CDFW and can change during a season.", source: x.species.link });
   if (x.audience !== "commercial") {
     for (const r of cdfwRegionsAt(x.lat).at)
       out.push({ id: `region-${r.id}`, kind: "official", title: `Check CDFW's ${r.name} region sport fishing rules`, reason: `These waters are in the ${r.name} region (${r.limits}).`, source: { label: `CDFW ${r.name} region`, url: r.url } });

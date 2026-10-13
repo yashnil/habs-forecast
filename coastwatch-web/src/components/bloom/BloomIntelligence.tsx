@@ -7,6 +7,8 @@ import type { OfficialDataset } from "@/generated/official";
 import type { PortOfficialRelation } from "@/generated/port_intel";
 import type { SourceStatus } from "@/generated/schema";
 import { StationChart } from "@/components/charts/StationChart";
+import { PlainReading } from "./PlainReading";
+import { useMode } from "@/lib/mode";
 import { AXES, SELECTOR_VARS, type SelectorVar } from "@/lib/bloom";
 import { DAY, monthYear, samples, summaryOf } from "@/lib/observations";
 import { useNow } from "@/lib/useNow";
@@ -91,6 +93,7 @@ export function BloomIntelligence({ stations, station, dataset, status, official
 
   const policy = status?.freshness ?? null;
   const vars = useMemo(() => Object.fromEntries(dataset.variables.map((v) => [v.id, v])) as Record<string, ObsVariable>, [dataset.variables]);
+  const [mode, , modeReady] = useMode();
 
   // the view (quantity, range, year) lives in the link, without a server round trip
   useEffect(() => {
@@ -208,6 +211,11 @@ export function BloomIntelligence({ stations, station, dataset, status, official
         <article className="min-w-0 space-y-5 sm:space-y-7" aria-labelledby="station-h" data-testid="station-detail" data-station={station.station_id}>
           <StationHeader station={station} policy={policy} now={now} portCode={portCode} onChange={() => setPickerOpen(true)} stationCount={stations.length} />
 
+          {/* the server renders the Coastal layout; Research swaps in the full analysis once read */}
+          {(!modeReady || mode === "coastal") && <PlainReading station={station} vars={vars} now={now} />}
+
+          {/* Coastal mode: the full analysis is one tap away; Research mode shows it as before */}
+          <AnalysisFold coastal={!modeReady || mode === "coastal"}>
           <QuantityIndex station={station} vars={vars} selected={variable} onSelect={setVariable} policy={policy} now={now} x0={x0} x1={x1} />
 
           <StationChart
@@ -283,8 +291,25 @@ export function BloomIntelligence({ stations, station, dataset, status, official
           <div className="border-t border-hairline pt-6">
             <AboutData station={station} dataset={dataset} compact={narrow} />
           </div>
+          </AnalysisFold>
         </article>
       </div>
     </div>
+  );
+}
+
+function AnalysisFold({ coastal, children }: { coastal: boolean; children: React.ReactNode }) {
+  if (!coastal) return <>{children}</>;
+  return (
+    <details className="group rounded-[18px] border border-hairline bg-surface" data-testid="bloom-analysis">
+      <summary className="flex min-h-[52px] cursor-pointer items-center justify-between gap-3 px-4 text-[15px] font-medium text-ink sm:px-5">
+        <span>
+          Full station analysis
+          <span className="block text-[13px] font-normal text-ink-3">Every quantity, the chart over time, how this season compares, methods and downloads</span>
+        </span>
+        <span aria-hidden className="text-ink-3 transition-transform group-open:rotate-90">›</span>
+      </summary>
+      <div className="space-y-5 border-t border-hairline px-4 pb-6 pt-5 sm:space-y-7 sm:px-5">{children}</div>
+    </details>
   );
 }

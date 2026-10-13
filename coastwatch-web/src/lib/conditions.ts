@@ -12,8 +12,6 @@
  * Ocean conditions are context for planning a trip. They are not a toxin forecast and say
  * nothing about where fish are.
  */
-import NDBC from "@/content/stations/ndbc-ca.json";
-import COOPS from "@/content/stations/coops-tide-ca.json";
 
 export type Station = { id: string; name: string; lat: number; lon: number; type?: string | null };
 
@@ -32,8 +30,6 @@ export function nearest<T extends Station>(list: T[], lat: number, lon: number, 
     .slice(0, n);
 }
 
-export const BUOYS = NDBC as Station[];
-export const TIDE_STATIONS = COOPS as Station[];
 
 // ---------------------------------------------------------------- NDBC realtime2 standard met
 

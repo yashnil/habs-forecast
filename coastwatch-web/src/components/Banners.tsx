@@ -6,6 +6,7 @@ import { isFixture } from "@/lib/layers";
 import { formatDateTimePT } from "@/lib/time";
 import { Icon } from "@/components/ui/Icon";
 import { CDFW_URL, CDPH_URL, useRegistryDisclosure } from "@/components/shell/OfficialShell";
+import { useMode } from "@/lib/mode";
 
 const link = "font-semibold underline underline-offset-2";
 
@@ -17,6 +18,9 @@ const link = "font-semibold underline underline-offset-2";
  */
 export function DataBanners({ manifest, error }: { manifest: Manifest | null; error: string | null }) {
   const reg = useRegistryDisclosure();
+  // Coastal mode keeps the line to the notices disclosure; failed updates stay under "More",
+  // in the data-status dot, and on each layer that is affected
+  const [mode] = useMode();
   const [open, setOpen] = useState(false);
   const id = useId();
   const unavailable = !!error || !manifest;
@@ -75,7 +79,7 @@ export function DataBanners({ manifest, error }: { manifest: Manifest | null; er
               <span className="sr-only">{reg.reason}</span>
             </p>
           )}
-          {failed.length > 0 && (
+          {failed.length > 0 && mode === "research" && (
             <p role="status" data-testid="source-failure-banner" className="flex shrink-0 items-baseline gap-1.5 text-ink max-md:hidden">
               <span aria-hidden className="text-warning">●</span>
               <span className="sr-only">Latest update failed for {failed.map((s) => s.title).join(", ")}.</span>

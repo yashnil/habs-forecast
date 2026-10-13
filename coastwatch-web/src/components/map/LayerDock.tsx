@@ -207,7 +207,7 @@ export function LayerDock(p: Props) {
         )}
       </header>
       <div className={`min-h-0 space-y-2.5 overflow-y-auto overscroll-contain [scrollbar-width:thin] ${desktop ? `px-3.5 pb-2.5 ${p.group == null ? "pt-3" : "pt-1.5"}` : "pt-2"}`}>
-        {p.group == null ? <NothingCurrent {...p} /> : p.group === "forecast" ? <ForecastSection {...p} /> : p.group === "currents" ? <CurrentsSection {...p} /> : <SatelliteSection {...p} />}
+        {p.group == null ? p.opening ? <NothingCurrent {...p} /> : <BasemapOnly {...p} /> : p.group === "forecast" ? <ForecastSection {...p} /> : p.group === "currents" ? <CurrentsSection {...p} /> : <SatelliteSection {...p} />}
       </div>
     </Region>
   );
@@ -893,6 +893,53 @@ function CombinedSection(p: Props & { currents: LayerArtifact | null }) {
           </ul>
         </>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- basemap only (Coastal mode's opening)
+/** Coastal mode opens on the coast and seafloor. Says what the map shows and offers each data
+ *  layer with its own date; choosing one is one tap. */
+function BasemapOnly(p: Props) {
+  const run = p.run;
+  const sat = satelliteLatest(p.manifest, "olci300") ?? satelliteLatest(p.manifest, "viirs750");
+  const satDate = sat?.time.observed_date ?? null;
+  const btn = "flex w-full items-center justify-between gap-3 rounded-lg border border-hairline-strong px-3 py-2 text-left hover:bg-surface-2";
+  return (
+    <div data-testid="basemap-only" className="space-y-2 text-[13px] leading-snug text-ink-2">
+      <p className="text-[14px] font-semibold text-ink">The coast and seafloor</p>
+      <p>Depth shading from NOAA relief models, ports, and the official notices&apos; areas. Add a layer:</p>
+      <div className="grid gap-1.5 sm:grid-cols-3">
+        <button type="button" className={btn} onClick={() => p.onGroup("forecast")} data-testid="add-forecast">
+          <span>
+            <span className="block text-[14px] font-medium text-ink">Toxin forecast</span>
+            <span className="block text-ink-3">{run ? `NOAA C-HARM, issued ${formatDate(run.issued_date).replace(/^\w+, /, "")}` : "Not available"}</span>
+          </span>
+          <span aria-hidden className="text-ink-3">+</span>
+        </button>
+        <button
+          type="button"
+          className={btn}
+          onClick={() => {
+            if (sat) p.onSat({ product: satelliteLatest(p.manifest, "olci300") ? "olci300" : "viirs750", day: null });
+            p.onGroup("satellite");
+          }}
+          data-testid="add-satellite"
+        >
+          <span>
+            <span className="block text-[14px] font-medium text-ink">Satellite chlorophyll</span>
+            <span className="block text-ink-3">{satDate ? `Newest ${formatDate(satDate).replace(/^\w+, /, "")}` : "Not available"}</span>
+          </span>
+          <span aria-hidden className="text-ink-3">+</span>
+        </button>
+        <button type="button" className={btn} onClick={() => p.onGroup("currents")} data-testid="add-currents">
+          <span>
+            <span className="block text-[14px] font-medium text-ink">Surface currents</span>
+            <span className="block text-ink-3">HF radar, observed</span>
+          </span>
+          <span aria-hidden className="text-ink-3">+</span>
+        </button>
+      </div>
     </div>
   );
 }

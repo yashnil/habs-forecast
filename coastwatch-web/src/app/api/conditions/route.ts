@@ -2,9 +2,8 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
+import { BUOYS, TIDE_STATIONS } from "@/lib/noaaStations";
 import {
-  BUOYS,
-  TIDE_STATIONS,
   nearest,
   parseAlerts,
   parseNdbc,
@@ -145,19 +144,25 @@ async function buoyPart(lat: number, lon: number): Promise<Conditions["buoy"]> {
 
 async function tidePart(lat: number, lon: number): Promise<Conditions["tides"]> {
   const source = "NOAA CO-OPS tide predictions";
-  const s = nearest(TIDE_STATIONS, lat, lon, 1, 40)[0];
-  if (!s) return { status: "none", reason: "No tide prediction station within 40 km.", source };
+  const cands = nearest(TIDE_STATIONS, lat, lon, 3, 40);
+  if (!cands.length) return { status: "none", reason: "No tide prediction station within 40 km.", source };
   const d = now();
   // predictions are requested in local time from the start of today in California
   const ymd = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit" }).format(d).replaceAll("-", "");
-  const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&station=${s.id}&datum=MLLW&interval=hilo&units=english&time_zone=lst_ldt&format=json&begin_date=${ymd}&range=96&application=CoastWatch`;
-  try {
-    const tides = parseTides(await get(url, "json"));
-    if (!tides.length) return { status: "unavailable", reason: "CO-OPS returned no predictions.", source, url };
-    return { status: "ok", data: tides, source, url: `https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${s.id}`, fetchedAt: d.toISOString(), station: { id: s.id, name: s.name, km: s.km } };
-  } catch (e) {
-    return { status: "unavailable", reason: `Tide predictions did not load (${msg(e)}).`, source, url };
+  const errors: string[] = [];
+  // some stations publish no high/low predictions: use the nearest that does
+  for (const s of cands) {
+    const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&station=${s.id}&datum=MLLW&interval=hilo&units=english&time_zone=lst_ldt&format=json&begin_date=${ymd}&range=96&application=CoastWatch`;
+    try {
+      const tides = parseTides(await get(url, "json"));
+      if (tides.length)
+        return { status: "ok", data: tides, source, url: `https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${s.id}`, fetchedAt: d.toISOString(), station: { id: s.id, name: s.name, km: s.km } };
+      errors.push(`${s.id}: no predictions`);
+    } catch (e) {
+      errors.push(`${s.id}: ${msg(e)}`);
+    }
   }
+  return { status: "unavailable", reason: `No tide predictions from the nearest stations (${errors.join("; ")}).`, source };
 }
 
 export async function GET(req: Request) {

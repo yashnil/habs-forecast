@@ -235,6 +235,8 @@ test.describe("Fisheries (M7) before the chart is measured", () => {
   test.use({ viewport: { width: 390, height: 844 }, javaScriptEnabled: false });
   test("the server-rendered page fits a phone and carries the story", async ({ page }) => {
     await page.goto(`${OK}/fisheries`);
+    // without JavaScript the page is the Coastal layout; the history opens natively from its summary
+    await page.getByTestId("fisheries-history").locator("summary").first().click();
     await expect(page.getByTestId("landings-chart")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
     await expect(page.getByTestId("exposure-definition")).toContainText("not a prediction of losses");

@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { BUOYS, TIDE_STATIONS, compass, marineHeadline, nearest, parseAlerts, parseNdbc, parseTides, parseZoneForecast } from "@/lib/conditions";
+import { BUOYS, TIDE_STATIONS } from "@/lib/noaaStations";
+import { compass, marineHeadline, nearest, parseAlerts, parseNdbc, parseTides, parseZoneForecast } from "@/lib/conditions";
 
 /** Recorded on 2026-10-13 from NWS (PZZ535 Monterey Bay), NDBC 46042 and CO-OPS 9413450 (Monterey). */
 const F = path.resolve(__dirname, "fixtures/conditions");

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { LayerArtifact } from "@/generated/schema";
-import { SPECIES, recordNamesSpecies, type Species, type SpeciesId } from "@/content/species";
+import { SPECIES, recordNamesSpecies, speciesPhrase, type Species, type SpeciesId } from "@/content/species";
 import { AUDIENCE, type Association } from "@/lib/applicability";
 import { AUDIENCES, type Audience } from "@/lib/coast";
 import { compass, marineHeadline, type Conditions } from "@/lib/conditions";
@@ -97,7 +97,8 @@ export function PlanBar({
             ))}
           </select>
         </label>
-        <div role="group" aria-label="Day" className="flex gap-1" data-testid="coast-day">
+        <div role="group" aria-label="Toxin forecast day" className="flex items-center gap-1" data-testid="coast-day">
+          <span className="mr-1 text-[13px] text-ink-3 max-[420px]:sr-only">Forecast day</span>
           {leads.map((l, i) =>
             l?.time.valid_date ? (
               <button
@@ -147,7 +148,7 @@ export function OfficialBrief({
   const unresolved = live.filter((a) => a.tier === "unresolved" && fits(a, audience) && recordNamesSpecies(a.record.species, species));
   const outside = live.filter((a) => a.tier === "outside").length;
   const disputed = assocs.filter((a) => a.dispute);
-  const forWhat = species.id === "any" ? (audience === "all" ? "" : ` for ${AUDIENCES.find((x) => x.id === audience)!.label.toLowerCase()}`) : ` for ${species.label.toLowerCase()}`;
+  const forWhat = species.id === "any" ? (audience === "all" ? "" : ` for ${AUDIENCES.find((x) => x.id === audience)!.label.toLowerCase()}`) : ` for ${speciesPhrase(species)}`;
   return (
     <section aria-labelledby="brief-official-h" className="rounded-[18px] border border-official-line bg-official-bg/60 px-4 py-4 sm:px-5" data-testid="brief-official">
       <div className="flex items-center justify-between gap-3">

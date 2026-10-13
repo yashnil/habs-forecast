@@ -72,6 +72,11 @@ export const SPECIES: Species[] = [
   { id: "lobster", label: "Spiny lobster", match: ["lobster"], activities: ["commercial", "recreational"], statementTopic: "lobster", link: { label: "CDFW spiny lobster", url: "https://wildlife.ca.gov/Regions/Marine/Lobster" } },
 ];
 
+/** The label inside a sentence: "razor clams", but "Dungeness crab" and "California halibut" keep their capital. */
+export function speciesPhrase(s: Species): string {
+  return /^(Dungeness|California)/.test(s.label) ? s.label : s.label.charAt(0).toLowerCase() + s.label.slice(1);
+}
+
 export function speciesById(id: string | null | undefined): Species {
   return SPECIES.find((s) => s.id === id) ?? SPECIES[0];
 }
