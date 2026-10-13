@@ -27,6 +27,12 @@ in the published dataset like everything else). What alerts, and why that thresh
                       previous one (the 2026-10-13 00:42Z run: C-HARM, HF radar and VIIRS all
                       got HTTP 403 from coastwatch.pfeg.noaa.gov, each on its first failure, so
                       nothing alerted). One alert per host, not one per source.
+- upstream_intermittent  two or more sources failed against the same host in at least
+                      INTERMITTENT_MIN_RUNS of the last INTERMITTENT_WINDOW runs, never two in a row
+                      (a replay of every published run, 2026-10-08..13: coastwatch.pfeg.noaa.gov
+                      refused C-HARM, HF radar and VIIRS together in 4 single runs within 3.5 days;
+                      each recovered by the next run, so no other check fired). One alert per host;
+                      it clears only after a whole window without such a failure.
 - data_stale          the newest published C-HARM run is older than its own freshness policy
                       allows (what the app labels "Stale"), whether or not the run succeeded. The message says which: CoastWatch could not reach the
                       source (last error), or the source published nothing newer.
@@ -66,6 +72,8 @@ NOAA_SOURCES = ("charm", "satellite_chl", "hf_radar")
 # daily sources; HF radar is hourly upstream)
 SUCCESS_BUDGET_HOURS = {"charm": 30, "satellite_chl": 30, "gibs_chl": 36, "hf_radar": 18, "official": 30, "calhabmap": 48, "port_intel": 30}
 OUTAGE_MIN_SOURCES = 2
+INTERMITTENT_WINDOW = 10
+INTERMITTENT_MIN_RUNS = 3
 # sources whose published data are checked against the same freshness policy the app uses to
 # label them. C-HARM: the app says "Stale" from 2 days, but charm_missing waited for 3 (the
 # 2026-10-13 run published a 2-day-old run, labelled Stale, with no alert). Satellite and HF
@@ -177,6 +185,15 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
         if h in prev_hosts:
             alert(f"upstream_outage:{h}", "upstream_outage", f"{h}: {len(ids)} sources failed against it in this run and the previous one ({', '.join(ids)}). The last published data stay live with their own dates.")
 
+    # the same host refusing several sources again and again, one run at a time
+    history = (prev.get("failing_hosts_history") or [])[-(INTERMITTENT_WINDOW - 1):] + [{"at": now_iso, "hosts": sorted(failing_hosts)}]
+    for h in sorted({h for run_ in history for h in run_["hosts"]}):
+        n = sum(h in run_["hosts"] for run_ in history)
+        # once open, it stays open until the host has a clean window (no flapping, no repeat comment)
+        need = 1 if f"upstream_intermittent:{h}" in prev_alerts else INTERMITTENT_MIN_RUNS
+        if n >= need and f"upstream_outage:{h}" not in {a["key"] for a in alerts}:
+            alert(f"upstream_intermittent:{h}", "upstream_intermittent", f"{h}: several sources failed against it in {n} of the last {len(history)} runs (recovering in between). Each failed run keeps the last good data, which age meanwhile; a block on the runners' addresses or a rate limit would look like this.")
+
     # stale-but-published: the newest data of a daily source against its own policy
     freshness: dict[str, dict] = {}
     for st in manifest.sources:
@@ -214,6 +231,11 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
     if hourly and "hf_radar" in freshness:
         newest = hourly[-1]
         freshness["hf_radar"]["coverage"] = {"newest_hour": newest.time.valid_time, "n_valid": newest.qc.n_valid if newest.qc else None}
+        # an hourly source: its date alone reads "1 d, current" for an hour 28 h old
+        hours = (now - _dt(newest.time.valid_time or now_iso)).total_seconds() / 3600
+        freshness["hf_radar"]["age_hours"] = round(hours)
+        if hours > HFR_MAX_AGE_HOURS:
+            freshness["hf_radar"]["state"] = "stale"
 
     # one alert per source (the root cause first), so one outage is one message, not five:
     # an upstream outage covers the sources failing against that host; stale data outranks a
@@ -267,10 +289,12 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
             "min_consecutive_failures": MIN_CONSECUTIVE_FAILURES, "olci_max_age_days": OLCI_MAX_AGE_DAYS, "viirs_max_age_days": VIIRS_MAX_AGE_DAYS,
             "charm_max_age_days": CHARM_MAX_AGE_DAYS, "hfr_max_age_hours": HFR_MAX_AGE_HOURS, "hfr_coverage_drop": HFR_COVERAGE_DROP,
             "publish_max_age_hours": PUBLISH_MAX_AGE_HOURS, "success_budget_hours": SUCCESS_BUDGET_HOURS, "outage_min_sources": OUTAGE_MIN_SOURCES,
+            "intermittent_window": INTERMITTENT_WINDOW, "intermittent_min_runs": INTERMITTENT_MIN_RUNS,
         },
         "sources": sources,
         "freshness": freshness,
         "failing_hosts": failing_hosts,
+        "failing_hosts_history": history,
         "charm_input": charm_input or prev_input,
         "hfr_regions_last_covered": seen,
         "alerts": alerts,
@@ -291,7 +315,7 @@ def markdown(h: dict, run_url: str = "") -> str:
     if h.get("freshness"):
         lines += ["", "| Source | Last attempt | Last success | Newest data | Age | State |", "|---|---|---|---|---|---|"]
         for sid, f in h["freshness"].items():
-            lines.append(f"| {sid} | {f['outcome']} {f['last_attempt_at'] or ''} | {f['last_success_at'] or 'never'} | {f['basis'] or ''} {f['newest_date'] or '—'} | {'' if f['age_days'] is None else str(f['age_days']) + ' d'} | {f['state'] or '—'} |")
+            lines.append(f"| {sid} | {f['outcome']} {f['last_attempt_at'] or ''} | {f['last_success_at'] or 'never'} | {f['basis'] or ''} {f['newest_date'] or '—'} | {str(f['age_hours']) + ' h' if f.get('age_hours') is not None else '' if f['age_days'] is None else str(f['age_days']) + ' d'} | {f['state'] or '—'} |")
     lines += ["", "Thresholds and rationale: pipeline/coastwatch_pipeline/health.py. The published data keep their own dates; nothing is relabelled."]
     return "\n".join(lines)
 

@@ -147,6 +147,32 @@ def test_one_host_failing_for_several_sources_alerts_on_the_second_run_once(base
     assert not any(k.startswith("upstream_outage") for k in keys(hl.evaluate(one, hl.evaluate(one, None, NOW), NOW + timedelta(hours=6))))
 
 
+def test_a_host_refusing_several_sources_in_single_runs_again_and_again_alerts_once(base):
+    """The replayed 2026-10-09..13 pattern: pfeg refused C-HARM, HF radar and VIIRS together in
+    single runs, recovering in between, so neither the consecutive nor the outage check fired."""
+    bad, good = failing_on(base, ("charm", "hf_radar", "satellite_chl")), base
+    pattern = [bad, good, good, bad, good, bad, good, good, good, good, bad, good]
+    h, opened, t = None, [], NOW
+    for i, m in enumerate(pattern):
+        h = hl.evaluate(m, h, t)
+        opened += [(i, k) for k in h["new_alerts"] if k.startswith("upstream_")]
+        t += timedelta(hours=8)
+    # opens on the third burst, once, and stays open across the recoveries (no flapping)
+    assert opened == [(5, "upstream_intermittent:coastwatch.pfeg.noaa.gov")]
+    assert "upstream_intermittent:coastwatch.pfeg.noaa.gov" in keys(h)
+    # clears after a whole window without such a failure
+    for _ in range(hl.INTERMITTENT_WINDOW):
+        h = hl.evaluate(good, h, t)
+        t += timedelta(hours=8)
+    assert not any(k.startswith("upstream_intermittent") for k in keys(h))
+    # two isolated bursts are ordinary NOAA behaviour
+    h = None
+    for m in [bad, good, good, good, bad, good]:
+        h = hl.evaluate(m, h, t)
+        t += timedelta(hours=8)
+        assert not any(k.startswith("upstream_intermittent") for k in keys(h))
+
+
 def test_no_success_for_too_long_alerts_by_time_even_when_runs_drift(base):
     m = failing_on(base, ("hf_radar",))
     last = next(s.last_success_at for s in base.sources if s.source_id == "hf_radar")
