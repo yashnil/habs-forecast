@@ -298,18 +298,27 @@ export function BloomIntelligence({ stations, station, dataset, status, official
   );
 }
 
+/**
+ * The full analysis inside one element whatever the mode: Coastal shows it as a closed fold;
+ * Research holds it open with no summary. The same tree in both modes, so the chart is never
+ * re-mounted when the device's choice is read after the first render.
+ */
 function AnalysisFold({ coastal, children }: { coastal: boolean; children: React.ReactNode }) {
-  if (!coastal) return <>{children}</>;
   return (
-    <details className="group rounded-[18px] border border-hairline bg-surface" data-testid="bloom-analysis">
-      <summary className="flex min-h-[52px] cursor-pointer items-center justify-between gap-3 px-4 text-[15px] font-medium text-ink sm:px-5">
+    <details
+      open={coastal ? undefined : true}
+      className={coastal ? "group rounded-[18px] border border-hairline bg-surface" : "contents"}
+      data-testid="bloom-analysis"
+      data-mode={coastal ? "coastal" : "research"}
+    >
+      <summary className={coastal ? "flex min-h-[52px] cursor-pointer items-center justify-between gap-3 px-4 text-[15px] font-medium text-ink sm:px-5" : "hidden"}>
         <span>
           Full station analysis
           <span className="block text-[13px] font-normal text-ink-3">Every quantity, the chart over time, how this season compares, methods and downloads</span>
         </span>
         <span aria-hidden className="text-ink-3 transition-transform group-open:rotate-90">›</span>
       </summary>
-      <div className="space-y-5 border-t border-hairline px-4 pb-6 pt-5 sm:space-y-7 sm:px-5">{children}</div>
+      <div className={coastal ? "space-y-5 border-t border-hairline px-4 pb-6 pt-5 sm:space-y-7 sm:px-5" : "space-y-5 sm:space-y-7"}>{children}</div>
     </details>
   );
 }

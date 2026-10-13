@@ -116,6 +116,21 @@ test.describe("Coastal mode", () => {
     await ctx.close();
   });
 
+  test("reading the device's mode never re-mounts the Bloom chart or the Fisheries history (Research)", async ({ browser }) => {
+    // regression: the Research layout used to replace the Coastal tree after the first render, so
+    // the chart was detached and drawn again (a flash for researchers; CI caught a detached element)
+    const { ctx, page } = await coastal(browser);
+    await page.addInitScript(() => localStorage.setItem("cw-mode-v1", "research"));
+    for (const [url, id] of [["/bloom?range=3m", "primary-chart"], ["/fisheries", "landings-chart"]] as const) {
+      await page.goto(`${OK}${url}`);
+      const el = await page.getByTestId(id).elementHandle();
+      await page.waitForTimeout(1500);
+      expect(await el!.evaluate((n) => n.isConnected), `${id} stayed in the page`).toBe(true);
+      await expect(page.getByTestId(id)).toBeVisible();
+    }
+    await ctx.close();
+  });
+
   for (const [name, opts] of [["desktop", { viewport: { width: 1440, height: 900 } }], ["phone", PHONE]] as const) {
     test(`${name}: axe finds nothing on the Coastal briefing`, async ({ browser }) => {
       const { ctx, page } = await coastal(browser, opts);

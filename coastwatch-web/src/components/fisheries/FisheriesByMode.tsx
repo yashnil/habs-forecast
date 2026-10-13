@@ -23,13 +23,15 @@ export function FisheriesByMode({ official, children }: { official: OfficialData
   const [sp, setSp] = useState<SpeciesId>("dungeness");
   // the server renders the Coastal layout (it works without JavaScript: the history is a native
   // <details>); a visitor set up for Research gets the history first once their choice is read
-  if (ready && mode === "research") return <>{children}</>;
+  const research = ready && mode === "research";
   const s = SPECIES.find((x) => x.id === sp)!;
   const notices = currentRecords(official).filter((r) => recordNamesSpecies(r.species, s));
   const disputed = disputedRecords(official).filter((d) => recordNamesSpecies(d.record.species, s));
   const statements = s.statementTopic ? (official?.registry.statements ?? []).filter((x) => x.topic.toLowerCase().includes(s.statementTopic!)) : [];
   return (
-    <div className="mx-auto w-full max-w-[1280px] space-y-6 px-4 pb-16 pt-5 sm:px-8" data-testid="fisheries-coastal">
+    <div className={research ? "" : "mx-auto w-full max-w-[1280px] space-y-6 px-4 pb-16 pt-5 sm:px-8"} data-testid={research ? "fisheries-research" : "fisheries-coastal"}>
+      {!research && (
+      <>
       <header className="space-y-2">
         <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-accent">Fisheries</p>
         <h1 className="font-display text-[32px] font-medium leading-tight text-ink sm:text-[40px]">Your fishery, now</h1>
@@ -114,15 +116,18 @@ export function FisheriesByMode({ official, children }: { official: OfficialData
           </div>
         </div>
       </section>
-      <details className="group rounded-[18px] border border-hairline bg-surface" data-testid="fisheries-history">
-        <summary className="flex min-h-[52px] cursor-pointer items-center justify-between gap-3 px-4 text-[15px] font-medium text-ink sm:px-5">
+      </>
+      )}
+      {/* the history is always inside this one element, so it is never re-mounted when the mode is read */}
+      <details open={research ? true : undefined} className={research ? "contents" : "group rounded-[18px] border border-hairline bg-surface"} data-testid="fisheries-history">
+        <summary className={research ? "hidden" : "flex min-h-[52px] cursor-pointer items-center justify-between gap-3 px-4 text-[15px] font-medium text-ink sm:px-5"}>
           <span>
             History: what California&apos;s toxin-affected fisheries have landed
             <span className="block text-[13px] font-normal text-ink-3">Statewide landed value 2015–2024 from NOAA. Past landings, not this season or these waters.</span>
           </span>
           <span aria-hidden className="text-ink-3 transition-transform group-open:rotate-90">›</span>
         </summary>
-        <div className="border-t border-hairline">{children}</div>
+        <div className={research ? "" : "border-t border-hairline"}>{children}</div>
       </details>
     </div>
   );
