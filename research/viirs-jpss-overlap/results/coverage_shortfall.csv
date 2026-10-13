@@ -1,0 +1,11 @@
+stratum,metric,n,median,p25,p75,p90,max,mean
+all,deficit_pts_on_23_failing_days (S-NPP - union; negative = union higher),23,1.11,0.634,4.508,8.309,25.013,3.446
+north,deficit_pts_on_23_failing_days (S-NPP - union; negative = union higher),23,0.683,-0.399,6.671,10.38,12.157,2.479
+central,deficit_pts_on_23_failing_days (S-NPP - union; negative = union higher),23,0.907,0.24,2.471,7.344,51.547,4.002
+south,deficit_pts_on_23_failing_days (S-NPP - union; negative = union higher),23,2.04,0.566,3.405,6.748,19.679,3.11
+nearshore_<5km,deficit_pts_on_23_failing_days (S-NPP - union; negative = union higher),23,-5.277,-9.362,2.298,5.719,9.957,-4.525
+5-20km,deficit_pts_on_23_failing_days (S-NPP - union; negative = union higher),23,0.421,-3.341,3.696,8.919,15.68,0.42
+offshore_>=5km,deficit_pts_on_23_failing_days (S-NPP - union; negative = union higher),23,1.239,0.756,4.456,8.645,25.438,3.601
+all,ratio_union_over_snpp_on_failing_days,23,0.907,0.752,0.961,0.988,0.999,0.824
+all,ratio_union_over_snpp_days_with_snpp>0,88,1.081,0.999,1.423,3.015,14.976,1.829
+all,deficit_pts_all_98_days,98,-2.438,-7.066,0.0,1.45,25.013,-6.426
