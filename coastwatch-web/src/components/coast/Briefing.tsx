@@ -153,7 +153,7 @@ export function OfficialBrief({
     <section aria-labelledby="brief-official-h" className="rounded-[18px] border border-official-line bg-official-bg/60 px-4 py-4 sm:px-5" data-testid="brief-official">
       <div className="flex items-center justify-between gap-3">
         <Eyebrow tone="official">Official notices · these waters</Eyebrow>
-        <span className="rounded-full border border-official-line px-2 py-0.5 text-[12px] font-medium text-official-ink" data-testid="brief-verification">
+        <span className="shrink-0 whitespace-nowrap rounded-full border border-official-line px-2 py-0.5 text-[12px] font-medium text-official-ink" data-testid="brief-verification">
           {verification?.state === "verified" ? "Checked by a person" : "Not verified"}
         </span>
       </div>
@@ -293,12 +293,19 @@ export function stationName(n: string): string {
   return s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : s;
 }
 
+/** What a Coastal reader needs from a failed or empty part: plain words; the technical reason goes in `title`. */
+function plain(part: { status: string; reason?: string } | undefined, what: string): { text: string; detail?: string } {
+  if (!part || !("reason" in part) || !part.reason) return { text: what };
+  if (part.status === "unavailable") return { text: `NOAA's ${what} service did not answer just now.`, detail: part.reason };
+  return { text: part.reason };
+}
+
 export type ToxinNear = { station: string; km: number; date: string; ageDays: number; value: string } | null;
 
-function Tile({ label, value, sub, state, testid, href }: { label: string; value: React.ReactNode; sub: React.ReactNode; state: "ok" | "old" | "none"; testid: string; href?: string }) {
+function Tile({ label, value, sub, state, testid, href, detail }: { label: string; value: React.ReactNode; sub: React.ReactNode; state: "ok" | "old" | "none"; testid: string; href?: string; detail?: string }) {
   const dot = { ok: "bg-measured", old: "bg-warning", none: "bg-ink-3/50" }[state];
   return (
-    <div className="min-w-0" data-testid={testid} data-state={state}>
+    <div className="min-w-0" data-testid={testid} data-state={state} title={detail}>
       <p className="flex items-center gap-1.5 text-[13px] text-ink-3">
         <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${dot}`} />
         {label}
@@ -377,7 +384,7 @@ export function ConditionsCard({
             testid="cond-marine"
           />
         ) : (
-          <Tile label="Marine forecast" value={c ? "Not available" : wait} sub={c && "reason" in c.marine ? c.marine.reason : "NWS"} state="none" testid="cond-marine" />
+          <Tile label="Marine forecast" value={c ? "Not available" : wait} sub={c ? plain(c.marine, "forecast").text : "NWS"} detail={c ? plain(c.marine, "forecast").detail : undefined} href={c && "url" in c.marine ? c.marine.url : undefined} state="none" testid="cond-marine" />
         )}
         {c?.buoy.status === "ok" && c.buoy.station ? (
           <Tile
@@ -395,7 +402,7 @@ export function ConditionsCard({
             testid="cond-buoy"
           />
         ) : (
-          <Tile label="Measured nearby" value={c ? "No recent buoy reading" : wait} sub={c && "reason" in c.buoy ? c.buoy.reason : "NDBC"} state="none" testid="cond-buoy" />
+          <Tile label="Measured nearby" value={c ? "No recent buoy reading" : wait} sub={c ? plain(c.buoy, "buoy data").text : "NDBC"} detail={c ? plain(c.buoy, "buoy data").detail : undefined} state="none" testid="cond-buoy" />
         )}
         {nextTides?.length ? (
           <Tile
@@ -407,7 +414,7 @@ export function ConditionsCard({
             testid="cond-tides"
           />
         ) : (
-          <Tile label="Tides" value={c ? "Not available" : wait} sub={c && "reason" in c.tides ? c.tides.reason : "NOAA CO-OPS"} state="none" testid="cond-tides" />
+          <Tile label="Tides" value={c ? "Not available" : wait} sub={c ? plain(c.tides, "tide prediction").text : "NOAA CO-OPS"} detail={c ? plain(c.tides, "tide prediction").detail : undefined} state="none" testid="cond-tides" />
         )}
         <Tile
           label="Toxin in seawater · nearest sample"

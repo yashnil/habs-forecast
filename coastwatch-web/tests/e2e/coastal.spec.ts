@@ -76,6 +76,18 @@ test.describe("Coastal mode", () => {
     await ctx.close();
   });
 
+  test("a NOAA outage reads in plain words, with the technical reason kept for anyone who looks", async ({ browser }) => {
+    // a point on the water with no recorded NOAA responses: every live request fails like an outage
+    const { ctx, page } = await coastal(browser);
+    await page.goto(`${OK}/coast?place=point-36.700,-122.300`);
+    const marine = page.getByTestId("cond-marine");
+    await expect(marine).toContainText("did not answer just now");
+    await expect(marine).toHaveAttribute("title", /HTTP 503/);
+    await expect(marine).not.toContainText("HTTP 503");
+    await expect(page.getByTestId("step-marine-gap")).toContainText("Check the NWS marine forecast directly");
+    await ctx.close();
+  });
+
   test("switching to Research opens the science, is kept on the device, and a link's mode wins without being saved", async ({ browser }) => {
     const { ctx, page } = await coastal(browser);
     await page.goto(`${OK}/coast?place=port-550`);
