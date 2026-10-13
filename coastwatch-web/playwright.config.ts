@@ -27,7 +27,10 @@ export default defineConfig({
   timeout: 45_000,
   fullyParallel: true,
   // a failure keeps its evidence: the HTML report, a trace (DOM, network, console) and a screenshot
-  reporter: [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
+  // in CI each failure is also a GitHub annotation on the failing test's line
+  reporter: process.env.CI
+    ? [["list"], ["github"], ["html", { open: "never", outputFolder: "playwright-report" }]]
+    : [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
   use: {
     storageState: dismissedIntro,
     viewport: { width: 1440, height: 900 },

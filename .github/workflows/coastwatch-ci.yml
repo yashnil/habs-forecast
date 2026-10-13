@@ -1,31 +1,61 @@
 name: CoastWatch CI
 
+# One run per pushed commit. Pushes cover every branch: main, feature branches with or without a
+# pull request, and draft PRs (a push run's checks are attached to the commit, so they show on
+# the PR). There is deliberately no `pull_request` trigger: with both, every push to a PR branch
+# ran the whole suite twice on the same commit and sent two failure emails ("Run failed" for the
+# push run, "PR run failed" for the pull_request run). Check names stay `pipeline` and `web`.
+#
+# Which commits need the full checks is decided by the `scope` job, not a `paths:` filter: a push
+# filter only sees the files in that push, so a docs-only commit on top of a code branch would
+# leave the PR's head without checks. `scope` compares the whole branch with main (as a
+# pull_request run would); main compares with the previous main commit.
 on:
   push:
-    paths:
-      - "pipeline/**"
-      - "coastwatch-web/**"
-      - "schemas/**"
-      - "data/curated/**"
-      - ".github/workflows/coastwatch-ci.yml"
-  pull_request:
-    paths:
-      - "pipeline/**"
-      - "coastwatch-web/**"
-      - "schemas/**"
-      - "data/curated/**"
-      - ".github/workflows/coastwatch-ci.yml"
+  workflow_dispatch:
 
 # Read-only token: CI never writes to the repository.
 permissions:
   contents: read
 
+# A newer push to the same feature branch supersedes the older run; main is never cancelled
+# (every main commit keeps its full result).
 concurrency:
   group: coastwatch-ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: diff
+        env:
+          BEFORE: ${{ github.event.before }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then echo "code=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            base="$BEFORE"; git cat-file -e "$base^{commit}" 2>/dev/null || base="HEAD~1"
+          else
+            base=$(git merge-base origin/main HEAD)
+          fi
+          changed=$(git diff --name-only "$base" HEAD)
+          echo "Files changed since $base:"; echo "$changed" | head -50
+          if echo "$changed" | grep -qE '^(pipeline/|coastwatch-web/|schemas/|data/curated/|\.github/workflows/coastwatch-ci\.yml$)'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"; echo "No pipeline, web, schema or registry change: the full checks are not needed."
+          fi
+
   pipeline:
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -37,9 +67,12 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: pipeline/uv.lock
       - run: uv sync
       - name: Offline tests (recorded fixtures; the single live test is run by the data workflow)
-        run: uv run pytest -rs
+        # four processes: ~3 min instead of ~12; the tests write only to their own temp dirs
+        run: uv run pytest -rs -n 4
       - name: JSON Schema is in sync with the models
         run: uv run cwp schema && git diff --exit-code ../schemas
       - name: Committed web fixture data is reproducible
@@ -49,7 +82,10 @@ jobs:
           uv run cwp fixture --scenario charm-failed --out ../coastwatch-web/tests/fixture-data-failed/v1
           git diff --exit-code -- '../coastwatch-web/tests/*.json' '../coastwatch-web/tests/*.geojson'
 
-  web:
+  web-static:
+    # generated types, lint, typecheck and unit tests (fast; runs beside the browser shards)
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -71,15 +107,65 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+
+  web-e2e:
+    # the browser suite in two halves on two runners (each builds once)
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    defaults:
+      run:
+        working-directory: coastwatch-web
+    env:
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: coastwatch-web/package-lock.json
+      - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Production build + end-to-end tests on fixture data
-        run: npm run test:e2e
+      - name: Reuse the Next.js build cache (keyed on the lockfile and the sources)
+        uses: actions/cache@v4
+        with:
+          path: coastwatch-web/.next/cache
+          key: nextjs-${{ hashFiles('coastwatch-web/package-lock.json') }}-${{ hashFiles('coastwatch-web/src/**') }}
+          restore-keys: nextjs-${{ hashFiles('coastwatch-web/package-lock.json') }}-
+      - name: Production build + end-to-end tests on fixture data (shard ${{ matrix.shard }} of 2)
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/2
       - name: Keep the browser-test evidence when a test fails
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: |
             coastwatch-web/playwright-report
             coastwatch-web/test-results
           retention-days: 14
+
+  web:
+    # The stable check name for the web: passes only if the static checks and every browser
+    # shard passed. It always runs (if: always()), so a failed or cancelled part is a failure
+    # here, never a "skipped" check that could read as passing.
+    needs: [scope, web-static, web-e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: All web checks passed
+        env:
+          CODE: ${{ needs.scope.outputs.code }}
+          SCOPE: ${{ needs.scope.result }}
+          RESULTS: ${{ needs.web-static.result }} ${{ needs.web-e2e.result }}
+        run: |
+          [ "$SCOPE" = "success" ] || { echo "the scope check did not run ($SCOPE)"; exit 1; }
+          if [ "$CODE" != "true" ]; then echo "No web change on this branch; nothing to check."; exit 0; fi
+          echo "web-static and web-e2e: $RESULTS"
+          for r in $RESULTS; do [ "$r" = "success" ] || { echo "a web check did not pass ($r)"; exit 1; }; done
