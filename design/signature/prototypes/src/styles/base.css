@@ -1,0 +1,100 @@
+@import "./tokens.css";
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font: var(--cw-t-body);
+  color: var(--cw-ink);
+  background: var(--cw-page);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "kern";
+  font-optical-sizing: auto;
+}
+h1, h2, h3, h4, p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+a { color: var(--cw-accent); text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: none; box-shadow: var(--cw-focus-ring); border-radius: 6px; }
+.num { font-variant-numeric: tabular-nums lining-nums; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------------------------------------------------------------- type roles */
+.t-display { font: var(--cw-t-display); letter-spacing: -0.012em; font-variation-settings: "opsz" 72; }
+.t-title { font: var(--cw-t-title); letter-spacing: -0.008em; font-variation-settings: "opsz" 48; }
+.t-headline { font: var(--cw-t-headline); font-variation-settings: "opsz" 24; }
+.t-lead { font: var(--cw-t-lead); color: var(--cw-ink-2); }
+.t-body { font: var(--cw-t-body); }
+.t-ui { font: var(--cw-t-ui); }
+.t-label { font: var(--cw-t-label); color: var(--cw-ink-2); }
+.t-meta { font: var(--cw-t-meta); color: var(--cw-ink-3); }
+.t-micro { font: var(--cw-t-micro); color: var(--cw-ink-3); }
+.t-value { font: var(--cw-t-value); font-variant-numeric: tabular-nums lining-nums; letter-spacing: -0.01em; }
+.t-value-sm { font: var(--cw-t-value-sm); font-variant-numeric: tabular-nums lining-nums; }
+.t-unit { font: var(--cw-t-meta); color: var(--cw-ink-3); margin-left: 0.25em; }
+.t-coord { font: var(--cw-t-coord); color: var(--cw-ink-3); letter-spacing: 0.01em; }
+
+/* ---------------------------------------------------------------- the four marks, as inline glyphs */
+.mark { display: inline-block; flex: none; vertical-align: -0.08em; }
+.mark-rule { width: 14px; height: 0; border-top: 2px solid var(--cw-official-line); margin-bottom: 0.3em; }
+.mark-sample { width: 9px; height: 9px; border-radius: 50%; background: var(--cw-measured); box-shadow: 0 0 0 2px color-mix(in srgb, var(--cw-measured) 22%, transparent); }
+.mark-field { width: 10px; height: 10px; background:
+  linear-gradient(var(--cw-model), var(--cw-model)) 0 0 / 4px 4px no-repeat,
+  linear-gradient(color-mix(in srgb, var(--cw-model) 70%, transparent), color-mix(in srgb, var(--cw-model) 70%, transparent)) 6px 0 / 4px 4px no-repeat,
+  linear-gradient(color-mix(in srgb, var(--cw-model) 55%, transparent), color-mix(in srgb, var(--cw-model) 55%, transparent)) 0 6px / 4px 4px no-repeat,
+  linear-gradient(color-mix(in srgb, var(--cw-model) 85%, transparent), color-mix(in srgb, var(--cw-model) 85%, transparent)) 6px 6px / 4px 4px no-repeat; }
+.mark-gap { width: 10px; height: 10px; border: 1px solid var(--cw-gap-hatch); background: repeating-linear-gradient(135deg, var(--cw-gap-hatch) 0 1.5px, transparent 1.5px 4px); }
+.mark-context { width: 8px; height: 8px; border-radius: 2px; background: var(--cw-accent); transform: rotate(45deg) scale(0.85); }
+
+/* ---------------------------------------------------------------- controls */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px;
+  border-radius: var(--cw-r-pill); border: 1px solid var(--cw-hairline-strong); background: var(--cw-surface);
+  font: var(--cw-t-ui); cursor: pointer; text-decoration: none; color: var(--cw-ink);
+  transition: background-color var(--cw-d-micro) var(--cw-ease-standard), border-color var(--cw-d-micro), transform var(--cw-d-micro) var(--cw-ease-standard);
+}
+.btn:hover { background: var(--cw-surface-2); border-color: var(--cw-ink-3); }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--cw-ink); color: var(--cw-page); border-color: var(--cw-ink); }
+.btn-primary:hover { background: var(--cw-navy-800); border-color: var(--cw-navy-800); }
+.btn-quiet { border-color: transparent; background: transparent; padding: 0 10px; }
+.btn-quiet:hover { background: color-mix(in srgb, var(--cw-ink) 6%, transparent); border-color: transparent; }
+@media (pointer: coarse) { .btn { min-height: var(--cw-hit); } }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border-radius: var(--cw-r-pill);
+  border: 1px solid var(--cw-hairline-strong); background: transparent; font: var(--cw-t-label); color: var(--cw-ink-2); cursor: pointer;
+  transition: background-color var(--cw-d-micro), color var(--cw-d-micro), border-color var(--cw-d-micro);
+}
+.chip:hover { border-color: var(--cw-ink-3); color: var(--cw-ink); }
+.chip[aria-pressed="true"], .chip[aria-checked="true"] { background: var(--cw-select-bg); color: var(--cw-select-ink); border-color: var(--cw-select-bg); }
+@media (pointer: coarse) { .chip { min-height: 40px; } }
+
+.link-quiet { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); }
+.ext::after { content: "↗"; font-size: 0.8em; margin-left: 0.15em; text-decoration: none; display: inline-block; }
+
+.hairline { border: 0; border-top: 1px solid var(--cw-hairline); margin: 0; }
+
+/* disclosure that animates height without measuring (works in Safari: grid 0fr→1fr) */
+.reveal { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--cw-d-medium) var(--cw-ease-standard); }
+.reveal[data-open="true"] { grid-template-rows: 1fr; }
+.reveal > * { overflow: hidden; min-height: 0; }
+
+/* skeleton: a still, low-contrast block — no shimmer loop (motion is reserved for change) */
+.skel { background: color-mix(in srgb, var(--cw-ink) 7%, transparent); border-radius: 6px; color: transparent !important; user-select: none; }
+.skel-line { height: 0.9em; margin: 0.35em 0; }
+
+/* a single, slow-to-appear progress hairline for work that is actually in progress */
+.progress-line { position: relative; height: 2px; overflow: hidden; background: color-mix(in srgb, var(--cw-accent) 14%, transparent); border-radius: 2px; }
+.progress-line::after {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 30%; background: var(--cw-accent); border-radius: 2px;
+  animation: cw-indeterminate 1.4s var(--cw-ease-standard) infinite; animation-delay: 400ms; opacity: 0;
+}
+@keyframes cw-indeterminate { 0% { transform: translateX(-100%); opacity: 1; } 100% { transform: translateX(340%); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .progress-line::after { animation: none; opacity: 1; width: 100%; background: color-mix(in srgb, var(--cw-accent) 45%, transparent); } }
+
+@keyframes cw-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cw-rise-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { @keyframes cw-rise-in { from { opacity: 0; } to { opacity: 1; } } }
+.enter { animation: cw-rise-in var(--cw-d-medium) var(--cw-ease-standard) both; }
+.enter-fade { animation: cw-fade-in var(--cw-d-short) var(--cw-ease-linear) both; }
