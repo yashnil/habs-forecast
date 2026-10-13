@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { EXPERIENCES, RESEARCH } from "@/content/copy";
+import { RESEARCH } from "@/content/copy";
+import { ModeSwitch, PrimaryNav } from "@/components/shell/ModeNav";
 import { SourceHealthDot } from "@/components/SourceHealthDot";
 import { OfficialDrawer, OfficialPill, OfficialProvider, TabBar } from "@/components/shell/OfficialShell";
 import type { Manifest, SourceStatus } from "@/generated/schema";
@@ -51,30 +52,11 @@ export function AppShell({
               <span className="text-[17px] font-semibold tracking-tight text-white">CoastWatch</span>
               <span className="hidden border-l border-white/15 pl-2.5 text-[13px] text-on-navy-2 lg:inline">California</span>
             </Link>
-            <nav aria-label="Primary" className="hidden h-full md:flex">
-              <ul className="flex h-full gap-1">
-                {EXPERIENCES.map((e) => {
-                  const current = active === e.key;
-                  return (
-                    <li key={e.key} className="h-full">
-                      <Link
-                        href={e.href}
-                        aria-current={current ? "page" : undefined}
-                        data-testid={`nav-${e.key}`}
-                        className={`-mb-px flex h-full items-center whitespace-nowrap border-b-2 px-3 text-[15px] font-medium ${
-                          current ? "border-accent-on-navy text-white" : "border-transparent text-on-navy-2 hover:text-on-navy"
-                        }`}
-                      >
-                        {/* full names where the masthead has room; the short ones below 1280 px */}
-                        <span className="hidden xl:inline">{e.label}</span>
-                        <span className="xl:hidden">{e.short}</span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
+            <PrimaryNav active={active} />
             <div className="ml-auto flex items-center gap-2 min-[360px]:gap-3">
+              <div className="hidden xl:block">
+                <ModeSwitch />
+              </div>
               <Link
                 href="/about"
                 data-testid="nav-about"

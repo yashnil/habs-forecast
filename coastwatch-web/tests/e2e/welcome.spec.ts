@@ -75,7 +75,8 @@ test.describe("welcome", () => {
   test("research puts measurements and forecast coverage first; the same notices are listed for everyone", async ({ browser }) => {
     const before = await fresh(browser, DESKTOP, `${OK}/coast?place=port-593`);
     const ids = async (p: Page) => (await p.locator('[data-testid^="coast-notice-"][data-tier]').evaluateAll((els) => els.map((e) => `${e.getAttribute("data-testid")}:${e.getAttribute("data-tier")}`))).sort();
-    await expect(before.page.getByTestId("coast-official")).toBeVisible();
+    // without a purpose the page is Coastal: the full sections sit in the closed details, still in the page
+    await expect(before.page.getByTestId("coast-official")).toBeAttached();
     const noPurpose = await ids(before.page);
     await before.ctx.close();
 
@@ -88,7 +89,7 @@ test.describe("welcome", () => {
     await expect(page.getByTestId("coast-official")).toBeVisible();
     const order = await page.locator('section[data-testid^="coast-"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
     expect(order.slice(0, 4)).toEqual(["coast-measured", "coast-model", "coast-observed", "coast-official"]);
-    await expect(page.getByTestId("glance-official")).toBeVisible(); // official information stays at the top
+    await expect(page.getByTestId("brief-official")).toBeVisible(); // official information stays at the top
     expect(await ids(page)).toEqual(noPurpose);
     await ctx.close();
   });
@@ -136,7 +137,7 @@ test.describe("welcome", () => {
     await page.getByTestId("place-option-site-clam-beach").click();
     await page.getByTestId("intro-to-coast").click();
     await expect(page).toHaveURL(/\/coast\?place=site-clam-beach&for=shellfish$/);
-    await expect(page.getByTestId("coast-glance")).toBeVisible();
+    await expect(page.getByTestId("brief-official")).toBeVisible();
     await ctx.close();
   });
 

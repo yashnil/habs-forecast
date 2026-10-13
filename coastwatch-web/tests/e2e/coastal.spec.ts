@@ -1,0 +1,130 @@
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test, type Browser, type Page } from "@playwright/test";
+import { FAILED, OK } from "./ports";
+
+/**
+ * Coastal mode (the default for anyone not set up for research): My Coast as a briefing
+ * (official status, next steps, conditions) with the science one tap away, and a basemap-first
+ * Ocean Map. Ocean conditions come from recorded NOAA responses (tests/conditions-fixtures.json).
+ */
+const NOW = "2026-10-08T20:00:00Z";
+const PHONE = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
+
+/** A visitor with no saved presentation (so Coastal) who has seen the welcome. */
+async function coastal(browser: Browser, opts: object = { viewport: { width: 1440, height: 900 } }) {
+  const ctx = await browser.newContext({ ...opts, storageState: { cookies: [], origins: [{ origin: OK, localStorage: [{ name: "cw-intro-dismissed-v1", value: "1" }] }, { origin: FAILED, localStorage: [{ name: "cw-intro-dismissed-v1", value: "1" }] }] } });
+  const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date(NOW));
+  return { ctx, page };
+}
+
+async function noUnsafeClaims(page: Page) {
+  const text = await page.locator("main").innerText();
+  const bad = text
+    .split(/(?<=[.!?])\s+|\n+/)
+    .filter((s) => /\b(safe|open|all clear|good fishing)\b/i.test(s) && !/\b(not|no|never|does not|isn't|nothing)\b/i.test(s) && !/Whale.?safe/i.test(s));
+  expect(bad, bad.join(" | ")).toEqual([]);
+}
+
+test.describe("Coastal mode", () => {
+  test("My Coast is a briefing: official status, next steps, conditions; the science is one tap away", async ({ browser }) => {
+    const { ctx, page } = await coastal(browser);
+    await page.goto(`${OK}/coast?place=port-550&for=recreational&species=anchovy-sardine`);
+    await expect(page.getByTestId("mode-switch-navy").getByTestId("mode-coastal")).toHaveAttribute("aria-pressed", "true");
+    // official status for the chosen species, each notice with its agency source
+    await expect(page.getByTestId("brief-official-headline")).toHaveText("2 notices apply here for anchovy or sardine");
+    await expect(page.getByTestId("brief-notice-cdfw-2026-anchovy-take-restriction-monterey-bay").getByRole("link", { name: /CDFW source/ })).toHaveAttribute("href", /^https:\/\/wildlife\.ca\.gov\//);
+    // next steps: every step has a source; regulation, species and conditions steps are there
+    const steps = page.getByTestId("next-steps").locator('[data-testid^="step-"]');
+    expect(await steps.count()).toBeGreaterThanOrEqual(5);
+    for (const s of await steps.all()) await expect(s.locator('a[href^="https://"], a[href^="tel:"]')).toHaveCount(1);
+    await expect(page.getByTestId("step-read-notices")).toContainText("Read the 2 notices that apply here");
+    await expect(page.getByTestId("step-species-rules")).toContainText("anchovy or sardine");
+    await expect(page.getByTestId("step-region-central")).toContainText("Central region");
+    // conditions from NOAA, each with its source and time
+    await expect(page.getByTestId("cond-marine")).toContainText("W wind 10 to 15 kt");
+    await expect(page.getByTestId("cond-marine")).toContainText("NWS PZZ535");
+    await expect(page.getByTestId("cond-tides")).toContainText("Monterey");
+    await expect(page.getByTestId("cond-forecast")).toContainText("No toxin forecast for these waters");
+    // the science sits in a closed details element, in the page
+    const details = page.getByTestId("coast-details");
+    await expect(details).not.toHaveAttribute("open", "");
+    await expect(page.getByTestId("coast-measured")).toBeHidden();
+    await details.locator("summary").first().click();
+    await expect(page.getByTestId("coast-measured")).toBeVisible();
+    await noUnsafeClaims(page);
+    await ctx.close();
+  });
+
+  test("choosing a species re-orders, never hides, and goes in the link", async ({ browser }) => {
+    const { ctx, page } = await coastal(browser);
+    await page.goto(`${OK}/coast?place=port-201`);
+    await page.getByTestId("coast-species").selectOption("razor-clam");
+    await expect(page).toHaveURL(/species=razor-clam/);
+    await expect(page.getByTestId("brief-official-headline")).toHaveText(/notices? appl(y|ies) here for razor clams/);
+    // notices for other species are one tap away, not gone
+    await expect(page.getByTestId("brief-others")).toContainText("more for other species here");
+    await ctx.close();
+  });
+
+  test("an honest gap: no station within 60 km at Shelter Cove; the step says what is not known", async ({ browser }) => {
+    const { ctx, page } = await coastal(browser);
+    await page.goto(`${OK}/coast?place=port-215`);
+    await expect(page.getByTestId("cond-buoy")).toContainText("No NDBC station reports within 60 km");
+    await expect(page.getByTestId("cond-buoy")).toHaveAttribute("data-state", "none");
+    await expect(page.getByTestId("step-toxin-gap")).toBeVisible();
+    await ctx.close();
+  });
+
+  test("switching to Research opens the science, is kept on the device, and a link's mode wins without being saved", async ({ browser }) => {
+    const { ctx, page } = await coastal(browser);
+    await page.goto(`${OK}/coast?place=port-550`);
+    await page.getByTestId("mode-switch-navy").getByTestId("mode-research").click();
+    await expect(page.getByTestId("coast-details")).toHaveCount(0);
+    await expect(page.getByTestId("coast-measured")).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem("cw-mode-v1"))).toBe("research");
+    await page.getByTestId("mode-switch-navy").getByTestId("mode-coastal").click();
+    await expect(page.getByTestId("coast-details")).toBeVisible();
+    // a shared research link shows Research here, but the visitor's own choice stays Coastal
+    await page.goto(`${OK}/coast?place=port-550&mode=research`);
+    await expect(page.getByTestId("mode-switch-navy").getByTestId("mode-research")).toHaveAttribute("aria-pressed", "true");
+    expect(await page.evaluate(() => localStorage.getItem("cw-mode-v1"))).toBe("coastal");
+    await ctx.close();
+  });
+
+  test("the Ocean Map opens on the basemap in Coastal mode; a link naming a layer still shows it", async ({ browser }) => {
+    const { ctx, page } = await coastal(browser);
+    const visible = (id: string) => page.evaluate((i) => (window as unknown as { __cwMap: { getLayer: (x: string) => unknown; getLayoutProperty: (x: string, p: string) => string } }).__cwMap.getLayoutProperty(i, "visibility") !== "none", id);
+    await page.goto(`${OK}/?region=monterey_bay`);
+    await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { loaded: () => boolean } }).__cwMap?.loaded());
+    await expect.poll(() => visible("relief-sea-tint")).toBe(true);
+    await expect(page.getByTestId("forecast-panel")).toHaveCount(0);
+    await page.goto(`${OK}/?region=monterey_bay&layer=forecast`);
+    await expect(page.getByTestId("forecast-panel")).toBeVisible();
+    await expect.poll(() => visible("relief-sea-tint")).toBe(false);
+    await ctx.close();
+  });
+
+  test("a failed update is never labelled Current, even for a recent run", async ({ browser }) => {
+    const { ctx, page } = await coastal(browser);
+    // the failed fixture's last run was issued on the fixture day; its later update failed
+    await page.goto(`${FAILED}/?region=monterey_bay&layer=forecast`);
+    const badge = page.getByTestId("forecast-panel").getByTestId("freshness");
+    await expect(badge).toHaveAttribute("data-state", "unconfirmed");
+    await expect(badge).toContainText("Not confirmed");
+    await expect(page.getByTestId("update-failed")).toContainText("a newer run may exist");
+    await ctx.close();
+  });
+
+  for (const [name, opts] of [["desktop", { viewport: { width: 1440, height: 900 } }], ["phone", PHONE]] as const) {
+    test(`${name}: axe finds nothing on the Coastal briefing`, async ({ browser }) => {
+      const { ctx, page } = await coastal(browser, opts);
+      await page.goto(`${OK}/coast?place=site-clam-beach&for=shellfish&species=razor-clam`);
+      await expect(page.getByTestId("next-steps")).toBeVisible();
+      await expect(page.getByTestId("cond-marine")).not.toContainText("Loading");
+      const r = await new AxeBuilder({ page }).include("main").analyze();
+      expect(r.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
+      await ctx.close();
+    });
+  }
+});

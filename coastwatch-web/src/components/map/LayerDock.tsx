@@ -223,12 +223,12 @@ function Details({ open, children }: { open: boolean; children: React.ReactNode 
   );
 }
 
-function MetaRow({ children, fresh, basis, compactAge }: { children: React.ReactNode; fresh: Freshness | null; basis?: string; compactAge?: boolean }) {
+function MetaRow({ children, fresh, basis, compactAge, unconfirmed }: { children: React.ReactNode; fresh: Freshness | null; basis?: string; compactAge?: boolean; unconfirmed?: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-ink-3">
       {children}
       <span className="ml-auto">
-        <FreshnessBadge f={fresh} basis={basis} compact={compactAge} />
+        <FreshnessBadge f={fresh} basis={basis} compact={compactAge} unconfirmed={unconfirmed} />
       </span>
     </div>
   );
@@ -314,10 +314,14 @@ function ForecastSection(p: Props) {
               Out of date: shown for reference only; it does not describe current conditions.{" "}
             </span>
           )}
-          {p.charmStatus?.outcome === "failed" && <span data-testid="update-failed">Last update failed ({formatDateTimePT(p.charmStatus.last_attempt_at)}); showing the last successful run.</span>}
+          {p.charmStatus?.outcome === "failed" && (
+            <span data-testid="update-failed">
+              CoastWatch could not reach NOAA at {formatDateTimePT(p.charmStatus.last_attempt_at)}, so a newer run may exist. This is the last run received, with its own dates.
+            </span>
+          )}
         </p>
       )}
-      <MetaRow fresh={fresh} basis={anyLayer.freshness.basis}>
+      <MetaRow fresh={fresh} basis={anyLayer.freshness.basis} unconfirmed={p.charmStatus?.outcome === "failed"}>
         <ProductClassBadge pc="official_forecast" />
         <span>C-HARM v3.1 · NOAA</span>
         <Res l={layer ?? anyLayer} />

@@ -34,8 +34,14 @@ import { Icon } from "@/components/ui/Icon";
 import { PlacePicker } from "./PlacePicker";
 import { PurposeSwitch } from "@/components/welcome/PurposeSwitch";
 import { defaultAudience, sectionOrder, usePurpose } from "@/lib/purpose";
-import { MeasuredSection, ModelSection, ObservedSection, OfficialSection, UnknownsSection, modelHeadline, useModel } from "./CoastSections";
+import { MeasuredSection, ModelSection, ObservedSection, OfficialSection, UnknownsSection, useModel } from "./CoastSections";
 import type { SatelliteResult } from "@/components/map/SatelliteNear";
+import { ConditionsCard, NextSteps, OfficialBrief, PlanBar, fmtWhen, useConditions } from "./Briefing";
+import { speciesById, type SpeciesId } from "@/content/species";
+import { useMode } from "@/lib/mode";
+import { ModeSwitch } from "@/components/shell/ModeNav";
+import { nextSteps } from "@/lib/nextSteps";
+import { currentRecords } from "@/lib/official";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), {
   ssr: false,
@@ -76,9 +82,11 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   const now = useNow();
   const placeKey = sp.get("place");
   // a link's own filter wins; otherwise the saved purpose's default (only a default: nothing is hidden)
-  const [purpose, , purposeRead] = usePurpose();
+  const [purpose] = usePurpose();
   const audience = sp.get("for") ? parseAudience(sp.get("for")) : defaultAudience(purpose);
   const homeParam = sp.get("home");
+  const species = speciesById(sp.get("species"));
+  const [viewMode, , modeRead] = useMode();
   const [homeStored, setHomeStored] = useState<string | null>(null);
   useEffect(() => setHomeStored(readHome()), []);
   const homeKey = homeParam ?? homeStored;
@@ -88,11 +96,16 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   const home = useMemo(() => (homeKey ? resolvePlace(homeKey, ports) : null), [homeKey, ports]);
 
   const go = useCallback(
-    (next: { place?: string | null; home?: string | null; for?: Audience }, mode: "push" | "replace" = "push") => {
-      const href = coastHref({ place: next.place !== undefined ? next.place : placeKey, home: next.home !== undefined ? next.home : homeParam, for: next.for ?? audience });
-      (mode === "push" ? router.push : router.replace)(href, { scroll: false });
+    (next: { place?: string | null; home?: string | null; for?: Audience; species?: SpeciesId }, how: "push" | "replace" = "push") => {
+      const href = coastHref({
+        place: next.place !== undefined ? next.place : placeKey,
+        home: next.home !== undefined ? next.home : homeParam,
+        for: next.for ?? audience,
+        species: next.species ?? species.id,
+      });
+      (how === "push" ? router.push : router.replace)(href, { scroll: false });
     },
-    [router, placeKey, homeParam, audience],
+    [router, placeKey, homeParam, audience, species.id],
   );
   const pick = useCallback((p: CoastPlace) => go({ place: p.key }), [go]);
 
@@ -125,6 +138,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   // the observations section reads the satellite grids once and reports what it found
   const [sat, setSat] = useState<SatelliteResult>(null);
   useEffect(() => setSat(null), [place?.key]);
+  const cond = useConditions(place?.lat ?? null, place?.lon ?? null);
 
   // ------------------------------------------------------------ the map shows where each fact came from
   const overlay = useMemo<GeoJSON.FeatureCollection | null>(() => {
@@ -224,10 +238,6 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
           <p className="mt-1.5 text-[15px] text-ink-2" data-testid="coast-subtitle">
             {place.note}
             {place.county ? ` · ${place.county} County` : ""}
-            <span className={`tabular max-sm:hidden ${place.kind === "point" ? "hidden" : ""}`}>
-              {" "}
-              · {place.lat.toFixed(3)}°N {Math.abs(place.lon).toFixed(3)}°W
-            </span>
           </p>
         ) : (
           <p className="mt-2 max-w-[60ch] text-[17px] leading-relaxed text-ink-2">{COAST_COPY.lede}</p>
@@ -265,64 +275,57 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     </header>
   );
 
-  const tied = assocs.filter((a) => a.tier === "geographic" && !a.dispute && a.record.area.type !== "statewide").length;
-  const statewide = assocs.filter((a) => a.record.area.type === "statewide" && !a.dispute).length;
-  const unresolved = assocs.filter((a) => a.tier === "unresolved" && !a.dispute).length;
-  const reportedLifted = assocs.filter((a) => a.dispute).length;
   const lastToxin = st.near
-    .flatMap((s) => s.station.latest.filter((m) => m.variable === "pDA").map((m) => ({ s, m })))
+    .flatMap((s) => s.station.latest.filter((m) => m.variable === "pDA" && m.value != null).map((m) => ({ s, m })))
     .sort((a, b) => b.m.date.localeCompare(a.m.date))[0];
-
-  const glance = place && (
-    <nav aria-label="At a glance" data-testid="coast-glance" className="overflow-hidden rounded-2xl border border-hairline bg-surface">
-      <dl className="divide-y divide-hairline text-[15px]">
-        <GlanceRow href="#coast-official-h" dot="bg-official" label="Official" testid="glance-official">
-          {official ? (
-            <>
-              {tied ? `${tied} notice${tied === 1 ? "" : "s"} tied to these waters` : "No notice tied to these waters"}
-              {statewide ? `, ${statewide} statewide` : ""}
-              {unresolved ? `; ${unresolved} may apply (unresolved)` : ""}
-              {reportedLifted ? `; ${reportedLifted} reported lifted, awaiting review` : ""} · <span className="text-official-ink">not verified</span>
-            </>
-          ) : (
-            "Unavailable: check CDFW and CDPH"
-          )}
-        </GlanceRow>
-        <GlanceRow href="#coast-measured-h" dot="bg-measured" label="Measured" testid="glance-measured">
-          {lastToxin && now ? (
-            <>
-              Toxin last sampled {ageWords(ageDays(lastToxin.m.date, now))}
-              {ageDays(lastToxin.m.date, now) > 90 ? ` (${formatDate(lastToxin.m.date, { year: true })})` : ""} at {lastToxin.s.station.name}, {lastToxin.s.km.toFixed(lastToxin.s.km < 10 ? 1 : 0)} km away
-            </>
-          ) : stationsError ? (
-            "Station data unavailable"
-          ) : (
-            "No toxin measurement within 40 km"
-          )}
-        </GlanceRow>
-        <GlanceRow href="#coast-model-h" dot="bg-model" label="Forecast" testid="glance-model">
-          {modelHeadline(model)}
-          {model && !model.error && !model.pda?.here && !model.pn?.here && (model.pda?.nearest ? ` · nearest value ${model.pda.nearest.km.toFixed(1)} km ${model.pda.nearest.bearing}, not a forecast here` : " or within 60 km")}
-          {model?.layer && now && classifyTime(model.layer.freshness, model.layer.time, now).state !== "current" && <span className="text-[#9b2c2c]"> · stale run</span>}
-        </GlanceRow>
-        <GlanceRow href="#coast-observed-h" dot="bg-measured" label="Satellite" testid="glance-satellite">
-          {sat === null
-            ? "Reading…"
-            : sat.date && now
-              ? `Clear view ${formatDate(sat.date)} (${ageWords(ageDays(sat.date, now))})`
-              : sat.nearestKm != null
-                ? `No clear pixel at these waters this week; the nearest is ${sat.nearestKm.toFixed(1)} km away`
-                : "No clear view of these waters in the last week"}
-        </GlanceRow>
-      </dl>
-      <p className="border-t border-hairline px-4 py-2.5 text-[13px] text-ink-3">
-        A summary of what exists, not a rating. Nothing here says waters are open or seafood is safe.{" "}
-        <button type="button" onClick={(e) => openDrawer(e.currentTarget)} className="font-medium text-accent hover:underline">
-          All official notices
-        </button>
-      </p>
-    </nav>
+  const toxin =
+    lastToxin && now
+      ? { station: lastToxin.s.station.name, km: lastToxin.s.km, date: lastToxin.m.date, ageDays: ageDays(lastToxin.m.date, now), value: `${Number(lastToxin.m.value!.toPrecision(2))} ${lastToxin.m.units}` }
+      : null;
+  const stale = model?.layer && now ? classifyTime(model.layer.freshness, model.layer.time, now).state !== "current" : false;
+  const forecastLine = !model
+    ? "Reading…"
+    : model.error
+      ? "No C-HARM run available"
+      : model.pda?.here
+        ? `${Math.round(model.pda.here.value * 100)}% probability in the waters' own 3 km cell`
+        : "No toxin forecast for these waters";
+  const forecastSub = model?.layer
+    ? `NOAA C-HARM, valid ${model.layer.time.valid_date ? formatDate(model.layer.time.valid_date) : "—"}${stale ? " · stale run" : ""}${
+        model.pda && !model.pda.here && model.pda.nearest ? ` · nearest value ${model.pda.nearest.km.toFixed(1)} km ${model.pda.nearest.bearing} (not a forecast here)` : ""
+      }`
+    : "NOAA C-HARM";
+  const satelliteLine =
+    sat === null ? "Reading…" : sat.date && now ? `Clear view ${formatDate(sat.date)} (${ageWords(ageDays(sat.date, now))})` : "No clear view this week (cloud, fog or no overpass)";
+  const steps = useMemo(
+    () =>
+      place
+        ? nextSteps({ official, verification, assocs, audience, species, lat: place.lat, conditions: cond.data, lastToxin: toxin, fmt: fmtWhen })
+        : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [place, official, verification, assocs, audience, species, cond.data, toxin?.date, toxin?.station],
   );
+  const detailsRef = useRef<HTMLDetailsElement | null>(null);
+  const openDetails = () => {
+    const d = detailsRef.current;
+    if (!d) return;
+    d.open = true;
+    d.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+  };
+
+  const sections = (order: ReturnType<typeof sectionOrder>) =>
+    place &&
+    order.map((k) =>
+      k === "official" ? (
+        <OfficialSection key={k} official={official} assocs={assocs} audience={audience} place={place} verification={verification} />
+      ) : k === "measured" ? (
+        <MeasuredSection key={k} near={st.near} nearestBeyond={st.nearestBeyond} now={now} />
+      ) : k === "model" ? (
+        <ModelSection key={k} manifest={manifest} model={model} lead={leadNow} onLead={setLead} now={now} />
+      ) : (
+        <ObservedSection key={k} manifest={manifest} baseUrl={baseUrl} place={place} onSat={setSat} />
+      ),
+    );
 
   const landing = !place && (
     <section aria-labelledby="coast-start-h" className="space-y-3" data-testid="coast-landing">
@@ -359,28 +362,75 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     <div className="lg:grid lg:grid-cols-[minmax(0,620px)_minmax(0,1fr)]" data-testid="my-coast">
       <div className="min-w-0 space-y-5 px-4 pb-24 pt-4 sm:space-y-8 sm:px-8 sm:pt-6 lg:pb-16">
         {header}
-        {glance}
-        <div className="h-[42vh] min-h-[260px] overflow-hidden rounded-2xl lg:hidden" data-testid="coast-map-mobile">
+        {place && (
+          <PlanBar
+            audience={audience}
+            onAudience={(a) => go({ for: a }, "replace")}
+            species={species}
+            onSpecies={(x) => go({ species: x }, "replace")}
+            leads={leads}
+            lead={leadNow}
+            onLead={setLead}
+          />
+        )}
+        {place && modeRead && (
+          <>
+            <OfficialBrief
+              assocs={assocs}
+              audience={audience}
+              species={species}
+              verification={verification}
+              totalActive={currentRecords(official).length}
+              onAll={(el) => openDrawer(el)}
+              onDetails={openDetails}
+            />
+            {viewMode === "coastal" && <NextSteps steps={steps} />}
+          </>
+        )}
+        <div className={`h-[38vh] min-h-[240px] overflow-hidden rounded-2xl lg:hidden ${place ? "" : "hidden"}`} data-testid="coast-map-mobile">
           {/* one map: phones get it inline, wide screens in the sticky column */}
           <MapSlot wide={false}>{map}</MapSlot>
         </div>
         {landing}
-        {place && (
+        {place && modeRead && (
           <>
-            {/* sections wait for the saved purpose (read on this device), so a researcher's order appears once instead of jumping */}
-            {(purposeRead ? sectionOrder(purpose) : []).map((k) =>
-              k === "official" ? (
-                <OfficialSection key={k} official={official} assocs={assocs} audience={audience} place={place} verification={verification} onAudience={(a) => go({ for: a }, "replace")} />
-              ) : k === "measured" ? (
-                <MeasuredSection key={k} near={st.near} nearestBeyond={st.nearestBeyond} now={now} />
-              ) : k === "model" ? (
-                <ModelSection key={k} manifest={manifest} model={model} lead={leadNow} onLead={setLead} now={now} />
-              ) : (
-                <ObservedSection key={k} manifest={manifest} baseUrl={baseUrl} place={place} onSat={setSat} />
-              ),
+            <ConditionsCard
+              conditions={cond.data}
+              loading={cond.loading}
+              error={cond.error}
+              toxin={toxin}
+              toxinError={stationsError}
+              forecastLine={forecastLine}
+              forecastSub={forecastSub}
+              satelliteLine={satelliteLine}
+              now={now}
+            />
+            {viewMode === "coastal" ? (
+              <details ref={detailsRef} className="group rounded-[18px] border border-hairline bg-surface" data-testid="coast-details">
+                <summary className="flex min-h-[52px] cursor-pointer items-center justify-between gap-3 px-4 text-[15px] font-medium text-ink sm:px-5">
+                  <span>
+                    Scientific details and every notice
+                    <span className="block text-[13px] font-normal text-ink-3">Measurements, forecast cells, satellite, currents, what is not known, sources</span>
+                  </span>
+                  <span aria-hidden className="text-ink-3 transition-transform group-open:rotate-90">›</span>
+                </summary>
+                <div className="space-y-8 border-t border-hairline px-4 pb-6 pt-5 sm:px-5">
+                  {sections(sectionOrder(null))}
+                  <UnknownsSection items={unknowns} />
+                </div>
+              </details>
+            ) : (
+              <>
+                {/* research: the full sections first, in the researcher's order, open */}
+                {sections(sectionOrder({ purpose: "research" }))}
+                <NextSteps steps={steps} />
+              </>
             )}
-            <UnknownsSection items={unknowns} />
-            <PurposeSwitch />
+            {viewMode === "research" && <UnknownsSection items={unknowns} />}
+            <div className="flex flex-wrap items-center gap-3">
+              <ModeSwitch tone="paper" />
+              <PurposeSwitch compact />
+            </div>
             <p className="border-t border-hairline pt-4 text-[13px] leading-relaxed text-ink-3">
               Sources: CDFW and CDPH notices (transcribed, not verified); CalHABMAP via SCCOOS ERDDAP; NOAA C-HARM v3.1; NOAA CoastWatch satellite chlorophyll; HF-radar
               currents. {pathname === "/coast" ? "This page's link reproduces this view." : ""}
@@ -411,22 +461,6 @@ function MapSlot({ wide, children }: { wide: boolean; children: React.ReactNode 
   return <div className="relative h-full w-full">{children}</div>;
 }
 
-function GlanceRow({ href, dot, label, testid, children }: { href: string; dot: string; label: string; testid: string; children: React.ReactNode }) {
-  return (
-    <div className="grid grid-cols-[92px_1fr] items-baseline gap-3 px-4 py-2 sm:grid-cols-[110px_1fr] sm:py-2.5" data-testid={testid}>
-      <dt className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">
-        <span aria-hidden className={`h-2 w-2 rounded-full ${dot}`} />
-        {label}
-      </dt>
-      <dd className="text-ink">
-        <a href={href} className="hover:underline">
-          {children}
-        </a>
-      </dd>
-    </div>
-  );
-}
-
 function CopyLink() {
   const [done, setDone] = useState(false);
   return (
@@ -452,3 +486,4 @@ function CopyLink() {
     </button>
   );
 }
+

@@ -1,0 +1,173 @@
+import { createHash } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { NextResponse } from "next/server";
+import {
+  BUOYS,
+  TIDE_STATIONS,
+  nearest,
+  parseAlerts,
+  parseNdbc,
+  parseTides,
+  parseZoneForecast,
+  type Conditions,
+  type Part,
+} from "@/lib/conditions";
+
+/**
+ * Ocean conditions for one place, from NWS, NDBC and CO-OPS (see lib/conditions.ts).
+ * Each part fails on its own and says why; nothing is invented or carried forward.
+ * Responses are cached for 10 minutes; each upstream request has a 6 s budget.
+ *
+ * Tests set CW_CONDITIONS_FIXTURE to a JSON file of recorded responses (keyed by the sha1 of the
+ * URL) instead of the network, and CW_FIXED_NOW for the clock. CW_CONDITIONS_RECORD_DIR records
+ * responses one file per URL; tests/conditions-fixtures.json is those files merged.
+ */
+export const dynamic = "force-dynamic";
+
+const UA = "CoastWatch (California coastal information research project; https://github.com/yashnil/habs-forecast)";
+const NWS = "https://api.weather.gov";
+
+/** `head`: fetch only the first bytes (NDBC files list the newest rows first; ~8 KB ≈ the last 16 h). */
+let recorded: Promise<Record<string, string>> | null = null;
+
+async function get(url: string, as: "json" | "text", head?: number): Promise<unknown> {
+  const fx = process.env.CW_CONDITIONS_FIXTURE;
+  if (fx) {
+    recorded ??= readFile(fx, "utf8").then((t) => JSON.parse(t) as Record<string, string>);
+    const body = (await recorded)[createHash("sha1").update(url).digest("hex") + (as === "json" ? ".json" : ".txt")];
+    if (body == null) throw new Error("HTTP 503 (not recorded)"); // a missing recording fails like an outage
+    return as === "json" ? JSON.parse(body) : body;
+  }
+  const r = await fetch(url, {
+    headers: { "User-Agent": UA, Accept: as === "json" ? "application/geo+json, application/json" : "text/plain", ...(head ? { Range: `bytes=0-${head - 1}` } : {}) },
+    signal: AbortSignal.timeout(6000),
+    next: { revalidate: 600 },
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  let body = await r.text();
+  // a ranged read ends mid-line: keep whole lines only
+  if (head && r.status === 206) body = body.slice(0, body.lastIndexOf("\n") + 1);
+  const rec = process.env.CW_CONDITIONS_RECORD_DIR; // recording test fixtures (development only; zone outlines are not used and not kept)
+  if (rec) {
+    await mkdir(rec, { recursive: true });
+    const keep = as === "json" ? JSON.stringify({ ...JSON.parse(body), geometry: null }) : body;
+    await writeFile(path.join(rec, createHash("sha1").update(url).digest("hex") + (as === "json" ? ".json" : ".txt")), keep);
+  }
+  return as === "json" ? JSON.parse(body) : body;
+}
+
+const now = () => (process.env.CW_FIXED_NOW ? new Date(process.env.CW_FIXED_NOW) : new Date());
+const msg = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 120);
+
+/**
+ * Coastal marine zones for these waters, nearest first. A port or harvest site is on land, so the
+ * nearest water is searched in rings (about 2, 5 and 10 km, eight directions); stepping only west
+ * would cross headlands such as the Monterey peninsula into the wrong zone.
+ */
+async function zonesFor(lat: number, lon: number): Promise<{ id: string; name: string }[]> {
+  const at = async (la: number, lo: number) => {
+    const j = (await get(`${NWS}/zones?type=coastal&point=${la.toFixed(4)},${lo.toFixed(4)}&include_geometry=false`, "json")) as { features?: { properties: { id: string; name: string } }[] };
+    const f = j.features?.[0];
+    return f ? { id: f.properties.id, name: f.properties.name } : null;
+  };
+  const out: { id: string; name: string }[] = [];
+  const add = (z: { id: string; name: string } | null) => z && !out.some((x) => x.id === z.id) && out.push(z);
+  add(await at(lat, lon));
+  if (out.length) return out;
+  const kx = 1 / (111.32 * Math.cos((lat * Math.PI) / 180));
+  for (const km of [2, 5, 10]) {
+    const ring = await Promise.all(
+      [0, 45, 90, 135, 180, 225, 270, 315].map((deg) => {
+        const r = (deg * Math.PI) / 180;
+        return at(lat + (km * Math.cos(r)) / 111.32, lon + km * Math.sin(r) * kx).catch(() => null);
+      }),
+    );
+    ring.forEach(add); // nearest ring first; farther rings add fallbacks (e.g. past a harbor-bar zone with no forecast)
+  }
+  return out;
+}
+
+async function marineParts(lat: number, lon: number): Promise<[Conditions["marine"], Conditions["alerts"]]> {
+  const source = "NOAA National Weather Service";
+  let zones: { id: string; name: string }[];
+  try {
+    zones = await zonesFor(lat, lon);
+  } catch (e) {
+    const u: Part<never> = { status: "unavailable", reason: `The NWS zone service did not answer (${msg(e)}).`, source };
+    return [u, u];
+  }
+  if (!zones.length) {
+    const n: Part<never> = { status: "none", reason: "These waters are not inside an NWS coastal marine zone.", source };
+    return [n, n];
+  }
+  // some zones (harbor bars) have no zone forecast: use the first nearby zone that has one
+  let lastError = "";
+  for (const zone of zones) {
+    const furl = `${NWS}/zones/coastal/${zone.id}/forecast`;
+    const aurl = `${NWS}/alerts/active?zone=${zone.id}`;
+    const [f, a] = await Promise.allSettled([get(furl, "json"), get(aurl, "json")]);
+    const forecast = f.status === "fulfilled" ? parseZoneForecast(zone.id, zone.name, f.value) : null;
+    if (!forecast) {
+      lastError = f.status === "rejected" ? `The NWS forecast did not load (${msg(f.reason)}).` : "NWS returned no forecast periods.";
+      continue;
+    }
+    const fetchedAt = now().toISOString();
+    return [
+      { status: "ok", data: forecast, source, url: `https://marine.weather.gov/MapClick.php?zoneid=${zone.id}`, fetchedAt },
+      a.status === "fulfilled"
+        ? { status: "ok", data: parseAlerts(a.value), source, url: `https://forecast.weather.gov/shmrn.php?mz=${zone.id.toLowerCase()}`, fetchedAt }
+        : { status: "unavailable", reason: `NWS alerts did not load (${msg(a.reason)}).`, source, url: aurl },
+    ];
+  }
+  const u: Part<never> = { status: "unavailable", reason: lastError || "No NWS forecast for these waters.", source };
+  return [u, u];
+}
+
+async function buoyPart(lat: number, lon: number): Promise<Conditions["buoy"]> {
+  const source = "NOAA National Data Buoy Center";
+  const cands = nearest(BUOYS, lat, lon, 8, 60);
+  if (!cands.length) return { status: "none", reason: "No NDBC station reports within 60 km.", source };
+  const errors: string[] = [];
+  for (const s of cands) {
+    const url = `https://www.ndbc.noaa.gov/data/realtime2/${s.id}.txt`;
+    try {
+      const obs = parseNdbc((await get(url, "text", 8192)) as string, now());
+      if (Object.keys(obs).length)
+        return { status: "ok", data: obs, source, url: `https://www.ndbc.noaa.gov/station_page.php?station=${s.id}`, fetchedAt: now().toISOString(), station: { id: s.id, name: s.name, km: s.km } };
+      errors.push(`${s.id}: nothing in the last 6 h`);
+    } catch (e) {
+      errors.push(`${s.id}: ${msg(e)}`);
+    }
+  }
+  return { status: "unavailable", reason: `No recent observation from the nearest stations (${errors.join("; ")}).`, source };
+}
+
+async function tidePart(lat: number, lon: number): Promise<Conditions["tides"]> {
+  const source = "NOAA CO-OPS tide predictions";
+  const s = nearest(TIDE_STATIONS, lat, lon, 1, 40)[0];
+  if (!s) return { status: "none", reason: "No tide prediction station within 40 km.", source };
+  const d = now();
+  // predictions are requested in local time from the start of today in California
+  const ymd = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit" }).format(d).replaceAll("-", "");
+  const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&station=${s.id}&datum=MLLW&interval=hilo&units=english&time_zone=lst_ldt&format=json&begin_date=${ymd}&range=96&application=CoastWatch`;
+  try {
+    const tides = parseTides(await get(url, "json"));
+    if (!tides.length) return { status: "unavailable", reason: "CO-OPS returned no predictions.", source, url };
+    return { status: "ok", data: tides, source, url: `https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${s.id}`, fetchedAt: d.toISOString(), station: { id: s.id, name: s.name, km: s.km } };
+  } catch (e) {
+    return { status: "unavailable", reason: `Tide predictions did not load (${msg(e)}).`, source, url };
+  }
+}
+
+export async function GET(req: Request) {
+  const q = new URL(req.url).searchParams;
+  const lat = Number(q.get("lat"));
+  const lon = Number(q.get("lon"));
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < 32 || lat > 42.5 || lon < -127 || lon > -116) {
+    return NextResponse.json({ error: "lat and lon must be California coastal coordinates" }, { status: 400 });
+  }
+  const [[marine, alerts], buoy, tides] = await Promise.all([marineParts(lat, lon), buoyPart(lat, lon), tidePart(lat, lon)]);
+  const body: Conditions = { lat, lon, marine, alerts, buoy, tides };
+  return NextResponse.json(body, { headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300" } });
+}

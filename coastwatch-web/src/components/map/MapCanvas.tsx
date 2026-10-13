@@ -16,6 +16,7 @@ import {
   NODATA_LAYER_ID,
   noDataImage,
   SPEED_CLASSES,
+  TINT_LAYER_IDS,
   WATER_FALLBACK_LAYER_IDS,
   WATER_FALLBACK_SOURCE,
   transformRequest,
@@ -154,6 +155,8 @@ export default function MapCanvas(p: Props) {
         [NODATA_LAYER_ID, hasRaster],
         [NODATA_FALLBACK_LAYER_ID, hasRaster && showFallback],
         ...WATER_FALLBACK_LAYER_IDS.map((id): [string, boolean] => [id, showFallback]),
+        // depth-tinted seafloor only when no data colours are on the map
+        ...TINT_LAYER_IDS.map((id): [string, boolean] => [id, !hasRaster]),
       ];
       for (const [id, on] of want) {
         if (!map.getLayer(id)) continue;

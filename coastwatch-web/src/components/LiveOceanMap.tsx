@@ -21,6 +21,7 @@ import {
   type SatProduct,
 } from "@/lib/layers";
 import { officialVerification, currentRecords } from "@/lib/official";
+import { useMode } from "@/lib/mode";
 import { openingLayer, type Opening } from "@/lib/opening";
 import { cellEdges, loadGrid } from "@/lib/grid";
 import type { StationLite } from "@/lib/data";
@@ -136,8 +137,16 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     explicit.current = true;
     setCurRaw(c);
   }, []);
+  // Coastal mode opens on the basemap (no data layer): the seafloor, the coast, ports and the
+  // official areas. Research mode, and any link naming a layer, open as before.
+  const [viewMode, , modeReady] = useMode();
   useEffect(() => {
-    if (decided || !now) return;
+    if (decided || !now || !modeReady) return;
+    if (viewMode === "coastal") {
+      setGroupRaw(null);
+      setDecided(true);
+      return;
+    }
     const v = initialQ.get("var");
     const o = openingLayer(manifest, now, {
       regionId: initialRegion.id === STATEWIDE.id ? null : initialRegion.id,
@@ -148,7 +157,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     if (o.group === "satellite") setSatRaw({ product: o.product, day: null });
     setGroupRaw(o.group);
     setDecided(true);
-  }, [decided, now, manifest, initialQ, initialRegion.id, firstLead]);
+  }, [decided, now, manifest, initialQ, initialRegion.id, firstLead, viewMode, modeReady]);
   const [flow, setFlow] = useState<FlowMode>(initialQ.get("flow") === "particles" ? "particles" : "arrows");
   // combined view (opt-in): satellite chlorophyll under the observed currents
   const [underlay, setUnderlay] = useState(initialQ.get("chl") === "1");

@@ -8,7 +8,7 @@ import { AGENCY_LINKS, COAST_COPY } from "@/content/coast";
 import { FORECAST_COPY, OFFICIAL_STATUS } from "@/content/copy";
 import { ACTION_LABEL, currentRecords, type Verification } from "@/lib/official";
 import { AUDIENCE, cdfwRegionsAt, type Association } from "@/lib/applicability";
-import { AUDIENCES, ageDays, ageWords, availability, RECENCY_LABEL, recency, type Audience, type Availability, type CoastPlace, type StationNear } from "@/lib/coast";
+import { ageDays, ageWords, availability, RECENCY_LABEL, recency, type Audience, type Availability, type CoastPlace, type StationNear } from "@/lib/coast";
 import { CHARM_LEADS, artifactUrl, charmLayer, leadLabel } from "@/lib/layers";
 import { loadGrid } from "@/lib/grid";
 import { classifyTime } from "@/lib/freshness";
@@ -94,14 +94,12 @@ export function OfficialSection({
   audience,
   place,
   verification,
-  onAudience,
 }: {
   official: OfficialDataset | null;
   assocs: Association[];
   audience: Audience;
   place: CoastPlace;
   verification: Verification | null;
-  onAudience: (a: Audience) => void;
 }) {
   const fits = (a: Association) => audience === "all" || AUDIENCE[a.record.fishery].groups.includes(audience);
   // a notice an agency release appears to lift is set apart, never listed as applying
@@ -118,25 +116,6 @@ export function OfficialSection({
   return (
     <section aria-labelledby="coast-official-h" className="space-y-4" data-testid="coast-official">
       <SectionHead id="coast-official-h" kind="official" title="Official information" aside={<VerificationBadge v={verification} />} />
-      <div className="space-y-1.5">
-        <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-ink-3" id="coast-for-h">
-          Show notices for
-        </p>
-        <div role="group" aria-labelledby="coast-for-h" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" data-testid="coast-audience">
-          {AUDIENCES.map((x) => (
-            <button
-              key={x.id}
-              type="button"
-              aria-pressed={audience === x.id}
-              onClick={() => onAudience(x.id)}
-              className={`min-h-[40px] shrink-0 rounded-full border px-3.5 text-[14px] ${audience === x.id ? "border-navy-900 bg-navy-900 text-white" : "border-hairline-strong bg-surface text-ink-2 hover:border-ink-3"}`}
-              data-testid={`coast-for-${x.id}`}
-            >
-              {x.label}
-            </button>
-          ))}
-        </div>
-      </div>
       <p className="text-[14px] text-ink-2">{COAST_COPY.unreviewed} The notices themselves are transcribed from the agencies&apos; pages and not verified.</p>
       {reg.changed && (
         <p className="rounded-lg bg-official-bg px-3 py-2 text-[14px] text-official-ink" role="note" data-testid="coast-registry-changed">
@@ -466,7 +445,7 @@ function AvailRow({ title, threshold, a, valid }: { title: string; threshold: st
                 <span className="font-semibold text-ink tabular">{fmtPct(a.nearest.value)}</span> at the cell centred {a.nearest.km.toFixed(1)} km {a.nearest.bearing} of here (
                 <span className="tabular">{fmtCell(a.nearest.cell.lat, a.nearest.cell.lon)}</span>){valid ? `, valid ${valid}` : ""}.
               </p>
-              <p className="mt-1 text-ink-3">It describes that 3 km cell of open water only. Conditions at the shore, in harbors and at piers can differ, and C-HARM does not model them.</p>
+              <p className="mt-1 text-ink-3">It describes that 3 km ocean cell only. Conditions at the shore, in harbors and at piers can differ, and C-HARM does not model them.</p>
             </div>
           )}
         </>

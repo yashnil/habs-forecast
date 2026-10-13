@@ -63,7 +63,9 @@ export const MONTEREY_INSET_CORNERS: [[number, number], [number, number], [numbe
   [-122.72, 36.22],
 ];
 
-const RELIEF_LAYER_IDS = new Set(["relief-land", "relief-sea", "relief-sea-monterey", "isobaths", "isobath-labels"]);
+const RELIEF_LAYER_IDS = new Set(["relief-land", "relief-sea", "relief-sea-monterey", "relief-sea-tint", "relief-sea-monterey-tint", "isobaths", "isobath-labels"]);
+/** Depth-tinted seafloor, shown only while no data raster is (pipeline/scripts/build_relief.py). */
+export const TINT_LAYER_IDS = ["relief-sea-tint", "relief-sea-monterey-tint"];
 
 /** The marine basemap with or without the relief (land and seafloor shading, isobaths). */
 export function basemapStyle({ relief }: { relief: boolean }): StyleSpecification {
@@ -72,6 +74,8 @@ export function basemapStyle({ relief }: { relief: boolean }): StyleSpecificatio
   delete sources["relief-land"];
   delete sources["relief-sea"];
   delete sources["relief-sea-monterey"];
+  delete sources["relief-sea-tint"];
+  delete sources["relief-sea-monterey-tint"];
   delete sources.isobaths;
   return { ...BASEMAP_STYLE, sources, layers: BASEMAP_STYLE.layers.filter((l) => !RELIEF_LAYER_IDS.has(l.id)) };
 }
@@ -90,6 +94,8 @@ export const BASEMAP_STYLE: StyleSpecification = {
     "relief-sea": { type: "image", url: "/basemap/relief-sea.webp", coordinates: RELIEF_CORNERS },
     // Monterey Bay at 3 arc-second from the NOAA Coastal Relief Model, over the ETOPO relief
     "relief-sea-monterey": { type: "image", url: "/basemap/relief-sea-monterey.webp", coordinates: MONTEREY_INSET_CORNERS },
+    "relief-sea-tint": { type: "image", url: "/basemap/relief-sea-tint.webp", coordinates: RELIEF_CORNERS },
+    "relief-sea-monterey-tint": { type: "image", url: "/basemap/relief-sea-monterey-tint.webp", coordinates: MONTEREY_INSET_CORNERS },
     isobaths: { type: "geojson", data: "/basemap/isobaths.geojson", attribution: RELIEF_ATTRIBUTION },
     [WATER_FALLBACK_SOURCE]: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
   },
@@ -108,6 +114,9 @@ export const BASEMAP_STYLE: StyleSpecification = {
     },
     { id: "relief-sea", type: "raster", source: "relief-sea", paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
     { id: "relief-sea-monterey", type: "raster", source: "relief-sea-monterey", minzoom: 7, paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
+    // the tinted seafloor sits over the neutral one and is shown only with no data raster on the map
+    { id: "relief-sea-tint", type: "raster", source: "relief-sea-tint", layout: { visibility: "none" }, paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
+    { id: "relief-sea-monterey-tint", type: "raster", source: "relief-sea-monterey-tint", minzoom: 7, layout: { visibility: "none" }, paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
     {
       id: "isobaths",
       type: "line",

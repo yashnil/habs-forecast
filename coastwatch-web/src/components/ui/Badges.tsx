@@ -29,19 +29,24 @@ const STATE_STYLE: Record<FreshnessState, { color: string; icon: React.ReactNode
 
 const BASIS_WORD: Record<string, string> = { issued_date: "issued", observed_date: "observed", valid_date: "updated" };
 
-export function FreshnessBadge({ f, compact = false, basis }: { f: Freshness | null; compact?: boolean; basis?: string }) {
+/**
+ * `unconfirmed`: the last update of this source failed. A recent date alone is then not enough to
+ * say "Current" (a newer run may exist that CoastWatch could not fetch): it reads "Not confirmed".
+ */
+export function FreshnessBadge({ f, compact = false, basis, unconfirmed = false }: { f: Freshness | null; compact?: boolean; basis?: string; unconfirmed?: boolean }) {
   const state: FreshnessState = f?.state ?? "unavailable";
-  const s = STATE_STYLE[state];
+  const notConfirmed = unconfirmed && state === "current";
+  const s = STATE_STYLE[notConfirmed ? "stale" : state];
   return (
     <span
       data-testid="freshness"
-      data-state={state}
+      data-state={notConfirmed ? "unconfirmed" : state}
       className="inline-flex items-center gap-1.5 rounded-full border border-hairline-strong bg-surface-2 px-2 py-0.5 text-[13px] font-medium text-ink"
     >
       <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden style={{ color: s.color }}>
         {s.icon}
       </svg>
-      {f ? FRESHNESS_LABEL[state] : "Checking…"}
+      {f ? (notConfirmed ? "Not confirmed" : FRESHNESS_LABEL[state]) : "Checking…"}
       {!compact && f?.ageDays != null && (
         <span className="text-ink-3">
           · {basis ? `${BASIS_WORD[basis] ?? ""} ` : ""}
