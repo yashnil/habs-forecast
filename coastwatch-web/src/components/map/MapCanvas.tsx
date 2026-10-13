@@ -144,24 +144,60 @@ export default function MapCanvas(p: Props) {
   }, [map, fallbackOn, fallbackReady]);
   const showFallback = fallbackOn && fallbackReady;
 
-  // The no-data dots show only under a raster data layer: with currents alone (or nothing)
-  // there is no "value" for a gap to be confused with. The bundled-water layers show only while
-  // the basemap is slow or down.
+  // Has the data field arrived? Until a raster's first tiles in view have loaded there is nothing
+  // for a gap to differ from: the hatch would cover the whole sea for a moment and read as "no
+  // data" (signature P11, the hatch flash). The basemap stays calm until then; loading words
+  // appear only after 400 ms. Keyed by the raster ids, so a new day starts unloaded again (the
+  // swap dips through the basemap; two days are never blended).
+  const rasterKey = [p.forecast?.id, p.satellite?.id, p.satelliteAge?.id].filter(Boolean).join("|");
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const [failedKey, setFailedKey] = useState<string | null>(null);
+  const fieldReady = hasRaster && loadedKey === rasterKey;
+  const fieldFailed = hasRaster && !fieldReady && failedKey === rasterKey;
+  useEffect(() => {
+    if (!map || !hasRaster) return;
+    const ids = ["forecast", "satellite", "satellite-age"].filter((id) => (id === "forecast" ? p.forecast : id === "satellite" ? p.satellite : p.satelliteAge));
+    const check = () => {
+      if (ids.every((id) => map.getSource(id) && map.isSourceLoaded(id))) setLoadedKey(rasterKey);
+    };
+    // a failure is said in words, never hidden behind a spinner (signature handoff, rule 8)
+    const failed = (e: unknown) => {
+      const id = (e as { sourceId?: string }).sourceId;
+      if (id && ids.includes(id)) setFailedKey(rasterKey);
+    };
+    check();
+    map.on("sourcedata", check);
+    map.on("idle", check);
+    map.on("error", failed);
+    return () => {
+      map.off("sourcedata", check);
+      map.off("idle", check);
+      map.off("error", failed);
+    };
+  }, [map, hasRaster, rasterKey, p.forecast, p.satellite, p.satelliteAge]);
+
+  // The no-data hatch shows only under a data field that has arrived: with currents alone (or
+  // nothing) there is no "value" for a gap to be confused with. The bundled-water layers show
+  // only while the basemap is slow or down.
   useEffect(() => {
     if (!map) return;
     // idempotent: every style change fires "styledata" again
     const apply = () => {
       const want: [string, boolean][] = [
-        [NODATA_LAYER_ID, hasRaster],
-        [NODATA_FALLBACK_LAYER_ID, hasRaster && showFallback],
+        [NODATA_LAYER_ID, fieldReady],
+        [NODATA_FALLBACK_LAYER_ID, fieldReady && showFallback],
         ...WATER_FALLBACK_LAYER_IDS.map((id): [string, boolean] => [id, showFallback]),
-        // depth-tinted seafloor only when no data colours are on the map
-        ...TINT_LAYER_IDS.map((id): [string, boolean] => [id, !hasRaster]),
       ];
       for (const [id, on] of want) {
         if (!map.getLayer(id)) continue;
         const v = on ? "visible" : "none";
         if (map.getLayoutProperty(id, "visibility") !== v) map.setLayoutProperty(id, "visibility", v);
+      }
+      // depth-tinted seafloor only when no data colours are on the map: a cross-fade, not a cut
+      for (const id of TINT_LAYER_IDS) {
+        if (!map.getLayer(id)) continue;
+        const o = hasRaster ? 0 : 1;
+        if (map.getPaintProperty(id, "raster-opacity") !== o) map.setPaintProperty(id, "raster-opacity", o);
       }
     };
     apply();
@@ -169,7 +205,7 @@ export default function MapCanvas(p: Props) {
     return () => {
       map.off("styledata", apply);
     };
-  }, [map, hasRaster, showFallback]);
+  }, [map, hasRaster, fieldReady, showFallback]);
   const { onHover } = p;
 
   const onClick = useCallback(
@@ -373,6 +409,20 @@ export default function MapCanvas(p: Props) {
             paint={{ "text-color": "#ffffff", "text-halo-color": "#06111e", "text-halo-width": 1.8 }}
           />
         </Source>
+      )}
+
+      {hasRaster && !fieldReady && map && (
+        <div className="pointer-events-none absolute inset-x-0 top-[72px] z-[1] flex justify-center" role="status" aria-live="polite">
+          {fieldFailed ? (
+            <span className="rounded-full bg-[rgba(11,26,43,0.92)] px-3 py-1.5 text-[13px] text-[#e9eff6] shadow-[0_6px_20px_rgba(6,17,30,0.3)]" data-testid="map-field-failed">
+              Part of this layer could not be loaded. Nothing is drawn in its place.
+            </span>
+          ) : (
+            <span className="cw-late rounded-full bg-[rgba(11,26,43,0.88)] px-3 py-1.5 text-[13px] text-[#e9eff6] shadow-[0_6px_20px_rgba(6,17,30,0.3)]" data-testid="map-field-loading">
+              Drawing the data…
+            </span>
+          )}
+        </div>
       )}
 
       {p.inspect && (

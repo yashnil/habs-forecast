@@ -6,12 +6,13 @@ import type { StyleSpecification } from "maplibre-gl";
  *
  * Drawing order, bottom to top:
  * - land tone, then land hillshade (clipped to the real coastline by the vector water);
- * - the sea, then seafloor shading and isobaths. The seafloor is a neutral tone darker than
- *   every data colour and lies *under* every data layer, so it is never read as a value;
+ * - the sea, then seafloor shading. The seafloor is a neutral tone darker than every data colour
+ *   and lies *under* every data layer, so it is never read as a value;
  * - the no-data hatch, shown only while a raster data layer is on (MapCanvas toggles it),
  *   so a gap in the data never looks like a low value;
  * - data layers, inserted before `coastline`;
- * - coastline, rivers, roads, boundaries and labels, which stay above the data.
+ * - coastline, isobaths, rivers, roads, boundaries and labels, which stay above the data: depth
+ *   and the shore stay readable over any field (signature handoff #2).
  * Label hierarchy: ports (MapCanvas) above towns above water names above roads. If the
  * tiles are unreachable the background still renders and the data still draws, and MapCanvas
  * shows the bundled water (lib/waterFallback) instead: the sea, its no-data hatch and the
@@ -101,7 +102,8 @@ export const BASEMAP_STYLE: StyleSpecification = {
   },
   layers: [
     { id: "land", type: "background", paint: { "background-color": LAND } },
-    { id: "relief-land", type: "raster", source: "relief-land", paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
+    // land one step quieter (desaturated), so the sea carries the colour
+    { id: "relief-land", type: "raster", source: "relief-land", paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-saturation": -0.35 } },
     // under the basemap's water, which covers it wherever the basemap's tiles did arrive
     // (its polygons are cut along a tile grid: no anti-aliased outline, so the cuts never show)
     { id: "water-fallback", type: "fill", source: WATER_FALLBACK_SOURCE, filter: ["==", ["geometry-type"], "Polygon"], layout: { visibility: "none" }, paint: { "fill-color": SEA, "fill-antialias": false } },
@@ -114,21 +116,13 @@ export const BASEMAP_STYLE: StyleSpecification = {
     },
     { id: "relief-sea", type: "raster", source: "relief-sea", paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
     { id: "relief-sea-monterey", type: "raster", source: "relief-sea-monterey", minzoom: 7, paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
-    // the tinted seafloor sits over the neutral one and is shown only with no data raster on the map
-    { id: "relief-sea-tint", type: "raster", source: "relief-sea-tint", layout: { visibility: "none" }, paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
-    { id: "relief-sea-monterey-tint", type: "raster", source: "relief-sea-monterey-tint", minzoom: 7, layout: { visibility: "none" }, paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
+    // the tinted seafloor sits over the neutral one and shows only with no data field on the map;
+    // MapCanvas cross-fades it (420 ms) to the neutral relief when a field appears, never a toggle
+    { id: "relief-sea-tint", type: "raster", source: "relief-sea-tint", paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-opacity": 1, "raster-opacity-transition": { duration: 420, delay: 0 } } },
+    { id: "relief-sea-monterey-tint", type: "raster", source: "relief-sea-monterey-tint", minzoom: 7, paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-opacity": 1, "raster-opacity-transition": { duration: 420, delay: 0 } } },
     {
-      id: "isobaths",
-      type: "line",
-      source: "isobaths",
-      minzoom: 5,
-      paint: {
-        // the shelf break (200 m) slightly stronger than deeper contours
-        "line-color": ["case", ["==", ["get", "depth_m"], 200], "rgba(150,182,214,0.30)", "rgba(150,182,214,0.16)"],
-        "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.5, 10, 1],
-      },
-    },
-    {
+      // depth labels stay under any data field (a label over the field would hide its values);
+      // the contour lines themselves are drawn above it
       id: "isobath-labels",
       type: "symbol",
       source: "isobaths",
@@ -175,6 +169,18 @@ export const BASEMAP_STYLE: StyleSpecification = {
         "line-color": "#d3dfeb",
         "line-opacity": ["interpolate", ["linear"], ["zoom"], 4, 0.7, 8, 0.9],
         "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.5, 8, 0.9, 10, 1.3, 12, 1.8],
+      },
+    },
+    {
+      id: "isobaths",
+      type: "line",
+      source: "isobaths",
+      minzoom: 5,
+      paint: {
+        // above every data field, so depth stays readable over the forecast (signature §basemap);
+        // the shelf break (200 m) slightly stronger than deeper contours
+        "line-color": ["case", ["==", ["get", "depth_m"], 200], "rgba(170,198,226,0.36)", "rgba(170,198,226,0.17)"],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.5, 10, 1],
       },
     },
     {

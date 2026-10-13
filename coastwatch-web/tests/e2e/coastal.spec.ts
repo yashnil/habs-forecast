@@ -125,7 +125,8 @@ test.describe("Coastal mode", () => {
 
   test("the Ocean Map opens on the basemap in Coastal mode; a link naming a layer still shows it", async ({ browser }) => {
     const { ctx, page } = await coastal(browser);
-    const visible = (id: string) => page.evaluate((i) => (window as unknown as { __cwMap: { getLayer: (x: string) => unknown; getLayoutProperty: (x: string, p: string) => string } }).__cwMap.getLayoutProperty(i, "visibility") !== "none", id);
+    // the depth tint cross-fades (raster-opacity), it is never toggled
+    const visible = (id: string) => page.evaluate((i) => (window as unknown as { __cwMap: { getPaintProperty: (x: string, p: string) => number } }).__cwMap.getPaintProperty(i, "raster-opacity") > 0, id);
     await page.goto(`${OK}/?region=monterey_bay`);
     await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { loaded: () => boolean } }).__cwMap?.loaded());
     await expect.poll(() => visible("relief-sea-tint")).toBe(true);

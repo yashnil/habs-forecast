@@ -216,6 +216,27 @@ test.describe("rasters and motion", () => {
     await expect.poll(vis).toBe("none");
   });
 
+  test("the no-data hatch never flashes over the sea while a field is still loading (it waits for the field)", async ({ page }) => {
+    // hold the forecast's value grid back: until it arrives, there is nothing for a gap to differ from
+    let release: () => void = () => {};
+    const held = new Promise<void>((r) => (release = r));
+    await page.route(/\/charm\/.*\.u16(\.gz)?$/, async (route) => {
+      await held;
+      await route.continue();
+    });
+    // not open(): the map cannot finish loading while its field is held back
+    await page.goto(`${OK}/?layer=forecast`);
+    await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { getLayer: (l: string) => unknown } }).__cwMap?.getLayer("forecast-raster"));
+    const vis = () => mapCall(page, "getLayoutProperty", "water-nodata", "visibility");
+    await page.waitForTimeout(800);
+    expect(await vis()).toBe("none");
+    // loading words appear only after 400 ms of real waiting, and say what is happening
+    await expect(page.getByTestId("map-field-loading")).toBeVisible();
+    release();
+    await expect.poll(vis).toBe("visible");
+    await expect(page.getByTestId("map-field-loading")).toHaveCount(0);
+  });
+
   test("satellite tiles: 512 px images, no request for a tile that does not exist", async ({ page }) => {
     const missing: string[] = [];
     let served = 0;
