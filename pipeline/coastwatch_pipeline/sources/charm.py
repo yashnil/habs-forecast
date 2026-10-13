@@ -323,7 +323,9 @@ def _qc(values: np.ndarray, checks: list[QCCheck]) -> QualityControl:
 
 
 def _provenance(ctx: RunContext, ld: LeadData, probe_url: str) -> Provenance:
-    keep = ("title", "product_version", "date_created", "creator_name", "creator_email", "source")
+    # what NOAA says the run is made from (its satellite input is S-NPP VIIRS until NOAA changes
+    # it; S-NPP data end 2026-11-02), so a change of input or version can be detected and stated
+    keep = ("title", "product_version", "date_created", "date_modified", "creator_name", "creator_email", "source", "satellite", "platform", "product_name")
     meta = {k: ld.attrs[k] for k in keep if k in ld.attrs}
     hist = ld.attrs.get("history", "")
     if hist:

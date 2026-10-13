@@ -31,6 +31,12 @@ in the published dataset like everything else). What alerts, and why that thresh
                       allows (what the app labels "Stale"), whether or not the run succeeded. The message says which: CoastWatch could not reach the
                       source (last error), or the source published nothing newer.
 
+- charm_input_changed NOAA's own metadata for the newest C-HARM run declares a different satellite
+                      input, platform, product name or version than the previous run did (NASA
+                      ends Suomi-NPP data on 2026-11-02; C-HARM v3.1 names S-NPP VIIRS as its
+                      ocean-colour input). Raised once; forecasts either side may not compare.
+- charm_input_ageing  after SNPP_END, new C-HARM runs still declare S-NPP as their input.
+
 Every run also writes a per-source freshness and coverage table (health["freshness"]) with
 each source's own dates; nothing is relabelled. Alerts are de-duplicated by key: the health
 issue is commented only when an alert appears or clears.
@@ -66,6 +72,8 @@ OUTAGE_MIN_SOURCES = 2
 # radar keep their latency-aware checks (satellite_stale, hfr_stale) instead.
 STALE_CHECK = {"charm": "C-HARM forecast"}
 HEALTH_FILE = "health.json"
+SNPP_END = date(2026, 11, 2)
+CHARM_INPUT_KEYS = ("satellite", "platform", "product_name", "product_version")
 
 
 def _dt(s: str) -> datetime:
@@ -228,6 +236,23 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
             best[sid] = a
     alerts[:] = [a for a in alerts if source_of(a) is None or best.get(source_of(a)) is a]
 
+    # C-HARM's declared input (NOAA's metadata on the newest run's layers)
+    charm_input: dict[str, str] = {}
+    for lyr in manifest.layers:
+        if lyr.group_id == "charm" and lyr.provenance and lyr.provenance.upstream_metadata:
+            md = lyr.provenance.upstream_metadata
+            charm_input = {k: str(md[k]) for k in CHARM_INPUT_KEYS if k in md}
+            break
+    prev_input = prev.get("charm_input") or {}
+    changed = {k: (prev_input.get(k), v) for k, v in charm_input.items() if k in prev_input and prev_input[k] != v}
+    if changed:
+        what = "; ".join(f"{k}: {a!r} -> {b!r}" for k, (a, b) in changed.items())
+        alert("charm_input_changed", "charm_input_changed", f"C-HARM's declared input changed ({what}). Forecasts before and after may not be directly comparable; state this in the app.")
+    elif "charm_input_changed" in prev_alerts and (now - _dt(prev_alerts["charm_input_changed"]["since"])).days < 7:
+        alerts.append(prev_alerts["charm_input_changed"])  # stays open for a week, then clears by itself
+    if today >= SNPP_END and "S-NPP" in charm_input.get("satellite", "") + charm_input.get("product_name", ""):
+        alert("charm_input_ageing", "charm_input_ageing", f"C-HARM runs after {SNPP_END} still declare S-NPP as their input ({charm_input}); NASA ended S-NPP data then, so the input may be ageing or stale.")
+
     # missed runs
     if previous_generated_at:
         gap = (now - _dt(previous_generated_at)).total_seconds() / 3600
@@ -246,6 +271,7 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
         "sources": sources,
         "freshness": freshness,
         "failing_hosts": failing_hosts,
+        "charm_input": charm_input or prev_input,
         "hfr_regions_last_covered": seen,
         "alerts": alerts,
         "new_alerts": [a["key"] for a in alerts if a["key"] not in prev_alerts],

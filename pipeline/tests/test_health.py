@@ -166,3 +166,30 @@ def test_every_run_writes_a_freshness_and_coverage_table_with_the_sources_own_da
     assert charm["basis"] == "issued_date" and charm["newest_date"] == next(s.latest_issued_date for s in base.sources if s.source_id == "charm")
     assert 0 < charm["coverage"]["valid_fraction"] <= 1
     assert "| Source | Last attempt |" in hl.markdown(h)
+
+
+def with_charm_input(m: Manifest, **md) -> Manifest:
+    def upd(lyr):
+        if lyr.group_id != "charm" or not lyr.provenance:
+            return lyr
+        return lyr.model_copy(update={"provenance": lyr.provenance.model_copy(update={"upstream_metadata": {**(lyr.provenance.upstream_metadata or {}), **md}})})
+    return m.model_copy(update={"layers": [upd(lyr) for lyr in m.layers]})
+
+
+def test_a_change_in_charm_s_declared_satellite_input_alerts_once(base):
+    snpp = with_charm_input(base, satellite="S-NPP", product_name="C-HARM v3.1 model output with SNPP VIIRS and WCOFS data", product_version="3.1")
+    h1 = hl.evaluate(snpp, None, NOW)
+    assert h1["charm_input"]["satellite"] == "S-NPP" and "charm_input_changed" not in keys(h1)
+    h2 = hl.evaluate(snpp, h1, NOW + timedelta(hours=6))
+    assert "charm_input_changed" not in keys(h2)
+    n20 = with_charm_input(base, satellite="NOAA-20", product_name="C-HARM v3.2 model output with NOAA-20 VIIRS and WCOFS data", product_version="3.2")
+    h3 = hl.evaluate(n20, h2, NOW + timedelta(hours=12))
+    assert "charm_input_changed" in h3["new_alerts"]
+    assert "S-NPP" in next(a["message"] for a in h3["alerts"] if a["key"] == "charm_input_changed")
+
+
+def test_charm_still_declaring_snpp_after_the_end_of_snpp_data_is_flagged(base):
+    snpp = with_charm_input(base, satellite="S-NPP")
+    after = datetime(2026, 11, 5, 18, 0, tzinfo=timezone.utc)
+    assert "charm_input_ageing" in keys(hl.evaluate(snpp, None, after))
+    assert "charm_input_ageing" not in keys(hl.evaluate(snpp, None, NOW))
