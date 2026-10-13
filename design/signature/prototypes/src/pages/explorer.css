@@ -196,8 +196,8 @@
 @keyframes sel-settle { from { transform: scale(1.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 /* ---------------------------------------------------------------- notes & cards over the map */
-.tiles-note, .netflag { position: absolute; z-index: 3; right: 16px; top: 72px; max-width: 320px; margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--cw-page); color: var(--cw-ink-2); box-shadow: var(--cw-shadow-float); }
-.netflag { top: auto; bottom: 8px; right: 50%; transform: translateX(50%); background: #12263c; color: #c9d6e4; box-shadow: none; }
+.tiles-note, .netflag { position: absolute; z-index: 3; right: 16px; bottom: 44px; max-width: 320px; margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--cw-page); color: var(--cw-ink-2); box-shadow: var(--cw-shadow-float); }
+.netflag { bottom: auto; top: 76px; right: 50%; transform: translateX(50%); background: #12263c; color: #c9d6e4; box-shadow: none; }
 .caption, .travel { position: absolute; z-index: 4; left: 452px; top: 72px; max-width: 520px; margin: 0; padding: 10px 10px 10px 16px; border-radius: 14px; background: var(--cw-page); box-shadow: var(--cw-shadow-float); font: var(--cw-t-label); color: var(--cw-ink); display: flex; gap: 8px; align-items: center; }
 .travel { padding: 8px 14px; background: rgba(11, 26, 43, 0.88); color: #dbe5ef; box-shadow: none; }
 .purpose, .tourcard { position: absolute; z-index: 4; right: 16px; top: 76px; width: 380px; padding: 20px; border-radius: var(--cw-r-lg); background: var(--cw-page); box-shadow: var(--cw-shadow-float); display: grid; gap: 8px; }
@@ -269,8 +269,8 @@
 .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); height: 64px; padding-bottom: env(safe-area-inset-bottom); background: var(--cw-page); border-top: 1px solid var(--cw-hairline); position: relative; z-index: 7; }
 .tabbar a { display: grid; justify-items: center; align-content: center; gap: 4px; color: var(--cw-ink-2); text-decoration: none; font: var(--cw-t-micro); }
 .tabbar a[aria-current="page"] { color: var(--cw-ink); font-weight: 600; }
-.tab-i { width: 22px; height: 18px; border-radius: 4px; border: 1.5px solid currentColor; opacity: 0.8; }
-.tabbar a[aria-current="page"] .tab-i { background: currentColor; }
+.tab-i-unused { width: 22px; height: 18px; border-radius: 4px; border: 1.5px solid currentColor; opacity: 0.8; }
+.tabbar a[aria-current="page"] .tab-i-unused { background: currentColor; }
 .tab-notices { border-color: #d9922e; border-radius: 2px; border-width: 0; border-top: 2.5px solid #d9922e; height: 0; margin: 8px 0; }
 
 @media (max-width: 360px) {
@@ -281,3 +281,25 @@
 @media (prefers-reduced-motion: reduce) {
   .ex[data-mobile] .bottombar { transition: none; }
 }
+
+/* mobile composition: one row of controls above the sheet; field mode lives in the sheet */
+.bottombar[data-hidden] { opacity: 0; pointer-events: none; transform: translateY(8px); }
+.bottombar { transition: opacity var(--cw-d-short), transform var(--cw-d-short) var(--cw-ease-standard); }
+.ex[data-mobile] .bottombar { flex-direction: row; flex-wrap: wrap; align-items: flex-end; }
+.timebar[data-compact] { grid-template-columns: 1fr; padding: 4px; row-gap: 0; border-radius: 14px; }
+.timebar[data-compact] .tday { min-width: 0; padding: 6px 9px; min-height: 40px; }
+.timebar[data-compact] .tday-r { display: none; }
+.timebar[data-compact] .timebar-issued { padding: 4px 6px 2px; }
+.timebar[data-compact] .issued-bracket { display: none; }
+.timebar[data-compact] .timebar-issued .t-meta { font-size: 12px; }
+.sheet-fieldmode { margin-bottom: 12px; }
+.sheet-fieldmode .fieldmode { background: var(--cw-surface-3); }
+.sheet-fieldmode .fieldmode button { color: var(--cw-ink-2); height: 36px; }
+.sheet-fieldmode .fieldmode button[aria-checked="true"] { background: var(--cw-model-bg); color: var(--cw-model); box-shadow: inset 0 0 0 1px var(--cw-model); }
+.tabbar a svg { opacity: 0.85; }
+.tabbar a[aria-current="page"] svg { opacity: 1; }
+.fm-short { display: none; }
+@media (max-width: 360px) { .fm-long { display: none; } .fm-short { display: inline; } }
+.lrow-note { color: var(--cw-official); font-weight: 500; }
+.legend-ramp-smooth { display: block; }
+.legend .mark-pixel { --cw-measured: #4fd1ae; }

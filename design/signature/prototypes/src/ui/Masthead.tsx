@@ -48,7 +48,7 @@ export function Masthead({ mode, onMode, notices, unverified, onNotices, compact
         <button className="mh-menu btn-quiet" aria-expanded={menu} onClick={() => setMenu(!menu)} aria-label="More">⋯</button>
       </div>
       <p className="mh-status">
-        Notices are copied from CDFW and CDPH and may be incomplete. Before harvesting or eating seafood, check{" "}
+        {compact ? "Notices may be incomplete. Before harvesting, check" : "Notices are copied from CDFW and CDPH and may be incomplete. Before harvesting or eating seafood, check"}{" "}
         <a href="https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories" target="_blank" rel="noopener" className="ext">CDFW</a> and{" "}
         <a href="https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx" target="_blank" rel="noopener" className="ext">CDPH</a>
         <span className="mh-status-phone"> · Shellfish line <a href="tel:+18005534133">(800) 553-4133</a></span>

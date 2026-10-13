@@ -9,7 +9,7 @@ import { fmtDay, relDay, TODAY } from "../lib/time";
  * For the satellite, the row shows its window and that each pixel keeps its own date.
  * Keyboard: a radiogroup (←/→).
  */
-export function TimeBar({ show, leads, lead, onLead, issued, freshness, satellite, loading }: {
+export function TimeBar({ show, leads, lead, onLead, issued, freshness, satellite, loading, compact }: {
   show: "base" | "forecast" | "satellite";
   leads: { lead: number; date: string }[];
   lead: number;
@@ -18,6 +18,7 @@ export function TimeBar({ show, leads, lead, onLead, issued, freshness, satellit
   freshness?: string | null;
   satellite?: Layer;
   loading?: boolean;
+  compact?: boolean;
 }) {
   if (show === "base") return null;
   if (show === "satellite") {
@@ -33,7 +34,7 @@ export function TimeBar({ show, leads, lead, onLead, issued, freshness, satellit
     );
   }
   return (
-    <div className="timebar enter" aria-label="Forecast dates">
+    <div className="timebar enter" data-compact={compact || undefined} aria-label="Forecast dates">
       <span className="timebar-k t-micro">For</span>
       <div className="timebar-days" role="radiogroup" aria-label="Day the forecast describes">
         {leads.map((l, i) => (
@@ -47,7 +48,7 @@ export function TimeBar({ show, leads, lead, onLead, issued, freshness, satellit
               onLead(n.lead);
               (e.currentTarget.parentElement?.children[leads.indexOf(n)] as HTMLElement | undefined)?.focus();
             }}>
-            <span className="tday-d">{fmtDay(l.date, { weekday: true })}</span>
+            <span className="tday-d">{compact ? fmtDay(l.date, { weekday: true }).replace(/,.*? (\d+)$/, " $1") : fmtDay(l.date, { weekday: true })}</span>
             <span className="tday-r t-micro">{l.lead === 0 ? "nowcast" : relDay(l.date)}</span>
           </button>
         ))}
@@ -55,7 +56,7 @@ export function TimeBar({ show, leads, lead, onLead, issued, freshness, satellit
       <span className="timebar-k t-micro">Issued</span>
       <div className="timebar-issued">
         <span className="issued-bracket" aria-hidden="true" />
-        <span className="t-meta">{loading ? "…" : <>One NOAA C-HARM run, {issued ? fmtDay(issued, { weekday: true }) : "—"}{freshness ? <> · <span className={`fresh fresh-${freshness.replace(" ", "-").toLowerCase()}`}>{freshness}</span></> : null}</>}</span>
+        <span className="t-meta">{loading ? "…" : <>{compact ? "Issued" : "One NOAA C-HARM run,"} {issued ? fmtDay(issued, { weekday: true }) : "—"}{freshness ? <> · <span className={`fresh fresh-${freshness.replace(" ", "-").toLowerCase()}`}>{freshness}</span></> : null}</>}</span>
       </div>
     </div>
   );

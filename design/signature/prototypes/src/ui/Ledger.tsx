@@ -29,8 +29,9 @@ export function Ledger(props: {
 }) {
   const { reading: r, research } = props;
   const [open, setOpen] = useState<RowKind | null>(research ? "model" : null);
+  const saved = (k: RowKind) => ((k === "official" ? props.official : k === "measured" ? props.observations : k === "model" ? props.forecast : null)?.status === "cached" ? "saved copy on this device" : undefined);
   const row = (kind: RowKind, mark: string, title: React.ReactNode, meta: React.ReactNode, body: React.ReactNode, state: "ready" | "loading" | "failed" = "ready") => (
-    <LedgerRow key={kind} kind={kind} mark={mark} title={title} meta={meta} state={state} open={open === kind || research}
+    <LedgerRow key={kind} kind={kind} note={saved(kind)} mark={mark} title={title} meta={meta} state={state} open={open === kind || research}
       onToggle={() => setOpen(open === kind ? null : kind)}
       onHover={(on) => props.onThread(on ? THREAD[kind] : null)}>
       {body}
@@ -67,7 +68,7 @@ export function Ledger(props: {
   const modelTitle = props.forecast.failed ? "Forecast unavailable right now"
     : m?.status === "value" ? <>{probWords(m.value)} <span className="t-meta">in this 3 km cell</span></>
     : m?.status === "gap" ? gapTitle(m.reason.kind) : "…";
-  const modelMeta = m && m.status !== "loading" && m.layer ? <>
+  const modelMeta = props.forecast.failed ? <>NOAA's run of {run ? fmtDay(run.issued_date) : "—"} exists, but CoastWatch could not load it just now</> : m && m.status !== "loading" && m.layer ? <>
     C-HARM · for {fmtDay(m.layer.time.valid_date!, { weekday: true })} · <span className={`fresh fresh-${(fresh ?? "").replace(" ", "-").toLowerCase()}`}>{fresh}</span>, issued {fmtDay(m.layer.time.issued_date!)}
   </> : null;
 
@@ -147,8 +148,8 @@ export function Ledger(props: {
   );
 }
 
-function LedgerRow({ kind, mark, title, meta, state, open, onToggle, onHover, children }: {
-  kind: RowKind; mark: string; title: React.ReactNode; meta: React.ReactNode; state: "ready" | "loading" | "failed"; open: boolean;
+function LedgerRow({ kind, mark, title, meta, state, open, onToggle, onHover, children, note }: {
+  kind: RowKind; note?: string; mark: string; title: React.ReactNode; meta: React.ReactNode; state: "ready" | "loading" | "failed"; open: boolean;
   onToggle: () => void; onHover: (on: boolean) => void; children: React.ReactNode;
 }) {
   const id = useId();
@@ -157,7 +158,7 @@ function LedgerRow({ kind, mark, title, meta, state, open, onToggle, onHover, ch
       <button className="lrow-head" aria-expanded={open} aria-controls={id} onClick={onToggle} onFocus={() => onHover(true)} onBlur={() => onHover(false)}>
         <span className={`mark ${mark}`} aria-hidden="true" />
         <span className="lrow-text">
-          <span className="lrow-kind t-micro">{KIND_WORD[kind]}</span>
+          <span className="lrow-kind t-micro">{KIND_WORD[kind]}{note && <span className="lrow-note"> · {note}</span>}</span>
           {state === "loading" ? <span className="lrow-title"><span className="skel skel-line" style={{ width: "72%", display: "block" }}>Loading</span></span>
             : <span className="lrow-title">{title}</span>}
           {state === "loading" ? <span className="t-meta lrow-loading">{LOADING_WORD[kind]}</span> : meta ? <span className="t-meta lrow-meta">{meta}</span> : null}

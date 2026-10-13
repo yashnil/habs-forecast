@@ -97,7 +97,7 @@ export function Explorer() {
     const np = ports.data ? nearestPort(ports.data, sel) : null;
     return {
       point: sel,
-      place: { label: placeLabel(sel, np), port: np?.port, portKm: np?.km },
+      place: { label: ports.data ? placeLabel(sel, np) : "This water point", port: np?.port, portKm: np?.km },
       model: modelReading(grid.data, layer, sel, m, grid.status === "failed"),
       satellite: satRead,
       station: stationReading(observations.data, sel),
@@ -155,11 +155,11 @@ export function Explorer() {
     // keep the point in the clear part of the map (not under the panel or sheet)
     const pt = map.project(p);
     const c = map.getContainer();
-    const pad = mobile ? { top: 72, bottom: sheetH + 24, left: 24, right: 24 } : { top: 88, bottom: 120, left: 452, right: 72 };
+    const pad = mobile ? { top: 72, bottom: sheetH + (show === "base" ? 90 : 190), left: 24, right: 24 } : { top: 88, bottom: 120, left: 452, right: 72 };
     if (pt.x < pad.left || pt.x > c.clientWidth - pad.right || pt.y < pad.top || pt.y > c.clientHeight - pad.bottom) {
       map.easeTo({ center: p, padding: pad, duration: prefersReduced() ? 0 : 420 });
     }
-  }, [mobile, snap, sheetH]);
+  }, [mobile, snap, sheetH, show]);
 
   const travel = useCallback((to: LngLat, zoom: number, label: string) => {
     const map = mapRef.current;
@@ -243,9 +243,17 @@ export function Explorer() {
     </div>
   );
 
+  const fieldControlsInner = (
+    <div className="fieldmode" role="radiogroup" aria-label="How loudly the forecast is drawn">
+      {([["veil", "Whole field", "Field"], ["lens", "Around my point", "Near me"], ["edges", "Class lines", "Lines"]] as const).map(([id, l, short]) => (
+        <button key={id} role="radio" aria-checked={fieldMode === id} onClick={() => setFieldMode(id)} disabled={id === "lens" && !sel} aria-label={l}><span className="fm-long">{l}</span><span className="fm-short" aria-hidden="true">{short}</span></button>
+      ))}
+    </div>
+  );
   const body = (
     <>
-      {summary}
+      {!mobile && summary}
+      {mobile && show === "forecast" && <div className="sheet-fieldmode">{fieldControlsInner}</div>}
       {reading && plan}
       {reading ? (
         <Ledger reading={reading} official={official} observations={observations} forecast={{ ...grid, failed: failedForecast }} manifest={m}
@@ -277,7 +285,7 @@ export function Explorer() {
     </div>
   );
 
-  const fieldControls = show === "forecast" && !research && (
+  const fieldControls = show === "forecast" && !research && !mobile && (
     <div className="fieldmode" role="radiogroup" aria-label="How loudly the forecast is drawn">
       {([["veil", "Whole field"], ["lens", "Around my point"], ["edges", "Class lines"]] as const).map(([id, l]) => (
         <button key={id} role="radio" aria-checked={fieldMode === id} onClick={() => setFieldMode(id)} disabled={id === "lens" && !sel} title={id === "lens" && !sel ? "Choose a point first" : undefined}>{l}</button>
@@ -285,7 +293,15 @@ export function Explorer() {
     </div>
   );
 
-  const legend = show === "forecast" && layer && (
+  const satLegend = show === "satellite" && satLayer?.palette && (
+    <div className="legend enter-fade">
+      <p className="t-micro"><span className="mark mark-pixel" aria-hidden="true" /> Chlorophyll-a seen from space, mg/m³ (log scale). Algae, not toxin.</p>
+      <div className="legend-ramp legend-ramp-smooth" aria-hidden="true" style={{ background: `linear-gradient(90deg, ${satLayer.palette.stops.map((s) => s.color).join(", ")})` }} />
+      <p className="legend-scale t-micro"><span>0.05</span><span>1</span><span>50</span></p>
+      <p className="t-micro"><span className="mark mark-gap" aria-hidden="true" /> No clear view (cloud, fog, no pass)</p>
+    </div>
+  );
+  const legend = show === "satellite" ? satLegend : show === "forecast" && layer && (
     <div className="legend enter-fade">
       <p className="t-micro"><span className="mark mark-field" aria-hidden="true" /> {layer.threshold_text}</p>
       <div className="legend-ramp" aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <span key={i} style={{ background: `var(--cw-p${i})` }} />)}</div>
@@ -302,7 +318,7 @@ export function Explorer() {
     <div className="ex" data-mobile={mobile || undefined} data-research={research || undefined}>
       <Masthead mode={mode} onMode={setMode} notices={activeNotices} unverified onNotices={() => {}} compact={mobile} />
       <main className="ex-main">
-        <MapStage ref={stage} show={show === "forecast" && failedForecast ? "base" : show} grid={grid.data} layer={layer}
+        <MapStage ref={stage} show={show === "forecast" && !grid.data ? "base" /* calm basemap until the field exists: no hatch flash while loading or failed */ : show} grid={grid.data} layer={layer}
           field={{ mode: fieldMode, lens: fieldMode === "lens" && sel ? { lon: sel[0], lat: sel[1], km: 16 } : null }}
           satellite={satLayer} official={official.data} observations={observations.data} ports={ports.data}
           highlightNotices={hl} selection={sel} researchGrid={research}
@@ -334,10 +350,10 @@ export function Explorer() {
           </button>
         </div>
 
-        <div className="bottombar" style={mobile ? { bottom: sheetH + 72 } : undefined}>
+        <div className="bottombar" style={mobile ? { bottom: sheetH + 76 } : undefined} data-hidden={(mobile && snap !== "peek") || undefined}>
           {mobile && layerSwitch}
           {fieldControls}
-          <TimeBar show={show} leads={leads} lead={lead} onLead={setLead} issued={run?.issued_date} freshness={fresh} satellite={satLayer} loading={!m} />
+          <TimeBar compact={mobile} show={show} leads={leads} lead={lead} onLead={setLead} issued={run?.issued_date} freshness={fresh} satellite={satLayer} loading={!m} />
           {show === "forecast" && grid.status === "loading" && <div className="progress-line" role="progressbar" aria-label="Loading the forecast run" />}
           {failedForecast && show === "forecast" && <p className="inline-error t-label" role="status"><span className="mark mark-gap" aria-hidden="true" /> NOAA's forecast could not be loaded. Nothing is drawn in its place. <button className="btn btn-quiet" onClick={() => location.reload()}>Try again</button></p>}
         </div>
@@ -371,7 +387,7 @@ export function Explorer() {
       </main>
       {mobile && (
         <nav className="tabbar" aria-label="Primary">
-          {["Map", "My Coast", "Blooms", "Fisheries", "Notices"].map((n) => <a key={n} href={n === "Map" ? "#/explorer" : n === "Blooms" ? "#/station" : "#/"} aria-current={n === "Map" ? "page" : undefined}><span className={`tab-i tab-${n.replace(" ", "").toLowerCase()}`} aria-hidden="true" />{n}</a>)}
+          {["Map", "My Coast", "Blooms", "Fisheries", "Notices"].map((n) => <a key={n} href={n === "Map" ? "#/explorer" : n === "Blooms" ? "#/station" : "#/"} aria-current={n === "Map" ? "page" : undefined}><TabIcon name={n} />{n}</a>)}
         </nav>
       )}
       <p className="sr-only" aria-live="polite">{reading ? `Selected ${reading.place.label}.` : ""}</p>
@@ -461,4 +477,13 @@ function placeLabel(_p: LngLat, np: ReturnType<typeof nearestPort>) {
 /** A port's waters: a point a few km offshore (west) — ports are on land. */
 function offshore(at: LngLat, kmOut: number): LngLat {
   return [at[0] - kmOut / (111.32 * Math.cos((at[1] * Math.PI) / 180)), at[1]];
+}
+
+function TabIcon({ name }: { name: string }) {
+  const c = { width: 22, height: 22, viewBox: "0 0 22 22", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+  if (name === "Map") return <svg {...c}><path d="M3 6l5-2 6 2 5-2v12l-5 2-6-2-5 2z" /><path d="M8 4v12M14 6v12" /></svg>;
+  if (name === "My Coast") return <svg {...c}><path d="M11 19s6-5.2 6-10a6 6 0 0 0-12 0c0 4.8 6 10 6 10z" /><circle cx="11" cy="9" r="2.2" /></svg>;
+  if (name === "Blooms") return <svg {...c}><circle cx="6" cy="14" r="2" /><circle cx="11" cy="8" r="2" /><circle cx="16" cy="12" r="2" /><path d="M3 19h16" /></svg>;
+  if (name === "Fisheries") return <svg {...c}><path d="M3 11c3-4 8-5 12-2l4-3v10l-4-3c-4 3-9 2-12-2z" /><circle cx="13" cy="10" r="0.6" fill="currentColor" /></svg>;
+  return <svg {...c}><path d="M4 7h14M4 11h14M4 15h9" stroke="#d9922e" /></svg>;
 }

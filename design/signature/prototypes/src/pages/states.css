@@ -1,0 +1,28 @@
+@import "./explorer.css";
+.st { max-width: 1120px; margin: 0 auto; padding: 40px 24px 80px; }
+.st-head { display: grid; gap: 12px; max-width: 720px; margin-bottom: 40px; }
+.st-sec { padding: 32px 0; border-top: 1px solid var(--cw-hairline); display: grid; gap: 16px; }
+.st-measure { max-width: 680px; }
+.st-profiles { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.wf { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.wf-row { display: grid; grid-template-columns: 22px minmax(0, 300px) 1fr 70px; gap: 12px; align-items: center; }
+.wf-p { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--cw-surface-3); color: var(--cw-ink-2); }
+.wf-row[data-p="1"] .wf-p, .wf-row[data-p="2"] .wf-p, .wf-row[data-p="3"] .wf-p { background: var(--cw-ink); color: var(--cw-page); }
+.wf-bar { position: relative; height: 12px; border-radius: 3px; background: color-mix(in srgb, var(--cw-ink) 5%, transparent); }
+.wf-fill { position: absolute; top: 0; bottom: 0; min-width: 3px; border-radius: 3px; background: var(--cw-hairline-strong); transition: width var(--cw-d-short) linear; }
+.wf-fill[data-done="true"] { background: var(--cw-accent); }
+.wf-fill[data-ok="false"] { background: repeating-linear-gradient(135deg, var(--cw-gap-hatch) 0 2px, transparent 2px 5px); outline: 1px solid var(--cw-gap); }
+.wf-t { text-align: right; }
+.st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.spec { display: grid; gap: 10px; align-content: start; padding: 20px; border-radius: var(--cw-r-lg); background: var(--cw-surface); border: 1px solid var(--cw-hairline); }
+.spec-demo { border-top: 1px solid var(--cw-hairline); border-bottom: 1px solid var(--cw-hairline); }
+.spec-row { border-bottom: 0; }
+.spec-row[data-dim] .lrow-title, .spec-row[data-dim] .mark { opacity: 0.6; }
+.spec-row[data-dim] .mark-sample { background: transparent; box-shadow: inset 0 0 0 1.5px var(--cw-measured); }
+.st-rules { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 760px; }
+.st-probe { display: grid; gap: 8px; max-width: 320px; }
+@media (max-width: 640px) {
+  .st { padding: 24px 16px 64px; }
+  .wf-row { grid-template-columns: 22px 1fr 56px; }
+  .wf-bar { grid-column: 2 / 4; }
+}
