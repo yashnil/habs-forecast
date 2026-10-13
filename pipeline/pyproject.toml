@@ -14,7 +14,10 @@ dependencies = [
 cwp = "coastwatch_pipeline.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8.0"]
+dev = [
+    "pytest>=8.0",
+    "pytest-xdist>=3.6",
+]
 
 [build-system]
 requires = ["hatchling"]

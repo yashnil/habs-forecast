@@ -1,5 +1,10 @@
 name: CoastWatch CI
 
+# One run per pushed commit. Pushes cover every branch: main, feature branches with or without a
+# pull request, and draft PRs (a push run's checks are attached to the commit, so they show on
+# the PR). There is deliberately no `pull_request` trigger: with both, every push to a PR branch
+# ran the whole suite twice on the same commit and sent two failure emails ("Run failed" for the
+# push run, "PR run failed" for the pull_request run). Check names stay `pipeline` and `web`.
 on:
   push:
     paths:
@@ -8,21 +13,17 @@ on:
       - "schemas/**"
       - "data/curated/**"
       - ".github/workflows/coastwatch-ci.yml"
-  pull_request:
-    paths:
-      - "pipeline/**"
-      - "coastwatch-web/**"
-      - "schemas/**"
-      - "data/curated/**"
-      - ".github/workflows/coastwatch-ci.yml"
+  workflow_dispatch:
 
 # Read-only token: CI never writes to the repository.
 permissions:
   contents: read
 
+# A newer push to the same feature branch supersedes the older run; main is never cancelled
+# (every main commit keeps its full result).
 concurrency:
   group: coastwatch-ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   pipeline:
@@ -37,9 +38,12 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: pipeline/uv.lock
       - run: uv sync
       - name: Offline tests (recorded fixtures; the single live test is run by the data workflow)
-        run: uv run pytest -rs
+        # four processes: ~3 min instead of ~12; the tests write only to their own temp dirs
+        run: uv run pytest -rs -n 4
       - name: JSON Schema is in sync with the models
         run: uv run cwp schema && git diff --exit-code ../schemas
       - name: Committed web fixture data is reproducible
@@ -72,6 +76,12 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npx playwright install --with-deps chromium
+      - name: Reuse the Next.js build cache (keyed on the lockfile and the sources)
+        uses: actions/cache@v4
+        with:
+          path: coastwatch-web/.next/cache
+          key: nextjs-${{ hashFiles('coastwatch-web/package-lock.json') }}-${{ hashFiles('coastwatch-web/src/**') }}
+          restore-keys: nextjs-${{ hashFiles('coastwatch-web/package-lock.json') }}-
       - name: Production build + end-to-end tests on fixture data
         run: npm run test:e2e
       - name: Keep the browser-test evidence when a test fails
