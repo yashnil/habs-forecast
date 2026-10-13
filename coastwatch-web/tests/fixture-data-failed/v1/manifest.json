@@ -9050,9 +9050,7 @@
         "Santa Cruz: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.819):(37.129)%5D%5B(237.781):(238.158)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.",
         "Santa Cruz: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Moss Landing: nowcast history not refreshed (HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.650):(3); previous history kept with its own dates",
-        "Moss Landing: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Monterey: nowcast history not refreshed (HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.445):(3); previous history kept with its own dates",
-        "Monterey: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Morro Bay: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(35.211):(35.521)%5D%5B(238.965):(239.335)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(35.",
         "Morro Bay: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Avila / Port San Luis: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(35.020):(35.330)%5D%5B(239.060):(239.430)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(35.",
@@ -9068,7 +9066,9 @@
         "Newport Beach: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.461):(33.770)%5D%5B(241.888):(242.251)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.",
         "Newport Beach: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Dana Point: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.312):(33.622)%5D%5B(242.120):(242.483)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.",
-        "Dana Point: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf"
+        "Dana Point: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
+        "Oceanside: nowcast history unavailable: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.041):(33.350)%5D%5B(242.434):(242.796)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.",
+        "Oceanside: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf"
       ],
       "latest_issued_date": "2026-10-08",
       "latest_valid_date": "2026-10-12",
@@ -9136,7 +9136,7 @@
   ],
   "ports_url": "ports-9e81ebe6cd.geojson",
   "official_url": "official-7b429b1ea9.json",
-  "port_intel_url": "port-intel-e8d46ad22c.json",
+  "port_intel_url": "port-intel-a3ede8f73d.json",
   "observations_url": "observations-e4ca12aea2.json",
   "fisheries_url": "fisheries-f0144b9b12.json"
 }

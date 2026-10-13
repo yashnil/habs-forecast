@@ -298,3 +298,22 @@ def test_port_both_fail_uses_the_snpp_8day_fallback_then_says_unavailable(tmp_pa
     chl = _port(coll, "Monterey").chlorophyll
     assert chl.latest is None and "NOAA-21/NOAA-20" in chl.error and "S-NPP fallback" in chl.error
     assert chl.dataset_id == f"{N21},{N20}" and not chl.history
+
+
+def test_port_history_reuses_complete_windows_and_fetches_two_weeks(tmp_path):
+    """ERDDAP takes 10-16 s per port and platform for 64 days; a later run keeps the complete
+    windows of the previous summary and asks only for the recent days, with the same result."""
+    out = tmp_path / "v1"
+    _, first = _ports(out)
+    f = FixtureFetcher()
+    _, second = _ports(out, f)
+    a, b = _port(first, "Monterey").chlorophyll, _port(second, "Monterey").chlorophyll
+    assert b.history == a.history and b.latest == a.latest and b.latest_center_date == a.latest_center_date
+    asked = [u for u in f.calls if N21 in u and "(36.7450)" in u]
+    start = asked[0].split("%5B(")[1][:10]
+    newest = datetime.fromisoformat(a.history[-1].date).date()
+    assert start == (newest - sat.timedelta(days=port_intel.CHL_REFRESH_DAYS + 2)).isoformat()
+    # a summary made from one platform is not reused as a two-platform one
+    one = a.model_copy(update={"dataset_id": N20})
+    chl, _ = port_intel.chlorophyll_jpss(fixture_context(tmp_path / "x"), _port(first, "Monterey").lat, _port(first, "Monterey").lon, datetime(2026, 10, 8).date(), one)
+    assert chl.history == a.history  # full fetch, same values

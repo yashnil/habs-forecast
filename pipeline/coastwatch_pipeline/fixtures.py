@@ -79,6 +79,47 @@ class FixtureFetcher:
             return None
         return Response(url=url, status=200, content_type=entry["content_type"], body=(self.root / "recorded" / entry["file"]).read_bytes())
 
+    def _jpss_port(self, url: str) -> Response | None:
+        """NOAA-21/NOAA-20 port requests start at a later day once a previous summary exists:
+        served from the recorded response for the same dataset and cells, cut to the times on
+        or after the requested start (values untouched)."""
+        import io
+        import json
+        from datetime import datetime, timezone
+
+        import numpy as np
+        from scipy.io import netcdf_file
+
+        m = re.search(r"/griddap/(noaacwN2[01]VIIRSchlaSectorUSDaily)\.nc\?chlor_a%5B\((\d{4}-\d\d-\d\d)T00:00:00Z\):\(last\)%5D(.*)$", url)
+        idx = self.root / "recorded" / "index.json"
+        if not m or not idx.exists():
+            return None
+        ds, start, rest = m.groups()
+        entries = json.loads(idx.read_text())
+        hit = next((u for u in entries if f"/griddap/{ds}.nc?chlor_a%5B(" in u and u.endswith(rest) and re.search(r"\((\d{4}-\d\d-\d\d)T", u).group(1) <= start), None)
+        if hit is None:
+            return None
+        src = netcdf_file(io.BytesIO((self.root / "recorded" / entries[hit]["file"]).read_bytes()), mmap=False)
+        t = np.array(src.variables["time"].data)
+        keep = np.array([datetime.fromtimestamp(float(x), tz=timezone.utc).date().isoformat() >= start for x in t])
+        out = io.BytesIO()
+        dst = netcdf_file(out, "w", version=1)
+        for d, n in src.dimensions.items():
+            dst.createDimension(d, int(keep.sum()) if d == "time" else n)
+        for name, var in src.variables.items():
+            data = np.array(var.data)
+            if var.dimensions and var.dimensions[0] == "time":
+                data = data[keep]
+            nv = dst.createVariable(name, data.dtype, var.dimensions)
+            nv[:] = data
+            for k, v in var._attributes.items():
+                setattr(nv, k, v)
+        dst.flush()
+        body = out.getvalue()
+        dst.close()
+        src.close()
+        return Response(url=url, status=200, content_type="application/x-netcdf", body=body)
+
     def _satellite(self, url: str) -> Response | None:
         import json
         from urllib.parse import unquote
@@ -167,7 +208,7 @@ class FixtureFetcher:
         return Response(url=url, status=200, content_type="application/x-netcdf", body=body)
 
     def _serve(self, url: str) -> Response:
-        rec = self._recorded(url)
+        rec = self._recorded(url) or self._jpss_port(url)
         if rec is not None:
             return rec
         sat = self._satellite(url)

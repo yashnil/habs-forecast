@@ -97,7 +97,9 @@ SOURCE_BUDGET_S = {
     "hf_radar": 300,
     "cdfw_ports": 180,
     "official": 240,
-    "port_intel": 420,
+    # 600: the first NOAA-21/NOAA-20 run fetches 64 days per port and platform (about 8 min live,
+    # 2026-10-13); later runs reuse complete windows and ask for about two weeks
+    "port_intel": 600,
     "calhabmap": 300,
     "foss_landings": 300,
 }

@@ -57,6 +57,11 @@ CHL_WINDOW_DAYS = 8
 # window of a point dated D: days D-3 .. D+4 (8 days; the centre falls between D and D+1)
 CHL_WINDOW_BEFORE, CHL_WINDOW_AFTER = 3, 4
 CHL_SOURCE_ID = "viirs_jpss_chl_8day"
+# ERDDAP opens one file per day, so a 64-day request takes 10-16 s per platform and port
+# (2026-10-13). Complete windows older than this many days before the newest published point
+# are kept from the previous port summary (same datasets); newer ones are recomputed, so late
+# near-real-time passes are picked up. A normal run then asks for about two weeks of days.
+CHL_REFRESH_DAYS = 7
 # S-NPP 8-day composites: fallback until S-NPP data end, then they stop updating
 CHL_DATASET = "erdVHNchla8day"
 CHL_SERVER = "https://coastwatch.pfeg.noaa.gov/erddap"
@@ -208,10 +213,20 @@ def _jpss_daily(ctx: RunContext, ds: str, lat: float, lon: float, start: date) -
     return out, arrays["latitude"].astype(float), arrays["longitude"].astype(float)
 
 
-def chlorophyll_jpss(ctx: RunContext, lat: float, lon: float, end: date) -> tuple[PortChlorophyll | None, list[str]]:
+def chlorophyll_jpss(ctx: RunContext, lat: float, lon: float, end: date, prev: PortChlorophyll | None = None) -> tuple[PortChlorophyll | None, list[str]]:
     """8-day windows of the daily NOAA-21/NOAA-20 pixels near a port. Returns (None, errors) if
-    neither platform answered."""
-    start = end - timedelta(days=CHL_DAYS + CHL_WINDOW_BEFORE)
+    neither platform answered. Complete windows of `prev` (the previous summary, if made from
+    both platforms) up to CHL_REFRESH_DAYS before its newest point are kept, not refetched."""
+    full_ids = ",".join(ds for _, ds in CHL_PLATFORMS)
+    first = end - timedelta(days=CHL_DAYS - 1)  # first window centre shown
+    keep: list[SeriesPoint] = []
+    cutoff = None
+    if prev and not prev.error and prev.dataset_id == full_ids and prev.history:
+        cutoff = date.fromisoformat(prev.history[-1].date) - timedelta(days=CHL_REFRESH_DAYS)
+        keep = [pt for pt in prev.history if first.isoformat() <= pt.date <= cutoff.isoformat()]
+        if not keep:
+            cutoff = None
+    start = (cutoff + timedelta(days=1 - CHL_WINDOW_BEFORE)) if cutoff else end - timedelta(days=CHL_DAYS + CHL_WINDOW_BEFORE)
     got: list[tuple[str, str, dict[date, np.ndarray]]] = []
     errors: list[str] = []
     coords = None
@@ -241,6 +256,8 @@ def chlorophyll_jpss(ctx: RunContext, lat: float, lon: float, end: date) -> tupl
                 out[fill] = days[d][fill]
         merged[d] = out
     last = all_days[-1] if all_days else None
+    if ",".join(ds for _, ds, _ in got) != full_ids:
+        keep, cutoff = [], None  # kept points came from both platforms; this run's do not
     base = PortChlorophyll(
         dataset_id=",".join(ds for _, ds, _ in got),
         source_url=f"{CHL_JPSS_SERVER}/griddap/{got[0][1]}.html",
@@ -250,10 +267,12 @@ def chlorophyll_jpss(ctx: RunContext, lat: float, lon: float, end: date) -> tupl
         latest=None,
         latest_valid_fraction=None,
     )
-    hist = []
+    hist = list(keep)
+    if prev and cutoff and prev.latest and prev.latest_center_date and prev.latest_center_date <= cutoff.isoformat() and keep:
+        base.latest_center_date, base.latest, base.latest_valid_fraction = prev.latest_center_date, prev.latest, prev.latest_valid_fraction
     if last is not None:
         # only complete windows: the last day of the window must be in the archive already
-        centre = max(end - timedelta(days=CHL_DAYS - 1), all_days[0] + timedelta(days=CHL_WINDOW_BEFORE))
+        centre = max(first, all_days[0] + timedelta(days=CHL_WINDOW_BEFORE), *( [cutoff + timedelta(days=1)] if cutoff else []))
         while centre + timedelta(days=CHL_WINDOW_AFTER) <= last:
             window = [merged[d] for k in range(-CHL_WINDOW_BEFORE, CHL_WINDOW_AFTER + 1) if (d := centre + timedelta(days=k)) in merged]
             if window:
@@ -273,9 +292,9 @@ def chlorophyll_jpss(ctx: RunContext, lat: float, lon: float, end: date) -> tupl
     return base, errors
 
 
-def chlorophyll_near(ctx: RunContext, lat: float, lon: float, end: date) -> PortChlorophyll:
+def chlorophyll_near(ctx: RunContext, lat: float, lon: float, end: date, prev: PortChlorophyll | None = None) -> PortChlorophyll:
     """NOAA-21/NOAA-20 8-day windows; the S-NPP 8-day composite only if neither answers."""
-    chl, errors = chlorophyll_jpss(ctx, lat, lon, end)
+    chl, errors = chlorophyll_jpss(ctx, lat, lon, end, prev)
     if chl is not None:
         return chl
     snpp = chlorophyll_snpp(ctx, lat, lon, end)
@@ -411,6 +430,7 @@ def run(
     end = date.fromisoformat(nowcast.layer.time.valid_date) if nowcast and nowcast.layer.time.valid_date else ctx.now.date()
     notes: list[str] = []
     prev_hist = {q.port_code: q.charm.history for q in previous.ports if q.charm and q.charm.history} if previous else {}
+    prev_chl = {q.port_code: q.chlorophyll for q in previous.ports if q.chlorophyll} if previous else {}
     out = []
     for f in ports.features:
         p = f.properties
@@ -427,7 +447,7 @@ def run(
                 else:
                     ch.history_error = f"nowcast history unavailable: {e}"[:300]
                     notes.append(f"{p.display_name}: {ch.history_error}")
-        chl = chlorophyll_near(ctx, lat, lon, ctx.now.date()) if fetch_history else None
+        chl = chlorophyll_near(ctx, lat, lon, ctx.now.date(), prev_chl.get(p.port_code)) if fetch_history else None
         if chl and chl.error:
             notes.append(f"{p.display_name}: {chl.error}")
         out.append(
