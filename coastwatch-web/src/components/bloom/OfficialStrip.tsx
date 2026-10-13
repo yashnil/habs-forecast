@@ -4,7 +4,7 @@ import type { OfficialDataset } from "@/generated/official";
 import { VerificationBadge } from "@/components/official/Official";
 import { useOfficialDrawer } from "@/components/shell/OfficialShell";
 import { Icon } from "@/components/ui/Icon";
-import { ACTION_LABEL } from "@/lib/official";
+import { ACTION_LABEL, disputeOf } from "@/lib/official";
 
 /**
  * Official notices first, in one strip (spec §3.2 item 1, rule 1): the given notices (on Bloom, those
@@ -32,7 +32,8 @@ export function OfficialStrip({
 }) {
   const { openDrawer, count, verification } = useOfficialDrawer();
   const records = new Map((official?.registry.records ?? []).map((r) => [r.id, r]));
-  const rel = [...new Set(recordIds)].filter((id) => records.get(id)?.status === "active");
+  const rel = [...new Set(recordIds)].filter((id) => records.get(id)?.status === "active" && !disputeOf(official, id));
+  const disputedHere = [...new Set(recordIds)].filter((id) => records.get(id)?.status === "active" && disputeOf(official, id));
   const missing = "A missing notice does not mean an area is open or seafood is safe.";
   return (
     <section className="rounded-lg border border-official-line bg-official-bg px-4 py-2" aria-labelledby={`${testid}-h`} data-testid={testid}>
@@ -64,6 +65,18 @@ export function OfficialStrip({
           <p className="mt-0.5 text-[13px] text-ink-3">{missing}</p>
         </>
       )}
+      {disputedHere.map((id) => {
+        const d = disputeOf(official, id)!;
+        return (
+          <p key={id} className="mt-0.5 text-[13px] font-medium text-warning" data-testid={`${testid}-disputed`}>
+            ⚠ {d.agency} release{" "}
+            <a href={d.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+              {d.release} ↗
+            </a>{" "}
+            appears to lift “{records.get(id)!.title}”. Awaiting review; not counted above.
+          </p>
+        );
+      })}
     </section>
   );
 }

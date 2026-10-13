@@ -202,11 +202,64 @@ def cdph_release_items(raw: str) -> list[str]:
     return [f"{k} | {v}" for k, v in sorted(seen.items(), reverse=True)]
 
 
+# What a CDPH release title names, mapped to words in a record's species list. Used only to flag a
+# possible discrepancy for a person to review; it never changes a record.
+_RELEASE_KINDS = {
+    "bivalve": ("mussel", "clam", "scallop", "oyster", "bivalve"),
+    "razor clam": ("razor",),
+    "mussel": ("mussel",),
+    "anchov": ("anchov",),
+    "sardine": ("sardine",),
+    "crab": ("crab",),
+}
+CDPH_RELEASE_URL = "https://www.cdph.ca.gov/Programs/OPA/Pages/{rid}.aspx"
+DISCREPANCY_PREFIX = "Agency source discrepancy:"
+
+
+def _release_no(rid: str) -> tuple[int, int]:
+    m = re.match(r"SN(\d\d)-(\d{3})$", rid)
+    return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+
+
+def reported_lifts(items: list[str], new_ids: list[str], reg: OfficialRegistry) -> list[str]:
+    """Unreviewed CDPH releases whose title says they lift something that an *active* CDPH record
+    in the registry still lists: same county (from the record's structured `counties`), the same
+    kind of seafood, and a later release than the record's own. Each becomes a published
+    discrepancy so the app can stop presenting that record as confirmed active. The registry is
+    never edited here: only a person, after reading the release, changes a record's status."""
+    out: list[str] = []
+    titles = dict(i.split(" | ", 1) for i in items if " | " in i)
+    for rid in new_ids:
+        title = titles.get(rid, "")
+        if not re.search(r"\blift", title, re.I):
+            continue
+        low = title.lower()
+        kinds = [words for key, words in _RELEASE_KINDS.items() if key in low]
+        for r in reg.records:
+            if r.status != "active" or r.agency != "CDPH" or r.area.type != "county":
+                continue
+            if not any(f"{c.lower()} county" in low for c in r.area.counties):
+                continue
+            species = " ".join(r.species).lower()
+            if kinds and not any(w in species for words in kinds for w in words):
+                continue
+            own = [_release_no(m) for s in r.sources for m in re.findall(r"(SN\d\d-\d{3})", s.url)]
+            if own and _release_no(rid) <= max(own):
+                continue
+            out.append(
+                f'{DISCREPANCY_PREFIX} CDPH release {rid} ("{title}", {CDPH_RELEASE_URL.format(rid=rid)}) appears to lift '
+                f"active record {r.id}. Not yet reviewed by a person: the record is shown as disputed, not as confirmed active."
+            )
+    return out
+
+
 def fingerprint(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def watch(ctx: RunContext, reg: OfficialRegistry) -> list[WatchResult]:
+def watch(ctx: RunContext, reg: OfficialRegistry, discrepancies: list[str] | None = None) -> list[WatchResult]:
+    """Read each watched page. When `discrepancies` is given, releases that appear to lift an
+    active record are appended to it (see `reported_lifts`)."""
     out = []
     for src in reg.watched_sources:
         try:
@@ -220,6 +273,8 @@ def watch(ctx: RunContext, reg: OfficialRegistry) -> list[WatchResult]:
                 ids = [i.split(" | ")[0] for i in items]
                 new = [i for i in ids if i not in set(reg.review.cdph_release_ids_reviewed)]
                 seen = ids[:30]
+                if discrepancies is not None:
+                    discrepancies.extend(reported_lifts(items, new, reg))
             else:
                 text = main_text(raw)
                 if len(text) < 200:
@@ -432,7 +487,9 @@ def run(ctx: RunContext, path: Path = REGISTRY) -> OfficialResult:
     errors, conflicts = validate_registry(reg)
     if errors:
         return OfficialResult(None, [f"registry invalid: {'; '.join(errors)}"], [])
-    watch_results = watch(ctx, reg)
+    discrepancies: list[str] = []
+    watch_results = watch(ctx, reg, discrepancies)
+    conflicts = conflicts + discrepancies
     geometry, geo_errors = build_geometry(ctx, reg)
     notes = []
     for w in watch_results:

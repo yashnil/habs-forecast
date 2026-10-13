@@ -1,0 +1,64 @@
+source: cdfw
+raw sha256: 26e1768b9aa46dc50e6c971cc44616774d2cd48c079d0e4efd715bf8c334540f
+
+Health Advisories and Closures for California Finfish, Shellfish and Crustaceans
+Skip to Main Content
+See the Emergency Closures page before visiting a CDFW office, facility or property.
+CA.gov
+Official website of the State of California
+About Us Contact
+State of California
+Department of Fish and Wildlife
+Menu
+Custom Google Search
+Home
+Fishing
+Hunting
+Licensing
+Conservation
+Learning
+Home /
+Fishing / Ocean / Health Advisories
+Health Advisories and Closures for California Finfish, Shellfish and Crustaceans
+On this page
+Introduction
+Recent News Releases
+Finfish Fishery
+Razor Clam Fishery
+Spiny Lobster Fisheries
+Dungeness and Rock Crab Fisheries
+Additional Information
+The California Department of Public Health (CDPH) coordinates a routine monitoring program along the California coast to sample mussels and other shellfish like clams and scallops for the presence of Paralytic Shellfish Poisoning (PSP) and domoic acid toxins. Commercial shellfish harvesters are also required to provide weekly shellfish samples to CDPH for PSP toxin assay and domoic acid analysis. If toxin levels are high enough, warnings and quarantines are issued to protect the recreational fishing public and shellfish consumers.
+CDPH also has a coastwide, monthly seawater monitoring program which detects the naturally occurring, microscopic algae that produce PSP and domoic acid toxins. When toxin levels begin increasing, CDPH may expand its mussel sampling effort to include other seafood species. If toxin levels increase quickly beyond the federal alert level for either toxin, then CDPH may immediately issue a health advisory for all potentially impacted seafood species in the affected region.
+The Office of Environmental Health Hazard Assessment (OEHHA), in consultation with CDPH, recommends closures, delay of openings, and re-openings of recreational and commercial fisheries based on high levels of toxic substances, including marine biotoxins such as domoic acid, under Fish and Game Code 5523 . Recommendations to close or delay the opening of fisheries are made when domoic acid levels meet or exceed the federal action level for this toxin. Closures, delay of openings, and re-openings are implemented by the California Department of Fish and Wildlife (CDFW). Recommendations for re-opening fisheries are made when domoic acid levels fall below the action level in two successive samples collected at least seven days apart.
+OEHHA also issues safe eating guidelines, or consumption advisories based on the amount of mercury or other chemical toxins found in finfish, shellfish and crustaceans. Consumption advisories can help to reduce your exposure to chemicals in sport fish—fish that you and your family or friends catch.
+This page was established as a source of information for fishermen and the fishing industry. When circumstances arise, marine biotoxin-related fishery closures, delay of openings, re-openings, CDPH warnings, quarantine information, and health advisories about consuming California's ocean finfish, shellfish and crustaceans will be posted here.
+News Releases
+Del Norte County Recreational Razor Clam Fishery Closes Due to Public Health Hazard
+(10/9/2026)
+CDPH Warns Against Consuming Razor Clams from Del Norte County
+California Department of Public Health News Release (10/8/2026)
+CDPH Warns Consumers Not to Eat Sport-Harvested Bivalve Shellfish from Monterey County
+California Department of Public Health News Release (9/14/2026)
+CDPH Warns the Public Not to Eat Northern Anchovies Harvested from Central California Waters
+California Department of Public Health News Release (9/14/2026)
+Commercial and Recreational Take Restrictions in Place for Northern Anchovy in Monterey Bay Due to Public Health Hazard
+(9/11/2026)
+Finfish Fisheries
+Northern anchovies may not be harvested recreationally or commercially for human consumption in Monterey Bay (Pigeon Point, San Mateo County to Point Lobos, Monterey County) due to elevated levels of domoic acid toxin in the fish. The Monterey Bay closure went into effect on September 11, 2026. Commercially taken anchovies from the area may only be sold as dead bait clearly labeled as not for human consumption or use in pet food. Recreationally taken anchovies may only be used as bait.
+Razor Clam Fishery
+The recreational razor clam fishery closed in Del Norte County on October 9, 2026, and remains closed in Humboldt County due to elevated levels of domoic acid in razor clams. The Humboldt County closure has been in effect since May 2, 2024.
+For recreational razor clam fishing season dates see the ocean sport fishing regulations .
+Spiny Lobster Fisheries: Open and Closed Ocean Waters
+There are currently no closures of the recreational or commercial California spiny lobster fisheries due to naturally occurring marine toxins.
+For CDPH shellfish consumption advisories , check the News section on this web page, the CDPH website , and the CDPH Shellfish Biotoxin Information Line at 1 (800) 553-4133.
+For information on CDFW Domoic Acid Fishery Closures , call the Domoic Acid Fishery Closure Information Line at (831) 649-2883.
+For recreational spiny lobster season dates and regulations, see the ocean sport fishing regulations .
+For commercial spiny lobster season dates and regulations , see the commercial regulations digest .
+Dungeness and Rock Crab Fisheries: Open and Closed Ocean Waters
+Recreational Fisheries for Dungeness Crab and Rock Crab
+Dungeness crab
+There are currently no closures in the recreational Dungeness crab fishery due to naturally occurring marine toxins.
+For CDPH shellfish consumption advisories , check the News section on this web page, the CDPH website , and the CDPH Shellfish Biotoxin Information Line at 1 (800) 553-4133.
+For information on CDFW Domoic Acid Fishery Closures , call the Domoic Acid Fishery Closure Information Line at (831) 649-2883.
+For information on season status, delays, closures, or trap use restrictions due to marine mammal or sea turtle entanglement risks , visi

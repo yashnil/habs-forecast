@@ -42,7 +42,9 @@ export function officialVerification(ds: OfficialDataset | null, status: SourceS
     else if (w.matches_review === false) reasons.push(`${labelFor(ds, w.source_id)} has changed since the last review.`);
     else if (w.matches_review == null) reasons.push(`${labelFor(ds, w.source_id)} has no reviewed fingerprint to compare against.`);
   }
-  if (ds.conflicts.length) reasons.push("Some records contradict each other.");
+  const disputed = disputes(ds);
+  for (const d of disputed) reasons.push(`${d.agency} release ${d.release} appears to lift a notice the list still shows as active; awaiting a person's review.`);
+  if (ds.conflicts.length > disputed.length) reasons.push("Some records contradict each other.");
   const lastCheckedAt = ds.watch.map((w) => w.checked_at).sort().at(-1) ?? null;
   if (lastCheckedAt && ageInDays(lastCheckedAt.slice(0, 10), now) > WATCH_STALE_DAYS) {
     reasons.push(`Official pages were last checked ${ageInDays(lastCheckedAt.slice(0, 10), now)} days ago.`);
@@ -57,8 +59,54 @@ function labelFor(ds: OfficialDataset, id: string): string {
   return ds.registry.watched_sources.find((s) => s.id === id)?.label ?? id;
 }
 
+// ---------------------------------------------------------------- source discrepancies
+
+/**
+ * The pipeline publishes, among `conflicts`, agency releases that appear to lift a record the
+ * registry still lists as active (pipeline: official.reported_lifts). Until a person reviews the
+ * release and updates the registry, such a record is "disputed": never presented as confirmed in
+ * effect, never counted as a current notice, and always shown with the release that disputes it.
+ */
+export const DISCREPANCY_PREFIX = "Agency source discrepancy:";
+export type Dispute = { recordId: string; agency: string; release: string; title: string; url: string };
+
+export function disputes(ds: OfficialDataset | null): Dispute[] {
+  if (!ds) return [];
+  const out: Dispute[] = [];
+  for (const c of ds.conflicts) {
+    if (!c.startsWith(DISCREPANCY_PREFIX)) continue;
+    const m = c.match(/^Agency source discrepancy: (\w+) release (\S+) \("(.*)", (https:\/\/\S+)\) appears to lift active record ([a-z0-9-]+)\./);
+    if (m) out.push({ agency: m[1], release: m[2], title: m[3], url: m[4], recordId: m[5] });
+  }
+  return out;
+}
+
+export function disputeOf(ds: OfficialDataset | null, id: string): Dispute | null {
+  return disputes(ds).find((d) => d.recordId === id) ?? null;
+}
+
+/** Plain-language line for a disputed record. */
+export function disputeText(d: Dispute): string {
+  return `${d.agency} release ${d.release} (“${d.title}”) appears to lift this notice. CoastWatch has not reviewed it yet, so it is not shown as in effect. Read the release.`;
+}
+
+/** Active records that no published discrepancy disputes: the notices shown as current. */
+export function currentRecords(ds: OfficialDataset | null): OfficialRecord[] {
+  const ids = new Set(disputes(ds).map((d) => d.recordId));
+  return activeRecords(ds).filter((r) => !ids.has(r.id));
+}
+
+/** Active records that an agency release appears to lift (awaiting review). */
+export function disputedRecords(ds: OfficialDataset | null): { record: OfficialRecord; dispute: Dispute }[] {
+  return disputes(ds).flatMap((d) => {
+    const record = activeRecords(ds).find((r) => r.id === d.recordId);
+    return record ? [{ record, dispute: d }] : [];
+  });
+}
+
 /** Flags that must always be visible next to a record (never hidden behind "details"). */
-export function criticalFlags(r: OfficialRecord, now: Date): string[] {
+export function criticalFlags(r: OfficialRecord, now: Date, dispute: Dispute | null = null): string[] {
+  if (dispute) return [disputeText(dispute)];
   const today = now.toISOString().slice(0, 10);
   if (r.status === "active" && r.expected_end_date && r.expected_end_date < today) {
     return [`Expected end date (${r.expected_end_date}) has passed, but no lifting notice is recorded. Treat as in effect until the agency confirms.`];
@@ -67,8 +115,8 @@ export function criticalFlags(r: OfficialRecord, now: Date): string[] {
 }
 
 /** All flags for a record: critical ones plus documented uncertainties. */
-export function recordFlags(r: OfficialRecord, now: Date): string[] {
-  const flags = criticalFlags(r, now);
+export function recordFlags(r: OfficialRecord, now: Date, dispute: Dispute | null = null): string[] {
+  const flags = criticalFlags(r, now, dispute);
   if (!r.effective_date && r.effective_date_note) flags.push(r.effective_date_note);
   for (const u of r.uncertainties ?? []) flags.push(u);
   return flags;

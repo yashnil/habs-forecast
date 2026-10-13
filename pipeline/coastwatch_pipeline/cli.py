@@ -157,7 +157,9 @@ def cmd_watch(a: argparse.Namespace) -> int:
 
     reg = official.load_registry(Path(a.registry))
     errors, conflicts = official.validate_registry(reg)
-    results = official.watch(RunContext(out_dir=Path(".")), reg)
+    discrepancies: list[str] = []
+    results = official.watch(RunContext(out_dir=Path(".")), reg, discrepancies)
+    conflicts = conflicts + discrepancies
     report = {
         "registry_errors": errors,
         "conflicts": conflicts,

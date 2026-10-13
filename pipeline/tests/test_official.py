@@ -135,9 +135,45 @@ def test_watcher_detects_new_cdph_release(out):
     res = official.run(fixture_context(out, fetcher=fetcher))
     w = next(w for w in res.dataset.watch if w.source_id == "cdph_release_list")
     assert w.new_items == ["SN26-020"] and w.matches_review is False
-    # a release titled 'Lifts' does not lift anything until a person edits the registry
+    # a release titled 'Lifts' does not lift anything until a person edits the registry ...
     mon = next(r for r in res.dataset.registry.records if r.id == "cdph-2026-sn26-018-monterey-bivalves")
     assert mon.status == "active"
+    # ... but it is published as a discrepancy naming the record, so the app stops presenting it as confirmed
+    disc = [c for c in res.dataset.conflicts if c.startswith(official.DISCREPANCY_PREFIX)]
+    assert len(disc) == 1
+    assert "CDPH release SN26-020" in disc[0] and "active record cdph-2026-sn26-018-monterey-bivalves" in disc[0]
+    assert "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-020.aspx" in disc[0]
+    assert any(n.startswith(official.DISCREPANCY_PREFIX) for n in res.notes)
+
+
+def _reg():
+    return official.load_registry()
+
+
+@pytest.mark.parametrize(
+    "items,new,expect",
+    [
+        # the real release of 2026-10-12
+        (["SN26-021 | CDPH Lifts Warnings about Sport-Harvested Bivalve Shellfish from Monterey County"], ["SN26-021"], ["cdph-2026-sn26-018-monterey-bivalves"]),
+        # already reviewed: not new, so no discrepancy
+        (["SN26-021 | CDPH Lifts Warnings about Sport-Harvested Bivalve Shellfish from Monterey County"], [], []),
+        # not a lift
+        (["SN26-021 | CDPH Warns Consumers Not to Eat Sport-Harvested Bivalve Shellfish from Monterey County"], ["SN26-021"], []),
+        # an older release than the record's own cannot lift it
+        (["SN26-009 | CDPH Lifts Warnings about Sport-Harvested Bivalve Shellfish from Monterey County"], ["SN26-009"], []),
+        # another county
+        (["SN26-021 | CDPH Lifts Warnings about Sport-Harvested Bivalve Shellfish from Sonoma County"], ["SN26-021"], []),
+        # another kind of seafood in the same county
+        (["SN26-021 | CDPH Lifts Domoic Acid Warning for Monterey County Razor Clams"], ["SN26-021"], []),
+        # razor clams in Del Norte: the CDPH record, not the CDFW fishery closure (another agency)
+        (["SN26-030 | CDPH Lifts Domoic Acid Warning for Del Norte County Razor Clams"], ["SN26-030"], ["cdph-2026-sn26-020-razor-clam-del-norte"]),
+    ],
+)
+def test_reported_lifts_flag_only_matching_active_cdph_records(items, new, expect):
+    out = official.reported_lifts(items, new, _reg())
+    assert [re.search(r"active record (\S+)\.", o).group(1) for o in out] == expect
+    for o in out:
+        assert o.startswith(official.DISCREPANCY_PREFIX) and "Not yet reviewed by a person" in o
 
 
 @pytest.mark.parametrize("override", [failing("HTTP 403"), lambda u: Response(url=u, status=200, content_type="text/html", body=b"<html>Access denied</html>")])

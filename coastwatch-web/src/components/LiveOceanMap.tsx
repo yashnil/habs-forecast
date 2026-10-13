@@ -20,7 +20,7 @@ import {
   type CharmVariable,
   type SatProduct,
 } from "@/lib/layers";
-import { officialVerification } from "@/lib/official";
+import { officialVerification, currentRecords } from "@/lib/official";
 import { openingLayer, type Opening } from "@/lib/opening";
 import { cellEdges, loadGrid } from "@/lib/grid";
 import type { StationLite } from "@/lib/data";
@@ -472,7 +472,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   const regionNotices = useMemo(() => {
     if (!portIntel || region === STATEWIDE.id) return null;
     const ids = new Set<string>();
-    const active = new Set((official?.registry.records ?? []).filter((r) => r.status === "active").map((r) => r.id));
+    const active = new Set(currentRecords(official).map((r) => r.id));
     for (const p of portIntel.ports) if (p.region === region) for (const rel of p.official_relations) if (active.has(rel.record_id)) ids.add(rel.record_id);
     return ids.size;
   }, [portIntel, region, official]);
@@ -481,7 +481,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   // (as its inspector shows it), else the region's
   const portNotices = useMemo(() => {
     if (!intel) return null;
-    const active = new Set((official?.registry.records ?? []).filter((r) => r.status === "active").map((r) => r.id));
+    const active = new Set(currentRecords(official).map((r) => r.id));
     return new Set(intel.official_relations.filter((x) => active.has(x.record_id)).map((x) => x.record_id)).size;
   }, [intel, official]);
   const placeNotices = portNotices ?? regionNotices;
@@ -614,7 +614,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   );
 
   const verWord = verification ? OFFICIAL_STATUS.verification[verification.state] : "Checking…";
-  const activeCount = official ? official.registry.records.filter((r) => r.status === "active").length : null;
+  const activeCount = official ? currentRecords(official).length : null;
 
   // The map keeps the same position in the tree for both layouts so switching between
   // desktop and mobile never re-creates it.

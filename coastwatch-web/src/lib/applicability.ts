@@ -1,6 +1,6 @@
 import type { OfficialDataset, OfficialRecord } from "@/generated/official";
 import { APPLICABILITY, APPLICABILITY_KM, CDFW_REGIONS, type AssociationReview, type NoticePart } from "@/content/coast";
-import { activeRecords, pointInGeometry } from "@/lib/official";
+import { activeRecords, disputeOf, pointInGeometry, type Dispute } from "@/lib/official";
 
 /**
  * Which official notices relate to a location, and on what evidence (docs/coastwatch/28 §3).
@@ -42,6 +42,8 @@ export type Association = {
   /** distance from the location to the notice's geography, when it is outside it */
   distanceKm: number | null;
   review: Review;
+  /** an agency release appears to lift this notice (awaiting review): never shown as applying */
+  dispute?: Dispute | null;
 };
 
 type Ring = [number, number][];
@@ -178,6 +180,7 @@ export function associationsAt(
     if (prev >= 0) out.splice(prev, 1, assoc);
     else out.push(assoc);
   }
+  for (const a of out) a.dispute = disputeOf(ds, a.record.id);
   const order = (x: Association) => ({ geographic: 0, unresolved: 1, outside: 2 })[x.tier] * 1000 + (x.distanceKm ?? 0);
   return out.sort((a, b) => order(a) - order(b));
 }

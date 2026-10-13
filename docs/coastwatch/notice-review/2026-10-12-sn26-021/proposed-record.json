@@ -1,0 +1,52 @@
+{
+  "id": "cdph-2026-sn26-018-monterey-bivalves",
+  "agency": "CDPH",
+  "action": "consumption_advisory",
+  "status": "lifted",
+  "title": "Do not eat sport-harvested bivalve shellfish from Monterey County",
+  "summary": "CDPH advises not eating sport-harvested mussels, clams, scallops or oysters from Monterey County because of dangerous levels of domoic acid detected in mussels.",
+  "official_text": "CDPH is advising the public not to eat sport-harvested mussels, clams, scallops, or oysters, gathered from Monterey County due to dangerous levels of domoic acid toxin detected in mussels from Monterey County.",
+  "fishery": "sport_harvest",
+  "species": [
+    "mussels",
+    "clams",
+    "scallops",
+    "oysters"
+  ],
+  "toxins": [
+    "domoic_acid"
+  ],
+  "area": {
+    "type": "county",
+    "description": "Monterey County",
+    "counties": [
+      "Monterey"
+    ],
+    "geometry_basis": "official_polygon",
+    "geometry_note": "CDPH county polygon from the CDPH shellfish advisory map; the advisory applies to shellfish gathered from the county, not to a line at sea."
+  },
+  "effective_date": "2026-09-14",
+  "sources": [
+    {
+      "label": "CDPH SN26-018",
+      "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-018.aspx",
+      "kind": "press_release",
+      "published_date": "2026-09-14"
+    },
+    {
+      "label": "CDPH recreational bivalve shellfish advisory map",
+      "url": "https://experience.arcgis.com/experience/394836318cfe4f7494e1c09097a43559",
+      "kind": "map"
+    },
+    {
+      "label": "CDPH SN26-021 (lift)",
+      "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx",
+      "kind": "press_release",
+      "published_date": "2026-10-12"
+    }
+  ],
+  "uncertainties": [
+    "Lifted by CDPH release SN26-021 (2026-10-12): “CDPH has removed the warning that advised against eating recreationally harvested bivalve shellfish from the waters of Monterey County. The annual mussel quarantine for recreationally harvested mussels along the entire California coast remains in effect.”"
+  ],
+  "lifted_date": "2026-10-12"
+}

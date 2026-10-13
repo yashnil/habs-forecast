@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { OfficialDataset, OfficialRecord } from "@/generated/official";
 import type { PortIntel } from "@/generated/port_intel";
 import { OFFICIAL_STATUS } from "@/content/copy";
-import { ACTION_LABEL, FISHERY_LABEL, activeRecords, criticalFlags, recordFlags, type Verification } from "@/lib/official";
+import { ACTION_LABEL, FISHERY_LABEL, criticalFlags, currentRecords, disputeOf, disputedRecords, recordFlags, type Dispute, type Verification } from "@/lib/official";
 import { formatDate, formatDateTimePT } from "@/lib/time";
 import { Notice, SourceLink } from "@/components/ui/Primitives";
 import { AgencyChip } from "@/components/ui/Badges";
@@ -74,12 +74,27 @@ export function VerificationDetail({ v, brief = false }: { v: Verification; brie
 }
 
 
-export function NoticeCard({ r, now, relationNote, compact = false, dense = false }: { r: OfficialRecord; now: Date | null; relationNote?: string; compact?: boolean; dense?: boolean }) {
+export function NoticeCard({
+  r,
+  now,
+  relationNote,
+  dispute = null,
+  compact = false,
+  dense = false,
+}: {
+  r: OfficialRecord;
+  now: Date | null;
+  relationNote?: string;
+  /** an agency release appears to lift this record: shown first, never as in effect */
+  dispute?: Dispute | null;
+  compact?: boolean;
+  dense?: boolean;
+}) {
   const [open, setOpen] = useState(!compact);
-  const critical = now ? criticalFlags(r, now) : [];
-  const flags = now ? recordFlags(r, now).filter((f) => !critical.includes(f)) : [];
+  const critical = dispute ? criticalFlags(r, now ?? new Date(), dispute) : now ? criticalFlags(r, now) : [];
+  const flags = now ? recordFlags(r, now, dispute).filter((f) => !critical.includes(f)) : [];
   return (
-    <article data-testid={`notice-${r.id}`} className="rounded-md border border-official-line bg-official-bg">
+    <article data-testid={`notice-${r.id}`} data-disputed={dispute ? "true" : undefined} className={`rounded-md border ${dispute ? "border-dashed border-warning/70 bg-surface" : "border-official-line bg-official-bg"}`}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -106,7 +121,15 @@ export function NoticeCard({ r, now, relationNote, compact = false, dense = fals
       {critical.length > 0 && (
         <ul className="space-y-0.5 px-2.5 pb-2 text-[13px] font-medium text-warning" data-testid="notice-critical">
           {critical.map((f) => (
-            <li key={f}>⚠ {f}</li>
+            <li key={f}>
+              ⚠ {f}
+              {dispute && (
+                <>
+                  {" "}
+                  <SourceLink href={dispute.url}>{dispute.release} ↗</SourceLink>
+                </>
+              )}
+            </li>
           ))}
         </ul>
       )}
@@ -174,7 +197,8 @@ export function Hotlines() {
 /** Rank-1 summary in the left rail: verification, every active notice, statements, hotlines. */
 export function OfficialSummary({ ds, v, now, error }: { ds: OfficialDataset | null; v: Verification | null; now: Date | null; error: string | null }) {
   const [showAll, setShowAll] = useState(false);
-  const records = activeRecords(ds);
+  const records = currentRecords(ds);
+  const disputed = disputedRecords(ds);
   const shown = showAll ? records : records.slice(0, 3);
   return (
     <section data-testid="official-status" aria-labelledby="official-h" className="space-y-2.5 rounded-lg border border-official-line bg-surface p-3.5">
@@ -194,6 +218,9 @@ export function OfficialSummary({ ds, v, now, error }: { ds: OfficialDataset | n
           <p className="text-[13px] text-ink-2">
             <span className="font-semibold text-ink tabular">{records.length}</span> active notices statewide from CDFW and CDPH. Select one for the agency&apos;s wording.
           </p>
+          {disputed.map(({ record, dispute }) => (
+            <NoticeCard key={record.id} r={record} now={now} dispute={dispute} compact dense />
+          ))}
           <div className="space-y-1">
             {shown.map((r) => (
               <NoticeCard key={r.id} r={r} now={now} compact dense />
@@ -258,7 +285,7 @@ export function OfficialForPort({ ds, v, port, now }: { ds: OfficialDataset | nu
       ) : rel.length ? (
         <div className="space-y-1.5">
           {rel.map((x) => (
-            <NoticeCard key={x.record_id} r={byId.get(x.record_id)!} now={now} relationNote={x.note} compact dense />
+            <NoticeCard key={x.record_id} r={byId.get(x.record_id)!} now={now} relationNote={x.note} dispute={disputeOf(ds, x.record_id)} compact dense />
           ))}
         </div>
       ) : (

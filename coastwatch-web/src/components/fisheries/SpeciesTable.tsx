@@ -4,7 +4,7 @@ import { Fragment, useMemo, useState } from "react";
 import type { FisheriesDataset, SpeciesGroup } from "@/generated/fisheries";
 import type { OfficialDataset } from "@/generated/official";
 import { useOfficialDrawer } from "@/components/shell/OfficialShell";
-import { ACTION_LABEL } from "@/lib/official";
+import { ACTION_LABEL, disputeOf } from "@/lib/official";
 import { formatValue, groupColor, groupShort, tierInk, groupValue, isDollars, pct, shareOfState, span, stateTotal, unitLabel, type Unit } from "@/lib/fisheries";
 
 type SortKey = "name" | "year" | "mean";
@@ -176,6 +176,7 @@ function GroupDetail({ ds, g, unit, year, official }: { ds: FisheriesDataset; g:
                 <li key={r.id}>
                   <span className="mr-1.5 font-mono text-[12px] font-semibold text-official">{r.agency.toUpperCase()}</span>
                   {ACTION_LABEL[r.action]}: {r.title}
+                  {disputeOf(official, r.id) && <span className="ml-1 font-medium text-warning"> (reported lifted by the agency; awaiting review)</span>}
                 </li>
               ))}
             </ul>
