@@ -5,8 +5,12 @@ For each port:
   variable, read from the *published* value grids (so they match the map and inspector).
 * C-HARM nowcast history: the last HISTORY_DAYS of nowcasts from ERDDAP, median over the
   same neighbourhood; missing runs stay missing (no interpolation).
-* Satellite chlorophyll: NOAA VIIRS (S-NPP) 750 m 8-day composites from ERDDAP
-  (erdVHNchla8day), median of valid pixels within RADIUS_KM; cloud/land pixels excluded.
+* Satellite chlorophyll: an 8-day window computed by CoastWatch from the daily NOAA-21 VIIRS
+  750 m merges, with NOAA-20 in cells NOAA-21 has no value for (no NOAA-20/21 750 m 8-day
+  product exists): each pixel's median over the window, then the median of those pixels within
+  RADIUS_KM; cloud/land pixels excluded. Until S-NPP data end (2026-11-02) the S-NPP 8-day
+  composite (erdVHNchla8day) is the fallback when neither NOAA-21 nor NOAA-20 answers, and the
+  port's dataset_id says which was used.
 * Official records whose stated area may include waters near the port, with the reason.
 
 A neighbourhood statistic describes the forecast grid near a port. It does not describe
@@ -16,6 +20,7 @@ conditions at the port or at any fishing ground.
 from __future__ import annotations
 
 import math
+import warnings
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from urllib.parse import quote
@@ -45,6 +50,14 @@ SOURCE_ID = "port_intel"
 RADIUS_KM = 15.0
 HISTORY_DAYS = 30
 CHL_DAYS = 60
+# NOAA-21 first, NOAA-20 only where NOAA-21 has no value (docs/coastwatch/33-suomi-npp-continuity.md)
+CHL_PLATFORMS = (("NOAA-21", "noaacwN21VIIRSchlaSectorUSDaily"), ("NOAA-20", "noaacwN20VIIRSchlaSectorUSDaily"))
+CHL_JPSS_SERVER = "https://coastwatch.noaa.gov/erddap"
+CHL_WINDOW_DAYS = 8
+# window of a point dated D: days D-3 .. D+4 (8 days; the centre falls between D and D+1)
+CHL_WINDOW_BEFORE, CHL_WINDOW_AFTER = 3, 4
+CHL_SOURCE_ID = "viirs_jpss_chl_8day"
+# S-NPP 8-day composites: fallback until S-NPP data end, then they stop updating
 CHL_DATASET = "erdVHNchla8day"
 CHL_SERVER = "https://coastwatch.pfeg.noaa.gov/erddap"
 NAMED_AREA_KM = 60.0
@@ -168,7 +181,116 @@ def charm_history(ctx: RunContext, lat: float, lon: float, end: date, days: int 
     return out
 
 
+def _jpss_daily(ctx: RunContext, ds: str, lat: float, lon: float, start: date) -> tuple[dict[date, np.ndarray], np.ndarray, np.ndarray]:
+    """Daily merges of one platform near a port: {UTC date: values}, latitudes, longitudes."""
+    from .charm import parse_netcdf
+
+    dlat, dlon = RADIUS_KM / KM_PER_DEG + 0.01, RADIUS_KM / (KM_PER_DEG * math.cos(math.radians(lat))) + 0.01
+    # latitude is descending; stride 2 (~1.5 km) as before. The two platforms share the
+    # lattice, so the same bounds give the same cells (checked by the caller).
+    sel = (
+        f"[({start.isoformat()}T00:00:00Z):(last)][(0.0)]"
+        f"[({lat + dlat:.4f}):2:({lat - dlat:.4f})][({lon - dlon:.4f}):2:({lon + dlon:.4f})]"
+    )
+    url = f"{CHL_JPSS_SERVER}/griddap/{ds}.nc?" + quote(f"chlor_a{sel}", safe=",():")
+    arrays, vattrs, _ = parse_netcdf(ctx.fetcher(url).body)
+    a = np.asarray(arrays["chlor_a"], dtype=float)
+    if a.ndim == 4:
+        a = a[:, 0]
+    for key in ("_FillValue", "missing_value"):
+        fv = vattrs["chlor_a"].get(key)
+        if isinstance(fv, (int, float)):
+            a[np.isclose(a, float(fv))] = np.nan
+    a[(a <= 0) | (a > 200)] = np.nan
+    out: dict[date, np.ndarray] = {}
+    for i, t in enumerate(np.atleast_1d(arrays["time"])):
+        out[datetime.fromtimestamp(float(t), tz=timezone.utc).date()] = a[i]  # one merge per UTC day
+    return out, arrays["latitude"].astype(float), arrays["longitude"].astype(float)
+
+
+def chlorophyll_jpss(ctx: RunContext, lat: float, lon: float, end: date) -> tuple[PortChlorophyll | None, list[str]]:
+    """8-day windows of the daily NOAA-21/NOAA-20 pixels near a port. Returns (None, errors) if
+    neither platform answered."""
+    start = end - timedelta(days=CHL_DAYS + CHL_WINDOW_BEFORE)
+    got: list[tuple[str, str, dict[date, np.ndarray]]] = []
+    errors: list[str] = []
+    coords = None
+    for plat, ds in CHL_PLATFORMS:
+        try:
+            days, la, lo = _jpss_daily(ctx, ds, lat, lon, start)
+        except Exception as e:
+            errors.append(f"{plat} {ds}: {e}"[:300])
+            continue
+        if coords is not None and (la.shape != coords[0].shape or lo.shape != coords[1].shape or np.abs(la - coords[0]).max() > 1e-6 or np.abs(lo - coords[1]).max() > 1e-6):
+            errors.append(f"{plat} {ds}: cells differ from {got[0][0]}'s; not combined")
+            continue
+        coords = coords or (la, lo)
+        got.append((plat, ds, days))
+    if not got or coords is None:
+        return None, errors
+    LA, LO = np.meshgrid(coords[0], coords[1], indexing="ij")
+    within = km(lat, lon, LA, LO) <= RADIUS_KM
+    # per day, per pixel: the first platform with a value (never an average of platforms)
+    all_days = sorted({d for _, _, days in got for d in days})
+    merged: dict[date, np.ndarray] = {}
+    for d in all_days:
+        out = np.full(LA.shape, np.nan)
+        for _, _, days in got:
+            if d in days:
+                fill = np.isnan(out) & np.isfinite(days[d])
+                out[fill] = days[d][fill]
+        merged[d] = out
+    last = all_days[-1] if all_days else None
+    base = PortChlorophyll(
+        dataset_id=",".join(ds for _, ds, _ in got),
+        source_url=f"{CHL_JPSS_SERVER}/griddap/{got[0][1]}.html",
+        radius_km=RADIUS_KM,
+        composite_days=CHL_WINDOW_DAYS,
+        latest_center_date=None,
+        latest=None,
+        latest_valid_fraction=None,
+    )
+    hist = []
+    if last is not None:
+        # only complete windows: the last day of the window must be in the archive already
+        centre = max(end - timedelta(days=CHL_DAYS - 1), all_days[0] + timedelta(days=CHL_WINDOW_BEFORE))
+        while centre + timedelta(days=CHL_WINDOW_AFTER) <= last:
+            window = [merged[d] for k in range(-CHL_WINDOW_BEFORE, CHL_WINDOW_AFTER + 1) if (d := centre + timedelta(days=k)) in merged]
+            if window:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN pixels stay NaN
+                    per_pixel = np.nanmedian(np.stack(window), axis=0)
+            else:
+                per_pixel = np.full(LA.shape, np.nan)
+            s = stat(per_pixel[within])
+            hist.append(SeriesPoint(date=centre.isoformat(), value=s.median, n=s.n))
+            if s.n > 0:
+                base.latest_center_date = centre.isoformat()
+                base.latest = s
+                base.latest_valid_fraction = round(s.n / int(within.sum()), 4) if within.sum() else None
+            centre += timedelta(days=1)
+    base.history = hist
+    return base, errors
+
+
 def chlorophyll_near(ctx: RunContext, lat: float, lon: float, end: date) -> PortChlorophyll:
+    """NOAA-21/NOAA-20 8-day windows; the S-NPP 8-day composite only if neither answers."""
+    chl, errors = chlorophyll_jpss(ctx, lat, lon, end)
+    if chl is not None:
+        return chl
+    snpp = chlorophyll_snpp(ctx, lat, lon, end)
+    if snpp.error:
+        # nothing answered: say so for both (never a zero); the dataset is the primary one
+        snpp.dataset_id = ",".join(ds for _, ds in CHL_PLATFORMS)
+        snpp.source_url = f"{CHL_JPSS_SERVER}/griddap/{CHL_PLATFORMS[0][1]}.html"
+        snpp.error = (
+            "satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: "
+            + "; ".join(e[:80] for e in errors) + f"; S-NPP fallback: {snpp.error.removeprefix('satellite chlorophyll unavailable: ')[:80]}"
+        )[:300]
+    return snpp
+
+
+def chlorophyll_snpp(ctx: RunContext, lat: float, lon: float, end: date) -> PortChlorophyll:
     from .charm import parse_netcdf
 
     base = PortChlorophyll(
@@ -217,6 +339,12 @@ def chlorophyll_near(ctx: RunContext, lat: float, lon: float, end: date) -> Port
             base.latest_valid_fraction = round(s.n / int(within.sum()), 4) if within.sum() else None
             break
     return base
+
+
+def satellite_offsets() -> str:
+    from .satellite import VIIRS_OFFSETS
+
+    return VIIRS_OFFSETS
 
 
 def relations(port: dict, lat: float, lon: float, official: OfficialDataset | None) -> list[PortOfficialRelation]:
@@ -323,7 +451,18 @@ def run(
             "neighbourhood": f"Cells whose centres lie within {RADIUS_KM:.0f} km of the CDFW port point.",
             "charm_leads": "Statistics from the published C-HARM value grids of the current run (same values as the map).",
             "charm_history": f"Median over the same neighbourhood for each C-HARM nowcast in the last {HISTORY_DAYS} days available on ERDDAP; days without a run are absent.",
-            "chlorophyll": "Median of valid NOAA VIIRS S-NPP 750 m pixels (8-day composites, time = centre of the 8-day window, successive values overlap). Cloud and land pixels are excluded; a missing value means no clear observation.",
+            "chlorophyll": (
+                "Computed by CoastWatch from NOAA's daily VIIRS 750 m merges: NOAA-21, with NOAA-20 only in pixels NOAA-21 has no value for "
+                f"(each pixel from one satellite, never averaged). For each date, every pixel's median over an {CHL_WINDOW_DAYS}-day window "
+                f"({CHL_WINDOW_BEFORE} days before to {CHL_WINDOW_AFTER} after; successive windows overlap), then the median of those pixels within {RADIUS_KM:.0f} km. "
+                "Only complete windows are shown. Cloud and land pixels are excluded; a missing value means no clear observation."
+            ),
+            "chlorophyll_source_change": (
+                "Earlier port summaries used NOAA's S-NPP 8-day composites (erdVHNchla8day); NOAA ends S-NPP data on 2026-11-02. "
+                "Over California NOAA-21 reads about 4% lower than S-NPP and NOAA-20 about 10% lower (98 days of overlap, Feb-Oct 2026); "
+                "no correction is applied, so values from before and after the change may differ by about that much. "
+                "A port whose dataset is erdVHNchla8day still uses the S-NPP composites (fallback while NOAA-21 and NOAA-20 are unavailable)."
+            ),
             "official": "A record is related to a port if it is statewide, names the port's county, has official latitudes that include the port, or its official polygon lies within 60 km.",
         },
         provenance=[
@@ -339,15 +478,40 @@ def run(
                 pipeline_run_id=ctx.run_id,
             ),
             Provenance(
-                source_id="viirs_chl_8day",
-                source_name="NOAA VIIRS S-NPP chlorophyll-a, 750 m, 8-day composite (NOAA CoastWatch West Coast ERDDAP)",
-                source_url=f"{CHL_SERVER}/griddap/{CHL_DATASET}.html",
-                dataset_id=CHL_DATASET,
+                source_id=CHL_SOURCE_ID,
+                source_name="NOAA VIIRS chlorophyll-a, 750 m daily merges from NOAA-21 (NOAA-20 where NOAA-21 has no value), 8-day windows computed by CoastWatch (NOAA CoastWatch ERDDAP)",
+                source_url=f"{CHL_JPSS_SERVER}/griddap/{CHL_PLATFORMS[0][1]}.html",
+                dataset_id=",".join(ds for _, ds in CHL_PLATFORMS),
                 license=charm.LICENSE,
                 retrieved_at=ctx.now_iso,
+                upstream_metadata={
+                    "change_point": (
+                        "Port chlorophyll switched from erdVHNchla8day (S-NPP 8-day composites) to 8-day windows of the daily "
+                        "NOAA-21/NOAA-20 pixels with this pipeline version; every port's dataset_id names the source of its own values and history."
+                    ),
+                    "offsets": satellite_offsets(),
+                    "platform_rule": "NOAA-21 first; NOAA-20 only in pixels NOAA-21 has no value for. No averaging, no bias correction.",
+                    "window": f"{CHL_WINDOW_DAYS} days, D-{CHL_WINDOW_BEFORE} to D+{CHL_WINDOW_AFTER}; per-pixel median, then the median within {RADIUS_KM:.0f} km",
+                },
                 pipeline_version=ctx.pipeline_version,
                 pipeline_run_id=ctx.run_id,
             ),
-        ],
+        ]
+        + (
+            [
+                Provenance(
+                    source_id="viirs_chl_8day",
+                    source_name="NOAA VIIRS S-NPP chlorophyll-a, 750 m, 8-day composite (NOAA CoastWatch West Coast ERDDAP); fallback while NOAA-21 and NOAA-20 are unavailable",
+                    source_url=f"{CHL_SERVER}/griddap/{CHL_DATASET}.html",
+                    dataset_id=CHL_DATASET,
+                    license=charm.LICENSE,
+                    retrieved_at=ctx.now_iso,
+                    pipeline_version=ctx.pipeline_version,
+                    pipeline_run_id=ctx.run_id,
+                )
+            ]
+            if any(q.chlorophyll and q.chlorophyll.dataset_id == CHL_DATASET and not q.chlorophyll.error for q in out)
+            else []
+        ),
     )
     return PortIntelResult(coll, [], notes)

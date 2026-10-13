@@ -9,9 +9,11 @@ in the published dataset like everything else). What alerts, and why that thresh
                       and serves the next one; one failure is not news.
 - source_degraded     the same for a source that partly fails (e.g. Sentinel-3 down, VIIRS up).
 - satellite_stale     newest Sentinel-3 pixel older than OLCI_MAX_AGE_DAYS, or newest VIIRS
-                      pixel older than VIIRS_MAX_AGE_DAYS. Both are latency-aware (OLCI ~1-2 d,
-                      VIIRS ~5 d). Statewide some pixel is almost always clear, so this means
-                      the feed stopped, not that it was cloudy. Low coverage never alerts.
+                      pixel older than VIIRS_MAX_AGE_DAYS. Both are latency-aware (OLCI ~1-2 d;
+                      VIIRS 750 m from NOAA-21/NOAA-20 3-8 d: 2.9 d on 2026-10-09, 7.5-8 d on
+                      2026-10-13, when NOAA's West Coast 750 m products, S-NPP included, lagged
+                      together). Statewide some pixel is almost always clear, so this means the
+                      feed stopped, not that it was cloudy. Low coverage never alerts.
 - charm_missing       newest C-HARM issue date older than CHARM_MAX_AGE_DAYS (daily product).
 - hfr_stale           newest HF-radar hour older than HFR_MAX_AGE_HOURS (latency is ~4-15 h).
 - hfr_coverage_drop   newest hour has fewer than HFR_COVERAGE_DROP of the window's median
@@ -62,7 +64,8 @@ from .models import Manifest
 
 MIN_CONSECUTIVE_FAILURES = 3
 OLCI_MAX_AGE_DAYS = 4
-VIIRS_MAX_AGE_DAYS = 8
+# observed NOAA-21/NOAA-20 latency reaches 8 days; alert only beyond that plus two days
+VIIRS_MAX_AGE_DAYS = 10
 CHARM_MAX_AGE_DAYS = 2
 HFR_MAX_AGE_HOURS = 18
 HFR_COVERAGE_DROP = 0.5
@@ -121,7 +124,7 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
     today = now.date()
 
     # satellite freshness (by newest observed pixel)
-    for lid, limit, label in (("olci300_chl_latest", OLCI_MAX_AGE_DAYS, "Sentinel-3 OLCI 300 m"), ("viirs750_chl_latest", VIIRS_MAX_AGE_DAYS, "VIIRS 750 m")):
+    for lid, limit, label in (("olci300_chl_latest", OLCI_MAX_AGE_DAYS, "Sentinel-3 OLCI 300 m"), ("viirs750_chl_latest", VIIRS_MAX_AGE_DAYS, "VIIRS 750 m (NOAA-21/NOAA-20)")):
         lyr = layers.get(lid)
         if lyr and lyr.time.observed_date:
             age = (today - date.fromisoformat(lyr.time.observed_date)).days

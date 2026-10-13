@@ -21,7 +21,8 @@ from .pipeline import run_pipeline
 FIXTURES = Path(__file__).resolve().parents[1] / "tests" / "fixtures"
 FIXTURE_NOW = "2026-10-08T18:00:00Z"
 
-# Bounding boxes of the satellite fixtures (real ERDDAP responses, recorded 2026-10-09).
+# Bounding boxes of the satellite fixtures (real ERDDAP responses, recorded 2026-10-09; the
+# NOAA-21/NOAA-20 VIIRS scenes on 2026-10-13 by scripts/record_jpss_fixtures.py).
 SATELLITE_REGIONS = {
     "monterey": (36.40125, 37.20125, -122.60125, -121.75125),
     "north_coast": (40.40125, 41.40125, -124.70125, -123.95125),
@@ -82,7 +83,7 @@ class FixtureFetcher:
         import json
         from urllib.parse import unquote
 
-        m = re.search(r"/griddap/((?:noaacwS3[AB]OLCIchlaSector[A-Z]{2}Daily)|erdVHNchla1day)\.(csv0|nc)\?(.*)$", url)
+        m = re.search(r"/griddap/((?:noaacwS3[AB]OLCIchlaSector[A-Z]{2}Daily)|(?:noaacwN2[01]VIIRSchlaSectorUSDaily)|erdVHNchla1day)\.(csv0|nc)\?(.*)$", url)
         if not m:
             return None
         ds, kind, q = m.group(1), m.group(2), unquote(m.group(3))

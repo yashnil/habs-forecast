@@ -504,6 +504,10 @@ def referenced_prefixes(m: Manifest | None) -> set[str]:
         for g in grids:
             if g and g.chunks:
                 out.add(g.chunks.url_template.split("{row}")[0])
+        # per-cell platform grid of a multi-platform satellite view (named in provenance)
+        pg = lyr.provenance.upstream_metadata.get("platform_grid")
+        if pg and "{row}" in pg:
+            out.add(pg.split("{row}")[0])
     return out
 
 
