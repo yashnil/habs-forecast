@@ -5,6 +5,8 @@
   "type": "module",
   "description": "Isolated design prototypes for CoastWatch. Not part of the production app.",
   "scripts": {
+    "predev": "node scripts/copy-worker.mjs",
+    "prebuild": "node scripts/copy-worker.mjs",
     "snapshot": "bash scripts/snapshot-data.sh",
     "dev": "vite --port 3460 --strictPort",
     "build": "tsc --noEmit && vite build",

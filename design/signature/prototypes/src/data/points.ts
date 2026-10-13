@@ -1,4 +1,5 @@
 import { fetchResource } from "./net";
+import { gunzipIfNeeded } from "./store";
 import type { GridSpec } from "./types";
 
 /** Point reads from large chunked grids (satellite 300 m): fetches only the 512×512 chunk needed. */
@@ -13,7 +14,7 @@ function chunk(spec: GridSpec, r: number, c: number) {
     else {
       const url = `/data/v1/${ch.url_template.replace("{row}", String(r)).replace("{col}", String(c))}`;
       p = fetchResource("satellite", url).then(async (res) => {
-        const buf = await new Response(res.body!.pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+        const buf = await gunzipIfNeeded(await res.arrayBuffer());
         const h = Math.min(ch.rows, spec.height - r * ch.rows);
         const w = Math.min(ch.cols, spec.width - c * ch.cols);
         return { w, h, u16: new Uint16Array(buf) };

@@ -61,8 +61,11 @@ async function runUncached<T>(id: string): Promise<T> {
   return f() as Promise<T>;
 }
 
+/** Resource ids include their URL: a hook called before its input exists (id ends in ":") gets a
+ *  loading placeholder that is never cached, so the real request starts once the input arrives. */
 function useRes<T>(id: string, key: ResourceKey, run: () => Promise<T>, plain: () => Promise<T>): Res<T> {
   useSyncExternalStore(store.subscribe, store.getVersion);
+  if (id.endsWith(":") || id === "grid:none") return PENDING as Res<T>;
   uncached.set(id, plain);
   return store.load(id, key, run);
 }
@@ -73,17 +76,17 @@ export const useManifest = () =>
 
 export function useOfficial(m?: Manifest) {
   const url = m ? `${BASE}/${m.official_url}` : "";
-  return useRes<Official>("official", "official", () => (m ? fetchJSON<Official>("official", url).then(withFixtureConflicts) : never()), () => fetch(url).then((r) => r.json()).then(withFixtureConflicts));
+  return useRes<Official>(`official:${url}`, "official", () => (m ? fetchJSON<Official>("official", url).then(withFixtureConflicts) : never()), () => fetch(url).then((r) => r.json()).then(withFixtureConflicts));
 }
 export function useObservations(m?: Manifest) {
   const url = m ? `${BASE}/${m.observations_url}` : "";
-  return useRes<Observations>("observations", "observations", () => (m ? fetchJSON("observations", url) : never()), () => fetch(url).then((r) => r.json()));
+  return useRes<Observations>(`observations:${url}`, "observations", () => (m ? fetchJSON("observations", url) : never()), () => fetch(url).then((r) => r.json()));
 }
 export function usePorts(m?: Manifest) {
   const url = m ? `${BASE}/${m.ports_url}` : "";
   const toPorts = (g: GeoJSON.FeatureCollection<GeoJSON.Point>) =>
     g.features.map((f) => ({ ...(f.properties as Omit<Port, "lon" | "lat">), lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] }) as Port);
-  return useRes<Port[]>("ports", "ports", () => (m ? fetchJSON<GeoJSON.FeatureCollection<GeoJSON.Point>>("ports", url).then(toPorts) : never()), () => fetch(url).then((r) => r.json()).then(toPorts));
+  return useRes<Port[]>(`ports:${url}`, "ports", () => (m ? fetchJSON<GeoJSON.FeatureCollection<GeoJSON.Point>>("ports", url).then(toPorts) : never()), () => fetch(url).then((r) => r.json()).then(toPorts));
 }
 export function useGrid(layer?: Layer) {
   const g = layer?.grid;
@@ -92,15 +95,14 @@ export function useGrid(layer?: Layer) {
   return useRes<Grid>(id, key, () => (g && !g.chunks ? loadGrid(key, g) : never()), () => (g ? loadGrid(null, g) : never()));
 }
 const never = <T,>() => new Promise<T>(() => {});
+const PENDING: Res<unknown> = { status: "loading", startedAt: 0 };
 
 /* ---------------------------------------------------------------- grids */
 export interface Grid { spec: GridSpec; values: Float32Array } // NaN = no value
 export async function loadGrid(key: ResourceKey | null, spec: GridSpec): Promise<Grid> {
   const url = `${BASE}/${spec.url}`;
   const res = key ? await fetchResource(key, url) : await fetch(url);
-  const stream = res.body!.pipeThrough(new DecompressionStream("gzip"));
-  const buf = await new Response(stream).arrayBuffer();
-  const u16 = new Uint16Array(buf);
+  const u16 = new Uint16Array(await gunzipIfNeeded(await res.arrayBuffer()));
   const out = new Float32Array(u16.length);
   for (let i = 0; i < u16.length; i++) {
     const v = u16[i];
@@ -162,4 +164,12 @@ export function disputedBy(o: Official, id: string) {
     if (m && m[5] === id) return { agency: m[1], release: m[2], title: m[3], url: m[4] };
   }
   return null;
+}
+
+/** Some static servers (Vite dev) send *.gz with Content-Encoding: gzip, so the browser has already
+ *  inflated it; others (Vercel, GitHub raw) send the bytes as-is. Check the gzip magic number. */
+export async function gunzipIfNeeded(buf: ArrayBuffer): Promise<ArrayBuffer> {
+  const b = new Uint8Array(buf, 0, Math.min(2, buf.byteLength));
+  if (b[0] !== 0x1f || b[1] !== 0x8b) return buf;
+  return new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
 }

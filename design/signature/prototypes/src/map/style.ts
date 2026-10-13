@@ -14,7 +14,7 @@ import { NET } from "../data/net";
  */
 export const SEA = "#0b1d33";
 export const LAND = "#1b2531";
-export const BEFORE_DATA = "coastline";
+export const BEFORE_DATA = "isobaths"; // fields sit under isobaths, coastline and labels
 const FONT = ["Noto Sans Regular"];
 const FONT_ITALIC = ["Noto Sans Italic"];
 

@@ -29,7 +29,8 @@ export interface Reading {
     | { status: "value"; value: number; date: string; ageDays: number; pixel: [number, number, number, number]; center: LngLat; layer: Layer }
     | { status: "gap"; reason: GapReason; pixel?: [number, number, number, number]; layer?: Layer }
     | { status: "loading" | "off" };
-  station: { station: Station; km: number; bearing: string; lastDate: string | null; lastValue: number | null; ageDays: number | null; tooFar: boolean } | null;
+  /** lastDate/ageDays: the last visit (any quantity); toxinDate/lastValue: the last toxin measurement */
+  station: { station: Station; km: number; bearing: string; lastDate: string | null; ageDays: number | null; toxinDate: string | null; lastValue: number | null; tooFar: boolean } | null;
   notices: NoticeGeo[];
   disputed: { record: OfficialRecord; by: NonNullable<ReturnType<typeof disputedBy>> }[];
 }
@@ -103,10 +104,11 @@ export function stationReading(obs: Observations | undefined, p: LngLat): Readin
   for (const s of obs.stations) { const k = km(p, [s.lon, s.lat]); if (k < d) { d = k; best = s; } }
   if (!best) return null;
   const sum = best.summaries.find((x) => x.variable === "pDA");
-  const lastDate = sum?.last_date ?? (best.sample_times.at(-1)?.slice(0, 10) ?? null);
+  const lastDate = best.sample_times.at(-1)?.slice(0, 10) ?? null;
   return {
     station: best, km: d, bearing: bearingWord(p, [best.lon, best.lat]),
-    lastDate, lastValue: sum?.last_value ?? null, ageDays: lastDate ? daysBetween(lastDate, TODAY) : null,
+    lastDate, ageDays: lastDate ? daysBetween(lastDate, TODAY) : null,
+    toxinDate: sum?.last_date ?? null, lastValue: sum?.last_value ?? null,
     tooFar: d > STATION_FAR_KM,
   };
 }
@@ -120,7 +122,7 @@ export function noticeGeometry(off: Official | undefined, p: LngLat): Pick<Readi
   for (const r of off.registry.records) {
     if (r.status !== "active") continue;
     const by = disputedBy(off, r.id);
-    if (by) { disputed.push({ record: r, by }); continue; }
+    if (by) { const near = areaDistanceKm(off, r.id, p); if (near != null && near < 30) disputed.push({ record: r, by }); continue; }
     if (r.area.type === "lat_band" && r.area.lat_north != null && r.area.lat_south != null) {
       const between = p[1] <= r.area.lat_north && p[1] >= r.area.lat_south;
       const dn = km(p, [p[0], r.area.lat_north]), ds = km(p, [p[0], r.area.lat_south]);

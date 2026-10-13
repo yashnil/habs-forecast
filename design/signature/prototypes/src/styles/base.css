@@ -44,6 +44,9 @@ a:hover { text-decoration-thickness: 2px; }
   linear-gradient(color-mix(in srgb, var(--cw-model) 55%, transparent), color-mix(in srgb, var(--cw-model) 55%, transparent)) 0 6px / 4px 4px no-repeat,
   linear-gradient(color-mix(in srgb, var(--cw-model) 85%, transparent), color-mix(in srgb, var(--cw-model) 85%, transparent)) 6px 6px / 4px 4px no-repeat; }
 .mark-gap { width: 10px; height: 10px; border: 1px solid var(--cw-gap-hatch); background: repeating-linear-gradient(135deg, var(--cw-gap-hatch) 0 1.5px, transparent 1.5px 4px); }
+.mark-pixel { width: 9px; height: 9px; border-radius: 1px; background: var(--cw-measured); opacity: 0.85; outline: 1px solid color-mix(in srgb, var(--cw-measured) 40%, transparent); outline-offset: 1px; }
+.mark-depth { width: 12px; height: 9px; border-radius: 2px; background: linear-gradient(180deg, #3f8fb0, #0b1d33); }
+.mark-rule-broken { border-top-style: dashed; }
 .mark-context { width: 8px; height: 8px; border-radius: 2px; background: var(--cw-accent); transform: rotate(45deg) scale(0.85); }
 
 /* ---------------------------------------------------------------- controls */

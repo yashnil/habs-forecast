@@ -43,6 +43,11 @@
   --cw-gap: #606b78;
   --cw-gap-hatch: rgba(96, 107, 120, 0.35);
 
+  /* forecast probability display classes (10 % steps, not risk levels) — unchanged from the
+     published palette cw-probability-classes-v1, so the map and the data contract agree */
+  --cw-p0: #3a385b; --cw-p1: #4c436a; --cw-p2: #5f4e79; --cw-p3: #735986; --cw-p4: #886492;
+  --cw-p5: #9c709c; --cw-p6: #af7ea4; --cw-p7: #c28cab; --cw-p8: #d39cb3; --cw-p9: #e5abbc;
+
   /* ---------------------------------------------------------------- map (dark sea) */
   --cw-sea-shelf: #2c6c8a;     /* depth tint at the shore (bathymetry only, no data on) */
   --cw-sea-deep: #0a1a2e;

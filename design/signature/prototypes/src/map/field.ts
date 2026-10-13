@@ -7,8 +7,10 @@ import { km } from "../lib/geo";
  * Mercator so a cell's edge on screen is the cell's edge in the data. Three compositing modes —
  * none of them changes a value, a class or a cell boundary; they only change how loudly the field
  * is drawn relative to the coast:
- *   veil   all cells, palette classes at a reading opacity (default 0.62) so the seafloor, the
- *          coastline and labels stay legible. The default.
+ *   veil   all cells, each class colour mixed toward the sea colour (default 62 % class) so the
+ *          coastline, isobaths and labels — drawn above the field — stay legible. The default.
+ * Every valued cell is drawn fully opaque (pre-mixed with the sea), so the "no value" hatch under
+ * the field can only ever appear in cells that have no value.
  *   lens   cells whose centre lies within a radius of the selected water point at full opacity,
  *          all other cells at a low opacity. The lens edge follows cell edges (a staircase), so
  *          no cell is ever partly shown.
@@ -18,6 +20,7 @@ import { km } from "../lib/geo";
 export type FieldMode = "veil" | "lens" | "edges";
 export interface FieldOptions { mode: FieldMode; veil?: number; lens?: { lon: number; lat: number; km: number } | null; outside?: number }
 
+const SEA_RGB = [11, 29, 51]; // style.ts SEA
 const PX = 4; // canvas pixels per cell (x); y follows Mercator
 const mercY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
 const latFromY = (y: number) => (360 / Math.PI) * Math.atan(Math.exp(y)) - 90;
@@ -49,16 +52,16 @@ export function renderField(canvas: HTMLCanvasElement, grid: Grid, stops: Palett
   const g = canvas.getContext("2d", { willReadFrequently: false })!;
   const img = g.createImageData(W, H);
   const colours = stops.map((st) => hex(st.color));
-  const veil = opt.veil ?? 0.62;
-  const outside = opt.outside ?? 0.14;
+  const veil = opt.veil ?? 0.6;
+  const outside = opt.outside ?? 0.2;
   const edges = opt.mode === "edges";
   // per-cell alpha (lens membership by cell centre)
   const cellAlpha = new Float32Array(s.width * s.height);
   for (let r = 0; r < s.height; r++) for (let c = 0; c < s.width; c++) {
-    let a = edges ? 0.2 : veil;
+    let a = edges ? 0.24 : veil;
     if (opt.mode === "lens" && opt.lens) {
       const d = km([opt.lens.lon, opt.lens.lat], [s.lon_first + c * s.lon_step, s.lat_first + r * s.lat_step]);
-      a = d <= opt.lens.km ? 0.94 : outside;
+      a = d <= opt.lens.km ? 1 : outside;
     }
     cellAlpha[r * s.width + c] = a;
   }
@@ -77,8 +80,9 @@ export function renderField(canvas: HTMLCanvasElement, grid: Grid, stops: Palett
       const v = grid.values[i];
       if (Number.isNaN(v)) continue;
       const [cr, cg, cb] = colours[classOf(v)];
+      const a = cellAlpha[i];
       const o = (y * W + x) * 4;
-      d[o] = cr; d[o + 1] = cg; d[o + 2] = cb; d[o + 3] = Math.round(cellAlpha[i] * 255);
+      d[o] = Math.round(SEA_RGB[0] + (cr - SEA_RGB[0]) * a); d[o + 1] = Math.round(SEA_RGB[1] + (cg - SEA_RGB[1]) * a); d[o + 2] = Math.round(SEA_RGB[2] + (cb - SEA_RGB[2]) * a); d[o + 3] = 255;
     }
   }
   g.putImageData(img, 0, 0);
