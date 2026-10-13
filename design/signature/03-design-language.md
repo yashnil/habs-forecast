@@ -150,3 +150,17 @@ Each mode changes only how loudly the field is drawn. No mode changes a value, a
 | Reduced motion | All spatial motion → 120 ms opacity; threads instant; camera jumps; progress bar static | |
 
 Nothing loops continuously except the indeterminate progress line, which appears only after 400 ms of real waiting and is static under reduced motion.
+
+## Copy: representative rewrites
+
+The rule: lead with the place-specific fact, keep the one caveat that changes the meaning beside it, and move method to Level 3.
+
+| Today (redesign or `main`) | Proposed | Why |
+|---|---|---|
+| OFFICIAL NOTICES · THESE WATERS / 2 notices apply here for anchovy or sardine / Not verified | — Official<br>**2 notices cover these waters for northern anchovy**<br>From CDFW and CDPH · not verified by CoastWatch | Sentence case; "cover" is the geographic claim the data supports; verification stays on the same line |
+| No notice in CoastWatch's list (24 px serif) | **No notice's official limits include these waters**<br>That is not the same as safe or open | States the limit of the claim, not an absence; never set larger than a finding |
+| Current · issued 1 day ago … Last update failed … showing the last successful run | C-HARM · for Mon, Oct 12 · **Not confirmed**, issued Oct 11 | One line, both dates, one settled freshness word |
+| Probability that particulate domoic acid exceeds 500 ng per litre · 10-point colour steps for display, not risk levels | **60–70 % chance** in this 3 km cell<br>(open:) Particulate domoic acid above 500 ng/L. A forecast of the water, not a test of seafood. A low chance does not mean safe. | The answer first; the definition one level down |
+| Hatched or empty water has no value. C-HARM has no toxin values for many cells within about 3–6 km of shore… | **No forecast for this nearshore cell**<br>(open:) C-HARM leaves out many cells within about 3–6 km of shore, and bays. Nearest cell with a value: 70–80 % chance, 2.9 km away — it describes that cell, not this one. | Specific to the point, spatial, with the nearest real value kept in its place |
+| Toxin (domoic acid) in seawater 0.052 ng/mL, over 4 years ago | **Monterey Wharf, 4.1 km southeast**<br>Last sampled Oct 7 · toxin last measured Aug 31, 2022 | Separates "visited" from "measured this" |
+| (nothing) | **What isn't known here:** Toxin in seafood — only CDPH testing tells you that, and CoastWatch does not have those results | The most important unknown is always stated |
