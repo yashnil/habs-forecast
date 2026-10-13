@@ -123,7 +123,14 @@ export default function MapCanvas(p: Props) {
   const { onPort, onPoint } = p;
   const [map, setMap] = useState<MlMap | null>(null);
   const hasRaster = !!(p.forecast || p.satellite || p.satelliteAge);
-  const paint = p.fade ? RASTER_FADE : RASTER_PAINT;
+  // the fade is decided once per raster, when it first appears (a layer switch fades in; a new
+  // time step cuts) and kept for that raster's life, so a later re-render never changes it
+  const fadeOf = useRef(new globalThis.Map<string, boolean>());
+  const paintFor = (id: string | undefined) => {
+    if (!id) return RASTER_PAINT;
+    if (!fadeOf.current.has(id)) fadeOf.current.set(id, !!p.fade);
+    return fadeOf.current.get(id) ? RASTER_FADE : RASTER_PAINT;
+  };
   const fg = p.forecast?.grid;
   const forecastTiles = useMemo(() => (fg ? gridTiles(fg.layer, fg.url) : null), [fg]);
   const [counties, setCounties] = useCountyPrefs();
@@ -332,12 +339,12 @@ export default function MapCanvas(p: Props) {
 
       {p.forecast && forecastTiles && (
         <Source key={`${p.forecast.id}-grid`} id="forecast" type="raster" tiles={[forecastTiles.template]} tileSize={GRID_TILE_SIZE} bounds={forecastTiles.bounds} minzoom={0} maxzoom={13}>
-          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
+          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id)} />
         </Source>
       )}
       {p.forecast && !forecastTiles && (
         <Source key={p.forecast.id} id="forecast" type="image" url={p.forecast.url} coordinates={p.forecast.corners as [[number, number], [number, number], [number, number], [number, number]]}>
-          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
+          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id)} />
         </Source>
       )}
       {p.forecast && p.cellEdges && (
@@ -362,12 +369,12 @@ export default function MapCanvas(p: Props) {
           maxzoom={p.satellite.maxzoom}
           bounds={p.satellite.bounds as [number, number, number, number] | undefined}
         >
-          <Layer id="satellite-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
+          <Layer id="satellite-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.satellite?.id)} />
         </Source>
       )}
       {p.satelliteAge && (
         <Source key={p.satelliteAge.id} id="satellite-age" type="raster" tiles={[indexedTiles(p.satelliteAge.template, p.satelliteAge.indexUrl)]} tileSize={256} minzoom={p.satelliteAge.minzoom} maxzoom={p.satelliteAge.maxzoom} bounds={p.satelliteAge.bounds as [number, number, number, number] | undefined}>
-          <Layer id="satellite-age-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
+          <Layer id="satellite-age-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.satelliteAge?.id)} />
         </Source>
       )}
       {p.imagery && (
