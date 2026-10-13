@@ -50,7 +50,7 @@ export function AppShell({
                 <path d="M6 13.5c3.2-2.6 6.4-2.6 9.6 0s6.6 2.6 10.4-.2" fill="none" stroke="#e8eef5" strokeOpacity=".55" strokeWidth="2.2" strokeLinecap="round" />
                 <circle cx="22.5" cy="8.5" r="2.2" fill="#f6bb5c" />
               </svg>
-              <span className="text-[17px] font-semibold tracking-tight text-white">CoastWatch</span>
+              <span className="text-[17px] font-semibold tracking-tight text-white max-[359px]:sr-only">CoastWatch</span>
               <span className="hidden border-l border-white/15 pl-2.5 text-[13px] text-on-navy-2 lg:inline">California</span>
             </Link>
             <PrimaryNav active={active} />
