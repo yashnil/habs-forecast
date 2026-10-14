@@ -52,6 +52,7 @@ import { AnswerLine, ConditionsCard, stationName, NextSteps, OfficialBrief, Plan
 import { MEASURED_RECENT_DAYS } from "@/components/ui/Mark";
 import { speciesById, type SpeciesId } from "@/content/species";
 import { useMode } from "@/lib/mode";
+import { SinceLastCheck } from "./SinceLastCheck";
 import { ModeSwitch } from "@/components/shell/ModeNav";
 import { nextSteps } from "@/lib/nextSteps";
 import { currentRecords } from "@/lib/official";
@@ -388,6 +389,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
       </div>
       {(!place || picking) && <PlacePicker places={allPlaces} current={place} onPick={pick} />}
       {place && answer && <AnswerLine clauses={answer} />}
+      {place && modeRead && viewMode === "coastal" && <SinceLastCheck />}
     </header>
   );
   const homeLine = (
