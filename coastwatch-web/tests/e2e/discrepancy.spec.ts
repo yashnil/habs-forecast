@@ -38,7 +38,8 @@ test.describe("agency source discrepancy", () => {
     await expect(group).toContainText("Reported lifted by the agency · awaiting review");
     await expect(group.getByRole("link", { name: /SN26-021/ })).toHaveAttribute("href", /SN26-021\.aspx$/);
     await expect(page.getByTestId("coast-notices-geo").getByTestId(`coast-notice-${ID}`)).toHaveCount(0);
-    await expect(page.getByTestId("glance-official")).toContainText("1 reported lifted, awaiting review");
+    await expect(page.getByTestId(`brief-disputed-${ID}`)).toContainText("Reported lifted by CDPH · awaiting review");
+    await expect(page.getByTestId(`brief-notice-${ID}`)).toHaveCount(0);
     await expect(page.getByTestId("coast-unknowns")).toContainText("release SN26-021 appears to lift");
   });
 

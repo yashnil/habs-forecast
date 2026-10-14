@@ -42,6 +42,10 @@ The paper is about physics-informed chlorophyll forecasting (see the [root READM
 | [27 — Coastal intelligence](27-coastal-intelligence.md) | Nearshore C-HARM coverage audit (by distance, region, date), data-source comparison, nearshore prediction tracks, fishermen-first "My Coast" design with mockups, onboarding and county layer summaries, missing-data presentation alternatives, risks and roadmap; data, scripts and appendices in [coastal/](coastal/) |
 | [29 — My Coast MVP](29-my-coast.md) | What it does, stakeholder workflows, correctness evidence for 26 locations, applicability model and unresolved associations, three review passes, tests and performance, limits ([my-coast/](my-coast/)) |
 | [30 — Welcome by purpose](30-welcome.md) | Optional first-visit purpose (commercial, recreational/shellfish, research, ports, exploring), what each changes (defaults only), link precedence, screenshots, tests |
+| [31 — Product audit](31-product-audit.md) | Critical outsider audit of the site (first 5/10/30 seconds, measured text and caution density, what to remove or move) |
+| [32 — Coastal redesign](32-coastal-redesign.md) | Coastal and Research modes, My Coast briefing with next steps, live ocean conditions (NWS, NDBC, CO-OPS), basemap-first map, alternatives compared, three critique passes, measurements, GO/NO-GO by feature ([redesign/](redesign/)) |
+| [Research](research/) | [Ocean sources](research/ocean-sources.md) · [nearshore coverage](research/nearshore-coverage.md) · [data health](research/data-health.md) · [stakeholders and interview plan](research/stakeholders-and-interviews.md) · [fishing-opportunity feasibility](research/fishing-opportunity-feasibility.md) · [sablefish prototype](../../research/sablefish-prototype/README.md) |
+| [Notice review packets](notice-review/) | [2026-10-12: SN26-021 lifts SN26-018](notice-review/2026-10-12-sn26-021/README.md) |
 | [m5/](m5/) | M5 comparison (decision stage), review before/after images and evidence |
 | [m3/](m3/) | Screenshots of the M3 app (staging data, 2026-10-08) |
 | [m2/](m2/) | Screenshots of the M2 app (live data, 2026-10-08) |

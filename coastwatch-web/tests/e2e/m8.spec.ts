@@ -47,13 +47,17 @@ test.describe("About CoastWatch", () => {
     }
   });
 
-  test("on a phone About is a tab", async ({ browser }) => {
+  test("on a phone About is in the masthead menu, with the presentation switch; five tabs remain", async ({ browser }) => {
     const ctx = await browser.newContext(PHONE);
     const page = await ctx.newPage();
     await open(page, `${OK}/fisheries`);
-    await page.getByTestId("tab-about").click();
+    await expect(page.getByTestId("tabbar").locator("a, button")).toHaveCount(5);
+    await page.getByTestId("masthead-menu").click();
+    await expect(page.getByTestId("masthead-menu-panel").getByTestId("mode-research")).toBeVisible();
+    await page.getByTestId("menu-about").click();
     await expect(page).toHaveURL(/\/about$/);
-    await expect(page.getByTestId("tab-about")).toHaveAttribute("aria-current", "page");
+    await page.getByTestId("masthead-menu").click();
+    await expect(page.getByTestId("menu-about")).toHaveAttribute("aria-current", "page");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
     await ctx.close();
   });
@@ -70,11 +74,12 @@ test.describe("first visit", () => {
     await expect(card).toContainText("not an official source");
     for (const k of ["Model", "Measured", "Official"]) await expect(card).toContainText(k, { ignoreCase: true });
     await expect(card.getByTestId("intro-about")).toHaveAttribute("href", "/about");
-    // never in front of official information: the card does not overlap the place chip and its notices
-    const chip = (await page.getByTestId("place-chip").boundingBox())!;
+    // never in front of official information: the masthead's notices and the agency links stay
+    // above the welcome, visible and usable
     const c = (await card.boundingBox())!;
-    const overlaps = c.x < chip.x + chip.width && c.x + c.width > chip.x && c.y < chip.y + chip.height && c.y + c.height > chip.y;
-    expect(overlaps).toBe(false);
+    const pill = (await page.getByTestId("official-pill").boundingBox())!;
+    expect(pill.y + pill.height).toBeLessThanOrEqual(c.y);
+    await expect(page.getByTestId("status-line").getByRole("link", { name: "CDFW" }).first()).toBeVisible();
     await card.getByTestId("intro-dismiss").click();
     await expect(card).toHaveCount(0);
     await page.reload();

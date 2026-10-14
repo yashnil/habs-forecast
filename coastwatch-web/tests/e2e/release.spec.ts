@@ -64,7 +64,7 @@ test.describe("masthead at narrow widths", () => {
         expect(m.statusLinks, `${p} agency links`).toEqual(expect.arrayContaining(["CDFW", "CDPH"]));
         expect(m.offscreen, `${p} header controls off screen`).toEqual([]);
         if (phone) {
-          expect(m.tabs, `${p} tabs`).toBe(6);
+          expect(m.tabs, `${p} tabs`).toBe(5);
           expect(m.tabsInside, `${p} tabs inside`).toBe(true);
         } else {
           await expect(page.getByTestId("nav-about")).toBeVisible();
@@ -120,5 +120,23 @@ test.describe("source CSV download", () => {
     expect(tab.url()).toMatch(/erddap\.sccoos\.org/);
     await expect(page.getByTestId("station-detail")).toBeVisible();
     await expect(page).toHaveURL(/\/bloom/);
+  });
+});
+
+test.describe("research preview", () => {
+  test("every page says it is a research preview that does not replace CDFW or CDPH", async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: { cookies: [], origins: [{ origin: OK, localStorage: [{ name: "cw-intro-dismissed-v1", value: "1" }] }] } });
+    const page = await ctx.newPage();
+    for (const p of ["/", "/coast?place=port-550", "/bloom", "/fisheries", "/about"]) {
+      await page.goto(`${OK}${p}`);
+      await expect(page.getByTestId("research-preview-badge"), p).toHaveText("Research preview");
+    }
+    await page.goto(`${OK}/about`);
+    await expect(page.getByTestId("footer-disclaimer")).toContainText("does not replace CDFW or CDPH");
+    await expect(page.locator("main")).toContainText("published as a research preview");
+    // the site's own title (pages set their own, e.g. "About — CoastWatch")
+    await page.goto(`${OK}/`);
+    expect(await page.title()).toContain("research preview");
+    await ctx.close();
   });
 });

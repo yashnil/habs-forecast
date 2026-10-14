@@ -1,7 +1,11 @@
 import Link from "next/link";
-import { EXPERIENCES, RESEARCH } from "@/content/copy";
+import { MotionConfig } from "motion/react";
+import { PageIn } from "@/components/motion/PageIn";
+import { RESEARCH } from "@/content/copy";
+import { ModeSwitch, PrimaryNav } from "@/components/shell/ModeNav";
 import { SourceHealthDot } from "@/components/SourceHealthDot";
 import { OfficialDrawer, OfficialPill, OfficialProvider, TabBar } from "@/components/shell/OfficialShell";
+import { MastheadMenu } from "@/components/shell/MastheadMenu";
 import type { Manifest, SourceStatus } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 
@@ -29,6 +33,8 @@ export function AppShell({
   banner?: React.ReactNode;
 }) {
   return (
+    // every animation follows the device's reduced-motion setting
+    <MotionConfig reducedMotion="user">
     <OfficialProvider official={official} status={officialStatus}>
       {/* keyboard users skip the masthead and the status line */}
       <a
@@ -40,7 +46,7 @@ export function AppShell({
       </a>
       <div className={`flex min-h-dvh flex-col bg-page pb-[var(--cw-tabbar-h)] md:pb-0 ${scroll === "app" ? "lg:h-dvh" : ""}`}>
         <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-navy-950 text-on-navy">
-          <div className="flex h-[52px] min-w-0 items-center gap-3 px-3 min-[360px]:gap-6 min-[360px]:px-4 md:h-[var(--cw-masthead-h)] md:gap-5 md:px-6 lg:gap-8">
+          <div className="flex h-[52px] min-w-0 items-center gap-3 px-3 min-[360px]:px-4 min-[400px]:gap-6 md:h-[var(--cw-masthead-h)] md:gap-5 md:px-6 lg:gap-8">
             <Link href="/" className="flex shrink-0 items-center gap-2 min-[360px]:gap-2.5" aria-label="CoastWatch home">
               <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden>
                 <rect width="32" height="32" rx="8" fill="#10263e" />
@@ -48,33 +54,17 @@ export function AppShell({
                 <path d="M6 13.5c3.2-2.6 6.4-2.6 9.6 0s6.6 2.6 10.4-.2" fill="none" stroke="#e8eef5" strokeOpacity=".55" strokeWidth="2.2" strokeLinecap="round" />
                 <circle cx="22.5" cy="8.5" r="2.2" fill="#f6bb5c" />
               </svg>
-              <span className="text-[17px] font-semibold tracking-tight text-white">CoastWatch</span>
-              <span className="hidden border-l border-white/15 pl-2.5 text-[13px] text-on-navy-2 lg:inline">California</span>
+              <span className="text-[17px] font-semibold tracking-tight text-white max-[359px]:sr-only">CoastWatch</span>
+              {/* not independently validated: said on every page, beside the name (phones: the footer and the welcome) */}
+              <span className="hidden whitespace-nowrap border-l border-white/15 pl-2.5 text-[13px] text-on-navy-2 lg:inline" data-testid="research-preview-badge">
+                Research preview
+              </span>
             </Link>
-            <nav aria-label="Primary" className="hidden h-full md:flex">
-              <ul className="flex h-full gap-1">
-                {EXPERIENCES.map((e) => {
-                  const current = active === e.key;
-                  return (
-                    <li key={e.key} className="h-full">
-                      <Link
-                        href={e.href}
-                        aria-current={current ? "page" : undefined}
-                        data-testid={`nav-${e.key}`}
-                        className={`-mb-px flex h-full items-center whitespace-nowrap border-b-2 px-3 text-[15px] font-medium ${
-                          current ? "border-accent-on-navy text-white" : "border-transparent text-on-navy-2 hover:text-on-navy"
-                        }`}
-                      >
-                        {/* full names where the masthead has room; the short ones below 1280 px */}
-                        <span className="hidden xl:inline">{e.label}</span>
-                        <span className="xl:hidden">{e.short}</span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
+            <PrimaryNav active={active} />
             <div className="ml-auto flex items-center gap-2 min-[360px]:gap-3">
+              <div className="hidden xl:block">
+                <ModeSwitch />
+              </div>
               <Link
                 href="/about"
                 data-testid="nav-about"
@@ -88,24 +78,28 @@ export function AppShell({
                 href="/sources"
                 data-testid="data-status-link"
                 aria-current={active === "sources" ? "page" : undefined}
-                className={`flex items-center gap-2 rounded-md px-1.5 py-1.5 text-[14px] ${active === "sources" ? "text-white" : "text-on-navy-2 hover:text-on-navy"}`}
+                className={`items-center gap-2 rounded-md px-1.5 py-1.5 text-[14px] max-md:hidden md:flex ${active === "sources" ? "text-white" : "text-on-navy-2 hover:text-on-navy"}`}
               >
                 <SourceHealthDot manifest={manifest} />
                 <span className="hidden whitespace-nowrap lg:inline">Data status</span>
                 <span className="sr-only lg:hidden">Data status</span>
               </Link>
+              <MastheadMenu active={active} />
             </div>
           </div>
+          {/* the status line is part of the masthead: one navy band, not a second cream bar (signature P1) */}
+          {banner}
         </header>
-        {banner}
         <main id="main" tabIndex={-1} className={`flex min-h-0 flex-1 flex-col outline-none ${scroll === "app" ? "theme-dark" : ""}`}>
-          {children}
+          <PageIn kind={scroll}>{children}</PageIn>
         </main>
         {scroll === "page" && (
           <footer className="border-t border-hairline bg-page" data-testid="site-footer">
             <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6 text-[14px] text-ink-2 sm:px-8">
-              <span className="font-semibold text-ink">CoastWatch</span>
-              <span className="text-ink-3">Not an official source. Closures and advisories come from CDFW and CDPH.</span>
+              <span className="font-semibold text-ink">CoastWatch · research preview</span>
+              <span className="text-ink-3" data-testid="footer-disclaimer">
+                Not an official source and not independently validated. It does not replace CDFW or CDPH: closures, advisories and seafood safety come from them.
+              </span>
               <nav aria-label="About CoastWatch" className="flex flex-wrap gap-x-5 gap-y-2 sm:ml-auto">
                 <Link href="/about" className="font-medium text-accent hover:underline">About</Link>
                 <Link href="/sources" className="font-medium text-accent hover:underline">Data &amp; sources</Link>
@@ -118,5 +112,6 @@ export function AppShell({
       </div>
       <OfficialDrawer />
     </OfficialProvider>
+    </MotionConfig>
   );
 }

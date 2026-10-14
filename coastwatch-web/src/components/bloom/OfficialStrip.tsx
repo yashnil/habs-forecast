@@ -36,7 +36,7 @@ export function OfficialStrip({
   const disputedHere = [...new Set(recordIds)].filter((id) => records.get(id)?.status === "active" && disputeOf(official, id));
   const missing = "A missing notice does not mean an area is open or seafood is safe.";
   return (
-    <section className="rounded-lg border border-official-line bg-official-bg px-4 py-2" aria-labelledby={`${testid}-h`} data-testid={testid}>
+    <section className="rounded-lg border border-hairline border-l-[3px] border-l-official-line bg-surface px-4 py-2" aria-labelledby={`${testid}-h`} data-testid={testid}>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <h2 id={`${testid}-h`} className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold text-official-ink">
           <Icon name="shield" className="h-4 w-4 shrink-0 text-official" />

@@ -10,6 +10,7 @@ import { useNow } from "@/lib/useNow";
 import { Hotlines, NoticeCard, VerificationBadge, VerificationDetail } from "@/components/official/Official";
 import { SourceLink } from "@/components/ui/Primitives";
 import { Icon } from "@/components/ui/Icon";
+import { Glide } from "@/components/motion/Glide";
 
 /**
  * Official notices are global: every page shows their count and verification state in the
@@ -119,11 +120,20 @@ export function OfficialPill() {
   );
 }
 
-const AGENCY_NAME: Record<string, string> = {
-  CDFW: "California Department of Fish and Wildlife",
-  CDPH: "California Department of Public Health",
-  OEHHA: "Office of Environmental Health Hazard Assessment",
-};
+/** The drawer groups notices by what people harvest, from each record's own species list. */
+const GROUPS = [
+  { id: "shellfish", label: "Shellfish: mussels, clams, oysters, scallops" },
+  { id: "crab", label: "Crab" },
+  { id: "fish", label: "Fish" },
+  { id: "other", label: "Other" },
+] as const;
+function groupOf(r: OfficialRecord): (typeof GROUPS)[number]["id"] {
+  const s = r.species.join(" ").toLowerCase();
+  if (/mussel|clam|oyster|scallop|bivalve/.test(s)) return "shellfish";
+  if (/crab|lobster/.test(s)) return "crab";
+  if (/anchov|sardine|salmon|rockfish|halibut|fish|squid/.test(s)) return "fish";
+  return "other";
+}
 
 /** Full list of official notices, opened from the pill or the Notices tab. Paper surface on every page. */
 export function OfficialDrawer() {
@@ -155,7 +165,6 @@ export function OfficialDrawer() {
 
   // Not rendered while closed, so notice ids and test hooks exist once on the page.
   if (!open) return null;
-  const agencies = [...new Set(records.map((r) => r.agency))];
   return (
     <>
       <div className="fixed inset-0 z-50 bg-navy-950/45" onClick={closeDrawer} aria-hidden data-testid="official-drawer-scrim" />
@@ -167,8 +176,8 @@ export function OfficialDrawer() {
         data-testid="official-drawer"
         className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[520px] flex-col bg-surface text-ink shadow-[0_8px_32px_rgba(6,17,30,0.3)]"
       >
-        <div className="relative border-b border-official-line bg-official-bg px-6 pb-4 pt-6">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-official">{OFFICIAL_STATUS.heading}</p>
+        <div className="relative border-b border-hairline border-l-[3px] border-l-official-line bg-surface px-6 pb-4 pt-6">
+          <p className="text-[13px] font-medium text-official">{OFFICIAL_STATUS.heading}</p>
           <h2 id="official-drawer-h" className="mt-1.5 font-display text-[24px] font-medium leading-tight">
             {ds ? `${records.length} active notice${records.length === 1 ? "" : "s"} in California` : "Official notices unavailable"}
           </h2>
@@ -187,7 +196,17 @@ export function OfficialDrawer() {
           </button>
         </div>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-8 pt-4">
-          {verification && verification.state !== "verified" && ds && <VerificationDetail v={verification} />}
+          {verification && verification.state !== "verified" && ds && (
+            // one line, the reasons one tap away: the list itself comes first
+            <details className="rounded-lg border border-hairline border-l-[3px] border-l-official-line bg-surface px-3 py-2 text-[13px]" data-testid="drawer-why">
+              <summary className="cursor-pointer text-official-ink">
+                <b className="font-semibold">Transcribed from agency pages, not verified by a person.</b> Why?
+              </summary>
+              <div className="mt-2">
+                <VerificationDetail v={verification} />
+              </div>
+            </details>
+          )}
           {!ds && (
             <p className="text-[14px] text-ink-2">
               {OFFICIAL_STATUS.notTracked} {OFFICIAL_STATUS.instruction}
@@ -195,7 +214,7 @@ export function OfficialDrawer() {
           )}
           {disputedRecords(ds).length > 0 && (
             <section aria-labelledby="drawer-disputed" className="space-y-1.5" data-testid="drawer-disputed">
-              <h3 id="drawer-disputed" className="text-[12px] font-semibold uppercase tracking-[0.08em] text-warning">
+              <h3 id="drawer-disputed" className="text-[13px] font-medium text-warning">
                 Reported lifted by the agency · awaiting review · {disputedRecords(ds).length}
               </h3>
               {disputedRecords(ds).map(({ record, dispute }) => (
@@ -203,18 +222,20 @@ export function OfficialDrawer() {
               ))}
             </section>
           )}
-          {agencies.map((a) => (
-            <section key={a} aria-labelledby={`drawer-${a}`} className="space-y-1.5">
-              <h3 id={`drawer-${a}`} className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">
-                {AGENCY_NAME[a] ?? a} · {records.filter((r) => r.agency === a).length}
-              </h3>
-              {records
-                .filter((r) => r.agency === a)
-                .map((r) => (
+          {GROUPS.map((g) => {
+            const rs = records.filter((r) => groupOf(r) === g.id);
+            if (!rs.length) return null;
+            return (
+              <section key={g.id} aria-labelledby={`drawer-${g.id}`} className="space-y-1.5" data-testid={`drawer-group-${g.id}`}>
+                <h3 id={`drawer-${g.id}`} className="text-[13px] font-medium text-ink-3">
+                  {g.label} · {rs.length}
+                </h3>
+                {rs.map((r) => (
                   <NoticeCard key={r.id} r={r} now={now} compact />
                 ))}
-            </section>
-          ))}
+              </section>
+            );
+          })}
           {ds && ds.registry.statements.length > 0 && (
             <details className="rounded-md border border-hairline px-3 py-2 text-[13px] text-ink-2">
               <summary className="cursor-pointer font-medium text-ink">{OFFICIAL_STATUS.statementsHeading}</summary>
@@ -257,23 +278,27 @@ const TABS = [
   { key: "fisheries", href: "/fisheries", label: "Fisheries", icon: "fish" },
 ] as const;
 
-/** Mobile bottom navigation. Notices is a tab, so official information is one tap from anywhere; About carries the research and the limits. */
+/** Mobile bottom navigation: five places (signature P10). Notices is a tab, so official information is one tap from anywhere; About is in the masthead menu. */
 export function TabBar({ active }: { active: string }) {
   const { ds, records, open, openDrawer } = useOfficial();
+  const bar = useRef<HTMLElement>(null);
   return (
     <nav
+      ref={bar}
       aria-label="Primary"
       data-testid="tabbar"
-      className="fixed inset-x-0 bottom-0 z-40 grid h-[var(--cw-tabbar-h)] grid-cols-6 border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] text-ink-3 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 grid h-[var(--cw-tabbar-h)] grid-cols-5 border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] text-ink-3 md:hidden"
       style={{ colorScheme: "light" }}
     >
+      {/* the active marker glides from the previous page's tab */}
+      <Glide id="tabbar" container={bar} activeSelector='a[aria-current="page"]' className="pointer-events-none absolute top-0 h-0.5 rounded-b bg-accent" />
       {TABS.map((t) => (
         <Link
           key={t.key}
           href={t.href}
           data-testid={`tab-${t.key}`}
           aria-current={active === t.key ? "page" : undefined}
-          className={`relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium max-[379px]:text-[12px] ${active === t.key ? "text-accent before:absolute before:inset-x-[30%] before:top-0 before:h-0.5 before:rounded-b before:bg-accent" : ""}`}
+          className={`relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium max-[379px]:text-[12px] ${active === t.key ? "text-accent" : ""} cw-press`}
         >
           <Icon name={t.icon} className="h-[22px] w-[22px]" />
           {t.key === "coast" ? (
@@ -302,15 +327,6 @@ export function TabBar({ active }: { active: string }) {
         )}
         Notices
       </button>
-      <Link
-        href="/about"
-        data-testid="tab-about"
-        aria-current={active === "about" ? "page" : undefined}
-        className={`relative flex flex-col items-center justify-center gap-1 text-[13px] font-medium max-[379px]:text-[12px] ${active === "about" ? "text-accent before:absolute before:inset-x-[30%] before:top-0 before:h-0.5 before:rounded-b before:bg-accent" : ""}`}
-      >
-        <Icon name="info" className="h-[22px] w-[22px]" />
-        About
-      </Link>
     </nav>
   );
 }

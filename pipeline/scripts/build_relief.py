@@ -14,6 +14,9 @@ this script changes):
 - relief-land.webp: land hillshade on the basemap's land tone (drawn under the vector
   water, which clips it to the real coastline).
 - isobaths.geojson: 200, 500, 1000, 2000 and 3000 m depth contours, simplified.
+- relief-sea-tint.webp (and relief-sea-monterey-tint.webp): the same seafloor with a depth-tinted
+  blue ramp (light over the shelf, deep navy offshore). Used only when no data layer is shown
+  (the Coastal map's default), so a tint can never be read as a data value.
 - relief.json: image corners, the source, the licence and the citation.
 
 Both images are resampled onto pixels uniform in Web Mercator y, so placing them by their
@@ -127,6 +130,22 @@ def sea_rgba(zm, dx, exaggeration, fade):
     return np.dstack([np.clip(rgb, 0, 255), alpha]).astype(np.uint8)
 
 
+# depth-tinted ramp for the basemap-only view: (depth m, RGB); deep end equals the vector water
+TINT = [(0, (0x3E, 0x8F, 0xB0)), (60, (0x2F, 0x7A, 0x9E)), (200, (0x22, 0x5E, 0x84)), (600, (0x1A, 0x48, 0x6C)), (1500, (0x13, 0x35, 0x55)), (3200, (0x0E, 0x25, 0x40)), (4500, tuple(SEA.astype(int)))]
+
+
+def tint_rgba(zm, dx, exaggeration, fade):
+    depth = np.clip(-zm, 0, None)
+    hs = hillshade(np.minimum(zm, 0), dx, float(np.mean(dx)), exaggeration=exaggeration)
+    ds = np.array([d for d, _ in TINT], float)
+    cols = np.array([c for _, c in TINT], float)
+    base = np.dstack([np.interp(depth, ds, cols[:, i]) for i in range(3)])
+    shade = (hs - np.cos(np.radians(45))) * 0.7
+    rgb = base * (1 + shade[..., None] * fade[..., None])
+    alpha = np.clip((depth - 2) / 6, 0, 1) * 255 * fade
+    return np.dstack([np.clip(rgb, 0, 255), alpha]).astype(np.uint8)
+
+
 def crm_inset(npz: Path, out: Path) -> dict:
     """Monterey Bay seafloor from the NOAA NCEI Coastal Relief Model (3 arc-second, volumes 6
     and 7), drawn over the ETOPO relief with soft edges. Same tones as the ETOPO sea."""
@@ -138,6 +157,8 @@ def crm_inset(npz: Path, out: Path) -> dict:
     zm, dx, w, h = to_mercator(lat, lon, z, W, E, S, N)
     img = sea_rgba(zm, dx, 2.0, edge_fade(h, w, px=90))
     Image.fromarray(img, "RGBA").save(out / "relief-sea-monterey.webp", "WEBP", quality=82, method=6, alpha_quality=60)
+    tint = tint_rgba(zm, dx, 2.0, edge_fade(h, w, px=90))
+    Image.fromarray(tint, "RGBA").save(out / "relief-sea-monterey-tint.webp", "WEBP", quality=80, method=6, alpha_quality=60)
     return {"corners_lnglat": [[W, N], [E, N], [E, S], [W, S]], "width": w, "height": h,
             "source": "NOAA NCEI U.S. Coastal Relief Model, volumes 6 and 7, 3 arc-second", "source_url": "https://www.ncei.noaa.gov/products/coastal-relief-model"}
 
@@ -180,6 +201,7 @@ def main(src: Path, out: Path, crm: Path | None = None) -> None:
     alpha = np.clip((depth - 6) / 8, 0, 1) * 255  # nothing on land or in the surf zone
     sea = np.dstack([np.clip(rgb, 0, 255), alpha]).astype(np.uint8)
     Image.fromarray(sea, "RGBA").save(out / "relief-sea.webp", "WEBP", quality=82, method=6, alpha_quality=60)
+    Image.fromarray(tint_rgba(zm, dx, 4.0, fade), "RGBA").save(out / "relief-sea-tint.webp", "WEBP", quality=80, method=6, alpha_quality=60)
 
     # ---- land
     hs_land = hillshade(np.maximum(zm, 0), dx, float(np.mean(dx)), exaggeration=1.6)
@@ -213,7 +235,7 @@ def main(src: Path, out: Path, crm: Path | None = None) -> None:
         "source_url": "https://www.ncei.noaa.gov/products/etopo-global-relief-model",
         "doi": "https://doi.org/10.25921/fd45-gt74",
         "license": "Free to use and redistribute; not intended for legal use or navigation (NOAA NCEI).",
-        "rendering": "Seafloor and land hillshade (azimuth 315°, altitude 45°, vertical exaggeration 4x sea / 1.6x land); depth tone lightest on the shelf; isobaths from a 1.2-cell Gaussian-smoothed grid, simplified to about 400 m.",
+        "rendering": "Seafloor and land hillshade (azimuth 315°, altitude 45°, vertical exaggeration 4x sea / 1.6x land); depth tone lightest on the shelf (the tinted variant: a blue ramp from about #3E8FB0 at the shore to the water colour at 4,500 m, used only with no data layer shown); isobaths from a 1.2-cell Gaussian-smoothed grid, simplified to about 400 m.",
     }
     if crm:
         meta["monterey_inset"] = crm_inset(crm, out)

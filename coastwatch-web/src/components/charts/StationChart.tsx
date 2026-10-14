@@ -1,10 +1,12 @@
 "use client";
 
+import { motion } from "motion/react";
 import { useMemo, useState, type ReactNode } from "react";
 import type { ObsVariable, SeriesPoint } from "@/generated/observations";
 import { axisPosition, decadeTicks, highestInView, inView, modelOnAxis, modelSegments, onAxis, segments, viewSummary, type Axis, type ModelPoint } from "@/lib/bloom";
 import { DAY, formatObs, formatTick, unitLabel, type Sample } from "@/lib/observations";
 import { useWidth } from "@/lib/useWidth";
+import { Mark } from "@/components/ui/Mark";
 
 /**
  * The page's one primary chart (design spec §3.2 item 6, M6 §0): the measured record of one
@@ -81,9 +83,14 @@ type Props = {
   plotHeight?: number;
   /** shown over the plot when nothing was measured in view (e.g. a button to widen the range) */
   empty?: ReactNode;
+  /** official notices for waters near this pier, drawn as amber rules at their effective dates */
+  notices?: ChartNotice[];
 };
 
-export function StationChart({ variable, samples, visits, axis, x0, x1, title, note, controls, model, plotHeight = 300, empty }: Props) {
+/** An official notice on the time axis: the agency's own effective date, never inferred. */
+export type ChartNotice = { id: string; t: number; label: string };
+
+export function StationChart({ variable, samples, visits, axis, x0, x1, title, note, controls, model, plotHeight = 300, empty, notices = [] }: Props) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [hoverT, setHoverT] = useState<number | null>(null);
   const [tableOpen, setTableOpen] = useState(false);
@@ -162,9 +169,12 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
   const offAxis = win.filter((s2) => onAxis(s2, axis) && axisPosition(s2.value!, axis) !== "in");
   const labelW = topLabel.length * 6.6;
   const labelX = top ? Math.round(Math.max(4, Math.min(x(top.t) + (x(top.t) > PAD.l + iw * 0.62 ? -labelW - 6 : 6), width - labelW - 4))) : 0;
-  const desc = top
-    ? `${variable.label} at this pier from ${fmtDate(x0)} to ${fmtDate(x1)}: ${sum.measured} measured values in ${sum.visits} sampling visits, ${sum.zeros} reported 0. Highest ${formatObs(variable, top.value, top.q)} on ${fmtDate(top.t)}.`
-    : `${variable.label} at this pier from ${fmtDate(x0)} to ${fmtDate(x1)}: no value on the axis in view (${sum.zeros} reported 0 in ${sum.visits} visits).`;
+  const noticesIn = notices.filter((n) => n.t >= x0 && n.t <= x1);
+  const desc =
+    (top
+      ? `${variable.label} at this pier from ${fmtDate(x0)} to ${fmtDate(x1)}: ${sum.measured} measured values in ${sum.visits} sampling visits, ${sum.zeros} reported 0. Highest ${formatObs(variable, top.value, top.q)} on ${fmtDate(top.t)}.`
+      : `${variable.label} at this pier from ${fmtDate(x0)} to ${fmtDate(x1)}: no value on the axis in view (${sum.zeros} reported 0 in ${sum.visits} visits).`) +
+    noticesIn.map((n) => ` ${n.label} from ${fmtDate(n.t)}.`).join("");
 
   // ---------------------------------------------------------------- model band geometry
   const yM = (v: number) => r1(10 + (1 - v) * (BAND - 28));
@@ -249,9 +259,35 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
               <line key={t} x1={x(t)} x2={x(t)} y1={stripY} y2={stripY + STRIP - 2} stroke="var(--cw-ink-3)" strokeOpacity={measuredAt.has(t) ? 0.85 : 0.25} strokeWidth={1} />
             ))}
           </g>
+          {/* official notices: an amber rule at each effective date (the official mark is a line) */}
+          <g data-testid="chart-notices">
+            {noticesIn.map((n, i) => (
+              <g key={n.id} data-notice={n.id}>
+                <line x1={x(n.t)} x2={x(n.t)} y1={PLOT_T - 4} y2={PLOT_T + plotH} stroke="var(--cw-official-line)" strokeWidth={1.5} />
+                {i < 3 && !narrow && (
+                  // near the right edge the label sits on the rule's left, so it is never cut off
+                  <text x={x(n.t) + (x(n.t) > width - PAD.r - 150 ? -4 : 4)} y={PLOT_T + 8 + i * 14} textAnchor={x(n.t) > width - PAD.r - 150 ? "end" : "start"} className="fill-[var(--cw-official-ink)] text-[12px]">
+                    {n.label}
+                  </text>
+                )}
+              </g>
+            ))}
+          </g>
           {/* joined runs of samples ≤ 21 days apart */}
+          {/* lines fade in after the points arrive: a morphing line would pass through values no one
+              measured, so lines are never tweened (signature §10) */}
           {segs.map((sg, i) => (
-            <path key={i} d={sg.map((s, k) => `${k ? "L" : "M"}${x(s.t)},${y(s.value!)}`).join("")} fill="none" stroke="var(--cw-chl)" strokeWidth={1.6} strokeLinejoin="round" />
+            <motion.path
+              key={`${variable.id}-${x0}-${x1}-${i}`}
+              d={sg.map((s, k) => `${k ? "L" : "M"}${x(s.t)},${y(s.value!)}`).join("")}
+              fill="none"
+              stroke="var(--cw-chl)"
+              strokeWidth={1.6}
+              strokeLinejoin="round"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.35, delay: 0.32 }}
+            />
           ))}
           {win.map((s) =>
             onAxis(s, axis) && axisPosition(s.value!, axis) !== "in" ? (
@@ -269,11 +305,13 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
                 data-q={axisPosition(s.value!, axis) === "below" ? "below-axis" : "above-axis"}
               />
             ) : onAxis(s, axis) ? (
-              <circle
+              // each sample keeps its identity: on a new range it slides along time, on a new quantity it
+              // moves to its value at the same date (never between dates); new samples fade in where they are
+              <motion.circle
                 key={s.index}
-                cx={x(s.t)}
-                cy={y(s.value!)}
-                r={s === hovered ? 4.5 : 2.8}
+                initial={{ cx: x(s.t), cy: y(s.value!), opacity: 0, r: 2.8 }}
+                animate={{ cx: x(s.t), cy: y(s.value!), opacity: 1, r: s === hovered ? 5 : 2.8 }}
+                transition={{ cx: { type: "spring", stiffness: 170, damping: 26 }, cy: { type: "spring", stiffness: 170, damping: 26 }, r: { type: "spring", stiffness: 500, damping: 24 }, opacity: { duration: 0.25 } }}
                 fill={s.q === "flag_high" ? "var(--cw-surface)" : "var(--cw-chl)"}
                 stroke={s.q === "flag_high" ? "var(--cw-warning)" : s === hovered ? "var(--cw-surface)" : "none"}
                 strokeWidth={s.q === "flag_high" ? 1.6 : 1.5}
@@ -300,6 +338,14 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
         </svg>
 
       <div className="mb-3 mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-2" data-testid="chart-legend">
+          {noticesIn.length > 0 && (
+            <span className="inline-flex items-center gap-1.5">
+              <svg width="10" height="12" aria-hidden>
+                <line x1="5" x2="5" y1="0" y2="12" stroke="var(--cw-official-line)" strokeWidth="1.5" />
+              </svg>
+              Official notice in effect from
+            </span>
+          )}
           <span className="inline-flex items-center gap-1.5">
             <svg width="10" height="10" aria-hidden>
               <circle cx="5" cy="5" r="3.2" fill="var(--cw-chl)" />
@@ -334,14 +380,14 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
 
           {sum.measured === 0 && empty && (
           <div className="absolute inset-x-0 flex justify-center" style={{ top: PLOT_T + plotH / 2 - 40 }} data-testid="chart-empty">
-            <div className="max-w-[420px] rounded-lg border border-hairline bg-surface px-4 py-3 text-center text-[14px] text-ink-2 shadow-sm">{empty}</div>
+            <div className="cw-page-in max-w-[420px] rounded-lg border border-hairline bg-surface px-4 py-3 text-center text-[14px] text-ink-2 shadow-sm">{empty}</div>
           </div>
         )}
         {/* the model, directly beneath: same time axis, its own 0–100 % axis, never compared numerically */}
         <section className="mt-2 rounded-lg bg-model-bg/70 outline outline-1 -outline-offset-1 outline-model-line" data-testid="model-section" aria-labelledby="model-h">
           <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-3 pt-2.5">
             <div className="min-w-0">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-model-ink">Model, not a measurement · C-HARM v3.1, NOAA</p>
+              <p className="cw-kind text-model-ink"><Mark kind="model" />Model, not a measurement · C-HARM v3.1, NOAA</p>
               <h3 id="model-h" className="text-[14px] font-semibold leading-snug text-ink">
                 {model.title}
               </h3>
@@ -399,9 +445,12 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
         </section>
 
         {crossT != null && (hovered || hoveredModel) && (
-          <div
-            className="pointer-events-none absolute top-[22px] z-10 w-max max-w-[260px] rounded-md bg-navy-900 px-2.5 py-1.5 text-[13px] leading-snug text-on-navy shadow-lg"
-            style={{ left: Math.min(Math.max(x(crossT) + 10, 0), width - 250) }}
+          // the readout follows the pointer on a spring and names where the value came from
+          <motion.div
+            className="pointer-events-none absolute top-[22px] z-10 w-max max-w-[260px] rounded-xl bg-navy-900/95 px-3 py-2 text-[13px] leading-snug text-on-navy shadow-[0_10px_30px_rgba(6,17,30,0.35)] backdrop-blur"
+            initial={{ opacity: 0, y: 4, left: Math.min(Math.max(x(crossT) + 10, 0), width - 250) }}
+            animate={{ opacity: 1, y: 0, left: Math.min(Math.max(x(crossT) + 10, 0), width - 250) }}
+            transition={{ left: { type: "spring", stiffness: 500, damping: 40 }, opacity: { duration: 0.12 } }}
             data-testid="chart-tooltip"
             role="status"
           >
@@ -414,6 +463,12 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
                     ? "Reported 0 (not quantified, not absent)"
                     : formatObs(variable, hovered.value, hovered.q)}
                 {hovered.q === "flag_high" && <span className="block text-official-on-navy">Above the plausibility check: kept, flagged for review</span>}
+                <span className="mt-0.5 flex items-center gap-1.5 text-[12px] text-[#a7b6c8]">
+                  <svg width="8" height="8" aria-hidden>
+                    <circle cx="4" cy="4" r="3.2" fill="#4fd1ae" />
+                  </svg>
+                  Water sample at this pier, lab result (CalHABMAP)
+                </span>
               </div>
             )}
             {hoveredModel && (
@@ -421,7 +476,7 @@ export function StationChart({ variable, samples, visits, axis, x0, x1, title, n
                 Model {Math.round(hoveredModel.v * 100)}% ({hoveredModel.n} cells{hoveredModel.partial ? ", partial coverage" : ""})
               </div>
             )}
-          </div>
+          </motion.div>
         )}
       </div>
 

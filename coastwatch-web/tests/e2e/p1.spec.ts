@@ -31,7 +31,7 @@ const mapSource = (page: Page, id: string) =>
 test.describe("layer groups", () => {
   test("HAB forecast first; one group drawn at a time (currents only when chosen)", async ({ page }) => {
     await open(page, OK);
-    await expect(page.getByTestId("group-forecast")).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByTestId("group-forecast")).toHaveAttribute("aria-checked", "true");
     // a dataset without currents keeps that tab disabled: tests/e2e/p2-currents.spec.ts
     expect(await mapSource(page, "currents")).toBeNull();
     // the C-HARM raster is opaque and nearest-sampled, over a hatched no-value sea

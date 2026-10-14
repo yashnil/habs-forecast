@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/AppShell";
 import { DataBanners } from "@/components/Banners";
 import { FisheriesExposure } from "@/components/fisheries/FisheriesExposure";
+import { FisheriesByMode } from "@/components/fisheries/FisheriesByMode";
 import { OfficialStatusCard } from "@/components/panels/OfficialStatusCard";
 import { Notice } from "@/components/ui/Primitives";
 import { FISHERIES_COPY } from "@/content/copy";
@@ -27,15 +28,17 @@ export default async function FisheriesPage({ searchParams }: { searchParams: Pr
       scroll="page"
     >
       {data.ok && data.fisheries ? (
-        <FisheriesExposure
-          ds={data.fisheries}
-          status={sourceStatus(data.manifest, "foss_landings")}
-          official={data.official}
-          initial={parseView(data.fisheries, { unit: str(sp.unit), tiers: str(sp.tiers), group: str(sp.group), year: str(sp.year) })}
-        />
+        <FisheriesByMode official={data.official}>
+          <FisheriesExposure
+            ds={data.fisheries}
+            status={sourceStatus(data.manifest, "foss_landings")}
+            official={data.official}
+            initial={parseView(data.fisheries, { unit: str(sp.unit), tiers: str(sp.tiers), group: str(sp.group), year: str(sp.year) })}
+          />
+        </FisheriesByMode>
       ) : (
         <div className="mx-auto w-full max-w-2xl space-y-4 px-4 py-8" data-testid="fisheries-unavailable">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-history">Historical context · Statewide</p>
+          <p className="text-[13px] font-medium text-history">Historical context · Statewide</p>
           <h1 className="font-display text-[34px] font-medium leading-tight text-ink">{FISHERIES_COPY.heading}</h1>
           <p className="text-[15px] leading-relaxed text-ink-2">{FISHERIES_COPY.definition}</p>
           <Notice tone="warning" title={FISHERIES_COPY.unavailable}>

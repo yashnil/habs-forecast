@@ -122,7 +122,7 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
       {/* the story's opening, in the published terminology, beside the three figures (no cards) */}
       <div className="grid gap-x-12 gap-y-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <header className="space-y-2.5 sm:space-y-3">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-history">
+          <p className="text-[13px] font-medium text-history">
             Historical context · Statewide<span className="hidden sm:inline"> · NOAA Fisheries landings</span>
           </p>
           <h1 className="text-balance font-display text-[29px] font-medium leading-[1.08] text-ink sm:text-[44px]">{FISHERIES_COPY.title}</h1>
@@ -278,7 +278,7 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
         </h2>
         {narrow ? (
           <details className="group order-last border-t border-hairline pt-3" data-testid="limits-can">
-            <summary className="cursor-pointer text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">They show</summary>
+            <summary className="cursor-pointer text-[13.5px] font-semibold text-ink-3">They show</summary>
             <ul className="mt-1.5 space-y-2 text-[14.5px] leading-relaxed text-ink-2">
               {FISHERIES_COPY.can.map((t) => (
                 <li key={t}>{t}</li>
@@ -287,7 +287,7 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
           </details>
         ) : (
           <div data-testid="limits-can">
-            <h3 className="mb-1.5 text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">They show</h3>
+            <h3 className="mb-1.5 text-[13.5px] font-semibold text-ink-3">They show</h3>
             <ul className="space-y-2 text-[14.5px] leading-relaxed text-ink-2">
               {FISHERIES_COPY.can.map((t) => (
                 <li key={t}>{t}</li>
@@ -296,7 +296,7 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
           </div>
         )}
         <div>
-          <h3 className="mb-1.5 text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">They do not show</h3>
+          <h3 className="mb-1.5 text-[13.5px] font-semibold text-ink-3">They do not show</h3>
           <ul className="space-y-2 text-[14.5px] leading-relaxed text-ink-2">
             {FISHERIES_COPY.cannot.map((t) => (
               <li key={t}>{t}</li>

@@ -60,11 +60,12 @@ export function parseAudience(v: string | null | undefined): Audience {
 }
 
 /** The page's link: the place (waters), the home port and the audience. */
-export function coastHref(p: { place?: string | null; home?: string | null; for?: Audience }): string {
+export function coastHref(p: { place?: string | null; home?: string | null; for?: Audience; species?: string | null }): string {
   const q = new URLSearchParams();
   if (p.place) q.set("place", p.place);
   if (p.home) q.set("home", p.home);
   if (p.for && p.for !== "all") q.set("for", p.for);
+  if (p.species && p.species !== "any") q.set("species", p.species);
   // commas in a point key stay readable in shared links
   const s = q.toString().replace(/%2C/g, ",");
   return s ? `/coast?${s}` : "/coast";

@@ -12,6 +12,7 @@ import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, leadLabel, type 
 import { formatDate } from "@/lib/time";
 import { gradientCss } from "@/components/ui/ProbabilityLegend";
 import { LeadStrip, type LeadItem } from "./LeadStrip";
+import { Mark } from "@/components/ui/Mark";
 
 export type InspectPoint = { lat: number; lon: number };
 
@@ -92,49 +93,56 @@ export function Inspector({
       className="w-full"
     >
       <header className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-accent">Point</p>
-          <h3 className="text-[14px] font-semibold text-ink tabular">
+        <div className="min-w-0">
+          <p className="text-[13px] font-medium text-accent">Open water</p>
+          <h3 className="font-display text-[24px] font-medium leading-tight text-ink tabular">
             {point.lat.toFixed(3)}°N, {Math.abs(point.lon).toFixed(3)}°W
           </h3>
           {first?.time.valid_date && (
-            <p className="mt-0.5 text-[13px] text-ink-2">
-              C-HARM {leadLabel(lead).toLowerCase()} · valid {formatDate(first.time.valid_date, { year: true })}
+            <p className="mt-0.5 text-[13px] text-ink-3">
+              C-HARM {leadLabel(lead).toLowerCase()} · for {formatDate(first.time.valid_date, { year: true })}
             </p>
           )}
-          <Link href={`/coast?place=point-${point.lat.toFixed(3)},${point.lon.toFixed(3)}`} className="mt-1 inline-block text-[13px] font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent" data-testid="inspect-open-coast">
-            View these waters in My Coast →
-          </Link>
         </div>
-        <button onClick={onClose} className="rounded-md px-2 py-1 text-[13px] text-ink-3 hover:bg-surface-3 hover:text-ink" aria-label="Close point details">
+        <button onClick={onClose} className="cw-press grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-3 hover:bg-surface-3 hover:text-ink" aria-label="Close point details" data-testid="inspector-close">
           ✕
         </button>
       </header>
+      <Link
+        href={`/coast?place=point-${point.lat.toFixed(3)},${point.lon.toFixed(3)}`}
+        className="cw-press mt-3 flex min-h-[44px] items-center justify-between rounded-xl bg-navy-900 px-4 text-[15px] font-medium text-white hover:bg-navy-800"
+        data-testid="inspect-open-coast"
+      >
+        Plan a trip to these waters
+        <span aria-hidden>→</span>
+      </Link>
 
-      <div className="mt-3 space-y-1.5 rounded-md border border-[#ffb547]/30 bg-[#ffb547]/[0.04] p-2.5" data-testid="inspect-official">
+      <section className="mt-4 border-l-[3px] border-official-line pl-3" data-testid="inspect-official" aria-label="Official notices here">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[13px] font-semibold text-ink">Official notices here</p>
+          <p className="cw-kind text-official-ink">
+            <Mark kind="official" />
+            {official ? `${here.length} official notice${here.length === 1 ? "" : "s"} here` : "Official notices"}
+          </p>
           <VerificationBadge v={verification} />
         </div>
         {!official ? (
-          <p className="text-[13px] text-ink-2">Official notices unavailable; check CDFW and CDPH.</p>
+          <p className="mt-1 text-[14px] text-ink-2">Official notices unavailable; check CDFW and CDPH.</p>
         ) : (
-          <ul className="space-y-1 text-[13px] text-ink-2">
+          <ul className="mt-1.5 space-y-1.5 text-[14px] leading-snug text-ink">
             {here.map(({ record: r, reason }) => (
               <li key={r.id} data-testid={`inspect-notice-${r.id}`}>
-                <span className="font-medium text-ink">{ACTION_LABEL[r.action]}:</span> {r.title} <span className="text-ink-3">({reason})</span>
+                {r.title} <span className="text-[13px] text-ink-3">· {ACTION_LABEL[r.action].toLowerCase()}, {reason}</span>
               </li>
             ))}
-            {here.some((h) => h.reason !== "statewide") && <li className="text-ink-3">{OFFICIAL_STATUS.areaNote}</li>}
           </ul>
         )}
-        <p className="text-[13px] text-ink-3">{OFFICIAL_STATUS.missingNotOpen}</p>
-      </div>
+        <p className="mt-1.5 text-[13px] text-ink-3">The agency&apos;s wording controls. A notice missing here does not mean open or safe.</p>
+      </section>
 
       <div className="mt-4 space-y-1.5" data-testid="inspect-strip">
         <div className="flex items-baseline justify-between gap-2">
           <h4 className="text-[13px] font-semibold text-ink">{stripLayer?.short_title ?? "C-HARM forecast"} here</h4>
-          <span className="rounded border border-hairline-strong px-1 text-[12px] font-semibold uppercase tracking-wider text-model-ink">Model</span>
+          <span className="cw-kind text-model-ink"><Mark kind="model" />Model</span>
         </div>
         {strip && strip.some((x) => x.issued) ? (
           <>
@@ -153,7 +161,12 @@ export function Inspector({
       ) : !rows ? (
         <p className="mt-3 text-[13px] text-ink-3">Reading forecast values…</p>
       ) : (
-        <ul className="mt-3 space-y-2.5" aria-label={`All C-HARM quantities, ${leadLabel(lead).toLowerCase()}`}>
+        <details className="group mt-3 rounded-xl border border-hairline px-3 py-2" data-testid="inspect-quantities">
+        <summary className="flex cursor-pointer list-none items-center justify-between text-[14px] font-medium text-ink">
+          All three quantities, {leadLabel(lead).toLowerCase()}
+          <span aria-hidden className="text-ink-3 transition-transform group-open:rotate-90">›</span>
+        </summary>
+        <ul className="mt-2 space-y-2.5" aria-label={`All C-HARM quantities, ${leadLabel(lead).toLowerCase()}`}>
           {rows.map((r) => (
             <li key={r.variable} data-testid={`inspect-${r.variable}`}>
               <div className="flex items-baseline justify-between gap-2">
@@ -187,8 +200,9 @@ export function Inspector({
             </li>
           ))}
         </ul>
+        </details>
       )}
-      <p className="mt-3 border-t border-hairline pt-2 text-[13px] leading-snug text-ink-3">
+      <p className="mt-3 text-[13px] leading-snug text-ink-3">
         {FORECAST_COPY.notA} {FORECAST_COPY.lowNotSafe}
       </p>
     </section>

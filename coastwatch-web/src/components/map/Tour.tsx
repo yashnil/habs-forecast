@@ -176,7 +176,7 @@ export function MapTour({ open, onClose, actions, phone, reducedMotion, dockTop 
         style={{ top: pos?.top ?? dockTop, left: pos?.left ?? 12, width: phone ? undefined : CARD_W, visibility: pos ? "visible" : "hidden" }}
       >
         <div className="flex items-start justify-between gap-3">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3" data-testid="tour-progress">
+          <p className="text-[13px] font-medium text-ink-3" data-testid="tour-progress">
             Step {i + 1} of {STEPS.length}
           </p>
           <button type="button" onClick={close} aria-label="Close the tour" data-testid="tour-close" className="-mr-2 -mt-2 grid h-10 w-10 shrink-0 place-items-center rounded-md text-ink-3 hover:bg-hairline/50 hover:text-ink">

@@ -83,7 +83,7 @@ export function NavCard({ regions, region, onRegion, ports, portsError, port, on
           data-testid="official-summary"
           onClick={(e) => openDrawer(e.currentTarget)}
           aria-haspopup="dialog"
-          className="grid grid-cols-[auto_1fr_auto] items-center gap-2 border-b border-official-line bg-official-bg px-3.5 py-2.5 text-left text-[14px] hover:brightness-[0.98]"
+          className="grid grid-cols-[auto_1fr_auto] items-center gap-2 border-b border-hairline border-l-[3px] border-l-official-line bg-surface px-3.5 py-2.5 text-left text-[14px] hover:brightness-[0.98]"
         >
           <Icon name="shield" className="h-[18px] w-[18px] text-official" />
           <span className="leading-snug">
@@ -144,7 +144,7 @@ export function NavCard({ regions, region, onRegion, ports, portsError, port, on
           </>
         ) : (
           <>
-            <p className="px-2.5 pb-1 pt-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">Coast, north to south</p>
+            <p className="px-2.5 pb-1 pt-1.5 text-[13px] font-medium text-ink-3">Coast, north to south</p>
             <ul>
               {regions.slice(1).map((r) => {
                 const vals = inRegion(r.id)

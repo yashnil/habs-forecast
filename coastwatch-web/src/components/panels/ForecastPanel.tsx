@@ -53,7 +53,7 @@ export function ForecastPanel(p: Props) {
           <RunLine run={p.run} status={p.status} fresh={fresh} />
 
           <fieldset>
-            <legend className="mb-1.5 text-[12px] font-medium uppercase tracking-wider text-ink-3">Forecast</legend>
+            <legend className="mb-1.5 text-[13px] font-medium text-ink-3">Forecast</legend>
             <div role="radiogroup" className="grid grid-cols-3 gap-1 rounded-lg bg-surface-2 p-1">
               {CHARM_VARIABLES.map((v) => (
                 <button
@@ -72,7 +72,7 @@ export function ForecastPanel(p: Props) {
           </fieldset>
 
           <fieldset>
-            <legend className="mb-1.5 text-[12px] font-medium uppercase tracking-wider text-ink-3">Valid day</legend>
+            <legend className="mb-1.5 text-[13px] font-medium text-ink-3">Valid day</legend>
             <div role="radiogroup" className="grid grid-cols-4 gap-1">
               {CHARM_LEADS.map((l) => {
                 const lyr = charmLayer(p.manifest, p.variable, l);
@@ -91,7 +91,7 @@ export function ForecastPanel(p: Props) {
                       active ? "border-forecast/70 bg-surface-3" : "border-hairline bg-surface-2 hover:border-hairline-strong"
                     }`}
                   >
-                    <span className="block text-[12px] font-medium uppercase tracking-wide text-ink-3">{leadLabel(l)}</span>
+                    <span className="block text-[13px] font-medium text-ink-3">{leadLabel(l)}</span>
                     <span className="block text-[13px] font-semibold text-ink tabular">
                       {lyr?.time.valid_date ? formatDate(lyr.time.valid_date).replace(/^\w+, /, "") : "—"}
                     </span>
@@ -189,7 +189,7 @@ export function Caveats({ layer }: { layer: LayerArtifact }) {
   return (
     <div className="space-y-2">
       <div data-testid="forecast-caveats" className="rounded-lg border border-hairline bg-surface-2/60 px-3 py-2 text-[13px] leading-snug text-ink-2">
-        <p className="mb-1 text-[12px] font-medium uppercase tracking-wider text-ink-3">Read before using</p>
+        <p className="mb-1 text-[13px] font-medium text-ink-3">Read before using</p>
         <ul className="list-disc space-y-1 pl-4">
           {layer.caveats.map((c) => (
             <li key={c}>{c}</li>

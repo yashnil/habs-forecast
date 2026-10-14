@@ -30,9 +30,9 @@ test.describe("My Coast", () => {
     await expect(geo.getByTestId("coast-notice-cdph-2026-sn26-020-razor-clam-del-norte")).toContainText("Inside the agency's outline of Del Norte County");
     await expect(geo.getByTestId("coast-notice-cdph-rock-crab-viscera-north-coast-nci")).toContainText("Inside the notice's official latitudes");
     for (const n of await page.getByTestId("coast-notice-review").all()) await expect(n).toHaveText("Match to these waters not reviewed");
-    await expect(page.getByTestId("coast-glance")).toContainText("not verified");
+    await expect(page.getByTestId("brief-verification")).toHaveText("Not verified");
     await expect(page.getByTestId("coast-measured-none")).toContainText("No monitoring station within 40 km");
-    await expect(page.getByTestId("glance-measured")).toContainText("No toxin measurement within 40 km");
+    await expect(page.getByTestId("cond-toxin")).toContainText("No sample within 40 km");
     await expect(page.getByTestId("coast-model")).toContainText("C-HARM v3.1");
     await expect(page.getByTestId("coast-region-northern")).toContainText("Northern region");
     await expect(page.getByTestId("coast-unknowns")).toContainText("no person has reviewed these associations");
@@ -45,7 +45,7 @@ test.describe("My Coast", () => {
     await expect(pda).toBeVisible();
     // Santa Cruz's own cell has no C-HARM value: the section and the summary lead with that
     await expect(page.getByTestId("coast-model-none")).toContainText("No C-HARM forecast for these waters");
-    await expect(page.getByTestId("glance-model")).toContainText("No C-HARM forecast for these waters");
+    await expect(page.getByTestId("cond-forecast")).toContainText("No toxin forecast for these waters");
     await expect(pda.getByTestId("coast-model-here")).toContainText("No forecast for these waters");
     // the nearest value is set apart, with its distance, the cell's location and its valid date
     const nearest = pda.getByTestId("coast-model-nearest");
@@ -83,7 +83,7 @@ test.describe("My Coast", () => {
     await page.goto(`${OK}/coast?place=port-605`);
     const un = page.getByTestId("coast-notices-unresolved");
     await expect(un.getByTestId("coast-notice-cdph-rock-crab-viscera-north-coast-nci")).toContainText("gives no boundary for those waters");
-    await expect(page.getByTestId("glance-official")).toContainText("may apply (unresolved)");
+    await expect(page.getByTestId("brief-unresolved")).toContainText("Do not eat rock crab internal organs");
     await expect(page.getByTestId("coast-notices-geo").getByTestId("coast-notice-cdph-nci-bivalve-special-advisory")).toHaveCount(0);
     await assertNoUnsafeClaims(page);
   });
@@ -98,6 +98,10 @@ test.describe("My Coast", () => {
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/coast\?place=port-550$/);
     await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
+    // once waters are chosen, the picker is one tap away, after the answer
+    await expect(page.getByTestId("place-input")).toHaveCount(0);
+    await page.getByTestId("coast-change").click();
+    await expect(page.getByTestId("place-input")).toBeFocused();
     await page.getByTestId("place-input").fill("Clam");
     await page.getByTestId("place-option-site-clam-beach").click();
     await expect(page).toHaveURL(/place=site-clam-beach/);
@@ -119,7 +123,7 @@ test.describe("My Coast", () => {
 
   test("the fishing filter folds other notices without hiding them, and keeps the link", async ({ page }) => {
     await open(page, `${OK}/coast?place=port-201`);
-    await page.getByTestId("coast-for-commercial").click();
+    await page.getByTestId("coast-audience").selectOption("commercial");
     await expect(page).toHaveURL(/for=commercial/);
     await expect(page.getByTestId("coast-notices-other")).toContainText("more for other kinds of fishing");
     const total = await page.locator('[data-testid^="coast-notice-"][data-tier]').count();
@@ -167,7 +171,7 @@ test.describe("My Coast", () => {
     if (await link.count()) await expect(link).toHaveAttribute("href", "/coast?place=port-593");
   });
 
-  test("phone: the summary is on the first screen, no sideways scroll, and every tab fits at 320 px", async ({ browser }) => {
+  test("phone: the official status is on the first screen, no sideways scroll, and every tab fits at 320 px", async ({ browser }) => {
     for (const width of [390, 320]) {
       const ctx = await browser.newContext({ viewport: { width, height: width === 320 ? 640 : 844 }, isMobile: true, hasTouch: true });
       const page = await ctx.newPage();
@@ -175,7 +179,7 @@ test.describe("My Coast", () => {
       const m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, vw: document.documentElement.clientWidth }));
       expect(m.sw).toBeLessThanOrEqual(m.vw);
       if (width === 390) {
-        const g = (await page.getByTestId("coast-glance").boundingBox())!;
+        const g = (await page.getByTestId("brief-official-headline").boundingBox())!;
         const tab = (await page.getByTestId("tabbar").boundingBox())!;
         expect(g.y + g.height).toBeLessThanOrEqual(tab.y + 1);
       }
@@ -194,8 +198,11 @@ test.describe("My Coast", () => {
       const page = await ctx.newPage();
       await open(page, `${OK}/coast?place=port-201`);
       await expect(page.getByTestId("coast-model-pda").or(page.getByTestId("coast-model-error"))).toBeVisible();
+      // the answer line cross-fades when the model's reading arrives: check it once it has settled
+      await expect(page.getByTestId("answer-model")).not.toContainText("Reading");
+      await page.waitForTimeout(600);
       const r = await new AxeBuilder({ page }).exclude(".maplibregl-canvas").analyze();
-      expect(r.violations.map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
+      expect(r.violations.map((v) => `${v.id}: ${v.nodes.length} ${v.nodes.map((n) => n.html.slice(0, 140)).join(" | ")}`)).toEqual([]);
       await ctx.close();
     });
   }

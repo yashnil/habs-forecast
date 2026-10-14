@@ -93,7 +93,8 @@ test.describe("mobile shell", () => {
       const bar = page.getByTestId("tabbar");
       await expect(bar).toBeVisible();
       await expect(page.getByRole("navigation", { name: "Primary" }).filter({ visible: true })).toHaveCount(1);
-      if (name !== "sources") await expect(page.getByTestId(`tab-${name}`)).toHaveAttribute("aria-current", "page");
+      // About and the sources are in the masthead menu, not tabs (five tabs)
+      if (name !== "sources" && name !== "about") await expect(page.getByTestId(`tab-${name}`)).toHaveAttribute("aria-current", "page");
       await expect(page.getByTestId("tab-notices")).toContainText(String(active.length));
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
       await page.getByTestId("tab-notices").click();
@@ -112,12 +113,22 @@ test.describe("mobile shell", () => {
   test("map: the layer dock and the port sheet sit above the tab bar", async ({ page }) => {
     await open(page, `${OK}/`);
     const bar = await page.getByTestId("tabbar").boundingBox();
-    // the layer dock is the sheet's content (it scrolls inside it): the sheet is what must clear the bar
-    const dock = await page.getByTestId("mobile-sheet").boundingBox();
-    expect(dock!.y + dock!.height).toBeLessThanOrEqual(bar!.y + 1);
+    // the layer dock is the sheet's content (it scrolls inside it): the sheet is what must clear the
+    // bar. The sheet slides (transform-only) inside the map, which clips it: what shows is the part
+    // above the map's bottom edge, and that edge is at or above the tab bar.
+    const map = (await page.getByTestId("map").boundingBox())!;
+    expect(map.y + map.height).toBeLessThanOrEqual(bar!.y + 1);
+    const visibleBottom = async () => {
+      const s = (await page.getByTestId("mobile-sheet").boundingBox())!;
+      return { top: s.y, bottom: Math.min(s.y + s.height, map.y + map.height) };
+    };
+    let v = await visibleBottom();
+    expect(v.bottom).toBeLessThanOrEqual(bar!.y + 1);
+    expect(v.top).toBeLessThan(bar!.y - 100);
     await open(page, `${OK}/?region=monterey_bay&port=593`);
-    const sheet = await page.getByTestId("mobile-sheet").boundingBox();
-    expect(sheet!.y + sheet!.height).toBeLessThanOrEqual(bar!.y + 1);
+    v = await visibleBottom();
+    expect(v.bottom).toBeLessThanOrEqual(bar!.y + 1);
+    expect(v.top).toBeLessThan(bar!.y - 100);
     await expect(page.getByTestId("sheet-handle")).toBeVisible();
   });
 });

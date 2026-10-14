@@ -8,7 +8,7 @@ import { AGENCY_LINKS, COAST_COPY } from "@/content/coast";
 import { FORECAST_COPY, OFFICIAL_STATUS } from "@/content/copy";
 import { ACTION_LABEL, currentRecords, type Verification } from "@/lib/official";
 import { AUDIENCE, cdfwRegionsAt, type Association } from "@/lib/applicability";
-import { AUDIENCES, ageDays, ageWords, availability, RECENCY_LABEL, recency, type Audience, type Availability, type CoastPlace, type StationNear } from "@/lib/coast";
+import { ageDays, ageWords, availability, RECENCY_LABEL, recency, type Audience, type Availability, type CoastPlace, type StationNear } from "@/lib/coast";
 import { CHARM_LEADS, artifactUrl, charmLayer, leadLabel } from "@/lib/layers";
 import { loadGrid } from "@/lib/grid";
 import { classifyTime } from "@/lib/freshness";
@@ -19,6 +19,7 @@ import { SatelliteNear, type SatelliteResult } from "@/components/map/SatelliteN
 import { CurrentsNear } from "@/components/map/CurrentsNear";
 import { useRegistryDisclosure } from "@/components/shell/OfficialShell";
 import { currentsHourly } from "@/lib/currents";
+import { Mark } from "@/components/ui/Mark";
 
 // ---------------------------------------------------------------- shared bits
 
@@ -47,7 +48,7 @@ function NoticeItem({ a, muted = false }: { a: Association; muted?: boolean }) {
   const src = r.sources[0];
   return (
     <li className={`border-t border-official-line/60 py-3 first:border-t-0 first:pt-0 ${muted ? "opacity-[0.92]" : ""}`} data-testid={`coast-notice-${r.id}`} data-tier={a.tier}>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] font-semibold uppercase tracking-[0.06em]">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium">
         <span className="rounded border border-official-line px-1.5 py-px text-official-ink">{r.agency}</span>
         <span className="text-official-ink">{ACTION_LABEL[r.action]}</span>
         <span className="text-ink-2">{AUDIENCE[r.fishery].label}</span>
@@ -94,14 +95,12 @@ export function OfficialSection({
   audience,
   place,
   verification,
-  onAudience,
 }: {
   official: OfficialDataset | null;
   assocs: Association[];
   audience: Audience;
   place: CoastPlace;
   verification: Verification | null;
-  onAudience: (a: Audience) => void;
 }) {
   const fits = (a: Association) => audience === "all" || AUDIENCE[a.record.fishery].groups.includes(audience);
   // a notice an agency release appears to lift is set apart, never listed as applying
@@ -118,34 +117,15 @@ export function OfficialSection({
   return (
     <section aria-labelledby="coast-official-h" className="space-y-4" data-testid="coast-official">
       <SectionHead id="coast-official-h" kind="official" title="Official information" aside={<VerificationBadge v={verification} />} />
-      <div className="space-y-1.5">
-        <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-ink-3" id="coast-for-h">
-          Show notices for
-        </p>
-        <div role="group" aria-labelledby="coast-for-h" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" data-testid="coast-audience">
-          {AUDIENCES.map((x) => (
-            <button
-              key={x.id}
-              type="button"
-              aria-pressed={audience === x.id}
-              onClick={() => onAudience(x.id)}
-              className={`min-h-[40px] shrink-0 rounded-full border px-3.5 text-[14px] ${audience === x.id ? "border-navy-900 bg-navy-900 text-white" : "border-hairline-strong bg-surface text-ink-2 hover:border-ink-3"}`}
-              data-testid={`coast-for-${x.id}`}
-            >
-              {x.label}
-            </button>
-          ))}
-        </div>
-      </div>
       <p className="text-[14px] text-ink-2">{COAST_COPY.unreviewed} The notices themselves are transcribed from the agencies&apos; pages and not verified.</p>
       {reg.changed && (
-        <p className="rounded-lg bg-official-bg px-3 py-2 text-[14px] text-official-ink" role="note" data-testid="coast-registry-changed">
+        <p className="rounded-lg border border-hairline border-l-[3px] border-l-official-line bg-surface px-3 py-2 text-[14px] text-official-ink" role="note" data-testid="coast-registry-changed">
           {reg.reason} A notice may have been issued or lifted since; the agency pages below decide.
         </p>
       )}
       {disputed.length > 0 && (
         <div className="rounded-2xl border-2 border-dashed border-warning/60 bg-surface px-4 py-4 sm:px-5" data-testid="coast-notices-disputed" role="note">
-          <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-warning">Reported lifted by the agency · awaiting review</h3>
+          <h3 className="text-[13.5px] font-semibold text-warning">Reported lifted by the agency · awaiting review</h3>
           <p className="mt-1 text-[14px] text-ink-2">
             The agency has published a release that appears to lift {disputed.length === 1 ? "this notice" : "these notices"}. Until a person reviews it, CoastWatch does not show {disputed.length === 1 ? "it" : "them"} as in effect. Read the release.
           </p>
@@ -167,8 +147,8 @@ export function OfficialSection({
       {!official ? (
         <p className="text-[15px] text-ink-2">The list of official notices is unavailable right now. Check CDFW and CDPH directly (below).</p>
       ) : (
-        <div className="rounded-2xl border border-official-line bg-official-bg px-4 py-4 sm:px-5">
-          <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-official-ink">Apply here by their official geography</h3>
+        <div className="rounded-2xl border border-hairline border-l-[3px] border-l-official-line bg-surface px-4 py-4 sm:px-5">
+          <h3 className="cw-kind text-[13.5px] font-semibold text-official-ink"><Mark kind="official" />Apply here by their official geography</h3>
           {geoFit.length ? (
             <ul className="mt-3" data-testid="coast-notices-geo">
               {geoFit.map((a) => (
@@ -198,7 +178,7 @@ export function OfficialSection({
 
       {unresolved.length > 0 && (
         <div className="rounded-2xl border border-official-line/70 bg-surface px-4 py-4 sm:px-5" data-testid="coast-notices-unresolved">
-          <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-official-ink">May apply: not settled by their official geography</h3>
+          <h3 className="cw-kind text-[13.5px] font-semibold text-official-ink"><Mark kind="official" />May apply: not settled by their official geography</h3>
           <p className="mt-1 text-[14px] text-ink-2">Their stated area does not show whether they cover these waters. Check each notice&apos;s agency source before fishing or harvesting here.</p>
           <ul className="mt-3">
             {unresolved.map((a) => (
@@ -460,13 +440,13 @@ function AvailRow({ title, threshold, a, valid }: { title: string; threshold: st
             <b className="font-semibold">No forecast for these waters.</b> <span className="text-ink-2">The model has no value in the cell that contains them.</span>
           </p>
           {a.nearest && (
-            <div className="mt-2 rounded-lg bg-model-bg/60 px-3 py-2.5 text-[14px]" data-testid="coast-model-nearest">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-model-ink">Nearest cell with a value: not a forecast for these waters</p>
+            <div className="mt-2 rounded-lg border border-hairline px-3 py-2.5 text-[14px]" data-testid="coast-model-nearest">
+              <p className="cw-kind text-model-ink"><Mark kind="model" />Nearest cell with a value: not a forecast for these waters</p>
               <p className="mt-1 text-ink-2">
                 <span className="font-semibold text-ink tabular">{fmtPct(a.nearest.value)}</span> at the cell centred {a.nearest.km.toFixed(1)} km {a.nearest.bearing} of here (
                 <span className="tabular">{fmtCell(a.nearest.cell.lat, a.nearest.cell.lon)}</span>){valid ? `, valid ${valid}` : ""}.
               </p>
-              <p className="mt-1 text-ink-3">It describes that 3 km cell of open water only. Conditions at the shore, in harbors and at piers can differ, and C-HARM does not model them.</p>
+              <p className="mt-1 text-ink-3">It describes that 3 km ocean cell only. Conditions at the shore, in harbors and at piers can differ, and C-HARM does not model them.</p>
             </div>
           )}
         </>

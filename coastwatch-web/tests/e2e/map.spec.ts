@@ -135,7 +135,7 @@ test.describe("values and georeferencing", () => {
     expect(rows).toHaveLength(3);
     await open(page, `${OK}/?var=particulate_domoic&lead=1&inspect=36.80,-121.95`);
     const insp = page.getByTestId("inspector").first();
-    await expect(insp).toContainText("valid Thu, Oct 8, 2026");
+    await expect(insp).toContainText("for Thu, Oct 8, 2026");
     for (const r of rows) {
       const variable = r.layer_id.replace(/^charm_/, "").replace(/_lead\d$/, "");
       await expect(insp.getByTestId(`inspect-value-${variable}`)).toHaveText(`${(r.grid_value * 100).toFixed(0)}%`);
