@@ -256,7 +256,7 @@ def build_corpus(snap: Snapshot) -> dict[str, Evidence]:
         text=("Offline research, 2003–2021 MODIS 4 km 8-day composites; not used by CoastWatch. On the same evaluation "
               "pipeline the physics-informed model (PINN) matches but does not beat the ConvLSTM: test RMSE 0.801 vs 0.801 "
               "ln(mg/m³), against 0.889 for persistence (about 9.9% skill). It forecasts chlorophyll (biomass), not toxin. "
-              "An internal audit of the evaluation protocol is in progress (research/pinn_audit)."),
+              "An internal audit of the evaluation protocol awaits the author's review (research/pinn_audit)."),
         source_url="https://doi.org/10.33422/ccgconf.v2i2.1619")
     return ev
 

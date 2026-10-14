@@ -5,10 +5,9 @@
 - No original file was edited; the scripts import `pinn/*.py` unchanged.
 - No checkpoint in `~/HAB_Models` was written.
 
-**Status (2026-10-13).**
+**Status (2026-10-14).**
 
-- §1 and §2 are complete.
-- §3, the controlled retraining, is running. Its results replace the "pending" rows when it finishes.
+- §1–§3 are complete: 12 controlled runs (4 arms × 3 seeds) finished on 2026-10-14.
 - Nothing here has been reviewed by the author.
 - Numbers in this file come from `results/`. They are research diagnostics, not CoastWatch forecasts.
 
@@ -30,6 +29,8 @@
    - The physics residual is about 1e-8, against a data loss of about 0.3. Even at the λ clamp of 1000, physics contributes about 3e-5 of the loss.
    - κ never moves from its initial value; the change is at the level of weight decay.
    - So "optimal λ=5, κ=100" is an artefact of run order, and "PINN matches ConvLSTM" is true for the trivial reason that they are almost the same objective.
+   - The controlled retraining (§3) confirms this directly. With the physics term on and off, the same-seed test RMSE is identical to 5 decimals in all 3 seeds.
+   - Across 12 runs, the seed-to-seed spread (sd 0.005–0.008) is as large as the gap between the published checkpoints.
 5. **Several reported analyses are not what they are described as:**
    - the imputation table (§4.4);
    - the lead-time table (§4.2);
@@ -78,7 +79,7 @@ Test-period differences, from a moving-block bootstrap (blocks of 6 composites, 
 | PINN checkpoint − ConvLSTM checkpoint (as trained) | −0.007 | [−0.012, −0.002] |
 | Climatology AR(1) − persistence | −0.127 | [−0.152, −0.104] |
 
-The PINN-checkpoint advantage compares two *different single training runs*. They differ in dropout, κ, λ and RNG state as well as physics. §3 tests whether it survives a controlled comparison. Until then it must not be quoted as a PINN advantage.
+The PINN-checkpoint advantage compares two *different single training runs*. They differ in dropout, κ, λ and RNG state as well as physics. It does not survive the controlled comparison in §3: physics changes nothing, and seed variance alone is sd ≈ 0.005. It must not be quoted as a PINN advantage.
 
 ## 2. Code audit findings
 
@@ -101,7 +102,7 @@ Each finding is verified in code or artefacts unless marked *suspected*.
 | A13 | **Truth is cleaned with whole-record thresholds.** The outlier threshold and 3×3 median replacement use the whole record, including test targets. | `convLSTM/scrub_outliers.py:42-66` | Disclose it, or use a train-only threshold. It affects model and persistence equally. |
 | A14 | **The evaluated cube has no temporal gaps** inside the ocean footprint: 1,626 pixels × 845 steps, all finite. The step that gap-filled `log_chl` is not in `new_ds/`. | `summary.json` (`n_masked_nan_last: 0`) | README §2–§4 describes "native MODIS gaps". The evaluation actually scores gap-filled values as truth, and that should be stated. |
 
-## 3. Controlled retraining (running)
+## 3. Controlled retraining (complete)
 
 **Design.** This was set before the results.
 
@@ -111,12 +112,38 @@ Each finding is verified in code or artefacts unless marked *suspected*.
 - Scored on the full grid, with no bias correction, using the forecast each arm was trained to produce.
 - The reimplemented loss was checked against the original `train_one` on the same batch; the difference is exactly 0.
 
-| Arm | Test RMSE (mean ± sd, 3 seeds) | Val | Notes |
-|---|---|---|---|
-| λ=0, z-anchor (ConvLSTM as published) | pending | | |
-| λ adaptive, z-anchor (PINN as published) | pending | | |
-| λ=0, raw anchor | pending | | |
-| λ adaptive, raw anchor | pending | | |
+Source: `results/controlled/*.json` and `results/controlled/SUMMARY.md`, from `summarize_controlled.py`. Scores are full-grid RMSE in ln(mg m⁻³).
+
+| Arm | Test RMSE (mean ± sd, 3 seeds) | Per seed (0, 1, 2) | Val RMSE | Epochs run |
+|---|---|---|---|---|
+| λ=0, z-anchor (ConvLSTM as published, with dropout) | 0.7692 ± 0.0054 | 0.7707, 0.7736, 0.7632 | 0.7330 ± 0.0067 | 28, 25, 31 |
+| λ adaptive, z-anchor (PINN as published) | 0.7692 ± 0.0054 | 0.7707, 0.7736, 0.7632 | 0.7330 ± 0.0067 | 28, 25, 31 |
+| λ=0, raw anchor | 0.7776 ± 0.0082 | 0.7847, 0.7685, 0.7795 | 0.7449 ± 0.0074 | 16, 25, 17 |
+| λ adaptive, raw anchor | 0.7776 ± 0.0082 | 0.7847, 0.7685, 0.7795 | 0.7449 ± 0.0074 | 16, 25, 17 |
+| *Reference: persistence* | 0.8889 | | 0.8543 | |
+| *Reference: climatology + AR(1) (§1)* | 0.7618 | | 0.7129 | |
+
+These are the paired same-seed differences in test RMSE.
+
+**Physics on − off:**
+- z anchor: 0.00000, 0.00000, 0.00000.
+- raw anchor: 0.00000, 0.00000, 0.00000.
+- In the z arms, physics was active from epoch 21 to the end (25–31). The largest physics loss logged was about 6e-8, against a supervised loss of about 0.3. κ stayed at 25.000.
+- Raw-anchor seeds 0 and 2 early-stopped before epoch 21. **Physics never switched on** in those runs.
+- The original protocol has the same property: any run that early-stops before epoch 21 is a plain ConvLSTM, whatever its label.
+
+**Raw anchor − z anchor:** +0.0140, −0.0050, +0.0163.
+
+**Outcomes:**
+- **H1 is confirmed, and in a stronger form:** the arms are identical, not merely within the seed spread. As implemented, the PINN is the ConvLSTM.
+- **H2 is not supported.**
+  - The raw anchor averages +0.008 worse, worse in 2 of 3 seeds.
+  - That is within the seed spread, and two raw runs stopped early.
+  - So a true residual on persistence gives no gain here.
+  - The z-anchor model learns its own persistence mapping, which acts like the damped persistence in the AR baselines.
+- **H3 is confirmed.**
+  - None of the 12 runs beats the climatology + AR(1) baseline: the best is 0.7632, the baseline 0.7618.
+  - The single best network run ties it.
 
 **Hypotheses, stated in advance:**
 
@@ -134,6 +161,7 @@ Each finding is verified in code or artefacts unless marked *suspected*.
    - Log the ratio of L_phys to L_sup.
    - Learn log κ with a sensible scale.
    - Then re-run λ and κ sweeps with reseeding and at least 3 seeds per setting.
+   - Start physics before early stopping can end training. Otherwise, check that it ever switched on.
 3. **Correct the record.** README §4.2–§4.4 and §5 need the changes above, and the paper may need an erratum for §4.1's skill and the ablation claims. That is the author's decision. Nothing here changes CoastWatch, which publishes no model forecasts from this research.
 4. **Provenance.**
    - Commit the code that produced the optimised checkpoint, or retrain it from committed code.
