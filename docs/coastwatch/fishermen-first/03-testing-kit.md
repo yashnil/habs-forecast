@@ -111,3 +111,40 @@ After each session, add every incident to one shared, coded sheet. Repeated inci
 | T-changed beats the current app on outcome and time for ≥4 of 5 participants, **and** ≥3 spontaneously describe missing a change | Justifies the change list. Consider an opt-in notification only after that. |
 | Participants rely on the hotline or colleagues and say they wouldn't check a website | Prioritise the printable or shareable dated briefing and the source links, not more features. |
 | The baseline is already ≤60 s to the right source for most participants | CoastWatch's value is in "what changed" and the gaps, not in finding status. Rethink I1/I2. |
+
+## 9. Consent sheet: draft for owner review (not used, nothing sent)
+
+> **CoastWatch usability session: what you're agreeing to**
+>
+> **Who we are.** CoastWatch is an independent research project, not a government agency. We do not make, enforce or report on fishing rules.
+>
+> **What happens.** For about 15 minutes you try a few tasks on a test copy of our website and tell us what you're thinking. The test copy shows a banner with its date and is **not current information**. Please don't use it to decide anything.
+>
+> **What we record.** Your role (for example "commercial crab"), a broad region (for example "North Coast"), how long tasks take, and what you say. **Audio or screen recording only if you tick the box below.** We do not ask for your name alongside your answers. We do not collect licence, permit or vessel numbers, where you fish, or your catch.
+>
+> **Payment.** [amount, to be approved] for your time, **whether or not you finish**. It doesn't depend on what you say.
+>
+> **Your choices.** You can skip any task, stop at any time, or ask us to delete your notes within 30 days, by giving the participant code on this sheet.
+>
+> **Who sees it.** The research team only. Published results describe what groups of people did ("4 of 6 participants…"), never who said what. Quotes are used only without anything that could identify you.
+>
+> **After the session.** If anything we showed you could be misread, we'll tell you the correct official sources before you leave: CDFW (831) 649-2883, CDPH (800) 553-4133.
+>
+> ☐ I agree to take part ☐ Audio recording OK ☐ Screen recording OK ☐ Quotes without identifying details OK
+> Participant code: P__ Date: ____
+
+**Data-handling plan (for review):**
+
+| Data | Where | Kept until | Who |
+|---|---|---|---|
+| Contact details (only to arrange the session and pay) | Kept apart from session notes; never in the repo | Deleted after payment, within 14 days | The person scheduling |
+| Consent sheet (code only, no name) | Locked folder or encrypted drive | End of the project + 1 year, or the IRB's rule if one applies | Research team |
+| Session notes, timings, quotes (code only) | Private, encrypted folder; never in the public repo | Until the analysis is published + 1 year | Research team |
+| Recordings (only if ticked) | Same private folder | Deleted after transcription and coding, within 60 days | Research team |
+| Published findings | The repo / PR | Permanent | Public; aggregated and coded only |
+
+**Before anyone is contacted** (all need the owner's approval):
+1. The incentive amount and how it is paid.
+2. The intermediaries named in §2.
+3. Whether a university or Sea Grant partner's IRB reviews the study.
+4. Who holds the contact list.
