@@ -165,6 +165,65 @@ class FixtureFetcher:
         src.close()
         return Response(url=url, status=200, content_type="application/x-netcdf", body=body)
 
+    def _ndbc(self, url: str) -> Response | None:
+        """HF radar from NOAA NDBC's THREDDS copy (hfradar_uswc_2km, OPeNDAP). The attributes are
+        NDBC's own (currents/ndbc.das, recorded 2026-10-14). Data responses are re-encoded from
+        the recorded ERDDAP region files in NDBC's form (packed Int16 at 0.01 m/s, fill -32767,
+        signed-byte site counts): the two servers hold the same values (checked on live hours,
+        see sources/currents.py), so a run from either fixture must publish the same fields."""
+        import io
+        import json
+        from datetime import datetime
+        from urllib.parse import unquote
+
+        import numpy as np
+        from scipy.io import netcdf_file
+
+        from .process.opendap import encode_dods
+
+        m = re.search(r"/thredds/dodsC/hfradar_uswc_2km\.(das|dods)(?:\?(.*))?$", url)
+        if not m:
+            return None
+        root = self.root / "currents"
+        if m.group(1) == "das":
+            return self._file(url, "currents/ndbc.das", "text/plain")
+        q = unquote(m.group(2) or "")
+        idx = json.loads((root / "index.json").read_text())
+        secs = [int(datetime.fromisoformat(t.replace("Z", "+00:00")).timestamp()) for t in idx["times"]]
+        axis = lambda name: np.array([float(x) for x in (root / f"{name}.csv").read_text().split()], dtype=np.float32)  # noqa: E731
+        if q in ("lat,lon", "time"):
+            arrays = [("lat", axis("latitude")), ("lon", axis("longitude"))] if q == "lat,lon" else [("time", np.array(secs))]
+            dds = "Dataset {\n" + "".join(f"    {'Int32' if n == 'time' else 'Float32'} {n}[{n} = {a.size}];\n" for n, a in arrays) + "} hfradar_uswc_2km;\n"
+            return Response(url=url, status=200, content_type="application/octet-stream", body=encode_dods(dds, arrays))
+        sel = re.findall(r"(\w+)\[(\d+):1:(\d+)\]\[(\d+):1:(\d+)\]\[(\d+):1:(\d+)\]", q)
+        if not sel:
+            raise FetchError(f"HTTP 400 for {url} (fixture supports index ranges only)")
+        k0, k1, i0, i1, j0, j1 = (int(x) for x in sel[0][1:])
+        reg = next((r for r in idx["regions"].values() if r["i0"] <= i0 and i1 <= r["i1"] and r["j0"] <= j0 and j1 <= r["j1"]), None)
+        if reg is None or k1 >= len(secs):
+            raise FetchError(f"HTTP 404 for {url} (outside the recorded fixture)")
+        src = netcdf_file(io.BytesIO((root / reg["file"]).read_bytes()), mmap=False)
+        cut = (slice(k0, k1 + 1), slice(i0 - reg["i0"], i1 - reg["i0"] + 1), slice(j0 - reg["j0"], j1 - reg["j0"] + 1))
+        names = {"u": "water_u", "v": "water_v", "hdop": "hdop", "number_of_sites": "number_of_sites"}
+        lat, lon, t = axis("latitude")[i0 : i1 + 1], axis("longitude")[j0 : j1 + 1], np.array(secs[k0 : k1 + 1])
+        decl, arrays = [], []
+        for name, *_ in sel:
+            var = src.variables[names[name]]
+            a = np.array(var.data)[cut]
+            fv = var._attributes.get("_FillValue")
+            if name == "number_of_sites":
+                packed, typ = a.astype(np.int8).view(np.uint8), "Byte"  # DAP2 bytes are unsigned
+            else:
+                bad = ~np.isfinite(a) | (np.isclose(a, float(fv)) if fv is not None else False)
+                packed, typ = np.where(bad, -32767, np.round(np.where(bad, 0, a) * 100)).astype(np.int32), "Int16"
+            shape = "".join(f"[{d} = {n}]" for d, n in zip(("time", "lat", "lon"), a.shape))
+            decl.append(f"    Grid {{\n     ARRAY:\n        {typ} {name}{shape};\n     MAPS:\n        Int32 time[time = {t.size}];\n        Float32 lat[lat = {lat.size}];\n        Float32 lon[lon = {lon.size}];\n    }} {name};\n")
+            arrays += [(name, packed), ("time", t), ("lat", lat), ("lon", lon)]
+        src.close()
+        dds = "Dataset {\n" + "".join(decl) + "} hfradar_uswc_2km;\n"
+        body = encode_dods(dds, arrays)
+        return Response(url=url, status=200, content_type="application/octet-stream", body=body)
+
     def _serve(self, url: str) -> Response:
         rec = self._recorded(url)
         if rec is not None:
@@ -172,7 +231,7 @@ class FixtureFetcher:
         sat = self._satellite(url)
         if sat is not None:
             return sat
-        cur = self._currents(url)
+        cur = self._currents(url) or self._ndbc(url)
         if cur is not None:
             return cur
         m = re.search(r"wvcharmV3_(\d)day\.csv0\?time", url)

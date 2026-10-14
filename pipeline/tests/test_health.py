@@ -29,9 +29,14 @@ def with_status(m: Manifest, source_id: str, outcome: str) -> Manifest:
     return m.model_copy(update={"sources": [s.model_copy(update={"outcome": outcome, "error": "HTTP Error 403" if outcome == "failed" else None}) if s.source_id == source_id else s for s in m.sources]})
 
 
+# The satellite fixtures were recorded 2026-10-01..07, after Sentinel-3B stopped (its last CI scene
+# is 2026-10-01): they hold Sentinel-3A only, so the one alert on them is that real outage.
+S3B_SILENT = "platform_silent:olci300:Sentinel-3B"
+
+
 def test_healthy_fixture_has_no_alerts(base):
     h = hl.evaluate(base, None, NOW)
-    assert h["alerts"] == [] and h["new_alerts"] == []
+    assert keys(h) == {S3B_SILENT} and h["new_alerts"] == [S3B_SILENT]
 
 
 def test_a_noaa_source_alerts_only_after_consecutive_failures(base):
@@ -99,15 +104,15 @@ def test_health_file_is_published_and_kept(tmp_path):
     out = tmp_path / "v1"
     run_pipeline(fixture_context(out))
     h = hl.run_health(out, None, NOW)
-    assert (out / hl.HEALTH_FILE).exists() and h["alerts"] == []
+    assert (out / hl.HEALTH_FILE).exists() and keys(h) == {S3B_SILENT}
     # survives the next run (not pruned) and carries the failure count forward
     refuse = lambda url: (_ for _ in ()).throw(FetchError(f"Failed after 4 attempts: {url} (HTTP Error 403: )"))  # noqa: E731
     run_pipeline(fixture_context(out, fetcher=FixtureFetcher(overrides={r"wvcharmV3_": refuse})))
     assert (out / hl.HEALTH_FILE).exists()
     h2 = hl.run_health(out, None, NOW + timedelta(hours=6))
-    assert h2["sources"]["charm"]["consecutive_failures"] == 1 and not h2["alerts"]
+    assert h2["sources"]["charm"]["consecutive_failures"] == 1 and keys(h2) == {S3B_SILENT}
     assert guard_publish_tree(tmp_path) == []
-    assert "All checks clear" in hl.markdown(h)
+    assert "All checks clear" in hl.markdown({**h, "alerts": [], "new_alerts": []}) and "[platform_silent]" in hl.markdown(h)
 
 
 def test_a_partly_failing_source_alerts_after_consecutive_runs(base):
@@ -115,8 +120,9 @@ def test_a_partly_failing_source_alerts_after_consecutive_runs(base):
     h = None
     for i in range(1, hl.MIN_CONSECUTIVE_FAILURES + 1):
         h = hl.evaluate(part, h, NOW + timedelta(hours=6 * i))
-    assert "source_degraded:satellite_chl" in keys(h)
-    assert "source_degraded:satellite_chl" not in keys(hl.evaluate(part, None, NOW))
+    # satellite chlorophyll alerts per product (product_failing), not as one degraded source
+    assert "product_failing:olci300" in keys(h) and "product_failing:viirs750" not in keys(h)
+    assert "product_failing:olci300" not in keys(hl.evaluate(part, None, NOW))
 
 
 
@@ -187,7 +193,8 @@ def test_no_success_for_too_long_alerts_by_time_even_when_runs_drift(base):
 def test_every_run_writes_a_freshness_and_coverage_table_with_the_sources_own_dates(base):
     h = hl.evaluate(base, None, NOW)
     f = h["freshness"]
-    assert set(f) == {s.source_id for s in base.sources}
+    assert {k for k in f if not k.startswith("satellite_chl:")} == {s.source_id for s in base.sources}
+    assert {"satellite_chl:olci300", "satellite_chl:viirs750"} <= set(f)  # each product its own row
     charm = f["charm"]
     assert charm["basis"] == "issued_date" and charm["newest_date"] == next(s.latest_issued_date for s in base.sources if s.source_id == "charm")
     assert 0 < charm["coverage"]["valid_fraction"] <= 1
@@ -219,3 +226,54 @@ def test_charm_still_declaring_snpp_after_the_end_of_snpp_data_is_flagged(base):
     after = datetime(2026, 11, 5, 18, 0, tzinfo=timezone.utc)
     assert "charm_input_ageing" in keys(hl.evaluate(snpp, None, after))
     assert "charm_input_ageing" not in keys(hl.evaluate(snpp, None, NOW))
+
+
+# ---------------------------------------------------------------- satellite products, each on its own
+def _sat_error(m: Manifest, error: str) -> Manifest:
+    return m.model_copy(update={"sources": [s.model_copy(update={"outcome": "partial", "error": error}) if s.source_id == "satellite_chl" else s for s in m.sources]})
+
+
+def test_a_failing_product_alerts_under_its_own_key_and_does_not_mask_the_other(base):
+    viirs_down = _sat_error(base, "VIIRS erdVHNchla1day: time listing failed: Failed after 4 attempts (HTTP Error 403: )")
+    h = None
+    for i in range(hl.MIN_CONSECUTIVE_FAILURES):
+        h = hl.evaluate(viirs_down, h, NOW + timedelta(hours=6 * i))
+    k = keys(h)
+    assert "product_failing:viirs750" in k and "product_failing:olci300" not in k
+    assert S3B_SILENT in k  # the OLCI platform alert is still reported beside the VIIRS one
+    assert not any(x.startswith("source_degraded:satellite_chl") for x in k)
+    rows = h["freshness"]
+    assert rows["satellite_chl:viirs750"]["outcome"] == "failed" and rows["satellite_chl:olci300"]["newest_date"]
+
+
+def test_viirs_is_stale_after_five_days_now_that_latency_is_measured(base):
+    newest = datetime.fromisoformat(next(lyr for lyr in base.layers if lyr.layer_id == "viirs750_chl_latest").time.observed_date + "T12:00:00+00:00")
+    assert hl.VIIRS_MAX_AGE_DAYS == 5
+    assert "satellite_stale:viirs750_chl_latest" in keys(hl.evaluate(base, None, newest + timedelta(days=6)))
+    assert "satellite_stale:viirs750_chl_latest" not in keys(hl.evaluate(base, None, newest + timedelta(days=5)))
+
+
+def test_a_platform_that_comes_back_clears(base):
+    h = hl.evaluate(base, None, NOW)
+    h["satellite_products"]["olci300"]["platform_last_seen"]["Sentinel-3B"] = "2026-10-07"
+    assert S3B_SILENT in h["alerts"][0]["key"]
+    assert S3B_SILENT not in keys(hl.evaluate(base, h, NOW + timedelta(hours=6)))
+
+
+def test_coverage_collapse_needs_a_history_and_a_real_drop(base):
+    lyr = next(x for x in base.layers if x.layer_id == "olci300_chl_latest")
+    frac = lyr.coverage.domain_observed_fraction
+    h = None
+    for i in range(hl.COVERAGE_MIN_RUNS):
+        h = hl.evaluate(base, h, NOW + timedelta(hours=6 * i))
+    assert "coverage_collapse:olci300" not in keys(h)
+    low = base.model_copy(update={"layers": [x.model_copy(update={"coverage": x.coverage.model_copy(update={"domain_observed_fraction": frac * 0.1})}) if x.layer_id == lyr.layer_id else x for x in base.layers]})
+    assert "coverage_collapse:olci300" in keys(hl.evaluate(low, h, NOW + timedelta(hours=30)))
+    assert "coverage_collapse:olci300" not in keys(hl.evaluate(low, None, NOW))  # no history: no alert
+
+
+def test_ports_without_any_chlorophyll_alert(base):
+    ports = [{"port_code": i, "chlorophyll": {"latest": None, "error": "satellite chlorophyll unavailable: HTTP 403"}} for i in range(22)]
+    assert "port_chl_empty" in keys(hl.evaluate(base, None, NOW, port_intel={"ports": ports}))
+    ports[3]["chlorophyll"] = {"latest": {"median": 1.2}}
+    assert "port_chl_empty" not in keys(hl.evaluate(base, None, NOW, port_intel={"ports": ports}))
