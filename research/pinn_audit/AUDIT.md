@@ -1,5 +1,15 @@
 # Audit and reproduction of the physics-guided chlorophyll forecasting study
 
+> **Standing of these findings (2026-10-14).** This audit found *possible serious methodological
+> issues* in the study. They come from a single automated audit and **require independent
+> reproduction** (by the author and by an outside reviewer) before any conclusion is drawn.
+> Until that happens:
+> - the published paper, its research claims and its experimental results are **not changed**;
+> - no number in this file replaces a published number;
+> - CoastWatch's production forecasts are not changed, and its public statement stays
+>   "the PINN matches, does not beat, the ConvLSTM";
+> - this branch (PR #49) is preserved as research and is not merged or deployed.
+
 **Scope.** I re-ran the existing checkpoints against the frozen data cube, read the experiment code, and retrained under one controlled protocol.
 
 - No original file was edited; the scripts import `pinn/*.py` unchanged.
