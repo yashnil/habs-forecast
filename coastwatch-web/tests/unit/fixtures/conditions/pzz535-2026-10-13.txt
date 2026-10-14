@@ -1,0 +1,50 @@
+Expires:202610141615;;059124
+FZUS56 KMTR 140333
+CWFMTR
+
+Coastal Waters Forecast for California
+National Weather Service San Francisco Bay Area
+833 PM PDT Tue Oct 13 2026
+
+Central California Coast from Point Arena to Point Piedras
+Blancas out to 60 NM, including Monterey Bay, Greater Farallones,
+and Cordell Bank National Marine Sanctuaries
+
+
+PZZ535-141615-
+Monterey Bay-
+833 PM PDT Tue Oct 13 2026
+
+.TONIGHT...NW wind 10 to 15 kt, becoming NE 5 to 10 kt after
+midnight. Seas 3 to 5 ft. Wave Detail: NW 4 ft at 7 seconds and S
+2 ft at 17 seconds. 
+.WED...NE wind around 5 kt, backing to W in the afternoon. Seas
+3 to 4 ft. Wave Detail: NW 3 ft at 7 seconds and S 2 ft at
+16 seconds. 
+.WED NIGHT...SW wind around 5 kt, backing to NE after midnight.
+Seas 3 to 4 ft. Wave Detail: NW 3 ft at 7 seconds. 
+.THU...NE wind 5 to 10 kt, becoming NW in the afternoon. Seas
+around 3 ft. Wave Detail: NW 3 ft at 7 seconds. 
+.THU NIGHT...NW wind 5 to 10 kt, veering to NE after midnight.
+Seas around 3 ft. Wave Detail: NW 3 ft at 6 seconds and SW 2 ft
+at 13 seconds.
+.FRI...NE wind 5 to 10 kt, becoming NW in the afternoon. Seas
+around 3 ft. Wave Detail: W 2 ft at 11 seconds. 
+.FRI NIGHT...NW wind around 5 kt, veering to NE after midnight.
+Seas around 3 ft. Wave Detail: W 2 ft at 7 seconds. 
+.SAT...NE wind around 5 kt, backing to W in the afternoon. Seas
+around 3 ft. Wave Detail: W 3 ft at 8 seconds. 
+.SAT NIGHT...NW wind 5 to 10 kt, veering to N after midnight.
+Seas 3 to 4 ft. Wave Detail: NW 4 ft at 9 seconds. 
+.SUN...N wind around 5 kt, becoming NW 10 to 15 kt in the
+afternoon. Seas 3 to 5 ft. Wave Detail: W 4 ft at 12 seconds and
+SW 2 ft at 17 seconds. 
+.SUN NIGHT...NW wind 20 to 25 kt, easing to 15 to 20 kt after
+midnight. Seas 4 to 6 ft. Wave Detail: W 5 ft at 11 seconds and
+SW 2 ft at 14 seconds.  
+
+Locally lower winds and seas across sheltered portions of the bay.
+
+
+$$
+

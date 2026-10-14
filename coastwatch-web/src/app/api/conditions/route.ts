@@ -13,6 +13,7 @@ import {
   type Conditions,
   type Part,
 } from "@/lib/conditions";
+import { headlineAlerts, parseCoastalText, zoneNear, zonePageUrl, zoneTextUrl } from "@/lib/nwsText";
 
 /**
  * Ocean conditions for one place, from NWS, NDBC and CO-OPS (see lib/conditions.ts).
@@ -25,8 +26,10 @@ import {
  *
  * NWS: api.weather.gov's robots.txt disallows every automated client, so its marine forecast and
  * alerts are fetched only where an operator has set CW_NWS_API=1 (tests set it, with recorded
- * responses). Otherwise the card links to NWS's own marine forecast pages; NDBC and CO-OPS, whose
- * rules allow it, are fetched as before.
+ * responses). Otherwise, for waters near a place CoastWatch knows, the zone's forecast and headlines
+ * are read from NWS's plain-text product on tgftp.nws.noaa.gov (no robots.txt; lib/nwsText.ts),
+ * unless CW_NWS_TEXT=0; elsewhere the card links to NWS's own marine forecast pages. NDBC and
+ * CO-OPS, whose rules allow it, are fetched as before.
  */
 export const dynamic = "force-dynamic";
 
@@ -97,7 +100,19 @@ async function marineParts(lat: number, lon: number): Promise<[Conditions["marin
   const source = "NOAA National Weather Service";
   if (process.env.CW_NWS_API !== "1") {
     const link: Part<never> = { status: "none", reason: "Read the marine forecast and any warnings for your waters on NWS's site.", source, url: NWS_MARINE_PAGE };
-    return [link, link];
+    const z = process.env.CW_NWS_TEXT === "0" ? null : zoneNear(lat, lon);
+    if (!z) return [link, link];
+    try {
+      const r = parseCoastalText(z.zone, (await get(zoneTextUrl(z.zone), "text")) as string);
+      if (!r) return [{ ...link, status: "unavailable", reason: `NWS's text product did not contain zone ${z.zone}.` }, link];
+      const fetchedAt = now().toISOString();
+      return [
+        { status: "ok", data: r.forecast, source, url: zonePageUrl(z.zone), fetchedAt },
+        { status: "ok", data: headlineAlerts(r.headlines, zonePageUrl(z.zone)), source, url: zonePageUrl(z.zone), fetchedAt },
+      ];
+    } catch (e) {
+      return [{ status: "unavailable", reason: `The NWS forecast did not load (${msg(e)}).`, source, url: zonePageUrl(z.zone) }, link];
+    }
   }
   let zones: { id: string; name: string }[];
   try {
