@@ -21,7 +21,7 @@ import {
   type SatProduct,
 } from "@/lib/layers";
 import { officialVerification, currentRecords } from "@/lib/official";
-import { useMode } from "@/lib/mode";
+import { readMode, useMode } from "@/lib/mode";
 import { openingLayer, type Opening } from "@/lib/opening";
 import { cellEdges, loadGrid } from "@/lib/grid";
 import type { StationLite } from "@/lib/data";
@@ -72,7 +72,8 @@ type Props = {
   initialParams: Record<string, string>;
 };
 
-const STATEWIDE: RegionDef = { id: "california", label: "All California", bounds: [[-125.9, 32.45], [-117.1, 42.05]] };
+// California's coastal waters, with room for the panels but not the open Pacific
+const STATEWIDE: RegionDef = { id: "california", label: "All California", bounds: [[-125.3, 32.45], [-117.1, 42.05]] };
 // Hand-set views tight on the coast that matters: every port in the region and the shelf off
 // it, with a little sea. Monterey Bay runs Año Nuevo to Point Sur.
 const VIEW: Record<string, [[number, number], [number, number]]> = {
@@ -652,7 +653,10 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
         } catch {
           // storage blocked: open as usual
         }
-        m.fitBounds(first ? STATEWIDE.bounds : initialRegion.bounds, { padding: padding(), duration: 0 });
+        // Coastal opens on the whole California coast unless a link names a region; Research keeps its region
+        const coastalHome = !deepLinked && readMode() === "coastal";
+        m.fitBounds(first || coastalHome ? STATEWIDE.bounds : initialRegion.bounds, { padding: padding(), duration: 0 });
+        if (coastalHome && !first) setRegion(STATEWIDE.id);
         const code = pendingFly.current;
         if (code != null) {
           pendingFly.current = null;
