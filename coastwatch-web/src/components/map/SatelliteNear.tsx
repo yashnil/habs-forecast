@@ -2,51 +2,87 @@
 
 import { useEffect, useState } from "react";
 import type { LayerArtifact, Manifest } from "@/generated/schema";
-import { CHLOROPHYLL_COPY } from "@/content/copy";
-import { sampleChunked, type ChunkedSample } from "@/lib/grid";
+import { CHL_NEAR_COPY, CHLOROPHYLL_COPY } from "@/content/copy";
+import { fmtChlValue as fmtV, readChlNear, type ChlNear } from "@/lib/chlNear";
 import { nativeLabel, satelliteLatest, type SatProduct } from "@/lib/layers";
 import { formatDate } from "@/lib/time";
-import { multiSensorLayer, multiSensorMembers, multiSensorPick, observedDate, type SensorObs } from "@/lib/multisensor";
+import { multiSensorLayer, multiSensorMembers, multiSensorPick, type SensorObs } from "@/lib/multisensor";
 
 /**
- * "Latest clear satellite view near here": the newest valid chlorophyll pixel at (or, if
- * cloud covers the point, within about 1 km of) a location, with the date that pixel was
- * observed. OLCI 300 m first; the VIIRS 750 m fallback only if OLCI is not published.
+ * "Latest clear satellite view near here": the newest valid chlorophyll pixel at a location or,
+ * if that pixel is missing (cloud, land) or set aside by the quality rules (lib/chlNear), the
+ * median of the clear water pixels within about 1.5 km, with their count, range and date.
+ * OLCI 300 m first; the VIIRS 750 m fallback only if OLCI is not published.
  */
-/** What the component found, for a summary elsewhere on the page (one rule, one answer). */
-export type SatelliteResult = { date: string; nearestKm: null } | { date: null; nearestKm: number | null } | null;
+export const NEAR_RADIUS_KM = 1.5;
+
+/** What the component found, for a summary elsewhere on the page (one rule, one answer):
+ *  the date of the headline value, and how far its nearest pixel is when it is not at the point. */
+export type SatelliteResult = { date: string; nearestKm: number | null } | { date: null; nearestKm: null; flagged: boolean } | null;
 type NearProps = { manifest: Manifest; baseUrl: string; lat: number; lon: number; place: string; onRead?: (r: SatelliteResult) => void };
 
 export function SatelliteNear(props: NearProps) {
   return multiSensorLayer(props.manifest) ? <MultiSensorNear {...props} /> : <SingleSensorNear {...props} />;
 }
 
+const result = (n: ChlNear | null): SatelliteResult =>
+  n && (n.kind === "at" || n.kind === "median") && n.date ? { date: n.date, nearestKm: n.kind === "median" ? n.nearest.km : null } : { date: null, nearestKm: null, flagged: n?.kind === "flagged" };
+
+/** How a neighbourhood headline was made, and pixels set aside next to it. */
+function Basis({ n }: { n: ChlNear }) {
+  return (
+    <>
+      {n.kind === "median" && (
+        <p className="text-[13px] text-ink-3" data-testid="satellite-near-basis">
+          {CHL_NEAR_COPY.basis({ n: n.n, radiusKm: n.radiusKm, min: n.min, max: n.max, nearestKm: n.nearest.km })}
+        </p>
+      )}
+      {(n.kind === "at" || n.kind === "median") && n.aside && (
+        <p className="text-[13px] text-ink-2" data-testid="satellite-near-aside">
+          {CHL_NEAR_COPY.aside(n.aside)}
+        </p>
+      )}
+      {!n.water && <p className="text-[13px] text-ink-3">{CHL_NEAR_COPY.noCoastline}</p>}
+    </>
+  );
+}
+
+function Flagged({ place, n }: { place: string; n: ChlNear }) {
+  return (
+    <>
+      <p className="text-[13px] text-ink-2" data-testid="satellite-near-flagged">
+        {CHL_NEAR_COPY.flagged(place, n.radiusKm)}
+      </p>
+      <Basis n={n} />
+    </>
+  );
+}
+
 function SingleSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearProps) {
   const olci = satelliteLatest(manifest, "olci300");
   const layer = olci ?? satelliteLatest(manifest, "viirs750");
   const product: SatProduct | null = olci ? "olci300" : layer ? "viirs750" : null;
-  const [s, setS] = useState<ChunkedSample | null | "error">(null);
+  const [s, setS] = useState<ChlNear | null | "error">(null);
 
   useEffect(() => {
     let cancelled = false;
     setS(null);
     if (!layer?.grid?.chunks) return;
-    const search = product === "olci300" ? 4 : 2; // about 1-1.5 km either way
-    sampleChunked(baseUrl, layer.grid, lat, lon, layer.composite?.age_grid ?? null, search)
+    readChlNear(baseUrl, layer, lat, lon, { radiusKm: NEAR_RADIUS_KM })
       .then((r) => !cancelled && setS(r))
       .catch(() => !cancelled && setS("error"));
     return () => {
       cancelled = true;
     };
-  }, [baseUrl, layer, lat, lon, product]);
+  }, [baseUrl, layer, lat, lon]);
 
-  const ref = layer?.composite?.reference_date;
-  const observed = s && s !== "error" && s.kind === "value" && ref && s.ageDays != null ? new Date(Date.parse(`${ref}T12:00:00Z`) - s.ageDays * 86400000).toISOString().slice(0, 10) : null;
   useEffect(() => {
     if (!onRead || s === null) return;
-    if (s === "error" || s.kind !== "value") onRead({ date: null, nearestKm: null });
-    else if (observed) onRead(s.nearest ? { date: null, nearestKm: s.distanceKm } : { date: observed, nearestKm: null });
-  }, [s, observed, onRead]);
+    if (s === "error") return onRead({ date: null, nearestKm: null, flagged: false });
+    // a value without a date is not summarised elsewhere (as before)
+    if ((s.kind === "at" || s.kind === "median") && !s.date) return;
+    onRead(result(s));
+  }, [s, onRead]);
   if (!layer) return null;
   return (
     <section data-testid="satellite-near" className="space-y-1.5" aria-labelledby="sat-near-h">
@@ -66,54 +102,56 @@ function SingleSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearPr
         <p className="text-[13px] text-ink-2" data-testid="satellite-near-none">
           No clear observation near {place} in the last {layer.composite?.window_days ?? 7} days. Cloud or fog, not low chlorophyll.
         </p>
+      ) : s.kind === "flagged" ? (
+        <Flagged place={place} n={s} />
       ) : (
-        <p className="text-[13px] text-ink-2">
-          <span className="text-[20px] font-semibold text-ink tabular" data-testid="satellite-near-value">
-            {s.value >= 10 ? s.value.toFixed(0) : s.value.toPrecision(2)}
-          </span>{" "}
-          mg/m³
-          {observed && (
-            <>
-              {" "}
-              · observed <span className="font-medium text-ink" data-testid="satellite-near-date">{formatDate(observed)}</span>
-            </>
-          )}
-          {s.nearest && <span className="text-ink-3"> · nearest clear pixel {s.distanceKm.toFixed(1)} km away</span>}
-        </p>
+        <>
+          <p className="text-[13px] text-ink-2">
+            <span className="text-[20px] font-semibold text-ink tabular" data-testid="satellite-near-value">
+              {fmtV(s.value)}
+            </span>{" "}
+            mg/m³
+            {s.date && (
+              <>
+                {" "}
+                · {s.kind === "median" ? "newest pixel observed" : "observed"} <span className="font-medium text-ink" data-testid="satellite-near-date">{formatDate(s.date)}</span>
+              </>
+            )}
+          </p>
+          <Basis n={s} />
+        </>
       )}
       <p className="text-[13px] text-ink-3">{CHLOROPHYLL_COPY.biomass}</p>
     </section>
   );
 }
 
-type Read = { obs: SensorObs; nearest: ChunkedSample | null };
-
-async function readMember(baseUrl: string, l: LayerArtifact | null, lat: number, lon: number, search: number): Promise<Read> {
-  if (!l?.grid?.chunks || !l.composite) return { obs: null, nearest: null };
-  const here = await sampleChunked(baseUrl, l.grid, lat, lon, l.composite.age_grid, 0);
-  if (here.kind === "value" && here.ageDays != null) return { obs: { value: here.value, date: observedDate(l.composite.reference_date, here.ageDays) }, nearest: null };
-  const near = await sampleChunked(baseUrl, l.grid, lat, lon, l.composite.age_grid, search);
-  return { obs: null, nearest: near.kind === "value" ? near : null };
+async function readMember(baseUrl: string, l: LayerArtifact | null, lat: number, lon: number): Promise<ChlNear | null> {
+  if (!l?.grid?.chunks || !l.composite) return null;
+  return readChlNear(baseUrl, l, lat, lon, { radiusKm: NEAR_RADIUS_KM });
 }
 
-const fmtV = (v: number) => (v >= 10 ? v.toFixed(0) : v.toPrecision(2));
+const atObs = (n: ChlNear | null): SensorObs => (n?.kind === "at" && n.date ? { value: n.value, date: n.date } : null);
+const nearObs = (n: ChlNear | null): SensorObs => (n?.kind === "median" && n.date ? { value: n.value, date: n.date } : null);
 
 /**
  * At a selected point: which sensor the multi-sensor map shows there, with that sensor's own
  * value, resolution and observation date, and what the other sensor has at the same place.
- * Values come from the members' published grids; the rule is the pipeline's.
+ * Values come from the members' published grids; the rule is the pipeline's. Where neither
+ * sensor has a usable pixel at the point, the same rule picks between the sensors' medians of
+ * the clear water pixels nearby.
  */
 function MultiSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearProps) {
   const layer = multiSensorLayer(manifest)!;
   const ms = layer.multisensor!;
   const [primary, secondary] = multiSensorMembers(manifest, layer);
   const labels = [...ms.members].sort((a, b) => a.order - b.order).map((m) => m.label);
-  const [r, setR] = useState<[Read, Read] | null | "error">(null);
+  const [r, setR] = useState<[ChlNear | null, ChlNear | null] | null | "error">(null);
 
   useEffect(() => {
     let cancelled = false;
     setR(null);
-    Promise.all([readMember(baseUrl, primary, lat, lon, 4), readMember(baseUrl, secondary, lat, lon, 2)])
+    Promise.all([readMember(baseUrl, primary, lat, lon), readMember(baseUrl, secondary, lat, lon)])
       .then((x) => !cancelled && setR(x))
       .catch(() => !cancelled && setR("error"));
     return () => {
@@ -121,16 +159,18 @@ function MultiSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearPro
     };
   }, [baseUrl, primary, secondary, lat, lon]);
 
-  const pick = r && r !== "error" ? multiSensorPick(r[0].obs, r[1].obs, ms.prefer_primary_within_days) : null;
-  const shown = r && r !== "error" && pick ? r[pick - 1].obs : null;
-  const other = r && r !== "error" && pick ? r[2 - pick].obs : null;
-  const nearest = r && r !== "error" && !pick ? (r[0].nearest ?? r[1].nearest) : null;
+  const ok = r && r !== "error" ? r : null;
+  const pick = ok ? multiSensorPick(atObs(ok[0]), atObs(ok[1]), ms.prefer_primary_within_days) : 0;
+  const pickNear = ok && !pick ? multiSensorPick(nearObs(ok[0]), nearObs(ok[1]), ms.prefer_primary_within_days) : 0;
+  const which = pick || pickNear;
+  const shown = ok && which ? ok[which - 1] : null;
+  const other = ok && pick ? atObs(ok[2 - pick]) : null;
+  const flagged = ok ? (ok.find((n) => n?.kind === "flagged") ?? null) : null;
   useEffect(() => {
     if (!onRead || r === null) return;
-    if (r === "error") onRead({ date: null, nearestKm: null });
-    else if (shown) onRead({ date: shown.date, nearestKm: null });
-    else onRead({ date: null, nearestKm: nearest && nearest.kind === "value" ? nearest.distanceKm : null });
-  }, [r, shown, nearest, onRead]);
+    if (r === "error") onRead({ date: null, nearestKm: null, flagged: false });
+    else onRead(shown ? result(shown) : { date: null, nearestKm: null, flagged: !!flagged });
+  }, [r, shown, flagged, onRead]);
   return (
     <section data-testid="satellite-near" className="space-y-1.5" aria-labelledby="sat-near-h">
       <div className="flex items-baseline justify-between gap-2">
@@ -143,31 +183,33 @@ function MultiSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearPro
         <p className="text-[13px] text-ink-3">Reading the satellite grids…</p>
       ) : r === "error" ? (
         <p className="text-[13px] text-ink-3">The satellite grids could not be read.</p>
-      ) : !pick || !shown ? (
-        <p className="text-[13px] text-ink-2" data-testid="satellite-near-none">
-          Neither sensor observed {place} in the last 7 days. Cloud or fog, not low chlorophyll.
-          {nearest && nearest.kind === "value" && (
-            <span className="text-ink-3"> Nearest clear pixel {nearest.distanceKm.toFixed(1)} km away: {fmtV(nearest.value)} mg/m³.</span>
-          )}
-        </p>
+      ) : !shown || (shown.kind !== "at" && shown.kind !== "median") ? (
+        flagged ? (
+          <Flagged place={place} n={flagged} />
+        ) : (
+          <p className="text-[13px] text-ink-2" data-testid="satellite-near-none">
+            Neither sensor observed {place} in the last 7 days. Cloud or fog, not low chlorophyll.
+          </p>
+        )
       ) : (
         <>
           <p className="text-[13px] text-ink-2">
             <span className="text-[20px] font-semibold text-ink tabular" data-testid="satellite-near-value">
               {fmtV(shown.value)}
             </span>{" "}
-            mg/m³ · observed <span className="font-medium text-ink" data-testid="satellite-near-date">{formatDate(shown.date)}</span>
+            mg/m³ · {shown.kind === "median" ? "newest pixel observed" : "observed"} <span className="font-medium text-ink" data-testid="satellite-near-date">{shown.date ? formatDate(shown.date) : "—"}</span>
           </p>
           <p className="text-[13px] text-ink-2" data-testid="satellite-near-sensor">
-            Shown: <span className="font-medium text-ink">{labels[pick - 1]}</span>
-            {pick === 2 && r[0].obs && <> (Sentinel-3&apos;s pixel here is older: {formatDate(r[0].obs.date)})</>}
-            {pick === 2 && !r[0].obs && <> (no Sentinel-3 observation here in 7 days)</>}
+            Shown: <span className="font-medium text-ink">{labels[which - 1]}</span>
+            {pick === 2 && atObs(ok![0]) && <> (Sentinel-3&apos;s pixel here is older: {formatDate(atObs(ok![0])!.date)})</>}
+            {pick === 2 && !atObs(ok![0]) && (ok![0]?.atPoint === "set-aside" ? <> (Sentinel-3&apos;s pixel here is not used: on land, right against the shore, or far out of line with the water around it)</> : <> (no Sentinel-3 observation here in 7 days)</>)}
           </p>
           {other && (
             <p className="text-[13px] text-ink-3" data-testid="satellite-near-other">
               {labels[2 - pick]} here: {fmtV(other.value)} mg/m³ · observed {formatDate(other.date)}
             </p>
           )}
+          <Basis n={shown} />
         </>
       )}
       <p className="text-[13px] text-ink-3">{CHLOROPHYLL_COPY.biomass}</p>

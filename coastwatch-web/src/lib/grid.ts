@@ -114,6 +114,35 @@ export async function chunkedCode(baseUrl: string, g: ValueGrid, row: number, co
   return codes[k.localRow * k.width + k.localCol];
 }
 
+/**
+ * Codes of a block of a chunked grid (rows r0..r1, cols c0..c1, inclusive), as a lookup by
+ * row and column. Each chunk the block touches is fetched once (and cached by `loadGrid`);
+ * cells outside the grid or in unwritten chunks read as nodata.
+ */
+export async function chunkedBlock(baseUrl: string, g: ValueGrid, r0: number, r1: number, c0: number, c1: number): Promise<(row: number, col: number) => number> {
+  if (!g.chunks) throw new Error("grid is not chunked");
+  const ch = g.chunks;
+  const nodata = g.nodata ?? 65535;
+  const [ra, rb] = [Math.max(0, r0), Math.min(g.height - 1, r1)];
+  const [ca, cb] = [Math.max(0, c0), Math.min(g.width - 1, c1)];
+  const loaded = new Map<string, Uint16Array>();
+  const jobs: Promise<void>[] = [];
+  for (let r = Math.floor(ra / ch.rows); r <= Math.floor(rb / ch.rows) && ra <= rb; r++)
+    for (let c = Math.floor(ca / ch.cols); c <= Math.floor(cb / ch.cols) && ca <= cb; c++) {
+      const key = `${r}_${c}`;
+      if (!ch.present.includes(key)) continue;
+      const url = `${baseUrl.replace(/\/$/, "")}/${ch.url_template.replace("{row}", String(r)).replace("{col}", String(c))}`;
+      jobs.push(loadGrid(url).then((codes) => void loaded.set(key, codes)));
+    }
+  await Promise.all(jobs);
+  return (row, col) => {
+    if (row < 0 || row >= g.height || col < 0 || col >= g.width) return nodata;
+    const k = chunkOf(g, row, col);
+    const codes = loaded.get(k.key);
+    return codes ? codes[k.localRow * k.width + k.localCol] : nodata;
+  };
+}
+
 export type ChunkedSample =
   | { kind: "value"; value: number; cell: Cell; distanceKm: number; nearest: boolean; ageDays: number | null }
   | { kind: "none"; cell: Cell | null };
