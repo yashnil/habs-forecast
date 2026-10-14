@@ -61,7 +61,7 @@ class Host:
     served_by: str
 
 
-ERDDAP = Host("erddap", DATASET, f"{SERVER}/griddap/{DATASET}.html", "NOAA CoastWatch West Coast (ERDDAP)")
+ERDDAP = Host("erddap", DATASET, f"{SERVER}/griddap/{DATASET}.html", "NOAA CoastWatch West Coast")
 NDBC = Host("ndbc", NDBC_DATASET, f"{NDBC_URL}.html", "NOAA National Data Buoy Center (THREDDS)")
 HOSTS = (ERDDAP, NDBC)
 
