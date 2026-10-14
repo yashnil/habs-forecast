@@ -121,10 +121,10 @@ def test_noaa20_fills_cells_on_monterey_and_the_files_are_kept_and_checked(tmp_p
     # a later run keeps the files a still-served manifest references, then prunes them
     run_pipeline(fixture_context(out))
     assert all(f.exists() for f in files)
-    # the S-NPP fallback was not asked while NOAA-21/NOAA-20 answered
+    # while NOAA-21/NOAA-20 are as new as S-NPP, S-NPP is only listed (is it newer?), never downloaded
     f = FixtureFetcher()
     run_pipeline(fixture_context(out, fetcher=f))
-    assert not [u for u in f.calls if SNPP in u]
+    assert all(".csv0?time" in u for u in f.calls if SNPP in u)
     # verification checks the layer against its own datasets and reports the platform
     rows = [r for r in verify_satellite(out, live=False)["rows"] if r["layer_id"] == "viirs750_chl_latest" and r.get("value") is not None]
     assert rows and {r["platform"] for r in rows} <= {"NOAA-21", "NOAA-20"}
@@ -215,7 +215,7 @@ def test_published_snpp_artifacts_keep_their_provenance(tmp_path):
 
 
 def test_viirs_health_threshold_follows_noaa_latency(tmp_path):
-    assert health.VIIRS_MAX_AGE_DAYS == 10
+    assert health.VIIRS_MAX_AGE_DAYS == 5  # NOAA-21/20 latency ~1.5 d (ERDDAP /files/, 2026-10-14)
     m = run_pipeline(fixture_context(tmp_path / "v1"))
     obs = datetime.fromisoformat(viirs(m).time.observed_date).date()
 
@@ -226,9 +226,9 @@ def test_viirs_health_threshold_follows_noaa_latency(tmp_path):
         only = m.model_copy(update={"layers": [fresh(lyr) if lyr.layer_id == "olci300_chl_latest" else lyr for lyr in m.layers]})
         return {a["key"] for a in health.evaluate(only, None, now)["alerts"]}
 
-    assert "satellite_stale:viirs750_chl_latest" not in keys(8)  # NOAA-20/21 were 8 days behind on 2026-10-13
-    assert "satellite_stale:viirs750_chl_latest" not in keys(10)
-    assert "satellite_stale:viirs750_chl_latest" in keys(11)
+    assert "satellite_stale:viirs750_chl_latest" not in keys(5)
+    # 6 days: the 2026-10-05..14 index freeze (9 days) would have alerted on day 6, not stayed silent
+    assert "satellite_stale:viirs750_chl_latest" in keys(6)
 
 
 # ---------------------------------------------------------------- port chlorophyll
@@ -319,20 +319,71 @@ def test_port_history_reuses_complete_windows_and_fetches_two_weeks(tmp_path):
     assert chl.history == a.history  # full fetch, same values
 
 
-def test_noaa_stays_primary_when_it_lags_more_than_a_week(tmp_path):
-    """Staging, 2026-10-13: NOAA-21/NOAA-20 newest 10-05, S-NPP newest 10-08. With a 7-day
-    window NOAA had no pass in reach and the S-NPP fallback became the layer. The VIIRS window
-    covers NOAA's latency, so NOAA-21 stays primary and S-NPP is not even asked."""
-    f = FixtureFetcher()
-    ctx = fixture_context(tmp_path / "v1", "2026-10-12T18:00:00Z", f)  # fixture NOAA days 10-01..04: 8-11 days old
+def _frozen(ds: str, last: str):
+    """ERDDAP's time listing for `ds` stuck at `last` (coastwatch.noaa.gov, 2026-10-05..14)."""
+    from coastwatch_pipeline.http import Response
+
+    def f(url):
+        if ds in url and ".csv0?" in url:
+            body = FixtureFetcher()(url).body.decode()
+            keep = [t for t in body.split() if t[:10] <= last]
+            if not keep:
+                return nothing_newer(url)
+            return Response(url, 200, "text/csv", ("\n".join(keep) + "\n").encode())
+        return FixtureFetcher()(url)
+
+    return f
+
+
+def test_a_newer_snpp_day_is_never_hidden_by_older_noaa_days_in_the_window(tmp_path):
+    """2026-10-05..14: NOAA-21/NOAA-20 listed nothing after 10-05 (an ERDDAP index freeze) while
+    S-NPP had 10-12; the NOAA-first rule published the 9-day-old NOAA view. The newer lineage wins."""
+    f = FixtureFetcher(overrides={r"noaacwN2[01]VIIRS": _frozen("VIIRSchlaSectorUSDaily", "2026-10-02")})
+    ctx = fixture_context(tmp_path / "v1", fetcher=f)
     res = sat.run(ctx, [])
     lyr = viirs(res)
-    assert lyr.platforms[:2] == ["VIIRS", "NOAA-21"] and lyr.provenance.dataset_id.startswith(N21)
-    assert lyr.composite.window_days == sat.VIIRS_WINDOW_DAYS == 10
-    assert lyr.composite.oldest_observed_date >= "2026-10-02"
-    assert max(b.age_days for b in lyr.composite.age_histogram) <= 10
-    assert abs(sum(b.fraction for b in lyr.composite.age_histogram) - 1) < 1e-3
-    assert not [u for u in f.calls if SNPP in u]
-    # OLCI keeps its own 7-day window
-    olci = next(x for x in res.layers if x.layer_id == "olci300_chl_latest")
-    assert olci.composite.window_days == sat.WINDOW_DAYS == 7
+    assert lyr.platforms == ["VIIRS", "S-NPP"] and lyr.provenance.dataset_id == SNPP
+    assert lyr.time.observed_date == "2026-10-04" and "platform_grid" not in lyr.provenance.upstream_metadata
+    assert any("S-NPP composite has a newer day (2026-10-04) than NOAA-21/NOAA-20 (2026-10-02)" in n for n in res.notes)
+
+
+def test_on_the_same_newest_day_noaa21_stays_primary_and_snpp_scenes_are_not_fetched(tmp_path):
+    f = FixtureFetcher()
+    res = sat.run(fixture_context(tmp_path / "v1", fetcher=f), [])
+    lyr = viirs(res)
+    assert lyr.platforms[:2] == ["VIIRS", "NOAA-21"] and lyr.time.observed_date == "2026-10-04"
+    snpp_calls = [u for u in f.calls if SNPP in u]
+    assert snpp_calls and all(".csv0?time" in u for u in snpp_calls)  # S-NPP only listed, never downloaded
+
+
+def test_the_viirs_window_is_seven_days_like_olci(tmp_path):
+    """At 2026-10-12 the fixture days (10-01..04) are 8-11 days old: outside the window for both
+    lineages, so nothing new is published and nothing older than 7 days fills the layer."""
+    ctx = fixture_context(tmp_path / "v1", "2026-10-12T18:00:00Z", FixtureFetcher())
+    res = sat.run(ctx, [])
+    assert viirs(res) is None and sat.VIIRS_WINDOW_DAYS == sat.WINDOW_DAYS == 7
+
+
+def test_port_a_lagging_noaa_summary_never_hides_a_newer_snpp_composite(tmp_path, monkeypatch):
+    from datetime import date
+
+    _, coll = _ports(tmp_path / "v0")
+    lat, lon = _port(coll, "Monterey").lat, _port(coll, "Monterey").lon
+    f = FixtureFetcher()
+    ctx = fixture_context(tmp_path / "v1", fetcher=f)  # 2026-10-08: lagging means centred before 09-30
+    real = port_intel.chlorophyll_jpss
+
+    def lagging(*a, **kw):  # NOAA's index frozen: newest complete window 09-25
+        chl, errs = real(*a, **kw)
+        chl.latest_center_date = "2026-09-25"
+        return chl, errs
+
+    monkeypatch.setattr(port_intel, "chlorophyll_jpss", lagging)
+    chl = port_intel.chlorophyll_near(ctx, lat, lon, date(2026, 10, 8))
+    assert chl.dataset_id == "erdVHNchla8day" and chl.latest_center_date == "2026-10-01"
+    monkeypatch.setattr(port_intel, "chlorophyll_jpss", real)
+    # not lagging (centred 10-01): NOAA-21/NOAA-20 stays and S-NPP is not even asked
+    f.calls.clear()
+    chl = port_intel.chlorophyll_near(ctx, lat, lon, date(2026, 10, 8))
+    assert chl.dataset_id.startswith(N21) and chl.latest_center_date == "2026-10-01"
+    assert not [u for u in f.calls if "erdVHNchla8day" in u]

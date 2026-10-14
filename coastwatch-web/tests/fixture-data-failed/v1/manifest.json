@@ -3387,7 +3387,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
@@ -3753,7 +3753,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
@@ -3966,7 +3966,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
@@ -4179,7 +4179,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": null,
@@ -4329,7 +4329,7 @@
       "variable": "chlorophyll_a",
       "units": "mg m-3",
       "threshold_text": null,
-      "description": "Most recent valid chlorophyll-a observation from VIIRS on NOAA-21, with NOAA-20 in cells NOAA-21 has no value for at each pixel within 10 days, with the date of each pixel.",
+      "description": "Most recent valid chlorophyll-a observation from VIIRS on NOAA-21, with NOAA-20 in cells NOAA-21 has no value for at each pixel within 7 days, with the date of each pixel.",
       "resolution_deg": 0.0075,
       "time": {
         "issued_date": null,
@@ -4354,7 +4354,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
@@ -4453,7 +4453,7 @@
         "nodata": "transparent"
       },
       "caveats": [
-        "Latest clear view: each pixel shows its most recent valid observation within 10 days; neighbouring pixels can come from different days. Check the observation date in the readout.",
+        "Latest clear view: each pixel shows its most recent valid observation within 7 days; neighbouring pixels can come from different days. Check the observation date in the readout.",
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
@@ -4742,7 +4742,7 @@
         ]
       },
       "composite": {
-        "window_days": 10,
+        "window_days": 7,
         "reference_date": "2026-10-08",
         "newest_observed_date": "2026-10-04",
         "oldest_observed_date": "2026-10-01",
@@ -4902,7 +4902,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": null,
@@ -4980,7 +4980,7 @@
       },
       "caveats": [
         "Multi-sensor display: Sentinel-3 300 m where available, VIIRS 750 m elsewhere. The two sensors use different algorithms and can differ at the same place and day (see the agreement figures); a colour change at a sensor boundary may be the sensors, not the water.",
-        "Latest clear view: each pixel shows its most recent valid observation within 7 (VIIRS: 10) days; neighbouring pixels can come from different days. Check the observation date in the readout.",
+        "Latest clear view: each pixel shows its most recent valid observation within 7 days; neighbouring pixels can come from different days. Check the observation date in the readout.",
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
@@ -8946,7 +8946,7 @@
       "last_attempt_at": "2026-10-12T18:00:00Z",
       "last_success_at": "2026-10-12T18:00:00Z",
       "outcome": "partial",
-      "error": "NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: time listing failed: HTTP 502 for https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.csv0?time%5B(2026-10-02T00:00:00Z):1:(last)%5D; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: time listing failed: HTTP 502 for https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.csv0?time%5B(2026-10-02T00:00:00Z):1:(last)%5D; S-NPP fallback: S-NPP erdVHNchla1day: time listing failed: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.csv0?time%5B(2026-10-02T00:00:00Z):1:(last)%5D",
+      "error": "NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: time listing failed: HTTP 502 for https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.csv0?time%5B(2026-10-05T00:00:00Z):1:(last)%5D; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: time listing failed: HTTP 502 for https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.csv0?time%5B(2026-10-05T00:00:00Z):1:(last)%5D; S-NPP fallback: S-NPP erdVHNchla1day: time listing failed: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.csv0?time%5B(2026-10-05T00:00:00Z):1:(last)%5D",
       "notes": [
         "olci300 2026-10-05: same overpasses as the published day; reused it.",
         "olci300 2026-10-06: same overpasses as the published day; reused it.",
@@ -8960,7 +8960,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       }
     },
     {

@@ -238,7 +238,7 @@ def build(ctx: RunContext, olci: LayerArtifact, viirs: LayerArtifact, olci_days:
         time=TimeInfo(observed_date=newest, valid_date=newest, observed_times=sorted(set(olci.time.observed_times) | set(viirs.time.observed_times))),
         freshness=sat.FRESHNESS, grid=None,
         tiles=tl("tiles", ts, "Rendered by CoastWatch: each tile pixel shows one sensor's published value on that sensor's own grid (nearest cell); Sentinel-3 over VIIRS by the rule."),
-        palette=CHLOROPHYLL, caveats=[CAVEAT_MULTI, sat.CAVEAT_COMPOSITE.format(n=f"{sat.WINDOW_DAYS} (VIIRS: {viirs.composite.window_days})")] + list(sat.CAVEATS),
+        palette=CHLOROPHYLL, caveats=[CAVEAT_MULTI, sat.CAVEAT_COMPOSITE.format(n=sat.WINDOW_DAYS if viirs.composite.window_days == sat.WINDOW_DAYS else f"{sat.WINDOW_DAYS} (VIIRS: {viirs.composite.window_days})")] + list(sat.CAVEATS),
         qc=sat._qc(combined, checks), platforms=list(dict.fromkeys(list(olci.platforms) + list(viirs.platforms))),  # members' order (VIIRS: sensor, then satellites by priority)
         coverage=sat.coverage(combined, t_o),
         multisensor=MultiSensorInfo(

@@ -10,9 +10,8 @@ in the published dataset like everything else). What alerts, and why that thresh
 - source_degraded     the same for a source that partly fails (e.g. Sentinel-3 down, VIIRS up).
 - satellite_stale     newest Sentinel-3 pixel older than OLCI_MAX_AGE_DAYS, or newest VIIRS
                       pixel older than VIIRS_MAX_AGE_DAYS. Both are latency-aware (OLCI ~1-2 d;
-                      VIIRS 750 m from NOAA-21/NOAA-20 3-8 d: 2.9 d on 2026-10-09, 7.5-8 d on
-                      2026-10-13, when NOAA's West Coast 750 m products, S-NPP included, lagged
-                      together). Statewide some pixel is almost always clear, so this means the
+                      VIIRS 750 m ~1.5 d, measured 2026-10-14 from ERDDAP's /files/ listings: the
+                      "3-8 d" seen 2026-10-09..13 was ERDDAP's index stuck at 10-05). Statewide some pixel is almost always clear, so this means the
                       feed stopped, not that it was cloudy. Low coverage never alerts.
 - charm_missing       newest C-HARM issue date older than CHARM_MAX_AGE_DAYS (daily product).
 - hfr_stale           newest HF-radar hour older than HFR_MAX_AGE_HOURS (latency is ~4-15 h).
@@ -65,7 +64,7 @@ from .models import Manifest
 MIN_CONSECUTIVE_FAILURES = 3
 OLCI_MAX_AGE_DAYS = 4
 # observed NOAA-21/NOAA-20 latency reaches 8 days; alert only beyond that plus two days
-VIIRS_MAX_AGE_DAYS = 10
+VIIRS_MAX_AGE_DAYS = 5
 CHARM_MAX_AGE_DAYS = 2
 HFR_MAX_AGE_HOURS = 18
 HFR_COVERAGE_DROP = 0.5

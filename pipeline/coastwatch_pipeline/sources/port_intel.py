@@ -292,10 +292,22 @@ def chlorophyll_jpss(ctx: RunContext, lat: float, lon: float, end: date, prev: P
     return base, errors
 
 
+# The newest complete NOAA-21/NOAA-20 window is centred about 6 days back (4 days after the centre,
+# plus ~1.5 days latency). Centred further back than this, NOAA is lagging (an ERDDAP index froze
+# at 2026-10-05 for 9 days) and the S-NPP composite is asked whether it has something newer.
+CHL_LAG_DAYS = 8
+
+
 def chlorophyll_near(ctx: RunContext, lat: float, lon: float, end: date, prev: PortChlorophyll | None = None) -> PortChlorophyll:
-    """NOAA-21/NOAA-20 8-day windows; the S-NPP 8-day composite only if neither answers."""
+    """NOAA-21/NOAA-20 8-day windows; the S-NPP 8-day composite if neither answers, or if NOAA
+    lags and S-NPP's newest composite is strictly newer: an older summary never hides a newer one."""
     chl, errors = chlorophyll_jpss(ctx, lat, lon, end, prev)
     if chl is not None:
+        newest = chl.latest_center_date
+        if newest is None or newest < (end - timedelta(days=CHL_LAG_DAYS)).isoformat():
+            snpp = chlorophyll_snpp(ctx, lat, lon, end)
+            if not snpp.error and snpp.latest_center_date and snpp.latest_center_date > (newest or ""):
+                return snpp
         return chl
     snpp = chlorophyll_snpp(ctx, lat, lon, end)
     if snpp.error:

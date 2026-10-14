@@ -9,12 +9,14 @@ Verified 2026-10-09 (docs/coastwatch/forecast-upgrade/01-source-inventory.md):
 - VIIRS 750 m (0.0075 deg) is the fallback. NOAA ends Suomi-NPP data on 2026-11-02
   (docs/coastwatch/33-suomi-npp-continuity.md), so it comes from the NOAA-21 and NOAA-20 daily
   merges on NOAA CoastWatch (central) ERDDAP (noaacwN21/N20VIIRSchlaSectorUSDaily: same lattice
-  as erdVHNchla1day, one merge per day stamped at its overpass time, 3-8 days behind on
-  2026-10-09..13). NOAA-21 is primary; NOAA-20 fills only the cells NOAA-21 has no value for, so
+  as erdVHNchla1day, one merge per day stamped at its overpass time, about 1.5 days after the
+  overpass: measured 2026-10-14 from ERDDAP's /files/ listing; the "3-8 days" seen 2026-10-09..13
+  was ERDDAP's time index stuck at 10-05 until the server restarted). NOAA-21 is primary; NOAA-20 fills only the cells NOAA-21 has no value for, so
   every cell comes from one platform, recorded per cell (platform grid). Nothing is averaged or
   bias-corrected; the measured offsets to S-NPP are stated in the provenance. The S-NPP 1-day
-  composite (erdVHNchla1day, West Coast ERDDAP) is used, labelled S-NPP, only when neither
-  NOAA-21 nor NOAA-20 can be updated; once S-NPP data end it has nothing new and drops out.
+  composite (erdVHNchla1day, West Coast ERDDAP) is used, labelled S-NPP, when it holds a strictly
+  newer day than NOAA-21/NOAA-20 (or they cannot be updated): an older observation never hides a
+  newer one. Whole layers, one lineage each; once S-NPP data end it has nothing new and drops out.
 
 Rules (docs/coastwatch/05-science-and-safety.md, forecast-upgrade/04):
 - every value published is an upstream value (quantized); missing pixels stay missing
@@ -64,12 +66,11 @@ GROUP_ID = "satellite_chlorophyll_hr"
 REPO = Path(__file__).resolve().parents[3]
 
 WINDOW_DAYS = 7
-# VIIRS 750 m from NOAA-21/NOAA-20 is published 3-8 days after observation (8 on 2026-10-13):
-# with 7 days, a run would often hold no NOAA pass at all and fall back to S-NPP, which would
-# make S-NPP, not NOAA-21, the primary in practice. Its window is the observed maximum latency
-# plus two days (the same 10 days as health.VIIRS_MAX_AGE_DAYS). Ages above 7 days share the
-# last age colour.
-VIIRS_WINDOW_DAYS = 10
+# VIIRS 750 m from NOAA-21/NOAA-20 is published about 1.5 days after observation (ERDDAP /files/,
+# 2026-10-14). A 10-day window was tried for a "3-8 day latency" that was in fact ERDDAP's index
+# stuck for 9 days; it let 9-day-old NOAA data fill the layer silently. The same 7 days as OLCI;
+# a newer S-NPP day wins over older NOAA days (run_viirs), and health alerts after 5 days.
+VIIRS_WINDOW_DAYS = WINDOW_DAYS
 # Bump whenever processing changes what a published day contains (scope, masks, encoding, source):
 # published days are reused across runs only when made by the same processing version.
 # 3: VIIRS from NOAA-21/NOAA-20 (per-cell platform grid) instead of S-NPP; no S-NPP day is
@@ -95,9 +96,8 @@ FRESHNESS = FreshnessPolicy(
     current_max_age_days=3,
     stale_max_age_days=7,
     note=(
-        "Satellite overpasses are published about 2 (OLCI) to 3-8 (VIIRS 750 m, NOAA-21/NOAA-20) days after observation. "
+        "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). "
         "Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. "
-        "The VIIRS latest clear view reaches back 10 days (NOAA-21/NOAA-20 latency), so it can hold historical pixels. "
         "In a 'latest clear view' every pixel also carries its own date."
     ),
 )
@@ -801,13 +801,38 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
     return SatelliteResult(layers, errors, notes, latest.isoformat() if latest else None, nbytes)
 
 
+def newest_listed(ctx: RunContext, p: Product) -> str | None:
+    """Newest day a product's datasets list in its window (one small time listing each), or None."""
+    start = ctx.now.date() - timedelta(days=p.window_days)
+    newest = None
+    for _, sectors in p.platforms:
+        for ds, _, _, _ in sectors:
+            try:
+                ts = list_times(ctx, p.server, ds, start)
+            except Exception:
+                continue
+            if ts:
+                newest = max(newest or "", ts[-1][:10])
+    return newest
+
+
 def run_viirs(ctx: RunContext, domain: Domain, prev_layers: list[LayerArtifact]) -> SatelliteResult:
-    """NOAA-21/NOAA-20 first. Only if neither gives a day in the window, the S-NPP composite,
-    labelled S-NPP: a whole layer from one lineage, never S-NPP pixels mixed into NOAA-21/20
-    ones. After S-NPP data end (2026-11-02) its listing has nothing new and it drops out."""
+    """The newest VIIRS lineage, as whole layers, never S-NPP pixels mixed into NOAA-21/20 ones:
+    NOAA-21/NOAA-20 unless the S-NPP composite holds a strictly newer day (then S-NPP, labelled
+    S-NPP), or NOAA-21/NOAA-20 cannot be updated. An older observation inside the window must
+    not hide a newer one (2026-10-05..14: NOAA's index froze at 10-05 while S-NPP had 10-12).
+    S-NPP's scenes are fetched only when its listing is newer. After S-NPP data end
+    (2026-11-02) its listing has nothing new and it drops out."""
     res = run_product(ctx, VIIRS_JPSS, domain, prev_layers, VIIRS_ZOOMS, per_day=False)
     if res.layers:
-        return res
+        listed = newest_listed(ctx, VIIRS_SNPP)
+        if not listed or listed <= (res.latest_date or ""):
+            return res
+        snpp = run_product(ctx, VIIRS_SNPP, domain, prev_layers, VIIRS_ZOOMS, per_day=False)
+        if snpp.layers and (snpp.latest_date or "") > (res.latest_date or ""):
+            note = f"VIIRS: the S-NPP composite has a newer day ({snpp.latest_date}) than NOAA-21/NOAA-20 ({res.latest_date}); the newer S-NPP view, labelled S-NPP, is the layer this run."
+            return SatelliteResult(snpp.layers, res.errors + snpp.errors, res.notes + [note] + snpp.notes, snpp.latest_date, snpp.bytes_written)
+        return SatelliteResult(res.layers, res.errors, res.notes + [f"VIIRS: S-NPP listed {listed} but gave no newer layer; NOAA-21/NOAA-20 kept."] + [f"S-NPP: {e}" for e in snpp.errors], res.latest_date, res.bytes_written)
     snpp = run_product(ctx, VIIRS_SNPP, domain, prev_layers, VIIRS_ZOOMS, per_day=False)
     prev = next((lyr for lyr in prev_layers if lyr.layer_id == f"{VIIRS_JPSS.key}_chl_latest" and _published_intact(ctx.out_dir, lyr)), None)
     if snpp.layers and prev and product_for(prev.provenance.dataset_id) is VIIRS_JPSS and (prev.time.observed_date or "") >= (snpp.latest_date or ""):

@@ -659,7 +659,7 @@ function MultiDates({
     <>
       Sentinel-3 pixels observed {range(primary)}; VIIRS {range(secondary)}.{" "}
       {sec?.median_age_days != null && sec.pixels > 0 && (
-        <span data-testid="multi-viirs-age">VIIRS pixels shown are a median {Math.round(sec.median_age_days)} days old (VIIRS from NOAA-21 and NOAA-20 is published about 3–8 days after observation). </span>
+        <span data-testid="multi-viirs-age">VIIRS pixels shown are a median {Math.round(sec.median_age_days)} days old (VIIRS from NOAA-21 and NOAA-20 is published about 1–2 days after observation). </span>
       )}
       {cov && (
         <span data-testid="multi-coverage">
