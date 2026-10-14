@@ -47,7 +47,7 @@ export function PlaceChip({
         data-testid="official-summary"
         onClick={(e) => openDrawer(e.currentTarget)}
         aria-haspopup="dialog"
-        className="flex items-center gap-1.5 border-l border-official-line bg-official-bg px-3 text-[13px] text-official-ink hover:brightness-[0.97]"
+        className="flex items-center gap-1.5 border-l border-hairline px-3 text-[13px] text-official-ink hover:brightness-[0.97]"
       >
         <Icon name="shield" className="h-4 w-4 shrink-0 text-official" />
         {available ? (

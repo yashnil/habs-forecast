@@ -10,7 +10,8 @@ export function Panel({ children, className = "", testid, labelledBy }: { childr
 }
 
 export function Eyebrow({ children }: { children: ReactNode }) {
-  return <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">{children}</p>;
+  // sentence case: a label, not tracked capitals (signature P5)
+  return <p className="text-[13px] font-medium text-ink-3">{children}</p>;
 }
 
 export function SectionTitle({ id, children, aside }: { id?: string; children: ReactNode; aside?: ReactNode }) {

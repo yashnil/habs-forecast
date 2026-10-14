@@ -188,7 +188,7 @@ export const RESEARCH = {
 export const ABOUT = {
   title: "Harmful algal blooms on the California coast, in one place",
   lede:
-    "CoastWatch is an independent research project. It brings together the public information about harmful algal blooms along California’s coast: official notices, NOAA’s bloom forecast, satellite and shore-station measurements, and past fisheries landings. Each is labelled for what it is.",
+    "CoastWatch is an independent research project, published as a research preview: no independent scientist or agency has reviewed it, and it is not a regulatory or seafood-safety service. It brings together the public information about harmful algal blooms along California’s coast: official notices, NOAA’s bloom forecast, satellite and shore-station measurements, and past fisheries landings. Each is labelled for what it is.",
   kindsIntro:
     "Every page uses the same four colours, and they never stand for anything else. A forecast is never shown as a measurement, chlorophyll is never shown as toxin, and history is never shown as a prediction.",
   kinds: [

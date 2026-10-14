@@ -7,15 +7,20 @@ import type { OfficialDataset } from "@/generated/official";
 import type { PortOfficialRelation } from "@/generated/port_intel";
 import type { SourceStatus } from "@/generated/schema";
 import { StationChart } from "@/components/charts/StationChart";
+import { PlainReading } from "./PlainReading";
+import { useMode } from "@/lib/mode";
 import { AXES, SELECTOR_VARS, type SelectorVar } from "@/lib/bloom";
 import { DAY, monthYear, samples, summaryOf } from "@/lib/observations";
 import { useNow } from "@/lib/useNow";
 import { AboutData } from "./AboutData";
 import { OfficialStrip } from "./OfficialStrip";
+import type { ChartNotice } from "@/components/charts/StationChart";
+import { ACTION_LABEL, disputeOf } from "@/lib/official";
 import { QUANTITY_SHORT, QuantityIndex } from "./QuantityIndex";
 import { SeasonHeatmap } from "./SeasonHeatmap";
 import { StationHeader } from "./StationHeader";
 import { StationRail } from "./StationRail";
+import { Mark } from "@/components/ui/Mark";
 
 const RANGES = [
   { id: "3m", label: "3 mo", days: 91 },
@@ -91,6 +96,7 @@ export function BloomIntelligence({ stations, station, dataset, status, official
 
   const policy = status?.freshness ?? null;
   const vars = useMemo(() => Object.fromEntries(dataset.variables.map((v) => [v.id, v])) as Record<string, ObsVariable>, [dataset.variables]);
+  const [mode, , modeReady] = useMode();
 
   // the view (quantity, range, year) lives in the link, without a server round trip
   useEffect(() => {
@@ -176,6 +182,18 @@ export function BloomIntelligence({ stations, station, dataset, status, official
     </div>
   );
 
+  // the notices for waters near this pier, on the chart's time axis at their own effective dates
+  const chartNotices: ChartNotice[] = (() => {
+    const recs = new Map((official?.registry.records ?? []).map((r) => [r.id, r]));
+    const out: ChartNotice[] = [];
+    for (const id of new Set(relations.map((r) => r.record_id))) {
+      const r = recs.get(id);
+      if (!r || r.status !== "active" || !r.effective_date || disputeOf(official, id)) continue;
+      out.push({ id, t: Date.parse(`${r.effective_date}T12:00:00Z`), label: `${r.agency} ${ACTION_LABEL[r.action].toLowerCase()}` });
+    }
+    return out.sort((a, b) => a.t - b.t);
+  })();
+
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-5 px-4 pb-16 pt-4 sm:px-8" data-testid="bloom-page" aria-busy={pending}>
       <OfficialStrip
@@ -208,10 +226,16 @@ export function BloomIntelligence({ stations, station, dataset, status, official
         <article className="min-w-0 space-y-5 sm:space-y-7" aria-labelledby="station-h" data-testid="station-detail" data-station={station.station_id}>
           <StationHeader station={station} policy={policy} now={now} portCode={portCode} onChange={() => setPickerOpen(true)} stationCount={stations.length} />
 
+          {/* the server renders the Coastal layout; Research swaps in the full analysis once read */}
+          {(!modeReady || mode === "coastal") && <PlainReading station={station} vars={vars} now={now} />}
+
+          {/* Coastal mode: the full analysis is one tap away; Research mode shows it as before */}
+          <AnalysisFold coastal={!modeReady || mode === "coastal"}>
           <QuantityIndex station={station} vars={vars} selected={variable} onSelect={setVariable} policy={policy} now={now} x0={x0} x1={x1} />
 
           <StationChart
             variable={v}
+            notices={chartNotices}
             samples={series}
             visits={visits}
             axis={axis}
@@ -266,7 +290,7 @@ export function BloomIntelligence({ stations, station, dataset, status, official
             <details open={!narrow} className="group space-y-3" data-testid="season-section" key={narrow ? "n" : "w"}>
               <summary className="flex cursor-pointer list-none flex-wrap items-baseline justify-between gap-x-6 gap-y-1 [&::-webkit-details-marker]:hidden">
                 <div>
-                  <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-measured">Every {narrow ? "month" : "week"} since {station.sample_times[0]?.slice(0, 4) ?? "2014"}</p>
+                  <p className="cw-kind text-measured"><Mark kind="measured" />Every {narrow ? "month" : "week"} since {station.sample_times[0]?.slice(0, 4) ?? "2014"}</p>
                   <h2 id="season-h" className="font-display text-[24px] font-medium leading-tight text-ink">
                     How this season compares: {QUANTITY_SHORT[variable].toLowerCase().replace("pseudo‑nitzschia", "Pseudo‑nitzschia")}
                     <span className="ml-2 align-middle text-[14px] text-accent group-open:hidden lg:hidden">Show</span>
@@ -283,8 +307,34 @@ export function BloomIntelligence({ stations, station, dataset, status, official
           <div className="border-t border-hairline pt-6">
             <AboutData station={station} dataset={dataset} compact={narrow} />
           </div>
+          </AnalysisFold>
         </article>
       </div>
     </div>
+  );
+}
+
+/**
+ * The full analysis inside one element whatever the mode: Coastal shows it as a closed fold;
+ * Research holds it open with no summary. The same tree in both modes, so the chart is never
+ * re-mounted when the device's choice is read after the first render.
+ */
+function AnalysisFold({ coastal, children }: { coastal: boolean; children: React.ReactNode }) {
+  return (
+    <details
+      open={coastal ? undefined : true}
+      className={coastal ? "group rounded-[18px] border border-hairline bg-surface" : "contents"}
+      data-testid="bloom-analysis"
+      data-mode={coastal ? "coastal" : "research"}
+    >
+      <summary className={coastal ? "flex min-h-[52px] cursor-pointer items-center justify-between gap-3 px-4 text-[15px] font-medium text-ink sm:px-5" : "hidden"}>
+        <span>
+          Full station analysis
+          <span className="block text-[13px] font-normal text-ink-3">Every quantity, the chart over time, how this season compares, methods and downloads</span>
+        </span>
+        <span aria-hidden className="text-ink-3 transition-transform group-open:rotate-90">›</span>
+      </summary>
+      <div className={coastal ? "space-y-5 border-t border-hairline px-4 pb-6 pt-5 sm:space-y-7 sm:px-5" : "space-y-5 sm:space-y-7"}>{children}</div>
+    </details>
   );
 }

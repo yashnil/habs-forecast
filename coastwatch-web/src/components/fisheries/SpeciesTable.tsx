@@ -167,7 +167,7 @@ function GroupDetail({ ds, g, unit, year, official }: { ds: FisheriesDataset; g:
         <p className="font-display text-[20px] leading-snug text-ink">{g.label}</p>
         <p>{g.tier_basis}</p>
         {notices.length > 0 ? (
-          <div className="rounded-md border border-official-line bg-official-bg px-3 py-2 text-[13.5px]" data-testid={`species-notices-${g.id}`}>
+          <div className="rounded-md border border-hairline border-l-[3px] border-l-official-line bg-surface px-3 py-2 text-[13.5px]" data-testid={`species-notices-${g.id}`}>
             <p className="font-semibold text-official-ink">
               Official notices referenced ({verification?.state === "verified" ? "verified" : "not verified by a person"})
             </p>

@@ -16,6 +16,7 @@ import {
   NODATA_LAYER_ID,
   noDataImage,
   SPEED_CLASSES,
+  TINT_LAYER_IDS,
   WATER_FALLBACK_LAYER_IDS,
   WATER_FALLBACK_SOURCE,
   transformRequest,
@@ -62,6 +63,8 @@ type Props = {
   initialBounds: [[number, number], [number, number]];
   initialPadding: { top: number; bottom: number; left: number; right: number } | number;
   onPort: (portCode: number) => void;
+  /** a station of the overlay was chosen (My Coast) */
+  onStation?: (stationId: string) => void;
   onPoint: (p: MapPoint) => void;
   onReady: (map: MlMap) => void;
   /** pointer over the map (desktop hover readout); null when it leaves */
@@ -79,6 +82,26 @@ type Props = {
 };
 
 const OFFICIAL = "#f6bb5c";
+const MODEL_MARK = "#b58cf0";
+const MEASURED_MARK = "#4fd1ae";
+const CONDITIONS_MARK = "#74cfe6";
+// provenance threads: one layer per source so they draw out one after another (model, measured,
+// official), 520 ms each with a 90 ms stagger; white, never a data colour
+const THREADS = [
+  { to: "cell", color: "rgba(233,239,246,0.9)" },
+  { to: "station", color: "rgba(233,239,246,0.9)" },
+  { to: "pixel", color: "rgba(233,239,246,0.9)" },
+  { to: "obs", color: "rgba(233,239,246,0.9)" },
+  { to: "limit", color: "rgba(246,187,92,0.95)" },
+] as const;
+const THREAD_MS = 520;
+const THREAD_STAGGER = 90;
+/** A line drawn from its start up to `p` (0..1) of its length. */
+function threadGradient(p: number, color: string): ExpressionSpecification {
+  if (p >= 1) return ["interpolate", ["linear"], ["line-progress"], 0, color, 1, color];
+  const q = Math.max(0.0001, p);
+  return ["interpolate", ["linear"], ["line-progress"], 0, color, q, color, Math.min(1, q + 0.0001), "rgba(0,0,0,0)"];
+}
 // [level, minzoom, maxzoom]: one arrow per observed 2 km radar cell from z8.5 (M5); zoomed
 // out, only cells on every 2nd, 4th or 8th row and column carry one. Arrows never move
 // between zooms, more appear.
@@ -102,10 +125,17 @@ const RASTER_FADE = { ...RASTER_PAINT, "raster-fade-duration": 220 } as const;
 
 export default function MapCanvas(p: Props) {
   const [wide] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
-  const { onPort, onPoint } = p;
+  const { onPort, onPoint, onStation } = p;
   const [map, setMap] = useState<MlMap | null>(null);
   const hasRaster = !!(p.forecast || p.satellite || p.satelliteAge);
-  const paint = p.fade ? RASTER_FADE : RASTER_PAINT;
+  // the fade is decided once per raster, when it first appears (a layer switch fades in; a new
+  // time step cuts) and kept for that raster's life, so a later re-render never changes it
+  const fadeOf = useRef(new globalThis.Map<string, boolean>());
+  const paintFor = (id: string | undefined) => {
+    if (!id) return RASTER_PAINT;
+    if (!fadeOf.current.has(id)) fadeOf.current.set(id, !!p.fade);
+    return fadeOf.current.get(id) ? RASTER_FADE : RASTER_PAINT;
+  };
   const fg = p.forecast?.grid;
   const forecastTiles = useMemo(() => (fg ? gridTiles(fg.layer, fg.url) : null), [fg]);
   const [counties, setCounties] = useCountyPrefs();
@@ -143,16 +173,48 @@ export default function MapCanvas(p: Props) {
   }, [map, fallbackOn, fallbackReady]);
   const showFallback = fallbackOn && fallbackReady;
 
-  // The no-data dots show only under a raster data layer: with currents alone (or nothing)
-  // there is no "value" for a gap to be confused with. The bundled-water layers show only while
-  // the basemap is slow or down.
+  // Has the data field arrived? Until a raster's first tiles in view have loaded there is nothing
+  // for a gap to differ from: the hatch would cover the whole sea for a moment and read as "no
+  // data" (signature P11, the hatch flash). The basemap stays calm until then; loading words
+  // appear only after 400 ms. Keyed by the raster ids, so a new day starts unloaded again (the
+  // swap dips through the basemap; two days are never blended).
+  const rasterKey = [p.forecast?.id, p.satellite?.id, p.satelliteAge?.id].filter(Boolean).join("|");
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const [failedKey, setFailedKey] = useState<string | null>(null);
+  const fieldReady = hasRaster && loadedKey === rasterKey;
+  const fieldFailed = hasRaster && !fieldReady && failedKey === rasterKey;
+  useEffect(() => {
+    if (!map || !hasRaster) return;
+    const ids = ["forecast", "satellite", "satellite-age"].filter((id) => (id === "forecast" ? p.forecast : id === "satellite" ? p.satellite : p.satelliteAge));
+    const check = () => {
+      if (ids.every((id) => map.getSource(id) && map.isSourceLoaded(id))) setLoadedKey(rasterKey);
+    };
+    // a failure is said in words, never hidden behind a spinner (signature handoff, rule 8)
+    const failed = (e: unknown) => {
+      const id = (e as { sourceId?: string }).sourceId;
+      if (id && ids.includes(id)) setFailedKey(rasterKey);
+    };
+    check();
+    map.on("sourcedata", check);
+    map.on("idle", check);
+    map.on("error", failed);
+    return () => {
+      map.off("sourcedata", check);
+      map.off("idle", check);
+      map.off("error", failed);
+    };
+  }, [map, hasRaster, rasterKey, p.forecast, p.satellite, p.satelliteAge]);
+
+  // The no-data hatch shows only under a data field that has arrived: with currents alone (or
+  // nothing) there is no "value" for a gap to be confused with. The bundled-water layers show
+  // only while the basemap is slow or down.
   useEffect(() => {
     if (!map) return;
     // idempotent: every style change fires "styledata" again
     const apply = () => {
       const want: [string, boolean][] = [
-        [NODATA_LAYER_ID, hasRaster],
-        [NODATA_FALLBACK_LAYER_ID, hasRaster && showFallback],
+        [NODATA_LAYER_ID, fieldReady],
+        [NODATA_FALLBACK_LAYER_ID, fieldReady && showFallback],
         ...WATER_FALLBACK_LAYER_IDS.map((id): [string, boolean] => [id, showFallback]),
       ];
       for (const [id, on] of want) {
@@ -160,17 +222,58 @@ export default function MapCanvas(p: Props) {
         const v = on ? "visible" : "none";
         if (map.getLayoutProperty(id, "visibility") !== v) map.setLayoutProperty(id, "visibility", v);
       }
+      // depth-tinted seafloor only when no data colours are on the map: a cross-fade, not a cut
+      for (const id of TINT_LAYER_IDS) {
+        if (!map.getLayer(id)) continue;
+        const o = hasRaster ? 0 : 1;
+        if (map.getPaintProperty(id, "raster-opacity") !== o) map.setPaintProperty(id, "raster-opacity", o);
+      }
     };
     apply();
     map.on("styledata", apply);
     return () => {
       map.off("styledata", apply);
     };
-  }, [map, hasRaster, showFallback]);
+  }, [map, hasRaster, fieldReady, showFallback]);
   const { onHover } = p;
+
+  // threads draw out once per selection (reduced motion: drawn at once); a new selection restarts
+  const overlay = p.overlay;
+  useEffect(() => {
+    if (!map || !overlay) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+    const set = (t: number) => {
+      THREADS.forEach(({ to, color }, i) => {
+        const id = `coast-thread-${to}`;
+        if (!map.getLayer(id)) return;
+        const k = reduce ? 1 : Math.min(1, Math.max(0, (t - i * THREAD_STAGGER) / THREAD_MS));
+        // ease-out, so each thread lands softly at its source
+        map.setPaintProperty(id, "line-gradient", threadGradient(1 - (1 - k) ** 3, color));
+      });
+    };
+    if (reduce) {
+      set(Infinity);
+      return;
+    }
+    const t0 = performance.now();
+    const step = (now: number) => {
+      const t = now - t0;
+      set(t);
+      if (t < THREAD_MS + THREAD_STAGGER * (THREADS.length - 1)) raf = requestAnimationFrame(step);
+    };
+    // the layers exist after this render; start on the next frame
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [map, overlay]);
 
   const onClick = useCallback(
     (e: MapLayerMouseEvent) => {
+      const st = e.features?.find((x) => x.layer.id === "coast-station");
+      if (st && onStation) {
+        onStation(String((st.properties as Record<string, unknown>).id));
+        return;
+      }
       const f = e.features?.find((x) => x.layer.id === "ports-circle" || x.layer.id === "ports-hit");
       if (f) {
         onPort(Number((f.properties as Record<string, unknown>).port_code));
@@ -178,7 +281,7 @@ export default function MapCanvas(p: Props) {
       }
       onPoint({ lat: e.lngLat.lat, lon: e.lngLat.lng });
     },
-    [onPort, onPoint],
+    [onPort, onPoint, onStation],
   );
 
   const portsData = useMemo(
@@ -191,7 +294,7 @@ export default function MapCanvas(p: Props) {
         : null,
     [p.ports],
   );
-  const interactive = p.showPorts && portsData ? ["ports-hit", "ports-circle"] : [];
+  const interactive = [...(p.showPorts && portsData ? ["ports-hit", "ports-circle"] : []), ...(p.onStation && p.overlay ? ["coast-station"] : [])];
   const inited = useRef<MlMap | null>(null);
   const init = (m: MlMap) => {
     // the style's layers exist (isStyleLoaded would also wait for the tiles)
@@ -246,12 +349,12 @@ export default function MapCanvas(p: Props) {
 
       {p.forecast && forecastTiles && (
         <Source key={`${p.forecast.id}-grid`} id="forecast" type="raster" tiles={[forecastTiles.template]} tileSize={GRID_TILE_SIZE} bounds={forecastTiles.bounds} minzoom={0} maxzoom={13}>
-          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
+          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id)} />
         </Source>
       )}
       {p.forecast && !forecastTiles && (
         <Source key={p.forecast.id} id="forecast" type="image" url={p.forecast.url} coordinates={p.forecast.corners as [[number, number], [number, number], [number, number], [number, number]]}>
-          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
+          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id)} />
         </Source>
       )}
       {p.forecast && p.cellEdges && (
@@ -276,12 +379,12 @@ export default function MapCanvas(p: Props) {
           maxzoom={p.satellite.maxzoom}
           bounds={p.satellite.bounds as [number, number, number, number] | undefined}
         >
-          <Layer id="satellite-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
+          <Layer id="satellite-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.satellite?.id)} />
         </Source>
       )}
       {p.satelliteAge && (
         <Source key={p.satelliteAge.id} id="satellite-age" type="raster" tiles={[indexedTiles(p.satelliteAge.template, p.satelliteAge.indexUrl)]} tileSize={256} minzoom={p.satelliteAge.minzoom} maxzoom={p.satelliteAge.maxzoom} bounds={p.satelliteAge.bounds as [number, number, number, number] | undefined}>
-          <Layer id="satellite-age-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paint} />
+          <Layer id="satellite-age-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.satelliteAge?.id)} />
         </Source>
       )}
       {p.imagery && (
@@ -335,20 +438,68 @@ export default function MapCanvas(p: Props) {
       )}
 
       {p.overlay && (
-        <Source id="coast-overlay" type="geojson" data={p.overlay}>
-          <Layer id="coast-cell-fill" type="fill" filter={["==", ["get", "kind"], "cell"]} paint={{ "fill-color": "#b9a6f5", "fill-opacity": 0.22 }} />
-          <Layer id="coast-cell-line" type="line" filter={["==", ["get", "kind"], "cell"]} paint={{ "line-color": "#d9ccff", "line-width": 2 }} />
-          <Layer id="coast-link" type="line" filter={["==", ["get", "kind"], "link"]} paint={{ "line-color": "#e8eef5", "line-width": 1.6, "line-dasharray": [2, 2], "line-opacity": 0.9 }} />
-          <Layer id="coast-station" type="circle" filter={["==", ["get", "kind"], "station"]} paint={{ "circle-radius": 6, "circle-color": "#3fbfa6", "circle-stroke-color": "#06111e", "circle-stroke-width": 2 }} />
+        // provenance (lib/provenance): exact cell edges, threads from the point to each source, a dot
+        // in the source's mark colour at each end. Threads are connectors, never data colours.
+        <Source id="coast-overlay" type="geojson" data={p.overlay} lineMetrics>
+          <Layer id="coast-cell-fill" type="fill" filter={["==", ["get", "kind"], "cell"]} paint={{ "fill-color": MODEL_MARK, "fill-opacity": 0.12 }} />
+          <Layer id="coast-cell-line" type="line" filter={["==", ["get", "kind"], "cell"]} paint={{ "line-color": "#d9ccff", "line-width": 1.6 }} />
+          {THREADS.map(({ to, color }) => (
+            <Layer
+              key={to}
+              id={`coast-thread-${to}`}
+              type="line"
+              filter={["all", ["==", ["get", "kind"], "thread"], ["==", ["get", "to"], to]]}
+              layout={{ "line-cap": "round" }}
+              paint={{ "line-width": 1.4, "line-opacity": ["case", ["boolean", ["get", "far"], false], 0.5, 1], "line-gradient": threadGradient(1, color) }}
+            />
+          ))}
+          <Layer
+            id="coast-thread-end"
+            type="circle"
+            filter={["==", ["get", "kind"], "end"]}
+            paint={{
+              "circle-radius": 4,
+              "circle-color": ["match", ["get", "to"], "cell", MODEL_MARK, "station", MEASURED_MARK, "pixel", MEASURED_MARK, "obs", CONDITIONS_MARK, OFFICIAL],
+              "circle-stroke-color": "#06111e",
+              "circle-stroke-width": 1.5,
+              "circle-opacity": ["case", ["boolean", ["get", "far"], false], 0.55, 1],
+              "circle-stroke-opacity": ["case", ["boolean", ["get", "far"], false], 0.55, 1],
+            }}
+          />
+          {/* the model's neighbourhood: the cells within it are what the briefing summarises */}
+          <Layer id="coast-ring" type="line" filter={["==", ["get", "kind"], "ring"]} paint={{ "line-color": MODEL_MARK, "line-width": 1.4, "line-dasharray": [3, 2], "line-opacity": 0.9 }} />
+          {/* stations: a point that carries its age (filled when sampled in the last 30 days, a
+              ring when older); the station the briefing is describing is larger */}
+          <Layer
+            id="coast-station"
+            type="circle"
+            filter={["==", ["get", "kind"], "station"]}
+            paint={{
+              "circle-radius": ["case", ["boolean", ["get", "focus"], false], 8.5, ["boolean", ["get", "minor"], false], 4.5, 6.5],
+              "circle-color": ["case", ["boolean", ["get", "aged"], false], "rgba(6,17,30,0.6)", MEASURED_MARK],
+              "circle-stroke-color": ["case", ["boolean", ["get", "aged"], false], MEASURED_MARK, "#06111e"],
+              "circle-stroke-width": ["case", ["boolean", ["get", "aged"], false], 2.2, 2],
+              "circle-opacity": ["case", ["boolean", ["get", "minor"], false], 0.75, 1],
+            }}
+          />
           <Layer
             id="coast-station-label"
             type="symbol"
-            filter={["==", ["get", "kind"], "station"]}
+            filter={["all", ["==", ["get", "kind"], "station"], ["!", ["boolean", ["get", "minor"], false]]]}
             layout={{ "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 12, "text-offset": [0.9, 0], "text-anchor": "left", "text-optional": true }}
-            paint={{ "text-color": "#cdeee6", "text-halo-color": "#06111e", "text-halo-width": 1.6 }}
+            paint={{ "text-color": "#cdeee6", "text-halo-color": "rgba(6,17,30,0.7)", "text-halo-width": 1.6 }}
           />
-          <Layer id="coast-target-halo" type="circle" filter={["==", ["get", "kind"], "target"]} paint={{ "circle-radius": 14, "circle-color": "rgba(246,187,92,0.18)", "circle-stroke-color": "#f6bb5c", "circle-stroke-width": 2 }} />
-          <Layer id="coast-target" type="circle" filter={["==", ["get", "kind"], "target"]} paint={{ "circle-radius": 4, "circle-color": "#f6bb5c" }} />
+          <Layer id="coast-target-halo" type="circle" filter={["==", ["get", "kind"], "target"]} paint={{ "circle-radius": 11, "circle-color": "rgba(255,255,255,0.08)", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 }} />
+          {/* NOAA stations behind the conditions card (context, never a field), in the conditions colour */}
+          <Layer id="coast-obs" type="circle" filter={["==", ["get", "kind"], "obs"]} paint={{ "circle-radius": 6, "circle-color": CONDITIONS_MARK, "circle-stroke-color": "#06111e", "circle-stroke-width": 2 }} />
+          <Layer
+            id="coast-obs-label"
+            type="symbol"
+            filter={["==", ["get", "kind"], "obs"]}
+            layout={{ "text-field": ["concat", ["case", ["==", ["get", "what"], "buoy"], "Buoy · ", "Tides · "], ["get", "name"]], "text-font": ["Noto Sans Regular"], "text-size": 12, "text-offset": [0.9, 0], "text-anchor": "left", "text-optional": true }}
+            paint={{ "text-color": "#e9eff6", "text-halo-color": "#06111e", "text-halo-width": 1.4 }}
+          />
+          <Layer id="coast-target" type="circle" filter={["==", ["get", "kind"], "target"]} paint={{ "circle-radius": 3.5, "circle-color": "#ffffff", "circle-stroke-color": "#06111e", "circle-stroke-width": 1.5 }} />
         </Source>
       )}
 
@@ -372,9 +523,27 @@ export default function MapCanvas(p: Props) {
         </Source>
       )}
 
+      {hasRaster && !fieldReady && map && (
+        <div className="pointer-events-none absolute inset-x-0 top-[72px] z-[1] flex justify-center" role="status" aria-live="polite">
+          {fieldFailed ? (
+            <span className="rounded-full bg-[rgba(11,26,43,0.92)] px-3 py-1.5 text-[13px] text-[#e9eff6] shadow-[0_6px_20px_rgba(6,17,30,0.3)]" data-testid="map-field-failed">
+              Part of this layer could not be loaded. Nothing is drawn in its place.
+            </span>
+          ) : (
+            <span className="cw-late rounded-full bg-[rgba(11,26,43,0.88)] px-3 py-1.5 text-[13px] text-[#e9eff6] shadow-[0_6px_20px_rgba(6,17,30,0.3)]" data-testid="map-field-loading">
+              Drawing the data…
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* the chosen water: a ring settles onto the point and one pulse goes out from it, once */}
       {p.inspect && (
-        <Marker longitude={p.inspect.lon} latitude={p.inspect.lat} anchor="center">
-          <span className="block h-4 w-4 rounded-full border-2 border-white shadow-[0_0_0_2px_rgba(4,11,23,0.85)]" aria-hidden />
+        <Marker key={`${p.inspect.lat},${p.inspect.lon}`} longitude={p.inspect.lon} latitude={p.inspect.lat} anchor="center">
+          <span className="relative block h-5 w-5" aria-hidden data-testid="map-selection">
+            <span className="cw-ping absolute inset-0 rounded-full border-2 border-white" />
+            {!p.overlay && <span className="cw-settle absolute inset-0.5 rounded-full border-2 border-white shadow-[0_0_0_2px_rgba(4,11,23,0.85)]" />}
+          </span>
         </Marker>
       )}
     </Map>

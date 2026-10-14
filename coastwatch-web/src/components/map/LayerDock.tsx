@@ -27,6 +27,7 @@ import { ARROW_LENGTHS, SPEED_CLASSES } from "@/lib/basemap";
 import { safeHref } from "@/lib/links";
 import type { Opening } from "@/lib/opening";
 import { MapStamp, type StampLine } from "./MapStamp";
+import { Mark } from "@/components/ui/Mark";
 
 export type LayerGroup = "forecast" | "satellite" | "currents";
 /** Currents: one observed hour (null = newest) or the 24-hour mean, drawn as arrows or particles. */
@@ -158,7 +159,7 @@ function GroupTabs({ manifest, group, onGroup }: Pick<Props, "manifest" | "group
             className={`flex h-10 flex-col items-center justify-center rounded-[9px] leading-tight transition-colors duration-150 disabled:opacity-40 ${group === g.id ? "bg-surface text-ink shadow-[0_1px_2px_rgba(13,27,42,0.12)] ring-1 ring-hairline-strong" : "text-ink-2"}`}
           >
             <span className="text-[13.5px] font-semibold">{g.short}</span>
-            <span className={`text-[12px] font-semibold uppercase tracking-wider ${g.kind === "Model" ? "text-model-ink" : "text-measured"}`}>{g.kind}</span>
+            <span className={`cw-kind ${g.kind === "Model" ? "text-model-ink" : "text-measured"}`}><Mark kind={g.kind === "Model" ? "model" : "measured"} />{g.kind}</span>
           </button>
         );
       })}
@@ -207,7 +208,7 @@ export function LayerDock(p: Props) {
         )}
       </header>
       <div className={`min-h-0 space-y-2.5 overflow-y-auto overscroll-contain [scrollbar-width:thin] ${desktop ? `px-3.5 pb-2.5 ${p.group == null ? "pt-3" : "pt-1.5"}` : "pt-2"}`}>
-        {p.group == null ? <NothingCurrent {...p} /> : p.group === "forecast" ? <ForecastSection {...p} /> : p.group === "currents" ? <CurrentsSection {...p} /> : <SatelliteSection {...p} />}
+        {p.group == null ? p.opening ? <NothingCurrent {...p} /> : <BasemapOnly {...p} /> : p.group === "forecast" ? <ForecastSection {...p} /> : p.group === "currents" ? <CurrentsSection {...p} /> : <SatelliteSection {...p} />}
       </div>
     </Region>
   );
@@ -223,12 +224,12 @@ function Details({ open, children }: { open: boolean; children: React.ReactNode 
   );
 }
 
-function MetaRow({ children, fresh, basis, compactAge }: { children: React.ReactNode; fresh: Freshness | null; basis?: string; compactAge?: boolean }) {
+function MetaRow({ children, fresh, basis, compactAge, unconfirmed }: { children: React.ReactNode; fresh: Freshness | null; basis?: string; compactAge?: boolean; unconfirmed?: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-ink-3">
       {children}
       <span className="ml-auto">
-        <FreshnessBadge f={fresh} basis={basis} compact={compactAge} />
+        <FreshnessBadge f={fresh} basis={basis} compact={compactAge} unconfirmed={unconfirmed} />
       </span>
     </div>
   );
@@ -314,10 +315,14 @@ function ForecastSection(p: Props) {
               Out of date: shown for reference only; it does not describe current conditions.{" "}
             </span>
           )}
-          {p.charmStatus?.outcome === "failed" && <span data-testid="update-failed">Last update failed ({formatDateTimePT(p.charmStatus.last_attempt_at)}); showing the last successful run.</span>}
+          {p.charmStatus?.outcome === "failed" && (
+            <span data-testid="update-failed">
+              CoastWatch could not reach NOAA at {formatDateTimePT(p.charmStatus.last_attempt_at)}, so a newer run may exist. This is the last run received, with its own dates.
+            </span>
+          )}
         </p>
       )}
-      <MetaRow fresh={fresh} basis={anyLayer.freshness.basis}>
+      <MetaRow fresh={fresh} basis={anyLayer.freshness.basis} unconfirmed={p.charmStatus?.outcome === "failed"}>
         <ProductClassBadge pc="official_forecast" />
         <span>C-HARM v3.1 · NOAA</span>
         <Res l={layer ?? anyLayer} />
@@ -889,6 +894,53 @@ function CombinedSection(p: Props & { currents: LayerArtifact | null }) {
           </ul>
         </>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- basemap only (Coastal mode's opening)
+/** Coastal mode opens on the coast and seafloor. Says what the map shows and offers each data
+ *  layer with its own date; choosing one is one tap. */
+function BasemapOnly(p: Props) {
+  const run = p.run;
+  const sat = satelliteLatest(p.manifest, "olci300") ?? satelliteLatest(p.manifest, "viirs750");
+  const satDate = sat?.time.observed_date ?? null;
+  const btn = "flex w-full items-center justify-between gap-3 rounded-lg border border-hairline-strong px-3 py-2 text-left hover:bg-surface-2";
+  return (
+    <div data-testid="basemap-only" className="space-y-2 text-[13px] leading-snug text-ink-2">
+      <p className="text-[14px] font-semibold text-ink">The coast and seafloor</p>
+      <p>Depth shading from NOAA relief models, ports, and the official notices&apos; areas. Add a layer:</p>
+      <div className="grid gap-1.5 sm:grid-cols-3">
+        <button type="button" className={btn} onClick={() => p.onGroup("forecast")} data-testid="add-forecast">
+          <span>
+            <span className="block text-[14px] font-medium text-ink">Toxin forecast</span>
+            <span className="block text-ink-3">{run ? `NOAA C-HARM, issued ${formatDate(run.issued_date).replace(/^\w+, /, "")}` : "Not available"}</span>
+          </span>
+          <span aria-hidden className="text-ink-3">+</span>
+        </button>
+        <button
+          type="button"
+          className={btn}
+          onClick={() => {
+            if (sat) p.onSat({ product: satelliteLatest(p.manifest, "olci300") ? "olci300" : "viirs750", day: null });
+            p.onGroup("satellite");
+          }}
+          data-testid="add-satellite"
+        >
+          <span>
+            <span className="block text-[14px] font-medium text-ink">Satellite chlorophyll</span>
+            <span className="block text-ink-3">{satDate ? `Newest ${formatDate(satDate).replace(/^\w+, /, "")}` : "Not available"}</span>
+          </span>
+          <span aria-hidden className="text-ink-3">+</span>
+        </button>
+        <button type="button" className={btn} onClick={() => p.onGroup("currents")} data-testid="add-currents">
+          <span>
+            <span className="block text-[14px] font-medium text-ink">Surface currents</span>
+            <span className="block text-ink-3">HF radar, observed</span>
+          </span>
+          <span aria-hidden className="text-ink-3">+</span>
+        </button>
+      </div>
     </div>
   );
 }

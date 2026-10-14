@@ -1,0 +1,147 @@
+2026-10-13T23:12:04Z|robots_cdph|200|https://www.cdph.ca.gov/robots.txt|LM=Tue, 13 Oct 2026 22:06:08 GMT|ETag="{B71E09F3-FB63-4A7E-B786-50AC549DE661},3207"|CC=private,max-age=0|bytes=137
+2026-10-13T23:12:05Z|robots_cdfw|404|https://wildlife.ca.gov/robots.txt|LM=|ETag=|CC=public, max-age=31536000, immutable|bytes=1245
+2026-10-13T23:12:05Z|robots_nrm|200|https://nrm.dfg.ca.gov/robots.txt|LM=Wed, 23 Sep 2026 22:18:46 GMT|ETag="0a7ff7fa94bdd1:0"|CC=public,max-age=18000|bytes=42
+2026-10-13T23:12:06Z|robots_sccoos|200|https://sccoos.org/robots.txt|LM=Tue, 13 Oct 2026 22:28:09 GMT|ETag=|CC=max-age=14400, must-revalidate|bytes=128
+2026-10-13T23:12:12Z|cdph_adv|200|https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx|LM=|ETag=|CC=private|bytes=457896
+2026-10-13T23:12:16Z|cdph_mbmp|200|https://www.cdph.ca.gov/Programs/CEH/DRSEM/Pages/EMB/Shellfish/Marine-Biotoxin-Monitoring-Program.aspx|LM=|ETag=|CC=private|bytes=441654
+2026-10-13T23:12:34Z|cdph_sn021|200|https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx|LM=|ETag=|CC=private|bytes=441130
+2026-10-13T23:12:38Z|cdph_sn020|200|https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-020.aspx|LM=|ETag=|CC=private|bytes=438765
+2026-10-13T23:12:53Z|cdph_sp_tlm|200|https://www.cdph.ca.gov/Programs/OPA/_api/web/getfilebyserverrelativeurl('/Programs/OPA/Pages/Shellfish-Advisories.aspx')?$select=TimeLastModified|LM=Tue, 13 Oct 2026 23:12:53 GMT|ETag=|CC=private, max-age=0|bytes=947
+2026-10-13T23:12:53Z|cdph_sp_tlm21|200|https://www.cdph.ca.gov/Programs/OPA/_api/web/getfilebyserverrelativeurl('/Programs/OPA/Pages/SN26-021.aspx')?$select=TimeLastModified,TimeCreated|LM=Tue, 13 Oct 2026 23:12:53 GMT|ETag=|CC=private, max-age=0|bytes=996
+2026-10-13T23:12:54Z|cdph_sp_tlmMB|200|https://www.cdph.ca.gov/Programs/CEH/DRSEM/_api/web/getfilebyserverrelativeurl('/Programs/CEH/DRSEM/Pages/EMB/Shellfish/Marine-Biotoxin-Monitoring-Program.aspx')?$select=TimeLastModified|LM=Tue, 13 Oct 2026 23:12:54 GMT|ETag=|CC=private, max-age=0|bytes=1027
+2026-10-13T23:13:10Z|cdph_reports|200|https://www.cdph.ca.gov/Programs/CEH/DRSEM/Pages/EMB/Shellfish/Marine-Biotoxin-Monitoring-Reports.aspx|LM=|ETag=|CC=private|bytes=443293
+2026-10-13T23:13:13Z|cdph_qha|200|https://www.cdph.ca.gov/Programs/CEH/DRSEM/Pages/EMB/Shellfish/Marine-Biotoxin-Quarantines-and-Health-Advisories.aspx|LM=|ETag=|CC=private|bytes=434767
+2026-10-13T23:13:16Z|cdph_amq|200|https://www.cdph.ca.gov/Programs/CEH/DRSEM/Pages/EMB/Shellfish/Annual-Mussel-Quarantine.aspx|LM=|ETag=|CC=private|bytes=443008
+2026-10-13T23:13:18Z|cdph_fdb_da|200|https://www.cdph.ca.gov/Programs/CEH/DFDCS/Pages/FDBPrograms/FoodSafetyProgram/DomoicAcid.aspx|LM=|ETag=|CC=private|bytes=453569
+2026-10-13T23:13:29Z|crab_da|200|https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/CrabDAResults.pdf|LM=Mon, 12 Oct 2026 17:23:06 GMT|ETag="{9D219E7D-0A4B-450F-BE14-F37091DBF757},7"|CC=private,max-age=0|bytes=186445
+2026-10-13T23:13:30Z|seafood_da|200|https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/SeafoodDAResults.pdf|LM=Mon, 12 Oct 2026 15:10:26 GMT|ETag="{A6A0CA12-3219-41FC-976D-8751164B2CFD},4"|CC=private,max-age=0|bytes=173870
+2026-10-13T23:13:38Z|crab_da_conditional|see above|If-None-Match + If-Modified-Since
+2026-10-13T23:13:52Z|agol_wm_item|200|https://www.arcgis.com/sharing/rest/content/items/ad52187023f24b09b073d287f656df14?f=json|LM=|ETag=|CC=no-cache|bytes=1549
+2026-10-13T23:13:53Z|agol_wm_data|200|https://www.arcgis.com/sharing/rest/content/items/ad52187023f24b09b073d287f656df14/data?f=json|LM=|ETag="1a136227fa8"|CC=max-age=0, must-revalidate|bytes=123590
+2026-10-13T23:14:04Z|fs_quar|200|https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/Export_Output/FeatureServer/0?f=json|LM=Thu, 16 Jul 2020 23:08:41 GMT|ETag=734486910|CC=public, max-age=30, s-maxage=30|bytes=9929
+2026-10-13T23:14:04Z|fs_red|200|https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/Health_Advisory_Symbols_(Red)/FeatureServer/0?f=json|LM=Tue, 25 Aug 2020 18:59:26 GMT|ETag=-1602169883|CC=public, max-age=30, s-maxage=30|bytes=25675
+2026-10-13T23:14:05Z|fs_yel|200|https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/Limited_Advisory_Symbols_(Yellow)/FeatureServer/0?f=json|LM=Tue, 25 Aug 2020 17:59:02 GMT|ETag=1183999696|CC=public, max-age=30, s-maxage=30|bytes=68473
+2026-10-13T23:14:05Z|fs_nci|200|https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/All_Bivalve_Shellfish_Health_Advisory_Special_Advisory/FeatureServer/3?f=json|LM=Thu, 10 Jul 2025 22:22:19 GMT|ETag=-222878986|CC=public, max-age=30, s-maxage=30|bytes=10166
+2026-10-13T23:14:05Z|fs_cty|200|https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/California_Coastal_Counties/FeatureServer/3?f=json|LM=Wed, 26 Aug 2020 17:00:01 GMT|ETag=-2015595040|CC=public, max-age=30, s-maxage=30|bytes=9471
+2026-10-13T23:14:06Z|fs_list|200|https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services?f=json|LM=|ETag=1107722652|CC=private, max-age=0, s-maxage=0|bytes=173528
+2026-10-13T23:14:20Z|fs_pn|200|https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/Pseudo_nitzschia/FeatureServer/6?f=json|LM=Thu, 01 Oct 2026 19:42:26 GMT|ETag=1605252046|CC=public, max-age=30, s-maxage=30|bytes=219638
+2026-10-13T23:14:21Z|fs_pn_q|200|https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/Pseudo_nitzschia/FeatureServer/6/query?where=1%3D1&outStatistics=%5B%7B%22statisticType%22%3A%22max%22%2C%22onStatisticField%22%3A%22Date_Sampled%22%2C%22outStatisticFieldName%22%3A%22mx%22%7D%2C%7B%22statisticType%22%3A%22min%22%2C%22onStatisticField%22%3A%22Date_Sampled%22%2C%22outStatisticFieldName%22%3A%22mn%22%7D%2C%7B%22statisticType%22%3A%22count%22%2C%22onStatisticField%22%3A%22OBJECTID%22%2C%22outStatisticFieldName%22%3A%22n%22%7D%5D&f=json|LM=Thu, 01 Oct 2026 19:42:26 GMT|ETag=sd207663_369298996|CC=public, max-age=30, s-maxage=30|bytes=653
+2026-10-13T23:14:29Z|fs_cdfwc|200|https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/CDFW_Fisheries_Closure/FeatureServer?f=json|LM=Mon, 04 Oct 2021 18:36:06 GMT|ETag=sds_-615829195|CC=public, max-age=30, s-maxage=30|bytes=3624
+2026-10-13T23:14:29Z|fs_cdfwcb|200|https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/CDFW_Fisheries_Closure_Boundaries/FeatureServer?f=json|LM=Tue, 05 Oct 2021 20:31:42 GMT|ETag=sds_745409919|CC=public, max-age=30, s-maxage=30|bytes=3612
+2026-10-13T23:14:30Z|fs_sd|200|https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/SampleDetails/FeatureServer?f=json|LM=Mon, 11 Jan 2016 22:12:45 GMT|ETag=sds_1569612324|CC=public, max-age=0, s-maxage=0|bytes=3149
+2026-10-13T23:14:38Z|chhs_robots|200|https://data.chhs.ca.gov/robots.txt|LM=Fri, 09 Oct 2026 20:43:50 GMT|ETag=|CC=public, max-age=43200|bytes=3071
+2026-10-13T23:14:39Z|chhs_search|200|https://data.chhs.ca.gov/api/3/action/package_search?q=shellfish%20OR%20biotoxin%20OR%20domoic%20OR%20mussel&rows=20|LM=|ETag=|CC=max-age=0|bytes=216
+2026-10-13T23:14:40Z|cagov_search|200|https://data.ca.gov/api/3/action/package_search?q=shellfish%20OR%20biotoxin%20OR%20domoic&rows=20|LM=|ETag=|CC=public, max-age=0, must-revalidate|bytes=17184
+2026-10-13T23:14:46Z|cagov_robots|200|https://data.ca.gov/robots.txt|LM=|ETag=|CC=public, s-maxage=86400|bytes=139
+2026-10-13T23:14:55Z|erddap_sccoos_robots|404|https://erddap.sccoos.org/robots.txt|LM=|ETag=|CC=|bytes=431
+2026-10-13T23:14:56Z|habs_info_sc|200|https://erddap.sccoos.org/erddap/info/HABs-SantaCruzWharf/index.csv|LM=|ETag=|CC=|bytes=14562
+2026-10-13T23:15:11Z|habs_TrinidadPier|404|https://erddap.sccoos.org/erddap/tabledap/HABs-TrinidadPier.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:14Z|habs_Humboldt|404|https://erddap.sccoos.org/erddap/tabledap/HABs-Humboldt.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:17Z|habs_HumboldtSouthBay|404|https://erddap.sccoos.org/erddap/tabledap/HABs-HumboldtSouthBay.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:21Z|habs_BodegaMarineLab|404|https://erddap.sccoos.org/erddap/tabledap/HABs-BodegaMarineLab.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:24Z|habs_BodegaMarineLabBuoy|404|https://erddap.sccoos.org/erddap/tabledap/HABs-BodegaMarineLabBuoy.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:28Z|habs_TomalesBayMouth|404|https://erddap.sccoos.org/erddap/tabledap/HABs-TomalesBayMouth.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:31Z|habs_TomalesBayMid-ChannelBuoy|404|https://erddap.sccoos.org/erddap/tabledap/HABs-TomalesBayMid-ChannelBuoy.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:34Z|habs_InnerTomalesBay|404|https://erddap.sccoos.org/erddap/tabledap/HABs-InnerTomalesBay.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:37Z|habs_SantaCruzWharf|200|https://erddap.sccoos.org/erddap/tabledap/HABs-SantaCruzWharf.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:39Z|habs_MontereyWharf|200|https://erddap.sccoos.org/erddap/tabledap/HABs-MontereyWharf.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:40Z|habs_MorroBayFrontBay|200|https://erddap.sccoos.org/erddap/tabledap/HABs-MorroBayFrontBay.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:41Z|habs_MorroBayBackBay|200|https://erddap.sccoos.org/erddap/tabledap/HABs-MorroBayBackBay.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:43Z|habs_CalPolyPier|200|https://erddap.sccoos.org/erddap/tabledap/HABs-CalPolyPier.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:44Z|habs_StearnsWharf|200|https://erddap.sccoos.org/erddap/tabledap/HABs-StearnsWharf.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:45Z|habs_SantaMonicaPier|200|https://erddap.sccoos.org/erddap/tabledap/HABs-SantaMonicaPier.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:46Z|habs_NewportBeachPier|200|https://erddap.sccoos.org/erddap/tabledap/HABs-NewportBeachPier.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:15:48Z|habs_ScrippsPier|200|https://erddap.sccoos.org/erddap/tabledap/HABs-ScrippsPier.csv?time,pDA,Pseudo_nitzschia_seriata_group,Temp&time%3E=2026-05-01
+2026-10-13T23:16:02Z|habs_trin_max|200|https://erddap.sccoos.org/erddap/tabledap/HABs-TrinidadPier.csv?time&orderByMax(%22time%22)|LM=Tue, 13 Oct 2026 23:16:02 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:16:02Z|habs_hum_max|200|https://erddap.sccoos.org/erddap/tabledap/HABs-Humboldt.csv?time&orderByMax(%22time%22)|LM=Tue, 13 Oct 2026 23:16:02 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:16:02Z|habs_bml_max|200|https://erddap.sccoos.org/erddap/tabledap/HABs-BodegaMarineLab.csv?time&orderByMax(%22time%22)|LM=Tue, 13 Oct 2026 23:16:02 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:16:02Z|habs_tom_max|200|https://erddap.sccoos.org/erddap/tabledap/HABs-InnerTomalesBay.csv?time&orderByMax(%22time%22)|LM=Tue, 13 Oct 2026 23:16:02 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:16:09Z|cencoos_habsearch|404|https://erddap.cencoos.org/erddap/search/index.csv?page=1&itemsPerPage=50&searchFor=HABs%20domoic|LM=Tue, 13 Oct 2026 23:16:12 GMT|ETag=|CC=|bytes=193
+2026-10-13T23:16:18Z|cencoos_habsearch2|404|https://erddap.cencoos.org/erddap/search/index.csv?page=1&itemsPerPage=50&searchFor=pseudo-nitzschia|LM=Tue, 13 Oct 2026 23:16:21 GMT|ETag=|CC=|bytes=163
+2026-10-13T23:16:29Z|habbull|200|https://sccoos.org/california-hab-bulletin/|LM=Tue, 13 Oct 2026 23:15:26 GMT|ETag=|CC=max-age=600, must-revalidate|bytes=90735
+2026-10-13T23:16:35Z|e2ma_robots|200|https://t.e2ma.net/robots.txt|LM=Mon, 12 Oct 2026 19:53:46 GMT|ETag="26-65daa0e50b998"|CC=|bytes=38
+2026-10-13T23:16:42Z|habbull_mayjun|200|https://t.e2ma.net/webview/dg9wjm/be4d9ba98937188c7c8cad298c8b1b6e|LM=|ETag=|CC=|bytes=27943
+2026-10-13T23:16:53Z|sat_charm0||https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.csv?time[(last)]|LM=|ETag=|CC=|bytes=
+2026-10-13T23:16:53Z|sat_charm3||https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day.csv?time[(last)]|LM=|ETag=|CC=|bytes=
+2026-10-13T23:16:53Z|sat_vhn1||https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.csv?time[(last)]|LM=|ETag=|CC=|bytes=
+2026-10-13T23:16:53Z|sat_mur||https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41.csv?time[(last)]|LM=|ETag=|CC=|bytes=
+2026-10-13T23:16:54Z|sat_n20chl||https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaDaily.csv?time[(last)]|LM=|ETag=|CC=|bytes=
+2026-10-13T23:16:54Z|sat_n20sec||https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.csv?time[(last)]|LM=|ETag=|CC=|bytes=
+2026-10-13T23:16:54Z|sat_n21sec||https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.csv?time[(last)]|LM=|ETag=|CC=|bytes=
+2026-10-13T23:16:54Z|sat_olciA||https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.csv?time[(last)]|LM=|ETag=|CC=|bytes=
+2026-10-13T23:16:54Z|sat_olciB||https://coastwatch.noaa.gov/erddap/griddap/noaacwS3BOLCIchlaSectorCIDaily.csv?time[(last)]|LM=|ETag=|CC=|bytes=
+2026-10-13T23:16:54Z|sat_geopolar||https://coastwatch.noaa.gov/erddap/griddap/noaacwBLENDEDsstDNDaily.csv?time[(last)]|LM=|ETag=|CC=|bytes=
+2026-10-13T23:16:54Z|sat_acspo||https://coastwatch.noaa.gov/erddap/griddap/noaacwLEOACSPOSSTL3SnrtCDaily.csv?time[(last)]|LM=|ETag=|CC=|bytes=
+2026-10-13T23:17:03Z|sat_charm0|503|https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.csv?time[(last)]|LM=Tue, 13 Oct 2026 23:17:04 GMT|ETag=|CC=|bytes=168
+2026-10-13T23:17:05Z|sat_charm3|200|https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day.csv?time[(last)]|LM=Tue, 13 Oct 2026 23:17:05 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:17:05Z|sat_vhn1|200|https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.csv?time[(last)]|LM=Tue, 13 Oct 2026 23:17:05 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:17:05Z|sat_mur|200|https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41.csv?time[(last)]|LM=Tue, 13 Oct 2026 23:17:05 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:17:05Z|sat_n20chl|200|https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaDaily.csv?time[(last)]|LM=Tue, 13 Oct 2026 23:17:06 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:17:06Z|sat_n20sec|200|https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.csv?time[(last)]|LM=Tue, 13 Oct 2026 23:17:06 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:17:06Z|sat_n21sec|200|https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.csv?time[(last)]|LM=Tue, 13 Oct 2026 23:17:06 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:17:07Z|sat_olciA|200|https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.csv?time[(last)]|LM=Tue, 13 Oct 2026 23:17:07 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:17:07Z|sat_olciB|200|https://coastwatch.noaa.gov/erddap/griddap/noaacwS3BOLCIchlaSectorCIDaily.csv?time[(last)]|LM=Tue, 13 Oct 2026 23:17:07 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:17:07Z|sat_geopolar|200|https://coastwatch.noaa.gov/erddap/griddap/noaacwBLENDEDsstDNDaily.csv?time[(last)]|LM=Tue, 13 Oct 2026 23:17:08 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:17:08Z|sat_acspo|200|https://coastwatch.noaa.gov/erddap/griddap/noaacwLEOACSPOSSTL3SnrtCDaily.csv?time[(last)]|LM=Tue, 13 Oct 2026 23:17:08 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:17:35Z|sat_charm0b|200|https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.csv?time[(2026-09-25):1:(last)]|LM=Tue, 13 Oct 2026 23:17:35 GMT|ETag=|CC=|bytes=345
+2026-10-13T23:17:35Z|charm_info|200|https://coastwatch.pfeg.noaa.gov/erddap/info/wvcharmV3_0day/index.csv|LM=|ETag=|CC=|bytes=15383
+2026-10-13T23:17:44Z|nws_al_PZZ535|200|https://api.weather.gov/alerts/active?zone=PZZ535|LM=|ETag=W/"74eebdaf040aef4d781036acc959760f"|CC=public, max-age=5, s-maxage=5|bytes=3785
+2026-10-13T23:17:44Z|nws_al_PZZ455|200|https://api.weather.gov/alerts/active?zone=PZZ455|LM=|ETag=W/"c80d109aed3f4604fc5448e63f20e446"|CC=public, max-age=5, s-maxage=5|bytes=219
+2026-10-13T23:17:45Z|nws_al_PZZ356|200|https://api.weather.gov/alerts/active?zone=PZZ356|LM=|ETag=W/"e45cc65b294bdbb7bcefd2823d12e523"|CC=public, max-age=5, s-maxage=5|bytes=8239
+2026-10-13T23:17:45Z|nws_fc_PZZ535|200|https://api.weather.gov/zones/coastal/PZZ535/forecast|LM=|ETag=|CC=public, max-age=3600, s-maxage=120|bytes=63252
+2026-10-13T23:17:46Z|nws_fc_PZZ455|200|https://api.weather.gov/zones/coastal/PZZ455/forecast|LM=|ETag=|CC=public, max-age=3600, s-maxage=120|bytes=253982
+2026-10-13T23:17:46Z|nws_fc_PZZ356|200|https://api.weather.gov/zones/coastal/PZZ356/forecast|LM=|ETag=|CC=public, max-age=3600, s-maxage=120|bytes=125020
+2026-10-13T23:17:53Z|nws_cwf_mtr|200|https://api.weather.gov/products/types/CWF/locations/MTR|LM=|ETag=|CC=public, max-age=56, s-maxage=120|bytes=11920
+2026-10-13T23:17:54Z|nws_cwf_eka|200|https://api.weather.gov/products/types/CWF/locations/EKA|LM=|ETag=|CC=public, max-age=120, s-maxage=120|bytes=11920
+2026-10-13T23:17:54Z|nws_robots|200|https://api.weather.gov/robots.txt|LM=Tue, 06 Oct 2026 14:18:52 GMT|ETag=W/"6ac5034c-1a"|CC=max-age=180|bytes=26
+2026-10-13T23:18:03Z|robots_coastwatch_pfeg_noaa_gov|200|https://coastwatch.pfeg.noaa.gov/robots.txt|LM=Thu, 16 Feb 2023 20:34:49 GMT|ETag="33c-5f4d720ce0760"|CC=|bytes=828
+2026-10-13T23:18:03Z|robots_coastwatch_noaa_gov|200|https://coastwatch.noaa.gov/robots.txt|LM=Wed, 01 Apr 2026 11:58:04 GMT|ETag=|CC=|bytes=1422
+2026-10-13T23:18:04Z|robots_www_ndbc_noaa_gov|200|https://www.ndbc.noaa.gov/robots.txt|LM=Wed, 07 Jun 2023 13:21:35 GMT|ETag="c9-5fd8a03d295c0"|CC=max-age=300, must-revalidate|bytes=201
+2026-10-13T23:18:04Z|robots_api_tidesandcurrents_noaa_gov|403|https://api.tidesandcurrents.noaa.gov/robots.txt|LM=|ETag=|CC=|bytes=23
+2026-10-13T23:18:04Z|robots_tidesandcurrents_noaa_gov|404|https://tidesandcurrents.noaa.gov/robots.txt|LM=|ETag=|CC=|bytes=20083
+2026-10-13T23:18:05Z|robots_erddap_cencoos_org|200|https://erddap.cencoos.org/robots.txt|LM=|ETag=|CC=|bytes=581
+2026-10-13T23:18:05Z|robots_services2_arcgis_com|403|https://services2.arcgis.com/robots.txt|LM=|ETag=|CC=no-store, no-cache|bytes=11
+2026-10-13T23:18:06Z|robots_www_arcgis_com|200|https://www.arcgis.com/robots.txt|LM=Fri, 26 Jun 2026 03:38:50 GMT|ETag="43c8323a14817de04f0bd8f8ccbf148d"|CC=max-age=0|bytes=61
+2026-10-13T23:18:06Z|robots_nowcoast_noaa_gov|200|https://nowcoast.noaa.gov/robots.txt|LM=Thu, 24 Sep 2026 16:48:28 GMT|ETag="49bc6e75543b416786438889fb6b2bbd"|CC=|bytes=243
+2026-10-13T23:18:06Z|robots_www_fisheries_noaa_gov|200|https://www.fisheries.noaa.gov/robots.txt|LM=Thu, 17 Sep 2026 21:14:43 GMT|ETag=|CC=max-age=10135|bytes=2194
+2026-10-13T23:18:06Z|robots_public_govdelivery_com|502|https://public.govdelivery.com/robots.txt|LM=|ETag=|CC=|bytes=150
+2026-10-13T23:18:07Z|robots_content_govdelivery_com|404|https://content.govdelivery.com/robots.txt|LM=|ETag=|CC=|bytes=196
+2026-10-13T23:18:07Z|robots_cdip_ucsd_edu|200|https://cdip.ucsd.edu/robots.txt|LM=Wed, 22 Jan 2025 16:08:07 GMT|ETag="31e-62c4db2fbab13"|CC=|bytes=798
+2026-10-13T23:18:07Z|robots_thredds_cdip_ucsd_edu|404|https://thredds.cdip.ucsd.edu/robots.txt|LM=|ETag=|CC=|bytes=754
+2026-10-13T23:18:08Z|robots_storymaps_arcgis_com|200|https://storymaps.arcgis.com/robots.txt|LM=Wed, 09 Sep 2026 21:37:39 GMT|ETag="f2c7c7f1b0bc3bcbfe811551da98d397"|CC=max-age=31536000, public|bytes=41
+2026-10-13T23:18:25Z|ndbc_46042|200|https://www.ndbc.noaa.gov/data/realtime2/46042.txt|LM=Tue, 13 Oct 2026 23:10:46 GMT|ETag="95954-65dc0ecb44d2b"|CC=max-age=600, must-revalidate|bytes=612692
+2026-10-13T23:18:25Z|ndbc_46026|200|https://www.ndbc.noaa.gov/data/realtime2/46026.txt|LM=Tue, 13 Oct 2026 23:05:41 GMT|ETag="95606-65dc0da883594"|CC=max-age=600, must-revalidate|bytes=611846
+2026-10-13T23:18:25Z|ndbc_46022|200|https://www.ndbc.noaa.gov/data/realtime2/46022.txt|LM=Tue, 13 Oct 2026 23:10:46 GMT|ETag="95ca2-65dc0ecab8335"|CC=max-age=600, must-revalidate|bytes=613538
+2026-10-13T23:18:25Z|ndbc_46244|200|https://www.ndbc.noaa.gov/data/realtime2/46244.txt|LM=Tue, 13 Oct 2026 22:50:53 GMT|ETag="326b6-65dc0a591c881"|CC=max-age=600, must-revalidate|bytes=206518
+2026-10-13T23:18:35Z|ndbc_46244_conditional|304|If-None-Match
+2026-10-13T23:18:35Z|coops_wl_9413450|200|https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=9413450&product=water_level&date=latest&datum=MLLW&units=metric&time_zone=gmt&format=json&application=CoastWatch-research|LM=|ETag=|CC=no-cache, no-store, must-revalidate, max-age=0|bytes=167
+2026-10-13T23:18:35Z|coops_pr_9413450|200|https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=9413450&product=predictions&interval=hilo&datum=MLLW&units=english&time_zone=lst_ldt&format=json&begin_date=20261013&range=48&application=CoastWatch-research|LM=|ETag=|CC=no-cache, no-store, must-revalidate, max-age=0|bytes=423
+2026-10-13T23:18:36Z|coops_wl_9419750|200|https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=9419750&product=water_level&date=latest&datum=MLLW&units=metric&time_zone=gmt&format=json&application=CoastWatch-research|LM=|ETag=|CC=no-cache, no-store, must-revalidate, max-age=0|bytes=172
+2026-10-13T23:18:36Z|coops_pr_9419750|200|https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=9419750&product=predictions&interval=hilo&datum=MLLW&units=english&time_zone=lst_ldt&format=json&begin_date=20261013&range=48&application=CoastWatch-research|LM=|ETag=|CC=no-cache, no-store, must-revalidate, max-age=0|bytes=422
+2026-10-13T23:18:37Z|coops_wl_9418767|200|https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=9418767&product=water_level&date=latest&datum=MLLW&units=metric&time_zone=gmt&format=json&application=CoastWatch-research|LM=|ETag=|CC=no-cache, no-store, must-revalidate, max-age=0|bytes=169
+2026-10-13T23:18:37Z|coops_pr_9418767|200|https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=9418767&product=predictions&interval=hilo&datum=MLLW&units=english&time_zone=lst_ldt&format=json&begin_date=20261013&range=48&application=CoastWatch-research|LM=|ETag=|CC=no-cache, no-store, must-revalidate, max-age=0|bytes=424
+2026-10-13T23:18:44Z|nowcoast_home|200|https://nowcoast.noaa.gov/|LM=Thu, 24 Sep 2026 16:48:28 GMT|ETag="6c499c269c8030b41d479fc346152dcf"|CC=|bytes=2755
+2026-10-13T23:19:03Z|cdfw_sub|200|https://wildlife.ca.gov/Marine-Subscribe|LM=|ETag=|CC=no-cache,public, max-age=31536000, immutable|bytes=25344
+2026-10-13T23:19:03Z|cdfw_ha|200|https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories|LM=|ETag=|CC=no-cache,public, max-age=31536000, immutable|bytes=39387
+2026-10-13T23:19:04Z|cdfw_ws|200|https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries|LM=|ETag=|CC=no-cache,public, max-age=31536000, immutable|bytes=112035
+2026-10-13T23:19:19Z|gd_bul|404|https://content.govdelivery.com/accounts/CNRA/bulletins|LM=|ETag=|CC=no-cache, no-store, must-revalidate|bytes=196
+2026-10-13T23:19:20Z|gd_signup|200|https://public.govdelivery.com/accounts/CNRA/signup/42866|LM=|ETag=W/"9db7228280b7fb50f38778f3bf930feb"|CC=no-cache, no-store, max-age=0, must-revalidate|bytes=2643
+2026-10-13T23:19:45Z|gd_b1|200|https://content.govdelivery.com/accounts/CNRA/bulletins/427c3f0|LM=|ETag=W/"3b2624eb8497bf1c05581018e4705419"|CC=no-cache, no-store, must-revalidate|bytes=41651
+2026-10-13T23:19:54Z|cdfw_news|200|https://wildlife.ca.gov/News|LM=|ETag=|CC=no-cache,public, max-age=31536000, immutable|bytes=31296
+2026-10-13T23:19:55Z|cdfw_mblog|200|https://cdfwmarine.wordpress.com/feed/|LM=Tue, 13 Oct 2026 23:02:50 GMT|ETag=|CC=|bytes=27749
+2026-10-13T23:20:16Z|cdfw_arch|200|https://wildlife.ca.gov/News/Archive|LM=|ETag=|CC=no-cache,public, max-age=31536000, immutable|bytes=42125
+2026-10-13T23:20:24Z|cdfw_rss|200|https://wildlife.ca.gov/DesktopModules/LiveArticles/API/Syndication/GetRssFeeds?mid=56678&PortalId=0&tid=4232&ArticlePage=1&itemcount=20|LM=|ETag=|CC=no-cache,public, max-age=31536000, immutable|bytes=134832
+2026-10-13T23:20:47Z|nrm_245569|200|https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=245569&inline|LM=Thu, 18 Jun 2026 22:32:34 GMT|ETag="639173935546700000"|CC=private, must-revalidate|bytes=186360
+2026-10-13T23:20:47Z|nrm_65566|200|https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=65566&inline|LM=Wed, 08 May 2013 20:56:53 GMT|ETag="635036182139200000"|CC=private, must-revalidate|bytes=69805
+2026-10-13T23:20:56Z|gis_ramp|200|https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3120_fpu/FeatureServer/0?f=json|LM=Tue, 21 Apr 2026 18:48:25 GMT|ETag=1281334142|CC=public, max-age=30, s-maxage=30|bytes=9398
+2026-10-13T23:20:56Z|gis_mpa|200|https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds582_fpu/FeatureServer/0?f=json|LM=Tue, 09 Jan 2024 20:51:13 GMT|ETag=1683674276|CC=public, max-age=30, s-maxage=30|bytes=16095
+2026-10-13T23:20:57Z|gis_rca|200|https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3144_fpu/FeatureServer/0?f=json|LM=|ETag=|CC=no-cache|bytes=72
+2026-10-13T23:20:57Z|gis_gfa|200|https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3143_fpu/FeatureServer/0?f=json|LM=Wed, 12 Nov 2025 19:14:21 GMT|ETag=755779040|CC=public, max-age=3600, s-maxage=3600|bytes=9429
+2026-10-13T23:20:57Z|gis_f20|200|https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3160_fpu/FeatureServer/0?f=json|LM=|ETag=|CC=no-cache|bytes=72
+2026-10-13T23:21:15Z|shore_edu_humboldt_humboldt|200|https://erddap.cencoos.org/erddap/tabledap/edu_humboldt_humboldt.csv?time&orderByMax(%22time%22)|LM=Tue, 13 Oct 2026 23:21:15 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:21:17Z|shore_monterey-wharf-real-time-samplin|200|https://erddap.cencoos.org/erddap/tabledap/monterey-wharf-real-time-samplin.csv?time&orderByMax(%22time%22)|LM=Tue, 13 Oct 2026 23:21:18 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:21:20Z|shore_scripps-pier-automated-shore-sta-1|200|https://erddap.cencoos.org/erddap/tabledap/scripps-pier-automated-shore-sta-1.csv?time&orderByMax(%22time%22)|LM=Tue, 13 Oct 2026 23:21:20 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:21:22Z|shore_tiburon-water-tibc1|200|https://erddap.cencoos.org/erddap/tabledap/tiburon-water-tibc1.csv?time&orderByMax(%22time%22)|LM=Tue, 13 Oct 2026 23:21:23 GMT|ETag=|CC=|bytes=30
+2026-10-13T23:21:33Z|cdip_156|200|https://thredds.cdip.ucsd.edu/thredds/dodsC/cdip/realtime/156p1_rt.nc.das|LM=|ETag=|CC=|bytes=50526
+2026-10-13T23:21:41Z|cdfw_gf|200|https://wildlife.ca.gov/Fishing/Ocean/Regulations/Groundfish-Summary|LM=|ETag=|CC=no-cache,public, max-age=31536000, immutable|bytes=46496
+2026-10-13T23:21:42Z|cdfw_salmon|200|https://wildlife.ca.gov/Fishing/Ocean/Regulations/Salmon|LM=|ETag=|CC=no-cache,public, max-age=31536000, immutable|bytes=33922

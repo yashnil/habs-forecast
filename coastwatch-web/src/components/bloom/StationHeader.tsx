@@ -9,6 +9,7 @@ import { samplingStrip } from "@/lib/bloom";
 import { stationFreshness, summaryOf, cadenceLabel } from "@/lib/observations";
 import { formatDateTimePT } from "@/lib/time";
 import { FreshDot } from "./FreshDot";
+import { Mark } from "@/components/ui/Mark";
 
 /**
  * The title block (M6 §0.2 item 3): the station, then when it was last sampled and how regularly,
@@ -43,7 +44,8 @@ export function StationHeader({
     <header className="grid gap-x-10 gap-y-4 lg:grid-cols-[minmax(0,1fr)_320px]" data-testid="station-header">
       <div className="min-w-0 space-y-2">
         <div className="flex items-baseline justify-between gap-3">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-measured">
+          <p className="cw-kind text-measured">
+            <Mark kind="measured" />
             Shore station · {region}
             <span className="max-sm:hidden"> · CalHABMAP</span>
           </p>
@@ -85,7 +87,7 @@ export function StationHeader({
       </div>
 
       <div className="space-y-1.5 border-t-2 pt-2 lg:space-y-2 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0" style={{ borderColor: f?.state === "current" ? "#17704a" : f?.state === "stale" ? "#86590a" : "var(--cw-hairline-strong)" }} data-testid="freshness">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">Latest sample</p>
+        <p className="text-[13px] font-medium text-ink-3">Latest sample</p>
         <p className="font-display text-[22px] font-medium leading-tight text-ink sm:text-[26px]" data-testid="last-sample">
           {last ? fmtDate(Date.parse(last), { month: "long", day: "numeric", year: "numeric" }) : "No samples"}
         </p>
@@ -104,12 +106,12 @@ export function StationHeader({
       </div>
 
       {station.status === "carried_forward" && (
-        <p className="rounded-md border border-warning/40 bg-[#fff7e6] px-3 py-2 text-[13px] text-ink-2 lg:col-span-2" data-testid="station-carried">
+        <p className="rounded-md border border-hairline border-l-[3px] border-l-ink-3/60 bg-surface px-3 py-2 text-[13px] text-ink-2 lg:col-span-2" data-testid="station-carried">
           <b className="font-semibold text-ink">The latest update could not reach this station&apos;s data.</b> Showing what was retrieved {station.retrieved_at ? formatDateTimePT(station.retrieved_at) : "earlier"}, with the original sample dates; newer samples may exist.
         </p>
       )}
       {f?.state === "historical" && (
-        <p className="rounded-md border border-serious/40 bg-[#fdeeee] px-3 py-2 text-[13px] text-ink-2 lg:col-span-2" data-testid="station-historical">
+        <p className="rounded-md border border-hairline border-l-[3px] border-l-ink-3/60 bg-surface px-3 py-2 text-[13px] text-ink-2 lg:col-span-2" data-testid="station-historical">
           <b className="font-semibold text-ink">No recent samples.</b> The newest is {f.ageDays} days old, so these values do not describe current conditions.
         </p>
       )}

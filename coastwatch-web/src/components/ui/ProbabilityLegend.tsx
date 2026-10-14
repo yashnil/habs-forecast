@@ -8,8 +8,8 @@ export function NoValueSwatch({ label }: { label: string }) {
     <span className="inline-flex items-center gap-1.5 text-[13px] text-ink-2">
       <span
         className="inline-block h-[11px] w-4 shrink-0 rounded-[2px] border border-[#3a5070]"
-        // the map's no-data dots: 1 px on a 3 px diagonal lattice over the sea colour
-        style={{ background: "radial-gradient(circle at 0.5px 0.5px, rgba(170,196,224,0.75) 0.7px, transparent 0.8px) 0 0 / 3px 3px, radial-gradient(circle at 0.5px 0.5px, rgba(170,196,224,0.75) 0.7px, transparent 0.8px) 1.5px 1.5px / 3px 3px, #0b1d33" }}
+        // the map's no-data hatch: a faint diagonal line every 8 px over the sea colour
+        style={{ background: "repeating-linear-gradient(135deg, rgba(170,196,224,0.42) 0 1.2px, transparent 1.2px 5.6px), #0b1d33" }}
         aria-hidden
       />
       {label}

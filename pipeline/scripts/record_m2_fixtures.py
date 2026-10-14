@@ -20,7 +20,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coastwatch_pipeline.fixtures import FIXTURES, FixtureFetcher, fixture_context  # noqa: E402
 from coastwatch_pipeline.http import FetchError, fetch  # noqa: E402
 from coastwatch_pipeline.pipeline import run_pipeline  # noqa: E402
-from coastwatch_pipeline.sources.official import BROWSER_UA  # noqa: E402
 
 REC = FIXTURES / "recorded"
 # Monterey (36.60 N) and Moss Landing (36.80 N): ERDDAP history boxes start near these latitudes
@@ -41,7 +40,7 @@ class Recorder(FixtureFetcher):
         except FetchError:
             if not any(re.search(p, url) for p in RECORD):
                 raise
-            headers = {"User-Agent": BROWSER_UA} if ("cdph.ca.gov" in url or "wildlife.ca.gov" in url) else None
+            headers = {"Accept": "text/html"} if ("cdph.ca.gov" in url or "wildlife.ca.gov" in url) else None
             r = fetch(url, headers=headers)
             name = hashlib.sha1(url.encode()).hexdigest()[:16] + (".html" if "text/html" in r.content_type else ".bin")
             (REC / name).write_bytes(r.body)

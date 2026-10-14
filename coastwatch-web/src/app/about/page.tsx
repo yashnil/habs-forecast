@@ -28,7 +28,7 @@ export default async function AboutPage() {
     >
       <article className="mx-auto w-full max-w-[1120px] px-4 pb-20 pt-8 sm:px-8 sm:pt-12" data-testid="about-page">
         <header className="max-w-[760px] space-y-4">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">About CoastWatch</p>
+          <p className="text-[13px] font-medium text-ink-3">About CoastWatch</p>
           <h1 className="text-balance font-display text-[34px] font-medium leading-[1.08] text-ink sm:text-[46px]">{ABOUT.title}</h1>
           <p className="font-display text-[19px] leading-[1.5] text-ink-2 sm:text-[21px]">{ABOUT.lede}</p>
           <p className="text-[16px]">
@@ -39,7 +39,7 @@ export default async function AboutPage() {
         </header>
 
         <section aria-labelledby="purpose-h" className="mt-10 max-w-[760px] space-y-2" data-testid="about-purpose">
-          <h2 id="purpose-h" className="text-[13px] font-semibold uppercase tracking-[0.08em] text-ink-3">
+          <h2 id="purpose-h" className="text-[13.5px] font-semibold text-ink-3">
             What CoastWatch is set up for on this device
           </h2>
           <PurposeSwitch showReset />
@@ -88,7 +88,7 @@ export default async function AboutPage() {
           </h2>
           <div className="mt-5 grid gap-x-12 gap-y-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
             <figure className="rounded-2xl border border-hairline bg-surface p-6 sm:p-7" data-testid="publication">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-3">Publication</p>
+              <p className="text-[13px] font-medium text-ink-3">Publication</p>
               <p className="mt-2 font-display text-[22px] font-medium leading-snug text-ink sm:text-[24px]">{RESEARCH.title}</p>
               <p className="mt-3 text-[14px] leading-relaxed text-ink-2">
                 {RESEARCH.author} · {RESEARCH.venue}

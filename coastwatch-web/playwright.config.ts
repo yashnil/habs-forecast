@@ -10,16 +10,25 @@ const start = (port: number, base: string) => ({
   port,
   reuseExistingServer: false,
   timeout: 60_000,
-  env: { CW_DATA_BASE_URL: base },
+  // ocean conditions are replayed from recorded NOAA responses (2026-10-13), never fetched live
+  env: { CW_DATA_BASE_URL: base, CW_CONDITIONS_FIXTURE: "tests/conditions-fixtures.json", CW_NWS_API: "1", CW_FIXED_NOW: "2026-10-13T06:00:00Z" },
 });
 
 const BASE = Number(process.env.CW_E2E_PORT_BASE ?? 3200); // tests/e2e/ports.ts
 
 // Returning-visitor state for every test server: the first-visit introduction on the map is
-// already dismissed, so it never covers what a test clicks. tests/e2e/m8.spec.ts opens fresh contexts.
+// already dismissed, so it never covers what a test clicks, and the presentation is Research (the
+// detailed layout the earlier suites were written for). Coastal mode is tested explicitly
+// (tests/e2e/coastal.spec.ts); m8, welcome and tour open fresh contexts.
 const dismissedIntro = {
   cookies: [],
-  origins: [0, 1, 2, 3].map((i) => ({ origin: `http://localhost:${BASE + i}`, localStorage: [{ name: "cw-intro-dismissed-v1", value: "1" }] })),
+  origins: [0, 1, 2, 3].map((i) => ({
+    origin: `http://localhost:${BASE + i}`,
+    localStorage: [
+      { name: "cw-intro-dismissed-v1", value: "1" },
+      { name: "cw-mode-v1", value: "research" },
+    ],
+  })),
 };
 
 export default defineConfig({

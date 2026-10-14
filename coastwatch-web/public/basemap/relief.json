@@ -30,7 +30,7 @@
   "source_url": "https://www.ncei.noaa.gov/products/etopo-global-relief-model",
   "doi": "https://doi.org/10.25921/fd45-gt74",
   "license": "Free to use and redistribute; not intended for legal use or navigation (NOAA NCEI).",
-  "rendering": "Seafloor and land hillshade (azimuth 315\u00b0, altitude 45\u00b0, vertical exaggeration 4x sea / 1.6x land); depth tone lightest on the shelf; isobaths from a 1.2-cell Gaussian-smoothed grid, simplified to about 400 m.",
+  "rendering": "Seafloor and land hillshade (azimuth 315\u00b0, altitude 45\u00b0, vertical exaggeration 4x sea / 1.6x land); depth tone lightest on the shelf (the tinted variant: a blue ramp from about #3E8FB0 at the shore to the water colour at 4,500 m, used only with no data layer shown); isobaths from a 1.2-cell Gaussian-smoothed grid, simplified to about 400 m.",
   "monterey_inset": {
     "corners_lnglat": [
       [

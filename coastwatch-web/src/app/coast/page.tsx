@@ -21,7 +21,7 @@ export default async function CoastPage() {
       scroll="page"
     >
       {data.ok ? (
-        <MyCoast manifest={data.manifest} ports={data.ports} official={data.official} stations={data.stations} stationsError={data.stationsError} baseUrl={data.baseUrl} />
+        <MyCoast manifest={data.manifest} ports={data.ports} official={data.official} stations={data.stations} stationsError={data.stationsError} baseUrl={data.baseUrl} portIntel={data.portIntel} />
       ) : (
         <div className="mx-auto w-full max-w-xl p-4">
           <OfficialStatusCard />
