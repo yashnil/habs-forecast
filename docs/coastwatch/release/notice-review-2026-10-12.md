@@ -81,11 +81,13 @@ Confirm this in §6.
 - [ ] Still closed in Humboldt.
 - [ ] The OEHHA memo matches the date.
 
-### Record R2 — **missing:** CDPH razor clam advisory, Humboldt County (not in the registry)
+### Record R2 — `cdph-2024-sn24-003-razor-clam-humboldt`: CDPH razor clam advisory, Humboldt County (added unverified in PR #36)
 - **Agency source:** [SN24-003](https://www.cdph.ca.gov/Programs/OPA/Pages/SN24-003.aspx), May 2, 2024: "CDPH is advising the public not to consume sport-harvested razor clams gathered from Humboldt County due to high levels of Domoic Acid."
 - **Still in effect per CDPH:** SN25-024 (Oct 6, 2025): "A warning against eating sport-harvested razor clams from Humboldt County remains in effect". SN26-020 (Oct 9, 2026): "in addition to the razor clam advisory for Humboldt County".
-- [ ] Confirm it is still in effect. It is a CDPH **consumption** advisory, distinct from the CDFW **fishery** closure (R1).
-- [ ] Decide whether to add it. Suggested record: id `cdph-2024-sn24-003-razor-clam-humboldt`, consumption advisory, sport harvest, razor clams, Humboldt County, effective 2024-05-02, sources SN24-003 plus SN26-020.
+- **CDPH's map (checked 2026-10-12):** the Coastal Shellfish Advisories map's "Razor Clam Health Advisory" layer is filtered to Humboldt and Del Norte counties (web map modified 2026-10-09). SN25-025 (Oct 24, 2025) also states it remains.
+- **Stored:** the SN24-003 sentence plus "For Humboldt County, this warning only applies to razor clams…". Region: Humboldt County (CDPH polygon). Effective 2024-05-02. Consumption advisory, sport harvest.
+- [ ] Confirm it is still in effect (the CDPH shellfish line, 1 (800) 553-4133, can confirm; nobody has called yet). It is a CDPH **consumption** advisory, distinct from the CDFW **fishery** closure (R1).
+- [ ] Check the stored wording and geography against SN24-003.
 
 ### Record R3 — `cdfw-2026-razor-clam-del-norte` (CDFW recreational fishery closure)
 - **Agency source:** [CDFW status page](https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories). The same sentence as R1, which is shared by both records.
@@ -158,6 +160,6 @@ All four were found verbatim on the agency pages on 2026-10-12.
 
 - [ ] Every 2026 CDPH warning in the table above is either in the registry or lifted by a later release.
 - [ ] The CDFW status page lists no closure or take restriction that is missing here.
-- [ ] Decide on R2 (CDPH Humboldt razor clam advisory) and on the sardine question (§1).
+- [ ] Decide on the sardine question (§1). (R2 was added, unverified, in PR #36.)
 
 When every box is ticked, run the command in "How to work through it".
