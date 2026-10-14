@@ -9,6 +9,7 @@ import {
   parseNdbc,
   parseTides,
   parseZoneForecast,
+  NWS_MARINE_PAGE,
   type Conditions,
   type Part,
 } from "@/lib/conditions";
@@ -21,6 +22,11 @@ import {
  * Tests set CW_CONDITIONS_FIXTURE to a JSON file of recorded responses (keyed by the sha1 of the
  * URL) instead of the network, and CW_FIXED_NOW for the clock. CW_CONDITIONS_RECORD_DIR records
  * responses one file per URL; tests/conditions-fixtures.json is those files merged.
+ *
+ * NWS: api.weather.gov's robots.txt disallows every automated client, so its marine forecast and
+ * alerts are fetched only where an operator has set CW_NWS_API=1 (tests set it, with recorded
+ * responses). Otherwise the card links to NWS's own marine forecast pages; NDBC and CO-OPS, whose
+ * rules allow it, are fetched as before.
  */
 export const dynamic = "force-dynamic";
 
@@ -89,6 +95,10 @@ async function zonesFor(lat: number, lon: number): Promise<{ id: string; name: s
 
 async function marineParts(lat: number, lon: number): Promise<[Conditions["marine"], Conditions["alerts"]]> {
   const source = "NOAA National Weather Service";
+  if (process.env.CW_NWS_API !== "1") {
+    const link: Part<never> = { status: "none", reason: "Read the marine forecast and any warnings for your waters on NWS's site.", source, url: NWS_MARINE_PAGE };
+    return [link, link];
+  }
   let zones: { id: string; name: string }[];
   try {
     zones = await zonesFor(lat, lon);

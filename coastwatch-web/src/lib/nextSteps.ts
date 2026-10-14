@@ -224,6 +224,8 @@ export function nextSteps(x: StepInput): Step[] {
   if (c?.marine.status === "ok") {
     const p = c.marine.data.periods[0];
     out.push({ id: "marine", kind: "conditions", title: `${p.name}: ${marineHeadline(p)}`, reason: `NWS forecast for ${c.marine.data.zoneName} (${c.marine.data.zone}).`, when: c.marine.data.updated ? `issued ${x.fmt(c.marine.data.updated)}` : undefined, source: { label: "NWS marine forecast", url: c.marine.url } });
+  } else if (c && c.marine.status === "none" && c.marine.url) {
+    out.push({ id: "marine-link", kind: "conditions", title: "Read NWS's marine forecast and any warnings for your waters", reason: "Wind, waves and small craft advisories come from the National Weather Service; CoastWatch links to them rather than copying them.", source: { label: "NWS marine forecasts", url: c.marine.url } });
   } else if (c && c.marine.status === "unavailable") {
     out.push({ id: "marine-gap", kind: "gap", title: "Check the NWS marine forecast directly", reason: `NWS's forecast service did not answer just now (${c.marine.reason.replace(/^The NWS forecast did not load /, "").replace(/[()]/g, "").trim()}).`, source: { label: "NWS marine forecasts", url: "https://www.weather.gov/marine/" } });
   }

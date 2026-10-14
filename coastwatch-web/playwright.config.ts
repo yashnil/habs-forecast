@@ -11,7 +11,7 @@ const start = (port: number, base: string) => ({
   reuseExistingServer: false,
   timeout: 60_000,
   // ocean conditions are replayed from recorded NOAA responses (2026-10-13), never fetched live
-  env: { CW_DATA_BASE_URL: base, CW_CONDITIONS_FIXTURE: "tests/conditions-fixtures.json", CW_FIXED_NOW: "2026-10-13T06:00:00Z" },
+  env: { CW_DATA_BASE_URL: base, CW_CONDITIONS_FIXTURE: "tests/conditions-fixtures.json", CW_NWS_API: "1", CW_FIXED_NOW: "2026-10-13T06:00:00Z" },
 });
 
 const BASE = Number(process.env.CW_E2E_PORT_BASE ?? 3200); // tests/e2e/ports.ts

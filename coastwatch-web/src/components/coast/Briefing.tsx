@@ -659,7 +659,22 @@ export function ConditionsCard({
             testid="cond-marine"
           />
         ) : (
+          c?.marine.status === "none" && c.marine.url ? (
+            // CoastWatch does not query NWS's API (its robots.txt): the reader goes to NWS directly
+            <Tile
+              label="Marine forecast and warnings"
+              value={
+                <a href={c.marine.url} {...ext} className={link} data-testid="cond-marine-link">
+                  Read NWS&apos;s marine forecast ↗
+                </a>
+              }
+              sub="From the National Weather Service; CoastWatch does not copy it here"
+              state="none"
+              testid="cond-marine"
+            />
+          ) : (
           <Tile label="Marine forecast" value={c ? "Not available" : wait} sub={c ? plain(c.marine, "forecast").text : "NWS"} detail={c ? plain(c.marine, "forecast").detail : undefined} href={c && "url" in c.marine ? c.marine.url : undefined} state="none" testid="cond-marine" />
+          )
         )}
         {c?.buoy.status === "ok" && c.buoy.station ? (
           <Tile

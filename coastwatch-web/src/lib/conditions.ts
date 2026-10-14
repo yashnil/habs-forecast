@@ -127,7 +127,7 @@ export function parseTides(json: unknown): Tide[] {
 
 export type Part<T> =
   | { status: "ok"; data: T; source: string; url: string; fetchedAt: string; station?: { id: string; name: string; km: number; lat?: number; lon?: number } }
-  | { status: "none"; reason: string; source: string }
+  | { status: "none"; reason: string; source: string; url?: string }
   | { status: "unavailable"; reason: string; source: string; url?: string };
 
 export type Conditions = {
@@ -138,3 +138,6 @@ export type Conditions = {
   buoy: Part<BuoyObs>;
   tides: Part<Tide[]>;
 };
+
+/** NWS's public marine forecast pages, for readers when CoastWatch does not query its API (its robots.txt). */
+export const NWS_MARINE_PAGE = "https://www.weather.gov/marine/";
