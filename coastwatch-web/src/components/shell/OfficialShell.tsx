@@ -100,22 +100,25 @@ export function OfficialPill() {
       aria-haspopup="dialog"
       aria-expanded={open}
       onClick={(e) => openDrawer(e.currentTarget)}
-      className="flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-official-on-navy/45 bg-official-on-navy/10 pl-3 pr-3 min-[360px]:pl-2.5 text-[13px] font-medium text-official-on-navy hover:bg-official-on-navy/15 md:h-[34px] md:text-[14px]"
+      className="flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-white/20 bg-white/[0.06] pl-3 pr-3 min-[360px]:pl-2.5 text-[13px] font-medium text-on-navy transition-colors hover:border-white/35 hover:bg-white/10 md:h-[34px] md:text-[14px]"
     >
       {/* below 360 px the masthead keeps the count and the verification word, not the icon */}
-      <Icon name="shield" className="h-4 w-4 max-[359px]:hidden" />
+      <Icon name="shield" className="h-4 w-4 text-official-on-navy max-[359px]:hidden" />
       {ds ? (
         <>
           <b className="font-semibold text-white tabular">{records.length}</b>
           {/* the words show only where the masthead has room; screen readers always hear them */}
-          <span className="hidden xl:inline">official notice{records.length === 1 ? "" : "s"}</span>
-          <span className="sr-only xl:hidden">official notice{records.length === 1 ? "" : "s"}</span>
+          <span className="hidden xl:inline">
+            <span className="sr-only">agency </span>notice{records.length === 1 ? "" : "s"}
+          </span>
+          <span className="sr-only xl:hidden">agency notice{records.length === 1 ? "" : "s"}</span>
         </>
       ) : (
         <span>Official notices</span>
       )}
-      <span className="h-3.5 w-px bg-official-on-navy/40" aria-hidden />
-      <span>{ds ? verificationWord(verification) : "Unavailable"}</span>
+      <span className="h-3.5 w-px bg-white/25" aria-hidden />
+      {/* the words say whose check is missing: the agencies published the notices; CoastWatch's copy of them is unreviewed */}
+      <span className={verification && verification.state !== "verified" ? "text-on-navy-2" : ""}>{ds ? (verification && verification.state !== "verified" && verification.state !== "unavailable" ? <>Not verified<span className="max-2xl:hidden"> copy</span></> : verificationWord(verification)) : "Unavailable"}</span>
     </button>
   );
 }

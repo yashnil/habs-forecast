@@ -17,14 +17,18 @@ const link = "font-semibold text-white underline decoration-white/40 underline-o
  * agency links; "More" opens the reasons. Missing live data is an alert and leads the row.
  */
 export function DataBanners({ manifest, error }: { manifest: Manifest | null; error: string | null }) {
-  const reg = useRegistryDisclosure();
-  // Coastal mode keeps the line to the notices disclosure; failed updates stay under "More",
-  // in the data-status dot, and on each layer that is affected
+  const registry = useRegistryDisclosure();
+  // Coastal mode has no standing line: the masthead pill says the copy is unreviewed, and every
+  // official item in a briefing carries its source, the date CoastWatch checked it and that no person
+  // has reviewed the copy. Research keeps the full line. Failed updates stay under "More", in the
+  // data-status dot, and on each layer that is affected; missing data and test data always show.
   const [mode] = useMode();
+  const reg = mode === "research" ? registry : { ...registry, show: false, pending: false };
   const [open, setOpen] = useState(false);
   const id = useId();
   const unavailable = !!error || !manifest;
-  const failed = manifest ? manifest.sources.filter((s) => s.outcome === "failed") : [];
+  // Coastal shows failed updates only in the data-status dot and on the layers affected
+  const failed = manifest && mode === "research" ? manifest.sources.filter((s) => s.outcome === "failed") : [];
   const fixture = !!manifest && isFixture(manifest);
   if (!reg.show && !unavailable && !failed.length && !fixture) {
     // same box as the line below, with an invisible line of text: no jump when the line appears

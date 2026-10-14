@@ -70,6 +70,10 @@ test.describe("welcome", () => {
   test("analyze scientific data: Research presentation, station analysis; the same notices are listed for everyone", async ({ browser }) => {
     const before = await fresh(browser, DESKTOP, `${OK}/coast?place=port-593`);
     const ids = async (p: Page) => (await p.locator('[data-testid^="coast-notice-"][data-tier]').evaluateAll((els) => els.map((e) => `${e.getAttribute("data-testid")}:${e.getAttribute("data-tier")}`))).sort();
+    // Coastal keeps every notice in the Explore section's notices list and the science tab
+    // the trip view is rendered on the server: wait until it is interactive (the HAB line is client-only)
+    await expect(before.page.getByTestId("matter-hab")).toBeVisible();
+    await before.page.getByTestId("explore-tab-science").click();
     await expect(before.page.getByTestId("coast-official")).toBeAttached();
     const noPurpose = await ids(before.page);
     await before.ctx.close();
@@ -96,9 +100,9 @@ test.describe("welcome", () => {
     await page.evaluate(() => localStorage.setItem("cw-purpose-v1", JSON.stringify({ purpose: "commercial" })));
     await page.goto(`${OK}/coast?place=port-201&for=recreational`);
     // a link naming the activity wins over the saved purpose
-    await expect(page.getByTestId("coast-for-recreational")).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByTestId("trip-activity")).toContainText("Recreational");
     await page.goto(`${OK}/coast?place=port-201`);
-    await expect(page.getByTestId("coast-for-commercial")).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByTestId("trip-activity")).toContainText("Commercial");
     await expect(page.getByTestId("coast-title")).toHaveText("Crescent City");
     await ctx.close();
   });
@@ -109,9 +113,9 @@ test.describe("welcome", () => {
     await page.goto(`${OK}/about`);
     await page.getByTestId("purpose-select").selectOption("recreational:shellfish");
     await page.goto(`${OK}/coast?place=site-clam-beach`);
-    await expect(page.getByTestId("coast-for-shellfish")).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByTestId("trip-activity")).toContainText("Shellfish harvest");
     await page.getByTestId("purpose-select").selectOption("none");
-    await expect(page.getByTestId("coast-for-all")).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByTestId("trip-activity")).toContainText("Any activity");
     await page.goto(`${OK}/about`);
     await page.getByTestId("purpose-reset").click();
     await expect(page).toHaveURL(new RegExp(`^${OK}/(\\?.*)?$`));
@@ -131,7 +135,7 @@ test.describe("welcome", () => {
     await page.getByTestId("place-input").fill("Clam");
     await page.getByTestId("place-option-site-clam-beach").click();
     await expect(page).toHaveURL(/\/coast\?place=site-clam-beach&for=shellfish$/);
-    await expect(page.getByTestId("brief-official")).toBeVisible();
+    await expect(page.getByTestId("matter-notices")).toBeVisible();
     await ctx.close();
   });
 

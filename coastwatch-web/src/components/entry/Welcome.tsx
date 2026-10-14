@@ -9,6 +9,7 @@ import { coastHref, type Audience, type CoastPlace } from "@/lib/coast";
 import { defaultAudience, usePurpose, type PurposeChoice } from "@/lib/purpose";
 import { writeMode } from "@/lib/mode";
 import { TOUR_SEEN_KEY } from "@/components/map/Tour";
+import { CDFW_URL, CDPH_URL } from "@/components/shell/OfficialShell";
 
 /**
  * The front door (first visit to the map, never over a shared link): "Explore California's coast"
@@ -172,7 +173,15 @@ export function Welcome({ places, suppressed, onConditions, pillClass = "", onOp
               Explore California&apos;s coast
             </motion.h1>
             <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease, delay: 0.38 }} className="mt-3 max-w-[52ch] text-[16px] leading-relaxed text-[#c6d3e1] sm:text-[17px]">
-              Official notices, what has been measured, and what NOAA&apos;s model expects, for the waters you care about. CoastWatch is not an official source: closures come from CDFW and CDPH.
+              Official notices, what has been measured, and what NOAA&apos;s model expects, for the waters you care about. CoastWatch is not an official source: closures come from{" "}
+              <a href={CDFW_URL} target="_blank" rel="noopener noreferrer" className="font-semibold underline decoration-current/40 underline-offset-2 hover:decoration-current">
+                CDFW
+              </a>{" "}
+              and{" "}
+              <a href={CDPH_URL} target="_blank" rel="noopener noreferrer" className="font-semibold underline decoration-current/40 underline-offset-2 hover:decoration-current">
+                CDPH
+              </a>
+              .
             </motion.p>
 
             <AnimatePresence mode="wait" initial={false}>

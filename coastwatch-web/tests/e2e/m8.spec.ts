@@ -79,7 +79,9 @@ test.describe("first visit", () => {
     const c = (await card.boundingBox())!;
     const pill = (await page.getByTestId("official-pill").boundingBox())!;
     expect(pill.y + pill.height).toBeLessThanOrEqual(c.y);
-    await expect(page.getByTestId("status-line").getByRole("link", { name: "CDFW" }).first()).toBeVisible();
+    // Coastal has no standing status line: the welcome itself links the agencies
+    await expect(card.getByRole("link", { name: "CDFW" })).toHaveAttribute("href", /^https:\/\/wildlife\.ca\.gov\//);
+    await expect(card.getByRole("link", { name: "CDPH" })).toHaveAttribute("href", /^https:\/\/www\.cdph\.ca\.gov\//);
     await card.getByTestId("intro-dismiss").click();
     await expect(card).toHaveCount(0);
     await page.reload();
