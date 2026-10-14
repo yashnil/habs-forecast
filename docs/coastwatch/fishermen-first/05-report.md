@@ -142,41 +142,61 @@ My Coast's Coastal mode, after #41's current work, already follows "answer → w
 
 ## 6. Before-and-after benchmarks
 
-**Before** = `d414dd63`, production data, phone at 390 × 844 (checkpoint §2). **After** = #41's next pushed head plus I2/I3, measured with the same script (`scratchpad/audit/capture.mjs`, to be committed with the I2 work) on the same tasks.
+Full results, method and limitations: [07](07-benchmarks.md). These are scripted walkthroughs on fixture data, not stakeholder tests.
 
-| Task | Before: outcome | Before: measures | After |
-|---|---|---|---|
-| T1 Monterey commercial, cold | Pass | 4 taps + typing to the briefing; 5 to conditions; official headline at 0.25 s | pending |
-| T2 Crescent City Dungeness status | **Fail** (ambiguous: "no notice" first; season closed hidden) | Season status: 1 tap + scroll | pending (#41 fix) |
-| T3 Clam Beach razor clams | Pass | 0.17 s; both notices with dates | pending |
-| T4 Santa Cruz recent HAB activity | Partial (nearest toxin line OK here; Monterey used a 2022 value) | Requires a species choice before the official chapter | pending (#41 `hab.ts`) |
-| T5 Return after days: what changed | **Fail** (not possible) | n/a | pending (I2) |
-| T6 Researcher provenance | Not yet timed | — | pending |
+| Task | Before (`d414dd63`) | After (`599d2d18` + "Since you last checked") |
+|---|---|---|
+| T1 Monterey, tomorrow's conditions, cold | ✓ 5 taps + typing | ✓ 4 taps + typing (1 scroll) |
+| T2 Crescent City Dungeness | ✓ 3 taps, **first line "No notice…"** | ✓ 2 taps, **first line: CDFW "Season is closed"** |
+| T3 Clam Beach razor clams | ✓ 3 taps | ✓ 2 taps (1 scroll) |
+| T4 Santa Cruz recent HAB activity | ✓ 0 taps | ✓ 0 taps |
+| T5 What changed since the last visit | **✗ not possible: 3 agency pages to compare by hand** | **✓ 1 tap, every change with its source and date** |
+| T6 Researcher provenance | ✓ 0 taps, 1 scroll | ✓ 0 taps, 1 scroll |
 
----
+## 7. Integration handoff (with the #41 session)
 
-## 7. Integration handoff for Terminal 1 (#41 session)
+The contract is in [06](06-integration-contract.md).
 
-| Item | Owner | State | Mount / files | Acceptance criteria |
-|---|---|---|---|---|
-| I1 season status first | #41 | Built, uncommitted | `nextSteps.ts speciesStatements`, `answer-status`, `brief-status` | Checkpoint §3 I1 |
-| RAMP link row (Dungeness) | #41 | Text sent; no function needed | `nextSteps.ts` | Link only; no inferred dates |
-| I2 Since you last checked | this branch | **Waiting for user approval** | `lib/changes.ts` (pure) + `components/coast/SinceLastCheck.tsx` (no props), mounted below `AnswerLine` in `MyCoast.header()` | Checkpoint §3 I2 + the categories in §5 |
-| Remember activity and species | this branch | Waiting for user approval | Extends the existing `cw-home-port` key without breaking it | A returning user lands on the same activity and species; the URL still wins |
-| I3 Dated kept briefing | this branch | Waiting for user approval | Separate files; print CSS | Checkpoint §3 I3 |
-| Watcher honest User-Agent | pipeline owner | Reported only | `pipeline/.../official.py:41` | A user decision |
+| Item | Owner | State |
+|---|---|---|
+| Season status first (I1) | #41 | **Pushed** in `a948908c`/`32449b76` |
+| RAMP / whale-rule gate | #41 | Link only: no machine-readable status exists (04 §2.12) |
+| "Since you last checked" (I2) | This branch | **Built, mounted under the answer line in Coastal mode** (`4d840ec8`, the agreed one-line mount on top of #41's head) |
+| Remembered activity and species | This branch | Built: a "Continue with …" link (1 tap), never an automatic redirect |
+| Dated kept briefing (I3) | This branch | Built: print view `/coast/kept` and a single offline HTML file |
+| Honest watcher User-Agent | This session, PR #48 against `main` | Draft PR; approved in principle by the owner |
 
-**Base:** I2/I3 will be built on #41's pushed `feat/coastal-redesign` head, never on its uncommitted files.
+**Integrate:** the change block, the remembered activity and species, and the kept briefing as one secondary link.
+**Do not integrate:** push, e-mail or SMS alerts (not built, demand unvalidated); weather in kept copies or any new NOAA call from these features (robots.txt question); pre-season crab-testing progress (needs a reviewed PDF transcription pipeline); disaster-assistance links (below).
 
----
+### Disaster-assistance resources: verified, not integrated
+
+These are direct official sources, live on 2026-10-13 ([02 §9](02-existing-products.md)):
+- NOAA Fisheries Fishery Resource Disaster Assistance, and its list of determinations;
+- CDFW Federal Fishery Disaster Relief;
+- PSMFC Federal Fishery Disaster Relief;
+- SBA disaster assistance;
+- California Sea Grant.
+
+**Rule if they are ever shown:**
+- only while a Commerce disaster determination or request covers the chosen species and region, linked by its number;
+- worded as "official information about fishery disaster relief", **never** as eligibility, availability, amounts or timing;
+- with no tax, loan or financial advice.
+
+None of the determinations seen in the review (02 §9) concerns the 2026–27 Dungeness season, but the list was not checked exhaustively for pending requests. Until someone checks it, nothing is shown.
 
 ## 8. Decisions that need the project owner
 
-1. **Pilot:** North Coast commercial Dungeness, pre-opener check (with a shellfish secondary arm).
-2. **Ownership:** #41 owns I1 and the RAMP row; this branch builds I2, activity and species memory, and I3 as separate files.
-3. **Outreach:** approve the recruitment drafts and intermediaries (03 §2), the incentive amount, and any IRB route. Nothing is sent until then.
-4. **robots.txt:** `api.weather.gov` and the ERDDAP servers disallow crawling. Is it acceptable to treat their documented API queries as permitted (CoastWatch already depends on both), or should we ask the providers?
-5. **Compliance slip:** the source audit sent one request each to data.chhs.ca.gov and data.ca.gov `/api/` before reading their robots.txt, which disallows that path. No further requests were made.
-6. **CDFW GovDelivery:** subscribing a dedicated inbox to the domoic acid alert topic would be the fastest CDFW signal. It means submitting an e-mail address.
-7. **Watcher User-Agent:** switch from a browser string to an honest one (all three agency sites returned 200 to an honest one).
-8. **Disaster-aid links:** add direct official links (NOAA Fisheries disaster assistance, the PSMFC spend plans, SBA) during a declared closure only. Never as financial advice. (02 §9)
+**Decided on 2026-10-13:**
+- the pilot (North Coast commercial Dungeness; shellfish harvesters second);
+- the ownership split;
+- the honest User-Agent (PR #48, conditional on provider rules, which were checked);
+- no e-mail subscription, outreach or incentives yet;
+- a documented API is not exempt from robots.txt.
+
+**Still open:**
+1. **`api.weather.gov` and robots.txt.** It is `Disallow: /` for every agent, and #41's `/api/conditions` uses it. Production use needs your decision. Options: ask NWS, use only their web pages as links, or accept the documented API. My features make no NWS calls.
+2. **ERDDAP robots.txt (SCCOOS/CeNCOOS).** The pipeline's shore-station and model data come from it. Same question, from the source audit.
+3. **Outreach package** (03 §2, §9): intermediaries, incentive amount and payment method, IRB route, and who holds contacts. Drafts only.
+4. **Merging #48** (the watcher User-Agent) into `main`.
+5. **Integration of #47 into #41** (or after #41 merges): your review of the change block and the kept briefing ([07](07-benchmarks.md) §Costs lists the trade-offs).
