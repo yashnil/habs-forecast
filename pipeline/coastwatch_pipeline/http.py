@@ -29,8 +29,10 @@ def tls_context() -> ssl.SSLContext:
 
 
 class FetchError(RuntimeError):
-    def __init__(self, message: str, detail: str | None = None, *, hang: bool = False, budget: bool = False):
+    def __init__(self, message: str, detail: str | None = None, *, hang: bool = False, budget: bool = False, refused: bool = False):
         super().__init__(message)
+        # every attempt was answered with HTTP 403: the server refuses this client, for now
+        self.refused = refused
         self.detail = detail  # start of the server's error message, when it sent one
         # every attempt timed out or could not connect: the server gave no answer at all
         self.hang = hang
@@ -102,6 +104,8 @@ def fetch(
 ) -> Response:
     last: Exception | None = None
     answered = False  # the server sent an HTTP response on some attempt
+    codes: list[int] = []
+    who = ""  # which layer answered a refusal (Server / Via headers), for reporting it to the operator
     for attempt in range(retries + 1):
         rem = _remaining()
         if rem is not None and rem[0] <= 1:
@@ -130,15 +134,20 @@ def fetch(
                     msg = ""
                 raise FetchError(f"HTTP {e.code} for {url}" + (f" ({msg[:240]})" if msg else ""), detail=msg[:240] or None) from e
             last, answered = e, True
+            codes.append(e.code)
+            if e.code == 403 and e.headers is not None:
+                who = ", ".join(f"{h}: {e.headers.get(h)}" for h in ("Server", "Via", "X-Cache") if e.headers.get(h))[:160]
         except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
             last = e
+            codes.append(0)
         if attempt < retries:
             wait = backoff * (2**attempt)
             rem = _remaining()
             if rem is not None and rem[0] <= wait + 1:
                 raise FetchError(f"{rem[1]} used up after {attempt + 1} attempts: {url} ({last})", hang=not answered, budget=True)
             time.sleep(wait)
-    raise FetchError(f"Failed after {retries + 1} attempts: {url} ({last})", hang=not answered)
+    refused = bool(codes) and all(c == 403 for c in codes)
+    raise FetchError(f"Failed after {retries + 1} attempts: {url} ({last}{'; ' + who if refused and who else ''})", hang=not answered, refused=refused)
 
 
 def _log(msg: str) -> None:
@@ -162,10 +171,20 @@ class CircuitBreaker:
     find that out (SCCOOS's ERDDAP serves one dataset per CalHABMAP station). After
     `host_threshold` consecutive hangs the host is skipped for the rest of the run. A host
     that answers, even with errors, is never skipped this way.
+
+    Refusals are counted per host too: once `refusal_threshold` different datasets of one host
+    have been refused (HTTP 403 on every attempt) in this run, the host is not asked again until
+    the next run. coastwatch.pfeg.noaa.gov refused the runners this way in 3 of 10 runs on
+    2026-10-12..14, from the first request on and for every dataset, while coastwatch.noaa.gov
+    answered the same runners; each refused dataset still cost ~40-95 s of retries. Asking a
+    server again and again after it has said no is neither useful nor polite. One refused
+    dataset (staging run 37967595146) never stops the others.
     """
 
-    def __init__(self, inner: Fetcher = fetch, threshold: int = 2, host_threshold: int = 2):
-        self.inner, self.threshold, self.host_threshold = inner, threshold, host_threshold
+    def __init__(self, inner: Fetcher = fetch, threshold: int = 2, host_threshold: int = 2, refusal_threshold: int = 3):
+        self.inner, self.threshold, self.host_threshold, self.refusal_threshold = inner, threshold, host_threshold, refusal_threshold
+        self.host_refusals: dict[str, set[str]] = {}
+        self.hosts_refusing: dict[str, str] = {}
         self.failures: dict[str, int] = {}
         self.opened: dict[str, str] = {}
         self.host_hangs: dict[str, int] = {}
@@ -185,6 +204,8 @@ class CircuitBreaker:
         k, host = self.key(url), urlsplit(url).netloc
         if host in self.hosts_down:
             raise FetchError(f"{host} skipped for the rest of this run: no answer to {self.host_threshold} requests in a row (last: {self.hosts_down[host]}): {url}", hang=True)
+        if host in self.hosts_refusing:
+            raise FetchError(f"{host} not asked again this run: it refused {len(self.host_refusals[host])} datasets (HTTP 403 on every attempt; last: {self.hosts_refusing[host]}): {url}", refused=True)
         if k in self.opened:
             raise FetchError(f"circuit open for {k} after {self.threshold} consecutive failures this run (last: {self.opened[k]}): {url}")
         t0 = time.monotonic()
@@ -199,6 +220,11 @@ class CircuitBreaker:
                 raise
             if e.budget and not e.hang:  # the budget ran out; says nothing about the server
                 raise
+            if e.refused:
+                self.host_refusals.setdefault(host, set()).add(k)
+                if len(self.host_refusals[host]) >= self.refusal_threshold:
+                    self.hosts_refusing[host] = str(e)[:200]
+                    _log(f"{host} refused {len(self.host_refusals[host])} datasets this run; not asked again until the next run")
             self.failures[k] = self.failures.get(k, 0) + 1
             if self.failures[k] >= self.threshold:
                 self.opened[k] = str(e)[:200]
