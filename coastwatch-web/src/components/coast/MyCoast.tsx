@@ -9,6 +9,7 @@ import type { Manifest, PortsCollection } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 import type { StationLite } from "@/lib/data";
 import { COAST_COPY } from "@/content/coast";
+import { CHL_NEAR_COPY } from "@/content/copy";
 import { provenanceFeatures } from "@/lib/provenance";
 import { journeyTo } from "@/lib/camera";
 import { associationsAt } from "@/lib/applicability";
@@ -318,7 +319,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     if (model?.pda && !model.pda.here) out.push(`C-HARM gives no toxin probability for these waters${model.pda.nearest ? `; its nearest value is ${model.pda.nearest.km.toFixed(1)} km away and is not a forecast here` : ""}.`);
     const lyr = model?.layer;
     if (lyr && now && classifyTime(lyr.freshness, lyr.time, now).state !== "current") out.push("The latest C-HARM run is not current.");
-    if (sat && !sat.date) out.push(`No clear satellite view of these waters in the last week (cloud, fog or no overpass)${sat.nearestKm != null ? `; the nearest clear pixel was ${sat.nearestKm.toFixed(1)} km away` : ""}.`);
+    if (sat && sat.date === null)
+      out.push(sat.flagged ? CHL_NEAR_COPY.unknownFlagged : "No clear satellite view of these waters in the last week (cloud, fog or no overpass).");
     out.push("Toxin in seafood is not measured by CoastWatch. CDPH tests shellfish; paralytic shellfish poisoning (PSP) results are not shown here.");
     return out;
   }, [place, assocs, st, model, sat, now]);
