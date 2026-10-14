@@ -47,11 +47,18 @@ export type StationLite = {
   /** the station's original-data request on SCCOOS ERDDAP (lib/observations sourceCsvUrl) */
   request_url?: string | null;
   latest: { variable: string; label: string; units: string; kind: string; value: number | null; date: string; qualifier: string | null; n_last_365d: number }[];
+  /** the last 370 days of samples of the HAB measurements (My Coast's evidence timelines): [date, value] */
+  recent?: Record<string, [string, number | null][]>;
 };
+/** HAB measurements kept as recent timelines for the evidence cards */
+const RECENT_VARIABLES = ["pDA", "pn_seriata", "pn_delicatissima", "chl_extracted"];
+const RECENT_DAYS = 370;
 const MAP_VARIABLES = ["pDA", "pn_seriata", "pn_delicatissima"];
 
 export function slimStations(obs: ObservationDataset): StationLite[] {
   const meta = new Map(obs.variables.map((v) => [v.id, v]));
+  // the timelines end at the dataset's newest sample (not each station's), so a long-silent station sends none
+  const newest = Math.max(0, ...obs.stations.map((st) => (st.sample_times.length ? Date.parse(st.sample_times[st.sample_times.length - 1]) : 0)));
   return obs.stations.flatMap((st) => (st.lat == null || st.lon == null ? [] : [{
     station_id: st.station_id,
     name: st.name,
@@ -66,7 +73,26 @@ export function slimStations(obs: ObservationDataset): StationLite[] {
         const v = meta.get(sm.variable);
         return { variable: sm.variable, label: v?.label ?? sm.variable, units: v?.units ?? "", kind: v?.kind ?? "", value: sm.last_value ?? null, date: sm.last_date!, qualifier: sm.last_qualifier ?? null, n_last_365d: sm.n_last_365d };
       }),
+    recent: recentSeries(st, newest),
   }]));
+}
+
+/** Samples in the RECENT_DAYS days before the dataset's newest sample, per HAB variable (measured values only, 3 significant digits). */
+function recentSeries(st: ObservationDataset["stations"][number], newest: number): Record<string, [string, number | null][]> {
+  const times = st.sample_times;
+  const from = newest - RECENT_DAYS * 86400000;
+  const out: Record<string, [string, number | null][]> = {};
+  for (const se of st.series as { variable: string; values: (number | null)[] }[]) {
+    if (!RECENT_VARIABLES.includes(se.variable)) continue;
+    const pts: [string, number | null][] = [];
+    se.values.forEach((v, i) => {
+      if (v == null) return; // not measured that visit: no point (a gap is not a zero)
+      const t = Date.parse(times[i]);
+      if (t >= from) pts.push([times[i].slice(0, 10), Number(v.toPrecision(3))]);
+    });
+    if (pts.length) out[se.variable] = pts;
+  }
+  return out;
 }
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });

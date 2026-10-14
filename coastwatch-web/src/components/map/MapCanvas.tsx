@@ -63,6 +63,8 @@ type Props = {
   initialBounds: [[number, number], [number, number]];
   initialPadding: { top: number; bottom: number; left: number; right: number } | number;
   onPort: (portCode: number) => void;
+  /** a station of the overlay was chosen (My Coast) */
+  onStation?: (stationId: string) => void;
   onPoint: (p: MapPoint) => void;
   onReady: (map: MlMap) => void;
   /** pointer over the map (desktop hover readout); null when it leaves */
@@ -87,6 +89,7 @@ const MEASURED_MARK = "#4fd1ae";
 const THREADS = [
   { to: "cell", color: "rgba(233,239,246,0.9)" },
   { to: "station", color: "rgba(233,239,246,0.9)" },
+  { to: "pixel", color: "rgba(233,239,246,0.9)" },
   { to: "limit", color: "rgba(246,187,92,0.95)" },
 ] as const;
 const THREAD_MS = 520;
@@ -120,7 +123,7 @@ const RASTER_FADE = { ...RASTER_PAINT, "raster-fade-duration": 220 } as const;
 
 export default function MapCanvas(p: Props) {
   const [wide] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
-  const { onPort, onPoint } = p;
+  const { onPort, onPoint, onStation } = p;
   const [map, setMap] = useState<MlMap | null>(null);
   const hasRaster = !!(p.forecast || p.satellite || p.satelliteAge);
   // the fade is decided once per raster, when it first appears (a layer switch fades in; a new
@@ -264,6 +267,11 @@ export default function MapCanvas(p: Props) {
 
   const onClick = useCallback(
     (e: MapLayerMouseEvent) => {
+      const st = e.features?.find((x) => x.layer.id === "coast-station");
+      if (st && onStation) {
+        onStation(String((st.properties as Record<string, unknown>).id));
+        return;
+      }
       const f = e.features?.find((x) => x.layer.id === "ports-circle" || x.layer.id === "ports-hit");
       if (f) {
         onPort(Number((f.properties as Record<string, unknown>).port_code));
@@ -271,7 +279,7 @@ export default function MapCanvas(p: Props) {
       }
       onPoint({ lat: e.lngLat.lat, lon: e.lngLat.lng });
     },
-    [onPort, onPoint],
+    [onPort, onPoint, onStation],
   );
 
   const portsData = useMemo(
@@ -284,7 +292,7 @@ export default function MapCanvas(p: Props) {
         : null,
     [p.ports],
   );
-  const interactive = p.showPorts && portsData ? ["ports-hit", "ports-circle"] : [];
+  const interactive = [...(p.showPorts && portsData ? ["ports-hit", "ports-circle"] : []), ...(p.onStation && p.overlay ? ["coast-station"] : [])];
   const inited = useRef<MlMap | null>(null);
   const init = (m: MlMap) => {
     // the style's layers exist (isStyleLoaded would also wait for the tiles)
@@ -449,18 +457,33 @@ export default function MapCanvas(p: Props) {
             filter={["==", ["get", "kind"], "end"]}
             paint={{
               "circle-radius": 4,
-              "circle-color": ["match", ["get", "to"], "cell", MODEL_MARK, "station", MEASURED_MARK, OFFICIAL],
+              "circle-color": ["match", ["get", "to"], "cell", MODEL_MARK, "station", MEASURED_MARK, "pixel", MEASURED_MARK, OFFICIAL],
               "circle-stroke-color": "#06111e",
               "circle-stroke-width": 1.5,
               "circle-opacity": ["case", ["boolean", ["get", "far"], false], 0.55, 1],
               "circle-stroke-opacity": ["case", ["boolean", ["get", "far"], false], 0.55, 1],
             }}
           />
-          <Layer id="coast-station" type="circle" filter={["==", ["get", "kind"], "station"]} paint={{ "circle-radius": 6, "circle-color": MEASURED_MARK, "circle-stroke-color": "#06111e", "circle-stroke-width": 2 }} />
+          {/* the model's neighbourhood: the cells within it are what the briefing summarises */}
+          <Layer id="coast-ring" type="line" filter={["==", ["get", "kind"], "ring"]} paint={{ "line-color": MODEL_MARK, "line-width": 1.4, "line-dasharray": [3, 2], "line-opacity": 0.9 }} />
+          {/* stations: a point that carries its age (filled when sampled in the last 30 days, a
+              ring when older); the station the briefing is describing is larger */}
+          <Layer
+            id="coast-station"
+            type="circle"
+            filter={["==", ["get", "kind"], "station"]}
+            paint={{
+              "circle-radius": ["case", ["boolean", ["get", "focus"], false], 8.5, ["boolean", ["get", "minor"], false], 4.5, 6.5],
+              "circle-color": ["case", ["boolean", ["get", "aged"], false], "rgba(6,17,30,0.6)", MEASURED_MARK],
+              "circle-stroke-color": ["case", ["boolean", ["get", "aged"], false], MEASURED_MARK, "#06111e"],
+              "circle-stroke-width": ["case", ["boolean", ["get", "aged"], false], 2.2, 2],
+              "circle-opacity": ["case", ["boolean", ["get", "minor"], false], 0.75, 1],
+            }}
+          />
           <Layer
             id="coast-station-label"
             type="symbol"
-            filter={["==", ["get", "kind"], "station"]}
+            filter={["all", ["==", ["get", "kind"], "station"], ["!", ["boolean", ["get", "minor"], false]]]}
             layout={{ "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 12, "text-offset": [0.9, 0], "text-anchor": "left", "text-optional": true }}
             paint={{ "text-color": "#cdeee6", "text-halo-color": "rgba(6,17,30,0.7)", "text-halo-width": 1.6 }}
           />

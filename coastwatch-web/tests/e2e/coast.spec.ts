@@ -198,8 +198,11 @@ test.describe("My Coast", () => {
       const page = await ctx.newPage();
       await open(page, `${OK}/coast?place=port-201`);
       await expect(page.getByTestId("coast-model-pda").or(page.getByTestId("coast-model-error"))).toBeVisible();
+      // the answer line cross-fades when the model's reading arrives: check it once it has settled
+      await expect(page.getByTestId("answer-model")).not.toContainText("Reading");
+      await page.waitForTimeout(600);
       const r = await new AxeBuilder({ page }).exclude(".maplibregl-canvas").analyze();
-      expect(r.violations.map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
+      expect(r.violations.map((v) => `${v.id}: ${v.nodes.length} ${v.nodes.map((n) => n.html.slice(0, 140)).join(" | ")}`)).toEqual([]);
       await ctx.close();
     });
   }
