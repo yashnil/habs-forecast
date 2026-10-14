@@ -24,7 +24,7 @@ export function WhatMatters({ items, checked, onFocus, focus, sourceNote }: { it
           {items.map((m, i) => (
             <motion.li
               layout
-              key={m.id + (m.quote ?? m.headline)}
+              key={m.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{
                 opacity: 1,
@@ -47,8 +47,18 @@ export function WhatMatters({ items, checked, onFocus, focus, sourceNote }: { it
               <div className="grid grid-cols-[16px_1fr] gap-x-2.5">
                 <Mark kind={m.kind} aged={m.aged} className="mt-[5px]" />
                 <div className="min-w-0">
-                  <p className={`text-[16.5px] font-semibold leading-snug ${m.tone === "gap" ? "text-ink-2" : "text-ink"}`}>{m.headline}</p>
+                  <motion.p key={m.headline} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: [0.2, 0, 0, 1] }} className={`text-[16.5px] font-semibold leading-snug ${m.tone === "gap" ? "text-ink-2" : "text-ink"}`}>{m.headline}</motion.p>
                   {m.quote && <blockquote className="mt-1 text-[16px] leading-snug text-ink">“{m.quote}”</blockquote>}
+                  {m.also && (
+                    <p className="mt-1.5 text-[14px] leading-snug text-ink-2" data-testid={`matter-${m.id}-also`}>
+                      <span className="font-medium text-ink">{m.also.label}:</span> “{m.also.quote}”{" "}
+                      {m.also.url !== m.source?.url && (
+                        <a href={m.also.url} {...ext} className="font-semibold text-accent hover:underline">
+                          source ↗
+                        </a>
+                      )}
+                    </p>
+                  )}
                   {m.detail && <p className="mt-0.5 text-[14px] leading-snug text-ink-2">{m.detail}</p>}
                   <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px]">
                     {m.source && (

@@ -2,7 +2,7 @@ import type { LayerArtifact } from "@/generated/schema";
 import type { Association } from "@/lib/applicability";
 import { AUDIENCE } from "@/lib/applicability";
 import type { Audience } from "@/lib/coast";
-import { compass, stationName, type Conditions, type Tide } from "@/lib/conditions";
+import { compass, marineHeadline, stationName, type Conditions, type MarinePeriod, type Tide } from "@/lib/conditions";
 import { ageWords, fmtMeasured, fmtPct, EVIDENCE_RADIUS_KM, NEIGHBOURHOOD_KM, RECENT_DAYS, type Neighbourhood, type StationEvidence } from "@/lib/hab";
 import type { Step } from "@/lib/nextSteps";
 import type { Verification } from "@/lib/official";
@@ -66,6 +66,8 @@ export type Matter = {
   detail?: string;
   /** the agency's own words, quoted */
   quote?: string;
+  /** a second statement from the agency about the same fishery, quoted with its own page */
+  also?: { label: string; quote: string; url: string };
   source?: { label: string; url: string };
   /** what the map shows when the item is chosen */
   focus?: "cells" | "toxin" | "model" | "satellite" | "conditions" | "official" | null;
@@ -87,6 +89,8 @@ export type MatterInput = {
   modelBeyond?: boolean;
   conditions: Conditions | null;
   tripDate: string | null;
+  /** today (Pacific), to pick the NWS forecast period for the trip day */
+  today?: string | null;
   /** formats a date (YYYY-MM-DD) or an ISO time */
   fmt: (s: string) => string;
 };
@@ -114,8 +118,10 @@ export function whatMatters(x: MatterInput): Matter[] {
   const forWhat = x.species.id === "any" ? (x.audience === "all" ? "" : ` for ${{ commercial: "commercial fishing", recreational: "recreational fishing", shellfish: "shellfish harvest", all: "" }[x.audience]}`) : ` for ${speciesPhrase(x.species)}`;
   const n = tripNotices(x.assocs, x.audience, x.species);
 
-  // 1. a fishery's own status (quoted): "closed" or "delayed" says more than any notice count
+  // 1. a fishery's own status (quoted): "closed" or "delayed" says more than any notice count; the
+  // agency's other statement about the species (e.g. on marine toxin closures) is quoted with it
   const season = x.statements.find((s) => /season status/i.test(s.topic));
+  const other = x.statements.find((s) => s !== season) ?? null;
   if (season)
     out.push({
       id: "season",
@@ -123,12 +129,13 @@ export function whatMatters(x: MatterInput): Matter[] {
       tone: CLOSED.test(season.statement) ? "alert" : "note",
       headline: `${season.agency} season status for ${speciesPhrase(x.species)}`,
       quote: season.statement,
+      also: other ? { label: `${other.agency} on ${topicWords(other.topic)}`, quote: other.statement, url: other.source.url } : undefined,
       source: { label: `${season.agency} page`, url: season.source.url },
       focus: null,
     });
 
-  // the agency's other current statements about this species (quoted), e.g. "no closures due to marine toxins"
-  for (const st of x.statements.filter((s) => s !== season).slice(0, 1))
+  // without a season status, the agency's statement stands on its own
+  for (const st of season ? [] : other ? [other] : [])
     out.push({
       id: `statement-${st.id}`,
       kind: "official",
@@ -187,7 +194,7 @@ export function whatMatters(x: MatterInput): Matter[] {
   out.push(habMatter(x));
 
   // 5. conditions on the trip day (context, never a HAB or fishing forecast)
-  const c = conditionsMatter(x.conditions, x.tripDate, x.audience, x.fmt);
+  const c = conditionsMatter(x.conditions, x.tripDate, x.audience, x.fmt, x.today ?? x.tripDate);
   if (c) out.push(c);
   return out;
 }
@@ -235,16 +242,33 @@ export function tidesOn(tides: Tide[], date: string | null): Tide[] {
   return date ? tides.filter((t) => t.at.startsWith(date)) : [];
 }
 
-function conditionsMatter(c: Conditions | null, date: string | null, audience: Audience, fmt: (s: string) => string): Matter | null {
+/** The NWS forecast period for the trip day: "Tonight"/"Today" for today, else the day's name ("Thu"), never a night period first. */
+export function periodFor(periods: MarinePeriod[], date: string | null, today: string | null): MarinePeriod | null {
+  if (!periods.length) return null;
+  if (!date || !today || date === today) return periods[0];
+  const day = new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" }).toLowerCase();
+  return periods.find((p) => p.name.toLowerCase() === day || p.name.toLowerCase() === day.slice(0, 3)) ?? null;
+}
+
+function conditionsMatter(c: Conditions | null, date: string | null, audience: Audience, fmt: (s: string) => string, today: string | null): Matter | null {
   if (!c) return null;
   const parts: string[] = [];
   let source: Matter["source"];
+  // NWS's forecast for the trip day comes first, in its own words; then the nearest buoy now
+  let nws: string | null = null;
+  if (c.marine.status === "ok") {
+    const p = periodFor(c.marine.data.periods, date, today);
+    if (p) {
+      nws = `NWS ${/tonight|today|this afternoon/i.test(p.name) ? p.name.toLowerCase() : `for ${p.name}`}: ${marineHeadline(p)}`;
+      source = { label: `NWS forecast, ${c.marine.data.zoneName}`, url: c.marine.url };
+    }
+  }
   if (c.buoy.status === "ok" && c.buoy.station) {
     const b = c.buoy.data;
     const w = [b.windKt ? `wind ${Math.round(b.windKt.value)} kt${b.windDirDeg ? ` ${compass(b.windDirDeg.value)}` : ""}` : null, b.waveFt ? `waves ${b.waveFt.value.toFixed(1)} ft` : null].filter(Boolean).join(", ");
     if (w) {
       parts.push(`${w.charAt(0).toUpperCase()}${w.slice(1)} at ${stationName(c.buoy.station.name)} buoy now`);
-      source = { label: `NDBC ${c.buoy.station.id}`, url: c.buoy.url };
+      source ??= { label: `NDBC ${c.buoy.station.id}`, url: c.buoy.url };
     }
   }
   if (c.tides.status === "ok") {
@@ -255,13 +279,16 @@ function conditionsMatter(c: Conditions | null, date: string | null, audience: A
     if (!source) source = { label: "NOAA tide predictions", url: c.tides.url };
   }
   const marine = c.marine.status === "ok" ? null : (c.marine.url ?? null);
-  if (!parts.length && !marine) return null;
+  const advisory = c.alerts.status === "ok" ? c.alerts.data[0] : null;
+  if (!parts.length && !marine && !nws) return null;
+  const head = nws ?? (parts.length ? parts.join(" · ") : "No buoy or tide station reports near these waters");
+  const rest = nws ? parts : [];
   return {
     id: "conditions",
     kind: "conditions",
-    tone: "note",
-    headline: parts.length ? parts.join(" · ") : "No buoy or tide station reports near these waters",
-    detail: "Marine forecast and warnings: read NWS for your zone.",
+    tone: advisory ? "alert" : "note",
+    headline: advisory ? `${advisory.event} · ${head}` : head,
+    detail: [rest.length ? `${rest.join(" · ")}.` : "", nws ? (advisory ? `NWS: “${advisory.headline}”.` : "Wind and seas, not a HAB or fishing forecast.") : "Marine forecast and warnings: read NWS for your zone."].filter(Boolean).join(" "),
     source: source ?? (marine ? { label: "NWS marine forecast", url: marine } : undefined),
     focus: "conditions",
   };
@@ -289,6 +316,7 @@ const PRIORITY: [RegExp, number][] = [
 const ACTION_TITLE: Record<string, string> = {
   "toxin-gap": "Look at CDPH's latest toxin test results",
   "marine-gap": "Read the NWS marine forecast for your zone",
+  marine: "Read NWS's full forecast for your zone",
 };
 const rank = (s: Step) => PRIORITY.find(([re]) => re.test(s.id))?.[1] ?? 20;
 

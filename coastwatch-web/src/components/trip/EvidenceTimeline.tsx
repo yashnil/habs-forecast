@@ -45,7 +45,8 @@ export function EvidenceTimeline({
   focus: Focus;
   onFocus: (f: Focus) => void;
 }) {
-  const [ref, w] = useWidth<HTMLDivElement>(520, 280);
+  // starts at a phone's width (never wider than the page before it is measured), then follows its box
+  const [ref, w] = useWidth<HTMLDivElement>(300, 280);
   const reduce = useReducedMotion();
   if (!today || !hab) return <div className="h-[260px] animate-pulse rounded-2xl bg-surface-3/70" data-testid="evidence-loading" aria-label="Reading the evidence" role="status" />;
 
@@ -106,7 +107,7 @@ export function EvidenceTimeline({
 
   return (
     <div ref={ref} className="relative" data-testid="evidence-timeline">
-      <svg width={w} height={H} viewBox={`0 0 ${w} ${H}`} role="img" aria-labelledby="ev-desc" className="block overflow-visible">
+      <svg width={w} height={H} style={{ maxWidth: "100%" }} viewBox={`0 0 ${w} ${H}`} role="img" aria-labelledby="ev-desc" className="block overflow-visible">
         <desc id="ev-desc">{rows.map((r) => `${r.title}, ${r.where}: ${r.latest}.`).join(" ")}</desc>
         {/* the week panel: a finer scale, tinted so the change of scale is visible */}
         <rect x={weekX0 - 2} y={0} width={w - 8 - weekX0 + 2} height={H - 22} rx={6} fill="var(--cw-surface-3)" opacity={0.7} />

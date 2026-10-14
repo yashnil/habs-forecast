@@ -7,7 +7,8 @@ import { speciesById } from "@/content/species";
 import { associationsAt } from "@/lib/applicability";
 import { nextSteps, speciesStatements } from "@/lib/nextSteps";
 import type { StationEvidence, Neighbourhood } from "@/lib/hab";
-import { checklist, checklistKey, parseTripDate, topicWords, tripDays, whatMatters, type MatterInput } from "@/lib/trip";
+import { checklist, checklistKey, parseTripDate, periodFor, topicWords, tripDays, whatMatters, type MatterInput } from "@/lib/trip";
+import type { Conditions } from "@/lib/conditions";
 import { coastHref } from "@/lib/coast";
 
 const FIX = path.resolve(__dirname, "../fixture-data/v1");
@@ -129,6 +130,37 @@ describe("what matters right now", () => {
     expect(n.kind).toBe("official");
     expect(n.tone).toBe("alert");
     expect(n.headline).toMatch(/notices cover these waters for anchovy or sardine/);
+  });
+
+  it("conditions: NWS's period for the trip day, quoted, and an advisory as an alert", () => {
+    const periods = [
+      { name: "Tonight", text: "NW wind 10 to 15 kt. Seas 3 to 5 ft." },
+      { name: "Wed", text: "NE wind around 5 kt. Seas 3 to 4 ft." },
+      { name: "Wed Night", text: "SW wind around 5 kt. Seas 3 to 4 ft." },
+      { name: "Thu", text: "NE wind 5 to 10 kt. Seas around 3 ft." },
+    ];
+    expect(periodFor(periods, "2026-10-13", "2026-10-13")?.name).toBe("Tonight");
+    expect(periodFor(periods, "2026-10-15", "2026-10-13")?.name).toBe("Thu");
+    expect(periodFor(periods, "2026-10-16", "2026-10-13")).toBeNull();
+    const rest = whatMatters(input({ conditions: { lat: 0, lon: 0, marine: { status: "ok", data: { zone: "PZZ450", zoneName: "x", updated: null, periods: [{ name: "Rest Of Tonight", text: "N wind 5 to 10 kt. Seas 6 ft." }] }, source: "", url: "u", fetchedAt: "" }, alerts: { status: "ok", data: [], source: "", url: "", fetchedAt: "" }, buoy: { status: "none", reason: "", source: "" }, tides: { status: "none", reason: "", source: "" } }, tripDate: "2026-10-13", today: "2026-10-13" })).find((x) => x.id === "conditions")!;
+    expect(rest.headline).toBe("NWS rest of tonight: N wind 5 to 10 kt · Seas 6 ft");
+    const src = "NOAA National Weather Service";
+    const cond = (alerts: { event: string; headline: string }[]): Conditions => ({
+      lat: 0,
+      lon: 0,
+      marine: { status: "ok", data: { zone: "PZZ535", zoneName: "Monterey Bay", updated: null, periods }, source: src, url: "https://forecast.weather.gov/shmrn.php?mz=pzz535", fetchedAt: "" },
+      alerts: { status: "ok", data: alerts.map((a) => ({ ...a, onset: null, ends: null, url: "" })), source: src, url: "", fetchedAt: "" },
+      buoy: { status: "none", reason: "", source: src },
+      tides: { status: "none", reason: "", source: src },
+    });
+    const calm = whatMatters(input({ conditions: cond([]), tripDate: "2026-10-15", today: "2026-10-13" })).find((x) => x.id === "conditions")!;
+    expect(calm.headline).toBe("NWS for Thu: NE wind 5 to 10 kt · Seas around 3 ft");
+    expect(calm.tone).toBe("note");
+    expect(calm.detail).toMatch(/not a HAB or fishing forecast/);
+    expect(calm.source?.label).toBe("NWS forecast, Monterey Bay");
+    const sca = whatMatters(input({ conditions: cond([{ event: "Small craft advisory", headline: "Small craft advisory in effect until 9 pm pdt this evening" }]), tripDate: "2026-10-13", today: "2026-10-13" })).find((x) => x.id === "conditions")!;
+    expect(sca.tone).toBe("alert");
+    expect(sca.headline).toMatch(/^Small craft advisory · NWS tonight: NW wind 10 to 15 kt/);
   });
 
   it("topic words read inside a sentence", () => {

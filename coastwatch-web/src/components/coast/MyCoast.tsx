@@ -559,7 +559,9 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   );
 
   // ------------------------------------------------------------ Coastal: the trip briefing
-  const coastalView = modeRead && viewMode === "coastal";
+  // Coastal is the default, so the server renders the trip briefing (no flash of another layout);
+  // a device set to Research switches once its choice is read, and a link's mode=research never renders it
+  const coastalView = viewMode === "coastal" && (modeRead || sp.get("mode") !== "research");
   const tripModel = outlook === null ? ("loading" as const) : outlook === "error" ? ("error" as const) : tripDay?.lead != null ? (outlook.find((d) => d.lead === tripDay.lead) ?? null) : null;
   const matters = useMemo(
     () =>
@@ -576,6 +578,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
             modelBeyond: !!tripDay && tripDay.lead == null && outlook !== null && outlook !== "error",
             conditions: cond.data,
             tripDate,
+            today,
             fmt: fmtWhen,
           })
         : [],
@@ -635,7 +638,6 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
                 home={home}
                 onPickOnMap={() => setMapOpen(true)}
               />
-            <SinceLastCheck />
           </div>
           <WhatMatters
             items={matters}
@@ -651,6 +653,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
               </p>
             }
           />
+          {/* what changed since the last visit (PR #47), after what matters now, before the evidence */}
+          <SinceLastCheck />
           <section aria-labelledby="hab-h" data-testid="hab-evidence">
             <h2 id="hab-h" className="font-display text-[22px] font-medium text-ink sm:text-[24px]">
               HAB evidence near {place.name}

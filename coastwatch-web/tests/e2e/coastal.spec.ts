@@ -124,10 +124,11 @@ test.describe("Coastal mode", () => {
     const later = page.getByTestId("trip-sheet-day").locator('[role="radio"]').last();
     const date = (await later.getAttribute("data-testid"))!.replace("trip-day-", "");
     await expect(later).toContainText(/Tides only|Model outlook/);
+    const tidesOnly = (await later.textContent())!.includes("Tides only");
     await later.click();
     await expect(page).toHaveURL(new RegExp(`date=${date}`));
     await expect(page.getByTestId("ev-trip")).toBeVisible();
-    if ((await later.textContent())?.includes("Tides only")) await expect(page.getByTestId("matter-hab")).toContainText("does not reach this day");
+    if (tidesOnly) await expect(page.getByTestId("matter-hab")).toContainText("does not reach this day");
     // Escape closes a picker and gives focus back
     await page.getByTestId("trip-activity").click();
     await expect(page.getByTestId("trip-sheet-activity")).toBeVisible();
@@ -145,6 +146,8 @@ test.describe("Coastal mode", () => {
     await expect(first).toHaveAttribute("data-testid", "matter-season");
     await expect(first.locator("blockquote")).not.toBeEmpty();
     await expect(page.getByTestId("matter-season-source")).toHaveAttribute("href", /^https:\/\/wildlife\.ca\.gov\//);
+    // CDFW's other Dungeness statement is quoted with it, not as a second card
+    await expect(page.getByTestId("matter-season-also")).toContainText("marine toxin");
     const checks = page.getByTestId("checklist").locator('li[data-testid^="check-"]');
     await expect(checks.first()).toContainText("Confirm the season status on CDFW's page");
     await expect(page.getByTestId("check-closure-line-go")).toHaveAttribute("href", /^tel:/);
@@ -160,6 +163,8 @@ test.describe("Coastal mode", () => {
     await expect(page.getByTestId("what-matters")).toBeVisible();
     const box = (await page.getByTestId("trip-day").boundingBox())!;
     expect(box.y + box.height).toBeLessThan(844);
+    // nothing (not even a chart before it is measured) widens the page: a wider layout makes a phone zoom out
+    expect(await page.evaluate(() => window.innerWidth)).toBe(390);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
     // the map is not loaded until it is wanted
     await expect(page.getByTestId("coast-map-mobile")).toHaveAttribute("data-open", "false");
