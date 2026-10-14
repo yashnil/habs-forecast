@@ -1,0 +1,21 @@
+{
+  "log_chl_mu_sd": [
+    0.5025529265403748,
+    1.2166557312011719
+  ],
+  "checkpoints": {
+    "convlstm": {
+      "bias_all": 0.5989574193954468,
+      "bias_train": 0.6067876219749451,
+      "kappa": null
+    },
+    "pinn_opt": {
+      "bias_all": 0.5720069408416748,
+      "bias_train": 0.5842792987823486,
+      "kappa": 99.99560546875
+    }
+  },
+  "n_masked": 1373970,
+  "n_masked_nan_last": 0,
+  "n_common": 1373970
+}

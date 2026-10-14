@@ -1,0 +1,17 @@
+[audit] Tpred=845 grid=(240, 183) masked px=1373970
+[audit] masked px with NaN last_log: 0
+[audit] convlstm: inference 585s kappa=nan
+[audit] pinn_opt: inference 891s kappa=100
+subset                 test   train     val
+forecast                                   
+ar1_clim_anom        0.7618  0.7537  0.7129
+ar1_pooled           0.8226  0.8304  0.7932
+convlstm:as_trained  0.7679  0.7714  0.7317
+convlstm:no_bias     0.9752  1.0030  0.9695
+convlstm:published   0.8006  0.7987  0.7622
+convlstm:train_bias  0.8010  0.7986  0.7622
+persistence          0.8889  0.8927  0.8543
+pinn_opt:as_trained  0.7608  0.7621  0.7226
+pinn_opt:no_bias     0.9535  0.9907  0.9494
+pinn_opt:published   0.8007  0.8002  0.7650
+pinn_opt:train_bias  0.8015  0.8001  0.7652
