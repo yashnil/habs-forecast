@@ -1,0 +1,104 @@
+{
+ "schema": "coastwatch-health-1",
+ "evaluated_at": "2026-10-13T22:58:11Z",
+ "pipeline_run_id": "38480042565",
+ "thresholds": {
+  "min_consecutive_failures": 3,
+  "olci_max_age_days": 4,
+  "viirs_max_age_days": 8,
+  "charm_max_age_days": 2,
+  "hfr_max_age_hours": 18,
+  "hfr_coverage_drop": 0.5,
+  "publish_max_age_hours": 14
+ },
+ "sources": {
+  "charm": {
+   "outcome": "failed",
+   "consecutive_failures": 1,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-13T14:14:44Z",
+   "error": "lead 0: probe failed: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.csv0?time%5Blast%5D (HTTP Error 403: ); lead 1: probe failed: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_1day.csv0?time%5Blast%5D (HTTP Error 403: ); "
+  },
+  "gibs_chl": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-13T22:47:03Z",
+   "error": null
+  },
+  "satellite_chl": {
+   "outcome": "failed",
+   "consecutive_failures": 1,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-13T14:14:44Z",
+   "error": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily: time listing failed: Failed after 4 attempts: https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.csv0?time%5B(2026-10-06T00:00:00Z):1:(last)%5D (HTTP Error 502: Proxy Error); Sentinel-3A noaacwS3AOLCIchlaSectorDIDaily: time listing f"
+  },
+  "hf_radar": {
+   "outcome": "failed",
+   "consecutive_failures": 3,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-12T15:29:18Z",
+   "error": "ucsdHfrW2: axes or time listing failed: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/ucsdHfrW2.csv0?latitude (HTTP Error 403: )"
+  },
+  "cdfw_ports": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-13T22:47:03Z",
+   "error": null
+  },
+  "official": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-13T22:47:03Z",
+   "error": null
+  },
+  "port_intel": {
+   "outcome": "partial",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-13T22:47:03Z",
+   "error": null
+  },
+  "calhabmap": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-13T22:47:03Z",
+   "error": null
+  },
+  "foss_landings": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-13T22:47:03Z",
+   "error": null
+  }
+ },
+ "hfr_regions_last_covered": {
+  "mendocino_sonoma": "2026-10-13T22:58:11Z",
+  "sf_bay_farallones": "2026-10-13T22:58:11Z",
+  "monterey_bay": "2026-10-13T22:58:11Z",
+  "central_coast": "2026-10-13T22:58:11Z",
+  "southern_california": "2026-10-13T22:58:11Z"
+ },
+ "alerts": [
+  {
+   "key": "source_failing:hf_radar",
+   "kind": "source_failing",
+   "message": "Observed surface currents: HF radar 2 km (HFRNet), hourly and 24-hour mean: failed 3 runs in a row (last success 2026-10-12T15:29:18Z). Last error: ucsdHfrW2: axes or time listing failed: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/ucsdHfrW2.csv0?latitude (HTTP Error 403: )",
+   "since": "2026-10-13T22:58:11Z"
+  },
+  {
+   "key": "hfr_stale",
+   "kind": "hfr_stale",
+   "message": "HF radar: newest hour 2026-10-12T10:00:00Z is 37 h old (alert above 18 h).",
+   "since": "2026-10-13T14:34:01Z"
+  }
+ ],
+ "new_alerts": [
+  "source_failing:hf_radar"
+ ],
+ "cleared_alerts": []
+}
