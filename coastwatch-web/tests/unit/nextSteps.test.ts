@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { OfficialDataset } from "@/generated/official";
 import { speciesById, speciesPhrase, recordNamesSpecies } from "@/content/species";
 import { associationsAt } from "@/lib/applicability";
-import { nextSteps, type StepInput } from "@/lib/nextSteps";
+import { nextSteps, speciesStatements, type StepInput } from "@/lib/nextSteps";
 import type { Conditions } from "@/lib/conditions";
 
 const FIX = path.resolve(__dirname, "../fixture-data/v1");
@@ -42,7 +42,9 @@ describe("next steps", () => {
           const steps = nextSteps(input({ species: speciesById(sp), audience, at }));
           expect(steps.length).toBeGreaterThan(2);
           for (const s of steps) {
-            expect("url" in s.source ? s.source.url : s.source.tel).toMatch(/^(https:\/\/|\+1)/);
+            // an agency page, a phone line, or one of CoastWatch's own pages (a station's history, landings history)
+            expect("url" in s.source ? s.source.url : s.source.tel).toMatch(/^(https:\/\/|\+1|\/(bloom|fisheries)\?)/);
+            if (s.also) expect(s.also.url).toMatch(/^https:\/\//);
             const text = `${s.title} ${s.reason}`;
             const bad = /\b(safe|open|all clear|good fishing|productive)\b/i.test(text) && !/\b(not|no|never)\b/i.test(text);
             expect(bad, text).toBe(false);
@@ -101,5 +103,48 @@ describe("species", () => {
     for (const id of ["dungeness", "rock-crab", "razor-clam", "mussel", "bivalve", "anchovy-sardine", "salmon", "groundfish", "halibut", "squid", "lobster"])
       expect(speciesById(id).link?.url).toMatch(/^https:\/\/wildlife\.ca\.gov\//);
   });
-});
 
+  it("a fishery's season status comes before any other statement about the species", () => {
+    const st = speciesStatements(official, speciesById("dungeness"), "commercial");
+    if (!st.length) return; // the fixture registry may carry no statements for it
+    const firstStatus = st.findIndex((x) => /season status/i.test(x.topic));
+    if (firstStatus >= 0) expect(firstStatus).toBe(0);
+    for (const x of st) expect(x.topic.toLowerCase()).not.toMatch(/\brecreational\b(?!.*commercial)/);
+  });
+
+  it("species drive the steps: landings history for a fished species, CDPH first for shellfish, none for 'any'", () => {
+    const anySp = nextSteps(input({}));
+    expect(anySp.some((s) => s.kind === "history")).toBe(false);
+    const crab = nextSteps(input({ species: speciesById("dungeness"), audience: "commercial", at: CRESCENT }));
+    const h = crab.find((s) => s.kind === "history")!;
+    expect(h.source).toEqual({ label: "Fisheries history", url: "/fisheries?group=dungeness_crab" });
+    expect(h.caveat).toMatch(/history only/i);
+    // Dungeness: CDFW's whale-safe (RAMP) actions are linked, never inferred
+    const ramp = crab.find((s) => s.id === "whale-safe")!;
+    expect("url" in ramp.source && ramp.source.url).toBe("https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries");
+    expect(`${ramp.title} ${ramp.reason}`).not.toMatch(/\b(late|next|expected|October|November)\b/);
+    const clam = nextSteps(input({ species: speciesById("razor-clam"), audience: "shellfish", at: CRESCENT }));
+    const i = clam.findIndex((s) => s.id === "cdph-map");
+    expect(i).toBeGreaterThanOrEqual(0);
+    expect(clam.slice(0, i).every((s) => /^(dispute|read-notices|confirm)/.test(s.id))).toBe(true);
+  });
+
+  it("a recent shore sample becomes a step that names its station, distance and date; an old one does not", () => {
+    const sample = { kind: "cells" as const, station: "Santa Cruz Wharf", stationId: "santa_cruz_wharf", km: 2.2, date: "2026-09-30", ageDays: 13, text: "Pseudo-nitzschia 4,900 cells/L" };
+    const s = nextSteps(input({ samples: [sample] })).find((x) => x.kind === "hab")!;
+    expect(s.title).toContain("Santa Cruz Wharf");
+    expect(s.scope).toContain("2.2 km");
+    expect(s.when).toContain("2026-09-30");
+    expect(s.reason).toMatch(/not that seafood is toxic|seafood can differ/);
+    expect(nextSteps(input({ samples: [{ ...sample, ageDays: 45 }] })).some((x) => x.kind === "hab")).toBe(false);
+  });
+
+  it("every step says which waters or species it concerns when it is about a notice", () => {
+    const steps = nextSteps(input({ species: speciesById("bivalve"), audience: "shellfish" }));
+    for (const s of steps.filter((x) => /^(dispute|read-notices|confirm|cdph-map)/.test(x.id))) {
+      expect(s.scope, s.id).toBeTruthy();
+      expect(s.caveat, s.id).toBeTruthy();
+    }
+    for (const s of steps.filter((x) => x.id.startsWith("dispute-"))) expect(s.also?.label).toBe("the original notice");
+  });
+});

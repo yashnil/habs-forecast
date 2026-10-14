@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import NextLink from "next/link";
 import type { LayerArtifact } from "@/generated/schema";
 import { SPECIES, recordNamesSpecies, speciesPhrase, type Species, type SpeciesId } from "@/content/species";
 import { AUDIENCE, type Association } from "@/lib/applicability";
@@ -25,7 +26,11 @@ export const fmtWhen = (s: string) => (/^\d{4}-\d{2}-\d{2}$/.test(s) ? formatDat
 
 /** A kind label: the mark of how it is known, then sentence-case words (signature P5). */
 function Eyebrow({ children, tone = "ink" }: { children: React.ReactNode; tone?: "ink" | "official" | "accent" }) {
-  const c = { ink: "text-ink-3", official: "text-official-ink", accent: "text-accent" }[tone];
+  const c = {
+    ink: "text-ink-3",
+    official: "text-official-ink",
+    accent: "text-accent",
+  }[tone];
   const mark = tone === "official" ? "official" : tone === "accent" ? "conditions" : null;
   return (
     <p className={`cw-kind ${c}`}>
@@ -38,7 +43,11 @@ function Eyebrow({ children, tone = "ink" }: { children: React.ReactNode; tone?:
 // ---------------------------------------------------------------- conditions (live, from NOAA)
 
 export function useConditions(lat: number | null, lon: number | null): { data: Conditions | null; error: string | null; loading: boolean } {
-  const [s, setS] = useState<{ data: Conditions | null; error: string | null; loading: boolean }>({ data: null, error: null, loading: false });
+  const [s, setS] = useState<{
+    data: Conditions | null;
+    error: string | null;
+    loading: boolean;
+  }>({ data: null, error: null, loading: false });
   useEffect(() => {
     if (lat == null || lon == null) return;
     let cancelled = false;
@@ -86,7 +95,14 @@ export function PlanBar({
         >
           {AUDIENCES.map((x) => (
             <option key={x.id} value={x.id}>
-              {{ all: "Any activity", commercial: "Commercial", recreational: "Recreational", shellfish: "Shellfish" }[x.id]}
+              {
+                {
+                  all: "Any activity",
+                  commercial: "Commercial",
+                  recreational: "Recreational",
+                  shellfish: "Shellfish",
+                }[x.id]
+              }
             </option>
           ))}
         </select>
@@ -109,11 +125,16 @@ export function PlanBar({
  * "What are you after?" (the trip plan's first chapter): the kind of fishing as one row of chips
  * with a sliding pill, then the species that kind of fishing involves, as chips. Both go in the link.
  */
-export function TargetPicker({ audience, onAudience, species, onSpecies }: { audience: Audience; onAudience: (a: Audience) => void; species: Species; onSpecies: (s: SpeciesId) => void }) {
+export function TargetPicker({ audience, onAudience, species, onSpecies, compact = false }: { audience: Audience; onAudience: (a: Audience) => void; species: Species; onSpecies: (s: SpeciesId) => void; compact?: boolean }) {
   const options = SPECIES.filter((s) => s.id === "any" || audience === "all" || s.activities.includes(audience === "shellfish" ? "shellfish" : audience));
-  const label: Record<Audience, string> = { all: "Any activity", commercial: "Commercial", recreational: "Recreational", shellfish: "Shellfish" };
+  const label: Record<Audience, string> = {
+    all: "Any activity",
+    commercial: "Commercial",
+    recreational: "Recreational",
+    shellfish: "Shellfish",
+  };
   return (
-    <div className="space-y-4" data-testid="coast-plan">
+    <div className={compact ? "space-y-3" : "space-y-4"} data-testid="coast-plan">
       <div>
         <p className="mb-2 text-[13px] font-medium text-ink-3">Kind of fishing</p>
         <div role="radiogroup" aria-label="Kind of fishing" className="grid grid-cols-2 gap-1 rounded-2xl bg-surface-3 p-1 sm:inline-flex sm:flex-wrap" data-testid="coast-audience">
@@ -138,7 +159,13 @@ export function TargetPicker({ audience, onAudience, species, onSpecies }: { aud
       </div>
       <div>
         <p className="mb-2 text-[13px] font-medium text-ink-3">Target species</p>
-        <motion.div layout role="radiogroup" aria-label="Target species" className="flex flex-wrap gap-1.5" data-testid="coast-species">
+        <motion.div
+          layout
+          role="radiogroup"
+          aria-label="Target species"
+          className={`flex gap-1.5 ${compact ? "-mx-4 flex-nowrap overflow-x-auto px-4 pb-1 [mask-image:linear-gradient(to_right,#000_88%,transparent)] [scrollbar-width:none] sm:-mx-5 sm:px-5" : "flex-wrap"}`}
+          data-testid="coast-species"
+        >
           <AnimatePresence initial={false}>
             {options.map((s) => {
               const on = species.id === s.id;
@@ -155,7 +182,7 @@ export function TargetPicker({ audience, onAudience, species, onSpecies }: { aud
                   aria-checked={on}
                   onClick={() => onSpecies(s.id as SpeciesId)}
                   data-testid={`coast-species-${s.id}`}
-                  className={`cw-press min-h-[38px] rounded-full border px-3 text-[14px] transition-colors ${on ? "border-navy-900 bg-navy-900 text-white" : "border-hairline-strong bg-surface text-ink-2 hover:border-ink-3 hover:text-ink"}`}
+                  className={`cw-press min-h-[38px] shrink-0 whitespace-nowrap rounded-full border px-3 text-[14px] transition-colors ${on ? "border-navy-900 bg-navy-900 text-white" : "border-hairline-strong bg-surface text-ink-2 hover:border-ink-3 hover:text-ink"}`}
                 >
                   {s.label}
                 </motion.button>
@@ -170,7 +197,12 @@ export function TargetPicker({ audience, onAudience, species, onSpecies }: { aud
 
 // ---------------------------------------------------------------- the answer (Level 1)
 
-export type AnswerClause = { kind: "official" | "measured" | "model" | "gap"; text: string; aged?: boolean; testid: string };
+export type AnswerClause = {
+  kind: "official" | "measured" | "model" | "gap";
+  text: string;
+  aged?: boolean;
+  testid: string;
+};
 
 /**
  * The answer under the place name, one short line per kind of knowing, each led by its mark
@@ -184,7 +216,20 @@ export function AnswerLine({ clauses }: { clauses: AnswerClause[] }) {
           <Mark kind={c.kind} aged={c.aged} className="translate-y-px" />
           {/* when the answer changes (new waters, species or day) the line shows that it did */}
           <AnimatePresence mode="wait" initial={false}>
-            <motion.span key={c.text} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0, transition: { delay: i * 0.05, duration: 0.28, ease: [0.2, 0, 0, 1] } }} exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
+            <motion.span
+              key={c.text}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                transition: {
+                  delay: i * 0.05,
+                  duration: 0.28,
+                  ease: [0.2, 0, 0, 1],
+                },
+              }}
+              exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}
+            >
               {c.text}
             </motion.span>
           </AnimatePresence>
@@ -217,7 +262,16 @@ export function OfficialBrief({
   totalActive,
   onAll,
   onDetails,
+  statements = [],
 }: {
+  /** CDFW's statewide statements for the chosen species and activity (season status first), quoted */
+  statements?: {
+    id: string;
+    agency: string;
+    statement: string;
+    topic: string;
+    source: { url: string };
+  }[];
   assocs: Association[];
   audience: Audience;
   species: Species;
@@ -238,6 +292,22 @@ export function OfficialBrief({
           {verification?.state === "verified" ? "Checked by a person" : "Not verified"}
         </span>
       </div>
+      {statements.length > 0 && (
+        // a fishery's status leads: "no notice" below it must never read as "open"
+        <ul className="mt-2 space-y-1.5" data-testid="brief-status">
+          {statements.map((st) => (
+            <li key={st.id} className="rounded-xl bg-official-bg/60 px-3 py-2">
+              <p className="text-[12.5px] font-medium text-official-ink">
+                {st.agency} · {st.topic}
+              </p>
+              <p className="text-[15.5px] font-medium leading-snug text-ink">“{st.statement}”</p>
+              <a href={st.source.url} {...ext} className={`${link} text-[13px]`}>
+                {st.agency} page ↗
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
       <h2 id="brief-official-h" className="mt-2 font-display text-[22px] font-medium leading-snug text-ink sm:text-[24px]" data-testid="brief-official-headline">
         {headline}
       </h2>
@@ -249,9 +319,17 @@ export function OfficialBrief({
             <li key={a.record.id} className="py-2.5" data-testid={`brief-disputed-${a.record.id}`}>
               <p className="text-[13px] font-medium text-warning">Reported lifted by {a.dispute!.agency} · awaiting review</p>
               <p className="text-[15px] font-medium leading-snug text-ink">{a.record.title}</p>
-              <a href={a.dispute!.url} {...ext} className={`${link} text-[13px]`}>
-                {a.dispute!.agency} {a.dispute!.release} ↗
-              </a>
+              <p className="mt-0.5 flex flex-wrap gap-x-3 text-[13px]">
+                {a.record.sources.find((x) => x.url.startsWith("https://")) && (
+                  <a href={a.record.sources.find((x) => x.url.startsWith("https://"))!.url} {...ext} className={link} data-testid={`brief-original-${a.record.id}`}>
+                    The original notice ↗
+                  </a>
+                )}
+                <a href={a.dispute!.url} {...ext} className={link}>
+                  {a.dispute!.agency} {a.dispute!.release}, the later release ↗
+                </a>
+              </p>
+              <p className="text-[13px] text-ink-3">Confirm with {a.dispute!.agency} which applies; CoastWatch shows it as neither in effect nor lifted.</p>
             </li>
           ))}
           {mine.map((a) => (
@@ -310,10 +388,19 @@ function BriefRow({ a }: { a: Association }) {
 
 // ---------------------------------------------------------------- next steps
 
-const STEP_MARK: Record<Step["kind"], { mark: "official" | "conditions" | "gap"; label: string }> = {
+const STEP_MARK: Record<
+  Step["kind"],
+  {
+    mark: "official" | "conditions" | "gap" | "measured";
+    label: string;
+    aged?: boolean;
+  }
+> = {
   official: { mark: "official", label: "Official" },
   conditions: { mark: "conditions", label: "Conditions" },
   gap: { mark: "gap", label: "Not known here" },
+  hab: { mark: "measured", label: "Measured nearby" },
+  history: { mark: "measured", label: "History", aged: true },
 };
 
 /**
@@ -322,7 +409,7 @@ const STEP_MARK: Record<Step["kind"], { mark: "official" | "conditions" | "gap";
  * on a phone they fit beside the official answer instead of a wall of text. Conditions readings are
  * left to the conditions card when it is on the same page.
  */
-export function NextSteps({ steps: given, max = 5, conditionsShown = false }: { steps: Step[]; max?: number; conditionsShown?: boolean }) {
+export function NextSteps({ steps: given, max = 5, conditionsShown = false, sub }: { steps: Step[]; max?: number; conditionsShown?: boolean; sub?: string }) {
   const [all, setAll] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   // where the conditions card sits right below, its readings are not repeated as steps
@@ -330,30 +417,51 @@ export function NextSteps({ steps: given, max = 5, conditionsShown = false }: { 
   const shown = all ? steps : steps.slice(0, max);
   return (
     <section aria-labelledby="next-h" className="rounded-[18px] border border-hairline bg-surface px-4 py-4 sm:px-5" data-testid="next-steps">
-      <Eyebrow>Before you go</Eyebrow>
+      <Eyebrow>Next steps</Eyebrow>
       <h2 id="next-h" className="mt-1 font-display text-[22px] font-medium leading-snug text-ink">
-        Next steps
+        Before you go
       </h2>
+      {sub && (
+        <p className="mt-0.5 text-[14px] text-ink-2" data-testid="next-steps-for">
+          {sub}
+        </p>
+      )}
       <ol className="mt-2 divide-y divide-hairline">
         {shown.map((s) => {
           const isOpen = open === s.id;
           const rid = `step-why-${s.id}`;
           return (
             <li key={s.id} className="grid grid-cols-[16px_1fr] gap-x-2.5 py-2.5" data-testid={`step-${s.id}`} data-kind={s.kind}>
-              <Mark kind={STEP_MARK[s.kind].mark} className="mt-[5px]" />
+              <Mark kind={STEP_MARK[s.kind].mark} aged={STEP_MARK[s.kind].aged} className="mt-[5px]" />
               <div className="min-w-0">
                 <p className="text-[15px] font-medium leading-snug text-ink">
                   <span className="sr-only">{STEP_MARK[s.kind].label}: </span>
                   {s.title}
                 </p>
+                {s.scope && (
+                  <p className="mt-0.5 text-[13px] leading-snug text-ink-2" data-testid={`scope-${s.id}`}>
+                    {s.scope}
+                  </p>
+                )}
                 <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-3">
                   {"url" in s.source ? (
-                    <a href={s.source.url} {...ext} className={`${link} font-medium`}>
-                      {s.source.label} ↗
-                    </a>
+                    s.source.url.startsWith("/") ? (
+                      <NextLink href={s.source.url} className={`${link} font-medium`}>
+                        {s.source.label} →
+                      </NextLink>
+                    ) : (
+                      <a href={s.source.url} {...ext} className={`${link} font-medium`}>
+                        {s.source.label} ↗
+                      </a>
+                    )
                   ) : (
                     <a href={`tel:${s.source.tel}`} className={`${link} font-medium tabular`}>
                       {s.source.label}
+                    </a>
+                  )}
+                  {s.also && (
+                    <a href={s.also.url} {...ext} className={`${link} font-medium`} data-testid={`also-${s.id}`}>
+                      {s.also.label} ↗
                     </a>
                   )}
                   {s.when && <span>{s.when}</span>}
@@ -361,9 +469,10 @@ export function NextSteps({ steps: given, max = 5, conditionsShown = false }: { 
                     {isOpen ? "Less" : "Why"}
                   </button>
                 </p>
-                <p id={rid} hidden={!isOpen} className="mt-1 text-[14px] leading-snug text-ink-2">
-                  {s.reason}
-                </p>
+                <div id={rid} hidden={!isOpen} className="mt-1 space-y-1 text-[14px] leading-snug text-ink-2">
+                  <p>{s.reason}</p>
+                  {s.caveat && <p className="text-ink-3">How sure: {s.caveat}</p>}
+                </div>
               </div>
             </li>
           );
@@ -389,11 +498,21 @@ export function stationName(n: string): string {
 /** What a Coastal reader needs from a failed or empty part: plain words; the technical reason goes in `title`. */
 function plain(part: { status: string; reason?: string } | undefined, what: string): { text: string; detail?: string } {
   if (!part || !("reason" in part) || !part.reason) return { text: what };
-  if (part.status === "unavailable") return { text: `NOAA's ${what} service did not answer just now.`, detail: part.reason };
+  if (part.status === "unavailable")
+    return {
+      text: `NOAA's ${what} service did not answer just now.`,
+      detail: part.reason,
+    };
   return { text: part.reason };
 }
 
-export type ToxinNear = { station: string; km: number; date: string; ageDays: number; value: string } | null;
+export type ToxinNear = {
+  station: string;
+  km: number;
+  date: string;
+  ageDays: number;
+  value: string;
+} | null;
 
 function Tile({ label, value, sub, state, testid, href, detail }: { label: string; value: React.ReactNode; sub: React.ReactNode; state: "ok" | "old" | "none"; testid: string; href?: string; detail?: string }) {
   const dot = { ok: "bg-measured", old: "bg-warning", none: "bg-ink-3/50" }[state];
@@ -440,27 +559,51 @@ export function ConditionsCard({
   leads,
   lead,
   onLead,
+  habTiles = true,
+  day = null,
+  tidesFirst = false,
 }: {
   conditions: Conditions | null;
   loading: boolean;
   error: string | null;
-  toxin: ToxinNear;
+  toxin?: ToxinNear;
   toxinError?: string | null;
-  forecastLine: string;
-  forecastSub: string;
-  satelliteLine: string;
+  forecastLine?: string;
+  forecastSub?: string;
+  satelliteLine?: string;
   now: Date | null;
   leads?: (LayerArtifact | null)[];
   lead?: number;
   onLead?: (l: number) => void;
+  /** the toxin, model and satellite tiles (off where the HAB briefing shows them) */
+  habTiles?: boolean;
+  /** the trip day (Pacific date), when one is chosen: its marine period and tides */
+  day?: string | null;
+  /** shellfish harvest: the tides lead */
+  tidesFirst?: boolean;
 }) {
   const c = conditions;
+  // the trip day's marine forecast period ("THU", "THU NIGHT"), else the first one
+  const dayName = day ? new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" }).toUpperCase() : null;
+  const period = c?.marine.status === "ok" ? ((dayName && c.marine.data.periods.find((p) => p.name.toUpperCase().startsWith(dayName.slice(0, 3)) && !/NIGHT/i.test(p.name))) ?? c.marine.data.periods[0]) : null;
   const wait = loading ? "Loading…" : error ? "Unavailable right now" : "—";
   const ageH = (iso: string) => (now ? (now.getTime() - new Date(iso).getTime()) / 3_600_000 : 0);
   const nextTides = (() => {
     if (c?.tides.status !== "ok" || !now) return null;
-    const nowLocal = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now).replace(",", "");
-    return c.tides.data.filter((t) => t.at >= nowLocal).slice(0, 2);
+    const nowLocal = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Los_Angeles",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .format(now)
+      .replace(",", "");
+    const after = c.tides.data.filter((t) => t.at >= nowLocal);
+    const onDay = day ? after.filter((t) => t.at.startsWith(day)) : [];
+    return (onDay.length ? onDay : after).slice(0, onDay.length ? 4 : 2);
   })();
   const tideTime = (t: string) => {
     const [d, hm] = t.split(" ");
@@ -485,10 +628,26 @@ export function ConditionsCard({
         </p>
       )}
       <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-4 min-[480px]:grid-cols-2">
-        {c?.marine.status === "ok" ? (
+        {tidesFirst && (
+          <>
+            {nextTides?.length ? (
+              <Tile
+                label={`Tides · ${c!.tides.status === "ok" && c!.tides.station ? stationName(c!.tides.station.name) : ""}`}
+                value={nextTides.map((t) => `${t.type === "H" ? "High" : "Low"} ${t.ft.toFixed(1)} ft ${tideTime(t.at).split(" ").slice(-2).join(" ")}`).join(" · ")}
+                sub={`Predicted, ${tideTime(nextTides[0].at).split(" ").slice(0, 3).join(" ")} · NOAA CO-OPS, feet above MLLW`}
+                state="ok"
+                href={c!.tides.status === "ok" ? c!.tides.url : undefined}
+                testid="cond-tides"
+              />
+            ) : (
+              <Tile label="Tides" value={c ? "Not available" : wait} sub={c ? plain(c.tides, "tide prediction").text : "NOAA CO-OPS"} detail={c ? plain(c.tides, "tide prediction").detail : undefined} state="none" testid="cond-tides" />
+            )}
+          </>
+        )}
+        {c?.marine.status === "ok" && period ? (
           <Tile
-            label={`Marine forecast · ${c.marine.data.periods[0].name}`}
-            value={marineHeadline(c.marine.data.periods[0])}
+            label={`Marine forecast · ${period.name}`}
+            value={marineHeadline(period)}
             sub={`NWS ${c.marine.data.zone}${c.marine.data.updated ? `, issued ${formatDateTimePT(c.marine.data.updated)}` : ""}`}
             state="ok"
             href={c.marine.url}
@@ -515,43 +674,51 @@ export function ConditionsCard({
         ) : (
           <Tile label="Measured nearby" value={c ? "No recent buoy reading" : wait} sub={c ? plain(c.buoy, "buoy data").text : "NDBC"} detail={c ? plain(c.buoy, "buoy data").detail : undefined} state="none" testid="cond-buoy" />
         )}
-        {nextTides?.length ? (
-          <Tile
-            label={`Tides · ${c!.tides.status === "ok" && c!.tides.station ? stationName(c!.tides.station.name) : ""}`}
-            value={nextTides.map((t) => `${t.type === "H" ? "High" : "Low"} ${t.ft.toFixed(1)} ft ${tideTime(t.at).split(" ").slice(-2).join(" ")}`).join(" · ")}
-            sub={`Predicted, ${tideTime(nextTides[0].at).split(" ").slice(0, 3).join(" ")} · NOAA CO-OPS, feet above MLLW`}
-            state="ok"
-            href={c!.tides.status === "ok" ? c!.tides.url : undefined}
-            testid="cond-tides"
-          />
-        ) : (
-          <Tile label="Tides" value={c ? "Not available" : wait} sub={c ? plain(c.tides, "tide prediction").text : "NOAA CO-OPS"} detail={c ? plain(c.tides, "tide prediction").detail : undefined} state="none" testid="cond-tides" />
+        {!tidesFirst && (
+          <>
+            {nextTides?.length ? (
+              <Tile
+                label={`Tides · ${c!.tides.status === "ok" && c!.tides.station ? stationName(c!.tides.station.name) : ""}`}
+                value={nextTides.map((t) => `${t.type === "H" ? "High" : "Low"} ${t.ft.toFixed(1)} ft ${tideTime(t.at).split(" ").slice(-2).join(" ")}`).join(" · ")}
+                sub={`Predicted, ${tideTime(nextTides[0].at).split(" ").slice(0, 3).join(" ")} · NOAA CO-OPS, feet above MLLW`}
+                state="ok"
+                href={c!.tides.status === "ok" ? c!.tides.url : undefined}
+                testid="cond-tides"
+              />
+            ) : (
+              <Tile label="Tides" value={c ? "Not available" : wait} sub={c ? plain(c.tides, "tide prediction").text : "NOAA CO-OPS"} detail={c ? plain(c.tides, "tide prediction").detail : undefined} state="none" testid="cond-tides" />
+            )}
+          </>
         )}
-        <Tile
-          label="Toxin in seawater · nearest sample"
-          value={toxin ? `${toxin.value}, ${ageWords(toxin.ageDays)}` : toxinError ? "Station data unavailable" : "No sample within 40 km"}
-          sub={toxin ? `${toxin.station}, ${toxin.km < 10 ? toxin.km.toFixed(1) : Math.round(toxin.km)} km, sampled ${formatDate(toxin.date, { year: true })} · CalHABMAP` : "CalHABMAP shore stations"}
-          state={!toxin ? "none" : toxin.ageDays > 30 ? "old" : "ok"}
-          testid="cond-toxin"
-        />
-        <div className="min-w-0">
-          <Tile label="Toxin forecast · model" value={forecastLine} sub={forecastSub} state={/^No /.test(forecastLine) ? "none" : "ok"} testid="cond-forecast" />
-          {leads && onLead && (
-            <label className="mt-1.5 inline-flex min-h-[36px] items-center gap-2 rounded-lg border border-hairline-strong px-2.5 text-[13px] text-ink-3">
-              For
-              <select value={lead} onChange={(e) => onLead(Number(e.target.value))} className="min-h-[32px] bg-transparent font-medium text-ink outline-none" data-testid="coast-day">
-                {leads.map((l, i) =>
-                  l?.time.valid_date ? (
-                    <option key={i} value={i}>
-                      {formatDate(l.time.valid_date)} ({leadLabel(i)})
-                    </option>
-                  ) : null,
-                )}
-              </select>
-            </label>
-          )}
-        </div>
-        <Tile label="Satellite view of the water" value={satelliteLine} sub="NOAA CoastWatch chlorophyll (algae, not toxin)" state={/^Clear/.test(satelliteLine) ? "ok" : "none"} testid="cond-satellite" />
+        {habTiles && (
+          <>
+            <Tile
+              label="Toxin in seawater · nearest sample"
+              value={toxin ? `${toxin.value}, ${ageWords(toxin.ageDays)}` : toxinError ? "Station data unavailable" : "No sample within 40 km"}
+              sub={toxin ? `${toxin.station}, ${toxin.km < 10 ? toxin.km.toFixed(1) : Math.round(toxin.km)} km, sampled ${formatDate(toxin.date, { year: true })} · CalHABMAP` : "CalHABMAP shore stations"}
+              state={!toxin ? "none" : toxin.ageDays > 30 ? "old" : "ok"}
+              testid="cond-toxin"
+            />
+            <div className="min-w-0">
+              <Tile label="Toxin forecast · model" value={forecastLine ?? ""} sub={forecastSub ?? ""} state={/^No /.test(forecastLine ?? "") ? "none" : "ok"} testid="cond-forecast" />
+              {leads && onLead && (
+                <label className="mt-1.5 inline-flex min-h-[36px] items-center gap-2 rounded-lg border border-hairline-strong px-2.5 text-[13px] text-ink-3">
+                  For
+                  <select value={lead} onChange={(e) => onLead(Number(e.target.value))} className="min-h-[32px] bg-transparent font-medium text-ink outline-none" data-testid="coast-day">
+                    {leads.map((l, i) =>
+                      l?.time.valid_date ? (
+                        <option key={i} value={i}>
+                          {formatDate(l.time.valid_date)} ({leadLabel(i)})
+                        </option>
+                      ) : null,
+                    )}
+                  </select>
+                </label>
+              )}
+            </div>
+            <Tile label="Satellite view of the water" value={satelliteLine ?? ""} sub="NOAA CoastWatch chlorophyll (algae, not toxin)" state={/^Clear/.test(satelliteLine ?? "") ? "ok" : "none"} testid="cond-satellite" />
+          </>
+        )}
       </div>
     </section>
   );
