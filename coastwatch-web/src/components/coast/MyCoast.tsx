@@ -48,7 +48,7 @@ import { artifactUrl, satelliteLatest, tileIndexUrl } from "@/lib/layers";
 import { supportsGridTiles } from "@/lib/gridTiles";
 import { gradientCss } from "@/lib/palette";
 import { speciesStatements, type NearSample } from "@/lib/nextSteps";
-import { AnswerLine, ConditionsCard, NextSteps, OfficialBrief, PlanBar, fmtWhen, officialAnswer, useConditions, type AnswerClause } from "./Briefing";
+import { AnswerLine, ConditionsCard, stationName, NextSteps, OfficialBrief, PlanBar, fmtWhen, officialAnswer, useConditions, type AnswerClause } from "./Briefing";
 import { MEASURED_RECENT_DAYS } from "@/components/ui/Mark";
 import { speciesById, type SpeciesId } from "@/content/species";
 import { useMode } from "@/lib/mode";
@@ -223,10 +223,17 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
         .filter((a) => !threadTo.some((e) => e.station.station_id === a.station.station_id))
         .map((a) => ({ lat: a.station.lat, lon: a.station.lon, name: a.station.name, id: a.station.station_id, aged: a.ageDays > RECENT_DAYS, minor: !ids.has(a.station.station_id) && a.station.station_id !== peek })),
       pixel: pix,
+      obs:
+        focus === "conditions" && cond.data
+          ? [
+              ...(cond.data.buoy.status === "ok" && cond.data.buoy.station?.lat != null ? [{ lat: cond.data.buoy.station.lat, lon: cond.data.buoy.station.lon!, name: stationName(cond.data.buoy.station.name), what: "buoy" as const }] : []),
+              ...(cond.data.tides.status === "ok" && cond.data.tides.station?.lat != null ? [{ lat: cond.data.tides.station.lat, lon: cond.data.tides.station.lon!, name: stationName(cond.data.tides.station.name), what: "tide" as const }] : []),
+            ]
+          : [],
       ring: focus === "model" ? ringPolygon(place.lat, place.lon, NEIGHBOURHOOD_KM) : null,
       official: focus === null || focus === "official" ? ((official?.geometry as unknown as GeoJSON.FeatureCollection) ?? null) : null,
     });
-  }, [place, model, official, hab, focus, peek, around, satNow]);
+  }, [place, model, official, hab, focus, peek, around, satNow, cond.data]);
 
   const mapRef = useRef<MlMap | null>(null);
   const [headH, setHeadH] = useState<number | null>(null);
@@ -253,6 +260,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
         for (const q of r) pts.push(q as [number, number]);
       } else if (ev) {
         pts.push([ev.station.lon, ev.station.lat]);
+      } else if (focus === "conditions") {
+        for (const s of [cond.data?.buoy, cond.data?.tides]) if (s?.status === "ok" && s.station?.lat != null) pts.push([s.station.lon!, s.station.lat]);
       } else if (focus === "satellite") {
         if (satNow && satNow !== "error" && satNow.value != null) pts.push([satNow.pixelLon, satNow.pixelLat]);
         pts.push([place.lon - 0.12, place.lat - 0.08], [place.lon + 0.12, place.lat + 0.08]);
@@ -265,7 +274,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
       const pad = focus === "model" ? 0.01 : 0.06;
       journeyTo(m, { bounds: [[Math.min(...lons) - pad, Math.min(...lats) - pad], [Math.max(...lons) + pad, Math.max(...lats) + pad]], padding: 48, maxZoom: focus === "satellite" ? 10.5 : 11 });
     },
-    [place, model, hab, focus, satNow],
+    [place, model, hab, focus, satNow, cond.data],
   );
   useEffect(() => {
     if (mapRef.current) fit(mapRef.current);
@@ -596,7 +605,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
                 onDetails={openDetails}
                 statements={status}
               />
-              <ConditionsCard conditions={cond.data} loading={cond.loading} error={cond.error} now={now} habTiles={false} day={leadNow > 0 ? (leads[leadNow]?.time.valid_date ?? null) : null} tidesFirst={audience === "shellfish"} />
+              <ConditionsCard conditions={cond.data} loading={cond.loading} error={cond.error} now={now} habTiles={false} onMap={() => focusOn(focus === "conditions" ? null : "conditions")} mapOn={focus === "conditions"} day={leadNow > 0 ? (leads[leadNow]?.time.valid_date ?? null) : null} tidesFirst={audience === "shellfish"} />
             </section>
             <NextSteps
               steps={steps}

@@ -562,7 +562,12 @@ export function ConditionsCard({
   habTiles = true,
   day = null,
   tidesFirst = false,
+  onMap,
+  mapOn = false,
 }: {
+  /** shows the buoy and tide station on the map (My Coast) */
+  onMap?: () => void;
+  mapOn?: boolean;
   conditions: Conditions | null;
   loading: boolean;
   error: string | null;
@@ -720,6 +725,11 @@ export function ConditionsCard({
           </>
         )}
       </div>
+      {onMap && c && (c.buoy.status === "ok" || c.tides.status === "ok") && (
+        <button type="button" onClick={onMap} aria-pressed={mapOn} className="cw-press mt-3 text-[13px] font-medium text-accent hover:underline" data-testid="cond-map">
+          {mapOn ? "Shown on the map: the buoy and the tide station" : "Show the buoy and the tide station on the map"}
+        </button>
+      )}
     </section>
   );
 }

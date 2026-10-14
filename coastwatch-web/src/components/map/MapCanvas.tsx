@@ -84,12 +84,14 @@ type Props = {
 const OFFICIAL = "#f6bb5c";
 const MODEL_MARK = "#b58cf0";
 const MEASURED_MARK = "#4fd1ae";
+const CONDITIONS_MARK = "#74cfe6";
 // provenance threads: one layer per source so they draw out one after another (model, measured,
 // official), 520 ms each with a 90 ms stagger; white, never a data colour
 const THREADS = [
   { to: "cell", color: "rgba(233,239,246,0.9)" },
   { to: "station", color: "rgba(233,239,246,0.9)" },
   { to: "pixel", color: "rgba(233,239,246,0.9)" },
+  { to: "obs", color: "rgba(233,239,246,0.9)" },
   { to: "limit", color: "rgba(246,187,92,0.95)" },
 ] as const;
 const THREAD_MS = 520;
@@ -457,7 +459,7 @@ export default function MapCanvas(p: Props) {
             filter={["==", ["get", "kind"], "end"]}
             paint={{
               "circle-radius": 4,
-              "circle-color": ["match", ["get", "to"], "cell", MODEL_MARK, "station", MEASURED_MARK, "pixel", MEASURED_MARK, OFFICIAL],
+              "circle-color": ["match", ["get", "to"], "cell", MODEL_MARK, "station", MEASURED_MARK, "pixel", MEASURED_MARK, "obs", CONDITIONS_MARK, OFFICIAL],
               "circle-stroke-color": "#06111e",
               "circle-stroke-width": 1.5,
               "circle-opacity": ["case", ["boolean", ["get", "far"], false], 0.55, 1],
@@ -488,6 +490,15 @@ export default function MapCanvas(p: Props) {
             paint={{ "text-color": "#cdeee6", "text-halo-color": "rgba(6,17,30,0.7)", "text-halo-width": 1.6 }}
           />
           <Layer id="coast-target-halo" type="circle" filter={["==", ["get", "kind"], "target"]} paint={{ "circle-radius": 11, "circle-color": "rgba(255,255,255,0.08)", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 }} />
+          {/* NOAA stations behind the conditions card (context, never a field), in the conditions colour */}
+          <Layer id="coast-obs" type="circle" filter={["==", ["get", "kind"], "obs"]} paint={{ "circle-radius": 6, "circle-color": CONDITIONS_MARK, "circle-stroke-color": "#06111e", "circle-stroke-width": 2 }} />
+          <Layer
+            id="coast-obs-label"
+            type="symbol"
+            filter={["==", ["get", "kind"], "obs"]}
+            layout={{ "text-field": ["concat", ["case", ["==", ["get", "what"], "buoy"], "Buoy · ", "Tides · "], ["get", "name"]], "text-font": ["Noto Sans Regular"], "text-size": 12, "text-offset": [0.9, 0], "text-anchor": "left", "text-optional": true }}
+            paint={{ "text-color": "#e9eff6", "text-halo-color": "#06111e", "text-halo-width": 1.4 }}
+          />
           <Layer id="coast-target" type="circle" filter={["==", ["get", "kind"], "target"]} paint={{ "circle-radius": 3.5, "circle-color": "#ffffff", "circle-stroke-color": "#06111e", "circle-stroke-width": 1.5 }} />
         </Source>
       )}

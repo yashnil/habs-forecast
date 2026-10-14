@@ -12,7 +12,7 @@
  * so threads are decorative for assistive technology.
  */
 
-export type ThreadTo = "cell" | "station" | "limit" | "pixel";
+export type ThreadTo = "cell" | "station" | "limit" | "pixel" | "obs";
 
 export type ProvenanceInput = {
   target: { lat: number; lon: number };
@@ -23,6 +23,8 @@ export type ProvenanceInput = {
   pixel?: { lat: number; lon: number } | null;
   /** other stations to draw without a thread (small) */
   others?: { lat: number; lon: number; name: string; id: string; aged: boolean; minor?: boolean }[];
+  /** NOAA stations behind the conditions card (a buoy's measurements, a tide station's predictions) */
+  obs?: { lat: number; lon: number; name: string; what: "buoy" | "tide" }[];
   /** a neighbourhood ring (the model's cells within it), as a polygon */
   ring?: GeoJSON.Polygon | null;
   /** official geometry (lat_limit lines are used for the ruler) */
@@ -72,6 +74,10 @@ export function provenanceFeatures(x: ProvenanceInput): GeoJSON.FeatureCollectio
     thread("station", [s.lon, s.lat], { far: s.km > STATION_FAR_KM });
   }
   if (x.pixel) thread("pixel", [x.pixel.lon, x.pixel.lat]);
+  for (const o of x.obs ?? []) {
+    f.push({ type: "Feature", properties: { kind: "obs", name: o.name, what: o.what }, geometry: { type: "Point", coordinates: [o.lon, o.lat] } });
+    thread("obs", [o.lon, o.lat]);
+  }
   const lim = nearestLatLimit(x.official, x.target.lat);
   const dLat = lim ? Math.abs(lim.lat - x.target.lat) : Infinity;
   if (lim && dLat > 0.002 && dLat <= LIMIT_RULER_DEG) thread("limit", [x.target.lon, lim.lat], { label: lim.label });

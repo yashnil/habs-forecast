@@ -126,7 +126,7 @@ export function parseTides(json: unknown): Tide[] {
 // ---------------------------------------------------------------- the response
 
 export type Part<T> =
-  | { status: "ok"; data: T; source: string; url: string; fetchedAt: string; station?: { id: string; name: string; km: number } }
+  | { status: "ok"; data: T; source: string; url: string; fetchedAt: string; station?: { id: string; name: string; km: number; lat?: number; lon?: number } }
   | { status: "none"; reason: string; source: string }
   | { status: "unavailable"; reason: string; source: string; url?: string };
 

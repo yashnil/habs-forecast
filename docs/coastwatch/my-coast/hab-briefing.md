@@ -36,6 +36,9 @@ any "no notice in CoastWatch's list" line.
 - **The model card's "Show the model's cells and its nearshore gaps":** the C-HARM grid at exact cell
   edges, the 15 km ring, and the no-value hatch, explained in the map key.
 - **The satellite card:** the satellite chlorophyll field and a thread to the pixel used.
+- **The conditions card's "Show the buoy and the tide station":** the NOAA buoy and tide station that the
+  card reads, each labelled and threaded to your waters, in the conditions colour (context, not HAB
+  evidence).
 - **A station clicked on the map:** if the briefing names it, its card takes focus. Otherwise a small card
   shows its latest measurements, each with its own date, and links to its history on Bloom.
 

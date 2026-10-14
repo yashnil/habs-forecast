@@ -133,7 +133,7 @@ async function buoyPart(lat: number, lon: number): Promise<Conditions["buoy"]> {
     try {
       const obs = parseNdbc((await get(url, "text", 8192)) as string, now());
       if (Object.keys(obs).length)
-        return { status: "ok", data: obs, source, url: `https://www.ndbc.noaa.gov/station_page.php?station=${s.id}`, fetchedAt: now().toISOString(), station: { id: s.id, name: s.name, km: s.km } };
+        return { status: "ok", data: obs, source, url: `https://www.ndbc.noaa.gov/station_page.php?station=${s.id}`, fetchedAt: now().toISOString(), station: { id: s.id, name: s.name, km: s.km, lat: s.lat, lon: s.lon } };
       errors.push(`${s.id}: nothing in the last 6 h`);
     } catch (e) {
       errors.push(`${s.id}: ${msg(e)}`);
@@ -156,7 +156,7 @@ async function tidePart(lat: number, lon: number): Promise<Conditions["tides"]> 
     try {
       const tides = parseTides(await get(url, "json"));
       if (tides.length)
-        return { status: "ok", data: tides, source, url: `https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${s.id}`, fetchedAt: d.toISOString(), station: { id: s.id, name: s.name, km: s.km } };
+        return { status: "ok", data: tides, source, url: `https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${s.id}`, fetchedAt: d.toISOString(), station: { id: s.id, name: s.name, km: s.km, lat: s.lat, lon: s.lon } };
       errors.push(`${s.id}: no predictions`);
     } catch (e) {
       errors.push(`${s.id}: ${msg(e)}`);

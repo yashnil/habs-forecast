@@ -154,6 +154,11 @@ export function MapKey({ focus, gradient }: { focus: string | null; gradient?: s
           </p>
         </>
       )}
+      {focus === "conditions" && (
+        <p className="flex items-center gap-2">
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[#74cfe6]" /> NOAA buoy and tide station (conditions, not HAB)
+        </p>
+      )}
       {focus === "satellite" && (
         <p className="flex items-center gap-2">
           <span aria-hidden className="h-2.5 w-6 rounded-sm" style={{ background: gradient ?? "#4fd1ae" }} /> Satellite chlorophyll (algae, not toxin)

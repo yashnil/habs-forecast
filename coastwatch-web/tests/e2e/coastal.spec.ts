@@ -166,6 +166,26 @@ test.describe("Coastal mode", () => {
     await ctx.close();
   });
 
+  test("the conditions card shows its own NOAA stations on the map, apart from the HAB evidence", async ({ browser }) => {
+    const { ctx, page } = await coastal(browser);
+    await page.goto(`${OK}/coast?place=port-550&for=recreational`);
+    await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { loaded: () => boolean } }).__cwMap?.loaded());
+    await expect(page.getByTestId("cond-tides")).toContainText("Monterey");
+    await page.getByTestId("cond-map").click();
+    await expect(page.getByTestId("cond-map")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("coast-map-key")).toContainText("NOAA buoy and tide station (conditions, not HAB)");
+    const obs = () =>
+      page.evaluate(() => {
+        const m = (window as unknown as { __cwMap: import("maplibre-gl").Map }).__cwMap;
+        return m.querySourceFeatures("coast-overlay").filter((f) => f.properties?.kind === "obs").map((f) => `${f.properties?.what}`).sort().join(",");
+      });
+    await expect.poll(obs).toMatch(/tide/);
+    // selecting it again returns the map to the overview, without the NOAA stations
+    await page.getByTestId("cond-map").click();
+    await expect.poll(obs).toBe("");
+    await ctx.close();
+  });
+
   test("an honest gap: no station within 60 km at Shelter Cove; the step says what is not known", async ({ browser }) => {
     const { ctx, page } = await coastal(browser);
     await page.goto(`${OK}/coast?place=port-215`);
