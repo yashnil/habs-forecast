@@ -1,7 +1,8 @@
 # React #418 on the public site: cause, evidence and options (2026-10-14)
 
 **Status:** the cause is identified. Two fixes were tried and both were rejected, for the reasons
-below. Nothing has been deployed, and production (`demo-release/2026-10-14`) is unchanged.
+below. **Option C (framework update) is now the candidate fix, see "Candidate fix" at the end.**
+Nothing has been deployed to production (`demo-release/2026-10-14`).
 
 ## Symptom
 On some cold page loads the browser logs React error #418 ("the server-rendered HTML didn't match
@@ -62,6 +63,28 @@ it.
 - **D. A narrow boundary that Fizz does not outline,** for example only around client components
   whose props are already serialised. That needs more investigation, and the risk is the same as
   fix 1.
+
+## Candidate fix: Next 16.4.0 + React 19.3.0 (option C, 2026-10-14)
+- **Why a React-only bump does nothing:** Next 15.5.x bundles its own React for the App Router
+  (the browser ran `19.2.0-canary-0bdb9206-20250818`, never the `react` in package.json). Bumping
+  react/react-dom on 15.5.14 or 15.5.27 left the app's client chunks byte-identical.
+- Next 16.4.0 ships React `19.3.0-canary-278794d7-20261002`. It includes
+  [facebook/react#35494](https://github.com/facebook/react/pull/35494) ("Correctly handle replaying
+  when hydrating"), which matches step 4 of the cause above. That link is inferred from the changelog
+  and the measurements, not instrumented.
+
+| Build | Drip-fed #418 | Direct #418 |
+|---|---|---|
+| next 15.5.14 / React 19.1.0 (baseline and controls) | 10/54, 17/90 | 2/60, 0/120 |
+| react/react-dom 19.2.8 or 19.3.0 on next 15.5.x | 6–7 of 30 each (no change) | – |
+| **next 16.4.0 / React 19.3.0** | **0/185** | **0/120** |
+
+The full Linux suite passes on the upgrade: 289 unit tests, 243 e2e including `tests/e2e/hydration.spec.ts`, and
+102/102 repeats. Without JavaScript the content is visible, and the text matches the baseline. There is no
+duplicated DOM. On Vercel the rate still has to be measured on a preview.
+
+**Correction:** reproduce with the fixture data (`CW_DATA_BASE_URL=/data/fixture/v1`, as the Playwright
+config does). Without it, pages are about 35 KB instead of 400–650 KB, and the error almost never fires.
 
 ## Reproduce
 ```
