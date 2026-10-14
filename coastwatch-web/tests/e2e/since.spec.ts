@@ -5,10 +5,12 @@ import type { Snapshot } from "../../src/lib/briefingSnapshot";
 import { NODATA, OK } from "./ports";
 
 /**
- * "Since you last checked" and kept briefings (fishermen-first workstream), on the isolated
- * prototype route /coast/changes. Fixture data; nothing is fetched from a third party.
+ * "Since you last checked" and kept briefings (fishermen-first workstream), on My Coast in Coastal
+ * mode (mounted under the answer line). Fixture data; nothing is fetched from a third party.
  */
-const CRAB = "/coast/changes?place=port-201&for=commercial&species=dungeness";
+const CRAB = "/coast?place=port-201&for=commercial&species=dungeness";
+const coastal = (origin: string) => ({ origin, localStorage: [{ name: "cw-intro-dismissed-v1", value: "1" }, { name: "cw-mode-v1", value: "coastal" }] });
+test.use({ storageState: { cookies: [], origins: [coastal(OK), coastal(NODATA)] } });
 const SEASON = "cdfw-dungeness-2026-27-season-status";
 
 async function seedPreviousVisit(page: Page, lastSeenAt: string, edit: (snap: Snapshot) => void) {
@@ -76,7 +78,7 @@ test.describe("since you last checked", () => {
         });
     });
     await page.goto(`${OK}${CRAB}`);
-    await expect(page.getByRole("heading", { name: "Crescent City" })).toBeVisible();
+    await expect(page.getByTestId("coast-title")).toHaveText("Crescent City");
     await page.waitForTimeout(1500);
     await expect(page.getByTestId("since-last-check")).toHaveCount(0);
     await expect(page.getByTestId("since-none")).toHaveCount(0);
@@ -86,7 +88,7 @@ test.describe("since you last checked", () => {
   test("remembered activity and species: one tap continues with them", async ({ page }) => {
     await page.goto(`${OK}${CRAB}`);
     await expect(page.getByTestId("since-last-check")).toBeVisible();
-    await page.goto(`${OK}/coast/changes?place=port-201`);
+    await page.goto(`${OK}/coast?place=port-201`);
     const resume = page.getByTestId("since-resume");
     await expect(resume).toHaveText("Continue with Commercial fishing · Dungeness crab");
     await resume.click();
@@ -100,10 +102,18 @@ test.describe("since you last checked", () => {
     expect(await page.evaluate(() => localStorage.getItem("cw-waters-v1"))).toBeNull();
   });
 
-  test("when CoastWatch data are unavailable the prototype says so and lists nothing", async ({ page }) => {
+  test("when CoastWatch data are unavailable nothing is listed or claimed", async ({ page }) => {
     await page.goto(`${NODATA}${CRAB}`);
+    await page.waitForTimeout(1500);
     await expect(page.getByTestId("since-last-check")).toHaveCount(0);
-    await expect(page.getByTestId("changes-page")).toContainText("Choose waters on My Coast");
+    expect((await page.request.get(`${NODATA}/api/briefing?place=port-201`)).status()).toBe(503);
+  });
+
+  test("Research mode does not show the block", async ({ page }) => {
+    await page.goto(`${OK}${CRAB}&mode=research`);
+    await expect(page.getByTestId("coast-title")).toHaveText("Crescent City");
+    await page.waitForTimeout(1500);
+    await expect(page.getByTestId("since-last-check")).toHaveCount(0);
   });
 });
 

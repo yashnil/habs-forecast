@@ -143,7 +143,7 @@ export function diffSnapshots(prev: Snapshot, next: Snapshot, lastSeenAt: string
     for (const s of next.official.statements) {
       const p = prevSt.get(s.id);
       if (p && p.statement === s.statement) continue;
-      add({ kind: "agency-statement", group: "agency", forYou: true, title: `${s.agency} now says: “${s.statement}”`, detail: p ? `${s.topic}. At your last check it said: “${p.statement}”. The page gives no date for the change; CoastWatch saw it by ${next.official.checkedAt ? o.fmtTime(next.official.checkedAt) : "its latest check"}.` : `${s.topic}. Not in CoastWatch's list at your last check.`, dates: next.official.checkedAt ? [{ label: "CoastWatch checked", date: next.official.checkedAt }] : [], source: { label: `${s.agency} page`, url: s.url } });
+      add({ kind: "agency-statement", group: "agency", forYou: true, title: `${s.agency} now says: “${s.statement}”`, detail: p ? `${s.topic}. At your last check it said: “${p.statement}”${/[.!?]$/.test(p.statement) ? "" : "."} The page gives no date for the change; CoastWatch saw it by ${next.official.checkedAt ? o.fmtTime(next.official.checkedAt) : "its latest check"}.` : `${s.topic}. Not in CoastWatch's list at your last check.`, dates: next.official.checkedAt ? [{ label: "CoastWatch checked", date: next.official.checkedAt }] : [], source: { label: `${s.agency} page`, url: s.url } });
     }
 
     // agency pages: unreadable, or changed in ways the items above may not explain

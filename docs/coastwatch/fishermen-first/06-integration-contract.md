@@ -19,7 +19,7 @@ import { SinceLastCheck } from "@/components/coast/SinceLastCheck";
 <SinceLastCheck />
 ```
 
-- **No props.** It reads `place`, `for` and `species` from the page's URL (`useSearchParams`), so it follows #41's link rules: a link's parameters win, and nothing is written to the URL.
+- **No props.** It reads `place`, `for` and `species` from the page's URL. When `for` is absent it uses the saved purpose's default, the same rule as My Coast, and waits until the purpose has been read. Nothing is written to the URL.
 - **Mount it in Coastal mode only.** In Research mode it is optional; my recommendation is to leave it out until the pilot shows it helps.
 - **The prototype route** `app/coast/changes/page.tsx` is deleted in the same commit. It exists only so the feature could be tested before the mount. The cases in `tests/e2e/since.spec.ts` move to `/coast?…`; only the URL changes.
 
@@ -49,7 +49,7 @@ If any of these changes, `tests/unit/changes.test.ts` fails. Please tell me rath
 
 | Situation | What the block shows |
 |---|---|
-| First visit to these waters (place, activity and species) | "Remembered on this device…", the time CoastWatch last checked the agencies' pages, "Keep a dated copy", and "Forget on this device". **No change list and no claims.** |
+| First visit to these waters (place, activity and species) | One quiet line, not a card: "Remembered on this device, to list what changed next time." It also shows when CoastWatch last checked the agencies' pages, "Keep a dated copy" and "Forget on this device". **No change list and no claims** (about 110 px on a phone; [07](07-benchmarks.md) §Costs). |
 | Return visit with differences | "Since you last checked · <time>", then up to 4 items for the chosen species. "N more" reveals the rest (other species, data and model). |
 | Return visit with no difference | "No change in CoastWatch's information for these waters since then. That does not mean nothing changed at the agencies." |
 | Storage blocked or cleared | Nothing at all: the page is exactly as without the block |

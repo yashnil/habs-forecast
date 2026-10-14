@@ -7,6 +7,7 @@ import { Mark, type MarkKind } from "@/components/ui/Mark";
 import type { Snapshot } from "@/lib/briefingSnapshot";
 import { diffSnapshots, type Change, type ChangeGroup } from "@/lib/changes";
 import { coastHref, parseAudience } from "@/lib/coast";
+import { defaultAudience, usePurpose } from "@/lib/purpose";
 import { activityLabel, keptFilename, keptHtml, makeKept, saveKept, type Kept } from "@/lib/keptBriefing";
 import { forgetAll, keepSessionBaseline, recordVisit, rememberedFor, sessionBaseline, storageAvailable, watersKey, type SavedWaters } from "@/lib/savedWaters";
 import { formatDate, formatDateTimePT } from "@/lib/time";
@@ -39,7 +40,9 @@ const fmt = { fmtDate: (d: string) => formatDate(d), fmtTime: (iso: string) => f
 function SinceLastCheckInner() {
   const q = useSearchParams();
   const place = q.get("place");
-  const audience = parseAudience(q.get("for"));
+  // the same rule as My Coast: a link's own filter wins, otherwise the saved purpose's default
+  const [purpose, , purposeRead] = usePurpose();
+  const audience = q.get("for") ? parseAudience(q.get("for")) : defaultAudience(purpose);
   const species = q.get("species") ?? "any";
   const [state, setState] = useState<State>({ phase: "idle" });
   const [all, setAll] = useState(false);
@@ -47,7 +50,7 @@ function SinceLastCheckInner() {
   const [forgotten, setForgotten] = useState(false);
 
   useEffect(() => {
-    if (!place || !storageAvailable()) return;
+    if (!place || !purposeRead || !storageAvailable()) return;
     let live = true;
     setState({ phase: "idle" });
     setKept(null);
@@ -70,7 +73,7 @@ function SinceLastCheckInner() {
     return () => {
       live = false;
     };
-  }, [place, audience, species]);
+  }, [place, audience, species, purposeRead]);
 
   if (!place || forgotten) return null;
   if (state.phase === "error")
@@ -99,13 +102,18 @@ function SinceLastCheckInner() {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+  const checkedLine = snap.official.ok && snap.official.checkedAt ? `CoastWatch last checked the agencies' pages ${formatDateTimePT(snap.official.checkedAt)}.` : "Official notices could not be loaded.";
   const forget = () => {
     forgetAll();
     setForgotten(true);
   };
 
   return (
-    <section aria-labelledby="since-h" className="mt-4 max-w-[62ch] rounded-[14px] border border-hairline bg-surface px-4 py-3" data-testid="since-last-check" data-state={since ? (changes.length ? "changes" : "none") : "first"}>
+    <section
+      aria-labelledby="since-h"
+      // a first visit has nothing to report: one quiet line, not a card that pushes the briefing down
+      className={since || resume ? "mt-4 max-w-[62ch] rounded-[14px] border border-hairline bg-surface px-4 py-3" : "mt-3 max-w-[62ch]"}
+      data-testid="since-last-check" data-state={since ? (changes.length ? "changes" : "none") : "first"}>
       {resume ? (
         <p className="mb-2">
           <Link href={coastHref({ place: snap.place.key, for: parseAudience(resume.audience), species: resume.species })} className="cw-press inline-flex min-h-[44px] items-center rounded-full border border-hairline px-4 text-[15px] font-medium text-accent" data-testid="since-resume">
@@ -147,14 +155,17 @@ function SinceLastCheckInner() {
           ) : null}
         </>
       ) : (
-        <p className="text-[15px] text-ink-2" data-testid="since-first">
-          <span id="since-h" className="font-medium text-ink">Remembered on this device.</span> Next time you open these waters, CoastWatch will list what changed in its information since now.
+        <p className="text-[13px] leading-snug text-ink-2" data-testid="since-first">
+          <span id="since-h" className="font-medium text-ink">Remembered on this device</span>, to list what changed next time.{" "}
+          <span data-testid="since-checked">{checkedLine}</span>
         </p>
       )}
-      <p className="mt-2 text-[13px] text-ink-3" data-testid="since-checked">
-        {snap.official.ok && snap.official.checkedAt ? `CoastWatch last checked the agencies' pages ${formatDateTimePT(snap.official.checkedAt)}.` : "Official notices could not be loaded."}
-      </p>
-      <div className="mt-1 flex flex-wrap items-center gap-x-4">
+      {since ? (
+        <p className="mt-2 text-[13px] text-ink-3" data-testid="since-checked">
+          {checkedLine}
+        </p>
+      ) : null}
+      <div className={`${since ? "mt-1" : ""} flex flex-wrap items-center gap-x-4`}>
         {kept ? (
           <span className="flex flex-wrap items-center gap-x-4 text-[14px]" data-testid="kept-done">
             <span className="text-ink-2">Kept {formatDateTimePT(kept.keptAt)}.</span>
