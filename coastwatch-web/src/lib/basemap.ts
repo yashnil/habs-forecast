@@ -301,20 +301,19 @@ export const CA_BOUNDS: [[number, number], [number, number]] = [
   [-112.5, 44.8],
 ];
 
-/** No-data dots (M5): a 1 px dot on a 3 px diagonal lattice in a colour no data palette uses,
- *  so a gap reads as texture, never as a low value, and the seafloor relief shows through.
- *  Drawn at 2x for sharp dots on high-density screens. */
+/** No data: a fine diagonal hatch (the "not known" mark of the design language), faint enough
+ *  that a large gap reads as quiet texture rather than noise, never as a low value, and the
+ *  seafloor relief shows through. A seamless 8 px tile, drawn at 2x for sharp lines. */
 export function noDataImage(): { width: number; height: number; data: Uint8Array } {
-  const n = 12; // 6 css px at pixelRatio 2
+  const n = 16; // 8 css px at pixelRatio 2
   const data = new Uint8Array(n * n * 4);
-  const dot = (x: number, y: number) => {
-    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
-      const i = ((y + dy) * n + (x + dx)) * 4;
-      data.set([170, 196, 224, 120], i);
+  for (let y = 0; y < n; y++)
+    for (let x = 0; x < n; x++) {
+      const d = (x + y) % n;
+      // a 1.5 css px line with soft edges, so it does not shimmer as the map moves
+      const a = d === 0 || d === 1 ? 66 : d === 2 || d === n - 1 ? 24 : 0;
+      if (a) data.set([170, 196, 224, a], (y * n + x) * 4);
     }
-  };
-  dot(0, 0);
-  dot(6, 6);
   return { width: n, height: n, data };
 }
 

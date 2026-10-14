@@ -6,7 +6,7 @@ import type { LayerArtifact } from "@/generated/schema";
 import { SPECIES, recordNamesSpecies, speciesPhrase, type Species, type SpeciesId } from "@/content/species";
 import { AUDIENCE, type Association } from "@/lib/applicability";
 import { AUDIENCES, type Audience } from "@/lib/coast";
-import { compass, marineHeadline, type Conditions } from "@/lib/conditions";
+import { compass, marineHeadline, stationName, type Conditions } from "@/lib/conditions";
 import type { Step } from "@/lib/nextSteps";
 import { ACTION_LABEL, type Verification } from "@/lib/official";
 import { formatDate, formatDateTimePT } from "@/lib/time";
@@ -490,10 +490,7 @@ export function NextSteps({ steps: given, max = 5, conditionsShown = false, sub 
 // ---------------------------------------------------------------- conditions
 
 /** "Monterey Canyon Outer, CA  (156)" → "Monterey Canyon Outer"; "MONTEREY, MONTEREY BAY" → "Monterey, Monterey Bay". */
-export function stationName(n: string): string {
-  const s = n.replace(/\s*\(\d+\)\s*$/, "").replace(/,\s*CA\s*$/i, "").replace(/\s*-\s*\d+\s*NM.*$/i, "").trim();
-  return s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : s;
-}
+export { stationName } from "@/lib/conditions";
 
 /** What a Coastal reader needs from a failed or empty part: plain words; the technical reason goes in `title`. */
 function plain(part: { status: string; reason?: string } | undefined, what: string): { text: string; detail?: string } {

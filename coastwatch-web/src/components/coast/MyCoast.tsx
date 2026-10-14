@@ -50,12 +50,19 @@ import { gradientCss } from "@/lib/palette";
 import { speciesStatements, type NearSample } from "@/lib/nextSteps";
 import { AnswerLine, ConditionsCard, stationName, NextSteps, OfficialBrief, PlanBar, fmtWhen, officialAnswer, useConditions, type AnswerClause } from "./Briefing";
 import { MEASURED_RECENT_DAYS } from "@/components/ui/Mark";
-import { speciesById, type SpeciesId } from "@/content/species";
+import { speciesById, speciesPhrase, type SpeciesId } from "@/content/species";
 import { useMode } from "@/lib/mode";
 import { SinceLastCheck } from "./SinceLastCheck";
 import { ModeSwitch } from "@/components/shell/ModeNav";
 import { nextSteps } from "@/lib/nextSteps";
 import { currentRecords } from "@/lib/official";
+import { checklist, checklistKey, parseTripDate, tripDays, whatMatters } from "@/lib/trip";
+import { TripBar } from "@/components/trip/TripBar";
+import { WhatMatters } from "@/components/trip/WhatMatters";
+import { EvidenceTimeline } from "@/components/trip/EvidenceTimeline";
+import { Checklist } from "@/components/trip/Checklist";
+import { Explore } from "@/components/trip/Explore";
+import { MapSheet } from "@/components/trip/MapSheet";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), {
   ssr: false,
@@ -102,6 +109,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   const [purpose] = usePurpose();
   const audience = sp.get("for") ? parseAudience(sp.get("for")) : defaultAudience(purpose);
   const homeParam = sp.get("home");
+  const dateParam = sp.get("date");
   const species = speciesById(sp.get("species"));
   const [viewMode, , modeRead] = useMode();
   const [homeStored, setHomeStored] = useState<string | null>(null);
@@ -113,16 +121,17 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   const home = useMemo(() => (homeKey ? resolvePlace(homeKey, ports) : null), [homeKey, ports]);
 
   const go = useCallback(
-    (next: { place?: string | null; home?: string | null; for?: Audience; species?: SpeciesId }, how: "push" | "replace" = "push") => {
+    (next: { place?: string | null; home?: string | null; for?: Audience; species?: SpeciesId; date?: string | null }, how: "push" | "replace" = "push") => {
       const href = coastHref({
         place: next.place !== undefined ? next.place : placeKey,
         home: next.home !== undefined ? next.home : homeParam,
         for: next.for ?? audience,
         species: next.species ?? species.id,
+        date: next.date !== undefined ? next.date : dateParam,
       });
       (how === "push" ? router.push : router.replace)(href, { scroll: false });
     },
-    [router, placeKey, homeParam, audience, species.id],
+    [router, placeKey, homeParam, audience, species.id, dateParam],
   );
   const pick = useCallback((p: CoastPlace) => go({ place: p.key }), [go]);
 
@@ -141,7 +150,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   const verification = useMemo(() => (official && now ? officialVerification(official, sourceStatus(manifest, "official"), now) : null), [official, manifest, now]);
   const assocs = useMemo(() => (place ? associationsAt(official, place.key, place.lat, place.lon, undefined, place.kind === "point" ? "water" : "shore") : []), [official, place]);
   const st = useMemo(() => (place ? stationsNear(stations, place.lat, place.lon) : { near: [], nearestBeyond: null }), [stations, place]);
-  const leads = CHARM_LEADS.map((l) => charmLayer(manifest, "particulate_domoic", l));
+  const leads = useMemo(() => CHARM_LEADS.map((l) => charmLayer(manifest, "particulate_domoic", l)), [manifest]);
   const today = now ? pacificToday(now) : null;
   const [lead, setLead] = useState<number | null>(null);
   useEffect(() => {
@@ -150,6 +159,13 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     const issued = leads.map((l, k) => (l ? k : -1)).filter((k) => k >= 0);
     setLead(i >= 0 ? i : (issued.at(-1) ?? 0));
   }, [today, lead, leads]);
+  // the trip day (Coastal): today unless the link names one of the next days; it picks the model day
+  const days = useMemo(() => (today ? tripDays(today, leads) : []), [today, leads]);
+  const tripDate = parseTripDate(dateParam, days);
+  const tripDay = days.find((d) => d.date === tripDate) ?? null;
+  useEffect(() => {
+    if (viewMode === "coastal" && tripDay?.lead != null) setLead(tripDay.lead);
+  }, [viewMode, tripDay?.lead]);
   const leadNow = lead ?? 0;
   const model = useModel(manifest, baseUrl, place?.lat ?? null, place?.lon ?? null, leadNow);
   // the observations section reads the satellite grids once and reports what it found
@@ -163,6 +179,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   const hab = useHabEvidence(stations, place?.lat ?? null, place?.lon ?? null, now);
   const portEntry = useMemo(() => (place?.kind === "port" ? (portIntel?.ports.find((x) => `port-${x.port_code}` === place.key) ?? null) : null), [place, portIntel]);
   const [focus, setFocus] = useState<Focus>(null);
+  const [mapOpen, setMapOpen] = useState(false);
   const [peek, setPeek] = useState<string | null>(null);
   useEffect(() => {
     setFocus(null);
@@ -195,11 +212,14 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     (f: Focus) => {
       setFocus(f);
       setPeek(null);
-      // on a phone the map is above: bring it into view so the reader sees what changed
+      // on a phone the map is a sheet: open it so the reader sees what changed
       if (f && !window.matchMedia("(min-width: 1024px)").matches) {
-        const el = document.querySelector('[data-testid="coast-map-mobile"]');
-        const r = el?.getBoundingClientRect();
-        if (el && r && (r.bottom < 80 || r.top > window.innerHeight - 120)) el.scrollIntoView({ behavior: reducedMotionNow() ? "auto" : "smooth", block: "center" });
+        if (document.querySelector('[data-testid="coast-map-open"], [data-testid="coast-map-close"]')) setMapOpen(true);
+        else {
+          const el = document.querySelector('[data-testid="coast-map-mobile"]');
+          const r = el?.getBoundingClientRect();
+          if (el && r && (r.bottom < 80 || r.top > window.innerHeight - 120)) el.scrollIntoView({ behavior: reducedMotionNow() ? "auto" : "smooth", block: "center" });
+        }
       }
     },
     [],
@@ -273,7 +293,9 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
       const lons = pts.map((p) => p[0]);
       const lats = pts.map((p) => p[1]);
       const pad = focus === "model" ? 0.01 : 0.06;
-      journeyTo(m, { bounds: [[Math.min(...lons) - pad, Math.min(...lats) - pad], [Math.max(...lons) + pad, Math.max(...lats) + pad]], padding: 48, maxZoom: focus === "satellite" ? 10.5 : 11 });
+      // a harbour is shown with its coast around it (about 40 km across), never zoomed past the relief's detail
+      if (!focus) pts.push([place.lon - 0.22, place.lat - 0.16], [place.lon + 0.22, place.lat + 0.16]);
+      journeyTo(m, { bounds: [[Math.min(...lons, ...pts.map((p) => p[0])) - pad, Math.min(...lats, ...pts.map((p) => p[1])) - pad], [Math.max(...lons, ...pts.map((p) => p[0])) + pad, Math.max(...lats, ...pts.map((p) => p[1])) + pad]], padding: 48, maxZoom: focus === "satellite" ? 10.5 : focus ? 10.5 : 9.6 });
     },
     [place, model, hab, focus, satNow, cond.data],
   );
@@ -354,7 +376,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
         <p className="text-[13px] font-medium text-accent">{COAST_COPY.title}</p>
         <div className="mt-1 flex items-start justify-between gap-3">
           <h1 className="text-balance font-display text-[30px] font-medium leading-[1.08] text-ink sm:text-[40px]" data-testid="coast-title">
-            {place ? place.name : "Choose the waters you care about"}
+            {place ? place.name : viewMode === "coastal" ? "Where are you fishing next?" : "Choose the waters you care about"}
           </h1>
           {place && <CopyLink />}
         </div>
@@ -379,7 +401,9 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
             </button>
           </p>
         ) : (
-          <p className="mt-2 max-w-[60ch] text-[17px] leading-relaxed text-ink-2">{COAST_COPY.lede}</p>
+          <p className="mt-2 max-w-[60ch] text-[17px] leading-relaxed text-ink-2">
+            {viewMode === "coastal" ? "Pick your port or harvest site. You get one briefing for the trip: the agencies' notices, the latest bloom and toxin samples, NOAA's model, sea conditions and what to check before you leave." : COAST_COPY.lede}
+          </p>
         )}
         {!place && placeKey && (
           <p className="mt-2 rounded-lg border border-hairline border-l-[3px] border-l-official-line bg-surface px-3 py-2 text-[14px] text-official-ink" role="status" data-testid="coast-unknown-place">
@@ -533,6 +557,170 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
       <p className="text-[14px] text-ink-3">Or click any water on the map to choose those waters.</p>
     </section>
   );
+
+  // ------------------------------------------------------------ Coastal: the trip briefing
+  // Coastal is the default, so the server renders the trip briefing (no flash of another layout);
+  // a device set to Research switches once its choice is read, and a link's mode=research never renders it
+  const coastalView = viewMode === "coastal" && (modeRead || sp.get("mode") !== "research");
+  const tripModel = outlook === null ? ("loading" as const) : outlook === "error" ? ("error" as const) : tripDay?.lead != null ? (outlook.find((d) => d.lead === tripDay.lead) ?? null) : null;
+  const matters = useMemo(
+    () =>
+      place && now
+        ? whatMatters({
+            assocs,
+            audience,
+            species,
+            statements: status,
+            verification,
+            hab,
+            habError: stationsError,
+            model: tripModel === "loading" || tripModel === "error" ? tripModel : tripModel ? { valid: tripModel.valid, pda: tripModel.pda } : null,
+            modelBeyond: !!tripDay && tripDay.lead == null && outlook !== null && outlook !== "error",
+            conditions: cond.data,
+            tripDate,
+            today,
+            fmt: fmtWhen,
+          })
+        : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [place, now && today, assocs, audience, species, status.map((x) => x.id).join(), verification?.state, hab, stationsError, tripModel, tripDay?.lead, cond.data, tripDate],
+  );
+  const checks = useMemo(() => checklist(steps), [steps]);
+  // the day of CoastWatch's last check, in California time
+  const checkedOn = verification?.lastCheckedAt ? formatDate(pacificToday(new Date(verification.lastCheckedAt))) : null;
+  const tripWords = `${{ all: "", commercial: "commercial ", recreational: "recreational ", shellfish: "" }[audience]}${species.id === "any" ? (audience === "shellfish" ? "shellfish harvest" : audience === "all" ? "any activity" : "fishing") : speciesPhrase(species)}`;
+  const habSentence = (() => {
+    if (!hab) return null;
+    const recent = [hab.cells, hab.toxin].some((e) => e && e.near && e.ageDays <= RECENT_DAYS);
+    const days = outlook && outlook !== "error" ? outlook : [];
+    const own = days.some((d) => d.pda?.here != null);
+    const nearby = days.some((d) => d.pda && d.pda.n > 0);
+    const m = own ? "NOAA's model has a value for these waters' own cell." : nearby ? `NOAA's model has no value at these nearshore waters; the bars are offshore cells within ${NEIGHBOURHOOD_KM} km, not a forecast here.` : "These waters are outside NOAA's toxin model.";
+    return recent ? `Shore samples near these waters are recent (dots, newest ringed). ${m}` : `No shore station within 60 km has sampled in the last ${RECENT_DAYS} days, so nothing measured describes these waters right now. ${m}`;
+  })();
+
+  if (coastalView && place) {
+    const evidenceDetail = (
+      <HabBriefing
+        manifest={manifest}
+        placeName={place.name}
+        stations={stations}
+        outlook={outlook}
+        sat={satNow}
+        port={portEntry}
+        lead={leadNow}
+        focus={focus}
+        onFocus={focusOn}
+        pick={quantity}
+        onPick={setQuantity}
+        now={now}
+        lat={place.lat}
+        lon={place.lon}
+        between={null}
+      />
+    );
+    return (
+      <div className="lg:grid lg:grid-cols-[minmax(0,600px)_minmax(0,1fr)]" data-testid="my-coast" data-view="trip">
+        <div className="min-w-0 space-y-8 px-4 pb-32 pt-4 sm:space-y-10 sm:px-8 sm:pt-6 lg:pb-16">
+          <div className="space-y-4">
+            <TripBar
+                action={<CopyLink />}
+                place={place}
+                places={allPlaces}
+                onPlace={pick}
+                audience={audience}
+                onAudience={(a) => go({ for: a, species: a === "all" || species.activities.includes(a) ? species.id : "any" }, "replace")}
+                species={species}
+                onSpecies={(x) => go({ species: x }, "replace")}
+                days={days}
+                date={tripDate}
+                onDate={(d) => go({ date: d === days[0]?.date ? null : d }, "replace")}
+                home={home}
+                onPickOnMap={() => setMapOpen(true)}
+              />
+          </div>
+          <WhatMatters
+            items={matters}
+            checked={checkedOn}
+            focus={focus}
+            onFocus={focusOn}
+            sourceNote={
+              <p data-testid="matters-provenance">
+                Official items quote CoastWatch&apos;s copy of the CDFW and CDPH pages{checkedOn ? `, checked ${checkedOn}` : ""}. No person has reviewed that copy against the agencies yet, so the agency pages are the authority.{" "}
+                <button type="button" onClick={(e) => openDrawer(e.currentTarget)} className="font-medium text-accent hover:underline" data-testid="matters-all-notices">
+                  All {currentRecords(official).length} agency notices
+                </button>
+              </p>
+            }
+          />
+          {/* what changed since the last visit (PR #47), after what matters now, before the evidence */}
+          <SinceLastCheck />
+          <section aria-labelledby="hab-h" data-testid="hab-evidence">
+            <h2 id="hab-h" className="font-display text-[22px] font-medium text-ink sm:text-[24px]">
+              HAB evidence near {place.name}
+            </h2>
+            {habSentence && <p className="mt-1 max-w-[60ch] text-[15px] leading-snug text-ink-2" data-testid="trip-hab-summary">{habSentence}</p>}
+            <div className="mt-4">
+              <EvidenceTimeline hab={hab} sat={satNow} outlook={outlook} today={today} tripDate={tripDate} focus={focus} onFocus={focusOn} />
+            </div>
+            <p className="mt-3 text-[13px] leading-snug text-ink-3">Algae counts and seawater toxin are not seafood tests, chlorophyll is algae of every kind, and a missing sample is not a clean result. Only CDPH and CDFW test seafood.</p>
+          </section>
+          <Checklist shown={checks.shown} more={checks.more} storageKey={checklistKey(place.key, audience, species.id, tripDate)} sub={`For ${tripWords} at ${place.name}${tripDay ? `, ${tripDay.label.toLowerCase() === "today" ? "today" : `${tripDay.label} ${tripDay.day}`}` : ""}.`} />
+          <Explore
+            tabs={[
+              { id: "hab", label: "HAB detail", content: evidenceDetail },
+              {
+                id: "notices",
+                label: "Notices",
+                content: <OfficialBrief assocs={assocs} audience={audience} species={species} verification={verification} totalActive={currentRecords(official).length} onAll={(el) => openDrawer(el)} onDetails={() => undefined} statements={status} />,
+              },
+              {
+                id: "conditions",
+                label: "Conditions",
+                content: <ConditionsCard conditions={cond.data} loading={cond.loading} error={cond.error} now={now} habTiles={false} onMap={() => focusOn(focus === "conditions" ? null : "conditions")} mapOn={focus === "conditions"} day={tripDate} tidesFirst={audience === "shellfish"} />,
+              },
+              {
+                id: "science",
+                label: "Science and sources",
+                content: (
+                  <>
+                    {sections(sectionOrder(null))}
+                    <UnknownsSection items={unknowns} />
+                  </>
+                ),
+              },
+            ]}
+          />
+          <div className="space-y-4 border-t border-hairline pt-5">
+            {homeLine}
+            <div className="flex flex-wrap items-center gap-3">
+              <ModeSwitch tone="paper" />
+              <PurposeSwitch compact />
+            </div>
+            <p className="text-[13px] leading-relaxed text-ink-3">
+              Sources: CDFW and CDPH notices (CoastWatch&apos;s copy, not reviewed by a person); CalHABMAP via SCCOOS ERDDAP; NOAA C-HARM v3.1; NOAA CoastWatch satellite chlorophyll; NOAA NDBC buoys and CO-OPS tides. This page&apos;s link reproduces this trip.
+            </p>
+          </div>
+        </div>
+        <div className="lg:hidden">
+          <MapSheet open={mapOpen} onOpen={() => setMapOpen(true)} onClose={() => setMapOpen(false)} label={`Map of ${place.name}`}>
+            <MapSlot wide={false}>
+              {map}
+              {mapExtras}
+            </MapSlot>
+          </MapSheet>
+        </div>
+        <div className="hidden lg:block">
+          <div className="sticky top-[var(--cw-masthead-h)] h-[calc(100dvh-var(--cw-masthead-h))]" style={headH ? { top: headH, height: `calc(100dvh - ${headH}px)` } : undefined} data-testid="coast-map-desktop">
+            <MapSlot wide>
+              {map}
+              {mapExtras}
+            </MapSlot>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="lg:grid lg:grid-cols-[minmax(0,620px)_minmax(0,1fr)]" data-testid="my-coast">

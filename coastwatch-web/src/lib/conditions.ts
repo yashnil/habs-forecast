@@ -141,3 +141,9 @@ export type Conditions = {
 
 /** NWS's public marine forecast pages, for readers when CoastWatch does not query its API (its robots.txt). */
 export const NWS_MARINE_PAGE = "https://www.weather.gov/marine/";
+
+/** A NOAA station name as people say it: "St Georges", not "ST GEORGES - 8 NM NW of Crescent City, CA". */
+export function stationName(n: string): string {
+  const s = n.replace(/\s*\(\d+\)\s*$/, "").replace(/,\s*CA\s*$/i, "").replace(/\s*-\s*\d+\s*NM.*$/i, "").trim();
+  return s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : s;
+}

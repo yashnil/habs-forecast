@@ -187,7 +187,7 @@ export function nextSteps(x: StepInput): Step[] {
   } else {
     out.push({ id: "commercial", kind: "official", title: "Check CDFW commercial fishing rules and permits", reason: "Commercial seasons, permits and closures are set by CDFW.", source: { label: AGENCY_LINKS.cdfwCommercial.label, url: AGENCY_LINKS.cdfwCommercial.url } });
   }
-  if (x.audience === "commercial" && /crab/.test(x.species.id))
+  if (x.audience === "commercial" && /crab|dungeness/.test(x.species.id))
     out.push({ id: "closure-line", kind: "official", title: "Call CDFW's domoic acid fishery closure line", reason: "Closures and reopenings can be announced before this list is updated.", source: { label: AGENCY_LINKS.cdfwClosureLine.phone, tel: AGENCY_LINKS.cdfwClosureLine.tel }, scope: `Commercial ${speciesPhrase(x.species)}` });
   if (x.audience === "shellfish" || ["mussel", "bivalve", "razor-clam"].includes(x.species.id))
     out.push({
