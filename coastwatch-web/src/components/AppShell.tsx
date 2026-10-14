@@ -55,7 +55,10 @@ export function AppShell({
                 <circle cx="22.5" cy="8.5" r="2.2" fill="#f6bb5c" />
               </svg>
               <span className="text-[17px] font-semibold tracking-tight text-white max-[359px]:sr-only">CoastWatch</span>
-              <span className="hidden border-l border-white/15 pl-2.5 text-[13px] text-on-navy-2 lg:inline">California</span>
+              {/* not independently validated: said on every page, beside the name (phones: the footer and the welcome) */}
+              <span className="hidden whitespace-nowrap border-l border-white/15 pl-2.5 text-[13px] text-on-navy-2 lg:inline" data-testid="research-preview-badge">
+                Research preview
+              </span>
             </Link>
             <PrimaryNav active={active} />
             <div className="ml-auto flex items-center gap-2 min-[360px]:gap-3">
@@ -93,8 +96,10 @@ export function AppShell({
         {scroll === "page" && (
           <footer className="border-t border-hairline bg-page" data-testid="site-footer">
             <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6 text-[14px] text-ink-2 sm:px-8">
-              <span className="font-semibold text-ink">CoastWatch</span>
-              <span className="text-ink-3">Not an official source. Closures and advisories come from CDFW and CDPH.</span>
+              <span className="font-semibold text-ink">CoastWatch · research preview</span>
+              <span className="text-ink-3" data-testid="footer-disclaimer">
+                Not an official source and not independently validated. It does not replace CDFW or CDPH: closures, advisories and seafood safety come from them.
+              </span>
               <nav aria-label="About CoastWatch" className="flex flex-wrap gap-x-5 gap-y-2 sm:ml-auto">
                 <Link href="/about" className="font-medium text-accent hover:underline">About</Link>
                 <Link href="/sources" className="font-medium text-accent hover:underline">Data &amp; sources</Link>

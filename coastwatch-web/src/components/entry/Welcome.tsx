@@ -160,7 +160,7 @@ export function Welcome({ places, suppressed, onConditions, pillClass = "", onOp
         >
           <div className="w-full max-w-[640px]">
             <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease, delay: 0.15 }} className="text-[14px] font-medium text-[#74cfe6]">
-              CoastWatch · harmful algal blooms, California
+              CoastWatch · harmful algal blooms, California · research preview
             </motion.p>
             <motion.h1
               id="welcome-h"
