@@ -62,7 +62,10 @@ def test_satellite_age_alerts_follow_latency_not_clouds(base):
 def test_missing_charm_runs_and_stale_hf_radar(base):
     run = next(r for r in base.forecast_runs if r.group_id == "charm")
     issued = datetime.fromisoformat(run.issued_date + "T12:00:00+00:00")
-    assert "charm_missing" in keys(hl.evaluate(base, None, issued + timedelta(days=hl.CHARM_MAX_AGE_DAYS + 1)))
+    # what the app labels "Stale" alerts (data_stale supersedes the older 3-day charm_missing)
+    assert "data_stale:charm" in keys(hl.evaluate(base, None, issued + timedelta(days=2)))
+    assert "charm_missing" not in keys(hl.evaluate(base, None, issued + timedelta(days=hl.CHARM_MAX_AGE_DAYS + 1)))
+    assert not any(k.endswith(":charm") for k in keys(hl.evaluate(base, None, issued + timedelta(days=1))))
     assert "hfr_stale" in keys(hl.evaluate(base, None, NOW + timedelta(hours=hl.HFR_MAX_AGE_HOURS)))  # newest hour 12:00, now 18:00 + 18 h
     assert "hfr_stale" not in keys(hl.evaluate(base, None, NOW))
 
@@ -115,3 +118,104 @@ def test_a_partly_failing_source_alerts_after_consecutive_runs(base):
     assert "source_degraded:satellite_chl" in keys(h)
     assert "source_degraded:satellite_chl" not in keys(hl.evaluate(part, None, NOW))
 
+
+
+# ---------------------------------------------------------------- 2026-10-13: three failures, no alert
+
+
+def failing_on(m: Manifest, ids: tuple[str, ...], host: str = "coastwatch.pfeg.noaa.gov") -> Manifest:
+    """The 00:42Z run: several sources refused by one host in the same run."""
+    return m.model_copy(update={"sources": [
+        s.model_copy(update={"outcome": "failed", "error": f"probe failed: https://{host}/erddap/griddap/x.csv0 (HTTP Error 403: )"}) if s.source_id in ids else s
+        for s in m.sources
+    ]})
+
+
+def test_one_host_failing_for_several_sources_alerts_on_the_second_run_once(base):
+    m = failing_on(base, ("charm", "hf_radar", "satellite_chl"))
+    h1 = hl.evaluate(m, None, NOW)
+    assert not any(k.startswith("upstream_outage") for k in keys(h1))  # one run: NOAA often refuses a single run
+    assert h1["failing_hosts"] == {"coastwatch.pfeg.noaa.gov": ["charm", "hf_radar", "satellite_chl"]}
+    h2 = hl.evaluate(m, h1, NOW + timedelta(hours=8))
+    assert "upstream_outage:coastwatch.pfeg.noaa.gov" in h2["new_alerts"]
+    # one alert for the host, not one per source
+    assert not any(k.startswith(("source_failing", "source_not_updating", "source_degraded")) for k in keys(h2))
+    h3 = hl.evaluate(m, h2, NOW + timedelta(hours=16))
+    assert h3["new_alerts"] == [] or all(not k.startswith("upstream_outage") for k in h3["new_alerts"])
+    # a single source failing does not count as a host outage
+    one = failing_on(base, ("charm",))
+    assert not any(k.startswith("upstream_outage") for k in keys(hl.evaluate(one, hl.evaluate(one, None, NOW), NOW + timedelta(hours=6))))
+
+
+def test_a_host_refusing_several_sources_in_single_runs_again_and_again_alerts_once(base):
+    """The replayed 2026-10-09..13 pattern: pfeg refused C-HARM, HF radar and VIIRS together in
+    single runs, recovering in between, so neither the consecutive nor the outage check fired."""
+    bad, good = failing_on(base, ("charm", "hf_radar", "satellite_chl")), base
+    pattern = [bad, good, good, bad, good, bad, good, good, good, good, bad, good]
+    h, opened, t = None, [], NOW
+    for i, m in enumerate(pattern):
+        h = hl.evaluate(m, h, t)
+        opened += [(i, k) for k in h["new_alerts"] if k.startswith("upstream_")]
+        t += timedelta(hours=8)
+    # opens on the third burst, once, and stays open across the recoveries (no flapping)
+    assert opened == [(5, "upstream_intermittent:coastwatch.pfeg.noaa.gov")]
+    assert "upstream_intermittent:coastwatch.pfeg.noaa.gov" in keys(h)
+    # clears after a whole window without such a failure
+    for _ in range(hl.INTERMITTENT_WINDOW):
+        h = hl.evaluate(good, h, t)
+        t += timedelta(hours=8)
+    assert not any(k.startswith("upstream_intermittent") for k in keys(h))
+    # two isolated bursts are ordinary NOAA behaviour
+    h = None
+    for m in [bad, good, good, good, bad, good]:
+        h = hl.evaluate(m, h, t)
+        t += timedelta(hours=8)
+        assert not any(k.startswith("upstream_intermittent") for k in keys(h))
+
+
+def test_no_success_for_too_long_alerts_by_time_even_when_runs_drift(base):
+    m = failing_on(base, ("hf_radar",))
+    last = next(s.last_success_at for s in base.sources if s.source_id == "hf_radar")
+    t0 = datetime.fromisoformat(last.replace("Z", "+00:00"))
+    # two failed runs 10 h apart: under the 3-in-a-row count, but over the 18 h budget
+    h1 = hl.evaluate(m, None, t0 + timedelta(hours=10))
+    h2 = hl.evaluate(m, h1, t0 + timedelta(hours=20))
+    assert any(a["key"].endswith(":hf_radar") or a["kind"] == "hfr_stale" for a in h2["alerts"])
+    assert len([a for a in h2["alerts"] if a["key"].endswith(":hf_radar") or a["kind"].startswith("hfr")]) == 1  # one per source
+
+
+def test_every_run_writes_a_freshness_and_coverage_table_with_the_sources_own_dates(base):
+    h = hl.evaluate(base, None, NOW)
+    f = h["freshness"]
+    assert set(f) == {s.source_id for s in base.sources}
+    charm = f["charm"]
+    assert charm["basis"] == "issued_date" and charm["newest_date"] == next(s.latest_issued_date for s in base.sources if s.source_id == "charm")
+    assert 0 < charm["coverage"]["valid_fraction"] <= 1
+    assert "| Source | Last attempt |" in hl.markdown(h)
+
+
+def with_charm_input(m: Manifest, **md) -> Manifest:
+    def upd(lyr):
+        if lyr.group_id != "charm" or not lyr.provenance:
+            return lyr
+        return lyr.model_copy(update={"provenance": lyr.provenance.model_copy(update={"upstream_metadata": {**(lyr.provenance.upstream_metadata or {}), **md}})})
+    return m.model_copy(update={"layers": [upd(lyr) for lyr in m.layers]})
+
+
+def test_a_change_in_charm_s_declared_satellite_input_alerts_once(base):
+    snpp = with_charm_input(base, satellite="S-NPP", product_name="C-HARM v3.1 model output with SNPP VIIRS and WCOFS data", product_version="3.1")
+    h1 = hl.evaluate(snpp, None, NOW)
+    assert h1["charm_input"]["satellite"] == "S-NPP" and "charm_input_changed" not in keys(h1)
+    h2 = hl.evaluate(snpp, h1, NOW + timedelta(hours=6))
+    assert "charm_input_changed" not in keys(h2)
+    n20 = with_charm_input(base, satellite="NOAA-20", product_name="C-HARM v3.2 model output with NOAA-20 VIIRS and WCOFS data", product_version="3.2")
+    h3 = hl.evaluate(n20, h2, NOW + timedelta(hours=12))
+    assert "charm_input_changed" in h3["new_alerts"]
+    assert "S-NPP" in next(a["message"] for a in h3["alerts"] if a["key"] == "charm_input_changed")
+
+
+def test_charm_still_declaring_snpp_after_the_end_of_snpp_data_is_flagged(base):
+    snpp = with_charm_input(base, satellite="S-NPP")
+    after = datetime(2026, 11, 5, 18, 0, tzinfo=timezone.utc)
+    assert "charm_input_ageing" in keys(hl.evaluate(snpp, None, after))
+    assert "charm_input_ageing" not in keys(hl.evaluate(snpp, None, NOW))
