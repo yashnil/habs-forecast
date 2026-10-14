@@ -35,7 +35,7 @@ test.describe("welcome", () => {
     await page.getByTestId("place-input").fill("Santa Cruz");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/coast\?place=port-593&for=commercial$/);
-    await expect(page.getByTestId("journey")).toBeVisible();
+    await expect(page.getByTestId("hab-briefing")).toBeVisible();
     expect(JSON.parse((await stored(page, "cw-purpose-v1"))!)).toEqual({ purpose: "commercial" });
     // a later plain visit: no welcome, one link back to those waters
     await page.goto(`${OK}/`);
@@ -95,12 +95,9 @@ test.describe("welcome", () => {
     await expect(page.getByTestId("intro-card")).toHaveCount(0);
     await page.evaluate(() => localStorage.setItem("cw-purpose-v1", JSON.stringify({ purpose: "commercial" })));
     await page.goto(`${OK}/coast?place=port-201&for=recreational`);
-    // a link naming the activity opens on what officially applies; the first chapter keeps the choice
-    await expect(page.getByTestId("chapter-target")).toContainText("Recreational");
-    await page.getByTestId("chapter-head-target").click();
+    // a link naming the activity wins over the saved purpose
     await expect(page.getByTestId("coast-for-recreational")).toHaveAttribute("aria-checked", "true");
     await page.goto(`${OK}/coast?place=port-201`);
-    await page.getByTestId("chapter-head-target").click();
     await expect(page.getByTestId("coast-for-commercial")).toHaveAttribute("aria-checked", "true");
     await expect(page.getByTestId("coast-title")).toHaveText("Crescent City");
     await ctx.close();
@@ -134,7 +131,6 @@ test.describe("welcome", () => {
     await page.getByTestId("place-input").fill("Clam");
     await page.getByTestId("place-option-site-clam-beach").click();
     await expect(page).toHaveURL(/\/coast\?place=site-clam-beach&for=shellfish$/);
-    await page.getByTestId("chapter-head-official").click();
     await expect(page.getByTestId("brief-official")).toBeVisible();
     await ctx.close();
   });

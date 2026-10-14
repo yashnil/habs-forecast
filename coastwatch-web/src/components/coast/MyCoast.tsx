@@ -38,9 +38,17 @@ import { PurposeSwitch } from "@/components/welcome/PurposeSwitch";
 import { defaultAudience, sectionOrder, usePurpose } from "@/lib/purpose";
 import { MeasuredSection, ModelSection, ObservedSection, OfficialSection, UnknownsSection, useModel } from "./CoastSections";
 import type { SatelliteResult } from "@/components/map/SatelliteNear";
-import { Journey } from "./Journey";
-import { marineHeadline } from "@/lib/conditions";
-import { AnswerLine, TargetPicker, ConditionsCard, NextSteps, OfficialBrief, PlanBar, fmtWhen, officialAnswer, useConditions, type AnswerClause } from "./Briefing";
+import { AnimatePresence } from "motion/react";
+import type { PortIntelCollection } from "@/generated/port_intel";
+import type { ImageRaster, TileRaster } from "@/components/map/MapCanvas";
+import { HabBriefing, useHabEvidence, useOutlook, useSatellite, type Focus } from "./HabBriefing";
+import { MapKey, StationPeek, WatersAndSpecies } from "./Waters";
+import { fmtMeasured, fmtPct, ringPolygon, stationsAround, NEIGHBOURHOOD_KM, RECENT_DAYS } from "@/lib/hab";
+import { artifactUrl, satelliteLatest, tileIndexUrl } from "@/lib/layers";
+import { supportsGridTiles } from "@/lib/gridTiles";
+import { gradientCss } from "@/lib/palette";
+import { speciesStatements, type NearSample } from "@/lib/nextSteps";
+import { AnswerLine, ConditionsCard, NextSteps, OfficialBrief, PlanBar, fmtWhen, officialAnswer, useConditions, type AnswerClause } from "./Briefing";
 import { MEASURED_RECENT_DAYS } from "@/components/ui/Mark";
 import { speciesById, type SpeciesId } from "@/content/species";
 import { useMode } from "@/lib/mode";
@@ -57,6 +65,8 @@ const HOME_KEY = "cw-home-port";
 const CA: [[number, number], [number, number]] = [[-125.2, 32.5], [-117.1, 42.0]];
 const EXAMPLES = ["port-201", "port-220", "port-593", "port-550", "port-770", "site-clam-beach"];
 
+const reducedMotionNow = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 function readHome(): string | null {
   try {
     return window.localStorage.getItem(HOME_KEY);
@@ -72,6 +82,7 @@ type Props = {
   stations: StationLite[] | null;
   stationsError: string | null;
   baseUrl: string;
+  portIntel?: PortIntelCollection | null;
 };
 
 /**
@@ -80,7 +91,7 @@ type Props = {
  * The location is the waters someone cares about (a port, a CDPH harvest site or a point on the
  * map); the home port is remembered separately and never assumed to be where anyone fishes.
  */
-export function MyCoast({ manifest, ports, official, stations, stationsError, baseUrl }: Props) {
+export function MyCoast({ manifest, ports, official, stations, stationsError, baseUrl, portIntel = null }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -145,22 +156,89 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   useEffect(() => setSat(null), [place?.key]);
   const cond = useConditions(place?.lat ?? null, place?.lon ?? null);
 
+  // ------------------------------------------------------------ HAB evidence (the briefing) and what the map shows of it
+  const outlook = useOutlook(manifest, baseUrl, place?.lat ?? null, place?.lon ?? null);
+  const satNow = useSatellite(manifest, baseUrl, place?.lat ?? null, place?.lon ?? null);
+  const hab = useHabEvidence(stations, place?.lat ?? null, place?.lon ?? null, now);
+  const portEntry = useMemo(() => (place?.kind === "port" ? (portIntel?.ports.find((x) => `port-${x.port_code}` === place.key) ?? null) : null), [place, portIntel]);
+  const [focus, setFocus] = useState<Focus>(null);
+  const [peek, setPeek] = useState<string | null>(null);
+  useEffect(() => {
+    setFocus(null);
+    setPeek(null);
+  }, [place?.key]);
+  const around = useMemo(() => (place && now ? stationsAround(stations, place.lat, place.lon, now) : []), [stations, place, now]);
+  const outDay = outlook && outlook !== "error" ? (outlook.find((d) => d.lead === leadNow) ?? outlook[0] ?? null) : null;
+  const [quantity, setQuantity] = useState<"pda" | "pn">("pda");
+  const modelLayer = charmLayer(manifest, quantity === "pda" ? "particulate_domoic" : "pseudo_nitzschia", leadNow);
+  const forecastRaster: ImageRaster | null = useMemo(
+    () =>
+      focus === "model" && modelLayer?.image
+        ? {
+            id: `coast-${modelLayer.layer_id}`,
+            url: artifactUrl(baseUrl, modelLayer.image.url),
+            corners: modelLayer.image.corners_lnglat,
+            grid: supportsGridTiles(modelLayer) ? { layer: modelLayer, url: artifactUrl(baseUrl, modelLayer.grid!.url) } : null,
+          }
+        : null,
+    [focus, modelLayer, baseUrl],
+  );
+  const satLayer = satelliteLatest(manifest, "olci300") ?? satelliteLatest(manifest, "viirs750");
+  const satelliteRaster: TileRaster | null = useMemo(() => {
+    const t = satLayer?.tiles;
+    if (focus !== "satellite" || !satLayer || !t) return null;
+    return { id: `coast-${satLayer.layer_id}`, template: t.relative ? artifactUrl(baseUrl, t.url_template) : t.url_template, minzoom: t.min_zoom ?? 0, maxzoom: t.max_native_zoom, bounds: t.bounds_lnglat, indexUrl: tileIndexUrl(baseUrl, t) };
+  }, [focus, satLayer, baseUrl]);
+  const keyGradient = focus === "model" && modelLayer?.palette ? gradientCss(modelLayer.palette) : focus === "satellite" && satLayer?.palette ? gradientCss(satLayer.palette) : null;
+  const focusOn = useCallback(
+    (f: Focus) => {
+      setFocus(f);
+      setPeek(null);
+      // on a phone the map is above: bring it into view so the reader sees what changed
+      if (f && !window.matchMedia("(min-width: 1024px)").matches) {
+        const el = document.querySelector('[data-testid="coast-map-mobile"]');
+        const r = el?.getBoundingClientRect();
+        if (el && r && (r.bottom < 80 || r.top > window.innerHeight - 120)) el.scrollIntoView({ behavior: reducedMotionNow() ? "auto" : "smooth", block: "center" });
+      }
+    },
+    [],
+  );
+
   // ------------------------------------------------------------ the map shows where each fact came from
   const overlay = useMemo<GeoJSON.FeatureCollection | null>(() => {
     if (!place) return null;
     const g = model?.layer?.grid;
     const used = model?.pda?.here ?? model?.pda?.nearest ?? null;
-    // the nearest station: the one the answer line names
-    const near = st.near.length ? st.near.slice(0, 1) : st.nearestBeyond ? [st.nearestBeyond] : [];
+    // the stations the briefing names (Pseudo-nitzschia, toxin); one of them in focus
+    const named = [hab?.cells, hab?.toxin].filter((e): e is NonNullable<typeof e> => !!e && e.km <= 120);
+    const ids = new Set(named.map((e) => e.station.station_id));
+    const focused = focus === "cells" ? hab?.cells?.station.station_id : focus === "toxin" ? hab?.toxin?.station.station_id : peek;
+    const threadTo = focus === "cells" || focus === "toxin" ? named.filter((e) => e.station.station_id === focused) : focus ? [] : named;
+    const pix = focus === "satellite" && satNow && satNow !== "error" && satNow.value != null && satNow.km > 0 ? { lat: satNow.pixelLat, lon: satNow.pixelLon } : null;
     return provenanceFeatures({
       target: { lat: place.lat, lon: place.lon },
-      cell: g && used ? { polygon: cellPolygon(g, used.cell), lat: used.cell.lat, lon: used.cell.lon, own: !!model?.pda?.here } : null,
-      stations: near.map((s) => ({ lat: s.station.lat, lon: s.station.lon, name: s.station.name, km: s.km })),
-      official: (official?.geometry as unknown as GeoJSON.FeatureCollection) ?? null,
+      cell: g && used && (focus === null || focus === "model") ? { polygon: cellPolygon(g, used.cell), lat: used.cell.lat, lon: used.cell.lon, own: !!model?.pda?.here } : null,
+      stations: threadTo.map((e) => ({ lat: e.station.lat, lon: e.station.lon, name: e.station.name, km: e.km, id: e.station.station_id, aged: e.ageDays > RECENT_DAYS, focus: e.station.station_id === focused })),
+      others: around
+        .filter((a) => !threadTo.some((e) => e.station.station_id === a.station.station_id))
+        .map((a) => ({ lat: a.station.lat, lon: a.station.lon, name: a.station.name, id: a.station.station_id, aged: a.ageDays > RECENT_DAYS, minor: !ids.has(a.station.station_id) && a.station.station_id !== peek })),
+      pixel: pix,
+      ring: focus === "model" ? ringPolygon(place.lat, place.lon, NEIGHBOURHOOD_KM) : null,
+      official: focus === null || focus === "official" ? ((official?.geometry as unknown as GeoJSON.FeatureCollection) ?? null) : null,
     });
-  }, [place, st, model, official]);
+  }, [place, model, official, hab, focus, peek, around, satNow]);
 
   const mapRef = useRef<MlMap | null>(null);
+  const [headH, setHeadH] = useState<number | null>(null);
+  useEffect(() => {
+    const h = document.querySelector("header");
+    if (!h) return;
+    const on = () => setHeadH(h.getBoundingClientRect().height);
+    on();
+    const ro = new ResizeObserver(on);
+    ro.observe(h);
+    return () => ro.disconnect();
+  }, []);
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches), []);
   const fit = useCallback(
@@ -168,14 +246,26 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
       if (!place) return m.fitBounds(CA, { padding: 24, duration: 0 });
       const pts: [number, number][] = [[place.lon, place.lat]];
       const used = model?.pda?.here ?? model?.pda?.nearest;
-      if (used) pts.push([used.cell.lon, used.cell.lat]);
-      for (const s of st.near.slice(0, 2)) if (s.km < 25) pts.push([s.station.lon, s.station.lat]);
+      const ev = focus === "cells" ? hab?.cells : focus === "toxin" ? hab?.toxin : null;
+      if (focus === "model") {
+        // the whole neighbourhood the briefing summarises
+        const r = ringPolygon(place.lat, place.lon, NEIGHBOURHOOD_KM).coordinates[0];
+        for (const q of r) pts.push(q as [number, number]);
+      } else if (ev) {
+        pts.push([ev.station.lon, ev.station.lat]);
+      } else if (focus === "satellite") {
+        if (satNow && satNow !== "error" && satNow.value != null) pts.push([satNow.pixelLon, satNow.pixelLat]);
+        pts.push([place.lon - 0.12, place.lat - 0.08], [place.lon + 0.12, place.lat + 0.08]);
+      } else {
+        if (used) pts.push([used.cell.lon, used.cell.lat]);
+        for (const e of [hab?.cells, hab?.toxin]) if (e && e.km < 25) pts.push([e.station.lon, e.station.lat]);
+      }
       const lons = pts.map((p) => p[0]);
       const lats = pts.map((p) => p[1]);
-      const pad = 0.06;
-      journeyTo(m, { bounds: [[Math.min(...lons) - pad, Math.min(...lats) - pad], [Math.max(...lons) + pad, Math.max(...lats) + pad]], padding: 48, maxZoom: 11 });
+      const pad = focus === "model" ? 0.01 : 0.06;
+      journeyTo(m, { bounds: [[Math.min(...lons) - pad, Math.min(...lats) - pad], [Math.max(...lons) + pad, Math.max(...lats) + pad]], padding: 48, maxZoom: focus === "satellite" ? 10.5 : 11 });
     },
-    [place, model, st, reducedMotion],
+    [place, model, hab, focus, satNow],
   );
   useEffect(() => {
     if (mapRef.current) fit(mapRef.current);
@@ -206,8 +296,9 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   // ------------------------------------------------------------ render
   const map = (
     <MapCanvas
-      forecast={null}
-      satellite={null}
+      forecast={forecastRaster}
+      satellite={satelliteRaster}
+      fade
       satelliteAge={null}
       imagery={null}
       ports={ports}
@@ -221,6 +312,12 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
       initialPadding={32}
       onPort={(code) => go({ place: `port-${code}` })}
       onPoint={(p) => go({ place: pointKey(p.lat, p.lon) })}
+      onStation={(id) => {
+        // a station the briefing names takes its card into focus; any other opens its latest measurements
+        if (hab?.cells?.station.station_id === id && focus !== "cells") return focusOn("cells");
+        if (hab?.toxin?.station.station_id === id && focus !== "toxin") return focusOn("toxin");
+        setPeek(id);
+      }}
       onReady={(m) => {
         mapRef.current = m;
         // on a small map the credits start folded (the (i) button opens them), as on Bloom's map
@@ -230,7 +327,13 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     />
   );
 
-  const [chapter, setChapter] = useState<string>(() => (sp.get("for") || sp.get("species") ? "official" : "target"));
+  const peekStation = peek && now ? (around.find((a) => a.station.station_id === peek) ?? null) : null;
+  const mapExtras = place && (
+    <>
+      <MapKey focus={focus} gradient={keyGradient} />
+      <AnimatePresence>{peekStation && now && <StationPeek key={peekStation.station.station_id} station={peekStation.station} km={peekStation.km} now={now} onClose={() => setPeek(null)} />}</AnimatePresence>
+    </>
+  );
   const [picking, setPicking] = useState(false);
   useEffect(() => setPicking(false), [place?.key]);
   const actionLink = "min-h-[32px] font-medium text-accent hover:underline";
@@ -327,30 +430,45 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   const satelliteLine =
     sat === null ? "Reading…" : sat.date && now ? `Clear view ${formatDate(sat.date)} (${ageWords(ageDays(sat.date, now))})` : "No clear view this week (cloud, fog or no overpass)";
   const official1 = officialAnswer(assocs, audience, species);
+  const status = speciesStatements(official, species, audience);
+  const seasonStatus = status.find((x) => /season status/i.test(x.topic));
   const answer: AnswerClause[] | null =
     place && modeRead
       ? [
+          ...(seasonStatus ? [{ kind: "official" as const, testid: "answer-status", text: `${seasonStatus.agency}: “${seasonStatus.statement}”` }] : []),
           {
             kind: "official",
             testid: "answer-official",
             text:
               official1.headline + (official1.disputed.length ? ` · ${official1.disputed.length} more reported lifted, awaiting review` : ""),
           },
-          toxin
-            ? { kind: "measured", testid: "answer-measured", aged: toxin.ageDays > MEASURED_RECENT_DAYS, text: `Toxin last measured at ${toxin.station} (${toxin.km < 10 ? toxin.km.toFixed(1) : Math.round(toxin.km)} km), ${ageWords(toxin.ageDays)}` }
-            : { kind: "gap", testid: "answer-measured", text: stationsError ? "Shore measurements could not be loaded" : "No toxin sample within 40 km" },
-          model?.pda?.here
-            ? { kind: "model", testid: "answer-model", text: `Model: ${Math.round(model.pda.here.value * 100)}% probability that toxin in the water exceeds the model threshold (this 3 km cell${model.layer?.time.valid_date ? `, ${formatDate(model.layer.time.valid_date)}` : ""})` }
-            : { kind: "gap", testid: "answer-model", text: !model ? "Reading the toxin forecast" : model.error ? "No toxin forecast run is available" : "No toxin forecast for these waters: the model leaves out many nearshore cells" },
+          measuredClause(hab, stationsError),
+          modelClause(outlook, outDay?.valid ?? null, outDay?.pda ?? null),
         ]
       : null;
+  const samples = useMemo<NearSample[]>(
+    () =>
+      [hab?.cells, hab?.toxin]
+        .filter((e): e is NonNullable<typeof e> => !!e && e.near)
+        .sort((a, b) => a.ageDays - b.ageDays)
+        .map((e) => ({
+          kind: e.kind === "toxin" ? "toxin" : "cells",
+          station: e.station.name,
+          stationId: e.station.station_id,
+          km: e.km,
+          date: e.date,
+          ageDays: e.ageDays,
+          text: e.kind === "cells" ? `Pseudo-nitzschia ${fmtMeasured("pn_seriata", e.values.reduce((a, v) => a + v.value, 0))}` : `domoic acid ${fmtMeasured("pDA", e.values[0].value)}`,
+        })),
+    [hab],
+  );
   const steps = useMemo(
     () =>
       place
-        ? nextSteps({ official, verification, assocs, audience, species, lat: place.lat, conditions: cond.data, lastToxin: toxin, fmt: fmtWhen })
+        ? nextSteps({ official, verification, assocs, audience, species, lat: place.lat, conditions: cond.data, lastToxin: toxin, fmt: fmtWhen, samples })
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [place, official, verification, assocs, audience, species, cond.data, toxin?.date, toxin?.station],
+    [place, official, verification, assocs, audience, species, cond.data, toxin?.date, toxin?.station, samples],
   );
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const openDetails = () => {
@@ -410,65 +528,16 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
       <div className="min-w-0 space-y-5 px-4 pb-24 pt-4 sm:space-y-8 sm:px-8 sm:pt-6 lg:pb-16">
         {header()}
         {place && modeRead && viewMode === "coastal" && (
-          // Coastal: a trip plan in chapters (what you are after → what officially applies →
-          // conditions → before you go), one open at a time, each folded to its answer
-          <Journey
-            active={chapter}
-            onActive={setChapter}
-            chapters={[
-              {
-                id: "target",
-                title: "What are you after?",
-                summary: `${{ all: "Any activity", commercial: "Commercial", recreational: "Recreational", shellfish: "Shellfish harvest" }[audience]} · ${species.label}`,
-                content: <TargetPicker audience={audience} onAudience={(a) => go({ for: a }, "replace")} species={species} onSpecies={(x) => go({ species: x }, "replace")} />,
-                cta: "See what officially applies",
-              },
-              {
-                id: "official",
-                title: "What officially applies",
-                summary: official1.headline + (official1.disputed.length ? ` · ${official1.disputed.length} reported lifted` : ""),
-                content: (
-                  <OfficialBrief
-                    assocs={assocs}
-                    audience={audience}
-                    species={species}
-                    verification={verification}
-                    totalActive={currentRecords(official).length}
-                    onAll={(el) => openDrawer(el)}
-                    onDetails={openDetails}
-                  />
-                ),
-                cta: "Check the conditions",
-              },
-              {
-                id: "conditions",
-                title: "Conditions at sea",
-                summary: cond.data?.marine.status === "ok" ? `${cond.data.marine.data.periods[0].name}: ${marineHeadline(cond.data.marine.data.periods[0])}` : cond.loading ? "Reading NOAA's forecast…" : "Wind, waves, tides and the nearest buoy, from NOAA",
-                content: (
-                  <ConditionsCard
-                    conditions={cond.data}
-                    loading={cond.loading}
-                    error={cond.error}
-                    toxin={toxin}
-                    toxinError={stationsError}
-                    forecastLine={forecastLine}
-                    forecastSub={forecastSub}
-                    satelliteLine={satelliteLine}
-                    now={now}
-                    leads={leads}
-                    lead={leadNow}
-                    onLead={setLead}
-                  />
-                ),
-                cta: "What to check before you go",
-              },
-              {
-                id: "before",
-                title: "Before you go",
-                summary: steps.length ? `${steps.filter((x) => x.kind !== "conditions").length} things to check, starting with: ${steps[0].title}` : "What to check before you go",
-                content: <NextSteps steps={steps} conditionsShown />,
-              },
-            ]}
+          // Coastal: your waters and species, then the HAB evidence at once (no chapters to open)
+          <WatersAndSpecies
+            audience={audience}
+            onAudience={(a) => go({ for: a }, "replace")}
+            species={species}
+            onSpecies={(x) => go({ species: x }, "replace")}
+            leads={leads}
+            lead={leadNow}
+            onLead={setLead}
+            today={today}
           />
         )}
         {place && modeRead && viewMode === "research" && (
@@ -482,14 +551,64 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
               totalActive={currentRecords(official).length}
               onAll={(el) => openDrawer(el)}
               onDetails={openDetails}
+                statements={status}
             />
           </>
         )}
-        <div className={`h-[38vh] min-h-[240px] overflow-hidden rounded-2xl lg:hidden ${place ? "" : "hidden"}`} data-testid="coast-map-mobile">
-          {/* one map: phones get it inline, wide screens in the sticky column */}
-          <MapSlot wide={false}>{map}</MapSlot>
-        </div>
         {landing}
+        {place && modeRead && (
+          <HabBriefing
+            manifest={manifest}
+            placeName={place.name}
+            stations={stations}
+            outlook={outlook}
+            sat={satNow}
+            port={portEntry}
+            lead={leadNow}
+            focus={focus}
+            onFocus={focusOn}
+            pick={quantity}
+            onPick={setQuantity}
+            now={now}
+            lat={place.lat}
+            lon={place.lon}
+            between={
+          <div className="h-[42vh] min-h-[260px] overflow-hidden rounded-2xl lg:hidden" data-testid="coast-map-mobile">
+            {/* one map: phones get it inline, below the summary it illustrates; wide screens in the sticky column */}
+            <MapSlot wide={false}>
+              {map}
+              {mapExtras}
+            </MapSlot>
+          </div>
+            }
+          />
+        )}
+        {place && modeRead && viewMode === "coastal" && (
+          <>
+            <section aria-label="Official information and ocean conditions" className="space-y-5" data-testid="coast-official-conditions">
+              <OfficialBrief
+                assocs={assocs}
+                audience={audience}
+                species={species}
+                verification={verification}
+                totalActive={currentRecords(official).length}
+                onAll={(el) => openDrawer(el)}
+                onDetails={openDetails}
+                statements={status}
+              />
+              <ConditionsCard conditions={cond.data} loading={cond.loading} error={cond.error} now={now} habTiles={false} day={leadNow > 0 ? (leads[leadNow]?.time.valid_date ?? null) : null} tidesFirst={audience === "shellfish"} />
+            </section>
+            <NextSteps
+              steps={steps}
+              conditionsShown
+              sub={
+                species.id === "any"
+                  ? `A general overview for ${place.name}. Choose a species above for its notices, rules and history.`
+                  : `For ${{ all: "", commercial: "commercial ", recreational: "recreational ", shellfish: "" }[audience]}${species.label.toLowerCase().replace(/^dungeness/, "Dungeness").replace(/^california/, "California")} at ${place.name}.`
+              }
+            />
+          </>
+        )}
         {place && modeRead && (
           <>
             {viewMode === "research" && (
@@ -543,8 +662,12 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
         )}
       </div>
       <div className="hidden lg:block">
-        <div className="sticky top-[var(--cw-masthead-h)] h-[calc(100dvh-var(--cw-masthead-h))]" data-testid="coast-map-desktop">
-          <MapSlot wide>{map}</MapSlot>
+        {/* below the whole sticky header (masthead and any status banner), so nothing on the map hides under it */}
+        <div className="sticky top-[var(--cw-masthead-h)] h-[calc(100dvh-var(--cw-masthead-h))]" style={headH ? { top: headH, height: `calc(100dvh - ${headH}px)` } : undefined} data-testid="coast-map-desktop">
+          <MapSlot wide>
+            {map}
+            {mapExtras}
+          </MapSlot>
         </div>
       </div>
     </div>
@@ -591,3 +714,26 @@ function CopyLink() {
   );
 }
 
+
+type Hab = ReturnType<typeof useHabEvidence>;
+
+/** The answer line's measured clause: the latest shore sample near these waters, with its age. */
+function measuredClause(hab: Hab, error: string | null): AnswerClause {
+  if (error) return { kind: "gap", testid: "answer-measured", text: "Shore measurements could not be loaded" };
+  if (!hab) return { kind: "gap", testid: "answer-measured", text: "Reading the shore measurements" };
+  const near = [hab.cells, hab.toxin].filter((e): e is NonNullable<typeof e> => !!e && e.near).sort((a, b) => a.ageDays - b.ageDays)[0];
+  if (!near) return { kind: "gap", testid: "answer-measured", text: "No shore station within 60 km measures bloom algae or toxin" };
+  const km = near.km < 10 ? near.km.toFixed(1) : String(Math.round(near.km));
+  const what = near.kind === "cells" ? `Pseudo-nitzschia ${fmtMeasured("pn_seriata", near.values.reduce((a, v) => a + v.value, 0))}` : `Domoic acid ${fmtMeasured("pDA", near.values[0].value)}`;
+  return { kind: "measured", testid: "answer-measured", aged: near.ageDays > MEASURED_RECENT_DAYS, text: `${what} at ${near.station.name} (${km} km), ${ageWords(near.ageDays)}` };
+}
+
+/** The answer line's model clause: the waters' own cell, or the real offshore cells near them (never as the waters' own). */
+function modelClause(outlook: ReturnType<typeof useOutlook>, valid: string | null, nb: import("@/lib/hab").Neighbourhood | null): AnswerClause {
+  if (outlook === null) return { kind: "gap", testid: "answer-model", text: "Reading the toxin model" };
+  if (outlook === "error" || !outlook.length) return { kind: "gap", testid: "answer-model", text: "No toxin model run is available" };
+  const day = valid ? `, ${formatDate(valid)}` : "";
+  if (nb?.here != null) return { kind: "model", testid: "answer-model", text: `Model: ${fmtPct(nb.here)} chance toxin in the water exceeds its threshold (this 3 km cell${day})` };
+  if (nb && nb.n > 0) return { kind: "model", testid: "answer-model", text: `Model: no value for these nearshore waters; ${nb.n} offshore cells within ${NEIGHBOURHOOD_KM} km, median ${fmtPct(nb.median)}${day}` };
+  return { kind: "gap", testid: "answer-model", text: `Outside the toxin model: no cell within ${NEIGHBOURHOOD_KM} km${nb?.nearest ? ` (nearest ${Math.round(nb.nearest.km)} km away)` : ""}` };
+}
