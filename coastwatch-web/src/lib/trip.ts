@@ -87,6 +87,8 @@ export type MatterInput = {
   model: { valid: string | null; pda: Neighbourhood | null } | null | "error" | "loading";
   /** the trip day has no model run */
   modelBeyond?: boolean;
+  /** the newest C-HARM run is stale or historical by its own policy (what the map labels it) */
+  modelStale?: { state: "stale" | "historical"; issued: string | null; ageDays: number } | null;
   conditions: Conditions | null;
   tripDate: string | null;
   /** today (Pacific), to pick the NWS forecast period for the trip day */
@@ -203,7 +205,8 @@ function habMatter(x: MatterInput): Matter {
   if (x.habError) return { id: "hab", kind: "gap", tone: "gap", headline: "Shore measurements could not be loaded", focus: null };
   const near = [x.hab?.cells, x.hab?.toxin].filter((e): e is StationEvidence => !!e && e.near && e.ageDays <= RECENT_DAYS).sort((a, b) => b.date.localeCompare(a.date) || a.km - b.km);
   const m = x.model !== "error" && x.model !== "loading" ? x.model : null;
-  const modelText = x.modelBeyond
+  const stale = m && x.modelStale ? modelStaleWords(x.modelStale, x.fmt) : "";
+  const modelText = (x.modelBeyond
     ? "NOAA's model does not reach this day"
     : m?.pda?.here != null
       ? `model ${fmtPct(m.pda.here)} chance of toxin above threshold in these waters' own cell`
@@ -211,7 +214,8 @@ function habMatter(x: MatterInput): Matter {
         ? `model: no value at these nearshore waters (offshore cells within ${NEIGHBOURHOOD_KM} km: median ${fmtPct(m.pda.median)})`
         : m
           ? "outside NOAA's toxin model"
-          : null;
+          : null) as string | null;
+  const modelLine = modelText && stale && !x.modelBeyond && m ? `${modelText} (${stale})` : modelText;
   if (near.length) {
     const e = near[0];
     const v = e.kind === "cells" ? `Pseudo-nitzschia ${fmtMeasured("pn_seriata", e.values.reduce((a, y) => a + y.value, 0))}` : `Domoic acid in seawater ${fmtMeasured("pDA", e.values[0].value)}`;
@@ -220,21 +224,35 @@ function habMatter(x: MatterInput): Matter {
       kind: "measured",
       tone: "note",
       headline: `${v} at ${e.station.name}, ${ageWords(e.ageDays)}`,
-      detail: `${km(e.km)} km ${e.bearing} of these waters${modelText ? ` · ${modelText}` : ""}. Seawater, not seafood.`,
+      detail: `${km(e.km)} km ${e.bearing} of these waters${modelLine ? ` · ${modelLine}` : ""}. Seawater, not seafood.`,
       focus: e.kind === "cells" ? "cells" : "toxin",
       aged: e.ageDays > 14,
     };
   }
   if (m?.pda?.here != null)
-    return { id: "hab", kind: "model", tone: "note", headline: `NOAA model: ${fmtPct(m.pda.here)} chance toxin in the water exceeds its threshold here`, detail: `A probability for this 3 km cell${m.valid ? ` on ${x.fmt(m.valid)}` : ""}, not a measurement. No shore sample within ${EVIDENCE_RADIUS_KM} km in the last ${RECENT_DAYS} days.`, focus: "model" };
+    return {
+      id: "hab",
+      kind: "model",
+      tone: "note",
+      headline: `NOAA model: ${fmtPct(m.pda.here)} chance toxin in the water exceeds its threshold here${stale ? ` (${stale})` : ""}`,
+      detail: `A probability for this 3 km cell${m.valid ? ` on ${x.fmt(m.valid)}` : ""}, not a measurement.${stale ? " NOAA has published no newer run that CoastWatch could read." : ""} No shore sample within ${EVIDENCE_RADIUS_KM} km in the last ${RECENT_DAYS} days.`,
+      focus: "model",
+      aged: !!stale,
+    };
   return {
     id: "hab",
     kind: "gap",
     tone: "gap",
     headline: `No recent HAB sample within ${EVIDENCE_RADIUS_KM} km`,
-    detail: `${modelText ? `${modelText.charAt(0).toUpperCase()}${modelText.slice(1)}. ` : ""}No sample is not a clean result.`,
+    detail: `${modelLine ? `${modelLine.charAt(0).toUpperCase()}${modelLine.slice(1)}. ` : ""}No sample is not a clean result.`,
     focus: m?.pda && m.pda.n > 0 ? "model" : null,
   };
+}
+
+/** "stale run, issued Oct 12, 2 days ago": the same state the map and the Science tab show. */
+export function modelStaleWords(s: NonNullable<MatterInput["modelStale"]>, fmt: (d: string) => string): string {
+  const age = s.ageDays === 1 ? "1 day ago" : `${s.ageDays} days ago`;
+  return `${s.state === "stale" ? "stale" : "old"} run${s.issued ? `, issued ${fmt(s.issued)}` : ""}, ${age}`;
 }
 
 /** The trip day's tides, low tides first for shellfish harvest. */

@@ -564,6 +564,10 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   // Coastal is the default, so the server renders the trip briefing (no flash of another layout);
   // a device set to Research switches once its choice is read, and a link's mode=research never renders it
   const coastalView = viewMode === "coastal" && (modeRead || sp.get("mode") !== "research");
+  // the newest C-HARM run's state by its own policy: the same words the map and the Science tab use
+  const runLayer = charmLayer(manifest, "particulate_domoic", 0) ?? charmLayer(manifest, "pseudo_nitzschia", 0);
+  const runFresh = runLayer && now ? classifyTime(runLayer.freshness, runLayer.time, now) : null;
+  const modelStale = runFresh && (runFresh.state === "stale" || runFresh.state === "historical") ? { state: runFresh.state, issued: runLayer?.time.issued_date ?? null, ageDays: runFresh.ageDays ?? 0 } : null;
   const tripModel = outlook === null ? ("loading" as const) : outlook === "error" ? ("error" as const) : tripDay?.lead != null ? (outlook.find((d) => d.lead === tripDay.lead) ?? null) : null;
   const matters = useMemo(
     () =>
@@ -578,6 +582,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
             habError: stationsError,
             model: tripModel === "loading" || tripModel === "error" ? tripModel : tripModel ? { valid: tripModel.valid, pda: tripModel.pda } : null,
             modelBeyond: !!tripDay && tripDay.lead == null && outlook !== null && outlook !== "error",
+            modelStale,
             conditions: cond.data,
             tripDate,
             today,
@@ -585,7 +590,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
           })
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [place, now && today, assocs, audience, species, status.map((x) => x.id).join(), verification?.state, hab, stationsError, tripModel, tripDay?.lead, cond.data, tripDate],
+    [place, now && today, assocs, audience, species, status.map((x) => x.id).join(), verification?.state, hab, stationsError, tripModel, tripDay?.lead, cond.data, tripDate, modelStale?.state, modelStale?.ageDays],
   );
   const checks = useMemo(() => checklist(steps), [steps]);
   // the day of CoastWatch's last check, in California time
@@ -604,6 +609,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   if (coastalView && place) {
     const evidenceDetail = (
       <HabBriefing
+        modelStale={modelStale}
         manifest={manifest}
         placeName={place.name}
         stations={stations}
@@ -759,6 +765,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
         {landing}
         {place && modeRead && (
           <HabBriefing
+            modelStale={modelStale}
             manifest={manifest}
             placeName={place.name}
             stations={stations}

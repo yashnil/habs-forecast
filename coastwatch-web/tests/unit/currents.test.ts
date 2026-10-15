@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compass, directionDeg, fieldFeatures, hourStamp, hoursAgo, sampleField, type CurrentField } from "@/lib/currents";
+import { compass, currentsStale, directionDeg, fieldFeatures, HFR_STALE_HOURS, hourStamp, hoursAgo, sampleField, type CurrentField } from "@/lib/currents";
 import type { ValueGrid } from "@/generated/schema";
 
 const g = { url: "", width: 9, height: 9, lat_first: 36.5, lat_step: 0.018, lon_first: -122.2, lon_step: 0.0208, scale_factor: 1, add_offset: 0, max_quantization_error: 0 } as unknown as ValueGrid;
@@ -47,5 +47,13 @@ describe("currents helpers", () => {
   it("hour stamps and ages", () => {
     expect(hourStamp("2026-10-08T12:00:00Z")).toBe("20261008T12Z");
     expect(hoursAgo("2026-10-08T12:00:00Z", new Date("2026-10-08T20:30:00Z"))).toBe(8);
+  });
+
+  it("an HF-radar hour older than the health threshold is stale everywhere it is shown", () => {
+    const now = new Date("2026-10-14T22:00:00Z");
+    expect(HFR_STALE_HOURS).toBe(18);
+    expect(currentsStale("2026-10-14T06:00:00Z", now)).toBe(false); // 16 h
+    expect(currentsStale("2026-10-12T10:00:00Z", now)).toBe(true); // 60 h: production on 2026-10-14
+    expect(currentsStale(null, now)).toBe(false);
   });
 });

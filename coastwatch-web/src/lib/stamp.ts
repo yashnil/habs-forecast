@@ -1,5 +1,5 @@
 import type { ForecastRun, LayerArtifact } from "@/generated/schema";
-import { hoursAgo } from "@/lib/currents";
+import { currentsStale, hoursAgo } from "@/lib/currents";
 import { formatDate, formatDateTimePT } from "@/lib/time";
 
 export type Stamp = { kind: "observation" | "model" | "gap"; text: string; testid: string };
@@ -68,7 +68,7 @@ export function stampLines(p: {
       kind: "observation",
       testid: "stamp-currents",
       text: t
-        ? `Currents, HF radar · ${mean ? `24 h mean to ${formatDateTimePT(t)}` : `observed ${formatDateTimePT(t)}`}${p.now ? ` (${hoursAgo(t, p.now)} h ago)` : ""}`
+        ? `Currents, HF radar · ${mean ? `24 h mean to ${formatDateTimePT(t)}` : `observed ${formatDateTimePT(t)}`}${p.now ? ` (${currentsStale(t, p.now) ? "Stale: " : ""}${hoursAgo(t, p.now)} h ago)` : ""}`
         : "Currents, HF radar",
     });
     // missing coverage is said on the map, not only in the dock
