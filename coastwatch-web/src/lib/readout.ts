@@ -1,5 +1,7 @@
 import type { LayerArtifact, Manifest } from "@/generated/schema";
 import { compass, type CurrentField, sampleField } from "@/lib/currents";
+import { CHL_NEAR_COPY } from "@/content/copy";
+import { pixelStatus } from "@/lib/chlNear";
 import { artifactUrl } from "@/lib/layers";
 import { cellAt, loadGrid, sampleChunked, valueOf } from "@/lib/grid";
 import { multiSensorMembers, multiSensorPick, observedDate, type SensorObs } from "@/lib/multisensor";
@@ -11,7 +13,7 @@ import { formatDate, formatDateTimePT } from "@/lib/time";
  * the point, with its own date and source. Never the nearest cell, never interpolated; where
  * the cell has no value the readout says so and why it may be missing.
  */
-export type Readout = { kind: "model" | "observation"; value: string | null; unit: string; what: string; when: string; none?: string };
+export type Readout = { kind: "model" | "observation"; value: string | null; unit: string; what: string; when: string; none?: string; flag?: string };
 
 const short = (d: string) => formatDate(d).replace(/^\w+, /, "");
 export const fmtChl = (v: number) => (v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(2));
@@ -68,14 +70,24 @@ export async function satelliteAt(m: Manifest, baseUrl: string, l: LayerArtifact
     const obs = pick === 1 ? a : pick === 2 ? b : null;
     const src = pick === 1 ? p : s;
     if (!obs || !src) return { kind: "observation", value: null, unit: "", what, when: "Multi-sensor, last 7 days", none: NO_OBS };
-    return { kind: "observation", value: fmtChl(obs.value), unit: "mg/m³", what, when: `${sensorLabel(src)} · observed ${short(obs.date)}` };
+    return { kind: "observation", value: fmtChl(obs.value), unit: "mg/m³", what, when: `${sensorLabel(src)} · observed ${short(obs.date)}`, flag: await flagOf(baseUrl, src, lat, lon) };
   }
   if (!l.grid?.chunks) return { kind: "observation", value: null, unit: "", what, when: `${sensorLabel(l)} · ${short(l.time.observed_date ?? "")}`, none: NO_OBS };
   const s = await sampleChunked(baseUrl, l.grid, lat, lon, l.composite?.age_grid ?? null, 0);
   const date = l.composite ? (s.kind === "value" && s.ageDays != null ? observedDate(l.composite.reference_date, s.ageDays) : null) : (l.time.observed_date ?? null);
   const when = `${sensorLabel(l)}${date ? ` · observed ${short(date)}` : l.composite ? `, last ${l.composite.window_days} days` : ""}`;
   if (s.kind !== "value") return { kind: "observation", value: null, unit: "", what, when, none: NO_OBS };
-  return { kind: "observation", value: fmtChl(s.value), unit: "mg/m³", what, when };
+  return { kind: "observation", value: fmtChl(s.value), unit: "mg/m³", what, when, flag: await flagOf(baseUrl, l, lat, lon) };
+}
+
+/** The place rules (lib/chlNear) applied to this one pixel: why a place would not use it. */
+async function flagOf(baseUrl: string, l: LayerArtifact, lat: number, lon: number): Promise<string | undefined> {
+  try {
+    const why = await pixelStatus(baseUrl, l, lat, lon);
+    return why ? CHL_NEAR_COPY.pixel[why] : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function currentsAt(f: CurrentField, l: LayerArtifact, lat: number, lon: number): Readout {

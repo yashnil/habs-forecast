@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import type { LayerArtifact } from "@/generated/schema";
-import { compass, KNOTS_PER_MS, loadField, sampleField, type CurrentSample } from "@/lib/currents";
+import { compass, currentsStale, hoursAgo, KNOTS_PER_MS, loadField, sampleField, type CurrentSample } from "@/lib/currents";
+import { useNow } from "@/lib/useNow";
 import { formatDateTimePT } from "@/lib/time";
 
 /** Observed surface current at a point for the hour (or 24 h mean) shown on the map. */
 export function CurrentsNear({ layer, baseUrl, lat, lon, place }: { layer: LayerArtifact | null; baseUrl: string; lat: number; lon: number; place: string }) {
   const [s, setS] = useState<CurrentSample | null | "none" | "error">(null);
+  const now = useNow();
   useEffect(() => {
     let cancelled = false;
     setS(null);
@@ -25,6 +27,8 @@ export function CurrentsNear({ layer, baseUrl, lat, lon, place }: { layer: Layer
   const when = mean
     ? `24-hour mean to ${formatDateTimePT(ot[ot.length - 1] ?? "")}`
     : `hour of ${formatDateTimePT(layer.time.valid_time ?? "")}`;
+  const newest = mean ? ot[ot.length - 1] : layer.time.valid_time;
+  const stale = currentsStale(newest, now);
   return (
     <section data-testid="currents-near" className="space-y-1.5" aria-labelledby="cur-near-h">
       <div className="flex items-baseline justify-between gap-2">
@@ -33,6 +37,11 @@ export function CurrentsNear({ layer, baseUrl, lat, lon, place }: { layer: Layer
         </h3>
         <span className="text-[13px] text-ink-3">HF radar · native 2 km</span>
       </div>
+      {stale && newest && now && (
+        <p className="text-[13px] font-medium text-serious" data-testid="currents-near-stale">
+          Stale: the newest radar hour CoastWatch has is {hoursAgo(newest, now)} h old. The radar feed has not updated since; this is not the current state of the water.
+        </p>
+      )}
       {s === null ? (
         <p className="text-[13px] text-ink-3">Reading the current field…</p>
       ) : s === "error" ? (

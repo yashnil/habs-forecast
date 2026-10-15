@@ -71,6 +71,37 @@ export const CHLOROPHYLL_COPY = {
   gaps: "Gaps are clouds or missing passes, not low chlorophyll.",
 } as const;
 
+const km = (v: number) => (v < 10 ? v.toFixed(1) : v.toFixed(0)).replace(/\.0$/, "");
+const mg = (v: number) => (v >= 10 ? v.toFixed(0) : v.toPrecision(2));
+
+/**
+ * Chlorophyll near a place (lib/chlNear): how a headline was made, and pixels set aside. Pixels on
+ * land or right against the shore, and single pixels far above the water around them, are never a
+ * place's headline; they stay on the map. No fixed ceiling: real blooms here have exceeded 300 mg/m³.
+ */
+export const CHL_NEAR_COPY = {
+  /** how a neighbourhood headline was made: "Median of 33 clear water pixels within 1.5 km · range 0.91–9.2 · nearest 0.5 km away" */
+  basis: (b: { n: number; radiusKm: number; min: number; max: number; nearestKm: number }) =>
+    [`Median of ${b.n} clear water pixel${b.n === 1 ? "" : "s"} within ${km(b.radiusKm)} km`, mg(b.min) === mg(b.max) ? null : `range ${mg(b.min)}–${mg(b.max)}`, `nearest ${km(b.nearestKm)} km away`].filter(Boolean).join(" · "),
+  /** the highest pixel set aside, when it is far above the headline (one line, about that pixel) */
+  aside: (a: { value: number; reason: "shore" | "spike" }) =>
+    a.reason === "shore"
+      ? `One pixel right against the shore read ${mg(a.value)} mg/m³. Pixels this close to land are often wrong (glare from land, rocks and surf); it is not used here.`
+      : `One pixel nearby read ${mg(a.value)} mg/m³, more than ten times the water around it. A lone pixel that far above its neighbours is usually a measurement error (such as glare or a cloud edge), not a bloom; it is not used here.`,
+  flagged: (place: string, radiusKm: number) =>
+    `No reading from open water within ${km(radiusKm)} km of ${place}. The only clear pixels there are on land, right against the shore or far out of line with the water around them, and they are not treated as a measurement.`,
+  /** My Coast's "what is not known" list */
+  unknownFlagged:
+    "No satellite reading from open water near these waters in the last week: the only clear pixels nearby are on land, right against the shore or far out of line with the water around them.",
+  noCoastline: "The coastline could not be loaded, so pixels on land or right against the shore could not be set aside.",
+  /** the pixel under the pointer, when the place rules set it aside (shown with its own value) */
+  pixel: {
+    land: "On land by the app's coastline: not a sea-surface reading; never used for a place.",
+    shore: "Right against the shore: often wrong (glare from land, rocks, surf); never used for a place.",
+    spike: "Far above the water around it: not treated as a measurement; never used for a place.",
+  },
+} as const;
+
 export const DISCLAIMER =
   "CoastWatch brings together public data from state and federal agencies. It is not an official source. Closures, advisories and seasons from CDFW, CDPH and OEHHA always take precedence. Forecasts are probabilities, not guarantees.";
 

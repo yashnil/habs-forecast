@@ -289,11 +289,17 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       ]
     : [
         { id: "peek", height: peekH },
-        { id: "half", height: Math.round(mapH * 0.58) },
+        // at most 45 % of the map area, so the chosen layer stays mostly visible (≥ 55 % of the map)
+        { id: "half", height: Math.round(mapH * 0.45) },
         { id: "full", height: Math.max(260, mapH - 12) },
       ];
   const sheetH = snaps.find((x) => x.id === sheetSnap)?.height ?? snaps[0].height;
   useEffect(() => setSheetSnap("peek"), [detailOpen, port, inspect]);
+  // a new layer group goes back to the peek, so the layer just chosen is what fills the screen; a
+  // choice within a group (product, day, lead, variable) lowers a full sheet to half, keeping the
+  // controls in reach with most of the map in view
+  useEffect(() => setSheetSnap("peek"), [group]);
+  useEffect(() => setSheetSnap((s) => (s === "full" ? "half" : s)), [variable, lead, sat, cur, showAge, showSensor]);
 
   const [dockH, setDockH] = useState(200);
   useEffect(() => {

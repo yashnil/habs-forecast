@@ -56,6 +56,11 @@ export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds 
             {r.unit && <span className="text-[13px] text-on-navy-2">{r.unit}</span>}
           </p>
           <p className="text-[13px] leading-snug text-white/85">{r.what}</p>
+          {r.flag && (
+            <p className="text-[13px] leading-snug text-[#f6c87a]" data-testid="hover-flag">
+              {r.flag}
+            </p>
+          )}
         </>
       ) : (
         <p className="text-[13px] text-white" data-testid="hover-none">

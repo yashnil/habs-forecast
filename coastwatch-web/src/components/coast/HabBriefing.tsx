@@ -5,8 +5,10 @@ import { motion } from "motion/react";
 import type { Manifest } from "@/generated/schema";
 import type { PortIntel } from "@/generated/port_intel";
 import type { StationLite } from "@/lib/data";
-import { CHARM_LEADS, artifactUrl, charmLayer, leadLabel, satelliteLatest } from "@/lib/layers";
-import { loadGrid, sampleChunked } from "@/lib/grid";
+import { CHARM_LEADS, artifactUrl, charmLayer, leadLabel } from "@/lib/layers";
+import { loadGrid } from "@/lib/grid";
+import { CHL_PLACE_RADIUS_KM, chlStaleWord, fmtChlValue, readPlaceChl, type ChlAside } from "@/lib/chlNear";
+import { CHL_NEAR_COPY } from "@/content/copy";
 import { formatDate } from "@/lib/time";
 import { Mark } from "@/components/ui/Mark";
 import { ageWords, fmtMeasured, fmtPct, measuredEvidence, neighbourhood, stationsAround, EVIDENCE_RADIUS_KM, NEIGHBOURHOOD_KM, RECENT_DAYS, type Neighbourhood, type StationEvidence } from "@/lib/hab";
@@ -48,27 +50,54 @@ export function useOutlook(manifest: Manifest, baseUrl: string, lat: number | nu
   return r;
 }
 
-export type SatReading = { value: number; date: string | null; km: number; sensor: string; pixelLat: number; pixelLon: number; layerId: string } | { value: null; sensor: string; windowDays: number } | null;
+export type SatReading =
+  | {
+      value: number;
+      date: string | null;
+      /** 0 when the value is the pixel at the waters; otherwise the distance to the nearest pixel used */
+      km: number;
+      sensor: string;
+      /** the pixel at the waters, or the nearest pixel used */
+      pixelLat: number;
+      pixelLon: number;
+      layerId: string;
+      /** set when the value is a median of the clear water pixels nearby */
+      basis: { n: number; min: number; max: number; radiusKm: number } | null;
+      aside: ChlAside | null;
+      /** whether pixels on land and against the shore could be set aside */
+      water: boolean;
+    }
+  | { value: null; sensor: string; windowDays: number; flagged: boolean; radiusKm: number; water: boolean }
+  | null;
 
-/** The satellite's latest clear pixel at the waters or, if cloud covers them, within about 5 km. */
+export const SAT_RADIUS_KM = CHL_PLACE_RADIUS_KM;
+
+/** The place's satellite chlorophyll: the same reading as the Science tab and the map (lib/chlNear readPlaceChl). */
 export function useSatellite(manifest: Manifest, baseUrl: string, lat: number | null, lon: number | null): SatReading | "error" {
   const [r, setR] = useState<SatReading | "error">(null);
   useEffect(() => {
     let cancelled = false;
     setR(null);
     if (lat == null || lon == null) return;
-    const olci = satelliteLatest(manifest, "olci300");
-    const layer = olci ?? satelliteLatest(manifest, "viirs750");
-    if (!layer?.grid?.chunks) return;
-    const sensor = olci ? "Sentinel-3 OLCI, 300 m" : "VIIRS, 750 m";
-    const search = olci ? 16 : 7; // about 5 km either way
-    sampleChunked(baseUrl, layer.grid, lat, lon, layer.composite?.age_grid ?? null, search)
-      .then((s) => {
-        if (cancelled) return;
-        if (s.kind !== "value") return setR({ value: null, sensor, windowDays: layer.composite?.window_days ?? 7 });
-        const ref = layer.composite?.reference_date;
-        const date = ref && s.ageDays != null ? new Date(Date.parse(`${ref}T12:00:00Z`) - s.ageDays * 86400000).toISOString().slice(0, 10) : (layer.time.observed_date ?? null);
-        setR({ value: s.value, date, km: s.nearest ? s.distanceKm : 0, sensor, pixelLat: s.cell.lat, pixelLon: s.cell.lon, layerId: layer.layer_id });
+    readPlaceChl(manifest, baseUrl, lat, lon)
+      .then((pc) => {
+        if (cancelled || !pc) return;
+        const { layer, read: s } = pc;
+        const sensor = layer.layer_id.startsWith("olci300") ? "Sentinel-3 OLCI, 300 m" : "VIIRS, 750 m";
+        if (s.kind === "none" || s.kind === "flagged") return setR({ value: null, sensor, windowDays: layer.composite?.window_days ?? 7, flagged: s.kind === "flagged", radiusKm: s.radiusKm, water: s.water });
+        const px = s.kind === "at" ? s.pixel : s.nearest;
+        setR({
+          value: s.value,
+          date: s.date,
+          km: s.kind === "at" ? 0 : s.nearest.km,
+          sensor,
+          pixelLat: px.lat,
+          pixelLon: px.lon,
+          layerId: layer.layer_id,
+          basis: s.kind === "median" ? { n: s.n, min: s.min, max: s.max, radiusKm: s.radiusKm } : null,
+          aside: s.aside,
+          water: s.water,
+        });
       })
       .catch(() => !cancelled && setR("error"));
     return () => {
@@ -249,7 +278,10 @@ export function HabBriefing({
   between,
   pick,
   onPick,
+  modelStale = null,
 }: {
+  /** the newest C-HARM run is stale or historical by its own policy */
+  modelStale?: { state: "stale" | "historical"; issued: string | null; ageDays: number } | null;
   /** the model quantity shown (and drawn on the map) */
   pick: "pda" | "pn";
   onPick: (p: "pda" | "pn") => void;
@@ -361,18 +393,40 @@ export function HabBriefing({
           ) : sat === "error" ? (
             <p className="mt-2 text-[15px] text-ink-2">The satellite grid could not be read.</p>
           ) : sat.value == null ? (
-            <p className="mt-2 text-[15px] text-ink-2">No clear view within 5 km in the last {sat.windowDays} days: cloud, fog or no overpass, not low chlorophyll.</p>
+            sat.flagged ? (
+              <p className="mt-2 text-[15px] text-ink-2" data-testid="ev-satellite-flagged">
+                {CHL_NEAR_COPY.flagged("these waters", sat.radiusKm)}
+              </p>
+            ) : (
+              <p className="mt-2 text-[15px] text-ink-2">No clear view within {sat.radiusKm} km in the last {sat.windowDays} days: cloud, fog or no overpass, not low chlorophyll.</p>
+            )
           ) : (
             <>
-              <p className="mt-1.5 text-[22px] font-semibold leading-tight tabular text-ink">{sat.value >= 10 ? sat.value.toFixed(0) : sat.value.toPrecision(2)} mg/m³</p>
+              <p className="mt-1.5 text-[22px] font-semibold leading-tight tabular text-ink" data-testid="ev-satellite-value">
+                {fmtChlValue(sat.value)} mg/m³
+              </p>
               <p className="mt-1 text-[14px] text-ink-2">
-                {sat.date ? `${formatDate(sat.date)} · ${ageWords(Math.floor(((now?.getTime() ?? Date.now()) - Date.parse(`${sat.date}T12:00:00Z`)) / 86400000))}` : "latest view"}
+                {(() => {
+                  const word = chlStaleWord(manifest.layers.find((l) => l.layer_id === sat.layerId), sat.date, now);
+                  return word ? (
+                    <span className="mr-1 font-medium text-[#9b2c2c]" data-testid="ev-satellite-stale">
+                      {word}:
+                    </span>
+                  ) : null;
+                })()}
+                {sat.date ? `${sat.basis ? "Newest pixel " : ""}${formatDate(sat.date)} · ${ageWords(Math.floor(((now?.getTime() ?? Date.now()) - Date.parse(`${sat.date}T12:00:00Z`)) / 86400000))}` : "latest view"}
               </p>
-              <p className="text-[13px] text-ink-3">
-                {sat.km === 0 ? "At these waters" : `Nearest clear pixel, ${sat.km.toFixed(1)} km away`} · {sat.sensor}
+              <p className="text-[13px] text-ink-3" data-testid="ev-satellite-basis">
+                {sat.basis ? CHL_NEAR_COPY.basis({ ...sat.basis, nearestKm: sat.km }) : "At these waters"} · {sat.sensor}
               </p>
+              {sat.aside && (
+                <p className="mt-1 text-[13px] text-ink-2" data-testid="ev-satellite-aside">
+                  {CHL_NEAR_COPY.aside(sat.aside)}
+                </p>
+              )}
             </>
           )}
+          {sat && sat !== "error" && !sat.water && <p className="mt-1 text-[13px] text-ink-3">{CHL_NEAR_COPY.noCoastline}</p>}
           <p className="mt-2 text-[13px] text-ink-2">Algae of every kind, not toxin: high chlorophyll does not confirm a harmful bloom, and low does not rule one out.</p>
           <p className="mt-1.5 text-[13px] font-medium text-accent group-hover:underline">{satOn ? "Shown on the map" : "Show the satellite view"}</p>
         </motion.button>
@@ -383,6 +437,11 @@ export function HabBriefing({
               <Mark kind="model" />
               NOAA C-HARM model · a probability, not a measurement
             </p>
+            {modelStale && (
+              <p className="basis-full text-[14px] font-medium text-[#9b2c2c]" data-testid="ev-model-stale">
+                {modelStale.state === "stale" ? "Stale" : "Historical"}: the newest run CoastWatch has was issued {modelStale.issued ? formatDate(modelStale.issued) : "—"}, {modelStale.ageDays === 1 ? "1 day" : `${modelStale.ageDays} days`} ago. Its later days are older forecasts, not today&apos;s.
+              </p>
+            )}
             <div role="radiogroup" aria-label="Model quantity" className="flex rounded-xl bg-surface-3 p-0.5 text-[13px]">
               {(
                 [
