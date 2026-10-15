@@ -3,18 +3,19 @@
 import { useEffect, useState } from "react";
 import type { LayerArtifact, Manifest } from "@/generated/schema";
 import { CHL_NEAR_COPY, CHLOROPHYLL_COPY } from "@/content/copy";
-import { fmtChlValue as fmtV, readChlNear, type ChlNear } from "@/lib/chlNear";
-import { nativeLabel, satelliteLatest, type SatProduct } from "@/lib/layers";
+import { CHL_PLACE_RADIUS_KM, chlStaleWord, fmtChlValue as fmtV, readChlNear, readPlaceChl, type ChlNear } from "@/lib/chlNear";
+import { useNow } from "@/lib/useNow";
+import { nativeLabel, satelliteLatest } from "@/lib/layers";
 import { formatDate } from "@/lib/time";
 import { multiSensorLayer, multiSensorMembers, multiSensorPick, type SensorObs } from "@/lib/multisensor";
 
 /**
  * "Latest clear satellite view near here": the newest valid chlorophyll pixel at a location or,
  * if that pixel is missing (cloud, land) or set aside by the quality rules (lib/chlNear), the
- * median of the clear water pixels within about 1.5 km, with their count, range and date.
- * OLCI 300 m first; the VIIRS 750 m fallback only if OLCI is not published.
+ * median of the clear water pixels within CHL_PLACE_RADIUS_KM, with their count, range and date.
+ * The same reading (lib/chlNear readPlaceChl) as My Coast's briefing: one place, one number.
  */
-export const NEAR_RADIUS_KM = 1.5;
+export const NEAR_RADIUS_KM = CHL_PLACE_RADIUS_KM;
 
 /** What the component found, for a summary elsewhere on the page (one rule, one answer):
  *  the date of the headline value, and how far its nearest pixel is when it is not at the point. */
@@ -23,6 +24,17 @@ type NearProps = { manifest: Manifest; baseUrl: string; lat: number; lon: number
 
 export function SatelliteNear(props: NearProps) {
   return multiSensorLayer(props.manifest) ? <MultiSensorNear {...props} /> : <SingleSensorNear {...props} />;
+}
+
+/** The map's freshness word for the reading's own date (nothing when current). */
+function StaleWord({ layer, date }: { layer: LayerArtifact | null; date: string | null }) {
+  const now = useNow();
+  const word = chlStaleWord(layer, date, now);
+  return word ? (
+    <span className="ml-1 font-medium text-[#9b2c2c]" data-testid="satellite-near-stale">
+      · {word}
+    </span>
+  ) : null;
 }
 
 const result = (n: ChlNear | null): SatelliteResult =>
@@ -59,22 +71,24 @@ function Flagged({ place, n }: { place: string; n: ChlNear }) {
 }
 
 function SingleSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearProps) {
-  const olci = satelliteLatest(manifest, "olci300");
-  const layer = olci ?? satelliteLatest(manifest, "viirs750");
-  const product: SatProduct | null = olci ? "olci300" : layer ? "viirs750" : null;
+  const [layer, setLayer] = useState<LayerArtifact | null>(null);
   const [s, setS] = useState<ChlNear | null | "error">(null);
 
   useEffect(() => {
     let cancelled = false;
     setS(null);
-    if (!layer?.grid?.chunks) return;
-    readChlNear(baseUrl, layer, lat, lon, { radiusKm: NEAR_RADIUS_KM })
-      .then((r) => !cancelled && setS(r))
+    readPlaceChl(manifest, baseUrl, lat, lon)
+      .then((r) => {
+        if (cancelled || !r) return;
+        setLayer(r.layer);
+        setS(r.read);
+      })
       .catch(() => !cancelled && setS("error"));
     return () => {
       cancelled = true;
     };
-  }, [baseUrl, layer, lat, lon]);
+  }, [manifest, baseUrl, lat, lon]);
+  const product = layer?.layer_id.startsWith("olci300") ? "olci300" : "viirs750";
 
   useEffect(() => {
     if (!onRead || s === null) return;
@@ -83,7 +97,7 @@ function SingleSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearPr
     if ((s.kind === "at" || s.kind === "median") && !s.date) return;
     onRead(result(s));
   }, [s, onRead]);
-  if (!layer) return null;
+  if (!satelliteLatest(manifest, "olci300") && !satelliteLatest(manifest, "viirs750")) return null;
   return (
     <section data-testid="satellite-near" className="space-y-1.5" aria-labelledby="sat-near-h">
       <div className="flex items-baseline justify-between gap-2">
@@ -91,7 +105,11 @@ function SingleSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearPr
           Satellite chlorophyll, latest clear view
         </h3>
         <span className="text-[13px] text-ink-3">
-          {product === "olci300" ? "Sentinel-3 OLCI" : "VIIRS"} · native {nativeLabel(layer)}
+          {layer && (
+            <>
+              {product === "olci300" ? "Sentinel-3 OLCI" : "VIIRS"} · native {nativeLabel(layer)}
+            </>
+          )}
         </span>
       </div>
       {s === null ? (
@@ -100,7 +118,7 @@ function SingleSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearPr
         <p className="text-[13px] text-ink-3">The satellite grid could not be read.</p>
       ) : s.kind === "none" ? (
         <p className="text-[13px] text-ink-2" data-testid="satellite-near-none">
-          No clear observation near {place} in the last {layer.composite?.window_days ?? 7} days. Cloud or fog, not low chlorophyll.
+          No clear observation near {place} in the last {layer?.composite?.window_days ?? 7} days. Cloud or fog, not low chlorophyll.
         </p>
       ) : s.kind === "flagged" ? (
         <Flagged place={place} n={s} />
@@ -115,6 +133,7 @@ function SingleSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearPr
               <>
                 {" "}
                 · {s.kind === "median" ? "newest pixel observed" : "observed"} <span className="font-medium text-ink" data-testid="satellite-near-date">{formatDate(s.date)}</span>
+                <StaleWord layer={layer} date={s.date} />
               </>
             )}
           </p>
@@ -198,6 +217,7 @@ function MultiSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearPro
               {fmtV(shown.value)}
             </span>{" "}
             mg/m³ · {shown.kind === "median" ? "newest pixel observed" : "observed"} <span className="font-medium text-ink" data-testid="satellite-near-date">{shown.date ? formatDate(shown.date) : "—"}</span>
+            <StaleWord layer={ok && which ? [primary, secondary][which - 1] : null} date={shown.date} />
           </p>
           <p className="text-[13px] text-ink-2" data-testid="satellite-near-sensor">
             Shown: <span className="font-medium text-ink">{labels[which - 1]}</span>

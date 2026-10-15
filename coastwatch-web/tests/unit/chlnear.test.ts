@@ -4,7 +4,7 @@ import { gzipSync } from "node:zlib";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { LayerArtifact, ValueGrid } from "@/generated/schema";
 import { CHL_NEAR_COPY } from "@/content/copy";
-import { readChlNear, waterProbe, type ChlNear, type WaterProbe } from "@/lib/chlNear";
+import { chlStaleWord, pixelStatus, readChlNear, readPlaceChl, waterProbe, type ChlNear, type WaterProbe } from "@/lib/chlNear";
 import { decodeWaterFallback } from "@/lib/waterFallback";
 
 /**
@@ -71,7 +71,10 @@ function layerOf(s: Spec): { base: string; layer: LayerArtifact } {
   );
   const layer = {
     layer_id: "olci300_chl_latest",
+    group_id: "satellite_chlorophyll_hr",
     native_resolution_m: 300,
+    // the published satellite policy: current up to 3 days, stale up to 7
+    freshness: { basis: "observed_date", current_max_age_days: 3, stale_max_age_days: 7, note: "" },
     grid,
     time: {},
     composite: { reference_date: "2026-10-14", window_days: 7, age_grid: age },
@@ -179,6 +182,33 @@ describe("Crescent City, 2026-10-12: the 310 mg/m³ shoreline pixel", () => {
     expect(r.aside!.value).toBeCloseTo(309.9, 0);
     // pixels the water rules would have excluded are now used, not hidden
     expect(withWater.kind === "median" && r.n > withWater.n).toBe(true);
+  });
+});
+
+describe("one rule for every view of a place", () => {
+  it("the hover marks the 310 pixel with the same reason the place readings set it aside", async () => {
+    const { base, layer } = crescentCity();
+    expect(await pixelStatus(base, layer, 41.74625, -124.20625, bundled)).toBe("shore");
+    expect(await pixelStatus(base, layer, 41.74625, -124.20625, null)).toBe("spike"); // without the coastline, Q3 still applies
+    // an ordinary water pixel nearby is not marked
+    expect(await pixelStatus(base, layer, 41.74125, -124.21625, bundled)).toBeNull();
+  });
+
+  it("the briefing, the Science tab and the map read a place the same way (5 km, the same pixels and date)", async () => {
+    const { base, layer } = crescentCity();
+    const manifest = { generated_at: "2026-10-14T17:13:06Z", layers: [layer] } as unknown as Parameters<typeof readPlaceChl>[0];
+    const place = await readPlaceChl(manifest, base, PORT.lat, PORT.lon, bundled);
+    const direct = await readChlNear(base, layer, PORT.lat, PORT.lon, { radiusKm: 5, water: bundled });
+    expect(place?.read).toEqual(direct);
+    expect(place?.layer.layer_id).toBe(layer.layer_id);
+  });
+
+  it("a reading's own date gets the map's freshness word", () => {
+    const { layer } = crescentCity();
+    const now = new Date("2026-10-15T18:00:00Z");
+    expect(chlStaleWord(layer, "2026-10-14", now)).toBeNull();
+    expect(chlStaleWord(layer, "2026-10-10", now)).toBe("Stale"); // 5 days: the briefing said this in words only
+    expect(chlStaleWord(layer, "2026-09-20", now)).toBe("Historical");
   });
 });
 

@@ -94,6 +94,12 @@ export const CHL_NEAR_COPY = {
   unknownFlagged:
     "No satellite reading from open water near these waters in the last week: the only clear pixels nearby are on land, right against the shore or far out of line with the water around them.",
   noCoastline: "The coastline could not be loaded, so pixels on land or right against the shore could not be set aside.",
+  /** the pixel under the pointer, when the place rules set it aside (shown with its own value) */
+  pixel: {
+    land: "On land by the app's coastline: not a sea-surface reading; never used for a place.",
+    shore: "Right against the shore: often wrong (glare from land, rocks, surf); never used for a place.",
+    spike: "Far above the water around it: not treated as a measurement; never used for a place.",
+  },
 } as const;
 
 export const DISCLAIMER =

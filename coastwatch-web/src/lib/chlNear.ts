@@ -1,6 +1,8 @@
-import type { LayerArtifact } from "@/generated/schema";
+import type { LayerArtifact, Manifest } from "@/generated/schema";
 import { cellAt, chunkedBlock, decodeCode, distanceKm } from "@/lib/grid";
-import { observedDate } from "@/lib/multisensor";
+import { satelliteLatest } from "@/lib/layers";
+import { multiSensorLayer, multiSensorMembers, multiSensorPick, observedDate, type SensorObs } from "@/lib/multisensor";
+import { classifyDate } from "@/lib/freshness";
 import { loadWaterFallback, rasterWater, type WaterGeometry } from "@/lib/waterFallback";
 
 /**
@@ -103,6 +105,8 @@ type Common = {
   water: boolean;
   /** the pixel at the point: none (cloud, no pass), used, or set aside (land, shoreline, isolated extreme) */
   atPoint: "none" | "used" | "set-aside";
+  /** why the pixel at the point was set aside (the same rules the place headline uses) */
+  atPointReason?: "land" | "shore" | "spike";
 };
 
 export type ChlNear = Common &
@@ -126,7 +130,23 @@ type Px = ChlPixel & { code: number; dLatKm: number; dLonKm: number; sea: boolea
  * Read chlorophyll near (lat, lon) from a chunked satellite layer with the rules above.
  * `water`: pass a probe (or null for "unavailable") to skip loading the bundled geometry.
  */
-export async function readChlNear(baseUrl: string, layer: LayerArtifact, lat: number, lon: number, opts: { radiusKm: number; water?: WaterProbe | null }): Promise<ChlNear> {
+const reads = new Map<string, Promise<ChlNear>>();
+
+export function readChlNear(baseUrl: string, layer: LayerArtifact, lat: number, lon: number, opts: { radiusKm: number; water?: WaterProbe | null }): Promise<ChlNear> {
+  // one reading per layer, place and radius: every view showing it gets the same object
+  if (opts.water !== undefined) return readChlNearUncached(baseUrl, layer, lat, lon, opts);
+  const key = [baseUrl, layer.layer_id, layer.grid?.url ?? "", lat.toFixed(5), lon.toFixed(5), opts.radiusKm].join("|");
+  let p = reads.get(key);
+  if (!p) {
+    p = readChlNearUncached(baseUrl, layer, lat, lon, opts);
+    p.catch(() => reads.delete(key));
+    reads.set(key, p);
+    if (reads.size > 400) reads.delete(reads.keys().next().value!);
+  }
+  return p;
+}
+
+async function readChlNearUncached(baseUrl: string, layer: LayerArtifact, lat: number, lon: number, opts: { radiusKm: number; water?: WaterProbe | null }): Promise<ChlNear> {
   const { radiusKm } = opts;
   const g = layer.grid;
   const water = opts.water === undefined ? await loadWaterProbe() : opts.water;
@@ -186,7 +206,13 @@ export async function readChlNear(baseUrl: string, layer: LayerArtifact, lat: nu
   };
 
   const at = ok.find((p) => p.here);
-  const common: Common = { ...empty, atPoint: at ? "used" : inRadius.some((p) => p.here) ? "set-aside" : "none" };
+  const here = inRadius.find((p) => p.here);
+  const common: Common = {
+    ...empty,
+    atPoint: at ? "used" : here ? "set-aside" : "none",
+    // the same precedence as the set-aside line of a place (shore before spike)
+    ...(here && !at ? { atPointReason: !here.sea ? ("land" as const) : here.shore ? ("shore" as const) : ("spike" as const) } : {}),
+  };
   if (at) return { ...common, kind: "at", value: at.value, date: at.date, pixel: pixel(at), aside: asideFor(at.value) };
   if (ok.length) {
     const vs = ok.map((p) => p.value);
@@ -202,3 +228,75 @@ export async function readChlNear(baseUrl: string, layer: LayerArtifact, lat: nu
 
 /** Chlorophyll as the readouts print it. */
 export const fmtChlValue = (v: number) => (v >= 10 ? v.toFixed(0) : v.toPrecision(2));
+
+/**
+ * The one satellite chlorophyll reading for a place, shared by every view that gives a place a
+ * number (My Coast's briefing and HAB evidence, its Science tab, the map's place inspector), so
+ * they agree on pixels, radius, sensor, units and dates. The sensor follows the pipeline's
+ * multi-sensor rule when that display is published (Sentinel-3 OLCI 300 m unless VIIRS observed
+ * the place more than the published tolerance more recently), first on the pixel at the place,
+ * then on the medians nearby; otherwise OLCI, else VIIRS. Readings are cached per place.
+ */
+export const CHL_PLACE_RADIUS_KM = 5;
+
+export type PlaceChl = {
+  /** the layer the headline comes from */
+  layer: LayerArtifact;
+  read: ChlNear;
+  /** the other sensor's own pixel at the place, when the multi-sensor rule chose between two */
+  other: { layer: LayerArtifact; value: number; date: string } | null;
+  multi: boolean;
+};
+
+const atObs = (n: ChlNear | null): SensorObs => (n?.kind === "at" && n.date ? { value: n.value, date: n.date } : null);
+const nearObs = (n: ChlNear | null): SensorObs => (n?.kind === "median" && n.date ? { value: n.value, date: n.date } : null);
+
+const places = new Map<string, Promise<PlaceChl | null>>();
+
+export function readPlaceChl(manifest: Manifest, baseUrl: string, lat: number, lon: number, water?: WaterProbe | null): Promise<PlaceChl | null> {
+  const ms = multiSensorLayer(manifest);
+  const olci = satelliteLatest(manifest, "olci300");
+  const viirs = satelliteLatest(manifest, "viirs750");
+  const key = [baseUrl, manifest.generated_at, lat.toFixed(5), lon.toFixed(5), water === undefined ? "" : "probe"].join("|");
+  let p = places.get(key);
+  if (!p) {
+    p = (async (): Promise<PlaceChl | null> => {
+      const read = (l: LayerArtifact | null) => (l?.grid?.chunks ? readChlNear(baseUrl, l, lat, lon, { radiusKm: CHL_PLACE_RADIUS_KM, ...(water === undefined ? {} : { water }) }) : Promise.resolve(null));
+      if (ms?.multisensor) {
+        const [a, b] = multiSensorMembers(manifest, ms);
+        const [ra, rb] = await Promise.all([read(a), read(b)]);
+        const tol = ms.multisensor.prefer_primary_within_days;
+        const pick = multiSensorPick(atObs(ra), atObs(rb), tol);
+        const which = pick || multiSensorPick(nearObs(ra), nearObs(rb), tol);
+        const reads: [LayerArtifact | null, ChlNear | null][] = [
+          [a, ra],
+          [b, rb],
+        ];
+        const [layer, r] = which ? reads[which - 1] : (reads.find(([, x]) => x?.kind === "flagged") ?? reads.find(([l, x]) => l && x) ?? [null, null]);
+        if (!layer || !r) return null;
+        const o = pick ? reads[2 - pick] : null;
+        const oo = o ? atObs(o[1]) : null;
+        return { layer, read: r, other: o && oo && o[0] ? { layer: o[0], value: oo.value, date: oo.date } : null, multi: true };
+      }
+      const layer = olci?.grid?.chunks ? olci : viirs;
+      const r = await read(layer);
+      return layer && r ? { layer, read: r, other: null, multi: false } : null;
+    })();
+    p.catch(() => places.delete(key));
+    places.set(key, p);
+  }
+  return p;
+}
+
+/** Quality status of the single pixel under the pointer, by the same rules (hover readouts). */
+export async function pixelStatus(baseUrl: string, layer: LayerArtifact, lat: number, lon: number, water?: WaterProbe | null): Promise<ChlNear["atPointReason"] | null> {
+  const r = await readChlNear(baseUrl, layer, lat, lon, { radiusKm: 0, ...(water === undefined ? {} : { water }) });
+  return r.atPoint === "set-aside" ? (r.atPointReason ?? null) : null;
+}
+
+/** "Stale" / "Historical" for a reading's own observation date, by its layer's freshness policy (the map's rule); null when current. */
+export function chlStaleWord(layer: LayerArtifact | null | undefined, date: string | null | undefined, now: Date | null): "Stale" | "Historical" | null {
+  if (!layer?.freshness || !date || !now) return null;
+  const f = classifyDate(layer.freshness, date, now);
+  return f.state === "stale" ? "Stale" : f.state === "historical" ? "Historical" : null;
+}
