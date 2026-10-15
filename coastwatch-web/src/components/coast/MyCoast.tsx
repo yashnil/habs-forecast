@@ -1,5 +1,6 @@
 "use client";
 
+import { labelledGeometry } from "@/lib/officialGeometry";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -337,7 +338,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
       imagery={null}
       ports={ports}
       showPorts
-      officialGeometry={(official?.geometry as unknown as GeoJSON.FeatureCollection) ?? null}
+      officialGeometry={labelledGeometry(official)}
       showOfficial
       selectedPort={place?.kind === "port" ? Number(place.key.slice(5)) : null}
       inspect={null}

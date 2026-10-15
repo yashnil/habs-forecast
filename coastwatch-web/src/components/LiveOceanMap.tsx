@@ -1,5 +1,6 @@
 "use client";
 
+import { labelledGeometry } from "@/lib/officialGeometry";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MlMap } from "maplibre-gl";
@@ -645,7 +646,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       currents={currentsOverlay}
       ports={ports}
       showPorts
-      officialGeometry={(official?.geometry as unknown as GeoJSON.FeatureCollection) ?? null}
+      officialGeometry={labelledGeometry(official)}
       showOfficial
       selectedPort={port}
       inspect={inspect}
