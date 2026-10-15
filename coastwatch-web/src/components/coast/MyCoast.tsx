@@ -310,7 +310,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     const out: string[] = [];
     const tied = assocs.filter((a) => a.tier === "geographic" && !a.dispute && a.record.area.type !== "statewide");
     for (const a of assocs.filter((x) => x.dispute)) out.push(`${a.dispute!.agency} release ${a.dispute!.release} appears to lift “${a.record.title}”; no person has reviewed it yet.`);
-    if (!tied.length) out.push("No notice in CoastWatch's list is tied to these waters by its geography. The list may be incomplete; check the agencies.");
+    if (!tied.length) out.push("No notice in Neritic Signal's list is tied to these waters by its geography. The list may be incomplete; check the agencies.");
     out.push("Whether each notice applies here was worked out from the notices' official geography; no person has reviewed these associations, and the notices themselves are not verified.");
     const nUnresolved = assocs.filter((a) => a.tier === "unresolved" && !a.dispute).length;
     if (nUnresolved) out.push(`Whether ${nUnresolved === 1 ? "one notice applies" : `${nUnresolved} notices apply`} to these waters is not settled by ${nUnresolved === 1 ? "its" : "their"} official geography.`);
@@ -321,7 +321,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     if (lyr && now && classifyTime(lyr.freshness, lyr.time, now).state !== "current") out.push("The latest C-HARM run is not current.");
     if (sat && sat.date === null)
       out.push(sat.flagged ? CHL_NEAR_COPY.unknownFlagged : "No clear satellite view of these waters in the last week (cloud, fog or no overpass).");
-    out.push("Toxin in seafood is not measured by CoastWatch. CDPH tests shellfish; paralytic shellfish poisoning (PSP) results are not shown here.");
+    out.push("Toxin in seafood is not measured by Neritic Signal. CDPH tests shellfish; paralytic shellfish poisoning (PSP) results are not shown here.");
     return out;
   }, [place, assocs, st, model, sat, now]);
 
@@ -409,7 +409,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
         )}
         {!place && placeKey && (
           <p className="mt-2 rounded-lg border border-hairline border-l-[3px] border-l-official-line bg-surface px-3 py-2 text-[14px] text-official-ink" role="status" data-testid="coast-unknown-place">
-            The place in this link (“{placeKey}”) is not one CoastWatch knows. Choose a port, a harvest site or a point on the map.
+            The place in this link (“{placeKey}”) is not one Neritic Signal knows. Choose a port, a harvest site or a point on the map.
           </p>
         )}
       </div>
@@ -654,7 +654,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
             onFocus={focusOn}
             sourceNote={
               <p data-testid="matters-provenance">
-                Official items quote CoastWatch&apos;s copy of the CDFW and CDPH pages{checkedOn ? `, checked ${checkedOn}` : ""}. No person has reviewed that copy against the agencies yet, so the agency pages are the authority.{" "}
+                Official items quote Neritic Signal&apos;s copy of the CDFW and CDPH pages{checkedOn ? `, checked ${checkedOn}` : ""}. No person has reviewed that copy against the agencies yet, so the agency pages are the authority.{" "}
                 <button type="button" onClick={(e) => openDrawer(e.currentTarget)} className="font-medium text-accent hover:underline" data-testid="matters-all-notices">
                   All {currentRecords(official).length} agency notices
                 </button>
@@ -706,7 +706,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
               <PurposeSwitch compact />
             </div>
             <p className="text-[13px] leading-relaxed text-ink-3">
-              Sources: CDFW and CDPH notices (CoastWatch&apos;s copy, not reviewed by a person); CalHABMAP via SCCOOS ERDDAP; NOAA C-HARM v3.1; NOAA CoastWatch satellite chlorophyll; NOAA NDBC buoys and CO-OPS tides. This page&apos;s link reproduces this trip.
+              Sources: CDFW and CDPH notices (Neritic Signal&apos;s copy, not reviewed by a person); CalHABMAP via SCCOOS ERDDAP; NOAA C-HARM v3.1; NOAA CoastWatch satellite chlorophyll; NOAA NDBC buoys and CO-OPS tides. This page&apos;s link reproduces this trip.
             </p>
           </div>
         </div>

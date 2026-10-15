@@ -72,20 +72,20 @@ describe("since you last checked", () => {
     expect(c[0].dates).toContainEqual({ label: "CDPH dated", date: "2026-10-09" });
   });
 
-  it("never describes a previously unseen old notice as new: it is 'newly listed by CoastWatch' with the agency's date", () => {
+  it("never describes a previously unseen old notice as new: it is 'newly listed by Neritic Signal' with the agency's date", () => {
     const prev = snap();
     const next = clone(prev);
     next.official.notices.push(notice({ id: "old-1", published: "2026-09-14", title: "Do not eat sport-harvested bivalve shellfish from Monterey County" }));
     next.official.notices.push(notice({ id: "undated", published: null, effective: null, title: "Commercial rock crab: domoic acid closure" }));
     const c = diffSnapshots(prev, next, LAST, fmt);
     expect(kinds(c)).toEqual(["listed-late", "listed-late"]);
-    expect(c[0].title).toMatch(/^Newly listed by CoastWatch/);
+    expect(c[0].title).toMatch(/^Newly listed by Neritic Signal/);
     expect(c[0].detail).toMatch(/Not new from the agency: CDPH dated it 2026-09-14, before your last check/);
     expect(c[1].detail).toMatch(/gives no date/);
     for (const x of c) expect(`${x.title} ${x.detail}`).not.toMatch(/\bissued since|\bnew notice\b|after your last check/i);
   });
 
-  it("distinguishes an agency lift after the last check from a lift CoastWatch learned of late", () => {
+  it("distinguishes an agency lift after the last check from a lift Neritic Signal learned of late", () => {
     const base = snap();
     base.official.notices.push(notice({ id: "n1" }), notice({ id: "n2" }));
     const next = clone(base);
@@ -125,7 +125,7 @@ describe("since you last checked", () => {
     expect(c[0].kind).toBe("agency-statement");
     expect(c[0].title).toMatch(/now says: “Commercial Fishery: Season opens/);
     expect(c[0].detail).toMatch(/At your last check it said: “Commercial Fishery: Season is closed/);
-    expect(c[0].dates.map((d) => d.label)).toEqual(["CoastWatch checked"]);
+    expect(c[0].dates.map((d) => d.label)).toEqual(["Neritic Signal checked"]);
   });
 
   it("names a new sample by its sample date, saying when it was sampled before the last check", () => {
@@ -203,7 +203,7 @@ describe("kept briefing", () => {
     const html = keptHtml(makeKept(s, NOW));
     expect(html).not.toContain("<img onerror");
     const lines = keptSections(makeKept(s, NOW)).flatMap((x) => x.lines.map((l) => l.text)).join(" ");
-    expect(lines).toMatch(/No notice in CoastWatch's list covered these waters for Market squid when this was saved\. That is not the same as open or safe\./);
+    expect(lines).toMatch(/No notice in Neritic Signal's list covered these waters for Market squid when this was saved\. That is not the same as open or safe\./);
   });
 });
 

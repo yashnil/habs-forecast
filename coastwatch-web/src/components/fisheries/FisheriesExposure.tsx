@@ -117,7 +117,7 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
 
   return (
     <div className="mx-auto w-full max-w-[1280px] space-y-7 px-4 pb-16 pt-4 sm:space-y-9 sm:px-8" data-testid="fisheries-page">
-      <OfficialStrip official={official} error={null} recordIds={recordIds} heading={narrow ? "{n} notices name these species" : "Official notices that name these species"} emptyText="No active notice in CoastWatch’s list names these species." compact testid="fisheries-official" />
+      <OfficialStrip official={official} error={null} recordIds={recordIds} heading={narrow ? "{n} notices name these species" : "Official notices that name these species"} emptyText="No active notice in Neritic Signal’s list names these species." compact testid="fisheries-official" />
 
       {/* the story's opening, in the published terminology, beside the three figures (no cards) */}
       <div className="grid gap-x-12 gap-y-6 xl:grid-cols-[minmax(0,1fr)_400px]">
@@ -267,7 +267,7 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
             <b className="font-semibold text-ink">Tier 2</b>: species under consumption advisories, sport-harvest quarantines or toxin monitoring.
             {tiers === "1" ? " Dimmed while the chart shows Tier 1; choosing one adds Tier 2." : ""}
           </p>
-          <p className="text-ink-3">Tiers are CoastWatch&apos;s grouping and await independent scientific review. Choose a group to see its revenue and weight side by side, and the notices it references.</p>
+          <p className="text-ink-3">Tiers are Neritic Signal&apos;s grouping and await independent scientific review. Choose a group to see its revenue and weight side by side, and the notices it references.</p>
         </div>
       </section>
 
@@ -313,7 +313,7 @@ export function FisheriesExposure({ ds, status, official, initial }: { ds: Fishe
           </h2>
           <p>Commercial catches are reported to CDFW at more than a hundred ports, which CDFW groups into port areas from Eureka to San Diego. The figures on this page add all of them together.</p>
           <p data-testid="port-level-unavailable">
-            <b className="font-semibold text-ink">{FISHERIES_COPY.portUnavailable}</b>, so CoastWatch does not split the statewide totals among ports or areas: any split would be an estimate, and confidential values cannot be redistributed.
+            <b className="font-semibold text-ink">{FISHERIES_COPY.portUnavailable}</b>, so Neritic Signal does not split the statewide totals among ports or areas: any split would be an estimate, and confidential values cannot be redistributed.
           </p>
           <details className="text-[13.5px]" data-testid="port-level-why">
             <summary className="cursor-pointer font-medium text-ink">Why port-level values are missing</summary>

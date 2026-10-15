@@ -161,7 +161,7 @@ export function Welcome({ places, suppressed, onConditions, pillClass = "", onOp
         >
           <div className="w-full max-w-[640px]">
             <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease, delay: 0.15 }} className="text-[14px] font-medium text-[#74cfe6]">
-              CoastWatch · harmful algal blooms, California · research preview
+              Neritic Signal · coastal intelligence for California · research preview
             </motion.p>
             <motion.h1
               id="welcome-h"
@@ -173,7 +173,7 @@ export function Welcome({ places, suppressed, onConditions, pillClass = "", onOp
               Explore California&apos;s coast
             </motion.h1>
             <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease, delay: 0.38 }} className="mt-3 max-w-[52ch] text-[16px] leading-relaxed text-[#c6d3e1] sm:text-[17px]">
-              Official notices, what has been measured, and what NOAA&apos;s model expects, for the waters you care about. CoastWatch is not an official source: closures come from{" "}
+              Official notices, what has been measured, and what NOAA&apos;s model expects, for the waters you care about. Neritic Signal is not an official source: closures come from{" "}
               <a href={CDFW_URL} target="_blank" rel="noopener noreferrer" className="font-semibold underline decoration-current/40 underline-offset-2 hover:decoration-current">
                 CDFW
               </a>{" "}
@@ -252,7 +252,7 @@ export function Welcome({ places, suppressed, onConditions, pillClass = "", onOp
                 Skip to the map
               </button>
               <Link href="/about" className="min-h-[36px] leading-[36px] hover:text-white" data-testid="intro-about">
-                About CoastWatch
+                About Neritic Signal
               </Link>
             </motion.div>
           </div>

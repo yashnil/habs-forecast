@@ -122,12 +122,12 @@ export const APPLICABILITY_KM = {
 
 export const COAST_COPY = {
   title: "My Coast",
-  lede: "Choose the waters you care about. CoastWatch shows the official notices that may apply, what was measured nearby and when, where the forecast has values, and what is not known.",
-  notAuthority: "CoastWatch is not the authority. Regulations and advisories change; the agencies' own pages decide.",
+  lede: "Choose the waters you care about. Neritic Signal shows the official notices that may apply, what was measured nearby and when, where the forecast has values, and what is not known.",
+  notAuthority: "Neritic Signal is not the authority. Regulations and advisories change; the agencies' own pages decide.",
   pierNotHere: "A pier sample describes the water at that pier on that day. It may not represent other waters, even nearby, or seafood.",
   modelNotHere: "C-HARM gives probabilities for 3 km ocean cells. A value in a cell offshore is not a forecast for this location.",
   chlNotToxin: "Chlorophyll measures algae, not toxin.",
   currentsNotForecast: "Observed surface currents show recent water movement, not where a bloom will go.",
   unreviewed: "Matched by location from each notice's official geography; not reviewed by a person.",
-  noPsp: "Shellfish toxins from paralytic shellfish poisoning (PSP) are tested by CDPH and are not shown in CoastWatch.",
+  noPsp: "Shellfish toxins from paralytic shellfish poisoning (PSP) are tested by CDPH and are not shown in Neritic Signal.",
 } as const;

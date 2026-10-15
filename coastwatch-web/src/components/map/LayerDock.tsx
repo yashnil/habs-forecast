@@ -317,7 +317,7 @@ function ForecastSection(p: Props) {
           )}
           {p.charmStatus?.outcome === "failed" && (
             <span data-testid="update-failed">
-              CoastWatch could not reach NOAA at {formatDateTimePT(p.charmStatus.last_attempt_at)}, so a newer run may exist. This is the last run received, with its own dates.
+              Neritic Signal could not reach NOAA at {formatDateTimePT(p.charmStatus.last_attempt_at)}, so a newer run may exist. This is the last run received, with its own dates.
             </span>
           )}
         </p>
@@ -334,7 +334,7 @@ function ForecastSection(p: Props) {
       <Details open={p.expanded}>
         <p className="text-[13px] leading-snug text-ink-2" data-testid="run-line">
           Issued <span className="font-medium text-ink tabular">{formatDate(p.run.issued_date, { year: true })}</span>
-          {p.run.issued_date_derived && <span className="text-ink-3" title="NOAA does not publish the issue date; CoastWatch infers it from the forecast's own dates."> (date inferred)</span>}
+          {p.run.issued_date_derived && <span className="text-ink-3" title="NOAA does not publish the issue date; Neritic Signal infers it from the forecast's own dates."> (date inferred)</span>}
           {layer?.time.valid_date && (
             <span className="text-ink-3">
               {" "}

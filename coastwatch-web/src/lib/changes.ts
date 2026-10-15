@@ -101,7 +101,7 @@ export function diffSnapshots(prev: Snapshot, next: Snapshot, lastSeenAt: string
           if (d && d >= seenDay) {
             add({ kind: "agency-issued", group: "agency", forYou: n.forYou, title: `${n.agency}: ${n.title}`, detail: `${n.agency} dated it ${o.fmtDate(d)}, after your last check.${n.tier === "check" ? " Its geography does not settle whether it covers your waters." : ""}`, dates: dated(n), source: link(n) });
           } else {
-            add({ kind: "listed-late", group: "coastwatch", forYou: n.forYou, title: `Newly listed by CoastWatch: ${n.title}`, detail: d ? `Not new from the agency: ${n.agency} dated it ${o.fmtDate(d)}, before your last check. CoastWatch had not listed it for these waters then.` : `${n.agency} gives no date for it. CoastWatch had not listed it for these waters at your last check.`, dates: dated(n), source: link(n) });
+            add({ kind: "listed-late", group: "coastwatch", forYou: n.forYou, title: `Newly listed by Neritic Signal: ${n.title}`, detail: d ? `Not new from the agency: ${n.agency} dated it ${o.fmtDate(d)}, before your last check. Neritic Signal had not listed it for these waters then.` : `${n.agency} gives no date for it. Neritic Signal had not listed it for these waters at your last check.`, dates: dated(n), source: link(n) });
           }
         } else if (n.lifted && n.lifted >= seenDay) {
           add({ kind: "agency-lifted", group: "agency", forYou: n.forYou, title: `${n.agency} lifted: ${n.title}`, detail: `Lifted ${o.fmtDate(n.lifted)}.`, dates: dated(n), source: link(n) });
@@ -117,7 +117,7 @@ export function diffSnapshots(prev: Snapshot, next: Snapshot, lastSeenAt: string
           forYou: n.forYou,
           title: `${n.status === "superseded" ? "Replaced" : "Lifted"}: ${n.title}`,
           detail: late
-            ? `CoastWatch now lists it as ${n.status === "superseded" ? "replaced" : "lifted"}. ${when ? `${n.agency} dated that ${o.fmtDate(when)}, before your last check.` : `${n.agency} gives no date for it.`}`
+            ? `Neritic Signal now lists it as ${n.status === "superseded" ? "replaced" : "lifted"}. ${when ? `${n.agency} dated that ${o.fmtDate(when)}, before your last check.` : `${n.agency} gives no date for it.`}`
             : `${n.agency} dated it ${o.fmtDate(when!)}, after your last check.`,
           dates: dated(n),
           source: link(n),
@@ -126,7 +126,7 @@ export function diffSnapshots(prev: Snapshot, next: Snapshot, lastSeenAt: string
     }
     for (const p of prev.official.notices) {
       if (after.has(p.id) || !isActive(p)) continue;
-      add({ kind: "removed", group: "coastwatch", forYou: p.forYou, title: `No longer listed for these waters: ${p.title}`, detail: "CoastWatch no longer ties this notice to these waters, and does not know why. Check the agency before relying on it either way.", dates: [], source: link(p) });
+      add({ kind: "removed", group: "coastwatch", forYou: p.forYou, title: `No longer listed for these waters: ${p.title}`, detail: "Neritic Signal no longer ties this notice to these waters, and does not know why. Check the agency before relying on it either way.", dates: [], source: link(p) });
     }
 
     // releases that appear to lift a notice here (awaiting a person's review)
@@ -135,7 +135,7 @@ export function diffSnapshots(prev: Snapshot, next: Snapshot, lastSeenAt: string
     for (const x of next.official.disputes) {
       if (!here.has(x.recordId) || seenDisputes.has(`${x.recordId}|${x.release}`)) continue;
       const n = after.get(x.recordId)!;
-      add({ kind: "release-pending", group: "agency", forYou: n.forYou, title: `${x.agency} ${x.release} appears to lift: ${n.title}`, detail: `Found by CoastWatch at its check of ${next.official.checkedAt ? o.fmtTime(next.official.checkedAt) : "agency pages"}. No person has reviewed it yet; read the release.`, dates: next.official.checkedAt ? [{ label: "CoastWatch checked", date: next.official.checkedAt }] : [], source: { label: `${x.agency} ${x.release}`, url: x.url } });
+      add({ kind: "release-pending", group: "agency", forYou: n.forYou, title: `${x.agency} ${x.release} appears to lift: ${n.title}`, detail: `Found by Neritic Signal at its check of ${next.official.checkedAt ? o.fmtTime(next.official.checkedAt) : "agency pages"}. No person has reviewed it yet; read the release.`, dates: next.official.checkedAt ? [{ label: "Neritic Signal checked", date: next.official.checkedAt }] : [], source: { label: `${x.agency} ${x.release}`, url: x.url } });
     }
 
     // agency status statements (season status, "no toxin closures"), quoted
@@ -143,7 +143,7 @@ export function diffSnapshots(prev: Snapshot, next: Snapshot, lastSeenAt: string
     for (const s of next.official.statements) {
       const p = prevSt.get(s.id);
       if (p && p.statement === s.statement) continue;
-      add({ kind: "agency-statement", group: "agency", forYou: true, title: `${s.agency} now says: “${s.statement}”`, detail: p ? `${s.topic}. At your last check it said: “${p.statement}”${/[.!?]$/.test(p.statement) ? "" : "."} The page gives no date for the change; CoastWatch saw it by ${next.official.checkedAt ? o.fmtTime(next.official.checkedAt) : "its latest check"}.` : `${s.topic}. Not in CoastWatch's list at your last check.`, dates: next.official.checkedAt ? [{ label: "CoastWatch checked", date: next.official.checkedAt }] : [], source: { label: `${s.agency} page`, url: s.url } });
+      add({ kind: "agency-statement", group: "agency", forYou: true, title: `${s.agency} now says: “${s.statement}”`, detail: p ? `${s.topic}. At your last check it said: “${p.statement}”${/[.!?]$/.test(p.statement) ? "" : "."} The page gives no date for the change; Neritic Signal saw it by ${next.official.checkedAt ? o.fmtTime(next.official.checkedAt) : "its latest check"}.` : `${s.topic}. Not in Neritic Signal's list at your last check.`, dates: next.official.checkedAt ? [{ label: "Neritic Signal checked", date: next.official.checkedAt }] : [], source: { label: `${s.agency} page`, url: s.url } });
     }
 
     // agency pages: unreadable, or changed in ways the items above may not explain
@@ -152,16 +152,16 @@ export function diffSnapshots(prev: Snapshot, next: Snapshot, lastSeenAt: string
     for (const g of next.official.pages) {
       const p = prevPages.get(g.id);
       if (!p) continue;
-      if (p.ok && !g.ok) add({ kind: "source-outage", group: "data", forYou: true, title: `CoastWatch could not read ${g.label}`, detail: `At its check of ${o.fmtTime(g.checkedAt)}. Changes there may be missing here.`, dates: [{ label: "CoastWatch checked", date: g.checkedAt }], source: { label: g.label, url: g.url } });
-      else if (!p.ok && g.ok) add({ kind: "source-recovered", group: "data", forYou: true, title: `CoastWatch can read ${g.label} again`, detail: `Read at ${o.fmtTime(g.checkedAt)}.`, dates: [{ label: "CoastWatch checked", date: g.checkedAt }], source: { label: g.label, url: g.url } });
+      if (p.ok && !g.ok) add({ kind: "source-outage", group: "data", forYou: true, title: `Neritic Signal could not read ${g.label}`, detail: `At its check of ${o.fmtTime(g.checkedAt)}. Changes there may be missing here.`, dates: [{ label: "Neritic Signal checked", date: g.checkedAt }], source: { label: g.label, url: g.url } });
+      else if (!p.ok && g.ok) add({ kind: "source-recovered", group: "data", forYou: true, title: `Neritic Signal can read ${g.label} again`, detail: `Read at ${o.fmtTime(g.checkedAt)}.`, dates: [{ label: "Neritic Signal checked", date: g.checkedAt }], source: { label: g.label, url: g.url } });
       else if (p.ok && g.ok && p.hash && g.hash && p.hash !== g.hash && !explained)
-        add({ kind: "page-changed", group: "coastwatch", forYou: true, title: `${g.label} changed`, detail: `Its content differs from your last check (seen by CoastWatch at ${o.fmtTime(g.checkedAt)}). CoastWatch has not reviewed what changed; read the page.`, dates: [{ label: "CoastWatch checked", date: g.checkedAt }], source: { label: g.label, url: g.url } });
+        add({ kind: "page-changed", group: "coastwatch", forYou: true, title: `${g.label} changed`, detail: `Its content differs from your last check (seen by Neritic Signal at ${o.fmtTime(g.checkedAt)}). Neritic Signal has not reviewed what changed; read the page.`, dates: [{ label: "Neritic Signal checked", date: g.checkedAt }], source: { label: g.label, url: g.url } });
     }
 
     const nc = next.official.checkedAt;
     const pc = prev.official.checkedAt;
     if (nc && pc && ageDays(pc.slice(0, 10), seenDate) <= CHECK_STALE_DAYS && ageDays(nc.slice(0, 10), nowDate) > CHECK_STALE_DAYS)
-      add({ kind: "became-stale", group: "data", forYou: true, title: "CoastWatch has not checked the agencies' pages recently", detail: `Last checked ${o.fmtTime(nc)}. Later agency actions will not be shown here.`, dates: [{ label: "CoastWatch checked", date: nc }], source: null });
+      add({ kind: "became-stale", group: "data", forYou: true, title: "Neritic Signal has not checked the agencies' pages recently", detail: `Last checked ${o.fmtTime(nc)}. Later agency actions will not be shown here.`, dates: [{ label: "Neritic Signal checked", date: nc }], source: null });
   }
 
   // ---------------------------------------------------------------- shore-station samples
@@ -177,7 +177,7 @@ export function diffSnapshots(prev: Snapshot, next: Snapshot, lastSeenAt: string
     }
   }
   for (const p of prev.stations) {
-    if (!next.stations.some((s) => s.id === p.id)) add({ kind: "unavailable", group: "data", forYou: true, title: `${p.name}: no longer in CoastWatch's station data`, detail: "Its samples could not be loaded this time.", dates: [], source: { label: p.name, url: p.url } });
+    if (!next.stations.some((s) => s.id === p.id)) add({ kind: "unavailable", group: "data", forYou: true, title: `${p.name}: no longer in Neritic Signal's station data`, detail: "Its samples could not be loaded this time.", dates: [], source: { label: p.name, url: p.url } });
   }
   // the newest toxin result near these waters crossing the "not recent" limit
   const newest = (snap: Snapshot) => snap.stations.map((s) => s.toxin).filter((x): x is string => !!x).sort().at(-1) ?? null;
@@ -194,7 +194,7 @@ export function diffSnapshots(prev: Snapshot, next: Snapshot, lastSeenAt: string
     const p = prevSrc.get(s.id);
     if (!p) continue;
     if (p.outcome !== "failed" && s.outcome === "failed")
-      add({ kind: "source-outage", group: "data", forYou: true, title: `${s.title}: latest update failed`, detail: `CoastWatch tried at ${s.lastAttempt ? o.fmtTime(s.lastAttempt) : "its latest run"}${s.lastSuccess ? `; it is showing data from ${o.fmtTime(s.lastSuccess)}` : ""}.`, dates: s.lastAttempt ? [{ label: "attempted", date: s.lastAttempt }] : [], source: null });
+      add({ kind: "source-outage", group: "data", forYou: true, title: `${s.title}: latest update failed`, detail: `Neritic Signal tried at ${s.lastAttempt ? o.fmtTime(s.lastAttempt) : "its latest run"}${s.lastSuccess ? `; it is showing data from ${o.fmtTime(s.lastSuccess)}` : ""}.`, dates: s.lastAttempt ? [{ label: "attempted", date: s.lastAttempt }] : [], source: null });
     else if (p.outcome === "failed" && s.outcome !== "failed")
       add({ kind: "source-recovered", group: "data", forYou: true, title: `${s.title}: updating again`, detail: s.lastSuccess ? `Updated ${o.fmtTime(s.lastSuccess)}.` : "", dates: s.lastSuccess ? [{ label: "updated", date: s.lastSuccess }] : [], source: null });
   }

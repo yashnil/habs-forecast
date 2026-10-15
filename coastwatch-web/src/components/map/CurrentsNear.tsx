@@ -39,7 +39,7 @@ export function CurrentsNear({ layer, baseUrl, lat, lon, place }: { layer: Layer
       </div>
       {stale && newest && now && (
         <p className="text-[13px] font-medium text-serious" data-testid="currents-near-stale">
-          Stale: the newest radar hour CoastWatch has is {hoursAgo(newest, now)} h old. The radar feed has not updated since; this is not the current state of the water.
+          Stale: the newest radar hour Neritic Signal has is {hoursAgo(newest, now)} h old. The radar feed has not updated since; this is not the current state of the water.
         </p>
       )}
       {s === null ? (

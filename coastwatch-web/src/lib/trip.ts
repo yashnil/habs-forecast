@@ -184,7 +184,7 @@ export function whatMatters(x: MatterInput): Matter[] {
       id: "notices",
       kind: "gap",
       tone: "gap",
-      headline: `No notice in CoastWatch's copy names these waters${forWhat}`,
+      headline: `No notice in Neritic Signal's copy names these waters${forWhat}`,
       detail: n.unresolved.length
         ? `${n.unresolved.length === 1 ? "One more" : `${n.unresolved.length} more`} may apply; ${n.unresolved.length === 1 ? "its" : "their"} stated area does not settle it. Not the same as open or safe.`
         : "Not the same as open or safe: the copy can lag the agencies.",
@@ -235,7 +235,7 @@ function habMatter(x: MatterInput): Matter {
       kind: "model",
       tone: "note",
       headline: `NOAA model: ${fmtPct(m.pda.here)} chance toxin in the water exceeds its threshold here${stale ? ` (${stale})` : ""}`,
-      detail: `A probability for this 3 km cell${m.valid ? ` on ${x.fmt(m.valid)}` : ""}, not a measurement.${stale ? " NOAA has published no newer run that CoastWatch could read." : ""} No shore sample within ${EVIDENCE_RADIUS_KM} km in the last ${RECENT_DAYS} days.`,
+      detail: `A probability for this 3 km cell${m.valid ? ` on ${x.fmt(m.valid)}` : ""}, not a measurement.${stale ? " NOAA has published no newer run that Neritic Signal could read." : ""} No shore sample within ${EVIDENCE_RADIUS_KM} km in the last ${RECENT_DAYS} days.`,
       focus: "model",
       aged: !!stale,
     };
@@ -353,7 +353,7 @@ export function checklist(steps: Step[], max = 5): { shown: Step[]; more: Step[]
         ? {
             ...s,
             title: /season status/i.test(s.reason) ? `Confirm the season status on ${s.source.label.replace(/ page$/, "")}'s page` : `Check ${s.source.label.replace(/ page$/, "")}'s page on ${topicWords(s.reason)}`,
-            reason: `CoastWatch quotes it as “${s.title.replace(/^[^“]*“|”$/g, "")}” Agency pages can change between CoastWatch's checks.`,
+            reason: `Neritic Signal quotes it as “${s.title.replace(/^[^“]*“|”$/g, "")}” Agency pages can change between Neritic Signal's checks.`,
           }
         : s,
     )

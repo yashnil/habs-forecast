@@ -19,8 +19,8 @@ async function assertNoUnsafeClaims(page: Page) {
   expect(bad, bad.join(" | ")).toEqual([]);
 }
 
-test.describe("About CoastWatch", () => {
-  test("is in the masthead and says what CoastWatch is, its four kinds of information, its limits and the research", async ({ page }) => {
+test.describe("About Neritic Signal", () => {
+  test("is in the masthead and says what Neritic Signal is, its four kinds of information, its limits and the research", async ({ page }) => {
     await open(page, `${OK}/bloom`);
     await page.getByTestId("nav-about").click();
     await expect(page).toHaveURL(/\/about$/);
@@ -32,7 +32,7 @@ test.describe("About CoastWatch", () => {
     await expect(pub).toContainText("Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System");
     await expect(page.getByTestId("publication-doi")).toHaveAttribute("href", "https://doi.org/10.33422/ccgconf.v2i2.1619");
     await expect(page.getByTestId("research")).toContainText("matches, but does not beat");
-    await expect(page.getByTestId("research-relation")).toContainText("CoastWatch does not run those research models");
+    await expect(page.getByTestId("research-relation")).toContainText("Neritic Signal does not run those research models");
     await expect(page.getByTestId("research-relation")).toContainText("not been peer reviewed or reviewed by an independent HAB scientist");
     await expect(page.getByTestId("about-review")).toContainText("have not been checked by a person");
     await assertNoUnsafeClaims(page);

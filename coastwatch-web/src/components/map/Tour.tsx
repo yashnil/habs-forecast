@@ -212,7 +212,7 @@ export function MapTour({ open, onClose, actions, phone, reducedMotion, dockTop 
           {step.id === "limits" && (
             <p>
               <Link href="/about" className="font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent" data-testid="tour-about">
-                About CoastWatch and its limits
+                About Neritic Signal and its limits
               </Link>
             </p>
           )}
