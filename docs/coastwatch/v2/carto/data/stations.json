@@ -1,0 +1,142 @@
+{
+ "generated_at": "2026-10-15T17:03:14Z",
+ "program": "California Harmful Algal Bloom Monitoring and Alert Program (CalHABMAP)",
+ "stations": [
+  {
+   "station_id": "HABs-TrinidadPier",
+   "name": "Trinidad Pier",
+   "lat": 41.05495,
+   "lon": -124.14696,
+   "latest": "2026-04-17",
+   "n_samples": 122
+  },
+  {
+   "station_id": "HABs-Humboldt",
+   "name": "Humboldt Bay",
+   "lat": 40.77833,
+   "lon": -124.1967,
+   "latest": "2026-04-07",
+   "n_samples": 101
+  },
+  {
+   "station_id": "HABs-HumboldtSouthBay",
+   "name": "Humboldt Bay, South Bay",
+   "lat": 40.72343,
+   "lon": -124.2234,
+   "latest": "2026-03-30",
+   "n_samples": 121
+  },
+  {
+   "station_id": "HABs-BodegaMarineLab",
+   "name": "Bodega Marine Lab",
+   "lat": 38.31613,
+   "lon": -123.0705,
+   "latest": "2026-04-13",
+   "n_samples": 324
+  },
+  {
+   "station_id": "HABs-BodegaMarineLabBuoy",
+   "name": "Bodega Marine Lab buoy",
+   "lat": 38.3126,
+   "lon": -123.0825,
+   "latest": "2026-01-28",
+   "n_samples": 53
+  },
+  {
+   "station_id": "HABs-TomalesBayMouth",
+   "name": "Tomales Bay mouth",
+   "lat": 38.23082,
+   "lon": -122.9791,
+   "latest": "2026-03-03",
+   "n_samples": 65
+  },
+  {
+   "station_id": "HABs-TomalesBayMid-ChannelBuoy",
+   "name": "Tomales Bay mid-channel buoy",
+   "lat": 38.18967,
+   "lon": -122.9286,
+   "latest": "2026-03-03",
+   "n_samples": 58
+  },
+  {
+   "station_id": "HABs-InnerTomalesBay",
+   "name": "Inner Tomales Bay",
+   "lat": 38.11798,
+   "lon": -122.867,
+   "latest": "2026-03-03",
+   "n_samples": 57
+  },
+  {
+   "station_id": "HABs-SantaCruzWharf",
+   "name": "Santa Cruz Wharf",
+   "lat": 36.958,
+   "lon": -122.017,
+   "latest": "2026-09-30",
+   "n_samples": 630
+  },
+  {
+   "station_id": "HABs-MontereyWharf",
+   "name": "Monterey Wharf",
+   "lat": 36.603683,
+   "lon": -121.889275,
+   "latest": "2026-10-14",
+   "n_samples": 534
+  },
+  {
+   "station_id": "HABs-MorroBayFrontBay",
+   "name": "Morro Bay, front bay",
+   "lat": 35.370853,
+   "lon": -120.858734,
+   "latest": "2026-09-01",
+   "n_samples": 192
+  },
+  {
+   "station_id": "HABs-MorroBayBackBay",
+   "name": "Morro Bay, back bay",
+   "lat": 35.32999,
+   "lon": -120.844475,
+   "latest": "2026-09-01",
+   "n_samples": 192
+  },
+  {
+   "station_id": "HABs-CalPolyPier",
+   "name": "Cal Poly Pier (Avila Beach)",
+   "lat": 35.170204,
+   "lon": -120.740685,
+   "latest": "2026-10-04",
+   "n_samples": 658
+  },
+  {
+   "station_id": "HABs-StearnsWharf",
+   "name": "Stearns Wharf (Santa Barbara)",
+   "lat": 34.408043,
+   "lon": -119.68485,
+   "latest": "2026-09-28",
+   "n_samples": 635
+  },
+  {
+   "station_id": "HABs-SantaMonicaPier",
+   "name": "Santa Monica Pier",
+   "lat": 34.008,
+   "lon": -118.499,
+   "latest": "2026-10-05",
+   "n_samples": 661
+  },
+  {
+   "station_id": "HABs-NewportBeachPier",
+   "name": "Newport Beach Pier",
+   "lat": 33.6061,
+   "lon": -117.9311,
+   "latest": "2026-08-18",
+   "n_samples": 605
+  },
+  {
+   "station_id": "HABs-ScrippsPier",
+   "name": "Scripps Pier (La Jolla)",
+   "lat": 32.867,
+   "lon": -117.257,
+   "latest": "2026-10-05",
+   "n_samples": 666
+  }
+ ]
+}

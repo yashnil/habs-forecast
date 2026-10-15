@@ -1,0 +1,242 @@
+{
+ "manifest_generated_at": "2026-10-15T17:03:14Z",
+ "pipeline_run_id": "38774047981",
+ "layers": {
+  "charm_pseudo_nitzschia_lead2": {
+   "layer_id": "charm_pseudo_nitzschia_lead2",
+   "title": "Probability of a Pseudo-nitzschia bloom",
+   "short_title": "Pseudo-nitzschia bloom",
+   "variable": "pseudo_nitzschia",
+   "units": "probability (0-1)",
+   "threshold_text": "Probability that Pseudo-nitzschia exceeds 10,000 cells per litre",
+   "resolution_deg": 0.03,
+   "time": {
+    "issued_date": "2026-10-14",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-15",
+    "valid_time": "2026-10-15T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 2,
+    "observed_times": []
+   },
+   "native_resolution_m": null,
+   "grid": {
+    "url": "data/pseudo_nitzschia.u16.gz",
+    "encoding": "uint16le+gzip",
+    "width": 351,
+    "height": 391,
+    "lat_first": 31.3,
+    "lat_step": 0.03,
+    "lon_first": -127.5,
+    "lon_step": 0.03,
+    "scale_factor": 1.5259254737998596e-05,
+    "add_offset": 0.0,
+    "nodata": 65535,
+    "max_quantization_error": 7.629627368999298e-06,
+    "transform": "none",
+    "chunks": null
+   },
+   "palette": {
+    "id": "cw-probability-classes-v1",
+    "domain": [
+     0.0,
+     1.0
+    ],
+    "stops": [
+     {
+      "value": 0.0,
+      "color": "#3a385b"
+     },
+     {
+      "value": 0.1,
+      "color": "#4c436a"
+     },
+     {
+      "value": 0.2,
+      "color": "#5f4e79"
+     },
+     {
+      "value": 0.3,
+      "color": "#735986"
+     },
+     {
+      "value": 0.4,
+      "color": "#886492"
+     },
+     {
+      "value": 0.5,
+      "color": "#9c709c"
+     },
+     {
+      "value": 0.6,
+      "color": "#af7ea4"
+     },
+     {
+      "value": 0.7,
+      "color": "#c28cab"
+     },
+     {
+      "value": 0.8,
+      "color": "#d39cb3"
+     },
+     {
+      "value": 0.9,
+      "color": "#e5abbc"
+     }
+    ],
+    "interpolation": "step",
+    "scale": "linear",
+    "nodata": "transparent"
+   },
+   "provenance": {
+    "source_id": "charm",
+    "source_name": "C-HARM v3.1 \u2014 California Harmful Algae Risk Mapping",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_2day.html",
+    "dataset_id": "wvcharmV3_2day",
+    "product_version": "3.1",
+    "institution": "NOAA/NMFS/SWFSC/ERD, CoastWatch West Coast",
+    "license": "NOAA CoastWatch: may be used and redistributed for free but is not intended for legal use, since it may contain inaccuracies. No warranty or legal liability.",
+    "citation": "C-HARM v3.1, NOAA NMFS SWFSC ERD CoastWatch West Coast (creator C. Anderson, SCCOOS/UCSD). Methods: Anderson et al. 2016, Harmful Algae 59:1-18, doi:10.1016/j.hal.2016.08.006 (assessment of v1).",
+    "retrieved_at": "2026-10-15T17:03:14Z",
+    "request_urls": [
+     "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_2day.csv0?time%5Blast%5D",
+     "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_2day.nc?pseudo_nitzschia%5B(2026-10-15T12:00:00Z)%5D%5B(31.3):(43.0)%5D%5B(232.5):(243.0)%5D,particulate_domoic%5B(2026-10-15T12:00:00Z)%5D%5B(31.3):(43.0)%5D%5B(232.5):(243.0)%5D,cellular_domoic%5B(2026-10-15T12:00:00Z)%5D%5B(31.3):(43.0)%5D%5B(232.5):(243.0)%5D"
+    ],
+    "upstream_metadata": {
+     "title": "C-HARM v3.1 2-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, California and Southern Oregon coast, 2022-present",
+     "product_version": "3.1",
+     "date_created": "2022-11-23T19:25:09Z",
+     "date_modified": "2022-11-23T19:25:09Z",
+     "creator_name": "Clarissa Anderson",
+     "creator_email": "cra002@ucsd.edu",
+     "source": "Satellite data, C-HARM model output, and WCOFS model output",
+     "satellite": "S-NPP",
+     "platform": "VIIRS",
+     "product_name": "C-HARM v3.1 model output with SNPP VIIRS and WCOFS data",
+     "history_first_line": "2026-10-15: DINEOF gap filling was applied to daily S-NPP NOAA VIIRS chlorophyll, 551nm reflectance, and 486nm reflectance fields extending back 180 days from today's date."
+    },
+    "pipeline_version": "fc44807971b3",
+    "pipeline_run_id": "38774047981"
+   }
+  },
+  "charm_particulate_domoic_lead2": {
+   "layer_id": "charm_particulate_domoic_lead2",
+   "title": "Probability of elevated particulate domoic acid",
+   "short_title": "Particulate domoic acid",
+   "variable": "particulate_domoic",
+   "units": "probability (0-1)",
+   "threshold_text": "Probability that particulate domoic acid exceeds 500 ng per litre",
+   "resolution_deg": 0.03,
+   "time": {
+    "issued_date": "2026-10-14",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-15",
+    "valid_time": "2026-10-15T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 2,
+    "observed_times": []
+   },
+   "native_resolution_m": null,
+   "grid": {
+    "url": "data/particulate_domoic.u16.gz",
+    "encoding": "uint16le+gzip",
+    "width": 351,
+    "height": 391,
+    "lat_first": 31.3,
+    "lat_step": 0.03,
+    "lon_first": -127.5,
+    "lon_step": 0.03,
+    "scale_factor": 1.5259254737998596e-05,
+    "add_offset": 0.0,
+    "nodata": 65535,
+    "max_quantization_error": 7.629627368999298e-06,
+    "transform": "none",
+    "chunks": null
+   },
+   "palette": {
+    "id": "cw-probability-classes-v1",
+    "domain": [
+     0.0,
+     1.0
+    ],
+    "stops": [
+     {
+      "value": 0.0,
+      "color": "#3a385b"
+     },
+     {
+      "value": 0.1,
+      "color": "#4c436a"
+     },
+     {
+      "value": 0.2,
+      "color": "#5f4e79"
+     },
+     {
+      "value": 0.3,
+      "color": "#735986"
+     },
+     {
+      "value": 0.4,
+      "color": "#886492"
+     },
+     {
+      "value": 0.5,
+      "color": "#9c709c"
+     },
+     {
+      "value": 0.6,
+      "color": "#af7ea4"
+     },
+     {
+      "value": 0.7,
+      "color": "#c28cab"
+     },
+     {
+      "value": 0.8,
+      "color": "#d39cb3"
+     },
+     {
+      "value": 0.9,
+      "color": "#e5abbc"
+     }
+    ],
+    "interpolation": "step",
+    "scale": "linear",
+    "nodata": "transparent"
+   },
+   "provenance": {
+    "source_id": "charm",
+    "source_name": "C-HARM v3.1 \u2014 California Harmful Algae Risk Mapping",
+    "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_2day.html",
+    "dataset_id": "wvcharmV3_2day",
+    "product_version": "3.1",
+    "institution": "NOAA/NMFS/SWFSC/ERD, CoastWatch West Coast",
+    "license": "NOAA CoastWatch: may be used and redistributed for free but is not intended for legal use, since it may contain inaccuracies. No warranty or legal liability.",
+    "citation": "C-HARM v3.1, NOAA NMFS SWFSC ERD CoastWatch West Coast (creator C. Anderson, SCCOOS/UCSD). Methods: Anderson et al. 2016, Harmful Algae 59:1-18, doi:10.1016/j.hal.2016.08.006 (assessment of v1).",
+    "retrieved_at": "2026-10-15T17:03:14Z",
+    "request_urls": [
+     "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_2day.csv0?time%5Blast%5D",
+     "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_2day.nc?pseudo_nitzschia%5B(2026-10-15T12:00:00Z)%5D%5B(31.3):(43.0)%5D%5B(232.5):(243.0)%5D,particulate_domoic%5B(2026-10-15T12:00:00Z)%5D%5B(31.3):(43.0)%5D%5B(232.5):(243.0)%5D,cellular_domoic%5B(2026-10-15T12:00:00Z)%5D%5B(31.3):(43.0)%5D%5B(232.5):(243.0)%5D"
+    ],
+    "upstream_metadata": {
+     "title": "C-HARM v3.1 2-Day Forecast, Pseudo-nitzschia, cellular domoic acid, and particular domoic acid probability, California and Southern Oregon coast, 2022-present",
+     "product_version": "3.1",
+     "date_created": "2022-11-23T19:25:09Z",
+     "date_modified": "2022-11-23T19:25:09Z",
+     "creator_name": "Clarissa Anderson",
+     "creator_email": "cra002@ucsd.edu",
+     "source": "Satellite data, C-HARM model output, and WCOFS model output",
+     "satellite": "S-NPP",
+     "platform": "VIIRS",
+     "product_name": "C-HARM v3.1 model output with SNPP VIIRS and WCOFS data",
+     "history_first_line": "2026-10-15: DINEOF gap filling was applied to daily S-NPP NOAA VIIRS chlorophyll, 551nm reflectance, and 486nm reflectance fields extending back 180 days from today's date."
+    },
+    "pipeline_version": "fc44807971b3",
+    "pipeline_run_id": "38774047981"
+   }
+  }
+ }
+}
