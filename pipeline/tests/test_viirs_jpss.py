@@ -171,11 +171,12 @@ def test_after_the_cutoff_both_noaa_fail_last_good_is_kept_and_health_alerts(tmp
     assert st.outcome == "partial" and N21 in st.error and "S-NPP fallback" in st.error
     assert any("kept the previously published layers" in n for n in st.notes)
     assert check_published(str(out))["ok"]
-    # three such runs in a row: the existing degraded-source alert, as for any partial outage
+    # three such runs in a row: VIIRS's own alert (per product since #56), never hidden by OLCI's
     h = None
     for _ in range(3):
         h = health.evaluate(m2, h, datetime(2026, 10, 8, 18, tzinfo=timezone.utc))
-    assert "source_degraded:satellite_chl" in {a["key"] for a in h["alerts"]}
+    keys = {a["key"] for a in h["alerts"]}
+    assert "product_failing:viirs750" in keys and "product_failing:olci300" not in keys
 
 
 def test_snpp_fallback_never_replaces_a_newer_noaa_view(tmp_path):

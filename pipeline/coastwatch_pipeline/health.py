@@ -10,9 +10,20 @@ in the published dataset like everything else). What alerts, and why that thresh
 - source_degraded     the same for a source that partly fails (e.g. Sentinel-3 down, VIIRS up).
 - satellite_stale     newest Sentinel-3 pixel older than OLCI_MAX_AGE_DAYS, or newest VIIRS
                       pixel older than VIIRS_MAX_AGE_DAYS. Both are latency-aware (OLCI ~1-2 d;
-                      VIIRS 750 m ~1.5 d, measured 2026-10-14 from ERDDAP's /files/ listings: the
-                      "3-8 d" seen 2026-10-09..13 was ERDDAP's index stuck at 10-05). Statewide some pixel is almost always clear, so this means the
-                      feed stopped, not that it was cloudy. Low coverage never alerts.
+                      VIIRS ~1.5 d, measured 2026-10-14 from ERDDAP's /files/ listings: the
+                      "3-8 days" seen before was an ERDDAP index stuck for 9 days). Statewide some
+                      pixel is almost always clear, so this means the feed stopped, not clouds.
+- product_failing     one satellite product (OLCI or VIIRS) failed MIN_CONSECUTIVE_FAILURES runs
+                      in a row while the other kept the source "partial". Each product has its
+                      own key, so a failing VIIRS never hides behind, or masks, an OLCI alert.
+- platform_silent     a platform of a product (Sentinel-3A/3B; for VIIRS each satellite) has no
+                      scene newer than PLATFORM_MAX_AGE_DAYS while the product itself is current
+                      (Sentinel-3B stopped after 2026-10-01 while 3A carried on: nothing alerted).
+- coverage_collapse   a product's latest clear view covers under COVERAGE_DROP of its median over
+                      the last runs (at least COVERAGE_MIN_RUNS of them): masking or an upstream
+                      processing change, not weather (a 7-day composite rarely halves).
+- port_chl_empty      no port has a satellite chlorophyll value (0 of 22 on 2026-10-13..14, when
+                      the ports' dataset host refused the runners; nothing alerted).
 - charm_missing       newest C-HARM issue date older than CHARM_MAX_AGE_DAYS (daily product).
 - hfr_stale           newest HF-radar hour older than HFR_MAX_AGE_HOURS (latency is ~4-15 h).
 - hfr_coverage_drop   newest hour has fewer than HFR_COVERAGE_DROP of the window's median
@@ -63,8 +74,13 @@ from .models import Manifest
 
 MIN_CONSECUTIVE_FAILURES = 3
 OLCI_MAX_AGE_DAYS = 4
-# observed NOAA-21/NOAA-20 latency reaches 8 days; alert only beyond that plus two days
 VIIRS_MAX_AGE_DAYS = 5
+PLATFORM_MAX_AGE_DAYS = 5
+COVERAGE_DROP = 0.3
+COVERAGE_MIN_RUNS = 4
+COVERAGE_HISTORY = 10
+# satellite products: latest-clear-view layer, age limit, label
+SATELLITE_PRODUCTS = (("olci300", "olci300_chl_latest", OLCI_MAX_AGE_DAYS, "Sentinel-3 OLCI 300 m"), ("viirs750", "viirs750_chl_latest", VIIRS_MAX_AGE_DAYS, "VIIRS 750 m"))
 CHARM_MAX_AGE_DAYS = 2
 HFR_MAX_AGE_HOURS = 18
 HFR_COVERAGE_DROP = 0.5
@@ -90,7 +106,22 @@ def _dt(s: str) -> datetime:
     return datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
-def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_generated_at: str | None = None) -> dict:
+def _product_datasets(key: str) -> set[str]:
+    from .sources import satellite as sat
+
+    prods = [p for p in (getattr(sat, "PRODUCTS", None) or (sat.OLCI, sat.VIIRS)) if p.key == key]
+    return {sec[0] for p in prods for _, sectors in p.platforms for sec in sectors}
+
+
+def _product_platforms(key: str) -> list[str]:
+    """The platforms the product's primary definition expects (OLCI: Sentinel-3A and 3B)."""
+    from .sources import satellite as sat
+
+    p = next((x for x in (sat.OLCI, sat.VIIRS) if x.key == key), None)
+    return [pl for pl, _ in p.platforms] if p and len(p.platforms) > 1 else []
+
+
+def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_generated_at: str | None = None, port_intel: dict | None = None) -> dict:
     prev = previous or {}
     prev_sources = prev.get("sources", {})
     prev_alerts = {a["key"]: a for a in prev.get("alerts", [])}
@@ -105,7 +136,12 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
         k = a["key"]
         if ":" in k and a["kind"] in ("source_failing", "source_degraded", "source_not_updating", "data_stale"):
             return k.split(":", 1)[1]
-        return {"charm_missing": "charm", "hfr_stale": "hf_radar", "hfr_coverage_drop": "hf_radar"}.get(a["kind"]) or ("satellite_chl" if a["kind"] == "satellite_stale" else None)
+        if a["kind"] == "platform_silent":  # its own slot per platform: never masks the product's alerts
+            return "satellite_chl:" + k.split(":", 1)[1]
+        if a["kind"] in ("satellite_stale", "product_failing", "coverage_collapse"):
+            # one de-duplication slot per product (OLCI, VIIRS), never one for both
+            return "satellite_chl:" + k.split(":", 1)[1].split("_", 1)[0]
+        return {"charm_missing": "charm", "hfr_stale": "hf_radar", "hfr_coverage_drop": "hf_radar"}.get(a["kind"])
 
     # consecutive failures per source
     for st in manifest.sources:
@@ -116,21 +152,66 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
         sources[st.source_id] = {"outcome": st.outcome, "consecutive_failures": n, "consecutive_degraded": d, "last_success_at": st.last_success_at, "error": (st.error or "")[:300] or None}
         if st.source_id in NOAA_SOURCES and n >= MIN_CONSECUTIVE_FAILURES:
             alert(f"source_failing:{st.source_id}", "source_failing", f"{st.title}: failed {n} runs in a row (last success {st.last_success_at or 'never'}). Last error: {(st.error or '')[:200]}")
-        elif st.source_id in NOAA_SOURCES and d >= MIN_CONSECUTIVE_FAILURES:
+        elif st.source_id in NOAA_SOURCES and st.source_id != "satellite_chl" and d >= MIN_CONSECUTIVE_FAILURES:
+            # (satellite chlorophyll alerts per product instead: product_failing below)
             alert(f"source_degraded:{st.source_id}", "source_degraded", f"{st.title}: partly failing {d} runs in a row; the rest still updates. Last error: {(st.error or '')[:200]}")
 
     layers = {lyr.layer_id: lyr for lyr in manifest.layers}
     today = now.date()
 
-    # satellite freshness (by newest observed pixel)
-    for lid, limit, label in (("olci300_chl_latest", OLCI_MAX_AGE_DAYS, "Sentinel-3 OLCI 300 m"), ("viirs750_chl_latest", VIIRS_MAX_AGE_DAYS, "VIIRS 750 m (NOAA-21/NOAA-20)")):
+    # satellite products, each on its own: freshness, failures, platforms, coverage
+    sat_status = next((st for st in manifest.sources if st.source_id == "satellite_chl"), None)
+    prev_products = prev.get("satellite_products", {})
+    products: dict[str, dict] = {}
+    for key, lid, limit, label in SATELLITE_PRODUCTS:
         lyr = layers.get(lid)
+        pp = prev_products.get(key, {})
+        rec: dict = {"consecutive_failures": 0, "platform_last_seen": dict(pp.get("platform_last_seen", {})), "coverage_history": list(pp.get("coverage_history", []))}
+        products[key] = rec
+        age = None
         if lyr and lyr.time.observed_date:
             age = (today - date.fromisoformat(lyr.time.observed_date)).days
             if age > limit:
                 alert(f"satellite_stale:{lid}", "satellite_stale", f"{label}: newest observation {lyr.time.observed_date} is {age} days old (alert above {limit}).")
         elif "satellite_chl" in sources:
             alert(f"satellite_stale:{lid}", "satellite_stale", f"{label}: not in the published dataset.")
+        # failures: this product's own datasets named in the source's error this run
+        datasets = _product_datasets(key) | {"OLCI", "Sentinel-3"} if key == "olci300" else _product_datasets(key) | {"VIIRS", "S-NPP", "NOAA-20", "NOAA-21"}
+        err = (sat_status.error or "") if sat_status and sat_status.outcome in ("failed", "partial") else ""
+        mine = [e for e in re.split(r";\s+(?=[A-Z])", err) if any(ds in e for ds in datasets)]
+        if mine:
+            rec["consecutive_failures"] = pp.get("consecutive_failures", 0) + 1
+            if rec["consecutive_failures"] >= MIN_CONSECUTIVE_FAILURES:
+                alert(f"product_failing:{key}", "product_failing", f"{label}: could not be updated {rec['consecutive_failures']} runs in a row (newest published {lyr.time.observed_date if lyr else 'none'}). Last error: {mine[0][:200]}")
+        # platforms: newest scene of each expected platform (from the composite's days)
+        if lyr and lyr.composite:
+            for d in lyr.composite.days:
+                if d.pixels_used or d.observed_times:
+                    for pl in d.platforms:
+                        rec["platform_last_seen"][pl] = max(rec["platform_last_seen"].get(pl, ""), d.date)
+        if age is not None and age <= limit:
+            for pl in _product_platforms(key):
+                seen_ = rec["platform_last_seen"].get(pl)
+                p_age = (today - date.fromisoformat(seen_)).days if seen_ else None
+                if p_age is None or p_age > PLATFORM_MAX_AGE_DAYS:
+                    alert(f"platform_silent:{key}:{pl}", "platform_silent", f"{label}: no {pl} scene {'since ' + seen_ if seen_ else 'in the window'} (alert above {PLATFORM_MAX_AGE_DAYS} days) while the product is current from its other platform(s); coverage is reduced, nothing is filled.")
+        # coverage of the latest clear view against its recent median
+        if lyr and lyr.coverage is not None and lyr.provenance.pipeline_run_id == manifest.pipeline_run_id:
+            frac = lyr.coverage.domain_observed_fraction
+            hist_ = rec["coverage_history"]
+            if len(hist_) >= COVERAGE_MIN_RUNS:
+                med = statistics.median(hist_)
+                if med > 0.02 and frac < COVERAGE_DROP * med:
+                    alert(f"coverage_collapse:{key}", "coverage_collapse", f"{label}: latest clear view covers {frac:.1%} of the domain, under {COVERAGE_DROP:.0%} of its median over the last {len(hist_)} runs ({med:.1%}).")
+            rec["coverage_history"] = (hist_ + [round(frac, 4)])[-COVERAGE_HISTORY:]
+
+    # ports without any satellite chlorophyll
+    if port_intel is not None:
+        ports = port_intel.get("ports") or []
+        with_chl = sum(1 for p in ports if (p.get("chlorophyll") or {}).get("latest") is not None)
+        if ports and with_chl == 0:
+            errs = sorted({str((p.get("chlorophyll") or {}).get("error") or "")[:160] for p in ports} - {""})
+            alert("port_chl_empty", "port_chl_empty", f"No port has a satellite chlorophyll value (0 of {len(ports)}). {('Error: ' + errs[0]) if errs else ''}".strip())
 
     # C-HARM run
     run = next((r for r in manifest.forecast_runs if r.group_id == "charm"), None)
@@ -230,6 +311,24 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
         lyr = layers.get(lid)
         if lyr and lyr.coverage and "satellite_chl" in freshness:
             freshness["satellite_chl"].setdefault("coverage", {})[lid] = {"observed_fraction": lyr.coverage.domain_observed_fraction, "observed_date": lyr.time.observed_date}
+    # each satellite product its own row: one product updating must not make the other look current
+    for key, lid, limit, label in SATELLITE_PRODUCTS:
+        lyr = layers.get(lid)
+        if lyr is None or "satellite_chl" not in freshness:
+            continue
+        age = (today - date.fromisoformat(lyr.time.observed_date)).days if lyr.time.observed_date else None
+        fresh = lyr.freshness
+        freshness[f"satellite_chl:{key}"] = {
+            "title": label + (f" ({', '.join(lyr.platforms)})" if lyr.platforms else ""),
+            "outcome": "failed" if products[key]["consecutive_failures"] else "updated" if lyr.provenance.pipeline_run_id == manifest.pipeline_run_id else "kept",
+            "last_attempt_at": freshness["satellite_chl"]["last_attempt_at"],
+            "last_success_at": lyr.provenance.retrieved_at,
+            "basis": "observed_date",
+            "newest_date": lyr.time.observed_date,
+            "age_days": age,
+            "state": None if age is None or fresh is None else "current" if age <= fresh.current_max_age_days else "stale" if age <= fresh.stale_max_age_days else "historical",
+            "coverage": {"observed_fraction": lyr.coverage.domain_observed_fraction if lyr.coverage else None, "platforms_last_seen": products[key]["platform_last_seen"]},
+        }
     if hourly and "hf_radar" in freshness:
         newest = hourly[-1]
         freshness["hf_radar"]["coverage"] = {"newest_hour": newest.time.valid_time, "n_valid": newest.qc.n_valid if newest.qc else None}
@@ -242,7 +341,7 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
     # one alert per source (the root cause first), so one outage is one message, not five:
     # an upstream outage covers the sources failing against that host; stale data outranks a
     # failing count, which outranks "not updating"
-    rank = {"data_stale": 0, "charm_missing": 1, "satellite_stale": 1, "hfr_stale": 1, "hfr_coverage_drop": 2, "source_failing": 3, "source_degraded": 3, "source_not_updating": 4}
+    rank = {"data_stale": 0, "charm_missing": 1, "satellite_stale": 1, "hfr_stale": 1, "hfr_coverage_drop": 2, "product_failing": 2, "coverage_collapse": 2, "platform_silent": 3, "source_failing": 3, "source_degraded": 3, "source_not_updating": 4}
     outage_sources = {sid for a in alerts if a["kind"] == "upstream_outage" for sid in failing_hosts.get(a["key"].split(":", 1)[1], [])}
     best: dict[str, dict] = {}
     for a in alerts:
@@ -289,7 +388,7 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
         "pipeline_run_id": manifest.pipeline_run_id,
         "thresholds": {
             "min_consecutive_failures": MIN_CONSECUTIVE_FAILURES, "olci_max_age_days": OLCI_MAX_AGE_DAYS, "viirs_max_age_days": VIIRS_MAX_AGE_DAYS,
-            "charm_max_age_days": CHARM_MAX_AGE_DAYS, "hfr_max_age_hours": HFR_MAX_AGE_HOURS, "hfr_coverage_drop": HFR_COVERAGE_DROP,
+            "platform_max_age_days": PLATFORM_MAX_AGE_DAYS, "coverage_drop": COVERAGE_DROP, "charm_max_age_days": CHARM_MAX_AGE_DAYS, "hfr_max_age_hours": HFR_MAX_AGE_HOURS, "hfr_coverage_drop": HFR_COVERAGE_DROP,
             "publish_max_age_hours": PUBLISH_MAX_AGE_HOURS, "success_budget_hours": SUCCESS_BUDGET_HOURS, "outage_min_sources": OUTAGE_MIN_SOURCES,
             "intermittent_window": INTERMITTENT_WINDOW, "intermittent_min_runs": INTERMITTENT_MIN_RUNS,
         },
@@ -299,6 +398,7 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
         "failing_hosts_history": history,
         "charm_input": charm_input or prev_input,
         "hfr_regions_last_covered": seen,
+        "satellite_products": products,
         "alerts": alerts,
         "new_alerts": [a["key"] for a in alerts if a["key"] not in prev_alerts],
         "cleared_alerts": [k for k in prev_alerts if k not in {a["key"] for a in alerts}],
@@ -326,6 +426,8 @@ def run_health(out_dir: Path, previous_manifest_generated_at: str | None, now: d
     m = Manifest.model_validate_json((out_dir / "manifest.json").read_text())
     p = out_dir / HEALTH_FILE
     previous = json.loads(p.read_text()) if p.exists() else None
-    h = evaluate(m, previous, now or datetime.now(timezone.utc), previous_manifest_generated_at)
+    pi = out_dir / m.port_intel_url if m.port_intel_url else None
+    port_intel = json.loads(pi.read_text()) if pi and pi.exists() else None
+    h = evaluate(m, previous, now or datetime.now(timezone.utc), previous_manifest_generated_at, port_intel)
     p.write_text(json.dumps(h, indent=1) + "\n")
     return h
