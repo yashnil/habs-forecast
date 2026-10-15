@@ -146,6 +146,10 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
                 tiles_validated += len(files) - len(bad)
                 record(t.url_template, f"{kind}_all", Fetched(200, b""), ok, detail)
         grids = [("grid", lyr.grid)] + ([("age_grid", lyr.composite.age_grid)] if lyr.composite else [])
+        # per-cell platform grid (same chunks as the value grid), named in provenance
+        pg = lyr.provenance.upstream_metadata.get("platform_grid")
+        if pg and lyr.grid and lyr.grid.chunks:
+            grids.append(("platform_grid", lyr.grid.model_copy(update={"chunks": lyr.grid.chunks.model_copy(update={"url_template": pg})})))
         for kind, g in grids:
             if not g or not g.chunks:
                 continue

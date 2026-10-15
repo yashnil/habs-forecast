@@ -1,10 +1,11 @@
 # 33 — Satellite continuity: the end of Suomi-NPP data (2026-11-02)
 
-**Status:** audit and validation done; migration planned, not yet implemented. The C-HARM input watch and the monitoring fixes are in this PR. **No production dataset changed.**
+**Status:** audit and validation done; the C-HARM input watch and the monitoring fixes are in PR #45. The migration of CoastWatch's own VIIRS products to NOAA-21/NOAA-20 is implemented on `feat/viirs-jpss` (stacked on #45, §7) and tested on the staging channel only. **No production dataset changed.**
 
 **Evidence:**
 - [dependency audit](../../research/viirs-jpss-overlap/snpp-dependency-audit.md): live checks on 2026-10-13, 07:02–07:11 UTC;
 - [overlap validation](../../research/viirs-jpss-overlap/report.md): 98 three-sensor days; scripts, download log and metrics in [research/viirs-jpss-overlap](../../research/viirs-jpss-overlap). The 258 MB raw archive is kept outside the repo.
+- [coverage investigation](../../research/viirs-jpss-overlap/coverage-investigation.md): why the coverage criterion failed, on the same archive (§3a).
 
 ## 1. What depends on Suomi-NPP
 
@@ -53,6 +54,29 @@
   - no in-situ check.
 - **No bias correction.** CoastWatch publishes the agency's values and states the offset.
 
+### 3a. The failed coverage criterion, investigated (not waived)
+
+Details, script and tables: [coverage-investigation.md](../../research/viirs-jpss-overlap/coverage-investigation.md).
+
+- **Verdict unchanged:** the union is at least S-NPP on 75 of 98 days, **76.5% against 80%: fail.** Without the 8 days on which all three products are empty, 67 of 90 (74.4%).
+- **Why the 23 days fail:**
+
+  | cause | days |
+  |---|---|
+  | NOAA-20/21 swath geometry (straight-edged no-data areas over water S-NPP saw) | 7 |
+  | S-NPP's pass saw more clear sky | 7 |
+  | single-platform outage or partial day (all NOAA-21) | 5 |
+  | near-total cloud (S-NPP < 10%) | 4 |
+  | near-shore masking | 0 |
+
+- **How large:** on failing days the union is a median 1.1 points of the ocean area below S-NPP (p90 8.3, worst 25.0 on 2026-03-24; median ratio 0.91). Across all 98 days the shortfall exceeds 2 points on 8 days and 5 points on 4.
+- **Where:** not near shore. Within 5 km of shore the union matches or beats S-NPP on 88% of days (mean 48.3% vs 33.8%); the cells lost are spread like the ocean itself, mostly offshore in the central and southern regions. Worst month: May (10 of 27 days).
+- **On average the union covers more:** 32.5% vs 26.1% (mean), and 17 of 17 weeks by weekly mean.
+- **Not assessable from the archive:** flag/QA differences (the archive holds `chlor_a` only) and the overpass-time explanation (the stamps are nominal). 86 of the 98 days are February–June; there is no July–August comparison because of the S-NPP gap.
+- **4 km NOAA-20 (`nesdisVHNnoaa20chlaDaily`):** the same NOAA-20 data, binned coarser. It is empty on NOAA-20's empty days, so it cannot fill outages; its larger footprint is a resolution effect, not 750 m coverage. It stays, at most, a separately labelled product and is not a fix for this criterion.
+- **Is the criterion well posed?** It behaves close to a cloud lottery: NOAA-21 ≥ NOAA-20 on 48% of days, S-NPP against itself a day later 51%. Tolerances (union ≥ 0.9 × S-NPP: 88.8%; ≥ S-NPP − 2 points: 91.8%) are reported for a future criterion only, not to pass this one.
+- **What users get:** on about 1 day in 4 the VIIRS layer shows less ocean than S-NPP would have, usually by about 1 point, by 2 points or more about 1 day in 12. On the other days it shows more. The app already says a gap is "cloud or missing passes, not low chlorophyll", dates every pixel, gives coverage per region and now names the satellite of each layer; it does not claim equal or better coverage every day.
+
 **Recommendation:** NOAA-21 first, with NOAA-20 filling cells NOAA-21 lacks. Each pixel comes from one platform and is never averaged. The 4 km NOAA-20 product is a labelled fallback on another server.
 
 ## 4. Migration plan (staging first)
@@ -76,7 +100,7 @@
    - view staging in the private preview;
    - simulate the cut-off: S-NPP returns nothing newer, and NOAA-21 or NOAA-20 fails alone.
 4. **Merge by about 2026-10-26**, so a week of NOAA-20/21 runs exists before 2026-11-02. Keep the S-NPP fallback until it goes stale, then remove it.
-5. **Health thresholds:** set the VIIRS latency threshold from the observed 3–8 days (NOAA-20/21 lagged about 7.5 days on 10-13).
+5. **Health thresholds:** set the VIIRS latency threshold from the measured latency. Correction (2026-10-14): NOAA-21/20 latency is about 1.5 days (ERDDAP `/files/` lists one file a day about 36 h after the overpass). The "3–8 days" seen on 10-09..13 was coastwatch.noaa.gov ERDDAP's time index stuck at 10-05 until the server restarted at 16:02Z on 10-14; the threshold is 5 days.
 
 ## 5. C-HARM (in this PR)
 
@@ -90,3 +114,17 @@
 - **Primary platform:** NOAA-21 first, as NOAA recommends and as the validation supports, or NOAA-20 first.
 - **NOAA CoastWatch help desk:** whether to ask about the OC3/OCI algorithm labels and C-HARM's plans. This is outreach and needs your approval.
 - **Timing:** approval to implement `feat/viirs-jpss` now, so it can merge before 2026-10-26.
+
+## 7. Implementation (`feat/viirs-jpss`)
+
+- **VIIRS 750 m layer** (`viirs750_chl_latest`, same layer id): NOAA-21 (`noaacwN21VIIRSchlaSectorUSDaily`) first, NOAA-20 (`noaacwN20VIIRSchlaSectorUSDaily`) only in cells NOAA-21 has no value for, on the `erdVHNchla1day` lattice, with the overpass-time stamps. Each cell keeps its platform in a per-cell platform grid, named in `provenance.upstream_metadata` (`platform_grid`, `platform_codes`, `pixels_by_platform`) with the measured offsets (`offsets`). `platforms` lists the sensor, then the satellites used: `["VIIRS", "NOAA-21", "NOAA-20"]`. `dataset_id` names only the datasets used.
+- **Window:** 7 days, like OLCI. (A 10-day window was tried after staging run 38428219106 found NOAA-21/NOAA-20's newest pass 8 days old. That lag was ERDDAP's frozen index, not NOAA's processing; the wider window then let 9-day-old NOAA data fill the layer while S-NPP had 10-12, silently. Reverted 2026-10-14.)
+- **Newest lineage wins:** each run lists S-NPP's times (one small request). If `erdVHNchla1day` holds a strictly newer day than NOAA-21/NOAA-20, or they cannot be updated, the S-NPP composite is the layer, whole and labelled `["VIIRS", "S-NPP"]`; on the same newest day NOAA-21/NOAA-20 stays and S-NPP is never downloaded. It never replaces a published NOAA-21/NOAA-20 view that is as new. After the cut-off S-NPP has nothing new and drops out. Port summaries follow the same rule: when the newest complete NOAA window is centred more than 8 days back (normally about 6), the S-NPP 8-day composite is asked and used only if strictly newer.
+- **Multi-sensor:** the VIIRS member is labelled with its satellites ("VIIRS 750 m · NOAA-21/NOAA-20"); `dataset_id` comes from the member.
+- **Port / My Coast chlorophyll:** an 8-day window (D−3 to D+4) computed by CoastWatch from the daily NOAA-21/NOAA-20 pixels near the port: each pixel's median over the window, then the median within 15 km; complete windows only. `dataset_id` per port names the source; provenance `viirs_jpss_chl_8day` records the change point and the offsets, and the method text says values may step by about 4–10% at the change. `erdVHNchla8day` is the fallback while it answers.
+- **verify-satellite** selects the product by each layer's own `dataset_id`, queries each dataset at its own overpass time, and checks that the platform the source answers for first is the one the platform grid names.
+- **Processing version** `satellite-processing-3`: no S-NPP day is reused as a NOAA-21/NOAA-20 one (OLCI days are also rebuilt once).
+- **Health:** `VIIRS_MAX_AGE_DAYS` 5 (measured latency ~1.5 days; see §4 item 5).
+- **Web:** labels from `platforms` ("VIIRS · NOAA-21", "VIIRS · NOAA-21 + NOAA-20"; older layers "VIIRS · S-NPP" from their dataset id); port panel names its source per port.
+- **Schema:** no new field anywhere; the regenerated fixture manifests validate against the released schema. Published S-NPP artifacts keep `erdVHNchla1day` / `erdVHNchla8day` and their dates.
+- **Unchanged:** C-HARM. Its S-NPP input is NOAA's to change (§5).

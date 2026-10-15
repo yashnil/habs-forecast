@@ -21,7 +21,8 @@ from .pipeline import run_pipeline
 FIXTURES = Path(__file__).resolve().parents[1] / "tests" / "fixtures"
 FIXTURE_NOW = "2026-10-08T18:00:00Z"
 
-# Bounding boxes of the satellite fixtures (real ERDDAP responses, recorded 2026-10-09).
+# Bounding boxes of the satellite fixtures (real ERDDAP responses, recorded 2026-10-09; the
+# NOAA-21/NOAA-20 VIIRS scenes on 2026-10-13 by scripts/record_jpss_fixtures.py).
 SATELLITE_REGIONS = {
     "monterey": (36.40125, 37.20125, -122.60125, -121.75125),
     "north_coast": (40.40125, 41.40125, -124.70125, -123.95125),
@@ -78,11 +79,52 @@ class FixtureFetcher:
             return None
         return Response(url=url, status=200, content_type=entry["content_type"], body=(self.root / "recorded" / entry["file"]).read_bytes())
 
+    def _jpss_port(self, url: str) -> Response | None:
+        """NOAA-21/NOAA-20 port requests start at a later day once a previous summary exists:
+        served from the recorded response for the same dataset and cells, cut to the times on
+        or after the requested start (values untouched)."""
+        import io
+        import json
+        from datetime import datetime, timezone
+
+        import numpy as np
+        from scipy.io import netcdf_file
+
+        m = re.search(r"/griddap/(noaacwN2[01]VIIRSchlaSectorUSDaily)\.nc\?chlor_a%5B\((\d{4}-\d\d-\d\d)T00:00:00Z\):\(last\)%5D(.*)$", url)
+        idx = self.root / "recorded" / "index.json"
+        if not m or not idx.exists():
+            return None
+        ds, start, rest = m.groups()
+        entries = json.loads(idx.read_text())
+        hit = next((u for u in entries if f"/griddap/{ds}.nc?chlor_a%5B(" in u and u.endswith(rest) and re.search(r"\((\d{4}-\d\d-\d\d)T", u).group(1) <= start), None)
+        if hit is None:
+            return None
+        src = netcdf_file(io.BytesIO((self.root / "recorded" / entries[hit]["file"]).read_bytes()), mmap=False)
+        t = np.array(src.variables["time"].data)
+        keep = np.array([datetime.fromtimestamp(float(x), tz=timezone.utc).date().isoformat() >= start for x in t])
+        out = io.BytesIO()
+        dst = netcdf_file(out, "w", version=1)
+        for d, n in src.dimensions.items():
+            dst.createDimension(d, int(keep.sum()) if d == "time" else n)
+        for name, var in src.variables.items():
+            data = np.array(var.data)
+            if var.dimensions and var.dimensions[0] == "time":
+                data = data[keep]
+            nv = dst.createVariable(name, data.dtype, var.dimensions)
+            nv[:] = data
+            for k, v in var._attributes.items():
+                setattr(nv, k, v)
+        dst.flush()
+        body = out.getvalue()
+        dst.close()
+        src.close()
+        return Response(url=url, status=200, content_type="application/x-netcdf", body=body)
+
     def _satellite(self, url: str) -> Response | None:
         import json
         from urllib.parse import unquote
 
-        m = re.search(r"/griddap/((?:noaacwS3[AB]OLCIchlaSector[A-Z]{2}Daily)|erdVHNchla1day)\.(csv0|nc)\?(.*)$", url)
+        m = re.search(r"/griddap/((?:noaacwS3[AB]OLCIchlaSector[A-Z]{2}Daily)|(?:noaacwN2[01]VIIRSchlaSectorUSDaily)|erdVHNchla1day)\.(csv0|nc)\?(.*)$", url)
         if not m:
             return None
         ds, kind, q = m.group(1), m.group(2), unquote(m.group(3))
@@ -225,7 +267,7 @@ class FixtureFetcher:
         return Response(url=url, status=200, content_type="application/octet-stream", body=body)
 
     def _serve(self, url: str) -> Response:
-        rec = self._recorded(url)
+        rec = self._recorded(url) or self._jpss_port(url)
         if rec is not None:
             return rec
         sat = self._satellite(url)
@@ -282,7 +324,8 @@ def fixture_context(out: Path, now: str = FIXTURE_NOW, fetcher: FixtureFetcher |
 
 def build_fixture_dataset(out: Path, now: str = FIXTURE_NOW, scenario: str = "normal") -> Manifest:
     """Scenarios: 'normal' (all sources succeed) or 'charm-failed' (a later run in which
-    every C-HARM request fails, so the previous run is kept and the failure recorded)."""
+    every C-HARM request and every VIIRS daily request fails, so the previous C-HARM run and VIIRS
+    layer are kept and the failures recorded; Sentinel-3 still updates)."""
     import json
 
     from .verify import verify_charm
@@ -291,10 +334,18 @@ def build_fixture_dataset(out: Path, now: str = FIXTURE_NOW, scenario: str = "no
         shutil.rmtree(out)
     m = run_pipeline(fixture_context(out, now))
     if scenario == "charm-failed":
-        # a later run: every C-HARM request fails, and CDPH has meanwhile published a release that
-        # appears to lift an active record (published as a discrepancy, the record left unchanged)
+        # a later run: every C-HARM request fails, the VIIRS daily products fail too (an explicit
+        # failure: with a 10-day VIIRS window the four-day-later run would otherwise still find
+        # scenes), and CDPH has meanwhile published a release that appears to lift an active record
+        # (published as a discrepancy, the record left unchanged)
         later = (datetime.fromisoformat(now.replace("Z", "+00:00")) + timedelta(days=4)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        fetcher = FixtureFetcher(overrides={r"wvcharmV3_": _fail_502, re.escape(CDPH_RELEASES): _with_lift_release})
+        fetcher = FixtureFetcher(
+            overrides={
+                r"wvcharmV3_": _fail_502,
+                r"/griddap/(noaacwN2[01]VIIRSchlaSectorUSDaily|erdVHNchla1day)\.": _fail_502,
+                re.escape(CDPH_RELEASES): _with_lift_release,
+            }
+        )
         m = run_pipeline(fixture_context(out, later, fetcher))
     elif scenario != "normal":
         raise ValueError(f"unknown scenario {scenario}")

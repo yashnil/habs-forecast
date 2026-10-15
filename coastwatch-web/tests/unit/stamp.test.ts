@@ -50,3 +50,41 @@ describe("map timestamp lines", () => {
     expect(stampLines({ group: "satellite", satellite: ms })[0].text).toBe("Chlorophyll, Sentinel-3 300 m + VIIRS 750 m · each pixel dated, newest Oct 8");
   });
 });
+
+describe("VIIRS satellites after Suomi-NPP (labels from each layer's own platforms)", () => {
+  const v = (platforms: string[], dataset_id = "") =>
+    ({
+      layer_id: "viirs750_chl_latest",
+      short_title: "Chlorophyll",
+      platforms,
+      native_resolution_m: 750,
+      provenance: { dataset_id },
+      time: { observed_date: "2026-10-04" },
+      composite: { oldest_observed_date: "2026-10-03", newest_observed_date: "2026-10-04" },
+    }) as unknown as LayerArtifact;
+  it("names NOAA-21, and both satellites on mixed days", async () => {
+    const { viirsPlatformLabel, sensorLabel } = await import("@/lib/stamp");
+    expect(viirsPlatformLabel(v(["VIIRS", "NOAA-21"]))).toBe("VIIRS · NOAA-21");
+    expect(viirsPlatformLabel(v(["VIIRS", "NOAA-21", "NOAA-20"]))).toBe("VIIRS · NOAA-21 + NOAA-20");
+    expect(sensorLabel(v(["VIIRS", "NOAA-20"]))).toBe("VIIRS 750 m (NOAA-20)");
+    expect(stampLines({ group: "satellite", satellite: v(["VIIRS", "NOAA-21", "NOAA-20"]) })[0].text).toBe(
+      "Chlorophyll, VIIRS 750 m (NOAA-21 + NOAA-20) · pixels observed Oct 3–Oct 4",
+    );
+  });
+  it("labels artifacts published before the change as S-NPP from their dataset id", async () => {
+    const { viirsPlatformLabel, sensorLabel } = await import("@/lib/stamp");
+    expect(viirsPlatformLabel(v(["VIIRS"], "erdVHNchla1day"))).toBe("VIIRS · S-NPP");
+    expect(viirsPlatformLabel(v(["VIIRS", "S-NPP"], "erdVHNchla1day"))).toBe("VIIRS · S-NPP");
+    expect(sensorLabel(v(["VIIRS"], "erdVHNchla1day"))).toBe("VIIRS 750 m (S-NPP)");
+  });
+  it("multi-sensor stamp names the VIIRS satellites but not Sentinel-3 as one", () => {
+    const ms = { ...v(["Sentinel-3A", "VIIRS", "NOAA-21", "NOAA-20"]), native_resolution_m: null, composite: null, multisensor: {}, time: { observed_date: "2026-10-08" } } as unknown as LayerArtifact;
+    expect(stampLines({ group: "satellite", satellite: ms })[0].text).toBe("Chlorophyll, Sentinel-3 300 m + VIIRS 750 m (NOAA-21 + NOAA-20) · each pixel dated, newest Oct 8");
+  });
+  it("port chlorophyll says which source each value comes from", async () => {
+    const { portChlorophyllSource } = await import("@/lib/stamp");
+    expect(portChlorophyllSource("noaacwN21VIIRSchlaSectorUSDaily,noaacwN20VIIRSchlaSectorUSDaily")).toBe("8-day window of NOAA-21 + NOAA-20 passes");
+    expect(portChlorophyllSource("noaacwN20VIIRSchlaSectorUSDaily")).toBe("8-day window of NOAA-20 passes");
+    expect(portChlorophyllSource("erdVHNchla8day")).toBe("S-NPP 8-day composite");
+  });
+});

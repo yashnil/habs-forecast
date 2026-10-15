@@ -17,6 +17,8 @@ from coastwatch_pipeline.sources import multisensor as ms
 from coastwatch_pipeline.sources import satellite as sat
 from coastwatch_pipeline.verify_satellite import verify_multisensor
 
+VIIRS_ALL = r"noaacwN2[01]VIIRS|erdVHNchla1day"  # NOAA-21, NOAA-20 and the S-NPP fallback
+
 D = date(2026, 10, 6).toordinal()
 NAN = np.nan
 
@@ -72,7 +74,7 @@ def test_viirs_keeps_its_750_m_cells_in_the_display(tmp_path):
 
 def test_not_built_without_both_members_and_members_survive(tmp_path):
     out = tmp_path / "v1"
-    fx = FixtureFetcher(overrides={r"erdVHNchla1day": lambda url: (_ for _ in ()).throw(FetchError(f"HTTP 503 for {url}"))})
+    fx = FixtureFetcher(overrides={VIIRS_ALL: lambda url: (_ for _ in ()).throw(FetchError(f"HTTP 503 for {url}"))})
     m = run_pipeline(fixture_context(out, fetcher=fx))
     ids = {lyr.layer_id for lyr in m.layers}
     assert ms.LAYER_ID not in ids and "olci300_chl_latest" in ids
