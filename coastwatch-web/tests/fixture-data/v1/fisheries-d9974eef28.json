@@ -891,7 +891,7 @@
   "missing": "Rows without a published value are counted (n_rows_without_value) and never treated as zero.",
   "duplicates": "Rows in the same year with different names but identical non-zero pounds and dollars are counted once; the excluded rows are listed. The only case found is explained upstream: FOSS's source-species table maps PacFIN code KSTR (Kumamoto oyster) to both 'OYSTER, PACIFIC' and 'OYSTER, KUMAMOTO', and NOAA's published state totals count it once.",
   "inflation": "Annual average = mean of the 12 published monthly values, rounded to 3 decimals (as BLS publishes). Real value = nominal × CPI(2024) / CPI(year). Base year = most recent year with all 12 monthly values published.",
-  "tiers": "Tier 1: fisheries with commercial closures or take restrictions for marine toxins (current or past). Tier 2: species under consumption advisories, sport-harvest quarantines or monitoring. Tier assignments are CoastWatch's editorial grouping and await HAB scientific review."
+  "tiers": "Tier 1: fisheries with commercial closures or take restrictions for marine toxins (current or past). Tier 2: species under consumption advisories, sport-harvest quarantines or monitoring. Tier assignments are Neritic Signal's editorial grouping and await HAB scientific review."
  },
  "caveats": [
   "Historical fisheries exposure is not a forecast of losses. Past landings say nothing about whether a fishery will be closed.",
@@ -900,7 +900,7 @@
   "Upstream species categories are market categories; some combine several species. Generic categories are left unassigned, so group values are lower bounds.",
   "Bivalve values include aquaculture (farmed clams, mussels and oysters); bivalve pounds are meat weight.",
   "NOAA updates these statistics weekly and published annual summaries are preliminary; values can be revised.",
-  "Tier assignments are CoastWatch's editorial grouping and await HAB scientific review."
+  "Tier assignments are Neritic Signal's editorial grouping and await HAB scientific review."
  ],
  "provenance": [
   {

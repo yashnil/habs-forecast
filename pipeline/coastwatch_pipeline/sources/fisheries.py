@@ -55,7 +55,7 @@ FOSS_LICENSE = (
 FOSS_CAVEATS_URL = "https://apps-st.fisheries.noaa.gov/foss/f?p=215:240"
 BLS_LICENSE = "U.S. Government work (Bureau of Labor Statistics); public domain."
 
-TIER_REVIEW = "Tier assignments are CoastWatch's editorial grouping and await HAB scientific review."
+TIER_REVIEW = "Tier assignments are Neritic Signal's editorial grouping and await HAB scientific review."
 
 # id, label, tier, basis, official record ids (CoastWatch registry), exact upstream names / regex
 GROUPS: list[dict] = [

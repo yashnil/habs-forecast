@@ -478,7 +478,7 @@
     ],
     "uncertainties": [
      "Effective date not confirmed from the CDPH release.",
-     "Northern Channel Islands part of the area is not mapped in CoastWatch."
+     "Northern Channel Islands part of the area is not mapped in Neritic Signal."
     ]
    },
    {
@@ -3868,7 +3868,7 @@
  },
  "provenance": {
   "source_id": "official",
-  "source_name": "CoastWatch official notices registry (human-reviewed transcription of CDFW and CDPH notices)",
+  "source_name": "Neritic Signal official notices registry (human-reviewed transcription of CDFW and CDPH notices)",
   "source_url": "https://github.com/yashnil/habs-forecast/blob/main/data/curated/official_notices.json",
   "dataset_id": null,
   "product_version": null,

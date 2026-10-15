@@ -237,7 +237,7 @@ def build(ctx: RunContext, olci: LayerArtifact, viirs: LayerArtifact, olci_days:
         description="Display of the most informative recent observation at each pixel from two sensors, each at its own resolution and date. " + RULE,
         time=TimeInfo(observed_date=newest, valid_date=newest, observed_times=sorted(set(olci.time.observed_times) | set(viirs.time.observed_times))),
         freshness=sat.FRESHNESS, grid=None,
-        tiles=tl("tiles", ts, "Rendered by CoastWatch: each tile pixel shows one sensor's published value on that sensor's own grid (nearest cell); Sentinel-3 over VIIRS by the rule."),
+        tiles=tl("tiles", ts, "Rendered by Neritic Signal: each tile pixel shows one sensor's published value on that sensor's own grid (nearest cell); Sentinel-3 over VIIRS by the rule."),
         palette=CHLOROPHYLL, caveats=[CAVEAT_MULTI, sat.CAVEAT_COMPOSITE.format(n=sat.WINDOW_DAYS if viirs.composite.window_days == sat.WINDOW_DAYS else f"{sat.WINDOW_DAYS} (VIIRS: {viirs.composite.window_days})")] + list(sat.CAVEATS),
         qc=sat._qc(combined, checks), platforms=list(dict.fromkeys(list(olci.platforms) + list(viirs.platforms))),  # members' order (VIIRS: sensor, then satellites by priority)
         coverage=sat.coverage(combined, t_o),
@@ -253,9 +253,9 @@ def build(ctx: RunContext, olci: LayerArtifact, viirs: LayerArtifact, olci_days:
             shown=[_shown(0, age_top[code == 1]), _shown(1, (ref - vd_on_o)[code == 2])],
         ),
         provenance=Provenance(
-            source_id=sat.SOURCE_ID, source_name="CoastWatch multi-sensor display of NOAA CoastWatch Sentinel-3 OLCI and VIIRS chlorophyll-a",
+            source_id=sat.SOURCE_ID, source_name="Neritic Signal multi-sensor display of NOAA CoastWatch Sentinel-3 OLCI and VIIRS chlorophyll-a",
             source_url=olci.provenance.source_url, dataset_id=f"{olci.provenance.dataset_id},{viirs.provenance.dataset_id}",
-            institution="NOAA CoastWatch (data); CoastWatch pipeline (display)", license=olci.provenance.license,
+            institution="NOAA CoastWatch (data); Neritic Signal pipeline (display)", license=olci.provenance.license,
             retrieved_at=ctx.now_iso, request_urls=[], upstream_metadata={"members": f"{olci.layer_id} ({olci.provenance.pipeline_run_id}), {viirs.layer_id} ({viirs.provenance.pipeline_run_id})", "rule": RULE_VERSION},
             pipeline_version=ctx.pipeline_version, pipeline_run_id=ctx.run_id,
         ),

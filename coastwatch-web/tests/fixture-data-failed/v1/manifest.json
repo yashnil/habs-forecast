@@ -3419,7 +3419,7 @@
         "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
-        "date_selection": "Rendered by CoastWatch from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        "date_selection": "Rendered by Neritic Signal from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
         "relative": true,
         "min_zoom": 5,
         "bounds_lnglat": [
@@ -3785,7 +3785,7 @@
         "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
-        "date_selection": "Rendered by CoastWatch from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        "date_selection": "Rendered by Neritic Signal from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
         "relative": true,
         "min_zoom": 5,
         "bounds_lnglat": [
@@ -3998,7 +3998,7 @@
         "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
-        "date_selection": "Rendered by CoastWatch from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        "date_selection": "Rendered by Neritic Signal from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
         "relative": true,
         "min_zoom": 5,
         "bounds_lnglat": [
@@ -4386,7 +4386,7 @@
         "max_native_zoom": 10,
         "legend_url": null,
         "legend_verified": false,
-        "date_selection": "Rendered by CoastWatch from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        "date_selection": "Rendered by Neritic Signal from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
         "relative": true,
         "min_zoom": 5,
         "bounds_lnglat": [
@@ -4912,7 +4912,7 @@
         "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
-        "date_selection": "Rendered by CoastWatch: each tile pixel shows one sensor's published value on that sensor's own grid (nearest cell); Sentinel-3 over VIIRS by the rule.",
+        "date_selection": "Rendered by Neritic Signal: each tile pixel shows one sensor's published value on that sensor's own grid (nearest cell); Sentinel-3 over VIIRS by the rule.",
         "relative": true,
         "min_zoom": 5,
         "bounds_lnglat": [
@@ -5007,11 +5007,11 @@
       },
       "provenance": {
         "source_id": "satellite_chl",
-        "source_name": "CoastWatch multi-sensor display of NOAA CoastWatch Sentinel-3 OLCI and VIIRS chlorophyll-a",
+        "source_name": "Neritic Signal multi-sensor display of NOAA CoastWatch Sentinel-3 OLCI and VIIRS chlorophyll-a",
         "source_url": "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.html",
         "dataset_id": "noaacwS3AOLCIchlaSectorCIDaily,noaacwS3AOLCIchlaSectorDIDaily,noaacwS3BOLCIchlaSectorCIDaily,noaacwS3BOLCIchlaSectorDIDaily,noaacwN21VIIRSchlaSectorUSDaily,noaacwN20VIIRSchlaSectorUSDaily",
         "product_version": null,
-        "institution": "NOAA CoastWatch (data); CoastWatch pipeline (display)",
+        "institution": "NOAA CoastWatch (data); Neritic Signal pipeline (display)",
         "license": "Contains modified Copernicus Sentinel-3 data (EUMETSAT), processed by NOAA CoastWatch/OceanWatch; free and open. NOAA data: may be used and redistributed for free.",
         "citation": null,
         "retrieved_at": "2026-10-12T18:00:00Z",
@@ -9135,8 +9135,8 @@
     }
   ],
   "ports_url": "ports-9e81ebe6cd.geojson",
-  "official_url": "official-7b429b1ea9.json",
-  "port_intel_url": "port-intel-808d045b30.json",
+  "official_url": "official-2e99f187d8.json",
+  "port_intel_url": "port-intel-a1936c0608.json",
   "observations_url": "observations-e4ca12aea2.json",
-  "fisheries_url": "fisheries-f0144b9b12.json"
+  "fisheries_url": "fisheries-d9974eef28.json"
 }

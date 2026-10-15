@@ -115,7 +115,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           title="Official notices: sources changed since last review"
-          body="The CoastWatch watcher detected changes (or could not read) official CDFW/CDPH pages since the last human review. The app shows official notices as NOT verified until a person checks every record in data/curated/official_notices.json against the sources and runs: cwp review-official --reviewer NAME --confirm. Details: ${RUN_URL} (job build, step 'Watch official pages')."
+          body="The Neritic Signal (formerly CoastWatch) watcher detected changes (or could not read) official CDFW/CDPH pages since the last human review. The app shows official notices as NOT verified until a person checks every record in data/curated/official_notices.json against the sources and runs: cwp review-official --reviewer NAME --confirm. Details: ${RUN_URL} (job build, step 'Watch official pages')."
           n=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
           if [ -n "$n" ]; then gh issue comment "$n" --repo "$GITHUB_REPOSITORY" --body "$body"; else gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"; fi
 

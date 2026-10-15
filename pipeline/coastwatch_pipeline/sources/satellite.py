@@ -552,7 +552,7 @@ def publish_values(ctx: RunContext, values: np.ndarray, target: Target, base: st
         tile_size=256 * TILE_SCALE,
         legend_url=None, legend_verified=False, bounds_lnglat=[round(w, 5), round(s, 5), round(e, 5), round(n, 5)],
         n_tiles=ts.n_tiles, sample_tiles=ts.tiles[:: max(1, len(ts.tiles) // 5)][:5],
-        date_selection="Rendered by CoastWatch from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        date_selection="Rendered by Neritic Signal from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
     )
     return grid, tiles, nbytes + ts.bytes
 
