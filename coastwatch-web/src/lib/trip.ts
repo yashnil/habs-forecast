@@ -1,4 +1,5 @@
 import type { LayerArtifact } from "@/generated/schema";
+import type { StationLite } from "@/lib/data";
 import type { Association } from "@/lib/applicability";
 import { AUDIENCE } from "@/lib/applicability";
 import type { Audience } from "@/lib/coast";
@@ -81,7 +82,7 @@ export type MatterInput = {
   /** CDFW statements for the species and activity, season status first */
   statements: { id: string; agency: string; statement: string; topic: string; source: { url: string } }[];
   verification: Verification | null;
-  hab: { cells: StationEvidence | null; toxin: StationEvidence | null } | null;
+  hab: { cells: StationEvidence | null; toxin: StationEvidence | null; nearest?: { station: StationLite; km: number; date: string; ageDays: number } | null } | null;
   habError?: string | null;
   /** the model on the trip day: the waters' own cell and the real cells near them */
   model: { valid: string | null; pda: Neighbourhood | null } | null | "error" | "loading";
@@ -201,6 +202,12 @@ export function whatMatters(x: MatterInput): Matter[] {
   return out;
 }
 
+/**
+ * The HAB line: where the evidence is, how far it is and how old, before what it says. A station
+ * 41 km away never heads a line as if it were at the harbour; a closer station that has gone quiet
+ * is named with the date of its last sample; the model's offshore cells are context after the
+ * measurement, never a bold value for waters that have no cell of their own.
+ */
 function habMatter(x: MatterInput): Matter {
   if (x.habError) return { id: "hab", kind: "gap", tone: "gap", headline: "Shore measurements could not be loaded", focus: null };
   const near = [x.hab?.cells, x.hab?.toxin].filter((e): e is StationEvidence => !!e && e.near && e.ageDays <= RECENT_DAYS).sort((a, b) => b.date.localeCompare(a.date) || a.km - b.km);
@@ -209,22 +216,25 @@ function habMatter(x: MatterInput): Matter {
   const modelText = (x.modelBeyond
     ? "NOAA's model does not reach this day"
     : m?.pda?.here != null
-      ? `model ${fmtPct(m.pda.here)} chance of toxin above threshold in these waters' own cell`
+      ? `NOAA's model gives these waters' own 3 km cell a ${fmtPct(m.pda.here)} chance of toxin above threshold`
       : m?.pda && m.pda.n > 0
-        ? `model: no value at these nearshore waters (offshore cells within ${NEIGHBOURHOOD_KM} km: median ${fmtPct(m.pda.median)})`
+        ? `NOAA's C-HARM has no valid estimate for these nearshore waters; its offshore cells within ${NEIGHBOURHOOD_KM} km read ${fmtPct(m.pda.min)}–${fmtPct(m.pda.max)} (context only, not the harbour)`
         : m
-          ? "outside NOAA's toxin model"
+          ? "these waters are outside NOAA's toxin model"
           : null) as string | null;
   const modelLine = modelText && stale && !x.modelBeyond && m ? `${modelText} (${stale})` : modelText;
   if (near.length) {
     const e = near[0];
-    const v = e.kind === "cells" ? `Pseudo-nitzschia ${fmtMeasured("pn_seriata", e.values.reduce((a, y) => a + y.value, 0))}` : `Domoic acid in seawater ${fmtMeasured("pDA", e.values[0].value)}`;
+    const v = e.kind === "cells" ? `Pseudo-nitzschia ${fmtMeasured("pn_seriata", e.values.reduce((a, y) => a + y.value, 0))}` : `domoic acid in seawater ${fmtMeasured("pDA", e.values[0].value)}`;
+    // a closer station that measures this but has not reported recently: say so, with its last date
+    const c = x.hab?.nearest;
+    const closer = c && c.station.station_id !== e.station.station_id && c.km < e.km ? `${c.station.name}, ${km(c.km)} km, is closer but its last sample is from ${x.fmt(c.date)} (${ageWords(c.ageDays)}). ` : "";
     return {
       id: "hab",
       kind: "measured",
       tone: "note",
-      headline: `${v} at ${e.station.name}, ${ageWords(e.ageDays)}`,
-      detail: `${km(e.km)} km ${e.bearing} of these waters${modelLine ? ` · ${modelLine}` : ""}. Seawater, not seafood.`,
+      headline: `${e.station.name}, ${km(e.km)} km ${e.bearing}: ${v}, ${x.fmt(e.date)}`,
+      detail: `${ageWords(e.ageDays).replace(/^\w/, (ch) => ch.toUpperCase())}. ${closer}${modelLine ? `${modelLine.charAt(0).toUpperCase()}${modelLine.slice(1)}. ` : ""}Seawater, not seafood.`,
       focus: e.kind === "cells" ? "cells" : "toxin",
       aged: e.ageDays > 14,
     };
@@ -235,24 +245,30 @@ function habMatter(x: MatterInput): Matter {
       kind: "model",
       tone: "note",
       headline: `NOAA model: ${fmtPct(m.pda.here)} chance toxin in the water exceeds its threshold here${stale ? ` (${stale})` : ""}`,
-      detail: `A probability for this 3 km cell${m.valid ? ` on ${x.fmt(m.valid)}` : ""}, not a measurement.${stale ? " NOAA has published no newer run that Neritic could read." : ""} No shore sample within ${EVIDENCE_RADIUS_KM} km in the last ${RECENT_DAYS} days.`,
+      detail: `A probability for this 3 km cell${m.valid ? ` on ${x.fmt(m.valid)}` : ""}, not a measurement.${stale ? " NOAA has published no newer run." : ""} No shore sample within ${EVIDENCE_RADIUS_KM} km in the last ${RECENT_DAYS} days.`,
       focus: "model",
       aged: !!stale,
     };
+  const c = x.hab?.nearest;
   return {
     id: "hab",
     kind: "gap",
     tone: "gap",
     headline: `No recent HAB sample within ${EVIDENCE_RADIUS_KM} km`,
-    detail: `${modelLine ? `${modelLine.charAt(0).toUpperCase()}${modelLine.slice(1)}. ` : ""}No sample is not a clean result.`,
+    detail: `${c ? `The nearest station, ${c.station.name} (${km(c.km)} km), last reported ${ageWords(c.ageDays)}. ` : ""}${modelLine ? `${modelLine.charAt(0).toUpperCase()}${modelLine.slice(1)}. ` : ""}No sample is not a clean result.`,
     focus: m?.pda && m.pda.n > 0 ? "model" : null,
   };
 }
 
-/** "stale run, issued Oct 12, 2 days ago": the same state the map and the Science tab show. */
+/**
+ * "run of Oct 12, 2 days old" or "out-of-date run of Oct 5, 9 days old": the same state the map and
+ * the Science tab show, in the same voice (lib/charmDays): a run a few days old is NOAA's ordinary
+ * latency and is named by its date, not called a failure.
+ */
 export function modelStaleWords(s: NonNullable<MatterInput["modelStale"]>, fmt: (d: string) => string): string {
-  const age = s.ageDays === 1 ? "1 day ago" : `${s.ageDays} days ago`;
-  return `${s.state === "stale" ? "stale" : "old"} run${s.issued ? `, issued ${fmt(s.issued)}` : ""}, ${age}`;
+  const age = s.ageDays === 1 ? "1 day old" : `${s.ageDays} days old`;
+  const of = s.issued ? `run of ${fmt(s.issued)}` : "run";
+  return `${s.state === "historical" ? "out-of-date " : ""}${of}, ${age}`;
 }
 
 /** The trip day's tides, low tides first for shellfish harvest. */

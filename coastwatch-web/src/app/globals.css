@@ -325,3 +325,8 @@ body {
     animation: none !important;
   }
 }
+
+/* an outlined, hatched fill for a model value that is not the waters' own (offshore cells' median) */
+.cw-hatch-model {
+  background-image: repeating-linear-gradient(135deg, color-mix(in srgb, var(--cw-forecast) 55%, transparent) 0 2px, transparent 2px 5px);
+}

@@ -65,8 +65,11 @@ test.describe("information hierarchy and labelling", () => {
   test("lead buttons show real valid dates and select the matching layer", async ({ page }) => {
     await open(page, OK);
     await expect(page.getByTestId("lead-0")).toContainText("Oct 7");
-    await expect(page.getByTestId("lead-0")).toContainText("nowcast");
+    // one vocabulary per row: every chip says its date and distance from today; "nowcast" is in the run line
+    await expect(page.getByTestId("lead-0")).toContainText("yesterday");
+    await expect(page.getByTestId("lead-0")).not.toContainText("nowcast");
     await expect(page.getByTestId("lead-1")).toContainText("today");
+    await expect(page.getByTestId("lead-1")).toHaveAttribute("aria-checked", "true"); // opens on today, not on yesterday's nowcast
     await expect(page.getByTestId("lead-3")).toContainText("Oct 10");
     await expect(page.getByTestId("lead-4")).toHaveCount(0); // C-HARM issues nowcast + 3 days only
     await page.getByTestId("lead-3").click();
@@ -98,9 +101,14 @@ test.describe("freshness", () => {
     const panel = page.getByTestId("forecast-panel");
     await expect(panel.getByTestId("freshness").first()).toHaveAttribute("data-state", "stale");
     await expect(panel.getByTestId("stale-note")).toBeVisible();
+    // ordinary latency is said plainly (NOAA often skips a day), not in the colour of a failure
+    await expect(panel.getByTestId("stale-note")).toHaveAttribute("data-tone", "caution");
+    await expect(panel.getByTestId("stale-note")).toContainText("No newer run since Oct 8 (4 days ago)");
     await openDockDetails(page);
     await expect(panel.getByTestId("run-line")).toContainText("Oct 8, 2026");
     await expect(page.getByTestId("lead-1")).toContainText("4 days ago");
+    // a run that stops before today opens on its last day, with the note above explaining why
+    await expect(page.getByTestId("lead-3")).toHaveAttribute("aria-checked", "true");
   });
 
   test("two weeks later: historical, explicitly not current", async ({ page }) => {
@@ -115,6 +123,7 @@ test.describe("freshness", () => {
     await expect(page.getByTestId("source-failure-banner")).toContainText("Latest update failed");
     const panel = page.getByTestId("forecast-panel");
     await expect(panel.getByTestId("update-failed")).toBeVisible();
+    await expect(panel.getByTestId("update-failed")).toHaveAttribute("data-tone", "problem");
     await openDockDetails(page);
     await expect(panel.getByTestId("run-line")).toContainText("Issued Thu, Oct 8, 2026");
     await expect(page.getByTestId("source-health")).toHaveAttribute("data-state", /stale|historical/);

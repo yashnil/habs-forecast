@@ -1,6 +1,6 @@
 import type { ForecastRun, LayerArtifact } from "@/generated/schema";
 import { currentsStale, hoursAgo } from "@/lib/currents";
-import { formatDate, formatDateTimePT } from "@/lib/time";
+import { formatDate, formatDateTimePT, relativeDay } from "@/lib/time";
 
 export type Stamp = { kind: "observation" | "model" | "gap"; text: string; testid: string };
 const short = (d: string) => formatDate(d).replace(/^\w+, /, ""); // "Oct 8"
@@ -67,10 +67,13 @@ export function stampLines(p: {
   const out: Stamp[] = [];
   if (p.group === "forecast" && p.forecast?.time.valid_date) {
     const lead = p.forecast.time.lead_days ?? 0;
+    // the day, how far from today it is, and which run it belongs to: the nowcast's date precedes
+    // the run's, so the stamp says both rather than leaving "nowcast" beside "yesterday"
+    const rel = p.now ? ` (${relativeDay(p.forecast.time.valid_date, p.now)})` : "";
     out.push({
       kind: "model",
       testid: "stamp-forecast",
-      text: `C-HARM ${lead === 0 ? "nowcast" : "forecast"} for ${formatDate(p.forecast.time.valid_date)}${p.run ? ` · issued ${short(p.run.issued_date)}` : ""}`,
+      text: `C-HARM ${lead === 0 ? "nowcast" : "forecast"} for ${formatDate(p.forecast.time.valid_date)}${rel}${p.run ? ` · issued ${short(p.run.issued_date)}` : ""}`,
     });
   }
   const sat = p.satellite;

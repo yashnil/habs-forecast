@@ -17,7 +17,8 @@ import {
   type CharmVariable,
   type SatProduct,
 } from "@/lib/layers";
-import { formatDate, formatDateTimePT, relativeDay } from "@/lib/time";
+import { formatDate, formatDateTimePT } from "@/lib/time";
+import { charmDays, roleWords, runNotes } from "@/lib/charmDays";
 import { FreshnessBadge, ProductClassBadge } from "@/components/ui/Badges";
 import { AgeLegend, ChlorophyllLegend, ProbabilityLegend, SensorLegend } from "@/components/ui/ProbabilityLegend";
 import { multiSensorMembers, ratioPhrase } from "@/lib/multisensor";
@@ -281,47 +282,39 @@ function ForecastSection(p: Props) {
           </select>
         </label>
         <div role="radiogroup" aria-label="Forecast day" className="grid min-w-[280px] flex-[2] grid-cols-4 gap-1">
-          {CHARM_LEADS.map((l) => {
-            const lyr = charmLayer(p.manifest, p.variable, l);
-            const active = p.lead === l;
+          {/* one vocabulary per row: the date and its distance from today; nowcast/forecast is said in the run line */}
+          {charmDays(
+            CHARM_LEADS.map((l) => charmLayer(p.manifest, p.variable, l)),
+            p.now,
+          ).map((d) => {
+            const active = p.lead === d.lead;
             return (
               <button
-                key={l}
+                key={d.lead}
                 type="button"
                 role="radio"
                 aria-checked={active}
-                disabled={!lyr}
-                data-testid={`lead-${l}`}
-                onClick={() => p.onLead(l)}
-                title={!lyr ? "Not issued in this run" : l === 0 ? "Nowcast" : `Forecast ${leadLabel(l)}`}
+                disabled={!d.issued}
+                data-testid={`lead-${d.lead}`}
+                onClick={() => p.onLead(d.lead)}
+                title={!d.issued ? "Not issued in this run" : `${d.role === "nowcast" ? "Nowcast" : "Forecast"} for ${d.date ? formatDate(d.date) : ""}`}
                 className={`rounded-lg border px-1.5 py-1 text-left transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${active ? "border-navy-900 bg-navy-900 text-white" : "border-hairline hover:border-hairline-strong"}`}
               >
-                <span className="block text-[13px] font-semibold leading-tight tabular">{lyr?.time.valid_date ? formatDate(lyr.time.valid_date).replace(/^\w+, /, "") : "—"}</span>
-                <span className={`block truncate text-[13px] leading-tight ${active ? "text-on-navy-2" : "text-ink-3"}`}>
-                  {!lyr ? "not issued" : l === 0 ? "nowcast" : p.now && lyr.time.valid_date ? relativeDay(lyr.time.valid_date, p.now) : leadLabel(l)}
-                </span>
+                <span className="block text-[13px] font-semibold leading-tight tabular">{d.short ?? "—"}</span>
+                <span className={`block truncate text-[13px] leading-tight ${active ? "text-on-navy-2" : "text-ink-3"}`}>{!d.issued ? "not issued" : (d.relative ?? roleWords(d.lead))}</span>
               </button>
             );
           })}
         </div>
       </div>
       {!sheet && legend}
-      {/* freshness problems are never hidden behind "Details": one line, beside the badge */}
-      {(fresh?.state === "stale" || fresh?.state === "historical" || p.charmStatus?.outcome === "failed") && (
-        <p className={`text-[13px] leading-snug ${fresh?.state === "historical" || p.charmStatus?.outcome === "failed" ? "text-serious" : "text-warning"}`} data-testid="forecast-warning">
-          {fresh?.state === "stale" && <span data-testid="stale-note">No newer C-HARM run has been published; this is the newest, with its dates as issued. </span>}
-          {fresh?.state === "historical" && (
-            <span data-testid="historical-note" className="font-medium">
-              Out of date: shown for reference only; it does not describe current conditions.{" "}
-            </span>
-          )}
-          {p.charmStatus?.outcome === "failed" && (
-            <span data-testid="update-failed">
-              Neritic could not reach NOAA at {formatDateTimePT(p.charmStatus.last_attempt_at)}, so a newer run may exist. This is the last run received, with its own dates.
-            </span>
-          )}
+      {/* the run's state is never hidden behind "Details": one line per note, in a voice that matches it
+          (ordinary latency is said plainly; out of date and failed updates are problems) */}
+      {runNotes(fresh, p.charmStatus).map((n) => (
+        <p key={n.testid} className={`text-[13px] leading-snug ${n.tone === "problem" ? "text-serious" : "text-ink-2"}`} data-testid={n.testid} data-tone={n.tone}>
+          <span className="font-medium">{n.head}.</span> {n.text}
         </p>
-      )}
+      ))}
       <MetaRow fresh={fresh} basis={anyLayer.freshness.basis} unconfirmed={p.charmStatus?.outcome === "failed"}>
         <ProductClassBadge pc="official_forecast" />
         <span>C-HARM v3.1 · NOAA</span>
@@ -338,9 +331,10 @@ function ForecastSection(p: Props) {
           {layer?.time.valid_date && (
             <span className="text-ink-3">
               {" "}
-              · showing {formatDate(layer.time.valid_date)}, {p.lead === 0 ? "nowcast" : `forecast ${leadLabel(p.lead)}`}
+              · showing {formatDate(layer.time.valid_date)}, {roleWords(p.lead)}
             </span>
           )}
+          <span className="text-ink-3"> · the nowcast is NOAA&apos;s analysis of the day before the run; the forecasts are the three days after it</span>
           {p.run.leads_missing.length > 0 && <span className="text-ink-3"> · {p.run.leads_missing.map(leadLabel).join(", ")} not issued in this run</span>}
           <span className="text-ink-3"> · no forecast exists beyond day 3</span>
         </p>

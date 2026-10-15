@@ -13,7 +13,8 @@ const ext = { target: "_blank", rel: "noopener noreferrer" } as const;
  * action sits on an amber rule; a gap is grey and says what is not known, never a reassurance.
  * Choosing an item shows where it comes from on the map.
  */
-export function WhatMatters({ items, checked, onFocus, focus, sourceNote }: { items: Matter[]; checked: string | null; onFocus: (f: Focus) => void; focus: Focus; sourceNote: React.ReactNode }) {
+/** `checked`: the day of Neritic's last check of the agency pages; said once, in `sourceNote`, never under each item. */
+export function WhatMatters({ items, onFocus, focus, sourceNote }: { items: Matter[]; checked?: string | null; onFocus: (f: Focus) => void; focus: Focus; sourceNote: React.ReactNode }) {
   return (
     <section aria-labelledby="matters-h" data-testid="what-matters">
       <h2 id="matters-h" className="font-display text-[22px] font-medium text-ink sm:text-[24px]">
@@ -71,7 +72,6 @@ export function WhatMatters({ items, checked, onFocus, focus, sourceNote }: { it
                         {m.source.label} ↗
                       </a>
                     )}
-                    {m.kind === "official" && checked && <span className="text-ink-3">Neritic&apos;s copy, checked {checked}</span>}
                     {m.focus && (
                       <button
                         type="button"

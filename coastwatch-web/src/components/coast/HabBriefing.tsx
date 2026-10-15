@@ -5,7 +5,8 @@ import { motion } from "motion/react";
 import type { Manifest } from "@/generated/schema";
 import type { PortIntel } from "@/generated/port_intel";
 import type { StationLite } from "@/lib/data";
-import { CHARM_LEADS, artifactUrl, charmLayer, leadLabel } from "@/lib/layers";
+import { CHARM_LEADS, artifactUrl, charmLayer } from "@/lib/layers";
+import { charmDays, roleWords, runNotes } from "@/lib/charmDays";
 import { loadGrid } from "@/lib/grid";
 import { CHL_PLACE_RADIUS_KM, chlStaleWord, fmtChlValue, readPlaceChl, type ChlAside } from "@/lib/chlNear";
 import { CHL_NEAR_COPY } from "@/content/copy";
@@ -139,32 +140,50 @@ function Timeline({ series, now, color = "var(--cw-chl)", testid }: { series: [s
   );
 }
 
-/** Four days of C-HARM for the nearby cells: the median as a bar, the range as a whisker. */
-function OutlookBars({ days, pick, active }: { days: OutlookDay[]; pick: "pda" | "pn"; active: number }) {
+/**
+ * Four days of C-HARM for the waters: the waters' own cell as a solid bar when it has a value;
+ * otherwise the offshore cells' median as an outlined, hatched bar with the range as a whisker and
+ * the word "offshore" under it, so a probability that is not for these waters is never drawn as
+ * if it were. Days are named by their date and distance from today (lib/charmDays).
+ */
+function OutlookBars({ days, pick, active, now }: { days: OutlookDay[]; pick: "pda" | "pn"; active: number; now: Date | null }) {
+  const chips = charmDays(
+    [0, 1, 2, 3].map((l) => {
+      const d = days.find((x) => x.lead === l);
+      return d?.valid ? { time: { valid_date: d.valid } } : null;
+    }),
+    now,
+  );
   return (
     <div className="mt-2 grid grid-cols-4 gap-2" data-testid={`outlook-${pick}`}>
       {days.map((d) => {
         const nb = d[pick];
+        const own = nb?.here != null;
         const v = nb?.here ?? nb?.median ?? null;
+        const chip = chips[d.lead];
         return (
-          <div key={d.lead} className={`rounded-lg px-1.5 pb-1.5 pt-1 ${d.lead === active ? "bg-model-bg" : ""}`}>
+          <div key={d.lead} className={`rounded-lg px-1.5 pb-1.5 pt-1 ${d.lead === active ? "bg-model-bg" : ""}`} data-testid={`outlook-${pick}-${d.lead}`} data-basis={own ? "own-cell" : v != null ? "offshore-median" : "none"}>
             <div className="relative h-14">
-              {nb && nb.min != null && nb.max != null && nb.here == null && (
+              {nb && nb.min != null && nb.max != null && !own && (
                 <span aria-hidden className="absolute left-1/2 w-px -translate-x-1/2 bg-model/50" style={{ bottom: `${nb.min * 100}%`, height: `${(nb.max - nb.min) * 100}%` }} />
               )}
               {v != null && (
                 <motion.span
                   aria-hidden
-                  className="absolute bottom-0 left-1/2 w-3.5 -translate-x-1/2 rounded-t-sm bg-model"
+                  className={`absolute bottom-0 left-1/2 w-3.5 -translate-x-1/2 rounded-t-sm ${own ? "bg-model" : "cw-hatch-model border border-model/70"}`}
                   initial={{ height: 0 }}
                   animate={{ height: `${v * 100}%` }}
                   transition={{ type: "spring", stiffness: 160, damping: 22, delay: d.lead * 0.06 }}
                 />
               )}
             </div>
-            <p className="mt-1 text-center text-[13px] font-semibold tabular text-ink">{fmtPct(v)}</p>
-            <p className="text-center text-[12px] leading-tight text-ink-3">{d.valid ? formatDate(d.valid).replace(/^\w+, /, "") : "—"}</p>
-            <p className="text-center text-[12px] leading-tight text-ink-3">{leadLabel(d.lead).replace(/^\+/, "+")}</p>
+            <p className={`mt-1 text-center text-[13px] tabular ${own ? "font-semibold text-ink" : "text-ink-2"}`}>
+              {v != null && !own ? "~" : ""}
+              {fmtPct(v)}
+            </p>
+            <p className="text-center text-[12px] leading-tight text-ink-3">{own ? "own cell" : v != null ? "offshore" : "no value"}</p>
+            <p className="text-center text-[12px] leading-tight text-ink-3">{chip.short ?? "—"}</p>
+            <p className="text-center text-[12px] leading-tight text-ink-3">{chip.relative ?? roleWords(d.lead)}</p>
           </div>
         );
       })}
@@ -437,11 +456,12 @@ export function HabBriefing({
               <Mark kind="model" />
               NOAA C-HARM model · a probability, not a measurement
             </p>
-            {modelStale && (
-              <p className="basis-full text-[14px] font-medium text-[#9b2c2c]" data-testid="ev-model-stale">
-                {modelStale.state === "stale" ? "Stale" : "Historical"}: the newest run Neritic has was issued {modelStale.issued ? formatDate(modelStale.issued) : "—"}, {modelStale.ageDays === 1 ? "1 day" : `${modelStale.ageDays} days`} ago. Its later days are older forecasts, not today&apos;s.
-              </p>
-            )}
+            {modelStale &&
+              runNotes({ state: modelStale.state, basisDate: modelStale.issued, ageDays: modelStale.ageDays }, null).map((n) => (
+                <p key={n.testid} className={`basis-full text-[14px] ${n.tone === "problem" ? "font-medium text-serious" : "text-ink-2"}`} data-testid="ev-model-stale" data-tone={n.tone}>
+                  <span className="font-medium text-ink">{n.head}.</span> {n.text}
+                </p>
+              ))}
             <div role="radiogroup" aria-label="Model quantity" className="flex rounded-xl bg-surface-3 p-0.5 text-[13px]">
               {(
                 [
@@ -480,7 +500,7 @@ export function HabBriefing({
                 )}
               </p>
               <p className="text-[13px] text-ink-3">{(pick === "pda" ? thrPda : thrPn) ?? ""}</p>
-              <OutlookBars days={days} pick={pick} active={lead} />
+              <OutlookBars days={days} pick={pick} active={lead} now={now} />
               {hist && hist.length > 1 && (
                 <div className="mt-3">
                   <p className="text-[13px] text-ink-3">Nowcast median for the cells within {port?.charm?.radius_km ?? NEIGHBOURHOOD_KM} km, last {hist.length} runs</p>

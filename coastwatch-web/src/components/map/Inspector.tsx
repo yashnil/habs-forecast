@@ -9,7 +9,7 @@ import { ACTION_LABEL, officialAt, type Verification } from "@/lib/official";
 import { VerificationBadge } from "@/components/official/Official";
 import { loadGrid, sample, type Sample } from "@/lib/grid";
 import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, leadLabel, type CharmVariable } from "@/lib/layers";
-import { formatDate } from "@/lib/time";
+import { formatDate, relativeDay } from "@/lib/time";
 import { gradientCss } from "@/components/ui/ProbabilityLegend";
 import { LeadStrip, type LeadItem } from "./LeadStrip";
 import { Mark } from "@/components/ui/Mark";
@@ -28,7 +28,10 @@ export function Inspector({
   onClose,
   official,
   verification,
+  now = null,
 }: {
+  /** the clock, for the day chips' "today"/"2 days ago" */
+  now?: Date | null;
   manifest: Manifest;
   baseUrl: string;
   point: InspectPoint;
@@ -100,7 +103,7 @@ export function Inspector({
           </h3>
           {first?.time.valid_date && (
             <p className="mt-0.5 text-[13px] text-ink-3">
-              C-HARM {leadLabel(lead).toLowerCase()} · for {formatDate(first.time.valid_date, { year: true })}
+              C-HARM {leadLabel(lead).toLowerCase()} · for {formatDate(first.time.valid_date, { year: true })}{now ? ` (${relativeDay(first.time.valid_date, now)})` : ""}
             </p>
           )}
         </div>
@@ -146,7 +149,7 @@ export function Inspector({
         </div>
         {strip && strip.some((x) => x.issued) ? (
           <>
-            <LeadStrip items={strip} lead={lead} onLead={onLead} palette={palette} label="Forecast day at this point" testidPrefix="inspect-lead" />
+            <LeadStrip items={strip} lead={lead} onLead={onLead} palette={palette} label="Forecast day at this point" testidPrefix="inspect-lead" now={now} />
             {strip.every((x) => x.value == null) && <p className="text-[13px] text-ink-3">No forecast value in this cell on any day: land, or a nearshore cell C-HARM does not cover. The other quantities below may show the nearest cell, with its distance.</p>}
           </>
         ) : strip ? (

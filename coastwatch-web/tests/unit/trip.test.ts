@@ -96,8 +96,10 @@ describe("what matters right now", () => {
     const items = whatMatters(input({ hab: { cells: null, toxin: null }, model: { valid: "2026-10-13", pda: nb({ n: 27, median: 0.74, min: 0.6, max: 0.79 }) } }));
     const hab = items.find((x) => x.id === "hab")!;
     expect(hab.kind).toBe("gap");
-    expect(hab.detail).toMatch(/no value at these nearshore waters/i);
-    expect(hab.detail).toMatch(/offshore cells within 15 km: median 74%/);
+    expect(hab.detail).toMatch(/no valid estimate for these nearshore waters/i);
+    // the offshore cells are context: a range, never a single bold value, and never a median for the harbour
+    expect(hab.detail).toMatch(/offshore cells within 15 km read 60%–79% \(context only, not the harbour\)/);
+    expect(`${hab.headline} ${hab.detail}`).not.toMatch(/median/);
     // with the waters' own cell, it says so
     const own = whatMatters(input({ model: { valid: "2026-10-13", pda: nb({ here: 0.31, n: 5, median: 0.3 }) } })).find((x) => x.id === "hab")!;
     expect(own.kind).toBe("model");
@@ -108,23 +110,37 @@ describe("what matters right now", () => {
   it("a stale C-HARM run is said in the briefing, with its issue date and age", () => {
     const modelStale = { state: "stale" as const, issued: "2026-10-12", ageDays: 2 };
     const own = whatMatters(input({ model: { valid: "2026-10-14", pda: nb({ here: 0.31, n: 5, median: 0.3 }) }, modelStale })).find((x) => x.id === "hab")!;
-    expect(own.headline).toMatch(/31%.*\(stale run, issued .*, 2 days ago\)/);
+    // ordinary latency is named by the run's date and age, never called stale or old
+    expect(own.headline).toMatch(/31%.*\(run of 2026-10-12, 2 days old\)/);
+    expect(own.headline).not.toMatch(/stale|old run/);
     expect(own.detail).toMatch(/no newer run/i);
     expect(own.aged).toBe(true);
     const offshore = whatMatters(input({ hab: { cells: null, toxin: null }, model: { valid: "2026-10-14", pda: nb({ n: 27, median: 0.74, min: 0.6, max: 0.79 }) }, modelStale })).find((x) => x.id === "hab")!;
-    expect(offshore.detail).toMatch(/stale run, issued/);
+    expect(offshore.detail).toMatch(/run of 2026-10-12, 2 days old/);
+    // past the policy window, the run is out of date and says so
+    const historical = whatMatters(input({ model: { valid: "2026-10-14", pda: nb({ here: 0.31, n: 5, median: 0.3 }) }, modelStale: { state: "historical", issued: "2026-10-02", ageDays: 12 } })).find((x) => x.id === "hab")!;
+    expect(historical.headline).toMatch(/out-of-date run of 2026-10-02, 12 days old/);
     // current runs say nothing extra
     const fresh = whatMatters(input({ model: { valid: "2026-10-14", pda: nb({ here: 0.31, n: 5, median: 0.3 }) } })).find((x) => x.id === "hab")!;
     expect(`${fresh.headline} ${fresh.detail}`).not.toMatch(/stale/);
   });
 
-  it("a recent nearby sample leads the HAB line with station, distance and age, and says seawater is not seafood", () => {
+  it("a recent nearby sample leads the HAB line with station and distance before the value, and says seawater is not seafood", () => {
     const items = whatMatters(input({ hab: { cells: ev({}), toxin: null } }));
     const hab = items.find((x) => x.id === "hab")!;
     expect(hab.kind).toBe("measured");
-    expect(hab.headline).toBe("Pseudo-nitzschia 4,900 cells/L at Santa Cruz Wharf, 13 days ago");
-    expect(hab.detail).toMatch(/^41 km NNW of these waters/);
+    // distance is in the headline, not hidden under it: a reader at Monterey sees "41 km NNW" first
+    expect(hab.headline).toBe("Santa Cruz Wharf, 41 km NNW: Pseudo-nitzschia 4,900 cells/L, 2026-09-30");
+    expect(hab.detail).toMatch(/^13 days ago\./);
     expect(hab.detail).toMatch(/Seawater, not seafood/);
+    // a closer station that has gone quiet is named with its last date, so the reader knows why it is not the evidence
+    const quiet = { station: { station_id: "mw", name: "Monterey Wharf", lat: 36.605, lon: -121.89, status: "", source_url: "", latest: [] }, km: 0.6, date: "2025-08-12", ageDays: 428 };
+    const withCloser = whatMatters(input({ hab: { cells: ev({}), toxin: null, nearest: quiet }, model: { valid: "2026-10-13", pda: nb({ n: 27, median: 0.77, min: 0.73, max: 0.79 }) } })).find((x) => x.id === "hab")!;
+    expect(withCloser.detail).toMatch(/Monterey Wharf, 0\.6 km, is closer but its last sample is from 2025-08-12 \(14 months ago\)/);
+    expect(withCloser.detail).toMatch(/C-HARM has no valid estimate for these nearshore waters/);
+    // the evidence station itself is never named as "closer"
+    const same = whatMatters(input({ hab: { cells: ev({}), toxin: null, nearest: { ...quiet, station: ev({}).station, km: 41 } } })).find((x) => x.id === "hab")!;
+    expect(same.detail).not.toMatch(/is closer/);
     // a sample far away or old never leads as "near these waters"
     const far = whatMatters(input({ hab: { cells: ev({ km: 394, near: false }), toxin: null } })).find((x) => x.id === "hab")!;
     expect(far.kind).toBe("gap");

@@ -26,6 +26,8 @@ import { openingLayer, type Opening } from "@/lib/opening";
 import { cellEdges, loadGrid } from "@/lib/grid";
 import type { StationLite } from "@/lib/data";
 import { useNow } from "@/lib/useNow";
+import { charmDays, defaultLead } from "@/lib/charmDays";
+import { pacificToday } from "@/lib/time";
 import { PortPanel } from "@/components/port/PortPanel";
 import { Inspector, type InspectPoint } from "@/components/map/Inspector";
 import { MobileSheet, type SnapId, type SnapPoint } from "@/components/MobileSheet";
@@ -120,7 +122,12 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   const initialQ = useMemo(() => new URLSearchParams(initialParams), [initialParams]);
   const initialRegion = regions.find((r) => r.id === initialQ.get("region")) ?? regions.find((r) => r.id === DEFAULT_REGION) ?? STATEWIDE;
 
-  const firstLead = run?.leads_available.includes(1) ? 1 : (run?.leads_available[0] ?? 0);
+  // the day to open on: the issued day valid today (Pacific), else the first after today, else the
+  // run's last day (lib/charmDays): a fresh run opens on today, never on yesterday's nowcast
+  const firstLead = useMemo(() => {
+    const days = charmDays(CHARM_LEADS.map((l) => charmLayer(manifest, "particulate_domoic", l) ?? charmLayer(manifest, "pseudo_nitzschia", l)), now);
+    return now ? defaultLead(days, pacificToday(now)) : (run?.leads_available.includes(1) ? 1 : (run?.leads_available[0] ?? 0));
+  }, [manifest, now, run]);
   const initialLayer = parseLayer(initialQ.get("layer"));
   // The opening layer (lib/opening): a layer named in the link wins; otherwise it is chosen
   // once, in the browser, from the data's freshness and coverage. Until then nothing is drawn.
@@ -201,7 +208,17 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     if (v) setShowAgeRaw(false);
   };
   const [variable, setVariable] = useState<CharmVariable>("particulate_domoic");
-  const [lead, setLead] = useState<number>(firstLead);
+  const [lead, setLeadRaw] = useState<number>(firstLead);
+  // the clock arrives after the first render: until a link or the reader chooses a day, the map
+  // follows the default for today (never stays on yesterday's nowcast because the clock was late)
+  const leadChosen = useRef(false);
+  const setLead = useCallback((l: number) => {
+    leadChosen.current = true;
+    setLeadRaw(l);
+  }, []);
+  useEffect(() => {
+    if (!leadChosen.current && !initialQ.has("lead")) setLeadRaw(firstLead);
+  }, [firstLead, initialQ]);
   const [region, setRegion] = useState<string>(initialRegion.id);
   const [port, setPort] = useState<number | null>(null);
   const [inspect, setInspect] = useState<InspectPoint | null>(null);
@@ -543,7 +560,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       )
     ) : inspect ? (
       <div className="space-y-5">
-        <Inspector manifest={manifest} baseUrl={baseUrl} point={inspect} lead={lead} onLead={setLead} variable={variable} onClose={() => setInspect(null)} official={official} verification={verification} />
+        <Inspector manifest={manifest} baseUrl={baseUrl} point={inspect} lead={lead} onLead={setLead} variable={variable} onClose={() => setInspect(null)} official={official} verification={verification} now={now} />
         {near(inspect.lat, inspect.lon, "this point")}
       </div>
     ) : null;

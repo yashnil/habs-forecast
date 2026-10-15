@@ -96,6 +96,7 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
                 label="Forecast day near this port"
                 testidPrefix="port-lead"
                 valueNote="median"
+                now={now}
               />
             </div>
             {ch.cells_in_radius === 0 ? (

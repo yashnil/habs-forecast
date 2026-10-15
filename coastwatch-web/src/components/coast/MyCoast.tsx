@@ -765,7 +765,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
         {landing}
         {place && modeRead && (
           <HabBriefing
-            modelStale={modelStale}
+            // Research mode renders the full model section below, which carries the run's note: said once
+            modelStale={null}
             manifest={manifest}
             placeName={place.name}
             stations={stations}

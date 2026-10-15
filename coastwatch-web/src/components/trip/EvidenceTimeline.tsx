@@ -169,8 +169,11 @@ export function EvidenceTimeline({
                       width={bw}
                       height={bh}
                       rx={1.5}
-                      fill="var(--cw-forecast)"
-                      opacity={d.pda?.here != null ? 1 : 0.55}
+                      fill={d.pda?.here != null ? "var(--cw-forecast)" : "url(#ev-hatch-model)"}
+                      stroke={d.pda?.here != null ? undefined : "var(--cw-forecast)"}
+                      strokeWidth={d.pda?.here != null ? 0 : 1}
+                      strokeDasharray={d.pda?.here != null ? undefined : "2 2"}
+                      data-basis={d.pda?.here != null ? "own-cell" : "offshore-median"}
                       style={{
                         transformBox: "fill-box",
                         transformOrigin: "50% 100%",
@@ -190,6 +193,9 @@ export function EvidenceTimeline({
           );
         })}
         <defs>
+          <pattern id="ev-hatch-model" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="4" stroke="var(--cw-forecast)" strokeWidth="1.2" strokeOpacity="0.6" />
+          </pattern>
           <pattern id="ev-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <line x1="0" y1="0" x2="0" y2="6" stroke="var(--cw-gap-hatch)" strokeWidth="2" />
           </pattern>
@@ -277,7 +283,7 @@ function modelLatest(days: OutlookDay[], tripDate: string | null): string {
   const d = days.find((x) => x.valid === tripDate);
   if (!d) return `Does not reach ${tripDate ? shortDate(tripDate) : "that day"} (last ${shortDate(days.at(-1)!.valid!)})`;
   if (d.pda?.here != null) return `${fmtPct(d.pda.here)} chance above threshold, ${shortDate(d.valid!)}`;
-  if (d.pda && d.pda.n > 0) return `No value here · nearby offshore median ${fmtPct(d.pda.median)}`;
+  if (d.pda && d.pda.n > 0) return `No value here · offshore cells ${fmtPct(d.pda.min)}–${fmtPct(d.pda.max)}, context only`;
   return `No cell within ${NEIGHBOURHOOD_KM} km`;
 }
 
