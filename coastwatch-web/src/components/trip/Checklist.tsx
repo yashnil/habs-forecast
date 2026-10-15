@@ -148,7 +148,7 @@ export function Checklist({ shown, more, storageKey, sub }: { shown: Step[]; mor
                           aria-expanded={why === s.id}
                           className="inline-flex min-h-[44px] items-center text-[13px] font-medium text-ink-3 hover:text-ink"
                         >
-                          What Neritic Signal can&apos;t settle
+                          What Neritic can&apos;t settle
                         </button>
                       )}
                     </div>

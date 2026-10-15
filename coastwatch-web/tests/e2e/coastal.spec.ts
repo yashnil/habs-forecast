@@ -70,7 +70,7 @@ test.describe("Coastal mode", () => {
     expect(await checks.count()).toBeGreaterThanOrEqual(3);
     for (const c of await checks.all()) expect(await c.locator('a[href^="https://"], a[href^="tel:"], a[href^="/bloom?"], a[href^="/fisheries?"]').count()).toBeGreaterThanOrEqual(1);
     await expect(page.getByTestId("check-read-notices")).toContainText("Read the 2 notices that cover these waters");
-    await page.getByTestId("check-read-notices").getByRole("button", { name: "What Neritic Signal can't settle" }).click();
+    await page.getByTestId("check-read-notices").getByRole("button", { name: "What Neritic can't settle" }).click();
     await expect(page.getByTestId("check-read-notices")).toContainText("no person has reviewed the association");
     // a tick is kept for this trip on this device, and means only that the source was opened
     await page.getByTestId("check-read-notices-box").click();

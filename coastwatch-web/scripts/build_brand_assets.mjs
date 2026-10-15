@@ -1,4 +1,4 @@
-// Brand icons drawn from the Neritic Signal mark (src/components/brand/BrandMark.tsx): the
+// Brand icons drawn from the Neritic mark (src/components/brand/BrandMark.tsx): the
 // favicon (16/32/48 px PNGs in one .ico), the PWA icons and the Apple touch icon. Rerun after
 // changing the mark: node scripts/build_brand_assets.mjs
 import { chromium } from "@playwright/test";
@@ -10,11 +10,11 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 // the same drawing as BrandMark (32 x 32 viewBox); `pad`: safe-zone inset for maskable icons
 export const markSvg = (pad = 0) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-pad} ${-pad} ${32 + 2 * pad} ${32 + 2 * pad}">
 ${pad ? `<rect x="${-pad}" y="${-pad}" width="${32 + 2 * pad}" height="${32 + 2 * pad}" fill="#10263e"/>` : ""}<rect width="32" height="32" rx="${pad ? 0 : 8}" fill="#10263e"/>
-<path d="M5 10.5c2.6-1.7 5.2-1.7 7.8 0s5.4 1.7 8.2 0 4.6-1.6 6 -.6" fill="none" stroke="#6cc6dc" stroke-width="2" stroke-linecap="round"/>
-<path d="M4.5 23.5h11.2c1.6 0 2.6.5 3.5 1.6l2.6 3.2" fill="none" stroke="#e8eef5" stroke-opacity=".6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="10.4" cy="18" r="2" fill="#f6bb5c"/>
-<path d="M14 15.6a4 4 0 0 1 0 4.8" fill="none" stroke="#f6bb5c" stroke-opacity=".75" stroke-width="1.6" stroke-linecap="round"/>
-<path d="M16.7 14.1a7 7 0 0 1 0 7.8" fill="none" stroke="#f6bb5c" stroke-opacity=".4" stroke-width="1.6" stroke-linecap="round"/>
+<defs><linearGradient id="lit" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6cc6dc" stop-opacity=".42"/><stop offset="1" stop-color="#6cc6dc" stop-opacity=".04"/></linearGradient></defs>
+<path d="M6 10H19.5V21H6Z" fill="url(#lit)"/>
+<path d="M6 10H26" stroke="#6cc6dc" stroke-width="2" stroke-linecap="round"/>
+<path d="M6 21H19.5L24.5 26.5" fill="none" stroke="#e8eef5" stroke-opacity=".78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="12.75" cy="15.5" r="2.2" fill="#f6bb5c"/>
 </svg>`;
 
 const browser = await chromium.launch();

@@ -141,7 +141,7 @@ export function associationsAt(
     if (a.type === "county" || a.type === "named_area") {
       const outlines = outlinesFor(ds, r.id);
       if (!outlines.length) {
-        out.push({ record: r, tier: "unresolved", basis: "Neritic Signal has no outline for this notice's area, so whether it applies here cannot be resolved.", caveats: [], distanceKm: null, review });
+        out.push({ record: r, tier: "unresolved", basis: "Neritic has no outline for this notice's area, so whether it applies here cannot be resolved.", caveats: [], distanceKm: null, review });
         continue;
       }
       const d = Math.min(...outlines.map((f) => distanceToPolygonKm(lon, lat, f.geometry)));
@@ -171,9 +171,9 @@ export function associationsAt(
       tier: "unresolved",
       basis:
         d === 0
-          ? `The notice also covers the ${part.part} ("${part.quote}"); these waters are inside Neritic Signal's approximate outline of that area.`
+          ? `The notice also covers the ${part.part} ("${part.quote}"); these waters are inside Neritic's approximate outline of that area.`
           : `The notice also covers the ${part.part} ("${part.quote}"), about ${fmtKm(d)} km away. It gives no boundary for those waters, so whether they reach here is not stated.`,
-      caveats: [`Neritic Signal's outline for the ${part.part} is borrowed from another CDPH notice and is approximate for this one.`],
+      caveats: [`Neritic's outline for the ${part.part} is borrowed from another CDPH notice and is approximate for this one.`],
       distanceKm: d === 0 ? null : d,
       review: reviewOf(location, r.id, model.reviews),
     };

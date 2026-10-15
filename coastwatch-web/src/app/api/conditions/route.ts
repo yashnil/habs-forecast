@@ -33,7 +33,7 @@ import { headlineAlerts, parseCoastalText, zoneNear, zonePageUrl, zoneTextUrl } 
  */
 export const dynamic = "force-dynamic";
 
-const UA = "Neritic Signal (formerly CoastWatch; California coastal information research project; https://github.com/yashnil/habs-forecast)";
+const UA = "Neritic (formerly CoastWatch; California coastal information research project; https://github.com/yashnil/habs-forecast)";
 const NWS = "https://api.weather.gov";
 
 /** `head`: fetch only the first bytes (NDBC files list the newest rows first; ~8 KB ≈ the last 16 h). */

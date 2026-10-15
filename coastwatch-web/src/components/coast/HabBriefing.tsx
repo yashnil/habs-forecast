@@ -439,7 +439,7 @@ export function HabBriefing({
             </p>
             {modelStale && (
               <p className="basis-full text-[14px] font-medium text-[#9b2c2c]" data-testid="ev-model-stale">
-                {modelStale.state === "stale" ? "Stale" : "Historical"}: the newest run Neritic Signal has was issued {modelStale.issued ? formatDate(modelStale.issued) : "—"}, {modelStale.ageDays === 1 ? "1 day" : `${modelStale.ageDays} days`} ago. Its later days are older forecasts, not today&apos;s.
+                {modelStale.state === "stale" ? "Stale" : "Historical"}: the newest run Neritic has was issued {modelStale.issued ? formatDate(modelStale.issued) : "—"}, {modelStale.ageDays === 1 ? "1 day" : `${modelStale.ageDays} days`} ago. Its later days are older forecasts, not today&apos;s.
               </p>
             )}
             <div role="radiogroup" aria-label="Model quantity" className="flex rounded-xl bg-surface-3 p-0.5 text-[13px]">

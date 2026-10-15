@@ -127,7 +127,7 @@ export function OfficialSection({
         <div className="rounded-2xl border-2 border-dashed border-warning/60 bg-surface px-4 py-4 sm:px-5" data-testid="coast-notices-disputed" role="note">
           <h3 className="text-[13.5px] font-semibold text-warning">Reported lifted by the agency · awaiting review</h3>
           <p className="mt-1 text-[14px] text-ink-2">
-            The agency has published a release that appears to lift {disputed.length === 1 ? "this notice" : "these notices"}. Until a person reviews it, Neritic Signal does not show {disputed.length === 1 ? "it" : "them"} as in effect. Read the release.
+            The agency has published a release that appears to lift {disputed.length === 1 ? "this notice" : "these notices"}. Until a person reviews it, Neritic does not show {disputed.length === 1 ? "it" : "them"} as in effect. Read the release.
           </p>
           <ul className="mt-3">
             {disputed.map((a) => (
@@ -157,7 +157,7 @@ export function OfficialSection({
             </ul>
           ) : (
             <p className="mt-2 text-[15px] text-ink-2" data-testid="coast-notices-geo-empty">
-              None in Neritic Signal&apos;s list{audience !== "all" ? " for this kind of fishing" : ""}. That is not an all-clear: the list may be incomplete, and it has not been verified.
+              None in Neritic&apos;s list{audience !== "all" ? " for this kind of fishing" : ""}. That is not an all-clear: the list may be incomplete, and it has not been verified.
             </p>
           )}
           {geoOther.length > 0 && (
@@ -221,7 +221,7 @@ export function OfficialSection({
       <div className="rounded-2xl border border-hairline bg-surface px-4 py-4 sm:px-5" data-testid="coast-agencies">
         <h3 className="text-[16px] font-semibold text-ink">Check the rules with the agencies</h3>
         <p className="mt-1 text-[14px] text-ink-2" data-testid="coast-agencies-complete">
-          Neritic Signal matches notices to places automatically and may miss one. The agencies&apos; own lists are complete; Neritic Signal&apos;s list has {active} active notice{active === 1 ? "" : "s"} statewide
+          Neritic matches notices to places automatically and may miss one. The agencies&apos; own lists are complete; Neritic&apos;s list has {active} active notice{active === 1 ? "" : "s"} statewide
           {" "}(
           <button type="button" onClick={(e) => reg.openDrawer(e.currentTarget)} className={`${linkCls} font-medium`} data-testid="coast-all-notices">
             see all
@@ -560,7 +560,7 @@ export function ObservedSection({ manifest, baseUrl, place, onSat }: { manifest:
 export function UnknownsSection({ items }: { items: string[] }) {
   return (
     <section aria-labelledby="coast-unknown-h" className="space-y-3" data-testid="coast-unknowns">
-      <SectionHead id="coast-unknown-h" kind="plain" title="What Neritic Signal does not know here" />
+      <SectionHead id="coast-unknown-h" kind="plain" title="What Neritic does not know here" />
       <ul className="list-disc space-y-1.5 pl-5 text-[15px] leading-relaxed text-ink-2">
         {items.map((t) => (
           <li key={t}>{t}</li>

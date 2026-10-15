@@ -46,7 +46,7 @@ function KeptViewInner() {
         </p>
       ) : (
         <article data-testid="kept-article">
-          <p className="text-[14px] text-ink-2">Neritic Signal briefing, kept copy</p>
+          <p className="text-[14px] text-ink-2">Neritic briefing, kept copy</p>
           <h1 className="mt-1 font-display text-[24px] font-medium leading-snug" data-testid="kept-title">
             {keptTitle(k)}
           </h1>
@@ -95,7 +95,7 @@ function KeptViewInner() {
             </section>
           ))}
           <p className="mt-5 text-[13px] text-ink-2">
-            Built from Neritic Signal data generated {stamp(k.snapshot.dataGeneratedAt)}. Neritic Signal is an independent research project, not a government agency.
+            Built from Neritic data generated {stamp(k.snapshot.dataGeneratedAt)}. Neritic is an independent research project, not a government agency.
           </p>
         </article>
       )}

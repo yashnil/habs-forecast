@@ -3421,7 +3421,7 @@
         "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
-        "date_selection": "Rendered by Neritic Signal from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        "date_selection": "Rendered by Neritic from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
         "relative": true,
         "min_zoom": 5,
         "bounds_lnglat": [
@@ -3963,7 +3963,7 @@
         "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
-        "date_selection": "Rendered by Neritic Signal from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        "date_selection": "Rendered by Neritic from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
         "relative": true,
         "min_zoom": 5,
         "bounds_lnglat": [
@@ -4176,7 +4176,7 @@
         "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
-        "date_selection": "Rendered by Neritic Signal from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        "date_selection": "Rendered by Neritic from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
         "relative": true,
         "min_zoom": 5,
         "bounds_lnglat": [
@@ -4725,7 +4725,7 @@
         "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
-        "date_selection": "Rendered by Neritic Signal from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        "date_selection": "Rendered by Neritic from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
         "relative": true,
         "min_zoom": 5,
         "bounds_lnglat": [
@@ -4938,7 +4938,7 @@
         "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
-        "date_selection": "Rendered by Neritic Signal from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        "date_selection": "Rendered by Neritic from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
         "relative": true,
         "min_zoom": 5,
         "bounds_lnglat": [
@@ -5326,7 +5326,7 @@
         "max_native_zoom": 10,
         "legend_url": null,
         "legend_verified": false,
-        "date_selection": "Rendered by Neritic Signal from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
+        "date_selection": "Rendered by Neritic from the published value grid: one source cell per tile pixel (nearest), cells without a value transparent.",
         "relative": true,
         "min_zoom": 5,
         "bounds_lnglat": [
@@ -5854,7 +5854,7 @@
         "max_native_zoom": 11,
         "legend_url": null,
         "legend_verified": false,
-        "date_selection": "Rendered by Neritic Signal: each tile pixel shows one sensor's published value on that sensor's own grid (nearest cell); Sentinel-3 over VIIRS by the rule.",
+        "date_selection": "Rendered by Neritic: each tile pixel shows one sensor's published value on that sensor's own grid (nearest cell); Sentinel-3 over VIIRS by the rule.",
         "relative": true,
         "min_zoom": 5,
         "bounds_lnglat": [
@@ -5949,11 +5949,11 @@
       },
       "provenance": {
         "source_id": "satellite_chl",
-        "source_name": "Neritic Signal multi-sensor display of NOAA CoastWatch Sentinel-3 OLCI and VIIRS chlorophyll-a",
+        "source_name": "Neritic multi-sensor display of NOAA CoastWatch Sentinel-3 OLCI and VIIRS chlorophyll-a",
         "source_url": "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.html",
         "dataset_id": "noaacwS3AOLCIchlaSectorCIDaily,noaacwS3AOLCIchlaSectorDIDaily,noaacwS3BOLCIchlaSectorCIDaily,noaacwS3BOLCIchlaSectorDIDaily,noaacwN21VIIRSchlaSectorUSDaily,noaacwN20VIIRSchlaSectorUSDaily",
         "product_version": null,
-        "institution": "NOAA CoastWatch (data); Neritic Signal pipeline (display)",
+        "institution": "NOAA CoastWatch (data); Neritic pipeline (display)",
         "license": "Contains modified Copernicus Sentinel-3 data (EUMETSAT), processed by NOAA CoastWatch/OceanWatch; free and open. NOAA data: may be used and redistributed for free.",
         "citation": null,
         "retrieved_at": "2026-10-08T18:00:00Z",
@@ -10074,8 +10074,8 @@
     }
   ],
   "ports_url": "ports-53ac2a4e2e.geojson",
-  "official_url": "official-9397e2fdfc.json",
-  "port_intel_url": "port-intel-dfa1af2de4.json",
+  "official_url": "official-7867116b7a.json",
+  "port_intel_url": "port-intel-2189140e4f.json",
   "observations_url": "observations-6d325da89a.json",
-  "fisheries_url": "fisheries-d9974eef28.json"
+  "fisheries_url": "fisheries-3da88e0b2f.json"
 }

@@ -31,7 +31,7 @@ export default async function SourcesPage() {
         </header>
         <OfficialStatusCard />
         <section aria-labelledby="research-h" data-testid="research" className="space-y-2 text-[14px] leading-relaxed text-ink-2">
-          <h2 id="research-h" className="font-display text-[22px] font-medium leading-tight text-ink">The research behind Neritic Signal</h2>
+          <h2 id="research-h" className="font-display text-[22px] font-medium leading-tight text-ink">The research behind Neritic</h2>
           <p className="max-w-2xl">
             <span className="font-display text-[17px] leading-snug text-ink">{RESEARCH.title}</span>
             <br />
@@ -43,7 +43,7 @@ export default async function SourcesPage() {
           <p className="max-w-2xl">{RESEARCH.relation}</p>
           <p>
             <Link href="/about" className="font-medium text-accent underline underline-offset-2">
-              About Neritic Signal: what it shows, what it cannot tell you, and the research
+              About Neritic: what it shows, what it cannot tell you, and the research
             </Link>
           </p>
         </section>

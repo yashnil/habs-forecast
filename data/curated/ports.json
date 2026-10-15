@@ -1,5 +1,5 @@
 {
-  "description": "Principal California ocean landing ports shown in Neritic Signal. Geometry, names and port areas come from CDFW 'Marine Landing Data System Ports' [ds3081]; this file only selects ports by CDFW port code and sets display names. Edit by pull request. County is used to relate county-level CDPH advisories to ports; region drives map navigation.",
+  "description": "Principal California ocean landing ports shown in Neritic. Geometry, names and port areas come from CDFW 'Marine Landing Data System Ports' [ds3081]; this file only selects ports by CDFW port code and sets display names. Edit by pull request. County is used to relate county-level CDPH advisories to ports; region drives map navigation.",
   "source": "https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3081_fpu/FeatureServer/0",
   "last_reviewed": "2026-10-08",
   "ports": [

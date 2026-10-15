@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   const place = q.get("place");
   if (!place) return NextResponse.json({ error: "place is required" }, { status: 400 });
   const data = await loadData();
-  if (!data.ok) return NextResponse.json({ error: "Neritic Signal data are unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  if (!data.ok) return NextResponse.json({ error: "Neritic data are unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
   const snap = buildSnapshot(data, place, parseAudience(q.get("for")), q.get("species") ?? "any", new Date());
   if (!snap) return NextResponse.json({ error: "unknown place" }, { status: 404 });
   return NextResponse.json(snap, { headers: { "Cache-Control": "no-store" } });

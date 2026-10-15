@@ -17,7 +17,7 @@ export function OfficialStrip({
   error,
   recordIds,
   heading,
-  emptyText = "No active notice in Neritic Signal’s list names this area.",
+  emptyText = "No active notice in Neritic’s list names this area.",
   compact = false,
   testid = "bloom-official",
 }: {

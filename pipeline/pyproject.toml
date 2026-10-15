@@ -1,7 +1,7 @@
 [project]
 name = "coastwatch-pipeline"
 version = "0.1.0"
-description = "Neritic Signal (formerly CoastWatch) data pipeline: ingest, validate, render and publish static artifacts"
+description = "Neritic (formerly CoastWatch) data pipeline: ingest, validate, render and publish static artifacts"
 requires-python = ">=3.11"
 dependencies = [
   "numpy>=1.26",

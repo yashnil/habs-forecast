@@ -51,7 +51,7 @@ export function AppShell({
           <div className="flex h-[52px] min-w-0 items-center gap-3 px-3 min-[360px]:px-4 min-[400px]:gap-6 md:h-[var(--cw-masthead-h)] md:gap-5 md:px-6 lg:gap-8">
             <Link href="/" className="flex shrink-0 items-center gap-2 min-[360px]:gap-2.5" aria-label={`${BRAND.name} home`} data-testid="brand-home">
               <BrandMark size={26} />
-              <Wordmark className="text-[15px] text-white max-[359px]:sr-only min-[400px]:text-[17px]" />
+              <Wordmark className="text-[17px] text-white" />
               {/* not independently validated: said on every page, beside the name (phones: the footer and the welcome) */}
               <span className="hidden whitespace-nowrap border-l border-white/15 pl-2.5 text-[13px] text-on-navy-2 lg:inline" data-testid="research-preview-badge">
                 Research preview

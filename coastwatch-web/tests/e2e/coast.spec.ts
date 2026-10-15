@@ -146,7 +146,7 @@ test.describe("My Coast", () => {
 
   test("an unknown place in a link says so instead of guessing", async ({ page }) => {
     await open(page, `${OK}/coast?place=Santa%20Cruz`);
-    await expect(page.getByTestId("coast-unknown-place")).toContainText("not one Neritic Signal knows");
+    await expect(page.getByTestId("coast-unknown-place")).toContainText("not one Neritic knows");
     await expect(page.getByTestId("coast-landing")).toBeVisible();
   });
 

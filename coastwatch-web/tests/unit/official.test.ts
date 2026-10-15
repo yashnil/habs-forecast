@@ -132,7 +132,7 @@ describe("agency source discrepancies (a release appears to lift an active recor
     expect(currentRecords(ds).map((r) => r.id)).not.toContain("cdph-2026-sn26-018-monterey-bivalves");
     expect(disputedRecords(ds).map((d) => d.record.id)).toEqual(["cdph-2026-sn26-018-monterey-bivalves"]);
     const r = disputedRecords(ds)[0];
-    expect(criticalFlags(r.record, at("2026-10-12T20:00:00Z"), r.dispute)[0]).toMatch(/SN26-021 .* appears to lift this notice\. Neritic Signal has not reviewed it yet/);
+    expect(criticalFlags(r.record, at("2026-10-12T20:00:00Z"), r.dispute)[0]).toMatch(/SN26-021 .* appears to lift this notice\. Neritic has not reviewed it yet/);
     expect(officialVerification(ds, null, at("2026-10-12T20:00:00Z")).reasons.join(" ")).toMatch(/release SN26-021 appears to lift a notice the list still shows as active/);
   });
 

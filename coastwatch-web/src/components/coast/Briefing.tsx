@@ -246,7 +246,7 @@ export function officialAnswer(assocs: Association[], audience: Audience, specie
   const mine = applies.filter((a) => recordNamesSpecies(a.record.species, species));
   const forWhat = species.id === "any" ? (audience === "all" ? "" : ` for ${AUDIENCES.find((x) => x.id === audience)!.label.toLowerCase()}`) : ` for ${speciesPhrase(species)}`;
   const disputed = assocs.filter((a) => a.dispute);
-  const headline = mine.length ? `${mine.length} notice${mine.length === 1 ? " covers" : "s cover"} these waters${forWhat}` : `No notice in Neritic Signal's list covers these waters${forWhat}`;
+  const headline = mine.length ? `${mine.length} notice${mine.length === 1 ? " covers" : "s cover"} these waters${forWhat}` : `No notice in Neritic's list covers these waters${forWhat}`;
   return { live, applies, mine, forWhat, disputed, headline };
 }
 
@@ -329,7 +329,7 @@ export function OfficialBrief({
                   {a.dispute!.agency} {a.dispute!.release}, the later release ↗
                 </a>
               </p>
-              <p className="text-[13px] text-ink-3">Confirm with {a.dispute!.agency} which applies; Neritic Signal shows it as neither in effect nor lifted.</p>
+              <p className="text-[13px] text-ink-3">Confirm with {a.dispute!.agency} which applies; Neritic shows it as neither in effect nor lifted.</p>
             </li>
           ))}
           {mine.map((a) => (
@@ -665,7 +665,7 @@ export function ConditionsCard({
                   Read NWS&apos;s marine forecast ↗
                 </a>
               }
-              sub="From the National Weather Service; Neritic Signal does not copy it here"
+              sub="From the National Weather Service; Neritic does not copy it here"
               state="none"
               testid="cond-marine"
             />
