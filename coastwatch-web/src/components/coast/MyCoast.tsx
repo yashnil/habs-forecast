@@ -663,8 +663,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
           />
           {/* what changed since the last visit (PR #47), after what matters now, before the evidence */}
           <SinceLastCheck />
-          <section aria-labelledby="hab-h" data-testid="hab-evidence">
-            <h2 id="hab-h" className="font-display text-[22px] font-medium text-ink sm:text-[24px]">
+          <section aria-labelledby="hab-evidence-h" data-testid="hab-evidence">
+            <h2 id="hab-evidence-h" className="font-display text-[22px] font-medium text-ink sm:text-[24px]">
               HAB evidence near {place.name}
             </h2>
             {habSentence && <p className="mt-1 max-w-[60ch] text-[15px] leading-snug text-ink-2" data-testid="trip-hab-summary">{habSentence}</p>}

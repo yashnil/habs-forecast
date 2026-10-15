@@ -348,13 +348,13 @@ export function HabBriefing({
   const satOn = focus === "satellite";
   const modelOn = focus === "model";
   return (
-    <section aria-labelledby="hab-h" data-testid="hab-briefing" className="space-y-4">
+    <section aria-labelledby="hab-briefing-h" data-testid="hab-briefing" className="space-y-4">
       <div>
         <p className="cw-kind text-model-ink">
           <Mark kind="model" />
           HAB conditions · measured, observed and modelled
         </p>
-        <h2 id="hab-h" className="mt-1 font-display text-[26px] font-medium leading-tight text-ink">
+        <h2 id="hab-briefing-h" className="mt-1 font-display text-[26px] font-medium leading-tight text-ink">
           Bloom and toxin evidence near {placeName}
         </h2>
         <p className="mt-2 max-w-[64ch] text-[16px] leading-relaxed text-ink-2" data-testid="hab-summary" aria-live="polite">

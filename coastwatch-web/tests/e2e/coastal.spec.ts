@@ -84,6 +84,10 @@ test.describe("Coastal mode", () => {
     }
     // explore the evidence: the detail, one subject at a time
     await expect(page.getByTestId("hab-briefing")).toBeVisible();
+    // every id on the page is unique, and each evidence section is named by its own heading
+    expect(await page.evaluate(() => { const seen = new Set<string>(); const dup: string[] = []; document.querySelectorAll("[id]").forEach((e) => (seen.has(e.id) ? dup.push(e.id) : seen.add(e.id))); return dup; })).toEqual([]);
+    await expect(page.getByRole("region", { name: /^HAB evidence near/ })).toHaveAttribute("data-testid", "hab-evidence");
+    await expect(page.getByRole("region", { name: /^Bloom and toxin evidence near/ })).toHaveAttribute("data-testid", "hab-briefing");
     await page.getByTestId("explore-tab-notices").click();
     await expect(page.getByTestId("brief-notice-cdfw-2026-anchovy-take-restriction-monterey-bay").getByRole("link", { name: /CDFW source/ })).toHaveAttribute("href", /^https:\/\/wildlife\.ca\.gov\//);
     await page.getByTestId("explore-tab-conditions").click();
