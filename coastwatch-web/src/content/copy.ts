@@ -62,7 +62,7 @@ export const PORT_COPY = {
   nearshore: "C-HARM does not provide domoic acid probabilities for many cells within about 3–6 km of shore, so fewer cells contribute to those values.",
   history: "One value per C-HARM nowcast (median of the same cells). Days without a published run are left blank.",
   chlorophyll:
-    "NOAA VIIRS 8-day composites (dated at the centre of each 8-day window; neighbouring values overlap). Median of clear pixels within 15 km. Chlorophyll is algae biomass, not toxin.",
+    "NOAA VIIRS, 8-day windows (dated at the centre of each window; neighbouring values overlap): NOAA-21 daily passes, with NOAA-20 where NOAA-21 has no clear pixel, combined by CoastWatch. Before NOAA ended Suomi-NPP data (Nov 2, 2026), NOAA's S-NPP 8-day composites, which read about 4–10% higher. Median of clear pixels within 15 km. Chlorophyll is algae biomass, not toxin.",
 } as const;
 
 export const CHLOROPHYLL_COPY = {
@@ -270,7 +270,7 @@ export const ABOUT = {
     "CoastWatch reads public data from these providers every six hours, checks it against the source, and shows the last good data with its own dates when a source fails.",
   providers: [
     { name: "NOAA C-HARM v3.1", what: "Bloom and domoic acid forecast (NOAA CoastWatch West Coast ERDDAP)" },
-    { name: "NOAA CoastWatch, NASA GIBS", what: "Satellite chlorophyll: Sentinel-3 OLCI 300 m, VIIRS 750 m" },
+    { name: "NOAA CoastWatch, NASA GIBS", what: "Satellite chlorophyll: Sentinel-3 OLCI 300 m, VIIRS 750 m (NOAA-21, NOAA-20)" },
     { name: "HFRNet (IOOS)", what: "HF-radar surface currents, 2 km, hourly" },
     { name: "CalHABMAP (SCCOOS ERDDAP)", what: "Shore-station domoic acid, Pseudo-nitzschia, chlorophyll and temperature" },
     { name: "NOAA Fisheries FOSS, BLS CPI-U", what: "Commercial landings since 2015, and the inflation index for constant dollars" },

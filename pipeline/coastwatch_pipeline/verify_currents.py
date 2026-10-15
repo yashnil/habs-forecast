@@ -8,7 +8,12 @@
                 good observations are never discarded silently
 3. mean       - each 24-hour-mean cell equals the mean of the published hourly values at
                 that cell, with at least MEAN_MIN_HOURS hours
-An ERDDAP that does not answer is reported as UNVERIFIABLE (and fails), never as a mismatch.
+Each layer is checked against the server it was read from (provenance dataset_id): CoastWatch
+ERDDAP (ucsdHfrW2) or NOAA NDBC's THREDDS copy (hfradar_uswc_2km), which hold the same values
+(sources/currents.py). If that server does not answer, the other copy is asked and the row says
+so (verified_against). Only when neither answers is a row UNVERIFIABLE (and fails), never a
+mismatch: run 38560029579 (2026-10-14) fetched hours from ERDDAP minutes before it restarted,
+and the unanswerable check blocked every source from publishing.
 """
 
 from __future__ import annotations
@@ -22,6 +27,7 @@ import numpy as np
 from .http import FetchError, fetch
 from .models import LayerArtifact, Manifest
 from .process import grid as gridcodec
+from .process import opendap
 from .sources import currents as cur
 
 
@@ -45,6 +51,49 @@ def _erddap(t: str, lat: float, lon: float) -> dict | None:
     return {"lat": float(line[1]), "lon": float(line[2]), "u": num(line[3]), "v": num(line[4]), "hdop": num(line[5]), "sites": num(line[6])}
 
 
+class _Ndbc:
+    """Point values from NDBC's OPeNDAP copy: the nearest cell (like ERDDAP's nearest-bound
+    selection), so a misaligned published cell shows up as a different source cell."""
+
+    def __init__(self) -> None:
+        self.ax: cur.Axes | None = None
+
+    def _open(self) -> cur.Axes:
+        if self.ax is None:
+            a = opendap.parse_dods(fetch(f"{cur.NDBC_URL}.dods?lat,lon", retries=3, backoff=3).body)
+            t = opendap.parse_dods(fetch(f"{cur.NDBC_URL}.dods?time", retries=3, backoff=3).body)["time"]
+            attrs = opendap.parse_das(fetch(f"{cur.NDBC_URL}.das", retries=3, backoff=3).body.decode("utf-8", "replace"))
+            lat, lon = (np.array([float(str(np.float32(x))) for x in a[k]]) for k in ("lat", "lon"))
+            self.ax = cur.Axes(lat, lon, 0, 0, 0, 0, cur.NDBC, attrs, {cur._iso(x): k for k, x in enumerate(np.atleast_1d(t))})
+        return self.ax
+
+    def __call__(self, t: str, lat: float, lon: float) -> dict | None:
+        try:
+            ax = self._open()
+            k = ax.time_index.get(t)
+            if k is None:
+                return None  # that hour is not on the server: no data there
+            i, j = int(np.argmin(abs(ax.lat - lat))), int(np.argmin(abs(ax.lon - lon)))
+            sel = f"[{k}:1:{k}][{i}:1:{i}][{j}:1:{j}]"
+            body = fetch(f"{cur.NDBC_URL}.dods?" + quote(",".join(v + sel for v in cur.NDBC_VARS), safe=",:"), retries=3, backoff=3).body
+            arrays, _ = cur._ndbc_arrays(body, ax)
+        except (FetchError, ValueError) as e:
+            raise RuntimeError(f"UNVERIFIABLE, NDBC unreachable: {str(e)[:160]}") from e
+        val = lambda n: float(np.asarray(arrays[n]).ravel()[0])  # noqa: E731
+        return {"lat": float(ax.lat[i]), "lon": float(ax.lon[j]), "u": val("water_u"), "v": val("water_v"), "hdop": val("hdop"), "sites": val("number_of_sites")}
+
+
+def _upstream(lookups: dict, host: cur.Host, t: str, lat: float, lon: float) -> tuple[dict | None, cur.Host]:
+    """The value at the layer's own server, else at the other copy; raises if neither answers."""
+    errors = []
+    for h in [host] + [x for x in cur.HOSTS if x is not host]:
+        try:
+            return lookups[h.key](t, lat, lon), h
+        except RuntimeError as e:
+            errors.append(str(e))
+    raise RuntimeError("; ".join(errors))
+
+
 def _cells(mask: np.ndarray, n: int) -> list[tuple[int, int]]:
     rr, cc = np.nonzero(mask)
     if not rr.size:
@@ -59,12 +108,14 @@ def verify_currents(out_dir: Path, live: bool = True, per_layer: int = 6, hourly
     hourly = sorted((lyr for lyr in all_cur if lyr.layer_id.startswith("hfr2km_currents_2")), key=lambda x: x.time.valid_time or "")
     new = [lyr for lyr in hourly if lyr.provenance.pipeline_run_id == m.pipeline_run_id]
     rows: list[dict] = []
+    lookups = {cur.ERDDAP.key: _erddap, cur.NDBC.key: _Ndbc()}
     picks = new[-1:] + new[:: max(1, len(new) // max(1, hourly_layers - 1))][: hourly_layers - 1] if new else []
     for lyr in {x.layer_id: x for x in picks}.values():
         u, v = _field(out_dir, lyr)
         g = lyr.vectors.u_grid  # type: ignore[union-attr]
         tol = g.max_quantization_error + 1e-6
         t = lyr.time.valid_time or ""
+        host = cur.host_for(lyr.provenance.dataset_id)
         for kind, cells in (("value", _cells(np.isfinite(u), per_layer)), ("no_value", _cells(~np.isfinite(u), max(2, per_layer // 3)))):
             for r, c in cells:
                 lat, lon = g.lat_first + r * g.lat_step, g.lon_first + c * g.lon_step
@@ -74,7 +125,8 @@ def verify_currents(out_dir: Path, live: bool = True, per_layer: int = 6, hourly
                 ok = True
                 if live:
                     try:
-                        up = _erddap(t, lat, lon)
+                        up, used = _upstream(lookups, host, t, lat, lon)
+                        row["verified_against"] = used.dataset
                         time.sleep(0.2)
                     except RuntimeError as e:
                         up, ok = None, False
@@ -93,7 +145,7 @@ def verify_currents(out_dir: Path, live: bool = True, per_layer: int = 6, hourly
                             ok = ok and row["source_cell_matches"] and row["dropped_correctly"]
                     elif "source_error" not in row and kind == "value":
                         ok = False
-                        row["source_error"] = "ERDDAP has no value at a published cell"
+                        row["source_error"] = f"{row['verified_against']} has no value at a published cell"
                 row["status"] = "pass" if ok else "FAIL"
                 rows.append(row)
     # 24-hour mean equals the mean of the published hours

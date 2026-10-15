@@ -6,6 +6,7 @@ import { CHL_NEAR_COPY, CHLOROPHYLL_COPY } from "@/content/copy";
 import { CHL_PLACE_RADIUS_KM, chlStaleWord, fmtChlValue as fmtV, readChlNear, readPlaceChl, type ChlNear } from "@/lib/chlNear";
 import { useNow } from "@/lib/useNow";
 import { nativeLabel, satelliteLatest } from "@/lib/layers";
+import { viirsPlatformLabel } from "@/lib/stamp";
 import { formatDate } from "@/lib/time";
 import { multiSensorLayer, multiSensorMembers, multiSensorPick, type SensorObs } from "@/lib/multisensor";
 
@@ -107,7 +108,7 @@ function SingleSensorNear({ manifest, baseUrl, lat, lon, place, onRead }: NearPr
         <span className="text-[13px] text-ink-3">
           {layer && (
             <>
-              {product === "olci300" ? "Sentinel-3 OLCI" : "VIIRS"} · native {nativeLabel(layer)}
+              {product === "olci300" ? "Sentinel-3 OLCI" : viirsPlatformLabel(layer)} · native {nativeLabel(layer)}
             </>
           )}
         </span>

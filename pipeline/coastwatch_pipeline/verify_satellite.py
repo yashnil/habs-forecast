@@ -8,6 +8,11 @@ For sample pixels with a value (spread across the domain, deterministic):
 3. tiles      - the tile pixel containing the cell centre at the native zoom has the
                 palette colour of the published value
 4. composite  - each latest-clear-view pixel equals the day layer its age points to
+5. platform   - (live) for a multi-platform view (VIIRS: NOAA-21 first, NOAA-20 where NOAA-21
+                has no value) the platform order is applied to ERDDAP's own values, and the
+                platform that answers must be the one the published platform grid names
+Each layer is checked against the source it names in its own provenance (dataset_id), so an
+S-NPP layer is checked against S-NPP and a NOAA-21/NOAA-20 layer against those.
 Cells without a value are checked to be transparent in the tiles.
 """
 
@@ -77,6 +82,16 @@ def _erddap(server: str, ds: str, var: str, t: str, lat: float, lon: float) -> t
     return v, float(line[2]), float(line[3])
 
 
+def _scene_times(lyr: LayerArtifact) -> dict[str, list[str]]:
+    """dataset -> overpass times it was used for, from provenance ("<platform> <dataset> <time>, ...")."""
+    out: dict[str, list[str]] = {}
+    for item in (lyr.provenance.upstream_metadata.get("scenes") or "").split(", "):
+        parts = item.split()
+        if len(parts) >= 3:
+            out.setdefault(parts[-2], []).append(parts[-1])
+    return out
+
+
 def verify_satellite(out_dir: Path, live: bool = True, per_layer: int = 8) -> dict:
     m = Manifest.model_validate_json((out_dir / "manifest.json").read_text())
     all_layers = [lyr for lyr in m.layers if lyr.provenance.source_id == satellite.SOURCE_ID and lyr.grid]
@@ -89,7 +104,10 @@ def verify_satellite(out_dir: Path, live: bool = True, per_layer: int = 8) -> di
         vals = _published(out_dir, lyr)
         g = lyr.grid
         assert g
-        prod = satellite.OLCI if lyr.layer_id.startswith("olci") else satellite.VIIRS
+        prod = satellite.product_for(lyr.provenance.dataset_id) or (satellite.OLCI if lyr.layer_id.startswith("olci") else satellite.VIIRS_SNPP)
+        used = set((lyr.provenance.dataset_id or "").split(","))
+        scene_times = _scene_times(lyr)
+        pgrid = satellite.load_platform_grid(out_dir, lyr)
         _, colours = palette_indices(np.array([1.0]), lyr.palette)
         age = _age(out_dir, lyr) if lyr.composite else None
         for r, c in _sample(vals, per_layer):
@@ -115,15 +133,23 @@ def verify_satellite(out_dir: Path, live: bool = True, per_layer: int = 8) -> di
                 times = [t for t in lyr.time.observed_times if t.startswith(d)] if src_layer is None else src_layer.time.observed_times
             else:
                 times = lyr.time.observed_times
+            if pgrid is not None:
+                code = int(pgrid[0][r, c])
+                row["platform"] = pgrid[1][code - 1] if 0 < code <= len(pgrid[1]) else None
+                if row["platform"] is None:
+                    row["platform_error"] = f"no platform recorded for a cell with a value (code {code})"
+                    ok = False
             if live:
                 tol = g.max_quantization_error + 1e-6
                 match = None
                 unreachable = None
                 for plat, sectors in prod.platforms:
                     for ds, lo, hi, _ in sectors:
-                        if not ((lo == -180 or lon > lo) and lon < hi):
+                        if not ((lo == -180 or lon > lo) and lon < hi) or (prod.sensor and ds not in used):
                             continue
-                        for t in times:
+                        # each dataset at its own overpass time (ERDDAP snaps a time it does not have)
+                        ds_times = [t for t in times if t in scene_times[ds]] if ds in scene_times else times
+                        for t in ds_times:
                             try:
                                 res = _erddap(prod.server, ds, prod.variable, t, lat, lon)
                             except Unreachable as e:
@@ -138,11 +164,15 @@ def verify_satellite(out_dir: Path, live: bool = True, per_layer: int = 8) -> di
                     if match:
                         break
                 if match:
-                    _, ds, t, sv, slat, slon = match
+                    plat, ds, t, sv, slat, slon = match
                     row.update(source_dataset=ds, source_time=t, source_value=round(sv, 5), source_cell=[slat, slon])
                     row["source_cell_matches"] = abs(slat - lat) < 1e-5 and abs(slon - lon) < 1e-5
                     row["source_matches_grid"] = abs(math.log10(sv) - math.log10(v)) <= tol
                     ok = ok and row["source_cell_matches"] and row["source_matches_grid"]
+                    if pgrid is not None:
+                        # the first platform in order with a value is the one that must be published
+                        row["platform_matches_source"] = row.get("platform") == plat
+                        ok = ok and row["platform_matches_source"]
                 else:
                     row["source_matches_grid"] = False
                     row["source_error"] = f"UNVERIFIABLE, ERDDAP unreachable: {unreachable}" if unreachable else "no valid value at this cell in the listed scenes"

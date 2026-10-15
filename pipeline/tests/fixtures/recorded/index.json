@@ -51,6 +51,22 @@
   "content_type": "application/json",
   "file": "7bd26c4a06812749.json"
  },
+ "https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-08-06T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(36.7450):2:(36.4555)%5D%5B(-122.0725):2:(-121.7168)%5D": {
+  "content_type": "application/x-netcdf",
+  "file": "11a4a02745cece0d.bin"
+ },
+ "https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-08-06T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(36.9491):2:(36.6597)%5D%5B(-121.9652):2:(-121.6086)%5D": {
+  "content_type": "application/x-netcdf",
+  "file": "1ed40cef50b9287c.bin"
+ },
+ "https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-08-06T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(36.7450):2:(36.4555)%5D%5B(-122.0725):2:(-121.7168)%5D": {
+  "content_type": "application/x-netcdf",
+  "file": "4b7fa9de8a0c8a4e.bin"
+ },
+ "https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-08-06T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(36.9491):2:(36.6597)%5D%5B(-121.9652):2:(-121.6086)%5D": {
+  "content_type": "application/x-netcdf",
+  "file": "2563141bedcab9b4.bin"
+ },
  "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(36.7450):2:(36.4555)%5D%5B(-122.0725):2:(-121.7168)%5D": {
   "content_type": "application/x-netcdf",
   "file": "3b2dcaa92c89385f.bin"
@@ -147,6 +163,10 @@
   "content_type": "application/json; charset=utf-8",
   "file": "5202a28b9aa6d2e1.bin"
  },
+ "https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/California_Coastal_Counties/FeatureServer/3/query?where=TITLE%20%3D%20%27Del%20Norte%20County%27&outFields=TITLE&outSR=4326&f=geojson": {
+  "content_type": "application/json; charset=utf-8",
+  "file": "4cbac48bde1372bd.bin"
+ },
  "https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/California_Coastal_Counties/FeatureServer/3/query?where=TITLE%20%3D%20%27Humboldt%20County%27&outFields=TITLE&outSR=4326&f=geojson": {
   "content_type": "application/json; charset=utf-8",
   "file": "14eb6bdc8941af18.bin"
@@ -166,9 +186,5 @@
  "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx": {
   "content_type": "text/html; charset=utf-8",
   "file": "e368d8ebea12174f.html"
- },
- "https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/California_Coastal_Counties/FeatureServer/3/query?where=TITLE%20%3D%20%27Del%20Norte%20County%27&outFields=TITLE&outSR=4326&f=geojson": {
-  "content_type": "application/json; charset=utf-8",
-  "file": "4cbac48bde1372bd.bin"
  }
 }

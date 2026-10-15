@@ -156,7 +156,7 @@ def test_outage_keeps_previous_currents_with_their_real_times(tmp_path):
     out = tmp_path / "v1"
     m1 = run_pipeline(fixture_context(out))
     refuse = lambda url: (_ for _ in ()).throw(FetchError(f"Failed after 4 attempts: {url} (HTTP Error 403: )"))  # noqa: E731
-    m2 = run_pipeline(fixture_context(out, "2026-10-09T18:00:00Z", FixtureFetcher(overrides={r"ucsdHfrW2": refuse})))
+    m2 = run_pipeline(fixture_context(out, "2026-10-09T18:00:00Z", FixtureFetcher(overrides={r"ucsdHfrW2|hfradar_uswc_2km": refuse})))
     old = {lyr.layer_id: lyr.time.valid_time for lyr in m1.layers if lyr.group_id == "currents"}
     new = {lyr.layer_id: lyr.time.valid_time for lyr in m2.layers if lyr.group_id == "currents"}
     assert new == old and len(new) == 25
@@ -199,3 +199,94 @@ def test_a_dataset_that_vanishes_during_verification_is_unverifiable_not_a_misma
     live = [r for r in rep["rows"] if r["kind"] in ("value", "no_value")]
     assert live and all(r["status"] == "FAIL" and r["source_error"].startswith("UNVERIFIABLE") for r in live)
     assert rep["summary"]["unverifiable_upstream_unreachable"] == len(live) and not rep["summary"]["all_passed"]
+
+
+# ---------------------------------------------------------------- NOAA NDBC copy (OPeNDAP)
+def test_opendap_reader_reads_a_genuine_ndbc_response():
+    from coastwatch_pipeline.process import opendap
+
+    a = opendap.parse_dods((FIX / "ndbc_sample.dods").read_bytes())  # recorded 2026-10-14, see .query
+    assert a["u"].shape == a["v"].shape == a["hdop"].shape == a["number_of_sites"].shape == (2, 3, 4)
+    assert a["time"].tolist() == [1791799200, 1791802800]  # 2026-10-12T10:00Z and 11:00Z
+    lat = np.array([float(x) for x in (FIX / "latitude.csv").read_text().split()], dtype=np.float32)
+    assert np.array_equal(a["lat"], lat[360:363])  # NDBC's lattice is ucsdHfrW2's, index for index
+    das = opendap.parse_das((FIX / "ndbc.das").read_text())
+    assert das["u"]["scale_factor"] == pytest.approx(0.01) and das["u"]["_FillValue"] == -32767 and das["u"]["units"] == "m s-1"
+    assert das["number_of_sites"]["_FillValue"] == -127 and das["time"]["units"].startswith("seconds since 1970-01-01")
+
+
+def test_opendap_reader_rejects_truncated_or_foreign_responses():
+    from coastwatch_pipeline.process import opendap
+
+    body = (FIX / "ndbc_sample.dods").read_bytes()
+    for bad in (body[:-3], body + b"\0\0\0\0", b"<html>Service unavailable</html>"):
+        with pytest.raises(ValueError):
+            opendap.parse_dods(bad)
+
+
+def _fields(m):
+    return {lyr.layer_id: lyr for lyr in m.layers if lyr.group_id == "currents"}
+
+
+def test_erddap_refused_reads_the_same_hours_from_ndbc_with_the_same_values(tmp_path):
+    refuse = lambda url: (_ for _ in ()).throw(FetchError(f"Failed after 4 attempts: {url} (HTTP Error 403: )"))  # noqa: E731
+    a = run_pipeline(fixture_context(tmp_path / "a" / "v1"))
+    b = run_pipeline(fixture_context(tmp_path / "b" / "v1", fetcher=FixtureFetcher(overrides={r"ucsdHfrW2": refuse})))
+    fa, fb = _fields(a), _fields(b)
+    assert fa.keys() == fb.keys() and len(fb) == 25
+    for k, la in fa.items():
+        lb = fb[k]
+        assert lb.time == la.time and lb.vectors.u_grid.lat_first == la.vectors.u_grid.lat_first and lb.vectors.u_grid.lon_first == la.vectors.u_grid.lon_first
+        assert lb.qc.n_valid == la.qc.n_valid
+        tol = la.vectors.u_grid.scale_factor * 1.01  # same value; at most one code apart from float32 rounding
+        for g in ("u_grid", "v_grid"):
+            ga, gb = getattr(la.vectors, g), getattr(lb.vectors, g)
+            from coastwatch_pipeline.process import grid as gc
+
+            xa = gc.decode((tmp_path / "a" / "v1" / ga.url).read_bytes(), ga.width, ga.height, ga.scale_factor, ga.add_offset)
+            xb = gc.decode((tmp_path / "b" / "v1" / gb.url).read_bytes(), gb.width, gb.height, gb.scale_factor, gb.add_offset)
+            assert np.array_equal(np.isfinite(xa), np.isfinite(xb)) and np.nanmax(abs(xa - xb)) <= tol
+        assert la.provenance.dataset_id == "ucsdHfrW2" and lb.provenance.dataset_id == "hfradar_uswc_2km"
+        assert "ndbc.noaa.gov" in lb.provenance.source_url and "National Data Buoy Center" in lb.provenance.institution
+    st = next(s for s in b.sources if s.source_id == "hf_radar")
+    assert st.outcome == "updated" and any("NDBC" in n and "403" in n for n in st.notes)
+    out = tmp_path / "b" / "v1"
+    assert check_published(str(out))["ok"] and verify_currents(out, live=False)["summary"]["all_passed"]
+
+
+def test_a_stalled_erddap_index_does_not_hide_newer_ndbc_hours(tmp_path):
+    from coastwatch_pipeline.http import Response
+
+    idx = __import__("json").loads((FIX / "index.json").read_text())
+
+    def frozen(url):  # ERDDAP's time index stuck 6 hours back (as coastwatch.noaa.gov's was on 2026-10-05..14)
+        if "csv0?time" in url:
+            return Response(url, 200, "text/csv", ("\n".join(idx["times"][:-6]) + "\n").encode())
+        return FixtureFetcher()(url)
+
+    m = run_pipeline(fixture_context(tmp_path / "v1", fetcher=FixtureFetcher(overrides={r"ucsdHfrW2\.csv0\?time": frozen})))
+    st = next(s for s in m.sources if s.source_id == "hf_radar")
+    hourly = sorted(lyr.time.valid_time for lyr in m.layers if lyr.layer_id.startswith("hfr2km_currents_2"))
+    assert hourly[-1] == idx["times"][-1] and any("NDBC" in n for n in st.notes)
+
+
+def test_verification_uses_the_other_copy_when_the_layers_own_server_is_gone(tmp_path, monkeypatch):
+    from coastwatch_pipeline import verify_currents as vc
+
+    out = tmp_path / "v1"
+    run_pipeline(fixture_context(out))  # layers read from ERDDAP
+    fx = FixtureFetcher()
+
+    def only_ndbc(url, **kw):
+        if "ucsdHfrW2" in url:
+            raise FetchError(f"HTTP 404 for {url} (unknown)", detail='Error { code=404; message="Not Found: Currently unknown datasetID=ucsdHfrW2"; }')
+        if "hfradar_uswc_2km.dods" in url and "%5B" in url:  # point query: answer from the fixture with NDBC's encoding
+            return fx(url.replace("%5B", "[").replace("%5D", "]"))
+        return fx(url)
+
+    monkeypatch.setattr(vc, "fetch", only_ndbc)
+    monkeypatch.setattr(vc.time, "sleep", lambda s: None)
+    rep = verify_currents(out, live=True)
+    live = [r for r in rep["rows"] if r["kind"] in ("value", "no_value")]
+    assert live and all(r["verified_against"] == "hfradar_uswc_2km" and r["status"] == "pass" for r in live), [r for r in live if r["status"] != "pass"][:2]
+    assert rep["summary"]["all_passed"]
