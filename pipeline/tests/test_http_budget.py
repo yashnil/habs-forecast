@@ -176,3 +176,43 @@ def _ok():
             return False
 
     return R()
+
+
+def test_a_host_that_refuses_several_datasets_is_not_asked_again_this_run(clock, monkeypatch):
+    # runs 38328551760, 38480042565, 38513961299: coastwatch.pfeg.noaa.gov answered every request
+    # with 403 from the first one on, while other hosts answered; ~40-95 s of retries per dataset
+    calls: list = []
+
+    def urlopen(req, timeout, context):
+        calls.append(req.full_url)
+        if "refusing.test" in req.full_url:
+            raise urllib.error.HTTPError(req.full_url, 403, "Forbidden", {"Server": "Apache"}, None)
+        return _ok()
+
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    cb = http.CircuitBreaker()
+    for d in ("A", "B", "C"):
+        with pytest.raises(http.FetchError, match="Server: Apache") as ei:
+            cb(f"https://refusing.test/erddap/griddap/{d}.csv")
+        assert ei.value.refused
+    n = len(calls)
+    with pytest.raises(http.FetchError, match="not asked again this run"):
+        cb("https://refusing.test/erddap/griddap/D.csv")
+    assert len(calls) == n  # no request at all
+    assert cb("https://other.test/erddap/griddap/A.csv").body == b"ok"  # other hosts unaffected
+    assert "refusing.test" not in cb.hosts_down  # a refusal is not a hang
+
+
+def test_a_refusal_mixed_with_other_errors_is_not_counted_as_a_refusal(clock, monkeypatch):
+    codes = iter([403, 502, 403, 403] * 3)
+
+    def urlopen(req, timeout, context):
+        raise urllib.error.HTTPError(req.full_url, next(codes), "x", {}, None)
+
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    cb = http.CircuitBreaker()
+    for d in ("A", "B", "C"):
+        with pytest.raises(http.FetchError) as ei:
+            cb(f"https://h.test/erddap/griddap/{d}.csv")
+        assert not ei.value.refused
+    assert "h.test" not in cb.hosts_refusing

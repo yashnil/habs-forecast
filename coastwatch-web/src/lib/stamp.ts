@@ -1,21 +1,54 @@
 import type { ForecastRun, LayerArtifact } from "@/generated/schema";
-import { hoursAgo } from "@/lib/currents";
+import { currentsStale, hoursAgo } from "@/lib/currents";
 import { formatDate, formatDateTimePT } from "@/lib/time";
 
 export type Stamp = { kind: "observation" | "model" | "gap"; text: string; testid: string };
 const short = (d: string) => formatDate(d).replace(/^\w+, /, ""); // "Oct 8"
 
-/** "Sentinel-3 300 m" or "VIIRS 750 m": the sensor and native resolution of a satellite layer. */
+/**
+ * The satellites carrying VIIRS for a layer, from its own `platforms` ("VIIRS" then the
+ * satellites, e.g. ["VIIRS", "NOAA-21", "NOAA-20"]). Layers published before NOAA ended
+ * Suomi-NPP data list only "VIIRS"; their dataset (erdVHNchla1day) says S-NPP.
+ */
+export function viirsSatellites(l: Pick<LayerArtifact, "platforms" | "provenance">): string[] {
+  const p = l.platforms ?? [];
+  if (!p.includes("VIIRS")) return [];
+  const sats = p.filter((x) => x !== "VIIRS" && !x.startsWith("Sentinel-3"));
+  if (sats.length) return sats;
+  return /erdVHN/.test(l.provenance?.dataset_id ?? "") ? ["S-NPP"] : [];
+}
+
+/** "VIIRS · NOAA-21", or "VIIRS · NOAA-21 + NOAA-20" when both satellites contributed. */
+export function viirsPlatformLabel(l: Pick<LayerArtifact, "platforms" | "provenance">): string {
+  const sats = viirsSatellites(l);
+  return sats.length ? `VIIRS · ${sats.join(" + ")}` : "VIIRS";
+}
+
+/**
+ * What a port's chlorophyll value is, from its own dataset id: NOAA's S-NPP 8-day composite
+ * (erdVHNchla8day, before NOAA ended S-NPP data) or CoastWatch's 8-day window of NOAA-21/NOAA-20 passes.
+ */
+export function portChlorophyllSource(datasetId: string): string {
+  if (/erdVHN/.test(datasetId)) return "S-NPP 8-day composite";
+  const sats = [/N21VIIRS/.test(datasetId) && "NOAA-21", /N20VIIRS/.test(datasetId) && "NOAA-20"].filter(Boolean);
+  return `8-day window of ${sats.length ? sats.join(" + ") : "VIIRS"} passes`;
+}
+
+/** "Sentinel-3 300 m" or "VIIRS 750 m (NOAA-21)": the sensor and native resolution of a satellite layer. */
 export function sensorLabel(l: LayerArtifact): string {
   const name = l.platforms?.some((p) => p.startsWith("Sentinel-3")) ? "Sentinel-3" : l.platforms?.includes("VIIRS") ? "VIIRS" : null;
   const res = l.native_resolution_m ? `${Math.round(l.native_resolution_m)} m` : null;
-  return [name, res].filter(Boolean).join(" ") || l.short_title.replace(/^Chlorophyll · /, "");
+  const sats = name === "VIIRS" ? viirsSatellites(l) : [];
+  const label = [name, res].filter(Boolean).join(" ") || l.short_title.replace(/^Chlorophyll · /, "");
+  return sats.length ? `${label} (${sats.join(" + ")})` : label;
 }
 
 /** Multi-sensor view: Sentinel-3 300 m where it has a recent pixel, VIIRS 750 m elsewhere. */
 function multiSensorLabel(l: LayerArtifact): string {
   const p = l.platforms ?? [];
-  const parts = [p.some((x) => x.startsWith("Sentinel-3")) && "Sentinel-3 300 m", p.includes("VIIRS") && "VIIRS 750 m"].filter(Boolean);
+  const sats = viirsSatellites(l);
+  const viirs = p.includes("VIIRS") && `VIIRS 750 m${sats.length ? ` (${sats.join(" + ")})` : ""}`;
+  const parts = [p.some((x) => x.startsWith("Sentinel-3")) && "Sentinel-3 300 m", viirs].filter(Boolean);
   return parts.length ? parts.join(" + ") : "multi-sensor";
 }
 
@@ -68,7 +101,7 @@ export function stampLines(p: {
       kind: "observation",
       testid: "stamp-currents",
       text: t
-        ? `Currents, HF radar · ${mean ? `24 h mean to ${formatDateTimePT(t)}` : `observed ${formatDateTimePT(t)}`}${p.now ? ` (${hoursAgo(t, p.now)} h ago)` : ""}`
+        ? `Currents, HF radar · ${mean ? `24 h mean to ${formatDateTimePT(t)}` : `observed ${formatDateTimePT(t)}`}${p.now ? ` (${currentsStale(t, p.now) ? "Stale: " : ""}${hoursAgo(t, p.now)} h ago)` : ""}`
         : "Currents, HF radar",
     });
     // missing coverage is said on the map, not only in the dock

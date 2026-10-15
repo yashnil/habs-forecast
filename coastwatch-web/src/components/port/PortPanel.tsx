@@ -11,6 +11,7 @@ import { Notice, Segmented, SourceLink } from "@/components/ui/Primitives";
 import { colorAt } from "@/components/ui/ProbabilityLegend";
 import { charmLayer, CHARM_VARIABLES, type CharmVariable } from "@/lib/layers";
 import type { Verification } from "@/lib/official";
+import { portChlorophyllSource } from "@/lib/stamp";
 import { formatDate, formatDateTimePT } from "@/lib/time";
 import { LeadStrip } from "@/components/map/LeadStrip";
 import { Sparkline } from "@/components/charts/Sparkline";
@@ -180,7 +181,7 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
             <span id="pc-h" className="block text-[13px] font-semibold text-ink">
               Chlorophyll near this port, last 60 days
             </span>
-            <span className="block text-[13px] text-ink-3">8-day satellite composites, median of clear pixels</span>
+            <span className="block text-[13px] text-ink-3">8-day windows of satellite passes, median of clear pixels</span>
           </span>
           <span aria-hidden className="text-ink-3 transition-transform duration-150 group-open:rotate-90">›</span>
         </summary>
@@ -204,7 +205,7 @@ export function PortPanel({ port, coll, manifest, official, verification, lead, 
               <span className="text-[13px] text-ink-2">mg m⁻³ median</span>
             </div>
             <p className="text-[13px] text-ink-3">
-              8-day composite centred on {formatDate(chl.latest_center_date!, { year: true })} · {chl.latest.n} clear pixels (
+              {portChlorophyllSource(chl.dataset_id)} centred on {formatDate(chl.latest_center_date!, { year: true })} · {chl.latest.n} clear pixels (
               {Math.round((chl.latest_valid_fraction ?? 0) * 100)}% of pixels within {chl.radius_km} km; land and cloud excluded) · range{" "}
               {chl.latest.min!.toFixed(2)}–{chl.latest.max!.toFixed(2)}
             </p>

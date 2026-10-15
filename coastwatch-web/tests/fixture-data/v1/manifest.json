@@ -3389,11 +3389,11 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/latest-2026-10-08-4ee14063ad/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/latest-2026-10-08-7fce46100a/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3409,14 +3409,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/latest-2026-10-08-4ee14063ad/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/latest-2026-10-08-7fce46100a/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/latest-2026-10-08-4ee14063ad/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/latest-2026-10-08-7fce46100a/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -3734,7 +3734,7 @@
         ],
         "upstream_metadata": {
           "days": "2026-10-01, 2026-10-02, 2026-10-03, 2026-10-04, 2026-10-05, 2026-10-06, 2026-10-07",
-          "processing": "satellite-processing-2"
+          "processing": "satellite-processing-3"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -3853,7 +3853,7 @@
           }
         ],
         "age_grid": {
-          "url": "satellite/olci300/latest-2026-10-08-4ee14063ad/age/{row}_{col}.u16.gz",
+          "url": "satellite/olci300/latest-2026-10-08-7fce46100a/age/{row}_{col}.u16.gz",
           "encoding": "uint16le+gzip",
           "width": 341,
           "height": 321,
@@ -3869,14 +3869,14 @@
           "chunks": {
             "rows": 512,
             "cols": 512,
-            "url_template": "satellite/olci300/latest-2026-10-08-4ee14063ad/age/{row}_{col}.u16.gz",
+            "url_template": "satellite/olci300/latest-2026-10-08-7fce46100a/age/{row}_{col}.u16.gz",
             "present": [
               "0_0"
             ]
           }
         },
         "age_tiles": {
-          "url_template": "satellite/olci300/latest-2026-10-08-4ee14063ad/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/olci300/latest-2026-10-08-7fce46100a/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
@@ -3931,11 +3931,11 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-01-fe044c6f22/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-01-6372f53b46/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3951,14 +3951,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-01-fe044c6f22/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-01-6372f53b46/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-01-fe044c6f22/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-01-6372f53b46/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -4089,7 +4089,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-01T19:19:05Z",
-          "processing": "satellite-processing-2"
+          "processing": "satellite-processing-3"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4144,11 +4144,11 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-02-7a883c66bf/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-02-1f03a8c0a8/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -4164,14 +4164,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-02-7a883c66bf/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-02-1f03a8c0a8/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-02-7a883c66bf/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-02-1f03a8c0a8/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -4302,7 +4302,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-02T18:54:24Z",
-          "processing": "satellite-processing-2"
+          "processing": "satellite-processing-3"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4357,7 +4357,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": null,
@@ -4470,7 +4470,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-03T18:31:13Z",
-          "processing": "satellite-processing-2"
+          "processing": "satellite-processing-3"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4525,7 +4525,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": null,
@@ -4638,7 +4638,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-04T18:54:02Z",
-          "processing": "satellite-processing-2"
+          "processing": "satellite-processing-3"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4693,11 +4693,11 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-05-950c454a96/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-05-e8b048e1c1/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -4713,14 +4713,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-05-950c454a96/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-05-e8b048e1c1/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-05-950c454a96/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-05-e8b048e1c1/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -4851,7 +4851,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-05T19:15:21Z",
-          "processing": "satellite-processing-2"
+          "processing": "satellite-processing-3"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4906,11 +4906,11 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-06-3bfe3a01c2/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-06-ebd50939dc/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -4926,14 +4926,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-06-3bfe3a01c2/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-06-ebd50939dc/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-06-3bfe3a01c2/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-06-ebd50939dc/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -5064,7 +5064,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-06T18:50:40Z",
-          "processing": "satellite-processing-2"
+          "processing": "satellite-processing-3"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -5119,7 +5119,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": null,
@@ -5232,7 +5232,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-07T19:16:29Z",
-          "processing": "satellite-processing-2"
+          "processing": "satellite-processing-3"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -5269,7 +5269,7 @@
       "variable": "chlorophyll_a",
       "units": "mg m-3",
       "threshold_text": null,
-      "description": "Most recent valid chlorophyll-a observation from VIIRS (daily composite of available passes) at each pixel within 7 days, with the date of each pixel.",
+      "description": "Most recent valid chlorophyll-a observation from VIIRS on NOAA-21, with NOAA-20 in cells NOAA-21 has no value for at each pixel within 7 days, with the date of each pixel.",
       "resolution_deg": 0.0075,
       "time": {
         "issued_date": null,
@@ -5280,19 +5280,25 @@
         "observed_date": "2026-10-04",
         "lead_days": null,
         "observed_times": [
-          "2026-10-03T12:00:00Z",
-          "2026-10-04T12:00:00Z"
+          "2026-10-01T19:02:52Z",
+          "2026-10-01T19:06:26Z",
+          "2026-10-02T19:28:03Z",
+          "2026-10-02T19:35:10Z",
+          "2026-10-03T19:11:16Z",
+          "2026-10-03T19:20:30Z",
+          "2026-10-04T19:02:17Z",
+          "2026-10-04T19:37:51Z"
         ]
       },
       "freshness": {
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": {
-        "url": "satellite/viirs750/latest-2026-10-08-a0bd363d43/grid/{row}_{col}.u16.gz",
+        "url": "satellite/viirs750/latest-2026-10-08-3af56abd1a/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 114,
         "height": 107,
@@ -5308,14 +5314,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/viirs750/latest-2026-10-08-a0bd363d43/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/viirs750/latest-2026-10-08-a0bd363d43/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 10,
         "legend_url": null,
@@ -5396,27 +5402,52 @@
       "qc": {
         "checks": [
           {
-            "name": "erdVHNchla1day:required_variables",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:required_variables",
             "passed": true,
             "detail": "all present"
           },
           {
-            "name": "erdVHNchla1day:time_matches_listing",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:time_matches_listing",
             "passed": true,
-            "detail": "file 2026-10-01T12:00:00Z, listed 2026-10-01T12:00:00Z"
+            "detail": "file 2026-10-01T19:02:52Z, listed 2026-10-01T19:02:52Z"
           },
           {
-            "name": "erdVHNchla1day:coordinates_on_lattice",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:coordinates_on_lattice",
             "passed": true,
             "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
           },
           {
-            "name": "erdVHNchla1day:within_domain",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:within_domain",
             "passed": true,
-            "detail": "1 edge rows and 0 edge columns outside the domain dropped"
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
           },
           {
-            "name": "erdVHNchla1day:plausible_values",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:plausible_values",
+            "passed": true,
+            "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:required_variables",
+            "passed": true,
+            "detail": "all present"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:time_matches_listing",
+            "passed": true,
+            "detail": "file 2026-10-01T19:06:26Z, listed 2026-10-01T19:06:26Z"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:coordinates_on_lattice",
+            "passed": true,
+            "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:within_domain",
+            "passed": true,
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
           },
@@ -5426,27 +5457,52 @@
             "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           },
           {
-            "name": "erdVHNchla1day:required_variables",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:required_variables",
             "passed": true,
             "detail": "all present"
           },
           {
-            "name": "erdVHNchla1day:time_matches_listing",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:time_matches_listing",
             "passed": true,
-            "detail": "file 2026-10-02T12:00:00Z, listed 2026-10-02T12:00:00Z"
+            "detail": "file 2026-10-02T19:28:03Z, listed 2026-10-02T19:28:03Z"
           },
           {
-            "name": "erdVHNchla1day:coordinates_on_lattice",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:coordinates_on_lattice",
             "passed": true,
             "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
           },
           {
-            "name": "erdVHNchla1day:within_domain",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:within_domain",
             "passed": true,
-            "detail": "1 edge rows and 0 edge columns outside the domain dropped"
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
           },
           {
-            "name": "erdVHNchla1day:plausible_values",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:plausible_values",
+            "passed": true,
+            "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:required_variables",
+            "passed": true,
+            "detail": "all present"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:time_matches_listing",
+            "passed": true,
+            "detail": "file 2026-10-02T19:35:10Z, listed 2026-10-02T19:35:10Z"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:coordinates_on_lattice",
+            "passed": true,
+            "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:within_domain",
+            "passed": true,
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
           },
@@ -5456,109 +5512,171 @@
             "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           },
           {
-            "name": "erdVHNchla1day:required_variables",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:required_variables",
             "passed": true,
             "detail": "all present"
           },
           {
-            "name": "erdVHNchla1day:time_matches_listing",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:time_matches_listing",
             "passed": true,
-            "detail": "file 2026-10-03T12:00:00Z, listed 2026-10-03T12:00:00Z"
+            "detail": "file 2026-10-03T19:11:16Z, listed 2026-10-03T19:11:16Z"
           },
           {
-            "name": "erdVHNchla1day:coordinates_on_lattice",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:coordinates_on_lattice",
             "passed": true,
             "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
           },
           {
-            "name": "erdVHNchla1day:within_domain",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:within_domain",
             "passed": true,
-            "detail": "1 edge rows and 0 edge columns outside the domain dropped"
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
           },
           {
-            "name": "erdVHNchla1day:plausible_values",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:plausible_values",
+            "passed": true,
+            "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:required_variables",
+            "passed": true,
+            "detail": "all present"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:time_matches_listing",
+            "passed": true,
+            "detail": "file 2026-10-03T19:20:30Z, listed 2026-10-03T19:20:30Z"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:coordinates_on_lattice",
+            "passed": true,
+            "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:within_domain",
+            "passed": true,
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
           },
           {
             "name": "coastal_scope",
             "passed": true,
-            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+            "detail": "2 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           },
           {
-            "name": "erdVHNchla1day:required_variables",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:required_variables",
             "passed": true,
             "detail": "all present"
           },
           {
-            "name": "erdVHNchla1day:time_matches_listing",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:time_matches_listing",
             "passed": true,
-            "detail": "file 2026-10-04T12:00:00Z, listed 2026-10-04T12:00:00Z"
+            "detail": "file 2026-10-04T19:37:51Z, listed 2026-10-04T19:37:51Z"
           },
           {
-            "name": "erdVHNchla1day:coordinates_on_lattice",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:coordinates_on_lattice",
             "passed": true,
             "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
           },
           {
-            "name": "erdVHNchla1day:within_domain",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:within_domain",
             "passed": true,
-            "detail": "1 edge rows and 0 edge columns outside the domain dropped"
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
           },
           {
-            "name": "erdVHNchla1day:plausible_values",
+            "name": "noaacwN21VIIRSchlaSectorUSDaily:plausible_values",
+            "passed": true,
+            "detail": "0.0000% of values > 200.0 mg m-3"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:required_variables",
+            "passed": true,
+            "detail": "all present"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:time_matches_listing",
+            "passed": true,
+            "detail": "file 2026-10-04T19:02:17Z, listed 2026-10-04T19:02:17Z"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:coordinates_on_lattice",
+            "passed": true,
+            "detail": "max offset lat 7.11e-15, lon 1.42e-14 deg"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:within_domain",
+            "passed": true,
+            "detail": "0 edge rows and 0 edge columns outside the domain dropped"
+          },
+          {
+            "name": "noaacwN20VIIRSchlaSectorUSDaily:plausible_values",
             "passed": true,
             "detail": "0.0000% of values > 200.0 mg m-3"
           },
           {
             "name": "coastal_scope",
             "passed": true,
-            "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+            "detail": "1 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           }
         ],
         "n_cells": 12198,
-        "n_valid": 7341,
-        "valid_fraction": 0.60182,
-        "value_min": 0.3949100971221924,
-        "value_max": 65.11837005615234
+        "n_valid": 8413,
+        "valid_fraction": 0.689703,
+        "value_min": 0.26062601804733276,
+        "value_max": 188.08389282226562
       },
       "provenance": {
         "source_id": "satellite_chl",
-        "source_name": "VIIRS chlorophyll-a, 750 m daily composite (NOAA CoastWatch West Coast)",
-        "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.html",
-        "dataset_id": "erdVHNchla1day",
+        "source_name": "VIIRS chlorophyll-a, 750 m daily merges from NOAA-21, with NOAA-20 where NOAA-21 has no value (NOAA CoastWatch / NESDIS STAR, near real time)",
+        "source_url": "https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.html",
+        "dataset_id": "noaacwN21VIIRSchlaSectorUSDaily,noaacwN20VIIRSchlaSectorUSDaily",
         "product_version": null,
         "institution": "NOAA CoastWatch",
         "license": "NOAA CoastWatch: may be used and redistributed for free but is not intended for legal use.",
         "citation": null,
         "retrieved_at": "2026-10-08T18:00:00Z",
         "request_urls": [
-          "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.nc?chla%5B(2026-10-01T12:00:00Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
-          "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.nc?chla%5B(2026-10-02T12:00:00Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
-          "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.nc?chla%5B(2026-10-03T12:00:00Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
-          "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.nc?chla%5B(2026-10-04T12:00:00Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D"
+          "https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-01T19:02:52Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
+          "https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-01T19:06:26Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
+          "https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-02T19:28:03Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
+          "https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-02T19:35:10Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
+          "https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-03T19:11:16Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
+          "https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-03T19:20:30Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
+          "https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-04T19:37:51Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D",
+          "https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.nc?chlor_a%5B(2026-10-04T19:02:17Z)%5D%5B(0.0)%5D%5B(37.19625):(36.40125)%5D%5B(-122.59875):(-121.75125)%5D"
         ],
         "upstream_metadata": {
           "days": "2026-10-01, 2026-10-02, 2026-10-03, 2026-10-04",
-          "processing": "satellite-processing-2"
+          "processing": "satellite-processing-3",
+          "scenes": "NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-01T19:02:52Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-01T19:06:26Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-02T19:28:03Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-02T19:35:10Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-03T19:11:16Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-03T19:20:30Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-04T19:37:51Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-04T19:02:17Z",
+          "platform_grid": "satellite/viirs750/latest-2026-10-08-3af56abd1a/platform/{row}_{col}.u16.gz",
+          "platform_codes": "1=NOAA-21, 2=NOAA-20; a cell without a value has no code. Same chunks (512 x 512 cells) and lattice as the value grid; one platform per cell, never averaged.",
+          "platform_rule": "NOAA-21 first; NOAA-20 only in cells the platforms before it have no value for. No averaging, no bias correction.",
+          "pixels_by_platform": "NOAA-21 5048, NOAA-20 3365",
+          "offsets": "Measured, not corrected (98 days with all three, Feb-Oct 2026, California, same cells; research/viirs-jpss-overlap/report.md): NOAA-21 reads about 4% lower than S-NPP (median log10 ratio -0.020), NOAA-20 about 10% lower (-0.045); NOAA-21 about 10% higher than NOAA-20 (+0.040). Agreement is poorer within 5 km of shore and above 1 mg m-3."
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
       },
       "native_resolution_m": 750.0,
       "platforms": [
-        "VIIRS"
+        "VIIRS",
+        "NOAA-21",
+        "NOAA-20"
       ],
       "coverage": {
         "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
-        "domain_observed_fraction": 0.9176,
+        "domain_observed_fraction": 0.9789,
         "domain_reference_cells": 522,
         "regions": [
           {
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
-            "observed_fraction": 0.9355,
-            "observed_km2": 2984.4,
+            "observed_fraction": 0.9812,
+            "observed_km2": 3335.0,
             "reference_cells": 372
           }
         ]
@@ -5567,45 +5685,57 @@
         "window_days": 7,
         "reference_date": "2026-10-08",
         "newest_observed_date": "2026-10-04",
-        "oldest_observed_date": "2026-10-03",
+        "oldest_observed_date": "2026-10-01",
         "days": [
           {
             "date": "2026-10-04",
             "platforms": [
-              "VIIRS"
+              "VIIRS",
+              "NOAA-21",
+              "NOAA-20"
             ],
             "observed_times": [
-              "2026-10-04T12:00:00Z"
+              "2026-10-04T19:02:17Z",
+              "2026-10-04T19:37:51Z"
             ],
-            "pixels_used": 2356
+            "pixels_used": 3531
           },
           {
             "date": "2026-10-03",
             "platforms": [
-              "VIIRS"
+              "VIIRS",
+              "NOAA-21",
+              "NOAA-20"
             ],
             "observed_times": [
-              "2026-10-03T12:00:00Z"
+              "2026-10-03T19:11:16Z",
+              "2026-10-03T19:20:30Z"
             ],
-            "pixels_used": 4985
+            "pixels_used": 4876
           },
           {
             "date": "2026-10-02",
             "platforms": [
-              "VIIRS"
+              "VIIRS",
+              "NOAA-21",
+              "NOAA-20"
             ],
             "observed_times": [
-              "2026-10-02T12:00:00Z"
+              "2026-10-02T19:28:03Z",
+              "2026-10-02T19:35:10Z"
             ],
-            "pixels_used": 0
+            "pixels_used": 6
           },
           {
             "date": "2026-10-01",
             "platforms": [
-              "VIIRS"
+              "VIIRS",
+              "NOAA-21",
+              "NOAA-20"
             ],
             "observed_times": [
-              "2026-10-01T12:00:00Z"
+              "2026-10-01T19:02:52Z",
+              "2026-10-01T19:06:26Z"
             ],
             "pixels_used": 0
           }
@@ -5613,15 +5743,19 @@
         "age_histogram": [
           {
             "age_days": 4,
-            "fraction": 0.3209
+            "fraction": 0.4197
           },
           {
             "age_days": 5,
-            "fraction": 0.6791
+            "fraction": 0.5796
+          },
+          {
+            "age_days": 6,
+            "fraction": 0.0007
           }
         ],
         "age_grid": {
-          "url": "satellite/viirs750/latest-2026-10-08-a0bd363d43/age/{row}_{col}.u16.gz",
+          "url": "satellite/viirs750/latest-2026-10-08-3af56abd1a/age/{row}_{col}.u16.gz",
           "encoding": "uint16le+gzip",
           "width": 114,
           "height": 107,
@@ -5637,14 +5771,14 @@
           "chunks": {
             "rows": 512,
             "cols": 512,
-            "url_template": "satellite/viirs750/latest-2026-10-08-a0bd363d43/age/{row}_{col}.u16.gz",
+            "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/age/{row}_{col}.u16.gz",
             "present": [
               "0_0"
             ]
           }
         },
         "age_tiles": {
-          "url_template": "satellite/viirs750/latest-2026-10-08-a0bd363d43/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 10,
           "legend_url": null,
@@ -5692,10 +5826,16 @@
         "observed_date": "2026-10-06",
         "lead_days": null,
         "observed_times": [
+          "2026-10-01T19:02:52Z",
+          "2026-10-01T19:06:26Z",
           "2026-10-01T19:19:05Z",
           "2026-10-02T18:54:24Z",
-          "2026-10-03T12:00:00Z",
-          "2026-10-04T12:00:00Z",
+          "2026-10-02T19:28:03Z",
+          "2026-10-02T19:35:10Z",
+          "2026-10-03T19:11:16Z",
+          "2026-10-03T19:20:30Z",
+          "2026-10-04T19:02:17Z",
+          "2026-10-04T19:37:51Z",
           "2026-10-05T19:15:21Z",
           "2026-10-06T18:50:40Z"
         ]
@@ -5704,12 +5844,12 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       },
       "image": null,
       "grid": null,
       "tiles": {
-        "url_template": "satellite/multisensor/latest-2026-10-08-6b18dda4be/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/multisensor/latest-2026-10-08-db0d644346/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -5793,7 +5933,7 @@
           {
             "name": "one_sensor_per_pixel",
             "passed": true,
-            "detail": "14115 pixels Sentinel-3, 52239 pixels VIIRS (on the 300 m lattice); no pixel combines values"
+            "detail": "14085 pixels Sentinel-3, 61466 pixels VIIRS (on the 300 m lattice); no pixel combines values"
           },
           {
             "name": "members_unchanged",
@@ -5802,8 +5942,8 @@
           }
         ],
         "n_cells": 109461,
-        "n_valid": 66354,
-        "valid_fraction": 0.606189,
+        "n_valid": 75551,
+        "valid_fraction": 0.690209,
         "value_min": 0.009999297310040017,
         "value_max": 316.23887710622756
       },
@@ -5811,7 +5951,7 @@
         "source_id": "satellite_chl",
         "source_name": "CoastWatch multi-sensor display of NOAA CoastWatch Sentinel-3 OLCI and VIIRS chlorophyll-a",
         "source_url": "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.html",
-        "dataset_id": "noaacwS3AOLCIchlaSectorCIDaily,noaacwS3AOLCIchlaSectorDIDaily,noaacwS3BOLCIchlaSectorCIDaily,noaacwS3BOLCIchlaSectorDIDaily,erdVHNchla1day",
+        "dataset_id": "noaacwS3AOLCIchlaSectorCIDaily,noaacwS3AOLCIchlaSectorDIDaily,noaacwS3BOLCIchlaSectorCIDaily,noaacwS3BOLCIchlaSectorDIDaily,noaacwN21VIIRSchlaSectorUSDaily,noaacwN20VIIRSchlaSectorUSDaily",
         "product_version": null,
         "institution": "NOAA CoastWatch (data); CoastWatch pipeline (display)",
         "license": "Contains modified Copernicus Sentinel-3 data (EUMETSAT), processed by NOAA CoastWatch/OceanWatch; free and open. NOAA data: may be used and redistributed for free.",
@@ -5828,18 +5968,20 @@
       "native_resolution_m": null,
       "platforms": [
         "Sentinel-3A",
-        "VIIRS"
+        "VIIRS",
+        "NOAA-21",
+        "NOAA-20"
       ],
       "coverage": {
         "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
-        "domain_observed_fraction": 0.933,
+        "domain_observed_fraction": 0.9866,
         "domain_reference_cells": 522,
         "regions": [
           {
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
-            "observed_fraction": 0.9543,
-            "observed_km2": 2996.1,
+            "observed_fraction": 0.9866,
+            "observed_km2": 3325.0,
             "reference_cells": 372
           }
         ]
@@ -5860,12 +6002,12 @@
           {
             "order": 1,
             "layer_id": "viirs750_chl_latest",
-            "label": "VIIRS 750 m",
+            "label": "VIIRS 750 m \u00b7 NOAA-21/NOAA-20",
             "native_resolution_m": 750.0
           }
         ],
         "sensor_tiles": {
-          "url_template": "satellite/multisensor/latest-2026-10-08-6b18dda4be/sensor-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/multisensor/latest-2026-10-08-db0d644346/sensor-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
@@ -5889,7 +6031,7 @@
           ]
         },
         "age_tiles": {
-          "url_template": "satellite/multisensor/latest-2026-10-08-6b18dda4be/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/multisensor/latest-2026-10-08-db0d644346/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
@@ -5918,32 +6060,32 @@
             "label": "Whole domain",
             "reference_cells": 522,
             "primary_fraction": 0.249,
-            "secondary_fraction": 0.9176,
-            "combined_fraction": 0.933,
-            "secondary_only_fraction": 0.684
+            "secondary_fraction": 0.9789,
+            "combined_fraction": 0.9866,
+            "secondary_only_fraction": 0.7376
           },
           {
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
             "reference_cells": 372,
             "primary_fraction": 0.3065,
-            "secondary_fraction": 0.9355,
-            "combined_fraction": 0.9543,
-            "secondary_only_fraction": 0.6478
+            "secondary_fraction": 0.9812,
+            "combined_fraction": 0.9866,
+            "secondary_only_fraction": 0.6801
           }
         ],
         "shown": [
           {
             "order": 0,
-            "pixels": 14115,
+            "pixels": 14085,
             "median_age_days": 2.0,
             "max_age_days": 7
           },
           {
             "order": 1,
-            "pixels": 52239,
+            "pixels": 61466,
             "median_age_days": 5.0,
-            "max_age_days": 5
+            "max_age_days": 6
           }
         ],
         "agreement_method": "Same-day pairs: for each VIIRS 750 m cell observed on a day Sentinel-3 also observed, the geometric mean of the valid Sentinel-3 300 m pixels inside it (at least 5) against the VIIRS value, in log10. Overpasses differ by a few hours. Describes the visible seam; not a validation of either sensor.",
@@ -9757,7 +9899,7 @@
         "basis": "observed_date",
         "current_max_age_days": 3,
         "stale_max_age_days": 7,
-        "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+        "note": "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
       }
     },
     {
@@ -9826,45 +9968,45 @@
       "error": null,
       "notes": [
         "Crescent City: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(41.594):(41.904)%5D%5B(235.595):(235.997)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(4",
-        "Crescent City: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.8938):2:(41.6043)%5D%5B(-124.3946):2:(-124.0134)%5D",
+        "Crescent City: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Trinidad: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(40.905):(41.214)%5D%5B(235.658):(236.056)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(4",
-        "Trinidad: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.2040):2:(40.9146)%5D%5B(-124.3318):2:(-123.9544)%5D",
+        "Trinidad: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Eureka: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(40.644):(40.953)%5D%5B(235.638):(236.034)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(4",
-        "Eureka: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(40.9431):2:(40.6536)%5D%5B(-124.3518):2:(-123.9758)%5D",
+        "Eureka: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Shelter Cove: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(39.871):(40.180)%5D%5B(235.738):(236.130)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Shelter Cove: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(40.1702):2:(39.8808)%5D%5B(-124.2524):2:(-123.8804)%5D",
+        "Shelter Cove: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Fort Bragg: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(39.270):(39.580)%5D%5B(236.002):(236.391)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Fort Bragg: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(39.5699):2:(39.2804)%5D%5B(-123.9882):2:(-123.6193)%5D",
+        "Fort Bragg: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Point Arena: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(38.754):(39.064)%5D%5B(236.114):(236.500)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Point Arena: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(39.0535):2:(38.7641)%5D%5B(-123.8762):2:(-123.5099)%5D",
+        "Point Arena: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Bodega Bay: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(38.179):(38.488)%5D%5B(236.760):(237.144)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Bodega Bay: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(38.4780):2:(38.1885)%5D%5B(-123.2298):2:(-122.8663)%5D",
+        "Bodega Bay: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "San Francisco: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(37.654):(37.963)%5D%5B(237.394):(237.775)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "San Francisco: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(37.9534):2:(37.6639)%5D%5B(-122.5961):2:(-122.2350)%5D",
+        "San Francisco: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Princeton / Half Moon Bay: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(37.349):(37.658)%5D%5B(237.328):(237.708)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Princeton / Half Moon Bay: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(37.6484):2:(37.3590)%5D%5B(-122.6617):2:(-122.3020)%5D",
+        "Princeton / Half Moon Bay: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Santa Cruz: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(36.819):(37.129)%5D%5B(237.781):(238.158)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Santa Cruz: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(37.1189):2:(36.8294)%5D%5B(-122.2095):2:(-121.8521)%5D",
+        "Santa Cruz: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Morro Bay: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(35.211):(35.521)%5D%5B(238.965):(239.335)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Morro Bay: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(35.5106):2:(35.2211)%5D%5B(-121.0251):2:(-120.6747)%5D",
+        "Morro Bay: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Avila / Port San Luis: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(35.020):(35.330)%5D%5B(239.060):(239.430)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Avila / Port San Luis: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(35.3197):2:(35.0302)%5D%5B(-120.9300):2:(-120.5803)%5D",
+        "Avila / Port San Luis: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Santa Barbara: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(34.252):(34.562)%5D%5B(240.128):(240.495)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Santa Barbara: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(34.5520):2:(34.2625)%5D%5B(-119.8621):2:(-119.5154)%5D",
+        "Santa Barbara: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Ventura: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(34.124):(34.433)%5D%5B(240.524):(240.890)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Ventura: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(34.4231):2:(34.1336)%5D%5B(-119.4663):2:(-119.1201)%5D",
+        "Ventura: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Port Hueneme: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.993):(34.303)%5D%5B(240.622):(240.988)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Port Hueneme: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(34.2925):2:(34.0030)%5D%5B(-119.3679):2:(-119.0223)%5D",
+        "Port Hueneme: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "San Pedro: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.581):(33.891)%5D%5B(241.526):(241.890)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "San Pedro: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(33.8806):2:(33.5911)%5D%5B(-118.4643):2:(-118.1203)%5D",
+        "San Pedro: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Newport Beach: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.461):(33.770)%5D%5B(241.888):(242.251)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Newport Beach: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(33.7602):2:(33.4707)%5D%5B(-118.1024):2:(-117.7588)%5D",
+        "Newport Beach: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Dana Point: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.312):(33.622)%5D%5B(242.120):(242.483)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Dana Point: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(33.6117):2:(33.3222)%5D%5B(-117.8696):2:(-117.5266)%5D",
+        "Dana Point: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "Oceanside: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(33.041):(33.350)%5D%5B(242.434):(242.796)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "Oceanside: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(33.3401):2:(33.0506)%5D%5B(-117.5559):2:(-117.2138)%5D",
+        "Oceanside: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf",
         "San Diego: nowcast history unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(32.560):(32.870)%5D%5B(242.686):(243.000)%5D,particulate_domoic%5B(2026-09-08T12:00:00Z):(2026-10-07T12:00:00Z)%5D%5B(3",
-        "San Diego: satellite chlorophyll unavailable: no fixture for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-09T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(32.8599):2:(32.5704)%5D%5B(-117.3043):2:(-116.9640)%5D"
+        "San Diego: satellite chlorophyll unavailable from NOAA-21/NOAA-20 and from the S-NPP fallback: NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: HTTP 404 for https://coastwatch.noaa.go; S-NPP fallback: no fixture for https://coastwatch.pf"
       ],
       "latest_issued_date": "2026-10-08",
       "latest_valid_date": "2026-10-08",
@@ -9933,7 +10075,7 @@
   ],
   "ports_url": "ports-53ac2a4e2e.geojson",
   "official_url": "official-773a67989c.json",
-  "port_intel_url": "port-intel-6e673c8f04.json",
+  "port_intel_url": "port-intel-ce8b98512a.json",
   "observations_url": "observations-6d325da89a.json",
   "fisheries_url": "fisheries-f0144b9b12.json"
 }

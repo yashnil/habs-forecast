@@ -21,6 +21,8 @@ from coastwatch_pipeline.sources.charm import parse_netcdf
 from coastwatch_pipeline.verify_satellite import verify_satellite
 
 FIX = Path(__file__).parent / "fixtures" / "satellite"
+# every VIIRS 750 m source: NOAA-21, NOAA-20 and the S-NPP fallback
+VIIRS_ALL = r"noaacwN2[01]VIIRS|erdVHNchla1day"
 
 
 def run_region(tmp_path: Path, region: str, **kw):
@@ -196,7 +198,7 @@ def test_total_outage_keeps_previous_layers_with_real_dates(tmp_path):
     out = tmp_path / "v1"
     m1 = run_pipeline(fixture_context(out))
     later = "2026-10-12T18:00:00Z"
-    fetcher = FixtureFetcher(overrides={r"OLCIchla|erdVHNchla1day": lambda url: (_ for _ in ()).throw(FetchError(f"HTTP 503 for {url}"))})
+    fetcher = FixtureFetcher(overrides={r"OLCIchla|" + VIIRS_ALL: lambda url: (_ for _ in ()).throw(FetchError(f"HTTP 503 for {url}"))})
     m2 = run_pipeline(fixture_context(out, later, fetcher))
     old = {lyr.layer_id: lyr.time.observed_date for lyr in m1.layers if lyr.provenance.source_id == "satellite_chl"}
     new = {lyr.layer_id: lyr.time.observed_date for lyr in m2.layers if lyr.provenance.source_id == "satellite_chl"}
@@ -207,11 +209,12 @@ def test_total_outage_keeps_previous_layers_with_real_dates(tmp_path):
 
 
 def test_viirs_outage_keeps_previous_viirs_while_olci_updates(tmp_path):
-    # staging, 2026-10-09: ERDDAP answered 403 to every VIIRS request while OLCI worked
+    # staging, 2026-10-09: ERDDAP answered 403 to every VIIRS request while OLCI worked (now: NOAA-21,
+    # NOAA-20 and the S-NPP fallback all refused)
     out = tmp_path / "v1"
     m1 = run_pipeline(fixture_context(out))
     prev = next(lyr for lyr in m1.layers if lyr.layer_id == "viirs750_chl_latest")
-    fetcher = FixtureFetcher(overrides={r"erdVHNchla1day": lambda url: (_ for _ in ()).throw(FetchError(f"HTTP 403 for {url}"))})
+    fetcher = FixtureFetcher(overrides={VIIRS_ALL: lambda url: (_ for _ in ()).throw(FetchError(f"HTTP 403 for {url}"))})
     m2 = run_pipeline(fixture_context(out, fetcher=fetcher))
     kept = next(lyr for lyr in m2.layers if lyr.layer_id == "viirs750_chl_latest")
     assert kept.model_dump() == prev.model_dump()  # same files, same real dates
@@ -313,7 +316,7 @@ def test_verification_checks_only_this_runs_layers_and_names_an_unreachable_upst
 
     out = tmp_path / "v1"
     run_pipeline(fixture_context(out))
-    fetcher = FixtureFetcher(overrides={r"erdVHNchla1day": lambda url: (_ for _ in ()).throw(FetchError(f"HTTP 403 for {url}"))})
+    fetcher = FixtureFetcher(overrides={VIIRS_ALL: lambda url: (_ for _ in ()).throw(FetchError(f"HTTP 403 for {url}"))})
     ctx = fixture_context(out, fetcher=fetcher)
     ctx.run_id = "second"
     run_pipeline(ctx)

@@ -103,3 +103,11 @@ export function sampleField(f: CurrentField, lat: number, lon: number, search = 
 export function hoursAgo(validTime: string, now: Date): number {
   return Math.max(0, Math.floor((now.getTime() - Date.parse(validTime)) / 3_600_000));
 }
+
+/**
+ * HF-radar hours are published about 4-15 h after observation, so an hour older than this means
+ * the feed stopped (the pipeline's health check alerts at the same age, HFR_MAX_AGE_HOURS). Every
+ * view that shows an hour says "Stale" past it; the hour's own time is always shown.
+ */
+export const HFR_STALE_HOURS = 18;
+export const currentsStale = (validTime: string | null | undefined, now: Date | null | undefined): boolean => !!validTime && !!now && hoursAgo(validTime, now) > HFR_STALE_HOURS;

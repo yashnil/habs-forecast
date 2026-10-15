@@ -21,8 +21,8 @@ import { formatDate, formatDateTimePT, relativeDay } from "@/lib/time";
 import { FreshnessBadge, ProductClassBadge } from "@/components/ui/Badges";
 import { AgeLegend, ChlorophyllLegend, ProbabilityLegend, SensorLegend } from "@/components/ui/ProbabilityLegend";
 import { multiSensorMembers, ratioPhrase } from "@/lib/multisensor";
-import { currentsHourly, currentsMean, hourStamp, hoursAgo, KNOTS_PER_MS } from "@/lib/currents";
-import { combinedGapDays } from "@/lib/stamp";
+import { currentsHourly, currentsMean, currentsStale, hourStamp, hoursAgo, KNOTS_PER_MS } from "@/lib/currents";
+import { combinedGapDays, viirsPlatformLabel } from "@/lib/stamp";
 import { ARROW_LENGTHS, SPEED_CLASSES } from "@/lib/basemap";
 import { safeHref } from "@/lib/links";
 import type { Opening } from "@/lib/opening";
@@ -494,7 +494,7 @@ function SatelliteSection(p: Props) {
           )}
           <MetaRow fresh={fresh} basis="observed_date">
             <ProductClassBadge pc="observation" />
-            <span className={p.expanded ? "" : "hidden"}>{product === "viirs750" ? "VIIRS · NOAA" : product === "multi" ? "Sentinel-3 OLCI + VIIRS · NOAA CoastWatch" : "Sentinel-3 OLCI · NOAA CoastWatch"}</span>
+            <span className={p.expanded ? "" : "hidden"}>{product === "viirs750" ? `${layer ? viirsPlatformLabel(layer) : "VIIRS"} · NOAA` : product === "multi" ? `Sentinel-3 OLCI + ${layer ? viirsPlatformLabel(layer) : "VIIRS"} · NOAA CoastWatch` : "Sentinel-3 OLCI · NOAA CoastWatch"}</span>
             <Res l={layer} />
           </MetaRow>
           {/* what chlorophyll is and what a gap means: always visible, never clamped */}
@@ -659,7 +659,7 @@ function MultiDates({
     <>
       Sentinel-3 pixels observed {range(primary)}; VIIRS {range(secondary)}.{" "}
       {sec?.median_age_days != null && sec.pixels > 0 && (
-        <span data-testid="multi-viirs-age">VIIRS pixels shown are a median {Math.round(sec.median_age_days)} days old (VIIRS is published about 5 days after observation). </span>
+        <span data-testid="multi-viirs-age">VIIRS pixels shown are a median {Math.round(sec.median_age_days)} days old (VIIRS from NOAA-21 and NOAA-20 is published about 1–2 days after observation). </span>
       )}
       {cov && (
         <span data-testid="multi-coverage">
@@ -770,9 +770,10 @@ function CurrentsSection(p: Props) {
               Observed <span className="font-medium text-ink">{t ? formatDateTimePT(t) : "—"}</span>
               {t && <span className="text-ink-3"> ({t.slice(11, 16)} UTC)</span>}
               {t && p.now && (
-                <span className="text-ink-3" data-testid="cur-age">
+                <span className={currentsStale(t, p.now) ? "font-medium text-serious" : "text-ink-3"} data-testid="cur-age">
                   {" "}
-                  · {hoursAgo(t, p.now)} h ago
+                  · {currentsStale(t, p.now) ? "Stale: " : ""}
+                  {hoursAgo(t, p.now)} h ago
                 </span>
               )}
               {idx === hours.length - 1 && <span className="text-ink-3"> · newest hour</span>}

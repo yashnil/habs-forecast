@@ -62,13 +62,44 @@ export const PORT_COPY = {
   nearshore: "C-HARM does not provide domoic acid probabilities for many cells within about 3–6 km of shore, so fewer cells contribute to those values.",
   history: "One value per C-HARM nowcast (median of the same cells). Days without a published run are left blank.",
   chlorophyll:
-    "NOAA VIIRS 8-day composites (dated at the centre of each 8-day window; neighbouring values overlap). Median of clear pixels within 15 km. Chlorophyll is algae biomass, not toxin.",
+    "NOAA VIIRS, 8-day windows (dated at the centre of each window; neighbouring values overlap): NOAA-21 daily passes, with NOAA-20 where NOAA-21 has no clear pixel, combined by CoastWatch. Before NOAA ended Suomi-NPP data (Nov 2, 2026), NOAA's S-NPP 8-day composites, which read about 4–10% higher. Median of clear pixels within 15 km. Chlorophyll is algae biomass, not toxin.",
 } as const;
 
 export const CHLOROPHYLL_COPY = {
   heading: "Satellite chlorophyll",
   biomass: "Chlorophyll measures algae biomass. It does not measure toxins and does not predict where fish are.",
   gaps: "Gaps are clouds or missing passes, not low chlorophyll.",
+} as const;
+
+const km = (v: number) => (v < 10 ? v.toFixed(1) : v.toFixed(0)).replace(/\.0$/, "");
+const mg = (v: number) => (v >= 10 ? v.toFixed(0) : v.toPrecision(2));
+
+/**
+ * Chlorophyll near a place (lib/chlNear): how a headline was made, and pixels set aside. Pixels on
+ * land or right against the shore, and single pixels far above the water around them, are never a
+ * place's headline; they stay on the map. No fixed ceiling: real blooms here have exceeded 300 mg/m³.
+ */
+export const CHL_NEAR_COPY = {
+  /** how a neighbourhood headline was made: "Median of 33 clear water pixels within 1.5 km · range 0.91–9.2 · nearest 0.5 km away" */
+  basis: (b: { n: number; radiusKm: number; min: number; max: number; nearestKm: number }) =>
+    [`Median of ${b.n} clear water pixel${b.n === 1 ? "" : "s"} within ${km(b.radiusKm)} km`, mg(b.min) === mg(b.max) ? null : `range ${mg(b.min)}–${mg(b.max)}`, `nearest ${km(b.nearestKm)} km away`].filter(Boolean).join(" · "),
+  /** the highest pixel set aside, when it is far above the headline (one line, about that pixel) */
+  aside: (a: { value: number; reason: "shore" | "spike" }) =>
+    a.reason === "shore"
+      ? `One pixel right against the shore read ${mg(a.value)} mg/m³. Pixels this close to land are often wrong (glare from land, rocks and surf); it is not used here.`
+      : `One pixel nearby read ${mg(a.value)} mg/m³, more than ten times the water around it. A lone pixel that far above its neighbours is usually a measurement error (such as glare or a cloud edge), not a bloom; it is not used here.`,
+  flagged: (place: string, radiusKm: number) =>
+    `No reading from open water within ${km(radiusKm)} km of ${place}. The only clear pixels there are on land, right against the shore or far out of line with the water around them, and they are not treated as a measurement.`,
+  /** My Coast's "what is not known" list */
+  unknownFlagged:
+    "No satellite reading from open water near these waters in the last week: the only clear pixels nearby are on land, right against the shore or far out of line with the water around them.",
+  noCoastline: "The coastline could not be loaded, so pixels on land or right against the shore could not be set aside.",
+  /** the pixel under the pointer, when the place rules set it aside (shown with its own value) */
+  pixel: {
+    land: "On land by the app's coastline: not a sea-surface reading; never used for a place.",
+    shore: "Right against the shore: often wrong (glare from land, rocks, surf); never used for a place.",
+    spike: "Far above the water around it: not treated as a measurement; never used for a place.",
+  },
 } as const;
 
 export const DISCLAIMER =
@@ -239,7 +270,7 @@ export const ABOUT = {
     "CoastWatch reads public data from these providers every six hours, checks it against the source, and shows the last good data with its own dates when a source fails.",
   providers: [
     { name: "NOAA C-HARM v3.1", what: "Bloom and domoic acid forecast (NOAA CoastWatch West Coast ERDDAP)" },
-    { name: "NOAA CoastWatch, NASA GIBS", what: "Satellite chlorophyll: Sentinel-3 OLCI 300 m, VIIRS 750 m" },
+    { name: "NOAA CoastWatch, NASA GIBS", what: "Satellite chlorophyll: Sentinel-3 OLCI 300 m, VIIRS 750 m (NOAA-21, NOAA-20)" },
     { name: "HFRNet (IOOS)", what: "HF-radar surface currents, 2 km, hourly" },
     { name: "CalHABMAP (SCCOOS ERDDAP)", what: "Shore-station domoic acid, Pseudo-nitzschia, chlorophyll and temperature" },
     { name: "NOAA Fisheries FOSS, BLS CPI-U", what: "Commercial landings since 2015, and the inflation index for constant dollars" },

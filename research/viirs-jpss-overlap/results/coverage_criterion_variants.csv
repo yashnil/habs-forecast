@@ -1,0 +1,33 @@
+criterion,n_days,days_pass,pct_days_pass,note
+ORIGINAL union >= S-NPP (per day),98,75.0,76.531,acceptance criterion as proposed: FAILED (needs >= 80%)
+union >= 0.95 x S-NPP,98,82.0,83.673,tolerance variant
+union >= 0.90 x S-NPP,98,87.0,88.776,tolerance variant
+union >= S-NPP - 1 pt,98,83.0,84.694,tolerance variant
+union >= S-NPP - 2 pt,98,90.0,91.837,tolerance variant
+union >= S-NPP - 5 pt,98,94.0,95.918,tolerance variant
+"ORIGINAL test, excluding the 8 days on which all three products are empty",90,67.0,74.444,0 >= 0 ties removed; these days carry no information
+"union >= S-NPP, days with S-NPP >= 10% only",67,51.0,76.119,excludes near-total cloud days
+"union >= 0.9 x S-NPP, days with S-NPP >= 10% only",67,62.0,92.537,
+union >= S-NPP offshore (>= 5 km) only,98,73.0,74.49,stratum
+union >= S-NPP near-shore (<= 5 km) only,98,86.0,87.755,stratum
+"union >= S-NPP, north region only",98,64.0,65.306,stratum
+"union >= S-NPP, central region only",98,74.0,75.51,stratum
+"union >= S-NPP, south region only",98,71.0,72.449,stratum
+BASELINE N21 >= N20,98,47.0,47.959,two near-identical JPSS sensors
+BASELINE N20 >= N21,98,59.0,60.204,
+BASELINE N21 >= S-NPP,98,45.0,45.918,single sensor vs single sensor
+BASELINE N20 >= S-NPP,98,36.0,36.735,
+BASELINE S-NPP u N21 >= N20,98,86.0,87.755,"same 'two-sensor union vs third sensor' test, sensors permuted"
+BASELINE S-NPP u N20 >= N21,98,92.0,93.878,"same test, sensors permuted"
+BASELINE S-NPP(day+1) >= S-NPP(day),98,50.0,51.02,"S-NPP against itself one day later, all consecutive S-NPP day pairs"
+BASELINE S-NPP(day-1) u S-NPP(day+1) >= S-NPP(day),87,74.0,85.057,two S-NPP looks a day apart vs one look
+SUMMARY mean_cov_snpp,98,,,26.1185
+SUMMARY mean_cov_union,98,,,32.5445
+SUMMARY median_cov_snpp,98,,,23.8986
+SUMMARY median_cov_union,98,,,30.1389
+SUMMARY n_days_ratio_defined,98,,,88.0000
+SUMMARY median_ratio,98,,,1.0806
+SUMMARY p10_ratio,98,,,0.8611
+SUMMARY p25_ratio,98,,,0.9987
+SUMMARY pooled_ratio_sum_union_over_sum_snpp,98,,,1.2460
+weekly mean union >= weekly mean S-NPP (weeks with >= 3 three-sensor days),17,17.0,100.0,"unit = week, not day"

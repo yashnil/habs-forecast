@@ -94,7 +94,8 @@ export function AgeLegend({ maxDays }: { maxDays: number }) {
         {AGE_COLOURS.slice(0, maxDays + 1).map((c, i) => (
           <span key={c} className="flex-1 text-center text-[12px] text-ink-3 tabular">
             <span className="mb-0.5 block h-2.5 rounded-[2px]" style={{ background: c }} aria-hidden />
-            {i}
+            {/* the last colour also covers older pixels (VIIRS reaches back 10 days) */}
+            {i === AGE_COLOURS.length - 1 && maxDays > i ? `${i}+` : i}
           </span>
         ))}
       </div>

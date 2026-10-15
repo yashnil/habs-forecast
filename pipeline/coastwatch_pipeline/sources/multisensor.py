@@ -67,6 +67,12 @@ CAVEAT_MULTI = (
 )
 
 
+def viirs_label(viirs: LayerArtifact) -> str:
+    """"VIIRS 750 m · NOAA-21/NOAA-20": the satellites the VIIRS member actually used."""
+    sats = [p for p in viirs.platforms if p != "VIIRS"]
+    return "VIIRS 750 m" + (f" · {'/'.join(sats)}" if sats else "")
+
+
 def target_of(g: ValueGrid) -> sat.Target:
     return sat.Target(g.lat_first, g.lon_first, g.lon_step, g.height, g.width)
 
@@ -232,14 +238,14 @@ def build(ctx: RunContext, olci: LayerArtifact, viirs: LayerArtifact, olci_days:
         time=TimeInfo(observed_date=newest, valid_date=newest, observed_times=sorted(set(olci.time.observed_times) | set(viirs.time.observed_times))),
         freshness=sat.FRESHNESS, grid=None,
         tiles=tl("tiles", ts, "Rendered by CoastWatch: each tile pixel shows one sensor's published value on that sensor's own grid (nearest cell); Sentinel-3 over VIIRS by the rule."),
-        palette=CHLOROPHYLL, caveats=[CAVEAT_MULTI, sat.CAVEAT_COMPOSITE.format(n=sat.WINDOW_DAYS)] + list(sat.CAVEATS),
-        qc=sat._qc(combined, checks), platforms=sorted(set(olci.platforms) | set(viirs.platforms)),
+        palette=CHLOROPHYLL, caveats=[CAVEAT_MULTI, sat.CAVEAT_COMPOSITE.format(n=sat.WINDOW_DAYS if viirs.composite.window_days == sat.WINDOW_DAYS else f"{sat.WINDOW_DAYS} (VIIRS: {viirs.composite.window_days})")] + list(sat.CAVEATS),
+        qc=sat._qc(combined, checks), platforms=list(dict.fromkeys(list(olci.platforms) + list(viirs.platforms))),  # members' order (VIIRS: sensor, then satellites by priority)
         coverage=sat.coverage(combined, t_o),
         multisensor=MultiSensorInfo(
             reference_date=ctx.now.date().isoformat(), rule=RULE, prefer_primary_within_days=PREFER_PRIMARY_WITHIN_DAYS,
             members=[
                 SensorMember(order=0, layer_id=olci.layer_id, label="Sentinel-3 OLCI 300 m", native_resolution_m=olci.native_resolution_m or 300),
-                SensorMember(order=1, layer_id=viirs.layer_id, label="VIIRS 750 m", native_resolution_m=viirs.native_resolution_m or 750),
+                SensorMember(order=1, layer_id=viirs.layer_id, label=viirs_label(viirs), native_resolution_m=viirs.native_resolution_m or 750),
             ],
             sensor_tiles=tl("sensor-tiles", sts, "Which sensor is shown at each pixel (categorical)."),
             age_tiles=tl("age-tiles", ats, "Age in days of the observation shown at each pixel (categorical)."),

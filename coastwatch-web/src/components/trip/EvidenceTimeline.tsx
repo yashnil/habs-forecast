@@ -81,8 +81,10 @@ export function EvidenceTimeline({
           : sat === null
             ? "Reading…"
             : sat.value == null
-              ? `No clear view in ${sat.windowDays} days (cloud or fog)`
-              : `${Number(sat.value.toPrecision(2))} mg/m³${sat.km > 0 ? ` · ${sat.km.toFixed(1)} km away` : ""}${sat.date ? ` · ${shortDate(sat.date)}` : ""}`,
+              ? sat.flagged
+                ? `No open-water reading within ${sat.radiusKm} km`
+                : `No clear view in ${sat.windowDays} days (cloud or fog)`
+              : `${Number(sat.value.toPrecision(2))} mg/m³${sat.basis ? ` · median within ${sat.basis.radiusKm} km` : ""}${sat.date ? ` · ${shortDate(sat.date)}` : ""}`,
       focus: "satellite",
       far: !sat || sat === "error" || sat.value == null,
     },

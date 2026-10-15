@@ -105,6 +105,19 @@ describe("what matters right now", () => {
     expect(own.detail).toMatch(/not a measurement/);
   });
 
+  it("a stale C-HARM run is said in the briefing, with its issue date and age", () => {
+    const modelStale = { state: "stale" as const, issued: "2026-10-12", ageDays: 2 };
+    const own = whatMatters(input({ model: { valid: "2026-10-14", pda: nb({ here: 0.31, n: 5, median: 0.3 }) }, modelStale })).find((x) => x.id === "hab")!;
+    expect(own.headline).toMatch(/31%.*\(stale run, issued .*, 2 days ago\)/);
+    expect(own.detail).toMatch(/no newer run/i);
+    expect(own.aged).toBe(true);
+    const offshore = whatMatters(input({ hab: { cells: null, toxin: null }, model: { valid: "2026-10-14", pda: nb({ n: 27, median: 0.74, min: 0.6, max: 0.79 }) }, modelStale })).find((x) => x.id === "hab")!;
+    expect(offshore.detail).toMatch(/stale run, issued/);
+    // current runs say nothing extra
+    const fresh = whatMatters(input({ model: { valid: "2026-10-14", pda: nb({ here: 0.31, n: 5, median: 0.3 }) } })).find((x) => x.id === "hab")!;
+    expect(`${fresh.headline} ${fresh.detail}`).not.toMatch(/stale/);
+  });
+
   it("a recent nearby sample leads the HAB line with station, distance and age, and says seawater is not seafood", () => {
     const items = whatMatters(input({ hab: { cells: ev({}), toxin: null } }));
     const hab = items.find((x) => x.id === "hab")!;

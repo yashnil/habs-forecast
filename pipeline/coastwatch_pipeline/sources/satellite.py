@@ -6,8 +6,17 @@ Verified 2026-10-09 (docs/coastwatch/forecast-upgrade/01-source-inventory.md):
   California needs both. The time axis holds one overpass per sector per day, ~2 days
   behind real time, in a rolling 90-day window. On 2026-10-09 the server also reloaded
   and the sector datasets were briefly "unknown"; that is handled as an outage.
-- CoastWatch West Coast ERDDAP serves VIIRS chlorophyll-a 1-day composites at 0.0075 deg
-  (erdVHNchla1day), ~5 days behind, as the fallback.
+- VIIRS 750 m (0.0075 deg) is the fallback. NOAA ends Suomi-NPP data on 2026-11-02
+  (docs/coastwatch/33-suomi-npp-continuity.md), so it comes from the NOAA-21 and NOAA-20 daily
+  merges on NOAA CoastWatch (central) ERDDAP (noaacwN21/N20VIIRSchlaSectorUSDaily: same lattice
+  as erdVHNchla1day, one merge per day stamped at its overpass time, about 1.5 days after the
+  overpass: measured 2026-10-14 from ERDDAP's /files/ listing; the "3-8 days" seen 2026-10-09..13
+  was ERDDAP's time index stuck at 10-05 until the server restarted). NOAA-21 is primary; NOAA-20 fills only the cells NOAA-21 has no value for, so
+  every cell comes from one platform, recorded per cell (platform grid). Nothing is averaged or
+  bias-corrected; the measured offsets to S-NPP are stated in the provenance. The S-NPP 1-day
+  composite (erdVHNchla1day, West Coast ERDDAP) is used, labelled S-NPP, when it holds a strictly
+  newer day than NOAA-21/NOAA-20 (or they cannot be updated): an older observation never hides a
+  newer one. Whole layers, one lineage each; once S-NPP data end it has nothing new and drops out.
 
 Rules (docs/coastwatch/05-science-and-safety.md, forecast-upgrade/04):
 - every value published is an upstream value (quantized); missing pixels stay missing
@@ -57,9 +66,16 @@ GROUP_ID = "satellite_chlorophyll_hr"
 REPO = Path(__file__).resolve().parents[3]
 
 WINDOW_DAYS = 7
-# Bump whenever processing changes what a published day contains (scope, masks, encoding):
+# VIIRS 750 m from NOAA-21/NOAA-20 is published about 1.5 days after observation (ERDDAP /files/,
+# 2026-10-14). A 10-day window was tried for a "3-8 day latency" that was in fact ERDDAP's index
+# stuck for 9 days; it let 9-day-old NOAA data fill the layer silently. The same 7 days as OLCI;
+# a newer S-NPP day wins over older NOAA days (run_viirs), and health alerts after 5 days.
+VIIRS_WINDOW_DAYS = WINDOW_DAYS
+# Bump whenever processing changes what a published day contains (scope, masks, encoding, source):
 # published days are reused across runs only when made by the same processing version.
-PROCESSING_VERSION = "satellite-processing-2"
+# 3: VIIRS from NOAA-21/NOAA-20 (per-cell platform grid) instead of S-NPP; no S-NPP day is
+# ever reused as a NOAA-21/NOAA-20 one.
+PROCESSING_VERSION = "satellite-processing-3"
 CHUNK = 512
 LOG_RANGE = (-3.0, 3.0)  # quantization domain for log10(chl): 0.001 .. 1000 mg m-3
 IMPLAUSIBLE_MG_M3 = 200.0  # flagged in QC, never silently removed
@@ -80,7 +96,7 @@ FRESHNESS = FreshnessPolicy(
     current_max_age_days=3,
     stale_max_age_days=7,
     note=(
-        "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. "
+        "Satellite overpasses are published about 1.5-2 days after observation (OLCI; VIIRS 750 m from NOAA-21/NOAA-20). "
         "Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. "
         "In a 'latest clear view' every pixel also carries its own date."
     ),
@@ -129,6 +145,15 @@ class Product:
     license: str
     source_name: str
     sensor_text: str
+    # A sensor name listed before the satellites in `platforms` ("VIIRS", then "NOAA-21"...):
+    # the app names the sensor from it, and the released app knows only "VIIRS".
+    sensor: str | None = None
+    # Publish a per-cell platform grid with the latest clear view (referenced from provenance)
+    platform_grid: bool = False
+    # Offsets measured against other platforms, stated in provenance (never applied)
+    offsets: str | None = None
+    # Latest clear view: days back from the run date
+    window_days: int = WINDOW_DAYS
 
 
 SPLIT = -120.0
@@ -151,10 +176,41 @@ OLCI = Product(
     source_name="Sentinel-3 OLCI chlorophyll-a, near real time (NOAA CoastWatch)",
     sensor_text="the OLCI sensor on Sentinel-3A, with Sentinel-3B filling gaps",
 )
-VIIRS = Product(
+# Measured on 98 days with all three sensors, February-October 2026, California, same cells
+# (research/viirs-jpss-overlap/report.md): median log10 ratio, pooled.
+VIIRS_OFFSETS = (
+    "Measured, not corrected (98 days with all three, Feb-Oct 2026, California, same cells; "
+    "research/viirs-jpss-overlap/report.md): NOAA-21 reads about 4% lower than S-NPP (median log10 ratio -0.020), "
+    "NOAA-20 about 10% lower (-0.045); NOAA-21 about 10% higher than NOAA-20 (+0.040). Agreement is poorer "
+    "within 5 km of shore and above 1 mg m-3."
+)
+VIIRS_JPSS = Product(
+    key="viirs750",  # the layer the app selects as "VIIRS"; provenance names the satellites
+    server="https://coastwatch.noaa.gov/erddap",
+    platforms=(
+        ("NOAA-21", (("noaacwN21VIIRSchlaSectorUSDaily", -180.0, 180.0, 90.0),)),
+        ("NOAA-20", (("noaacwN20VIIRSchlaSectorUSDaily", -180.0, 180.0, 90.0),)),
+    ),
+    variable="chlor_a",
+    step=0.0075,
+    lattice_lat=42.49875,  # the erdVHNchla1day lattice (checked 2026-10-13)
+    lattice_lon=-127.00125,
+    native_m=750.0,
+    title="Satellite chlorophyll-a, VIIRS 750 m",
+    short_title="Chlorophyll · VIIRS 750 m",
+    license=LICENSE_VIIRS,
+    source_name="VIIRS chlorophyll-a, 750 m daily merges from NOAA-21, with NOAA-20 where NOAA-21 has no value (NOAA CoastWatch / NESDIS STAR, near real time)",
+    sensor_text="VIIRS on NOAA-21, with NOAA-20 in cells NOAA-21 has no value for",
+    sensor="VIIRS",
+    platform_grid=True,
+    offsets=VIIRS_OFFSETS,
+    window_days=VIIRS_WINDOW_DAYS,
+)
+# Suomi-NPP: fallback only, until its data end (2026-11-02, 13:00 UTC).
+VIIRS_SNPP = Product(
     key="viirs750",
     server="https://coastwatch.pfeg.noaa.gov/erddap",
-    platforms=(("VIIRS", (("erdVHNchla1day", -180.0, 180.0, 90.0),)),),
+    platforms=(("S-NPP", (("erdVHNchla1day", -180.0, 180.0, 90.0),)),),
     variable="chla",
     step=0.0075,
     lattice_lat=0.0,  # resolved from the response
@@ -163,9 +219,28 @@ VIIRS = Product(
     title="Satellite chlorophyll-a, VIIRS 750 m",
     short_title="Chlorophyll · VIIRS 750 m",
     license=LICENSE_VIIRS,
-    source_name="VIIRS chlorophyll-a, 750 m daily composite (NOAA CoastWatch West Coast)",
-    sensor_text="VIIRS (daily composite of available passes)",
+    source_name="VIIRS chlorophyll-a, 750 m daily composite from Suomi-NPP (NOAA CoastWatch West Coast); fallback while NOAA-21 and NOAA-20 are unavailable",
+    sensor_text="VIIRS on Suomi-NPP (daily composite of available passes)",
+    sensor="VIIRS",
+    offsets=VIIRS_OFFSETS,
+    window_days=VIIRS_WINDOW_DAYS,
 )
+VIIRS = VIIRS_JPSS
+PRODUCTS = (OLCI, VIIRS_JPSS, VIIRS_SNPP)
+
+
+def product_for(dataset_id: str | None) -> Product | None:
+    """The product a published layer came from, by its own provenance dataset ids."""
+    ids = set((dataset_id or "").split(","))
+    for p in PRODUCTS:
+        if ids & {sec[0] for _, sectors in p.platforms for sec in sectors}:
+            return p
+    return None
+
+
+def platform_labels(p: Product, platforms: list[str]) -> list[str]:
+    """`platforms` as published: the sensor (if the product names one) then the satellites."""
+    return ([p.sensor] if p.sensor else []) + [pl for pl in platforms if pl != p.sensor]
 
 
 # ---------------------------------------------------------------- target grid
@@ -313,27 +388,34 @@ class Day:
     platforms: list[str] = field(default_factory=list)
     checks: list[QCCheck] = field(default_factory=list)
     reused: LayerArtifact | None = None
+    # per cell: 1 + index in the product's platform order, 0 without a value (None if unknown)
+    source: np.ndarray | None = None
 
     @property
     def key(self) -> str:
         return hashlib.sha256(("|".join(sorted(self.observed_times)) + PROCESSING_VERSION).encode()).hexdigest()[:10]
 
 
-def mosaic(target: Target, scenes: list[Scene], platform_order: list[str], scope: np.ndarray | None = None) -> tuple[np.ndarray, int]:
-    """Primary platform first; a later platform only fills cells the earlier one left empty.
-    Cells outside the coastal scope are dropped (returned count), never altered."""
+def mosaic(target: Target, scenes: list[Scene], platform_order: list[str], scope: np.ndarray | None = None) -> tuple[np.ndarray, int, np.ndarray]:
+    """Primary platform first; a later platform only fills cells the earlier one left empty,
+    so every cell is one platform's own value. Cells outside the coastal scope are dropped
+    (returned count), never altered. Also returns, per cell, 1 + the index in platform_order
+    of the platform the value came from (0: no value)."""
     out = np.full((target.height, target.width), np.nan)
-    for plat in platform_order:
+    src = np.zeros((target.height, target.width), dtype=np.uint8)
+    for k, plat in enumerate(platform_order):
         for sc in scenes:
             if sc.platform == plat:
                 fill = np.isnan(out) & np.isfinite(sc.values)
                 out[fill] = sc.values[fill]
+                src[fill] = k + 1
     dropped = 0
     if scope is not None:
         outside = np.isfinite(out) & ~scope
         dropped = int(outside.sum())
         out[outside] = np.nan
-    return out, dropped
+        src[outside] = 0
+    return out, dropped, src
 
 
 # ---------------------------------------------------------------- coverage
@@ -475,11 +557,16 @@ def publish_values(ctx: RunContext, values: np.ndarray, target: Target, base: st
     return grid, tiles, nbytes + ts.bytes
 
 
-def _provenance(ctx: RunContext, p: Product, urls: list[str], meta: dict[str, str]) -> Provenance:
-    first_ds = p.platforms[0][1][0][0]
+def _provenance(ctx: RunContext, p: Product, urls: list[str], meta: dict[str, str], platforms: list[str] | None = None) -> Provenance:
+    """dataset_id lists the product's datasets; for a product with a named sensor (VIIRS) only
+    those of the platforms actually used, so a layer made from NOAA-20 alone says so."""
+    used = [(pl, sectors) for pl, sectors in p.platforms if not (p.sensor and platforms is not None) or pl in platforms] or list(p.platforms)
+    first_ds = used[0][1][0][0]
+    if p.offsets:
+        meta = {**meta, "offsets": p.offsets}
     return Provenance(
         source_id=SOURCE_ID, source_name=p.source_name, source_url=f"{p.server}/griddap/{first_ds}.html",
-        dataset_id=",".join(sec[0] for _, sectors in p.platforms for sec in sectors), institution="NOAA CoastWatch",
+        dataset_id=",".join(sec[0] for _, sectors in used for sec in sectors), institution="NOAA CoastWatch",
         license=p.license, retrieved_at=ctx.now_iso, request_urls=urls[:12], upstream_metadata=meta,
         pipeline_version=ctx.pipeline_version, pipeline_run_id=ctx.run_id,
     )
@@ -502,11 +589,11 @@ def day_layer(ctx: RunContext, p: Product, target: Target, day: Day, zooms: rang
         layer_id=f"{p.key}_chl_{day.date.isoformat()}", group_id=GROUP_ID, product_class="observation",
         title=f"{p.title}, single day", short_title=p.short_title, variable="chlorophyll_a", units="mg m-3",
         description=f"Chlorophyll-a from {p.sensor_text}, as published for {day.date.isoformat()}. Cells without a clear observation have no value.",
-        resolution_deg=p.step, native_resolution_m=p.native_m, platforms=day.platforms,
+        resolution_deg=p.step, native_resolution_m=p.native_m, platforms=platform_labels(p, day.platforms),
         time=TimeInfo(observed_date=day.date.isoformat(), valid_date=day.date.isoformat(), observed_times=sorted(day.observed_times)),
         freshness=FRESHNESS, grid=grid if has else None, tiles=tiles if has else None, palette=CHLOROPHYLL,
         caveats=list(CAVEATS), qc=_qc(day.values, day.checks), coverage=coverage(day.values, target),
-        provenance=_provenance(ctx, p, [s.url for s in day.scenes], {"scenes": ", ".join(f"{s.platform} {s.dataset} {s.time}" for s in day.scenes), "processing": PROCESSING_VERSION}),
+        provenance=_provenance(ctx, p, [s.url for s in day.scenes], {"scenes": ", ".join(f"{s.platform} {s.dataset} {s.time}" for s in day.scenes), "processing": PROCESSING_VERSION}, day.platforms),
     )
     return layer, nbytes
 
@@ -515,12 +602,16 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
     ref = ctx.now.date()
     comp = np.full((target.height, target.width), np.nan)
     age = np.full((target.height, target.width), np.nan)
+    track = p.platform_grid and all(d.source is not None for d in days)
+    src = np.zeros((target.height, target.width), dtype=np.uint8)
     used: list[CompositeDay] = []
     for d in sorted(days, key=lambda x: x.date, reverse=True):
         fill = np.isnan(comp) & np.isfinite(d.values)
         comp[fill] = d.values[fill]
         age[fill] = (ref - d.date).days
-        used.append(CompositeDay(date=d.date.isoformat(), platforms=d.platforms, observed_times=sorted(d.observed_times), pixels_used=int(fill.sum())))
+        if track:
+            src[fill] = d.source[fill]  # type: ignore[index]
+        used.append(CompositeDay(date=d.date.isoformat(), platforms=platform_labels(p, d.platforms), observed_times=sorted(d.observed_times), pixels_used=int(fill.sum())))
     if not np.isfinite(comp).any():
         return None, 0
     observed_days = [d for d in days if np.isfinite(d.values).any()]
@@ -535,23 +626,63 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
     write_index(ats, ctx.out_dir / base / "age-tiles")
     age_tiles = tiles.model_copy(update={"url_template": f"{base}/age-tiles/{{z}}/{{x}}/{{y}}.png", "n_tiles": ats.n_tiles, "sample_tiles": ats.tiles[:: max(1, len(ats.tiles) // 5)][:5], "date_selection": "Age in days of each pixel of the latest clear view (categorical)."})
     a = age[np.isfinite(age)]
-    hist = [AgeBin(age_days=int(k), fraction=round(float((a == k).mean()), 4)) for k in range(WINDOW_DAYS + 1) if (a == k).any()]
+    hist = [AgeBin(age_days=int(k), fraction=round(float((a == k).mean()), 4)) for k in range(p.window_days + 1) if (a == k).any()]
+    order = [pl for pl, _ in p.platforms]
+    platforms = [pl for pl in order if any(pl in d.platforms for d in observed_days)]
+    meta = {"days": ", ".join(sorted(d.date.isoformat() for d in days)), "processing": PROCESSING_VERSION}
+    if p.sensor:
+        # which dataset and overpass each day used (the verifier queries exactly these)
+        meta["scenes"] = ", ".join(f"{s.platform} {s.dataset} {s.time}" for d in sorted(days, key=lambda x: x.date) for s in d.scenes)
+    if track:
+        pbytes = write_chunks(encode_age, np.where(src > 0, src.astype(float), np.nan), CHUNK, CHUNK, ctx.out_dir / base / "platform")[1]
+        abytes += pbytes
+        meta.update(platform_meta(base, order, src))
     layer = LayerArtifact(
         layer_id=f"{p.key}_chl_latest", group_id=GROUP_ID, product_class="observation",
         title=f"{p.title}, latest clear view", short_title=p.short_title, variable="chlorophyll_a", units="mg m-3",
-        description=f"Most recent valid chlorophyll-a observation from {p.sensor_text} at each pixel within {WINDOW_DAYS} days, with the date of each pixel.",
-        resolution_deg=p.step, native_resolution_m=p.native_m, platforms=sorted({pl for d in observed_days for pl in d.platforms}),
+        description=f"Most recent valid chlorophyll-a observation from {p.sensor_text} at each pixel within {p.window_days} days, with the date of each pixel.",
+        resolution_deg=p.step, native_resolution_m=p.native_m, platforms=platform_labels(p, platforms),
         time=TimeInfo(observed_date=newest.isoformat(), valid_date=newest.isoformat(), observed_times=sorted(t for d in observed_days for t in d.observed_times)),
         freshness=FRESHNESS, grid=grid, tiles=tiles, palette=CHLOROPHYLL,
-        caveats=[CAVEAT_COMPOSITE.format(n=WINDOW_DAYS)] + list(CAVEATS), qc=_qc(comp, [c for d in days for c in d.checks]),
+        caveats=[CAVEAT_COMPOSITE.format(n=p.window_days)] + list(CAVEATS), qc=_qc(comp, [c for d in days for c in d.checks]),
         coverage=coverage(comp, target),
         composite=CompositeInfo(
-            window_days=WINDOW_DAYS, reference_date=ref.isoformat(), newest_observed_date=newest.isoformat(),
+            window_days=p.window_days, reference_date=ref.isoformat(), newest_observed_date=newest.isoformat(),
             oldest_observed_date=oldest.isoformat(), days=used, age_histogram=hist, age_grid=age_grid, age_tiles=age_tiles,
         ),
-        provenance=_provenance(ctx, p, [s.url for d in days for s in d.scenes], {"days": ", ".join(sorted(d.date.isoformat() for d in days)), "processing": PROCESSING_VERSION}),
+        provenance=_provenance(ctx, p, [s.url for d in days for s in d.scenes], meta, platforms),
     )
     return layer, nbytes + abytes + ats.bytes
+
+
+# ---------------------------------------------------------------- per-cell platform
+# The latest clear view of a multi-platform product (VIIRS: NOAA-21, NOAA-20) records which
+# platform each cell's value came from, as a chunked grid next to the values (same chunking,
+# codec and cell lattice as the age grid). It is referenced from provenance.upstream_metadata
+# (a free-form dict), so the published schema does not change.
+PLATFORM_GRID_KEY = "platform_grid"
+
+
+def platform_meta(base: str, order: list[str], src: np.ndarray) -> dict[str, str]:
+    counts = {pl: int((src == k + 1).sum()) for k, pl in enumerate(order)}
+    return {
+        PLATFORM_GRID_KEY: f"{base}/platform/{{row}}_{{col}}.u16.gz",
+        "platform_codes": ", ".join(f"{k + 1}={pl}" for k, pl in enumerate(order)) + "; a cell without a value has no code. Same chunks (512 x 512 cells) and lattice as the value grid; one platform per cell, never averaged.",
+        "platform_rule": f"{order[0]} first; " + "; ".join(f"{pl} only in cells the platforms before it have no value for" for pl in order[1:]) + ". No averaging, no bias correction.",
+        "pixels_by_platform": ", ".join(f"{pl} {n}" for pl, n in counts.items()),
+    }
+
+
+def load_platform_grid(out_dir: Path, lyr: LayerArtifact) -> tuple[np.ndarray, list[str]] | None:
+    """(codes per cell, platform order) of a published latest clear view, if it has one."""
+    md = lyr.provenance.upstream_metadata
+    tmpl, codes = md.get(PLATFORM_GRID_KEY), md.get("platform_codes", "")
+    if not tmpl or not lyr.grid or not lyr.grid.chunks:
+        return None
+    order = [c.split("=", 1)[1] for c in codes.split(";")[0].split(", ") if "=" in c]
+    g = lyr.grid.model_copy(update={"url": tmpl, "scale_factor": 1.0, "add_offset": 0.0, "transform": "none", "chunks": lyr.grid.chunks.model_copy(update={"url_template": tmpl})})
+    v = load_published(out_dir, g)
+    return np.where(np.isfinite(v), v, 0).astype(np.uint8), order
 
 
 # ---------------------------------------------------------------- reuse of published days
@@ -588,7 +719,7 @@ class SatelliteResult:
 def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[LayerArtifact], zooms: range, per_day: bool) -> SatelliteResult:
     errors: list[str] = []
     notes: list[str] = []
-    start = ctx.now.date() - timedelta(days=WINDOW_DAYS)
+    start = ctx.now.date() - timedelta(days=p.window_days)
     listings: dict[tuple[str, str], list[str]] = {}
     for plat, sectors in p.platforms:
         for ds, _, _, _ in sectors:
@@ -619,7 +750,7 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
         if prev and target is not None and same_processing and sorted(prev.time.observed_times) == times and _published_intact(ctx.out_dir, prev):
             vals = load_published(ctx.out_dir, prev.grid) if prev.grid else np.full((target.height, target.width), np.nan)
             if vals.shape == (target.height, target.width):
-                days.append(Day(d, vals, observed_times=times, platforms=list(prev.platforms), checks=list(prev.qc.checks) if prev.qc else [], reused=prev))
+                days.append(Day(d, vals, observed_times=times, platforms=[pl for pl in prev.platforms if pl != p.sensor], checks=list(prev.qc.checks) if prev.qc else [], reused=prev))
                 notes.append(f"{p.key} {d}: same overpasses as the published day; reused it.")
                 continue
         scenes: list[Scene] = []
@@ -641,15 +772,15 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
             continue
         if scope is None:
             scope = coastal_mask(target)
-        vals, dropped = mosaic(target, scenes, order, scope)
+        vals, dropped, src = mosaic(target, scenes, order, scope)
         checks = [c for s in scenes for c in s.checks] + [
             QCCheck(name="coastal_scope", passed=True, detail=f"{dropped} valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out")
         ]
         day = Day(d, vals, scenes=scenes, observed_times=sorted(s.time for s in scenes),
-                  platforms=[pl for pl in order if any(s.platform == pl for s in scenes)], checks=checks)
+                  platforms=[pl for pl in order if any(s.platform == pl for s in scenes)], checks=checks, source=src)
         days.append(day)
     if not days or target is None:
-        return SatelliteResult([], errors or [f"{p.key}: no scenes in the last {WINDOW_DAYS} days"], notes, None)
+        return SatelliteResult([], errors or [f"{p.key}: no scenes in the last {p.window_days} days"], notes, None)
 
     layers: list[LayerArtifact] = []
     nbytes = 0
@@ -670,12 +801,56 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
     return SatelliteResult(layers, errors, notes, latest.isoformat() if latest else None, nbytes)
 
 
+def newest_listed(ctx: RunContext, p: Product) -> str | None:
+    """Newest day a product's datasets list in its window (one small time listing each), or None."""
+    start = ctx.now.date() - timedelta(days=p.window_days)
+    newest = None
+    for _, sectors in p.platforms:
+        for ds, _, _, _ in sectors:
+            try:
+                ts = list_times(ctx, p.server, ds, start)
+            except Exception:
+                continue
+            if ts:
+                newest = max(newest or "", ts[-1][:10])
+    return newest
+
+
+def run_viirs(ctx: RunContext, domain: Domain, prev_layers: list[LayerArtifact]) -> SatelliteResult:
+    """The newest VIIRS lineage, as whole layers, never S-NPP pixels mixed into NOAA-21/20 ones:
+    NOAA-21/NOAA-20 unless the S-NPP composite holds a strictly newer day (then S-NPP, labelled
+    S-NPP), or NOAA-21/NOAA-20 cannot be updated. An older observation inside the window must
+    not hide a newer one (2026-10-05..14: NOAA's index froze at 10-05 while S-NPP had 10-12).
+    S-NPP's scenes are fetched only when its listing is newer. After S-NPP data end
+    (2026-11-02) its listing has nothing new and it drops out."""
+    res = run_product(ctx, VIIRS_JPSS, domain, prev_layers, VIIRS_ZOOMS, per_day=False)
+    if res.layers:
+        listed = newest_listed(ctx, VIIRS_SNPP)
+        if not listed or listed <= (res.latest_date or ""):
+            return res
+        snpp = run_product(ctx, VIIRS_SNPP, domain, prev_layers, VIIRS_ZOOMS, per_day=False)
+        if snpp.layers and (snpp.latest_date or "") > (res.latest_date or ""):
+            note = f"VIIRS: the S-NPP composite has a newer day ({snpp.latest_date}) than NOAA-21/NOAA-20 ({res.latest_date}); the newer S-NPP view, labelled S-NPP, is the layer this run."
+            return SatelliteResult(snpp.layers, res.errors + snpp.errors, res.notes + [note] + snpp.notes, snpp.latest_date, snpp.bytes_written)
+        return SatelliteResult(res.layers, res.errors, res.notes + [f"VIIRS: S-NPP listed {listed} but gave no newer layer; NOAA-21/NOAA-20 kept."] + [f"S-NPP: {e}" for e in snpp.errors], res.latest_date, res.bytes_written)
+    snpp = run_product(ctx, VIIRS_SNPP, domain, prev_layers, VIIRS_ZOOMS, per_day=False)
+    prev = next((lyr for lyr in prev_layers if lyr.layer_id == f"{VIIRS_JPSS.key}_chl_latest" and _published_intact(ctx.out_dir, lyr)), None)
+    if snpp.layers and prev and product_for(prev.provenance.dataset_id) is VIIRS_JPSS and (prev.time.observed_date or "") >= (snpp.latest_date or ""):
+        # the last NOAA-21/NOAA-20 view is as new as S-NPP's: keep it (the caller does)
+        note = f"VIIRS: NOAA-21 and NOAA-20 unavailable this run; the S-NPP composite (newest {snpp.latest_date}) is not newer than the published NOAA-21/NOAA-20 view ({prev.time.observed_date}), which is kept."
+        return SatelliteResult([], res.errors, res.notes + [note], None)
+    if snpp.layers:
+        snpp.notes.insert(0, "VIIRS: NOAA-21 and NOAA-20 unavailable this run; the S-NPP composite (erdVHNchla1day), labelled S-NPP, is the fallback.")
+        return SatelliteResult(snpp.layers, res.errors + snpp.errors, res.notes + snpp.notes, snpp.latest_date, snpp.bytes_written)
+    return SatelliteResult([], res.errors + [f"S-NPP fallback: {e}" for e in snpp.errors], res.notes + snpp.notes, None)
+
+
 def run(ctx: RunContext, prev_layers: list[LayerArtifact], domain: Domain | None = None) -> SatelliteResult:
     """OLCI 300 m (primary) and VIIRS 750 m (fallback). Each runs independently: if OLCI is
     unavailable the VIIRS latest clear view is still published, and the reverse."""
     domain = domain or ctx.options.get("satellite_domain", CALIFORNIA)
     res_o = run_product(ctx, OLCI, domain, prev_layers, OLCI_ZOOMS, per_day=True)
-    res_v = run_product(ctx, VIIRS, domain, prev_layers, VIIRS_ZOOMS, per_day=False)
+    res_v = run_viirs(ctx, domain, prev_layers)
     notes = res_o.notes + res_v.notes
     # A product that failed this run keeps its previously published layers, with their real
     # observation dates, as long as the other product still updated (a total outage is
