@@ -33,8 +33,13 @@ export const FORECAST_CLASSES = [
  */
 export const FORECAST_RASTER_OPACITY = 0.72;
 
+/** The colours the pipeline publishes with every C-HARM layer (palette.py PROBABILITY); the pipeline's
+ *  tests check this mirror, and `displayPalette` swaps a palette only when its stops are exactly these. */
+export const PUBLISHED_FORECAST_CLASSES = ["#3a385b", "#4c436a", "#5f4e79", "#735986", "#886492", "#9c709c", "#af7ea4", "#c28cab", "#d39cb3", "#e5abbc"] as const;
+
 export function displayPalette(p: Palette): Palette {
   if (p.id !== FORECAST_CLASSES_ID || p.stops.length !== FORECAST_CLASSES.length) return p;
+  if (!p.stops.every((s, i) => s.color.toLowerCase() === PUBLISHED_FORECAST_CLASSES[i])) return p;
   return { ...p, stops: p.stops.map((s, i) => ({ ...s, color: FORECAST_CLASSES[i] })) };
 }
 

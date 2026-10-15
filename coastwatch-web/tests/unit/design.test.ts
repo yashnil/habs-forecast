@@ -61,7 +61,8 @@ describe("design tokens", () => {
 
 describe("display palette (v2 classes)", async () => {
   const { displayPalette, displayManifest, FORECAST_CLASSES } = await import("@/lib/palette");
-  const published = { id: "cw-probability-classes-v1", interpolation: "step", scale: "linear", domain: [0, 1], stops: Array.from({ length: 10 }, (_, i) => ({ value: i / 10, color: "#000000" })) } as unknown as import("@/generated/schema").Palette;
+  const { PUBLISHED_FORECAST_CLASSES } = await import("@/lib/palette");
+  const published = { id: "cw-probability-classes-v1", interpolation: "step", scale: "linear", domain: [0, 1], stops: Array.from({ length: 10 }, (_, i) => ({ value: i / 10, color: PUBLISHED_FORECAST_CLASSES[i] })) } as unknown as import("@/generated/schema").Palette;
   it("swaps only the colours of the published C-HARM palette, keeping every stop value and domain", () => {
     const d = displayPalette(published);
     expect(d.stops.map((s) => s.value)).toEqual(published.stops.map((s) => s.value));
@@ -69,6 +70,9 @@ describe("display palette (v2 classes)", async () => {
     expect(d.domain).toEqual([0, 1]);
     const other = { ...published, id: "cw-chlorophyll-log-v1" };
     expect(displayPalette(other)).toBe(other);
+    // a v1 palette whose colours are not the published ones is left alone (the swap is exact, never a guess)
+    const altered = { ...published, stops: published.stops.map((s, i) => (i === 3 ? { ...s, color: "#123456" } : s)) };
+    expect(displayPalette(altered)).toBe(altered);
     const m = displayManifest({ layers: [{ palette: published }, { palette: other }, { palette: null }] });
     expect(m.layers[0].palette!.stops[9].color).toBe(FORECAST_CLASSES[9]);
     expect(m.layers[1].palette).toBe(other);
