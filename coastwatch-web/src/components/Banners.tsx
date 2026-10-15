@@ -18,12 +18,13 @@ const link = "font-semibold text-white underline decoration-white/40 underline-o
  */
 export function DataBanners({ manifest, error }: { manifest: Manifest | null; error: string | null }) {
   const registry = useRegistryDisclosure();
-  // Coastal mode has no standing line: the masthead pill says the copy is unreviewed, and every
-  // official item in a briefing carries its source, the date CoastWatch checked it and that no person
-  // has reviewed the copy. Research keeps the full line. Failed updates stay under "More", in the
-  // data-status dot, and on each layer that is affected; missing data and test data always show.
+  // Both modes keep the standing line while the notices are unreviewed, so every page links straight
+  // to CDFW and CDPH (the agencies are the authority; the public research preview must say so on
+  // every page, not only behind the notices pill). Failed updates stay Research-only here: Coastal
+  // shows them in the data-status dot and on each layer that is affected; missing data and test
+  // data always show.
   const [mode] = useMode();
-  const reg = mode === "research" ? registry : { ...registry, show: false, pending: false };
+  const reg = registry;
   const [open, setOpen] = useState(false);
   const id = useId();
   const unavailable = !!error || !manifest;

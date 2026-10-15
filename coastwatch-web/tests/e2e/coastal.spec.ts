@@ -370,4 +370,14 @@ test.describe("Coastal mode", () => {
       await ctx.close();
     });
   }
+  test("every page links straight to CDFW and CDPH in Coastal mode while the notices are unreviewed", async ({ page }) => {
+    for (const path of ["/about", "/bloom", "/fisheries", "/coast"]) {
+      await page.goto(`${OK}${path}${path.includes("?") ? "&" : "?"}mode=coastal`);
+      const line = page.getByTestId("status-line");
+      await expect(line, path).toBeVisible();
+      await expect(line.getByRole("link", { name: "CDFW" })).toHaveAttribute("href", /wildlife\.ca\.gov/);
+      await expect(line.getByRole("link", { name: "CDPH" })).toHaveAttribute("href", /cdph\.ca\.gov/);
+      await expect(line).toContainText(/not verified/i);
+    }
+  });
 });
