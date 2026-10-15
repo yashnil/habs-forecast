@@ -76,3 +76,20 @@ describe("raster georeferencing", () => {
     }
   });
 });
+
+describe("cell labels at harbour zoom (carto T2)", async () => {
+  const { cellLabels } = await import("@/lib/grid");
+  const g = { width: 4, height: 3, lat_first: 36.0, lat_step: 0.03, lon_first: -122.0, lon_step: 0.03, scale_factor: 1 / 65534, add_offset: 0, nodata: 65535, transform: "none" } as unknown as import("@/generated/schema").ValueGrid;
+  const codes = new Uint16Array([65535, 32767, 65535, 6553, 65535, 65535, 52427, 65535, 65535, 65535, 65535, 65535]);
+  it("labels only valued cells inside the bounds, nearest the centre first, with a legible colour flag", () => {
+    const fc = cellLabels(g, codes, [-122.02, 35.98, -121.9, 36.05]);
+    expect(fc.features.map((f) => f.properties!.text).sort()).toEqual(["10", "50", "80"]);
+    const f80 = fc.features.find((f) => f.properties!.text === "80")!;
+    expect(f80.geometry.coordinates).toEqual([-121.94, 36.03]);
+    expect(f80.properties!.dark).toBe(true);
+    expect(fc.features.find((f) => f.properties!.text === "10")!.properties!.dark).toBe(false);
+    // a bounds that excludes a cell's centre excludes its label; a max caps the count nearest the centre
+    expect(cellLabels(g, codes, [-122.0, 35.99, -121.95, 36.01]).features.map((f) => f.properties!.text)).toEqual(["50"]);
+    expect(cellLabels(g, codes, [-122.02, 35.98, -121.9, 36.05], 1).features).toHaveLength(1);
+  });
+});

@@ -944,6 +944,6 @@ function modelClause(outlook: ReturnType<typeof useOutlook>, valid: string | nul
   if (outlook === "error" || !outlook.length) return { kind: "gap", testid: "answer-model", text: "No toxin model run is available" };
   const day = valid ? `, ${formatDate(valid)}` : "";
   if (nb?.here != null) return { kind: "model", testid: "answer-model", text: `Model: ${fmtPct(nb.here)} chance toxin in the water exceeds its threshold (this 3 km cell${day})` };
-  if (nb && nb.n > 0) return { kind: "model", testid: "answer-model", text: `Model: no value for these nearshore waters; ${nb.n} offshore cells within ${NEIGHBOURHOOD_KM} km, median ${fmtPct(nb.median)}${day}` };
+  if (nb && nb.n > 0) return { kind: "gap", testid: "answer-model", text: `Model: no valid estimate for these nearshore waters (nearest cell ${nb.nearest ? `${nb.nearest.km.toFixed(1)} km` : "farther"} out); ${nb.n} offshore cells within ${NEIGHBOURHOOD_KM} km read ${fmtPct(nb.min)}–${fmtPct(nb.max)}${day}, context only` };
   return { kind: "gap", testid: "answer-model", text: `Outside the toxin model: no cell within ${NEIGHBOURHOOD_KM} km${nb?.nearest ? ` (nearest ${Math.round(nb.nearest.km)} km away)` : ""}` };
 }

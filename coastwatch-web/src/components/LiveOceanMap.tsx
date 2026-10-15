@@ -24,7 +24,7 @@ import {
 import { officialVerification, currentRecords } from "@/lib/official";
 import { readMode, useMode } from "@/lib/mode";
 import { openingLayer, type Opening } from "@/lib/opening";
-import { cellEdges, loadGrid } from "@/lib/grid";
+import { cellEdges, cellLabels, loadGrid } from "@/lib/grid";
 import type { StationLite } from "@/lib/data";
 import { useNow } from "@/lib/useNow";
 import { charmDays, defaultLead } from "@/lib/charmDays";
@@ -110,6 +110,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   const now = useNow();
   const run = charmRun(manifest);
   const mapRef = useRef<MlMap | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const pendingFly = useRef<number | null>(null);
   const dockRef = useRef<HTMLDivElement | null>(null);
   // null until the first client render, so a phone never flashes the desktop layout
@@ -473,18 +474,39 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   const imagery: TileRaster | null = imageryLayer?.tiles ? { id: imageryLayer.layer_id, template: imageryLayer.tiles.url_template, minzoom: 0, maxzoom: imageryLayer.tiles.max_native_zoom } : null;
 
   // C-HARM's own cell edges (faint, from z8.5): its 3 km cells read as model cells, not blur
-  const [edges, setEdges] = useState<{ id: string; fc: GeoJSON.FeatureCollection } | null>(null);
+  const [edges, setEdges] = useState<{ id: string; fc: GeoJSON.FeatureCollection; codes: Uint16Array } | null>(null);
   useEffect(() => {
     let cancelled = false;
     const g = group === "forecast" ? forecastLayer?.grid : null;
     if (!g || !forecastLayer || edges?.id === forecastLayer.layer_id) return;
     loadGrid(artifactUrl(baseUrl, g.url))
-      .then((codes) => !cancelled && setEdges({ id: forecastLayer.layer_id, fc: cellEdges(g, codes) }))
+      .then((codes) => !cancelled && setEdges({ id: forecastLayer.layer_id, fc: cellEdges(g, codes), codes }))
       .catch(() => !cancelled && setEdges(null));
     return () => {
       cancelled = true;
     };
   }, [group, forecastLayer, baseUrl, edges?.id]);
+  // per-cell values at harbour zoom (from z 11, carto T2): only the cells in view, recomputed when the
+  // view settles, from the same grid the readout uses
+  const [labels, setLabels] = useState<{ id: string; fc: GeoJSON.FeatureCollection } | null>(null);
+  useEffect(() => {
+    const m = mapRef.current;
+    const g = forecastLayer?.grid;
+    if (!m || !g || !edges || edges.id !== forecastLayer?.layer_id || group !== "forecast") {
+      setLabels(null);
+      return;
+    }
+    const update = () => {
+      if (m.getZoom() < 10.5) return setLabels((l) => (l ? null : l));
+      const b = m.getBounds();
+      setLabels({ id: forecastLayer.layer_id, fc: cellLabels(g, edges.codes, [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]) });
+    };
+    update();
+    m.on("moveend", update);
+    return () => {
+      m.off("moveend", update);
+    };
+  }, [edges, forecastLayer, group, mapReady]);
 
   // switching layer fades the new data in; a new time step of the same layer cuts (lib note in MapCanvas)
   const fadeRef = useRef<{ group: LayerGroup | null; until: number }>({ group: null, until: 0 });
@@ -654,6 +676,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       initialBounds={initialRegion.bounds}
       initialPadding={wide ? { top: 64, bottom: 28, left: 660, right: 28 } : { top: 64, bottom: 168, left: 16, right: 16 }}
       cellEdges={group === "forecast" && edges && edges.id === forecastLayer?.layer_id ? edges.fc : null}
+      cellLabels={group === "forecast" && labels && labels.id === forecastLayer?.layer_id ? labels.fc : null}
       fade={fade}
       onHover={wide && canHover ? onHover : undefined}
       onPort={selectPort}
@@ -671,6 +694,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       }}
       onReady={(m) => {
         mapRef.current = m;
+        setMapReady(true);
         let first = false;
         try {
           first = !deepLinked && window.localStorage.getItem("cw-intro-dismissed-v1") !== "1";

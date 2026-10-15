@@ -11,17 +11,37 @@ import type { Palette } from "@/generated/schema";
 export const FORECAST_CLASSES_ID = "cw-probability-classes-v1";
 
 export const FORECAST_CLASSES = [
-  "#3a385b",
-  "#4c436a",
-  "#5f4e79",
-  "#735986",
-  "#886492",
-  "#9c709c",
-  "#af7ea4",
-  "#c28cab",
-  "#d39cb3",
-  "#e5abbc",
+  "#4a4a65",
+  "#61537b",
+  "#7d5b8c",
+  "#9a6396",
+  "#b27097",
+  "#ca7f94",
+  "#e38e8e",
+  "#f7a082",
+  "#ffb97f",
+  "#fed48c",
 ] as const;
+
+/**
+ * The classes as drawn (v2, docs/coastwatch/v2/carto): built in OKLCH with lightness rising in
+ * near-equal steps (L* 32.5 → 87.0, min ΔL* 5.6) and hue sweeping indigo → magenta → amber, chroma
+ * kept low through the reds so a high probability reads as salient, not as an alarm. Drawn at
+ * 0.72 opacity over the relief. The pipeline still publishes its own stops with every layer;
+ * `displayPalette` swaps the colours and nothing else, so every value, threshold and legend tick
+ * stays the published one.
+ */
+export const FORECAST_RASTER_OPACITY = 0.72;
+
+export function displayPalette(p: Palette): Palette {
+  if (p.id !== FORECAST_CLASSES_ID || p.stops.length !== FORECAST_CLASSES.length) return p;
+  return { ...p, stops: p.stops.map((s, i) => ({ ...s, color: FORECAST_CLASSES[i] })) };
+}
+
+/** Every C-HARM layer's palette replaced by the display classes; values untouched. */
+export function displayManifest<M extends { layers: { palette?: Palette | null }[] }>(m: M): M {
+  return { ...m, layers: m.layers.map((l) => (l.palette ? { ...l, palette: displayPalette(l.palette) } : l)) };
+}
 
 /** Display class for a probability in [0, 1]; 1.0 falls in the top class. */
 export function forecastClass(p: number): number {

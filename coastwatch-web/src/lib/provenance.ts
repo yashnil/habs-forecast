@@ -1,3 +1,4 @@
+import { distanceKm } from "@/lib/grid";
 /**
  * Provenance threads (signature interaction, PR #43 04-interactions §1): when a reader selects a
  * water point, thin lines run from it to where each statement about it comes from:
@@ -65,7 +66,10 @@ export function provenanceFeatures(x: ProvenanceInput): GeoJSON.FeatureCollectio
   if (x.cell) {
     f.push({ type: "Feature", properties: { kind: "cell", own: x.cell.own }, geometry: x.cell.polygon });
     // the point's own cell needs no thread: the outline around the point is the connection
-    if (!x.cell.own) thread("cell", [x.cell.lon, x.cell.lat]);
+    if (!x.cell.own) {
+      const km = distanceKm(x.target.lat, x.target.lon, x.cell.lat, x.cell.lon);
+      thread("cell", [x.cell.lon, x.cell.lat], { km: +km.toFixed(1), label: `${km < 10 ? km.toFixed(1) : Math.round(km)} km to the nearest model cell` });
+    }
   }
   if (x.ring) f.push({ type: "Feature", properties: { kind: "ring" }, geometry: x.ring });
   for (const o of x.others ?? []) f.push({ type: "Feature", properties: { kind: "station", name: o.name, id: o.id, aged: o.aged, minor: o.minor ?? true }, geometry: { type: "Point", coordinates: [o.lon, o.lat] } });

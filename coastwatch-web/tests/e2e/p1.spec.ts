@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { FORECAST_CLASSES as DISPLAY_CLASSES } from "../../src/lib/palette";
 import { expect, test, type Page } from "@playwright/test";
 import { FAILED, OK } from "./ports";
 import { openDockDetails, openPlaces, tileSource } from "./helpers";
@@ -34,23 +35,27 @@ test.describe("layer groups", () => {
     await expect(page.getByTestId("group-forecast")).toHaveAttribute("aria-checked", "true");
     // a dataset without currents keeps that tab disabled: tests/e2e/p2-currents.spec.ts
     expect(await mapSource(page, "currents")).toBeNull();
-    // the C-HARM raster is opaque and nearest-sampled, over a hatched no-value sea
+    // the C-HARM raster is nearest-sampled (a pixel is a real cell) and translucent over the relief
+    // (docs/coastwatch/v2/carto, 0.72), over a hatched no-value sea
     const paint = await page.evaluate(() => {
       const m = (window as unknown as { __cwMap: { getPaintProperty: (l: string, p: string) => unknown; getLayer: (l: string) => unknown } }).__cwMap;
       return { opacity: m.getPaintProperty("forecast-raster", "raster-opacity"), resampling: m.getPaintProperty("forecast-raster", "raster-resampling"), hatch: !!m.getLayer("water-nodata") };
     });
-    expect(paint).toEqual({ opacity: 1, resampling: "nearest", hatch: true });
+    expect(paint).toEqual({ opacity: 0.72, resampling: "nearest", hatch: true });
   });
 
-  test("legend colours are exactly the published palette classes", async ({ page }) => {
+  test("legend colours are exactly the display classes, at the published palette's own stops", async ({ page }) => {
     await open(page, OK);
     const bar = page.getByTestId("probability-legend").locator("[style*=gradient]").first();
     const style = (await bar.getAttribute("style")) ?? "";
     const charm = manifest.layers.find((l: Layer) => l.layer_id === "charm_particulate_domoic_lead1");
-    // the browser may serialise the colours as rgb(); compare channel values
-    const rgb = (h: string) => `rgb(${parseInt(h.slice(1, 3), 16)}, ${parseInt(h.slice(3, 5), 16)}, ${parseInt(h.slice(5, 7), 16)})`;
-    for (const s of charm.palette.stops) expect([style.toLowerCase().includes(s.color), style.includes(rgb(s.color))]).toContain(true);
     expect(charm.palette.id).toBe("cw-probability-classes-v1");
+    // the published palette's colours are swapped for the display classes (lib/palette displayPalette);
+    // its stop values are kept, so the legend's ten bands sit at 0, 10, … 90 %
+    const rgb = (h: string) => `rgb(${parseInt(h.slice(1, 3), 16)}, ${parseInt(h.slice(3, 5), 16)}, ${parseInt(h.slice(5, 7), 16)})`;
+    for (const c of DISPLAY_CLASSES) expect([style.toLowerCase().includes(c), style.includes(rgb(c))]).toContain(true);
+    for (const s of charm.palette.stops) expect(style).toContain(` ${Math.round(s.value * 100)}%`);
+    expect(style.toLowerCase()).not.toContain(charm.palette.stops[0].color);
   });
 });
 
