@@ -10,7 +10,7 @@ import { parseView } from "@/lib/fisheries";
 import { sourceStatus } from "@/lib/layers";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Fisheries & Economic Exposure — CoastWatch" };
+export const metadata = { title: "Fisheries & Economic Exposure" };
 
 const str = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
 

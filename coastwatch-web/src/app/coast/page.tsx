@@ -6,7 +6,7 @@ import { loadData } from "@/lib/data";
 import { sourceStatus } from "@/lib/layers";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "My Coast — CoastWatch" };
+export const metadata = { title: "My Coast" };
 
 /** My Coast: one location's official information, measurements, forecast availability and observations. */
 export default async function CoastPage() {

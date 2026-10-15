@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BRAND } from "@/content/brand";
 import { AppShell } from "@/components/AppShell";
 import { DataBanners } from "@/components/Banners";
 import { OfficialStatusCard } from "@/components/panels/OfficialStatusCard";
@@ -8,7 +9,7 @@ import { loadData } from "@/lib/data";
 import { sourceStatus } from "@/lib/layers";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Data & sources — CoastWatch" };
+export const metadata = { title: "Data & sources" };
 
 export default async function SourcesPage() {
   const data = await loadData();
@@ -24,10 +25,13 @@ export default async function SourcesPage() {
         <header className="space-y-2">
           <h1 className="font-display text-[34px] font-medium leading-tight text-ink">Data &amp; sources</h1>
           <p className="max-w-2xl text-[14px] leading-relaxed text-ink-2">{DISCLAIMER}</p>
+          <p className="max-w-2xl text-[13px] leading-relaxed text-ink-3" data-testid="sources-independence">
+            {BRAND.independence} Satellite data credited to NOAA CoastWatch below come from that NOAA program.
+          </p>
         </header>
         <OfficialStatusCard />
         <section aria-labelledby="research-h" data-testid="research" className="space-y-2 text-[14px] leading-relaxed text-ink-2">
-          <h2 id="research-h" className="font-display text-[22px] font-medium leading-tight text-ink">The research behind CoastWatch</h2>
+          <h2 id="research-h" className="font-display text-[22px] font-medium leading-tight text-ink">The research behind Neritic Signal</h2>
           <p className="max-w-2xl">
             <span className="font-display text-[17px] leading-snug text-ink">{RESEARCH.title}</span>
             <br />
@@ -39,7 +43,7 @@ export default async function SourcesPage() {
           <p className="max-w-2xl">{RESEARCH.relation}</p>
           <p>
             <Link href="/about" className="font-medium text-accent underline underline-offset-2">
-              About CoastWatch: what it shows, what it cannot tell you, and the research
+              About Neritic Signal: what it shows, what it cannot tell you, and the research
             </Link>
           </p>
         </section>
