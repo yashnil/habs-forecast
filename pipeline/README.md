@@ -1,4 +1,6 @@
-# CoastWatch pipeline
+# Neritic Signal data pipeline
+
+Formerly the CoastWatch pipeline; the `coastwatch_pipeline` module, the `cwp` command and the data branches keep their names.
 
 Fetches public data, validates it, renders map-ready artifacts, and writes a versioned manifest the web app reads. No database or server: output is static files.
 
