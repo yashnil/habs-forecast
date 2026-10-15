@@ -349,3 +349,41 @@ def test_unknown_dataset_is_an_outage_not_an_empty_week(tmp_path):
     assert not any("no scenes" in e for e in res.errors)
     assert satellite.no_matching_results(FE("HTTP 404 for u", detail="Error { message=\"Your query produced no matching results.\" }"))
     assert satellite.no_matching_results(FE("HTTP 404 for u"))
+
+
+def test_front_end_html_404_is_an_empty_window_when_the_dataset_answers(tmp_path):
+    # production run 38774047981 (2026-10-15): coastwatch.noaa.gov's Apache front end replaced
+    # ERDDAP's "no matching results" text with a site-wide HTML 404 for every Sentinel-3B window
+    # (S3B's feed had stalled on 2026-10-01); the run failed the whole source as an outage
+    from coastwatch_pipeline.http import FetchError as FE
+
+    html = '<!DOCTYPE html><html><head><title>404 | NOAA CoastWatch</title></head><body>Page not found</body></html>'
+    masked = lambda url: (_ for _ in ()).throw(FE(f"HTTP 404 for {url} ({html[:40]})", detail=html[:240]))  # noqa: E731
+    assert satellite.masked_404(FE("HTTP 404 for u", detail=html))
+    assert not satellite.masked_404(FE("HTTP 404 for u", detail='Error { message="Your query produced no matching results." }'))
+    assert not satellite.masked_404(FE("HTTP 404 for u", detail='Error { message="Not Found: Currently unknown datasetID=x"; }'))
+    assert not satellite.no_matching_results(FE("HTTP 404 for u", detail=html))
+
+    class Ctx:
+        def __init__(self, das_ok):
+            self.calls = []
+            self.das_ok = das_ok
+
+        def fetcher(self, url):
+            self.calls.append(url)
+            if url.endswith(".das"):
+                if self.das_ok:
+                    return type("R", (), {"body": b"Attributes {}"})()
+                raise FE(f"HTTP 404 for {url}", detail=html[:240])
+            return masked(url)
+
+    from datetime import date
+
+    ok = Ctx(True)
+    assert satellite.list_times(ok, "https://coastwatch.noaa.gov/erddap", "noaacwS3BOLCIchlaSectorCIDaily", date(2026, 10, 8)) == []
+    assert ok.calls[-1] == "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3BOLCIchlaSectorCIDaily.das"
+    # the dataset itself unreachable: still the outage it looks like
+    import pytest
+
+    with pytest.raises(FE):
+        satellite.list_times(Ctx(False), "https://coastwatch.noaa.gov/erddap", "noaacwS3BOLCIchlaSectorCIDaily", date(2026, 10, 8))

@@ -304,6 +304,16 @@ def no_matching_results(e: Exception) -> bool:
     return detail is None or "no matching results" in text.lower()
 
 
+def masked_404(e: Exception) -> bool:
+    """A 404 whose body is a web page, not ERDDAP's error: coastwatch.noaa.gov's front end replaces
+    ERDDAP's 'no matching results' text with a site-wide HTML 404 (seen 2026-10-15 for every
+    Sentinel-3B window, whose feed had stalled), so the body cannot say which 404 it is."""
+    if "HTTP 404" not in str(e):
+        return False
+    detail = (getattr(e, "detail", None) or "").lower()
+    return bool(detail) and ("<html" in detail or "<!doctype" in detail or "noaa coastwatch" in detail) and "no matching results" not in detail and "unknown datasetid" not in detail
+
+
 def list_times(ctx: RunContext, server: str, ds: str, start: date) -> list[str]:
     try:
         r = ctx.fetcher(times_url(server, ds, start))
@@ -311,6 +321,14 @@ def list_times(ctx: RunContext, server: str, ds: str, start: date) -> list[str]:
         # ERDDAP answers 404 "Your query produced no matching results" when nothing is newer
         # than start; a 404 for "Currently unknown datasetID" is an outage, not "no data"
         if no_matching_results(e):
+            return []
+        # a front-end HTML 404 hides which it was: the dataset's own metadata settles it
+        # (reachable: nothing newer than start; not reachable: the outage it looks like)
+        if masked_404(e):
+            try:
+                ctx.fetcher(f"{server}/griddap/{ds}.das")
+            except FetchError:
+                raise e
             return []
         raise
     out = []
