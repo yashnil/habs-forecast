@@ -91,6 +91,10 @@ test.describe("Coastal mode", () => {
     await page.getByTestId("explore-tab-notices").click();
     await expect(page.getByTestId("brief-notice-cdfw-2026-anchovy-take-restriction-monterey-bay").getByRole("link", { name: /CDFW source/ })).toHaveAttribute("href", /^https:\/\/wildlife\.ca\.gov\//);
     await page.getByTestId("explore-tab-conditions").click();
+    // water measured in the harbour itself (CO-OPS 6-minute thermistor, recorded 2026-10-13): named as the harbour's, with its flags
+    await expect(page.getByTestId("cond-harbor")).toContainText("Water in the harbour · measured");
+    await expect(page.getByTestId("cond-harbor")).toContainText(/\d+\.\d °C/);
+    await expect(page.getByTestId("cond-harbor")).toContainText("NOAA tide station 9413450, in the harbour");
     await expect(page.getByTestId("cond-marine")).toContainText("W wind 10 to 15 kt");
     await expect(page.getByTestId("cond-marine")).toContainText("NWS PZZ535");
     await expect(page.getByTestId("cond-tides")).toContainText("Monterey");

@@ -8,6 +8,8 @@
  *   shore station measured, each value with its own time.
  * - CO-OPS tide predictions (high and low water) at the nearest prediction station:
  *   astronomical predictions, not observed water levels.
+ * - CO-OPS 6-minute water temperature at the nearest tide station with a thermistor: measured in
+ *   the harbour itself at Monterey, Crescent City and San Diego (±0.2 °C), flagged by NOAA.
  *
  * Ocean conditions are context for planning a trip. They are not a toxin forecast and say
  * nothing about where fish are.
@@ -123,6 +125,35 @@ export function parseTides(json: unknown): Tide[] {
   return p.filter((x) => x.type === "H" || x.type === "L").map((x) => ({ at: x.t, ft: Number(x.v), type: x.type as "H" | "L" }));
 }
 
+// ---------------------------------------------------------------- CO-OPS water temperature (in the harbour)
+
+export type HarborTemp = { waterC: Obs; /** CO-OPS quality flags for that reading, e.g. "0,0,0" (every test passed) */ flags: string };
+
+/** A station this close is in the harbour itself; farther, it is named with its distance. */
+export const HARBOR_TEMP_AT_KM = 2;
+/** Beyond this a tide-station thermistor says nothing about the harbour (lib/harborEvidence REPRESENTATIVE_KM.water_temp). */
+export const HARBOR_TEMP_MAX_KM = 20;
+
+/**
+ * The newest water-temperature reading from CO-OPS's 6-minute series (`time_zone=gmt`, "2026-10-13 05:54"),
+ * no older than `maxAgeH` hours before `now`, with its flags. A reading whose flags are not all "0" is
+ * skipped (CO-OPS marks range, rate-of-change and other test failures there). `{"error":…}` is null.
+ */
+export function parseWaterTemp(json: unknown, now: Date, maxAgeH = 3): HarborTemp | null {
+  const rows = (json as { data?: { t: string; v: string; f?: string }[] })?.data ?? [];
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const r = rows[i];
+    const at = new Date(`${r.t.replace(" ", "T")}:00Z`);
+    const v = Number(r.v);
+    if (Number.isNaN(at.getTime()) || !Number.isFinite(v)) continue;
+    if (now.getTime() - at.getTime() > maxAgeH * 3600_000 || at.getTime() - now.getTime() > 3600_000) continue;
+    const flags = r.f ?? "";
+    if (flags && flags.split(",").some((x) => x.trim() !== "0")) continue;
+    return { waterC: { value: v, at: at.toISOString() }, flags };
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------- the response
 
 export type Part<T> =
@@ -137,6 +168,8 @@ export type Conditions = {
   alerts: Part<MarineAlert[]>;
   buoy: Part<BuoyObs>;
   tides: Part<Tide[]>;
+  /** water temperature measured in the harbour itself (CO-OPS tide-station thermistor), when one is near */
+  harbor?: Part<HarborTemp>;
 };
 
 /** NWS's public marine forecast pages, for readers when CoastWatch does not query its API (its robots.txt). */

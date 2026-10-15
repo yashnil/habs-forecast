@@ -3,7 +3,7 @@ import type { StationLite } from "@/lib/data";
 import type { Association } from "@/lib/applicability";
 import { AUDIENCE } from "@/lib/applicability";
 import type { Audience } from "@/lib/coast";
-import { compass, marineHeadline, stationName, type Conditions, type MarinePeriod, type Tide } from "@/lib/conditions";
+import { compass, marineHeadline, stationName, HARBOR_TEMP_AT_KM, type Conditions, type MarinePeriod, type Tide } from "@/lib/conditions";
 import { ageWords, fmtMeasured, fmtPct, EVIDENCE_RADIUS_KM, NEIGHBOURHOOD_KM, RECENT_DAYS, type Neighbourhood, type StationEvidence } from "@/lib/hab";
 import type { Step } from "@/lib/nextSteps";
 import type { Verification } from "@/lib/official";
@@ -296,6 +296,12 @@ function conditionsMatter(c: Conditions | null, date: string | null, audience: A
       nws = `NWS ${/tonight|today|this afternoon/i.test(p.name) ? p.name.toLowerCase() : `for ${p.name}`}: ${marineHeadline(p)}`;
       source = { label: `NWS forecast, ${c.marine.data.zoneName}`, url: c.marine.url };
     }
+  }
+  // the harbour's own water, measured at the tide station inside it (never the offshore buoy's)
+  if (c.harbor?.status === "ok" && c.harbor.station) {
+    const h = c.harbor;
+    parts.push(`Water ${h.data.waterC.value.toFixed(1)} °C ${h.station!.km <= HARBOR_TEMP_AT_KM ? "in the harbour" : `at ${stationName(h.station!.name)} tide station, ${km(h.station!.km)} km`}`);
+    source ??= { label: `NOAA tide station ${h.station!.id}`, url: h.url };
   }
   if (c.buoy.status === "ok" && c.buoy.station) {
     const b = c.buoy.data;

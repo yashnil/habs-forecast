@@ -249,6 +249,28 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
   // ---- live conditions (measurements and an official forecast), context never a HAB forecast
   const c = x.conditions;
   if (c) {
+    if (c.harbor?.status === "ok" && c.harbor.station) {
+      const h = c.harbor;
+      const st = h.station!;
+      const n: EvidenceNode = {
+        id: `coops:${st.id}:water_temperature`,
+        class: "measurement",
+        variable: "water temperature",
+        units: "°C",
+        value: h.data.waterC.value,
+        text: `${h.data.waterC.value.toFixed(1)} °C`,
+        source: { id: "coops", name: "NOAA CO-OPS", url: h.url, product: `tide station ${st.id}` },
+        time: { observed: h.data.waterC.at, ageDays: 0 },
+        support: { kind: "point" },
+        where: { lat: st.lat ?? null, lon: st.lon ?? null, name: `${stationName(st.name)} tide station`, km: st.km, bearing: null, representative: representative("water_temp", st.km), setting: st.km <= 2 ? "sheltered-harbor" : "unclassified" },
+        freshness: { state: "current" },
+        quality: { flags: h.data.flags ? [`NOAA flags ${h.data.flags} (pass)`] : [] },
+        lineage: ["thermistor at the tide station, 6-minute average", "CO-OPS data API", "read live by Neritic's server"],
+        caveats: ["Water temperature at the station's pier, ±0.2 °C; the harbour entrance and the open coast can differ."],
+      };
+      nodes.push(n);
+      claims.push({ id: "harbor-water", kind: "conditions", text: `Water ${st.km <= 2 ? `in ${P.name} harbour` : `at ${stationName(st.name)} tide station (${km(st.km)} km)`} measured ${n.text} (NOAA tide station ${st.id}). Measured there, not a forecast.`, supports: [n.id] });
+    }
     if (c.buoy.status === "ok" && c.buoy.station) {
       const b = c.buoy.data;
       const st = c.buoy.station;
