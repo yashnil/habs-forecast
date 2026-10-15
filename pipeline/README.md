@@ -1,4 +1,4 @@
-# Neritic Signal data pipeline
+# Neritic data pipeline
 
 Formerly the CoastWatch pipeline; the `coastwatch_pipeline` module, the `cwp` command and the data branches keep their names.
 

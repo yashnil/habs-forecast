@@ -1,6 +1,6 @@
-# Neritic Signal — web app
+# Neritic — web app
 
-The Neritic Signal (formerly CoastWatch) web app; the directory keeps its earlier name. Next.js 16 (App Router) + TypeScript + Tailwind 4 + **MapLibre GL** (via `react-map-gl/maplibre`) with a navy basemap on OpenFreeMap vector tiles. No map token or paid service.
+Neritic's web app (formerly CoastWatch); the directory keeps its earlier name. Next.js 16 (App Router) + TypeScript + Tailwind 4 + **MapLibre GL** (via `react-map-gl/maplibre`) with a navy basemap on OpenFreeMap vector tiles. No map token or paid service.
 
 The app renders static artifacts produced by [`../pipeline`](../pipeline/README.md). It never calls upstream agencies at request time.
 
