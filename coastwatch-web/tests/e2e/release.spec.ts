@@ -79,6 +79,18 @@ test.describe("masthead at narrow widths", () => {
     const page = await ctx.newPage();
     for (const p of ["/", "/bloom"]) {
       await open(page, `${OK}${p}`);
+      // contrast is judged on what a reader sees once the entrance fade has finished: measured
+      // mid-fade (opacity 0.8) the same colours read 4.1:1 instead of their settled 4.5:1 or better
+      await page.waitForFunction(
+        () =>
+          [...document.querySelectorAll("header *")].every((el) => {
+            let o = 1;
+            for (let e: Element | null = el; e; e = e.parentElement) o *= Number(getComputedStyle(e).opacity);
+            return o === 0 || o > 0.99;
+          }),
+        null,
+        { timeout: 10_000 },
+      );
       const r = await new AxeBuilder({ page }).include("header").analyze();
       expect(r.violations.map((v) => v.id), p).toEqual([]);
     }
