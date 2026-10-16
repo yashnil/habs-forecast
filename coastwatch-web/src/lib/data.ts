@@ -7,6 +7,7 @@ import type { OfficialDataset } from "@/generated/official";
 import type { PortIntelCollection } from "@/generated/port_intel";
 import type { ObservationDataset } from "@/generated/observations";
 import type { FisheriesDataset } from "@/generated/fisheries";
+import { recordContext, type RecordContext, type RecordVariable } from "@/lib/history";
 import fisheriesSchema from "@/generated/schemas/fisheries.schema.json";
 import observationsSchema from "@/generated/schemas/observations.schema.json";
 import manifestSchema from "@/generated/schemas/manifest.schema.json";
@@ -50,6 +51,8 @@ export type StationLite = {
   latest: { variable: string; label: string; units: string; kind: string; value: number | null; date: string; qualifier: string | null; n_last_365d: number }[];
   /** the last 370 days of samples of the HAB measurements (My Coast's evidence timelines): [date, value] */
   recent?: Record<string, [string, number | null][]>;
+  /** the newest toxin and Pseudo-nitzschia samples placed in the station's own record (lib/history) */
+  record?: Partial<Record<RecordVariable, RecordContext>>;
 };
 /** HAB measurements kept as recent timelines for the evidence cards */
 const RECENT_VARIABLES = ["pDA", "pn_seriata", "pn_delicatissima", "chl_extracted"];
@@ -75,7 +78,17 @@ export function slimStations(obs: ObservationDataset): StationLite[] {
         return { variable: sm.variable, label: v?.label ?? sm.variable, units: v?.units ?? "", kind: v?.kind ?? "", value: sm.last_value ?? null, date: sm.last_date!, qualifier: sm.last_qualifier ?? null, n_last_365d: sm.n_last_365d };
       }),
     recent: recentSeries(st, newest),
+    record: stationRecord(st),
   }]));
+}
+
+function stationRecord(st: ObservationDataset["stations"][number]): Partial<Record<RecordVariable, RecordContext>> {
+  const out: Partial<Record<RecordVariable, RecordContext>> = {};
+  for (const v of ["pDA", "pn"] as const) {
+    const r = recordContext(st as Parameters<typeof recordContext>[0], v);
+    if (r) out[v] = r;
+  }
+  return out;
 }
 
 /** Samples in the RECENT_DAYS days before the dataset's newest sample, per HAB variable (measured values only, 3 significant digits). */

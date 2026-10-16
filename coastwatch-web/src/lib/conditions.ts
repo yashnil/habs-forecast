@@ -44,6 +44,8 @@ export function nearest<T extends Station>(list: T[], lat: number, lon: number, 
 
 // ---------------------------------------------------------------- NDBC realtime2 standard met
 
+import type { ShoreObs } from "@/lib/shoreStations";
+
 export type Obs = { value: number; at: string };
 export type BuoyObs = {
   windDirDeg?: Obs;
@@ -272,6 +274,8 @@ export type Conditions = {
   tides: Part<Tide[]>;
   /** water temperature measured in the harbour itself (CO-OPS tide-station thermistor), when one is near */
   harbor?: Part<HarborTemp>;
+  /** a CeNCOOS shore station's QARTOD-passed readings (lib/shoreStations), when one is within 6 km */
+  shore?: Part<ShoreObs>;
 };
 
 /** NWS's public marine forecast pages, for readers when Neritic does not query its API (its robots.txt). */

@@ -1,0 +1,3 @@
+time,sea_water_temperature,sea_water_temperature_qc_agg,sea_water_practical_salinity,sea_water_practical_salinity_qc_agg,mass_concentration_of_chlorophyll_in_sea_water,mass_concentration_of_chlorophyll_in_sea_water_qc_agg
+UTC,degree_Celsius,,1e-3,,microg.L-1,
+2026-10-13T05:56:00Z,14.93485,1,33.07825,1,NaN,2

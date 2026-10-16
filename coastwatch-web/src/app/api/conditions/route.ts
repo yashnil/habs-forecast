@@ -19,6 +19,7 @@ import {
   type Part,
   type WaterTempSeries,
 } from "@/lib/conditions";
+import { parseShoreCsv, shoreCandidate, shorePage, shoreUrl, SHORE_MAX_AGE_H, SHORE_MAX_KM } from "@/lib/shoreStations";
 import { headlineAlerts, parseCoastalText, zoneNear, zonePageUrl, zoneTextUrl } from "@/lib/nwsText";
 
 /**
@@ -237,6 +238,30 @@ async function harborPart(lat: number, lon: number): Promise<Conditions["harbor"
   return { status: "unavailable", reason: `${where}: ${why}.`, source, url: page };
 }
 
+/**
+ * A CeNCOOS shore station's newest row (lib/shoreStations), when one is within SHORE_MAX_KM. Values
+ * whose QARTOD flag is not PASS are withheld and named; a newest row older than SHORE_MAX_AGE_H
+ * hours is "not reporting since …", said with the last report's time, never shown as current.
+ */
+async function shorePart(lat: number, lon: number): Promise<Conditions["shore"]> {
+  const source = "CeNCOOS shore station";
+  const s = shoreCandidate(lat, lon);
+  if (!s) return { status: "none", reason: `No CeNCOOS shore station within ${SHORE_MAX_KM} km.`, source };
+  const d = now();
+  const page = shorePage(s);
+  const station = { id: s.id, name: s.name, km: s.km, lat: s.lat, lon: s.lon, sensorNote: s.place };
+  let obs;
+  try {
+    obs = parseShoreCsv((await get(shoreUrl(s, d), "text")) as string);
+  } catch (e) {
+    return { status: "unavailable", reason: `${s.name}: CeNCOOS ERDDAP did not answer (${msg(e)}).`, source, url: page };
+  }
+  if (!obs) return { status: "unavailable", reason: `${s.name}: no rows.`, source, url: page };
+  const ageH = (d.getTime() - Date.parse(obs.at)) / 3600_000;
+  if (ageH > SHORE_MAX_AGE_H) return { status: "unavailable", reason: `${s.name} (${s.km.toFixed(1)} km) has not reported since ${new Date(obs.at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}.`, source, url: page };
+  return { status: "ok", data: obs, source, url: page, fetchedAt: d.toISOString(), station };
+}
+
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;
   const lat = Number(q.get("lat"));
@@ -244,7 +269,7 @@ export async function GET(req: Request) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < 32 || lat > 42.5 || lon < -127 || lon > -116) {
     return NextResponse.json({ error: "lat and lon must be California coastal coordinates" }, { status: 400 });
   }
-  const [[marine, alerts], buoy, tides, harbor] = await Promise.all([marineParts(lat, lon), buoyPart(lat, lon), tidePart(lat, lon), harborPart(lat, lon)]);
-  const body: Conditions = { lat, lon, marine, alerts, buoy, tides, harbor };
+  const [[marine, alerts], buoy, tides, harbor, shore] = await Promise.all([marineParts(lat, lon), buoyPart(lat, lon), tidePart(lat, lon), harborPart(lat, lon), shorePart(lat, lon)]);
+  const body: Conditions = { lat, lon, marine, alerts, buoy, tides, harbor, shore };
   return NextResponse.json(body, { headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300" } });
 }
