@@ -13,12 +13,12 @@ const layer = manifest.layers.find((l: { layer_id: string }) => l.layer_id === "
 const g = layer.grid;
 const codes = new Uint16Array(new Uint8Array(gunzipSync(readFileSync(path.join(FIX, g.url)))).buffer);
 const cls = (code: number) => (code === g.nodata ? -1 : Math.min(9, Math.floor(code * g.scale_factor * 10 + 1e-9)));
-type Win = { __cwMap: { jumpTo(o: unknown): void; project(p: number[]): { x: number; y: number }; loaded(): boolean; getSource(id: string): { type: string } | undefined; setLayoutProperty(l: string, p: string, v: string): void; getLayer(l: string): unknown } };
+type Win = { __cwMap: { jumpTo(o: unknown): void; project(p: number[]): { x: number; y: number }; loaded(): boolean; getSource(id: string): { type: string } | undefined; setLayoutProperty(l: string, p: string, v: string): void; setPaintProperty(l: string, p: string, v: unknown): void; getLayer(l: string): unknown } };
 
 async function open(page: Page) {
   await page.clock.setFixedTime(new Date("2026-10-08T20:00:00Z"));
   await page.goto(`${OK}/?layer=forecast&var=particulate_domoic&lead=1`);
-  await expect(page.getByTestId("official-pill")).not.toHaveAttribute("data-state", "checking");
+  await expect(page.getByTestId("notices-button")).toBeVisible();
   await page.waitForFunction(() => !!(window as unknown as Win).__cwMap?.loaded());
 }
 
@@ -46,6 +46,10 @@ test("drawn cell edges sit on the true cell boundaries, and the readout agrees o
   await page.evaluate(() => {
     const m = (window as unknown as Win).__cwMap;
     if (m.getLayer("forecast-cell-edges")) m.setLayoutProperty("forecast-cell-edges", "visibility", "none");
+    // geometry, not styling: v4 draws the forecast translucent at harbour zoom; sample it opaque
+    // (and without the per-cell value labels), so the colour edge found is the cells' own edge
+    if (m.getLayer("forecast-raster")) m.setPaintProperty("forecast-raster", "raster-opacity", 1);
+    if (m.getLayer("forecast-cell-labels")) m.setLayoutProperty("forecast-cell-labels", "visibility", "none");
   });
   const list = boundaries(4);
   expect(list.length).toBeGreaterThan(1);
@@ -53,6 +57,8 @@ test("drawn cell edges sit on the true cell boundaries, and the readout agrees o
   for (const q of list) {
     await page.evaluate(([lon, lat]) => (window as unknown as Win).__cwMap.jumpTo({ center: [lon, lat], zoom: 12 }), [q.lon, q.lat]);
     await page.waitForFunction(() => (window as unknown as Win).__cwMap.loaded());
+    // the previous step's hover readout must not sit over the strip being sampled
+    await page.mouse.move(5, box.y + box.height - 5);
     await page.waitForTimeout(150);
     const pt = await page.evaluate(([lon, lat]) => (window as unknown as Win).__cwMap.project([lon, lat]), [q.lon, q.lat]);
     const y0 = Math.round(pt.y) - 30;

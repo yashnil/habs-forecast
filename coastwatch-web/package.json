@@ -16,7 +16,8 @@
     "test": "vitest run",
     "test:e2e": "npm run data:fixture && npm run build && playwright test",
     "test:published": "playwright test -c playwright.published.config.ts",
-    "shots": "node scripts/shoot.mjs"
+    "shots": "node scripts/shoot.mjs",
+    "test:offline": "node scripts/offline-proof.mjs"
   },
   "dependencies": {
     "@mapbox/vector-tile": "3.0.0",
@@ -25,6 +26,7 @@
     "motion": "^12.43.0",
     "next": "16.4.0",
     "pbf": "5.1.2",
+    "pmtiles": "4.5.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-map-gl": "^8.1.3"

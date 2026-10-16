@@ -27,6 +27,7 @@ export function MobileSheet({
   children,
   label,
   testid = "mobile-sheet",
+  field = false,
 }: {
   snaps: SnapPoint[];
   snap: SnapId;
@@ -36,6 +37,8 @@ export function MobileSheet({
   children?: ReactNode;
   label: string;
   testid?: string;
+  /** v4 field ergonomics: a 44 px handle */
+  field?: boolean;
 }) {
   const i = Math.max(0, snaps.findIndex((s) => s.id === snap));
   const target = snaps[i]?.height ?? 0;
@@ -78,7 +81,7 @@ export function MobileSheet({
         aria-label={`${label}: ${LABEL[snap]}. Activate to resize, or use the arrow keys.`}
         aria-expanded={snap !== snaps[0]?.id}
         data-testid="sheet-handle"
-        className="flex h-6 w-full shrink-0 touch-none items-center justify-center rounded-t-2xl"
+        className={`flex w-full shrink-0 touch-none items-center justify-center rounded-t-2xl ${field ? "h-14" : "h-6"}`}
         onClick={() => {
           if (drag.current?.moved) return;
           go(i === snaps.length - 1 ? 0 : i + 1);

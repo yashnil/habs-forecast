@@ -13,7 +13,7 @@ const manifest = JSON.parse(readFileSync(path.join(FIX, "manifest.json"), "utf8"
 async function open(page: Page, url: string) {
   await page.clock.setFixedTime(new Date("2026-10-08T20:00:00Z"));
   await page.goto(url);
-  await expect(page.getByTestId("official-pill")).not.toHaveAttribute("data-state", "checking");
+  await expect(page.getByTestId("notices-button")).toBeVisible();
   await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { loaded: () => boolean } }).__cwMap?.loaded());
 }
 

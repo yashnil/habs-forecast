@@ -1,0 +1,284 @@
+"use client";
+
+import type { LayerArtifact, Manifest, Palette } from "@/generated/schema";
+import { CHARM_VARIABLES, charmRun, satelliteLatest, sourceStatus, type CharmVariable } from "@/lib/layers";
+import { currentsHourly } from "@/lib/currents";
+import { AGE_COLOURS, SENSOR_COLOURS, displayPalette, gradientCss } from "@/lib/palette";
+import { SPEED_CLASSES, ARROW_LENGTHS } from "@/lib/basemap";
+import { stampLines, sensorLabel } from "@/lib/stamp";
+import { Icon } from "@/v4/ui/Icon";
+import { SAT_WORDS, VARIABLE_WORDS, type LayerChoice, type Resolved } from "./layers";
+import { dayLabel, relTime } from "@/v4/ui/time";
+
+type Family = "none" | "forecast" | "satellite" | "currents";
+
+const FAMILY: Record<Family, { name: string; kind: string; icon: string; tone: string }> = {
+  none: { name: "Seafloor and coast", kind: "Reference", icon: "map", tone: "text-n-ink-2" },
+  forecast: { name: "NOAA C-HARM forecast", kind: "Model", icon: "cell", tone: "text-n-model" },
+  satellite: { name: "Satellite chlorophyll", kind: "Observation", icon: "layers", tone: "text-n-measured" },
+  currents: { name: "Surface currents", kind: "Observation", icon: "compass", tone: "text-n-conditions" },
+};
+
+function freshnessLine(m: Manifest, f: Family, now: Date | null): string | null {
+  if (f === "forecast") {
+    const run = charmRun(m);
+    return run ? `Run of ${dayLabel(run.issued_date)}${now ? ` · ${relTime(run.issued_date, now)}` : ""}` : "No run published";
+  }
+  if (f === "satellite") {
+    const l = satelliteLatest(m, "olci300") ?? satelliteLatest(m, "viirs750");
+    const d = l?.composite?.newest_observed_date ?? l?.time.observed_date;
+    return d ? `Newest pixels ${now ? relTime(d, now) : d}` : "No recent clear view";
+  }
+  if (f === "currents") {
+    const h = currentsHourly(m);
+    const t = h[h.length - 1]?.time.valid_time;
+    return t ? `Newest hour ${now ? relTime(t, now) : t}` : "No radar hour published";
+  }
+  return null;
+}
+
+function familyOf(c: LayerChoice): Family {
+  return c.kind;
+}
+
+export function LayerList({ manifest, choice, onChoice, now, defaults }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; now: Date | null; defaults: { lead: number } }) {
+  const active = familyOf(choice);
+  const pick = (f: Family) => {
+    if (f === active) return;
+    if (f === "none") onChoice({ kind: "none" });
+    if (f === "forecast") onChoice({ kind: "forecast", variable: "particulate_domoic", lead: defaults.lead });
+    if (f === "satellite") onChoice({ kind: "satellite", product: satelliteLatest(manifest, "olci300") ? "olci300" : "viirs750", day: null });
+    if (f === "currents") onChoice({ kind: "currents", hour: null, mean: false });
+  };
+  const available: Record<Family, boolean> = {
+    none: true,
+    forecast: !!charmRun(manifest),
+    satellite: !!(satelliteLatest(manifest, "olci300") || satelliteLatest(manifest, "viirs750")),
+    currents: currentsHourly(manifest).length > 0,
+  };
+  return (
+    <div role="radiogroup" aria-label="What the map shows" className="flex flex-col gap-1" data-testid="layer-list">
+      {(Object.keys(FAMILY) as Family[]).map((f) => {
+        const on = f === active;
+        const meta = FAMILY[f];
+        const line = freshnessLine(manifest, f, now);
+        return (
+          <button
+            key={f}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            disabled={!available[f]}
+            onClick={() => pick(f)}
+            data-testid={`layer-${f}`}
+            className={`nx-press nx-focus flex min-h-[56px] w-full items-center gap-3 rounded-xl px-3 text-left disabled:opacity-45 ${on ? "bg-n-accent-bg ring-1 ring-n-accent" : "hover:bg-n-surface-2"}`}
+          >
+            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-n-surface-2 ${meta.tone}`}>
+              <Icon name={meta.icon} className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold leading-tight text-n-ink">{meta.name}</span>
+              <span className={`block truncate text-[13px] leading-snug ${on ? "text-n-ink-2" : "text-n-ink-3"}`}>
+                <span className={meta.tone}>{meta.kind}</span>
+                {line ? ` · ${line}` : ""}
+                {!available[f] ? " · not available" : ""}
+              </span>
+            </span>
+            <span aria-hidden className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${on ? "border-n-accent" : "border-n-line-strong"}`}>
+              {on && <span className="h-2.5 w-2.5 rounded-full bg-n-accent" />}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Options of the active layer: the C-HARM variable, the satellite sensor. Time lives in the timebar. */
+export function LayerOptions({ manifest, choice, onChoice }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void }) {
+  if (choice.kind === "forecast")
+    return (
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="nx-variable" className="nx-eyebrow">
+          Variable
+        </label>
+        <select
+          id="nx-variable"
+          value={choice.variable}
+          onChange={(e) => onChoice({ ...choice, variable: e.target.value as CharmVariable })}
+          className="nx-focus min-h-11 rounded-lg border border-n-line-strong bg-n-surface px-3 text-[15px] text-n-ink"
+          data-testid="variable-select"
+        >
+          {CHARM_VARIABLES.map((v) => (
+            <option key={v} value={v}>
+              {VARIABLE_WORDS[v].name}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  if (choice.kind === "satellite") {
+    const prods = (["olci300", "viirs750", "multi"] as const).filter((p) => satelliteLatest(manifest, p));
+    return (
+      <div className="flex flex-col gap-1.5">
+        <span className="nx-eyebrow">Sensor</span>
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Sensor">
+          {prods.map((p) => (
+            <button
+              key={p}
+              type="button"
+              role="radio"
+              aria-checked={choice.product === p}
+              onClick={() => onChoice({ kind: "satellite", product: p, day: null })}
+              className={`nx-press nx-focus min-h-11 rounded-lg px-3 text-[14px] font-semibold ${choice.product === p ? "bg-n-ink text-n-bg" : "border border-n-line-strong text-n-ink-2 hover:text-n-ink"}`}
+              data-testid={`sensor-${p}`}
+            >
+              {SAT_WORDS[p].name} <span className="font-normal opacity-75">{SAT_WORDS[p].native}</span>
+            </button>
+          ))}
+        </div>
+        {!choice.day && (
+          <>
+            <span className="nx-eyebrow mt-2">Show</span>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="What the colours show">
+              {(["chl", "age", ...(choice.product === "multi" ? (["sensor"] as const) : [])] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="radio"
+                  aria-checked={(choice.view ?? "chl") === v}
+                  onClick={() => onChoice({ ...choice, view: v })}
+                  className={`nx-press nx-focus min-h-11 rounded-lg px-3 text-[14px] font-semibold ${(choice.view ?? "chl") === v ? "bg-n-ink text-n-bg" : "border border-n-line-strong text-n-ink-2 hover:text-n-ink"}`}
+                  data-testid={`satview-${v}`}
+                >
+                  {v === "chl" ? "Chlorophyll" : v === "age" ? "Age of each pixel" : "Which sensor"}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+  return null;
+}
+
+function Ramp({ palette, labels }: { palette: Palette; labels: [string, string, string] }) {
+  return (
+    <div>
+      <div className="h-3 w-full rounded-sm" style={{ background: gradientCss(displayPalette(palette)) }} aria-hidden />
+      <div className="nx-data mt-1 flex justify-between text-[12px] text-n-ink-3">
+        <span>{labels[0]}</span>
+        <span>{labels[1]}</span>
+        <span>{labels[2]}</span>
+      </div>
+    </div>
+  );
+}
+
+function NoData() {
+  return (
+    <span className="flex items-center gap-2 text-[13px] text-n-ink-2">
+      <span aria-hidden className="h-3 w-5 rounded-sm" style={{ background: "repeating-linear-gradient(135deg, rgba(160,180,195,0.55) 0 1.5px, transparent 1.5px 4px)", outline: "1px solid rgba(160,180,195,0.4)" }} />
+      No value (not modelled, cloud or no observation): never zero
+    </span>
+  );
+}
+
+/** The legend of the layer on the map: units, scale, the no-data mark. */
+export function Legend({ choice, resolved }: { choice: LayerChoice; resolved: Resolved }) {
+  if (choice.kind === "forecast" && resolved.forecastLayer?.palette)
+    return (
+      <figure className="flex flex-col gap-2" data-testid="legend-forecast" aria-label={`Legend: ${VARIABLE_WORDS[choice.variable].what}`}>
+        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">{VARIABLE_WORDS[choice.variable].what}</figcaption>
+        <Ramp palette={resolved.forecastLayer.palette} labels={["0%", "50%", "100%"]} />
+        <p className="text-[12.5px] leading-snug text-n-ink-3">A probability for each 3 km model cell, not a toxin measurement. Classes are display steps, not risk levels.</p>
+        <NoData />
+      </figure>
+    );
+  if (choice.kind === "satellite" && choice.view === "age")
+    return (
+      <figure className="flex flex-col gap-2" data-testid="legend-age" aria-label="Legend: days since each pixel was observed">
+        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Days since each pixel was last seen clear</figcaption>
+        <div className="flex">
+          {AGE_COLOURS.map((c, i) => (
+            <span key={c} className="flex flex-1 flex-col items-center gap-1">
+              <span className="h-3 w-full" style={{ background: c }} aria-hidden />
+              <span className="nx-data text-[11.5px] text-n-ink-3">{i}</span>
+            </span>
+          ))}
+        </div>
+        <p className="text-[12.5px] leading-snug text-n-ink-3">Each colour is an observation date, not a value. Older than 7 days is left out.</p>
+      </figure>
+    );
+  if (choice.kind === "satellite" && choice.view === "sensor")
+    return (
+      <figure className="flex flex-col gap-2" data-testid="legend-sensor" aria-label="Legend: which sensor each pixel comes from">
+        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Which sensor each pixel comes from</figcaption>
+        <div className="flex gap-4 text-[13px]">
+          <span className="flex items-center gap-2"><span className="h-3 w-5" style={{ background: SENSOR_COLOURS[0] }} aria-hidden />Sentinel-3 OLCI 300 m</span>
+          <span className="flex items-center gap-2"><span className="h-3 w-5" style={{ background: SENSOR_COLOURS[1] }} aria-hidden />VIIRS 750 m</span>
+        </div>
+      </figure>
+    );
+  if (choice.kind === "satellite" && resolved.satLayer?.palette)
+    return (
+      <figure className="flex flex-col gap-2" data-testid="legend-satellite" aria-label="Legend: chlorophyll-a, milligrams per cubic metre, log scale">
+        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Chlorophyll-a, mg/m³ (log scale)</figcaption>
+        <Ramp palette={resolved.satLayer.palette} labels={["0.05", "1.6", "50"]} />
+        <p className="text-[12.5px] leading-snug text-n-ink-3">Algae of every kind, not toxin. Cloud and coastal glare leave gaps; a gap is not clear water.</p>
+        <NoData />
+      </figure>
+    );
+  if (choice.kind === "currents")
+    return (
+      <figure className="flex flex-col gap-2" data-testid="legend-currents" aria-label="Legend: current speed classes, metres per second">
+        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Surface current speed, m/s (arrow length)</figcaption>
+        <div className="flex items-end gap-3">
+          {SPEED_CLASSES.map((v, i) => (
+            <span key={v} className="flex flex-col items-center gap-1">
+              <svg width="30" height="14" aria-hidden>
+                <line x1={15 - ARROW_LENGTHS[i] / 2} y1={7} x2={15 + ARROW_LENGTHS[i] / 2} y2={7} stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" className="text-n-ink" />
+              </svg>
+              <span className="nx-data text-[11.5px] text-n-ink-3">{i === SPEED_CLASSES.length - 1 ? `≥${v}` : v}</span>
+            </span>
+          ))}
+        </div>
+        <p className="text-[12.5px] leading-snug text-n-ink-3">One arrow per observed 2 km radar cell. No arrow means no observation, not calm water.</p>
+      </figure>
+    );
+  if (choice.kind === "none")
+    return <p className="text-[13.5px] leading-snug text-n-ink-2">NOAA ETOPO 2022 and Coastal Relief Model seafloor. Harbours, shore stations and official limits stay on every layer.</p>;
+  return null;
+}
+
+/** Where the field comes from and when it is valid: one line per source, its own date. */
+export function Provenance({ manifest, choice, resolved, now }: { manifest: Manifest; choice: LayerChoice; resolved: Resolved; now: Date | null }) {
+  const stamps = stampLines({
+    group: choice.kind === "none" ? null : choice.kind,
+    forecast: resolved.forecastLayer,
+    run: charmRun(manifest),
+    satellite: resolved.satLayer,
+    currents: resolved.curLayer,
+    now,
+  });
+  if (!stamps.length) return null;
+  const status = choice.kind === "forecast" ? sourceStatus(manifest, "charm") : choice.kind === "satellite" ? sourceStatus(manifest, "satellite_chl") : choice.kind === "currents" ? sourceStatus(manifest, "hf_radar") : null;
+  return (
+    <div className="flex flex-col gap-1" data-testid="provenance">
+      {stamps.map((s) => (
+        <p key={s.testid} data-testid={s.testid} className={`flex items-start gap-2 text-[13px] leading-snug ${s.kind === "gap" ? "text-n-stale" : "text-n-ink-2"}`}>
+          <span className={`mt-[5px] h-2 w-2 shrink-0 rounded-full ${s.kind === "model" ? "bg-n-model" : s.kind === "gap" ? "bg-n-stale" : "bg-n-measured"}`} aria-hidden />
+          {s.text}
+        </p>
+      ))}
+      {status && status.outcome !== "updated" && (
+        <p className="flex items-start gap-2 text-[13px] text-n-stale" data-testid="provenance-status">
+          <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0" />
+          The last update did not complete; the newest published data is shown.
+        </p>
+      )}
+      {choice.kind === "satellite" && resolved.satLayer && <p className="text-[12.5px] text-n-ink-3">{sensorLabel(resolved.satLayer as LayerArtifact)}</p>}
+    </div>
+  );
+}

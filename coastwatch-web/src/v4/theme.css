@@ -1,0 +1,246 @@
+/*
+ * Neritic v4 design tokens.
+ *
+ * Two environments share one vocabulary:
+ * - Instrument: the dark ocean workspace (Explore, map surfaces). Solid decks over the map, no
+ *   heavy blur over WebGL; one cyan accent for selection and focus.
+ * - Chart: the light reading environment (My Coast briefing, Research, reference pages). Cool and
+ *   crisp, like chart paper, never cream.
+ *
+ * Data families keep their meaning everywhere: official = amber, model = violet,
+ * measured = teal, conditions = sky. State never relies on colour alone (each state ships an icon
+ * and a word). Names are --nx-* so v2 components (--cw-*) keep working while routes migrate.
+ */
+
+:root,
+.env-chart {
+  --nx-bg: #f2f5f6;
+  --nx-surface: #ffffff;
+  --nx-surface-2: #eef2f4;
+  --nx-surface-3: #e3e9ec;
+  --nx-line: #dbe2e6;
+  --nx-line-strong: #c3ced4;
+  --nx-ink: #0b1820;
+  --nx-ink-2: #3a4e5b;
+  --nx-ink-3: #526773;
+  --nx-accent: #086a85;
+  --nx-accent-bg: #e3f2f6;
+  --nx-on-accent: #ffffff;
+
+  --nx-official: #a14b00;
+  --nx-official-bg: #fdf1df;
+  --nx-official-line: #efbb72;
+  --nx-model: #6b3fb3;
+  --nx-model-bg: #f2edfb;
+  --nx-model-line: #cbbbee;
+  --nx-measured: #0b7468;
+  --nx-measured-bg: #e2f3ef;
+  --nx-measured-line: #a3d5cc;
+  --nx-conditions: #1f6496;
+  --nx-conditions-bg: #e6f0f8;
+
+  --nx-ok: #17784c;
+  --nx-partial: #086a85;
+  --nx-stale: #8a5a00;
+  --nx-offline: #4b5d6a;
+  --nx-down: #b3361f;
+
+  --nx-gap: #5d707b;
+  --nx-shadow: 0 1px 2px rgba(11, 24, 32, 0.08), 0 8px 24px rgba(11, 24, 32, 0.08);
+}
+
+.env-instrument {
+  color-scheme: dark;
+  --nx-bg: #061016;
+  --nx-surface: #0c1921;
+  --nx-surface-2: #12232e;
+  --nx-surface-3: #1a2f3c;
+  --nx-line: rgba(186, 214, 230, 0.12);
+  --nx-line-strong: rgba(186, 214, 230, 0.24);
+  --nx-ink: #ebf2f6;
+  --nx-ink-2: #aabdc9;
+  --nx-ink-3: #7c95a4;
+  --nx-accent: #5fd0e6;
+  --nx-accent-bg: rgba(95, 208, 230, 0.13);
+  --nx-on-accent: #04141b;
+
+  --nx-official: #f4b552;
+  --nx-official-bg: rgba(244, 181, 82, 0.1);
+  --nx-official-line: rgba(244, 181, 82, 0.42);
+  --nx-model: #c2a8f5;
+  --nx-model-bg: rgba(194, 168, 245, 0.11);
+  --nx-model-line: rgba(194, 168, 245, 0.4);
+  --nx-measured: #4fd3b0;
+  --nx-measured-bg: rgba(79, 211, 176, 0.1);
+  --nx-measured-line: rgba(79, 211, 176, 0.4);
+  --nx-conditions: #7cc4f0;
+  --nx-conditions-bg: rgba(124, 196, 240, 0.1);
+
+  --nx-ok: #4fd3b0;
+  --nx-partial: #5fd0e6;
+  --nx-stale: #e5b25a;
+  --nx-offline: #9fb2be;
+  --nx-down: #f08a74;
+
+  --nx-gap: #8ea2af;
+  --nx-shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.35);
+  background: var(--nx-bg);
+  color: var(--nx-ink);
+}
+
+:root {
+  /* type: one sans for the interface and reading (Atkinson Hyperlegible Next: built for
+     legibility, which also serves bright sun), a serif for editorial headlines, a mono for values */
+  --nx-font-ui: var(--font-atkinson), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --nx-font-display: var(--font-source-serif), "Iowan Old Style", Georgia, serif;
+  --nx-font-data: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* motion: short, ease-out, interruptible; frequent map operations are instant */
+  --nx-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --nx-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --nx-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --nx-t-quick: 120ms;
+  --nx-t-base: 180ms;
+  --nx-t-sheet: 300ms;
+
+  /* field ergonomics: primary controls on phones are 56 px, secondary ones at least 44 px */
+  --nx-hit-field: 56px;
+  --nx-hit: 44px;
+  --nx-radius: 12px;
+  --nx-radius-lg: 18px;
+}
+
+@theme inline {
+  --color-n-bg: var(--nx-bg);
+  --color-n-surface: var(--nx-surface);
+  --color-n-surface-2: var(--nx-surface-2);
+  --color-n-surface-3: var(--nx-surface-3);
+  --color-n-line: var(--nx-line);
+  --color-n-line-strong: var(--nx-line-strong);
+  --color-n-ink: var(--nx-ink);
+  --color-n-ink-2: var(--nx-ink-2);
+  --color-n-ink-3: var(--nx-ink-3);
+  --color-n-accent: var(--nx-accent);
+  --color-n-accent-bg: var(--nx-accent-bg);
+  --color-n-on-accent: var(--nx-on-accent);
+  --color-n-official: var(--nx-official);
+  --color-n-official-bg: var(--nx-official-bg);
+  --color-n-official-line: var(--nx-official-line);
+  --color-n-model: var(--nx-model);
+  --color-n-model-bg: var(--nx-model-bg);
+  --color-n-model-line: var(--nx-model-line);
+  --color-n-measured: var(--nx-measured);
+  --color-n-measured-bg: var(--nx-measured-bg);
+  --color-n-measured-line: var(--nx-measured-line);
+  --color-n-conditions: var(--nx-conditions);
+  --color-n-conditions-bg: var(--nx-conditions-bg);
+  --color-n-ok: var(--nx-ok);
+  --color-n-partial: var(--nx-partial);
+  --color-n-stale: var(--nx-stale);
+  --color-n-offline: var(--nx-offline);
+  --color-n-down: var(--nx-down);
+  --color-n-gap: var(--nx-gap);
+  --font-ui: var(--nx-font-ui);
+  --font-serif: var(--nx-font-display);
+  --font-data: var(--nx-font-data);
+}
+
+/* v2 content inside the v4 reading environment takes the v4 palette and faces */
+.env-chart {
+  --cw-page: var(--nx-bg);
+  --cw-surface: var(--nx-surface);
+  --cw-surface-2: var(--nx-surface-2);
+  --cw-surface-3: var(--nx-surface-3);
+  --cw-hairline: var(--nx-line);
+  --cw-hairline-strong: var(--nx-line-strong);
+  --cw-ink: var(--nx-ink);
+  --cw-ink-2: var(--nx-ink-2);
+  --cw-ink-3: var(--nx-ink-3);
+  --cw-accent: var(--nx-accent);
+  --font-plex-sans: var(--font-atkinson);
+  --font-newsreader: var(--font-source-serif);
+}
+
+/* v4 surfaces read in the v4 faces (v2 pages keep theirs until they move) */
+.env-chart,
+.env-instrument {
+  font-family: var(--nx-font-ui);
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* v4 surfaces: a deck is the one floating surface over the map (solid, a hairline, one shadow) */
+.nx-deck {
+  background: var(--nx-surface);
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-radius-lg);
+  box-shadow: var(--nx-shadow);
+}
+.nx-data {
+  font-family: var(--nx-font-data);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+.nx-eyebrow {
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--nx-ink-3);
+}
+.nx-press {
+  transition: transform var(--nx-t-quick) var(--nx-ease-out), background-color var(--nx-t-quick) var(--nx-ease-out), color var(--nx-t-quick) var(--nx-ease-out);
+}
+.nx-press:active {
+  transform: scale(0.97);
+}
+.nx-focus:focus-visible {
+  outline: 2px solid var(--nx-accent);
+  outline-offset: 2px;
+}
+
+@keyframes nx-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nx-sheet {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+@keyframes nx-panel {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: none; }
+}
+.nx-rise { animation: nx-rise var(--nx-t-base) var(--nx-ease-out) both; }
+.nx-panel { animation: nx-panel 220ms var(--nx-ease-out) both; }
+
+/* the loading contour: one slow sweep along a bathymetric line, only while something loads */
+@keyframes nx-sweep {
+  from { stroke-dashoffset: 240; }
+  to { stroke-dashoffset: 0; }
+}
+.nx-sweep { stroke-dasharray: 60 180; animation: nx-sweep 1.6s linear infinite; }
+
+/* skeleton text: a flat tone, no shimmer (a shimmer reads as activity that is not happening) */
+.nx-skeleton {
+  background: var(--nx-surface-3);
+  border-radius: 6px;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-sweep { animation: none; stroke-dasharray: none; }
+}
+@media (prefers-contrast: more) {
+  .env-instrument {
+    --nx-line: rgba(220, 235, 245, 0.35);
+    --nx-ink-2: #d6e3ea;
+    --nx-ink-3: #b6c8d3;
+  }
+  :root,
+  .env-chart {
+    --nx-line: #9fb0b9;
+    --nx-ink-2: #22343f;
+    --nx-ink-3: #3a4e5b;
+  }
+}
