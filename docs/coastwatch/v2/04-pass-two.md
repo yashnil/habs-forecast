@@ -90,3 +90,20 @@ inspector readout. Tests: `m5.spec.ts` (the harbour view), `m2.spec.ts` (limits 
   README, site copy, pipeline strings and workflows (NOAA CoastWatch credits and technical identifiers kept).
 - Experimental or pending: the eight masthead controls under 44 px; the light map; the evidence list's
   per-row map focus for buoys (the sea row focuses the conditions as one); anything predictive.
+
+## 6. Release preparation (2026-10-15, evening)
+
+Measured again on the same production data after the owner's release-preparation brief.
+
+| Measure (Monterey, 390 px) | After pass two | After release preparation |
+|---|---|---|
+| Controls under 44 px (of all) | 8 of 76 | **1 of 76**: the skip link, visually hidden until focused (44 px when focused) |
+| Overlapping hit boxes in the masthead and status line, 320 and 390 px | not measured | **0** |
+| Header height (masthead + status line) | 86 px | 88 px; the drawn pill stays 32 px, the masthead row 52 px |
+| Repeated sentences, Crescent City / Shelter Cove | 1 / 1 | **0 / 0** (the HAB line no longer restates the model) |
+| Sentences built outside the evidence graph on My Coast | 1 paragraph (the HAB detail's summary) | **0** (it renders the graph's `claim.text`, checked against the API by `evidence.spec.ts`) |
+
+Also fixed from the inspection at 1440, 390 and 320 px (Monterey, Crescent City, San Diego, Shelter Cove): the
+docked map bar's "Open" label wrapped at 320 px; Shelter Cove's sea line began lowercase when tides were its only
+measurement; the map's distance label at the nearest model cell covered "Crescent City" (2.4 km away) and is now
+anchored on the side away from the harbour. The release plan is `docs/coastwatch/release/2026-10-16-release-candidate.md`.

@@ -82,11 +82,29 @@
   <h1>Neritic v2 Review</h1>
   <span class="meta">Coastal intelligence v2 · pass one · 15 October 2026 · draft PR #65, private</span>
   <nav class="index" aria-label="Sections">
-    <a href="#pass2">Pass two</a><a href="#works">Pass one</a><a href="#trust">Trust fixes</a><a href="#evidence">Harbour evidence</a><a href="#water">In-harbour water</a><a href="#sources">Sources</a><a href="#carto">Cartography</a><a href="#logo">Logo</a><a href="#research">Unvalidated</a><a href="#tests">Tests</a><a href="#next">Next</a>
+    <a href="#rc">Release candidate</a><a href="#pass2">Pass two</a><a href="#works">Pass one</a><a href="#trust">Trust fixes</a><a href="#evidence">Harbour evidence</a><a href="#water">In-harbour water</a><a href="#sources">Sources</a><a href="#carto">Cartography</a><a href="#logo">Logo</a><a href="#research">Unvalidated</a><a href="#tests">Tests</a><a href="#next">Next</a>
   </nav>
 </header>
 
 <main>
+<section id="rc">
+  <h2>Release candidate · inspection at 1440, 390 and 320 px (15 Oct, evening)</h2>
+  <p>The final rendered app on the 15 October data, after the release-preparation fixes: every masthead control a 44 px target with no overlapping hit boxes (the drawn pill unchanged at 32 px), the HAB line no longer restating the model on sample-less harbours, the HAB detail's summary now the graph's own sentences, the map's distance label clear of the harbour's name, the docked bar's label never wrapping at 320 px. The plan for merging, building, promoting and rolling back is <code>docs/coastwatch/release/2026-10-16-release-candidate.md</code>.</p>
+  <div class="grid">
+    <figure><img src="img/rc-monterey-390.jpg" alt="Monterey on a 390 px phone: masthead, status line, the trip bar and the first two claims" width="390" height="844" /><figcaption><b>Monterey, 390 px.</b> The disputed CDPH notice leads, then the notices that apply; the docked map bar covers nothing.</figcaption></figure>
+    <figure><img src="img/rc-crescent-390.jpg" alt="Crescent City on a 390 px phone: the notices and the HAB gap line" width="390" height="844" /><figcaption><b>Crescent City, 390 px.</b> No shore station within 60 km samples here; the model is the next line, said once.</figcaption></figure>
+    <figure><img src="img/rc-sandiego-390.jpg" alt="San Diego on a 390 px phone" width="390" height="844" /><figcaption><b>San Diego, 390 px.</b> The nearest station (Scripps Pier, 20 km) last reported 4 weeks ago.</figcaption></figure>
+    <figure><img src="img/rc-sheltercove-390.jpg" alt="Shelter Cove on a 390 px phone" width="390" height="844" /><figcaption><b>Shelter Cove, 390 px.</b> A sparse harbour: five notices, no sample, no valid model cell, the satellite and the tides.</figcaption></figure>
+  </div>
+  <div class="grid">
+    <figure><img src="img/rc-monterey-320.jpg" alt="Monterey at 320 px" width="320" height="640" /><figcaption><b>Monterey, 320 px.</b> The status line wraps to two lines by design; no sideways scroll.</figcaption></figure>
+    <figure><img src="img/rc-sandiego-320.jpg" alt="San Diego at 320 px" width="320" height="640" /><figcaption><b>San Diego, 320 px.</b></figcaption></figure>
+    <figure><img src="img/rc-header-390.jpg" alt="The phone masthead and status line at 390 px" width="390" height="92" /><figcaption><b>The phone header.</b> Looks as before; every control is now a 44 px target.</figcaption></figure>
+  </div>
+  <figure><img src="img/rc-monterey-1440.jpg" alt="Monterey at 1440 px beside the harbour map" width="1440" height="900" /><figcaption><b>Monterey, 1440 px.</b> The briefing column beside the sticky harbour map: the stations with their last sample, the thread to the nearest model cell, the official limit clipped to the sea.</figcaption></figure>
+  <figure><img src="img/rc-crescent-1440.jpg" alt="Crescent City at 1440 px beside the harbour map" width="1440" height="900" /><figcaption><b>Crescent City, 1440 px.</b> The distance label sits west of the cell, clear of the harbour's name.</figcaption></figure>
+</section>
+
 <section id="pass2">
   <h2><small>Pass two · 15 October</small>Connected evidence, the phone redesign, corrected harbour data</h2>
   <p class="lede">After the pass-one audit the brief was to make the existing work useful rather than add more: one evidence backbone that the page actually consumes, the real mobile layout, honest harbour thermometers, and the harbour-scale map elements, each measured.</p>
