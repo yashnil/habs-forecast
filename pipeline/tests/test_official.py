@@ -280,7 +280,7 @@ def test_del_norte_razor_clam_records_are_transcribed_not_verified():
 
 
 def test_agency_pages_are_fetched_as_coastwatch_not_a_browser(monkeypatch):
-    """The watcher identifies itself honestly: the shared Neritic User-Agent, no browser string."""
+    """The watcher identifies itself honestly: the shared pipeline User-Agent, no browser string."""
     from coastwatch_pipeline import http
 
     sent: list[dict] = []
@@ -292,6 +292,6 @@ def test_agency_pages_are_fetched_as_coastwatch_not_a_browser(monkeypatch):
     monkeypatch.setattr(http, "fetch", fake_fetch)
     official._page_fetch(None, "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories")
     ua = sent[0]["User-Agent"]
-    assert ua.startswith("Neritic") and "github.com/yashnil/habs-forecast" in ua
+    assert ua.startswith("CoastWatch-pipeline/") and "github.com/yashnil/habs-forecast" in ua
     assert not re.search(r"Mozilla|Chrome|Safari|AppleWebKit", ua)
     assert not hasattr(official, "BROWSER_UA")

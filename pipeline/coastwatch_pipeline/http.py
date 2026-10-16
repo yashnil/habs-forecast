@@ -12,7 +12,9 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
-USER_AGENT = "Neritic-pipeline/0.1 (formerly CoastWatch; +https://github.com/yashnil/habs-forecast)"
+# unchanged while NOAA ERD investigates the runner HTTP 403s against this exact string; it becomes
+# "Neritic-pipeline/0.1 (formerly CoastWatch-pipeline; +repo)" once they reply (docs/coastwatch/brand/neritic.md)
+USER_AGENT = "CoastWatch-pipeline/0.1 (+https://github.com/yashnil/habs-forecast)"
 
 
 CERT_DIR = Path(__file__).parent / "certs"
