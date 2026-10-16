@@ -4,7 +4,7 @@ import path from "node:path";
 import { SPECIES, speciesById } from "@/content/species";
 import { SPECIES_EVIDENCE } from "@/content/speciesEvidence";
 import { checkGraph } from "@/lib/evidenceCheck";
-import { harborEvidence } from "@/lib/harborEvidence";
+import { harborEvidence, pageClaims, PAGE_MAX, type EvidenceGraph } from "@/lib/harborEvidence";
 
 /**
  * The species line: the agencies' own sentences, quoted exactly (checked against excerpts of the
@@ -34,8 +34,9 @@ describe("species evidence", () => {
     const crab = brief("dungeness").claims.find((c) => c.id === "species")!;
     expect(crab.headline).toBe("For Dungeness crab, the agencies watch for domoic acid");
     expect(crab.quote).toMatch(/pre-season testing of Dungeness crab/);
-    expect(crab.detail).toMatch(/viscera .* much more domoic acid than the meat/);
-    expect(crab.detail).toMatch(/domoic acid in the water, not in the crab\.$/);
+    // the page shows the headline and what the readings can say; the agency's other sentences fold with the quote
+    expect(crab.detail).toBe("Neritic's shore readings and NOAA's model are about domoic acid in the water, not in the crab.");
+    expect(crab.more).toMatch(/viscera .* much more domoic acid than the meat/);
   });
 
   it("says plainly that Neritic carries no reading for paralytic shellfish toxins", () => {
@@ -50,6 +51,23 @@ describe("species evidence", () => {
     expect(salmon.headline).toBe("Neritic's sources name no biotoxin test specific to salmon");
     expect(salmon.detail).toBe("The shore readings describe the water, not the fish.");
     expect(brief("any").claims.some((c) => c.id === "species")).toBe(false);
+  });
+
+  it("adds a page line only for what it says: a gap species line stays in the API, not on the page", () => {
+    expect(pageClaims(brief("salmon")).some((c) => c.id === "species")).toBe(false);
+    expect(brief("salmon").claims.some((c) => c.id === "species")).toBe(true);
+    expect(pageClaims(brief("mussel")).some((c) => c.id === "species")).toBe(true);
+  });
+
+  it("never shows more than six lines; satellite gives way first, then the model, then the sea; official words and the measurement stay", () => {
+    const line = (id: string, kind: "official" | "measured" | "model" | "satellite" | "conditions" | "gap" = "official") => ({ id, kind, tone: "note" as const, headline: id, focus: null, text: id, supports: [] });
+    const g = (ids: [string, Parameters<typeof line>[1]][]): EvidenceGraph => ({ place: { name: "x", lat: 0, lon: 0 }, generatedAt: "", window: { from: "", to: "" }, nodes: [], gaps: [], limits: [], claims: ids.map(([id, k]) => line(id, k)) });
+    const eight = g([["season", "official"], ["disputed-a", "official"], ["notices", "official"], ["hab", "gap"], ["species", "official"], ["model", "model"], ["satellite", "satellite"], ["conditions", "conditions"]]);
+    const page = pageClaims(eight).map((c) => c.id);
+    expect(page.length).toBe(PAGE_MAX);
+    expect(page).toEqual(["season", "disputed-a", "notices", "hab", "species", "conditions"]);
+    // at or under six, nothing gives way
+    expect(pageClaims(g([["notices", "official"], ["hab", "gap"], ["model", "model"], ["satellite", "satellite"], ["conditions", "conditions"]])).length).toBe(5);
   });
 
   it("keeps every consistency rule and never speaks of safety for any species", () => {

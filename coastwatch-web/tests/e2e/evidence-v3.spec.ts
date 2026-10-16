@@ -47,7 +47,26 @@ test("My Coast shows the species line and, where the sample is the station's new
   await expect(page.getByTestId("matter-hab")).not.toContainText("Reading");
   await expect(page.getByTestId("matter-species")).toContainText("For Dungeness crab, the agencies watch for domoic acid");
   await expect(page.getByTestId("matter-species")).toContainText("not in the crab");
+  // the agency's words are one tap away, not on the first read of the line
+  const agency = page.getByTestId("matter-species-agency");
+  await expect(agency).not.toHaveAttribute("open", "");
+  await expect(agency.locator("blockquote")).toBeHidden();
+  await agency.locator("summary").click();
+  await expect(agency.locator("blockquote")).toContainText("pre-season testing of Dungeness crab");
   // Santa Cruz Wharf's September 30 count is its newest: the line places it in the wharf's record since 2014
   await expect(page.getByTestId("matter-hab-history")).toHaveText(/^Compared with earlier years at Santa Cruz Wharf: higher than \d+% of the (Aug|Sep)–(Oct|Nov) samples there in 2014–2025\. /);
+  await ctx.close();
+});
+
+test("a species with no named biotoxin test adds no line to the page (it stays in the API)", async ({ browser, request }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, storageState: { cookies: [], origins: [{ origin: OK, localStorage: [{ name: "cw-intro-dismissed-v1", value: "1" }, { name: "cw-mode-v1", value: "coastal" }] }] } });
+  const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/coast?place=port-593&for=recreational&species=salmon`);
+  await expect(page.getByTestId("matter-hab")).not.toContainText("Reading");
+  await expect(page.getByTestId("matter-species")).toHaveCount(0);
+  expect(await page.locator('[data-testid^="matter-"][data-kind]').count()).toBeLessThanOrEqual(6);
+  const g = (await (await request.get(`${OK}/api/evidence?place=port-593&for=recreational&species=salmon`)).json()) as EvidenceGraph;
+  expect(g.claims.find((c) => c.id === "species")?.kind).toBe("gap");
   await ctx.close();
 });

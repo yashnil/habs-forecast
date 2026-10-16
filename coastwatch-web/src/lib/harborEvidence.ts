@@ -67,6 +67,8 @@ export type Claim = {
   detail?: string;
   /** the measurement against the station's own record (lib/history): one sentence, its own node */
   history?: string;
+  /** more of the agency's own sentences, shown with the quote behind a disclosure (the species line) */
+  more?: string;
   /** the agency's own words, quoted */
   quote?: string;
   /** a second statement from the agency about the same fishery, quoted with its own page */
@@ -728,20 +730,34 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
   };
 }
 
-/** The claims the page shows as its "right now" lines: the model's own line is folded into the HAB line when that line already said it. */
+/** The most "Right now" lines the page shows (the owner's limit, 2026-10-16). */
+export const PAGE_MAX = 6;
+/** Lines that give way first when there are more than PAGE_MAX: least relevant to a harbour decision first. */
+const GIVE_WAY: string[] = ["satellite", "model", "conditions"];
+
+/**
+ * The claims the page shows as its "right now" lines, ranked by relevance and never more than PAGE_MAX:
+ * - the model's own line is folded into the HAB line when that line already said it;
+ * - a species line that is only a gap (no agency names a biotoxin test for that species) stays in the
+ *   API and adds no line: a line is added for what it says, not because the feature exists;
+ * - past PAGE_MAX, satellite chlorophyll gives way first, then the model, then the sea.
+ * Official words, the measurement and the species' toxins always stay, in the graph's order.
+ */
 export function pageClaims(g: EvidenceGraph): Claim[] {
   const hab = g.claims.find((c) => c.id === "hab");
   const saidWithHab = hab && (hab.kind === "measured" || hab.kind === "model");
-  return g.claims.filter((c) => !(c.id === "model" && saidWithHab));
+  let out = g.claims.filter((c) => !(c.id === "model" && saidWithHab) && !(c.id === "species" && c.kind === "gap"));
+  for (const id of GIVE_WAY) if (out.length > PAGE_MAX) out = out.filter((c) => c.id !== id);
+  return out;
 }
+
+/** the animal as the species line names it ("not in the crab") */
+const ANIMAL: Partial<Record<Species["id"], string>> = { dungeness: "crab", "rock-crab": "crab", lobster: "lobster", "razor-clam": "clams", mussel: "mussels", bivalve: "shellfish", "anchovy-sardine": "fish", salmon: "fish", groundfish: "fish", halibut: "fish", squid: "squid" };
 
 /**
  * "What the readings mean for Dungeness crab": the agency's own sentences about testing the animal,
  * then which of Neritic's readings bear on those toxins. Never says a species is safe or affected.
  */
-/** the animal as the species line names it ("not in the crab") */
-const ANIMAL: Partial<Record<Species["id"], string>> = { dungeness: "crab", "rock-crab": "crab", lobster: "lobster", "razor-clam": "clams", mussel: "mussels", bivalve: "shellfish", "anchovy-sardine": "fish", salmon: "fish", groundfish: "fish", halibut: "fish", squid: "squid" };
-
 function speciesClaim(sp: Species, assocs: Association[], nodes: EvidenceNode[], claims: Claim[]) {
   const ev = SPECIES_EVIDENCE[sp.id];
   const phrase = speciesPhrase(sp);
@@ -775,7 +791,9 @@ function speciesClaim(sp: Species, assocs: Association[], nodes: EvidenceNode[],
     kind: toxins.length ? "official" : "gap",
     tone: toxins.length ? "note" : "gap",
     headline: toxins.length ? `For ${phrase}, the agencies watch for ${toxins.map((t) => TOXIN_WORDS[t]).join(" and ")}` : `Neritic's sources name no biotoxin test specific to ${phrase}`,
-    detail: [...(ev?.facts.slice(1).map((f) => f.text) ?? []), ...readings].join(" "),
+    // on the page: the headline and what the readings can say; the agency's words one tap away
+    detail: readings.join(" "),
+    more: ev && ev.facts.length > 1 ? ev.facts.slice(1).map((f) => f.text).join(" ") : undefined,
     quote: first?.quote,
     source: first?.source,
     focus: null,

@@ -98,7 +98,7 @@ export function checkGraph(g: EvidenceGraph): Violation[] {
 
   for (const c of g.claims) {
     const cited = c.supports.map((id) => byId.get(id));
-    const all = [c.headline, c.detail, c.history, c.text].filter(Boolean).join(" ");
+    const all = [c.headline, c.detail, c.history, c.more, c.text].filter(Boolean).join(" ");
 
     // 1. cites
     for (const [i, n] of cited.entries()) if (!n) out.push({ rule: "cites", claim: c.id, message: `cites ${c.supports[i]}, which is not a node` });
@@ -113,7 +113,7 @@ export function checkGraph(g: EvidenceGraph): Violation[] {
     if (c.kind !== "official") {
       for (const x of numbersIn(c.headline)) if (!own.has(x) && !RULE_NUMBERS.has(x)) out.push({ rule: "numbers", claim: c.id, message: `headline number ${x} is not in the nodes it cites` });
     }
-    for (const field of [c.detail, c.history, c.text]) {
+    for (const field of [c.detail, c.history, c.more, c.text]) {
       for (const x of numbersIn(field ?? "")) if (!graphNumbers.has(x) && !own.has(x)) out.push({ rule: "numbers", claim: c.id, message: `number ${x} appears in no node or gap` });
     }
 
@@ -126,7 +126,7 @@ export function checkGraph(g: EvidenceGraph): Violation[] {
 
     // 4. kind words
     // each surface on its own: what the page shows (headline, detail, history) and the plain statement (text)
-    const shown = [c.headline, c.detail, c.history].filter(Boolean).join(" ");
+    const shown = [c.headline, c.detail, c.history, c.more].filter(Boolean).join(" ");
     for (const [where, t] of [["page", shown], ["text", c.text]] as const) {
       if (/chlorophyll/i.test(t) && !/not toxin/i.test(t)) out.push({ rule: "kind-words", claim: c.id, message: `chlorophyll without “not toxin” (${where})` });
       if (c.kind === "model" && !(/probability|chance/i.test(t) && /not a measurement/i.test(t))) out.push({ rule: "kind-words", claim: c.id, message: `a model claim not called a probability and not a measurement (${where})` });
@@ -149,7 +149,7 @@ export function checkGraph(g: EvidenceGraph): Violation[] {
   // 7. once
   const seen = new Map<string, string>();
   for (const c of pageClaims(g)) {
-    for (const s of [c.headline, c.detail, c.history].filter(Boolean).flatMap((x) => x!.split(/(?<=[.!?])\s+/))) {
+    for (const s of [c.headline, c.detail, c.history, c.more].filter(Boolean).flatMap((x) => x!.split(/(?<=[.!?])\s+/))) {
       const k = s.trim().toLowerCase();
       if (k.length < 24) continue; // "Seawater, not seafood." and other short tags may recur
       const prev = seen.get(k);

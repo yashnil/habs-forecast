@@ -39,7 +39,20 @@ quoted, and what Neritic's readings are evidence of. Pages read 2026-10-16 (exce
 The toxins listed also include any `toxins` of the notices here that name the species, so a new
 agency notice extends the line without a code change. For PSP the line says plainly that Neritic
 carries no seawater reading of the algae behind it (CalHABMAP's Alexandrium counts are a candidate
-source, not yet read). Owner decision: with a species chosen, "Right now" can show six lines.
+source; see `03-alexandrium-cdip-feasibility.md`).
+
+**Owner's decision (2026-10-16), as built in `pageClaims`:** at most six "Right now" lines, ranked
+by relevance; a line is added for what it says, not because the feature exists.
+- A species line that is only a gap (salmon, groundfish, halibut, squid) stays in the API and adds
+  no page line.
+- Past six lines, satellite chlorophyll gives way first, then the model, then the sea. Official
+  words, the measurement and the species' toxins always stay.
+- The species line shows its headline and what the readings can say. The agency's quote and other
+  sentences sit behind "What CDPH says" (closed by default).
+
+Measured at 390 × 844 (fixture clock): the first screen still holds the official line and the HAB
+line. The species line is 300 → 213 px tall for Dungeness crab and 362 → 319 px for mussels.
+Salmon goes from five lines back to four.
 
 ## 3. Consistency rules (`src/lib/evidenceCheck.ts`)
 
