@@ -51,7 +51,7 @@ describe("harbor evidence graph", () => {
     const g = harborEvidence(inputs());
     const measured = g.claims.find((c) => c.id === "hab")!;
     expect(measured.text).toBe("Santa Cruz Wharf reported 4,900 cells/L Pseudo-nitzschia on September 30, 41 km NNW of Monterey. Monterey Wharf is closer (0.6 km) but has no comparable sample since August 12, 2025.");
-    expect(measured.supports).toEqual(["pn_cells:SantaCruzWharf"]);
+    expect(measured.supports).toEqual(["pn_cells:SantaCruzWharf", "silent:MontereyWharf"]);
     const model = g.claims.find((c) => c.id === "model")!;
     expect(model.kind).toBe("gap");
     expect(model.text).toMatch(/^NOAA's C-HARM model has no valid estimate in these nearshore waters\. Its nearest cell is 6\.6 km out; the 27 offshore cells within 15 km read 73%–79% for October 15, context for the open water, not the harbor\.$/);

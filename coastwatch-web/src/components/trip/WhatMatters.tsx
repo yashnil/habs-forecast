@@ -50,6 +50,11 @@ export function WhatMatters({ items, onFocus, focus, sourceNote, placeName }: { 
                 </p>
               )}
               {m.detail && <p className="mt-0.5 text-[15px] leading-snug text-ink-2">{m.detail}</p>}
+              {m.history && (
+                <p className="mt-0.5 text-[15px] leading-snug text-ink-2" data-testid={`matter-${m.id}-history`}>
+                  {m.history}
+                </p>
+              )}
               {(m.source || m.focus) && (
                 <p className="mt-1 flex flex-wrap items-center gap-x-4 text-[14px]">
                   {m.source && (
