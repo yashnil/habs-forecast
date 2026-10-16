@@ -1,0 +1,392 @@
+<title>Neritic Design Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
+<style>
+/* Layout: a reading column (≈68ch) with figures that break out wider; sticky contents rail on wide screens. */
+:root {
+  --bg: #fbfcfc; --surface: #f1f4f6; --ink: #0b2238; --ink-2: #3c4d5e; --ink-3: #5b6b7b; --rule: #dde3e8;
+  --accent: #1d7894; --dot: #c97a16; --p0: #b42318; --p1: #9a5b00; --p2: #3c4d5e; --ok: #1a7a4f;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #08131f; --surface: #0f1e2e; --ink: #e9eff5; --ink-2: #b8c6d4; --ink-3: #8fa1b3; --rule: #22344a;
+  --accent: #6cc6dc; --dot: #f2ae4a; --p0: #ff8a7a; --p1: #f3b75a; --p2: #b8c6d4; --ok: #5fd39a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #08131f; --surface: #0f1e2e; --ink: #e9eff5; --ink-2: #b8c6d4; --ink-3: #8fa1b3; --rule: #22344a;
+  --accent: #6cc6dc; --dot: #f2ae4a; --p0: #ff8a7a; --p1: #f3b75a; --p2: #b8c6d4; --ok: #5fd39a; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 400 16.5px/1.6 var(--sans); margin: 0; -webkit-font-smoothing: antialiased }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 96px; display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 56px }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 32px); align-self: start; font-size: 14px; line-height: 1.45 }
+nav.toc a { display: block; color: var(--ink-3); text-decoration: none; padding: 5px 0; border-left: 2px solid transparent; padding-left: 12px; margin-left: -14px }
+nav.toc a:hover { color: var(--ink) }
+nav.toc b { display: block; font: 600 13px/1.3 var(--sans); color: var(--ink); margin: 0 0 10px }
+main { min-width: 0; max-width: 980px }
+.col { max-width: 70ch }
+h1 { font: 600 clamp(34px, 5vw, 50px)/1.08 var(--serif); letter-spacing: -0.01em; margin: 0 0 14px; text-wrap: balance }
+h2 { font: 600 30px/1.15 var(--serif); margin: 88px 0 14px; text-wrap: balance; scroll-margin-top: 24px }
+h3 { font: 600 19px/1.3 var(--sans); margin: 40px 0 8px; text-wrap: balance }
+h4 { font: 600 16.5px/1.4 var(--sans); margin: 22px 0 4px }
+p, li { color: var(--ink-2) } p { margin: 0 0 14px }
+strong { color: var(--ink); font-weight: 600 }
+a { color: var(--accent) } a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px }
+.lede { font-size: 19px; line-height: 1.55; color: var(--ink-2) }
+.status { display: inline-flex; gap: 10px; align-items: center; font-size: 14px; color: var(--ink-3); margin-bottom: 26px }
+.status i { width: 8px; height: 8px; border-radius: 50%; background: var(--dot); display: inline-block }
+figure { margin: 22px 0 30px } figure img { display: block; width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface) }
+figcaption { font-size: 14px; color: var(--ink-3); margin-top: 8px; line-height: 1.5; max-width: 80ch }
+.pair { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr); gap: 16px; align-items: start }
+.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start }
+.phones { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: start }
+.finding { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 4px 14px; padding: 18px 0; border-top: 1px solid var(--rule) }
+.finding .sev { font: 600 13px/1 var(--sans); letter-spacing: .04em; padding-top: 5px }
+.sev.p0 { color: var(--p0) } .sev.p1 { color: var(--p1) } .sev.p2 { color: var(--p2) }
+.finding h4 { margin: 0 0 4px } .finding p { margin: 0 0 6px } .finding .fix { color: var(--ink) }
+.finding .ev { font-size: 14px; color: var(--ink-3) }
+table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums }
+th, td { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top }
+th { font-weight: 600; color: var(--ink); font-size: 14px } td { color: var(--ink-2) }
+td.n { text-align: right; padding-right: 0; padding-left: 12px } th.n { text-align: right; padding-right: 0 }
+.scroll { overflow-x: auto }
+.keep { border-left: 2px solid var(--ok); padding: 2px 0 2px 16px; margin: 18px 0 }
+.rec { background: var(--surface); border-radius: 6px; padding: 22px 24px; margin: 24px 0 }
+.rec h3 { margin-top: 0 }
+ul.tight { padding-left: 20px; margin: 6px 0 16px } ul.tight li { margin: 4px 0 }
+.tok { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 12px 0 20px }
+.tok div { font-size: 13.5px; color: var(--ink-3); line-height: 1.35 } .tok span { display: block; height: 44px; border-radius: 4px; border: 1px solid var(--rule); margin-bottom: 6px }
+.tok b { display: block; color: var(--ink); font-weight: 600; font-size: 14px }
+code { font: 13.5px var(--mono); background: var(--surface); padding: 1px 5px; border-radius: 3px; color: var(--ink) }
+.small { font-size: 14px; color: var(--ink-3) }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 40px 0 }
+@media (max-width: 980px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 0 } nav.toc { display: none } .phones { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+@media (max-width: 720px) { .pair, .trio, .two { grid-template-columns: minmax(0, 1fr) } h2 { font-size: 26px; margin-top: 64px } body { font-size: 17px } }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth } }
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <b>Neritic design review</b>
+  <a href="#summary">Summary and decisions</a>
+  <a href="#audit">1 · Audit</a>
+  <a href="#references">2 · Reference study</a>
+  <a href="#logo">3 · Logo</a>
+  <a href="#directions">4 · Two directions</a>
+  <a href="#system">5 · Tokens, type, motion</a>
+  <a href="#recommend">6 · Recommendation</a>
+  <a href="#plan">7 · Phases and acceptance</a>
+</nav>
+<main>
+<div class="col">
+<div class="status"><i></i>Proposal for review · nothing changed in the product · 15 October 2026</div>
+<h1>Neritic design review</h1>
+<p class="lede">Neritic's data and honesty are strong, but the interface works against them. It repeats warnings until they stop registering, sets nearly everything in 13 px type, and gives the least applicable evidence, the offshore model, the boldest marks on the page. This review audits the live design, studies seven references, proposes three logos and two complete interface directions, and recommends a path.</p>
+</div>
+
+<section id="summary" class="col">
+<h2>Summary and decisions</h2>
+<p><strong>Recommendation:</strong> logo <strong>B, Depth N</strong>, with the interface built on <strong>Direction B’s structure with Direction A’s typography and reading surfaces</strong>, on the current relief basemap (details in <a href="#recommend">section 6</a>). Nothing is implemented in the product yet. The audit baseline, prototypes and logo files live on the branch <code>design/neritic-excellence</code> and in this page.</p>
+<p><strong>Decisions I need from you:</strong></p>
+<ul class="tight">
+<li><strong>Logo:</strong> A, B or C. Approve one, or ask for another round.</li>
+<li><strong>Direction:</strong> A or B, or B with A's reading surfaces, which is my recommendation.</li>
+<li><strong>Light or dark briefing on phones.</strong> I propose a light, high-contrast briefing and a dark map.</li>
+<li><strong>Research mode:</strong> fold it into an "Evidence and sources" depth layer, or keep it as a separate mode.</li>
+</ul>
+</section>
+
+<section id="audit">
+<div class="col">
+<h2>1 · Audit of the current design</h2>
+<p>I captured 60 baseline screenshots of the private preview (production data) at 1440, 1024, 768, 390 and 320 px: the welcome; the map with Forecast, Satellite and Currents; a map inspection; My Coast for Monterey and for Crescent City Dungeness; HAB evidence; Research mode; Bloom; Fisheries; About; and Sources. All 60 loaded with 0 console errors. I measured the rendered pages in the browser rather than reading the DOM.</p>
+</div>
+
+<h3>Measured</h3>
+<div class="scroll"><table>
+<thead><tr><th>Page</th><th class="n">Font sizes in use</th><th class="n">Text under 13 px</th><th class="n">Words</th><th class="n">Page height</th><th class="n">Phone controls under 44 px</th><th class="n">"Not verified" mentions</th></tr></thead>
+<tbody>
+<tr><td>Ocean Map</td><td class="n">7–8</td><td class="n">19–21 %</td><td class="n">230</td><td class="n">1 screen</td><td class="n">26 of 31</td><td class="n">3 (4 on phone)</td></tr>
+<tr><td>My Coast, Monterey</td><td class="n">18</td><td class="n">12 %</td><td class="n">1,325</td><td class="n">4,777 px · 6,293 px phone</td><td class="n">31 of 65</td><td class="n">2</td></tr>
+<tr><td>My Coast, Research mode</td><td class="n">16</td><td class="n">5 %</td><td class="n">2,439</td><td class="n">7,942 px · 12,191 px at 320</td><td class="n">76 of 85</td><td class="n">7</td></tr>
+<tr><td>Bloom station</td><td class="n">16</td><td class="n">2 %</td><td class="n">2,265</td><td class="n">1,603 px</td><td class="n">37 of 47</td><td class="n">3</td></tr>
+<tr><td>Fisheries</td><td class="n">15–17</td><td class="n">1 %</td><td class="n">2,551</td><td class="n">995 px</td><td class="n">57 of 69</td><td class="n">3</td></tr>
+</tbody></table></div>
+<p class="small">13 px is the most common size on every page, at 35–61 % of the text, and half-pixel sizes (12.5, 13.5, 14.5, 15.5, 16.5) show there is no type scale. The 44 px count includes inline text links. WCAG 2.2 AA requires 24 px, so 44 px is the stricter phone guideline (Apple HIG, WCAG AAA), applied deliberately for gloved, wet or sunlit use.</p>
+
+<h3>Findings, by priority</h3>
+<p class="small col"><strong>P0</strong> can mislead or erode trust. <strong>P1</strong> hurts usability. <strong>P2</strong> is craft and polish.</p>
+
+<div class="finding"><div class="sev p0">P0</div><div>
+<h4>The offshore model looks like the strongest evidence at the harbor</h4>
+<p>In "HAB evidence near Monterey", the NOAA model row ("No value here · nearby offshore median 77%") is drawn as the tallest, most saturated marks on the chart, right under the "trip" marker. The rule that it describes offshore cells, not these waters, appears only in 13 px grey text below the chart. A glance reads it as "77 % at Monterey on my trip day".</p>
+<p class="fix"><strong>Fix:</strong> lead with "No model value at Monterey's nearshore waters". Show the offshore cells as context with their distance (nearest 6.6 km out), in an outlined or hatched encoding, never at the same visual weight as samples taken here.</p>
+<p class="ev">Evidence: My Coast timeline (desktop and phone), below.</p></div></div>
+
+<div class="finding"><div class="sev p0">P0</div><div>
+<h4>Notice status is everywhere, so it registers nowhere</h4>
+<p>On one map screen, the unverified-notice status appears in the masthead pill, the amber banner, the place chip and the phone tab badge, up to 4 times. Research mode reaches 7. The one item that matters today, CDPH's reported lifting of SN26-021 awaiting review, competes with chrome that says the same thing.</p>
+<p class="fix"><strong>Fix:</strong> one notice surface per screen. Tie it to the place, keep "not verified" and the direct CDFW and CDPH links, and promote it when something changes.</p></div></div>
+
+<div class="finding"><div class="sev p0">P0</div><div>
+<h4>Forecast days contradict each other</h4>
+<p>The panel says "C-HARM forecast for Wed, Oct 14 · issued Oct 14". The day chips call Oct 13 the "nowcast" and Oct 14 "yesterday". The inspector calls the same day "+1 day". The default selection is yesterday, although today's value exists.</p>
+<p class="fix"><strong>Fix:</strong> one vocabulary, "issued Tue 13 Oct · valid Thu 15 Oct (today)", on a time bar that marks today and hatches the forecast span. Default to today.</p></div></div>
+
+<div class="finding"><div class="sev p0">P0</div><div>
+<h4>Distance is hidden behind the headline</h4>
+<p>"Pseudo-nitzschia 4,900 cells/L at Santa Cruz Wharf" heads a section titled "near Monterey", but the station is 41 km NNW, which appears in the grey second line. The nearest station, Monterey Wharf (0.6 km), has reported nothing for 14 months, and that appears only in prose.</p>
+<p class="fix"><strong>Fix:</strong> state where each measurement was taken, how far away and how old it is as part of the value: "4,900 cells/L · Santa Cruz Wharf, 41 km NNW · 15 days ago".</p></div></div>
+
+<div class="finding"><div class="sev p1">P1</div><div>
+<h4>No type scale; 13 px everywhere</h4>
+<p>There are 15–18 distinct font sizes per page, and running text is 13–14 px even on phones. The serif display (Newsreader) carries the page titles, while everything that matters (values, notices, steps) is small sans.</p>
+<p class="fix"><strong>Fix:</strong> five sizes; body 16 px on desktop and 17 px in the phone briefing; values set larger than their labels.</p></div></div>
+
+<div class="finding"><div class="sev p1">P1</div><div>
+<h4>The same facts, four times</h4>
+<p>My Coast says the lifted-notice item in "What matters", again in "Before you leave", and again in Explore → Notices. It gives the 77 % model median in the timeline, the C-HARM card and the prose. Shore samples appear in the summary card, the timeline, the prose paragraph and the station cards. The result is 1,325 words and 7.5 phone screens.</p>
+<p class="fix"><strong>Fix:</strong> one answer section, one evidence section and one checklist, each stating a fact once. Depth goes behind disclosure, not repetition.</p></div></div>
+
+<div class="finding"><div class="sev p1">P1</div><div>
+<h4>The masthead competes with the content</h4>
+<p>On desktop, there are 10 targets before any content: 4 destinations, the Coastal/Research switch, About, the notice pill, Data status, the banner and "More". The phone stacks the masthead, banner, tab bar, a floating "Map" button and the place pill. The floating button covers the CDPH link in the first notice card.</p>
+<p class="fix"><strong>Fix:</strong> four destinations. Mode, About and data status move into a menu or footer. No floating button over content.</p></div></div>
+
+<div class="finding"><div class="sev p1">P1</div><div>
+<h4>The forecast map is one colour today</h4>
+<p>The 10-step lavender-to-pink ramp gives today's real range (73–79 %) a single tone, so Monterey Bay is a flat magenta slab that reads as alarm without information. The dark hatching of the nearshore gap is heavier than the data and reads as land.</p>
+<p class="fix"><strong>Fix:</strong> a perceptual sequential ramp with ticks that separates the range actually present, a lighter gap hatch, and cell outlines at high zoom.</p></div></div>
+
+<div class="finding"><div class="sev p1">P1</div><div>
+<h4>Charts lack axes, units and room</h4>
+<p>The HAB evidence timeline has no value axis, and its time labels collide ("3 mo ago2 mo"). On phone the row labels are cut off ("median within 5 km · …"). Station sparklines show when samples were taken, not what they measured.</p>
+<p class="fix"><strong>Fix:</strong> every chart gets a labelled axis with units, a today marker, gaps drawn as gaps and the latest value labelled directly.</p></div></div>
+
+<div class="finding"><div class="sev p1">P1</div><div>
+<h4>The station page hides its best content</h4>
+<p>Santa Cruz Wharf's 12-month record, the reason to visit, sits behind "Full station analysis". Up front are two numbers and a date strip.</p>
+<p class="fix"><strong>Fix:</strong> lead with the chart: toxin and cells over 12 months, the latest sample labelled, the season's range shaded.</p></div></div>
+
+<div class="finding"><div class="sev p1">P1</div><div>
+<h4>Routine latency is shown as failure</h4>
+<p>"The latest update (Oct 15, 10:03 AM PDT) did not refresh this product" appears in alert red-orange inside the satellite panel, while the data is a normal 3 days old. The station page adds a separate grey "could not reach" banner.</p>
+<p class="fix"><strong>Fix:</strong> freshness as a quiet, consistent stamp. Use alert colour only when data is unusable or misleading.</p></div></div>
+
+<div class="finding"><div class="sev p2">P2</div><div>
+<h4>Cards, tints and heavy buttons everywhere</h4>
+<p>Amber-tinted cards with coloured left rules, nested cards in Explore, and five black pill buttons stacked in the checklist all carry the same visual weight, so nothing leads.</p></div></div>
+
+<div class="finding"><div class="sev p2">P2</div><div>
+<h4>Map details</h4>
+<p>The boundary label "36°31.46′ N · south limit" renders doubled and blurred. A limit line runs under the toolbar. Current arrows form a uniform white carpet in which speed classes are hard to tell apart. A layer panel truncates its last sentence ("nothing is…").</p></div></div>
+
+<div class="finding"><div class="sev p2">P2</div><div>
+<h4>The brand is generic</h4>
+<p>Warm cream paper, a serif display and a navy frame is today's default "editorial" look. The 26 px mark is low-contrast in the masthead, and the wordmark is a stock semibold.</p></div></div>
+
+<div class="keep col"><p><strong>Keep:</strong></p>
+<ul class="tight">
+<li><strong>The seafloor relief basemap</strong> is the product's most beautiful asset.</li>
+<li><strong>The satellite chlorophyll rendering:</strong> its viridis-like ramp, honest gaps and per-pixel dates.</li>
+<li><strong>Disciplined copy:</strong> the product never says "safe".</li>
+<li><strong>Labels and links:</strong> provenance chips, freshness words and direct agency links.</li>
+<li><strong>The three-path welcome.</strong></li>
+<li><strong>The motion tokens:</strong> no value interpolation; the sheet spring only.</li>
+</ul></div>
+
+<figure><div class="pair"><img src="img/base-hab-timeline.webp" alt="Current HAB evidence timeline: offshore model bars are the boldest marks under the trip marker" loading="lazy"><img src="img/base-hab-390.webp" alt="Same timeline on a phone with truncated labels and a floating Map button over the text" loading="lazy"></div>
+<figcaption>P0: in the HAB timeline, the offshore model is the boldest thing under the "trip" marker. On phone, the labels truncate and the floating "Map" button covers the caveat.</figcaption></figure>
+
+<figure><img src="img/base-map-forecast.webp" alt="Current Ocean Map forecast: whole bay one magenta colour, notice status in three places" loading="lazy">
+<figcaption>Ocean Map, Forecast. Notice status appears three times (pill, banner, chip). Today's 73–79 % range renders as one magenta tone. The panel calls the forecast "issued Oct 14" while the chips call Oct 13 the nowcast. The boundary label renders doubled.</figcaption></figure>
+
+<figure><div class="two"><img src="img/base-map-inspect.webp" alt="Map inspection panel" loading="lazy"><img src="img/base-map-satellite.webp" alt="Satellite chlorophyll layer with an error-coloured latency sentence" loading="lazy"></div>
+<figcaption>Left: the inspection panel calls the same day "+1d", "Oct 14" and "yesterday". Right: the satellite layer, the strongest visual, with routine latency set in alert colour.</figcaption></figure>
+
+<figure><div class="pair"><img src="img/base-mycoast-top.webp" alt="My Coast top: tinted cards with left rules" loading="lazy"><img src="img/base-mycoast-390.webp" alt="My Coast on phone: masthead, banner, selectors and a floating Map button" loading="lazy"></div>
+<figcaption>My Coast. On a 390 px phone, the first screen spends about half its height on chrome before the first fact, and the floating button covers the first card's agency link.</figcaption></figure>
+
+<figure><div class="pair"><img src="img/base-bloom.webp" alt="Bloom station page with chart hidden" loading="lazy"><img src="img/base-bloom-390.webp" alt="Bloom station on phone" loading="lazy"></div>
+<figcaption>Bloom station page. Two banners, two numbers and a sampling-date strip lead; the 12-month chart is behind "Full station analysis".</figcaption></figure>
+</section>
+
+<section id="references">
+<div class="col">
+<h2>2 · Reference study</h2>
+<p>A separate research pass read the actual skill files of Emil Kowalski's <em>skills</em>, <em>Impeccable</em> and <em>Taste Skill</em>, and captured Global Fishing Watch, Copernicus MyOcean, earth.nullschool and Linear live at desktop and phone width. No site blocked capture. Figma MCP is not configured in this environment, so prototypes are local HTML rendered with Playwright.</p>
+<p><strong>Install a skill?</strong> No. Impeccable's launcher downloads a binary and adds an edit hook, which is too invasive for a repository shared by parallel sessions. Taste Skill says it is not for app screens, and its motion budget, which requires animation, conflicts with a tool. Emil Kowalski's <em>review-animations</em> is clean Markdown, but its rules fit in our design doc. Proposed: copy the rules, install nothing.</p>
+</div>
+
+<h3>What transfers, with the example</h3>
+<figure><div class="two"><img src="img/ref-gfw-desktop-map.webp" alt="Global Fishing Watch layer panel with legends inside each row" loading="lazy"><img src="img/ref-copernicus-viewer-desktop.webp" alt="Copernicus MyOcean viewer with metadata line per layer" loading="lazy"></div>
+<figcaption>Left, Global Fishing Watch: each layer row carries its own legend with ticks and a unit line ("hours / 32,000 km²"), and the timebar is also a histogram of where data exists. Its first load also stacks a modal, a promo card and "?" hotspots, a lesson in what not to do. Right, Copernicus MyOcean: one metadata line per layer ("16/10/2026 · −0.5 m · Global daily"), but the date shown is a model forecast with no forecast label.</figcaption></figure>
+<figure><div class="two"><img src="img/ref-nullschool-point-readout.webp" alt="earth.nullschool point readout" loading="lazy"><img src="img/ref-linear-desktop.webp" alt="Linear home page" loading="lazy"></div>
+<figcaption>Left, earth.nullschool: a tap gives coordinates and every value with its unit ("200° @ 0.12 m/s"), and the units cycle on tap. But closed, there is no date, source or legend, and the scale has no ticks. Right, Linear: the real product is the hero; a theme is generated from 3 LCH inputs plus a contrast setting. Its mid-grey on near-black would fail in sun.</figcaption></figure>
+
+<div class="col">
+<h3>Principles to adopt</h3>
+<ol>
+<li><strong>Provenance lives in the layer row.</strong> Source · valid time · cadence · resolution, plus a legend with ticks and units (GFW, Copernicus). <em>Neritic:</em> map layers, every evidence item.</li>
+<li><strong>The time control shows where data exists, and where it is forecast.</strong> A presence strip, a "today" mark, a hatched and labelled forecast span (GFW's histogram; Copernicus's missing label is the cautionary case). <em>Neritic:</em> map time bar, station charts.</li>
+<li><strong>Native resolution, honest gaps.</strong> Visible 3 km C-HARM cells that stop before the shore, labelled "No model value at the shoreline" (GFW's cells). <em>Neritic:</em> map, HAB evidence.</li>
+<li><strong>A tap answers with value, unit, valid time, or "No data here".</strong> (nullschool) <em>Neritic:</em> map readout, phone sheet peek.</li>
+<li><strong>Frequency decides motion.</strong> Nothing used many times a day animates: time scrubbing, layer toggles, values (Kowalski). Only sheets, popovers and press feedback move.</li>
+<li><strong>Choose light or dark from the scene of use, not the category</strong> (Impeccable). A fisherman reads in sun, so the briefing is light and high contrast; the map can stay dark.</li>
+<li><strong>Real data is the hero</strong> (Linear). No illustration, glow or decorative chart.</li>
+<li><strong>Plain names, no invented terms, no eyebrows</strong> (Linear's method, Impeccable). The current "HAB conditions · measured, observed and modelled" eyebrows go.</li>
+<li><strong>One surface per role; separate surfaces by a tone step</strong>, not a border plus shadow (Taste Skill, Impeccable). No nested cards.</li>
+<li><strong>On phone, map and list are separate views</strong> (GFW), with a sheet that has two snap points and scrolls before it drags (Vaul).</li>
+</ol>
+<h3>Rejected or adapted</h3>
+<ul class="tight">
+<li><strong>Hidden chrome (nullschool).</strong> Valid time and source must stay visible on a scientific map.</li>
+<li><strong>Particles over gaps or the coast (nullschool, Copernicus).</strong> They imply measurements where there are none. Particles appear only where radials exist, and become static arrows under reduced motion.</li>
+<li><strong>Grey on black (Linear).</strong> It fails outdoors. Briefing text targets 7:1.</li>
+<li><strong>GFW's density, hotspots and uppercase section labels.</strong></li>
+<li><strong>Taste Skill's animation budget.</strong> It is latency in a tool.</li>
+<li><strong>Rainbow ramps and a phone panel covering 45 % of the map (Copernicus).</strong></li>
+</ul>
+<p class="small">The full research notes, including all 14 captures, are at <code>scratchpad/design/refs/REPORT.md</code>.</p>
+</div>
+</section>
+
+<section id="logo">
+<div class="col">
+<h2>3 · Logo: three directions</h2>
+<p>Each direction is a real vector on a 48-unit grid. Each wordmark is outlined from a typeface and then changed by hand: the i-dots are redrawn as true circles, the spacing is set pair by pair, and the lockup is aligned to the wordmark's baseline and sized in x-heights. Every candidate is shown at 16 px (pixel-exact and at 3×), at 32 px, in a browser tab, in a 56 px header (light and dark), in monochrome on both grounds, and as an app icon.</p>
+<p>Avoided throughout: wave lines (Neritic Diving's mark is the word over two wave lines), radar arcs, compass roses and sparkles. The colour version uses amber exactly once, for the observation.</p>
+</div>
+<figure><img src="img/logo-B.webp" alt="Logo B, Depth N, comparison board" loading="lazy"><figcaption><strong>B · Depth N (recommended).</strong> An N drawn as a depth profile: the coast, the shelf sloping gently offshore, the steep slope, and back up. The dot is an observation at the surface over the shelf. Its vertices are cut flat at baseline and cap height, like a typographic N. Paired with Sora, tightened, with the i-dots set at the mark's dot height.</figcaption></figure>
+<figure><img src="img/logo-A.webp" alt="Logo A, Shelf, comparison board" loading="lazy"><figcaption><strong>A · Shelf.</strong> The water over the continental shelf in section, as one solid shape: flat surface, shallow shelf, break into deep water. It is oriented the way California sits, with the ocean west and the coast east. The observation sits in the shallow water. Paired with Spectral, a scientific-editorial serif.</figcaption></figure>
+<figure><img src="img/logo-C.webp" alt="Logo C, Soundings, comparison board" loading="lazy"><figcaption><strong>C · Soundings.</strong> A seafloor profile as an echo sounder records it: discrete soundings spaced evenly along the curve, one of them the observation. Paired with Schibsted Grotesk, letterspaced like a chart label.</figcaption></figure>
+<div class="col">
+<h3>Assessment</h3>
+<div class="scroll"><table><thead><tr><th></th><th>A · Shelf</th><th>B · Depth N</th><th>C · Soundings</th></tr></thead><tbody>
+<tr><td><strong>At 16 px</strong></td><td>Clear silhouette</td><td>Clear, reads as N</td><td>Breaks up: the dots merge into texture</td></tr>
+<tr><td><strong>Monochrome</strong></td><td>Strong; the dot knocks out</td><td>Strong</td><td>Fair; the observation becomes a ring</td></tr>
+<tr><td><strong>Ownable</strong></td><td>Moderate: a block shape, could read as a flag or a "7"</td><td>High: a letter that is also a depth profile</td><td>High in concept, low in recognition</td></tr>
+<tr><td><strong>Meaning</strong></td><td>Literal neritic zone</td><td>The name and the place in one stroke</td><td>Evidence as measurement</td></tr>
+<tr><td><strong>Risk</strong></td><td>Bottom-heavy in lockups</td><td>The dot could be read as an accent (Ń); kept clear of the stem</td><td>Unreadable as a favicon</td></tr>
+</tbody></table></div>
+<div class="rec"><h3>Recommendation: B, Depth N</h3><p>B is the only candidate that works equally well as a 16 px favicon, an app icon and a header mark. It carries the name, the N, and the meaning, the shelf profile, in one gesture, and it looks like nobody else's mark in the coastal space. Next refinements if approved: optically compensate the diagonal's thickness at the joins, test the dot at 0.9× size, build a 2-weight wordmark (for headers and large uses), and set the clear-space and minimum-size rules.</p></div>
+<p class="small">Vector files: <code>scratchpad/design/logo/out/{A,B,C}-symbol(-dark|-mono).svg</code> and <code>-wordmark.svg</code>. The generator is <code>logo/final.mjs</code> plus <code>board.mjs</code>. The wordmark faces (Sora, Spectral, Schibsted Grotesk) are all SIL Open Font License.</p>
+</div>
+</section>
+
+<section id="directions">
+<div class="col">
+<h2>4 · Two interface directions</h2>
+<p>Both directions are working HTML prototypes built from <strong>today's production data</strong>: Monterey for commercial fishing, and Santa Cruz Wharf. That includes the real C-HARM grid, real 12-month station records and the real notice registry. Each went through at least two critique-and-fix loops at 1440, 390 and 320 px, with no horizontal overflow and no console errors. Both apply every P0 fix from the audit. They differ in where the product's centre of gravity sits.</p>
+<p class="small">Prototype limits: pickers and menus are visual only; Direction A doesn't draw the Satellite and Currents layers; a few Monterey Wharf facts are hand-entered from the data. Sources: <code>scratchpad/design/dirA/</code> and <code>dirB/</code>.</p>
+</div>
+<h3>Direction A · Scientific editorial</h3>
+<div class="col"><p>A <strong>reading surface</strong> that leads with the answer. A one-paragraph summary under the place name; the trip settings set as a sentence ("Commercial fishing · any species · today, Thu 15 Oct"); a three-column grid with section names on the left, content in the centre and caveats in the right margin. Type: Source Serif 4 for display and Atkinson Hyperlegible Next for text, designed for low-vision legibility, with 17 px phone body text. A cool paper tone, not cream. Fine rules rather than cards.</p></div>
+<figure><div class="two"><img src="img/A-mycoast.webp" alt="Direction A My Coast desktop" loading="lazy"><img src="img/A-evidence.webp" alt="Direction A HAB evidence desktop" loading="lazy"></div>
+<figcaption>Left: My Coast. The summary states the three facts that matter, and notices appear once, with "Not verified by a person" and both agency links. Right: HAB evidence on one 12-month axis: Pseudo-nitzschia on a log scale with units, the 12-month high and latest labelled, gaps longer than two weeks hatched, reported zeros as open dots. Every row names its station and distance. The model row reads "6.6–15 km out, not the harbor", in a dashed band.</figcaption></figure>
+<figure><div class="two"><img src="img/A-map.webp" alt="Direction A Ocean Map" loading="lazy"><img src="img/A-station.webp" alt="Direction A station page" loading="lazy"></div>
+<figcaption>Left: the map as a docked panel. Layer rows give their source and date; the selected row opens to its legend and caveats; valid days are labelled "Thu 15 · today, +2" and the selection defaults to today. Weak point: the light basemap gives up the relief, and the harbour labels collide. Right: the station page leads with its chart.</figcaption></figure>
+<figure><img src="img/A-phones.webp" alt="Direction A on a 390 px phone: briefing, evidence, map, station" loading="lazy"><figcaption>A on a 390 px phone. Each measurement is one typographic unit: value and unit, then place and distance, then date and age. Four tabs replace the floating map button.</figcaption></figure>
+<h3>Direction B · Precision ocean instrument</h3>
+<div class="col"><p>A <strong>map-first instrument</strong>. One docked panel on the left on desktop, a bottom sheet with snap points on phone. Layer rows carry their legend, ticks, units and a provenance line. A time bar shows where data exists, marks today, and hatches and labels the forecast span. A tap returns value, unit, cell and valid/issued dates, or "No model value here" with the distance to the nearest cell. The C-HARM ramp is re-stepped to 5 % above 50 % so today's 71–83 % range separates. Type: IBM Plex Sans alone, re-scaled.</p></div>
+<figure><div class="two"><img src="img/B-mycoast.webp" alt="Direction B My Coast with map" loading="lazy"><img src="img/B-map.webp" alt="Direction B Ocean Map with time bar" loading="lazy"></div>
+<figcaption>Left: My Coast. <strong>This is the strongest answer to the harbor-versus-offshore problem.</strong> The briefing leads with "No model value for Monterey's nearshore waters". The map draws only the 27 offshore cells inside a 15 km ring, hatches the nearshore gap, marks "6.6 km to the nearest model cell", and draws the anchovy notices' south limit. Right: the map instrument, with "valid Thu 15 Oct · made Wed 14 Oct", data presence per day, the forecast hatched, and a readout on a cell.</figcaption></figure>
+<figure><div class="two"><img src="img/B-evidence.webp" alt="Direction B HAB evidence" loading="lazy"><img src="img/B-station.webp" alt="Direction B station page" loading="lazy"></div>
+<figcaption>Left: evidence beside its map. Selecting a row rings its station, and the reverse. Monterey Wharf's missing record is drawn as a hatched band. Right: the station page with three aligned 12-month panels and the 27 May peak annotated. Note: B's chlorophyll row uses a 15 km median; the product uses 5 km, and an implementation would keep 5 km.</figcaption></figure>
+<figure><img src="img/B-phones.webp" alt="Direction B on a 390 px phone: map with sheet, briefing, map readout, evidence" loading="lazy"><figcaption>B on a 390 px phone. The map with the sheet at peek, the sheet raised, the map readout with the day strip, and evidence. Weak point: the four-notice amber block fills the first raised-sheet screen.</figcaption></figure>
+<figure><div class="two"><img src="img/B-map-currents.webp" alt="Direction B currents" loading="lazy"><img src="img/B-map-satellite.webp" alt="Direction B satellite" loading="lazy"></div>
+<figcaption>B's Currents and Satellite rows. Currents state "No arrow: no radar coverage that hour, not calm water". The arrow field is still too dense at bay scale and needs thinning by zoom.</figcaption></figure>
+</section>
+
+
+<section id="system">
+<div class="col">
+<h2>5 · Proposed tokens, type and motion</h2>
+<p>These apply to whichever direction is chosen. They replace the 18 ad-hoc sizes and the cream-and-navy palette.</p>
+<h3>Type</h3>
+<ul class="tight">
+<li><strong>Five sizes:</strong> 13 caption · 16 body (17 in the phone briefing) · 20 section · 28 page · 40 display. Line height 1.5 for body, 1.15 for headings. No half-pixel sizes.</li>
+<li><strong>One text family with tabular figures</strong> for every value, and at most one display face for page titles. Values are set larger than their labels; units are set at 0.8× next to the value, never on another line.</li>
+<li><strong>Sentence case throughout.</strong> No uppercase eyebrows. Monospace only for coordinates and dataset ids.</li>
+</ul>
+<h3>Colour roles</h3>
+<p class="small">Semantic families stay, because they carry meaning that users have learned: <strong>official = amber</strong>, <strong>measured = teal</strong>, <strong>model = violet</strong>. They are re-tuned for 7:1 text contrast on the briefing surface and paired with a word and a shape, never colour alone.</p>
+<div class="tok">
+<div><span style="background:#fbfcfc"></span><b>Surface</b>cool near-white, not cream</div>
+<div><span style="background:#0b2238"></span><b>Ink</b>navy-black, 15:1 on surface</div>
+<div><span style="background:#1d7894"></span><b>Action</b>links, selection, focus; under 5 % of a screen</div>
+<div><span style="background:#9a4a00"></span><b>Official</b>notices: word plus shield</div>
+<div><span style="background:#0d756c"></span><b>Measured</b>samples: filled point</div>
+<div><span style="background:#6a3fb0"></span><b>Model</b>C-HARM: square cell, outlined when offshore</div>
+<div><span style="background:repeating-linear-gradient(135deg,#8b98a6 0 2px,transparent 2px 6px)"></span><b>Not known</b>hatching, never a data colour</div>
+<div><span style="background:#e5902a"></span><b>Observation dot</b>brand only</div>
+</div>
+<h3>Space and shape</h3>
+<ul class="tight">
+<li><strong>Spacing:</strong> a 4 px base, mostly 8 · 12 · 16 · 24 · 40 · 64. Tight inside a group, generous between groups.</li>
+<li><strong>Shape:</strong> one radius (6 px). Surfaces are separated by a tone step or a 1 px rule, never border plus shadow plus tint.</li>
+<li><strong>Touch targets:</strong> 44 px on phone.</li>
+</ul>
+<h3>Motion principles</h3>
+<ul class="tight">
+<li><strong>Frequency decides.</strong> These never animate: time scrubbing, layer switching (instant, or a 120 ms crossfade at most), values (no count-ups), notices, legends, and anything driven by the keyboard.</li>
+<li><strong>Curves:</strong> enter or exit <code>cubic-bezier(0.23,1,0.32,1)</code>; on-screen moves <code>(0.77,0,0.175,1)</code>; sheet <code>(0.32,0.72,0,1)</code>. Never ease-in.</li>
+<li><strong>Durations:</strong> press 120 ms (scale 0.97); tooltip 125 ms, then 0 ms; popover 160–200 ms from its trigger; state change 200 ms; sheet 420 ms, where a flick above 0.11 px/ms dismisses; map fly-to 800 ms or less. Exits take about 70 % of the entrance time.</li>
+<li><strong>Purposeful links:</strong> selecting a station highlights its evidence row, and hovering a row rings its marker. The connection is shown, never narrated.</li>
+<li><strong>Reduced motion:</strong> opacity and colour only; fly-to becomes jump-to; particles become static arrows.</li>
+<li><strong>Nothing moves on first load.</strong> That avoids layout shift and hydration-timing failures.</li>
+</ul>
+</div>
+</section>
+
+<section id="recommend">
+<div class="col">
+<h2>6 · Recommendation and tradeoffs</h2>
+<p><strong>Build B's structure, with A's typography and reading surfaces, on the relief basemap.</strong> The two directions are not rivals: each solved half of the problem better.</p>
+<div class="scroll"><table><thead><tr><th></th><th>A · Editorial</th><th>B · Instrument</th></tr></thead><tbody>
+<tr><td><strong>Harbor versus offshore model</strong></td><td>Headline plus a to-scale distance strip: clear, but abstract.</td><td><strong>Better.</strong> The actual cells, the hatched gap and a measured 6.6 km line on the map. Nobody reads 77 % as the harbor.</td></tr>
+<tr><td><strong>Reading a briefing on a phone</strong></td><td><strong>Better.</strong> Answer first, measurements as composed units, 17 px, calm.</td><td>Good, but the notice block dominates.</td></tr>
+<tr><td><strong>Map, time and layers</strong></td><td>Adequate.</td><td><strong>Better.</strong> Provenance rows, a presence-and-forecast time bar, a tap readout.</td></tr>
+<tr><td><strong>Charts</strong></td><td>Excellent single-axis evidence ledger.</td><td>Excellent aligned station panels; linked selection.</td></tr>
+<tr><td><strong>Brand distinctiveness</strong></td><td><strong>Higher.</strong> A new type pairing, a cool paper tone.</td><td>Lower: it keeps Plex.</td></tr>
+<tr><td><strong>Implementation risk</strong></td><td>Lower: mostly layout and type.</td><td>Higher: the time bar, the sheet and map interactions need careful engineering and tests.</td></tr>
+</tbody></table></div>
+<h3>The merged direction, concretely</h3>
+<ul class="tight">
+<li><strong>From B:</strong> the map-first Ocean Map with its docked panel and bottom sheet; layer rows with legends and provenance; the time bar; the tap readout; the embedded My Coast map that draws offshore cells, the gap and the distance; and the linked station-to-evidence selection.</li>
+<li><strong>From A:</strong> the type system (Source Serif 4 for display, Atkinson Hyperlegible Next for text, 13/16/20/28/40, 17 px phone body); the answer-first summary; measurements composed as value, place and distance, and time and age; the single-axis evidence ledger; the station page layout; caveats in the margin on desktop.</li>
+<li><strong>From the current product:</strong> the shaded seafloor relief and depth contours as the map's base (neither prototype used it, and it is Neritic's most distinctive visual), and the satellite chlorophyll rendering.</li>
+<li><strong>Fixes to both:</strong> notices collapse to a count, a "not verified" chip and agency links, then one line per notice relevant to the activity, with the rest behind "all notices here". The C-HARM ramp keeps B's 5 % steps above 50 %. Current arrows thin by zoom.</li>
+</ul>
+<h3>Tradeoffs to accept</h3>
+<ul class="tight">
+<li><strong>A second typeface and a new display face add 2 font files</strong> (about 60 KB). Worth it: Atkinson Hyperlegible exists for exactly this reader.</li>
+<li><strong>The time bar and the sheet are the riskiest engineering.</strong> They land in phase 4 with their own tests, after the low-risk foundations.</li>
+<li><strong>Research mode becomes a depth layer</strong> ("Evidence and sources") rather than a separate mode. Researchers lose a toggle but gain the same charts everywhere. This needs your decision.</li>
+<li><strong>Some long explanatory copy moves to the margin or behind disclosure.</strong> No legally or scientifically important warning is removed. Each is said once, next to the thing it qualifies.</li>
+</ul>
+
+</div>
+</section>
+
+<section id="plan">
+<div class="col">
+<h2>7 · Implementation phases and acceptance criteria</h2>
+<p>Each phase runs on the design branch with tests and a private preview. Nothing merges or deploys without your approval. API contracts, data, URLs, scientific logic and Vercel projects stay untouched.</p>
+<div class="scroll"><table><thead><tr><th>Phase</th><th>Scope</th><th>Accepted when</th></tr></thead><tbody>
+<tr><td><strong>0 · Baseline</strong></td><td>Commit the visual-regression baseline: Playwright screenshots at 5 widths for 12 routes, plus the metrics script.</td><td>Baseline reproducible in CI's Linux container. Metrics recorded.</td></tr>
+<tr><td><strong>1 · Foundations</strong></td><td>Tokens, the 5-size type scale, fonts, colour roles, radius, spacing, the approved logo and icons.</td><td>No more than 6 font sizes on any page. Phone body 16 px or larger. Axe passes on all routes. No visual change to data layers.</td></tr>
+<tr><td><strong>2 · Shell and notices</strong></td><td>Four-destination navigation; one notice surface per screen; mode, About and data status move to a menu; no floating button over content.</td><td>Notice status shown once per screen, with CDFW and CDPH links on every page (tested). 10 or fewer targets before content.</td></tr>
+<tr><td><strong>3 · My Coast and evidence</strong></td><td>Answer first, one evidence section, one checklist; distance and age as part of every value; the harbor-versus-offshore model treatment.</td><td>Monterey briefing at most 3 phone screens before the checklist. A test asserts the "no model value here" headline precedes any offshore probability, and that the offshore value is always labelled with its distance. Every fact appears once.</td></tr>
+<tr><td><strong>4 · Map</strong></td><td>Layer rows with legends and provenance; the time bar (issued/valid, today, hatched forecast); the perceptual C-HARM ramp; a lighter gap hatch; a tap readout; the boundary-label fix.</td><td>Consistent day labels (tested). The ramp separates 70–80 %. The readout gives value, unit and valid time, or "No data here". Phone: 44 px targets, sheet snap points, reduced-motion path.</td></tr>
+<tr><td><strong>5 · Bloom and charts</strong></td><td>The station page leads with its 12-month chart; shared chart primitives (axes, units, today marker, gaps).</td><td>Every chart has an axis with units. No colliding labels at 320–1440 px (Playwright overlap check).</td></tr>
+<tr><td><strong>6 · Motion and polish</strong></td><td>Segmented controls, the sheet, fly-to, marker-to-evidence linking, focus and pressed states, skeletons.</td><td>No animation on load (CLS 0). Reduced-motion path tested. 0 hydration errors in 30 cold loads.</td></tr>
+<tr><td><strong>7 · Proof</strong></td><td>Before and after at 1440, 1024, 768, 390 and 320 px; two critique loops per phase; full Linux suite and CI.</td><td>Metrics improve against the baseline. All existing behavioural tests pass, with copy-based assertions updated only where wording deliberately changed.</td></tr>
+</tbody></table></div>
+<p class="small">Fisheries, About and Sources inherit the foundations in phase 1 and get a lighter structural pass after phase 5.</p>
+</div>
+</section>
+</main>
+</div>

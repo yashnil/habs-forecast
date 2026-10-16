@@ -1,0 +1,132 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>My Coast · Monterey — Neritic (Direction B)</title>
+<link rel="preconnect" href="https://fonts.gstatic.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet"><script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link href="b.css" rel="stylesheet"></head><body>
+<main class="shell">
+  <aside class="rail" id="rail" aria-label="Monterey briefing">
+    <section class="sec">
+      <div class="place"><h1>Monterey</h1><span class="sub">CDFW port · Monterey County</span></div>
+      <div class="chips" role="group" aria-label="Trip">
+        <button class="chip" type="button"><b>Commercial</b></button>
+        <button class="chip" type="button"><b>Any species</b></button>
+        <button class="chip" type="button"><b>Today</b>&nbsp;Thu 15 Oct</button>
+      </div>
+    </section>
+
+    <section class="notices" aria-labelledby="nh">
+      <div class="top"><strong id="nh">3 agency notices may cover these waters</strong><span class="badge-nv">Not verified</span></div>
+      <ul class="nlist" id="nlist"></ul>
+      <p class="meta" style="color:var(--official)">Neritic's transcription of agency pages, checked Thu 15 Oct. No person has reviewed it. A notice missing here does not mean open or safe.</p>
+      <div class="agency-links"><a href="https://www.cdph.ca.gov/Programs/EEB/Pages/Shellfish-Advisories.aspx">CDPH shellfish advisories ↗</a><a href="https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories">CDFW health advisories ↗</a></div>
+    </section>
+
+    <section class="sec" aria-labelledby="mh">
+      <h2 class="h2" id="mh"><span class="k" style="background:var(--model)"></span>Toxin model (NOAA C-HARM) at the harbour</h2>
+      <div class="verdict"><span class="sw-hatch" aria-hidden="true"></span>
+        <div><p class="lead">No model value for Monterey's nearshore waters.</p>
+        <p class="p">C-HARM's 3 km cells stop short of the shore. Nothing here is a forecast for the harbour.</p></div></div>
+      <div class="offshore" id="offshore"></div>
+    </section>
+
+    <section class="sec" aria-labelledby="sh">
+      <h2 class="h2" id="sh"><span class="k" style="background:var(--measured)"></span>Shore samples, measured · seawater, not seafood</h2>
+      <div class="rows" id="stations"></div>
+    </section>
+
+    <section class="sec" aria-labelledby="ch">
+      <h2 class="h2" id="ch"><span class="k" style="background:var(--sat)"></span>Satellite chlorophyll, observed · algae of every kind, not toxin</h2>
+      <div class="rows"><div class="row"><span class="n">Median within 5 km</span><span class="v">1.0 <small>mg/m³</small></span>
+        <span class="w">Mon 12 Oct · 24 clear pixels · VIIRS 750 m (NOAA-21/20) · range 0.78–2.6 · one shoreline pixel (3.5) set aside as glare</span></div></div>
+    </section>
+
+    <section class="sec" aria-labelledby="wh">
+      <h2 class="h2" id="wh">Sea today · NWS, not a HAB forecast</h2>
+      <div class="rows"><div class="row"><span class="n">NE wind 5–10 kt · seas ~3 ft</span><span class="v">3.6 <small>ft waves</small></span>
+        <span class="w">Monterey Canyon Outer buoy now · tides high 3.6 ft, low 3.3 ft · <a href="https://forecast.weather.gov/shmrn.php?mz=pzz535">NWS forecast PZZ535 ↗</a></span></div></div>
+    </section>
+
+    <section class="sec" aria-labelledby="bh">
+      <h2 class="h2" id="bh">Before you go · 0 of 3 opened</h2>
+      <ul class="check">
+        <li><input type="checkbox" aria-label="Opened"><span class="x">Check CDPH: is the Monterey County bivalve warning lifted?<span>SN26-021 appears to lift SN26-018; confirm which applies</span></span><a href="https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx">CDPH ↗</a></li>
+        <li><input type="checkbox" aria-label="Opened"><span class="x">Read the anchovy notices in the agencies' words<span>South limit 36°31.46′ N (Point Lobos), 8.4 km south of the port</span></span><a href="https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories">CDFW ↗</a></li>
+        <li><input type="checkbox" aria-label="Opened"><span class="x">CDFW commercial seasons and closures<span>Rules and permits are set by CDFW</span></span><a href="https://wildlife.ca.gov/Fishing/Commercial">CDFW ↗</a></li>
+      </ul>
+      <p class="meta">Ticks stay on this device. A tick means you opened the source, not that anything is safe or open.</p>
+    </section>
+    <section class="sec"><p class="meta" style="margin:0">Sources: CDFW and CDPH (Neritic's unreviewed copy) · CalHABMAP via SCCOOS ERDDAP · NOAA C-HARM v3.1 · NOAA CoastWatch VIIRS · NDBC, CO-OPS. Neritic is an independent research project, not affiliated with NOAA, CDFW or CDPH. <a href="evidence.html">All HAB evidence →</a></p></section>
+  </aside>
+  <div class="mapwrap"><div id="map" role="img" aria-label="Map of Monterey Bay: the harbour, the offshore model cells within 15 km, the hatched nearshore gap, and two shore stations"></div>
+    <div class="mapnote mapkey"><div class="legend-inline" style="margin:0">
+      <span><i style="background:#7f5dbb"></i>Model cell within 15 km</span><span><i style="background:#e6e1ef;border:1px solid #d6cfe6"></i>Model cell, farther</span>
+      <span><i style="background:repeating-linear-gradient(135deg,#8a96a2 0 1.5px,#dce6ec 1.5px 5px)"></i>No model value</span>
+      <span><i style="background:var(--measured);border-radius:50%"></i>Shore station</span>
+      <span><i style="background:transparent;border-top:2px solid var(--official);height:0;border-radius:0"></i>Notice limit</span></div></div>
+  </div>
+</main>
+<script type="module">
+import { chrome, DATA, fmtDate, baseMap, graticule, cellsGeo, circle, kmBetween, sheet, reduced } from "./b.js";
+chrome("My Coast");
+const d = await DATA();
+const P = [d.port.lon, d.port.lat];
+// notices: the one place their status is stated
+const N = { "cdph-2026-sn26-018-monterey-bivalves": "disputed" };
+document.getElementById("nlist").innerHTML = d.notices.filter((n) => n.id !== "cdph-2026-annual-mussel-quarantine" || true).map((n) =>
+  `<li><span class="ag">${n.agency}</span>${n.title}${n.id === "cdph-2026-sn26-018-monterey-bivalves" ? '<span class="disp">CDPH release SN26-021 appears to lift this; awaiting review</span>' : n.area?.type === "statewide" ? '<span class="disp" style="color:var(--ink-3)">Statewide · until at least 31 Oct</span>' : ""}</li>`).join("");
+document.getElementById("nh").textContent = `${d.notices.length} agency notices may cover these waters`;
+// offshore context: subordinate, with distance, differently encoded
+const ch = d.port.charm, today = ch.leads.find((l) => l.valid_date === "2026-10-15").variables.particulate_domoic;
+const cells = d.charm_pda_lead2.cells.map((c) => ({ c, km: kmBetween(P, c) })).filter((x) => x.km <= 15).sort((a, b) => a.km - b.km);
+document.getElementById("offshore").innerHTML = `<span class="num">${Math.round(today.median * 100)}<small>%</small></span>
+  <span class="t"><b>Offshore context only.</b> Median chance that particulate domoic acid exceeds 500 ng/L in the ${today.n} model cells <b>${cells[0].km.toFixed(1)}–15 km out</b> (range ${Math.round(today.min * 100)}–${Math.round(today.max * 100)} %).</span>
+  <span class="t">Valid Thu 15 Oct · issued Wed 14 Oct · <a href="map.html">see the cells on the map</a></span>`;
+// stations: distance as prominent as the value
+const SC = d["Santa Cruz Wharf"], MW = d["Monterey Wharf"];
+const st = document.getElementById("stations");
+st.innerHTML = `
+ <div class="row" data-st="mw"><span class="n">Monterey Wharf <span class="dist">· 0.6 km</span></span><span class="v stale" style="font-size:var(--t-s)">No recent toxin</span>
+  <span class="w">Last toxin sample Aug 2022 · last algae count 27 Aug 2025 · temperature sampled Wed 14 Oct (16.2 °C)</span></div>
+ <div class="row" data-st="sc"><span class="n">Santa Cruz Wharf <span class="dist">· 41 km NNW</span></span><span class="v">4,900 <small>cells/L</small></span>
+  <span class="w">Pseudo-nitzschia (the algae that can make domoic acid) and 0.20 ng/mL toxin in seawater · Wed 30 Sep, <span class="stale">15 days ago</span> · <a href="station.html">station record</a></span></div>`;
+// map
+const phone = matchMedia("(max-width: 760px)").matches;
+const map = await baseMap("map", { bounds: [[-122.12, 36.5], [-121.76, 37.0]], fitBoundsOptions: { padding: phone ? { top: 56, bottom: innerHeight * 0.5, left: 14, right: 14 } : { top: 60, bottom: 40, left: 60, right: 60 } } });
+graticule(map, [-122.8, 36.2, -121.6, 37.2]);
+map.addSource("water-h", { type: "vector", url: map.getStyle().sources.openmaptiles.url });
+map.addLayer({ id: "nomodel", type: "fill", source: "openmaptiles", "source-layer": "water", paint: { "fill-pattern": "hatch" } }, "coastline");
+map.addSource("cells", { type: "geojson", data: cellsGeo(d.charm_pda_lead2.cells, 0.03) });
+map.addLayer({ id: "cells", type: "fill", source: "cells", paint: { "fill-color": "#e6e1ef", "fill-outline-color": "#d6cfe6" } }, "coastline");
+map.addLayer({ id: "cells-in", type: "fill", source: "cells", filter: ["in", ["id"], ["literal", cells.map((x) => d.charm_pda_lead2.cells.indexOf(x.c))]], paint: { "fill-color": ["get", "c"], "fill-outline-color": "rgba(255,255,255,.35)" } }, "coastline");
+map.addSource("ring", { type: "geojson", data: circle(P, 15) });
+map.addLayer({ id: "ring", type: "line", source: "ring", paint: { "line-color": "#4f3591", "line-width": 1.2, "line-dasharray": [3, 2] } });
+const near = cells[0].c;
+map.addSource("nearl", { type: "geojson", data: { type: "Feature", properties: { t: `${cells[0].km.toFixed(1)} km to the nearest model cell` }, geometry: { type: "LineString", coordinates: [P, [near[0], near[1]]] } } });
+map.addLayer({ id: "nearl", type: "line", source: "nearl", paint: { "line-color": "#0b1b2b", "line-width": 1.4 } });
+map.addSource("nearp", { type: "geojson", data: { type: "Feature", properties: { t: `${cells[0].km.toFixed(1)} km to the\nnearest model cell` }, geometry: { type: "Point", coordinates: [near[0], near[1]] } } });
+map.addLayer({ id: "near-dot", type: "circle", source: "nearp", paint: { "circle-radius": 3, "circle-color": "#0b1b2b" } });
+map.addLayer({ id: "nearl-t", type: "symbol", source: "nearp", layout: { "text-field": ["get", "t"], "text-size": 12.5, "text-anchor": "right", "text-offset": [-0.8, 0], "text-font": ["Noto Sans Bold"], "text-justify": "right" }, paint: { "text-color": "#0b1b2b", "text-halo-color": "#ffffff", "text-halo-width": 2.2 } });
+// notice limit (anchovy notices' south limit)
+map.addSource("lim", { type: "geojson", data: { type: "Feature", properties: { t: "Anchovy notices · south limit 36°31.46′ N" }, geometry: { type: "LineString", coordinates: [[-122.15, 36.5243], [-121.9, 36.5243]] } } });
+map.addLayer({ id: "lim", type: "line", source: "lim", paint: { "line-color": "#8a4500", "line-width": 1.6 } });
+map.addSource("limp", { type: "geojson", data: { type: "Feature", properties: { t: "Anchovy notices: south limit 36°31.46′ N" }, geometry: { type: "Point", coordinates: [-122.15, 36.5243] } } });
+map.addLayer({ id: "lim-t", type: "symbol", source: "limp", layout: { "text-field": ["get", "t"], "text-size": 12.5, "text-anchor": "bottom-left", "text-offset": [0, -0.4], "text-font": ["Noto Sans Bold"] }, paint: { "text-color": "#8a4500", "text-halo-color": "#ffffff", "text-halo-width": 2.2 } });
+// markers: harbour and stations
+const pts = { type: "FeatureCollection", features: [
+  { type: "Feature", id: 1, properties: { k: "port", t: "Monterey" }, geometry: { type: "Point", coordinates: P } },
+  { type: "Feature", id: 2, properties: { k: "mw", t: "Monterey Wharf · no recent toxin" }, geometry: { type: "Point", coordinates: [MW.lon, MW.lat] } },
+  { type: "Feature", id: 3, properties: { k: "sc", t: "Santa Cruz Wharf · 4,900 cells/L, 30 Sep" }, geometry: { type: "Point", coordinates: [SC.lon, SC.lat] } }] };
+map.addSource("pts", { type: "geojson", data: pts });
+map.addLayer({ id: "st-ring", type: "circle", source: "pts", filter: ["!=", ["get", "k"], "port"], paint: { "circle-radius": ["case", ["boolean", ["feature-state", "on"], false], 13, 0], "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": "#0b1b2b", "circle-stroke-width": 2 } });
+map.addLayer({ id: "st", type: "circle", source: "pts", filter: ["!=", ["get", "k"], "port"], paint: { "circle-radius": 6.5, "circle-color": ["case", ["==", ["get", "k"], "mw"], "#ffffff", "#0a6b61"], "circle-stroke-color": "#0a6b61", "circle-stroke-width": 2.5 } });
+map.addLayer({ id: "port", type: "circle", source: "pts", filter: ["==", ["get", "k"], "port"], paint: { "circle-radius": 5, "circle-color": "#0b1b2b", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2.5 } });
+map.addLayer({ id: "pt-t", type: "symbol", source: "pts", layout: { "text-field": ["get", "t"], "text-size": ["case", ["==", ["get", "k"], "port"], 15, 12.5], "text-font": ["case", ["==", ["get", "k"], "port"], ["literal", ["Noto Sans Bold"]], ["literal", ["Noto Sans Regular"]]], "text-anchor": ["case", ["==", ["get", "k"], "mw"], "right", "left"], "text-offset": ["case", ["==", ["get", "k"], "mw"], ["literal", [-1.1, 0.9]], ["literal", [1, 0]]], "text-max-width": 14 }, paint: { "text-color": "#0b1b2b", "text-halo-color": "#ffffff", "text-halo-width": 2 } });
+// selection: list ↔ map
+const ids = { mw: 2, sc: 3 };
+const select = (k) => { for (const [kk, id] of Object.entries(ids)) map.setFeatureState({ source: "pts", id }, { on: kk === k }); st.querySelectorAll("[data-st]").forEach((r) => r.classList.toggle("on", r.dataset.st === k)); };
+st.querySelectorAll("[data-st]").forEach((r) => { r.addEventListener("mouseenter", () => select(r.dataset.st)); r.addEventListener("click", () => { select(r.dataset.st); const f = pts.features.find((x) => x.properties.k === r.dataset.st); map[reduced ? "jumpTo" : "easeTo"]({ center: f.geometry.coordinates, duration: 700 }); }); });
+map.on("click", "st", (e) => select(e.features[0].properties.k));
+map.on("mouseenter", "st", () => (map.getCanvas().style.cursor = "pointer")); map.on("mouseleave", "st", () => (map.getCanvas().style.cursor = ""));
+sheet(document.getElementById("rail"), "half");
+window.__ready = true;
+</script></body></html>

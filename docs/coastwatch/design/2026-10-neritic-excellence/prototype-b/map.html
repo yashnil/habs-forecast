@@ -1,0 +1,134 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ocean Map · Monterey Bay — Neritic (Direction B)</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet"><script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link href="b.css" rel="stylesheet"></head><body>
+<main class="shell" style="grid-template-columns: 400px 1fr">
+  <aside class="rail" id="rail" aria-label="Map layers" data-peek="236">
+    <section class="sec" style="padding-block:14px">
+      <button class="chip" type="button" style="min-height:44px;width:100%;justify-content:space-between;font-size:var(--t-s)"><span>Region <b>Monterey Bay</b></span><svg width="12" height="12" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></button>
+    </section>
+    <div class="phone-seg"><div class="seg" id="pseg"><button type="button" data-v="forecast" aria-pressed="true">Model</button><button type="button" data-v="satellite" aria-pressed="false">Chlorophyll</button><button type="button" data-v="currents" aria-pressed="false">Currents</button></div></div>
+    <div id="tb-phone"></div>
+    <ul class="layers" role="radiogroup" aria-label="What the map shows" id="layers">
+      <li class="layer" data-l="forecast" aria-selected="true"><button type="button" role="radio" aria-checked="true"><span class="rd"></span><span class="nm">Bloom &amp; toxin model<span>NOAA C-HARM · model</span></span><span class="kd">3 km</span></button>
+        <div class="body">
+          <label class="meta" for="var" style="display:block;margin:0 0 4px">Quantity</label>
+          <select class="select" id="var"><option>Particulate domoic acid &gt; 500 ng/L</option><option>Pseudo-nitzschia bloom</option><option>Cellular domoic acid</option></select>
+          <div class="ramp" id="ramp"></div>
+          <div class="nodata-key"><i></i>No model value: C-HARM does not cover nearshore waters</div>
+          <p class="meta">Chance, not a toxin measurement or a closure decision. A low value does not mean an area is safe.</p>
+        </div>
+        <div class="prov">C-HARM v3.1 · valid Thu 15 Oct · made Wed 14 Oct · daily · <a href="https://sccoos.org/california-hab-bulletin/">source ↗</a></div></li>
+      <li class="layer" data-l="satellite" aria-selected="false"><button type="button" role="radio" aria-checked="false"><span class="rd"></span><span class="nm">Chlorophyll<span>satellite · observed</span></span><span class="kd">300–750 m</span></button>
+        <div class="body"><div class="ramp" id="ramp-chl"></div><div class="nodata-key"><i></i>No observation: cloud or no pass in 7 days</div><p class="meta">Algae of every kind, not toxin. Each pixel keeps its own date.</p></div>
+        <div class="prov">Sentinel-3 OLCI + VIIRS · newest pixel Mon 12 Oct · <a href="https://coastwatch.noaa.gov/">NOAA CoastWatch ↗</a></div></li>
+      <li class="layer" data-l="currents" aria-selected="false"><button type="button" role="radio" aria-checked="false"><span class="rd"></span><span class="nm">Surface currents<span>HF radar · observed</span></span><span class="kd">2 km</span></button>
+        <div class="body"><div class="legend-inline" style="margin-top:0"><span>Arrow length and weight: speed, m/s</span></div><div class="nodata-key"><i></i>No arrow: no radar coverage that hour, not calm water</div></div>
+        <div class="prov">HFRNet via NOAA NDBC · 8 AM PDT Thu 15 Oct · hourly · 77 % of the bay observed</div></li>
+      <li class="layer" data-l="none" aria-selected="false"><button type="button" role="radio" aria-checked="false"><span class="rd"></span><span class="nm">Seafloor and coast only</span><span class="kd"></span></button><div class="prov">NOAA NCEI relief · OpenStreetMap</div></li>
+    </ul>
+    <section class="notices on-map" style="border-top:1px solid var(--official-line)">
+      <div class="top"><strong>3 agency notices in Monterey Bay</strong><span class="badge-nv">Not verified</span></div>
+      <p class="meta" style="color:var(--official);margin-top:4px">Shown on the map as their stated limits. The agencies decide; the map does not. <a href="https://www.cdph.ca.gov/Programs/EEB/Pages/Shellfish-Advisories.aspx" style="color:var(--official);font-weight:600">CDPH ↗</a> · <a href="https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories" style="color:var(--official);font-weight:600">CDFW ↗</a></p>
+    </section>
+  </aside>
+  <div class="mapwrap"><div id="map" role="application" aria-label="Ocean map of Monterey Bay"></div>
+    <div class="timebar" id="timebar"></div>
+    <div class="mapnotice" role="note"><b>3 agency notices here</b><span class="badge-nv">Not verified</span><span style="margin-left:auto"><a href="https://www.cdph.ca.gov/Programs/EEB/Pages/Shellfish-Advisories.aspx">CDPH ↗</a> · <a href="https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories">CDFW ↗</a></span></div>
+  </div>
+</main>
+<script type="module">
+import { chrome, DATA, baseMap, graticule, cellsGeo, PROB_STOPS, probColor, kmBetween, sheet, segmented, reduced } from "./b.js";
+chrome("Map");
+const d = await DATA();
+const phone = matchMedia("(max-width: 760px)").matches;
+// ramp with ticks; today's range marked
+const cellsV = d.charm_pda_lead2.cells.map((c) => c[2]);
+const lo = Math.min(...cellsV), hi = Math.max(...cellsV);
+const steps = []; for (let v = 0; v < 1; v += 0.05) steps.push(probColor(v + 0.001));
+document.getElementById("ramp").innerHTML = `<div class="rbar">${steps.map((c) => `<i style="background:${c}"></i>`).join("")}</div>
+  <div class="ticks">${[0, 25, 50, 75, 100].map((v) => `<span style="left:${v}%">${v}${v === 100 ? " %" : ""}</span>`).join("")}</div>
+  <div class="range"><b style="left:${lo * 100}%;width:${(hi - lo) * 100}%"></b><span style="right:${100 - hi * 100}%">In view: ${Math.round(lo * 100)}–${Math.round(hi * 100)} %</span></div>`;
+const chlStops = ["#102a4c", "#14466e", "#126483", "#147f85", "#2a9a7c", "#5bb267", "#9bc851", "#d6dd5e", "#f3ef9c"];
+document.getElementById("ramp-chl").innerHTML = `<div class="rbar">${chlStops.map((c) => `<i style="background:${c}"></i>`).join("")}</div>
+  <div class="ticks">${[["0.05", 0], ["1", 44.4], ["10", 77.7], ["50 mg/m³", 100]].map(([t, p]) => `<span style="left:${p}%">${t}</span>`).join("")}</div>`;
+// time bar: one row of days, presence per layer, forecast segment hatched and labelled
+const allDays = ["2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16"];
+const days = phone ? allDays.slice(3) : allDays;
+const pres = {
+  forecast: (s) => (s >= "2026-10-14" ? "fc" : s <= "2026-10-13" ? "on" : "off"),
+  satellite: (s) => (["2026-10-08", "2026-10-09", "2026-10-10", "2026-10-12"].includes(s) ? "sat" : "off"),
+  currents: (s) => (s >= "2026-10-14" && s <= "2026-10-15" ? "cur" : "off"),
+};
+let layer = "forecast", day = "2026-10-15";
+function timebar() {
+  const host = phone ? document.getElementById("tb-phone") : document.getElementById("timebar");
+  if (phone) host.className = "timebar";
+  const f = (s, o) => new Date(s + "T12:00:00Z").toLocaleDateString("en-US", { ...o, timeZone: "UTC" });
+  const head = layer === "forecast" ? `<span><b>Thu 15 Oct</b> · forecast made ${phone ? "14 Oct" : "Wed 14 Oct"}</span><span>Past days: that day's nowcast</span>` :
+    layer === "satellite" ? `<span><b>Newest pixels</b> · Mon 12 Oct and earlier</span><span>No pass on 11 Oct; 13–15 Oct not yet processed</span>` :
+    layer === "currents" ? `<span><b>8 AM PDT Thu 15 Oct</b> · hourly, last 24 h kept</span><span>Published 4–15 h after observation</span>` : `<span><b>No time-varying layer</b></span><span></span>`;
+  host.innerHTML = `<div class="head">${head}</div><div class="days" role="group" aria-label="Day" style="grid-template-columns:${phone ? 46 : 74}px repeat(${days.length}, 1fr)">
+    <span class="lbl">Day</span>${days.map((s) => `<button type="button" class="d ${s === "2026-10-15" ? "today" : ""}" aria-pressed="${s === day}" data-day="${s}"><span>${s === "2026-10-15" ? "Today" : f(s, { weekday: "short" })}</span><span>${f(s, { day: "numeric" })}</span></button>`).join("")}
+    <span class="lbl">Data</span>${days.map((s) => `<span class="pres ${layer === "none" ? "off" : pres[layer](s)}" title="${s}"></span>`).join("")}
+    ${layer === "forecast" ? `<span></span><span style="grid-column:2/${days.indexOf("2026-10-14") + 2}"></span><span class="fclabel" style="grid-column:${days.indexOf("2026-10-14") + 2}/${days.length + 2}">forecast</span>` : ""}</div>`;
+  host.querySelectorAll(".d").forEach((b) => b.addEventListener("click", () => { day = b.dataset.day; timebar(); }));
+}
+timebar();
+// map
+const map = await baseMap("map", { center: [-122.02, 36.78], zoom: phone ? 8.75 : 9.55, maxBounds: [[-123.6, 35.6], [-120.8, 37.9]] });
+graticule(map, [-123.4, 35.8, -121.0, 37.7]);
+map.addLayer({ id: "nomodel", type: "fill", source: "openmaptiles", "source-layer": "water", paint: { "fill-pattern": "hatch" } }, "coastline");
+map.addSource("cells", { type: "geojson", data: cellsGeo(d.charm_pda_lead2.cells, 0.03) });
+map.addLayer({ id: "cells", type: "fill", source: "cells", paint: { "fill-color": ["get", "c"], "fill-outline-color": "rgba(255,255,255,.28)" } }, "coastline");
+map.addLayer({ id: "cell-sel", type: "line", source: "cells", filter: ["==", ["id"], -1], paint: { "line-color": "#0b1b2b", "line-width": 2 } });
+map.addSource("sat", { type: "raster", tiles: ["https://yashnil.github.io/habs-forecast/v1/satellite/multisensor/latest-2026-10-15-8277242a53/tiles/{z}/{x}/{y}.png"], tileSize: 512, maxzoom: 11, minzoom: 5, bounds: [-125.5, 32.4, -117.0, 42.1] });
+map.addLayer({ id: "sat", type: "raster", source: "sat", layout: { visibility: "none" }, paint: { "raster-resampling": "nearest", "raster-fade-duration": 0 } }, "coastline");
+const k = (lat) => 1 / Math.cos(lat * Math.PI / 180);
+map.addSource("cur", { type: "geojson", data: { type: "FeatureCollection", features: d.currents.cells.filter(([x, y]) => !phone || (Math.round(x / 0.0208) + Math.round(y / 0.018)) % 2 === 0).map(([x, y, u, v]) => { const sp = Math.hypot(u, v), L = 0.016 + sp * 0.05, ang = Math.atan2(v, u);
+  const ex = x + Math.cos(ang) * L * k(y), ey = y + Math.sin(ang) * L; const hx = 0.35 * L;
+  return { type: "Feature", properties: { s: sp }, geometry: { type: "MultiLineString", coordinates: [[[x, y], [ex, ey]], [[ex - Math.cos(ang - 0.45) * hx * k(y), ey - Math.sin(ang - 0.45) * hx], [ex, ey], [ex - Math.cos(ang + 0.45) * hx * k(y), ey - Math.sin(ang + 0.45) * hx]]] } }; }) } });
+map.addLayer({ id: "cur", type: "line", source: "cur", layout: { visibility: "none", "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#0b1b2b", "line-width": ["interpolate", ["linear"], ["get", "s"], 0, 0.7, 0.5, 1.8], "line-opacity": 0.85 } });
+// notice limits (anchovy notices) drawn once, on the map
+map.addSource("lim", { type: "geojson", data: { type: "FeatureCollection", features: [[36.5243, "south limit · Point Lobos"], [37.1833, "north limit · Pigeon Point"]].map(([lat, t]) => ({ type: "Feature", properties: { t: "Anchovy notices: " + t }, geometry: { type: "LineString", coordinates: [[-122.9, lat], [-121.85, lat]] } })) } });
+map.addLayer({ id: "lim", type: "line", source: "lim", paint: { "line-color": "#8a4500", "line-width": 1.6 } });
+map.addSource("limp", { type: "geojson", data: { type: "FeatureCollection", features: [[36.5243, "Anchovy notices · south limit, Point Lobos"], [37.1833, "Anchovy notices · north limit, Pigeon Point"]].map(([lat, t]) => ({ type: "Feature", properties: { t }, geometry: { type: "Point", coordinates: [phone ? -122.08 : -122.42, lat] } })) } });
+map.addLayer({ id: "lim-t", type: "symbol", source: "limp", layout: { "text-field": ["get", "t"], "text-size": 12.5, "text-font": ["Noto Sans Bold"], "text-anchor": "bottom", "text-offset": [0, -0.35], "text-allow-overlap": true }, paint: { "text-color": "#8a4500", "text-halo-color": "#ffffff", "text-halo-width": 2.2 } });
+const SC = d["Santa Cruz Wharf"], MW = d["Monterey Wharf"];
+map.addSource("pts", { type: "geojson", data: { type: "FeatureCollection", features: [[SC, "Santa Cruz Wharf"], [MW, "Monterey Wharf"]].map(([s, t]) => ({ type: "Feature", properties: { t }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } })) } });
+map.addLayer({ id: "st", type: "circle", source: "pts", paint: { "circle-radius": 5.5, "circle-color": "#0a6b61", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 } });
+map.addLayer({ id: "st-t", type: "symbol", source: "pts", layout: { "text-field": ["get", "t"], "text-size": 12.5, "text-font": ["Noto Sans Regular"], "text-anchor": "left", "text-offset": [0.9, 0] }, paint: { "text-color": "#0a6b61", "text-halo-color": "#ffffff", "text-halo-width": 2 } });
+// layer switching: instant swap (no crossfade between datasets)
+const vis = { forecast: ["cells", "cell-sel"], satellite: ["sat"], currents: ["cur"], none: [] };
+function setLayer(l) {
+  layer = l;
+  document.querySelectorAll(".layer").forEach((li) => { const on = li.dataset.l === l; li.setAttribute("aria-selected", on); li.querySelector("button").setAttribute("aria-checked", on); });
+  for (const [g, ids] of Object.entries(vis)) ids.forEach((id) => map.setLayoutProperty(id, "visibility", g === l ? "visible" : "none"));
+  map.setLayoutProperty("nomodel", "visibility", l === "forecast" ? "visible" : "none");
+  popup.remove(); timebar();
+}
+document.querySelectorAll(".layer > button").forEach((b) => b.addEventListener("click", () => setLayer(b.parentElement.dataset.l)));
+// tap readout: value, unit, valid time — or "No data here"
+const popup = new maplibregl.Popup({ closeButton: true, maxWidth: "280px", offset: 8, focusAfterOpen: false });
+function readout(lngLat) {
+  if (layer !== "forecast") return;
+  const i = d.charm_pda_lead2.cells.findIndex(([x, y]) => Math.abs(x - lngLat.lng) <= 0.015 && Math.abs(y - lngLat.lat) <= 0.015);
+  const f = i < 0 ? null : { id: i, properties: { v: d.charm_pda_lead2.cells[i][2] } };
+  const coord = `${lngLat.lat.toFixed(3)}° N, ${Math.abs(lngLat.lng).toFixed(3)}° W`;
+  if (f) { map.setFilter("cell-sel", ["==", ["id"], f.id]);
+    popup.setLngLat(lngLat).setHTML(`<div class="ro"><div class="v">${(f.properties.v * 100).toFixed(0)} <small>% chance</small></div><div class="t">particulate domoic acid &gt; 500 ng/L</div><div class="c">3 km cell at ${coord}<br>Valid Thu 15 Oct · C-HARM made Wed 14 Oct</div></div>`).addTo(map); }
+  else { map.setFilter("cell-sel", ["==", ["id"], -1]);
+    const near = d.charm_pda_lead2.cells.reduce((a, c) => { const km = kmBetween([lngLat.lng, lngLat.lat], c); return km < a.km ? { km, c } : a; }, { km: 1e9 });
+    popup.setLngLat(lngLat).setHTML(`<div class="ro"><div class="v" style="font-size:var(--t-m)">No model value here</div><div class="t">C-HARM does not cover these nearshore waters. Nearest cell ${near.km.toFixed(1)} km away.</div><div class="c">${coord}</div></div>`).addTo(map); }
+}
+map.on("click", (e) => readout(e.lngLat));
+setLayer("forecast");
+segmented(document.getElementById("pseg"), (v) => setLayer(v));
+if (phone) { const reg = document.querySelector(".rail > .sec"); document.getElementById("layers").after(reg); }
+sheet(document.getElementById("rail"), "peek");
+// a readout open in the resting state, so the screenshot shows the instrument in use
+readout({ lng: -121.95, lat: 36.64 });
+const q = new URLSearchParams(location.search); if (q.get("l")) { setLayer(q.get("l")); document.querySelector(`#pseg button[data-v="${q.get("l")}"]`)?.click(); }
+map.once("idle", () => (window.__ready = true));
+</script></body></html>

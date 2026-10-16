@@ -1,0 +1,94 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Santa Cruz Wharf — Neritic Blooms (Direction B)</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet"><script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link href="b.css" rel="stylesheet"></head><body>
+<main class="shell" style="grid-template-columns: 720px 1fr">
+  <aside class="rail" id="rail" aria-label="Santa Cruz Wharf station record">
+    <section class="sec" style="padding-bottom:14px">
+      <button class="chip" type="button" style="min-height:40px"><span>Station</span><b>Santa Cruz Wharf</b><span style="color:var(--ink-3)">· 1 of 17</span><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></button>
+      <h1 style="margin:12px 0 0;font-size:var(--t-xxl);line-height:1.05;letter-spacing:-0.015em">Santa Cruz Wharf</h1>
+      <p class="p" style="margin-top:6px">Shore station · seawater sampled about weekly · <b style="color:var(--ink)">latest Wed 30 Sep</b>, <span class="stale">15 days ago</span></p>
+      <p class="mapnotice" style="display:flex;position:static;margin:12px 0 0" role="note"><b>3 agency notices for waters near Santa Cruz</b><span class="badge-nv">Not verified</span><span style="margin-left:auto"><a href="https://www.cdph.ca.gov/Programs/EEB/Pages/Shellfish-Advisories.aspx">CDPH ↗</a> · <a href="https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories">CDFW ↗</a></span></p>
+    </section>
+    <section class="sec">
+      <div class="toolbar"><span class="h2" style="margin:0">Last 12 months · 49 samples</span>
+        <div class="seg" id="range"><button type="button" data-v="3" aria-pressed="false">3 months</button><button type="button" data-v="12" aria-pressed="true">12 months</button></div></div>
+      <div id="chart"></div>
+      <p class="meta" style="margin-top:4px">The 15 Oct update could not reach the station's data server; this is the copy retrieved 15 Oct, 4:32 AM PDT, and a newer sample may exist · <a href="https://erddap.sccoos.org/erddap/tabledap/HABs-SantaCruzWharf.html">SCCOOS ERDDAP ↗</a></p>
+      <div class="legend-inline"><span><i style="background:var(--measured);border-radius:50%"></i>Sample</span><span><i style="background:var(--paper);border:1.5px solid var(--measured);border-radius:50%"></i>Reported 0 (at or below the lab's limit)</span><span><i style="background:repeating-linear-gradient(135deg,#8a96a2 0 1.2px,transparent 1.2px 5px);border:1px solid var(--rule-strong)"></i>No sample for more than 16 days</span></div>
+    </section>
+    <section class="sec">
+      <h2 class="h2">Latest values · Wed 30 Sep</h2>
+      <div class="rows">
+        <div class="row"><span class="n">Domoic acid, particulate</span><span class="v">0.20 <small>ng/mL</small></span><span class="w">12-month high 11.2 ng/mL on 27 May · seawater, not seafood</span></div>
+        <div class="row"><span class="n">Pseudo-nitzschia, large-cell group</span><span class="v">4,900 <small>cells/L</small></span><span class="w">12-month high 2,245,440 cells/L on 27 May</span></div>
+        <div class="row"><span class="n">Chlorophyll, extracted</span><span class="v">2.22 <small>mg/m³</small></span><span class="w">Measured in the sample, not from satellite</span></div>
+        <div class="row"><span class="n">Water temperature</span><span class="v">17.1 <small>°C</small></span><span class="w"></span></div>
+      </div>
+      <p class="meta">Not measured at this station: dissolved and total domoic acid, the small-cell Pseudo-nitzschia group.</p>
+    </section>
+    <section class="sec"><p class="meta" style="margin:0">Source: Central and Northern California Ocean Observing System / SCCOOS, CalHABMAP program. Coordinates 36.958° N, 122.017° W. <a href="map.html">Open on the Ocean Map →</a></p></section>
+  </aside>
+  <div class="mapwrap"><div id="map" role="img" aria-label="Location of Santa Cruz Wharf and neighbouring stations"></div></div>
+</main>
+<script type="module">
+import { chrome, DATA, baseMap, graticule, sheet, segmented } from "./b.js";
+chrome("Blooms");
+const d = await DATA();
+const S = d["Santa Cruz Wharf"].series;
+const ms = (s) => new Date(s + "T12:00:00Z").getTime();
+let months = 12;
+function render() {
+  const el = document.getElementById("chart"), W = el.clientWidth, G = 44;
+  const t1 = ms("2026-10-20"), t0 = months === 3 ? ms("2026-07-13") : ms("2025-10-10");
+  const x = (s) => G + ((ms(s) - t0) / (t1 - t0)) * (W - G - 4);
+  const panels = [
+    { k: "pDA", label: "Domoic acid in seawater", unit: "ng/mL, particulate", H: 120, scale: "lin" },
+    { k: "pn_seriata", label: "Pseudo-nitzschia, large-cell group", unit: "cells/L, log scale", H: 120, scale: "log" },
+    { k: "chl_extracted", label: "Chlorophyll in the sample", unit: "mg/m³", H: 70, scale: "lin" },
+  ];
+  const dates = S.pDA.map((p) => p[0]); const gaps = [];
+  for (let i = 1; i < dates.length; i++) if ((ms(dates[i]) - ms(dates[i - 1])) / 864e5 > 16) gaps.push([dates[i - 1], dates[i]]);
+  let y = 0, out = "";
+  for (const P of panels) {
+    const pts = S[P.k].filter((p) => p[1] !== null && ms(p[0]) >= t0);
+    const max = Math.max(...pts.map((p) => p[1]));
+    const top = y + 24, H = P.H;
+    let yv, ticks;
+    if (P.scale === "log") { yv = (v) => top + H - (Math.log10(Math.max(v, 100)) - 2) / 5 * H; ticks = [[100, "100"], [1e4, "10k"], [1e6, "1M"], [1e7, "10M"]]; }
+    else { const st = max > 10 ? 5 : max > 4 ? 2 : 1, m = Math.ceil(max / st) * st; yv = (v) => top + H - (v / m) * H; ticks = []; for (let v = 0; v <= m; v += (P.H < 100 ? m / 2 : st * (m / st > 4 ? 2 : 1))) ticks.push([v, String(v)]); }
+    const last = pts.at(-1), peak = pts.reduce((a, p) => (p[1] > a[1] ? p : a));
+    out += `<text class="lab" x="0" y="${y + 12}">${P.label} <tspan class="lab2" font-weight="400">· ${P.unit}</tspan></text>`;
+    out += gaps.filter(([a]) => ms(a) >= t0).map(([a, b]) => `<rect x="${x(a) + 4}" y="${top}" width="${x(b) - x(a) - 8}" height="${H}" fill="url(#hatchS)"/>`).join("");
+    out += ticks.map(([v, t]) => `<line x1="${G}" x2="${W}" y1="${yv(v)}" y2="${yv(v)}" stroke="var(--rule)" ${v ? 'stroke-dasharray="2 3"' : ""}/><text x="${G - 6}" y="${yv(v) + 4}" text-anchor="end">${t}</text>`).join("");
+    let path = "", prev = null;
+    for (const p of pts) { const px = x(p[0]), py = yv(p[1]); path += prev && (ms(p[0]) - ms(prev[0])) / 864e5 <= 16 ? `L${px.toFixed(1)} ${py.toFixed(1)}` : `M${px.toFixed(1)} ${py.toFixed(1)}`; prev = p; }
+    out += `<path d="${path}" fill="none" stroke="var(--measured)" stroke-width="1.2" stroke-opacity=".5"/>`;
+    out += pts.map((p) => p[2] === "reported_zero" ? `<circle cx="${x(p[0])}" cy="${yv(p[1])}" r="3.2" fill="var(--paper)" stroke="var(--measured)" stroke-width="1.4"/>` : `<circle cx="${x(p[0])}" cy="${yv(p[1])}" r="3" fill="var(--measured)"/>`).join("");
+    out += `<circle cx="${x(last[0])}" cy="${yv(last[1])}" r="5" fill="var(--measured)" stroke="var(--ink)" stroke-width="1.8"/>`;
+    if (peak !== last && P.k !== "chl_extracted") { const right = x(peak[0]) > W - 190; out += `<text x="${x(peak[0]) + (right ? -8 : 8)}" y="${yv(peak[1]) + 4}" text-anchor="${right ? "end" : "start"}" style="font-size:12px;fill:var(--ink-2)">${P.k === "pDA" ? peak[1].toFixed(1) + " ng/mL" : Math.round(peak[1]).toLocaleString("en-US") + " cells/L"} · ${new Date(peak[0] + "T12:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })}</text>`; }
+    out += `<line class="today" x1="${x("2026-10-15")}" x2="${x("2026-10-15")}" y1="${top}" y2="${top + H}"/>`;
+    y = top + H + 26;
+  }
+  const ticks = []; const dd = new Date(t0); dd.setUTCDate(1); dd.setUTCMonth(dd.getUTCMonth() + 1);
+  for (; dd.getTime() < t1; dd.setUTCMonth(dd.getUTCMonth() + (months === 3 ? 1 : W < 500 ? 3 : 2))) ticks.push(dd.toISOString().slice(0, 10));
+  const tx = x("2026-10-15");
+  out += ticks.filter((t) => Math.abs(x(t) - tx) > 36).map((t) => `<text x="${x(t)}" y="${y}" text-anchor="middle">${new Date(t + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "UTC" })}${t.slice(5, 7) === "01" ? " " + t.slice(0, 4) : ""}</text>`).join("");
+  out += `<text x="${tx}" y="${y}" text-anchor="middle" style="font-weight:600;fill:var(--ink)">Today</text>`;
+  if (gaps.some(([a]) => ms(a) >= t0)) { const [a, b] = gaps[0]; out += `<text x="${(x(a) + x(b)) / 2}" y="${y + 16}" text-anchor="middle" style="font-size:11.5px">no sample 17 Dec–7 Jan</text>`; }
+  el.innerHTML = `<svg class="ev" width="${W}" height="${y + 22}" viewBox="0 0 ${W} ${y + 22}" role="img" aria-label="Station time series, 12 months"><defs><pattern id="hatchS" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#b9c2ca" stroke-width="1.2"/></pattern></defs>${out}</svg>`;
+}
+render(); addEventListener("resize", render);
+segmented(document.getElementById("range"), (v) => { months = +v; document.querySelector(".toolbar .h2").textContent = v === "3" ? "Last 3 months · 12 samples" : "Last 12 months · 49 samples"; render(); });
+const phone = matchMedia("(max-width: 760px)").matches;
+const SC = d["Santa Cruz Wharf"], MW = d["Monterey Wharf"];
+const map = await baseMap("map", { bounds: [[-122.15, 36.55], [-121.8, 37.02]], fitBoundsOptions: { padding: 60 } });
+graticule(map, [-122.8, 36.2, -121.6, 37.2], 0.05);
+map.addSource("pts", { type: "geojson", data: { type: "FeatureCollection", features: [[SC, "Santa Cruz Wharf · this station", 1], [MW, "Monterey Wharf · 41 km SSE · no recent toxin sample", 0]].map(([s, t, on]) => ({ type: "Feature", properties: { t, on }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } })) } });
+map.addLayer({ id: "ring", type: "circle", source: "pts", filter: ["==", ["get", "on"], 1], paint: { "circle-radius": 14, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": "#0b1b2b", "circle-stroke-width": 2 } });
+map.addLayer({ id: "st", type: "circle", source: "pts", paint: { "circle-radius": 6.5, "circle-color": "#0a6b61", "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
+map.addLayer({ id: "st-t", type: "symbol", source: "pts", layout: { "text-field": ["get", "t"], "text-size": 13, "text-font": ["Noto Sans Bold"], "text-anchor": "left", "text-offset": [1.4, 0] }, paint: { "text-color": "#0b1b2b", "text-halo-color": "#fff", "text-halo-width": 2 } });
+sheet(document.getElementById("rail"), "full");
+map.once("idle", () => (window.__ready = true));
+</script></body></html>
