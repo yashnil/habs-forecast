@@ -66,8 +66,8 @@ The owner approved the release direction on 2026-10-16 and asked for an order in
 
 The Neritic name is accepted for this independent research preview only. It is not trademark clearance (see `docs/coastwatch/brand/neritic.md`).
 
-1. **Preflight.** `origin/main` is `fc448079`. #65's head is `211ead29` with CI green. `git rev-parse 211ead29:coastwatch-web` is `3032bb89` (the preview's tree). Terminal 2's `feat/harbor-intelligence-v3` is not in any of the three branches; it stays local and unpushed until v2 is on `main`.
-2. **Candidate on the demo project, not aliased.** `git archive 211ead29:coastwatch-web | tar -x -C <empty dir>` (the project root is `.`, so the app goes at the archive root), `vercel link --project coastwatch-demo --scope yashnils-projects`, delete the `.env.local` it writes, then
+1. **Preflight.** `origin/main` is `fc448079`. Let `H` be #65's final head (`git rev-parse origin/feat/coastal-intelligence-v2`), with CI green. `git rev-parse H:coastwatch-web` is `3032bb89` (the preview's tree; commits after `211ead29` are docs only). Terminal 2's `feat/harbor-intelligence-v3` is not in any of the three branches; it stays local and unpushed until v2 is on `main`.
+2. **Candidate on the demo project, not aliased.** `git archive H:coastwatch-web | tar -x -C <empty dir>` (the project root is `.`, so the app goes at the archive root), `vercel link --project coastwatch-demo --scope yashnils-projects`, delete the `.env.local` it writes, then
    `vercel deploy --prod --skip-domain --build-env CW_DATA_BASE_URL=https://yashnil.github.io/habs-forecast/v1 --env CW_DATA_BASE_URL=https://yashnil.github.io/habs-forecast/v1`
    The BASES URL keeps serving `dpl_HfUScMViHiKPs2aMC9TAsQWrTHjA`.
 3. **Smoke test the candidate** through the protection-bypass cookie (a bypass header breaks CORS preflights), with the same checks as §7:
@@ -85,13 +85,13 @@ The Neritic name is accepted for this independent research preview only. It is n
    2. #63 (GitHub retargets it to `main` when #62's branch is deleted).
    3. #65 (retargeted to `main`), then wait for CI on `main`.
 
-   Then `git rev-parse origin/main^{tree}` must be `8a6ab613` (= `211ead29^{tree}`, so `main` carries exactly the deployed web tree and the final pipeline and workflow fixes). If `main` moved in between, compare `origin/main:coastwatch-web` with `3032bb89` instead, and rebuild if it differs.
+   Then `git rev-parse origin/main^{tree}` must equal `git rev-parse H^{tree}` (record `H` before #65's branch is deleted), so `main` carries exactly the deployed web tree and the final pipeline and workflow fixes. If `main` moved in between, compare `origin/main:coastwatch-web` with `3032bb89` instead, and rebuild if it differs.
 6. **First data run after the merge** (scheduled, ≤ 6 h; or a manual `workflow_dispatch` of "CoastWatch data refresh" if the owner wants it sooner):
    - the Fisheries tier note reads "Neritic's editorial grouping";
    - the run commented on issue #44 or opened nothing new (no second "pipeline health" issue);
    - `/api/evidence` still validates.
 7. **Record:**
-   - tag `demo-release/2026-10-16` on `211ead29`, the commit whose tree was deployed (it stays reachable after the branch is deleted);
+   - tag `demo-release/2026-10-16` on `H`, the commit whose tree was deployed (it stays reachable after the branch is deleted);
    - write `docs/coastwatch/release/2026-10-16-research-preview.md` in a docs PR naming the promoted deployment and `main`'s squash commits;
    - Terminal 2 then rebases v3 onto `main`.
 
