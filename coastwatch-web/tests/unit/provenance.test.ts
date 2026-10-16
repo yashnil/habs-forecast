@@ -32,3 +32,54 @@ describe("provenance threads", () => {
     expect(kinds(fc)).toEqual(["target", "cell"]);
   });
 });
+
+describe("the harbour view (carto T3)", async () => {
+  const { GAP_NOTE, gapFeatures, lastHabSample, stationFeatures } = await import("@/lib/provenance");
+
+  it("the gap note names the distance to the nearest modelled cell; the thread ends at that cell's centre", () => {
+    const fc = gapFeatures({ lat: 36.605, lon: -121.89 }, { inDomain: true, here: false, nearestKm: 6.63, nearest: { lat: 36.63, lon: -121.95, value: 0.77, cell: { row: 1, col: 2, lat: 36.63, lon: -121.95 } } })!;
+    expect(kinds(fc)).toEqual(["note", "thread", "end"]);
+    const note = fc.features[0];
+    expect(note.properties!.text).toBe(`${GAP_NOTE} · nearest cell 6.6 km`);
+    expect((note.geometry as GeoJSON.Point).coordinates).toEqual([-121.89, 36.605]);
+    expect((fc.features[1].geometry as GeoJSON.LineString).coordinates).toEqual([[-121.89, 36.605], [-121.95, 36.63]]);
+    expect(fc.features[1].properties!.label).toBe("6.6 km");
+    expect(fc.features[2].properties!.label).toBe("6.6 km to the nearest modelled cell: 77 %");
+    // beyond 10 km the distance is a whole number
+    expect(gapFeatures({ lat: 36.6, lon: -121.9 }, { inDomain: true, here: false, nearestKm: 12.4, nearest: { lat: 36.7, lon: -122, value: 0.2, cell: { row: 0, col: 0, lat: 36.7, lon: -122 } } })!.features[0].properties!.text).toMatch(/nearest cell 12 km$/);
+  });
+
+  it("no note where the centre cell has a value, outside the domain, and no thread without a cell in reach", () => {
+    expect(gapFeatures({ lat: 36.8, lon: -122 }, { inDomain: true, here: true, nearestKm: 0, nearest: { lat: 36.8, lon: -122, value: 0.5, cell: { row: 0, col: 0, lat: 36.8, lon: -122 } } })).toBeNull();
+    expect(gapFeatures({ lat: 40, lon: -130 }, { inDomain: false, here: false, nearestKm: null, nearest: null })).toBeNull();
+    const far = gapFeatures({ lat: 36.8, lon: -122 }, { inDomain: true, here: false, nearestKm: null, nearest: null })!;
+    expect(kinds(far)).toEqual(["note"]);
+    expect(far.features[0].properties!.text).toMatch(/no modelled cell within/);
+  });
+
+  it("stations carry their newest HAB sample date and whether it was in the last 30 days", () => {
+    const now = new Date("2026-10-08T20:00:00Z");
+    const latest = (v: string, date: string) => ({ variable: v, date });
+    const stations = [
+      { station_id: "HABs-SantaCruzWharf", name: "Santa Cruz Wharf", lat: 36.958, lon: -122.017, status: "ok", latest: [latest("pDA", "2026-09-30"), latest("pn_seriata", "2026-09-30"), latest("chl_extracted", "2026-10-07")] },
+      { station_id: "HABs-MontereyWharf", name: "Monterey Wharf", lat: 36.6037, lon: -121.8893, status: "ok", latest: [latest("pDA", "2022-08-31"), latest("pn_seriata", "2025-08-27"), latest("pn_delicatissima", "2025-08-27")] },
+      { station_id: "HABs-None", name: "Nowhere", lat: 36.5, lon: -121.9, status: "ok", latest: [] },
+      { station_id: "HABs-Failed", name: "Failed", lat: 36.4, lon: -121.9, status: "failed", latest: [latest("pDA", "2026-10-01")] },
+    ];
+    expect(lastHabSample(stations[0])).toBe("2026-09-30"); // chlorophyll is not a HAB sample
+    expect(lastHabSample(stations[1])).toBe("2025-08-27");
+    expect(lastHabSample(stations[2])).toBeNull();
+    const fc = stationFeatures(stations, now, "2026-10-08");
+    expect(fc.features.map((f) => f.properties!.id)).toEqual(["HABs-SantaCruzWharf", "HABs-MontereyWharf", "HABs-None"]);
+    expect(fc.features[0].properties).toMatchObject({ kind: "station", name: "Santa Cruz Wharf", last: "2026-09-30", recent: true, label: "Santa Cruz Wharf · last sample Sep 30" });
+    // an older sample says its year, and the station is drawn as a ring
+    expect(fc.features[1].properties).toMatchObject({ recent: false, label: "Monterey Wharf · last sample Aug 27, 2025" });
+    expect(fc.features[2].properties).toMatchObject({ recent: false, last: null, label: "Nowhere · no HAB sample published" });
+    expect((fc.features[1].geometry as GeoJSON.Point).coordinates).toEqual([-121.8893, 36.6037]);
+    // without a clock nothing is called recent
+    expect(stationFeatures(stations, null).features[0].properties!.recent).toBe(false);
+    // exactly 30 days is recent; 31 is not
+    expect(stationFeatures([stations[0]], new Date("2026-10-30T12:00:00Z")).features[0].properties!.recent).toBe(true);
+    expect(stationFeatures([stations[0]], new Date("2026-10-31T13:00:00Z")).features[0].properties!.recent).toBe(false);
+  });
+});

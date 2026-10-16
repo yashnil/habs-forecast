@@ -2,7 +2,7 @@
 
 import type { Palette } from "@/generated/schema";
 import { colorAt } from "@/components/ui/ProbabilityLegend";
-import { formatDate, relativeDay } from "@/lib/time";
+import { formatDate, relativeDayShort } from "@/lib/time";
 
 export type LeadItem = { lead: number; date: string | null; value: number | null; issued: boolean };
 
@@ -17,9 +17,10 @@ export function LeadStrip({ items, lead, onLead, palette, label, testidPrefix, v
       {items.map((it) => {
         const on = it.lead === lead;
         const v = it.value;
-        // the chip names the day's distance from today ("today", "2 days ago"); "nowcast" is the
-        // run's word for lead 0 and stays in the accessible name, where it cannot clash with the date
-        const when = it.date && now ? relativeDay(it.date, now) : it.lead === 0 ? "nowcast" : `+${it.lead}d`;
+        // the chip names the day's distance from today in its compact form ("today", "2 d ago": a
+        // chip is too narrow for "2 days ago"); "nowcast" is the run's word for lead 0 and stays in
+        // the accessible name, where it cannot clash with the date
+        const when = it.date && now ? relativeDayShort(it.date, now) : it.lead === 0 ? "nowcast" : `+${it.lead}d`;
         return (
           <button
             key={it.lead}
@@ -33,7 +34,7 @@ export function LeadStrip({ items, lead, onLead, palette, label, testidPrefix, v
             className={`flex flex-col items-stretch gap-1 rounded-lg border px-1.5 pb-1.5 pt-1 text-left transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${on ? "border-navy-900 ring-1 ring-navy-900" : "border-hairline hover:border-hairline-strong"}`}
           >
             <span className="flex items-baseline justify-between gap-1">
-              <span className="truncate text-[13px] font-medium text-ink-3">{when}</span>
+              <span className="whitespace-nowrap text-[12px] font-medium leading-tight text-ink-3">{when}</span>
               <span className="text-[13px] text-ink-3 tabular">{it.date ? formatDate(it.date).replace(/^\w+, /, "") : "—"}</span>
             </span>
             <span className="text-[17px] font-semibold leading-none text-ink tabular">{v != null ? `${Math.round(v * 100)}%` : "—"}</span>

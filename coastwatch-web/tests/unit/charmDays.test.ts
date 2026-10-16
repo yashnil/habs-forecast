@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LayerArtifact } from "@/generated/schema";
 import { charmDays, defaultLead, roleWords, runAgeWords, runNotes, runWords } from "@/lib/charmDays";
-import { relativeDay } from "@/lib/time";
+import { relativeDay, relativeDayShort } from "@/lib/time";
 
 /**
  * Scientific-communication regressions for the C-HARM day vocabulary (design audit P0: "forecast day
@@ -30,9 +30,26 @@ describe("C-HARM day chips", () => {
     }
   });
 
+  it("carries a compact form for a chip's width that names the same day", () => {
+    const days = charmDays(RUN, NOW);
+    expect(days.map((d) => d.relativeShort)).toEqual(["2 d ago", "yesterday", "today", "tomorrow"]);
+    expect(relativeDayShort("2026-10-18", NOW)).toBe("in 3 d");
+    expect(relativeDayShort("2026-10-11", NOW)).toBe("4 d ago");
+    // the short and long forms always agree on the day
+    for (const iso of ["2026-10-13T08:00:00Z", "2026-10-15T06:59:00Z", "2026-10-19T20:00:00Z"]) {
+      const now = new Date(iso);
+      for (const d of RUN) {
+        const long = relativeDay(d.time.valid_date!, now);
+        const short = relativeDayShort(d.time.valid_date!, now);
+        expect(short.replace(/(\d+) d\b/, "$1 days")).toBe(long);
+        expect(short.length).toBeLessThanOrEqual(9);
+      }
+    }
+  });
+
   it("a day the run did not issue is marked, not invented", () => {
     const days = charmDays([RUN[0], RUN[1], null, RUN[3]], NOW);
-    expect(days[2]).toMatchObject({ lead: 2, date: null, short: null, relative: null, issued: false });
+    expect(days[2]).toMatchObject({ lead: 2, date: null, short: null, relative: null, relativeShort: null, issued: false });
   });
 
   it("opens on today when the run reaches it, never on yesterday's nowcast", () => {

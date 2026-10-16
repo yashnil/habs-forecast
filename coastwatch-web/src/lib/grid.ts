@@ -81,6 +81,46 @@ export function sample(g: ValueGrid, codes: Uint16Array, lat: number, lon: numbe
   return { kind: "value", value: best.value, cell: best.cell, distanceKm: best.d, nearest: true };
 }
 
+export type Gap = {
+  /** the point lies inside the grid's extent */
+  inDomain: boolean;
+  /** the point's own cell holds a value (then there is no gap to describe) */
+  here: boolean;
+  /** distance from the point to the centre of the nearest cell with a value; null when none within reach */
+  nearestKm: number | null;
+  /** that cell's centre and its decoded value */
+  nearest: { lat: number; lon: number; value: number; cell: Cell } | null;
+};
+
+/**
+ * The nearshore gap at a point (carto T3): whether the point is inside the C-HARM domain, whether
+ * its own cell has a value, and otherwise the nearest valued cell within `searchCells` (default
+ * ±12 cells, about 36 km) with its great-circle distance. Reports the grid as published: it never
+ * fills the gap with a value.
+ */
+export function gapAt(g: ValueGrid, codes: Uint16Array, lat: number, lon: number, searchCells = 12): Gap {
+  const c = cellAt(g, lat, lon);
+  if (!c) return { inDomain: false, here: false, nearestKm: null, nearest: null };
+  const own = decodeCode(g, codes[c.row * g.width + c.col]);
+  if (own != null) return { inDomain: true, here: true, nearestKm: 0, nearest: { lat: c.lat, lon: c.lon, value: own, cell: c } };
+  let best: { cell: Cell; value: number; d: number } | null = null;
+  for (let dr = -searchCells; dr <= searchCells; dr++) {
+    const r = c.row + dr;
+    if (r < 0 || r >= g.height) continue;
+    for (let dc = -searchCells; dc <= searchCells; dc++) {
+      const k = c.col + dc;
+      if (k < 0 || k >= g.width) continue;
+      const v = decodeCode(g, codes[r * g.width + k]);
+      if (v == null) continue;
+      const cell = { row: r, col: k, lat: g.lat_first + r * g.lat_step, lon: g.lon_first + k * g.lon_step };
+      const d = distanceKm(lat, lon, cell.lat, cell.lon);
+      if (!best || d < best.d) best = { cell, value: v, d };
+    }
+  }
+  if (!best) return { inDomain: true, here: false, nearestKm: null, nearest: null };
+  return { inDomain: true, here: false, nearestKm: best.d, nearest: { lat: best.cell.lat, lon: best.cell.lon, value: best.value, cell: best.cell } };
+}
+
 // ---------------------------------------------------------------- chunked grids (satellite)
 
 /** Decoded value of a raw code, honouring the grid's transform (e.g. log10 for chlorophyll). */

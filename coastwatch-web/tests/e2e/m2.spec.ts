@@ -65,6 +65,30 @@ test.describe("official notices", () => {
     expect(kinds).not.toContain("lat_band"); // latitude notices are drawn as limits, never shaded areas
   });
 
+  test("latitude limits are drawn over the sea only, keeping their labels", async ({ page }) => {
+    await open(page, OK);
+    type Lim = { properties: { kind: string; label: string; pipeline_label: string }; geometry: { type: string; coordinates: number[][][] } };
+    const limits = () =>
+      page.evaluate(() => {
+        const m = (window as unknown as { __cwMap?: { getSource: (s: string) => { serialize: () => { data: { features: Lim[] } } } | undefined } }).__cwMap;
+        return m?.getSource("official")?.serialize().data.features.filter((f) => f.properties.kind === "lat_limit") ?? null;
+      });
+    // once the bundled water has loaded each limit is the parts of its line over water
+    await expect.poll(async () => (await limits())?.every((f) => f.geometry.type === "MultiLineString") ?? false).toBe(true);
+    const raw = official.geometry.features.filter((f: { properties: { kind: string } }) => f.properties.kind === "lat_limit");
+    const drawn = (await limits())!;
+    expect(drawn).toHaveLength(raw.length);
+    for (const f of drawn) {
+      expect(f.geometry.coordinates.length).toBeGreaterThan(0);
+      expect(f.properties.label).toMatch(/limit \d+°/);
+      expect(f.properties.pipeline_label).toMatch(/· (north|south) limit$/);
+      // never east of the pipeline's own shore end (no line invented over land)
+      const east = Math.max(...raw.map((r: { geometry: { coordinates: number[][] } }) => Math.max(...r.geometry.coordinates.map((c) => c[0]))));
+      for (const part of f.geometry.coordinates) for (const [lon] of part) expect(lon).toBeLessThanOrEqual(east + 1e-5);
+    }
+    expect(await page.evaluate(() => !!(window as unknown as { __cwMap: { getLayer: (l: string) => unknown } }).__cwMap.getLayer("official-limit-label"))).toBe(true);
+  });
+
   test("when the data stops updating, official notices say how old the review and the last check are", async ({ page }) => {
     // failed-update dataset: records transcribed Oct 8, official pages last checked Oct 12
     await open(page, FAILED, "2026-10-20T20:00:00Z");

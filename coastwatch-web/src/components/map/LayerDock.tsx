@@ -301,7 +301,9 @@ function ForecastSection(p: Props) {
                 className={`rounded-lg border px-1.5 py-1 text-left transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${active ? "border-navy-900 bg-navy-900 text-white" : "border-hairline hover:border-hairline-strong"}`}
               >
                 <span className="block text-[13px] font-semibold leading-tight tabular">{d.short ?? "—"}</span>
-                <span className={`block truncate text-[13px] leading-tight ${active ? "text-on-navy-2" : "text-ink-3"}`}>{!d.issued ? "not issued" : (d.relative ?? roleWords(d.lead))}</span>
+                {/* the compact distance ("2 d ago"): a chip is too narrow for "2 days ago", and a clipped
+                    word would misstate the day; the full words are in the title and the run line */}
+                <span className={`block whitespace-normal text-[12px] leading-tight ${active ? "text-on-navy-2" : "text-ink-3"}`}>{!d.issued ? "not issued" : (d.relativeShort ?? roleWords(d.lead))}</span>
               </button>
             );
           })}

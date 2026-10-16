@@ -8,7 +8,7 @@ import { FORECAST_COPY, OFFICIAL_STATUS } from "@/content/copy";
 import { ACTION_LABEL, officialAt, type Verification } from "@/lib/official";
 import { VerificationBadge } from "@/components/official/Official";
 import { loadGrid, sample, type Sample } from "@/lib/grid";
-import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, leadLabel, type CharmVariable } from "@/lib/layers";
+import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, leadLabel, nativeLabel, type CharmVariable } from "@/lib/layers";
 import { formatDate, relativeDay } from "@/lib/time";
 import { gradientCss } from "@/components/ui/ProbabilityLegend";
 import { LeadStrip, type LeadItem } from "./LeadStrip";
@@ -102,8 +102,9 @@ export function Inspector({
             {point.lat.toFixed(3)}°N, {Math.abs(point.lon).toFixed(3)}°W
           </h3>
           {first?.time.valid_date && (
-            <p className="mt-0.5 text-[13px] text-ink-3">
+            <p className="mt-0.5 text-[13px] text-ink-3" data-testid="inspect-product">
               C-HARM {leadLabel(lead).toLowerCase()} · for {formatDate(first.time.valid_date, { year: true })}{now ? ` (${relativeDay(first.time.valid_date, now)})` : ""}
+              {nativeLabel(first) ? ` · native ${nativeLabel(first)}, nearest cell, no interpolation` : ""}
             </p>
           )}
         </div>

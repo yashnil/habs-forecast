@@ -1,6 +1,6 @@
 import type { ForecastRun, LayerArtifact, SourceStatus } from "@/generated/schema";
 import type { Freshness } from "@/lib/freshness";
-import { formatDate, formatDateTimePT, relativeDay } from "@/lib/time";
+import { formatDate, formatDateTimePT, relativeDay, relativeDayShort } from "@/lib/time";
 
 /**
  * One vocabulary for the days of a C-HARM run, used by every control that names them (the map's
@@ -21,6 +21,8 @@ export type CharmDay = {
   short: string | null;
   /** "today", "yesterday", "2 days ago", "tomorrow", "in 2 days" (relative to Pacific today); null without a date */
   relative: string | null;
+  /** the same distance in a chip's width: "today", "yesterday", "2 d ago", "in 2 d"; null without a date */
+  relativeShort: string | null;
   /** NOAA's name for the lead: the nowcast is its analysis of that day, the rest are forecasts */
   role: "nowcast" | "forecast";
   issued: boolean;
@@ -37,6 +39,7 @@ export function charmDays(layers: (Pick<LayerArtifact, "time"> | null | undefine
       date,
       short: date ? short(date) : null,
       relative: date && now ? relativeDay(date, now) : null,
+      relativeShort: date && now ? relativeDayShort(date, now) : null,
       role: lead === 0 ? "nowcast" : "forecast",
       issued: !!layers[lead],
     };

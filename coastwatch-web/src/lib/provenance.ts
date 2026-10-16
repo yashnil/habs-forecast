@@ -1,4 +1,4 @@
-import { distanceKm } from "@/lib/grid";
+import { distanceKm, type Gap } from "@/lib/grid";
 /**
  * Provenance threads (signature interaction, PR #43 04-interactions §1): when a reader selects a
  * water point, thin lines run from it to where each statement about it comes from:
@@ -86,4 +86,86 @@ export function provenanceFeatures(x: ProvenanceInput): GeoJSON.FeatureCollectio
   const dLat = lim ? Math.abs(lim.lat - x.target.lat) : Infinity;
   if (lim && dLat > 0.002 && dLat <= LIMIT_RULER_DEG) thread("limit", [x.target.lon, lim.lat], { label: lim.label });
   return { type: "FeatureCollection", features: f };
+}
+
+// ---------------------------------------------------------------- the harbour view (carto T3)
+
+/** "6.6 km" below ten, "12 km" above. */
+export const kmWords = (km: number) => `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
+
+export const GAP_NOTE = "No C-HARM value here: nearshore cells not modelled";
+
+/**
+ * The nearshore gap at harbour zoom: when the map's centre lies in the C-HARM domain in a cell
+ * without a value, a note at the centre says so and names the distance to the nearest cell with a
+ * value, and a dashed thread runs from the centre to that cell's centre, carrying the distance.
+ * Null when the centre's own cell has a value (nothing to explain) or the point is outside the
+ * domain (the readout says "outside"). Features: "note" (Point, text), "thread" (LineString, label),
+ * "end" (Point at the cell centre, label). The note is a statement about the model, never a value.
+ */
+export function gapFeatures(target: { lat: number; lon: number }, gap: Gap): GeoJSON.FeatureCollection | null {
+  if (!gap.inDomain || gap.here) return null;
+  const t: [number, number] = [+target.lon.toFixed(5), +target.lat.toFixed(5)];
+  const f: GeoJSON.Feature[] = [];
+  if (gap.nearest && gap.nearestKm != null) {
+    const km = kmWords(gap.nearestKm);
+    const end: [number, number] = [+gap.nearest.lon.toFixed(5), +gap.nearest.lat.toFixed(5)];
+    f.push({ type: "Feature", properties: { kind: "note", text: `${GAP_NOTE} · nearest cell ${km}`, km: +gap.nearestKm.toFixed(1) }, geometry: { type: "Point", coordinates: t } });
+    f.push({ type: "Feature", properties: { kind: "thread", label: km }, geometry: { type: "LineString", coordinates: [t, end] } });
+    f.push({ type: "Feature", properties: { kind: "end", label: `${km} to the nearest modelled cell: ${Math.round(gap.nearest.value * 100)} %` }, geometry: { type: "Point", coordinates: end } });
+  } else {
+    f.push({ type: "Feature", properties: { kind: "note", text: `${GAP_NOTE} · no modelled cell within 35 km` }, geometry: { type: "Point", coordinates: t } });
+  }
+  return { type: "FeatureCollection", features: f };
+}
+
+/** The HAB measurements whose sample dates say when a shore station was last sampled (lib/hab MEASURED_VARIABLES). */
+export const HAB_SAMPLE_VARIABLES = ["pDA", "pn_seriata", "pn_delicatissima"] as const;
+/** A station sampled within this many days is drawn filled; older, as a ring. */
+export const STATION_RECENT_DAYS = 30;
+
+type StationPoint = { station_id: string; name: string; lat: number; lon: number; status?: string; latest: { variable: string; date: string }[] };
+
+/** The newest HAB sample date (YYYY-MM-DD) across a station's latest values, or null. */
+export function lastHabSample(st: Pick<StationPoint, "latest">): string | null {
+  let best: string | null = null;
+  for (const l of st.latest) {
+    if (!(HAB_SAMPLE_VARIABLES as readonly string[]).includes(l.variable) || !l.date) continue;
+    const d = l.date.slice(0, 10);
+    if (!best || d > best) best = d;
+  }
+  return best;
+}
+
+/**
+ * The HAB shore stations as map points for harbour zoom (carto T3): each with its name, the date
+ * of its newest HAB sample and whether that was within the last 30 days (`recent`: drawn filled,
+ * otherwise a ring), and a label "<name> · last sample <Mon D>" (with the year when it is not
+ * this year). Stations whose last update failed are left out, as the inspector leaves them out.
+ * `now` null: no station is called recent.
+ */
+export function stationFeatures(stations: StationPoint[] | null | undefined, now: Date | null, today: string | null = null): GeoJSON.FeatureCollection<GeoJSON.Point> {
+  const ref = now ? now.getTime() : null;
+  const year = today?.slice(0, 4) ?? null;
+  const features = (stations ?? [])
+    .filter((s) => s.status !== "failed" && Number.isFinite(s.lat) && Number.isFinite(s.lon))
+    .map((s): GeoJSON.Feature<GeoJSON.Point> => {
+      const last = lastHabSample(s);
+      const age = last && ref != null ? (ref - Date.parse(`${last}T12:00:00Z`)) / 86_400_000 : null;
+      const recent = age != null && age <= STATION_RECENT_DAYS;
+      const when = last ? sampleDateWords(last, year) : null;
+      return {
+        type: "Feature",
+        properties: { kind: "station", id: s.station_id, name: s.name, last, recent, label: `${s.name} · ${when ? `last sample ${when}` : "no HAB sample published"}` },
+        geometry: { type: "Point", coordinates: [s.lon, s.lat] },
+      };
+    });
+  return { type: "FeatureCollection", features };
+}
+
+/** "Oct 7" this year, "Aug 27, 2025" another year (no time-zone shifting). */
+function sampleDateWords(date: string, year: string | null): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  const sameYear = year == null || date.slice(0, 4) === year;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }), timeZone: "UTC" });
 }
