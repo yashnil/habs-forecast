@@ -6,7 +6,7 @@ URL. The public research preview at the BASES URL is unchanged: `dpl_HfUScMViHiK
 
 | | |
 |---|---|
-| Candidate commit | **`9a650960`**, head of `feat/coastal-intelligence-v2` (draft PR #65) |
+| Candidate commit | **`9a650960`** (the product code on `feat/coastal-intelligence-v2`, draft PR #65; the docs and one test-timing commit follow it) |
 | Equivalent after merge | `main` once #62, #63 and #65 are squash-merged in that order |
 | Public URL (unchanged) | https://coastwatch-demo.vercel.app → `dpl_HfUScMViHiKPs2aMC9TAsQWrTHjA` |
 | Rollback target (unchanged) | the same deployment; the one before it is `dpl_jxGvioj1FRFnwf6AM577bSczWFue` (`demo-release/2026-10-14`) |

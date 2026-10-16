@@ -25,6 +25,7 @@ type MapLike = {
   setLayoutProperty(l: string, p: string, v: string): void;
   getLayoutProperty(l: string, p: string): string | undefined;
   getLayer(l: string): unknown;
+  getSource(id: string): { serialize(): { data?: { features?: { properties: Record<string, unknown>; geometry: { coordinates: number[] } }[] } } } | undefined;
   getCanvas(): HTMLCanvasElement;
   once(e: string, f: () => void): void;
   triggerRepaint(): void;
@@ -84,10 +85,13 @@ async function classify(page: Page, lat: number, lon: number, step: number): Pro
 }
 
 /** Whether the forecast colours each point: the canvas with the forecast on vs off. Waits for the
- *  forecast's own tiles only (not the basemap's), so it works while the basemap is slow. */
-async function drawn(page: Page, lat: number, lon: number, pts: Pt[]): Promise<boolean[]> {
+ *  forecast's own tiles only (not the basemap's), so it works while the basemap is slow. At harbour
+ *  zoom the map also writes a note at an unmodelled centre (the gap's distance to the nearest cell),
+ *  asynchronously after the move: with `unmodelledCentre` the comparison waits for that note to be
+ *  at the centre first, so it is in both frames and never counts as the forecast's colour. */
+async function drawn(page: Page, lat: number, lon: number, pts: Pt[], unmodelledCentre = false): Promise<boolean[]> {
   return page.evaluate(
-    async ([lat, lon, pts]) => {
+    async ([lat, lon, pts, unmodelledCentre]) => {
       const m = (window as unknown as { __cwMap: MapLike }).__cwMap;
       const frame = () => new Promise<void>((res) => { m.once("render", () => res()); m.triggerRepaint(); });
       m.jumpTo({ center: [lon, lat], zoom: 12 });
@@ -96,6 +100,11 @@ async function drawn(page: Page, lat: number, lon: number, pts: Pt[]): Promise<b
       await frame();
       await frame();
       for (let i = 0; i < 600 && !m.isSourceLoaded("forecast"); i++) await frame();
+      const noteHere = () => {
+        const f = m.getSource("forecast-gap")?.serialize().data?.features?.find((x) => x.properties.kind === "note");
+        return !!f && Math.abs(f.geometry.coordinates[0] - lon) < 1e-4 && Math.abs(f.geometry.coordinates[1] - lat) < 1e-4;
+      };
+      for (let i = 0; unmodelledCentre && i < 600 && !noteHere(); i++) await frame();
       await frame();
       await frame();
       const grab = () => {
@@ -121,7 +130,7 @@ async function drawn(page: Page, lat: number, lon: number, pts: Pt[]): Promise<b
         return Math.abs(on.d[i] - off.d[i]) + Math.abs(on.d[i + 1] - off.d[i + 1]) + Math.abs(on.d[i + 2] - off.d[i + 2]) > 12;
       });
     },
-    [lat, lon, pts] as const,
+    [lat, lon, pts, unmodelledCentre] as const,
   );
 }
 
@@ -236,7 +245,7 @@ test("with the basemap unavailable, no-value water and the toxin mask keep the n
     expect(res.filter((r) => r.sea && !r.dots).length, `${name}: sea cells without the no-data dots`).toBe(0);
     if (name === "toxin mask") maskOnSea = sea[0];
     for (const [x, y] of sea.slice(0, 2)) {
-      const d = await drawn(page, y, x, [{ lon: x, lat: y, kind: "ocean" }]);
+      const d = await drawn(page, y, x, [{ lon: x, lat: y, kind: "ocean" }], true);
       expect(d[0], `${name}: forecast colour at ${x}, ${y}`).toBe(false);
     }
   }
