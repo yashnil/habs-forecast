@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import os from "node:os";
@@ -78,6 +78,10 @@ describe("tide predictions", () => {
     expect(t.every((x) => x.type === "H" || x.type === "L")).toBe(true);
   });
 });
+
+const FIXTURE_DIR = path.resolve(__dirname, "../fixture-data/v1");
+/** the fixture's CDFW ports file (content-hashed name) */
+const PORTS_FILE = path.join(FIXTURE_DIR, readdirSync(FIXTURE_DIR).find((f) => f.startsWith("ports-") && f.endsWith(".geojson"))!);
 
 describe("station lists", () => {
   it("find the nearest stations to Monterey within the limit", () => {
@@ -179,7 +183,7 @@ describe("CO-OPS water temperature in the harbour", () => {
   });
 
   describe("which station may speak for a harbour (nearest only, within 6 km, no fallback)", () => {
-    const PORTS = JSON.parse(readFileSync(path.resolve(__dirname, "../../public/data/v1/ports-adfcb13636.geojson"), "utf8")) as {
+    const PORTS = JSON.parse(readFileSync(PORTS_FILE, "utf8")) as {
       features: { properties: { name: string }; geometry: { coordinates: number[] } }[];
     };
     const port = (name: string) => {
@@ -257,7 +261,7 @@ describe("CO-OPS water temperature in the harbour", () => {
       vi.stubEnv("CW_NWS_TEXT", "0");
       vi.stubEnv("CW_FIXED_NOW", NOW.toISOString());
       vi.stubEnv("CW_CONDITIONS_FIXTURE", fixture);
-      const f = (JSON.parse(readFileSync(path.resolve(__dirname, "../../public/data/v1/ports-adfcb13636.geojson"), "utf8")) as { features: { properties: { name: string }; geometry: { coordinates: number[] } }[] }).features.find((x) => x.properties.name === name)!;
+      const f = (JSON.parse(readFileSync(PORTS_FILE, "utf8")) as { features: { properties: { name: string }; geometry: { coordinates: number[] } }[] }).features.find((x) => x.properties.name === name)!;
       const { GET } = await import("@/app/api/conditions/route");
       const body = await (await GET(new Request(`http://x/api/conditions?lat=${f.geometry.coordinates[1]}&lon=${f.geometry.coordinates[0]}`))).json();
       return body.harbor;
