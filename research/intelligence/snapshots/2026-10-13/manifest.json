@@ -1,0 +1,1496 @@
+{
+ "schema_version": 1,
+ "generated_at": "2026-10-13T22:47:03Z",
+ "pipeline_version": "8bf182d6b27e",
+ "pipeline_run_id": "38480042565",
+ "forecast_runs": [
+  {
+   "group_id": "charm",
+   "source_id": "charm",
+   "issued_date": "2026-10-12",
+   "issued_date_derived": true,
+   "leads_available": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "leads_missing": [],
+   "notes": []
+  }
+ ],
+ "sources": [
+  {
+   "source_id": "charm",
+   "title": "C-HARM v3.1 harmful algal bloom forecast",
+   "product_class": "official_forecast",
+   "last_attempt_at": "2026-10-13T22:47:03Z",
+   "last_success_at": "2026-10-13T14:14:44Z",
+   "outcome": "failed",
+   "error": "lead 0: probe failed: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.csv0?time%5Blast%5D (HTTP Error 403: ); lead 1: probe failed: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_1day.csv0?time%5Blast%5D (HTTP Error 403: ); lead 2: probe failed: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_2day.csv0?time%5Blast%5D (HTTP Error 403: ); lead 3: probe failed: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day.csv0?time%5Blast%5D (HTTP Error 403: )",
+   "notes": [],
+   "latest_issued_date": "2026-10-12",
+   "latest_valid_date": "2026-10-14",
+   "freshness": {
+    "basis": "issued_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 7,
+    "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
+   }
+  },
+  {
+   "source_id": "gibs_chl",
+   "title": "NASA GIBS satellite chlorophyll",
+   "product_class": "observation",
+   "last_attempt_at": "2026-10-13T22:47:03Z",
+   "last_success_at": "2026-10-13T22:47:03Z",
+   "outcome": "updated",
+   "error": null,
+   "notes": [
+    "VIIRS_NOAA20_Chlorophyll_a: 2026-10-12 rejected (0/3 probe tiles well-formed, 0.0% of probe pixels with data; need 2%).",
+    "VIIRS_NOAA20_Chlorophyll_a: newest advertised date 2026-10-12 failed tile checks; using 2026-10-11.",
+    "OCI_PACE_Chlorophyll_a: 2026-10-13 rejected (0/3 probe tiles well-formed, 0.0% of probe pixels with data; need 2%).",
+    "OCI_PACE_Chlorophyll_a: newest advertised date 2026-10-13 failed tile checks; using 2026-10-12."
+   ],
+   "latest_issued_date": null,
+   "latest_valid_date": "2026-10-12",
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 4,
+    "stale_max_age_days": 10,
+    "note": "Daily satellite composites usually appear 1-3 days after observation. Current: observed within 4 days. Stale: 5-10 days. Historical: older."
+   }
+  },
+  {
+   "source_id": "satellite_chl",
+   "title": "Satellite chlorophyll-a: Sentinel-3 OLCI 300 m (VIIRS 750 m fallback)",
+   "product_class": "observation",
+   "last_attempt_at": "2026-10-13T22:47:03Z",
+   "last_success_at": "2026-10-13T14:14:44Z",
+   "outcome": "failed",
+   "error": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily: time listing failed: Failed after 4 attempts: https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorCIDaily.csv0?time%5B(2026-10-06T00:00:00Z):1:(last)%5D (HTTP Error 502: Proxy Error); Sentinel-3A noaacwS3AOLCIchlaSectorDIDaily: time listing failed: Failed after 4 attempts: https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaSectorDIDaily.csv0?time%5B(2026-10-06T00:00:00Z):1:(last)%5D (HTTP Error 502: Proxy Error); VIIRS erdVHNchla1day: time listing failed: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.csv0?time%5B(2026-10-06T00:00:00Z):1:(last)%5D (HTTP Error 403: ); Neither OLCI nor VIIRS could be updated this run.; multi-sensor view needs both the Sentinel-3 and the VIIRS latest clear view; not built this run.",
+   "notes": [],
+   "latest_issued_date": null,
+   "latest_valid_date": "2026-10-10",
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 3,
+    "stale_max_age_days": 7,
+    "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+   }
+  },
+  {
+   "source_id": "hf_radar",
+   "title": "Observed surface currents: HF radar 2 km (HFRNet), hourly and 24-hour mean",
+   "product_class": "observation",
+   "last_attempt_at": "2026-10-13T22:47:03Z",
+   "last_success_at": "2026-10-12T15:29:18Z",
+   "outcome": "failed",
+   "error": "ucsdHfrW2: axes or time listing failed: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/ucsdHfrW2.csv0?latitude (HTTP Error 403: )",
+   "notes": [],
+   "latest_issued_date": null,
+   "latest_valid_date": "2026-10-12",
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "source_id": "cdfw_ports",
+   "title": "CDFW landing ports (ds3081)",
+   "product_class": "reference",
+   "last_attempt_at": "2026-10-13T22:47:03Z",
+   "last_success_at": "2026-10-13T22:47:03Z",
+   "outcome": "updated",
+   "error": null,
+   "notes": [],
+   "latest_issued_date": null,
+   "latest_valid_date": "2026-10-13",
+   "freshness": {
+    "basis": "valid_date",
+    "current_max_age_days": 35,
+    "stale_max_age_days": 120,
+    "note": "Reference geometry; changes rarely. Re-fetched every run."
+   }
+  },
+  {
+   "source_id": "official",
+   "title": "Official closures and advisories (CDFW, CDPH)",
+   "product_class": "official_regulatory",
+   "last_attempt_at": "2026-10-13T22:47:03Z",
+   "last_success_at": "2026-10-13T22:47:03Z",
+   "outcome": "updated",
+   "error": null,
+   "notes": [
+    "cdph_release_list: official items not yet reviewed: SN26-021, SN26-020",
+    "cdfw_health_advisories: page content changed since the last review",
+    "Agency source discrepancy: CDPH release SN26-021 (\"CDPH Lifts Warnings about Sport-Harvested Bivalve Shellfish from Monterey County\", https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx) appears to lift active record cdph-2026-sn26-018-monterey-bivalves. Not yet reviewed by a person: the record is shown as disputed, not as confirmed active."
+   ],
+   "latest_issued_date": null,
+   "latest_valid_date": "2026-10-08",
+   "freshness": {
+    "basis": "reviewed_date",
+    "current_max_age_days": 3,
+    "stale_max_age_days": 7,
+    "note": "Verified: a person reviewed every record against the official pages within 3 days and the watcher has seen no change since. Ageing: 4-7 days since review. Older reviews, pending reviews, detected source changes, or a failed watcher mean the records are NOT verified."
+   }
+  },
+  {
+   "source_id": "port_intel",
+   "title": "Port summaries (C-HARM, satellite chlorophyll, official notices)",
+   "product_class": "derived_summary",
+   "last_attempt_at": "2026-10-13T22:47:03Z",
+   "last_success_at": "2026-10-13T22:47:03Z",
+   "outcome": "partial",
+   "error": null,
+   "notes": [
+    "Crescent City: nowcast history not refreshed (Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2026-09-12T12:00:00Z):(2026-10-11T12:00:00Z)%5D%5); previous history kept with its own dates",
+    "Crescent City: satellite chlorophyll unavailable: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.8938):2:(41.6043)%5D%5B(-124.3946):2:(-124.0134)%5D (HTTP Error 403: )",
+    "Trinidad: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Trinidad: satellite chlorophyll unavailable: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.2040):2:(40.9146)%5D%5B(-124.3318):2:(-123.9544)%5D (HTTP Error 403: )",
+    "Eureka: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Eureka: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Shelter Cove: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Shelter Cove: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Fort Bragg: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Fort Bragg: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Point Arena: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Point Arena: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Bodega Bay: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Bodega Bay: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "San Francisco: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "San Francisco: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Princeton / Half Moon Bay: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Princeton / Half Moon Bay: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Santa Cruz: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Santa Cruz: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Moss Landing: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Moss Landing: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Monterey: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Monterey: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Morro Bay: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Morro Bay: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Avila / Port San Luis: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Avila / Port San Luis: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Santa Barbara: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Santa Barbara: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Ventura: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Ventura: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Port Hueneme: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Port Hueneme: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "San Pedro: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "San Pedro: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Newport Beach: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Newport Beach: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41.",
+    "Dana Point: nowcast history not refreshed (circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch); previous history kept with its own dates",
+    "Dana Point: satellite chlorophyll unavailable: circuit open for coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day after 2 consecutive failures this run (last: Failed after 4 attempts: https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla8day.nc?chla%5B(2026-08-14T00:00:00Z):(last)%5D%5B(0.0)%5D%5B(41."
+   ],
+   "latest_issued_date": "2026-10-12",
+   "latest_valid_date": "2026-10-13",
+   "freshness": {
+    "basis": "valid_date",
+    "current_max_age_days": 2,
+    "stale_max_age_days": 7,
+    "note": "Port summaries are rebuilt from each pipeline run; their inputs carry their own dates."
+   }
+  },
+  {
+   "source_id": "calhabmap",
+   "title": "CalHABMAP shore-station measurements (domoic acid, Pseudo-nitzschia)",
+   "product_class": "observation",
+   "last_attempt_at": "2026-10-13T22:47:03Z",
+   "last_success_at": "2026-10-13T22:47:03Z",
+   "outcome": "updated",
+   "error": null,
+   "notes": [],
+   "latest_issued_date": null,
+   "latest_valid_date": "2026-10-07",
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 14,
+    "stale_max_age_days": 45,
+    "note": "Shore stations are sampled about weekly and published after laboratory analysis; each station and variable carries its own sample dates."
+   }
+  },
+  {
+   "source_id": "foss_landings",
+   "title": "Historical fisheries exposure (NOAA FOSS landings, BLS CPI-U)",
+   "product_class": "historical_context",
+   "last_attempt_at": "2026-10-13T22:47:03Z",
+   "last_success_at": "2026-10-13T22:47:03Z",
+   "outcome": "updated",
+   "error": null,
+   "notes": [
+    "FOSS has not published California commercial landings for 2025 yet.",
+    "10 duplicate species row(s) counted once (see excluded_rows)."
+   ],
+   "latest_issued_date": null,
+   "latest_valid_date": "2024-12-31",
+   "freshness": {
+    "basis": "valid_date",
+    "current_max_age_days": 730,
+    "stale_max_age_days": 1100,
+    "note": "Annual landings are finalised and published one to two years after the year ends; the date is the end of the latest year included."
+   }
+  }
+ ],
+ "ports_url": "ports-cb61b140ae.geojson",
+ "official_url": "official-128859ca2b.json",
+ "port_intel_url": "port-intel-2ae6df388c.json",
+ "observations_url": "observations-3cf4ce0f98.json",
+ "fisheries_url": "fisheries-ad791322f4.json",
+ "layers": [
+  {
+   "layer_id": "charm_pseudo_nitzschia_lead0",
+   "group_id": "charm",
+   "product_class": "official_forecast",
+   "title": "Probability of a Pseudo-nitzschia bloom",
+   "variable": "pseudo_nitzschia",
+   "units": "probability (0-1)",
+   "time": {
+    "issued_date": "2026-10-12",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 0,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "issued_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 7,
+    "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
+   }
+  },
+  {
+   "layer_id": "charm_particulate_domoic_lead0",
+   "group_id": "charm",
+   "product_class": "official_forecast",
+   "title": "Probability of elevated particulate domoic acid",
+   "variable": "particulate_domoic",
+   "units": "probability (0-1)",
+   "time": {
+    "issued_date": "2026-10-12",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 0,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "issued_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 7,
+    "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
+   }
+  },
+  {
+   "layer_id": "charm_cellular_domoic_lead0",
+   "group_id": "charm",
+   "product_class": "official_forecast",
+   "title": "Probability of elevated cellular domoic acid",
+   "variable": "cellular_domoic",
+   "units": "probability (0-1)",
+   "time": {
+    "issued_date": "2026-10-12",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 0,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "issued_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 7,
+    "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
+   }
+  },
+  {
+   "layer_id": "charm_pseudo_nitzschia_lead1",
+   "group_id": "charm",
+   "product_class": "official_forecast",
+   "title": "Probability of a Pseudo-nitzschia bloom",
+   "variable": "pseudo_nitzschia",
+   "units": "probability (0-1)",
+   "time": {
+    "issued_date": "2026-10-12",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 1,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "issued_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 7,
+    "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
+   }
+  },
+  {
+   "layer_id": "charm_particulate_domoic_lead1",
+   "group_id": "charm",
+   "product_class": "official_forecast",
+   "title": "Probability of elevated particulate domoic acid",
+   "variable": "particulate_domoic",
+   "units": "probability (0-1)",
+   "time": {
+    "issued_date": "2026-10-12",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 1,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "issued_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 7,
+    "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
+   }
+  },
+  {
+   "layer_id": "charm_cellular_domoic_lead1",
+   "group_id": "charm",
+   "product_class": "official_forecast",
+   "title": "Probability of elevated cellular domoic acid",
+   "variable": "cellular_domoic",
+   "units": "probability (0-1)",
+   "time": {
+    "issued_date": "2026-10-12",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 1,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "issued_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 7,
+    "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
+   }
+  },
+  {
+   "layer_id": "charm_pseudo_nitzschia_lead2",
+   "group_id": "charm",
+   "product_class": "official_forecast",
+   "title": "Probability of a Pseudo-nitzschia bloom",
+   "variable": "pseudo_nitzschia",
+   "units": "probability (0-1)",
+   "time": {
+    "issued_date": "2026-10-12",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-13",
+    "valid_time": "2026-10-13T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 2,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "issued_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 7,
+    "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
+   }
+  },
+  {
+   "layer_id": "charm_particulate_domoic_lead2",
+   "group_id": "charm",
+   "product_class": "official_forecast",
+   "title": "Probability of elevated particulate domoic acid",
+   "variable": "particulate_domoic",
+   "units": "probability (0-1)",
+   "time": {
+    "issued_date": "2026-10-12",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-13",
+    "valid_time": "2026-10-13T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 2,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "issued_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 7,
+    "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
+   }
+  },
+  {
+   "layer_id": "charm_cellular_domoic_lead2",
+   "group_id": "charm",
+   "product_class": "official_forecast",
+   "title": "Probability of elevated cellular domoic acid",
+   "variable": "cellular_domoic",
+   "units": "probability (0-1)",
+   "time": {
+    "issued_date": "2026-10-12",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-13",
+    "valid_time": "2026-10-13T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 2,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "issued_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 7,
+    "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
+   }
+  },
+  {
+   "layer_id": "charm_pseudo_nitzschia_lead3",
+   "group_id": "charm",
+   "product_class": "official_forecast",
+   "title": "Probability of a Pseudo-nitzschia bloom",
+   "variable": "pseudo_nitzschia",
+   "units": "probability (0-1)",
+   "time": {
+    "issued_date": "2026-10-12",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-14",
+    "valid_time": "2026-10-14T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 3,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "issued_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 7,
+    "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
+   }
+  },
+  {
+   "layer_id": "charm_particulate_domoic_lead3",
+   "group_id": "charm",
+   "product_class": "official_forecast",
+   "title": "Probability of elevated particulate domoic acid",
+   "variable": "particulate_domoic",
+   "units": "probability (0-1)",
+   "time": {
+    "issued_date": "2026-10-12",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-14",
+    "valid_time": "2026-10-14T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 3,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "issued_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 7,
+    "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
+   }
+  },
+  {
+   "layer_id": "charm_cellular_domoic_lead3",
+   "group_id": "charm",
+   "product_class": "official_forecast",
+   "title": "Probability of elevated cellular domoic acid",
+   "variable": "cellular_domoic",
+   "units": "probability (0-1)",
+   "time": {
+    "issued_date": "2026-10-12",
+    "issued_date_derived": true,
+    "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+    "valid_date": "2026-10-14",
+    "valid_time": "2026-10-14T12:00:00Z",
+    "observed_date": null,
+    "lead_days": 3,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "issued_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 7,
+    "note": "C-HARM runs daily but runs are often missing. Current: issued today or yesterday (UTC). Stale: 2-7 days old. Historical: older than 7 days; not a current forecast."
+   }
+  },
+  {
+   "layer_id": "gibs_viirs_noaa20_chl",
+   "group_id": "satellite_chlorophyll",
+   "product_class": "observation",
+   "title": "Satellite chlorophyll-a (VIIRS, NOAA-20)",
+   "variable": "chlorophyll_a",
+   "units": "mg m-3 (NASA legend)",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": null,
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 4,
+    "stale_max_age_days": 10,
+    "note": "Daily satellite composites usually appear 1-3 days after observation. Current: observed within 4 days. Stale: 5-10 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "gibs_pace_oci_chl",
+   "group_id": "satellite_chlorophyll",
+   "product_class": "observation",
+   "title": "Satellite chlorophyll-a (PACE OCI)",
+   "variable": "chlorophyll_a",
+   "units": "mg m-3 (NASA legend)",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-12",
+    "valid_time": null,
+    "observed_date": "2026-10-12",
+    "lead_days": null,
+    "observed_times": []
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 4,
+    "stale_max_age_days": 10,
+    "note": "Daily satellite composites usually appear 1-3 days after observation. Current: observed within 4 days. Stale: 5-10 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "olci300_chl_latest",
+   "group_id": "satellite_chlorophyll_hr",
+   "product_class": "observation",
+   "title": "Satellite chlorophyll-a, Sentinel-3 OLCI 300 m, latest clear view",
+   "variable": "chlorophyll_a",
+   "units": "mg m-3",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-10",
+    "valid_time": null,
+    "observed_date": "2026-10-10",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-06T17:12:40Z",
+     "2026-10-06T18:50:40Z",
+     "2026-10-07T17:35:29Z",
+     "2026-10-07T19:16:29Z",
+     "2026-10-08T17:56:48Z",
+     "2026-10-08T18:50:18Z",
+     "2026-10-09T17:32:07Z",
+     "2026-10-09T19:13:06Z",
+     "2026-10-10T17:57:56Z",
+     "2026-10-10T18:46:55Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 3,
+    "stale_max_age_days": 7,
+    "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+   }
+  },
+  {
+   "layer_id": "olci300_chl_2026-10-06",
+   "group_id": "satellite_chlorophyll_hr",
+   "product_class": "observation",
+   "title": "Satellite chlorophyll-a, Sentinel-3 OLCI 300 m, single day",
+   "variable": "chlorophyll_a",
+   "units": "mg m-3",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-06",
+    "valid_time": null,
+    "observed_date": "2026-10-06",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-06T17:12:40Z",
+     "2026-10-06T18:50:40Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 3,
+    "stale_max_age_days": 7,
+    "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+   }
+  },
+  {
+   "layer_id": "olci300_chl_2026-10-07",
+   "group_id": "satellite_chlorophyll_hr",
+   "product_class": "observation",
+   "title": "Satellite chlorophyll-a, Sentinel-3 OLCI 300 m, single day",
+   "variable": "chlorophyll_a",
+   "units": "mg m-3",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-07",
+    "valid_time": null,
+    "observed_date": "2026-10-07",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-07T17:35:29Z",
+     "2026-10-07T19:16:29Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 3,
+    "stale_max_age_days": 7,
+    "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+   }
+  },
+  {
+   "layer_id": "olci300_chl_2026-10-08",
+   "group_id": "satellite_chlorophyll_hr",
+   "product_class": "observation",
+   "title": "Satellite chlorophyll-a, Sentinel-3 OLCI 300 m, single day",
+   "variable": "chlorophyll_a",
+   "units": "mg m-3",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-08",
+    "valid_time": null,
+    "observed_date": "2026-10-08",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-08T17:56:48Z",
+     "2026-10-08T18:50:18Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 3,
+    "stale_max_age_days": 7,
+    "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+   }
+  },
+  {
+   "layer_id": "olci300_chl_2026-10-09",
+   "group_id": "satellite_chlorophyll_hr",
+   "product_class": "observation",
+   "title": "Satellite chlorophyll-a, Sentinel-3 OLCI 300 m, single day",
+   "variable": "chlorophyll_a",
+   "units": "mg m-3",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-09",
+    "valid_time": null,
+    "observed_date": "2026-10-09",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-09T17:32:07Z",
+     "2026-10-09T19:13:06Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 3,
+    "stale_max_age_days": 7,
+    "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+   }
+  },
+  {
+   "layer_id": "olci300_chl_2026-10-10",
+   "group_id": "satellite_chlorophyll_hr",
+   "product_class": "observation",
+   "title": "Satellite chlorophyll-a, Sentinel-3 OLCI 300 m, single day",
+   "variable": "chlorophyll_a",
+   "units": "mg m-3",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-10",
+    "valid_time": null,
+    "observed_date": "2026-10-10",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-10T17:57:56Z",
+     "2026-10-10T18:46:55Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 3,
+    "stale_max_age_days": 7,
+    "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+   }
+  },
+  {
+   "layer_id": "olci300_chl_2026-10-11",
+   "group_id": "satellite_chlorophyll_hr",
+   "product_class": "observation",
+   "title": "Satellite chlorophyll-a, Sentinel-3 OLCI 300 m, single day",
+   "variable": "chlorophyll_a",
+   "units": "mg m-3",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": null,
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T17:31:44Z",
+     "2026-10-11T19:12:44Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 3,
+    "stale_max_age_days": 7,
+    "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+   }
+  },
+  {
+   "layer_id": "viirs750_chl_latest",
+   "group_id": "satellite_chlorophyll_hr",
+   "product_class": "observation",
+   "title": "Satellite chlorophyll-a, VIIRS 750 m, latest clear view",
+   "variable": "chlorophyll_a",
+   "units": "mg m-3",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-08",
+    "valid_time": null,
+    "observed_date": "2026-10-08",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-06T12:00:00Z",
+     "2026-10-07T12:00:00Z",
+     "2026-10-08T12:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 3,
+    "stale_max_age_days": 7,
+    "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+   }
+  },
+  {
+   "layer_id": "multisensor_chl_latest",
+   "group_id": "satellite_chlorophyll_hr",
+   "product_class": "observation",
+   "title": "Satellite chlorophyll-a, multi-sensor latest view (Sentinel-3 300 m, VIIRS 750 m where Sentinel-3 has none)",
+   "variable": "chlorophyll_a",
+   "units": "mg m-3",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-10",
+    "valid_time": null,
+    "observed_date": "2026-10-10",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-06T12:00:00Z",
+     "2026-10-06T17:12:40Z",
+     "2026-10-06T18:50:40Z",
+     "2026-10-07T12:00:00Z",
+     "2026-10-07T17:35:29Z",
+     "2026-10-07T19:16:29Z",
+     "2026-10-08T12:00:00Z",
+     "2026-10-08T17:56:48Z",
+     "2026-10-08T18:50:18Z",
+     "2026-10-09T17:32:07Z",
+     "2026-10-09T19:13:06Z",
+     "2026-10-10T17:57:56Z",
+     "2026-10-10T18:46:55Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 3,
+    "stale_max_age_days": 7,
+    "note": "Satellite overpasses are published about 2 (OLCI) to 5 (VIIRS 750 m) days after observation. Current: newest observation within 3 days. Stale: 4-7 days. Historical: older. In a 'latest clear view' every pixel also carries its own date."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261011T11Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T11:00:00Z",
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T11:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261011T12Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T12:00:00Z",
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T12:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261011T13Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T13:00:00Z",
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T13:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261011T14Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T14:00:00Z",
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T14:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261011T15Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T15:00:00Z",
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T15:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261011T16Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T16:00:00Z",
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T16:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261011T17Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T17:00:00Z",
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T17:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261011T18Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T18:00:00Z",
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T18:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261011T19Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T19:00:00Z",
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T19:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261011T20Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T20:00:00Z",
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T20:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261011T21Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T21:00:00Z",
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T21:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261011T22Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T22:00:00Z",
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T22:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261011T23Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-11",
+    "valid_time": "2026-10-11T23:00:00Z",
+    "observed_date": "2026-10-11",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T23:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261012T00Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T00:00:00Z",
+    "observed_date": "2026-10-12",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-12T00:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261012T01Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T01:00:00Z",
+    "observed_date": "2026-10-12",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-12T01:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261012T02Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T02:00:00Z",
+    "observed_date": "2026-10-12",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-12T02:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261012T03Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T03:00:00Z",
+    "observed_date": "2026-10-12",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-12T03:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261012T04Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T04:00:00Z",
+    "observed_date": "2026-10-12",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-12T04:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261012T05Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T05:00:00Z",
+    "observed_date": "2026-10-12",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-12T05:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261012T06Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T06:00:00Z",
+    "observed_date": "2026-10-12",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-12T06:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261012T07Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T07:00:00Z",
+    "observed_date": "2026-10-12",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-12T07:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261012T08Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T08:00:00Z",
+    "observed_date": "2026-10-12",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-12T08:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261012T09Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T09:00:00Z",
+    "observed_date": "2026-10-12",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-12T09:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_20261012T10Z",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, one hour",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T10:00:00Z",
+    "observed_date": "2026-10-12",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-12T10:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  },
+  {
+   "layer_id": "hfr2km_currents_mean24h",
+   "group_id": "currents",
+   "product_class": "observation",
+   "title": "Observed surface currents, HF radar 2 km, 24-hour mean",
+   "variable": "surface_current",
+   "units": "m s-1",
+   "time": {
+    "issued_date": null,
+    "issued_date_derived": false,
+    "issued_date_method": null,
+    "valid_date": "2026-10-12",
+    "valid_time": "2026-10-12T10:00:00Z",
+    "observed_date": "2026-10-12",
+    "lead_days": null,
+    "observed_times": [
+     "2026-10-11T11:00:00Z",
+     "2026-10-12T10:00:00Z"
+    ]
+   },
+   "freshness": {
+    "basis": "observed_date",
+    "current_max_age_days": 1,
+    "stale_max_age_days": 3,
+    "note": "HF-radar totals are published about 4-15 hours after observation. Current: observed today or yesterday (UTC). Stale: 2-3 days. Historical: older."
+   }
+  }
+ ]
+}
