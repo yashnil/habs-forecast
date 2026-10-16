@@ -20,7 +20,7 @@ URL. The public research preview at the BASES URL is unchanged: `dpl_HfUScMViHiK
 | #63 `design/neritic-excellence` | #62 | 1 | 91 (+20,046 −0) | `docs/coastwatch/design/2026-10-neritic-excellence/`: the design audit, reference study, logo directions and two interface prototypes (46 webp, 12 svg, 9 html, 7 mjs; 5.3 MB committed). | Documentation only, no file under `coastwatch-web/src` or `pipeline/`. Merge second as the design record that #65's decisions cite, or keep it as a branch if main should stay lean. |
 | #65 `feat/coastal-intelligence-v2` | #63 | 17 + this pass | 233 (+8,650 −841) | The product work: trust fixes, the evidence graph and `/api/evidence`, My Coast on the phone, CO-OPS harbour water, harbour-zoom map, the pipeline's OLCI 404 handling, the last name references, the masthead targets. Plus `docs/coastwatch/v2/` (145 files, 14.2 MB committed). | Product change. Merge last. See §2 for what should not come with it. |
 
-**Safest integration order: bottom-up, one squash merge per PR.**
+**Safest integration order: bottom-up, one squash merge per PR**, and only after the new UI is promoted (§4).
 1. Squash-merge #62 into `main`; wait for CI on `main`.
 2. GitHub retargets #63 to `main` when #62's branch is deleted; squash-merge it (docs only, CI is a no-op for it).
 3. GitHub retargets #65 to `main`; squash-merge it; wait for CI on `main`.
@@ -60,22 +60,49 @@ following is in the deployed bundle. The question is what `main` carries.
 - **Harbour zoom.** The distance label at the nearest model cell is anchored on the side away from the harbour, so it no longer covers "Crescent City" (2.4 km away).
 - **320 px.** No sideways scroll on any inspected page; the docked map bar's label never wraps; the status line wraps to two lines by design.
 
-## 4. Release sequence (every step needs the owner's go; nothing below has been run)
+## 4. Release sequence: promote first, merge after (every gate needs the owner's go; nothing below has been run)
 
-1. **Approve** the merge order (§1). The pruning (§2) is done. I merge #62, #63, #65 as described and wait for CI on `main`. Do it shortly after a scheduled data run (they start at 00:17, 06:17, 12:17 and 18:17 UTC): the next run uses main's pipeline, so its rebranded provenance text reaches the current public UI until step 5 (see §5).
-2. **Data:** nothing to publish by hand. The manifest schema is unchanged. The pipeline changes in the stack (the OLCI time-listing 404 rule; display and provenance strings such as "computed by Neritic" and the Fisheries tier note) take effect on the first scheduled data run after the merge, at most 6 h later, or at once with a manual `workflow_dispatch` of "CoastWatch data refresh". Until then the new UI shows one legacy string from the live data: the Fisheries tier note "Tier assignments are CoastWatch's editorial grouping…".
-3. **Build the candidate without touching the public URL:** check `git rev-parse origin/main:coastwatch-web` is `3032bb89…` (then the bundle is byte-identical to the verified preview; if not, re-verify), `git archive origin/main:coastwatch-web | tar -x -C <empty dir>` (the project's root directory is `.`, so the app goes at the archive root), `vercel link --project coastwatch-demo --scope yashnils-projects`, delete the `.env.local` it writes, then
+The owner approved the release direction on 2026-10-16 and asked for an order in which the scheduled data run can never publish Neritic-branded text to the old public CoastWatch UI. Data runs use `main`'s pipeline (every 6 h at minute 17 UTC). The stack's pipeline text changes start with #62, so in this order no merge happens until the new UI is public. The new UI on the current data is exactly what the private preview verified (§7).
+
+The Neritic name is accepted for this independent research preview only. It is not trademark clearance (see `docs/coastwatch/brand/neritic.md`).
+
+1. **Preflight.** `origin/main` is `fc448079`. #65's head is `211ead29` with CI green. `git rev-parse 211ead29:coastwatch-web` is `3032bb89` (the preview's tree). Terminal 2's `feat/harbor-intelligence-v3` is not in any of the three branches; it stays local and unpushed until v2 is on `main`.
+2. **Candidate on the demo project, not aliased.** `git archive 211ead29:coastwatch-web | tar -x -C <empty dir>` (the project root is `.`, so the app goes at the archive root), `vercel link --project coastwatch-demo --scope yashnils-projects`, delete the `.env.local` it writes, then
    `vercel deploy --prod --skip-domain --build-env CW_DATA_BASE_URL=https://yashnil.github.io/habs-forecast/v1 --env CW_DATA_BASE_URL=https://yashnil.github.io/habs-forecast/v1`
-   This produces a production-target deployment that is not aliased: the BASES URL keeps serving `dpl_HfUScMViHiKPs2aMC9TAsQWrTHjA`.
-4. **Smoke test the candidate** through the protection-bypass cookie (a bypass header breaks CORS preflights): all 22 ports' My Coast pages 200 with 0 console errors and 0 React #418 over 30 cold loads; page vs `/api/evidence` on Monterey, Crescent City, San Diego, Shelter Cove; the masthead at 320 and 390 px; "Not verified" on the pill, the drawer and My Coast; CDFW and CDPH links on every page; the harbour-zoom map; the saved briefing link.
-5. **Owner GO → `vercel promote <candidate dpl>`**, which re-aliases the prebuilt deployment without rebuilding. Repeat the checks on the public URL without login.
-6. **Record:** tag `demo-release/2026-10-16` on the `main` commit, write `docs/coastwatch/release/2026-10-16-research-preview.md`, update the memory note.
+   The BASES URL keeps serving `dpl_HfUScMViHiKPs2aMC9TAsQWrTHjA`.
+3. **Smoke test the candidate** through the protection-bypass cookie (a bypass header breaks CORS preflights), with the same checks as §7:
+   - 17 pages × 1440/390/320 px: 200, 0 console or page errors, no sideways scroll, "Not verified" present, no product-name CoastWatch except the Fisheries tier note from the live data;
+   - 30 cold loads with 0 hydration errors;
+   - `/api/evidence` invariants on all 22 ports;
+   - CO-OPS lines for Monterey, Crescent City and San Diego;
+   - a kept briefing, Copy link and shared links;
+   - axe on six pages.
+
+   Stop on any failure.
+4. **Owner GO → `vercel promote <candidate dpl> --scope yashnils-projects`.** This re-aliases the prebuilt deployment without rebuilding. Repeat the smoke test on https://coastwatch-demo.vercel.app without login, and check that `vercel inspect coastwatch-demo.vercel.app` names the candidate. **Rollback in this window:** `vercel rollback dpl_HfUScMViHiKPs2aMC9TAsQWrTHjA`. It is complete, because no data has changed.
+5. **Owner GO → merge, bottom-up, one squash merge per PR:**
+   1. #62 into `main`, then wait for CI on `main`.
+   2. #63 (GitHub retargets it to `main` when #62's branch is deleted).
+   3. #65 (retargeted to `main`), then wait for CI on `main`.
+
+   Then `git rev-parse origin/main^{tree}` must be `8a6ab613` (= `211ead29^{tree}`, so `main` carries exactly the deployed web tree and the final pipeline and workflow fixes). If `main` moved in between, compare `origin/main:coastwatch-web` with `3032bb89` instead, and rebuild if it differs.
+6. **First data run after the merge** (scheduled, ≤ 6 h; or a manual `workflow_dispatch` of "CoastWatch data refresh" if the owner wants it sooner):
+   - the Fisheries tier note reads "Neritic's editorial grouping";
+   - the run commented on issue #44 or opened nothing new (no second "pipeline health" issue);
+   - `/api/evidence` still validates.
+7. **Record:**
+   - tag `demo-release/2026-10-16` on `211ead29`, the commit whose tree was deployed (it stays reachable after the branch is deleted);
+   - write `docs/coastwatch/release/2026-10-16-research-preview.md` in a docs PR naming the promoted deployment and `main`'s squash commits;
+   - Terminal 2 then rebases v3 onto `main`.
+
+Official notices are a separate track: see `2026-10-16-notice-review-guide.md`. They stay `pending_human_review` until a person reviews them. That doesn't block the steps above, because every notice is labelled Not verified.
 
 ## 5. Rollback (one command, no rebuild, data untouched)
 
 - `vercel rollback dpl_HfUScMViHiKPs2aMC9TAsQWrTHjA` returns the public URL to today's release (`demo-release/2026-10-15`). Behind it: `dpl_jxGvioj1FRFnwf6AM577bSczWFue` (`demo-release/2026-10-14`).
 - The web app reads the published dataset at `https://yashnil.github.io/habs-forecast/v1`. Its schema does not change, and both UIs read it (the preview is the new UI on today's data; `tests/unit/compat` checks the released schema against new pipeline output), so a UI rollback never needs a data rollback to keep working.
-- A UI rollback does **not** undo the pipeline's text changes once main has published with them: the rolled-back UI would show provenance strings such as "computed by Neritic" beside the CoastWatch name. To undo those as well, revert the merge on `main` and run "CoastWatch data refresh" (`workflow_dispatch`), or wait for the next scheduled run.
+- Between promotion (step 4) and the merge (step 5), a rollback is complete: the data has not changed.
+- After the merge and the next data run, a UI rollback does **not** undo the pipeline's text changes: the rolled-back UI would show provenance strings such as "computed by Neritic" beside the CoastWatch name. To undo those as well, revert the three squash commits on `main` (revert commits; `main` is never rewritten) and run "CoastWatch data refresh" (`workflow_dispatch`), or wait for the next scheduled run.
 - The official-notice registry stays `pending_human_review`; nothing in this release marks anything verified, lifted or expired.
 - `main` is never rewritten; if a merged PR must come out, it is a revert commit.
 
