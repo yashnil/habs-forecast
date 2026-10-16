@@ -36,8 +36,8 @@ following is in the deployed bundle. The question is what `main` carries.
 
 | Path | Size (committed) | What it is | Recommendation |
 |---|---|---|---|
-| `docs/coastwatch/v2/carto/shots/*.png` | 9.4 MB, 24 files | Full-size captures of the cartography prototype (T0–T4). The review page already carries JPEG versions of the ones that matter. | Remove before merge, or re-encode as webp (about 1 MB). The prototype itself (`index.html`, `ramp.mjs`, `serve.mjs`, `shoot.mjs`) stays: it is the record of the approved palette. |
-| `docs/coastwatch/v2/carto/data/water-fallback.json` | 0.4 MB | Byte-identical copy of `coastwatch-web/public/basemap/water-fallback.json`. | Remove; point the prototype at the app's file. |
+| `docs/coastwatch/v2/carto/shots/*.png` | 9.4 MB, 24 files | Full-size captures of the cartography prototype (T0–T4). The review page already carries JPEG versions of the ones that matter. | **Removed (owner-approved, 2026-10-16)**; `shots/*.png` is now ignored and `shoot.mjs` regenerates them. `shots/perf.json`, which the README quotes, stays. The prototype itself (`index.html`, `ramp.mjs`, `serve.mjs`, `shoot.mjs`) stays: it is the record of the approved palette. |
+| `docs/coastwatch/v2/carto/data/water-fallback.json` | 0.4 MB | Byte-identical copy of `coastwatch-web/public/basemap/water-fallback.json`. | **Removed (owner-approved, 2026-10-16)**; `serve.mjs` serves the app's file at the same path, so the prototype is unchanged. |
 | `docs/coastwatch/v2/carto/data/*.u16.gz`, `relief-*.webp` | 0.5 MB | The 15 Oct C-HARM grids and relief tiles the prototype renders. | Keep (small, and the prototype is not reproducible without them). |
 | `docs/coastwatch/v2/logo/out/`, `logo/shots/` | 1.3 MB, 75 files | Generated logo candidates and board captures. The decision is still open (2b recommended). | Keep until the logo decision; then keep only the chosen direction's sources. `logo/fonts/` is gitignored (OFL files fetched at run time). |
 | `docs/coastwatch/v2/review/` | 2.3 MB | The private review page and its JPEGs. | Keep: it is the acceptance record. |

@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import { dirname, join, normalize, extname } from "node:path";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
+// the product's own bundled ocean, served where the page asks for it (no copy kept here)
+const ALIASES = { "/data/water-fallback.json": join(ROOT, "../../../../coastwatch-web/public/basemap/water-fallback.json") };
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".mjs": "text/javascript",
@@ -25,8 +27,8 @@ export function startServer(port = 3399) {
       const url = new URL(req.url, "http://x");
       let p = normalize(decodeURIComponent(url.pathname));
       if (p === "/" || p === "\\") p = "/index.html";
-      const file = join(ROOT, p);
-      if (!file.startsWith(ROOT)) throw Object.assign(new Error("forbidden"), { code: "EACCES" });
+      const file = ALIASES[p.replaceAll("\\", "/")] ?? join(ROOT, p);
+      if (!ALIASES[p.replaceAll("\\", "/")] && !file.startsWith(ROOT)) throw Object.assign(new Error("forbidden"), { code: "EACCES" });
       const s = await stat(file);
       if (!s.isFile()) throw Object.assign(new Error("not a file"), { code: "ENOENT" });
       const body = await readFile(file);
