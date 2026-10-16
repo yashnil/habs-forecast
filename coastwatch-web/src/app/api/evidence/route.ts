@@ -8,8 +8,12 @@ import { measuredEvidence, neighbourhood, stationsAround, EVIDENCE_RADIUS_KM } f
 import { harborEvidence, type EvidenceInputs, type SatLite } from "@/lib/harborEvidence";
 import { CHARM_LEADS, artifactUrl, charmLayer, charmRun, sourceStatus } from "@/lib/layers";
 import { officialVerification } from "@/lib/official";
-import { readPlaceChl } from "@/lib/chlNear";
+import { readPlaceChl, waterProbe, type WaterProbe } from "@/lib/chlNear";
+import { decodeWaterFallback, WATER_FALLBACK_URL } from "@/lib/waterFallback";
 import { speciesById } from "@/content/species";
+import { speciesStatements } from "@/lib/nextSteps";
+import { pacificToday } from "@/lib/time";
+import type { Conditions } from "@/lib/conditions";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +36,8 @@ export async function GET(req: Request) {
   const place = resolvePlace(placeKey, data.ports);
   if (!place) return NextResponse.json({ error: "unknown place" }, { status: 404 });
   const now = process.env.CW_FIXED_NOW ? new Date(process.env.CW_FIXED_NOW) : new Date();
-  const tripDate = q.get("date") ?? now.toISOString().slice(0, 10);
+  const today = pacificToday(now);
+  const tripDate = q.get("date") ?? today;
   // grids are fetched from this server's own data path (relative bases cannot be fetched from node)
   const base = /^https?:\/\//.test(data.baseUrl) ? data.baseUrl : `${url.origin}${data.baseUrl}`;
 
@@ -61,7 +66,15 @@ export async function GET(req: Request) {
 
   let sat: SatLite | "error" = null;
   try {
-    const pc = await readPlaceChl(data.manifest, base, place.lat, place.lon);
+    // the same water mask the page applies (shore-adjacent pixels set aside): the bundled water, fetched by absolute URL
+    let water: WaterProbe | null = null;
+    try {
+      const r = await fetch(`${url.origin}${WATER_FALLBACK_URL}`, { signal: AbortSignal.timeout(8000) });
+      if (r.ok) water = waterProbe(decodeWaterFallback(await r.json()));
+    } catch {
+      water = null;
+    }
+    const pc = await readPlaceChl(data.manifest, base, place.lat, place.lon, water);
     if (pc) {
       const sensor = pc.layer.layer_id.startsWith("olci300") ? "Sentinel-3 OLCI, 300 m" : "VIIRS, 750 m";
       const r = pc.read;
@@ -74,8 +87,20 @@ export async function GET(req: Request) {
 
   const audience = parseAudience(q.get("for"));
   const species = speciesById(q.get("species") ?? "any");
-  const official = data.official ? { assocs: associationsAt(data.official, place.key, place.lat, place.lon), verification: officialVerification(data.official, sourceStatus(data.manifest, "official"), now), audience, species } : null;
-
-  const graph = harborEvidence({ place: { name: place.name, lat: place.lat, lon: place.lon }, now, tripDate, measured, measuredError: data.stationsError, model, sat, conditions: null, official });
+  const official = data.official
+    ? { assocs: associationsAt(data.official, place.key, place.lat, place.lon, undefined, place.kind === "point" ? "water" : "shore"), verification: officialVerification(data.official, sourceStatus(data.manifest, "official"), now), audience, species, statements: speciesStatements(data.official, species, audience) }
+    : null;
+  // live conditions through this server's own route (the same reading the page makes), unless asked not to
+  let conditions: Conditions | null = null;
+  if (q.get("conditions") !== "0") {
+    try {
+      const r = await fetch(`${url.origin}/api/conditions?lat=${place.lat}&lon=${place.lon}`, { signal: AbortSignal.timeout(15000) });
+      if (r.ok) conditions = (await r.json()) as Conditions;
+    } catch {
+      conditions = null;
+    }
+  }
+  const modelBeyond = !!(model && model !== "error" && !model.days.some((d) => d.valid === tripDate) && tripDate > (model.days.at(-1)?.valid ?? ""));
+  const graph = harborEvidence({ place: { name: place.name, lat: place.lat, lon: place.lon }, now, today, tripDate, measured, measuredError: data.stationsError, model, modelBeyond, sat, conditions, official });
   return NextResponse.json(graph, { headers: { "Cache-Control": "no-store" } });
 }

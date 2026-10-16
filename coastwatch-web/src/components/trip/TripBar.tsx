@@ -104,7 +104,7 @@ export function TripBar({
               onClick={() => setOpen(open === "place" ? null : "place")}
               aria-expanded={open === "place"}
               aria-haspopup="dialog"
-              className="cw-press group -ml-1.5 rounded-xl px-1.5 text-left hover:bg-surface-3/70"
+              className="cw-press group -ml-1.5 inline-flex min-h-[44px] items-center rounded-xl px-1.5 text-left hover:bg-surface-3/70"
               data-testid="trip-place"
             >
               <span data-testid="coast-title">{place.name}</span>

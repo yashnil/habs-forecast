@@ -25,7 +25,7 @@ function readTicks(key: string): string[] {
 
 /**
  * "Before you leave": a short checklist for this trip. Each item is something to open (the agency
- * page, the phone line, the forecast) with why, for which waters or species, and what CoastWatch
+ * page, the phone line, the forecast) with why, for which waters or species, and what Neritic
  * cannot settle. Ticks are kept on this device for this trip only (waters, activity, species, day);
  * a tick records that the reader opened the source, not that anything is safe or open.
  */
@@ -70,7 +70,7 @@ export function Checklist({ shown, more, storageKey, sub }: { shown: Step[]; mor
           transition={{ type: "spring", stiffness: 200, damping: 30 }}
         />
       </div>
-      <ol className="mt-3 space-y-2">
+      <ol className="mt-3 space-y-1.5">
         <AnimatePresence initial={false}>
           {steps.map((s) => {
             const on = ticks.includes(s.id);
@@ -89,7 +89,7 @@ export function Checklist({ shown, more, storageKey, sub }: { shown: Step[]; mor
                 data-testid={`check-${s.id}`}
                 data-done={on}
               >
-                <div className="grid grid-cols-[44px_1fr] gap-x-1 py-2.5 pl-1.5 pr-3.5">
+                <div className="grid grid-cols-[44px_1fr] gap-x-1 py-1.5 pl-1.5 pr-3">
                   <button
                     type="button"
                     role="checkbox"
@@ -120,13 +120,11 @@ export function Checklist({ shown, more, storageKey, sub }: { shown: Step[]; mor
                     </span>
                   </button>
                   <div className="min-w-0 pt-1.5">
-                    <p className={`flex items-start gap-2 text-[15.5px] font-semibold leading-snug ${on ? "text-ink-3" : "text-ink"}`}>
-                      <Mark kind={MARK[s.kind]} className="mt-[5px]" />
+                    <p className={`flex items-start gap-2 text-[16px] font-semibold leading-snug ${on ? "text-ink-3" : "text-ink"}`}>
+                      <Mark kind={MARK[s.kind]} className="mt-[6px]" />
                       <span className={on ? "line-through decoration-ink-3/40" : ""}>{s.title}</span>
                     </p>
-                    <p className="mt-0.5 pl-[22px] text-[13.5px] leading-snug text-ink-2">{s.reason}</p>
-                    {(s.scope || s.when) && <p className="mt-0.5 pl-[22px] text-[12.5px] text-ink-3">{[s.scope, s.when].filter(Boolean).join(" · ")}</p>}
-                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 pl-[22px]">
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0 pl-[22px]">
                       {internal ? (
                         <Link href={href} className={linkCls} onClick={open} data-testid={`check-${s.id}-go`}>
                           {s.source.label} →
@@ -137,31 +135,27 @@ export function Checklist({ shown, more, storageKey, sub }: { shown: Step[]; mor
                         </a>
                       )}
                       {s.also && (
-                        <a href={s.also.url} {...ext} className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent hover:underline">
+                        <a href={s.also.url} {...ext} className="inline-flex min-h-[44px] min-w-[44px] items-center text-[14px] font-medium text-accent hover:underline">
                           {s.also.label} ↗
                         </a>
                       )}
-                      {s.caveat && (
-                        <button
-                          type="button"
-                          onClick={() => setWhy(why === s.id ? null : s.id)}
-                          aria-expanded={why === s.id}
-                          className="inline-flex min-h-[44px] items-center text-[13px] font-medium text-ink-3 hover:text-ink"
-                        >
-                          What Neritic can&apos;t settle
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => setWhy(why === s.id ? null : s.id)}
+                        aria-expanded={why === s.id}
+                        className="inline-flex min-h-[44px] min-w-[44px] items-center text-[14px] font-medium text-ink-3 hover:text-ink"
+                        data-testid={`check-${s.id}-why`}
+                      >
+                        {why === s.id ? "Less" : "Why"}
+                      </button>
                     </div>
                     <AnimatePresence initial={false}>
-                      {why === s.id && s.caveat && (
-                        <motion.p
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="overflow-hidden pl-[22px] text-[13px] leading-snug text-ink-2"
-                        >
-                          <span className="mt-1 block border-l-2 border-hairline-strong pl-2.5">{s.caveat}</span>
-                        </motion.p>
+                      {why === s.id && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden pl-[22px]" data-testid={`check-${s.id}-reason`}>
+                          <p className="mt-1 text-[15px] leading-snug text-ink-2">{s.reason}</p>
+                          {(s.scope || s.when) && <p className="mt-0.5 text-[13.5px] text-ink-3">{[s.scope, s.when].filter(Boolean).join(" · ")}</p>}
+                          {s.caveat && <p className="mt-1.5 border-l-2 border-hairline-strong pl-2.5 text-[13.5px] leading-snug text-ink-2">{s.caveat}</p>}
+                        </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
@@ -172,7 +166,7 @@ export function Checklist({ shown, more, storageKey, sub }: { shown: Step[]; mor
         </AnimatePresence>
       </ol>
       {more.length > 0 && (
-        <button type="button" onClick={() => setAll(!all)} className="mt-2 inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent hover:underline" data-testid="checklist-more">
+        <button type="button" onClick={() => setAll(!all)} className="mt-2 inline-flex min-h-[44px] min-w-[44px] items-center text-[14px] font-medium text-accent hover:underline" data-testid="checklist-more">
           {all ? "Fewer" : `${more.length} more for this trip`}
         </button>
       )}

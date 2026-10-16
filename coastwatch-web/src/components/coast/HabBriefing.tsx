@@ -469,7 +469,7 @@ export function HabBriefing({
                   ["pn", "Bloom"],
                 ] as const
               ).map(([id, label]) => (
-                <button key={id} type="button" role="radio" aria-checked={pick === id} onClick={() => onPick(id)} data-testid={`outlook-pick-${id}`} className={`cw-press relative rounded-[10px] px-3 py-1 font-medium ${pick === id ? "text-ink" : "text-ink-3"}`}>
+                <button key={id} type="button" role="radio" aria-checked={pick === id} onClick={() => onPick(id)} data-testid={`outlook-pick-${id}`} className={`cw-press relative min-h-[44px] rounded-[10px] px-3 py-1 font-medium ${pick === id ? "text-ink" : "text-ink-3"}`}>
                   {pick === id && <motion.span layoutId="outlook-pill" className="absolute inset-0 rounded-[10px] bg-surface shadow-[0_1px_2px_rgba(13,27,42,0.12)]" aria-hidden />}
                   <span className="relative">{label}</span>
                 </button>
@@ -510,7 +510,7 @@ export function HabBriefing({
               <p className="mt-2 text-[13px] leading-snug text-ink-2">
                 Bloom: the chance that Pseudo-nitzschia exceeds the model&apos;s threshold. Toxin: the chance that particulate domoic acid in the water does. Neither is a measurement, and neither is a test of seafood.
               </p>
-              <button type="button" onClick={() => onFocus(modelOn ? null : "model")} aria-pressed={modelOn} className="cw-press mt-2 text-[13px] font-medium text-accent hover:underline" data-testid="ev-model-map">
+              <button type="button" onClick={() => onFocus(modelOn ? null : "model")} aria-pressed={modelOn} className="cw-press mt-2 inline-flex min-h-[44px] items-center text-[13px] font-medium text-accent hover:underline" data-testid="ev-model-map">
                 {modelOn ? "Shown on the map: the real 3 km cells and the nearshore gaps" : "Show the model's cells and its nearshore gaps on the map"}
               </button>
             </>

@@ -2,6 +2,13 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { OK } from "./ports";
 
+/** The detail behind the briefing sits in one disclosure; open it (idempotent) before reading a tab. */
+async function openDetails(page: Page) {
+  const d = page.getByTestId("coast-details");
+  if ((await d.count()) && !(await d.evaluate((el) => (el as HTMLDetailsElement).open))) await d.locator("summary").click();
+}
+
+
 /** The front door: "Explore California's coast" and three paths; defaults only, never facts. */
 const NOW = "2026-10-08T20:00:00Z";
 const FIRST = { cookies: [], origins: [] };
@@ -35,6 +42,7 @@ test.describe("welcome", () => {
     await page.getByTestId("place-input").fill("Santa Cruz");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/coast\?place=port-593&for=commercial$/);
+    await openDetails(page);
     await expect(page.getByTestId("hab-briefing")).toBeVisible();
     expect(JSON.parse((await stored(page, "cw-purpose-v1"))!)).toEqual({ purpose: "commercial" });
     // a later plain visit: no welcome, one link back to those waters
@@ -73,6 +81,7 @@ test.describe("welcome", () => {
     // Coastal keeps every notice in the Explore section's notices list and the science tab
     // the trip view is rendered on the server: wait until it is interactive (the HAB line is client-only)
     await expect(before.page.getByTestId("matter-hab")).toBeVisible();
+    await openDetails(before.page);
     await before.page.getByTestId("explore-tab-science").click();
     await expect(before.page.getByTestId("coast-official")).toBeAttached();
     const noPurpose = await ids(before.page);

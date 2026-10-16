@@ -72,7 +72,7 @@ export function ModeSwitch({ tone = "navy", className = "" }: { tone?: "navy" | 
             title={MODE_LABEL[m].hint}
             onClick={() => setMode(m)}
             data-testid={`mode-${m}`}
-            className={`cw-press relative min-h-[30px] rounded-full px-3 transition-colors duration-200 ${
+            className={`cw-press relative rounded-full px-3 transition-colors duration-200 ${navy ? "min-h-[30px]" : "min-h-[44px] min-w-[44px]"} ${
               on ? (navy ? "text-navy-950" : "text-white") : navy ? "text-on-navy-2 hover:text-white" : "text-ink-2 hover:text-ink"
             }`}
           >

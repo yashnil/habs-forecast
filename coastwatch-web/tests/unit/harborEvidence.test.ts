@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { StationEvidence } from "@/lib/hab";
-import { harborEvidence, representative, stationSetting, type EvidenceInputs } from "@/lib/harborEvidence";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import type { OfficialDataset } from "@/generated/official";
+import { speciesById } from "@/content/species";
+import { associationsAt } from "@/lib/applicability";
+import { speciesStatements } from "@/lib/nextSteps";
+import type { Conditions } from "@/lib/conditions";
+import type { Neighbourhood } from "@/lib/hab";
+import { harborEvidence, pageClaims, periodFor, representative, stationSetting, topicWords, type EvidenceInputs } from "@/lib/harborEvidence";
 
 /**
  * The harbor evidence graph: one place, every reading typed by how it is known, with its distance,
@@ -41,7 +49,7 @@ function inputs(over: Partial<EvidenceInputs> = {}): EvidenceInputs {
 describe("harbor evidence graph", () => {
   it("states the measurement with its place, date and distance, names the closer silent station, and says the model has no estimate here", () => {
     const g = harborEvidence(inputs());
-    const measured = g.claims.find((c) => c.id === "measured")!;
+    const measured = g.claims.find((c) => c.id === "hab")!;
     expect(measured.text).toBe("Santa Cruz Wharf reported 4,900 cells/L Pseudo-nitzschia on September 30, 41 km NNW of Monterey. Monterey Wharf is closer (0.6 km) but has no comparable sample since August 12, 2025.");
     expect(measured.supports).toEqual(["pn_cells:SantaCruzWharf"]);
     const model = g.claims.find((c) => c.id === "model")!;
@@ -91,12 +99,18 @@ describe("harbor evidence graph", () => {
         sat: { value: null, sensor: "Sentinel-3 OLCI, 300 m", windowDays: 7, flagged: false, radiusKm: 5 },
       }),
     );
-    expect(g.claims.find((c) => c.id === "measured")).toBeUndefined();
+    expect(g.claims.find((c) => c.id === "hab")!.kind).toBe("gap");
     expect(g.gaps.map((x) => x.id)).toEqual(["pn_cells-recent", "model-day", "satellite"]);
     expect(g.gaps[0].reason).toMatch(/No Pseudo-nitzschia cells sample within 60 km in the last 30 days; the latest nearby is 7 months ago at Santa Cruz Wharf \(41 km\)/);
     expect(g.gaps[2].reason).toMatch(/not low chlorophyll/);
     // the old sample is still a node, flagged historical, so nothing is hidden
     expect(g.nodes.find((n) => n.id === "pn_cells:SantaCruzWharf")!.freshness.state).toBe("historical");
+  });
+
+  it("water temperature from a tide station is the harbour's own within 2 km, the same bay to 6 km, another water body beyond", () => {
+    expect(representative("water_temp", 1.0)).toBe("at");
+    expect(representative("water_temp", 5.7)).toBe("near");
+    expect(representative("water_temp", 10.9)).toBe("context");
   });
 
   it("representativeness is per variable, not one radius", () => {
@@ -107,10 +121,144 @@ describe("harbor evidence graph", () => {
     expect(representative("chl_satellite", 3)).toBe("near");
     expect(representative("chl_satellite", 12)).toBe("context");
     expect(representative("wind", 25)).toBe("near");
-    expect(representative("water_temp", 25)).toBe("context");
+    expect(representative("water_temp", 25)).toBe("far");
     expect(stationSetting("Santa Cruz Wharf")).toBe("exposed-pier");
     expect(stationSetting("Moss Landing, South Harbor, CA")).toBe("sheltered-harbor");
     expect(stationSetting("Monterey Canyon Outer, CA (156)")).toBe("offshore");
     expect(stationSetting("MBM1")).toBe("unclassified");
+  });
+});
+
+
+// ---------------------------------------------------------------- the briefing's claims (moved from lib/trip)
+
+const FIX = path.resolve(__dirname, "../fixture-data/v1");
+const mf = JSON.parse(readFileSync(path.join(FIX, "manifest.json"), "utf8")) as { official_url: string };
+const official: OfficialDataset = JSON.parse(readFileSync(path.join(FIX, mf.official_url), "utf8"));
+const CRESCENT = { name: "Crescent City", lat: 41.74901, lon: -124.20398 };
+const nb = (over: Partial<Neighbourhood>): Neighbourhood => ({ n: 0, median: null, min: null, max: null, nearest: null, here: null, cells: [], ...over });
+const CLOCK = new Date("2026-10-13T20:00:00Z");
+
+function brief(over: Partial<EvidenceInputs> & { at?: { name: string; lat: number; lon: number }; audience?: "all" | "commercial" | "recreational" | "shellfish"; speciesId?: string } = {}): EvidenceInputs {
+  const at = over.at ?? MONTEREY;
+  const species = speciesById(over.speciesId ?? "any");
+  const audience = over.audience ?? "all";
+  return {
+    place: at,
+    now: CLOCK,
+    today: "2026-10-13",
+    tripDate: "2026-10-13",
+    measured: { cells: null, toxin: null, nearest: null },
+    model: null,
+    sat: null,
+    conditions: null,
+    official: { assocs: associationsAt(official, "x", at.lat, at.lon), verification: null, audience, species, statements: speciesStatements(official, species, audience) },
+    ...over,
+  };
+}
+const claim = (x: EvidenceInputs, id: string) => harborEvidence(x).claims.find((c) => c.id === id)!;
+
+describe("the briefing's claims", () => {
+  it("a Dungeness crab trip leads with CDFW's season status, quoted, with its source", () => {
+    const g = harborEvidence(brief({ at: CRESCENT, audience: "commercial", speciesId: "dungeness" }));
+    const first = g.claims[0];
+    expect(first.id).toBe("season");
+    expect(first.kind).toBe("official");
+    expect(first.quote).toMatch(/season|closed|delay/i);
+    expect(first.source?.url).toMatch(/^https:\/\/wildlife\.ca\.gov/);
+    expect(first.supports[0]).toMatch(/^statement:/);
+    expect(g.nodes.some((n) => n.id === first.supports[0])).toBe(true);
+  });
+
+  it("a missing sample is a gap, never reassurance", () => {
+    const g = harborEvidence(brief({ at: CRESCENT }));
+    const hab = claim(brief({ at: CRESCENT }), "hab");
+    expect(hab.kind).toBe("gap");
+    expect(`${hab.headline} ${hab.detail}`).toMatch(/not a clean result/);
+    for (const c of g.claims) expect(`${c.headline} ${c.detail ?? ""} ${c.text}`).not.toMatch(/\b(safe|all clear|clean)\b(?! result)/i);
+  });
+
+  it("an offshore model value is never presented as the waters' own, and a stale run is named by its date, not called stale", () => {
+    const model = (pda: Neighbourhood, fresh: EvidenceInputs["model"] extends infer M ? (M extends { fresh: infer F } ? F : never) : never) => ({ days: [{ lead: 2, valid: "2026-10-13", pda, pn: null }], issued: "2026-10-12", fresh });
+    const offshore = claim(brief({ model: model(nb({ n: 27, median: 0.74, min: 0.6, max: 0.79, nearest: { cell: { row: 0, col: 0, lat: 36.55, lon: -121.95 }, value: 0.7, km: 6.6 } }), { state: "stale", basisDate: "2026-10-12", ageDays: 1 }) }), "hab");
+    expect(offshore.kind).toBe("gap");
+    expect(offshore.detail).toMatch(/no valid estimate for these nearshore waters/i);
+    expect(offshore.detail).toMatch(/offshore cells within 15 km read 60%–79% \(context only, not the harbour\)/);
+    expect(offshore.detail).toMatch(/run of Oct 12, 1 day old/);
+    expect(`${offshore.headline} ${offshore.detail}`).not.toMatch(/median|stale/);
+    const own = claim(brief({ model: model(nb({ here: 0.31, n: 5, median: 0.3 }), { state: "current", basisDate: "2026-10-12", ageDays: 1 }) }), "hab");
+    expect(own.kind).toBe("model");
+    expect(own.headline).toMatch(/31%/);
+    expect(own.detail).toMatch(/not a measurement/);
+    expect(own.supports).toEqual(["charm:own:2026-10-13"]);
+    // the model's own claim is folded into the HAB line on the page, but stays in the graph for the API
+    const g = harborEvidence(brief({ model: model(nb({ here: 0.31, n: 5, median: 0.3 }), { state: "current", basisDate: "2026-10-12", ageDays: 1 }) }));
+    expect(g.claims.map((c) => c.id)).toContain("model");
+    expect(pageClaims(g).map((c) => c.id)).not.toContain("model");
+  });
+
+  it("a day beyond the model says the model does not reach it", () => {
+    const hab = claim(brief({ tripDate: "2026-10-16", modelBeyond: true, model: { days: [{ lead: 3, valid: "2026-10-14", pda: nb({ n: 3, median: 0.5 }), pn: null }], issued: "2026-10-11", fresh: null } }), "hab");
+    expect(hab.detail).toMatch(/does not reach this day/);
+    const model = claim(brief({ tripDate: "2026-10-16", modelBeyond: true, model: { days: [{ lead: 3, valid: "2026-10-14", pda: nb({ n: 3, median: 0.5 }), pn: null }], issued: "2026-10-11", fresh: null } }), "model");
+    expect(model.headline).toBe("NOAA's model does not reach Oct 16");
+    expect(model.detail).toBe("Its newest run ends Oct 14.");
+  });
+
+  it("notices that apply by their own geography are named, restrictive ones as alerts, and a disputed one leads", () => {
+    const g = harborEvidence(brief({ speciesId: "anchovy-sardine" }));
+    const n = g.claims.find((c) => c.id === "notices")!;
+    expect(n.headline).toMatch(/notices cover these waters for anchovy or sardine|Do not eat northern anchovies/);
+    expect(n.tone).toBe("alert");
+    for (const id of n.supports) expect(g.nodes.find((x) => x.id === id)?.variable).toBe("official notice");
+    const d = g.claims.find((c) => c.id.startsWith("disputed-"));
+    if (d) {
+      expect(g.claims.indexOf(d)).toBeLessThan(g.claims.indexOf(n));
+      expect(d.headline).toMatch(/appears to have lifted/);
+    }
+  });
+
+  it("conditions: NWS's period for the trip day, the harbour's water before the buoy, and an advisory as an alert", () => {
+    const cond = (alerts: { event: string; headline: string }[], harbor = true): Conditions => ({
+      lat: 36.6,
+      lon: -121.9,
+      marine: { status: "ok", data: { zone: "PZZ535", zoneName: "Monterey Bay", updated: null, periods: [{ name: "Tonight", text: "NW wind 10 to 15 kt. Seas 4 to 6 ft." }, { name: "Thursday", text: "NE wind 5 to 10 kt. Seas around 3 ft." }] }, source: "NWS", url: "https://marine.weather.gov/x", fetchedAt: "2026-10-13T20:00:00Z" },
+      alerts: { status: "ok", data: alerts.map((a) => ({ ...a, onset: null, ends: null, url: "https://api.weather.gov/a" })), source: "NWS", url: "https://x", fetchedAt: "2026-10-13T20:00:00Z" },
+      buoy: { status: "ok", data: { windKt: { value: 9.7, at: "2026-10-13T19:50:00Z" }, windDirDeg: { value: 330, at: "2026-10-13T19:50:00Z" }, waveFt: { value: 3.6, at: "2026-10-13T19:50:00Z" } }, source: "NDBC", url: "https://ndbc/46236", fetchedAt: "2026-10-13T20:00:00Z", station: { id: "46236", name: "Monterey Canyon Outer, CA (156)", km: 18, lat: 36.759, lon: -121.95 } },
+      tides: { status: "ok", data: [{ at: "2026-10-13 04:51", ft: 2.2, type: "L" }, { at: "2026-10-13 11:02", ft: 5.8, type: "H" }], source: "CO-OPS", url: "https://tides/x", fetchedAt: "2026-10-13T20:00:00Z", station: { id: "9413450", name: "Monterey", km: 1 } },
+      harbor: harbor ? { status: "ok", data: { waterC: { value: 17.6, at: "2026-10-13T19:54:00Z" }, flags: "0,0,0" }, source: "NOAA CO-OPS water temperature", url: "https://tidesandcurrents.noaa.gov/stationhome.html?id=9413450", fetchedAt: "2026-10-13T20:00:00Z", station: { id: "9413450", name: "Monterey", km: 1.0, lat: 36.605, lon: -121.889 } } : undefined,
+    });
+    const g = harborEvidence(brief({ conditions: cond([]) }));
+    const c = g.claims.find((x) => x.id === "conditions")!;
+    expect(c.headline).toBe("NWS tonight: NW wind 10 to 15 kt · Seas 4 to 6 ft");
+    expect(c.detail).toMatch(/^Water 17\.6 °C in the harbour · Wind 10 kt NNW, waves 3\.6 ft at Monterey Canyon Outer buoy now · tides low 2\.2 ft, high 5\.8 ft\./);
+    expect(c.supports).toEqual(expect.arrayContaining(["nws:PZZ535:Tonight", "coops:9413450:water_temperature", "buoy:46236:windKt", "buoy:46236:waveFt"]));
+    expect(g.nodes.find((n) => n.id === "coops:9413450:water_temperature")!.where.representative).toBe("at");
+    // the trip day's own period, by name
+    const thu = harborEvidence(brief({ conditions: cond([]), tripDate: "2026-10-15" })).claims.find((x) => x.id === "conditions")!;
+    expect(thu.headline).toBe("NWS for Thursday: NE wind 5 to 10 kt · Seas around 3 ft");
+    expect(periodFor([{ name: "Tonight", text: "" }, { name: "Thu", text: "" }], "2026-10-15", "2026-10-13")?.name).toBe("Thu");
+    const sca = harborEvidence(brief({ conditions: cond([{ event: "Small craft advisory", headline: "Small craft advisory in effect until 9 pm pdt this evening" }]) })).claims.find((x) => x.id === "conditions")!;
+    expect(sca.tone).toBe("alert");
+    expect(sca.headline).toMatch(/^Small craft advisory · NWS tonight/);
+    // shellfish harvest leads with the lowest tide
+    const shell = harborEvidence(brief({ conditions: cond([], false), audience: "shellfish" })).claims.find((x) => x.id === "conditions")!;
+    expect(shell.detail).toMatch(/^Lowest tide 2\.2 ft at 4:51 AM/);
+  });
+
+  it("topic words read inside a sentence", () => {
+    expect(topicWords("Dungeness crab, commercial — marine toxin closures")).toBe("marine toxin closures");
+    expect(topicWords("Season status")).toBe("season status");
+  });
+
+  it("the claims never speak of safety or catch, and every supporting id is a node", () => {
+    for (const x of [brief(), brief({ at: CRESCENT, audience: "commercial", speciesId: "dungeness" }), brief({ speciesId: "anchovy-sardine", audience: "recreational" })]) {
+      const g = harborEvidence(x);
+      const ids = new Set(g.nodes.map((n) => n.id));
+      for (const c of g.claims) {
+        expect(c.text).not.toMatch(/\b(safe|unsafe|risk score|catch)\b/i);
+        for (const s of c.supports) expect(ids.has(s)).toBe(true);
+      }
+    }
   });
 });

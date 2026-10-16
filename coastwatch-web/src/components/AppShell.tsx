@@ -101,9 +101,9 @@ export function AppShell({
                 {BRAND.independence}
               </span>
               <nav aria-label={`About ${BRAND.name}`} className="flex flex-wrap gap-x-5 gap-y-2 sm:ml-auto">
-                <Link href="/about" className="font-medium text-accent hover:underline">About</Link>
-                <Link href="/sources" className="font-medium text-accent hover:underline">Data &amp; sources</Link>
-                <a href={RESEARCH.doi} target="_blank" rel="noreferrer" className="font-medium text-accent hover:underline">Research paper ↗</a>
+                <Link href="/about" className="inline-flex min-h-[44px] min-w-[44px] items-center font-medium text-accent hover:underline">About</Link>
+                <Link href="/sources" className="inline-flex min-h-[44px] items-center font-medium text-accent hover:underline">Data &amp; sources</Link>
+                <a href={RESEARCH.doi} target="_blank" rel="noreferrer" className="inline-flex min-h-[44px] items-center font-medium text-accent hover:underline">Research paper ↗</a>
               </nav>
             </div>
           </footer>

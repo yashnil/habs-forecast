@@ -18,7 +18,7 @@ const OPTIONS: { value: string; label: string; choice: PurposeChoice | null }[] 
 const valueOf = (c: PurposeChoice | null) => (!c ? "none" : c.purpose === "recreational" ? `recreational:${c.harvest ?? "fishing"}` : c.purpose);
 
 /**
- * Change (or clear) what CoastWatch is set up for. Kept on this device only; it changes defaults
+ * Change (or clear) what Neritic is set up for. Kept on this device only; it changes defaults
  * and order, never what the data say. "Show the welcome again" brings back the first-visit card.
  */
 export function PurposeSwitch({ showReset = false, compact = false }: { showReset?: boolean; compact?: boolean }) {
@@ -34,7 +34,7 @@ export function PurposeSwitch({ showReset = false, compact = false }: { showRese
         id={id}
         value={valueOf(p)}
         onChange={(e) => setP(OPTIONS.find((o) => o.value === e.target.value)?.choice ?? null)}
-        className="min-h-[36px] rounded-md border border-hairline-strong bg-surface px-2 text-[14px] text-ink"
+        className="min-h-[44px] rounded-md border border-hairline-strong bg-surface px-2 text-[14px] text-ink"
         data-testid="purpose-select"
       >
         {OPTIONS.map((o) => (

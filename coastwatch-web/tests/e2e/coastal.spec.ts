@@ -2,6 +2,13 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { FAILED, OK } from "./ports";
 
+/** The detail behind the briefing sits in one disclosure; open it (idempotent) before reading a tab. */
+async function openDetails(page: Page) {
+  const d = page.getByTestId("coast-details");
+  if ((await d.count()) && !(await d.evaluate((el) => (el as HTMLDetailsElement).open))) await d.locator("summary").click();
+}
+
+
 /**
  * Coastal mode (the default for anyone not set up for research): My Coast as a briefing (your
  * waters and species, HAB conditions, official information and ocean conditions, before you go)
@@ -70,7 +77,7 @@ test.describe("Coastal mode", () => {
     expect(await checks.count()).toBeGreaterThanOrEqual(3);
     for (const c of await checks.all()) expect(await c.locator('a[href^="https://"], a[href^="tel:"], a[href^="/bloom?"], a[href^="/fisheries?"]').count()).toBeGreaterThanOrEqual(1);
     await expect(page.getByTestId("check-read-notices")).toContainText("Read the 2 notices that cover these waters");
-    await page.getByTestId("check-read-notices").getByRole("button", { name: "What Neritic can't settle" }).click();
+    await page.getByTestId("check-read-notices-why").click();
     await expect(page.getByTestId("check-read-notices")).toContainText("no person has reviewed the association");
     // a tick is kept for this trip on this device, and means only that the source was opened
     await page.getByTestId("check-read-notices-box").click();
@@ -83,13 +90,16 @@ test.describe("Coastal mode", () => {
       await expect(page.getByTestId("check-history").getByRole("link")).toHaveAttribute("href", "/fisheries?group=northern_anchovy");
     }
     // explore the evidence: the detail, one subject at a time
+    await openDetails(page);
     await expect(page.getByTestId("hab-briefing")).toBeVisible();
     // every id on the page is unique, and each evidence section is named by its own heading
     expect(await page.evaluate(() => { const seen = new Set<string>(); const dup: string[] = []; document.querySelectorAll("[id]").forEach((e) => (seen.has(e.id) ? dup.push(e.id) : seen.add(e.id))); return dup; })).toEqual([]);
     await expect(page.getByRole("region", { name: /^HAB evidence near/ })).toHaveAttribute("data-testid", "hab-evidence");
     await expect(page.getByRole("region", { name: /^Bloom and toxin evidence near/ })).toHaveAttribute("data-testid", "hab-briefing");
+    await openDetails(page);
     await page.getByTestId("explore-tab-notices").click();
     await expect(page.getByTestId("brief-notice-cdfw-2026-anchovy-take-restriction-monterey-bay").getByRole("link", { name: /CDFW source/ })).toHaveAttribute("href", /^https:\/\/wildlife\.ca\.gov\//);
+    await openDetails(page);
     await page.getByTestId("explore-tab-conditions").click();
     // water measured in the harbour itself (CO-OPS 6-minute thermistor, recorded 2026-10-13): named as the harbour's, with its flags
     await expect(page.getByTestId("cond-harbor")).toContainText("Water in the harbour · measured");
@@ -98,6 +108,7 @@ test.describe("Coastal mode", () => {
     await expect(page.getByTestId("cond-marine")).toContainText("W wind 10 to 15 kt");
     await expect(page.getByTestId("cond-marine")).toContainText("NWS PZZ535");
     await expect(page.getByTestId("cond-tides")).toContainText("Monterey");
+    await openDetails(page);
     await page.getByTestId("explore-tab-science").click();
     await expect(page.getByTestId("coast-measured")).toBeVisible();
     await noUnsafeClaims(page);
@@ -124,6 +135,7 @@ test.describe("Coastal mode", () => {
     await page.getByTestId("trip-activity").click();
     await page.getByTestId("trip-for-shellfish").click();
     await expect(page).toHaveURL(/for=shellfish/);
+    await openDetails(page);
     await page.getByTestId("explore-tab-conditions").click();
     const first = page.getByTestId("conditions").locator("[data-testid^=cond-][data-state]").first();
     await expect(first).toHaveAttribute("data-testid", "cond-tides");
@@ -207,6 +219,7 @@ test.describe("Coastal mode", () => {
     await expect(page.getByTestId("coast-map-key")).toContainText("Station sampled in the last 30 days");
     expect(await has("forecast")).toBe(false);
     // the model card puts its own grid on the map, with the 15 km ring and the no-value hatch named in the key
+    await openDetails(page);
     await page.getByTestId("ev-model-map").click();
     await expect(page.getByTestId("ev-model-map")).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByTestId("coast-map-key")).toContainText("15 km around your waters");
@@ -250,6 +263,7 @@ test.describe("Coastal mode", () => {
     await page.goto(`${OK}/coast?place=port-550&for=recreational`);
     await hydrated(page);
     await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { loaded: () => boolean } }).__cwMap?.loaded());
+    await openDetails(page);
     await page.getByTestId("explore-tab-conditions").click();
     await expect(page.getByTestId("cond-tides")).toContainText("Monterey");
     await page.getByTestId("cond-map").click();
@@ -275,10 +289,12 @@ test.describe("Coastal mode", () => {
     await expect(hab).toHaveAttribute("data-tone", "gap");
     await expect(hab).toContainText("No recent HAB sample within 60 km");
     await expect(hab).toContainText("not a clean result");
-    await expect(page.getByTestId("trip-hab-summary")).toContainText("nothing measured describes these waters right now");
+    // the gap is a row of the evidence list, said as a gap, not a reassurance
+    await expect(page.getByTestId("gap-pn_cells-recent").or(page.getByTestId("gap-pda-recent")).first()).toContainText(/too far to describe these waters|in the last 30 days/);
     await expect(page.getByTestId("evidence-where")).toContainText("too far to describe these waters");
     if (!(await page.getByTestId("check-toxin-gap").count())) await page.getByTestId("checklist-more").click();
     await expect(page.getByTestId("check-toxin-gap")).toContainText("Look at CDPH's latest toxin test results");
+    await openDetails(page);
     await page.getByTestId("explore-tab-conditions").click();
     await expect(page.getByTestId("cond-buoy")).toContainText("No NDBC station reports within 60 km");
     await expect(page.getByTestId("cond-buoy")).toHaveAttribute("data-state", "none");
@@ -292,7 +308,9 @@ test.describe("Coastal mode", () => {
     await hydrated(page);
     if (!(await page.getByTestId("check-marine-gap").count())) await page.getByTestId("checklist-more").click();
     await expect(page.getByTestId("check-marine-gap")).toContainText("Read the NWS marine forecast for your zone");
-    await expect(page.getByTestId("check-marine-gap")).toContainText("did not answer just now");
+    await page.getByTestId("check-marine-gap-why").click();
+    await expect(page.getByTestId("check-marine-gap-reason")).toContainText("did not answer just now");
+    await openDetails(page);
     await page.getByTestId("explore-tab-conditions").click();
     const marine = page.getByTestId("cond-marine");
     await expect(marine).toContainText("did not answer just now");
@@ -310,7 +328,7 @@ test.describe("Coastal mode", () => {
     await expect(page.getByTestId("coast-measured")).toBeVisible();
     expect(await page.evaluate(() => localStorage.getItem("cw-mode-v1"))).toBe("research");
     await page.getByTestId("mode-switch-navy").getByTestId("mode-coastal").click();
-    await expect(page.getByTestId("explore")).toBeVisible();
+    await expect(page.getByTestId("coast-details")).toBeVisible();
     // a shared research link shows Research here, but the visitor's own choice stays Coastal
     await page.goto(`${OK}/coast?place=port-550&mode=research`);
     await expect(page.getByTestId("mode-switch-navy").getByTestId("mode-research")).toHaveAttribute("aria-pressed", "true");

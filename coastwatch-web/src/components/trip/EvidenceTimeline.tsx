@@ -212,7 +212,7 @@ export function EvidenceTimeline({
             onClick={() => onFocus(on ? null : r.focus)}
             aria-pressed={on}
             className={`cw-press absolute left-0 flex flex-col justify-center rounded-lg px-1 text-left transition-colors ${on ? "bg-accent/10" : "hover:bg-surface-3/60"}`}
-            style={LABEL ? { top: y0, height: ROW, width: LABEL - 6 } : { top: y0 - 2 + (i === 0 ? 0 : 0), height: 24, width: "100%" }}
+            style={LABEL ? { top: y0, height: ROW, width: LABEL - 6 } : { top: y0 - 12 + (i === 0 ? 0 : 0), height: 44, width: "100%" }}
             data-testid={`ev-label-${r.id}`}
           >
             <span className="flex items-center gap-1.5 text-[13px] font-semibold leading-tight text-ink">
