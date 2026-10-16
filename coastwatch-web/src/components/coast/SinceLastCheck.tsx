@@ -102,7 +102,7 @@ function SinceLastCheckInner() {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
-  const checkedLine = snap.official.ok && snap.official.checkedAt ? `CoastWatch last checked the agencies' pages ${formatDateTimePT(snap.official.checkedAt)}.` : "Official notices could not be loaded.";
+  const checkedLine = snap.official.ok && snap.official.checkedAt ? `Neritic last checked the agencies' pages ${formatDateTimePT(snap.official.checkedAt)}.` : "Official notices could not be loaded.";
   const forget = () => {
     forgetAll();
     setForgotten(true);
@@ -145,7 +145,7 @@ function SinceLastCheckInner() {
             </ul>
           ) : (
             <p className="mt-1 text-[15px] text-ink-2" data-testid="since-none">
-              No change in CoastWatch&rsquo;s information for these waters since then. That does not mean nothing changed at the agencies.
+              No change in Neritic&rsquo;s information for these waters since then. That does not mean nothing changed at the agencies.
             </p>
           )}
           {hidden > 0 ? (

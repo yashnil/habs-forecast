@@ -1,6 +1,6 @@
 import { KeptView } from "@/components/coast/KeptView";
 
-export const metadata = { title: "Kept briefings — CoastWatch" };
+export const metadata = { title: "Kept briefings" };
 
 /**
  * Briefings kept on this device: dated copies to read or print. Read from the device only (no data

@@ -7,7 +7,7 @@
 export const OFFICIAL_STATUS = {
   heading: "Official closures and advisories",
   notTracked:
-    "CoastWatch lists notices transcribed from CDFW and CDPH pages. The list has not been checked by a person and may be incomplete. The absence of a notice here does not mean an area is open or that seafood is safe.",
+    "Neritic lists notices transcribed from CDFW and CDPH pages. The list has not been checked by a person and may be incomplete. The absence of a notice here does not mean an area is open or that seafood is safe.",
   missingNotOpen:
     "No notice listed here does not mean an area is open or that seafood is safe. Always confirm with CDFW and CDPH.",
   instruction: "Before fishing or harvesting, check the official sources:",
@@ -62,7 +62,7 @@ export const PORT_COPY = {
   nearshore: "C-HARM does not provide domoic acid probabilities for many cells within about 3–6 km of shore, so fewer cells contribute to those values.",
   history: "One value per C-HARM nowcast (median of the same cells). Days without a published run are left blank.",
   chlorophyll:
-    "NOAA VIIRS, 8-day windows (dated at the centre of each window; neighbouring values overlap): NOAA-21 daily passes, with NOAA-20 where NOAA-21 has no clear pixel, combined by CoastWatch. Before NOAA ended Suomi-NPP data (Nov 2, 2026), NOAA's S-NPP 8-day composites, which read about 4–10% higher. Median of clear pixels within 15 km. Chlorophyll is algae biomass, not toxin.",
+    "NOAA VIIRS, 8-day windows (dated at the centre of each window; neighbouring values overlap): NOAA-21 daily passes, with NOAA-20 where NOAA-21 has no clear pixel, combined by Neritic. Before NOAA ended Suomi-NPP data (Nov 2, 2026), NOAA's S-NPP 8-day composites, which read about 4–10% higher. Median of clear pixels within 15 km. Chlorophyll is algae biomass, not toxin.",
 } as const;
 
 export const CHLOROPHYLL_COPY = {
@@ -103,7 +103,7 @@ export const CHL_NEAR_COPY = {
 } as const;
 
 export const DISCLAIMER =
-  "CoastWatch brings together public data from state and federal agencies. It is not an official source. Closures, advisories and seasons from CDFW, CDPH and OEHHA always take precedence. Forecasts are probabilities, not guarantees.";
+  "Neritic brings together public data from state and federal agencies. It is not an official source. Closures, advisories and seasons from CDFW, CDPH and OEHHA always take precedence. Forecasts are probabilities, not guarantees.";
 
 /** Primary navigation. Only built experiences appear: unbuilt features are not navigation. */
 export const EXPERIENCES = [
@@ -139,7 +139,7 @@ export const BLOOM_COPY = {
   csvWhat:
     "The original CalHABMAP measurements for this station since 2014, exactly as SCCOOS ERDDAP serves them: not a copy of the chart above. Units are in the second row, NaN means not measured, and a 0 is a reported 0 (not quantified).",
   csvOutage: "If SCCOOS is unavailable the file will not load; try again later, or open the station's dataset page.",
-  csvStale: "SCCOOS did not respond when CoastWatch last checked this station, so the download may fail too.",
+  csvStale: "SCCOOS did not respond when Neritic last checked this station, so the download may fail too.",
 } as const;
 
 export const FISHERIES_COPY = {
@@ -150,7 +150,7 @@ export const FISHERIES_COPY = {
     "Historical fisheries exposure is the reported value of past commercial landings of species that marine toxins can affect. It is not a prediction of losses, not an estimate of harm, and says nothing about any current or future season.",
   atStake: "Past landings show what was at stake in earlier seasons. They are not losses, not a forecast of losses, and say nothing about the current season.",
   portUnavailable: "Port-level values are not available",
-  reviewPending: "Species tiers are CoastWatch's editorial grouping and await review by an independent HAB scientist.",
+  reviewPending: "Species tiers are Neritic's editorial grouping and await review by an independent HAB scientist.",
   unavailable: "Fisheries data are unavailable in this dataset.",
   /** what the figures can and cannot establish (M7 §5) */
   can: [
@@ -212,14 +212,14 @@ export const RESEARCH = {
   published: "Published January 29, 2026",
   doi: "https://doi.org/10.33422/ccgconf.v2i2.1619",
   relation:
-    "The paper develops physics-informed machine-learning forecasts of nearshore chlorophyll-a. CoastWatch does not run those research models: its forecast layer is NOAA's C-HARM, and its observations come from NOAA CoastWatch, HF-radar networks, CalHABMAP, NOAA Fisheries and the CDFW and CDPH notice pages. The publication covers the research, not this application, which has not been reviewed by an independent HAB scientist.",
+    "The paper develops physics-informed machine-learning forecasts of nearshore chlorophyll-a. Neritic does not run those research models: its forecast layer is NOAA's C-HARM, and its observations come from NOAA CoastWatch, HF-radar networks, CalHABMAP, NOAA Fisheries and the CDFW and CDPH notice pages. The publication covers the research, not this application, which has not been reviewed by an independent HAB scientist.",
 };
 
 /** The About page (M8): what CoastWatch is, the kinds of information, its limits, the research, providers. */
 export const ABOUT = {
   title: "Harmful algal blooms on the California coast, in one place",
   lede:
-    "CoastWatch is an independent research project, published as a research preview: no independent scientist or agency has reviewed it, and it is not a regulatory or seafood-safety service. It brings together the public information about harmful algal blooms along California’s coast: official notices, NOAA’s bloom forecast, satellite and shore-station measurements, and past fisheries landings. Each is labelled for what it is.",
+    "Neritic is an independent research project, published as a research preview: no independent scientist or agency has reviewed it, and it is not a regulatory or seafood-safety service. It brings together the public information about harmful algal blooms along California’s coast: official notices, NOAA’s bloom forecast, satellite and shore-station measurements, and past fisheries landings. Each is labelled for what it is.",
   kindsIntro:
     "Every page uses the same four colours, and they never stand for anything else. A forecast is never shown as a measurement, chlorophyll is never shown as toxin, and history is never shown as a prediction.",
   kinds: [
@@ -264,10 +264,10 @@ export const ABOUT = {
     result:
       "Evaluated with the same diagnostics, the physics-informed model matches, but does not beat, a standard ConvLSTM baseline; it modestly improves spatial fidelity and training stability.",
     relation:
-      "CoastWatch does not run those research models. Its forecast is NOAA’s operational C-HARM, and its observations come from the agencies below. The publication covers the research, not this application: CoastWatch has not been peer reviewed or reviewed by an independent HAB scientist.",
+      "Neritic does not run those research models. Its forecast is NOAA’s operational C-HARM, and its observations come from the agencies below. The publication covers the research, not this application: Neritic has not been peer reviewed or reviewed by an independent HAB scientist.",
   },
   providersIntro:
-    "CoastWatch reads public data from these providers every six hours, checks it against the source, and shows the last good data with its own dates when a source fails.",
+    "Neritic reads public data from these providers every six hours, checks it against the source, and shows the last good data with its own dates when a source fails.",
   providers: [
     { name: "NOAA C-HARM v3.1", what: "Bloom and domoic acid forecast (NOAA CoastWatch West Coast ERDDAP)" },
     { name: "NOAA CoastWatch, NASA GIBS", what: "Satellite chlorophyll: Sentinel-3 OLCI 300 m, VIIRS 750 m (NOAA-21, NOAA-20)" },
@@ -280,7 +280,7 @@ export const ABOUT = {
   repo: "https://github.com/yashnil/habs-forecast",
   review: [
     "The official notices are transcribed from the agency pages and have not been checked by a person. They may be incomplete.",
-    "The species tiers on the Fisheries page are CoastWatch’s grouping and await independent scientific review.",
+    "The species tiers on the Fisheries page are Neritic’s grouping and await independent scientific review.",
     "The application has not been reviewed by an independent HAB scientist.",
   ],
 };
@@ -289,10 +289,10 @@ export const ABOUT = {
 export const TOUR = {
   steps: {
     what: {
-      title: "What CoastWatch shows",
+      title: "What Neritic shows",
       body: [
         "Harmful algal bloom information for the California coast in one place: NOAA's C-HARM model, satellite and shore-station measurements, and official notices. Each is labelled for what it is.",
-        "CoastWatch is not an official source. Closures and advisories come from CDFW and CDPH.",
+        "Neritic is not an official source. Closures and advisories come from CDFW and CDPH.",
       ],
     },
     place: {
@@ -315,7 +315,7 @@ export const TOUR = {
     gaps: {
       title: "Empty water is missing data",
       body: [
-        "Hatched or empty water has no value. C-HARM has no toxin values for many cells within about 3–6 km of shore, or for bays such as San Francisco Bay; satellites miss cloudy days. CoastWatch never fills these in.",
+        "Hatched or empty water has no value. C-HARM has no toxin values for many cells within about 3–6 km of shore, or for bays such as San Francisco Bay; satellites miss cloudy days. Neritic never fills these in.",
         "Click or tap any spot on the water to see why it is empty.",
       ],
     },
@@ -328,7 +328,7 @@ export const TOUR = {
     official: {
       title: "Official restrictions",
       body: [
-        "Closures and advisories come only from CDFW and CDPH. CoastWatch lists them with links to the agencies; it has not verified them, and the list may be incomplete. This button opens the list from any page.",
+        "Closures and advisories come only from CDFW and CDPH. Neritic lists them with links to the agencies; it has not verified them, and the list may be incomplete. This button opens the list from any page.",
       ],
     },
     pages: {
@@ -340,7 +340,7 @@ export const TOUR = {
     limits: {
       title: "Not a safety clearance",
       body: [
-        "CoastWatch does not say that seafood is safe or that an area is open, and a missing notice is not an all-clear. Before you fish or harvest, check CDFW and CDPH, or call the CDPH shellfish line at 1 (800) 553-4133.",
+        "Neritic does not say that seafood is safe or that an area is open, and a missing notice is not an all-clear. Before you fish or harvest, check CDFW and CDPH, or call the CDPH shellfish line at 1 (800) 553-4133.",
       ],
     },
   },

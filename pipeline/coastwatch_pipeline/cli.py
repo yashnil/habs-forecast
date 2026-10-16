@@ -187,7 +187,7 @@ def cmd_review(a: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(prog="cwp", description="CoastWatch pipeline")
+    p = argparse.ArgumentParser(prog="cwp", description="Neritic data pipeline (formerly CoastWatch)")
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run", help="fetch, validate, render and publish artifacts")
     r.add_argument("--out", default=str(DEFAULT_OUT))

@@ -71,7 +71,7 @@ export function WhatMatters({ items, checked, onFocus, focus, sourceNote }: { it
                         {m.source.label} ↗
                       </a>
                     )}
-                    {m.kind === "official" && checked && <span className="text-ink-3">CoastWatch&apos;s copy, checked {checked}</span>}
+                    {m.kind === "official" && checked && <span className="text-ink-3">Neritic&apos;s copy, checked {checked}</span>}
                     {m.focus && (
                       <button
                         type="button"

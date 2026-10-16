@@ -70,7 +70,7 @@ export function keptTitle(k: Kept): string {
 
 export function keptFilename(k: Kept): string {
   const d = k.keptAt.slice(0, 10);
-  return `coastwatch-${k.snapshot.place.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${d}.html`;
+  return `neritic-${k.snapshot.place.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${d}.html`;
 }
 
 /** The plain sections of a kept briefing, shared by the in-app view and the saved file. */
@@ -95,9 +95,9 @@ export function keptSections(k: Kept): KeptSection[] {
   for (const d of o.disputes.filter((x) => o.notices.some((n) => n.id === x.recordId)))
     status.lines.push({ text: `${d.agency} ${d.release} appears to lift a notice above; not reviewed by a person`, url: d.url });
   if (o.ok && !mine.length && !o.statements.length)
-    status.lines.push({ text: `No notice in CoastWatch's list covered these waters for ${species.id === "any" ? "any species" : s.species.label} when this was saved. That is not the same as open or safe.` });
+    status.lines.push({ text: `No notice in Neritic's list covered these waters for ${species.id === "any" ? "any species" : s.species.label} when this was saved. That is not the same as open or safe.` });
   if (o.ok)
-    status.lines.push({ text: `Transcribed by CoastWatch from agency pages; ${o.reviewStatus === "human_verified" ? "checked by a person" : "not checked by a person"}.`, note: `CoastWatch last checked the agencies' pages ${o.checkedAt ? stamp(o.checkedAt) : "(unknown)"}` });
+    status.lines.push({ text: `Transcribed by Neritic from agency pages; ${o.reviewStatus === "human_verified" ? "checked by a person" : "not checked by a person"}.`, note: `Neritic last checked the agencies' pages ${o.checkedAt ? stamp(o.checkedAt) : "(unknown)"}` });
   out.push(status);
 
   const others = o.notices.filter((n) => !n.forYou && n.status === "active");
@@ -138,7 +138,7 @@ export function keptHtml(k: Kept): string {
           .join("")}</ul></section>`,
     )
     .join("");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(`CoastWatch briefing, saved ${stamp(k.keptAt)}: ${keptTitle(k)}`)}</title>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(`Neritic briefing, saved ${stamp(k.keptAt)}: ${keptTitle(k)}`)}</title>
 <style>
 :root{color-scheme:light}body{margin:0;background:#fff;color:#111;font:17px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 main{max-width:720px;margin:0 auto;padding:16px}h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:20px 0 6px;border-bottom:2px solid #111;padding-bottom:2px}
@@ -147,11 +147,11 @@ ul{list-style:none;margin:0;padding:0}li{padding:8px 0;border-bottom:1px solid #
 a{display:block;color:#0645ad;font-size:14px;word-break:break-all}
 @media print{body{font-size:12pt}main{padding:0}a{color:#000}.warn{border-width:2px}@page{margin:14mm}}
 </style></head><body><main>
-<p class="meta">CoastWatch briefing, kept copy</p>
+<p class="meta">Neritic briefing, kept copy</p>
 <h1>${esc(keptTitle(k))}</h1>
 <p class="meta">Saved ${esc(stamp(k.keptAt))}${s.place.county ? ` · ${esc(s.place.county)} County` : ""} · ${esc(`${s.place.lat.toFixed(3)}°N, ${Math.abs(s.place.lon).toFixed(3)}°W`)}</p>
 <p class="warn">${esc(KEPT_WARNING)}</p>
 ${sections}
-<footer><p class="meta">Saved ${esc(stamp(k.keptAt))}. Built from CoastWatch data generated ${esc(stamp(s.dataGeneratedAt))}. CoastWatch is an independent research project, not a government agency. ${esc(KEPT_WARNING)}</p></footer>
+<footer><p class="meta">Saved ${esc(stamp(k.keptAt))}. Built from Neritic data generated ${esc(stamp(s.dataGeneratedAt))}. Neritic is an independent research project, not a government agency. ${esc(KEPT_WARNING)}</p></footer>
 </main></body></html>`;
 }

@@ -290,7 +290,7 @@ export function OfficialForPort({ ds, v, port, now }: { ds: OfficialDataset | nu
         </div>
       ) : (
         <Notice tone="neutral" testid="port-no-notices">
-          No active notices in CoastWatch&apos;s list mention this port&apos;s county or latitude.
+          No active notices in Neritic&apos;s list mention this port&apos;s county or latitude.
         </Notice>
       )}
       <p className="text-[13px] text-ink-3">{OFFICIAL_STATUS.missingNotOpen}</p>

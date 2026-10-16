@@ -60,7 +60,7 @@ export function FisheriesByMode({ official, children }: { official: OfficialData
             <h2 className="mt-1 font-display text-[22px] font-medium text-ink">{`${notices.length} active notice${notices.length === 1 ? "" : "s"}`}</h2>
           ) : (
             <h2 className="mt-1 text-[16px] font-medium text-ink" data-testid="fish-notices-none">
-              No notice in CoastWatch&apos;s list names {speciesPhrase(s)}
+              No notice in Neritic&apos;s list names {speciesPhrase(s)}
             </h2>
           )}
           {!notices.length && <p className="mt-1 text-[14px] text-ink-2">That is not the same as safe or open: the list may be incomplete and is not verified. Check the agency.</p>}

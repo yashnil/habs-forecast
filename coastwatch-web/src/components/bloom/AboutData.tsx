@@ -117,7 +117,7 @@ export function AboutData({ station, dataset, compact = false }: { station: ObsS
           </ul>
         </details>
         <details className="py-2.5">
-          <summary className="cursor-pointer font-medium text-ink">How CoastWatch processes these data</summary>
+          <summary className="cursor-pointer font-medium text-ink">How Neritic processes these data</summary>
           <dl className="mt-2 grid gap-x-4 gap-y-1.5 sm:grid-cols-[auto_1fr]">
             {Object.entries(dataset.method).map(([k, v]) => (
               <div key={k} className="contents">

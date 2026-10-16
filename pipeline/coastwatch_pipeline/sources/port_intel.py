@@ -484,7 +484,7 @@ def run(
             "charm_leads": "Statistics from the published C-HARM value grids of the current run (same values as the map).",
             "charm_history": f"Median over the same neighbourhood for each C-HARM nowcast in the last {HISTORY_DAYS} days available on ERDDAP; days without a run are absent.",
             "chlorophyll": (
-                "Computed by CoastWatch from NOAA's daily VIIRS 750 m merges: NOAA-21, with NOAA-20 only in pixels NOAA-21 has no value for "
+                "Computed by Neritic from NOAA's daily VIIRS 750 m merges: NOAA-21, with NOAA-20 only in pixels NOAA-21 has no value for "
                 f"(each pixel from one satellite, never averaged). For each date, every pixel's median over an {CHL_WINDOW_DAYS}-day window "
                 f"({CHL_WINDOW_BEFORE} days before to {CHL_WINDOW_AFTER} after; successive windows overlap), then the median of those pixels within {RADIUS_KM:.0f} km. "
                 "Only complete windows are shown. Cloud and land pixels are excluded; a missing value means no clear observation."

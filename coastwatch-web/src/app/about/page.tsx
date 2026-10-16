@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BRAND } from "@/content/brand";
 import { AppShell } from "@/components/AppShell";
 import { DataBanners } from "@/components/Banners";
 import { KindChip, type Kind } from "@/components/ui/Kinds";
@@ -8,7 +9,7 @@ import { loadData } from "@/lib/data";
 import { sourceStatus } from "@/lib/layers";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "About — CoastWatch" };
+export const metadata = { title: "About" };
 
 /**
  * What CoastWatch is, the kinds of information it shows and where, what it cannot tell you, the
@@ -28,7 +29,7 @@ export default async function AboutPage() {
     >
       <article className="mx-auto w-full max-w-[1120px] px-4 pb-20 pt-8 sm:px-8 sm:pt-12" data-testid="about-page">
         <header className="max-w-[760px] space-y-4">
-          <p className="text-[13px] font-medium text-ink-3">About CoastWatch</p>
+          <p className="text-[13px] font-medium text-ink-3">About Neritic · {BRAND.tagline}</p>
           <h1 className="text-balance font-display text-[34px] font-medium leading-[1.08] text-ink sm:text-[46px]">{ABOUT.title}</h1>
           <p className="font-display text-[19px] leading-[1.5] text-ink-2 sm:text-[21px]">{ABOUT.lede}</p>
           <p className="text-[16px]">
@@ -36,11 +37,14 @@ export default async function AboutPage() {
               Take the tour of the Ocean Map →
             </Link>
           </p>
+          <p className="max-w-[68ch] text-[14px] leading-relaxed text-ink-3" data-testid="about-independence">
+            {BRAND.independence} {BRAND.formerly}
+          </p>
         </header>
 
         <section aria-labelledby="purpose-h" className="mt-10 max-w-[760px] space-y-2" data-testid="about-purpose">
           <h2 id="purpose-h" className="text-[13.5px] font-semibold text-ink-3">
-            What CoastWatch is set up for on this device
+            What Neritic is set up for on this device
           </h2>
           <PurposeSwitch showReset />
           <p className="text-[14px] text-ink-3">It changes only where you start and what comes first. Every page, value, caveat and official notice is the same for everyone. Nothing is sent anywhere.</p>
@@ -71,7 +75,7 @@ export default async function AboutPage() {
 
         <section aria-labelledby="cannot-h" className="mt-12 grid gap-x-12 gap-y-4 border-t border-hairline pt-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]" data-testid="about-cannot">
           <h2 id="cannot-h" className="font-display text-[26px] font-medium leading-tight text-ink">
-            What CoastWatch cannot tell you
+            What Neritic cannot tell you
           </h2>
           <ul className="space-y-3 text-[16px] leading-relaxed text-ink-2">
             {ABOUT.cannot.map((t) => (

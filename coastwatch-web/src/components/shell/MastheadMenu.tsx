@@ -55,7 +55,7 @@ export function MastheadMenu({ active }: { active: string }) {
             <ModeSwitch tone="paper" />
           </div>
           <Link href="/about" className={item} aria-current={active === "about" ? "page" : undefined} data-testid="menu-about" onClick={() => setOpen(false)}>
-            About CoastWatch
+            About Neritic
           </Link>
           <Link href="/sources" className={item} aria-current={active === "sources" ? "page" : undefined} data-testid="menu-sources" onClick={() => setOpen(false)}>
             Data status and sources

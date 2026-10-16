@@ -126,7 +126,7 @@ function RunLine({ run, status, fresh }: { run: ForecastRun; status: SourceStatu
     <div className="space-y-1 rounded-lg bg-surface-2 px-3 py-2 text-[13px] text-ink-2" data-testid="run-line">
       <p>
         Issued <span className="font-medium text-ink tabular">{formatDate(run.issued_date, { year: true })}</span>
-        {run.issued_date_derived && <span className="text-ink-3" title="NOAA does not publish the issue date; CoastWatch infers it from the forecast's own dates."> (date inferred)</span>}
+        {run.issued_date_derived && <span className="text-ink-3" title="NOAA does not publish the issue date; Neritic infers it from the forecast's own dates."> (date inferred)</span>}
         {run.leads_missing.length > 0 && (
           <span className="text-ink-3"> · {run.leads_missing.map(leadLabel).join(", ")} not issued in this run</span>
         )}

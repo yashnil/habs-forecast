@@ -106,7 +106,7 @@ export function nextSteps(x: StepInput): Step[] {
       source: { label: `${a.dispute!.agency} ${a.dispute!.release}, the later release`, url: a.dispute!.url },
       also: src(a) ? { label: `the original notice`, url: src(a)!.url } : undefined,
       scope: `${a.record.species.join(", ")}${a.record.area.description ? ` · ${a.record.area.description}` : ""}`,
-      caveat: "No person has reviewed the release yet, so CoastWatch shows the notice as neither in effect nor lifted.",
+      caveat: "No person has reviewed the release yet, so Neritic shows the notice as neither in effect nor lifted.",
     });
   }
 
@@ -178,7 +178,7 @@ export function nextSteps(x: StepInput): Step[] {
       reason: "CDFW can delay the season or limit trap depth to protect whales and sea turtles; this is separate from toxin testing.",
       source: { label: "CDFW Whale Safe Fisheries", url: "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries" },
       scope: `${activity.charAt(0).toUpperCase() + activity.slice(1)}Dungeness crab, by fishing zone`,
-      caveat: "CoastWatch does not track these actions; only CDFW's page and declarations say what applies.",
+      caveat: "Neritic does not track these actions; only CDFW's page and declarations say what applies.",
     });
   else if (x.species.link) out.push({ id: "species-rules", kind: "official", title: `Check the rules for ${speciesPhrase(x.species)}`, reason: "Seasons, size and bag limits, and gear rules are set by CDFW and can change during a season.", source: x.species.link, scope: `${activity.charAt(0).toUpperCase() + activity.slice(1)}${activity ? speciesPhrase(x.species) : x.species.label}` });
   if (x.audience !== "commercial") {
@@ -198,9 +198,9 @@ export function nextSteps(x: StepInput): Step[] {
       source: { label: AGENCY_LINKS.cdphMap.label, url: AGENCY_LINKS.cdphMap.url },
       also: { label: "CDPH's latest test results (PDF)", url: AGENCY_LINKS.cdphResults.url },
       scope: `${x.species.id === "any" ? "Shellfish" : x.species.label} in this county`,
-      caveat: "CoastWatch does not carry CDPH's shellfish results; seawater measurements are not a substitute.",
+      caveat: "Neritic does not carry CDPH's shellfish results; seawater measurements are not a substitute.",
     });
-  out.push({ id: "mpa", kind: "official", title: "Check Marine Protected Areas near your waters", reason: "Take is restricted or prohibited inside MPAs; CoastWatch does not draw them.", source: { label: AGENCY_LINKS.cdfwMpa.label, url: AGENCY_LINKS.cdfwMpa.url } });
+  out.push({ id: "mpa", kind: "official", title: "Check Marine Protected Areas near your waters", reason: "Take is restricted or prohibited inside MPAs; Neritic does not draw them.", source: { label: AGENCY_LINKS.cdfwMpa.label, url: AGENCY_LINKS.cdfwMpa.url } });
 
   // the species' landings history (Fisheries): history, never an outlook
   const group = FISHERIES_GROUP[x.species.id];
@@ -225,7 +225,7 @@ export function nextSteps(x: StepInput): Step[] {
     const p = c.marine.data.periods[0];
     out.push({ id: "marine", kind: "conditions", title: `${p.name}: ${marineHeadline(p)}`, reason: `NWS forecast for ${c.marine.data.zoneName} (${c.marine.data.zone}).`, when: c.marine.data.updated ? `issued ${x.fmt(c.marine.data.updated)}` : undefined, source: { label: "NWS marine forecast", url: c.marine.url } });
   } else if (c && c.marine.status === "none" && c.marine.url) {
-    out.push({ id: "marine-link", kind: "conditions", title: "Read NWS's marine forecast and any warnings for your waters", reason: "Wind, waves and small craft advisories come from the National Weather Service; CoastWatch links to them rather than copying them.", source: { label: "NWS marine forecasts", url: c.marine.url } });
+    out.push({ id: "marine-link", kind: "conditions", title: "Read NWS's marine forecast and any warnings for your waters", reason: "Wind, waves and small craft advisories come from the National Weather Service; Neritic links to them rather than copying them.", source: { label: "NWS marine forecasts", url: c.marine.url } });
   } else if (c && c.marine.status === "unavailable") {
     out.push({ id: "marine-gap", kind: "gap", title: "Check the NWS marine forecast directly", reason: `NWS's forecast service did not answer just now (${c.marine.reason.replace(/^The NWS forecast did not load /, "").replace(/[()]/g, "").trim()}).`, source: { label: "NWS marine forecasts", url: "https://www.weather.gov/marine/" } });
   }
@@ -251,7 +251,7 @@ export function nextSteps(x: StepInput): Step[] {
 
   // 8. the list itself is not verified: one place to say it, with what to do
   if (x.verification && x.verification.state !== "verified")
-    out.push({ id: "verify", kind: "gap", title: "Confirm on the agency pages before you go", reason: "CoastWatch's notice list is transcribed from agency pages and not checked by a person; it can miss or lag a change.", source: { label: AGENCY_LINKS.cdfwAdvisories.label, url: AGENCY_LINKS.cdfwAdvisories.url } });
+    out.push({ id: "verify", kind: "gap", title: "Confirm on the agency pages before you go", reason: "Neritic's notice list is transcribed from agency pages and not checked by a person; it can miss or lag a change.", source: { label: AGENCY_LINKS.cdfwAdvisories.label, url: AGENCY_LINKS.cdfwAdvisories.url } });
 
   // shellfish harvesters read CDPH's results before anything else that is not a notice
   if (x.audience === "shellfish" || ["mussel", "bivalve", "razor-clam"].includes(x.species.id)) {

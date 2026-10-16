@@ -11,7 +11,7 @@ import { DEFAULT_STATION } from "@/lib/observations";
 export const dynamic = "force-dynamic";
 
 const str = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
-export const metadata = { title: "Bloom Intelligence — CoastWatch" };
+export const metadata = { title: "Bloom Intelligence" };
 
 export default async function BloomPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const data = await loadBloomData();

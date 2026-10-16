@@ -31,10 +31,10 @@ test.describe("since you last checked", () => {
     await expect(s).toHaveAttribute("data-state", "first");
     await expect(page.getByTestId("since-first")).toContainText("Remembered on this device");
     await expect(page.getByTestId("since-list")).toHaveCount(0);
-    await expect(page.getByTestId("since-checked")).toContainText("CoastWatch last checked the agencies' pages");
+    await expect(page.getByTestId("since-checked")).toContainText("Neritic last checked the agencies' pages");
   });
 
-  test("a return visit lists the agency's changed statement first, and an old notice as newly listed by CoastWatch, never as new", async ({ page }) => {
+  test("a return visit lists the agency's changed statement first, and an old notice as newly listed by Neritic, never as new", async ({ page }) => {
     await seedPreviousVisit(page, "2026-10-07T16:00:00Z", (snap) => {
       snap.official.statements.find((s) => s.id === SEASON)!.statement = "Commercial Fishery: Season status to be announced.";
       // the Del Norte razor-clam notices were not listed at the last visit; the agency dated one before it
@@ -57,7 +57,7 @@ test.describe("since you last checked", () => {
     await expect(razor.first()).toContainText("after your last check");
     const mussels = page.getByTestId("since-list").locator("li", { hasText: "quarantine" });
     await expect(mussels).toHaveAttribute("data-testid", "since-item-listed-late");
-    await expect(mussels).toContainText("Newly listed by CoastWatch");
+    await expect(mussels).toContainText("Newly listed by Neritic");
     await expect(mussels).toContainText("Not new from the agency");
     const text = (await page.getByTestId("since-list").innerText()).replace(/\s+/g, " ");
     expect(text).not.toMatch(/\b(is|are) (open|safe)\b|safe to eat|good fishing/i);
@@ -102,7 +102,7 @@ test.describe("since you last checked", () => {
     expect(await page.evaluate(() => localStorage.getItem("cw-waters-v1"))).toBeNull();
   });
 
-  test("when CoastWatch data are unavailable nothing is listed or claimed", async ({ page }) => {
+  test("when Neritic data are unavailable nothing is listed or claimed", async ({ page }) => {
     await page.goto(`${NODATA}${CRAB}`);
     await page.waitForTimeout(1500);
     await expect(page.getByTestId("since-last-check")).toHaveCount(0);
@@ -123,7 +123,7 @@ test.describe("kept briefing", () => {
     await page.getByTestId("kept-make").click();
     await expect(page.getByTestId("kept-done")).toContainText("Kept ");
     const [dl] = await Promise.all([page.waitForEvent("download"), page.getByTestId("kept-download").click()]);
-    expect(dl.suggestedFilename()).toMatch(/^coastwatch-crescent-city-\d{4}-\d{2}-\d{2}\.html$/);
+    expect(dl.suggestedFilename()).toMatch(/^neritic-crescent-city-\d{4}-\d{2}-\d{2}\.html$/);
     const file = test.info().outputPath(dl.suggestedFilename());
     await dl.saveAs(file);
     const html = readFileSync(file, "utf8");

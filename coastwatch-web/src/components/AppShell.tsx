@@ -2,6 +2,8 @@ import Link from "next/link";
 import { MotionConfig } from "motion/react";
 import { PageIn } from "@/components/motion/PageIn";
 import { RESEARCH } from "@/content/copy";
+import { BRAND } from "@/content/brand";
+import { BrandMark, Wordmark } from "@/components/brand/BrandMark";
 import { ModeSwitch, PrimaryNav } from "@/components/shell/ModeNav";
 import { SourceHealthDot } from "@/components/SourceHealthDot";
 import { OfficialDrawer, OfficialPill, OfficialProvider, TabBar } from "@/components/shell/OfficialShell";
@@ -47,14 +49,9 @@ export function AppShell({
       <div className={`flex min-h-dvh flex-col bg-page pb-[var(--cw-tabbar-h)] md:pb-0 ${scroll === "app" ? "lg:h-dvh" : ""}`}>
         <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-navy-950 text-on-navy">
           <div className="flex h-[52px] min-w-0 items-center gap-3 px-3 min-[360px]:px-4 min-[400px]:gap-6 md:h-[var(--cw-masthead-h)] md:gap-5 md:px-6 lg:gap-8">
-            <Link href="/" className="flex shrink-0 items-center gap-2 min-[360px]:gap-2.5" aria-label="CoastWatch home">
-              <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden>
-                <rect width="32" height="32" rx="8" fill="#10263e" />
-                <path d="M6 19c3.2-2.6 6.4-2.6 9.6 0s6.6 2.6 10.4-.2" fill="none" stroke="#6cc6dc" strokeWidth="2.2" strokeLinecap="round" />
-                <path d="M6 13.5c3.2-2.6 6.4-2.6 9.6 0s6.6 2.6 10.4-.2" fill="none" stroke="#e8eef5" strokeOpacity=".55" strokeWidth="2.2" strokeLinecap="round" />
-                <circle cx="22.5" cy="8.5" r="2.2" fill="#f6bb5c" />
-              </svg>
-              <span className="text-[17px] font-semibold tracking-tight text-white max-[359px]:sr-only">CoastWatch</span>
+            <Link href="/" className="flex shrink-0 items-center gap-2 min-[360px]:gap-2.5" aria-label={`${BRAND.name} home`} data-testid="brand-home">
+              <BrandMark size={26} />
+              <Wordmark className="text-[17px] text-white" />
               {/* not independently validated: said on every page, beside the name (phones: the footer and the welcome) */}
               <span className="hidden whitespace-nowrap border-l border-white/15 pl-2.5 text-[13px] text-on-navy-2 lg:inline" data-testid="research-preview-badge">
                 Research preview
@@ -96,11 +93,14 @@ export function AppShell({
         {scroll === "page" && (
           <footer className="border-t border-hairline bg-page" data-testid="site-footer">
             <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6 text-[14px] text-ink-2 sm:px-8">
-              <span className="font-semibold text-ink">CoastWatch · research preview</span>
+              <span className="font-semibold text-ink" data-testid="footer-brand">{BRAND.name} · research preview</span>
               <span className="text-ink-3" data-testid="footer-disclaimer">
                 Not an official source and not independently validated. It does not replace CDFW or CDPH: closures, advisories and seafood safety come from them.
               </span>
-              <nav aria-label="About CoastWatch" className="flex flex-wrap gap-x-5 gap-y-2 sm:ml-auto">
+              <span className="w-full text-[13px] text-ink-3 sm:order-last" data-testid="footer-independence">
+                {BRAND.independence}
+              </span>
+              <nav aria-label={`About ${BRAND.name}`} className="flex flex-wrap gap-x-5 gap-y-2 sm:ml-auto">
                 <Link href="/about" className="font-medium text-accent hover:underline">About</Link>
                 <Link href="/sources" className="font-medium text-accent hover:underline">Data &amp; sources</Link>
                 <a href={RESEARCH.doi} target="_blank" rel="noreferrer" className="font-medium text-accent hover:underline">Research paper ↗</a>

@@ -5,19 +5,21 @@ This repository holds two related pieces of work by Yashnil Mohanty:
 | | What it is | Where |
 |---|---|---|
 | **Published research** | Physics-guided neural forecasts of nearshore chlorophyll-a (an algal-bloom proxy) in the California Current System: data pipeline, models, trained artifacts and diagnostics | repository root, `convLSTM/`, `pinn/`, `tft/`, `paper_results/`, `Diagnostics_*` |
-| **CoastWatch** | A coastal-conditions map for California fishing communities that brings together agency HAB forecasts, satellite and HF-radar observations, and official notices, each labelled for what it is | `pipeline/`, `coastwatch-web/`, `docs/coastwatch/` |
+| **Neritic** (formerly CoastWatch) | Coastal intelligence, grounded in evidence: a coastal-conditions map for California fishing communities that brings together agency HAB forecasts, satellite and HF-radar observations, and official notices, each labelled for what it is | `pipeline/`, `coastwatch-web/`, `docs/coastwatch/` |
 
 > **Publication.** Mohanty, Y. (2025). Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System. *Proceedings of the 6th World Conference on Climate Change and Global Warming*, 2(2). Published 29 January 2026. [doi:10.33422/ccgconf.v2i2.1619](https://doi.org/10.33422/ccgconf.v2i2.1619) · [publisher page](https://www.dpublication.com/conference-proceedings/index.php/CCGCONF/article/view/1619) (CC BY 4.0)
 
-**How the two relate.** The paper concerns forecasting chlorophyll-a with physics-informed machine learning. CoastWatch does **not** run those research models: its forecast layer is NOAA's C-HARM v3.1, and its observations come from NOAA CoastWatch, IOOS/HFRNet and the agencies listed below. The research models would need retraining on operational (VIIRS-era) inputs and fresh validation before they could appear in CoastWatch ([development plan](docs/coastwatch/06-development-plan.md)). The publication covers the research only; CoastWatch itself has not been peer reviewed or reviewed by an independent HAB scientist.
+**How the two relate.** The paper concerns forecasting chlorophyll-a with physics-informed machine learning. Neritic does **not** run those research models: its forecast layer is NOAA's C-HARM v3.1, and its observations come from NOAA CoastWatch, IOOS/HFRNet and the agencies listed below. The research models would need retraining on operational (VIIRS-era) inputs and fresh validation before they could appear in Neritic ([development plan](docs/coastwatch/06-development-plan.md)). The publication covers the research only; Neritic itself has not been peer reviewed or reviewed by an independent HAB scientist.
+
+Neritic is an independent research project and is not affiliated with or endorsed by NOAA, CDFW, or CDPH. It was called CoastWatch until October 2026; it is not NOAA CoastWatch, the NOAA program whose satellite data it uses. Technical names (this repository, `coastwatch-web/`, the `coastwatch_pipeline` module, the data branches and the public URL) keep the earlier name for compatibility: [brand notes](docs/coastwatch/brand/neritic.md).
 
 **Research result in one line.** Evaluated with the same diagnostics pipeline, the physics-informed ConvLSTM (PINN) **matches but does not beat** the ConvLSTM baseline at 8-day lead: test RMSE 0.801 for both, in log chlorophyll, against 0.889 for persistence. It modestly improves spatial fidelity and training stability ([§4.1](#41-global-skill-at-8-day-lead), [§5](#5-discussion)).
 
 ---
 
-## CoastWatch
+## Neritic (formerly CoastWatch)
 
-**Research preview:** <https://coastwatch-demo.vercel.app>. This is a map-only demonstration, not an advisory service. The full application is not deployed yet.
+**Research preview:** <https://coastwatch-demo.vercel.app> (the URL keeps the earlier name). It is a public research preview, not an advisory, fishing or seafood-safety service ([release record](docs/coastwatch/release/2026-10-15-research-preview.md)).
 
 ### What it shows
 
@@ -456,11 +458,11 @@ habs-forecast/
 ├── calibration.py             # Calibration diagnostics
 ├── RUN_DIAGNOSTICS.sh         # Diagnostics for the optimized PINN
 │
-├── pipeline/                  # CoastWatch data pipeline: ingest, validate, render, publish (see pipeline/README.md)
+├── pipeline/                  # Neritic data pipeline: ingest, validate, render, publish (see pipeline/README.md)
 ├── coastwatch-web/            # CoastWatch Next.js + MapLibre web app (see coastwatch-web/README.md)
 ├── schemas/v1/                # JSON Schema shared by the pipeline and the web app
 ├── data/curated/              # Human-reviewed inputs (CDFW port selection)
-├── docs/coastwatch/           # CoastWatch planning, architecture, safety rules, source evidence
+├── docs/coastwatch/           # Neritic (formerly CoastWatch) planning, architecture, safety rules, source evidence
 │
 ├── PAPER_READY_SUMMARY.md     # Reviewer-response status and results
 ├── PAPER_STATUS_REPORT.md
@@ -471,7 +473,7 @@ habs-forecast/
 
 ## 8. Decision-Support Application
 
-The research models are not part of CoastWatch. See [CoastWatch](#coastwatch) above for what the application shows and where its data come from.
+The research models are not part of Neritic. See [Neritic](#neritic-formerly-coastwatch) above for what the application shows and where its data come from.
 
 ---
 

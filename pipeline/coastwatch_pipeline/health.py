@@ -297,7 +297,7 @@ def evaluate(manifest: Manifest, previous: dict | None, now: datetime, previous_
         }
         if st.source_id in STALE_CHECK and state in ("stale", "historical"):
             why = (
-                f"CoastWatch's last update failed ({(st.error or '')[:160]}); a newer one may exist upstream"
+                f"Neritic's last update failed ({(st.error or '')[:160]}); a newer one may exist upstream"
                 if st.outcome in ("failed", "partial") and st.error
                 else "the source has published nothing newer"
             )
