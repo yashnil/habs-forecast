@@ -1,4 +1,4 @@
-# Release candidate: Coastal intelligence v2 (prepared 2026-10-15, evening)
+# Release candidate: Coastal intelligence v2 (prepared 2026-10-15, evening; verified on the private preview 2026-10-16)
 
 Prepared for the owner's decision. Nothing here has been merged, promoted or deployed to the public
 URL. The public research preview at the BASES URL is unchanged: `dpl_HfUScMViHiKPs2aMC9TAsQWrTHjA`
@@ -6,11 +6,11 @@ URL. The public research preview at the BASES URL is unchanged: `dpl_HfUScMViHiK
 
 | | |
 |---|---|
-| Candidate commit | **`9a650960`** (the product code on `feat/coastal-intelligence-v2`, draft PR #65; the docs and one test-timing commit follow it) |
+| Candidate | the `coastwatch-web` tree **`3032bb89`** (unchanged since `9a650960`; the head of draft PR #65 adds docs, a test-timing fix, the approved pruning and two restored identifiers, none of which is in the web bundle) |
 | Equivalent after merge | `main` once #62, #63 and #65 are squash-merged in that order |
 | Public URL (unchanged) | https://coastwatch-demo.vercel.app → `dpl_HfUScMViHiKPs2aMC9TAsQWrTHjA` |
 | Rollback target (unchanged) | the same deployment; the one before it is `dpl_jxGvioj1FRFnwf6AM577bSczWFue` (`demo-release/2026-10-14`) |
-| Private preview | Vercel project `coastwatch-preview` (deployment-protected). The upload is blocked by the free tier's 5,000-file window until about 17:15 PDT on 2026-10-16; one retry is prepared, nothing else in Vercel is touched. |
+| Private preview | `dpl_APuqAoSi48UygLivnTG3Zegxy7VM`, https://coastwatch-preview-knqgz1ln7-yashnils-projects.vercel.app (project `coastwatch-preview`, target preview, behind Vercel Authentication), deployed 2026-10-16 07:27 PDT from `git archive d8d5b712:coastwatch-web` (tree `3032bb89`) once the upload window had reset; one attempt, no project setting changed. |
 
 ## 1. The PR stack, reviewed
 
@@ -62,9 +62,9 @@ following is in the deployed bundle. The question is what `main` carries.
 
 ## 4. Release sequence (every step needs the owner's go; nothing below has been run)
 
-1. **Approve** the merge order (§1) and the pruning (§2). I merge #62, #63, #65 as described and wait for CI on `main`.
-2. **Data:** nothing to publish. The manifest schema is unchanged; the pipeline fixes in #65 (OLCI time listing, user agent) take effect on the next scheduled data run.
-3. **Build the candidate without touching the public URL:** `git archive main coastwatch-web` into an empty directory, `vercel link --project coastwatch-demo`, delete the `.env.local` it writes, then
+1. **Approve** the merge order (§1). The pruning (§2) is done. I merge #62, #63, #65 as described and wait for CI on `main`. Do it shortly after a scheduled data run (they start at 00:17, 06:17, 12:17 and 18:17 UTC): the next run uses main's pipeline, so its rebranded provenance text reaches the current public UI until step 5 (see §5).
+2. **Data:** nothing to publish by hand. The manifest schema is unchanged. The pipeline changes in the stack (the OLCI time-listing 404 rule; display and provenance strings such as "computed by Neritic" and the Fisheries tier note) take effect on the first scheduled data run after the merge, at most 6 h later, or at once with a manual `workflow_dispatch` of "CoastWatch data refresh". Until then the new UI shows one legacy string from the live data: the Fisheries tier note "Tier assignments are CoastWatch's editorial grouping…".
+3. **Build the candidate without touching the public URL:** check `git rev-parse origin/main:coastwatch-web` is `3032bb89…` (then the bundle is byte-identical to the verified preview; if not, re-verify), `git archive origin/main:coastwatch-web | tar -x -C <empty dir>` (the project's root directory is `.`, so the app goes at the archive root), `vercel link --project coastwatch-demo --scope yashnils-projects`, delete the `.env.local` it writes, then
    `vercel deploy --prod --skip-domain --build-env CW_DATA_BASE_URL=https://yashnil.github.io/habs-forecast/v1 --env CW_DATA_BASE_URL=https://yashnil.github.io/habs-forecast/v1`
    This produces a production-target deployment that is not aliased: the BASES URL keeps serving `dpl_HfUScMViHiKPs2aMC9TAsQWrTHjA`.
 4. **Smoke test the candidate** through the protection-bypass cookie (a bypass header breaks CORS preflights): all 22 ports' My Coast pages 200 with 0 console errors and 0 React #418 over 30 cold loads; page vs `/api/evidence` on Monterey, Crescent City, San Diego, Shelter Cove; the masthead at 320 and 390 px; "Not verified" on the pill, the drawer and My Coast; CDFW and CDPH links on every page; the harbour-zoom map; the saved briefing link.
@@ -74,13 +74,37 @@ following is in the deployed bundle. The question is what `main` carries.
 ## 5. Rollback (one command, no rebuild, data untouched)
 
 - `vercel rollback dpl_HfUScMViHiKPs2aMC9TAsQWrTHjA` returns the public URL to today's release (`demo-release/2026-10-15`). Behind it: `dpl_jxGvioj1FRFnwf6AM577bSczWFue` (`demo-release/2026-10-14`).
-- The web app reads the published dataset at `https://yashnil.github.io/habs-forecast/v1`, which this release does not change, so there is no data rollback.
+- The web app reads the published dataset at `https://yashnil.github.io/habs-forecast/v1`. Its schema does not change, and both UIs read it (the preview is the new UI on today's data; `tests/unit/compat` checks the released schema against new pipeline output), so a UI rollback never needs a data rollback to keep working.
+- A UI rollback does **not** undo the pipeline's text changes once main has published with them: the rolled-back UI would show provenance strings such as "computed by Neritic" beside the CoastWatch name. To undo those as well, revert the merge on `main` and run "CoastWatch data refresh" (`workflow_dispatch`), or wait for the next scheduled run.
 - The official-notice registry stays `pending_human_review`; nothing in this release marks anything verified, lifted or expired.
 - `main` is never rewritten; if a merged PR must come out, it is a revert commit.
 
-## 6. Checks on the candidate commit
+## 6. Checks on the candidate (re-run 2026-10-16 on the pushed head)
 
-- Web: 385 unit tests; lint 0 errors (4 pre-existing warnings); typecheck clean.
-- Playwright, one complete run with the fixture servers (`npm run test:e2e`, installed Chrome, no retries): **262 of 262 passed** in 6.0 min.
-- Pipeline: unchanged since CI's green run on `ff02d31f`.
-- GitHub CI on the pushed head: linked from the PR.
+| Check | Result |
+|---|---|
+| Web unit tests (vitest, Linux container) | 385 of 385, 34 files |
+| Lint / typecheck / generated types in sync with `schemas/v1` | 0 errors (4 old warnings) / clean / in sync |
+| Pipeline (`pytest -n 4` on the full tree) | 246 of 246, after restoring the User-Agent; `cwp schema` leaves `schemas/` unchanged; both fixture datasets regenerate byte-identically |
+| Playwright, one complete run, macOS, bundled Chromium, no retries | **262 of 262** in 4.8 min |
+| Playwright in the arm64 Linux container (2 complete runs) | 235/262 and 246/262. Not a pass: almost every failure is "Target crashed" (the renderer dies with software WebGL on arm64 under Docker's memory cap), and the failing set changes between runs. The one failure without a crash, `coast.spec.ts:124`, changes a select before hydration, so on that slow runner the change is lost. GitHub CI (x86-64 Linux) and the macOS run pass all of them. |
+| GitHub CI | green on `d8d5b712` (same web tree); the run on the pushed head is linked from PR #65 |
+
+## 7. Production-equivalent verification on the private preview (2026-10-16)
+
+`dpl_APuqAoSi48UygLivnTG3Zegxy7VM`, read through the protection-bypass cookie, on the live dataset generated 2026-10-16 11:27 UTC (pipeline `fc448079`, run 38893860718).
+
+- **17 pages × 1440 / 390 / 320 px (51 loads):** every page 200; 0 console errors, 0 page errors, 0 React #418; no sideways scroll; Neritic on every page; "not verified" on every page; no product-name "CoastWatch" text except the Fisheries tier note from live data (§4 step 2). Pages: landing, Ocean Map (forecast, satellite, currents), My Coast for Monterey, Crescent City, San Diego, Santa Cruz, Shelter Cove and Point Arena (low coverage), a shared crab link, Monterey in Research mode, Blooms in both modes, Fisheries, About, Sources.
+- **Against the public release (same matrix):** on phones My Coast, About and Sources have 0 controls under 44 px (public: 4–9 per page); Research-mode repeated sentences fell from 10 to 3 (the notice titles, listed in the notices and again in the evidence table); visible "CoastWatch" product text fell from up to 13 strings per page to 0. Not new and not fixed: MapLibre's 29 px zoom buttons, the 24 px layer-sheet handle and the 40 px Fisheries chips on phones; the sheet covers the zoom buttons on phones (pinch zoom works).
+- **30 cold loads** across ten pages, alternating desktop and phone: 0 hydration errors, 0 other console errors.
+- **Evidence graph** (`/api/evidence`, all 22 ports): no offshore C-HARM node is the harbour's own value where the harbour has no cell (21 ports state the nearshore gap and the distance, 2.2–11.8 km; Moss Landing is the one port inside a valued cell); every C-HARM node carries the run date (Oct 14) and the valid day (Oct 16, "2 days old"); every notice node is flagged "Neritic's transcription, not verified"; every claim cites nodes that exist; chlorophyll is always "algae of every kind, not toxin"; no claim is a safety, closure or catch statement.
+- **Harbour water (CO-OPS):** Monterey 9413450 (1.0 km, thermistor 2.1 m below MLLW), Crescent City 9419750 (0.1 km, 0.9 m), San Diego 9410170 (0.3 km, 5.6 m): 6-minute readings, NOAA's three QC flags passed, station link. Santa Cruz: "No NOAA water-temperature station within 6 km" (no second-station fallback).
+- **Flows:** a kept briefing (Crescent City, commercial, Dungeness) reads back on `/coast/kept` with its time and the "saved copy, not current information" warning; Copy link copies the current URL and it opens the same waters in a fresh browser; seven shared links open cold with their place, layer and day.
+- **Accessibility:** axe (WCAG 2.1 A/AA) on six pages at 1440 and 390 px: 0 violations. Reduced motion: no running animation on the landing, the currents map or My Coast; the currents flow stays off.
+- **Links:** 33 external links on About, Sources, My Coast, Blooms, Fisheries and the map; 32 return 200 to a script, and every CDFW, CDPH, SCCOOS and NOAA ERDDAP link opens its intended page. The NOAA Fisheries FOSS link refuses scripts (403) and opens in a browser (200).
+- **Timing** (one cold load, no throttling): LCP 0.41–1.52 s on desktop, 0.49–0.75 s on a 390 px phone; CLS ≤ 0.035; 204–596 KB of JavaScript per page.
+- **Official notices:** the registry is `pending_human_review` (AI transcription of 2026-10-08, not checked by a person). The watcher reports CDPH SN26-021 and SN26-020 as unreviewed and one conflict (SN26-021 appears to lift SN26-018); the pages say exactly that. Only a person running `cwp review-official` after checking the sources may change it.
+
+### Two identifiers restored on #65
+
+The last rename pass (`c588656e`) had changed two strings that the brand notes keep as identifiers. Both are back: the data workflow's "CoastWatch pipeline health" issue title (the open issue #44 is found by exact title; the new title would have opened a duplicate and left #44 open), and the pipeline User-Agent `CoastWatch-pipeline/0.1 (+repo)` (unchanged while NOAA ERD investigates the runner 403s).
