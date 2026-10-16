@@ -1,7 +1,7 @@
 import { OFFICIAL_STATUS } from "@/content/copy";
 
 /**
- * Rank 1 of the information hierarchy. Shown first and always. CoastWatch does not yet
+ * Rank 1 of the information hierarchy. Shown first and always. Neritic does not yet
  * ingest closures/advisories, so the card states that plainly (rule R2: unknown is not
  * "open") and routes people to the official sources and hotlines.
  */

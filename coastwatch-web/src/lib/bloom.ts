@@ -237,7 +237,7 @@ export function modelOnAxis(history: SeriesPoint[] | undefined, x0: number, x1: 
   const first = all.length ? all[0].t : null;
   return {
     points: all.filter((p) => inView(p, x0, x1)),
-    /** before this, CoastWatch kept no model history: the band hatches it */
+    /** before this, Neritic kept no model history: the band hatches it */
     historyStart: first,
   };
 }

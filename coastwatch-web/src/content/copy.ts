@@ -134,7 +134,7 @@ export const BLOOM_COPY = {
   chlNotToxin: "Chlorophyll measures algae biomass. High chlorophyll is not a toxic bloom; low chlorophyll does not rule one out.",
   reviewPending: "These pages have not yet been reviewed by an independent HAB scientist.",
   unavailable: "Measured observations are unavailable in this dataset.",
-  /** the source CSV link (original upstream data, not CoastWatch's chart) */
+  /** the source CSV link (original upstream data, not Neritic's chart) */
   csvLabel: "Download source data (CSV)",
   csvWhat:
     "The original CalHABMAP measurements for this station since 2014, exactly as SCCOOS ERDDAP serves them: not a copy of the chart above. Units are in the second row, NaN means not measured, and a 0 is a reported 0 (not quantified).",
@@ -215,7 +215,7 @@ export const RESEARCH = {
     "The paper develops physics-informed machine-learning forecasts of nearshore chlorophyll-a. Neritic does not run those research models: its forecast layer is NOAA's C-HARM, and its observations come from NOAA CoastWatch, HF-radar networks, CalHABMAP, NOAA Fisheries and the CDFW and CDPH notice pages. The publication covers the research, not this application, which has not been reviewed by an independent HAB scientist.",
 };
 
-/** The About page (M8): what CoastWatch is, the kinds of information, its limits, the research, providers. */
+/** The About page (M8): what Neritic is, the kinds of information, its limits, the research, providers. */
 export const ABOUT = {
   title: "Harmful algal blooms on the California coast, in one place",
   lede:

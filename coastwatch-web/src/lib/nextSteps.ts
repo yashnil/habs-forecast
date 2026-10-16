@@ -10,11 +10,11 @@ import type { Verification } from "@/lib/official";
  * "Next steps" for a place, an activity and a species: what to read or check before going,
  * each with the reason it is suggested, the time that matters, and the source to open.
  *
- * Rules, not advice: every step points to an official source or states a gap in what CoastWatch
+ * Rules, not advice: every step points to an official source or states a gap in what Neritic
  * knows. No step says waters are open, seafood is safe, or fishing will be good. Kinds:
  * - "official": an agency notice, statement or regulation page (the authority);
  * - "conditions": NWS/NDBC ocean conditions (context for planning, not a toxin forecast);
- * - "gap": something CoastWatch does not know here, with where to find out;
+ * - "gap": something Neritic does not know here, with where to find out;
  * - "hab": a recent shore measurement near these waters, to read at its source (seawater, not seafood);
  * - "history": the species' landings history (history, never an outlook).
  * Each step says why it is suggested here, which waters or species it concerns, and how sure it is.
@@ -30,7 +30,7 @@ export type Step = {
   source: { label: string; url: string } | { label: string; tel: string };
   /** the waters and species the step concerns */
   scope?: string;
-  /** how sure CoastWatch is about it, in plain words */
+  /** how sure Neritic is about it, in plain words */
   caveat?: string;
   /** a second source to read alongside (a disputed notice: the original notice) */
   also?: { label: string; url: string };
@@ -169,7 +169,7 @@ export function nextSteps(x: StepInput): Step[] {
     });
 
   // Dungeness crab: the season can also be held or limited for whales and sea turtles (RAMP), which
-  // CDFW publishes only as prose; CoastWatch links it and infers nothing from it
+  // CDFW publishes only as prose; Neritic links it and infers nothing from it
   if (x.species.id === "dungeness")
     out.push({
       id: "whale-safe",

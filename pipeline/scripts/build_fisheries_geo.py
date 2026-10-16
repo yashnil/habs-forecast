@@ -15,7 +15,7 @@ when this script changes):
 - outline: California's outline from Natural Earth 1:50m admin-1 states and provinces (public
   domain), simplified to 0.02°. It is a locator, not a coastline for measurement.
 
-The map carries no landings values: NOAA's annual figures are statewide and CoastWatch does not
+The map carries no landings values: NOAA's annual figures are statewide and Neritic does not
 divide them among port areas.
 
 usage: uv run --script pipeline/scripts/build_fisheries_geo.py <ne_50m_admin_1_states_provinces.shp> <out.json>

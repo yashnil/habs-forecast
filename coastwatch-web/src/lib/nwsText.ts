@@ -4,7 +4,7 @@ import { distanceKm, type MarineAlert, type MarineForecast } from "@/lib/conditi
  * NWS coastal waters forecasts as NWS publishes them in plain text on tgftp.nws.noaa.gov (no
  * robots.txt; the host api.weather.gov, whose robots.txt disallows automated clients, is not used).
  *
- * The zone is never guessed from a point: each place CoastWatch knows (CDFW ports and CDPH harvest
+ * The zone is never guessed from a point: each place Neritic knows (CDFW ports and CDPH harvest
  * sites) is assigned the inner coastal zone (out to 10 NM, or the named bay) that contains it by the
  * zone's own NWS description, checked on 2026-10-14 against each file's header:
  *   PZZ450 Pt. St. George to Cape Mendocino · PZZ455 Cape Mendocino to Pt. Arena ·

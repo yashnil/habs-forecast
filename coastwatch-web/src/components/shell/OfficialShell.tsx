@@ -117,7 +117,7 @@ export function OfficialPill() {
         <span>Official notices</span>
       )}
       <span className="h-3.5 w-px bg-white/25" aria-hidden />
-      {/* the words say whose check is missing: the agencies published the notices; CoastWatch's copy of them is unreviewed */}
+      {/* the words say whose check is missing: the agencies published the notices; Neritic's copy of them is unreviewed */}
       <span className={verification && verification.state !== "verified" ? "text-on-navy-2" : ""}>{ds ? (verification && verification.state !== "verified" && verification.state !== "unavailable" ? <>Not verified<span className="max-2xl:hidden"> copy</span></> : verificationWord(verification)) : "Unavailable"}</span>
     </button>
   );

@@ -8,7 +8,7 @@
                 good observations are never discarded silently
 3. mean       - each 24-hour-mean cell equals the mean of the published hourly values at
                 that cell, with at least MEAN_MIN_HOURS hours
-Each layer is checked against the server it was read from (provenance dataset_id): CoastWatch
+Each layer is checked against the server it was read from (provenance dataset_id): Neritic
 ERDDAP (ucsdHfrW2) or NOAA NDBC's THREDDS copy (hfradar_uswc_2km), which hold the same values
 (sources/currents.py). If that server does not answer, the other copy is asked and the row says
 so (verified_against). Only when neither answers is a row UNVERIFIABLE (and fails), never a

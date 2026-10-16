@@ -657,7 +657,7 @@ export function ConditionsCard({
           />
         ) : (
           c?.marine.status === "none" && c.marine.url ? (
-            // CoastWatch does not query NWS's API (its robots.txt): the reader goes to NWS directly
+            // Neritic does not query NWS's API (its robots.txt): the reader goes to NWS directly
             <Tile
               label="Marine forecast and warnings"
               value={

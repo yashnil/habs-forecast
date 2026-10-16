@@ -138,7 +138,7 @@ jobs:
           NEW: ${{ needs.build.outputs.new_alerts }}
           CLEARED: ${{ needs.build.outputs.cleared }}
         run: |
-          title="CoastWatch pipeline health"
+          title="Neritic pipeline health"
           n=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
           if [ "${ALERTS:-0}" -gt 0 ]; then
             if [ -z "$n" ]; then gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file health-report.md

@@ -304,7 +304,7 @@ def _uses_default_fetch(ctx: RunContext) -> bool:
 
 
 def _page_fetch(ctx: RunContext, url: str):
-    """Agency pages, fetched as CoastWatch (the shared honest User-Agent in http.py), never as a browser."""
+    """Agency pages, fetched as Neritic (the shared honest User-Agent in http.py), never as a browser."""
     from ..http import fetch
 
     return fetch(url, headers={"Accept": "text/html"})
