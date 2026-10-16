@@ -9,6 +9,7 @@ import type { Verification } from "@/lib/official";
 import { runAgeWords } from "@/lib/charmDays";
 import { recordNamesSpecies, speciesPhrase, type Species } from "@/content/species";
 import { rankWords, type RecordContext } from "@/lib/history";
+import { SHORE_STATIONS, SHORE_UNITS, type ShoreVariable } from "@/lib/shoreStations";
 import { READINGS_FOR, SPECIES_EVIDENCE, TOXIN_WORDS, type Toxin } from "@/content/speciesEvidence";
 
 /**
@@ -588,6 +589,44 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       parts.push(`Water ${n.text} ${inHarbour ? "in the harbour" : `at ${stationName(st.name)} tide station, ${km(st.km)} km`}`);
       source ??= { label: `NOAA tide station ${st.id}`, url: h.url };
     }
+    // a CeNCOOS shore station: QARTOD-passed temperature, salinity and chlorophyll fluorescence, each its own node
+    if (c.shore?.status === "ok" && c.shore.station) {
+      const sh = c.shore;
+      const st = sh.station!;
+      const meta = SHORE_STATIONS.find((x) => x.id === st.id);
+      const words: Record<ShoreVariable, string> = { water_temperature: "water temperature", salinity: "salinity", chlorophyll_fluorescence: "chlorophyll fluorescence" };
+      const fmt: Record<ShoreVariable, (v: number) => string> = { water_temperature: (v) => `${v.toFixed(1)} °C`, salinity: (v) => `${v.toFixed(1)} PSU`, chlorophyll_fluorescence: (v) => `${Number(v.toPrecision(2))} µg/L` };
+      for (const [v, r] of Object.entries(sh.data.readings) as [ShoreVariable, { value: number; at: string }][]) {
+        const n: EvidenceNode = {
+          id: `cencoos:${st.id}:${v}`,
+          class: "measurement",
+          variable: words[v],
+          units: SHORE_UNITS[v],
+          value: r.value,
+          text: fmt[v](r.value),
+          source: { id: "cencoos", name: `CeNCOOS, ${st.name}`, url: sh.url, product: st.id },
+          time: { observed: r.at, ageDays: 0 },
+          support: { kind: "point" },
+          where: { lat: st.lat ?? null, lon: st.lon ?? null, name: st.name, km: st.km, bearing: null, representative: representative("water_temp", st.km), setting: meta?.setting ?? "unclassified" },
+          freshness: { state: "current" },
+          quality: { flags: ["QARTOD: passed"] },
+          lineage: [`sensor at ${meta?.place ?? "the shore station"}, 10–15 minute readings`, "QARTOD automated quality tests (CeNCOOS)", "CeNCOOS ERDDAP", "read live by Neritic's server"],
+          caveats: [
+            v === "chlorophyll_fluorescence" ? "In-water fluorescence: algae of every kind, not toxin, and not the same measurement as satellite or laboratory chlorophyll." : "Measured at the station's intake; the open coast and the harbour can differ.",
+            "CeNCOOS: not intended for legal use; may contain inaccuracies.",
+          ],
+        };
+        nodes.push(n);
+        supports.push(n.id);
+      }
+      for (const [v, why] of Object.entries(sh.data.withheld) as [ShoreVariable, string][]) gaps.push({ id: `shore-${v}`, variable: words[v], reason: `${st.name}: its latest ${words[v]} reading ${why === "not flagged" ? "carries no quality flag" : `was flagged “${why}” by its quality tests`}, so it is not shown.` });
+      // the harbour's water temperature on the line, when NOAA's tide station did not give one
+      const t = sh.data.readings.water_temperature;
+      if (t && !(c.harbor?.status === "ok")) {
+        parts.push(`Water ${t.value.toFixed(1)} °C at ${st.name}${st.km > REPRESENTATIVE_KM.water_temp.at ? `, ${km(st.km)} km` : ""}`);
+        source ??= { label: `CeNCOOS ${st.name}`, url: sh.url };
+      }
+    } else if (c.shore?.status === "unavailable") gaps.push({ id: "shore", variable: "shore station", reason: c.shore.reason });
     if (c.buoy.status === "ok" && c.buoy.station) {
       const b = c.buoy.data;
       const st = c.buoy.station;

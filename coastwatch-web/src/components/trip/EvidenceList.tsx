@@ -19,7 +19,7 @@ function when(n: EvidenceNode): string {
   return age == null || age === 0 ? d : `${d} · ${age === 1 ? "1 day" : `${age} days`} ago`;
 }
 
-const isSea = (n: EvidenceNode) => n.id.startsWith("buoy:") || n.id.startsWith("coops:") || n.id.startsWith("nws:");
+const isSea = (n: EvidenceNode) => n.id.startsWith("buoy:") || n.id.startsWith("coops:") || n.id.startsWith("nws:") || n.id.startsWith("cencoos:") || n.id.startsWith("tides:");
 
 function focusOf(n: EvidenceNode): EvidenceFocus {
   if (n.id.startsWith("pn_cells:")) return "cells";
@@ -28,7 +28,7 @@ function focusOf(n: EvidenceNode): EvidenceFocus {
   if (n.id.startsWith("charm:")) return "model";
   if (n.id.startsWith("chl:")) return "satellite";
   if (n.id.startsWith("official:") || n.id.startsWith("statement:")) return "official";
-  if (n.id.startsWith("buoy:") || n.id.startsWith("coops:") || n.id.startsWith("nws:")) return "conditions";
+  if (n.id.startsWith("buoy:") || n.id.startsWith("coops:") || n.id.startsWith("nws:") || n.id.startsWith("cencoos:") || n.id.startsWith("tides:")) return "conditions";
   return null;
 }
 
