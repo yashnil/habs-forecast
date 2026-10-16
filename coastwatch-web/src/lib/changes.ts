@@ -7,8 +7,8 @@ import type { Snapshot, SnapNotice } from "@/lib/briefingSnapshot";
  * their device) and the current one, for the same waters.
  *
  * The rule that matters most: **a notice is "issued since your last check" only when the agency's own
- * date is on or after that check.** A notice CoastWatch lists for the first time, but which the agency
- * dated earlier, is "newly listed by CoastWatch" with the agency's date. It is never called new. Every
+ * date is on or after that check.** A notice Neritic lists for the first time, but which the agency
+ * dated earlier, is "newly listed by Neritic" with the agency's date. It is never called new. Every
  * item names its source and the date that applies (agency date, sample date, model issue date, or
  * CoastWatch's check time), and nothing here says waters are open, closed, safe or unsafe.
  */
@@ -17,8 +17,8 @@ export type ChangeKind =
   | "agency-lifted" // a notice the agency lifted on or after the last check
   | "agency-statement" // an agency status statement now reads differently
   | "release-pending" // an agency release appears to lift a notice; not reviewed by a person
-  | "listed-late" // CoastWatch now lists (or lists as lifted) something the agency dated before the last check
-  | "removed" // no longer in CoastWatch's list here; reason unknown
+  | "listed-late" // Neritic now lists (or lists as lifted) something the agency dated before the last check
+  | "removed" // no longer in Neritic's list here; reason unknown
   | "observation-new" // a newer shore-station sample
   | "forecast-new" // a newer model run
   | "source-outage" // a source failed, or could not be read
@@ -36,7 +36,7 @@ export type Change = {
   forYou: boolean;
   title: string;
   detail: string;
-  /** the dates that apply, labelled ("CDPH dated", "sampled", "issued", "CoastWatch checked") */
+  /** the dates that apply, labelled ("CDPH dated", "sampled", "issued", "Neritic checked") */
   dates: { label: string; date: string }[];
   source: { label: string; url: string } | null;
 };

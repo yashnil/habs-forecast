@@ -138,6 +138,8 @@ jobs:
           NEW: ${{ needs.build.outputs.new_alerts }}
           CLEARED: ${{ needs.build.outputs.cleared }}
         run: |
+          # the legacy title is an identifier: the open issue is found by its exact title, so a new
+          # title would open a duplicate and leave the old issue open (docs/coastwatch/brand/neritic.md)
           title="CoastWatch pipeline health"
           n=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
           if [ "${ALERTS:-0}" -gt 0 ]; then

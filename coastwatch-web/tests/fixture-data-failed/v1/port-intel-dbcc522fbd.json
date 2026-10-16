@@ -4019,7 +4019,7 @@
   },
   {
    "source_id": "viirs_jpss_chl_8day",
-   "source_name": "NOAA VIIRS chlorophyll-a, 750 m daily merges from NOAA-21 (NOAA-20 where NOAA-21 has no value), 8-day windows computed by CoastWatch (NOAA CoastWatch ERDDAP)",
+   "source_name": "NOAA VIIRS chlorophyll-a, 750 m daily merges from NOAA-21 (NOAA-20 where NOAA-21 has no value), 8-day windows computed by Neritic (NOAA CoastWatch ERDDAP)",
    "source_url": "https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.html",
    "dataset_id": "noaacwN21VIIRSchlaSectorUSDaily,noaacwN20VIIRSchlaSectorUSDaily",
    "product_version": null,

@@ -13,6 +13,7 @@ import { CHARM_LEADS, artifactUrl, charmLayer, leadLabel } from "@/lib/layers";
 import { loadGrid } from "@/lib/grid";
 import { classifyTime } from "@/lib/freshness";
 import { sourceCsvUrl } from "@/lib/observations";
+import { charmDays, roleWords } from "@/lib/charmDays";
 import { formatDate } from "@/lib/time";
 import { VerificationBadge } from "@/components/official/Official";
 import { SatelliteNear, type SatelliteResult } from "@/components/map/SatelliteNear";
@@ -478,31 +479,29 @@ export function ModelSection({ manifest, model, lead, onLead, now }: { manifest:
     <section aria-labelledby="coast-model-h" className="space-y-3" data-testid="coast-model">
       <SectionHead id="coast-model-h" kind="model" title="Forecast availability" aside={<span className="text-[13px] text-ink-3">C-HARM v3.1 · NOAA · 3 km cells</span>} />
       <div role="group" aria-label="Forecast day" className="flex flex-wrap gap-1.5">
-        {CHARM_LEADS.map((l) => {
-          const ly = layers[l];
-          return (
-            <button
-              key={l}
-              type="button"
-              disabled={!ly}
-              aria-pressed={l === lead}
-              onClick={() => onLead(l)}
-              className={`min-h-[40px] rounded-lg border px-3 text-left text-[13px] leading-tight disabled:opacity-40 ${l === lead ? "border-model bg-model-bg text-model-ink" : "border-hairline-strong text-ink-2 hover:border-ink-3"}`}
-              data-testid={`coast-lead-${l}`}
-            >
-              <span className="block font-semibold">{ly?.time.valid_date ? formatDate(ly.time.valid_date) : "—"}</span>
-              {leadLabel(l)}
-            </button>
-          );
-        })}
+        {charmDays(layers, now).map((d) => (
+          <button
+            key={d.lead}
+            type="button"
+            disabled={!d.issued}
+            aria-pressed={d.lead === lead}
+            onClick={() => onLead(d.lead)}
+            title={d.issued ? `${d.role === "nowcast" ? "Nowcast" : "Forecast"} for ${d.date ? formatDate(d.date) : ""}` : "Not issued in this run"}
+            className={`min-h-[40px] rounded-lg border px-3 text-left text-[13px] leading-tight disabled:opacity-40 ${d.lead === lead ? "border-model bg-model-bg text-model-ink" : "border-hairline-strong text-ink-2 hover:border-ink-3"}`}
+            data-testid={`coast-lead-${d.lead}`}
+          >
+            <span className="block font-semibold">{d.date ? formatDate(d.date) : "—"}</span>
+            {d.issued ? (d.relative ?? roleWords(d.lead)) : "not issued"}
+          </button>
+        ))}
       </div>
       {layer && (
         <p className="text-[14px] text-ink-2" data-testid="coast-model-run">
           Run issued {layer.time.issued_date ? formatDate(layer.time.issued_date, { year: true }) : "—"}
-          {layer.time.issued_date_derived ? " (date inferred: NOAA does not publish it)" : ""} · valid {layer.time.valid_date ? formatDate(layer.time.valid_date, { year: true }) : "—"}
+          {layer.time.issued_date_derived ? " (date inferred: NOAA does not publish it)" : ""} · showing {layer.time.valid_date ? formatDate(layer.time.valid_date, { year: true }) : "—"}, {roleWords(lead)}
           {fresh && fresh.state !== "current" && (
-            <span className="ml-1 font-medium text-[#9b2c2c]" data-testid="coast-model-stale">
-              · {fresh.state === "stale" ? "Stale" : "Historical"}: the latest run is {dayWord(fresh.ageDays ?? 0)}
+            <span className={`ml-1 font-medium ${fresh.state === "historical" ? "text-serious" : "text-ink"}`} data-testid="coast-model-stale">
+              · {fresh.state === "stale" ? `No newer run since ${layer.time.issued_date ? formatDate(layer.time.issued_date).replace(/^\w+, /, "") : "then"} (${dayWord(fresh.ageDays ?? 0)}); NOAA's runs are often missing a day or more` : `Out of date: the latest run is ${dayWord(fresh.ageDays ?? 0)} and does not describe current conditions`}
             </span>
           )}
         </p>

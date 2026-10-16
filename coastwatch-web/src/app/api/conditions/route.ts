@@ -2,16 +2,22 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { BUOYS, TIDE_STATIONS } from "@/lib/noaaStations";
+import { BUOYS, TIDE_STATIONS, WATER_TEMP_STATIONS } from "@/lib/noaaStations";
 import {
+  harborCandidate,
   nearest,
   parseAlerts,
   parseNdbc,
   parseTides,
+  parseWaterTempSeries,
   parseZoneForecast,
+  stationName,
+  HARBOR_TEMP_MAX_AGE_H,
+  HARBOR_TEMP_MAX_KM,
   NWS_MARINE_PAGE,
   type Conditions,
   type Part,
+  type WaterTempSeries,
 } from "@/lib/conditions";
 import { headlineAlerts, parseCoastalText, zoneNear, zonePageUrl, zoneTextUrl } from "@/lib/nwsText";
 
@@ -26,7 +32,7 @@ import { headlineAlerts, parseCoastalText, zoneNear, zonePageUrl, zoneTextUrl } 
  *
  * NWS: api.weather.gov's robots.txt disallows every automated client, so its marine forecast and
  * alerts are fetched only where an operator has set CW_NWS_API=1 (tests set it, with recorded
- * responses). Otherwise, for waters near a place CoastWatch knows, the zone's forecast and headlines
+ * responses). Otherwise, for waters near a place Neritic knows, the zone's forecast and headlines
  * are read from NWS's plain-text product on tgftp.nws.noaa.gov (no robots.txt; lib/nwsText.ts),
  * unless CW_NWS_TEXT=0; elsewhere the card links to NWS's own marine forecast pages. NDBC and
  * CO-OPS, whose rules allow it, are fetched as before.
@@ -190,6 +196,47 @@ async function tidePart(lat: number, lon: number): Promise<Conditions["tides"]> 
   return { status: "unavailable", reason: `No tide predictions from the nearest stations (${errors.join("; ")}).`, source };
 }
 
+/** "20261013 03:00" in GMT, the form CO-OPS takes for begin_date/end_date. */
+const coopsStamp = (d: Date) => d.toISOString().slice(0, 16).replace("-", "").replace("-", "").replace("T", " ");
+
+/**
+ * Water temperature in the harbour: CO-OPS's 6-minute series at the single nearest tide station with a
+ * thermistor, and only if it is within HARBOR_TEMP_MAX_KM (6 km, harbour/bay scale). Farther, the part is
+ * "none": a thermistor across the bay (Alameda for San Francisco) is not this harbour's water, so there
+ * is no fallback to the next station. The window is the last HARBOR_TEMP_MAX_AGE_H hours up to now, so
+ * the request is reproducible for a fixed clock. A station whose sensor is down answers `{"error":
+ * "No data was found…"}`, reported as "sensor not reporting", not as an outage of the service; an HTTP
+ * error (or, in tests, a missing recording) is the outage. `basis` says whether the station is in this
+ * harbour (≤ HARBOR_TEMP_AT_KM) or a nearby one named with its distance (docs/coastwatch/v2/03-coops-audit.md).
+ */
+async function harborPart(lat: number, lon: number): Promise<Conditions["harbor"]> {
+  const source = "NOAA CO-OPS water temperature";
+  const s = harborCandidate(WATER_TEMP_STATIONS, lat, lon);
+  if (!s) return { status: "none", reason: `No NOAA water-temperature station within ${HARBOR_TEMP_MAX_KM} km.`, source };
+  const d = now();
+  const begin = encodeURIComponent(coopsStamp(new Date(d.getTime() - HARBOR_TEMP_MAX_AGE_H * 3600_000)));
+  const end = encodeURIComponent(coopsStamp(d));
+  const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_temperature&station=${s.id}&begin_date=${begin}&end_date=${end}&units=metric&time_zone=gmt&format=json&application=neritic`;
+  const page = `https://tidesandcurrents.noaa.gov/stationhome.html?id=${s.id}`;
+  const where = `NOAA tide station ${s.id} (${stationName(s.name)}, ${s.km.toFixed(1)} km)`;
+  const station = { id: s.id, name: s.name, km: s.km, lat: s.lat, lon: s.lon, ...(s.sensorNote ? { sensorNote: s.sensorNote } : {}) };
+  let series: WaterTempSeries;
+  try {
+    series = parseWaterTempSeries(await get(url, "json"), d);
+  } catch (e) {
+    return { status: "unavailable", reason: `${where}: the CO-OPS service did not answer (${msg(e)}).`, source, url: page };
+  }
+  if (series.reading) return { status: "ok", data: series.reading, source, url: page, fetchedAt: d.toISOString(), station, basis: s.basis };
+  const why = series.error
+    ? "sensor not reporting"
+    : series.rows === 0
+      ? `no readings in the last ${HARBOR_TEMP_MAX_AGE_H} h`
+      : series.flagged && !series.outOfWindow
+        ? `every reading in the last ${HARBOR_TEMP_MAX_AGE_H} h failed NOAA's quality checks`
+        : `no reading in the last ${HARBOR_TEMP_MAX_AGE_H} h passed NOAA's checks (${series.flagged} flagged, ${series.outOfWindow} outside the window)`;
+  return { status: "unavailable", reason: `${where}: ${why}.`, source, url: page };
+}
+
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;
   const lat = Number(q.get("lat"));
@@ -197,7 +244,7 @@ export async function GET(req: Request) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < 32 || lat > 42.5 || lon < -127 || lon > -116) {
     return NextResponse.json({ error: "lat and lon must be California coastal coordinates" }, { status: 400 });
   }
-  const [[marine, alerts], buoy, tides] = await Promise.all([marineParts(lat, lon), buoyPart(lat, lon), tidePart(lat, lon)]);
-  const body: Conditions = { lat, lon, marine, alerts, buoy, tides };
+  const [[marine, alerts], buoy, tides, harbor] = await Promise.all([marineParts(lat, lon), buoyPart(lat, lon), tidePart(lat, lon), harborPart(lat, lon)]);
+  const body: Conditions = { lat, lon, marine, alerts, buoy, tides, harbor };
   return NextResponse.json(body, { headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300" } });
 }

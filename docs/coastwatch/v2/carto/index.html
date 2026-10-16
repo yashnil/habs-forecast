@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C-HARM carto prototype</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.13.0/dist/maplibre-gl.css" />
+<style>
+  :root {
+    --ink: #0b1d33;
+    --panel: rgba(10, 22, 38, 0.86);
+    --panel-fg: #e4ecf5;
+    --panel-muted: #9fb0c3;
+    --accent: #ffd7a1;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--ink); color: var(--panel-fg); font: 13px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #map { position: absolute; inset: 0; }
+  .bar { position: absolute; left: 8px; top: 8px; right: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; pointer-events: none; z-index: 2; }
+  .group { display: flex; gap: 2px; background: var(--panel); border-radius: 8px; padding: 3px; pointer-events: auto; backdrop-filter: blur(6px); }
+  .group button, .group select { font: inherit; font-size: 12px; color: var(--panel-fg); background: transparent; border: 0; border-radius: 6px; padding: 5px 9px; cursor: pointer; white-space: nowrap; }
+  .group button:hover { background: rgba(255,255,255,0.08); }
+  .group button[aria-pressed="true"] { background: var(--accent); color: var(--ink); font-weight: 600; }
+  .group select { appearance: none; background: rgba(255,255,255,0.06); }
+  .perf { font-size: 11px; color: var(--panel-muted); background: var(--panel); padding: 5px 9px; border-radius: 8px; pointer-events: auto; }
+  .legend { position: absolute; left: 8px; bottom: 28px; z-index: 2; width: 236px; max-width: calc(100vw - 16px); background: var(--panel); color: var(--panel-fg); border-radius: 10px; padding: 10px 12px; backdrop-filter: blur(6px); box-shadow: 0 2px 10px rgba(0,0,0,0.35); }
+  .legend h2 { margin: 0 0 2px; font-size: 13px; font-weight: 650; }
+  .legend .meta { color: var(--panel-muted); font-size: 11px; margin: 0 0 8px; }
+  .legend .ramp { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 1px; height: 14px; margin-bottom: 3px; background: var(--ink); border-radius: 2px; overflow: hidden; }
+  .legend .ramp i { display: block; }
+  .legend .ticks { display: flex; justify-content: space-between; font-size: 10px; color: var(--panel-muted); margin-bottom: 8px; }
+  .legend .row { display: flex; align-items: center; gap: 8px; font-size: 11px; margin: 4px 0; }
+  .legend .sw { width: 22px; height: 12px; border-radius: 2px; flex: none; border: 1px solid rgba(255,255,255,0.15); }
+  .legend .sw.hatch { background: repeating-linear-gradient(135deg, rgba(196,206,218,0.62) 0 1.4px, transparent 1.4px 6px), var(--ink); }
+  .legend .sw.quiet { background: repeating-linear-gradient(135deg, rgba(186,200,214,0.3) 0 1px, transparent 1px 6px), var(--ink); }
+  .legend .sw.dots { background: repeating-linear-gradient(135deg, rgba(170,196,224,0.26) 0 1.5px, transparent 1.5px 8px), var(--ink); }
+  .legend.light .sw.quiet { background: repeating-linear-gradient(135deg, rgba(70,84,100,0.38) 0 1px, transparent 1px 6px), var(--ink); }
+  .legend .sw.station { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #f4f7fa; background: #f4f7fa; margin: 0 5px; }
+  .legend .sw.station.hollow { background: transparent; }
+  .legend .note { font-size: 10.5px; color: var(--panel-muted); margin: 6px 0 0; }
+  .legend.light { --panel: rgba(255,255,255,0.92); --panel-fg: #17222e; --panel-muted: #5a6b7d; --ink: #dfe6ea; }
+  .readout { position: absolute; right: 8px; bottom: 28px; z-index: 2; max-width: 260px; background: var(--panel); border-radius: 10px; padding: 8px 12px; font-size: 12px; backdrop-filter: blur(6px); }
+  .readout b { color: var(--accent); }
+  .readout .muted { color: var(--panel-muted); font-size: 11px; }
+  .maplibregl-ctrl-attrib { font-size: 10px; }
+  .group button .short { display: none; }
+  @media (max-width: 480px) {
+    .bar { gap: 4px; }
+    .group button { padding: 5px 7px; font-size: 11px; }
+    .group button .short { display: inline; }
+    .group button .long { display: none; }
+    .legend { width: 180px; bottom: 24px; padding: 7px 9px; font-size: 10px; }
+    .legend h2 { font-size: 11px; }
+    .legend .meta { font-size: 9.5px; margin-bottom: 5px; }
+    .legend .row { font-size: 10px; margin: 2px 0; }
+    .legend .note { display: none; }
+    .readout { max-width: 150px; font-size: 11px; }
+    .perf { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="bar">
+  <div class="group" id="treatments" role="radiogroup" aria-label="Treatment"></div>
+  <div class="group" id="presets" role="radiogroup" aria-label="Zoom preset"></div>
+  <div class="group"><select id="variable" aria-label="Variable"></select></div>
+  <div class="perf" id="perf">loading…</div>
+</div>
+<div class="legend" id="legend"></div>
+<div class="readout" id="readout"><span class="muted">Click a cell for its exact value</span></div>
+
+<script type="module">
+import * as maplibregl from "https://unpkg.com/maplibre-gl@6.13.0/dist/maplibre-gl.mjs";
+
+// ---------------------------------------------------------------- constants
+const T0 = performance.now();
+const TODAY = "2026-10-15";
+const SEA = "#0b1d33", LAND = "#2a3646";
+const FONT = ["Noto Sans Regular"], FONT_ITALIC = ["Noto Sans Italic"];
+const OMT = "https://tiles.openfreemap.org/planet";
+const POSITRON = "https://tiles.openfreemap.org/styles/positron";
+const UPSAMPLE = 4; // image pixels per grid cell (east-west) in the whole-grid image
+const DETAIL_Z = 8; // from this zoom the field is drawn from the viewport image (water clip at device resolution)
+const RASTER_OPACITY = 0.72; // T1-T3 (see CRITIQUE.md for the rounds)
+const KM_PER_DEG = 111.32;
+
+const TREATMENTS = {
+  T0: { label: "T0 Baseline", desc: "Current 10-step purple, opaque", light: false, opacity: 1, ramp: "published", outlines: false, labels: false, harbor: false, hatch: "dots" },
+  T1: { label: "T1 Translucent", desc: "Uniform ramp at 0.72 over the relief", light: false, opacity: RASTER_OPACITY, ramp: "display", outlines: false, labels: false, harbor: false, hatch: "quiet" },
+  T2: { label: "T2 Outlines", desc: "T1 + zoom-adaptive cell outlines and values", light: false, opacity: RASTER_OPACITY, ramp: "display", outlines: true, labels: true, harbor: false, hatch: "quiet" },
+  T3: { label: "T3 Harbor", desc: "T2 + nearshore gap, stations, context ring", light: false, opacity: RASTER_OPACITY, ramp: "display", outlines: true, labels: true, harbor: true, hatch: "explicit" },
+  T4: { label: "T4 Light", desc: "T2 on a light basemap", light: true, opacity: 0.75, ramp: "display", outlines: true, labels: true, harbor: false, hatch: "light" },
+};
+const PRESETS = {
+  regional: { label: "Regional", center: [-121.6, 37.1], zoom: 5.5, harbor: null },
+  bay: { label: "Bay", center: [-121.98, 36.78], zoom: 9, harbor: "monterey" },
+  harbor: { label: "Harbor", center: [-121.89, 36.605], zoom: 12, harbor: "monterey" },
+  crescent: { label: "Crescent City", center: [-124.19, 41.745], zoom: 12, harbor: "crescent" },
+};
+const HARBORS = {
+  monterey: { name: "Monterey harbor", lat: 36.605, lon: -121.89 },
+  crescent: { name: "Crescent City harbor", lat: 41.745, lon: -124.19 },
+};
+
+// ---------------------------------------------------------------- data loading
+const perf = { marks: {} };
+const mark = (k) => (perf.marks[k] = +(performance.now() - T0).toFixed(0));
+const [layersFile, rampFile, stationsFile, reliefMeta, waterFile] = await Promise.all([
+  fetch("data/layers.json").then((r) => r.json()),
+  fetch("data/ramp.json").then((r) => r.json()),
+  fetch("data/stations.json").then((r) => r.json()),
+  fetch("data/relief.json").then((r) => r.json()),
+  fetch("data/water-fallback.json").then((r) => r.json()),
+]);
+mark("meta");
+
+const layers = Object.values(layersFile.layers);
+const variableSel = document.getElementById("variable");
+for (const l of layers) variableSel.append(new Option(l.short_title, l.layer_id));
+
+async function decodeGrid(url) {
+  const t0 = performance.now();
+  const r = await fetch(url);
+  const gz = await r.arrayBuffer();
+  const tFetch = performance.now() - t0;
+  const buf = await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+  const view = new DataView(buf);
+  const out = new Uint16Array(buf.byteLength / 2);
+  for (let i = 0; i < out.length; i++) out[i] = view.getUint16(i * 2, true);
+  return { codes: out, gzBytes: gz.byteLength, tFetch: +tFetch.toFixed(0), tDecode: +(performance.now() - t0 - tFetch).toFixed(0) };
+}
+const gridCache = new Map();
+const loadGrid = (l) => gridCache.get(l.layer_id) ?? gridCache.set(l.layer_id, decodeGrid(l.grid.url)).get(l.layer_id);
+
+// Water (the product's bundled OpenMapTiles ocean, normalised Web Mercator, y down): used only to
+// clip the drawn field and the no-value hatch to the sea, as the product does. Never changes a value.
+const water = (() => {
+  const rings = [], polygons = [];
+  for (const poly of waterFile.polygons) {
+    const ids = [];
+    for (const enc of poly) {
+      const r = new Float64Array(enc.length);
+      let x = 0, y = 0;
+      for (let i = 0; i < enc.length; i += 2) { x += enc[i]; y += enc[i + 1]; r[i] = x / waterFile.quant; r[i + 1] = y / waterFile.quant; }
+      ids.push(rings.length);
+      rings.push(r);
+    }
+    polygons.push(ids);
+  }
+  const bbox = rings.map((r) => { const b = [Infinity, Infinity, -Infinity, -Infinity]; for (let i = 0; i < r.length; i += 2) { b[0] = Math.min(b[0], r[i]); b[2] = Math.max(b[2], r[i]); b[1] = Math.min(b[1], r[i + 1]); b[3] = Math.max(b[3], r[i + 1]); } return b; });
+  return { rings, bbox, polygons };
+})();
+
+// ---------------------------------------------------------------- geometry helpers
+const mercX = (lon) => (lon + 180) / 360;
+const mercY = (lat) => (1 - Math.log(Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)) / Math.PI) / 2;
+const latOfY = (y) => (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI;
+const distanceKm = (lat1, lon1, lat2, lon2) => Math.hypot((lat2 - lat1) * KM_PER_DEG, (lon2 - lon1) * KM_PER_DEG * Math.cos((((lat1 + lat2) / 2) * Math.PI) / 180));
+const cellAt = (g, lat, lon) => {
+  const row = Math.floor((lat - g.lat_first) / g.lat_step + 0.5), col = Math.floor((lon - g.lon_first) / g.lon_step + 0.5);
+  if (row < 0 || row >= g.height || col < 0 || col >= g.width) return null;
+  return { row, col, lat: g.lat_first + row * g.lat_step, lon: g.lon_first + col * g.lon_step };
+};
+const valueOf = (g, codes, c) => { const code = codes[c.row * g.width + c.col]; return code === g.nodata ? null : code * g.scale_factor + g.add_offset; };
+const gridBounds = (g) => ({ west: g.lon_first - g.lon_step / 2, east: g.lon_first + (g.width - 0.5) * g.lon_step, south: g.lat_first - g.lat_step / 2, north: g.lat_first + (g.height - 0.5) * g.lat_step });
+
+// Pipeline step rule: class = last stop whose value <= v (searchsorted side=right - 1), domain-clipped.
+function classIndex(stops, domain, v) {
+  const x = Math.min(domain[1], Math.max(domain[0], v));
+  let i = 0;
+  while (i + 1 < stops.length && stops[i + 1].value <= x) i++;
+  return i;
+}
+const hexRgb = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+/** Colour of every possible grid code (packed RGBA, little-endian), alpha = the layer opacity; no-data = 0 (transparent). */
+function makeLut(g, palette, opacity) {
+  const a = Math.round(opacity * 255);
+  const cols = palette.stops.map((s) => { const [r, g2, b2] = hexRgb(s.color); return ((a << 24) | (b2 << 16) | (g2 << 8) | r) >>> 0; });
+  const lut = new Uint32Array(65536);
+  for (let code = 0; code < 65536; code++) if (code !== g.nodata) lut[code] = cols[classIndex(palette.stops, palette.domain, code * g.scale_factor + g.add_offset)];
+  return lut;
+}
+
+// ---------------------------------------------------------------- canvas rendering
+// One routine draws any Web Mercator box of the grid into a W x H canvas, nearest neighbour exactly
+// as the pipeline and the product's tile renderer: each image pixel takes the grid cell containing
+// its centre. Optionally the no-value cells get a hatch. The result is clipped to the sea.
+// [colour, line width css px, spacing css px]; "dots" is the product's current 8 px hatch
+const HATCH = { dots: ["rgba(170,196,224,0.26)", 1.5, 8], quiet: ["rgba(186,200,214,0.16)", 1, 12], light: ["rgba(70,84,100,0.28)", 1, 12], explicit: ["rgba(196,206,218,0.42)", 1.2, 12] };
+function makePattern(kind, dpr) {
+  const style = HATCH[kind];
+  const s = style[2] * dpr; const c = document.createElement("canvas"); c.width = s; c.height = s; const g = c.getContext("2d");
+  g.strokeStyle = style[0]; g.lineWidth = style[1] * dpr; g.lineCap = "butt";
+  g.beginPath(); g.moveTo(-s / 2, s * 1.5); g.lineTo(s * 1.5, -s / 2); g.moveTo(-s, s); g.lineTo(s, -s); g.moveTo(0, 2 * s); g.lineTo(2 * s, 0); g.stroke();
+  return c;
+}
+function renderBox({ g, codes, lut, box, W, H, withField, hatch, dpr = 1 }) {
+  const x0 = mercX(box.west), x1 = mercX(box.east), y0 = mercY(box.north), y1 = mercY(box.south);
+  const sx = W / (x1 - x0), sy = H / (y1 - y0);
+  const canvas = document.createElement("canvas"); canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  let cells = 0;
+  if (withField) {
+    const colOf = new Int32Array(W), rowOf = new Int32Array(H);
+    for (let px = 0; px < W; px++) { const lon = ((x0 + (px + 0.5) / sx) * 360) - 180; const c = Math.floor((lon - g.lon_first) / g.lon_step + 0.5); colOf[px] = c >= 0 && c < g.width ? c : -1; }
+    for (let py = 0; py < H; py++) { const lat = latOfY(y0 + (py + 0.5) / sy); const r = Math.floor((lat - g.lat_first) / g.lat_step + 0.5); rowOf[py] = r >= 0 && r < g.height ? r : -1; }
+    const img = ctx.createImageData(W, H);
+    const out = new Uint32Array(img.data.buffer);
+    for (let py = 0; py < H; py++) {
+      const r = rowOf[py]; if (r < 0) continue;
+      const base = r * g.width, o = py * W;
+      for (let px = 0; px < W; px++) { const c = colOf[px]; if (c >= 0) out[o + px] = lut[codes[base + c]]; }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  if (hatch) {
+    const rMin = Math.max(0, Math.floor((box.south - g.lat_first) / g.lat_step + 0.5)), rMax = Math.min(g.height - 1, Math.floor((box.north - g.lat_first) / g.lat_step + 0.5));
+    const cMin = Math.max(0, Math.floor((box.west - g.lon_first) / g.lon_step + 0.5)), cMax = Math.min(g.width - 1, Math.floor((box.east - g.lon_first) / g.lon_step + 0.5));
+    ctx.beginPath();
+    for (let r = rMin; r <= rMax; r++) {
+      const yTop = (mercY(g.lat_first + (r + 0.5) * g.lat_step) - y0) * sy, yBot = (mercY(g.lat_first + (r - 0.5) * g.lat_step) - y0) * sy;
+      for (let c = cMin; c <= cMax; c++) {
+        if (codes[r * g.width + c] !== g.nodata) continue;
+        const xl = (mercX(g.lon_first + (c - 0.5) * g.lon_step) - x0) * sx, xr = (mercX(g.lon_first + (c + 0.5) * g.lon_step) - x0) * sx;
+        ctx.rect(xl, yTop, xr - xl, yBot - yTop); cells++;
+      }
+    }
+    if (cells) { ctx.fillStyle = ctx.createPattern(makePattern(hatch, dpr), "repeat"); ctx.fill(); }
+  }
+  // clip to the sea: union of the water polygons into a mask, then destination-in
+  const mask = document.createElement("canvas"); mask.width = W; mask.height = H;
+  const m = mask.getContext("2d"); m.fillStyle = "#000";
+  for (const ids of water.polygons) {
+    const b = water.bbox[ids[0]];
+    if (b[0] > x1 || b[2] < x0 || b[1] > y1 || b[3] < y0) continue;
+    m.beginPath();
+    for (const id of ids) { const r = water.rings[id]; for (let i = 0; i < r.length; i += 2) { const x = (r[i] - x0) * sx, y = (r[i + 1] - y0) * sy; i ? m.lineTo(x, y) : m.moveTo(x, y); } m.closePath(); }
+    m.fill("evenodd");
+  }
+  ctx.globalCompositeOperation = "destination-in";
+  ctx.drawImage(mask, 0, 0);
+  return { canvas, cells, coordinates: [[box.west, box.north], [box.east, box.north], [box.east, box.south], [box.west, box.south]] };
+}
+const toBlobUrl = async (canvas) => { const blob = await new Promise((res) => canvas.toBlob(res, "image/png")); return { url: URL.createObjectURL(blob), bytes: blob.size }; };
+
+// Whole grid -> one EPSG:3857 image (~4 px per cell), placed by its corners. MapLibre quantises an
+// image source's placement (up to ~77 m here); the product's exact tile protocol has no such shift.
+// Below DETAIL_Z this image is what you see; above it the viewport image takes over (its water
+// clip is at device resolution, this one's is at ~0.75 km).
+const imageCache = new Map();
+async function renderWhole(layer, codes, lut, key) {
+  if (imageCache.has(key)) return imageCache.get(key);
+  const t0 = performance.now();
+  const g = layer.grid, box = gridBounds(g);
+  const W = g.width * UPSAMPLE;
+  const H = Math.round((W * (mercY(box.south) - mercY(box.north))) / (mercX(box.east) - mercX(box.west)));
+  const r = renderBox({ g, codes, lut, box, W, H, withField: true, hatch: null });
+  const tRender = performance.now() - t0;
+  const { url, bytes } = await toBlobUrl(r.canvas);
+  const result = { url, width: W, height: H, bytes, tRender: +tRender.toFixed(0), tEncode: +(performance.now() - t0 - tRender).toFixed(0), coordinates: r.coordinates };
+  imageCache.set(key, result);
+  return result;
+}
+
+// Viewport image, re-rendered on moveend (120 ms debounce) with a 25 % margin: the no-value hatch at
+// every zoom (crisp lines in device pixels), plus the field itself from DETAIL_Z.
+let detailToken = 0, detailUrl = null;
+async function refreshDetail() {
+  const layer = layersFile.layers[state.layerId];
+  const { codes } = await loadGrid(layer);
+  const o = TREATMENTS[state.t];
+  const token = ++detailToken;
+  const g = layer.grid, gb = gridBounds(g), vb = map.getBounds();
+  const margin = 0.25;
+  const w0 = vb.getWest(), e0 = vb.getEast(), n0 = vb.getNorth(), s0 = vb.getSouth();
+  const box = { west: Math.max(gb.west, w0 - (e0 - w0) * margin), east: Math.min(gb.east, e0 + (e0 - w0) * margin), north: Math.min(gb.north, n0 + (n0 - s0) * margin), south: Math.max(gb.south, s0 - (n0 - s0) * margin) };
+  const src = map.getSource("detail");
+  if (!src) return;
+  if (!(box.east > box.west && box.north > box.south)) { src.updateImage({ url: EMPTY_PNG, coordinates: EMPTY_COORDS }); return; }
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const x0 = mercX(box.west), x1 = mercX(box.east), y0 = mercY(box.north), y1 = mercY(box.south);
+  const scale = Math.min((map.getContainer().clientWidth * dpr * (1 + 2 * margin)) / (x1 - x0), 2048 / (x1 - x0), 2048 / (y1 - y0));
+  const W = Math.max(2, Math.round((x1 - x0) * scale)), H = Math.max(2, Math.round((y1 - y0) * scale));
+  const t0 = performance.now();
+  const r = renderBox({ g, codes, lut: state.lut, box, W, H, withField: map.getZoom() >= DETAIL_Z, hatch: o.hatch, dpr });
+  const { url, bytes } = await toBlobUrl(r.canvas);
+  if (token !== detailToken) { URL.revokeObjectURL(url); return; }
+  perf.detail = { width: W, height: H, pngBytes: bytes, ms: +(performance.now() - t0).toFixed(0), hatchedCells: r.cells };
+  src.updateImage({ url, coordinates: r.coordinates });
+  if (detailUrl) URL.revokeObjectURL(detailUrl);
+  detailUrl = url;
+}
+const EMPTY_PNG = (() => { const c = document.createElement("canvas"); c.width = 2; c.height = 2; return c.toDataURL(); })();
+const EMPTY_COORDS = [[-180, 85], [-179, 85], [-179, 84], [-180, 84]];
+
+// ---------------------------------------------------------------- derived vector data from the grid
+function cellEdges(g, codes) {
+  const ok = (r, c) => r >= 0 && r < g.height && c >= 0 && c < g.width && codes[r * g.width + c] !== g.nodata;
+  const latE = (r) => +(g.lat_first + (r - 0.5) * g.lat_step).toFixed(5);
+  const lonE = (c) => +(g.lon_first + (c - 0.5) * g.lon_step).toFixed(5);
+  const lines = [];
+  for (let r = 0; r <= g.height; r++) { let s = -1; for (let c = 0; c <= g.width; c++) { const on = c < g.width && (ok(r - 1, c) || ok(r, c)); if (on && s < 0) s = c; if (!on && s >= 0) { lines.push([[lonE(s), latE(r)], [lonE(c), latE(r)]]); s = -1; } } }
+  for (let c = 0; c <= g.width; c++) { let s = -1; for (let r = 0; r <= g.height; r++) { const on = r < g.height && (ok(r, c - 1) || ok(r, c)); if (on && s < 0) s = r; if (!on && s >= 0) { lines.push([[lonE(c), latE(s)], [lonE(c), latE(r)]]); s = -1; } } }
+  return { type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: lines } }] };
+}
+function cellCentres(g, codes, palette, inkFor) {
+  const features = [];
+  for (let r = 0; r < g.height; r++) for (let c = 0; c < g.width; c++) {
+    const code = codes[r * g.width + c]; if (code === g.nodata) continue;
+    const v = code * g.scale_factor + g.add_offset;
+    const k = classIndex(palette.stops, palette.domain, v);
+    features.push({ type: "Feature", properties: { v: Math.round(v * 100), k, ink: inkFor(k) }, geometry: { type: "Point", coordinates: [+(g.lon_first + c * g.lon_step).toFixed(4), +(g.lat_first + r * g.lat_step).toFixed(4)] } });
+  }
+  return { type: "FeatureCollection", features };
+}
+function nearestValued(g, codes, lat, lon, search = 12) {
+  const c0 = cellAt(g, lat, lon); if (!c0) return null;
+  let best = null;
+  for (let dr = -search; dr <= search; dr++) for (let dc = -search; dc <= search; dc++) {
+    const r = c0.row + dr, c = c0.col + dc; if (r < 0 || r >= g.height || c < 0 || c >= g.width) continue;
+    const cell = { row: r, col: c, lat: g.lat_first + r * g.lat_step, lon: g.lon_first + c * g.lon_step };
+    const v = valueOf(g, codes, cell); if (v === null) continue;
+    const d = distanceKm(lat, lon, cell.lat, cell.lon);
+    if (!best || d < best.d) best = { cell, v, d, own: cell.row === c0.row && cell.col === c0.col };
+  }
+  return best;
+}
+function circleKm(lat, lon, km, n = 72) {
+  const pts = [];
+  for (let i = 0; i <= n; i++) { const a = (i / n) * 2 * Math.PI; pts.push([lon + (km * Math.sin(a)) / (KM_PER_DEG * Math.cos((lat * Math.PI) / 180)), lat + (km * Math.cos(a)) / KM_PER_DEG]); }
+  return pts;
+}
+
+// ---------------------------------------------------------------- styles
+const reliefCorners = reliefMeta.corners_lnglat, montereyCorners = reliefMeta.monterey_inset.corners_lnglat;
+function darkBase() {
+  return {
+    version: 8,
+    glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+    sources: {
+      omt: { type: "vector", url: OMT, attribution: '<a href="https://openfreemap.org">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/">OpenMapTiles</a> © OpenStreetMap contributors' },
+      "relief-land": { type: "image", url: "data/relief-land.webp", coordinates: reliefCorners },
+      "relief-sea": { type: "image", url: "data/relief-sea.webp", coordinates: reliefCorners },
+      "relief-sea-monterey": { type: "image", url: "data/relief-sea-monterey.webp", coordinates: montereyCorners },
+      isobaths: { type: "geojson", data: "data/isobaths.geojson", attribution: "Relief: NOAA NCEI ETOPO 2022 and Coastal Relief Model" },
+    },
+    layers: [
+      { id: "land", type: "background", paint: { "background-color": LAND } },
+      { id: "relief-land", type: "raster", source: "relief-land", paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-saturation": -0.35 } },
+      { id: "water", type: "fill", source: "omt", "source-layer": "water", paint: { "fill-color": SEA } },
+      { id: "relief-sea", type: "raster", source: "relief-sea", paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
+      { id: "relief-sea-monterey", type: "raster", source: "relief-sea-monterey", minzoom: 7, paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
+      { id: "isobath-labels", type: "symbol", source: "isobaths", minzoom: 8, layout: { "symbol-placement": "line", "symbol-spacing": 420, "text-field": ["get", "label"], "text-font": FONT_ITALIC, "text-size": 10, "text-max-angle": 30 }, paint: { "text-color": "rgba(170,196,222,0.62)", "text-halo-color": SEA, "text-halo-width": 1.2 } },
+      // ---- data layers are inserted here (before "coastline")
+      { id: "coastline", type: "line", source: "omt", "source-layer": "water", paint: { "line-color": "#d3dfeb", "line-opacity": ["interpolate", ["linear"], ["zoom"], 4, 0.7, 8, 0.9], "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.5, 8, 0.9, 10, 1.3, 12, 1.8] } },
+      { id: "isobaths", type: "line", source: "isobaths", minzoom: 5, paint: { "line-color": ["case", ["==", ["get", "depth_m"], 200], "rgba(170,198,226,0.36)", "rgba(170,198,226,0.17)"], "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.5, 10, 1] } },
+      { id: "rivers", type: "line", source: "omt", "source-layer": "waterway", minzoom: 8, filter: ["in", ["get", "class"], ["literal", ["river", "canal"]]], paint: { "line-color": "#3c5574", "line-width": 0.8 } },
+      { id: "roads-major", type: "line", source: "omt", "source-layer": "transportation", minzoom: 6.5, filter: ["in", ["get", "class"], ["literal", ["motorway", "trunk"]]], paint: { "line-color": "#3e4c5e", "line-width": ["interpolate", ["linear"], ["zoom"], 6.5, 0.4, 12, 1.4] } },
+      { id: "roads-primary", type: "line", source: "omt", "source-layer": "transportation", minzoom: 9.5, filter: ["==", ["get", "class"], "primary"], paint: { "line-color": "#384658", "line-width": ["interpolate", ["linear"], ["zoom"], 9.5, 0.3, 12, 1] } },
+      { id: "boundary-state", type: "line", source: "omt", "source-layer": "boundary", filter: ["all", ["<=", ["coalesce", ["get", "admin_level"], 99], 4], ["!=", ["coalesce", ["get", "maritime"], 0], 1]], paint: { "line-color": "#5a6b80", "line-width": 0.8, "line-dasharray": [3, 2] } },
+      { id: "water-name", type: "symbol", source: "omt", "source-layer": "water_name", minzoom: 5, filter: ["in", ["get", "class"], ["literal", ["ocean", "sea", "bay", "strait", "gulf"]]], layout: { "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]], "text-font": FONT_ITALIC, "text-size": ["interpolate", ["linear"], ["zoom"], 5, 11, 10, 14], "text-letter-spacing": 0.12, "text-max-width": 7 }, paint: { "text-color": "rgba(222,234,246,0.9)", "text-halo-color": "rgba(6,17,30,0.5)", "text-halo-width": 1.2, "text-halo-blur": 0.8 } },
+      { id: "place-city", type: "symbol", source: "omt", "source-layer": "place", minzoom: 5.5, filter: ["==", ["get", "class"], "city"], layout: { "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]], "text-font": FONT, "text-size": ["interpolate", ["linear"], ["zoom"], 5.5, 11, 10, 14], "text-anchor": "left", "text-offset": [0.4, 0], "symbol-sort-key": ["get", "rank"] }, paint: { "text-color": "#c3cfdc", "text-halo-color": LAND, "text-halo-width": 1.2 } },
+      { id: "place-town", type: "symbol", source: "omt", "source-layer": "place", minzoom: 8, filter: ["==", ["get", "class"], "town"], layout: { "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]], "text-font": FONT, "text-size": ["interpolate", ["linear"], ["zoom"], 8, 11, 11, 13], "text-anchor": "left", "text-offset": [0.4, 0], "symbol-sort-key": ["get", "rank"] }, paint: { "text-color": "#a3b2c3", "text-halo-color": LAND, "text-halo-width": 1.2 } },
+      { id: "place-village", type: "symbol", source: "omt", "source-layer": "place", minzoom: 10.5, filter: ["==", ["get", "class"], "village"], layout: { "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]], "text-font": FONT, "text-size": 11, "text-anchor": "left", "text-offset": [0.4, 0] }, paint: { "text-color": "#8e9db0", "text-halo-color": LAND, "text-halo-width": 1.1 } },
+    ],
+  };
+}
+let positronCache = null;
+async function lightBase() {
+  positronCache ??= await fetch(POSITRON).then((r) => r.json());
+  const s = JSON.parse(JSON.stringify(positronCache));
+  s.sources.isobaths = { type: "geojson", data: "data/isobaths.geojson", attribution: "Isobaths: NOAA NCEI ETOPO 2022" };
+  const wi = s.layers.findIndex((l) => l.id === "water");
+  s.layers.splice(wi + 1, 0, { id: "isobaths", type: "line", source: "isobaths", minzoom: 5, paint: { "line-color": ["case", ["==", ["get", "depth_m"], 200], "rgba(60,90,120,0.4)", "rgba(60,90,120,0.22)"], "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.5, 10, 1] } });
+  return s;
+}
+
+// The overlay (our layers), inserted before `beforeId` in the base style. Symbol layers later in
+// the list are placed first by the collision engine, so the order below is also the label priority:
+// station labels > harbor labels > cell values.
+function overlayLayers(t, state) {
+  const o = TREATMENTS[t];
+  const halo = o.light ? "rgba(255,255,255,0.85)" : "rgba(6,17,30,0.85)";
+  const L = [];
+  L.push({ id: "field", type: "raster", source: "field", maxzoom: DETAIL_Z, paint: { "raster-opacity": 1, "raster-resampling": "nearest", "raster-fade-duration": 0 } });
+  L.push({ id: "detail", type: "raster", source: "detail", paint: { "raster-opacity": 1, "raster-resampling": "nearest", "raster-fade-duration": 0 } });
+  if (o.outlines) {
+    L.push({ id: "cell-edges", type: "line", source: "edges", minzoom: 8.5, paint: { "line-color": o.light ? "#2b3744" : "#e9f0f7", "line-width": ["step", ["zoom"], 0.8, 10.5, 1], "line-opacity": o.light ? ["step", ["zoom"], 0.2, 10.5, 0.45] : ["step", ["zoom"], 0.35, 10.5, 0.6] } });
+  }
+  if (o.labels) {
+    L.push({ id: "cell-values", type: "symbol", source: "centres", minzoom: 11, layout: { "text-field": ["to-string", ["get", "v"]], "text-font": FONT, "text-size": ["interpolate", ["linear"], ["zoom"], 11, 11, 13, 14], "text-allow-overlap": false, "text-padding": 2 }, paint: { "text-color": ["get", "ink"], "text-halo-color": ["case", ["==", ["get", "ink"], "#ffffff"], "rgba(11,29,51,0.45)", "rgba(255,255,255,0.35)"], "text-halo-width": 0.8 } });
+  }
+  if (o.harbor && state.harbor) {
+    L.push({ id: "ring", type: "line", source: "harbor", filter: ["==", ["get", "kind"], "ring"], paint: { "line-color": "rgba(236,242,248,0.75)", "line-width": 1.2, "line-dasharray": [4, 3] } });
+    L.push({ id: "ring-label", type: "symbol", source: "harbor", filter: ["==", ["get", "kind"], "ring"], layout: { "symbol-placement": "line", "text-field": ["get", "label"], "text-font": FONT_ITALIC, "text-size": 11, "symbol-spacing": 250 }, paint: { "text-color": "rgba(236,242,248,0.9)", "text-halo-color": SEA, "text-halo-width": 1.3 } });
+    L.push({ id: "nearest-line", type: "line", source: "harbor", filter: ["==", ["get", "kind"], "nearest-line"], paint: { "line-color": "#ffd7a1", "line-width": 1.6, "line-dasharray": [2, 2] } });
+    L.push({ id: "nearest-cell", type: "circle", source: "harbor", filter: ["==", ["get", "kind"], "nearest-cell"], paint: { "circle-radius": 4, "circle-color": "#ffd7a1", "circle-stroke-color": SEA, "circle-stroke-width": 1.2 } });
+    L.push({ id: "harbor-point", type: "circle", source: "harbor", filter: ["==", ["get", "kind"], "harbor"], paint: { "circle-radius": 5, "circle-color": SEA, "circle-stroke-color": "#ffd7a1", "circle-stroke-width": 2 } });
+    L.push({ id: "stations", type: "circle", source: "stations", paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 3.5, 12, 6.5], "circle-color": ["case", ["get", "recent"], "#f4f7fa", "rgba(11,29,51,0.35)"], "circle-stroke-color": "#f4f7fa", "circle-stroke-width": 2 } });
+    // the harbor annotations need the dashed line to be ~100 px long to have room: from z 10.5
+    L.push({ id: "harbor-labels", type: "symbol", source: "harbor", minzoom: 10.5, filter: ["in", ["get", "kind"], ["literal", ["harbor", "nearest", "gap-note"]]], layout: { "text-field": ["get", "label"], "text-font": FONT, "text-size": 11.5, "text-max-width": 16, "text-anchor": ["get", "anchor"], "text-offset": ["get", "offset"], "text-justify": "center", "text-allow-overlap": true, "text-ignore-placement": true, "symbol-sort-key": ["get", "rank"] }, paint: { "text-color": ["match", ["get", "kind"], "gap-note", "#e9eff6", "#ffd7a1"], "text-halo-color": halo, "text-halo-width": 1.4 } });
+    L.push({ id: "station-labels", type: "symbol", source: "stations", minzoom: 8, layout: { "text-field": ["get", "label"], "text-font": FONT, "text-size": 11, "text-variable-anchor": ["right", "left", "bottom", "top"], "text-radial-offset": 1, "text-max-width": 12, "text-justify": "auto" }, paint: { "text-color": "#f4f7fa", "text-halo-color": halo, "text-halo-width": 1.3 } });
+  }
+  return L;
+}
+
+// ---------------------------------------------------------------- state and map
+const url = new URL(location.href);
+const state = { t: "T1", p: "regional", layerId: "charm_particulate_domoic_lead2", harbor: null, lut: null, map: null };
+if (TREATMENTS[url.searchParams.get("t")]) state.t = url.searchParams.get("t");
+if (PRESETS[url.searchParams.get("p")]) state.p = url.searchParams.get("p");
+if (layersFile.layers[url.searchParams.get("v")]) state.layerId = url.searchParams.get("v");
+if (!layersFile.layers[state.layerId]) state.layerId = layers[0].layer_id;
+variableSel.value = state.layerId;
+
+const map = new maplibregl.Map({ container: "map", style: darkBase(), center: PRESETS[state.p].center, zoom: PRESETS[state.p].zoom, attributionControl: { compact: true }, fadeDuration: 0, canvasContextAttributes: { preserveDrawingBuffer: true } });
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+state.map = map;
+window.__carto = { state, perf, ready: false, idle: false };
+
+const FINE = url.searchParams.get("classes") === "20" && !!rampFile.fine; // experiment: 20 display classes of 5 %
+const rampFor = (t) => (FINE ? rampFile.fine : TREATMENTS[t].light && rampFile.light ? rampFile.light : rampFile);
+function paletteFor(t, layer) {
+  if (TREATMENTS[t].ramp === "published") return { id: layer.palette.id, domain: layer.palette.domain, stops: layer.palette.stops.map((s) => ({ value: s.value, color: s.color })) };
+  const r = rampFor(t);
+  return { id: r.id, domain: r.domain, stops: r.stops.map((s) => ({ value: s.value, color: s.color })) };
+}
+const inkFor = (t) => (k) => {
+  if (TREATMENTS[t].ramp === "published") return "#ffffff";
+  const s = rampFor(t).stops[k];
+  return s.contrast_white >= s.contrast_ink ? "#ffffff" : SEA; // the better WCAG contrast on this class
+};
+
+async function harborData(layer, codes) {
+  const h = HARBORS[PRESETS[state.p].harbor ?? "monterey"];
+  const near = nearestValued(layer.grid, codes, h.lat, h.lon);
+  const features = [
+    { type: "Feature", properties: { kind: "harbor", label: h.name, anchor: "left", offset: [0.9, 0], rank: 1 }, geometry: { type: "Point", coordinates: [h.lon, h.lat] } },
+    { type: "Feature", properties: { kind: "ring", label: "15 km C-HARM context ring" }, geometry: { type: "LineString", coordinates: circleKm(h.lat, h.lon, 15) } },
+  ];
+  if (near && !near.own) {
+    const along = (f) => [h.lon + (near.cell.lon - h.lon) * f, h.lat + (near.cell.lat - h.lat) * f];
+    features.push({ type: "Feature", properties: { kind: "nearest-line" }, geometry: { type: "LineString", coordinates: [[h.lon, h.lat], [near.cell.lon, near.cell.lat]] } });
+    // distance label over the line near the cell end; gap note under the line near the harbor end
+    features.push({ type: "Feature", properties: { kind: "nearest", label: `${near.d.toFixed(1)} km to the nearest modelled cell: ${Math.round(near.v * 100)} %`, anchor: "bottom", offset: [0, -0.5], rank: 2 }, geometry: { type: "Point", coordinates: along(0.75) } });
+    features.push({ type: "Feature", properties: { kind: "nearest-cell" }, geometry: { type: "Point", coordinates: [near.cell.lon, near.cell.lat] } });
+    features.push({ type: "Feature", properties: { kind: "gap-note", label: "No C-HARM value: nearshore cells not modelled", anchor: "top", offset: [0, 0.5], rank: 3 }, geometry: { type: "Point", coordinates: along(0.4) } });
+  } else if (near) {
+    features[0].properties.label = `${h.name}\nmodelled cell: ${Math.round(near.v * 100)} %`;
+  }
+  const stations = { type: "FeatureCollection", features: stationsFile.stations.map((s) => { const recent = s.latest && (Date.parse(TODAY) - Date.parse(s.latest)) / 864e5 <= 30; return { type: "Feature", properties: { name: s.name, recent: !!recent, label: `${s.name}\n${s.latest ? "last sample " + s.latest : "no samples"}` }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } }; }) };
+  return { harbor: { type: "FeatureCollection", features }, stations, near, h };
+}
+
+// Build and apply the full style for the current treatment, preset and variable.
+let applying = Promise.resolve();
+function apply(t, p, layerId, { move = true } = {}) {
+  applying = applying.then(() => doApply(t, p, layerId, move)).catch((e) => console.error("[carto] apply failed", e));
+  return applying;
+}
+async function doApply(t, p, layerId, move) {
+  state.t = t; state.p = p; state.layerId = layerId; window.__carto.idle = false;
+  const layer = layersFile.layers[layerId];
+  const o = TREATMENTS[t];
+  const grid = await loadGrid(layer);
+  perf.grid = { gzBytes: grid.gzBytes, tFetch: grid.tFetch, tDecode: grid.tDecode };
+  const palette = paletteFor(t, layer);
+  const key = `${layerId}|${palette.id}|${o.opacity}`;
+  state.lut = makeLut(layer.grid, palette, o.opacity);
+  const img = await renderWhole(layer, grid.codes, state.lut, key);
+  perf.image = { width: img.width, height: img.height, pngBytes: img.bytes, tRender: img.tRender, tEncode: img.tEncode };
+  const base = o.light ? await lightBase() : darkBase();
+  const beforeId = o.light ? base.layers.find((l) => l.type === "symbol").id : "coastline";
+  state.derived ??= {};
+  const dk = `${layerId}|${t}`;
+  if (!state.derived[dk]) {
+    const t0 = performance.now();
+    state.derived[dk] = { edges: o.outlines ? cellEdges(layer.grid, grid.codes) : null, centres: o.labels ? cellCentres(layer.grid, grid.codes, palette, inkFor(t)) : null };
+    state.derived[dk].ms = +(performance.now() - t0).toFixed(0);
+  }
+  const d = state.derived[dk];
+  const hd = o.harbor ? await harborData(layer, grid.codes) : null;
+  state.harbor = hd;
+  base.sources.field = { type: "image", url: img.url, coordinates: img.coordinates };
+  base.sources.detail = { type: "image", url: EMPTY_PNG, coordinates: EMPTY_COORDS };
+  if (d.edges) base.sources.edges = { type: "geojson", data: d.edges };
+  if (d.centres) base.sources.centres = { type: "geojson", data: d.centres };
+  if (hd) { base.sources.harbor = { type: "geojson", data: hd.harbor }; base.sources.stations = { type: "geojson", data: hd.stations }; }
+  const i = base.layers.findIndex((l) => l.id === beforeId);
+  base.layers.splice(i, 0, ...overlayLayers(t, state));
+  // time to first paint of the field: from setStyle to the first render in which the field source is loaded
+  const tStyle = performance.now();
+  let painted = false;
+  const onRender = () => {
+    if (painted) return;
+    if (map.getLayer("field") && map.isSourceLoaded("field")) {
+      painted = true;
+      perf.firstPaintMs = +(performance.now() - tStyle).toFixed(0);
+      perf.firstPaintFromPageStartMs = +(performance.now() - T0).toFixed(0);
+      console.log(`[carto] raster first paint: ${perf.firstPaintMs} ms after style apply (${perf.firstPaintFromPageStartMs} ms after page start); image ${img.width}x${img.height} px, PNG ${(img.bytes / 1024).toFixed(0)} KB; grid gz ${(grid.gzBytes / 1024).toFixed(0)} KB fetch ${grid.tFetch} ms decode ${grid.tDecode} ms; render ${img.tRender} ms encode ${img.tEncode} ms; derived vectors ${d.ms} ms`);
+      map.off("render", onRender);
+      updatePerf();
+    }
+  };
+  map.on("render", onRender);
+  map.setStyle(base, { diff: false });
+  if (move) map.jumpTo({ center: PRESETS[p].center, zoom: PRESETS[p].zoom, bearing: 0, pitch: 0 });
+  await new Promise((res) => map.once("idle", res));
+  await refreshDetail();
+  await new Promise((res) => map.once("idle", res));
+  renderLegend(layer, palette, t, hd);
+  syncButtons();
+  updatePerf();
+  window.__carto.idle = true;
+  window.__carto.ready = true;
+}
+
+function updatePerf() {
+  const el = document.getElementById("perf");
+  if (!perf.image) return;
+  el.textContent = `first paint ${perf.firstPaintMs ?? "…"} ms · image ${perf.image.width}×${perf.image.height} ${(perf.image.pngBytes / 1024).toFixed(0)} KB · grid gz ${(perf.grid.gzBytes / 1024).toFixed(0)} KB${perf.detail ? ` · viewport ${perf.detail.width}×${perf.detail.height} ${perf.detail.ms} ms` : ""}`;
+}
+
+// ---------------------------------------------------------------- legend, readout, controls
+function renderLegend(layer, palette, t, hd) {
+  const o = TREATMENTS[t];
+  const el = document.getElementById("legend");
+  el.classList.toggle("light", o.light);
+  const tm = layer.time;
+  el.innerHTML = `
+    <h2>${layer.title}</h2>
+    <p class="meta">NOAA C-HARM v3.1 · native 3 km (0.03°) · valid ${tm.valid_date} (lead ${tm.lead_days} d, issued ${tm.issued_date})</p>
+    <div class="ramp">${palette.stops.map((s) => `<i style="background:${s.color}${o.opacity < 1 ? ";opacity:" + o.opacity : ""}"></i>`).join("")}</div>
+    <div class="ticks"><span>0</span><span>50</span><span>100 %</span></div>
+    <div class="row"><span class="sw ${o.hatch === "dots" ? "dots" : o.hatch === "explicit" ? "hatch" : "quiet"}"></span><span>No value: cell not modelled (land, nearshore)</span></div>
+    ${hd ? `<div class="row"><span class="sw station"></span><span>Shore station, sampled in the last 30 days</span></div><div class="row"><span class="sw station hollow"></span><span>Shore station, older sample</span></div>` : ""}
+    <p class="note">${o.label}: ${o.desc}. ${palette.stops.length} display classes, not risk levels.${FINE ? " (5 % classes: experiment.)" : ""} Nearest neighbour, no interpolation.${o.outlines ? " Cell outlines from z 8.5, values from z 11." : ""}</p>`;
+}
+
+map.on("click", async (e) => {
+  const layer = layersFile.layers[state.layerId];
+  const { codes } = await loadGrid(layer);
+  const c = cellAt(layer.grid, e.lngLat.lat, e.lngLat.lng);
+  const el = document.getElementById("readout");
+  if (!c) { el.innerHTML = `<span class="muted">Outside the model grid</span>`; return; }
+  const v = valueOf(layer.grid, codes, c);
+  const near = v === null ? nearestValued(layer.grid, codes, e.lngLat.lat, e.lngLat.lng, 6) : null;
+  el.innerHTML = v === null
+    ? `<b>No value</b> at this cell<br><span class="muted">cell r${c.row} c${c.col}, centre ${c.lat.toFixed(2)}, ${c.lon.toFixed(2)}${near ? `<br>nearest modelled cell ${near.d.toFixed(1)} km away: ${Math.round(near.v * 100)} %` : ""}</span>`
+    : `<b>${(v * 100).toFixed(1)} %</b> ${layer.short_title}<br><span class="muted">cell r${c.row} c${c.col}, centre ${c.lat.toFixed(2)}, ${c.lon.toFixed(2)} · exact cell value, no interpolation</span>`;
+});
+
+const tGroup = document.getElementById("treatments"), pGroup = document.getElementById("presets");
+for (const [k, v] of Object.entries(TREATMENTS)) { const b = document.createElement("button"); b.innerHTML = `<span class="short">${k}</span><span class="long">${v.label}</span>`; b.dataset.k = k; b.title = v.desc; b.onclick = () => apply(k, state.p, state.layerId, { move: false }); tGroup.append(b); }
+for (const [k, v] of Object.entries(PRESETS)) { const b = document.createElement("button"); b.textContent = v.label; b.dataset.k = k; b.onclick = () => apply(state.t, k, state.layerId); pGroup.append(b); }
+variableSel.onchange = () => apply(state.t, state.p, variableSel.value, { move: false });
+function syncButtons() {
+  for (const b of tGroup.children) b.setAttribute("aria-pressed", String(b.dataset.k === state.t));
+  for (const b of pGroup.children) b.setAttribute("aria-pressed", String(b.dataset.k === state.p));
+}
+let detailTimer = null;
+map.on("moveend", () => { clearTimeout(detailTimer); detailTimer = setTimeout(() => refreshDetail().catch((e) => console.error("[carto] detail failed", e)), 120); });
+
+window.__carto.apply = (t, p, v) => apply(t ?? state.t, p ?? state.p, v ?? state.layerId);
+await apply(state.t, state.p, state.layerId);
+</script>
+</body>
+</html>

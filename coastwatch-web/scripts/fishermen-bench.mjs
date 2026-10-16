@@ -5,7 +5,7 @@
 //   node scripts/fishermen-bench.mjs <base-url> <driver: before|after> <out.json>
 //
 // Counted per task: success against the written rubric, taps, typed characters, scrolls needed to
-// bring the answer on screen, distinct pages, sources outside CoastWatch still needed, and the text
+// bring the answer on screen, distinct pages, sources outside Neritic still needed, and the text
 // a person would read first (for the misreading review). Time is scripted speed, not human time.
 import { writeFileSync } from "node:fs";
 import { chromium } from "@playwright/test";

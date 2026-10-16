@@ -1,7 +1,7 @@
 import { Mark, type MarkKind } from "@/components/ui/Mark";
 
 /**
- * The four kinds of information on CoastWatch, in their reserved colours (design reset §2.2): a
+ * The four kinds of information on Neritic, in their reserved colours (design reset §2.2): a
  * user who learns them once can read every page. Used where the product explains itself.
  */
 export type Kind = "official" | "model" | "measured" | "historical";

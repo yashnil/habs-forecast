@@ -1,4 +1,4 @@
-name: CoastWatch CI
+name: Neritic CI
 
 # One run per pushed commit. Pushes cover every branch: main, feature branches with or without a
 # pull request, and draft PRs (a push run's checks are attached to the commit, so they show on

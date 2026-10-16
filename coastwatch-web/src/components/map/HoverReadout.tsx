@@ -37,7 +37,7 @@ export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds 
   }, [manifest, baseUrl, source, point]);
 
   if (!r || !screen || !point) return null;
-  const W = 236;
+  const W = 252;
   const left = screen.x + 16 + W > bounds.w ? screen.x - 16 - W : screen.x + 16;
   const top = Math.min(Math.max(8, screen.y + 16), bounds.h - 96);
   return (
@@ -67,7 +67,7 @@ export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds 
           {r.none}
         </p>
       )}
-      <p className="truncate text-[13px]">
+      <p className="text-[13px] leading-snug" data-testid="hover-when">
         <span aria-hidden className={`mr-1 inline-block h-1.5 w-1.5 -translate-y-px rounded-full ${r.kind === "model" ? "bg-[#b9a6f5]" : "bg-[#7fd4c1]"}`} />
         {r.when}
       </p>

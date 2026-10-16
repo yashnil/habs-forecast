@@ -2,7 +2,7 @@ import type { LayerArtifact, Manifest } from "@/generated/schema";
 import { compass, type CurrentField, sampleField } from "@/lib/currents";
 import { CHL_NEAR_COPY } from "@/content/copy";
 import { pixelStatus } from "@/lib/chlNear";
-import { artifactUrl } from "@/lib/layers";
+import { artifactUrl, nativeLabel } from "@/lib/layers";
 import { cellAt, loadGrid, sampleChunked, valueOf } from "@/lib/grid";
 import { multiSensorMembers, multiSensorPick, observedDate, type SensorObs } from "@/lib/multisensor";
 import { sensorLabel } from "@/lib/stamp";
@@ -13,7 +13,16 @@ import { formatDate, formatDateTimePT } from "@/lib/time";
  * the point, with its own date and source. Never the nearest cell, never interpolated; where
  * the cell has no value the readout says so and why it may be missing.
  */
-export type Readout = { kind: "model" | "observation"; value: string | null; unit: string; what: string; when: string; none?: string; flag?: string };
+export type Readout = {
+  kind: "model" | "observation";
+  value: string | null;
+  unit: string;
+  what: string;
+  /** the product, its native resolution and the observation or valid time, e.g. "C-HARM forecast, native 3 km · valid Oct 9" */
+  when: string;
+  none?: string;
+  flag?: string;
+};
 
 const short = (d: string) => formatDate(d).replace(/^\w+, /, "");
 export const fmtChl = (v: number) => (v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(2));
@@ -29,7 +38,9 @@ export const NO_FORECAST = {
 /** `sibling`: the same run's Pseudo-nitzschia layer, used only to say why a toxin cell is empty. */
 export async function forecastAt(baseUrl: string, l: LayerArtifact, lat: number, lon: number, sibling: LayerArtifact | null = null): Promise<Readout> {
   const what = (l.threshold_text ?? l.short_title).replace(/^Probability (that|of) /i, "chance ");
-  const when = `C-HARM ${l.time.lead_days ? "forecast" : "nowcast"} · valid ${short(l.time.valid_date ?? "")}`;
+  // the product and its native cell size, then the day the value is for (never the day it was read)
+  const res = nativeLabel(l);
+  const when = `C-HARM ${l.time.lead_days ? "forecast" : "nowcast"}${res ? `, native ${res}` : ""} · valid ${short(l.time.valid_date ?? "")}`;
   if (!l.grid) return { kind: "model", value: null, unit: "", what, when, none: "No forecast grid published" };
   const codes = await loadGrid(artifactUrl(baseUrl, l.grid.url));
   const c = cellAt(l.grid, lat, lon);
@@ -93,7 +104,8 @@ async function flagOf(baseUrl: string, l: LayerArtifact, lat: number, lon: numbe
 export function currentsAt(f: CurrentField, l: LayerArtifact, lat: number, lon: number): Readout {
   const mean = l.layer_id.endsWith("mean24h");
   const t = mean ? (l.time.observed_times ?? []).at(-1) : l.time.valid_time;
-  const when = `HF radar · ${mean ? "24-hour mean to " : "observed "}${t ? formatDateTimePT(t) : "—"}`;
+  const res = nativeLabel(l);
+  const when = `HF radar${res ? `, native ${res}` : ""} · ${mean ? "24-hour mean to " : "observed "}${t ? formatDateTimePT(t) : "—"}`;
   const s = sampleField(f, lat, lon, 0);
   if (!s) return { kind: "observation", value: null, unit: "", what: "surface current", when, none: "No radar observation here. No data, not calm water." };
   return { kind: "observation", value: s.speed.toFixed(2), unit: "m/s", what: `toward ${compass(s.dir)} (${Math.round(s.dir)}°)`, when };

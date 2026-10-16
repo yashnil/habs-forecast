@@ -6,7 +6,7 @@ import type { LayerArtifact } from "@/generated/schema";
 import { SPECIES, recordNamesSpecies, speciesPhrase, type Species, type SpeciesId } from "@/content/species";
 import { AUDIENCE, type Association } from "@/lib/applicability";
 import { AUDIENCES, type Audience } from "@/lib/coast";
-import { compass, marineHeadline, stationName, type Conditions } from "@/lib/conditions";
+import { compass, marineHeadline, stationName, type Conditions, HARBOR_TEMP_AT_KM } from "@/lib/conditions";
 import type { Step } from "@/lib/nextSteps";
 import { ACTION_LABEL, type Verification } from "@/lib/official";
 import { formatDate, formatDateTimePT } from "@/lib/time";
@@ -657,7 +657,7 @@ export function ConditionsCard({
           />
         ) : (
           c?.marine.status === "none" && c.marine.url ? (
-            // CoastWatch does not query NWS's API (its robots.txt): the reader goes to NWS directly
+            // Neritic does not query NWS's API (its robots.txt): the reader goes to NWS directly
             <Tile
               label="Marine forecast and warnings"
               value={
@@ -672,6 +672,17 @@ export function ConditionsCard({
           ) : (
           <Tile label="Marine forecast" value={c ? "Not available" : wait} sub={c ? plain(c.marine, "forecast").text : "NWS"} detail={c ? plain(c.marine, "forecast").detail : undefined} href={c && "url" in c.marine ? c.marine.url : undefined} state="none" testid="cond-marine" />
           )
+        )}
+        {/* water measured in the harbour itself (CO-OPS 6-minute thermistor): the one reading that is at the dock */}
+        {c?.harbor?.status === "ok" && c.harbor.station && (
+          <Tile
+            label={c.harbor.station.km <= HARBOR_TEMP_AT_KM ? "Water in the harbour · measured" : `Water · ${stationName(c.harbor.station.name)} tide station`}
+            value={`${c.harbor.data.waterC.value.toFixed(1)} °C`}
+            sub={`NOAA tide station ${c.harbor.station.id}${c.harbor.station.km <= HARBOR_TEMP_AT_KM ? ", in the harbour" : `, ${Math.round(c.harbor.station.km)} km away`}, ${formatDateTimePT(c.harbor.data.waterC.at)} · ±0.2 °C, NOAA flags pass`}
+            state={ageH(c.harbor.data.waterC.at) > 3 ? "old" : "ok"}
+            href={c.harbor.url}
+            testid="cond-harbor"
+          />
         )}
         {c?.buoy.status === "ok" && c.buoy.station ? (
           <Tile

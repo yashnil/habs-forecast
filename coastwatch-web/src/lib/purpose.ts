@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Audience } from "@/lib/coast";
 
 /**
- * Why someone uses CoastWatch, chosen once (optional) and kept on this device only. It changes
+ * Why someone uses Neritic, chosen once (optional) and kept on this device only. It changes
  * only defaults and order: which kind of fishing My Coast starts filtered to, and which section
  * comes first for researchers. It never changes a value, a notice, a caveat or a verification
  * status, and every page stays available to everyone. Nothing identifying is stored.

@@ -282,6 +282,8 @@ test.describe("readouts and inspector", () => {
     await page.mouse.move(box.x + pt.x, box.y + pt.y);
     await expect(page.getByTestId("hover-value")).toHaveText(`${Math.round(row.grid_value * 100)}%`);
     await expect(page.getByTestId("hover-readout")).toContainText("valid");
+    // the product and its native cell size, with the day the value is for
+    await expect(page.getByTestId("hover-when")).toContainText("C-HARM forecast, native 3 km · valid Oct 8");
     await page.mouse.move(box.x + 40, box.y + 22); // over the map's top bar: the readout goes
     await expect(page.getByTestId("hover-readout")).toHaveCount(0);
   });
@@ -316,5 +318,78 @@ test.describe("readouts and inspector", () => {
     const r = await new AxeBuilder({ page }).exclude(".maplibregl-canvas").exclude(".maplibregl-ctrl-attrib").analyze();
     const bad = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
     expect(bad.map((v) => `${v.id}: ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+  });
+});
+
+test.describe("the harbour view (carto T3)", () => {
+  type Feature = { properties: Record<string, unknown>; geometry: { type: string; coordinates: unknown } };
+  const sourceFeatures = (page: Page, id: string) =>
+    page.evaluate((sid) => {
+      const m = (window as unknown as { __cwMap: { getSource: (s: string) => { serialize: () => { data: { features: Feature[] } } } | undefined } }).__cwMap;
+      return m.getSource(sid)?.serialize().data.features ?? null;
+    }, id);
+  const MONTEREY_HARBOUR = { lon: -121.89, lat: 36.605 };
+
+  test("at Monterey harbour the map says its cell is not modelled and how far the nearest modelled cell is", async ({ page }) => {
+    await open(page, `${OK}/?layer=forecast&var=particulate_domoic&lead=1&region=monterey_bay`);
+    await mapCall(page, "jumpTo", { center: [MONTEREY_HARBOUR.lon, MONTEREY_HARBOUR.lat], zoom: 11 });
+    await expect.poll(() => sourceFeatures(page, "forecast-gap")).not.toBeNull();
+    const features = (await sourceFeatures(page, "forecast-gap"))!;
+    const note = features.find((f) => f.properties.kind === "note")!;
+    expect(note.properties.text).toMatch(/^No C-HARM value here: nearshore cells not modelled · nearest cell \d+(\.\d)? km$/);
+    expect(note.properties.km as number).toBeGreaterThan(2);
+    expect(note.properties.km as number).toBeLessThan(15);
+    expect(note.geometry.coordinates).toEqual([MONTEREY_HARBOUR.lon, MONTEREY_HARBOUR.lat]);
+    // the thread runs from the centre to the nearest cell's centre and carries the distance
+    const thread = features.find((f) => f.properties.kind === "thread")!;
+    const end = features.find((f) => f.properties.kind === "end")!;
+    expect((thread.geometry.coordinates as number[][])[0]).toEqual([MONTEREY_HARBOUR.lon, MONTEREY_HARBOUR.lat]);
+    expect((thread.geometry.coordinates as number[][])[1]).toEqual(end.geometry.coordinates);
+    expect(thread.properties.label).toBe(`${note.properties.km as number} km`);
+    for (const id of ["forecast-gap-note", "forecast-gap-thread", "forecast-gap-distance"]) expect(await mapCall(page, "getLayer", id)).toBeTruthy();
+    expect(await mapCall(page, "getPaintProperty", "forecast-gap-thread", "line-dasharray")).toBeTruthy();
+    // over a modelled cell there is nothing to explain: no note
+    const row = charmReport.rows.find((r: { status: string; layer_id: string; grid_value: number | null }) => r.status === "pass" && r.layer_id === "charm_particulate_domoic_lead1" && r.grid_value != null);
+    await mapCall(page, "jumpTo", { center: [row.cell_lon, row.cell_lat], zoom: 11 });
+    await expect.poll(() => sourceFeatures(page, "forecast-gap")).toBeNull();
+    // and below harbour zoom the note is not computed
+    await mapCall(page, "jumpTo", { center: [MONTEREY_HARBOUR.lon, MONTEREY_HARBOUR.lat], zoom: 9 });
+    await page.waitForTimeout(300);
+    expect(await sourceFeatures(page, "forecast-gap")).toBeNull();
+  });
+
+  test("shore stations appear from z 9.5 with their last sample date; recent ones filled, older ones as rings", async ({ page }) => {
+    await open(page, `${OK}/?layer=forecast&region=monterey_bay`);
+    const minzoom = await page.evaluate(() => (window as unknown as { __cwMap: { getLayer: (l: string) => { minzoom: number } } }).__cwMap.getLayer("map-station").minzoom);
+    expect(minzoom).toBe(9.5);
+    const features = (await sourceFeatures(page, "map-stations"))!;
+    const monterey = features.find((f) => f.properties.id === "HABs-MontereyWharf")!;
+    const santaCruz = features.find((f) => f.properties.id === "HABs-SantaCruzWharf")!;
+    // Monterey Wharf: the newest HAB sample (Pseudo-nitzschia, Aug 2025) is old, so the year is said and it is a ring
+    expect(monterey.properties).toMatchObject({ label: "Monterey Wharf · last sample Aug 27, 2025", recent: false });
+    // Santa Cruz Wharf was sampled Sep 30 (8 days before the fixed clock): filled
+    expect(santaCruz.properties).toMatchObject({ label: "Santa Cruz Wharf · last sample Sep 30", recent: true });
+    // labels move around the point rather than collide with port names
+    expect(await mapCall(page, "getLayoutProperty", "map-station-label", "text-variable-anchor")).toEqual(["left", "right", "top", "bottom"]);
+    // clicking a station opens the point inspector at the station itself
+    await mapCall(page, "jumpTo", { center: [-121.8893, 36.6037], zoom: 11 });
+    await page.waitForFunction(() => (window as unknown as { __cwMap: { loaded: () => boolean } }).__cwMap.loaded());
+    await page.waitForTimeout(400);
+    const box = (await page.getByTestId("map").boundingBox())!;
+    const pt = (await mapCall(page, "project", [-121.889275, 36.603683])) as { x: number; y: number };
+    await page.mouse.click(box.x + pt.x, box.y + pt.y);
+    await expect(page.getByTestId("inspector")).toContainText("36.604°N, 121.889°W");
+    await expect(page.getByTestId("inspector").getByTestId("inspect-product")).toContainText("native 3 km");
+    await expect(page.getByTestId("measured-HABs-MontereyWharf")).toBeVisible();
+  });
+
+  test("hovering the currents names the radar product and its native cell size with the observation time", async ({ page }) => {
+    await open(page, `${OK}/?layer=currents&region=monterey_bay`);
+    await mapCall(page, "jumpTo", { center: [-122.1, 36.8], zoom: 9 });
+    await page.waitForTimeout(300);
+    const box = (await page.getByTestId("map").boundingBox())!;
+    const pt = (await mapCall(page, "project", [-122.1, 36.8])) as { x: number; y: number };
+    await page.mouse.move(box.x + pt.x, box.y + pt.y);
+    await expect(page.getByTestId("hover-when")).toContainText(/^HF radar, native 2 km · (observed|24-hour mean to) /);
   });
 });

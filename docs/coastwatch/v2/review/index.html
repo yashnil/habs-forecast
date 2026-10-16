@@ -1,0 +1,268 @@
+<title>Neritic v2 Review</title>
+<meta name="description" content="Coastal intelligence v2, pass one: what works now, what is proven, what is only drawn, and what stays unvalidated." />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap" />
+<style>
+  /* layout: one reading column (68ch) with full-bleed figure rows; a sticky section index on wide screens */
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --fg: #16202b;
+    --fg-2: #46525f;
+    --fg-3: #6f7b88;
+    --line: #d9dee4;
+    --accent: #0f5c73;
+    --accent-ink: #0b4a5d;
+    --ok: #2a7f5f;
+    --caution: #9a6a12;
+    --problem: #a2342b;
+    --model: #6a3fb0;
+    --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1620; --surface: #15202c; --fg: #e8edf2; --fg-2: #b4bfca; --fg-3: #8794a1; --line: #263342;
+      --accent: #63b8cf; --accent-ink: #8fd0e2; --ok: #6dc9a2; --caution: #e3b45a; --problem: #f08a7f; --model: #c3aef3;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1620; --surface: #15202c; --fg: #e8edf2; --fg-2: #b4bfca; --fg-3: #8794a1; --line: #263342;
+    --accent: #63b8cf; --accent-ink: #8fd0e2; --ok: #6dc9a2; --caution: #e3b45a; --problem: #f08a7f; --model: #c3aef3;
+    color-scheme: dark;
+  }
+  body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.55; margin: 0; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding-block: 32px 64px; padding-inline: 16px; }
+  header.masthead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; border-bottom: 1px solid var(--line); padding-bottom: 16px; }
+  header.masthead h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(28px, 4vw, 40px); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  header.masthead .meta { color: var(--fg-3); font-size: 14px; }
+  nav.index { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 14px; font-size: 14px; }
+  nav.index a { color: var(--accent-ink); text-decoration: none; border-bottom: 1px solid transparent; }
+  nav.index a:hover, nav.index a:focus-visible { border-bottom-color: currentColor; outline: none; }
+  main { display: grid; gap: 40px; margin-top: 32px; }
+  section > h2 { font-family: var(--font-display); font-weight: 600; font-size: 26px; margin: 0 0 6px; letter-spacing: -0.01em; text-wrap: balance; }
+  section > h2 small { font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--fg-3); letter-spacing: 0.06em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+  section > p, section li { max-width: 68ch; }
+  p { margin: 0 0 10px; }
+  ul, ol { margin: 0 0 10px; padding-left: 22px; }
+  li { margin: 0 0 6px; }
+  a { color: var(--accent-ink); }
+  .lede { font-size: 18px; color: var(--fg-2); max-width: 68ch; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin: 14px 0; }
+  figure { margin: 0; min-width: 0; }
+  figure img { display: block; width: 100%; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; background: #0b1d33; }
+  figcaption { font-size: 13px; color: var(--fg-3); margin-top: 6px; line-height: 1.4; }
+  figcaption b { color: var(--fg-2); font-weight: 600; }
+  .pair { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin: 14px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 12px 0; }
+  .tablewrap { overflow-x: auto; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--fg-3); font-weight: 500; font-size: 12.5px; letter-spacing: 0.04em; text-transform: uppercase; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: 0.03em; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; }
+  .pill.ok { color: var(--ok); } .pill.caution { color: var(--caution); } .pill.problem { color: var(--problem); } .pill.model { color: var(--model); } .pill.plain { color: var(--fg-3); }
+  pre { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.5; overflow-x: auto; margin: 10px 0; }
+  blockquote { margin: 10px 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--surface); font-family: var(--font-display); font-size: 17px; max-width: 68ch; }
+  blockquote cite { display: block; font-family: var(--font-body); font-style: normal; font-size: 13px; color: var(--fg-3); margin-top: 6px; }
+  .cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin: 12px 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; min-width: 0; }
+  .card h3 { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
+  .card p { font-size: 14px; color: var(--fg-2); margin: 0; }
+  .ramp { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; margin: 8px 0; max-width: 520px; }
+  .ramp span { height: 22px; border-radius: 3px; display: block; }
+  .ramp-labels { display: flex; justify-content: space-between; max-width: 520px; font-size: 12px; color: var(--fg-3); font-variant-numeric: tabular-nums; }
+  footer { margin-top: 48px; border-top: 1px solid var(--line); padding-top: 14px; font-size: 13px; color: var(--fg-3); }
+  @media (prefers-reduced-motion: no-preference) { a { transition: border-color 120ms ease; } }
+</style>
+
+<div class="wrap">
+<header class="masthead">
+  <h1>Neritic v2 Review</h1>
+  <span class="meta">Coastal intelligence v2 · pass one · 15 October 2026 · draft PR #65, private</span>
+  <nav class="index" aria-label="Sections">
+    <a href="#rc">Release candidate</a><a href="#pass2">Pass two</a><a href="#works">Pass one</a><a href="#trust">Trust fixes</a><a href="#evidence">Harbour evidence</a><a href="#water">In-harbour water</a><a href="#sources">Sources</a><a href="#carto">Cartography</a><a href="#logo">Logo</a><a href="#research">Unvalidated</a><a href="#tests">Tests</a><a href="#next">Next</a>
+  </nav>
+</header>
+
+<main>
+<section id="rc">
+  <h2>Release candidate · inspection at 1440, 390 and 320 px (15 Oct, evening)</h2>
+  <p>The final rendered app on the 15 October data, after the release-preparation fixes: every masthead control a 44 px target with no overlapping hit boxes (the drawn pill unchanged at 32 px), the HAB line no longer restating the model on sample-less harbours, the HAB detail's summary now the graph's own sentences, the map's distance label clear of the harbour's name, the docked bar's label never wrapping at 320 px. The plan for merging, building, promoting and rolling back is <code>docs/coastwatch/release/2026-10-16-release-candidate.md</code>.</p>
+  <div class="grid">
+    <figure><img src="img/rc-monterey-390.jpg" alt="Monterey on a 390 px phone: masthead, status line, the trip bar and the first two claims" width="390" height="844" /><figcaption><b>Monterey, 390 px.</b> The disputed CDPH notice leads, then the notices that apply; the docked map bar covers nothing.</figcaption></figure>
+    <figure><img src="img/rc-crescent-390.jpg" alt="Crescent City on a 390 px phone: the notices and the HAB gap line" width="390" height="844" /><figcaption><b>Crescent City, 390 px.</b> No shore station within 60 km samples here; the model is the next line, said once.</figcaption></figure>
+    <figure><img src="img/rc-sandiego-390.jpg" alt="San Diego on a 390 px phone" width="390" height="844" /><figcaption><b>San Diego, 390 px.</b> The nearest station (Scripps Pier, 20 km) last reported 4 weeks ago.</figcaption></figure>
+    <figure><img src="img/rc-sheltercove-390.jpg" alt="Shelter Cove on a 390 px phone" width="390" height="844" /><figcaption><b>Shelter Cove, 390 px.</b> A sparse harbour: five notices, no sample, no valid model cell, the satellite and the tides.</figcaption></figure>
+  </div>
+  <div class="grid">
+    <figure><img src="img/rc-monterey-320.jpg" alt="Monterey at 320 px" width="320" height="640" /><figcaption><b>Monterey, 320 px.</b> The status line wraps to two lines by design; no sideways scroll.</figcaption></figure>
+    <figure><img src="img/rc-sandiego-320.jpg" alt="San Diego at 320 px" width="320" height="640" /><figcaption><b>San Diego, 320 px.</b></figcaption></figure>
+    <figure><img src="img/rc-header-390.jpg" alt="The phone masthead and status line at 390 px" width="390" height="92" /><figcaption><b>The phone header.</b> Looks as before; every control is now a 44 px target.</figcaption></figure>
+  </div>
+  <figure><img src="img/rc-monterey-1440.jpg" alt="Monterey at 1440 px beside the harbour map" width="1440" height="900" /><figcaption><b>Monterey, 1440 px.</b> The briefing column beside the sticky harbour map: the stations with their last sample, the thread to the nearest model cell, the official limit clipped to the sea.</figcaption></figure>
+  <figure><img src="img/rc-crescent-1440.jpg" alt="Crescent City at 1440 px beside the harbour map" width="1440" height="900" /><figcaption><b>Crescent City, 1440 px.</b> The distance label sits west of the cell, clear of the harbour's name.</figcaption></figure>
+</section>
+
+<section id="pass2">
+  <h2><small>Pass two · 15 October</small>Connected evidence, the phone redesign, corrected harbour data</h2>
+  <p class="lede">After the pass-one audit the brief was to make the existing work useful rather than add more: one evidence backbone that the page actually consumes, the real mobile layout, honest harbour thermometers, and the harbour-scale map elements, each measured.</p>
+  <div class="cards">
+    <div class="card"><h3><span class="pill ok">one backbone</span></h3><p>Every briefing line, the answer line, the evidence rows, the map's thread and <code>/api/evidence</code> come from <code>lib/harborEvidence</code>; the duplicate claim logic is deleted. A Playwright spec proves the page and the API cannot disagree, and it caught one real contradiction (the satellite water mask) while being written.</p></div>
+    <div class="card"><h3><span class="pill ok">phone</span></h3><p>Monterey: 7.4 → 4.9 screens, 1,300 → 810 words, 3 → 0 repeated sentences, controls under 44 px 31 → 8 (all in the shared masthead), body text 13 → 14 px with 17 px claims, no button over content. The first conclusion is on the first screen with no tap.</p></div>
+    <div class="card"><h3><span class="pill ok">harbour data</span></h3><p>CO-OPS flags decoded (X/N/R), sensor elevations recorded, the 6 km same-water rule with no second-station fallback; San Francisco's sensor is NOAA-flagged "suspect" and now says "sensor not reporting" instead of borrowing Alameda's water.</p></div>
+    <div class="card"><h3><span class="pill model">map</span></h3><p>At harbour zoom: the gap note with the distance to the nearest valued cell, shore stations with their last sample date, limit lines clipped to the sea, chips that never truncate, resolution in every readout.</p></div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/pass2-before-390.jpg" alt="Before: the Monterey phone briefing's first screen, with a floating Map button over the text" width="390" height="844" /><figcaption><b>Before, first screen.</b> The floating "Map" pill sits over the briefing; the first line is a value without its distance.</figcaption></figure>
+    <figure><img src="img/pass2-after-390.jpg" alt="After: the Monterey phone briefing's first screen, with the trip bar, Right now at Monterey and two claims, and a docked Map bar above the tab bar" width="390" height="844" /><figcaption><b>After, first screen.</b> Trip bar, "Right now at Monterey", the first two claims with their sources, and a docked map bar that covers nothing.</figcaption></figure>
+  </div>
+  <div class="pair">
+    <figure><img src="img/pass2-before-390-full.jpg" alt="Before: the whole Monterey phone page, 6,282 pixels tall" width="390" height="6282" /><figcaption><b>Before, whole page.</b> 6,282 px, 7.4 screens, 1,300 words.</figcaption></figure>
+    <figure><img src="img/pass2-after-390-full.jpg" alt="After: the whole Monterey phone page, 4,097 pixels tall" width="390" height="4097" /><figcaption><b>After, whole page.</b> 4,097 px, 4.9 screens, 810 words: right now, the evidence (gaps first, readings behind one disclosure, the timeline), before you leave, one disclosure for everything else.</figcaption></figure>
+  </div>
+  <figure><img src="img/pass2-after-1440.jpg" alt="After: the Monterey desktop layout, the briefing column beside the sticky map" width="1440" height="900" /><figcaption><b>Desktop, after.</b> The same page beside the sticky map.</figcaption></figure>
+  <p>The full measurement table for five harbours, the section heights and the limits are in <a href="https://github.com/yashnil/habs-forecast/blob/feat/coastal-intelligence-v2/docs/coastwatch/v2/04-pass-two.md">04-pass-two.md</a>; the CO-OPS audit in <a href="https://github.com/yashnil/habs-forecast/blob/feat/coastal-intelligence-v2/docs/coastwatch/v2/03-coops-audit.md">03-coops-audit.md</a>.</p>
+</section>
+
+<section id="works">
+  <h2><small>Summary</small>What concretely works now</h2>
+  <p class="lede">Nothing here is merged or deployed. Everything below runs on the 15 October production data in a private build of the branch <code>feat/coastal-intelligence-v2</code>, stacked on the design study (#63) and the Neritic name (#62).</p>
+  <div class="cards">
+    <div class="card"><h3><span class="pill ok">built · proven</span></h3><p>Stage 1 trust fixes with regression tests; the harbour evidence service and <code>/api/evidence</code>; in-harbour water temperature from NOAA CO-OPS; the OLCI pipeline fix; limit lines named by their notices.</p></div>
+    <div class="card"><h3><span class="pill model">built · visual</span></h3><p>The cartography treatment in the product map: a uniform translucent ramp, zoom-adaptive cell outlines, per-cell values at harbour zoom, the distance label on My Coast's thread. Display only; every value is the published one.</p></div>
+    <div class="card"><h3><span class="pill caution">studied · not built</span></h3><p>The source feasibility matrix; the cartography prototype's light-map variant; three logo directions; the harbour-prediction research design; the AI tool contract.</p></div>
+    <div class="card"><h3><span class="pill problem">unvalidated · kept out</span></h3><p>Any nearshore toxin estimate. The PINN/ConvLSTM chlorophyll work. IFCB class scores. Gap-filled chlorophyll shown as observation. None of these reaches a page.</p></div>
+  </div>
+</section>
+
+<section id="trust">
+  <h2><small>Stage 1</small>Correctness and trust</h2>
+  <p>The design audit's four P0 findings, fixed in the product and covered by tests. The map now opens on today; every day chip names its date and its distance from today, and "nowcast" lives only in the run line, which explains why the nowcast's date precedes the run's.</p>
+  <div class="pair">
+    <figure><img src="img/base-map-forecast.jpg" alt="Before: the Ocean Map forecast panel with chips reading Oct 13 nowcast, Oct 14 yesterday, Oct 15 today, Oct 16 tomorrow, and a header saying forecast for Oct 14 issued Oct 14" width="1440" height="900" /><figcaption><b>Before.</b> "Oct 13 nowcast" beside "Oct 14 yesterday" under a header "for Oct 14 · issued Oct 14": three vocabularies in one row, and the map opened on yesterday. An opaque purple field hides the seafloor.</figcaption></figure>
+    <figure><img src="img/after-map-bay.jpg" alt="After: the same panel with chips reading Oct 13 two days ago, Oct 14 yesterday, Oct 15 today selected, Oct 16 tomorrow, and a translucent amber-to-indigo forecast field with cell outlines over the seafloor relief" width="1440" height="900" /><figcaption><b>After.</b> One vocabulary per row, today selected, the run line carries "nowcast". The field is translucent over the relief, with hairline cell edges from z 8.5.</figcaption></figure>
+  </div>
+  <div class="pair">
+    <figure><img src="img/base-mycoast-top.jpg" alt="Before: My Coast for Monterey with the HAB line reading Pseudo-nitzschia 4,900 cells/L at Santa Cruz Wharf, 2 weeks ago, with the 41 km distance in the small text below" width="1440" height="900" /><figcaption><b>Before.</b> The value leads; "41 km NNW" is in the detail line; the offshore median is quoted as a number.</figcaption></figure>
+    <figure><img src="img/after-mycoast-top.jpg" alt="After: the same line reading Santa Cruz Wharf, 41 km NNW: Pseudo-nitzschia 4,900 cells/L, Sep 30, with Monterey Wharf named as closer but silent since August 2025 and the model's offshore cells given as a context range" width="1440" height="900" /><figcaption><b>After.</b> Station and distance first; the closer, silent Monterey Wharf named with its last sample date; the model's offshore cells a range marked context only.</figcaption></figure>
+  </div>
+  <ul>
+    <li><b>Latency in the right voice.</b> A run a few days old is NOAA's ordinary latency: "No newer run since Oct 12 (3 days ago). NOAA's C-HARM runs are often missing a day or more." in a caution tone. "Out of date" and "Update failed … at 10:03 AM PDT" stay red. The briefing says "run of Oct 12, 3 days old", never "stale run".</li>
+    <li><b>Offshore cells never drawn as the harbour's own.</b> Outlook bars and the evidence timeline draw an offshore median outlined and hatched, labelled "offshore"; only the waters' own cell is a solid bar.</li>
+    <li><b>Duplicates.</b> Research-mode My Coast says the run's note once; the agency check date is said once under "What matters", not under every item.</li>
+    <li><b>Map boundaries.</b> Latitude limit lines are named by the notices they bound: "Northern anchovy notices · south limit 36°31.46′ N". (They still cross a little land at Point Lobos; clipping to water is Stage 3 work.)</li>
+  </ul>
+</section>
+
+<section id="evidence">
+  <h2><small>Stage 2</small>The harbour evidence service</h2>
+  <p>One typed graph per place, built from the same readings My Coast makes, so a sentence on the page, an API answer and a future assistant rest on the same evidence. Every node carries how it is known (measurement · satellite retrieval · published forecast · reconstruction · experimental), its source, time, native support, distance and bearing, a per-variable representativeness class, the station's setting, freshness, flags, lineage and caveats. Gaps are said as gaps. Claims cite the node ids they rest on.</p>
+  <p>The acceptance statement, produced from the live data by <code>GET /api/evidence?place=port-550</code>:</p>
+  <blockquote>Santa Cruz Wharf reported 4,900 cells/L Pseudo-nitzschia on September 30, 41 km NNW of Monterey. Monterey Wharf is closer (0.6 km) but has no comparable sample since August 27, 2025.<cite>claim "measured", supports pn_cells:HABs-SantaCruzWharf</cite></blockquote>
+  <blockquote>NOAA's C-HARM model has no valid estimate in these nearshore waters. Its nearest cell is 6.6 km out; the 27 offshore cells within 15 km read 73%–79% for October 15, context for the open water, not the harbor.<cite>claim "model", kind gap, supports charm:offshore:2026-10-15</cite></blockquote>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Harbour</th><th>Measured (nearest usable)</th><th>C-HARM at the harbour</th><th>Satellite chlorophyll</th><th>In-harbour water</th></tr></thead>
+    <tbody>
+      <tr><td>Monterey</td><td>Santa Cruz Wharf, 41 km, 30 Sep · Monterey Wharf closer but silent since Aug 2025</td><td>no value · nearest cell 6.6 km · 27 cells 73–79 %</td><td>2.9 mg/m³ at the pixel, 12 Oct (VIIRS 750 m)</td><td>17.6 °C, tide station 9413450, 1.0 km</td></tr>
+      <tr><td>Santa Cruz</td><td>Santa Cruz Wharf, 2.2 km, 30 Sep</td><td>no value · nearest 7.2 km · 24 cells 75–81 %</td><td>1.5 mg/m³ median of 116 pixels within 5 km, 10 Oct (OLCI 300 m)</td><td>none within 20 km (said so)</td></tr>
+      <tr><td>Crescent City</td><td>none within 60 km (Trinidad Pier 77 km, Bodega 394 km)</td><td>no value · nearest 2.4 km · 40 cells 50–96 %</td><td>6.9 mg/m³ at the pixel, 12 Oct</td><td>11.7 °C, tide station 9419750, 1.7 km</td></tr>
+      <tr><td>San Diego</td><td>Scripps Pier 20 km, cells 4 weeks old, toxin 2 months old</td><td>no value · nearest 8.4 km · 13 cells 88–93 %</td><td>4.5 mg/m³ median of 20 pixels, 12 Oct</td><td>23.9 °C, tide station 9410170, 4.0 km</td></tr>
+      <tr><td>Shelter Cove</td><td>none within 60 km (Humboldt South Bay 79 km)</td><td>no value · nearest 4.7 km · 31 cells 65–74 %</td><td>1.2 mg/m³ median of 757 pixels, 12 Oct (OLCI)</td><td>none within 20 km</td></tr>
+    </tbody>
+  </table></div>
+  <p>Representativeness is per variable, with the reasons in code: piers 2 / 15 / 60 km (bloom-patch scale and the C-HARM pier validation), satellite pixels 0.5 / 5 / 15 km, C-HARM own cell vs 15 km context, synoptic wind 30 km, harbour water temperature 2 km. A station's setting (exposed pier, sheltered harbour, offshore) is a named heuristic that never changes a value.</p>
+</section>
+
+<section id="water">
+  <h2><small>Stage 2</small>In-harbour water temperature, measured</h2>
+  <p>The one verified, low-risk source from the matrix that adds knowledge <em>at</em> the harbour: NOAA CO-OPS tide stations with a thermistor inside the harbour, 6-minute averages, ±0.2 °C, NOAA-flagged, public domain. Read live by <code>/api/conditions</code> as a new part, within 20 km only, named "in the harbour" within 2 km and by its distance otherwise. A station whose sensor is down (Santa Barbara, Los Angeles and San Francisco on 15 Oct) is said as such, not as an outage.</p>
+  <figure><img src="img/after-conditions-monterey.jpg" alt="The Monterey conditions card with a tile reading Water in the harbour · measured, 17.6 °C, NOAA tide station 9413450, in the harbour, with the time and the note ±0.2 °C, NOAA flags pass, beside the offshore buoy tile" width="1440" height="700" /><figcaption><b>Monterey, live.</b> Harbour water 17.6 °C at the tide station, beside the offshore buoy's 18.1 °C and 3.6 ft seas: the two are now told apart.</figcaption></figure>
+  <p>Why it matters: the OLCI 300 m product had usable pixels within 1.5 km of a harbour on only 1–3 of the last 8 days (fog and cloud). In-situ measurements are what make a harbour panel reliable. The next two sources in line are the CeNCOOS shore stations with QARTOD flags (Morro Bay T-pier, the harbour CO-OPS misses) and the CDIP wave buoys.</p>
+</section>
+
+<section id="sources">
+  <h2><small>Stage 0</small>Which new sources are genuinely useful</h2>
+  <p>Every row of <a href="https://github.com/yashnil/habs-forecast/blob/feat/coastal-intelligence-v2/docs/coastwatch/v2/01-sources.md">01-sources.md</a> was probed live on 15 October. The short version:</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Source</th><th>Harbour value</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>NOAA CO-OPS 6-min water temperature</td><td>measured in the harbour at 3 of 6 test harbours, ±0.2 °C, flagged</td><td><span class="pill ok">built</span></td></tr>
+      <tr><td>CeNCOOS shore stations (ERDDAP, QARTOD)</td><td>in-harbour T, salinity, chlorophyll fluorescence at Morro Bay; Trinidad, Humboldt, Bodega; Santa Cruz Wharf offline since 19 Aug</td><td><span class="pill ok">next</span></td></tr>
+      <tr><td>CDIP wave buoys (THREDDS)</td><td>harbour-approach Hs/Tp/Dp and SST at 18–34 km, unrestricted</td><td><span class="pill ok">next</span></td></tr>
+      <tr><td>WCOFS station file (87 nodes, 6-min, 72 h)</td><td>the only forecast of harbour-approach water temperature; RMSE ≈ 1.15 °C; 1.7–5.3 km out</td><td><span class="pill caution">later, as guidance</span></td></tr>
+      <tr><td>Sentinel-3 OLCI (NOAA)</td><td>already integrated; the "404" was a front-end HTML page while S3B's feed stalled, fixed in the pipeline</td><td><span class="pill ok">fixed</span></td></tr>
+      <tr><td>SCCOOS/UCLA ROMS · UCSC 150 m Monterey nest</td><td>dead since Dec 2022 · stale since Feb 2026, "not for operational use"</td><td><span class="pill problem">no</span></td></tr>
+      <tr><td>Copernicus Marine, EUMETSAT</td><td>account, attribution and record-keeping obligations</td><td><span class="pill problem">not without the owner's decision</span></td></tr>
+      <tr><td>Gap-filled chlorophyll (NOAA DINEOF 2/9 km, GlobColour 4 km)</td><td>reconstructions: visual smoothness only</td><td><span class="pill problem">never as observation</span></td></tr>
+      <tr><td>IFCB class scores (ifcb.caloos.org)</td><td>provisional CNN output, no licence statement</td><td><span class="pill problem">research only</span></td></tr>
+      <tr><td>CDFW fishery status</td><td>no structured feed; boundaries only</td><td><span class="pill plain">a person reviews</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="carto">
+  <h2><small>Stage 3</small>The map: beautiful without inventing precision</h2>
+  <p>The renderer is unchanged: every pixel is the 3 km cell that contains it, clipped to the basemap's water, nothing interpolated. What changed is what the reader sees. The classes are built in OKLCH with lightness rising in near-equal steps and chroma held low through the reds, drawn at 0.72 opacity so the seafloor stays legible; cell edges appear from z 8.5 and each cell says its value from z 11; at harbour zoom the no-value water stays a hatch and the thread to the nearest cell carries its distance.</p>
+  <div class="ramp" aria-label="The ten display classes, 0 to 100 percent"><span style="background:#4a4a65"></span><span style="background:#61537b"></span><span style="background:#7d5b8c"></span><span style="background:#9a6396"></span><span style="background:#b27097"></span><span style="background:#ca7f94"></span><span style="background:#e38e8e"></span><span style="background:#f7a082"></span><span style="background:#ffb97f"></span><span style="background:#fed48c"></span></div>
+  <div class="ramp-labels"><span>0 %</span><span>L* 32.5 → 87.0, min ΔL* 5.6 · display classes, not risk levels</span><span>100 %</span></div>
+  <div class="grid">
+    <figure><img src="img/carto-T1-regional.jpg" alt="Prototype, regional scale: the translucent ramp over the California relief, the shelf break and canyons visible through the field" width="1440" height="900" /><figcaption><b>Prototype T1, regional.</b> The relief reads through; low classes recede.</figcaption></figure>
+    <figure><img src="img/carto-T3-harbor.jpg" alt="Prototype, Monterey harbour at z12: per-cell values, the hatched nearshore gap with its note, a dashed line to the nearest modelled cell labelled 6.6 km, and Monterey Wharf as a station point" width="1440" height="900" /><figcaption><b>Prototype T3, harbour.</b> What the model says at the harbour, instead of enlarged pixels.</figcaption></figure>
+    <figure><img src="img/after-map-harbor.jpg" alt="The product map at Monterey harbour after integration: translucent cells with values 76 to 79, cell outlines, the hatched nearshore gap, the Monterey port point" width="1440" height="900" /><figcaption><b>Product, after.</b> The treatment in the Ocean Map on the live data.</figcaption></figure>
+    <figure><img src="img/after-mycoast-map.jpg" alt="My Coast's map for Monterey after integration, with the thread from the harbour to the nearest valued cell labelled with its distance" width="1440" height="900" /><figcaption><b>Product, after.</b> My Coast's thread now says "6.6 km to the nearest model cell".</figcaption></figure>
+  </div>
+  <p>Measured in the prototype (Chrome, local): grid 147 KB gzipped, decode 3–11 ms, whole-field image 105 KB, first paint of the field 22–42 ms for the raster alone and 170–233 ms with the derived outlines and labels. The light-map variant (T4) works only with a lighter ramp and the outlines on; its top class has 1.2:1 luminance contrast against the light sea and separates by hue, which is the inherent limit of a light-rising ramp on a light map. Recommendation: keep the dark relief as the default, offer the light map as a reading mode later.</p>
+</section>
+
+<section id="logo">
+  <h2><small>Stage 5</small>Bathymetric identity: three directions, none installed</h2>
+  <figure><img src="img/logo-board.jpg" alt="The logo comparison board: coast-cut contours, the shelf disc, the shelf with one isobath, the wordmark-led N tile, and the rejected Depth N for reference, each at 128, 48, 32 and 16 px, in light and dark headers, mono and as an app icon" width="1800" height="1456" /><figcaption><b>Board, round five.</b> Columns: 1b coast-cut contours, 2 shelf, 2b shelf with isobath, 3 wordmark-led, Depth N (rejected, reference).</figcaption></figure>
+  <ul>
+    <li><b>Strongest candidate: 2b, the shelf with one isobath.</b> A disc cut once by the shelf profile, with a single isobath on the water side; the line moves it out of the split-disc genre and makes it bathymetry. Single-path mono; at 16 px it falls back to the plain shelf (2), which is the cleanest small mark on the board.</li>
+    <li><b>3, wordmark-led,</b> has the best typography and the most pragmatic system, but its N tile is a generic app-letter tile.</li>
+    <li><b>1b, coast-cut contours,</b> is the most literal chart and the strongest full-bleed app icon, but its three hooks read as a ribbon on a transparent ground and it needs 32 px for the full figure; another round would try two isobaths cut by a straight coast.</li>
+  </ul>
+  <p>Nothing resembles Neritic Diving's mark (brush-stroke waves over hand-lettered caps). Vectors, generator, favicon renders and five rounds of critique: <a href="https://github.com/yashnil/habs-forecast/tree/feat/coastal-intelligence-v2/docs/coastwatch/v2/logo">logo/</a>.</p>
+</section>
+
+<section id="research">
+  <h2><small>Stage 6</small>What remains scientifically unvalidated</h2>
+  <ul>
+    <li><b>Any nearshore toxin estimate.</b> C-HARM has toxin values in 12.6 % of water within 1 km of shore; no public validated product fills that gap, and interpolating C-HARM to the shore is unsupported (three sources against it). The product says "no valid estimate" at the harbour and shows the offshore cells as context.</li>
+    <li><b>The PINN/ConvLSTM chlorophyll work</b> (PR #49 audit): a climatology plus AR(1) baseline matches both networks and the physics term is inert. It is a chlorophyll model, not a toxin model, and will not be advertised as one.</li>
+    <li><b>A pier-point domoic acid outlook</b> is the only defensible target: 4,267 CalHABMAP toxin samples at 10 piers since 2014, 155 at or above 0.5 ng/mL. The study design in <a href="https://github.com/yashnil/habs-forecast/blob/feat/coastal-intelligence-v2/docs/coastwatch/v2/02-plan.md">02-plan.md</a> holds out whole years and whole piers, compares to climatology, persistence, AR(1) and C-HARM's own cell, scores calibration, and promotes nothing until it beats every baseline on held-out piers across two seasons. If the labels cannot support it, the study says so and stops.</li>
+    <li><b>IFCB class scores</b> are provisional classifier output with no licence statement; not counts.</li>
+  </ul>
+</section>
+
+<section id="tests">
+  <h2><small>Stage 7</small>Exact tests and benchmarks</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Suite</th><th class="num">Before</th><th class="num">After</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td>Web unit (Vitest)</td><td class="num">310</td><td class="num">333</td><td>new: charmDays, harborEvidence, officialGeometry; additions to trip, conditions, grid, design</td></tr>
+      <tr><td>Web Playwright (4 servers, axe in 13 specs)</td><td class="num">249</td><td class="num">249</td><td>map.spec (chips, opening day, note tones), coastal.spec (harbour water tile)</td></tr>
+      <tr><td>Pipeline pytest</td><td class="num">245</td><td class="num">246</td><td>test_satellite: the masked 404</td></tr>
+      <tr><td>CI (Linux, bundled Chromium)</td><td class="num">—</td><td class="num">green</td><td>web-static, web-e2e ×2, pipeline, on PR #65</td></tr>
+    </tbody>
+  </table></div>
+  <p>Scientific-communication regressions now asserted: every day chip's relative word equals the calendar's for any clock; the default day is today when the run reaches it; a run ≤ 7 days old is a caution, never a failure; the HAB headline carries the station and distance before the value; the offshore range is marked context and no claim contains "median" for waters without a cell; no claim contains "safe", "catch" or a risk score; every claim's supporting ids exist in the graph; the water-temperature parser rejects flagged, old and future readings and treats "No data" as a sensor down.</p>
+  <p>Not measured in this pass: Lighthouse and frame-rate profiling of the product map (the prototype's first-paint numbers are above); tap-target compliance on the phone (the design audit's counts stand until Stage 4).</p>
+</section>
+
+<section id="next">
+  <h2><small>Decisions and next</small>What the owner decides, and the next milestone</h2>
+  <ol>
+    <li><b>Logo:</b> 2b, 2, 3, or another round on 1b.</li>
+    <li><b>Stage 1 on main now?</b> The trust-fix commits are independent of the brand and can be cherry-picked to <code>main</code> ahead of #62.</li>
+    <li><b>Light map:</b> keep as a later reading mode, or drop.</li>
+  </ol>
+  <p><b>Next highest-leverage milestone: Stage 4, My Coast on the phone.</b> The briefing's answer lines should come from the evidence graph's claims in order (official → measured → model → satellite → conditions), followed by one compact evidence section and the checklist, with the detailed science behind one disclosure. Today the phone page is about seven screens; the target is the first useful answer within one. Then CeNCOOS shore stations and CDIP waves through the same conditions route.</p>
+  <p>No public release, merge, deploy, domain change or purchase happens without the owner's explicit approval.</p>
+</section>
+</main>
+
+<footer>Neritic is an independent research project. Satellite, model and station data are credited to NOAA CoastWatch, NOAA CO-OPS, NOAA NDBC, NOAA NWS, SCCOOS/CalHABMAP and the agencies named on each page. Official notices are transcribed, not verified; the agency pages are the authority.</footer>
+</div>

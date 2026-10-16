@@ -14,7 +14,7 @@ all twelve months published.
 affected by marine toxins. It is not a prediction of losses and says nothing about any
 current or future season.
 
-Port-level values are not published by CoastWatch (see PORT_LEVEL): the only 2021+ source
+Port-level values are not published by Neritic (see PORT_LEVEL): the only 2021+ source
 (CDFW MFDE) has not granted permission for automated extraction or republication.
 """
 
@@ -57,7 +57,7 @@ BLS_LICENSE = "U.S. Government work (Bureau of Labor Statistics); public domain.
 
 TIER_REVIEW = "Tier assignments are Neritic's editorial grouping and await HAB scientific review."
 
-# id, label, tier, basis, official record ids (CoastWatch registry), exact upstream names / regex
+# id, label, tier, basis, official record ids (Neritic registry), exact upstream names / regex
 GROUPS: list[dict] = [
     {
         "id": "dungeness_crab",

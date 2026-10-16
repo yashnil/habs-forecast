@@ -1,0 +1,62 @@
+[
+ {
+  "shot": "T3-bay-390",
+  "marks": {
+   "meta": 12
+  },
+  "grid": {
+   "gzBytes": 150916,
+   "tFetch": 38,
+   "tDecode": 4
+  },
+  "image": {
+   "width": 1404,
+   "height": 1970,
+   "pngBytes": 108981,
+   "tRender": 17,
+   "tEncode": 53
+  },
+  "detail": {
+   "width": 946,
+   "height": 2048,
+   "pngBytes": 68047,
+   "ms": 19,
+   "hatchedCells": 760
+  },
+  "firstPaintMs": 171,
+  "firstPaintFromPageStartMs": 349,
+  "log": [
+   "[carto] raster first paint: 171 ms after style apply (349 ms after page start); image 1404x1970 px, PNG 106 KB; grid gz 147 KB fetch 38 ms decode 4 ms; render 17 ms encode 53 ms; derived vectors 26 ms"
+  ]
+ },
+ {
+  "shot": "T3-bay-1440",
+  "marks": {
+   "meta": 9
+  },
+  "grid": {
+   "gzBytes": 150916,
+   "tFetch": 42,
+   "tDecode": 4
+  },
+  "image": {
+   "width": 1404,
+   "height": 1970,
+   "pngBytes": 108981,
+   "tRender": 16,
+   "tEncode": 51
+  },
+  "detail": {
+   "width": 2048,
+   "height": 1280,
+   "pngBytes": 77596,
+   "ms": 20,
+   "hatchedCells": 2616
+  },
+  "firstPaintMs": 172,
+  "firstPaintFromPageStartMs": 339,
+  "log": [
+   "[carto] raster first paint: 172 ms after style apply (339 ms after page start); image 1404x1970 px, PNG 106 KB; grid gz 147 KB fetch 42 ms decode 4 ms; render 16 ms encode 51 ms; derived vectors 26 ms"
+  ]
+ }
+]

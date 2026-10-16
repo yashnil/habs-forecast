@@ -46,7 +46,7 @@ in the published dataset like everything else). What alerts, and why that thresh
                       each recovered by the next run, so no other check fired). One alert per host;
                       it clears only after a whole window without such a failure.
 - data_stale          the newest published C-HARM run is older than its own freshness policy
-                      allows (what the app labels "Stale"), whether or not the run succeeded. The message says which: CoastWatch could not reach the
+                      allows (what the app labels "Stale"), whether or not the run succeeded. The message says which: Neritic could not reach the
                       source (last error), or the source published nothing newer.
 
 - charm_input_changed NOAA's own metadata for the newest C-HARM run declares a different satellite

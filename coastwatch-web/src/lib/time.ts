@@ -35,15 +35,33 @@ export function pacificToday(now: Date): string {
   return PT_DAY.format(now); // en-CA yields YYYY-MM-DD
 }
 
-/** "today", "tomorrow", "yesterday", "in 2 days", "3 days ago" relative to Pacific today. */
-export function relativeDay(date: string, now: Date): string {
+/** Whole days from Pacific today to a YYYY-MM-DD date (negative in the past). */
+function dayDiff(date: string, now: Date): number {
   const today = Date.parse(`${pacificToday(now)}T00:00:00Z`);
   const d = Date.parse(`${date}T00:00:00Z`);
-  const diff = Math.round((d - today) / 86_400_000);
+  return Math.round((d - today) / 86_400_000);
+}
+
+/** "today", "tomorrow", "yesterday", "in 2 days", "3 days ago" relative to Pacific today. */
+export function relativeDay(date: string, now: Date): string {
+  const diff = dayDiff(date, now);
   if (diff === 0) return "today";
   if (diff === 1) return "tomorrow";
   if (diff === -1) return "yesterday";
   return diff > 0 ? `in ${diff} days` : `${-diff} days ago`;
+}
+
+/**
+ * The compact form for a chip a few characters wide: "today", "tomorrow", "yesterday", "in 2 d",
+ * "3 d ago". Same days as `relativeDay`; only the plural words are shortened, so a chip never
+ * clips "2 days ago" to "2 days a".
+ */
+export function relativeDayShort(date: string, now: Date): string {
+  const diff = dayDiff(date, now);
+  if (diff === 0) return "today";
+  if (diff === 1) return "tomorrow";
+  if (diff === -1) return "yesterday";
+  return diff > 0 ? `in ${diff} d` : `${-diff} d ago`;
 }
 
 export function formatAge(days: number | null): string {

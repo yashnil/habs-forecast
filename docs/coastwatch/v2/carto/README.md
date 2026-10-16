@@ -1,0 +1,175 @@
+# C-HARM geospatial rendering prototype (carto)
+
+A self-contained MapLibre page that draws today's published C-HARM field five ways, with a zoom
+preset bar and a screenshot harness, to answer: can the forecast field sit *on* the bathymetric
+basemap instead of hiding it, can the 70–80 % band be read, and what should a harbor-zoom view
+say when the harbor itself has no modelled cell.
+
+Prototype only: nothing here touches `coastwatch-web/src`. It does not use the product's exact
+tile protocol (see "What is display-only" below).
+
+## Run
+
+```
+cd docs/coastwatch/v2/carto
+node serve.mjs            # http://localhost:3399/index.html  (ES-module MapLibre needs http)
+node ramp.mjs             # regenerate data/ramp.json and print the stops with L* and contrast
+node shoot.mjs            # 40 screenshots -> shots/<treatment>-<preset>-<width>.png + perf.json
+node shoot.mjs T3 harbor 1440      # a subset;  node shoot.mjs T2 bay classes=20  (experiment)
+```
+
+Offline-capable except for the basemap tiles, glyphs and (T4) the positron style, which come from
+OpenFreeMap. `shoot.mjs` uses `coastwatch-web/node_modules/playwright` with the installed Chrome.
+
+URL parameters: `?t=T0..T4&p=regional|bay|harbor|crescent&v=<layer_id>&classes=20`.
+
+## Files
+
+| path | what |
+|---|---|
+| `index.html` | the page: data loading, canvas rendering, styles, legend, readout, controls |
+| `ramp.mjs` | the display ramp, built in OKLCH, validated in CIELAB; writes `data/ramp.json` |
+| `serve.mjs` | static server used by the page and by the screenshot harness |
+| `shoot.mjs` | Playwright screenshots, 1440×900 and 390×844, every treatment × preset |
+| `CRITIQUE.md` | the three critique rounds and what changed between them |
+| `data/layers.json` | the two layers' `grid` + `palette` blocks trimmed from today's manifest (run `2026-10-14`, valid 2026-10-15, lead 2) |
+| `data/particulate_domoic.u16.gz`, `data/pseudo_nitzschia.u16.gz` | the published value grids (uint16 LE, gzip; 351×391, 0.03°) |
+| `data/stations.json` | the 17 CalHABMAP shore stations (id, name, lat, lon, last sample date) from the observations file |
+| `data/ramp.json` | the ramp stops of every round, the light variant and the 20-class experiment |
+| `data/relief*.webp`, `data/relief.json`, `data/isobaths.geojson` | copies of the product's basemap relief (ETOPO 2022 / CRM) |
+| `data/water-fallback.json` | not stored here: `serve.mjs` serves the product's bundled OpenMapTiles ocean (`coastwatch-web/public/basemap/water-fallback.json`) at this path; it clips the field and the hatch to the sea |
+| (MapLibre GL 6.13.0) | loaded from unpkg at runtime, like the earlier prototypes; the page needs a network connection |
+| `shots/` | `perf.json` from round 2 (measured below). The PNG captures are not committed (`shoot.mjs` regenerates them); the ones the review relies on are on the v2 review page as JPEGs (`../review/img/carto-*.jpg`) |
+
+## Treatments
+
+| | basemap | ramp | field opacity | outlines | values | no-value water | harbor story |
+|---|---|---|---|---|---|---|---|
+| **T0 Baseline** | dark + relief | published purple `cw-probability-classes-v1` | 1.0 | – | – | the product's fine 8 px hatch | – |
+| **T1 Translucent** | dark + relief | display ramp r2 | 0.72 | – | – | quiet hatch (12 px, 0.16) | – |
+| **T2 Outlines** | dark + relief | r2 | 0.72 | hairline 0.35 from z 8.5, 0.6 from z 10.5 | per-cell "77" from z 11 | quiet hatch | – |
+| **T3 Harbor** | dark + relief | r2 | 0.72 | as T2 | as T2 | explicit hatch (0.42) + note "No C-HARM value: nearshore cells not modelled" | dashed line harbor → nearest modelled cell with distance, shore stations (filled = sampled in the last 30 days), 15 km context ring |
+| **T4 Light** | OpenFreeMap positron + isobaths | r2 light variant | 0.75 | dark, 0.2 / 0.45 | as T2 | grey hatch (0.28) | – |
+
+Every treatment: legend with variable, "NOAA C-HARM v3.1", native 3 km (0.03°), valid / issued
+dates, the ten swatches, the no-value swatch, "display classes, not risk levels", "nearest
+neighbour, no interpolation"; a click readout with the exact cell value (or "no value" plus the
+nearest modelled cell and its distance).
+
+## The ramp (final, round 2)
+
+Built in OKLCH: lightness rises linearly 0.42 → 0.89, hue sweeps 285° (indigo) → 345°
+(magenta) → 25° → 80° (amber), chroma 0.045 at the bottom (low probabilities recede into the
+sea), capped at ~0.10 through the red hues so nothing reads as an alarm, 0.135 at the amber top.
+Colours are gamut-clipped by reducing chroma only. CIELAB L* is monotonic (min ΔL* between
+classes 5.6). "Label ink" is the colour with the better WCAG contrast used for the z ≥ 11 value
+labels.
+
+| class | colour | OKLCH L / C / h | L* | label ink | contrast |
+|---|---|---|---|---|---|
+| 0–10 % | `#4a4a65` | 0.42 / 0.045 / 285° | 32.5 | white | 8.5 |
+| 10–20 % | `#61537b` | 0.47 / 0.065 / 300° | 38.1 | white | 6.9 |
+| 20–30 % | `#7d5b8c` | 0.52 / 0.086 / 315° | 43.9 | white | 5.6 |
+| 30–40 % | `#9a6396` | 0.58 / 0.099 / 329° | 49.5 | white | 4.6 |
+| 40–50 % | `#b27097` | 0.63 / 0.097 / 344° | 55.4 | #0b1d33 | 4.6 |
+| 50–60 % | `#ca7f94` | 0.68 / 0.095 / 2° | 61.5 | #0b1d33 | 5.6 |
+| 60–70 % | `#e38e8e` | 0.73 / 0.104 / 20° | 67.7 | #0b1d33 | 6.9 |
+| 70–80 % | `#f7a082` | 0.79 / 0.113 / 39° | 73.9 | #0b1d33 | 8.3 |
+| 80–90 % | `#ffb97f` | 0.84 / 0.110 / 60° | 80.5 | #0b1d33 | 10.1 |
+| 90–100 % | `#fed48c` | 0.89 / 0.101 / 80° | 87.0 | #0b1d33 | 12.1 |
+
+Light-map variant (T4): same curves with L 0.40 → 0.78: `#45445f #594b72 #714f80 #8a5587
+#9f5f85 #b36a7f #c87576 #d98367 #e39654 #e4ad44`, L* 30.0 → 74.1 (min ΔL* 4.3). Luminance
+contrast against positron's sea (`rgb(194,200,202)`) falls from 5.5:1 at the bottom to 1.2:1 at
+the top: on a light map the high classes separate by hue and by the cell outlines, not by
+lightness. That is the inherent limit of a light-rising ramp on a light basemap, and why T4 keeps
+the outlines on.
+
+The round-0 and round-1 stops are in `data/ramp.json` (`rounds`) and in CRITIQUE.md.
+
+## Recommendation
+
+- **Regional (z < 8.5): T1.** The translucent uniform ramp over the relief; no outlines, no
+  labels. The field reads as a field, the canyon and the shelf break read through it, the lowest
+  classes recede.
+- **Bay (z 8.5–11): T2.** Hairline outlines make the 3 km cells visible as cells, so a flat
+  73–82 % bay is honestly a set of cells of one class rather than a smeared surface.
+- **Harbor (z ≥ 11): T3.** Outlines at 0.6, per-cell values, the explicit hatch with its note,
+  the distance to the nearest modelled cell, the shore stations with their last sample date and
+  the 15 km context ring. This is the view that turns "enlarged pixels" into a statement about
+  what the model does and does not say at the harbor.
+- **T4** is the mobile / high-sunlight candidate; it works with the light variant of the ramp
+  and outlines on, and should keep both.
+- Keep **10 display classes**. The 5 % experiment (`?classes=20`) separates the 70–75 and
+  75–80 halves of Monterey Bay at Bay zoom, but at the cost of a legend of twenty near-identical
+  swatches; it is viable only as an explicit Bay-zoom option (CRITIQUE.md round 2).
+
+## What is display-only vs data
+
+Data, unchanged from the pipeline: the uint16 grid, its georeferencing (`lat_first`, `lon_first`,
+0.03° steps, cell centres on the lattice), the no-data code, the step rule (class = last stop
+≤ value, numpy `searchsorted` side="right" − 1), the valid/issued dates, the station
+coordinates and sample dates.
+
+Display only: the ramp colours (the published palette is one of the five treatments; the
+others recolour the same classes), the field opacity, the cell outlines (the grid's own
+geometry, as `grid.ts cellEdges`), the per-cell labels (`round(value × 100)`), the hatch, the
+dashed line and distance (`grid.ts`-style great-circle approximation from the harbor point to the
+nearest cell centre with a value, searched within ±12 cells), the "sampled in the last 30 days"
+cut (relative to 2026-10-15), the 15 km ring. Nothing is interpolated; every image pixel takes
+the grid cell containing its centre, exactly as `gridTiles.ts renderGridTile`.
+
+## How the field is drawn (and how that differs from the product)
+
+- **Whole-grid image** (`renderWhole`): the full 351×391 grid rendered to one EPSG:3857 canvas
+  at 4 px per cell east–west (1404×1970 px, rows follow the Mercator stretch), nearest
+  neighbour, clipped to the bundled water, PNG via `canvas.toBlob`, placed as a MapLibre `image`
+  source by its corner coordinates. Used below z 8.
+- **Viewport image** (`refreshDetail`): on every `moveend` (120 ms debounce) a second `image`
+  source is re-rendered for the current view plus a 25 % margin at device resolution (capped at
+  2048 px): the no-value hatch at every zoom (lines stay crisp in device pixels) and, from z 8,
+  the field itself (so the water clip is at screen resolution, not 0.75 km). The viewport image
+  is drawn over the whole-grid image; below z 8 it carries only the hatch.
+- The product draws exact 512 px tiles in a custom protocol (`gridTiles.ts`,
+  `gridTileProtocol`) and clips each tile to the basemap's own vector water (`waterMask.ts`).
+  **This prototype does not do that.** An `image` source is placed with MapLibre's
+  quantisation of image corners (up to ~77 m here, docs/coastwatch/25-charm-georeferencing.md)
+  and the whole-grid image's shoreline clip is at ~0.75 km; the viewport image hides both above
+  z 8 but goes stale at the edges while panning until the next `moveend`. The product's tile
+  renderer is the right home for T1–T3; everything above (ramp, opacity, outlines, labels,
+  hatch, harbor annotations) transfers as style and derived GeoJSON.
+
+## Measured performance (Chrome 155, Apple Silicon laptop, local server)
+
+From `shots/perf.json` (round 2, 40 shots) and the page's console line
+`[carto] raster first paint …`:
+
+- grid: 147 KB gzip, fetch 5–37 ms (local), gunzip + decode 3–11 ms;
+- whole-grid image 1404×1970 px: render 14–18 ms, PNG encode 15–74 ms, **105–106 KB**;
+- **time to first paint of the field** (from `setStyle` to the first render with the field
+  source loaded): **22–42 ms** for T0/T1; **170–233 ms** for T2–T4, the difference being the
+  cell-edge and cell-centre GeoJSON (77,172 valued cells → 77k points + the edge runs) that
+  MapLibre tiles on the first apply (building it takes 22–34 ms);
+- viewport image: 2048×1280 px on the desktop, 946×2048 on the phone (2x), 17–70 ms each,
+  61–95 KB PNG;
+- page start to first field paint on a cold load: 127–370 ms.
+
+## Limits and follow-ups
+
+- Not the product's tile protocol (above). Image placement quantisation and the stale edge
+  while panning are prototype artefacts.
+- The water clip uses the bundled `water-fallback.json` (ocean class only, simplified to 8 m
+  near the forecast, 40 m elsewhere); the product uses the basemap's own tiles first.
+- T3 annotations: at Crescent City the 3.4 km line is ~90 px at z 12 and the distance label and
+  gap note touch; on the phone the gap note can be clipped by the screen edge when the line is
+  partly off-screen. Shown only from z 10.5.
+- The shore-station "recent" rule uses the last `sample_times` entry per station, not the
+  per-variable `summaries` (Monterey Wharf: last sample 2026-10-14, but pDA last measured 2022).
+- The 15 km ring is drawn around the harbor point, not around the station; the two coincide at
+  Monterey.
+- T4 loads the positron style from OpenFreeMap at runtime (network).
+- Basemap labels (place names) are placed before this page's labels, so a harbor annotation can
+  sit close to a town name; the three T3 annotations are always drawn (allow-overlap) because
+  they are the point of the view.
+- Only `charm_particulate_domoic_lead2` and `charm_pseudo_nitzschia_lead2` are bundled; the
+  variable menu switches between them.

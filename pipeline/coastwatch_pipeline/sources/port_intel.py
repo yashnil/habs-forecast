@@ -5,7 +5,7 @@ For each port:
   variable, read from the *published* value grids (so they match the map and inspector).
 * C-HARM nowcast history: the last HISTORY_DAYS of nowcasts from ERDDAP, median over the
   same neighbourhood; missing runs stay missing (no interpolation).
-* Satellite chlorophyll: an 8-day window computed by CoastWatch from the daily NOAA-21 VIIRS
+* Satellite chlorophyll: an 8-day window computed by Neritic from the daily NOAA-21 VIIRS
   750 m merges, with NOAA-20 in cells NOAA-21 has no value for (no NOAA-20/21 750 m 8-day
   product exists): each pixel's median over the window, then the median of those pixels within
   RADIUS_KM; cloud/land pixels excluded. Until S-NPP data end (2026-11-02) the S-NPP 8-day
@@ -511,7 +511,7 @@ def run(
             ),
             Provenance(
                 source_id=CHL_SOURCE_ID,
-                source_name="NOAA VIIRS chlorophyll-a, 750 m daily merges from NOAA-21 (NOAA-20 where NOAA-21 has no value), 8-day windows computed by CoastWatch (NOAA CoastWatch ERDDAP)",
+                source_name="NOAA VIIRS chlorophyll-a, 750 m daily merges from NOAA-21 (NOAA-20 where NOAA-21 has no value), 8-day windows computed by Neritic (NOAA CoastWatch ERDDAP)",
                 source_url=f"{CHL_JPSS_SERVER}/griddap/{CHL_PLATFORMS[0][1]}.html",
                 dataset_id=",".join(ds for _, ds in CHL_PLATFORMS),
                 license=charm.LICENSE,

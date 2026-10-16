@@ -71,16 +71,16 @@
 
   /* Forecast probability display classes (10 % steps, not risk levels). Mirrors
      FORECAST_CLASSES in src/lib/palette.ts; the map adopts them in phase P1. */
-  --cw-p0: #3a385b;
-  --cw-p1: #4c436a;
-  --cw-p2: #5f4e79;
-  --cw-p3: #735986;
-  --cw-p4: #886492;
-  --cw-p5: #9c709c;
-  --cw-p6: #af7ea4;
-  --cw-p7: #c28cab;
-  --cw-p8: #d39cb3;
-  --cw-p9: #e5abbc;
+  --cw-p0: #4a4a65;
+  --cw-p1: #61537b;
+  --cw-p2: #7d5b8c;
+  --cw-p3: #9a6396;
+  --cw-p4: #b27097;
+  --cw-p5: #ca7f94;
+  --cw-p6: #e38e8e;
+  --cw-p7: #f7a082;
+  --cw-p8: #ffb97f;
+  --cw-p9: #fed48c;
 
   /* not known: the gap mark (hatching), never a colour from any data palette */
   --cw-gap: #5f6b79;
@@ -324,4 +324,9 @@ body {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* an outlined, hatched fill for a model value that is not the waters' own (offshore cells' median) */
+.cw-hatch-model {
+  background-image: repeating-linear-gradient(135deg, color-mix(in srgb, var(--cw-forecast) 55%, transparent) 0 2px, transparent 2px 5px);
 }

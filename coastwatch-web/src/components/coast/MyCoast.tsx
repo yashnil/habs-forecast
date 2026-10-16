@@ -1,5 +1,6 @@
 "use client";
 
+import { labelledGeometry } from "@/lib/officialGeometry";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -44,20 +45,22 @@ import type { PortIntelCollection } from "@/generated/port_intel";
 import type { ImageRaster, TileRaster } from "@/components/map/MapCanvas";
 import { HabBriefing, useHabEvidence, useOutlook, useSatellite, type Focus } from "./HabBriefing";
 import { MapKey, StationPeek, WatersAndSpecies } from "./Waters";
-import { fmtMeasured, fmtPct, ringPolygon, stationsAround, NEIGHBOURHOOD_KM, RECENT_DAYS } from "@/lib/hab";
+import { fmtMeasured, ringPolygon, stationsAround, NEIGHBOURHOOD_KM, RECENT_DAYS } from "@/lib/hab";
 import { artifactUrl, satelliteLatest, tileIndexUrl } from "@/lib/layers";
 import { supportsGridTiles } from "@/lib/gridTiles";
 import { gradientCss } from "@/lib/palette";
 import { speciesStatements, type NearSample } from "@/lib/nextSteps";
 import { AnswerLine, ConditionsCard, stationName, NextSteps, OfficialBrief, PlanBar, fmtWhen, officialAnswer, useConditions, type AnswerClause } from "./Briefing";
-import { MEASURED_RECENT_DAYS } from "@/components/ui/Mark";
 import { speciesById, speciesPhrase, type SpeciesId } from "@/content/species";
 import { useMode } from "@/lib/mode";
 import { SinceLastCheck } from "./SinceLastCheck";
 import { ModeSwitch } from "@/components/shell/ModeNav";
 import { nextSteps } from "@/lib/nextSteps";
 import { currentRecords } from "@/lib/official";
-import { checklist, checklistKey, parseTripDate, tripDays, whatMatters } from "@/lib/trip";
+import { checklist, checklistKey, parseTripDate, tripDays } from "@/lib/trip";
+import { harborEvidence, pageClaims, type EvidenceGraph } from "@/lib/harborEvidence";
+import { EvidenceList } from "@/components/trip/EvidenceList";
+import { cellAt } from "@/lib/grid";
 import { TripBar } from "@/components/trip/TripBar";
 import { WhatMatters } from "@/components/trip/WhatMatters";
 import { EvidenceTimeline } from "@/components/trip/EvidenceTimeline";
@@ -230,7 +233,9 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   const overlay = useMemo<GeoJSON.FeatureCollection | null>(() => {
     if (!place) return null;
     const g = model?.layer?.grid;
-    const used = model?.pda?.here ?? model?.pda?.nearest ?? null;
+    // the trip day's cells, as the briefing's claims read them (lib/hab neighbourhood): the own cell, else the nearest valued cell
+    const nbDay = outDay?.pda ?? null;
+    const used = g && nbDay ? (nbDay.here != null ? { cell: cellAt(g, place.lat, place.lon)! } : nbDay.nearest ? { cell: nbDay.nearest.cell } : null) : null;
     // the stations the briefing names (Pseudo-nitzschia, toxin); one of them in focus
     const named = [hab?.cells, hab?.toxin].filter((e): e is NonNullable<typeof e> => !!e && e.km <= 120);
     const ids = new Set(named.map((e) => e.station.station_id));
@@ -239,7 +244,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     const pix = focus === "satellite" && satNow && satNow !== "error" && satNow.value != null && satNow.km > 0 ? { lat: satNow.pixelLat, lon: satNow.pixelLon } : null;
     return provenanceFeatures({
       target: { lat: place.lat, lon: place.lon },
-      cell: g && used && (focus === null || focus === "model") ? { polygon: cellPolygon(g, used.cell), lat: used.cell.lat, lon: used.cell.lon, own: !!model?.pda?.here } : null,
+      cell: g && used?.cell && (focus === null || focus === "model") ? { polygon: cellPolygon(g, used.cell), lat: used.cell.lat, lon: used.cell.lon, own: nbDay?.here != null } : null,
       stations: threadTo.map((e) => ({ lat: e.station.lat, lon: e.station.lon, name: e.station.name, km: e.km, id: e.station.station_id, aged: e.ageDays > RECENT_DAYS, focus: e.station.station_id === focused })),
       others: around
         .filter((a) => !threadTo.some((e) => e.station.station_id === a.station.station_id))
@@ -255,7 +260,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
       ring: focus === "model" ? ringPolygon(place.lat, place.lon, NEIGHBOURHOOD_KM) : null,
       official: focus === null || focus === "official" ? ((official?.geometry as unknown as GeoJSON.FeatureCollection) ?? null) : null,
     });
-  }, [place, model, official, hab, focus, peek, around, satNow, cond.data]);
+  }, [place, model, outDay, official, hab, focus, peek, around, satNow, cond.data]);
 
   const mapRef = useRef<MlMap | null>(null);
   const [headH, setHeadH] = useState<number | null>(null);
@@ -274,7 +279,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     (m: MlMap) => {
       if (!place) return m.fitBounds(CA, { padding: 24, duration: 0 });
       const pts: [number, number][] = [[place.lon, place.lat]];
-      const used = model?.pda?.here ?? model?.pda?.nearest;
+      const nbDay = outDay?.pda ?? null;
+      const used = nbDay?.here != null ? null : (nbDay?.nearest ?? null);
       const ev = focus === "cells" ? hab?.cells : focus === "toxin" ? hab?.toxin : null;
       if (focus === "model") {
         // the whole neighbourhood the briefing summarises
@@ -298,7 +304,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
       if (!focus) pts.push([place.lon - 0.22, place.lat - 0.16], [place.lon + 0.22, place.lat + 0.16]);
       journeyTo(m, { bounds: [[Math.min(...lons, ...pts.map((p) => p[0])) - pad, Math.min(...lats, ...pts.map((p) => p[1])) - pad], [Math.max(...lons, ...pts.map((p) => p[0])) + pad, Math.max(...lats, ...pts.map((p) => p[1])) + pad]], padding: 48, maxZoom: focus === "satellite" ? 10.5 : focus ? 10.5 : 9.6 });
     },
-    [place, model, hab, focus, satNow, cond.data],
+    [place, outDay, hab, focus, satNow, cond.data],
   );
   useEffect(() => {
     if (mapRef.current) fit(mapRef.current);
@@ -337,7 +343,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
       imagery={null}
       ports={ports}
       showPorts
-      officialGeometry={(official?.geometry as unknown as GeoJSON.FeatureCollection) ?? null}
+      officialGeometry={labelledGeometry(official)}
       showOfficial
       selectedPort={place?.kind === "port" ? Number(place.key.slice(5)) : null}
       inspect={null}
@@ -370,7 +376,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   );
   const [picking, setPicking] = useState(false);
   useEffect(() => setPicking(false), [place?.key]);
-  const actionLink = "min-h-[32px] font-medium text-accent hover:underline";
+  const actionLink = "inline-flex min-h-[44px] items-center font-medium text-accent hover:underline";
   // a function: the answer line below it is computed further down
   const header = () => (
     <header className="space-y-3 sm:space-y-4" data-testid="coast-header">
@@ -430,7 +436,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
               Show home port
             </button>
           )}
-          <button type="button" onClick={() => setHome(null)} className="min-h-[32px] text-ink-3 hover:text-ink" data-testid="coast-home-clear">
+          <button type="button" onClick={() => setHome(null)} className="inline-flex min-h-[44px] min-w-[44px] items-center text-ink-3 hover:text-ink" data-testid="coast-home-clear">
             Clear
           </button>
         </>
@@ -469,6 +475,37 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   const official1 = officialAnswer(assocs, audience, species);
   const status = speciesStatements(official, species, audience);
   const seasonStatus = status.find((x) => /season status/i.test(x.topic));
+  // the trip day (Coastal) and the model's state, read once for the graph
+  const runLayer = charmLayer(manifest, "particulate_domoic", 0) ?? charmLayer(manifest, "pseudo_nitzschia", 0);
+  const runFresh = runLayer && now ? classifyTime(runLayer.freshness, runLayer.time, now) : null;
+  const modelStale = runFresh && (runFresh.state === "stale" || runFresh.state === "historical") ? { state: runFresh.state, issued: runLayer?.time.issued_date ?? null, ageDays: runFresh.ageDays ?? 0 } : null;
+  const modelBeyond = !!tripDay && tripDay.lead == null && outlook !== null && outlook !== "error";
+  // ------------------------------------------------------------ the evidence graph: the one source of every claim on this page
+  const graph = useMemo<EvidenceGraph | null>(
+    () =>
+      place && now
+        ? harborEvidence({
+            place: { name: place.name, lat: place.lat, lon: place.lon },
+            now,
+            today,
+            tripDate: viewMode === "coastal" ? tripDate : (outDay?.valid ?? tripDate),
+            measured: hab ? { cells: hab.cells, toxin: hab.toxin, nearest: hab.nearest } : null,
+            measuredError: stationsError,
+            model: outlook === null ? "loading" : outlook === "error" ? "error" : { days: outlook, issued: runLayer?.time.issued_date ?? null, fresh: runFresh },
+            modelBeyond: viewMode === "coastal" ? modelBeyond : false,
+            sat: satNow,
+            conditions: cond.data,
+            official: { assocs, verification, audience, species, statements: status },
+          })
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [place, now && today, tripDate, viewMode, outDay?.valid, hab, stationsError, outlook, runLayer?.time.issued_date, runFresh?.state, runFresh?.ageDays, modelBeyond, satNow, cond.data, assocs, verification?.state, audience, species, status.map((x) => x.id).join()],
+  );
+  const matters = useMemo(() => (graph ? pageClaims(graph) : []), [graph]);
+  // the HAB detail's summary paragraph: the graph's sentences for the HAB, model and satellite lines
+  const habSummary = useMemo(() => (graph ? matters.filter((c) => c.id === "hab" || c.id === "model" || c.id === "satellite").map((c) => c.text) : null), [graph, matters]);
+  const habClaim = graph?.claims.find((c) => c.id === "hab") ?? null;
+  const modelClaim = graph?.claims.find((c) => c.id === "model") ?? null;
   const answer: AnswerClause[] | null =
     place && modeRead
       ? [
@@ -476,11 +513,10 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
           {
             kind: "official",
             testid: "answer-official",
-            text:
-              official1.headline + (official1.disputed.length ? ` · ${official1.disputed.length} more reported lifted, awaiting review` : ""),
+            text: official1.headline + (official1.disputed.length ? ` · ${official1.disputed.length} more reported lifted, awaiting review` : ""),
           },
-          measuredClause(hab, stationsError),
-          modelClause(outlook, outDay?.valid ?? null, outDay?.pda ?? null),
+          habClaim ? { kind: habClaim.kind === "measured" ? "measured" : habClaim.kind === "model" ? "model" : "gap", testid: "answer-measured", aged: habClaim.aged, text: habClaim.headline } : { kind: "gap", testid: "answer-measured", text: "Reading the shore measurements" },
+          modelClaim ? { kind: modelClaim.kind === "model" ? "model" : "gap", testid: "answer-model", text: `${modelClaim.headline}${modelClaim.detail ? ` · ${modelClaim.detail.replace(/ \(Said with the measurement above\.\)$/, "")}` : ""}` } : { kind: "gap", testid: "answer-model", text: outlook === "error" ? "No toxin model run is available" : "Reading the toxin model" },
         ]
       : null;
   const samples = useMemo<NearSample[]>(
@@ -564,52 +600,17 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
   // Coastal is the default, so the server renders the trip briefing (no flash of another layout);
   // a device set to Research switches once its choice is read, and a link's mode=research never renders it
   const coastalView = viewMode === "coastal" && (modeRead || sp.get("mode") !== "research");
-  // the newest C-HARM run's state by its own policy: the same words the map and the Science tab use
-  const runLayer = charmLayer(manifest, "particulate_domoic", 0) ?? charmLayer(manifest, "pseudo_nitzschia", 0);
-  const runFresh = runLayer && now ? classifyTime(runLayer.freshness, runLayer.time, now) : null;
-  const modelStale = runFresh && (runFresh.state === "stale" || runFresh.state === "historical") ? { state: runFresh.state, issued: runLayer?.time.issued_date ?? null, ageDays: runFresh.ageDays ?? 0 } : null;
-  const tripModel = outlook === null ? ("loading" as const) : outlook === "error" ? ("error" as const) : tripDay?.lead != null ? (outlook.find((d) => d.lead === tripDay.lead) ?? null) : null;
-  const matters = useMemo(
-    () =>
-      place && now
-        ? whatMatters({
-            assocs,
-            audience,
-            species,
-            statements: status,
-            verification,
-            hab,
-            habError: stationsError,
-            model: tripModel === "loading" || tripModel === "error" ? tripModel : tripModel ? { valid: tripModel.valid, pda: tripModel.pda } : null,
-            modelBeyond: !!tripDay && tripDay.lead == null && outlook !== null && outlook !== "error",
-            modelStale,
-            conditions: cond.data,
-            tripDate,
-            today,
-            fmt: fmtWhen,
-          })
-        : [],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [place, now && today, assocs, audience, species, status.map((x) => x.id).join(), verification?.state, hab, stationsError, tripModel, tripDay?.lead, cond.data, tripDate, modelStale?.state, modelStale?.ageDays],
-  );
   const checks = useMemo(() => checklist(steps), [steps]);
-  // the day of CoastWatch's last check, in California time
+  // the day of Neritic's last check, in California time
   const checkedOn = verification?.lastCheckedAt ? formatDate(pacificToday(new Date(verification.lastCheckedAt))) : null;
   const tripWords = `${{ all: "", commercial: "commercial ", recreational: "recreational ", shellfish: "" }[audience]}${species.id === "any" ? (audience === "shellfish" ? "shellfish harvest" : audience === "all" ? "any activity" : "fishing") : speciesPhrase(species)}`;
-  const habSentence = (() => {
-    if (!hab) return null;
-    const recent = [hab.cells, hab.toxin].some((e) => e && e.near && e.ageDays <= RECENT_DAYS);
-    const days = outlook && outlook !== "error" ? outlook : [];
-    const own = days.some((d) => d.pda?.here != null);
-    const nearby = days.some((d) => d.pda && d.pda.n > 0);
-    const m = own ? "NOAA's model has a value for these waters' own cell." : nearby ? `NOAA's model has no value at these nearshore waters; the bars are offshore cells within ${NEIGHBOURHOOD_KM} km, not a forecast here.` : "These waters are outside NOAA's toxin model.";
-    return recent ? `Shore samples near these waters are recent (dots, newest ringed). ${m}` : `No shore station within 60 km has sampled in the last ${RECENT_DAYS} days, so nothing measured describes these waters right now. ${m}`;
-  })();
+  const mapSummary = focus === "model" ? "NOAA's model cells and the nearshore gap" : focus === "cells" || focus === "toxin" ? "the shore station and its distance" : focus === "satellite" ? "the satellite pixel" : focus === "conditions" ? "the buoy and tide station" : focus === "official" ? "the notices' limits" : `${place?.name ?? "these waters"}, the stations and the model cell`;
 
   if (coastalView && place) {
     const evidenceDetail = (
       <HabBriefing
         modelStale={modelStale}
+        summary={habSummary}
         manifest={manifest}
         placeName={place.name}
         stations={stations}
@@ -629,7 +630,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     );
     return (
       <div className="lg:grid lg:grid-cols-[minmax(0,600px)_minmax(0,1fr)]" data-testid="my-coast" data-view="trip">
-        <div className="min-w-0 space-y-8 px-4 pb-32 pt-4 sm:space-y-10 sm:px-8 sm:pt-6 lg:pb-16">
+        <div className="min-w-0 space-y-7 px-4 pb-[calc(var(--cw-tabbar-h)+72px)] pt-4 sm:space-y-9 sm:px-8 sm:pt-6 lg:pb-16">
           <div className="space-y-4">
             <TripBar
                 action={<CopyLink />}
@@ -649,13 +650,13 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
           </div>
           <WhatMatters
             items={matters}
-            checked={checkedOn}
+            placeName={place.name}
             focus={focus}
             onFocus={focusOn}
             sourceNote={
               <p data-testid="matters-provenance">
                 Official items quote Neritic&apos;s copy of the CDFW and CDPH pages{checkedOn ? `, checked ${checkedOn}` : ""}. No person has reviewed that copy against the agencies yet, so the agency pages are the authority.{" "}
-                <button type="button" onClick={(e) => openDrawer(e.currentTarget)} className="font-medium text-accent hover:underline" data-testid="matters-all-notices">
+                <button type="button" onClick={(e) => openDrawer(e.currentTarget)} className="inline-flex min-h-[44px] items-center font-medium text-accent hover:underline" data-testid="matters-all-notices">
                   All {currentRecords(official).length} agency notices
                 </button>
               </p>
@@ -663,17 +664,23 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
           />
           {/* what changed since the last visit (PR #47), after what matters now, before the evidence */}
           <SinceLastCheck />
-          <section aria-labelledby="hab-evidence-h" data-testid="hab-evidence">
-            <h2 id="hab-evidence-h" className="font-display text-[22px] font-medium text-ink sm:text-[24px]">
-              HAB evidence near {place.name}
-            </h2>
-            {habSentence && <p className="mt-1 max-w-[60ch] text-[15px] leading-snug text-ink-2" data-testid="trip-hab-summary">{habSentence}</p>}
-            <div className="mt-4">
-              <EvidenceTimeline hab={hab} sat={satNow} outlook={outlook} today={today} tripDate={tripDate} focus={focus} onFocus={focusOn} />
+          <section aria-labelledby="hab-evidence-h" data-testid="hab-evidence" className="space-y-4">
+            <h2 id="hab-evidence-h" className="sr-only">HAB evidence near {place.name}</h2>
+            {graph && <EvidenceList graph={graph} focus={focus} onFocus={focusOn} />}
+            <div>
+              <p className="text-[14px] font-medium text-ink-3" data-testid="trip-hab-summary">The last 90 days on one axis: shore samples (dots, newest ringed), the satellite view, and NOAA&apos;s model up to the trip day.</p>
+              <div className="mt-2">
+                <EvidenceTimeline hab={hab} sat={satNow} outlook={outlook} today={today} tripDate={tripDate} focus={focus} onFocus={focusOn} />
+              </div>
             </div>
-            <p className="mt-3 text-[13px] leading-snug text-ink-3">Algae counts and seawater toxin are not seafood tests, chlorophyll is algae of every kind, and a missing sample is not a clean result. Only CDPH and CDFW test seafood.</p>
           </section>
           <Checklist shown={checks.shown} more={checks.more} storageKey={checklistKey(place.key, audience, species.id, tripDate)} sub={`For ${tripWords} at ${place.name}${tripDay ? `, ${tripDay.label.toLowerCase() === "today" ? "today" : `${tripDay.label} ${tripDay.day}`}` : ""}.`} />
+          <details className="group rounded-2xl border border-hairline bg-surface" data-testid="coast-details">
+            <summary className="cw-press flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-3 px-4 text-[16px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
+              <span>More detail and every source</span>
+              <span aria-hidden className="text-ink-3 transition-transform group-open:rotate-180">▾</span>
+            </summary>
+            <div className="px-4 pb-5">
           <Explore
             tabs={[
               { id: "hab", label: "HAB detail", content: evidenceDetail },
@@ -699,6 +706,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
               },
             ]}
           />
+            </div>
+          </details>
           <div className="space-y-4 border-t border-hairline pt-5">
             {homeLine}
             <div className="flex flex-wrap items-center gap-3">
@@ -706,12 +715,12 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
               <PurposeSwitch compact />
             </div>
             <p className="text-[13px] leading-relaxed text-ink-3">
-              Sources: CDFW and CDPH notices (Neritic&apos;s copy, not reviewed by a person); CalHABMAP via SCCOOS ERDDAP; NOAA C-HARM v3.1; NOAA CoastWatch satellite chlorophyll; NOAA NDBC buoys and CO-OPS tides. This page&apos;s link reproduces this trip.
+              Sources: CDFW and CDPH (Neritic&apos;s copy), CalHABMAP via SCCOOS, NOAA C-HARM, NOAA CoastWatch, NDBC and CO-OPS. This link reproduces this trip.
             </p>
           </div>
         </div>
         <div className="lg:hidden">
-          <MapSheet open={mapOpen} onOpen={() => setMapOpen(true)} onClose={() => setMapOpen(false)} label={`Map of ${place.name}`}>
+          <MapSheet open={mapOpen} onOpen={() => setMapOpen(true)} onClose={() => setMapOpen(false)} label={`Map of ${place.name}`} summary={mapSummary}>
             <MapSlot wide={false}>
               {map}
               {mapExtras}
@@ -765,7 +774,9 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
         {landing}
         {place && modeRead && (
           <HabBriefing
-            modelStale={modelStale}
+            // Research mode renders the full model section below, which carries the run's note: said once
+            modelStale={null}
+            summary={habSummary}
             manifest={manifest}
             placeName={place.name}
             stations={stations}
@@ -912,7 +923,7 @@ function CopyLink() {
       }}
       aria-label={done ? "Link copied" : "Copy a link to these waters"}
       title="Copy a link to these waters"
-      className="mt-1 flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-full border border-hairline-strong bg-surface px-3 text-[14px] text-ink-2 hover:border-ink-3"
+      className="mt-1 flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-1.5 rounded-full border border-hairline-strong bg-surface px-3 text-[14px] text-ink-2 hover:border-ink-3"
       data-testid="coast-copy-link"
     >
       <Icon name="link" className="h-4 w-4" />
@@ -920,28 +931,4 @@ function CopyLink() {
       <span className="sr-only" aria-live="polite">{done ? "Link copied" : ""}</span>
     </button>
   );
-}
-
-
-type Hab = ReturnType<typeof useHabEvidence>;
-
-/** The answer line's measured clause: the latest shore sample near these waters, with its age. */
-function measuredClause(hab: Hab, error: string | null): AnswerClause {
-  if (error) return { kind: "gap", testid: "answer-measured", text: "Shore measurements could not be loaded" };
-  if (!hab) return { kind: "gap", testid: "answer-measured", text: "Reading the shore measurements" };
-  const near = [hab.cells, hab.toxin].filter((e): e is NonNullable<typeof e> => !!e && e.near).sort((a, b) => a.ageDays - b.ageDays)[0];
-  if (!near) return { kind: "gap", testid: "answer-measured", text: "No shore station within 60 km measures bloom algae or toxin" };
-  const km = near.km < 10 ? near.km.toFixed(1) : String(Math.round(near.km));
-  const what = near.kind === "cells" ? `Pseudo-nitzschia ${fmtMeasured("pn_seriata", near.values.reduce((a, v) => a + v.value, 0))}` : `Domoic acid ${fmtMeasured("pDA", near.values[0].value)}`;
-  return { kind: "measured", testid: "answer-measured", aged: near.ageDays > MEASURED_RECENT_DAYS, text: `${what} at ${near.station.name} (${km} km), ${ageWords(near.ageDays)}` };
-}
-
-/** The answer line's model clause: the waters' own cell, or the real offshore cells near them (never as the waters' own). */
-function modelClause(outlook: ReturnType<typeof useOutlook>, valid: string | null, nb: import("@/lib/hab").Neighbourhood | null): AnswerClause {
-  if (outlook === null) return { kind: "gap", testid: "answer-model", text: "Reading the toxin model" };
-  if (outlook === "error" || !outlook.length) return { kind: "gap", testid: "answer-model", text: "No toxin model run is available" };
-  const day = valid ? `, ${formatDate(valid)}` : "";
-  if (nb?.here != null) return { kind: "model", testid: "answer-model", text: `Model: ${fmtPct(nb.here)} chance toxin in the water exceeds its threshold (this 3 km cell${day})` };
-  if (nb && nb.n > 0) return { kind: "model", testid: "answer-model", text: `Model: no value for these nearshore waters; ${nb.n} offshore cells within ${NEIGHBOURHOOD_KM} km, median ${fmtPct(nb.median)}${day}` };
-  return { kind: "gap", testid: "answer-model", text: `Outside the toxin model: no cell within ${NEIGHBOURHOOD_KM} km${nb?.nearest ? ` (nearest ${Math.round(nb.nearest.km)} km away)` : ""}` };
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { FORECAST_RASTER_OPACITY } from "@/lib/palette";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import { setWorkerUrl, type ExpressionSpecification, type GeoJSONSource, type Map as MlMap } from "maplibre-gl";
@@ -41,7 +42,7 @@ export type ImageRaster = {
   /** drawn from the value grid when present (exact cell edges); the published image otherwise */
   grid?: { layer: LayerArtifact; url: string } | null;
 };
-/** XYZ tiles: CoastWatch-rendered satellite tiles or third-party imagery. */
+/** XYZ tiles: Neritic-rendered satellite tiles or third-party imagery. */
 export type TileRaster = { id: string; template: string; minzoom: number; maxzoom: number; bounds?: number[] | null; indexUrl?: string | null };
 
 export type MapPoint = { lat: number; lon: number };
@@ -71,6 +72,16 @@ type Props = {
   onHover?: (p: MapPoint | null, screen: { x: number; y: number } | null) => void;
   /** C-HARM model cell edges, drawn faintly from z8.5 so its 3 km cells read as cells */
   cellEdges?: GeoJSON.FeatureCollection | null;
+  /** valued cell centres with their value, for labels from z 11 (lib/grid cellLabels) */
+  cellLabels?: GeoJSON.FeatureCollection | null;
+  /**
+   * the nearshore gap at harbour zoom (lib/provenance gapFeatures): a note at the map's centre
+   * when its cell is in the C-HARM domain without a value, and a dashed thread to the nearest cell
+   * with one, carrying the distance
+   */
+  gap?: GeoJSON.FeatureCollection | null;
+  /** the HAB shore stations (lib/provenance stationFeatures), drawn from z 9.5 with their last sample date */
+  stations?: GeoJSON.FeatureCollection | null;
   /** fade new data rasters in (switching layer); time steps always cut, never cross-fade */
   fade?: boolean;
   /**
@@ -118,10 +129,14 @@ function addArrows(m: MlMap) {
     if (!m.hasImage(`cw-arrow-${i}`)) m.addImage(`cw-arrow-${i}`, arrowImage(len), { pixelRatio: 2 });
   });
 }
-// Every data raster is opaque and nearest-sampled: a pixel is a real source cell, and the
-// legend colours are exactly the colours on the map (design reset rev. 2, §5.1).
+// Every data raster is nearest-sampled: a pixel is a real source cell, and the legend colours are
+// the colours on the map (design reset rev. 2, §5.1). The forecast is drawn translucent over the
+// relief (docs/coastwatch/v2/carto, T1): the seafloor stays legible under a field of 3 km cells,
+// and the display classes were built for that opacity on the dark sea.
 const RASTER_PAINT = { "raster-opacity": 1, "raster-resampling": "nearest", "raster-fade-duration": 0 } as const;
 const RASTER_FADE = { ...RASTER_PAINT, "raster-fade-duration": 220 } as const;
+const FORECAST_RASTER = { ...RASTER_PAINT, "raster-opacity": FORECAST_RASTER_OPACITY } as const;
+const FORECAST_FADE = { ...FORECAST_RASTER, "raster-fade-duration": 220 } as const;
 
 export default function MapCanvas(p: Props) {
   const [wide] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
@@ -131,10 +146,11 @@ export default function MapCanvas(p: Props) {
   // the fade is decided once per raster, when it first appears (a layer switch fades in; a new
   // time step cuts) and kept for that raster's life, so a later re-render never changes it
   const fadeOf = useRef(new globalThis.Map<string, boolean>());
-  const paintFor = (id: string | undefined) => {
-    if (!id) return RASTER_PAINT;
+  const paintFor = (id: string | undefined, forecast = false) => {
+    if (!id) return forecast ? FORECAST_RASTER : RASTER_PAINT;
     if (!fadeOf.current.has(id)) fadeOf.current.set(id, !!p.fade);
-    return fadeOf.current.get(id) ? RASTER_FADE : RASTER_PAINT;
+    const fade = fadeOf.current.get(id);
+    return forecast ? (fade ? FORECAST_FADE : FORECAST_RASTER) : fade ? RASTER_FADE : RASTER_PAINT;
   };
   const fg = p.forecast?.grid;
   const forecastTiles = useMemo(() => (fg ? gridTiles(fg.layer, fg.url) : null), [fg]);
@@ -279,6 +295,14 @@ export default function MapCanvas(p: Props) {
         onPort(Number((f.properties as Record<string, unknown>).port_code));
         return;
       }
+      // a shore station opens the point inspector at the station itself (its measurements are
+      // in "Measured nearby"), never at the pixel that was clicked beside it
+      const ms = e.features?.find((x) => x.layer.id === "map-station");
+      if (ms && ms.geometry.type === "Point") {
+        const [lon, lat] = ms.geometry.coordinates as [number, number];
+        onPoint({ lat, lon });
+        return;
+      }
       onPoint({ lat: e.lngLat.lat, lon: e.lngLat.lng });
     },
     [onPort, onPoint, onStation],
@@ -294,7 +318,12 @@ export default function MapCanvas(p: Props) {
         : null,
     [p.ports],
   );
-  const interactive = [...(p.showPorts && portsData ? ["ports-hit", "ports-circle"] : []), ...(p.onStation && p.overlay ? ["coast-station"] : [])];
+  const interactive = [...(p.showPorts && portsData ? ["ports-hit", "ports-circle"] : []), ...(p.onStation && p.overlay ? ["coast-station"] : []), ...(p.stations ? ["map-station"] : [])];
+  // a station the provenance overlay already draws (the thread's end) is not drawn twice
+  const overlayStationIds = useMemo(
+    () => (p.overlay?.features ?? []).filter((f) => (f.properties as { kind?: string } | null)?.kind === "station").map((f) => String((f.properties as { id?: unknown }).id ?? "")),
+    [p.overlay],
+  );
   const inited = useRef<MlMap | null>(null);
   const init = (m: MlMap) => {
     // the style's layers exist (isStyleLoaded would also wait for the tiles)
@@ -349,12 +378,12 @@ export default function MapCanvas(p: Props) {
 
       {p.forecast && forecastTiles && (
         <Source key={`${p.forecast.id}-grid`} id="forecast" type="raster" tiles={[forecastTiles.template]} tileSize={GRID_TILE_SIZE} bounds={forecastTiles.bounds} minzoom={0} maxzoom={13}>
-          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id)} />
+          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id, true)} />
         </Source>
       )}
       {p.forecast && !forecastTiles && (
         <Source key={p.forecast.id} id="forecast" type="image" url={p.forecast.url} coordinates={p.forecast.corners as [[number, number], [number, number], [number, number], [number, number]]}>
-          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id)} />
+          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id, true)} />
         </Source>
       )}
       {p.forecast && p.cellEdges && (
@@ -364,7 +393,21 @@ export default function MapCanvas(p: Props) {
             type="line"
             minzoom={8.5}
             beforeId={BEFORE_OVERLAY_ID}
-            paint={{ "line-color": "#06111e", "line-width": 0.5, "line-opacity": ["interpolate", ["linear"], ["zoom"], 8.5, 0, 9.6, 0.1, 11, 0.16] }}
+            paint={{ "line-color": "#06111e", "line-width": ["interpolate", ["linear"], ["zoom"], 8.5, 0.5, 11, 0.8], "line-opacity": ["interpolate", ["linear"], ["zoom"], 8.5, 0, 9.6, 0.35, 10.5, 0.6] }}
+          />
+        </Source>
+      )}
+      {/* at harbour zoom each cell says its value (carto T2): the field reads as cells of a
+          class, never as a smooth surface; labels are white on the low classes, ink on the high */}
+      {p.forecast && p.cellLabels && (
+        <Source key={`${p.forecast.id}-labels`} id="forecast-labels" type="geojson" data={p.cellLabels}>
+          <Layer
+            id="forecast-cell-labels"
+            type="symbol"
+            minzoom={11}
+            beforeId={BEFORE_OVERLAY_ID}
+            layout={{ "text-field": ["get", "text"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-allow-overlap": false, "text-padding": 2 }}
+            paint={{ "text-color": ["case", ["boolean", ["get", "dark"], false], "#1b1d2b", "#ffffff"], "text-opacity": 0.85 }}
           />
         </Source>
       )}
@@ -466,6 +509,16 @@ export default function MapCanvas(p: Props) {
               "circle-stroke-opacity": ["case", ["boolean", ["get", "far"], false], 0.55, 1],
             }}
           />
+          {/* the distance to the nearest model cell, at the thread's end (carto T3); a point label, since
+              the thread is often shorter than its words */}
+          <Layer
+            id="coast-thread-label"
+            type="symbol"
+            minzoom={9}
+            filter={["all", ["==", ["get", "kind"], "end"], ["==", ["get", "to"], "cell"], ["has", "label"]]}
+            layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11.5, "text-anchor": ["get", "anchor"], "text-radial-offset": 0.8, "text-justify": "auto", "text-max-width": 12, "text-allow-overlap": true, "text-ignore-placement": true }}
+            paint={{ "text-color": "#e8e4ff", "text-halo-color": "#06111e", "text-halo-width": 1.4, "text-halo-blur": 0.4 }}
+          />
           {/* the model's neighbourhood: the cells within it are what the briefing summarises */}
           <Layer id="coast-ring" type="line" filter={["==", ["get", "kind"], "ring"]} paint={{ "line-color": MODEL_MARK, "line-width": 1.4, "line-dasharray": [3, 2], "line-opacity": 0.9 }} />
           {/* stations: a point that carries its age (filled when sampled in the last 30 days, a
@@ -503,6 +556,45 @@ export default function MapCanvas(p: Props) {
         </Source>
       )}
 
+      {p.stations && (
+        // the HAB shore stations at harbour zoom (carto T3): filled when sampled in the last 30 days,
+        // a ring when older; the label names the station and its last sample date, and moves
+        // around the point rather than collide with a port's name
+        <Source id="map-stations" type="geojson" data={p.stations}>
+          <Layer
+            id="map-station"
+            type="circle"
+            minzoom={9.5}
+            filter={["!", ["in", ["get", "id"], ["literal", overlayStationIds]]]}
+            paint={{
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 9.5, 4.5, 11, 6],
+              "circle-color": ["case", ["boolean", ["get", "recent"], false], MEASURED_MARK, "rgba(6,17,30,0.6)"],
+              "circle-stroke-color": ["case", ["boolean", ["get", "recent"], false], "#06111e", MEASURED_MARK],
+              "circle-stroke-width": ["case", ["boolean", ["get", "recent"], false], 1.6, 2],
+              "circle-opacity": ["interpolate", ["linear"], ["zoom"], 9.5, 0, 10, 1],
+              "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 9.5, 0, 10, 1],
+            }}
+          />
+          <Layer
+            id="map-station-label"
+            type="symbol"
+            minzoom={9.5}
+            filter={["!", ["in", ["get", "id"], ["literal", overlayStationIds]]]}
+            layout={{
+              "text-field": ["get", "label"],
+              "text-font": ["Noto Sans Regular"],
+              "text-size": 11.5,
+              "text-variable-anchor": ["left", "right", "top", "bottom"],
+              "text-radial-offset": 0.9,
+              "text-justify": "auto",
+              "text-max-width": 14,
+              "text-optional": true,
+            }}
+            paint={{ "text-color": "#cdeee6", "text-halo-color": "rgba(6,17,30,0.8)", "text-halo-width": 1.5, "text-opacity": ["interpolate", ["linear"], ["zoom"], 9.5, 0, 10, 1] }}
+          />
+        </Source>
+      )}
+
       {p.showPorts && portsData && (
         <Source id="ports" type="geojson" data={portsData}>
           <Layer id="ports-hit" type="circle" paint={{ "circle-radius": 14, "circle-opacity": 0 }} />
@@ -520,6 +612,36 @@ export default function MapCanvas(p: Props) {
             layout={{ "text-field": ["get", "display_name"], "text-font": ["Noto Sans Regular"], "text-size": 12.5, "text-offset": [0.9, 0], "text-anchor": "left", "text-optional": true }}
             paint={{ "text-color": "#ffffff", "text-halo-color": "#06111e", "text-halo-width": 1.8 }}
           />
+        </Source>
+      )}
+
+      {p.forecast && p.gap && (
+        // the nearshore gap at harbour zoom (carto T3): the thread style of the provenance overlay,
+        // dashed, from the map's centre to the nearest modelled cell; the note is the point of the
+        // view, so it is always placed
+        <Source id="forecast-gap" type="geojson" data={p.gap}>
+          <Layer id="forecast-gap-thread" type="line" minzoom={10.5} filter={["==", ["get", "kind"], "thread"]} layout={{ "line-cap": "round" }} paint={{ "line-color": "rgba(233,239,246,0.9)", "line-width": 1.4, "line-dasharray": [3, 2.2] }} />
+          <Layer id="forecast-gap-end" type="circle" minzoom={10.5} filter={["==", ["get", "kind"], "end"]} paint={{ "circle-radius": 4, "circle-color": MODEL_MARK, "circle-stroke-color": "#06111e", "circle-stroke-width": 1.5 }} />
+          <Layer
+            id="forecast-gap-distance"
+            type="symbol"
+            minzoom={10.5}
+            filter={["==", ["get", "kind"], "end"]}
+            // anchored on the side away from the harbour (lib/provenance gapFeatures), clear of its name
+            layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11.5, "text-anchor": ["get", "anchor"], "text-radial-offset": 0.8, "text-justify": "auto", "text-max-width": 12, "text-allow-overlap": true }}
+            paint={{ "text-color": "#e8e4ff", "text-halo-color": "#06111e", "text-halo-width": 1.4, "text-halo-blur": 0.4 }}
+          />
+          {/* the note is the top symbol layer, so it is placed first and always shown; it does not
+              ignore placement, so the station and port labels at the harbour move out of its way */}
+          <Layer
+            id="forecast-gap-note"
+            type="symbol"
+            minzoom={10.5}
+            filter={["==", ["get", "kind"], "note"]}
+            layout={{ "text-field": ["get", "text"], "text-font": ["Noto Sans Regular"], "text-size": 12, "text-variable-anchor": ["top", "bottom", "left", "right"], "text-radial-offset": 0.9, "text-justify": "auto", "text-max-width": 16, "text-allow-overlap": true }}
+            paint={{ "text-color": "#e9eff6", "text-halo-color": "#06111e", "text-halo-width": 1.5, "text-halo-blur": 0.4 }}
+          />
+          <Layer id="forecast-gap-centre" type="circle" minzoom={10.5} filter={["==", ["get", "kind"], "note"]} paint={{ "circle-radius": 3, "circle-color": "#ffffff", "circle-stroke-color": "#06111e", "circle-stroke-width": 1.5 }} />
         </Source>
       )}
 

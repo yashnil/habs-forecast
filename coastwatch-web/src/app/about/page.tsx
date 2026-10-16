@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "About" };
 
 /**
- * What CoastWatch is, the kinds of information it shows and where, what it cannot tell you, the
+ * What Neritic is, the kinds of information it shows and where, what it cannot tell you, the
  * research it comes from (and what that research does not cover), and its data providers.
  */
 export default async function AboutPage() {

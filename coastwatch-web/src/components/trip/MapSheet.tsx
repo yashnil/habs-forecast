@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 
 /**
- * The phone's map: a button above the tab bar that opens the map as a sheet over the briefing (the
- * briefing stays one scroll of text; the map is one tap away and follows whatever the reader chose).
- * The map is loaded on the first open only, then kept, so a slow connection does not pay for it
- * before it is wanted.
+ * The phone's map: a bar docked above the tab bar (part of the layout, never floating over the
+ * briefing's text) that opens the map as a sheet over the briefing. The map is loaded on the first
+ * open only, then kept, so a slow connection does not pay for it before it is wanted. The page
+ * leaves room for the bar (pb on the briefing column), so nothing is covered.
  */
-export function MapSheet({ open, onOpen, onClose, label, children }: { open: boolean; onOpen: () => void; onClose: () => void; label: string; children: React.ReactNode }) {
+export const MAP_BAR_H = 52;
+
+export function MapSheet({ open, onOpen, onClose, label, summary, children }: { open: boolean; onOpen: () => void; onClose: () => void; label: string; /** what the map is showing, one short phrase */ summary?: string | null; children: React.ReactNode }) {
   const reduce = useReducedMotion();
   const [mounted, setMounted] = useState(false);
   // fixed to the screen, so outside the page's animated (transformed) wrapper
@@ -28,24 +30,22 @@ export function MapSheet({ open, onOpen, onClose, label, children }: { open: boo
   if (!host) return null;
   return createPortal(
     <>
-      <AnimatePresence>
-        {!open && (
-          <motion.button
-            type="button"
-            onClick={onOpen}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            className="cw-press fixed bottom-[calc(76px+env(safe-area-inset-bottom))] right-4 z-40 lg:hidden flex min-h-[52px] items-center gap-2 rounded-full bg-navy-900 px-5 text-[15px] font-semibold text-white shadow-[0_10px_30px_rgba(6,17,30,0.35)]"
-            data-testid="coast-map-open"
-          >
-            <svg viewBox="0 0 20 20" className="h-5 w-5" aria-hidden>
-              <path d="M2 5l5-2 6 2 5-2v12l-5 2-6-2-5 2z M7 3v12 M13 5v12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-            </svg>
-            Map
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {!open && (
+        <div className="fixed inset-x-0 bottom-[var(--cw-tabbar-h)] z-40 border-t border-hairline bg-surface/95 backdrop-blur lg:hidden" data-testid="coast-map-bar">
+          <button type="button" onClick={onOpen} className="cw-press flex w-full items-center justify-between gap-3 px-4 text-left" style={{ minHeight: MAP_BAR_H }} data-testid="coast-map-open">
+            <span className="flex min-w-0 items-center gap-2.5">
+              <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0 text-accent" aria-hidden>
+                <path d="M2 5l5-2 6 2 5-2v12l-5 2-6-2-5 2z M7 3v12 M13 5v12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+              </svg>
+              <span className="min-w-0">
+                <span className="block text-[15px] font-semibold text-ink">Map</span>
+                {summary && <span className="block truncate text-[13px] text-ink-3">{summary}</span>}
+              </span>
+            </span>
+            <span aria-hidden className="shrink-0 whitespace-nowrap text-[13px] font-medium text-ink-3">Open ▴</span>
+          </button>
+        </div>
+      )}
       <motion.div
         role="dialog"
         aria-modal={open}

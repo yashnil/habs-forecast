@@ -4,7 +4,7 @@ Planning and architecture for turning `coastwatch-web/` and the HABs research in
 
 **Related publication.** Mohanty, Y. (2025). *Physics-Guided Neural Forecasts of Nearshore Harmful Algal Blooms in the California Current System.* Proceedings of the 6th World Conference on Climate Change and Global Warming, 2(2), published 29 January 2026. [doi:10.33422/ccgconf.v2i2.1619](https://doi.org/10.33422/ccgconf.v2i2.1619).
 
-The paper is about physics-informed chlorophyll forecasting (see the [root README](../../README.md)). CoastWatch does not run those models: its layers come from NOAA C-HARM, NOAA CoastWatch satellite products, HFRNet HF radar, CalHABMAP, NOAA Fisheries, and CDFW/CDPH notices. The publication does not review the CoastWatch application.
+The paper is about physics-informed chlorophyll forecasting (see the [root README](../../README.md)). Neritic does not run those models: its layers come from NOAA C-HARM, NOAA CoastWatch satellite products, HFRNet HF radar, CalHABMAP, NOAA Fisheries, and CDFW/CDPH notices. The publication does not review the Neritic application.
 
 | Doc | Contents |
 |---|---|

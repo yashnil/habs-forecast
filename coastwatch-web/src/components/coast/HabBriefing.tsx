@@ -5,7 +5,8 @@ import { motion } from "motion/react";
 import type { Manifest } from "@/generated/schema";
 import type { PortIntel } from "@/generated/port_intel";
 import type { StationLite } from "@/lib/data";
-import { CHARM_LEADS, artifactUrl, charmLayer, leadLabel } from "@/lib/layers";
+import { CHARM_LEADS, artifactUrl, charmLayer } from "@/lib/layers";
+import { charmDays, roleWords, runNotes } from "@/lib/charmDays";
 import { loadGrid } from "@/lib/grid";
 import { CHL_PLACE_RADIUS_KM, chlStaleWord, fmtChlValue, readPlaceChl, type ChlAside } from "@/lib/chlNear";
 import { CHL_NEAR_COPY } from "@/content/copy";
@@ -139,32 +140,50 @@ function Timeline({ series, now, color = "var(--cw-chl)", testid }: { series: [s
   );
 }
 
-/** Four days of C-HARM for the nearby cells: the median as a bar, the range as a whisker. */
-function OutlookBars({ days, pick, active }: { days: OutlookDay[]; pick: "pda" | "pn"; active: number }) {
+/**
+ * Four days of C-HARM for the waters: the waters' own cell as a solid bar when it has a value;
+ * otherwise the offshore cells' median as an outlined, hatched bar with the range as a whisker and
+ * the word "offshore" under it, so a probability that is not for these waters is never drawn as
+ * if it were. Days are named by their date and distance from today (lib/charmDays).
+ */
+function OutlookBars({ days, pick, active, now }: { days: OutlookDay[]; pick: "pda" | "pn"; active: number; now: Date | null }) {
+  const chips = charmDays(
+    [0, 1, 2, 3].map((l) => {
+      const d = days.find((x) => x.lead === l);
+      return d?.valid ? { time: { valid_date: d.valid } } : null;
+    }),
+    now,
+  );
   return (
     <div className="mt-2 grid grid-cols-4 gap-2" data-testid={`outlook-${pick}`}>
       {days.map((d) => {
         const nb = d[pick];
+        const own = nb?.here != null;
         const v = nb?.here ?? nb?.median ?? null;
+        const chip = chips[d.lead];
         return (
-          <div key={d.lead} className={`rounded-lg px-1.5 pb-1.5 pt-1 ${d.lead === active ? "bg-model-bg" : ""}`}>
+          <div key={d.lead} className={`rounded-lg px-1.5 pb-1.5 pt-1 ${d.lead === active ? "bg-model-bg" : ""}`} data-testid={`outlook-${pick}-${d.lead}`} data-basis={own ? "own-cell" : v != null ? "offshore-median" : "none"}>
             <div className="relative h-14">
-              {nb && nb.min != null && nb.max != null && nb.here == null && (
+              {nb && nb.min != null && nb.max != null && !own && (
                 <span aria-hidden className="absolute left-1/2 w-px -translate-x-1/2 bg-model/50" style={{ bottom: `${nb.min * 100}%`, height: `${(nb.max - nb.min) * 100}%` }} />
               )}
               {v != null && (
                 <motion.span
                   aria-hidden
-                  className="absolute bottom-0 left-1/2 w-3.5 -translate-x-1/2 rounded-t-sm bg-model"
+                  className={`absolute bottom-0 left-1/2 w-3.5 -translate-x-1/2 rounded-t-sm ${own ? "bg-model" : "cw-hatch-model border border-model/70"}`}
                   initial={{ height: 0 }}
                   animate={{ height: `${v * 100}%` }}
                   transition={{ type: "spring", stiffness: 160, damping: 22, delay: d.lead * 0.06 }}
                 />
               )}
             </div>
-            <p className="mt-1 text-center text-[13px] font-semibold tabular text-ink">{fmtPct(v)}</p>
-            <p className="text-center text-[12px] leading-tight text-ink-3">{d.valid ? formatDate(d.valid).replace(/^\w+, /, "") : "—"}</p>
-            <p className="text-center text-[12px] leading-tight text-ink-3">{leadLabel(d.lead).replace(/^\+/, "+")}</p>
+            <p className={`mt-1 text-center text-[13px] tabular ${own ? "font-semibold text-ink" : "text-ink-2"}`}>
+              {v != null && !own ? "~" : ""}
+              {fmtPct(v)}
+            </p>
+            <p className="text-center text-[12px] leading-tight text-ink-3">{own ? "own cell" : v != null ? "offshore" : "no value"}</p>
+            <p className="text-center text-[12px] leading-tight text-ink-3">{chip.short ?? "—"}</p>
+            <p className="text-center text-[12px] leading-tight text-ink-3">{chip.relative ?? roleWords(d.lead)}</p>
           </div>
         );
       })}
@@ -279,6 +298,7 @@ export function HabBriefing({
   pick,
   onPick,
   modelStale = null,
+  summary,
 }: {
   /** the newest C-HARM run is stale or historical by its own policy */
   modelStale?: { state: "stale" | "historical"; issued: string | null; ageDays: number } | null;
@@ -299,51 +319,15 @@ export function HabBriefing({
   lon: number;
   /** shown between the summary and the evidence cards (the phone's map) */
   between?: React.ReactNode;
+  /** the summary paragraph: the evidence graph's own sentences (lib/harborEvidence claim.text), never
+   *  words built here, so this section can never contradict the briefing's lines or the API */
+  summary: string[] | null;
 }) {
   const ev = useHabEvidence(stations, lat, lon, now);
   const days = outlook && outlook !== "error" ? outlook : [];
   const day = days.find((d) => d.lead === lead) ?? days[0] ?? null;
-  const tox = day?.pda ?? null;
   const thrPda = charmLayer(manifest, "particulate_domoic", lead)?.threshold_text ?? null;
   const thrPn = charmLayer(manifest, "pseudo_nitzschia", lead)?.threshold_text ?? null;
-  const forDay = day?.valid ? `for ${formatDate(day.valid)}` : "";
-
-  // the summary: facts only, in the order a reader needs them
-  const summary: string[] = [];
-  if (ev) {
-    const c = ev.cells;
-    const t = ev.toxin;
-    const recentC = c && c.near && c.ageDays <= RECENT_DAYS;
-    const recentT = t && t.near && t.ageDays <= RECENT_DAYS;
-    if (recentC) {
-      const v = c!.values.reduce((a, x) => a + x.value, 0);
-      summary.push(v > 0 ? `Pseudo-nitzschia, the algae that can produce domoic acid, was counted at ${c!.station.name} ${ageWords(c!.ageDays)} (${fmtMeasured("pn_seriata", v)}).` : `No Pseudo-nitzschia was counted at ${c!.station.name} ${ageWords(c!.ageDays)}.`);
-    }
-    if (recentT) {
-      const v = t!.values[0].value;
-      summary.push(v > 0 ? `Domoic acid was measured in seawater at ${t!.station.name} ${recentC && t!.station.station_id === c!.station.station_id ? "in that sample" : ageWords(t!.ageDays)}: ${fmtMeasured("pDA", v)}.` : `No domoic acid was quantified in seawater at ${t!.station.name} ${ageWords(t!.ageDays)}.`);
-    }
-    // the nearest station, when the evidence above came from farther away: its own last sample, with its age
-    const used = [recentC ? c : null, recentT ? t : null].filter(Boolean).map((e) => e!.station.station_id);
-    if (used.length && ev.nearest && !used.includes(ev.nearest.station.station_id) && ev.nearest.km < Math.min(...[c, t].filter(Boolean).map((e) => e!.km)))
-      summary.push(`The nearest station, ${ev.nearest.station.name} (${ev.nearest.km < 10 ? ev.nearest.km.toFixed(1) : Math.round(ev.nearest.km)} km), last reported Pseudo-nitzschia or toxin ${ageWords(ev.nearest.ageDays)}.`);
-    if (!recentC && !recentT) {
-      const older = [c, t].filter(Boolean).sort((a, b) => a!.km - b!.km)[0];
-      const nearOld = [c, t].filter((e) => e && e.near).sort((a, b) => a!.ageDays - b!.ageDays)[0];
-      summary.push(
-        nearOld
-          ? `No shore station within ${EVIDENCE_RADIUS_KM} km has sampled in the last ${RECENT_DAYS} days; the latest sample nearby was ${ageWords(nearOld.ageDays)}, at ${nearOld.station.name} (${Math.round(nearOld.km)} km).`
-          : older
-            ? `No shore station within ${EVIDENCE_RADIUS_KM} km measures bloom algae or toxin; the nearest that does, ${older.station.name}, is ${Math.round(older.km)} km away, too far to describe these waters.`
-            : "No shore station measures bloom algae or toxin near these waters.",
-      );
-    }
-  }
-  if (tox?.here != null) summary.push(`NOAA's model gives these waters' 3 km cell a ${fmtPct(tox.here)} chance that particulate domoic acid exceeds its threshold ${forDay}.`);
-  else if (tox && tox.n > 0) summary.push(`NOAA's model has no value for these nearshore waters; its ${tox.n} offshore cells within ${NEIGHBOURHOOD_KM} km have a median ${fmtPct(tox.median)} chance that particulate domoic acid exceeds its threshold ${forDay}.`);
-  else if (tox?.nearest) summary.push(`These waters are outside NOAA's model: it has no cells within ${NEIGHBOURHOOD_KM} km. Its nearest cell, ${tox.nearest.km.toFixed(0)} km away, has ${fmtPct(tox.nearest.value)}; that describes that cell, not these waters.`);
-  else if (tox) summary.push("These waters are outside NOAA's model: it has no cell within 80 km.");
-
   const hist = port?.charm?.history?.[pick === "pda" ? "particulate_domoic" : "pseudo_nitzschia"] ?? null;
   const satOn = focus === "satellite";
   const modelOn = focus === "model";
@@ -358,7 +342,7 @@ export function HabBriefing({
           Bloom and toxin evidence near {placeName}
         </h2>
         <p className="mt-2 max-w-[64ch] text-[16px] leading-relaxed text-ink-2" data-testid="hab-summary" aria-live="polite">
-          {ev ? summary.join(" ") : "Reading the measurements, the model and the satellite…"}
+          {summary ? summary.join(" ") : "Reading the measurements, the model and the satellite…"}
         </p>
       </div>
       {between}
@@ -437,11 +421,12 @@ export function HabBriefing({
               <Mark kind="model" />
               NOAA C-HARM model · a probability, not a measurement
             </p>
-            {modelStale && (
-              <p className="basis-full text-[14px] font-medium text-[#9b2c2c]" data-testid="ev-model-stale">
-                {modelStale.state === "stale" ? "Stale" : "Historical"}: the newest run Neritic has was issued {modelStale.issued ? formatDate(modelStale.issued) : "—"}, {modelStale.ageDays === 1 ? "1 day" : `${modelStale.ageDays} days`} ago. Its later days are older forecasts, not today&apos;s.
-              </p>
-            )}
+            {modelStale &&
+              runNotes({ state: modelStale.state, basisDate: modelStale.issued, ageDays: modelStale.ageDays }, null).map((n) => (
+                <p key={n.testid} className={`basis-full text-[14px] ${n.tone === "problem" ? "font-medium text-serious" : "text-ink-2"}`} data-testid="ev-model-stale" data-tone={n.tone}>
+                  <span className="font-medium text-ink">{n.head}.</span> {n.text}
+                </p>
+              ))}
             <div role="radiogroup" aria-label="Model quantity" className="flex rounded-xl bg-surface-3 p-0.5 text-[13px]">
               {(
                 [
@@ -449,7 +434,7 @@ export function HabBriefing({
                   ["pn", "Bloom"],
                 ] as const
               ).map(([id, label]) => (
-                <button key={id} type="button" role="radio" aria-checked={pick === id} onClick={() => onPick(id)} data-testid={`outlook-pick-${id}`} className={`cw-press relative rounded-[10px] px-3 py-1 font-medium ${pick === id ? "text-ink" : "text-ink-3"}`}>
+                <button key={id} type="button" role="radio" aria-checked={pick === id} onClick={() => onPick(id)} data-testid={`outlook-pick-${id}`} className={`cw-press relative min-h-[44px] rounded-[10px] px-3 py-1 font-medium ${pick === id ? "text-ink" : "text-ink-3"}`}>
                   {pick === id && <motion.span layoutId="outlook-pill" className="absolute inset-0 rounded-[10px] bg-surface shadow-[0_1px_2px_rgba(13,27,42,0.12)]" aria-hidden />}
                   <span className="relative">{label}</span>
                 </button>
@@ -480,7 +465,7 @@ export function HabBriefing({
                 )}
               </p>
               <p className="text-[13px] text-ink-3">{(pick === "pda" ? thrPda : thrPn) ?? ""}</p>
-              <OutlookBars days={days} pick={pick} active={lead} />
+              <OutlookBars days={days} pick={pick} active={lead} now={now} />
               {hist && hist.length > 1 && (
                 <div className="mt-3">
                   <p className="text-[13px] text-ink-3">Nowcast median for the cells within {port?.charm?.radius_km ?? NEIGHBOURHOOD_KM} km, last {hist.length} runs</p>
@@ -490,7 +475,7 @@ export function HabBriefing({
               <p className="mt-2 text-[13px] leading-snug text-ink-2">
                 Bloom: the chance that Pseudo-nitzschia exceeds the model&apos;s threshold. Toxin: the chance that particulate domoic acid in the water does. Neither is a measurement, and neither is a test of seafood.
               </p>
-              <button type="button" onClick={() => onFocus(modelOn ? null : "model")} aria-pressed={modelOn} className="cw-press mt-2 text-[13px] font-medium text-accent hover:underline" data-testid="ev-model-map">
+              <button type="button" onClick={() => onFocus(modelOn ? null : "model")} aria-pressed={modelOn} className="cw-press mt-2 inline-flex min-h-[44px] items-center text-[13px] font-medium text-accent hover:underline" data-testid="ev-model-map">
                 {modelOn ? "Shown on the map: the real 3 km cells and the nearshore gaps" : "Show the model's cells and its nearshore gaps on the map"}
               </button>
             </>

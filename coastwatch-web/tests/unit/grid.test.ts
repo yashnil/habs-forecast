@@ -76,3 +76,61 @@ describe("raster georeferencing", () => {
     }
   });
 });
+
+describe("cell labels at harbour zoom (carto T2)", async () => {
+  const { cellLabels } = await import("@/lib/grid");
+  const g = { width: 4, height: 3, lat_first: 36.0, lat_step: 0.03, lon_first: -122.0, lon_step: 0.03, scale_factor: 1 / 65534, add_offset: 0, nodata: 65535, transform: "none" } as unknown as import("@/generated/schema").ValueGrid;
+  const codes = new Uint16Array([65535, 32767, 65535, 6553, 65535, 65535, 52427, 65535, 65535, 65535, 65535, 65535]);
+  it("labels only valued cells inside the bounds, nearest the centre first, with a legible colour flag", () => {
+    const fc = cellLabels(g, codes, [-122.02, 35.98, -121.9, 36.05]);
+    expect(fc.features.map((f) => f.properties!.text).sort()).toEqual(["10", "50", "80"]);
+    const f80 = fc.features.find((f) => f.properties!.text === "80")!;
+    expect(f80.geometry.coordinates).toEqual([-121.94, 36.03]);
+    expect(f80.properties!.dark).toBe(true);
+    expect(fc.features.find((f) => f.properties!.text === "10")!.properties!.dark).toBe(false);
+    // a bounds that excludes a cell's centre excludes its label; a max caps the count nearest the centre
+    expect(cellLabels(g, codes, [-122.0, 35.99, -121.95, 36.01]).features.map((f) => f.properties!.text)).toEqual(["50"]);
+    expect(cellLabels(g, codes, [-122.02, 35.98, -121.9, 36.05], 1).features).toHaveLength(1);
+  });
+});
+
+describe("the nearshore gap at harbour zoom (carto T3)", async () => {
+  const { gapAt } = await import("@/lib/grid");
+  const g = { width: 4, height: 3, lat_first: 36.0, lat_step: 0.03, lon_first: -122.0, lon_step: 0.03, scale_factor: 1 / 65534, add_offset: 0, nodata: 65535, transform: "none" } as unknown as import("@/generated/schema").ValueGrid;
+  // row 0: -, 50 %, -, 10 %; row 1: -, -, 80 %, -; row 2: all empty
+  const codes = new Uint16Array([65535, 32767, 65535, 6553, 65535, 65535, 52427, 65535, 65535, 65535, 65535, 65535]);
+
+  it("says when the centre cell has its own value: no gap", () => {
+    const r = gapAt(g, codes, 36.0, -121.97);
+    expect(r).toMatchObject({ inDomain: true, here: true, nearestKm: 0 });
+    expect(r.nearest?.value).toBeCloseTo(0.5, 3);
+  });
+
+  it("in an empty cell, names the nearest cell with a value and the distance to its centre", () => {
+    // cell (2, 0) at 36.06, -122.00: the nearest valued cell is (1, 2) at 36.03, -121.94 (not (0, 1), farther south)
+    const r = gapAt(g, codes, 36.06, -122.0);
+    expect(r.inDomain).toBe(true);
+    expect(r.here).toBe(false);
+    expect(r.nearest).toMatchObject({ lat: expect.closeTo(36.03, 5), lon: expect.closeTo(-121.94, 5), cell: { row: 1, col: 2 } });
+    expect(r.nearest?.value).toBeCloseTo(0.8, 3);
+    expect(r.nearestKm).toBeCloseTo(Math.hypot(0.03 * 111.32, 0.06 * 111.32 * Math.cos((36.045 * Math.PI) / 180)), 2);
+  });
+
+  it("outside the grid is not a gap; a gap with no valued cell within reach has no nearest", () => {
+    expect(gapAt(g, codes, 40, -122)).toEqual({ inDomain: false, here: false, nearestKm: null, nearest: null });
+    expect(gapAt(g, codes, 36.06, -122.0, 0)).toEqual({ inDomain: true, here: false, nearestKm: null, nearest: null });
+  });
+
+  it("at Monterey harbour the published grid has no value, and the nearest modelled cell is a few km out", async () => {
+    const layer = charmLayer(manifest, "particulate_domoic", 1)!;
+    const codes = await codesFor(layer.grid!.url);
+    const r = gapAt(layer.grid!, codes, 36.605, -121.89);
+    expect(r.inDomain).toBe(true);
+    expect(r.here).toBe(false);
+    expect(r.nearestKm).toBeGreaterThan(2);
+    expect(r.nearestKm).toBeLessThan(15);
+    // the same cell `sample` reports (nearest within 3 cells) when it is within reach
+    const s = sample(layer.grid!, codes, 36.605, -121.89);
+    if (s.kind === "value") expect(r.nearest?.cell).toEqual(s.cell);
+  });
+});

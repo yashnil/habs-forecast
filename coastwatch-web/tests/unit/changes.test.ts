@@ -20,7 +20,7 @@ const input = {
   stations: slimStations(read<ObservationDataset>(manifest.observations_url!)),
 };
 const NOW = new Date("2026-10-09T18:00:00Z");
-const LAST = "2026-10-08T20:00:00Z"; // the previous evening, after CoastWatch's check of the fixture (Oct 8, 18:00 UTC)
+const LAST = "2026-10-08T20:00:00Z"; // the previous evening, after Neritic's check of the fixture (Oct 8, 18:00 UTC)
 const fmt = { fmtDate: (d: string) => d, fmtTime: (t: string) => t };
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 const snap = (place = "port-201", audience: "all" | "commercial" | "recreational" | "shellfish" = "commercial", species = "dungeness") => buildSnapshot(input, place, audience, species, NOW)!;

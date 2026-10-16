@@ -1,5 +1,6 @@
 import NDBC from "@/content/stations/ndbc-ca.json";
 import COOPS from "@/content/stations/coops-tide-ca.json";
+import WATERTEMP from "@/content/stations/coops-watertemp-ca.json";
 import type { Station } from "@/lib/conditions";
 
 /**
@@ -8,3 +9,4 @@ import type { Station } from "@/lib/conditions";
  */
 export const BUOYS = NDBC as Station[];
 export const TIDE_STATIONS = COOPS as Station[];
+export const WATER_TEMP_STATIONS = WATERTEMP as Station[];

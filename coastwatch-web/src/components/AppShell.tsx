@@ -41,7 +41,7 @@ export function AppShell({
       {/* keyboard users skip the masthead and the status line */}
       <a
         href="#main"
-        className="sr-only z-50 rounded-md bg-surface px-3 py-2 text-[14px] font-medium text-accent shadow focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
+        className="sr-only z-50 rounded-md bg-surface px-3 py-2 text-[14px] font-medium text-accent shadow focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:flex focus:min-h-11 focus:items-center"
         data-testid="skip-link"
       >
         Skip to main content
@@ -49,7 +49,7 @@ export function AppShell({
       <div className={`flex min-h-dvh flex-col bg-page pb-[var(--cw-tabbar-h)] md:pb-0 ${scroll === "app" ? "lg:h-dvh" : ""}`}>
         <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-navy-950 text-on-navy">
           <div className="flex h-[52px] min-w-0 items-center gap-3 px-3 min-[360px]:px-4 min-[400px]:gap-6 md:h-[var(--cw-masthead-h)] md:gap-5 md:px-6 lg:gap-8">
-            <Link href="/" className="flex shrink-0 items-center gap-2 min-[360px]:gap-2.5" aria-label={`${BRAND.name} home`} data-testid="brand-home">
+            <Link href="/" className="flex min-h-11 shrink-0 items-center gap-2 min-[360px]:gap-2.5" aria-label={`${BRAND.name} home`} data-testid="brand-home">
               <BrandMark size={26} />
               <Wordmark className="text-[17px] text-white" />
               {/* not independently validated: said on every page, beside the name (phones: the footer and the welcome) */}
@@ -101,9 +101,9 @@ export function AppShell({
                 {BRAND.independence}
               </span>
               <nav aria-label={`About ${BRAND.name}`} className="flex flex-wrap gap-x-5 gap-y-2 sm:ml-auto">
-                <Link href="/about" className="font-medium text-accent hover:underline">About</Link>
-                <Link href="/sources" className="font-medium text-accent hover:underline">Data &amp; sources</Link>
-                <a href={RESEARCH.doi} target="_blank" rel="noreferrer" className="font-medium text-accent hover:underline">Research paper ↗</a>
+                <Link href="/about" className="inline-flex min-h-[44px] min-w-[44px] items-center font-medium text-accent hover:underline">About</Link>
+                <Link href="/sources" className="inline-flex min-h-[44px] items-center font-medium text-accent hover:underline">Data &amp; sources</Link>
+                <a href={RESEARCH.doi} target="_blank" rel="noreferrer" className="inline-flex min-h-[44px] items-center font-medium text-accent hover:underline">Research paper ↗</a>
               </nav>
             </div>
           </footer>

@@ -74,7 +74,7 @@ test.describe("My Coast", () => {
     await outside.locator("summary").click();
     await expect(outside.getByTestId(mb)).toHaveAttribute("data-tier", "outside");
     await expect(outside.getByTestId(mb)).toContainText("Outside the agency's outline of Monterey County");
-    // the agencies' complete lists are always offered, with CoastWatch's whole list one click away
+    // the agencies' complete lists are always offered, with Neritic's whole list one click away
     await expect(page.getByTestId("coast-agencies-complete")).toContainText("may miss one");
     await page.getByTestId("coast-all-notices").click();
     await expect(page.getByTestId("official-drawer")).toBeVisible();

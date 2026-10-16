@@ -1,3 +1,4 @@
+import { displayManifest } from "@/lib/palette";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import Ajv2020 from "ajv/dist/2020";
@@ -180,8 +181,10 @@ export async function loadData(): Promise<DataLoad> {
   } catch (e) {
     return { ok: false, error: `manifest not available (${(e as Error).message})`, baseUrl };
   }
-  const m = checkManifest(raw);
-  if (!m.ok) return { ok: false, error: m.error, baseUrl };
+  const m0 = checkManifest(raw);
+  if (!m0.ok) return { ok: false, error: m0.error, baseUrl };
+  // the published manifest, with C-HARM's colours swapped for the display classes (lib/palette)
+  const m = { ok: true as const, manifest: displayManifest(m0.manifest) };
   let ports: PortsCollection | null = null;
   let portsError: string | null = null;
   if (m.manifest.ports_url) {

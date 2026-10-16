@@ -8,7 +8,7 @@ import { disputes } from "@/lib/official";
 import { recordNamesSpecies, speciesById } from "@/content/species";
 
 /**
- * A briefing snapshot: what CoastWatch's published data say about one place, activity and species,
+ * A briefing snapshot: what Neritic's published data say about one place, activity and species,
  * with every date the data carry. It is the unit "Since you last checked" compares and the content of
  * a kept briefing. Built only from CoastWatch's own published artifacts (no third-party request), and
  * small enough to keep on the device.
@@ -51,7 +51,7 @@ export type Snapshot = {
   v: typeof SNAPSHOT_VERSION;
   /** when this snapshot was built (server time) */
   builtAt: string;
-  /** when CoastWatch's data were generated (manifest) */
+  /** when Neritic's data were generated (manifest) */
   dataGeneratedAt: string;
   place: { key: string; name: string; county: string | null; lat: number; lon: number };
   audience: Audience;
@@ -59,7 +59,7 @@ export type Snapshot = {
   official: {
     /** false when the notice list could not be loaded: nothing below is complete */
     ok: boolean;
-    /** when CoastWatch last checked the agencies' pages */
+    /** when Neritic last checked the agencies' pages */
     checkedAt: string | null;
     reviewStatus: string | null;
     reviewedAt: string | null;

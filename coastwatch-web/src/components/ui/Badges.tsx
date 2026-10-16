@@ -34,7 +34,7 @@ const BASIS_WORD: Record<string, string> = { issued_date: "issued", observed_dat
 
 /**
  * `unconfirmed`: the last update of this source failed. A recent date alone is then not enough to
- * say "Current" (a newer run may exist that CoastWatch could not fetch): it reads "Not confirmed".
+ * say "Current" (a newer run may exist that Neritic could not fetch): it reads "Not confirmed".
  */
 export function FreshnessBadge({ f, compact = false, basis, unconfirmed = false }: { f: Freshness | null; compact?: boolean; basis?: string; unconfirmed?: boolean }) {
   const state: FreshnessState = f?.state ?? "unavailable";

@@ -1,5 +1,6 @@
 "use client";
 
+import { clipLimitsToWater, labelledGeometry } from "@/lib/officialGeometry";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MlMap } from "maplibre-gl";
@@ -23,9 +24,11 @@ import {
 import { officialVerification, currentRecords } from "@/lib/official";
 import { readMode, useMode } from "@/lib/mode";
 import { openingLayer, type Opening } from "@/lib/opening";
-import { cellEdges, loadGrid } from "@/lib/grid";
+import { cellEdges, cellLabels, gapAt, loadGrid } from "@/lib/grid";
 import type { StationLite } from "@/lib/data";
 import { useNow } from "@/lib/useNow";
+import { charmDays, defaultLead } from "@/lib/charmDays";
+import { pacificToday } from "@/lib/time";
 import { PortPanel } from "@/components/port/PortPanel";
 import { Inspector, type InspectPoint } from "@/components/map/Inspector";
 import { MobileSheet, type SnapId, type SnapPoint } from "@/components/MobileSheet";
@@ -48,7 +51,8 @@ import { currentsHourly, fieldFeatures, loadField, type CurrentField } from "@/l
 import { OFFICIAL_STATUS } from "@/content/copy";
 import { useModel } from "@/components/coast/CoastSections";
 import { cellPolygon, stationsNear } from "@/lib/coast";
-import { provenanceFeatures } from "@/lib/provenance";
+import { gapFeatures, provenanceFeatures, stationFeatures } from "@/lib/provenance";
+import { loadWaterFallback, type WaterGeometry } from "@/lib/waterFallback";
 import { journeyTo } from "@/lib/camera";
 import { Icon } from "@/components/ui/Icon";
 
@@ -107,6 +111,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   const now = useNow();
   const run = charmRun(manifest);
   const mapRef = useRef<MlMap | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const pendingFly = useRef<number | null>(null);
   const dockRef = useRef<HTMLDivElement | null>(null);
   // null until the first client render, so a phone never flashes the desktop layout
@@ -120,7 +125,12 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   const initialQ = useMemo(() => new URLSearchParams(initialParams), [initialParams]);
   const initialRegion = regions.find((r) => r.id === initialQ.get("region")) ?? regions.find((r) => r.id === DEFAULT_REGION) ?? STATEWIDE;
 
-  const firstLead = run?.leads_available.includes(1) ? 1 : (run?.leads_available[0] ?? 0);
+  // the day to open on: the issued day valid today (Pacific), else the first after today, else the
+  // run's last day (lib/charmDays): a fresh run opens on today, never on yesterday's nowcast
+  const firstLead = useMemo(() => {
+    const days = charmDays(CHARM_LEADS.map((l) => charmLayer(manifest, "particulate_domoic", l) ?? charmLayer(manifest, "pseudo_nitzschia", l)), now);
+    return now ? defaultLead(days, pacificToday(now)) : (run?.leads_available.includes(1) ? 1 : (run?.leads_available[0] ?? 0));
+  }, [manifest, now, run]);
   const initialLayer = parseLayer(initialQ.get("layer"));
   // The opening layer (lib/opening): a layer named in the link wins; otherwise it is chosen
   // once, in the browser, from the data's freshness and coverage. Until then nothing is drawn.
@@ -201,7 +211,17 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
     if (v) setShowAgeRaw(false);
   };
   const [variable, setVariable] = useState<CharmVariable>("particulate_domoic");
-  const [lead, setLead] = useState<number>(firstLead);
+  const [lead, setLeadRaw] = useState<number>(firstLead);
+  // the clock arrives after the first render: until a link or the reader chooses a day, the map
+  // follows the default for today (never stays on yesterday's nowcast because the clock was late)
+  const leadChosen = useRef(false);
+  const setLead = useCallback((l: number) => {
+    leadChosen.current = true;
+    setLeadRaw(l);
+  }, []);
+  useEffect(() => {
+    if (!leadChosen.current && !initialQ.has("lead")) setLeadRaw(firstLead);
+  }, [firstLead, initialQ]);
   const [region, setRegion] = useState<string>(initialRegion.id);
   const [port, setPort] = useState<number | null>(null);
   const [inspect, setInspect] = useState<InspectPoint | null>(null);
@@ -455,18 +475,65 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
   const imagery: TileRaster | null = imageryLayer?.tiles ? { id: imageryLayer.layer_id, template: imageryLayer.tiles.url_template, minzoom: 0, maxzoom: imageryLayer.tiles.max_native_zoom } : null;
 
   // C-HARM's own cell edges (faint, from z8.5): its 3 km cells read as model cells, not blur
-  const [edges, setEdges] = useState<{ id: string; fc: GeoJSON.FeatureCollection } | null>(null);
+  const [edges, setEdges] = useState<{ id: string; fc: GeoJSON.FeatureCollection; codes: Uint16Array } | null>(null);
   useEffect(() => {
     let cancelled = false;
     const g = group === "forecast" ? forecastLayer?.grid : null;
     if (!g || !forecastLayer || edges?.id === forecastLayer.layer_id) return;
     loadGrid(artifactUrl(baseUrl, g.url))
-      .then((codes) => !cancelled && setEdges({ id: forecastLayer.layer_id, fc: cellEdges(g, codes) }))
+      .then((codes) => !cancelled && setEdges({ id: forecastLayer.layer_id, fc: cellEdges(g, codes), codes }))
       .catch(() => !cancelled && setEdges(null));
     return () => {
       cancelled = true;
     };
   }, [group, forecastLayer, baseUrl, edges?.id]);
+  // the harbour view (from z 10.5, carto T2/T3), recomputed when the view settles, from the same
+  // grid the readout uses: per-cell values for the cells in view, and, when the map's centre cell
+  // is in the C-HARM domain without a value, the nearshore gap note with the distance to the
+  // nearest modelled cell. Never shown while the centre cell has a value.
+  const [harbour, setHarbour] = useState<{ id: string; labels: GeoJSON.FeatureCollection; gap: GeoJSON.FeatureCollection | null } | null>(null);
+  useEffect(() => {
+    const m = mapRef.current;
+    const g = forecastLayer?.grid;
+    if (!m || !g || !edges || edges.id !== forecastLayer?.layer_id || group !== "forecast") {
+      setHarbour(null);
+      return;
+    }
+    const update = () => {
+      if (m.getZoom() < 10.5) return setHarbour((h) => (h ? null : h));
+      const b = m.getBounds();
+      const c = m.getCenter();
+      setHarbour({
+        id: forecastLayer.layer_id,
+        labels: cellLabels(g, edges.codes, [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]),
+        gap: gapFeatures({ lat: c.lat, lon: c.lng }, gapAt(g, edges.codes, c.lat, c.lng)),
+      });
+    };
+    update();
+    m.on("moveend", update);
+    return () => {
+      m.off("moveend", update);
+    };
+  }, [edges, forecastLayer, group, mapReady]);
+  const harbourOn = group === "forecast" && harbour != null && harbour.id === forecastLayer?.layer_id;
+
+  // the HAB shore stations at harbour zoom, each with its last sample date (lib/provenance)
+  const stationPoints = useMemo(() => (stations?.length ? stationFeatures(stations, now, now ? pacificToday(now) : null) : null), [stations, now]);
+
+  // official latitude limits are drawn over the sea only: the bundled water (lib/waterFallback)
+  // clips them once it has loaded; until then the pipeline's full line is drawn
+  const [water, setWater] = useState<WaterGeometry | null>(null);
+  useEffect(() => {
+    let live = true;
+    loadWaterFallback().then((g) => live && g && setWater(g));
+    return () => {
+      live = false;
+    };
+  }, []);
+  const officialGeometry = useMemo(() => {
+    const fc = labelledGeometry(official);
+    return fc && water ? clipLimitsToWater(fc, water) : fc;
+  }, [official, water]);
 
   // switching layer fades the new data in; a new time step of the same layer cuts (lib note in MapCanvas)
   const fadeRef = useRef<{ group: LayerGroup | null; until: number }>({ group: null, until: 0 });
@@ -543,7 +610,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       )
     ) : inspect ? (
       <div className="space-y-5">
-        <Inspector manifest={manifest} baseUrl={baseUrl} point={inspect} lead={lead} onLead={setLead} variable={variable} onClose={() => setInspect(null)} official={official} verification={verification} />
+        <Inspector manifest={manifest} baseUrl={baseUrl} point={inspect} lead={lead} onLead={setLead} variable={variable} onClose={() => setInspect(null)} official={official} verification={verification} now={now} />
         {near(inspect.lat, inspect.lon, "this point")}
       </div>
     ) : null;
@@ -628,7 +695,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       currents={currentsOverlay}
       ports={ports}
       showPorts
-      officialGeometry={(official?.geometry as unknown as GeoJSON.FeatureCollection) ?? null}
+      officialGeometry={officialGeometry}
       showOfficial
       selectedPort={port}
       inspect={inspect}
@@ -636,6 +703,9 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       initialBounds={initialRegion.bounds}
       initialPadding={wide ? { top: 64, bottom: 28, left: 660, right: 28 } : { top: 64, bottom: 168, left: 16, right: 16 }}
       cellEdges={group === "forecast" && edges && edges.id === forecastLayer?.layer_id ? edges.fc : null}
+      cellLabels={harbourOn ? harbour.labels : null}
+      gap={harbourOn ? harbour.gap : null}
+      stations={stationPoints}
       fade={fade}
       onHover={wide && canHover ? onHover : undefined}
       onPort={selectPort}
@@ -653,6 +723,7 @@ export function LiveOceanMap({ manifest, ports, portsError, official, officialEr
       }}
       onReady={(m) => {
         mapRef.current = m;
+        setMapReady(true);
         let first = false;
         try {
           first = !deepLinked && window.localStorage.getItem("cw-intro-dismissed-v1") !== "1";

@@ -459,7 +459,7 @@ habs-forecast/
 ├── RUN_DIAGNOSTICS.sh         # Diagnostics for the optimized PINN
 │
 ├── pipeline/                  # Neritic data pipeline: ingest, validate, render, publish (see pipeline/README.md)
-├── coastwatch-web/            # CoastWatch Next.js + MapLibre web app (see coastwatch-web/README.md)
+├── coastwatch-web/            # Neritic Next.js + MapLibre web app (see coastwatch-web/README.md)
 ├── schemas/v1/                # JSON Schema shared by the pipeline and the web app
 ├── data/curated/              # Human-reviewed inputs (CDFW port selection)
 ├── docs/coastwatch/           # Neritic (formerly CoastWatch) planning, architecture, safety rules, source evidence

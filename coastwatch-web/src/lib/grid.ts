@@ -81,6 +81,46 @@ export function sample(g: ValueGrid, codes: Uint16Array, lat: number, lon: numbe
   return { kind: "value", value: best.value, cell: best.cell, distanceKm: best.d, nearest: true };
 }
 
+export type Gap = {
+  /** the point lies inside the grid's extent */
+  inDomain: boolean;
+  /** the point's own cell holds a value (then there is no gap to describe) */
+  here: boolean;
+  /** distance from the point to the centre of the nearest cell with a value; null when none within reach */
+  nearestKm: number | null;
+  /** that cell's centre and its decoded value */
+  nearest: { lat: number; lon: number; value: number; cell: Cell } | null;
+};
+
+/**
+ * The nearshore gap at a point (carto T3): whether the point is inside the C-HARM domain, whether
+ * its own cell has a value, and otherwise the nearest valued cell within `searchCells` (default
+ * ±12 cells, about 36 km) with its great-circle distance. Reports the grid as published: it never
+ * fills the gap with a value.
+ */
+export function gapAt(g: ValueGrid, codes: Uint16Array, lat: number, lon: number, searchCells = 12): Gap {
+  const c = cellAt(g, lat, lon);
+  if (!c) return { inDomain: false, here: false, nearestKm: null, nearest: null };
+  const own = decodeCode(g, codes[c.row * g.width + c.col]);
+  if (own != null) return { inDomain: true, here: true, nearestKm: 0, nearest: { lat: c.lat, lon: c.lon, value: own, cell: c } };
+  let best: { cell: Cell; value: number; d: number } | null = null;
+  for (let dr = -searchCells; dr <= searchCells; dr++) {
+    const r = c.row + dr;
+    if (r < 0 || r >= g.height) continue;
+    for (let dc = -searchCells; dc <= searchCells; dc++) {
+      const k = c.col + dc;
+      if (k < 0 || k >= g.width) continue;
+      const v = decodeCode(g, codes[r * g.width + k]);
+      if (v == null) continue;
+      const cell = { row: r, col: k, lat: g.lat_first + r * g.lat_step, lon: g.lon_first + k * g.lon_step };
+      const d = distanceKm(lat, lon, cell.lat, cell.lon);
+      if (!best || d < best.d) best = { cell, value: v, d };
+    }
+  }
+  if (!best) return { inDomain: true, here: false, nearestKm: null, nearest: null };
+  return { inDomain: true, here: false, nearestKm: best.d, nearest: { lat: best.cell.lat, lon: best.cell.lon, value: best.value, cell: best.cell } };
+}
+
 // ---------------------------------------------------------------- chunked grids (satellite)
 
 /** Decoded value of a raw code, honouring the grid's transform (e.g. log10 for chlorophyll). */
@@ -219,4 +259,34 @@ export function cellEdges(g: ValueGrid, codes: Uint16Array): GeoJSON.FeatureColl
     }
   }
   return { type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: lines } }] };
+}
+
+/**
+ * Cell centres with their value, for labels at harbour zoom: valued cells whose centres lie in
+ * `bounds` (west, south, east, north), at most `max` (nearest the bounds' centre first), each
+ * with `text` as a whole percentage and `dark` for a label colour that reads on its class.
+ */
+export function cellLabels(g: ValueGrid, codes: Uint16Array, bounds: [number, number, number, number], max = 400): GeoJSON.FeatureCollection<GeoJSON.Point> {
+  const [w, sth, e, n] = bounds;
+  const lonFirst = g.lon_first > 180 ? g.lon_first - 360 : g.lon_first;
+  const r0 = Math.max(0, Math.floor((sth - g.lat_first) / g.lat_step));
+  const r1 = Math.min(g.height - 1, Math.ceil((n - g.lat_first) / g.lat_step));
+  const c0 = Math.max(0, Math.floor((w - lonFirst) / g.lon_step));
+  const c1 = Math.min(g.width - 1, Math.ceil((e - lonFirst) / g.lon_step));
+  const cx = (w + e) / 2;
+  const cy = (sth + n) / 2;
+  const out: { d: number; f: GeoJSON.Feature<GeoJSON.Point> }[] = [];
+  for (let r = r0; r <= r1; r++) {
+    for (let c = c0; c <= c1; c++) {
+      const v = decodeCode(g, codes[r * g.width + c]);
+      if (v == null) continue;
+      const lat = g.lat_first + r * g.lat_step;
+      const lon = lonFirst + c * g.lon_step;
+      if (lat < sth || lat > n || lon < w || lon > e) continue;
+      const pct = Math.round(v * 100);
+      out.push({ d: (lat - cy) ** 2 + (lon - cx) ** 2, f: { type: "Feature", properties: { text: String(pct), dark: v >= 0.4 }, geometry: { type: "Point", coordinates: [+lon.toFixed(5), +lat.toFixed(5)] } } });
+    }
+  }
+  out.sort((a, b) => a.d - b.d);
+  return { type: "FeatureCollection", features: out.slice(0, max).map((x) => x.f) };
 }
