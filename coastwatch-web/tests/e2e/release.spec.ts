@@ -74,6 +74,48 @@ test.describe("masthead at narrow widths", () => {
     });
   }
 
+  /** Every masthead and status-line control is a 44 × 44 px target on phones (WCAG 2.5.5), and no two
+   *  hit boxes overlap, so a thumb lands on one control only. The drawn pill and menu keep their size:
+   *  the box is the control, the drawing is inside it. */
+  for (const width of [320, 390]) {
+    test(`${width} px: every header control is at least 44 × 44 and no hit boxes overlap`, async ({ browser }) => {
+      const ctx = await browser.newContext({ viewport: { width, height: 740 }, isMobile: true, hasTouch: true });
+      const page = await ctx.newPage();
+      for (const p of ["/", "/bloom", "/coast?place=port-550"]) {
+        await open(page, `${OK}${p}`);
+        const r = await page.evaluate(() => {
+          // the site masthead is the first header; Bloom's station header is the page's own
+          const boxes = [...document.querySelector("header")!.querySelectorAll<HTMLElement>("a, button")]
+            .filter((e) => getComputedStyle(e).position !== "absolute")
+            .map((e) => ({ t: e.dataset.testid || e.textContent?.trim().slice(0, 16) || "", r: e.getBoundingClientRect() }))
+            .filter((x) => x.r.width > 1 && x.r.height > 1);
+          const small = boxes.filter((x) => x.r.width < 44 || x.r.height < 44).map((x) => `${x.t} ${Math.round(x.r.width)}×${Math.round(x.r.height)}`);
+          const overlaps: string[] = [];
+          for (let i = 0; i < boxes.length; i++)
+            for (let j = i + 1; j < boxes.length; j++) {
+              const a = boxes[i].r, b = boxes[j].r;
+              if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0) overlaps.push(`${boxes[i].t}×${boxes[j].t}`);
+            }
+          const pill = document.querySelector('[data-testid="official-pill"]')!;
+          return {
+            n: boxes.length,
+            small,
+            overlaps,
+            masthead: document.querySelector("header")!.firstElementChild!.getBoundingClientRect().height,
+            drawnPill: parseFloat(getComputedStyle(pill, "::before").height),
+          };
+        });
+        expect(r.n, `${p} controls`).toBeGreaterThanOrEqual(5);
+        expect(r.small, `${p} small controls`).toEqual([]);
+        expect(r.overlaps, `${p} overlapping hit boxes`).toEqual([]);
+        // nothing was enlarged on screen: the masthead row is still 52 px and the drawn pill 32 px
+        expect(r.masthead, `${p} masthead row`).toBeLessThanOrEqual(52);
+        expect(r.drawnPill, `${p} drawn pill`).toBe(32);
+      }
+      await ctx.close();
+    });
+  }
+
   test("320 px: the masthead passes axe on the map and Bloom", async ({ browser }) => {
     const ctx = await browser.newContext({ viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true });
     const page = await ctx.newPage();

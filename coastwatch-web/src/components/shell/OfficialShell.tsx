@@ -100,25 +100,26 @@ export function OfficialPill() {
       aria-haspopup="dialog"
       aria-expanded={open}
       onClick={(e) => openDrawer(e.currentTarget)}
-      className="flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-white/20 bg-white/[0.06] pl-3 pr-3 min-[360px]:pl-2.5 text-[13px] font-medium text-on-navy transition-colors hover:border-white/35 hover:bg-white/10 md:h-[34px] md:text-[14px]"
+      // the hit box is 44 px tall on every screen; the drawn pill (the ::before) stays 32 px (34 on desktops)
+      className="relative flex h-11 shrink-0 items-center gap-2 whitespace-nowrap pl-3 pr-3 min-[360px]:pl-2.5 text-[13px] font-medium text-on-navy before:absolute before:inset-x-0 before:inset-y-1.5 before:rounded-full before:border before:border-white/20 before:bg-white/[0.06] before:transition-colors before:content-[''] hover:before:border-white/35 hover:before:bg-white/10 md:text-[14px] md:before:inset-y-[5px]"
     >
       {/* below 360 px the masthead keeps the count and the verification word, not the icon */}
-      <Icon name="shield" className="h-4 w-4 text-official-on-navy max-[359px]:hidden" />
+      <Icon name="shield" className="relative h-4 w-4 text-official-on-navy max-[359px]:hidden" />
       {ds ? (
         <>
-          <b className="font-semibold text-white tabular">{records.length}</b>
+          <b className="relative font-semibold text-white tabular">{records.length}</b>
           {/* the words show only where the masthead has room; screen readers always hear them */}
-          <span className="hidden xl:inline">
+          <span className="relative hidden xl:inline">
             <span className="sr-only">agency </span>notice{records.length === 1 ? "" : "s"}
           </span>
           <span className="sr-only xl:hidden">agency notice{records.length === 1 ? "" : "s"}</span>
         </>
       ) : (
-        <span>Official notices</span>
+        <span className="relative">Official notices</span>
       )}
-      <span className="h-3.5 w-px bg-white/25" aria-hidden />
+      <span className="relative h-3.5 w-px bg-white/25" aria-hidden />
       {/* the words say whose check is missing: the agencies published the notices; Neritic's copy of them is unreviewed */}
-      <span className={verification && verification.state !== "verified" ? "text-on-navy-2" : ""}>{ds ? (verification && verification.state !== "verified" && verification.state !== "unavailable" ? <>Not verified<span className="max-2xl:hidden"> copy</span></> : verificationWord(verification)) : "Unavailable"}</span>
+      <span className={`relative ${verification && verification.state !== "verified" ? "text-on-navy-2" : ""}`}>{ds ? (verification && verification.state !== "verified" && verification.state !== "unavailable" ? <>Not verified<span className="max-2xl:hidden"> copy</span></> : verificationWord(verification)) : "Unavailable"}</span>
     </button>
   );
 }

@@ -40,7 +40,7 @@ export function MastheadMenu({ active }: { active: string }) {
         aria-label="Menu: About, data status and presentation"
         data-testid="masthead-menu"
         onClick={() => setOpen(!open)}
-        className="cw-press grid h-9 w-9 place-items-center rounded-full text-on-navy hover:bg-white/[0.08]"
+        className="cw-press -mr-1 grid h-11 w-11 place-items-center rounded-full text-on-navy hover:bg-white/[0.08]"
       >
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
           <circle cx="3.5" cy="9" r="1.6" fill="currentColor" />

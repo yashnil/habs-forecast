@@ -8,7 +8,12 @@ import { Icon } from "@/components/ui/Icon";
 import { CDFW_URL, CDPH_URL, useRegistryDisclosure } from "@/components/shell/OfficialShell";
 import { useMode } from "@/lib/mode";
 
-const link = "font-semibold text-white underline decoration-white/40 underline-offset-2 hover:decoration-white";
+// an inline link with a 44 px hit box: the box extends into the line's margins (negative vertical
+// margins), so the line keeps its height and the words keep their place
+// an inline link with a 44 px hit box: the box extends into the line's margins (negative vertical
+// margins, more below the words than above, so it stays clear of the masthead's own boxes), the
+// line keeps its height and the words keep their place
+const link = "-mx-1 -mb-[18px] -mt-2 inline-flex min-h-11 min-w-11 items-center justify-center px-1 align-middle font-semibold text-white underline decoration-white/40 underline-offset-2 hover:decoration-white";
 
 /**
  * The status line, inside the navy masthead (signature handoff #1): the unverified-notices
@@ -36,7 +41,7 @@ export function DataBanners({ manifest, error }: { manifest: Manifest | null; er
     return reg.pending ? (
       <div aria-hidden className="relative z-20 border-t border-white/[0.06] text-[13px] leading-snug" data-testid="status-line-pending">
         {/* the line's one-row height: its "More" button sets it */}
-        <div className="mx-auto flex min-h-[33.875px] max-w-[1600px] items-center px-4 py-1">
+        <div className="mx-auto flex min-h-[34px] max-w-[1600px] items-center px-4 py-1">
           <span className="invisible">Official notices</span>
         </div>
       </div>
@@ -48,7 +53,7 @@ export function DataBanners({ manifest, error }: { manifest: Manifest | null; er
 
   return (
     <div className="relative z-20 border-t border-white/[0.06] text-[13px] leading-snug text-on-navy" data-testid="status-line">
-      <div className="flex min-h-8 items-center gap-x-3 border-l-[3px] border-official-on-navy py-1 pl-[13px] pr-2 md:pl-[21px] md:pr-4">
+      <div className="flex min-h-[34px] items-center gap-x-3 border-l-[3px] border-official-on-navy py-1 pl-[13px] pr-2 md:pl-[21px] md:pr-4">
         <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-0.5 md:flex-nowrap">
           {unavailable && (
             <p role="alert" data-testid="data-unavailable" className="min-w-0 text-on-navy">
@@ -69,7 +74,7 @@ export function DataBanners({ manifest, error }: { manifest: Manifest | null; er
                 <b className="font-semibold text-official-on-navy">Official notices are not verified.</b> Check{" "}
                 <a href={CDFW_URL} target="_blank" rel="noopener noreferrer" className={link}>CDFW</a> and{" "}
                 <a href={CDPH_URL} target="_blank" rel="noopener noreferrer" className={link}>CDPH</a>.{" "}
-                <button type="button" onClick={(e) => reg.openDrawer(e.currentTarget)} className={link}>
+                <button type="button" onClick={(e) => reg.openDrawer(e.currentTarget)} className={`${link} ml-0.5`}>
                   See the list
                 </button>
               </span>
@@ -77,7 +82,7 @@ export function DataBanners({ manifest, error }: { manifest: Manifest | null; er
                 <b className="font-semibold text-official-on-navy">Official notices are not verified.</b> The list may be incomplete. Before harvesting or eating seafood, check{" "}
                 <a href={CDFW_URL} target="_blank" rel="noopener noreferrer" className={link}>CDFW</a> and{" "}
                 <a href={CDPH_URL} target="_blank" rel="noopener noreferrer" className={link}>CDPH</a>.{" "}
-                <button type="button" onClick={(e) => reg.openDrawer(e.currentTarget)} className={link}>
+                <button type="button" onClick={(e) => reg.openDrawer(e.currentTarget)} className={`${link} ml-0.5`}>
                   See the list
                 </button>
               </span>
@@ -104,7 +109,7 @@ export function DataBanners({ manifest, error }: { manifest: Manifest | null; er
             aria-controls={id}
             onClick={() => setOpen(!open)}
             data-testid="status-more"
-            className="cw-press ml-auto flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[13px] font-semibold text-on-navy hover:bg-white/[0.07]"
+            className="cw-press -mb-4 -mt-2 ml-auto flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-md px-1.5 text-[13px] font-semibold text-on-navy hover:bg-white/[0.07]"
           >
             {/* failed updates are counted in Research; Coastal keeps them under "More" (and on each layer) */}
             {failed.length > 0 && mode === "research" && (
