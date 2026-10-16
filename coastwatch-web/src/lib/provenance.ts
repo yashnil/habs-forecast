@@ -56,6 +56,17 @@ export function nearestLatLimit(official: GeoJSON.FeatureCollection | null | und
  * The overlay features: the target, the cell outline, one thread per source and a dot at each
  * thread's end, in the order the threads draw (model, then measured, then official).
  */
+/**
+ * The text anchor that puts a label on the side of `end` away from `from`: the label's edge named
+ * by the anchor sits at the point, so "right" runs the words west of it. Used for the distance
+ * labels at a thread's end, so they never cover the harbour's own name when the cell is close.
+ */
+export function anchorAwayFrom(from: [number, number], end: [number, number]): "left" | "right" | "top" | "bottom" {
+  const dx = (from[0] - end[0]) * Math.cos((from[1] * Math.PI) / 180);
+  const dy = from[1] - end[1];
+  return Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? "right" : "left") : dy > 0 ? "top" : "bottom";
+}
+
 export function provenanceFeatures(x: ProvenanceInput): GeoJSON.FeatureCollection {
   const t: [number, number] = [x.target.lon, x.target.lat];
   const f: GeoJSON.Feature[] = [{ type: "Feature", properties: { kind: "target" }, geometry: { type: "Point", coordinates: t } }];
@@ -68,7 +79,7 @@ export function provenanceFeatures(x: ProvenanceInput): GeoJSON.FeatureCollectio
     // the point's own cell needs no thread: the outline around the point is the connection
     if (!x.cell.own) {
       const km = distanceKm(x.target.lat, x.target.lon, x.cell.lat, x.cell.lon);
-      thread("cell", [x.cell.lon, x.cell.lat], { km: +km.toFixed(1), label: `${km < 10 ? km.toFixed(1) : Math.round(km)} km to the nearest model cell` });
+      thread("cell", [x.cell.lon, x.cell.lat], { km: +km.toFixed(1), label: `${km < 10 ? km.toFixed(1) : Math.round(km)} km to the nearest model cell`, anchor: anchorAwayFrom(t, [x.cell.lon, x.cell.lat]) });
     }
   }
   if (x.ring) f.push({ type: "Feature", properties: { kind: "ring" }, geometry: x.ring });
@@ -112,7 +123,8 @@ export function gapFeatures(target: { lat: number; lon: number }, gap: Gap): Geo
     const end: [number, number] = [+gap.nearest.lon.toFixed(5), +gap.nearest.lat.toFixed(5)];
     f.push({ type: "Feature", properties: { kind: "note", text: `${GAP_NOTE} · nearest cell ${km}`, km: +gap.nearestKm.toFixed(1) }, geometry: { type: "Point", coordinates: t } });
     f.push({ type: "Feature", properties: { kind: "thread", label: km }, geometry: { type: "LineString", coordinates: [t, end] } });
-    f.push({ type: "Feature", properties: { kind: "end", label: `${km} to the nearest modelled cell: ${Math.round(gap.nearest.value * 100)} %` }, geometry: { type: "Point", coordinates: end } });
+    // the end label sits on the side of the cell away from the harbour (Crescent City: 2.4 km)
+    f.push({ type: "Feature", properties: { kind: "end", anchor: anchorAwayFrom(t, end), label: `${km} to the nearest modelled cell: ${Math.round(gap.nearest.value * 100)} %` }, geometry: { type: "Point", coordinates: end } });
   } else {
     f.push({ type: "Feature", properties: { kind: "note", text: `${GAP_NOTE} · no modelled cell within 35 km` }, geometry: { type: "Point", coordinates: t } });
   }

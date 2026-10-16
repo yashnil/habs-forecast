@@ -21,6 +21,8 @@ describe("provenance threads", () => {
       ["station", [-122.02, 36.96]],
       ["limit", [-122, 36.5243]],
     ]);
+    // the distance label sits on the side of the cell away from the harbour (the harbour is south)
+    expect(fc.features.find((f) => f.properties!.kind === "end" && f.properties!.to === "cell")!.properties!.anchor).toBe("bottom");
     const target = fc.features.find((f) => f.properties!.kind === "target")!;
     expect((target.geometry as GeoJSON.Point).coordinates).toEqual([-122, 36.6]);
     // a station beyond 25 km is still threaded, marked as too far to describe these waters
@@ -38,6 +40,10 @@ describe("the harbour view (carto T3)", async () => {
 
   it("the gap note names the distance to the nearest modelled cell; the thread ends at that cell's centre", () => {
     const fc = gapFeatures({ lat: 36.605, lon: -121.89 }, { inDomain: true, here: false, nearestKm: 6.63, nearest: { lat: 36.63, lon: -121.95, value: 0.77, cell: { row: 1, col: 2, lat: 36.63, lon: -121.95 } } })!;
+    // the end label is anchored on the side away from the harbour: the harbour is east, so the
+    // text's right edge sits at the cell and the words run west
+    expect(fc.features.find((f) => f.properties!.kind === "end")!.properties!.anchor).toBe("right");
+    expect(gapFeatures({ lat: 36.6, lon: -121.9 }, { inDomain: true, here: false, nearestKm: 5, nearest: { lat: 36.55, lon: -121.9, value: 0.2, cell: { row: 0, col: 0, lat: 36.55, lon: -121.9 } } })!.features.find((f) => f.properties!.kind === "end")!.properties!.anchor).toBe("top");
     expect(kinds(fc)).toEqual(["note", "thread", "end"]);
     const note = fc.features[0];
     expect(note.properties!.text).toBe(`${GAP_NOTE} · nearest cell 6.6 km`);

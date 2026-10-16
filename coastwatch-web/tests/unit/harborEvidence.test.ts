@@ -182,10 +182,18 @@ describe("the briefing's claims", () => {
     const model = (pda: Neighbourhood, fresh: EvidenceInputs["model"] extends infer M ? (M extends { fresh: infer F } ? F : never) : never) => ({ days: [{ lead: 2, valid: "2026-10-13", pda, pn: null }], issued: "2026-10-12", fresh });
     const offshore = claim(brief({ model: model(nb({ n: 27, median: 0.74, min: 0.6, max: 0.79, nearest: { cell: { row: 0, col: 0, lat: 36.55, lon: -121.95 }, value: 0.7, km: 6.6 } }), { state: "stale", basisDate: "2026-10-12", ageDays: 1 }) }), "hab");
     expect(offshore.kind).toBe("gap");
-    expect(offshore.detail).toMatch(/no valid estimate for these nearshore waters/i);
-    expect(offshore.detail).toMatch(/offshore cells within 15 km read 60%–79% \(context only, not the harbour\)/);
-    expect(offshore.detail).toMatch(/run of Oct 12, 1 day old/);
-    expect(`${offshore.headline} ${offshore.detail}`).not.toMatch(/median|stale/);
+    // the HAB line says what the shore stations say; the model is its own line, said once
+    expect(offshore.detail).not.toMatch(/C-HARM|offshore cells/);
+    const offshoreModel = claim(brief({ model: model(nb({ n: 27, median: 0.74, min: 0.6, max: 0.79, nearest: { cell: { row: 0, col: 0, lat: 36.55, lon: -121.95 }, value: 0.7, km: 6.6 } }), { state: "stale", basisDate: "2026-10-12", ageDays: 1 }) }), "model");
+    expect(offshoreModel.kind).toBe("gap");
+    expect(offshoreModel.headline).toMatch(/no valid NOAA model estimate for these nearshore waters/i);
+    expect(offshoreModel.detail).toMatch(/27 offshore cells within 15 km read 60%–79% for Oct 13, context for the open water, not the harbour/);
+    expect(`${offshoreModel.headline} ${offshoreModel.detail}`).not.toMatch(/median|stale/);
+    const page = pageClaims(harborEvidence(brief({ model: model(nb({ n: 27, median: 0.74, min: 0.6, max: 0.79, nearest: { cell: { row: 0, col: 0, lat: 36.55, lon: -121.95 }, value: 0.7, km: 6.6 } }), { state: "stale", basisDate: "2026-10-12", ageDays: 1 }) })));
+    expect(page.map((c) => c.id)).toEqual(expect.arrayContaining(["hab", "model"]));
+    // no fact is said twice across the page's lines
+    const sentences = page.flatMap((c) => `${c.headline}. ${c.detail ?? ""}`.split(/(?<=[.;])\s+/).map((x) => x.trim().toLowerCase()).filter((x) => x.split(" ").length >= 5));
+    expect(new Set(sentences).size).toBe(sentences.length);
     const own = claim(brief({ model: model(nb({ here: 0.31, n: 5, median: 0.3 }), { state: "current", basisDate: "2026-10-12", ageDays: 1 }) }), "hab");
     expect(own.kind).toBe("model");
     expect(own.headline).toMatch(/31%/);
@@ -199,7 +207,9 @@ describe("the briefing's claims", () => {
 
   it("a day beyond the model says the model does not reach it", () => {
     const hab = claim(brief({ tripDate: "2026-10-16", modelBeyond: true, model: { days: [{ lead: 3, valid: "2026-10-14", pda: nb({ n: 3, median: 0.5 }), pn: null }], issued: "2026-10-11", fresh: null } }), "hab");
-    expect(hab.detail).toMatch(/does not reach this day/);
+    // the HAB gap line leaves the model to the model line, which the page keeps beside it
+    expect(hab.kind).toBe("gap");
+    expect(hab.detail).not.toMatch(/model/);
     const model = claim(brief({ tripDate: "2026-10-16", modelBeyond: true, model: { days: [{ lead: 3, valid: "2026-10-14", pda: nb({ n: 3, median: 0.5 }), pn: null }], issued: "2026-10-11", fresh: null } }), "model");
     expect(model.headline).toBe("NOAA's model does not reach Oct 16");
     expect(model.detail).toBe("Its newest run ends Oct 14.");
@@ -244,6 +254,9 @@ describe("the briefing's claims", () => {
     // shellfish harvest leads with the lowest tide
     const shell = harborEvidence(brief({ conditions: cond([], false), audience: "shellfish" })).claims.find((x) => x.id === "conditions")!;
     expect(shell.detail).toMatch(/^Lowest tide 2\.2 ft at 4:51 AM/);
+    // tides alone (no harbour thermometer, no buoy: Shelter Cove) still read as a sentence
+    const tidesOnly = harborEvidence(brief({ conditions: { ...cond([], false), buoy: { status: "none", source: "NDBC", url: null, fetchedAt: "2026-10-13T20:00:00Z" } as unknown as Conditions["buoy"] } })).claims.find((x) => x.id === "conditions")!;
+    expect(tidesOnly.detail).toMatch(/^Tides low 2\.2 ft, high 5\.8 ft\. Wind and seas/);
   });
 
   it("topic words read inside a sentence", () => {

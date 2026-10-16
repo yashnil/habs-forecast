@@ -42,7 +42,7 @@ export function MapSheet({ open, onOpen, onClose, label, summary, children }: { 
                 {summary && <span className="block truncate text-[13px] text-ink-3">{summary}</span>}
               </span>
             </span>
-            <span aria-hidden className="text-[13px] font-medium text-ink-3">Open ▴</span>
+            <span aria-hidden className="shrink-0 whitespace-nowrap text-[13px] font-medium text-ink-3">Open ▴</span>
           </button>
         </div>
       )}

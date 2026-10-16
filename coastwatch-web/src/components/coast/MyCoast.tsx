@@ -502,6 +502,8 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     [place, now && today, tripDate, viewMode, outDay?.valid, hab, stationsError, outlook, runLayer?.time.issued_date, runFresh?.state, runFresh?.ageDays, modelBeyond, satNow, cond.data, assocs, verification?.state, audience, species, status.map((x) => x.id).join()],
   );
   const matters = useMemo(() => (graph ? pageClaims(graph) : []), [graph]);
+  // the HAB detail's summary paragraph: the graph's sentences for the HAB, model and satellite lines
+  const habSummary = useMemo(() => (graph ? matters.filter((c) => c.id === "hab" || c.id === "model" || c.id === "satellite").map((c) => c.text) : null), [graph, matters]);
   const habClaim = graph?.claims.find((c) => c.id === "hab") ?? null;
   const modelClaim = graph?.claims.find((c) => c.id === "model") ?? null;
   const answer: AnswerClause[] | null =
@@ -608,6 +610,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
     const evidenceDetail = (
       <HabBriefing
         modelStale={modelStale}
+        summary={habSummary}
         manifest={manifest}
         placeName={place.name}
         stations={stations}
@@ -773,6 +776,7 @@ export function MyCoast({ manifest, ports, official, stations, stationsError, ba
           <HabBriefing
             // Research mode renders the full model section below, which carries the run's note: said once
             modelStale={null}
+            summary={habSummary}
             manifest={manifest}
             placeName={place.name}
             stations={stations}

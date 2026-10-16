@@ -516,7 +516,7 @@ export default function MapCanvas(p: Props) {
             type="symbol"
             minzoom={9}
             filter={["all", ["==", ["get", "kind"], "end"], ["==", ["get", "to"], "cell"], ["has", "label"]]}
-            layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11.5, "text-anchor": "bottom", "text-offset": [0, -0.9], "text-allow-overlap": true, "text-ignore-placement": true }}
+            layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11.5, "text-anchor": ["get", "anchor"], "text-radial-offset": 0.8, "text-justify": "auto", "text-max-width": 12, "text-allow-overlap": true, "text-ignore-placement": true }}
             paint={{ "text-color": "#e8e4ff", "text-halo-color": "#06111e", "text-halo-width": 1.4, "text-halo-blur": 0.4 }}
           />
           {/* the model's neighbourhood: the cells within it are what the briefing summarises */}
@@ -627,7 +627,8 @@ export default function MapCanvas(p: Props) {
             type="symbol"
             minzoom={10.5}
             filter={["==", ["get", "kind"], "end"]}
-            layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11.5, "text-variable-anchor": ["bottom", "top", "left", "right"], "text-radial-offset": 0.8, "text-justify": "auto", "text-max-width": 12, "text-allow-overlap": true }}
+            // anchored on the side away from the harbour (lib/provenance gapFeatures), clear of its name
+            layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11.5, "text-anchor": ["get", "anchor"], "text-radial-offset": 0.8, "text-justify": "auto", "text-max-width": 12, "text-allow-overlap": true }}
             paint={{ "text-color": "#e8e4ff", "text-halo-color": "#06111e", "text-halo-width": 1.4, "text-halo-blur": 0.4 }}
           />
           {/* the note is the top symbol layer, so it is placed first and always shown; it does not

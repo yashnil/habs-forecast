@@ -403,8 +403,10 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         kind: "gap",
         tone: "gap",
         headline: `No recent HAB sample within ${EVIDENCE_RADIUS_KM} km`,
-        detail: `${c ? `The nearest station, ${c.station.name} (${km(c.km)} km), last reported ${ageWords(c.ageDays)}. ` : ""}${modelLine ? `${cap(modelLine)}. ` : ""}No sample is not a clean result.`,
-        focus: nb && nb.n > 0 ? "model" : null,
+        // the model is the next line's own claim (pageClaims keeps it when the HAB line is a gap), so
+        // this line says only what the shore stations say: nothing is said twice
+        detail: `${c ? `The nearest station, ${c.station.name} (${km(c.km)} km), last reported ${ageWords(c.ageDays)}. ` : `No shore station within ${EVIDENCE_RADIUS_KM} km samples bloom algae or toxin. `}No sample is not a clean result.`,
+        focus: null,
         text: `No shore station within ${EVIDENCE_RADIUS_KM} km of ${P.name} has a bloom or toxin sample from the last ${RECENT_DAYS} days${c ? `; the nearest, ${c.station.name} (${km(c.km)} km), last reported ${ageWords(c.ageDays)}` : ""}. No sample is not a clean result.`,
         supports: [],
       });
@@ -599,7 +601,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         kind: "conditions",
         tone: advisory ? "alert" : "note",
         headline: advisory ? `${advisory.event} · ${head}` : head,
-        detail: [rest.length ? `${rest.join(" · ")}.` : "", nws ? (advisory ? `NWS: “${advisory.headline}”.` : "Wind and seas, not a HAB or fishing forecast.") : "Marine forecast and warnings: read NWS for your zone."].filter(Boolean).join(" "),
+        detail: [rest.length ? `${cap(rest.join(" · "))}.` : "", nws ? (advisory ? `NWS: “${advisory.headline}”.` : "Wind and seas, not a HAB or fishing forecast.") : "Marine forecast and warnings: read NWS for your zone."].filter(Boolean).join(" "),
         source: source ?? (marine ? { label: "NWS marine forecast", url: marine } : undefined),
         focus: "conditions",
         text: `${advisory ? `${advisory.event}. ` : ""}${[nws, ...parts].filter(Boolean).join(". ")}. Wind, seas and tides, not a HAB or fishing forecast.`,

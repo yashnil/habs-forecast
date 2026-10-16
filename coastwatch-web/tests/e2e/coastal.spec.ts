@@ -148,7 +148,8 @@ test.describe("Coastal mode", () => {
     await later.click();
     await expect(page).toHaveURL(new RegExp(`date=${date}`));
     await expect(page.getByTestId("ev-trip")).toBeVisible();
-    if (tidesOnly) await expect(page.getByTestId("matter-hab")).toContainText("does not reach this day");
+    // the model's own line says so; the HAB line keeps to the shore stations
+    if (tidesOnly) await expect(page.getByTestId("matter-model")).toContainText("does not reach");
     // Escape closes a picker and gives focus back
     await page.getByTestId("trip-activity").click();
     await expect(page.getByTestId("trip-sheet-activity")).toBeVisible();

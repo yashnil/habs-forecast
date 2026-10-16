@@ -9,7 +9,7 @@ import { OK } from "./ports";
 const NOW = "2026-10-13T06:00:00Z";
 const PLACES = ["port-550", "port-593", "port-201", "port-215"];
 
-type Claim = { id: string; kind: string; headline: string; supports: string[] };
+type Claim = { id: string; kind: string; headline: string; text: string; supports: string[] };
 type Node = { id: string; text: string; where: { km: number } };
 type Graph = { claims: Claim[]; nodes: Node[]; gaps: { id: string }[] };
 
@@ -43,6 +43,12 @@ for (const place of PLACES) {
       expect(n, `API has node ${r.id}`).toBeDefined();
       expect(r.text).toBe(n!.text);
     }
+    // the HAB detail's summary paragraph (behind "More detail") is the graph's own sentences for the
+    // HAB, model and satellite lines, folded as the page folds them: no second wording anywhere
+    await page.getByTestId("coast-details").locator("summary").click();
+    const hab = api.claims.find((c) => c.id === "hab");
+    const folded = api.claims.filter((c) => (c.id === "hab" || c.id === "model" || c.id === "satellite") && !(c.id === "model" && hab && (hab.kind === "measured" || hab.kind === "model")));
+    await expect(page.getByTestId("hab-summary")).toHaveText(folded.map((c) => c.text).join(" "));
     // the map's thread to the nearest model cell carries the same distance the graph's node does
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect(page.getByTestId("coast-map-desktop")).toBeVisible();

@@ -298,6 +298,7 @@ export function HabBriefing({
   pick,
   onPick,
   modelStale = null,
+  summary,
 }: {
   /** the newest C-HARM run is stale or historical by its own policy */
   modelStale?: { state: "stale" | "historical"; issued: string | null; ageDays: number } | null;
@@ -318,51 +319,15 @@ export function HabBriefing({
   lon: number;
   /** shown between the summary and the evidence cards (the phone's map) */
   between?: React.ReactNode;
+  /** the summary paragraph: the evidence graph's own sentences (lib/harborEvidence claim.text), never
+   *  words built here, so this section can never contradict the briefing's lines or the API */
+  summary: string[] | null;
 }) {
   const ev = useHabEvidence(stations, lat, lon, now);
   const days = outlook && outlook !== "error" ? outlook : [];
   const day = days.find((d) => d.lead === lead) ?? days[0] ?? null;
-  const tox = day?.pda ?? null;
   const thrPda = charmLayer(manifest, "particulate_domoic", lead)?.threshold_text ?? null;
   const thrPn = charmLayer(manifest, "pseudo_nitzschia", lead)?.threshold_text ?? null;
-  const forDay = day?.valid ? `for ${formatDate(day.valid)}` : "";
-
-  // the summary: facts only, in the order a reader needs them
-  const summary: string[] = [];
-  if (ev) {
-    const c = ev.cells;
-    const t = ev.toxin;
-    const recentC = c && c.near && c.ageDays <= RECENT_DAYS;
-    const recentT = t && t.near && t.ageDays <= RECENT_DAYS;
-    if (recentC) {
-      const v = c!.values.reduce((a, x) => a + x.value, 0);
-      summary.push(v > 0 ? `Pseudo-nitzschia, the algae that can produce domoic acid, was counted at ${c!.station.name} ${ageWords(c!.ageDays)} (${fmtMeasured("pn_seriata", v)}).` : `No Pseudo-nitzschia was counted at ${c!.station.name} ${ageWords(c!.ageDays)}.`);
-    }
-    if (recentT) {
-      const v = t!.values[0].value;
-      summary.push(v > 0 ? `Domoic acid was measured in seawater at ${t!.station.name} ${recentC && t!.station.station_id === c!.station.station_id ? "in that sample" : ageWords(t!.ageDays)}: ${fmtMeasured("pDA", v)}.` : `No domoic acid was quantified in seawater at ${t!.station.name} ${ageWords(t!.ageDays)}.`);
-    }
-    // the nearest station, when the evidence above came from farther away: its own last sample, with its age
-    const used = [recentC ? c : null, recentT ? t : null].filter(Boolean).map((e) => e!.station.station_id);
-    if (used.length && ev.nearest && !used.includes(ev.nearest.station.station_id) && ev.nearest.km < Math.min(...[c, t].filter(Boolean).map((e) => e!.km)))
-      summary.push(`The nearest station, ${ev.nearest.station.name} (${ev.nearest.km < 10 ? ev.nearest.km.toFixed(1) : Math.round(ev.nearest.km)} km), last reported Pseudo-nitzschia or toxin ${ageWords(ev.nearest.ageDays)}.`);
-    if (!recentC && !recentT) {
-      const older = [c, t].filter(Boolean).sort((a, b) => a!.km - b!.km)[0];
-      const nearOld = [c, t].filter((e) => e && e.near).sort((a, b) => a!.ageDays - b!.ageDays)[0];
-      summary.push(
-        nearOld
-          ? `No shore station within ${EVIDENCE_RADIUS_KM} km has sampled in the last ${RECENT_DAYS} days; the latest sample nearby was ${ageWords(nearOld.ageDays)}, at ${nearOld.station.name} (${Math.round(nearOld.km)} km).`
-          : older
-            ? `No shore station within ${EVIDENCE_RADIUS_KM} km measures bloom algae or toxin; the nearest that does, ${older.station.name}, is ${Math.round(older.km)} km away, too far to describe these waters.`
-            : "No shore station measures bloom algae or toxin near these waters.",
-      );
-    }
-  }
-  if (tox?.here != null) summary.push(`NOAA's model gives these waters' 3 km cell a ${fmtPct(tox.here)} chance that particulate domoic acid exceeds its threshold ${forDay}.`);
-  else if (tox && tox.n > 0) summary.push(`NOAA's model has no value for these nearshore waters; its ${tox.n} offshore cells within ${NEIGHBOURHOOD_KM} km have a median ${fmtPct(tox.median)} chance that particulate domoic acid exceeds its threshold ${forDay}.`);
-  else if (tox?.nearest) summary.push(`These waters are outside NOAA's model: it has no cells within ${NEIGHBOURHOOD_KM} km. Its nearest cell, ${tox.nearest.km.toFixed(0)} km away, has ${fmtPct(tox.nearest.value)}; that describes that cell, not these waters.`);
-  else if (tox) summary.push("These waters are outside NOAA's model: it has no cell within 80 km.");
-
   const hist = port?.charm?.history?.[pick === "pda" ? "particulate_domoic" : "pseudo_nitzschia"] ?? null;
   const satOn = focus === "satellite";
   const modelOn = focus === "model";
@@ -377,7 +342,7 @@ export function HabBriefing({
           Bloom and toxin evidence near {placeName}
         </h2>
         <p className="mt-2 max-w-[64ch] text-[16px] leading-relaxed text-ink-2" data-testid="hab-summary" aria-live="polite">
-          {ev ? summary.join(" ") : "Reading the measurements, the model and the satellite…"}
+          {summary ? summary.join(" ") : "Reading the measurements, the model and the satellite…"}
         </p>
       </div>
       {between}
