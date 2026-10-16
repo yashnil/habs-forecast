@@ -82,11 +82,32 @@
   <h1>Neritic v2 Review</h1>
   <span class="meta">Coastal intelligence v2 · pass one · 15 October 2026 · draft PR #65, private</span>
   <nav class="index" aria-label="Sections">
-    <a href="#works">What works now</a><a href="#trust">Trust fixes</a><a href="#evidence">Harbour evidence</a><a href="#water">In-harbour water</a><a href="#sources">Sources</a><a href="#carto">Cartography</a><a href="#logo">Logo</a><a href="#research">Unvalidated</a><a href="#tests">Tests</a><a href="#next">Next</a>
+    <a href="#pass2">Pass two</a><a href="#works">Pass one</a><a href="#trust">Trust fixes</a><a href="#evidence">Harbour evidence</a><a href="#water">In-harbour water</a><a href="#sources">Sources</a><a href="#carto">Cartography</a><a href="#logo">Logo</a><a href="#research">Unvalidated</a><a href="#tests">Tests</a><a href="#next">Next</a>
   </nav>
 </header>
 
 <main>
+<section id="pass2">
+  <h2><small>Pass two · 15 October</small>Connected evidence, the phone redesign, corrected harbour data</h2>
+  <p class="lede">After the pass-one audit the brief was to make the existing work useful rather than add more: one evidence backbone that the page actually consumes, the real mobile layout, honest harbour thermometers, and the harbour-scale map elements, each measured.</p>
+  <div class="cards">
+    <div class="card"><h3><span class="pill ok">one backbone</span></h3><p>Every briefing line, the answer line, the evidence rows, the map's thread and <code>/api/evidence</code> come from <code>lib/harborEvidence</code>; the duplicate claim logic is deleted. A Playwright spec proves the page and the API cannot disagree, and it caught one real contradiction (the satellite water mask) while being written.</p></div>
+    <div class="card"><h3><span class="pill ok">phone</span></h3><p>Monterey: 7.4 → 4.9 screens, 1,300 → 810 words, 3 → 0 repeated sentences, controls under 44 px 31 → 8 (all in the shared masthead), body text 13 → 14 px with 17 px claims, no button over content. The first conclusion is on the first screen with no tap.</p></div>
+    <div class="card"><h3><span class="pill ok">harbour data</span></h3><p>CO-OPS flags decoded (X/N/R), sensor elevations recorded, the 6 km same-water rule with no second-station fallback; San Francisco's sensor is NOAA-flagged "suspect" and now says "sensor not reporting" instead of borrowing Alameda's water.</p></div>
+    <div class="card"><h3><span class="pill model">map</span></h3><p>At harbour zoom: the gap note with the distance to the nearest valued cell, shore stations with their last sample date, limit lines clipped to the sea, chips that never truncate, resolution in every readout.</p></div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/pass2-before-390.jpg" alt="Before: the Monterey phone briefing's first screen, with a floating Map button over the text" width="390" height="844" /><figcaption><b>Before, first screen.</b> The floating "Map" pill sits over the briefing; the first line is a value without its distance.</figcaption></figure>
+    <figure><img src="img/pass2-after-390.jpg" alt="After: the Monterey phone briefing's first screen, with the trip bar, Right now at Monterey and two claims, and a docked Map bar above the tab bar" width="390" height="844" /><figcaption><b>After, first screen.</b> Trip bar, "Right now at Monterey", the first two claims with their sources, and a docked map bar that covers nothing.</figcaption></figure>
+  </div>
+  <div class="pair">
+    <figure><img src="img/pass2-before-390-full.jpg" alt="Before: the whole Monterey phone page, 6,282 pixels tall" width="390" height="6282" /><figcaption><b>Before, whole page.</b> 6,282 px, 7.4 screens, 1,300 words.</figcaption></figure>
+    <figure><img src="img/pass2-after-390-full.jpg" alt="After: the whole Monterey phone page, 4,097 pixels tall" width="390" height="4097" /><figcaption><b>After, whole page.</b> 4,097 px, 4.9 screens, 810 words: right now, the evidence (gaps first, readings behind one disclosure, the timeline), before you leave, one disclosure for everything else.</figcaption></figure>
+  </div>
+  <figure><img src="img/pass2-after-1440.jpg" alt="After: the Monterey desktop layout, the briefing column beside the sticky map" width="1440" height="900" /><figcaption><b>Desktop, after.</b> The same page beside the sticky map.</figcaption></figure>
+  <p>The full measurement table for five harbours, the section heights and the limits are in <a href="https://github.com/yashnil/habs-forecast/blob/feat/coastal-intelligence-v2/docs/coastwatch/v2/04-pass-two.md">04-pass-two.md</a>; the CO-OPS audit in <a href="https://github.com/yashnil/habs-forecast/blob/feat/coastal-intelligence-v2/docs/coastwatch/v2/03-coops-audit.md">03-coops-audit.md</a>.</p>
+</section>
+
 <section id="works">
   <h2><small>Summary</small>What concretely works now</h2>
   <p class="lede">Nothing here is merged or deployed. Everything below runs on the 15 October production data in a private build of the branch <code>feat/coastal-intelligence-v2</code>, stacked on the design study (#63) and the Neritic name (#62).</p>
