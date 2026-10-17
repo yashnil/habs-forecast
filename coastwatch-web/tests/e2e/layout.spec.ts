@@ -101,3 +101,13 @@ test("reduced motion: nothing animates on load or on selecting", async ({ browse
   expect(running).toBe(0);
   await ctx.close();
 });
+
+test("the briefing and Research arrive in the first HTML, not in a streamed boundary revealed later", async ({ request }) => {
+  // A Suspense boundary around a page's content is streamed hidden and revealed by React in ~300 ms
+  // batches: the reader saw an empty page for that long (first paint ~60 ms, first content ~390 ms).
+  for (const [path, text] of [["/coast?place=port-550", "Monterey"], ["/research?place=port-550", "Research"]] as const) {
+    const html = await (await request.get(`${OK}${path}`)).text();
+    expect(html, `${path}: no hidden streamed boundary`).not.toMatch(/<div hidden id="S:/);
+    expect(html.replace(/<script[\s\S]*?<\/script>/g, ""), `${path}: content in the first HTML`).toContain(text);
+  }
+});
