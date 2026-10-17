@@ -56,14 +56,14 @@ export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null): { titl
     return {
       title: "HF radar: hourly observations",
       current: c.mean ? "mean" : (c.hour ?? hours[hours.length - 1]?.layer_id.split("_").pop() ?? ""),
-      latest: { kind: "currents", hour: null, mean: false },
+      latest: { ...c, hour: null, mean: false },
       steps: [
         ...hours.map((h) => {
           const id = h.layer_id.split("_").pop()!;
           const t = h.time.valid_time ?? "";
-          return { key: id, label: t ? clockLabel(t).replace(/^\w+ \d+, /, "") : id, sub: t ? dayLabel(t) : "", choice: { kind: "currents", hour: id, mean: false } as LayerChoice };
+          return { key: id, label: t ? clockLabel(t).replace(/^\w+ \d+, /, "") : id, sub: t ? dayLabel(t) : "", choice: { ...c, hour: id, mean: false } as LayerChoice };
         }),
-        ...(mean ? [{ key: "mean", label: "24 h mean", sub: "averaged", choice: { kind: "currents", hour: null, mean: true } as LayerChoice }] : []),
+        ...(mean ? [{ key: "mean", label: "24 h mean", sub: "averaged", choice: { ...c, hour: null, mean: true } as LayerChoice }] : []),
       ],
     };
   }

@@ -20,9 +20,17 @@ test("every page has the notices control with the count and the unverified state
     await page.goto(`${OK}${p}`);
     const b = page.getByTestId("notices-button");
     await expect(b, p).toHaveAttribute("data-state", "unverified");
-    await expect(b.locator(".nx-data"), p).toHaveText(String(active.length));
     await b.click();
-    await expect(page.getByTestId("notices-current").locator(":scope > li"), p).toHaveCount(active.length);
+    const panel = page.getByTestId("notices-panel");
+    if (await page.getByTestId("notices-here").count()) {
+      // a place is open: its own notices lead, the rest follow; together, every active notice once
+      const here = Number(await page.getByTestId("notices-count").innerText());
+      await expect(panel.getByTestId("notices-local"), p).toContainText(`· ${here}`);
+      await expect(panel.locator('li[data-testid^="notice-"]:not([data-disputed])'), p).toHaveCount(active.length);
+    } else {
+      await expect(page.getByTestId("notices-count"), p).toHaveText(String(active.length));
+      await expect(page.getByTestId("notices-current").locator(":scope > li"), p).toHaveCount(active.length);
+    }
     await page.keyboard.press("Escape");
   }
 });

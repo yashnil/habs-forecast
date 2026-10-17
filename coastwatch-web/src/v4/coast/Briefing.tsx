@@ -8,7 +8,7 @@ import type { Manifest, PortsCollection } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 import type { PortIntelCollection } from "@/generated/port_intel";
 import type { StationLite } from "@/lib/data";
-import { AUDIENCES, coastHref, parseAudience, portPlaces, resolvePlace, sitePlaces, type Audience, type CoastPlace } from "@/lib/coast";
+import { AUDIENCES, coastHref, parseAudience, pointKey, portPlaces, resolvePlace, sitePlaces, type Audience, type CoastPlace } from "@/lib/coast";
 import { SPECIES, speciesById, type SpeciesId } from "@/content/species";
 import { defaultAudience, usePurpose } from "@/lib/purpose";
 import { useNow } from "@/lib/useNow";
@@ -17,8 +17,9 @@ import type { EvidenceGraph, EvidenceNode } from "@/lib/harborEvidence";
 import { encodeSelection, type Selection } from "@/v4/state/selection";
 import { useReportSource } from "@/v4/readiness/store";
 import { TopBar, NavTabs } from "@/v4/shell/TopBar";
-import { NoticesButton } from "@/v4/shell/Notices";
+import { NoticesButton, type LocalNotices } from "@/v4/shell/Notices";
 import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { checklistKey } from "@/lib/trip";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { distanceKm } from "@/lib/grid";
 import type { Step } from "@/lib/nextSteps";
@@ -162,13 +163,23 @@ export function Briefing(props: Props) {
   const species = speciesById(sp.get("species"));
   const place = useMemo(() => resolvePlace(placeKey, ports), [placeKey, ports]);
   const b = useBriefing({ ...props, place, audience, species, dateParam: sp.get("date"), now });
-  const [home, setHome] = useState<string | null>(null);
+  const [home, setHomeState] = useState<string | null>(null);
   useEffect(() => {
     try {
-      setHome(window.localStorage.getItem(HOME_KEY));
+      setHomeState(window.localStorage.getItem(HOME_KEY));
     } catch {
-      setHome(null);
+      setHomeState(null);
     }
+  }, []);
+  // the home port is remembered on this device only, and never assumed to be where anyone fishes
+  const setHome = useCallback((key: string | null) => {
+    try {
+      if (key) window.localStorage.setItem(HOME_KEY, key);
+      else window.localStorage.removeItem(HOME_KEY);
+    } catch {
+      // not remembered on this device
+    }
+    setHomeState(key);
   }, []);
   const go = useCallback(
     (next: { place?: string | null; for?: Audience; species?: SpeciesId; date?: string | null }) => {
@@ -191,6 +202,38 @@ export function Briefing(props: Props) {
   useReportSource(place ? { id: "conditions", label: "Harbour conditions", state: b.cond.loading ? "loading" : b.cond.error ? "unavailable" : b.cond.data ? "ready" : "waiting", detail: b.cond.error ?? "NOAA CO-OPS, NDBC and NWS, read live" } : null);
 
   const all = useMemo(() => [...portPlaces(ports), ...sitePlaces()], [ports]);
+  // the reader's own ticks on "Before you go", per place, trip and day, on this device only
+  const tickKey = place ? checklistKey(place.key, audience, species.id, sp.get("date")) : null;
+  const [ticks, setTicks] = useState<{ k: string | null; ids: string[] }>({ k: null, ids: [] });
+  useEffect(() => {
+    if (!tickKey) return;
+    try {
+      setTicks({ k: tickKey, ids: JSON.parse(window.localStorage.getItem(tickKey) ?? "[]") as string[] });
+    } catch {
+      setTicks({ k: tickKey, ids: [] });
+    }
+  }, [tickKey]);
+  const ticked = useMemo(() => (ticks.k === tickKey ? ticks.ids : []), [ticks, tickKey]);
+  const toggleTick = useCallback(
+    (id: string) => {
+      if (!tickKey) return;
+      const ids = ticked.includes(id) ? ticked.filter((x) => x !== id) : [...ticked, id];
+      setTicks({ k: tickKey, ids });
+      try {
+        window.localStorage.setItem(tickKey, JSON.stringify(ids));
+      } catch {
+        // not remembered
+      }
+    },
+    [tickKey, ticked],
+  );
+  // the notices control leads with this place's own notices (official geography; unsettled apart)
+  const localNotices = useMemo<LocalNotices | null>(
+    () => (place ? { name: place.name, covering: b.assocs.filter((a) => a.tier === "geographic" && !a.dispute).map((a) => a.record.id), unsettled: b.assocs.filter((a) => a.tier === "unresolved" && !a.dispute).map((a) => a.record.id) } : null),
+    [place, b.assocs],
+  );
+  // another place keeps the trip (activity, species) and is a new entry in the history
+  const goPlace = useCallback((key: string) => router.push(coastHref({ place: key, for: audience, species: species.id }), { scroll: false }), [router, audience, species.id]);
   // the statements appear together once the model and the harbour conditions have answered (or 6 s
   // have passed), so the answer does not reshuffle as each source arrives
   const settledNow = b.outlook !== null && !b.cond.loading;
@@ -270,7 +313,7 @@ export function Briefing(props: Props) {
   return (
     <div className="env-chart relative min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="trip">
       <SkipLink />
-      <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} />} />
+      <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} local={localNotices} />} />
       <RegistryDisclosure className="mx-auto w-full max-w-[1240px] px-4 sm:px-6" fixture={isFixture(props.manifest)} />
       {!off.online && (
         <div className="px-3 pt-3">
@@ -301,6 +344,7 @@ export function Briefing(props: Props) {
               </div>
               <CopyLink />
             </div>
+            <PlaceBar place={place} ports={ports} home={home} onHome={setHome} onPlace={goPlace} />
             <TripSummary audience={audience} species={species.label} day={b.tripDay ? `${b.tripDay.label}, ${b.tripDay.day}` : "Today"} open={tripOpen} onToggle={() => setTripOpen((o) => !o)} />
             <div className={`flex-col gap-2 sm:flex sm:flex-row ${tripOpen ? "flex" : "hidden"}`} data-testid="trip-controls">
               <Select id="trip-activity" label="Activity" value={audience} onChange={(v) => go({ for: v as Audience, species: v === "all" || species.activities.includes(v as never) ? species.id : "any" })} options={activityOptions} />
@@ -335,9 +379,15 @@ export function Briefing(props: Props) {
 
           {/* what to do comes right after what matters and what changed; the evidence follows (v2 order) */}
           <Section id="checks" title="Before you go" kicker={`For ${species.id === "any" ? (audience === "all" ? "any activity" : AUDIENCES.find((a) => a.id === audience)?.label.toLowerCase()) : species.label.toLowerCase()} at ${place.name}${b.tripDay ? `, ${b.tripDay.label.toLowerCase() === "today" ? "today" : `${b.tripDay.label} ${b.tripDay.day}`}` : ""}.`}>
+            <p className="text-[13.5px] text-n-ink-2" data-testid="checks-progress">
+              <span className="font-semibold text-n-ink">
+                {b.checks.shown.filter((x) => ticked.includes(x.id)).length} of {b.checks.shown.length} ticked by you
+              </span>{" "}
+              · your own notes, kept on this device. A tick is not a check by Neritic or by any agency.
+            </p>
             <ol className="flex flex-col gap-3" data-testid="checks">
               {b.checks.shown.map((s, i) => (
-                <CheckItem key={s.id} s={s} n={i + 1} />
+                <CheckItem key={s.id} s={s} n={i + 1} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
               ))}
             </ol>
             {/* at most five checks up front; the rest stay one tap away, never dropped */}
@@ -348,7 +398,7 @@ export function Briefing(props: Props) {
                 </summary>
                 <ol className="mt-2 flex flex-col gap-3">
                   {b.checks.more.map((s, i) => (
-                    <CheckItem key={s.id} s={s} n={b.checks.shown.length + i + 1} />
+                    <CheckItem key={s.id} s={s} n={b.checks.shown.length + i + 1} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
                   ))}
                 </ol>
               </details>
@@ -427,7 +477,7 @@ export function Briefing(props: Props) {
         </main>
 
         <aside aria-label={`Map of ${place.name}`} className="lg:sticky lg:top-4 lg:self-start" data-testid="locator">
-          <Locator place={place} g={g} ports={ports} official={official} stations={stations} back={back} basemapPmtiles={!off.online && off.record?.complete ? `/offline/${pack.id}/basemap.pmtiles` : null} />
+          <Locator place={place} g={g} ports={ports} official={official} stations={stations} back={back} onPlace={goPlace} basemapPmtiles={!off.online && off.record?.complete ? `/offline/${pack.id}/basemap.pmtiles` : null} />
         </aside>
       </div>
       <MobileDock />
@@ -437,7 +487,7 @@ export function Briefing(props: Props) {
 
 /** A small map that says where the evidence is; the full spatial view is Explore. */
 /** `basemapPmtiles`: offline with a saved field pack, the locator draws the pack's own map, not the tile server's. */
-function Locator({ place, g, ports, official, stations, back, basemapPmtiles = null }: { place: CoastPlace; g: EvidenceGraph | null; ports: PortsCollection | null; official: OfficialDataset | null; stations: StationLite[] | null; back: string; basemapPmtiles?: string | null }) {
+function Locator({ place, g, ports, official, stations, back, onPlace, basemapPmtiles = null }: { place: CoastPlace; g: EvidenceGraph | null; ports: PortsCollection | null; official: OfficialDataset | null; stations: StationLite[] | null; back: string; onPlace: (key: string) => void; basemapPmtiles?: string | null }) {
   const feats = useMemo<GeoJSON.FeatureCollection>(() => {
     const out: GeoJSON.Feature[] = [{ type: "Feature", geometry: { type: "Point", coordinates: [place.lon, place.lat] }, properties: { kind: place.kind === "port" ? "harbor" : "point", label: place.name } }];
     for (const n of g?.nodes ?? []) {
@@ -503,13 +553,16 @@ function Locator({ place, g, ports, official, stations, back, basemapPmtiles = n
           highlight={feats}
           initialBounds={bounds}
           initialPadding={24}
-          onPort={() => undefined}
-          onPoint={() => undefined}
+          // choose other waters on the map: a harbour, or any point in the water (briefed as that point)
+          onPort={(code) => onPlace(`port-${code}`)}
+          onPoint={(pt) => onPlace(pointKey(pt.lat, pt.lon))}
           onReady={setMap}
         />}
       </div>
       <div className="flex items-center justify-between gap-3 px-3 py-2.5">
-        <p className="text-[13px] text-n-ink-2">{place.name}, the stations behind this briefing and the notices&rsquo; limits.</p>
+        <p className="text-[13px] text-n-ink-2" data-testid="locator-caption">
+          {place.name}, the stations behind this briefing and the notices&rsquo; limits. <span className="font-semibold text-n-ink">Tap a harbour or the water to brief those waters.</span>
+        </p>
         <Link href={`/?${new URLSearchParams({ sel: place.kind === "port" ? `harbor:${place.key.slice(5)}` : `point:${place.lat.toFixed(4)},${place.lon.toFixed(4)}`, from: back }).toString()}`} className="nx-focus flex min-h-11 shrink-0 items-center gap-1 rounded-lg px-2 text-[14px] font-semibold text-n-accent" data-testid="locator-explore">
           Explore <Icon name="chevronRight" className="h-4 w-4" />
         </Link>
@@ -555,12 +608,12 @@ function MobileDock() {
 }
 
 /** One check before going out: what to do, why, and where (an agency page, or a phone line that dials). */
-function CheckItem({ s, n }: { s: Step; n: number }) {
+function CheckItem({ s, n, done, onToggle }: { s: Step; n: number; done: boolean; onToggle: () => void }) {
   return (
-    <li className="grid grid-cols-[28px_minmax(0,1fr)] gap-3 rounded-2xl border border-n-line bg-n-surface p-4" data-testid={`check-${s.id}`}>
+    <li className={`grid grid-cols-[28px_minmax(0,1fr)_auto] gap-3 rounded-2xl border bg-n-surface p-4 ${done ? "border-n-line opacity-80" : "border-n-line"}`} data-testid={`check-${s.id}`} data-done={done}>
       <span className="nx-data grid h-7 w-7 place-items-center rounded-full bg-n-surface-2 text-[13px] font-semibold">{n}</span>
       <div className="min-w-0">
-        <p className="text-[16px] font-semibold leading-snug">{s.title}</p>
+        <p className={`text-[16px] font-semibold leading-snug ${done ? "text-n-ink-2" : ""}`}>{s.title}</p>
         {/* a service's technical reason (an HTTP status) stays available on hover, not in the sentence */}
         <p className="mt-0.5 text-[14.5px] leading-snug text-n-ink-2" title={/\(HTTP \d+\)/.test(s.reason) ? s.reason : undefined}>
           {s.reason.replace(/\s*\(HTTP \d+\)/, "")}
@@ -578,6 +631,87 @@ function CheckItem({ s, n }: { s: Step; n: number }) {
           {s.when && <span className="inline-flex min-h-9 items-center text-n-ink-3">{s.when}</span>}
         </p>
       </div>
+      {/* the reader's own acknowledgement: never a verification of the step */}
+      <label className="nx-focus -m-2 grid h-14 w-14 cursor-pointer place-items-center rounded-xl hover:bg-n-surface-2" title="Tick when you have done this (your own note)">
+        <input type="checkbox" checked={done} onChange={onToggle} className="h-6 w-6 accent-[var(--nx-accent)]" aria-label={`I have done this: ${s.title}`} data-testid={`check-${s.id}-box`} />
+      </label>
     </li>
+  );
+}
+
+/**
+ * Which waters, and the reader's home port: change the place (harbours by region, CDPH harvest sites),
+ * keep one harbour as home on this device, and get back to it in one tap. A point chosen on the map is
+ * a place too, but not a home port.
+ */
+function PlaceBar({ place, ports, home, onHome, onPlace }: { place: CoastPlace; ports: PortsCollection | null; home: string | null; onHome: (k: string | null) => void; onPlace: (k: string) => void }) {
+  const homePlace = home ? resolvePlace(home, ports) : null;
+  const regions = ports?.regions ?? [];
+  const byRegion = regions.map((r) => ({ r, items: (ports?.features ?? []).filter((f) => f.properties.region === r.id).map((f) => ({ key: `port-${f.properties.port_code}`, name: f.properties.display_name })) }));
+  const sites = sitePlaces();
+  const isHome = home === place.key;
+  const canBeHome = place.kind !== "point";
+  return (
+    <div className="flex flex-wrap items-center gap-2" data-testid="coast-place-bar">
+      <label className="relative inline-flex min-h-11 items-center">
+        <span className="sr-only">Change the place</span>
+        <select
+          value=""
+          onChange={(e) => e.target.value && onPlace(e.target.value)}
+          className="nx-focus min-h-11 cursor-pointer appearance-none rounded-full border border-n-line-strong bg-n-surface py-2 pl-3.5 pr-9 text-[14.5px] font-semibold text-n-ink"
+          data-testid="coast-place-picker"
+        >
+          <option value="">Change place…</option>
+          {homePlace && homePlace.key !== place.key && (
+            <optgroup label="Your home port">
+              <option value={homePlace.key}>{homePlace.name}</option>
+            </optgroup>
+          )}
+          {byRegion.map(({ r, items }) =>
+            items.length ? (
+              <optgroup key={r.id} label={`Harbours · ${r.label}`}>
+                {items.map((i) => (
+                  <option key={i.key} value={i.key} disabled={i.key === place.key}>
+                    {i.name}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null,
+          )}
+          <optgroup label="CDPH harvest monitoring sites">
+            {sites.map((x) => (
+              <option key={x.key} value={x.key} disabled={x.key === place.key}>
+                {x.name}
+              </option>
+            ))}
+          </optgroup>
+        </select>
+        <Icon name="chevronDown" className="pointer-events-none absolute right-3 h-4 w-4 text-n-ink-3" />
+      </label>
+      {isHome ? (
+        <span className="inline-flex min-h-11 items-center gap-2 text-[14px] text-n-ink-2" data-testid="coast-home">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-n-ink">
+            <Icon name="harbor" className="h-4 w-4 text-n-accent" /> Your home port
+          </span>
+          <button type="button" onClick={() => onHome(null)} className="nx-focus inline-flex min-h-11 items-center px-1 font-semibold text-n-accent underline underline-offset-2" data-testid="coast-home-clear">
+            Forget
+          </button>
+        </span>
+      ) : (
+        <>
+          {canBeHome && (
+            <button type="button" onClick={() => onHome(place.key)} className="nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-full border border-n-line-strong px-3.5 text-[14px] font-semibold text-n-ink" data-testid="coast-home-set">
+              <Icon name="harbor" className="h-4 w-4 text-n-accent" /> Make my home port
+            </button>
+          )}
+          {homePlace && (
+            <button type="button" onClick={() => onPlace(homePlace.key)} className="nx-focus inline-flex min-h-11 items-center px-1 text-[14px] font-semibold text-n-accent underline underline-offset-2" data-testid="coast-home-open">
+              Home: {homePlace.name}
+            </button>
+          )}
+        </>
+      )}
+      <span className="w-full text-[12.5px] text-n-ink-3">The home port is kept on this device only.</span>
+    </div>
   );
 }

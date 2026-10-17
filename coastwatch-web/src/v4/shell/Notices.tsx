@@ -15,13 +15,21 @@ import { clockLabel, dayLabel } from "@/v4/ui/time";
  * its dates, every warning (an expected end that passed is never hidden), and its sources; the
  * agencies' lists are the authority, Neritic's copy is a transcription.
  */
-export function NoticesButton({ official, status = null, compact = false }: { official: OfficialDataset | null; status?: SourceStatus | null; compact?: boolean }) {
+/** `local`: a place is open (a harbour, a briefing): the notices whose official geography covers its
+ *  waters, and those whose reach there is not settled (lib/applicability), led by name and count. */
+export type LocalNotices = { name: string; covering: string[]; unsettled: string[] };
+
+export function NoticesButton({ official, status = null, compact = false, local = null }: { official: OfficialDataset | null; status?: SourceStatus | null; compact?: boolean; local?: LocalNotices | null }) {
   const [open, setOpen] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => setNow(new Date()), []);
   const box = useRef<HTMLDivElement | null>(null);
   const button = useRef<HTMLButtonElement | null>(null);
   const recs = official ? currentRecords(official) : [];
+  // with a place open: its own notices first (current records only: a disputed one is never counted)
+  const here = local ? recs.filter((r) => local.covering.includes(r.id)) : [];
+  const maybe = local ? recs.filter((r) => local.unsettled.includes(r.id) && !local.covering.includes(r.id)) : [];
+  const elsewhere = local ? recs.filter((r) => !here.includes(r) && !maybe.includes(r)) : recs;
   // an agency release appears to lift these: never counted or shown as in effect, always shown with the release
   const disputed = official ? disputedRecords(official) : [];
   const v: Verification | null = now ? officialVerification(official, status, now) : null;
@@ -49,13 +57,14 @@ export function NoticesButton({ official, status = null, compact = false }: { of
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        aria-label={`${recs.length} official notices, ${word.toLowerCase()}`}
+        aria-label={local ? `${here.length} official notices cover ${local.name}'s waters, ${recs.length} in California, ${word.toLowerCase()}` : `${recs.length} official notices, ${word.toLowerCase()}`}
         data-testid="notices-button"
         data-state={state}
         className="nx-press nx-focus flex h-11 items-center gap-2 rounded-full border border-n-official-line bg-n-surface px-3 text-[14px] font-semibold text-n-ink"
       >
         <Icon name="shield" className="h-[18px] w-[18px] text-n-official" />
-        <span className="nx-data">{official ? recs.length : "?"}</span>
+        <span className="nx-data" data-testid="notices-count">{official ? (local ? here.length : recs.length) : "?"}</span>
+        {local && official && <span className="text-n-ink-2" data-testid="notices-here">here</span>}
         {/* below 400 px the word gives way (the count, the shield and the label still say it) so the bar fits */}
         {!compact && <span className="text-n-official max-[399px]:hidden">{word}</span>}
       </button>
@@ -110,8 +119,36 @@ export function NoticesButton({ official, status = null, compact = false }: { of
                 </ul>
               </section>
             )}
+            {local && (
+              <section className="border-b border-n-line px-4 pt-3" data-testid="notices-local">
+                <h3 className="text-[13.5px] font-semibold text-n-ink">
+                  Cover {local.name}&rsquo;s waters · {here.length}
+                </h3>
+                <p className="text-[12.5px] text-n-ink-3">By the agencies&rsquo; official geography, as Neritic transcribed it. Not verified.</p>
+                {here.length ? (
+                  <ul className="divide-y divide-n-line">
+                    {here.map((r) => (
+                      <NoticeRow key={r.id} r={r} now={now} />
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="py-2 text-[14px] text-n-ink-2">No notice in Neritic&rsquo;s list covers these waters. The list may be incomplete.</p>
+                )}
+                {maybe.length > 0 && (
+                  <div data-testid="notices-unsettled">
+                    <h3 className="pt-2 text-[13.5px] font-semibold text-n-stale">May apply here: not settled · {maybe.length}</h3>
+                    <ul className="divide-y divide-n-line">
+                      {maybe.map((r) => (
+                        <NoticeRow key={r.id} r={r} now={now} />
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </section>
+            )}
+            {local && <h3 className="px-4 pt-3 text-[13.5px] font-semibold text-n-ink-2">Elsewhere in California · {elsewhere.length}</h3>}
             <ul className="divide-y divide-n-line px-4" data-testid="notices-current">
-              {recs.map((r) => (
+              {elsewhere.map((r) => (
                 <NoticeRow key={r.id} r={r} now={now} />
               ))}
               {!official && <li className="py-3 text-[14px] text-n-ink-2">Neritic&rsquo;s copy of the notices could not be loaded. Check CDFW and CDPH directly.</li>}

@@ -25,8 +25,9 @@ import { HoverReadout, type HoverSource } from "@/components/map/HoverReadout";
 import { useReportSource, type SourceState } from "@/v4/readiness/store";
 import { SourceList } from "@/v4/readiness/StatusCenter";
 import { TopBar, NavTabs } from "@/v4/shell/TopBar";
-import { NoticesButton } from "@/v4/shell/Notices";
+import { NoticesButton, type LocalNotices } from "@/v4/shell/Notices";
 import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { associationsAt } from "@/lib/applicability";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { useCountyPrefs } from "@/components/map/Counties";
 import { Icon } from "@/v4/ui/Icon";
@@ -251,6 +252,13 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // the station's newest sample of any variable (its HAB sample may be older: the panel lists each)
   const stationLast = useMemo(() => newestSample(station?.latest), [station]);
   const harborF = selection?.kind === "harbor" ? (ports?.features.find((f) => f.properties.port_code === selection.port) ?? null) : null;
+  // a harbour selected: the notices control leads with the notices covering its waters
+  const harbourNotices = useMemo<LocalNotices | null>(() => {
+    if (!harborF || !official) return null;
+    const [lon, lat] = harborF.geometry.coordinates as number[];
+    const a = associationsAt(official, `port-${harborF.properties.port_code}`, lat, lon);
+    return { name: harborF.properties.display_name ?? harborF.properties.name, covering: a.filter((x) => x.tier === "geographic").map((x) => x.record.id), unsettled: a.filter((x) => x.tier === "unresolved").map((x) => x.record.id) };
+  }, [harborF, official]);
   const highlight = useMemo<GeoJSON.FeatureCollection | null>(() => {
     const feats: GeoJSON.Feature[] = [];
     if (selection?.kind === "cell" && cellRead?.status === "ready" && cellRead.polygon) feats.push({ type: "Feature", geometry: cellRead.polygon, properties: { kind: "cell" } });
@@ -359,7 +367,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const satF = obsFresh("satellite_chl", resolved.satLayer);
   const satField = fieldState(satF.fresh, satF.st);
   useReportSource(
-    active.kind === "satellite"
+    active.kind === "satellite" || (active.kind === "currents" && active.chl)
       ? { id: "satellite", label: "Satellite chlorophyll", state: mapStatus?.field === "failed" ? "unavailable" : mapStatus?.field === "ready" ? satField.state : "loading", detail: [resolved.satLayer ? `${resolved.satLayer.layer_id.split("_")[0].toUpperCase()} tiles` : "No layer", satField.note].filter(Boolean).join(". "), asOf: resolved.satLayer?.time.observed_date ?? null }
       : null,
   );
@@ -669,7 +677,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
             </div>
           ) : null
         }
-        notices={<NoticesButton official={official} status={officialStatus} compact={bp === "phone"} />}
+        notices={<NoticesButton official={official} status={officialStatus} compact={bp === "phone"} local={harbourNotices} />}
       />
 
       {backTo && (

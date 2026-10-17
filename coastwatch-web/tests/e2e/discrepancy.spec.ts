@@ -31,9 +31,12 @@ test.describe("agency source discrepancy", () => {
     await expect(card.getByTestId("notice-critical")).toContainText("appears to lift this notice");
     await expect(card.getByTestId("notice-critical")).toContainText("not shown as in effect");
     await expect(panel.getByTestId("notices-current").getByTestId(`notice-${ID}`)).toHaveCount(0);
-    // once, in the disputed group only; the count and the heading leave it out
+    // once, in the disputed group only; neither the place's count nor the statewide heading counts it
     await expect(panel.getByTestId(`notice-${ID}`)).toHaveCount(1);
-    await expect(panel.getByTestId("notices-heading")).toHaveText(`${count} active notices in California`);
+    await expect(panel.getByTestId("notices-local").getByTestId(`notice-${ID}`)).toHaveCount(0);
+    const listed = await panel.locator('li[data-testid^="notice-"]:not([data-disputed])').count();
+    await expect(panel.getByTestId("notices-heading")).toHaveText(`${listed} active notices in California`);
+    expect(count).toBe(await panel.getByTestId("notices-local").locator('li[data-testid^="notice-"]').count());
     await expect(panel.getByTestId("notices-unverified")).toContainText("Not verified");
   });
 
@@ -63,6 +66,8 @@ test.describe("agency source discrepancy", () => {
     await expect(row).not.toContainText("appears to lift");
     await page.getByTestId("notices-button").click();
     await expect(page.getByTestId("notices-disputed")).toHaveCount(0);
-    await expect(page.getByTestId("notices-current").getByTestId(`notice-${ID}`)).toHaveCount(1);
+    // listed once, as a notice covering Monterey's waters (the briefing's place)
+    await expect(page.getByTestId("notices-local").getByTestId(`notice-${ID}`)).toHaveCount(1);
+    await expect(page.getByTestId("notices-panel").locator(`li[data-testid="notice-${ID}"]`)).toHaveCount(1);
   });
 });
