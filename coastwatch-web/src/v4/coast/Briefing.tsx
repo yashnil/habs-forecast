@@ -193,7 +193,7 @@ export function Briefing(props: Props) {
   const [tripOpen, setTripOpen] = useState(false);
   const pack = packForPort(place?.kind === "port" ? Number(place.key.slice(5)) : null) ?? PACKS.monterey;
   const off = useOfflinePack(pack.id);
-  useRecordSource(off.record, pack.name, off.online, off.evicted);
+  useRecordSource(off.record, pack.name, off.online, off.evicted, off.problem);
   const [packOpen, setPackOpen] = useState(false);
   const hasPack = place?.kind === "port" && !!packForPort(Number(place.key.slice(5)));
   const back = typeof window === "undefined" ? `/coast?${sp.toString()}` : `${window.location.pathname}${window.location.search}`;
@@ -318,7 +318,7 @@ export function Briefing(props: Props) {
       {!off.online && (
         <div className="px-3 pt-3">
           {/* in the page's flow: on the briefing it must never cover the title */}
-          <OfflineBanner record={off.record ?? null} name={pack.name} inline />
+          <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline />
         </div>
       )}
       {packOpen && (

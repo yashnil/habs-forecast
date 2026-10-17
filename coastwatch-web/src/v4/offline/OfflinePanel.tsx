@@ -7,7 +7,7 @@ import { charmRun, satelliteLatest, sourceStatus } from "@/lib/layers";
 import { Icon } from "@/v4/ui/Icon";
 import { clockLabel } from "@/v4/ui/time";
 import { useSetSource } from "@/v4/readiness/store";
-import { GROUP_WORDS, deletePack, download, keepPublishedTiles, pageAssetsOf, plan, sizeOf, type Group, type PackDef, type PackRecord, type PlanItem, type Progress } from "./packs";
+import { GROUP_WORDS, PACK_VERSION, deletePack, download, isQuota, keepPublishedTiles, pageAssetsOf, plan, sizeOf, type Group, type PackDef, type PackProblem, type PackRecord, type PlanItem, type Progress } from "./packs";
 import { packAge, useOfflinePack } from "./useOfflinePack";
 
 const mb = (b: number) => `${(b / 1_048_576).toFixed(b < 10_485_760 ? 1 : 0)} MB`;
@@ -18,7 +18,7 @@ const mb = (b: number) => `${(b / 1_048_576).toFixed(b < 10_485_760 ? 1 : 0)} MB
  * download the pack is verified (every file, and the basemap's checksum).
  */
 export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackDef; manifest: Manifest; official?: OfficialDataset | null; baseUrl: string; onClose?: () => void }) {
-  const { record, online, sw, refresh, evicted } = useOfflinePack(pack.id);
+  const { record, problem, online, sw, refresh, evicted } = useOfflinePack(pack.id);
   const [items, setItems] = useState<PlanItem[] | null>(null);
   const [planErr, setPlanErr] = useState<string | null>(null);
   const [prog, setProg] = useState<Progress | null>(null);
@@ -31,7 +31,7 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
   useEffect(() => {
     navigator.storage?.estimate?.().then((e) => e.quota && setQuota({ usage: e.usage ?? 0, quota: e.quota }));
     navigator.storage?.persisted?.().then(setPersisted);
-  }, [record]);
+  }, [record, state]);
 
   const prepare = async () => {
     setState("sizing");
@@ -91,7 +91,7 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
       setState(ac.current.signal.aborted ? "cancelled" : rec.complete ? "done" : "failed");
       setSource({ id: "pack", label: `Field pack: ${pack.name}`, state: rec.complete ? "ready" : "incomplete", detail: rec.complete ? `Saved ${mb(rec.totalBytes)}, verified` : `${rec.verified?.missing ?? "Some"} files missing; download again to finish`, asOf: rec.savedAt });
     } catch (e) {
-      const q = (e as Error).name === "QuotaExceededError";
+      const q = isQuota(e);
       setState(q ? "quota" : "failed");
       setSource({ id: "pack", label: `Field pack: ${pack.name}`, state: "incomplete", detail: q ? "The device's storage for this site is full" : (e as Error).message });
       await refresh();
@@ -127,6 +127,16 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
             {record.osmDataAsOf ? ` · map data (OpenStreetMap) of ${record.osmDataAsOf}` : ""}.
           </p>
           {age?.outdated && <p className="mt-1 font-semibold text-n-stale">More than a day old: download again when you have a connection.</p>}
+          {problem === "older-format" && (
+            <p className="mt-1 font-semibold text-n-stale" data-testid="pack-older">
+              Saved by an earlier version of Neritic (pack format {record.version}, now {PACK_VERSION}). What it holds still opens offline, each value with its own time; download again so every part does.
+            </p>
+          )}
+          {problem === "missing-files" && (
+            <p className="mt-1 font-semibold" data-testid="pack-missing">
+              Some saved files are no longer on this device (the browser may have removed them). Finish the download to use {pack.name} offline.
+            </p>
+          )}
           <button
             type="button"
             onClick={async () => {
@@ -143,6 +153,13 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
         </div>
       )}
 
+      {!record && (problem === "unfinished" || problem === "damaged-record") && (
+        <p className="rounded-xl border border-n-official-line bg-n-official-bg p-3 text-[14px] font-semibold" data-testid="pack-problem" data-problem={problem}>
+          {problem === "unfinished"
+            ? `An unfinished download of ${pack.name} is on this device: it is not complete and nothing in it is verified. Finish the download to use ${pack.name} offline.`
+            : `The saved copy of ${pack.name} cannot be read (its record is damaged), so it is not counted as saved. Download again to replace it.`}
+        </p>
+      )}
       {!record && evicted && (
         <p className="rounded-xl border border-n-official-line bg-n-official-bg p-3 text-[14px] font-semibold" data-testid="pack-evicted">
           The copy saved {clockLabel(evicted)} is gone: the browser removed it (low storage or a site left unused). Download it again to use {pack.name} offline.
@@ -176,13 +193,18 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
                   At least <span className="nx-data font-semibold">{mb(total)}</span> in {items?.length} files (pages and evidence are sized as they are saved)
                   {quota ? ` · ${mb(quota.quota - quota.usage)} free for this site` : ""}
                 </p>
+                {quota && total > quota.quota - quota.usage && (
+                  <p className="text-[14px] font-semibold text-n-down" data-testid="pack-no-room">
+                    Not enough free storage for this site: the download would stop part way. Free some space on the device first.
+                  </p>
+                )}
               </>
             )}
             <h3 className="nx-eyebrow mt-2">Not available offline</h3>
             <ul className="list-disc pl-5 text-[13.5px] leading-snug text-n-ink-2">
               <li>Anything new after the download: harbour water, buoys and NWS forecasts stay as saved, with their times.</li>
               <li>Official notices: Neritic&rsquo;s copy as last checked; the agencies&rsquo; own pages need a connection.</li>
-              <li>Other harbours, earlier satellite days and the map outside {pack.name} (only the seafloor relief and coastline there).</li>
+              <li>Other harbours, earlier satellite days and the map outside {pack.name}: zoomed in beyond it, only the seafloor relief is drawn (no coastline, roads or names).</li>
               <li>Not for navigation.</li>
             </ul>
           </section>
@@ -209,12 +231,16 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
               className="nx-press nx-focus sticky bottom-0 z-10 flex min-h-14 items-center justify-center gap-2 rounded-xl bg-n-ink text-[16px] font-semibold text-n-bg shadow-[0_-8px_16px_var(--nx-surface)] disabled:opacity-40"
               data-testid="pack-download"
             >
-              <Icon name="download" /> {record ? (record.complete ? (record.dataGeneratedAt < manifest.generated_at ? "Download the newer data" : "Download again") : "Finish the download") : `Download ${items ? mb(total) : ""}`}
+              <Icon name="download" /> {downloadLabel(record, problem, manifest.generated_at, items ? mb(total) : "")}
             </button>
           )}
           {state === "done" && <p className="text-[14px] font-semibold text-n-ok" role="status">Saved and verified. {pack.name} now opens without a connection.</p>}
           {state === "cancelled" && <p className="text-[14px] text-n-ink-2" role="status">Stopped. What was saved is kept; download again to finish.</p>}
-          {state === "quota" && <p className="text-[14px] font-semibold text-n-down" role="alert">The device&rsquo;s storage for this site is full. Free some space, then finish the download.</p>}
+          {state === "quota" && (
+            <p className="text-[14px] font-semibold text-n-down" role="alert" data-testid="pack-quota">
+              The device&rsquo;s storage for this site is full: the pack is not complete{prog ? ` (${prog.done - prog.failed.length} of ${prog.total} files saved)` : ""}. What was saved is kept. Free some space, then finish the download.
+            </p>
+          )}
           {state === "failed" && prog && <p className="text-[14px] font-semibold text-n-down" role="alert">{prog.failed.length} files could not be saved. Download again to finish; nothing saved is lost.</p>}
           <p className="text-[12.5px] leading-snug text-n-ink-3">
             {persisted ? "The browser has agreed to keep this storage." : "The browser may remove saved data when the device is low on space or the site is unused; check the pack before you leave."} Map: © OpenStreetMap contributors (ODbL), © OpenMapTiles, OpenFreeMap. Relief: NOAA NCEI.
@@ -225,12 +251,25 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
   );
 }
 
-export function useRecordSource(record: PackRecord | null | undefined, name: string, online: boolean, evicted: string | null = null) {
+function downloadLabel(record: PackRecord | null | undefined, problem: PackProblem | null, generatedAt: string, size: string) {
+  if (problem === "unfinished") return "Finish the download";
+  if (!record) return `Download ${size}`;
+  if (!record.complete) return "Finish the download";
+  return record.dataGeneratedAt < generatedAt ? "Download the newer data" : "Download again";
+}
+
+export function useRecordSource(record: PackRecord | null | undefined, name: string, online: boolean, evicted: string | null = null, problem: PackProblem | null = null) {
   const setSource = useSetSource();
   useEffect(() => {
     if (record === undefined) return;
     if (!record) {
-      if (evicted) setSource({ id: "pack", label: `Field pack: ${name}`, state: "unavailable", detail: "Removed by the browser; download it again for offline use", asOf: evicted });
+      if (problem === "unfinished" || problem === "damaged-record")
+        setSource({ id: "pack", label: `Field pack: ${name}`, state: "incomplete", detail: problem === "unfinished" ? "Download not finished" : "The saved copy cannot be read; download it again" });
+      else if (evicted) setSource({ id: "pack", label: `Field pack: ${name}`, state: "unavailable", detail: "Removed by the browser; download it again for offline use", asOf: evicted });
+      return;
+    }
+    if (problem === "older-format" && record.complete) {
+      setSource({ id: "pack", label: `Field pack: ${name}`, state: online ? "stale" : "cached", detail: online ? "Saved by an earlier version of Neritic; download again" : "Showing the saved copy (offline; saved by an earlier version of Neritic)", asOf: record.savedAt });
       return;
     }
     // more than a day old: C-HARM and the observations have moved on, so the copy is stale
@@ -242,5 +281,5 @@ export function useRecordSource(record: PackRecord | null | undefined, name: str
       detail: !record.complete ? "Download incomplete" : !online ? "Showing the saved copy (offline)" : outdated ? `Saved more than a day ago (${mb(record.totalBytes)}); download again for newer data` : `Saved ${mb(record.totalBytes)}, verified`,
       asOf: record.savedAt,
     });
-  }, [record, name, online, evicted, setSource]);
+  }, [record, name, online, evicted, problem, setSource]);
 }

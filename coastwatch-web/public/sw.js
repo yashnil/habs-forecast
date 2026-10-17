@@ -76,7 +76,7 @@ self.addEventListener("fetch", (event) => {
         const hit = (await c.match(req)) || (await packMatch(req));
         if (hit) return hit;
         const r = await fetch(req);
-        if (r.ok) c.put(req, r.clone());
+        if (r.ok) c.put(req, r.clone()).catch(() => undefined); // storage full: served, not kept
         return r;
       })(),
     );
