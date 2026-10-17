@@ -15,7 +15,7 @@ import { DAY, unitLabel } from "@/lib/observations";
 import { OFFICIAL_STATUS } from "@/content/copy";
 import { disputeOf, officialAt } from "@/lib/official";
 import { currentsAt, forecastAt, pnSibling, satelliteAt, type Readout } from "@/lib/readout";
-import type { CurrentField } from "@/lib/currents";
+import { KNOTS_PER_MS, type CurrentField } from "@/lib/currents";
 import { Icon } from "@/v4/ui/Icon";
 import { clockLabel, dayLabel, kmLabel, relTime } from "@/v4/ui/time";
 import { SeriesChart, recentSamples } from "@/v4/charts/SeriesChart";
@@ -518,6 +518,8 @@ function PointReads({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
                       {r.value}
                     </span>
                     {r.unit && <span className="text-[13.5px] text-n-ink-2">{r.unit}</span>}
+                    {/* at sea, speeds are read in knots */}
+                    {id === "currents" && <span className="text-[13.5px] text-n-ink-2" data-testid="point-knots">≈ {(Number(r.value) * KNOTS_PER_MS).toFixed(1)} kn</span>}
                   </p>
                   <p className="text-[13.5px] text-n-ink-2">{r.what}</p>
                   {r.flag && <p className="text-[13px] text-n-stale">{r.flag}</p>}
