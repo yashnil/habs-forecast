@@ -211,6 +211,8 @@ test.describe("values: the published cell, with its product and time, reachable 
     // station line, so it is not said twice), and no forecast value is invented
     await open(page, "/?layer=forecast&sel=harbor:880");
     await expect(page.getByTestId("harbor-claims")).toContainText("NOAA's model does not reach this day");
-    await expect(page.getByTestId("harbor-claims")).not.toContainText(/\b\d+%/);
+    // no model probability is invented for it (a percentile of a station's own record is not one)
+    await expect(page.getByTestId("harbor-claims")).not.toContainText(/\d+% (chance|probability)|NOAA model: \d/);
+    await expect(page.getByTestId("harbor-claims").locator('[data-kind="model"]')).toHaveCount(0);
   });
 });
