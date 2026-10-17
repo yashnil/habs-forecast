@@ -170,3 +170,135 @@ test("the transect export lists every crossed cell; a gap is an empty value", as
   expect(rows.slice(1).some((r) => r.split(",")[5] === "")).toBe(true);
   expect(rows.slice(1).some((r) => /^0\.\d+$/.test(r.split(",")[5]))).toBe(true);
 });
+
+// ---------------------------------------------------------------- observation grids (satellite chlorophyll, HF radar)
+
+/** the grid map, in view and settled (the panel beside it changes the page height) */
+async function gridMap(page: import("@playwright/test").Page) {
+  await page.waitForTimeout(300);
+  const canvas = page.getByTestId("research-grid").locator(".maplibregl-canvas");
+  await canvas.scrollIntoViewIfNeeded();
+  return (await canvas.boundingBox())!;
+}
+
+test("satellite: one published pixel with its own date and sensor; only published days are offered", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
+  await mapReady(page);
+  await page.getByTestId("gsrc-satellite").click();
+  await expect(page.getByTestId("grid-heading")).toContainText("Satellite chlorophyll");
+  await expect(page.getByTestId("research-grid")).toContainText("not a toxin");
+  // the multi-sensor point: the sensor shown by the rule, each sensor at the point, its date
+  const b = await gridMap(page);
+  await page.mouse.click(b.x + b.width * 0.3, b.y + b.height * 0.65);
+  await expect(page.getByTestId("obs-point")).toContainText("observation, not a forecast");
+  await expect(page.getByTestId("obs-point-value")).toContainText("mg/m³ chlorophyll-a");
+  await expect(page.getByTestId("obs-point-date")).toContainText(/Observed \w{3}, Oct \d/);
+  await expect(page.getByTestId("obs-point-sensor")).toContainText(/Sentinel-3|VIIRS/);
+  await expect(page.getByTestId("obs-point-members")).toContainText("VIIRS 750 m");
+  // footprint drawn as a pixel outline on the map
+  await expect.poll(() => page.evaluate(() => JSON.stringify((window as unknown as { __cwMap: { getSource(id: string): { serialize(): { data: unknown } } } }).__cwMap.getSource("v4-highlight")?.serialize().data ?? null))).toContain('"pixel"');
+  // OLCI: days published without a clear pixel cannot be chosen; the pixel on each published day
+  await page.getByTestId("sat-product-olci300").click();
+  await expect(page.getByTestId("sat-day-2026-10-03")).toBeDisabled();
+  await expect(page.getByTestId("sat-day-2026-10-03")).toContainText("no clear pixel");
+  await expect(page.getByTestId("obs-day")).toHaveCount(7);
+  await expect(page.getByTestId("obs-day-strip")).toContainText("not low chlorophyll");
+  const csv = await csvOf(page, "export-obs-point");
+  expect(csv).toContain("# Product class: observation (satellite chlorophyll-a), not a forecast");
+  expect(csv).toContain("Sentinel-3 300 m");
+  expect(csv).toContain("# Pipeline run: fixture");
+  expect(csv).toContain("not low chlorophyll");
+  expect(csv.split("\n").find((l) => !l.startsWith("#"))).toBe("layer,observed_date,chlorophyll_mg_m3");
+  await page.getByTestId("sat-day-2026-10-05").click();
+  await expect(page.getByTestId("grid-heading")).toContainText("overpass Mon, Oct 5");
+  await expect(page.getByTestId("research-lineage")).toContainText("single day");
+});
+
+test("satellite transect: every crossed pixel with its date; gaps stay empty, never joined", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
+  await mapReady(page);
+  await page.getByTestId("gsrc-satellite").click();
+  await page.getByTestId("sat-product-olci300").click();
+  await page.getByTestId("tool-transect").click();
+  const b = await gridMap(page);
+  await page.mouse.click(b.x + b.width * 0.1, b.y + b.height * 0.5);
+  await page.mouse.click(b.x + b.width * 0.6, b.y + b.height * 0.85);
+  await expect(page.getByTestId("obs-transect-counts")).toContainText(/\d+ of \d+ pixels crossed have an observation; \d+ have none \(not low chlorophyll\)/);
+  await expect(page.getByTestId("obs-transect")).toContainText("never joined across a gap");
+  const csv = await csvOf(page, "export-obs-transect");
+  const rows = csv.trim().split("\n").filter((l) => !l.startsWith("#"));
+  expect(rows[0]).toBe("km,row,col,lat,lon,observed_date,chlorophyll_mg_m3,in_domain");
+  const body = rows.slice(1).map((r) => r.split(","));
+  // gaps: empty date and value; observations: a date and a value
+  expect(body.some((r) => r[5] === "" && r[6] === "" && r[7] === "yes")).toBe(true);
+  expect(body.some((r) => /^2026-10-0\d$/.test(r[5]) && Number(r[6]) > 0)).toBe(true);
+  expect(csv).toContain("gaps stay empty rows");
+});
+
+test("multi-sensor area: sensor and date of every pixel, coverage, and an honest consistency check", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
+  await mapReady(page);
+  await page.getByTestId("gsrc-satellite").click();
+  await page.getByTestId("tool-area").click();
+  await page.waitForTimeout(300);
+  await page.getByTestId("area-overlay").scrollIntoViewIfNeeded();
+  const b = (await page.getByTestId("area-overlay").boundingBox())!;
+  await page.mouse.move(b.x + b.width * 0.1, b.y + b.height * 0.2);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.width * 0.5, b.y + b.height * 0.8, { steps: 6 });
+  await page.mouse.up();
+  await expect(page.getByTestId("obs-area-counts")).toContainText(/of [\d,]+ display pixels \(300 m\) in the box have an observation/);
+  await expect(page.getByTestId("obs-area-coverage")).toContainText("C-HARM ocean cells");
+  await expect(page.getByTestId("obs-area-dates")).toContainText(/Oct \d: [\d,]+/);
+  await expect(page.getByTestId("obs-area-sensors")).toContainText(/Sentinel-3 300 m [\d,]+ pixels; VIIRS 750 m .* pixels \(from [\d,]+ native 750 m VIIRS pixels\)/);
+  const cons = page.getByTestId("obs-consistency");
+  await expect(cons).toContainText("not a validation");
+  // the fixture has no same-day pair in this box, and the pipeline published none: said, not computed
+  await expect(page.getByTestId("obs-consistency-none")).toContainText("Agreement cannot be computed in this box");
+  await expect(page.getByTestId("obs-consistency-published")).toContainText("no same-day pairs this week");
+  const text = await page.getByTestId("research").innerText();
+  expect(text).not.toMatch(/correlat|skill score|hit rate|accuracy|R²/i);
+  const csv = await csvOf(page, "export-obs-area");
+  expect(csv.split("\n").find((l) => !l.startsWith("#"))).toBe("row,col,lat,lon,sensor,observed_date,chlorophyll_mg_m3");
+  expect(csv).toContain("nothing is averaged");
+  expect(csv).toContain("noaacwN21VIIRSchlaSectorUSDaily");
+});
+
+test("radar: published hours only, a cell's every hour, gaps are no data and not calm water", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
+  await mapReady(page);
+  await page.getByTestId("gsrc-radar").click();
+  await expect(page.getByTestId("radar-hour").locator("option")).toHaveCount(25);
+  await expect(page.getByTestId("grid-heading")).toContainText("HF radar");
+  await expect(page.getByTestId("research-grid")).toContainText("not where a bloom will go");
+  await expect.poll(() => page.evaluate(() => !!(window as unknown as Win).__cwMap!.getSource("currents"))).toBe(true);
+  const b = await gridMap(page);
+  await page.mouse.click(b.x + b.width * 0.3, b.y + b.height * 0.65);
+  await expect(page.getByTestId("obs-point-value")).toContainText("m/s");
+  await expect(page.getByTestId("obs-point-date")).toContainText("Observed Oct 8, 5:00 AM PDT");
+  await expect(page.getByTestId("obs-radar-strip")).toContainText(/of 24 hours observed here/);
+  await expect(page.getByTestId("obs-radar-strip")).toContainText("not calm water");
+  await page.getByTestId("radar-prev").click();
+  await expect(page.getByTestId("obs-point-date")).toContainText("Oct 8, 4:00 AM PDT");
+  await page.getByTestId("radar-hour").selectOption("mean");
+  await expect(page.getByTestId("grid-heading")).toContainText("24-hour mean ending");
+  const csv = await csvOf(page, "export-obs-point");
+  expect(csv).toContain("# Product class: observation (HF-radar surface currents), not a forecast");
+  expect(csv).toContain("ucsdHfrW2");
+  expect(csv).toContain("not calm water");
+  expect(csv.split("\n").find((l) => !l.startsWith("#"))).toBe("layer,observed_hour_utc,u_ms,v_ms,speed_ms,direction_toward_deg");
+  // a box: counted cells, gaps labelled
+  await page.getByTestId("tool-area").click();
+  await page.waitForTimeout(300);
+  await page.getByTestId("area-overlay").scrollIntoViewIfNeeded();
+  const o = (await page.getByTestId("area-overlay").boundingBox())!;
+  await page.mouse.move(o.x + o.width * 0.1, o.y + o.height * 0.2);
+  await page.mouse.down();
+  await page.mouse.move(o.x + o.width * 0.5, o.y + o.height * 0.8, { steps: 6 });
+  await page.mouse.up();
+  await expect(page.getByTestId("obs-area-counts")).toContainText(/\d+ of \d+ radar cells in the box have an observation; \d+ have none \(no radar data or land: not calm water\)/);
+});

@@ -83,8 +83,8 @@ export function Lineage({ layer, manifest }: { layer: LayerArtifact; manifest: M
             {L.coverage ? ` ${L.coverage}.` : ""}
           </p>
           <ul className="mt-2 flex flex-col gap-1 text-[13px]" data-testid="lineage-qc">
-            {checks.map((q) => (
-              <li key={q.name} className="flex gap-2" data-passed={q.passed}>
+            {checks.map((q, i) => (
+              <li key={`${q.name}-${i}`} className="flex gap-2" data-passed={q.passed}>
                 <span className={`mt-px shrink-0 ${q.passed ? "text-n-ok" : "text-n-down"}`}>
                   <Icon name={q.passed ? "check" : "alert"} className="h-4 w-4" />
                   <span className="sr-only">{q.passed ? "passed" : "failed"}</span>
@@ -101,12 +101,21 @@ export function Lineage({ layer, manifest }: { layer: LayerArtifact; manifest: M
           <h3 className="nx-eyebrow">Uncertainty and caveats</h3>
           {L.quantErr != null && (
             <p className="mt-1 text-[13.5px] leading-snug" data-testid="lineage-quant">
-              Values are stored as 16-bit integers: each decoded value is within <span className="nx-data">± {Number(L.quantErr.toPrecision(2))}</span> of the producer&rsquo;s. This layer carries no uncertainty interval for the values themselves.
+              {L.quantLog ? (
+                <>
+                  Values are stored as 16-bit integers of log10(value): each decoded value is within <span className="nx-data">± {Number(L.quantErr.toPrecision(2))}</span> in log10, about ± {Number(((10 ** L.quantErr - 1) * 100).toPrecision(2))}% of the producer&rsquo;s value.
+                </>
+              ) : (
+                <>
+                  Values are stored as 16-bit integers: each decoded value is within <span className="nx-data">± {Number(L.quantErr.toPrecision(2))}</span> of the producer&rsquo;s.
+                </>
+              )}{" "}
+              This layer carries no uncertainty interval for the values themselves.
             </p>
           )}
           <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-[13px] leading-snug text-n-ink-2" data-testid="lineage-caveats">
-            {L.caveats.map((c) => (
-              <li key={c}>{c}</li>
+            {L.caveats.map((c, i) => (
+              <li key={i}>{c}</li>
             ))}
           </ul>
         </div>

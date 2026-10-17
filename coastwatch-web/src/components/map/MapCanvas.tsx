@@ -101,7 +101,8 @@ type Props = {
   clusterStations?: boolean;
   /**
    * v4: the selection, drawn above every data layer and label (it is never covered): features with
-   * properties.kind "cell" or "area" (polygons, outlined), "station" or "point" (a ring), optional label
+   * properties.kind "cell" or "area" (polygons, outlined), "station" or "point" (a ring), "pixel" (an
+   * observation pixel, outlined) or "footprint" (the outline of observed pixels), optional label
    */
   highlight?: GeoJSON.FeatureCollection | null;
   /** v4: readiness of the basemap and of the data field, for the status centre */
@@ -767,6 +768,9 @@ export default function MapCanvas(p: Props) {
           <Layer id="v4-hl-fill" type="fill" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "fill-color": ["match", ["get", "kind"], "cell", MODEL_MARK, "#5fd0e6"], "fill-opacity": ["match", ["get", "kind"], "cell", 0.16, 0.07] }} />
           <Layer id="v4-hl-halo" type="line" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "line-color": "#04121a", "line-width": 5, "line-opacity": 0.55 }} />
           <Layer id="v4-hl-line" type="line" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "line-color": ["match", ["get", "kind"], "cell", "#e6dbff", "#5fd0e6"], "line-width": 2, "line-dasharray": ["match", ["get", "kind"], "area", ["literal", [3, 2]], ["literal", [1, 0]]] }} />
+          {/* observation pixels and footprints (Research): neutral white, never the model's colour */}
+          <Layer id="v4-hl-pixel-halo" type="line" filter={["in", ["get", "kind"], ["literal", ["pixel", "footprint"]]]} paint={{ "line-color": "#04121a", "line-width": ["match", ["get", "kind"], "pixel", 4.5, 2.6], "line-opacity": 0.6 }} />
+          <Layer id="v4-hl-pixel" type="line" filter={["in", ["get", "kind"], ["literal", ["pixel", "footprint"]]]} paint={{ "line-color": "#ffffff", "line-width": ["match", ["get", "kind"], "pixel", 2, 1], "line-opacity": 0.95 }} />
           {/* the ring is a symbol, so it takes part in label placement: other labels move off it */}
           <Layer id="v4-hl-transect-halo" type="line" filter={["==", ["get", "kind"], "transect"]} layout={{ "line-cap": "round" }} paint={{ "line-color": "#04121a", "line-width": 5, "line-opacity": 0.6 }} />
           <Layer id="v4-hl-transect" type="line" filter={["==", ["get", "kind"], "transect"]} layout={{ "line-cap": "round" }} paint={{ "line-color": "#5fd0e6", "line-width": 2.4 }} />
