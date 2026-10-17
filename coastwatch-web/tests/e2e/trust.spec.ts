@@ -162,6 +162,8 @@ test.describe("freshness: old or failed data never reads as current", () => {
     await page.getByTestId("time-mean").click();
     await expect(page).toHaveURL(/layer=currents(%3A|:)mean/);
     await expect(page.getByTestId("stamp-currents").first()).toContainText("24 h mean to");
+    await expect(page.getByTestId("currents-note").first()).toContainText("tidal");
+    await expect(page.getByTestId("currents-note").first()).toContainText("1 m/s ≈ 1.9 knots");
     await page.clock.setFixedTime(new Date("2026-10-11T20:00:00Z"));
     await page.goto(`${OK}/?layer=currents`);
     await map(page);
@@ -199,6 +201,7 @@ test.describe("values: the published cell, with its product and time, reachable 
     await expect(s.getByTestId("point-value")).toBeVisible();
     await open(page, "/?layer=currents&sel=point:36.80,-122.10");
     await expect(page.getByTestId("point-currents").getByTestId("point-when")).toContainText(/HF radar, native 2 km · observed/);
+    await expect(page.getByTestId("point-currents").getByTestId("point-knots")).toContainText(/≈ \d+\.\d kn/);
     await open(page, "/?layer=currents&sel=point:36.70,-121.65");
     await expect(page.getByTestId("point-currents").getByTestId("point-none")).toContainText("not calm water");
   });

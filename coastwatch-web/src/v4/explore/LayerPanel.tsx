@@ -2,7 +2,7 @@
 
 import type { Manifest, Palette } from "@/generated/schema";
 import { CHARM_VARIABLES, charmRun, satelliteLatest, sourceStatus, type CharmVariable } from "@/lib/layers";
-import { currentsHourly } from "@/lib/currents";
+import { KNOTS_PER_MS, currentsHourly } from "@/lib/currents";
 import { AGE_COLOURS, SENSOR_COLOURS, displayPalette, gradientCss } from "@/lib/palette";
 import { SPEED_CLASSES, ARROW_LENGTHS } from "@/lib/basemap";
 import { stampLines } from "@/lib/stamp";
@@ -298,7 +298,10 @@ export function Legend({ choice, resolved }: { choice: LayerChoice; resolved: Re
             </span>
           ))}
         </div>
-        <p className="text-[12.5px] leading-snug text-n-ink-3">One arrow per observed 2 km radar cell. No arrow means no observation, not calm water.</p>
+        <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="currents-note">
+          One arrow per observed 2 km radar cell. No arrow means no observation, not calm water. Observed currents, not a forecast. 1 m/s ≈ {KNOTS_PER_MS.toFixed(1)} knots.{" "}
+          {choice.mean ? "The 24-hour mean smooths out most daily and tidal back-and-forth." : "Each hour is a separate snapshot; nothing is shown between hours."}
+        </p>
       </figure>
     );
   if (choice.kind === "none")
