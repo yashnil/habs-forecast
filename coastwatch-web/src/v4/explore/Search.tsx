@@ -65,7 +65,7 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
     input.current?.blur();
   };
   return (
-    <div className="relative w-full max-w-[420px]" data-testid="place-search">
+    <div className="relative w-full max-w-[420px]" id="place-search" tabIndex={-1} data-testid="place-search">
       <div className="flex h-11 items-center gap-2 rounded-full border border-n-line-strong bg-n-surface pl-3.5 pr-2 focus-within:ring-2 focus-within:ring-n-accent">
         <Icon name="search" className="h-[18px] w-[18px] shrink-0 text-n-ink-3" />
         <input

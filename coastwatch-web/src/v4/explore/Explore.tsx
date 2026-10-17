@@ -27,6 +27,7 @@ import { SourceList } from "@/v4/readiness/StatusCenter";
 import { TopBar, NavTabs } from "@/v4/shell/TopBar";
 import { NoticesButton } from "@/v4/shell/Notices";
 import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { SkipLink } from "@/v4/shell/SkipLink";
 import { useCountyPrefs } from "@/components/map/Counties";
 import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel } from "@/v4/ui/time";
@@ -620,6 +621,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // the whole workspace (and the dock) up the screen on phones
   return (
     <div className="env-instrument relative h-dvh w-full overflow-clip" data-testid="explore">
+      <SkipLink to="place-search" label="Skip to search places" />
       <h1 className="sr-only">Explore: harmful algal bloom evidence on the California coast{placeName ? `, ${placeName}` : ""}</h1>
       <div className="absolute inset-0" data-testid="map">
         {basemapPm !== undefined ? map : null}

@@ -109,14 +109,18 @@ test("units in words, the PN reference line, and the shared cursor reads both li
   await expect(page.getByTestId("cursor-measured")).toContainText("Measured at the pier, Wed, Sep 30");
   await expect(page.getByTestId("cursor-model")).toContainText("C-HARM nowcast, same day");
   await expect(page.getByTestId("cursor-model")).toContainText(/\d+%.*median of \d+ cells within 15 km/);
-  // a day on the model panel without a pier sample says so; the cursor shows on both charts
+  // another day, read on the model panel: the cursor moves on both charts (60% across: months from
+  // the newest sample, whatever the platform's text metrics do to the axis)
+  // (in view first: a pointer cannot reach a panel below the fold, and how far down it sits depends
+  // on the platform's text metrics)
+  await page.getByTestId("model-svg").scrollIntoViewIfNeeded();
   const m = (await page.getByTestId("model-svg").boundingBox())!;
-  await page.mouse.move(m.x + m.width * 0.93, m.y + m.height / 2);
+  await page.mouse.move(m.x + m.width * 0.6, m.y + m.height / 2);
   await expect(page.getByTestId("cursor-measured")).not.toContainText("Sep 30");
   // (a vertical line has no width, so it is checked as present, not "visible")
   await expect(page.getByTestId("series-cursor")).toHaveCount(1);
   await expect(page.getByTestId("model-cursor")).toHaveCount(1);
-  expect(Math.abs(Number(await page.getByTestId("model-cursor").getAttribute("x1")) - m.width * 0.93)).toBeLessThan(m.width * 0.02);
+  expect(Math.abs(Number(await page.getByTestId("model-cursor").getAttribute("x1")) - m.width * 0.6)).toBeLessThan(m.width * 0.02);
   const text = await page.getByTestId("research").innerText();
   expect(text).not.toMatch(/correlat|skill score|hit rate|accuracy|R²/i);
   // model history export
