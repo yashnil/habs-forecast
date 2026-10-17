@@ -1,16 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { readRecord, type PackRecord } from "./packs";
+import { packWasSaved, readRecord, type PackRecord } from "./packs";
 
 /** Registers the service worker (once) and reads a pack's record; re-reads it on demand. */
 export function useOfflinePack(id: string | null) {
   const [record, setRecord] = useState<PackRecord | null | undefined>(undefined);
   const [online, setOnline] = useState(true);
   const [sw, setSw] = useState<"unsupported" | "registering" | "ready" | "failed">("registering");
+  // saved on this device once, but the copy is gone: the browser evicted it (low storage, unused site)
+  const [evicted, setEvicted] = useState<string | null>(null);
   const refresh = useCallback(async () => {
     if (!id) return setRecord(null);
-    setRecord(await readRecord(id));
+    const r = await readRecord(id);
+    setRecord(r);
+    setEvicted(r ? null : packWasSaved(id));
   }, [id]);
   useEffect(() => {
     const on = () => setOnline(navigator.onLine);
@@ -32,7 +36,7 @@ export function useOfflinePack(id: string | null) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
-  return { record, online, sw, refresh };
+  return { record, online, sw, refresh, evicted };
 }
 
 /** How old the saved data is, in the words the banner and the status centre use. */

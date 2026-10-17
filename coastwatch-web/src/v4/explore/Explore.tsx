@@ -87,7 +87,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // offline with a verified pack: the map opens on the saved basemap (decided before it mounts)
   const pack = PACKS.monterey;
   const off = useOfflinePack(pack.id);
-  useRecordSource(off.record, pack.name, off.online);
+  useRecordSource(off.record, pack.name, off.online, off.evicted);
   const [basemapPm, setBasemapPm] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     if (basemapPm !== undefined || off.record === undefined) return;

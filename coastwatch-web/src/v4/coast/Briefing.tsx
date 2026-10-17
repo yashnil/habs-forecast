@@ -180,13 +180,12 @@ export function Briefing(props: Props) {
   const [tripOpen, setTripOpen] = useState(false);
   const pack = packForPort(place?.kind === "port" ? Number(place.key.slice(5)) : null) ?? PACKS.monterey;
   const off = useOfflinePack(pack.id);
-  useRecordSource(off.record, pack.name, off.online);
+  useRecordSource(off.record, pack.name, off.online, off.evicted);
   const [packOpen, setPackOpen] = useState(false);
   const hasPack = place?.kind === "port" && !!packForPort(Number(place.key.slice(5)));
   const back = typeof window === "undefined" ? `/coast?${sp.toString()}` : `${window.location.pathname}${window.location.search}`;
   const placeSel: Selection | null = !place ? null : place.kind === "port" ? { kind: "harbor", port: Number(place.key.slice(5)) } : { kind: "point", lat: place.lat, lon: place.lon };
 
-  useReportSource(place ? { id: "evidence", label: "Briefing evidence", state: b.graph ? (b.outlook === "error" ? "partial" : "ready") : "loading", detail: b.graph ? `${b.matters.length} statements, each with its source` : "Reading notices, shore samples, NOAA's model and the satellite" } : null);
   useReportSource(place ? { id: "conditions", label: "Harbour conditions", state: b.cond.loading ? "loading" : b.cond.error ? "unavailable" : b.cond.data ? "ready" : "waiting", detail: b.cond.error ?? "NOAA CO-OPS, NDBC and NWS, read live" } : null);
 
   const all = useMemo(() => [...portPlaces(ports), ...sitePlaces()], [ports]);
@@ -200,6 +199,8 @@ export function Briefing(props: Props) {
     return () => clearTimeout(t);
   }, [placeKey]);
   const settled = settledNow || waited;
+  // the statements are shown once the sources settle; until then the evidence is still loading
+  useReportSource(place ? { id: "evidence", label: "Briefing evidence", state: b.graph && settled ? (b.outlook === "error" ? "partial" : "ready") : "loading", detail: b.graph ? `${b.matters.length} statements, each with its source` : "Reading notices, shore samples, NOAA's model and the satellite" } : null);
   const g = b.graph;
   const measured = useMemo(() => (g ? g.nodes.filter((n) => n.variable !== "official notice") : []), [g]);
   const near = measured.filter((n) => (n.where?.representative === "at" || n.where?.representative === "near") && (!n.freshness || n.freshness.state === "current"));
@@ -421,7 +422,7 @@ export function Briefing(props: Props) {
         </main>
 
         <aside aria-label={`Map of ${place.name}`} className="lg:sticky lg:top-4 lg:self-start" data-testid="locator">
-          <Locator place={place} g={g} ports={ports} official={official} stations={stations} back={back} />
+          <Locator place={place} g={g} ports={ports} official={official} stations={stations} back={back} basemapPmtiles={!off.online && off.record?.complete ? `/offline/${pack.id}/basemap.pmtiles` : null} />
         </aside>
       </div>
       <MobileDock />
@@ -430,7 +431,8 @@ export function Briefing(props: Props) {
 }
 
 /** A small map that says where the evidence is; the full spatial view is Explore. */
-function Locator({ place, g, ports, official, stations, back }: { place: CoastPlace; g: EvidenceGraph | null; ports: PortsCollection | null; official: OfficialDataset | null; stations: StationLite[] | null; back: string }) {
+/** `basemapPmtiles`: offline with a saved field pack, the locator draws the pack's own map, not the tile server's. */
+function Locator({ place, g, ports, official, stations, back, basemapPmtiles = null }: { place: CoastPlace; g: EvidenceGraph | null; ports: PortsCollection | null; official: OfficialDataset | null; stations: StationLite[] | null; back: string; basemapPmtiles?: string | null }) {
   const feats = useMemo<GeoJSON.FeatureCollection>(() => {
     const out: GeoJSON.Feature[] = [{ type: "Feature", geometry: { type: "Point", coordinates: [place.lon, place.lat] }, properties: { kind: place.kind === "port" ? "harbor" : "point", label: place.name } }];
     for (const n of g?.nodes ?? []) {
@@ -479,6 +481,7 @@ function Locator({ place, g, ports, official, stations, back }: { place: CoastPl
           selectedPort={place.kind === "port" ? Number(place.key.slice(5)) : null}
           inspect={null}
           chrome="none"
+          basemapPmtiles={basemapPmtiles}
           highlight={feats}
           initialBounds={bounds}
           initialPadding={24}

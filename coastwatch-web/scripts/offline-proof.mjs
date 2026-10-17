@@ -77,11 +77,28 @@ try {
   p = ctx.pages()[0] ?? (await ctx.newPage());
   const errors = [];
   p.on("pageerror", (e) => errors.push(e.message));
+  // every request that failed while offline: a resource the saved pages need must never be missing
+  const failed = [];
+  // (not counted: requests the page itself cancelled on leaving, and link prefetches (_rsc), which
+  // fall back to a full page load that the service worker answers; that fallback is checked below)
+  p.on("requestfailed", (r) => {
+    if (/ERR_ABORTED/.test(r.failure()?.errorText ?? "") || /[?&]_rsc=/.test(r.url())) return;
+    failed.push(r.url());
+    if (process.env.DEBUG_OFFLINE) console.log(`  [debug] ${r.url().slice(-30)} frame=${r.frame()?.url()} worker=${!!r.serviceWorker()} online=${String(r.headers()["x-online"] ?? "")}`);
+  });
+  p.on("response", (r) => r.status() >= 400 && !/[?&]_rsc=/.test(r.url()) && failed.push(`${r.status()} ${r.url()}`));
   await p.goto(`${BASE}/coast?place=port-550`, { waitUntil: "load" });
   await p.waitForTimeout(4000);
   check((await p.getByTestId("coast-title").innerText().catch(() => "")) === "Monterey", "offline: the Monterey briefing opens");
   check((await p.locator('[data-testid="matters"] > li').count()) >= 3, "offline: the briefing's statements are there");
   check(/Offline/.test(await p.getByTestId("offline-banner").innerText().catch(() => "")), "offline: the banner says so, with the saved time");
+  // a link tapped offline (client navigation fails, the browser loads the saved page)
+  await p.getByRole("link", { name: "Open in Explore" }).first().click();
+  await p.waitForURL(/\/\?/, { timeout: 15000 }).catch(() => null);
+  await p.waitForTimeout(3000);
+  const tapped = await p.evaluate(() => ({ map: !!window.__cwMap, omt: window.__cwMap?.getStyle().sources.omt?.url ?? null, online: navigator.onLine })).catch(() => ({ map: false, omt: null, online: null }));
+  if (process.env.DEBUG_OFFLINE) console.log("  [debug] tapped", JSON.stringify(tapped));
+  check(tapped.map && /^pmtiles:/.test(tapped.omt ?? ""), "offline: a link tapped on the briefing opens Explore on the saved map");
   await p.goto(`${BASE}/?sel=harbor:550&layer=forecast`, { waitUntil: "load" });
   await p.waitForTimeout(7000);
   const map = await p.evaluate(() => {
@@ -99,6 +116,9 @@ try {
   check(!!map && map.water > 0, "offline: basemap features are drawn from the pack");
   check(!!map && map.forecast, "offline: the C-HARM forecast is drawn from the saved grid");
   check((await p.getByTestId("inspect-title").innerText().catch(() => "")) === "Monterey", "offline: the harbour panel opens");
+  const sameOrigin = failed.filter((u) => u.includes(`localhost:${PORT}`));
+  if (failed.length) console.log(`  offline requests that failed (${failed.length}):\n   ${[...new Set(failed)].slice(0, 30).join("\n   ")}`);
+  check(sameOrigin.length === 0, `offline: every resource of the saved pages is in the pack (${sameOrigin.length} same-origin failures)`);
   await p.goto(`${BASE}/research`, { waitUntil: "load" }).catch(() => null);
   check(/offline/i.test(await p.locator("h1").first().innerText().catch(() => "")), "offline: an unsaved page says it is offline");
   check(errors.length === 0, `offline: no page errors (${errors.slice(0, 2).join(" | ")})`);
