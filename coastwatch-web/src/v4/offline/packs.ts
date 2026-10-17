@@ -67,6 +67,8 @@ export function plan(pack: PackDef, m: Manifest, baseUrl: string, pageAssets: st
   add(`/offline/${pack.id}/pack.json`, "basemap");
   for (const f of ["relief-land.webp", "relief-sea.webp", "relief-sea-tint.webp", "relief-sea-monterey.webp", "relief-sea-monterey-tint.webp", "relief.json", "isobaths.geojson", "water-fallback.json", "ca-counties.json"]) add(`/basemap/${f}`, "basemap");
   for (const stack of ["Noto Sans Regular", "Noto Sans Italic"]) for (const r of ["0-255", "256-511", "512-767", "768-1023", "7680-7935", "8192-8447", "8448-8703", "8704-8959"]) add(`/fonts/${encodeURIComponent(stack)}/${r}.pbf`, "basemap");
+  // the glyphs' licence travels with them (SIL OFL 1.1 asks that each copy carry it)
+  add("/fonts/OFL.txt", "basemap");
   // the C-HARM run: every published day of every variable (its own horizon, never more)
   for (const v of CHARM_VARIABLES)
     for (const l of CHARM_LEADS) {
