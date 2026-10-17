@@ -1,15 +1,19 @@
 /** Times in the reader's words, from the source's own timestamp (never re-dated). */
 
+import { pacificToday } from "@/lib/time";
+
 const TZ = "America/Los_Angeles";
 
 export function relTime(iso: string, now: Date): string {
-  const t = Date.parse(iso.length === 10 ? `${iso}T12:00:00Z` : iso);
-  if (!Number.isFinite(t)) return "";
-  const m = Math.round((now.getTime() - t) / 60000);
   if (iso.length === 10) {
-    const d = Math.round(m / 1440);
+    // a calendar date: whole days from the Pacific date, so the evening (already tomorrow in UTC) does not add a day
+    const d = Math.round((Date.parse(`${pacificToday(now)}T00:00:00Z`) - Date.parse(`${iso}T00:00:00Z`)) / 86400000);
+    if (!Number.isFinite(d)) return "";
     return d <= 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`;
   }
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return "";
+  const m = Math.round((now.getTime() - t) / 60000);
   if (m < 1) return "just now";
   if (m < 60) return `${m} min ago`;
   const h = Math.round(m / 60);
