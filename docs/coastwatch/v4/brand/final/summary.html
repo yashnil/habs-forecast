@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Neritic logo decision</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@200..800&family=Source+Serif+4:opsz,wght@8..60,400..700&family=IBM+Plex+Mono:wght@400;500&display=block" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:24px 28px 26px;background:#f2f5f6;color:#0b1820;font:14px/1.45 "Atkinson Hyperlegible Next",system-ui,sans-serif;width:1600px}
+h1{font:600 27px/1.15 "Source Serif 4",Georgia,serif;margin:0}
+.verdict{margin:8px 0 0;font-size:15px;color:#3a4e5b;max-width:1400px}
+.verdict b{color:#0b1820}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:14px}
+.col{background:#fff;border:1px solid #dbe2e6;border-radius:14px;padding:12px 16px 14px;min-width:0}
+.col.pick{border:2px solid #086a85}
+.col h2{font:600 20px "Source Serif 4",Georgia,serif;margin:0 0 2px;display:flex;gap:10px;align-items:baseline}
+.tag{font:600 11px "Atkinson Hyperlegible Next";letter-spacing:.06em;text-transform:uppercase;color:#086a85}
+.lab{font:11.5px/1.3 "IBM Plex Mono",ui-monospace,monospace;color:#526773;margin:9px 0 4px;display:block}
+.row{display:flex;gap:10px;align-items:flex-end}
+img{display:block}
+.crop{position:relative;overflow:hidden;flex:none;border-radius:6px;box-shadow:0 0 0 1px #c3ced4}
+.crop img{position:absolute;max-width:none}
+.veil{position:absolute;inset:0;background:#fff}
+.app{overflow:hidden;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.06)}
+.app img{display:block;max-width:none}
+.wall{display:flex;gap:14px;padding:12px 14px;border-radius:12px;background:linear-gradient(135deg,#d9e7ee,#9fbccc)}
+.wall.d{background:linear-gradient(135deg,#1b2a36,#071016)}
+.foot{margin-top:10px;font-size:12px;color:#526773}
+</style>
+</head>
+<body>
+<h1>Neritic logo decision · R2 Bight or C2 Chart label</h1>
+<p class="verdict" id="verdict"></p>
+<div class="two" id="cols"></div>
+<p class="foot">Chromium screenshots of a faithful copy of the v4 top bar and dock (theme.css tokens); the dark map is an illustrative backdrop, not data. 2x = device scale 2 shown pixel for pixel; 4x/8x = nearest-neighbour. Glare = uniform 45 % white veil. Full evidence: board.png. Masters unchanged from round 2; nothing installed.</p>
+<script src="src/common.js"></script>
+<script>
+const PICK = 'c2';
+document.getElementById('verdict').innerHTML = `<b>Recommendation: C2 · Chart label.</b> It keeps a whole tile outline on every ground the app uses and puts a familiar glyph inside it, so it holds up under sun glare, in a 16 px tab and on the dark map; and it speaks a convention boaters and fishermen already read on charts (a depth label set in a break of its contour). R2 carries more meaning, but its pale Bight is 1.2–1.35:1 against light tabs and the white brand pill, so its lower-right corner disappears and the tile reads as a folded page.`;
+document.getElementById('cols').innerHTML = ['r2', 'c2'].map(k => `<div class="col ${k === PICK ? 'pick' : ''}"><h2>${NAME[k]}${k === PICK ? '<span class="tag">recommended</span>' : ''}</h2>
+  <span class="lab">desktop brand corner, true size: dark map (Explore) · light reading (My Coast)</span>
+  <div class="row">${crop(`desk-${k}-dark`, { w: 352, h: 60 })}${crop(`desk-${k}-light`, { w: 352, h: 60 })}</div>
+  <span class="lab">phone top bar at device scale 2: dark map, then light page</span>
+  ${crop(`phone-${k}-dark`, { w: 358, h: 64, dsf: 2, scale: 2 })}<div style="height:8px"></div>${crop(`phone-${k}-light`, { w: 358, h: 64, dsf: 2, scale: 2 })}
+  <span class="lab">glare stand-in (45 % white veil), device scale 2: dark map · light page</span>
+  <div class="row">${crop(`phone-${k}-dark`, { w: 176, h: 64, dsf: 2, scale: 2, glare: .45 })}${crop(`phone-${k}-light`, { w: 176, h: 64, dsf: 2, scale: 2, glare: .45 })}</div>
+  <span class="lab">crowded tabs, true size (Neritic is 5th): light · dark</span>
+  <div class="row">${shot(`crowd-${k}-light`)}${shot(`crowd-${k}-dark`)}</div>
+  <span class="lab">16 px favicon (hand-drawn master) at 8x: light tab · dark tab · retina slot at 4x: light · dark</span>
+  <div class="row">${shot(`one-${k}-light`, 8)}${shot(`one-${k}-dark`, 8)}${shot(`one-${k}-light@2x`, 4)}${shot(`one-${k}-dark@2x`, 4)}</div>
+  <span class="lab">app icon (180 px master shown at 132): iOS mask · maskable safe zone · home screen 60 px true size · one colour 16 px at 4x</span>
+  <div class="row">${appIcon(k, 132, 'ios')}${appIcon(k, 132, 'safe')}
+    <div class="wall">${appIcon(k, 60, 'ios')}</div><div class="wall d">${appIcon(k, 60, 'ios')}</div>${shot(`mono16-${k}`, 4)}</div>
+</div>`).join('');
+fit();
+</script>
+</body>
+</html>
