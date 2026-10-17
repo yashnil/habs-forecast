@@ -105,12 +105,17 @@ export function SeriesChart({
     pick(best);
   };
 
-  if (!inWin.length)
+  // a window whose visits never measured this variable is empty too: nothing would be drawn, so say so,
+  // and when the newest measurement was
+  if (!inWin.some((s) => s.value != null || s.q === "rejected_negative")) {
+    const newest = samples.findLast((s) => s.value != null);
     return (
       <p className="rounded-lg border border-dashed border-n-line-strong px-3 py-4 text-[14px] text-n-ink-2" data-testid="series-empty">
-        No {label.toLowerCase()} samples in this window. No sample is not a clean result.
+        No {label.toLowerCase()} measured in this window
+        {newest ? `; the newest measurement is from ${new Date(newest.t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}` : ""}. No sample is not a clean result.
       </p>
     );
+  }
 
   return (
     <figure ref={box} className="flex flex-col gap-2" data-testid={`series-${variable}`}>
@@ -253,7 +258,7 @@ export function SampleValue({ s, unit, fmt }: { s: Sample; unit: string; fmt: (v
         <span className="nx-data text-[20px] font-semibold text-n-down">rejected (QC)</span> <span className="text-n-ink-2">not a measurement</span>
       </>
     );
-  if (s.value == null) return <span className="nx-data text-[20px] font-semibold">not measured</span>;
+  if (s.value == null) return <span className="text-n-ink-2">a visit, but this was not measured</span>;
   return (
     <>
       <span className="nx-data text-[20px] font-semibold">{s.q === "reported_zero" || s.value === 0 ? "0" : fmt(s.value)}</span> <span className="text-n-ink-2">{unit}</span>

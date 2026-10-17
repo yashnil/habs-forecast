@@ -11,7 +11,7 @@ import { areaCells, areaStats, type AreaCell } from "@/lib/area";
 import { pageClaims, type Claim, type EvidenceGraph, type EvidenceNode } from "@/lib/harborEvidence";
 import { stationsNear, coastHref } from "@/lib/coast";
 import { distanceKm, loadGrid } from "@/lib/grid";
-import { DAY } from "@/lib/observations";
+import { DAY, unitLabel } from "@/lib/observations";
 import { OFFICIAL_STATUS } from "@/content/copy";
 import { disputeOf, officialAt } from "@/lib/official";
 import { currentsAt, forecastAt, pnSibling, satelliteAt, type Readout } from "@/lib/readout";
@@ -259,7 +259,7 @@ export function StationView({ id, ctx }: { id: string; ctx: Ctx }) {
             <li key={l.variable} className="flex items-baseline justify-between gap-3 text-[14.5px]">
               <span className="text-n-ink-2">{l.label}</span>
               <span className="text-right">
-                <span className="nx-data font-semibold text-n-ink">{l.value == null ? "—" : l.qualifier === "reported_zero" ? "0" : l.value.toLocaleString("en-US", { maximumSignificantDigits: 3 })}</span> <span className="text-n-ink-3">{l.units}</span>
+                <span className="nx-data font-semibold text-n-ink">{l.value == null ? "—" : l.qualifier === "reported_zero" ? "0" : l.value.toLocaleString("en-US", { maximumSignificantDigits: 3 })}</span> <span className="text-n-ink-3">{unitLabel(l.units)}</span>
                 <span className="block text-[12.5px] text-n-ink-3">
                   {dayLabel(l.date, true)}
                   {ctx.now ? ` · ${relTime(l.date, ctx.now)}` : ""}

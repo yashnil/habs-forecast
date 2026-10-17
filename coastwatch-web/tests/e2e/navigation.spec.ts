@@ -33,7 +33,7 @@ test("Explore, My Coast and Research say they are a research preview, and label 
     await page.goto(`${OK}${p}`);
     // the long form links to About; Explore's compact form says the words only
     await expect(page.locator('[data-testid^="preview-disclosure"]:visible').first(), p).toContainText("Research preview");
-    if (p !== "/research?place=port-550") await expect(page.getByTestId("fixture-banner").first(), p).toContainText("Test data");
+    await expect(page.getByTestId("fixture-banner").first(), p).toContainText("Test data");
   }
   for (const p of ["/bloom", "/fisheries", "/sources", "/about"]) {
     await page.goto(`${OK}${p}`);

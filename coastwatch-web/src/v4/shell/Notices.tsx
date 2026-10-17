@@ -56,7 +56,8 @@ export function NoticesButton({ official, status = null, compact = false }: { of
       >
         <Icon name="shield" className="h-[18px] w-[18px] text-n-official" />
         <span className="nx-data">{official ? recs.length : "?"}</span>
-        {!compact && <span className="text-n-official">{word}</span>}
+        {/* below 400 px the word gives way (the count, the shield and the label still say it) so the bar fits */}
+        {!compact && <span className="text-n-official max-[399px]:hidden">{word}</span>}
       </button>
       {open && (
         <div

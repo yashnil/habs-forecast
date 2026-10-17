@@ -10,7 +10,7 @@ import type { ObservationDataset, ObsStation } from "@/generated/observations";
 import type { OfficialDataset } from "@/generated/official";
 import { DAY, samples, sourceCsvUrl, unitLabel, type ObsVariableId, type Sample } from "@/lib/observations";
 import { modelOnAxis, modelSegments, type ModelPoint } from "@/lib/bloom";
-import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, charmRun, type CharmVariable } from "@/lib/layers";
+import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, charmRun, isFixture, sourceStatus, type CharmVariable } from "@/lib/layers";
 import { cellEdges, distanceKm, loadGrid } from "@/lib/grid";
 import { useNow } from "@/lib/useNow";
 import { labelledGeometry } from "@/lib/officialGeometry";
@@ -299,8 +299,8 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
 
   return (
     <div className="env-chart min-h-dvh bg-n-bg text-n-ink" data-testid="research">
-      <TopBar active="research" now={now} notices={<NoticesButton official={official} />} />
-      <RegistryDisclosure className="mx-auto w-full max-w-[1440px] px-4 pb-2 sm:px-6" />
+      <TopBar active="research" now={now} notices={<NoticesButton official={official} status={sourceStatus(manifest, "official")} />} />
+      <RegistryDisclosure className="mx-auto w-full max-w-[1440px] px-4 pb-2 sm:px-6" fixture={isFixture(manifest)} />
       <div className="mx-auto grid w-full max-w-[1440px] gap-6 px-4 pb-32 pt-2 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <nav aria-label="Stations" className="lg:sticky lg:top-4 lg:max-h-[calc(100dvh-110px)] lg:self-start lg:overflow-y-auto" data-testid="research-stations">
           <p className="nx-eyebrow mb-2">Shore stations · CalHABMAP</p>
