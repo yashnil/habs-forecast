@@ -3,34 +3,36 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MlMap } from "maplibre-gl";
-import type { Manifest, PortsCollection } from "@/generated/schema";
+import type { Manifest, PortsCollection, SourceStatus } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 import type { PortIntelCollection } from "@/generated/port_intel";
 import type { StationLite } from "@/lib/data";
-import { CHARM_VARIABLES, artifactUrl, charmRun, sourceStatus, type CharmVariable } from "@/lib/layers";
+import { CHARM_VARIABLES, artifactUrl, charmRun, satelliteLatest, isFixture, sourceStatus, type CharmVariable } from "@/lib/layers";
 import { loadField, fieldFeatures, type CurrentField } from "@/lib/currents";
 import { cellEdges, cellLabels, gapAt, loadGrid } from "@/lib/grid";
 import { gapFeatures, lastHabSample, stationFeatures } from "@/lib/provenance";
 import { clipLimitsToWater, labelledGeometry } from "@/lib/officialGeometry";
 import { loadWaterFallback, type WaterGeometry } from "@/lib/waterFallback";
 import { journeyTo } from "@/lib/camera";
-import { forecastFreshness, openingLayer } from "@/lib/opening";
+import { forecastFreshness, openingLayer, type Opening } from "@/lib/opening";
+import { classifyTime, type Freshness } from "@/lib/freshness";
 import { defaultLead } from "@/lib/charmDays";
 import { pacificToday } from "@/lib/time";
 import { useNow } from "@/lib/useNow";
 import type { CurrentsOverlay, MapPoint } from "@/components/map/MapCanvas";
 import { MobileSheet, type SnapId } from "@/components/MobileSheet";
 import { HoverReadout, type HoverSource } from "@/components/map/HoverReadout";
-import { useReportSource } from "@/v4/readiness/store";
+import { useReportSource, type SourceState } from "@/v4/readiness/store";
 import { SourceList } from "@/v4/readiness/StatusCenter";
 import { TopBar, NavTabs } from "@/v4/shell/TopBar";
 import { NoticesButton } from "@/v4/shell/Notices";
 import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { useCountyPrefs } from "@/components/map/Counties";
 import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel } from "@/v4/ui/time";
 import { decodeSelection, encodeSelection, sameSelection, type Camera, type HistoryEntry, type Selection } from "@/v4/state/selection";
 import { choiceParams, parseChoice, resolve, runDays, VARIABLE_WORDS, type LayerChoice } from "./layers";
-import { LayerList, LayerOptions, Legend, Provenance } from "./LayerPanel";
+import { LayerList, LayerOptions, Legend, Provenance, ReferenceLines } from "./LayerPanel";
 import { Timebar } from "./Timebar";
 import { PlaceSearch, type SearchHit } from "./Search";
 import { CellBody, HarborView, Header, PointView, StationView, areaStats } from "./Inspect";
@@ -101,9 +103,12 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // a forecast link without a day waits for the clock, then opens on the day valid today (lib/charmDays)
   const [choice, setChoiceRaw] = useState<LayerChoice | null>(linked);
   // no layer in the link: chosen once, in the browser, from the data's freshness (lib/opening)
+  // when nothing is current, the reason is said on the map's panel, never left as a bare seafloor
+  const [opening, setOpening] = useState<Opening | null>(null);
   useEffect(() => {
     if (choice || !now) return;
     const o = openingLayer(manifest, now, { regionId: q0.get("region"), variable: "particulate_domoic", lead: firstLead });
+    setOpening(o);
     setChoiceRaw(o.group === "satellite" ? { kind: "satellite", product: o.product, day: null } : o.group === "forecast" ? { kind: "forecast", variable: "particulate_domoic", lead: firstLead } : { kind: "none" });
   }, [choice, now, manifest, q0, firstLead]);
   useEffect(() => {
@@ -294,6 +299,9 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     return { type: "FeatureCollection", features: [{ type: "Feature", geometry: { type: "Polygon", coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] }, properties: { kind: "area" } }] };
   }, [dragBox, highlight]);
 
+  // county reference lines: the remembered v2 choice, now with its control back in the layer panel
+  const [counties, setCounties] = useCountyPrefs();
+
   // ------------------------------------------------------------------ readiness
   const [mapStatus, setMapStatus] = useState<{ basemap: "ok" | "slow" | "down"; field: "none" | "loading" | "ready" | "failed" } | null>(null);
   const onStatus = useCallback((s: { basemap: "ok" | "slow" | "down"; field: "none" | "loading" | "ready" | "failed" }) => setMapStatus(s), []);
@@ -314,27 +322,46 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     detail: official ? "Neritic's copy; not verified by a person. The agencies' pages are the authority." : "Neritic's copy could not be loaded; check CDFW and CDPH directly",
     asOf: officialStatus?.last_success_at ?? null,
   });
+  // a field that loaded is "ready" only while it is current: stale and historical data, and a failed
+  // update, are said in the status centre too (the same policy as the layer panel)
+  const fieldState = (fresh: Freshness | null, status: SourceStatus | null): { state: SourceState; note: string | null } => {
+    if (fresh?.state === "historical") return { state: "stale", note: `Out of date (${fresh.ageDays} days): does not describe current conditions` };
+    if (fresh?.state === "stale") return { state: "stale", note: `Older than usual (${fresh.ageDays} days)` };
+    if (status && status.outcome !== "updated") return { state: "partial", note: "The last update did not complete; the newest published data is shown" };
+    return { state: "ready", note: null };
+  };
+  const modelStatus = sourceStatus(manifest, "charm");
   const modelFresh = now ? forecastFreshness(manifest, now) : null;
+  const modelField = fieldState(modelFresh, modelStatus);
   useReportSource(
     active.kind === "forecast"
       ? {
           id: "model",
           label: "NOAA C-HARM forecast",
-          state: mapStatus?.field === "failed" ? "unavailable" : mapStatus?.field === "ready" ? (modelFresh?.state === "stale" ? "stale" : "ready") : "loading",
-          detail: run ? `${VARIABLE_WORDS[active.variable].short}, run issued ${run.issued_date}` : "No run published",
+          state: mapStatus?.field === "failed" ? "unavailable" : mapStatus?.field === "ready" ? modelField.state : "loading",
+          detail: [run ? `${VARIABLE_WORDS[active.variable].short}, run issued ${run.issued_date}` : "No run published", modelField.note].filter(Boolean).join(". "),
           asOf: run?.issued_date ?? null,
           actions: mapStatus?.field === "failed" ? [{ label: "Try again", run: reload }] : undefined,
         }
       : null,
   );
+  const obsFresh = (id: string, l: typeof resolved.satLayer) => {
+    const st = sourceStatus(manifest, id);
+    // each layer carries its own freshness policy; a latest-clear view is as fresh as its newest pixel
+    return { st, fresh: now && l ? classifyTime(l.freshness, l.composite ? { ...l.time, observed_date: l.composite.newest_observed_date } : l.time, now) : null };
+  };
+  const satF = obsFresh("satellite_chl", resolved.satLayer);
+  const satField = fieldState(satF.fresh, satF.st);
   useReportSource(
     active.kind === "satellite"
-      ? { id: "satellite", label: "Satellite chlorophyll", state: mapStatus?.field === "failed" ? "unavailable" : mapStatus?.field === "ready" ? "ready" : "loading", detail: resolved.satLayer ? `${resolved.satLayer.layer_id.split("_")[0].toUpperCase()} tiles` : "No layer", asOf: resolved.satLayer?.time.observed_date ?? null }
+      ? { id: "satellite", label: "Satellite chlorophyll", state: mapStatus?.field === "failed" ? "unavailable" : mapStatus?.field === "ready" ? satField.state : "loading", detail: [resolved.satLayer ? `${resolved.satLayer.layer_id.split("_")[0].toUpperCase()} tiles` : "No layer", satField.note].filter(Boolean).join(". "), asOf: resolved.satLayer?.time.observed_date ?? null }
       : null,
   );
+  const curF = obsFresh("hf_radar", curLayer);
+  const curReady = fieldState(curF.fresh, curF.st);
   useReportSource(
     active.kind === "currents"
-      ? { id: "currents", label: "Surface currents (HF radar)", state: curState === "failed" ? "unavailable" : curState === "ready" ? "ready" : "loading", detail: "Hourly, 2 km cells", asOf: curLayer?.time.valid_time ?? null }
+      ? { id: "currents", label: "Surface currents (HF radar)", state: curState === "failed" ? "unavailable" : curState === "ready" ? curReady.state : "loading", detail: ["Hourly, 2 km cells", curReady.note].filter(Boolean).join(". "), asOf: curLayer?.time.valid_time ?? null }
       : null,
   );
   const placeName = harborF?.properties.display_name ?? station?.name ?? null;
@@ -387,7 +414,17 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       if (r && mapRef.current) journeyTo(mapRef.current, { bounds: r.bounds, padding: padding() });
     }
   };
-  const ctx = { manifest, baseUrl, ports, portIntel, stations, now, variable, lead, onSelect: selectAndGo };
+  // what a point can be read for: the forecast for the chosen variable and day, the satellite view on the map
+  // (or the newest clear view), and the currents hour once its field has loaded
+  const pointReads = useMemo(
+    () => ({
+      forecast: resolve(manifest, { kind: "forecast", variable, lead }, baseUrl).forecastLayer ?? null,
+      satellite: (active.kind === "satellite" ? resolved.satLayer : null) ?? satelliteLatest(manifest, "olci300") ?? satelliteLatest(manifest, "viirs750") ?? null,
+      currents: hoverSource?.kind === "currents" ? { layer: hoverSource.layer, field: hoverSource.field } : null,
+    }),
+    [manifest, variable, lead, baseUrl, active.kind, resolved.satLayer, hoverSource],
+  );
+  const ctx = { manifest, baseUrl, ports, portIntel, stations, now, variable, lead, onSelect: selectAndGo, official, reads: pointReads };
   // opened from a briefing ("Show on map"): a way back to it, only to a My Coast address
   const backTo = useMemo(() => {
     const f = q0.get("from");
@@ -437,22 +474,44 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     </div>
   ) : null;
 
+  const nothingCurrent =
+    active.kind === "none" && opening?.reason === "nothing-current" ? (
+      <div className="flex flex-col gap-2 rounded-xl border border-n-stale/50 bg-n-surface-2 p-3 text-[13.5px] leading-snug text-n-ink-2" data-testid="nothing-current">
+        <p className="font-semibold text-n-ink">No current forecast or recent satellite view</p>
+        <p>
+          {run ? `The newest C-HARM forecast was issued ${dayLabel(run.issued_date)}. ` : "No C-HARM forecast could be loaded. "}
+          {opening.satellite?.layer.time.observed_date ? `The newest satellite view is from ${dayLabel(opening.satellite.layer.composite?.newest_observed_date ?? opening.satellite.layer.time.observed_date)}. ` : "No recent satellite view was published. "}
+          The map shows the coast and seafloor only. This does not mean conditions are normal.
+        </p>
+        {run && (
+          <button type="button" onClick={() => setChoiceRaw({ kind: "forecast", variable: "particulate_domoic", lead: firstLead < 0 ? 0 : firstLead })} className="nx-press nx-focus inline-flex min-h-11 w-fit items-center rounded-lg border border-n-line-strong px-3 font-semibold text-n-ink" data-testid="show-latest-forecast">
+            Show the latest forecast, marked out of date
+          </button>
+        )}
+      </div>
+    ) : null;
   const activeCard = (
     <div className="flex flex-col gap-3" data-testid="active-layer">
+      {nothingCurrent}
       <p className="nx-eyebrow">On the map</p>
-      <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} />
+      {/* the time control first, so it stays within reach at the sheet's peek; then what it shows */}
       {active.kind !== "none" && <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} compact />}
+      <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} />
       <Legend choice={active} resolved={resolved} />
     </div>
   );
   const layerDeck = (
     <div className="flex flex-col gap-4">
+      {nothingCurrent}
       <LayerList manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} defaults={{ lead: firstLead }} />
       <LayerOptions manifest={manifest} choice={active} onChoice={setChoiceRaw} />
       <div className="border-t border-n-line pt-3">
         <Legend choice={active} resolved={resolved} />
       </div>
-      <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} />
+      <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} />
+      <div className="border-t border-n-line pt-3">
+        <ReferenceLines prefs={counties} onChange={setCounties} />
+      </div>
     </div>
   );
 
@@ -491,6 +550,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       selectedPort={selection?.kind === "harbor" ? selection.port : null}
       inspect={null}
       chrome="none"
+      counties={counties}
       basemapPmtiles={basemapPm ?? null}
       clusterStations
       highlight={shownHighlight}
@@ -589,11 +649,11 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           bp && bp !== "phone" ? (
             <div className="flex flex-col gap-1.5">
               <PlaceSearch ports={ports} stations={stations} regions={regions} onPick={onSearch} current={placeName ?? ""} />
-              <RegistryDisclosure className="w-fit rounded-full border border-n-line bg-n-surface px-3 py-1" />
+              <RegistryDisclosure className="w-fit rounded-full border border-n-line bg-n-surface px-3 py-1" fixture={isFixture(manifest)} compact />
             </div>
           ) : null
         }
-        notices={<NoticesButton official={official} compact={bp === "phone"} />}
+        notices={<NoticesButton official={official} status={officialStatus} compact={bp === "phone"} />}
       />
 
       {backTo && (
@@ -663,7 +723,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         <>
           <div className="absolute inset-x-3 top-[68px] z-20 flex flex-col gap-1.5">
             <PlaceSearch ports={ports} stations={stations} regions={regions} onPick={onSearch} current={placeName ?? ""} />
-            <RegistryDisclosure className="w-fit rounded-full border border-n-line bg-n-surface px-3 py-1" />
+            <RegistryDisclosure className="w-fit rounded-full border border-n-line bg-n-surface px-3 py-1" fixture={isFixture(manifest)} compact />
           </div>
           {/* the sheet ends above the dock; the map stays live above it (non-modal) */}
           <div className="pointer-events-none absolute inset-x-0 top-0 z-30" style={{ bottom: `calc(${DOCK}px + env(safe-area-inset-bottom, 0px))` }}>

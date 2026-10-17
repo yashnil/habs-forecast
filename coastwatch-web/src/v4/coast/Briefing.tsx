@@ -19,12 +19,14 @@ import { useReportSource } from "@/v4/readiness/store";
 import { TopBar, NavTabs } from "@/v4/shell/TopBar";
 import { NoticesButton } from "@/v4/shell/Notices";
 import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import type { Step } from "@/lib/nextSteps";
 import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel, relTime } from "@/v4/ui/time";
 import { ClaimRow, nodeSelection } from "@/v4/explore/Inspect";
 import { SinceLastCheck } from "@/components/coast/SinceLastCheck";
 import { useBriefing } from "./useBriefing";
 import { PACKS, packForPort } from "@/v4/offline/packs";
+import { isFixture, sourceStatus } from "@/lib/layers";
 import { useOfflinePack } from "@/v4/offline/useOfflinePack";
 import { OfflinePanel, useRecordSource } from "@/v4/offline/OfflinePanel";
 import { OfflineBanner } from "@/v4/offline/OfflineBanner";
@@ -208,8 +210,8 @@ export function Briefing(props: Props) {
   if (!place) {
     return (
       <div className="env-chart min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="landing">
-        <TopBar active="coast" now={now} notices={<NoticesButton official={official} />} />
-        <RegistryDisclosure className="mx-auto w-full max-w-[760px] px-4 sm:px-6" />
+        <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} />} />
+        <RegistryDisclosure className="mx-auto w-full max-w-[760px] px-4 sm:px-6" fixture={isFixture(props.manifest)} />
         <main id="main" className="mx-auto w-full max-w-[760px] px-4 pb-28 pt-6 sm:px-6">
           <p className="nx-eyebrow">My Coast</p>
           <h1 className="mt-2 text-balance font-serif text-[36px] font-semibold leading-[1.1] sm:text-[44px]" data-testid="coast-title">
@@ -263,8 +265,8 @@ export function Briefing(props: Props) {
 
   return (
     <div className="env-chart relative min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="trip">
-      <TopBar active="coast" now={now} notices={<NoticesButton official={official} />} />
-      <RegistryDisclosure className="mx-auto w-full max-w-[1240px] px-4 sm:px-6" />
+      <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} />} />
+      <RegistryDisclosure className="mx-auto w-full max-w-[1240px] px-4 sm:px-6" fixture={isFixture(props.manifest)} />
       {!off.online && (
         <div className="px-3 pt-3">
           {/* in the page's flow: on the briefing it must never cover the title */}
@@ -380,28 +382,23 @@ export function Briefing(props: Props) {
 
           <Section id="checks" title="Before you go" kicker={`For ${species.id === "any" ? (audience === "all" ? "any activity" : AUDIENCES.find((a) => a.id === audience)?.label.toLowerCase()) : species.label.toLowerCase()} at ${place.name}${b.tripDay ? `, ${b.tripDay.label.toLowerCase() === "today" ? "today" : `${b.tripDay.label} ${b.tripDay.day}`}` : ""}.`}>
             <ol className="flex flex-col gap-3" data-testid="checks">
-              {[...b.checks.shown, ...b.checks.more].map((s, i) => (
-                <li key={s.id} className="grid grid-cols-[28px_minmax(0,1fr)] gap-3 rounded-2xl border border-n-line bg-n-surface p-4">
-                  <span className="nx-data grid h-7 w-7 place-items-center rounded-full bg-n-surface-2 text-[13px] font-semibold">{i + 1}</span>
-                  <div className="min-w-0">
-                    <p className="text-[16px] font-semibold leading-snug">{s.title}</p>
-                    <p className="mt-0.5 text-[14.5px] leading-snug text-n-ink-2">{s.reason}</p>
-                    <p className="mt-1.5 flex flex-wrap gap-x-3 text-[13.5px]">
-                      {"url" in s.source ? (
-                        <a href={s.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-9 items-center gap-1 font-semibold text-n-accent">
-                          {s.source.label} <Icon name="external" className="h-3.5 w-3.5" />
-                        </a>
-                      ) : (
-                        <span className="inline-flex min-h-9 items-center font-semibold">
-                          {s.source.label}: <span className="nx-data ml-1 select-all">{s.source.tel}</span>
-                        </span>
-                      )}
-                      {s.when && <span className="inline-flex min-h-9 items-center text-n-ink-3">{s.when}</span>}
-                    </p>
-                  </div>
-                </li>
+              {b.checks.shown.map((s, i) => (
+                <CheckItem key={s.id} s={s} n={i + 1} />
               ))}
             </ol>
+            {/* at most five checks up front; the rest stay one tap away, never dropped */}
+            {b.checks.more.length > 0 && (
+              <details className="mt-3" data-testid="checks-more">
+                <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center font-semibold text-n-accent">
+                  {b.checks.more.length} more {b.checks.more.length === 1 ? "check" : "checks"}
+                </summary>
+                <ol className="mt-2 flex flex-col gap-3">
+                  {b.checks.more.map((s, i) => (
+                    <CheckItem key={s.id} s={s} n={b.checks.shown.length + i + 1} />
+                  ))}
+                </ol>
+              </details>
+            )}
           </Section>
 
           <footer className="flex flex-col gap-3 border-t border-n-line pt-6 text-[14px] text-n-ink-3">
@@ -533,5 +530,33 @@ function MobileDock() {
     <div className="env-instrument fixed inset-x-0 bottom-0 z-40 border-t border-n-line bg-n-surface lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <NavTabs active="coast" size="dock" />
     </div>
+  );
+}
+
+/** One check before going out: what to do, why, and where (an agency page, or a phone line that dials). */
+function CheckItem({ s, n }: { s: Step; n: number }) {
+  return (
+    <li className="grid grid-cols-[28px_minmax(0,1fr)] gap-3 rounded-2xl border border-n-line bg-n-surface p-4" data-testid={`check-${s.id}`}>
+      <span className="nx-data grid h-7 w-7 place-items-center rounded-full bg-n-surface-2 text-[13px] font-semibold">{n}</span>
+      <div className="min-w-0">
+        <p className="text-[16px] font-semibold leading-snug">{s.title}</p>
+        {/* a service's technical reason (an HTTP status) stays available on hover, not in the sentence */}
+        <p className="mt-0.5 text-[14.5px] leading-snug text-n-ink-2" title={/\(HTTP \d+\)/.test(s.reason) ? s.reason : undefined}>
+          {s.reason.replace(/\s*\(HTTP \d+\)/, "")}
+        </p>
+        <p className="mt-1.5 flex flex-wrap gap-x-3 text-[13.5px]">
+          {"url" in s.source ? (
+            <a href={s.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-9 items-center gap-1 font-semibold text-n-accent">
+              {s.source.label} <Icon name="external" className="h-3.5 w-3.5" />
+            </a>
+          ) : (
+            <a href={`tel:${s.source.tel.replace(/[^\d+]/g, "")}`} className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent" data-testid="check-tel">
+              {s.source.label}: <span className="nx-data">{s.source.tel}</span>
+            </a>
+          )}
+          {s.when && <span className="inline-flex min-h-9 items-center text-n-ink-3">{s.when}</span>}
+        </p>
+      </div>
+    </li>
   );
 }

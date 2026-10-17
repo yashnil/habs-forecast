@@ -26,6 +26,11 @@ test.describe("agency source discrepancy", () => {
     const card = disputed.getByTestId(`notice-${ID}`);
     await expect(card).toHaveAttribute("data-disputed", "true");
     await expect(card.getByRole("link", { name: /SN26-021/ })).toHaveAttribute("href", "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx");
+    // the reason is always visible beside it, never behind "details"
+    await expect(card.getByTestId("notice-critical")).toContainText("release SN26-021");
+    await expect(card.getByTestId("notice-critical")).toContainText("appears to lift this notice");
+    await expect(card.getByTestId("notice-critical")).toContainText("not shown as in effect");
+    await expect(panel.getByTestId("notices-current").getByTestId(`notice-${ID}`)).toHaveCount(0);
     // once, in the disputed group only; the count and the heading leave it out
     await expect(panel.getByTestId(`notice-${ID}`)).toHaveCount(1);
     await expect(panel.getByTestId("notices-heading")).toHaveText(`${count} active notices in California`);
@@ -39,7 +44,9 @@ test.describe("agency source discrepancy", () => {
     await expect(claim.getByRole("link", { name: /SN26-021/ })).toHaveAttribute("href", /SN26-021\.aspx$/);
     await expect(page.getByTestId("unknowns")).toContainText("release SN26-021 appears to lift");
     // in the official list it carries the release, never a plain "in effect"
-    await expect(page.getByTestId(`notice-official:${ID}`)).toContainText("SN26-021");
+    await expect(page.getByTestId(`notice-official:${ID}`)).toContainText("appears to lift it; awaiting review");
+    // and no ordinary official statement counts it as applying
+    expect(await page.locator(`[data-testid="matters"] [data-kind="official"][data-supports~="official:${ID}"]:not([data-testid^="claim-disputed-"])`).count()).toBe(0);
   });
 
   test("Explore's harbour panel flags it", async ({ page }) => {
@@ -50,7 +57,12 @@ test.describe("agency source discrepancy", () => {
   test("without a discrepancy nothing changes", async ({ page }) => {
     await open(page, `${OK}/coast?place=port-550`);
     await expect(page.getByTestId(`claim-disputed-${ID}`)).toHaveCount(0);
+    // the notice is listed for Monterey as an ordinary, unverified notice
+    const row = page.getByTestId(`notice-official:${ID}`);
+    await expect(row).toContainText("Not verified");
+    await expect(row).not.toContainText("appears to lift");
     await page.getByTestId("notices-button").click();
     await expect(page.getByTestId("notices-disputed")).toHaveCount(0);
+    await expect(page.getByTestId("notices-current").getByTestId(`notice-${ID}`)).toHaveCount(1);
   });
 });

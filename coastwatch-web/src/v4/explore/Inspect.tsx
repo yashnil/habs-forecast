@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import type { Manifest, PortsCollection } from "@/generated/schema";
+import { useEffect, useMemo, useState } from "react";
+import type { LayerArtifact, Manifest, PortsCollection } from "@/generated/schema";
+import type { OfficialDataset } from "@/generated/official";
 import type { PortIntelCollection } from "@/generated/port_intel";
 import type { StationLite } from "@/lib/data";
 import { charmRun, type CharmVariable } from "@/lib/layers";
@@ -10,6 +11,10 @@ import { pageClaims, type Claim, type EvidenceGraph, type EvidenceNode } from "@
 import { stationsNear, coastHref } from "@/lib/coast";
 import { distanceKm } from "@/lib/grid";
 import { DAY } from "@/lib/observations";
+import { OFFICIAL_STATUS } from "@/content/copy";
+import { disputeOf, officialAt } from "@/lib/official";
+import { currentsAt, forecastAt, pnSibling, satelliteAt, type Readout } from "@/lib/readout";
+import type { CurrentField } from "@/lib/currents";
 import { Icon } from "@/v4/ui/Icon";
 import { clockLabel, dayLabel, kmLabel, relTime } from "@/v4/ui/time";
 import { SeriesChart, recentSamples } from "@/v4/charts/SeriesChart";
@@ -27,6 +32,9 @@ type Ctx = {
   variable: CharmVariable;
   lead: number;
   onSelect: (s: Selection) => void;
+  official?: OfficialDataset | null;
+  /** what can be read at a point: the forecast for the chosen variable and day, the satellite view, and the currents hour once loaded */
+  reads?: { forecast: LayerArtifact | null; satellite: LayerArtifact | null; currents: { layer: LayerArtifact; field: CurrentField } | null };
 };
 
 const KIND: Record<string, { word: string; tone: string; dot: string }> = {
@@ -379,14 +387,41 @@ export function CellBody({ read, ctx, variable }: { read: CellRead | null; ctx: 
 
 export function PointView({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
   const near = useMemo(() => stationsNear(ctx.stations, lat, lon), [ctx.stations, lat, lon]);
+  const notices = useMemo(() => officialAt(ctx.official ?? null, lon, lat), [ctx.official, lat, lon]);
   return (
     <div className="flex flex-col gap-4" data-testid="inspect-point">
       <p className="nx-data text-[13px] text-n-ink-3">
         {lat.toFixed(4)}°N {Math.abs(lon).toFixed(4)}°W
       </p>
+      {ctx.reads && <PointReads lat={lat} lon={lon} ctx={ctx} />}
       <button type="button" onClick={() => ctx.onSelect({ kind: "cell", lat, lon })} className="nx-press nx-focus flex min-h-12 items-center justify-between rounded-xl border border-n-line-strong px-3 text-[15px] font-semibold">
         What C-HARM publishes for this cell <Icon name="chevronRight" />
       </button>
+      {ctx.official !== undefined && (
+        <Section title="Official notices at this point">
+          {notices.length ? (
+            <ul className="flex flex-col gap-2" data-testid="point-notices">
+              {notices.map(({ record: r, reason }) => {
+                const d = disputeOf(ctx.official ?? null, r.id);
+                return (
+                  <li key={r.id} className="text-[14px]" data-testid={`point-notice-${r.id}`} data-disputed={d ? "true" : undefined}>
+                    <p className="font-semibold leading-snug">{r.title}</p>
+                    <p className="text-[13px] text-n-ink-2">
+                      {r.agency} · {reason} · <span className="text-n-official">not verified</span>
+                      {d ? ` · ${d.agency} release ${d.release} appears to lift it; not shown as in effect` : ""}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-[14px] text-n-ink-2">No notice in Neritic&rsquo;s list covers this point.</p>
+          )}
+          <p className="mt-1 text-[13px] leading-snug text-n-ink-3" data-testid="point-missing-not-open">
+            {OFFICIAL_STATUS.missingNotOpen}
+          </p>
+        </Section>
+      )}
       <Section title="Nearest shore stations">
         {near.near.length || near.nearestBeyond ? (
           <ul>
@@ -406,6 +441,66 @@ export function PointView({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ct
         )}
       </Section>
     </div>
+  );
+}
+
+/** The published values at a point: the same reads as the desktop hover label, reachable by click,
+ *  keyboard and screen reader. Each value is the cell or pixel that contains the point, never the
+ *  nearest one and never interpolated, with its own product, resolution and time. */
+function PointReads({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
+  const reads = ctx.reads!;
+  const [rows, setRows] = useState<{ id: string; label: string; r: Readout | null; err?: boolean }[] | null>(null);
+  useEffect(() => {
+    let live = true;
+    const jobs: { id: string; label: string; run: () => Promise<Readout> }[] = [];
+    if (reads.forecast) jobs.push({ id: "forecast", label: "NOAA C-HARM model", run: () => forecastAt(ctx.baseUrl, reads.forecast!, lat, lon, pnSibling(ctx.manifest, reads.forecast!)) });
+    if (reads.satellite) jobs.push({ id: "satellite", label: "Satellite chlorophyll", run: () => satelliteAt(ctx.manifest, ctx.baseUrl, reads.satellite!, lat, lon) });
+    if (reads.currents) jobs.push({ id: "currents", label: "Surface current", run: async () => currentsAt(reads.currents!.field, reads.currents!.layer, lat, lon) });
+    Promise.all(jobs.map((j) => j.run().then((r) => ({ id: j.id, label: j.label, r }), () => ({ id: j.id, label: j.label, r: null, err: true })))).then((x) => live && setRows(x));
+    return () => {
+      live = false;
+    };
+  }, [reads.forecast, reads.satellite, reads.currents, ctx.baseUrl, ctx.manifest, lat, lon]);
+  return (
+    <Section title="What is published here">
+      {!rows ? (
+        <p className="text-[14px] text-n-ink-2" role="status">
+          Reading the published cells…
+        </p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-n-line" data-testid="point-reads">
+          {rows.map(({ id, label, r, err }) => (
+            <li key={id} className="py-2.5" data-testid={`point-${id}`}>
+              <p className={`text-[12.5px] font-semibold uppercase tracking-[0.06em] ${r?.kind === "model" ? "text-n-model" : "text-n-measured"}`}>
+                {label} · {r?.kind === "model" ? "model" : "observation"}
+              </p>
+              {r?.value != null ? (
+                <>
+                  <p className="mt-0.5 flex items-baseline gap-1.5">
+                    <span className="nx-data text-[20px] font-semibold" data-testid="point-value">
+                      {r.value}
+                    </span>
+                    {r.unit && <span className="text-[13.5px] text-n-ink-2">{r.unit}</span>}
+                  </p>
+                  <p className="text-[13.5px] text-n-ink-2">{r.what}</p>
+                  {r.flag && <p className="text-[13px] text-n-stale">{r.flag}</p>}
+                </>
+              ) : (
+                <p className="mt-0.5 text-[14px] text-n-ink" data-testid="point-none">
+                  {err ? "Could not be read; the rest of this panel is unaffected." : r?.none}
+                </p>
+              )}
+              {r && (
+                <p className="mt-0.5 text-[13px] text-n-ink-3" data-testid="point-when">
+                  {r.when}
+                </p>
+              )}
+            </li>
+          ))}
+          {!reads.currents && <li className="py-2.5 text-[13.5px] text-n-ink-2">Surface currents: choose the currents layer to read the radar here.</li>}
+        </ul>
+      )}
+    </Section>
   );
 }
 

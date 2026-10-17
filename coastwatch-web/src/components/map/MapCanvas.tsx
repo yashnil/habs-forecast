@@ -30,7 +30,7 @@ import { indexedTiles } from "@/lib/tileIndex";
 import { loadWaterFallback, waterGeoJSON } from "@/lib/waterFallback";
 import { onBasemapSlow } from "@/lib/waterMask";
 import FlowParticles from "./FlowParticles";
-import { CountyControl, CountyLayers, useCountyPrefs } from "./Counties";
+import { CountyControl, CountyLayers, useCountyPrefs, type CountyPrefs } from "./Counties";
 
 // MapLibre's module worker is copied to public/ by scripts/copy-maplibre-worker.mjs
 setWorkerUrl("/vendor/maplibre/maplibre-gl-worker.mjs");
@@ -93,6 +93,8 @@ type Props = {
   overlay?: GeoJSON.FeatureCollection | null;
   /** v4: "none" leaves the map's own controls to the workspace (zoom, scale, counties) */
   chrome?: "v2" | "none";
+  /** v4: the county reference lines, controlled by the workspace (unset: the map's own remembered choice) */
+  counties?: CountyPrefs;
   /** v4: a shore station was chosen on the map (the station itself is selected, not the water beside it) */
   onStationPick?: (stationId: string) => void;
   /** v4: stations as counted clusters below harbour zoom, so the regional view stays calm */
@@ -208,7 +210,8 @@ export default function MapCanvas(p: Props) {
   });
   const fg = p.forecast?.grid;
   const forecastTiles = useMemo(() => (fg ? gridTiles(fg.layer, fg.url) : null), [fg]);
-  const [counties, setCounties] = useCountyPrefs();
+  const [ownCounties, setCounties] = useCountyPrefs();
+  const counties = p.counties ?? ownCounties;
 
   // When the basemap's tiles fail (tile server down, offline) or are late (a data tile stopped
   // waiting for them), draw the bundled water instead, so the sea, the coastline and the no-data
