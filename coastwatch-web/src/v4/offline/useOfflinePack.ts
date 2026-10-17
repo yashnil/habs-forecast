@@ -1,20 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { packWasSaved, readRecord, type PackRecord } from "./packs";
+import { packState, packWasSaved, type PackProblem, type PackRecord } from "./packs";
 
 /** Registers the service worker (once) and reads a pack's record; re-reads it on demand. */
 export function useOfflinePack(id: string | null) {
   const [record, setRecord] = useState<PackRecord | null | undefined>(undefined);
+  // what is wrong with the saved copy, if anything: an older format, files gone, a damaged record, unfinished
+  const [problem, setProblem] = useState<PackProblem | null>(null);
   const [online, setOnline] = useState(true);
   const [sw, setSw] = useState<"unsupported" | "registering" | "ready" | "failed">("registering");
   // saved on this device once, but the copy is gone: the browser evicted it (low storage, unused site)
   const [evicted, setEvicted] = useState<string | null>(null);
   const refresh = useCallback(async () => {
     if (!id) return setRecord(null);
-    const r = await readRecord(id);
-    setRecord(r);
-    setEvicted(r ? null : packWasSaved(id));
+    const s = await packState(id);
+    setProblem(s.problem);
+    setRecord(s.record);
+    setEvicted(s.record || s.problem ? null : packWasSaved(id));
   }, [id]);
   useEffect(() => {
     const on = () => setOnline(navigator.onLine);
@@ -36,7 +39,7 @@ export function useOfflinePack(id: string | null) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
-  return { record, online, sw, refresh, evicted };
+  return { record, problem, online, sw, refresh, evicted };
 }
 
 /** How old the saved data is, in the words the banner and the status centre use. */

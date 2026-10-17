@@ -1,6 +1,6 @@
 "use client";
 
-import type { Manifest } from "@/generated/schema";
+import type { Manifest, TileLayer } from "@/generated/schema";
 import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, satelliteLatest, tileIndexUrl } from "@/lib/layers";
 import { currentsHourly, currentsMean } from "@/lib/currents";
 
@@ -18,18 +18,27 @@ export const PACKS: Record<string, PackDef> = {
 export const packForPort = (code: number | null | undefined) => Object.values(PACKS).find((p) => p.port === code) ?? null;
 export const cacheName = (id: string) => `neritic-pack-${id}`;
 const RECORD = "/__pack__/record.json";
+/**
+ * The pack format this app writes and expects. 2: the record is written even when storage runs out
+ * (an unfinished pack says so), a new download refreshes the pages and evidence instead of keeping
+ * the old copies, and the map's water is read from the saved basemap. A pack of an older format stays
+ * usable for what it holds, and is said to be older: download again to bring it up to date.
+ */
+export const PACK_VERSION = 2;
 
 export type Group = "app" | "basemap" | "model" | "satellite" | "currents" | "briefing";
 export const GROUP_WORDS: Record<Group, { name: string; offline: string }> = {
   app: { name: "Neritic's pages and code", offline: "Explore and the briefing open with no connection" },
   basemap: { name: "Map of the region", offline: "Coast, roads and names (OpenStreetMap), seafloor relief and fonts" },
   model: { name: "NOAA C-HARM run", offline: "The run's four days for all three variables: no day beyond its horizon" },
-  satellite: { name: "Satellite chlorophyll, latest clear view", offline: "Sentinel-3 tiles over the region, each pixel with its own date" },
-  currents: { name: "HF-radar currents", offline: "The newest hour and the 24 h mean" },
+  satellite: { name: "Satellite chlorophyll, latest clear view", offline: "Sentinel-3, VIIRS and both together over the region, with each pixel's age: every pixel keeps its own date" },
+  currents: { name: "HF-radar currents", offline: "Every published hour and the 24 h mean" },
   briefing: { name: "Briefing and evidence snapshot", offline: "Notices, shore samples and harbour conditions as they were when saved" },
 };
 
 export type PlanItem = { url: string; group: Group; bytes: number | null; key?: string };
+/** What is wrong with a saved pack, if anything (found when it is read, never stored). */
+export type PackProblem = "older-format" | "missing-files" | "damaged-record" | "unfinished";
 export type PackRecord = {
   id: string;
   version: number;
@@ -75,10 +84,10 @@ export function plan(pack: PackDef, m: Manifest, baseUrl: string, pageAssets: st
       const lyr = charmLayer(m, v, l);
       if (lyr?.grid) add(artifactUrl(baseUrl, lyr.grid.url), "model");
     }
-  // satellite: the latest clear view over the region, every native zoom
-  const sat = satelliteLatest(m, "olci300");
-  const t = sat?.tiles;
-  if (sat && t?.relative) {
+  // satellite: the latest clear view over the region, every native zoom, of every view Explore offers
+  // (each sensor and both together; chlorophyll, the age of each pixel, which sensor)
+  for (const t of satelliteTileSets(m)) {
+    if (!t.relative) continue;
     const idx = tileIndexUrl(baseUrl, t);
     if (idx) add(idx, "satellite");
     for (let z = t.min_zoom ?? 5; z <= t.max_native_zoom; z++) {
@@ -101,8 +110,8 @@ export function plan(pack: PackDef, m: Manifest, baseUrl: string, pageAssets: st
         for (let c = c0; c <= c1; c++) if (ch.present.includes(`${r}_${c}`)) add(artifactUrl(baseUrl, ch.url_template.replace("{row}", String(r)).replace("{col}", String(c))), "satellite");
     }
   }
-  // currents: the newest hour and the 24 h mean
-  for (const l of [currentsHourly(m).at(-1), currentsMean(m)]) {
+  // currents: every published hour (Explore's timebar offers each) and the 24 h mean
+  for (const l of [...currentsHourly(m), currentsMean(m)]) {
     if (!l?.vectors) continue;
     add(artifactUrl(baseUrl, l.vectors.u_grid.url), "currents");
     add(artifactUrl(baseUrl, l.vectors.v_grid.url), "currents");
@@ -155,6 +164,24 @@ export async function pageAssetsOf(urls: string[]): Promise<string[]> {
       // the page could not be read now; its assets are picked up at runtime instead
     }
   }
+  // code a page loads only on demand (a layer, a panel opened later) is named inside the code it has
+  // loaded: follow those names until no new file appears, so no interaction offline needs the server
+  const read = new Set<string>();
+  for (let round = 0; round < 6; round++) {
+    const next = [...found].filter((x) => x.endsWith(".js") && !read.has(x));
+    if (!next.length) break;
+    await Promise.all(
+      next.map(async (js) => {
+        read.add(js);
+        try {
+          const txt = await (await fetch(js)).text();
+          for (const m of txt.matchAll(/["'](?:\/_next\/)?(static\/(?:chunks|media)\/[^"'\\\s]+)["']/g)) found.add(`/_next/${m[1]}`);
+        } catch {
+          // not readable now: cached at runtime if it loads later
+        }
+      }),
+    );
+  }
   for (const css of [...found].filter((x) => x.endsWith(".css"))) {
     try {
       const txt = await (await fetch(css)).text();
@@ -166,22 +193,35 @@ export async function pageAssetsOf(urls: string[]): Promise<string[]> {
   return [...found];
 }
 
-/** Satellite tiles that were never published (cloud, land) are not requested: the tile index lists those that exist. */
-export async function keepPublishedTiles(items: PlanItem[], m: Manifest, baseUrl: string): Promise<PlanItem[]> {
-  const t = satelliteLatest(m, "olci300")?.tiles;
-  const idx = t ? tileIndexUrl(baseUrl, t) : null;
-  if (!t || !idx) return items;
-  try {
-    const have = new Set((await (await fetch(idx)).json()) as string[]);
-    const prefix = artifactUrl(baseUrl, t.url_template.split("{z}")[0]);
-    return items.filter((it) => {
-      if (it.group !== "satellite" || !it.url.startsWith(prefix) || it.url === idx) return true;
-      const zxy = it.url.slice(prefix.length).replace(/\.png$/, "");
-      return have.has(zxy);
-    });
-  } catch {
-    return items;
+/** Every tile set of the latest satellite views Explore can show. */
+export function satelliteTileSets(m: Manifest): TileLayer[] {
+  const out: TileLayer[] = [];
+  for (const p of ["olci300", "viirs750", "multi"] as const) {
+    const l = satelliteLatest(m, p);
+    for (const t of [l?.tiles, l?.composite?.age_tiles, l?.multisensor?.age_tiles, l?.multisensor?.sensor_tiles]) if (t && !out.some((x) => x.url_template === t.url_template)) out.push(t);
   }
+  return out;
+}
+
+/** Satellite tiles that were never published (cloud, land) are not requested: each tile index lists those that exist. */
+export async function keepPublishedTiles(items: PlanItem[], m: Manifest, baseUrl: string): Promise<PlanItem[]> {
+  let out = items;
+  for (const t of satelliteTileSets(m)) {
+    const idx = tileIndexUrl(baseUrl, t);
+    if (!idx) continue;
+    try {
+      const have = new Set((await (await fetch(idx)).json()) as string[]);
+      const prefix = artifactUrl(baseUrl, t.url_template.split("{z}")[0]);
+      out = out.filter((it) => {
+        if (it.group !== "satellite" || !it.url.startsWith(prefix) || it.url === idx) return true;
+        const zxy = it.url.slice(prefix.length).replace(/\.png$/, "");
+        return have.has(zxy);
+      });
+    } catch {
+      // the index could not be read: every tile in the box is asked for, and a missing one is reported
+    }
+  }
+  return out;
 }
 
 /** Sizes from the servers (HEAD), so the reader sees the real total before downloading. */
@@ -205,15 +245,46 @@ export async function sizeOf(items: PlanItem[], signal?: AbortSignal): Promise<P
 }
 
 export async function readRecord(id: string): Promise<PackRecord | null> {
-  if (typeof caches === "undefined") return null;
+  return (await packState(id)).record;
+}
+
+const isRecord = (x: unknown): x is PackRecord => {
+  const r = x as PackRecord | null;
+  return !!r && typeof r === "object" && typeof r.savedAt === "string" && typeof r.version === "number" && Array.isArray(r.items) && typeof r.complete === "boolean";
+};
+
+/**
+ * A saved pack as it is now on this device, checked against its own record: every file the record
+ * lists must still be there (a browser can remove part of the storage, a file can be lost). A pack
+ * whose files are missing is not complete, whatever its record said; a record that cannot be read
+ * is said to be damaged; saved files with no record are an unfinished download.
+ */
+export async function packState(id: string): Promise<{ record: PackRecord | null; problem: PackProblem | null }> {
+  if (typeof caches === "undefined") return { record: null, problem: null };
   try {
     // never caches.open() to read: it would create the cache it was asked about
-    if (!(await caches.has(cacheName(id)))) return null;
+    if (!(await caches.has(cacheName(id)))) return { record: null, problem: null };
     const c = await caches.open(cacheName(id));
     const r = await c.match(RECORD);
-    return r ? ((await r.json()) as PackRecord) : null;
+    const keys = await c.keys();
+    if (!r) return { record: null, problem: keys.length ? "unfinished" : null };
+    let rec: unknown;
+    try {
+      rec = await r.json();
+    } catch {
+      rec = null;
+    }
+    if (!isRecord(rec)) return { record: null, problem: "damaged-record" };
+    // every key is stored as a full URL (a same-origin item under this site's origin)
+    const have = new Set(keys.map((k) => k.url));
+    const missing = rec.items.filter((it) => !have.has(new URL(it.url, location.origin).href)).length;
+    if (missing) {
+      const was = rec.verified?.missing ?? 0;
+      return { record: { ...rec, complete: false, verified: { basemapSha256: rec.verified?.basemapSha256 ?? false, failed: rec.verified?.failed ?? [], missing: was + missing } }, problem: "missing-files" };
+    }
+    return { record: rec, problem: rec.complete && rec.version < PACK_VERSION ? "older-format" : null };
   } catch {
-    return null;
+    return { record: null, problem: null };
   }
 }
 
@@ -254,7 +325,18 @@ async function sha256(buf: ArrayBuffer) {
  * written last; the pack is "complete" only when every item is saved and the basemap's checksum
  * matches the published one.
  */
+/** Files whose content never changes under the same URL: kept from an earlier download. Pages, the
+ *  briefing's evidence and the site's own unversioned files are always saved afresh, so a new
+ *  download never keeps an older answer under a newer date. */
+export const keepsAcrossDownloads = (url: string) => url.startsWith("/_next/static/") || /\/(charm|satellite|currents)\//.test(url);
+
 export async function download(pack: PackDef, items: PlanItem[], meta: Omit<PackRecord, "items" | "totalBytes" | "complete" | "verified" | "savedAt" | "id" | "version" | "osmDataAsOf">, onProgress: (p: Progress) => void, signal: AbortSignal): Promise<PackRecord> {
+  // an unfinished download (no record, or one that says incomplete) is resumed: what it saved is kept;
+  // otherwise only the files that cannot change are kept, and the rest is saved again
+  const before = await packState(pack.id);
+  // a record that cannot be read says nothing about what the files are: start again from nothing
+  if (before.problem === "damaged-record") await caches.delete(cacheName(pack.id));
+  const resume = before.problem !== "damaged-record" && (!before.record || !before.record.complete);
   const c = await caches.open(cacheName(pack.id));
   const p: Progress = { done: 0, total: items.length, bytes: 0, totalBytes: items.reduce((a, x) => a + (x.bytes ?? 0), 0), failed: [], current: null, rate: null };
   const saved: { url: string; group: Group; bytes: number }[] = [];
@@ -262,7 +344,7 @@ export async function download(pack: PackDef, items: PlanItem[], meta: Omit<Pack
   let i = 0;
   let quota = false;
   const one = async (it: PlanItem) => {
-    const have = await c.match(it.url);
+    const have = resume || keepsAcrossDownloads(it.url) ? await c.match(it.url) : undefined;
     if (have) {
       const n = Number(have.headers.get("content-length")) || it.bytes || 0;
       saved.push({ url: it.url, group: it.group, bytes: n });
@@ -288,7 +370,7 @@ export async function download(pack: PackDef, items: PlanItem[], meta: Omit<Pack
       try {
         await one(it);
       } catch (e) {
-        if ((e as Error).name === "QuotaExceededError") quota = true;
+        if (isQuota(e)) quota = true;
         if ((e as Error).name !== "AbortError") p.failed.push(it.url);
       }
       p.done++;
@@ -320,7 +402,7 @@ export async function download(pack: PackDef, items: PlanItem[], meta: Omit<Pack
   const missing = items.filter((it) => !saved.some((s) => s.url === it.url)).length;
   const record: PackRecord = {
     id: pack.id,
-    version: 1,
+    version: PACK_VERSION,
     savedAt: new Date().toISOString(),
     ...meta,
     items: saved,
@@ -329,8 +411,21 @@ export async function download(pack: PackDef, items: PlanItem[], meta: Omit<Pack
     verified: { basemapSha256: shaOk, missing, failed: p.failed.slice(0, 20) },
     osmDataAsOf: osm,
   };
+  // the record is written whatever happened, so an unfinished pack says it is unfinished (and what
+  // it holds); with no room even for the record, the saved files are an unfinished download
+  try {
+    await c.put(RECORD, new Response(JSON.stringify(record), { headers: { "content-type": "application/json" } }));
+    markSaved(pack.id, record.savedAt);
+  } catch (e) {
+    if (isQuota(e)) quota = true;
+    else throw e;
+  }
   if (quota) throw Object.assign(new Error("Storage is full"), { name: "QuotaExceededError", record });
-  await c.put(RECORD, new Response(JSON.stringify(record), { headers: { "content-type": "application/json" } }));
-  markSaved(pack.id, record.savedAt);
   return record;
+}
+
+/** The browser's "storage is full" (a DOMException; some engines name it by code only). */
+export function isQuota(e: unknown) {
+  const x = e as { name?: string; code?: number } | null;
+  return !!x && (x.name === "QuotaExceededError" || x.code === 22);
 }

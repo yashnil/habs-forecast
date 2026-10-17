@@ -96,7 +96,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // offline with a verified pack: the map opens on the saved basemap (decided before it mounts)
   const pack = PACKS.monterey;
   const off = useOfflinePack(pack.id);
-  useRecordSource(off.record, pack.name, off.online, off.evicted);
+  useRecordSource(off.record, pack.name, off.online, off.evicted, off.problem);
   const [basemapPm, setBasemapPm] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     if (basemapPm !== undefined || off.record === undefined) return;
@@ -645,7 +645,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           <HoverReadout manifest={manifest} baseUrl={baseUrl} source={hoverSource} point={hover.p} screen={hover.s} bounds={{ w: typeof window === "undefined" ? 1440 : window.innerWidth - (panelOpen ? PANEL + 24 : 0), h: typeof window === "undefined" ? 900 : window.innerHeight }} />
         </div>
       )}
-      {!off.online && <OfflineBanner record={off.record ?? null} name={pack.name} />}
+      {!off.online && <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} />}
       {packOpen && (
         <div className="absolute inset-0 z-50 grid place-items-center bg-[rgba(4,16,22,0.55)] p-3" onClick={(e) => e.target === e.currentTarget && setPackOpen(false)}>
           <div role="dialog" aria-modal="true" aria-label={`Field pack: ${pack.name}`} className="env-chart nx-deck nx-rise max-h-[92dvh] w-[min(520px,100%)] overflow-y-auto p-5 text-n-ink">

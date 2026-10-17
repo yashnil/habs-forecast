@@ -3,12 +3,17 @@
 import { useState } from "react";
 import { Icon } from "@/v4/ui/Icon";
 import { clockLabel } from "@/v4/ui/time";
-import type { PackRecord } from "./packs";
+import type { PackProblem, PackRecord } from "./packs";
 
 /** Offline: unmistakable and persistent, with the time of what is shown; one line until opened. Never a toast. */
-export function OfflineBanner({ record, name, inline = false }: { record: PackRecord | null; name: string; inline?: boolean }) {
+export function OfflineBanner({ record, name, problem = null, inline = false }: { record: PackRecord | null; name: string; problem?: PackProblem | null; inline?: boolean }) {
   const [open, setOpen] = useState(false);
-  const short = record?.complete ? `Offline · ${name} saved ${clockLabel(record.savedAt)}` : record ? `Offline · ${name} pack incomplete` : "Offline · no field pack saved";
+  const older = problem === "older-format";
+  const short = record?.complete
+    ? `Offline · ${name} saved ${clockLabel(record.savedAt)}${older ? " (older pack)" : ""}`
+    : record || problem === "unfinished" || problem === "damaged-record"
+      ? `Offline · ${name} pack incomplete`
+      : "Offline · no field pack saved";
   return (
     <div role="status" className={`env-chart ${inline ? "relative" : "absolute inset-x-3 top-[64px] z-40 max-md:top-[118px]"} mx-auto max-w-[640px] rounded-2xl border border-n-line-strong bg-n-surface text-n-ink shadow-[var(--nx-shadow)]`} data-testid="offline-banner">
       <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="nx-focus flex min-h-12 w-full items-center gap-3 px-4 text-left">
@@ -19,8 +24,8 @@ export function OfflineBanner({ record, name, inline = false }: { record: PackRe
       {open && (
         <p className="px-4 pb-3 text-[14px] leading-snug text-n-ink-2">
           {record?.complete
-            ? `Every value keeps its own time; nothing here is live. Official notices as last checked${record.noticesCheckedAt ? ` ${clockLabel(record.noticesCheckedAt)}` : ""}: confirm with CDFW and CDPH when you are back online.`
-            : record
+            ? `Every value keeps its own time; nothing here is live. Official notices as last checked${record.noticesCheckedAt ? ` ${clockLabel(record.noticesCheckedAt)}` : ""}: confirm with CDFW and CDPH when you are back online.${older ? " Saved by an earlier version of Neritic: some parts may not open; download again when you have a connection." : ""}`
+            : record || problem
               ? "Some parts of the pack were not saved and may not open. Finish the download when you have a connection."
               : "Only pages already open keep working. Save a field pack while you have a connection."}
         </p>

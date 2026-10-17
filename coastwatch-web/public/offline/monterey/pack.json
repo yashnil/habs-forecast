@@ -16,5 +16,5 @@
     "licence": "OpenStreetMap data under the Open Database License (ODbL 1.0); this file is an unmodified regional extract and is offered under the same licence. Map design © OpenMapTiles (CC-BY 4.0).",
     "attribution": "© OpenStreetMap contributors · © OpenMapTiles · OpenFreeMap"
   },
-  "notes": ["Not for navigation.", "Outside this box the offline map shows the bundled seafloor relief and coastline only."]
+  "notes": ["Not for navigation.", "Outside this box, zoomed in, the offline map shows the bundled seafloor relief only (no coastline, roads or names)."]
 }
