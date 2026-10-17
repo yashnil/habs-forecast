@@ -6,11 +6,11 @@ import { clockLabel } from "@/v4/ui/time";
 import type { PackRecord } from "./packs";
 
 /** Offline: unmistakable and persistent, with the time of what is shown; one line until opened. Never a toast. */
-export function OfflineBanner({ record, name }: { record: PackRecord | null; name: string }) {
+export function OfflineBanner({ record, name, inline = false }: { record: PackRecord | null; name: string; inline?: boolean }) {
   const [open, setOpen] = useState(false);
   const short = record?.complete ? `Offline · ${name} saved ${clockLabel(record.savedAt)}` : record ? `Offline · ${name} pack incomplete` : "Offline · no field pack saved";
   return (
-    <div role="status" className="env-chart absolute inset-x-3 top-[64px] z-40 mx-auto max-w-[640px] rounded-2xl border border-n-line-strong bg-n-surface text-n-ink shadow-[var(--nx-shadow)] max-md:top-[118px]" data-testid="offline-banner">
+    <div role="status" className={`env-chart ${inline ? "relative" : "absolute inset-x-3 top-[64px] z-40 max-md:top-[118px]"} mx-auto max-w-[640px] rounded-2xl border border-n-line-strong bg-n-surface text-n-ink shadow-[var(--nx-shadow)]`} data-testid="offline-banner">
       <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="nx-focus flex min-h-12 w-full items-center gap-3 px-4 text-left">
         <Icon name="offline" className="h-5 w-5 shrink-0 text-n-offline" />
         <span className="min-w-0 flex-1 text-[14.5px] font-semibold leading-snug">{short}</span>

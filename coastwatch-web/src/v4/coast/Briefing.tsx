@@ -265,8 +265,9 @@ export function Briefing(props: Props) {
       <TopBar active="coast" now={now} notices={<NoticesButton official={official} />} />
       <RegistryDisclosure className="mx-auto w-full max-w-[1240px] px-4 sm:px-6" />
       {!off.online && (
-        <div className="relative h-[76px] max-md:h-[96px]">
-          <OfflineBanner record={off.record ?? null} name={pack.name} />
+        <div className="px-3 pt-3">
+          {/* in the page's flow: on the briefing it must never cover the title */}
+          <OfflineBanner record={off.record ?? null} name={pack.name} inline />
         </div>
       )}
       {packOpen && (
