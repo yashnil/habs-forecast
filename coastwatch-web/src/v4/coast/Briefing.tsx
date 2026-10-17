@@ -182,6 +182,7 @@ export function Briefing(props: Props) {
   const [packOpen, setPackOpen] = useState(false);
   const hasPack = place?.kind === "port" && !!packForPort(Number(place.key.slice(5)));
   const back = typeof window === "undefined" ? `/coast?${sp.toString()}` : `${window.location.pathname}${window.location.search}`;
+  const placeSel: Selection | null = !place ? null : place.kind === "port" ? { kind: "harbor", port: Number(place.key.slice(5)) } : { kind: "point", lat: place.lat, lon: place.lon };
 
   useReportSource(place ? { id: "evidence", label: "Briefing evidence", state: b.graph ? (b.outlook === "error" ? "partial" : "ready") : "loading", detail: b.graph ? `${b.matters.length} statements, each with its source` : "Reading notices, shore samples, NOAA's model and the satellite" } : null);
   useReportSource(place ? { id: "conditions", label: "Harbour conditions", state: b.cond.loading ? "loading" : b.cond.error ? "unavailable" : b.cond.data ? "ready" : "waiting", detail: b.cond.error ?? "NOAA CO-OPS, NDBC and NWS, read live" } : null);
@@ -312,7 +313,7 @@ export function Briefing(props: Props) {
             ) : (
               <ul className="flex flex-col gap-5" data-testid="matters">
                 {b.matters.map((c) => (
-                  <ClaimRow key={c.id} c={c} graph={g as EvidenceGraph} stations={stations} onSelect={(s) => router.push(exploreHref(s, back))} />
+                  <ClaimRow key={c.id} c={c} graph={g as EvidenceGraph} stations={stations} onSelect={(s) => router.push(exploreHref(s, back))} fallback={placeSel} />
                 ))}
               </ul>
             )}
@@ -405,7 +406,7 @@ export function Briefing(props: Props) {
 
           <footer className="flex flex-col gap-3 border-t border-n-line pt-6 text-[14px] text-n-ink-3">
             <div className="flex flex-wrap gap-2">
-              <Link href={exploreHref(place.kind === "port" ? { kind: "harbor", port: Number(place.key.slice(5)) } : { kind: "point", lat: place.lat, lon: place.lon }, back)} className="nx-press nx-focus flex min-h-12 items-center gap-2 rounded-xl border border-n-line-strong px-4 font-semibold text-n-ink">
+              <Link href={exploreHref(placeSel!, back)} className="nx-press nx-focus flex min-h-12 items-center gap-2 rounded-xl border border-n-line-strong px-4 font-semibold text-n-ink">
                 <Icon name="map" /> Open in Explore
               </Link>
               <Link href={`/research?place=${encodeURIComponent(place.key)}`} className="nx-press nx-focus flex min-h-12 items-center gap-2 rounded-xl border border-n-line-strong px-4 font-semibold text-n-ink">

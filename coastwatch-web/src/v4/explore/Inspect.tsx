@@ -85,10 +85,11 @@ export function nodeSelection(n: EvidenceNode | undefined, stations: StationLite
   return null;
 }
 
-export function ClaimRow({ c, graph, stations, onSelect }: { c: Claim; graph: EvidenceGraph; stations: StationLite[] | null; onSelect?: (s: Selection) => void }) {
+/** `fallback`: where "Show on map" goes when no supporting node has a place of its own (an official notice: the harbour's waters). */
+export function ClaimRow({ c, graph, stations, onSelect, fallback = null }: { c: Claim; graph: EvidenceGraph; stations: StationLite[] | null; onSelect?: (s: Selection) => void; fallback?: Selection | null }) {
   const k = KIND[c.kind] ?? KIND.gap;
   const nodes = new Map(graph.nodes.map((n) => [n.id, n]));
-  const target = (c.supports ?? []).map((id) => nodeSelection(nodes.get(id), stations)).find(Boolean) ?? null;
+  const target = (c.supports ?? []).map((id) => nodeSelection(nodes.get(id), stations)).find(Boolean) ?? fallback;
   return (
     <li className="flex gap-3" data-testid={`claim-${c.id}`} data-kind={c.kind} data-supports={(c.supports ?? []).join(" ")}>
       <span className={`mt-2 h-2.5 w-2.5 shrink-0 rounded-full ${k.dot}`} aria-hidden />

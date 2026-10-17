@@ -25,6 +25,10 @@ test("the briefing answers first, in order, and every statement says its kind", 
   // nothing is called safe; chlorophyll is never toxin
   const text = await page.locator("main").innerText();
   expect(text).not.toMatch(/\b(safe to eat|safe to harvest|all clear)\b/i);
+  // an official statement has no place of its own: "Show on map" opens the harbour's waters
+  await page.locator('[data-testid="matters"] > li[data-kind="official"]').first().getByRole("button", { name: "Show on map" }).click();
+  await expect(page).toHaveURL(/sel=harbor(%3A|:)550/);
+  await expect(page.getByTestId("inspect-title")).toHaveText("Monterey");
 });
 
 test("the trip controls write the link, and the link reproduces the trip", async ({ page }) => {
