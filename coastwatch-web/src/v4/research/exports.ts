@@ -6,6 +6,9 @@ import type { CharmVariable } from "@/lib/layers";
 import type { AreaCell } from "@/lib/area";
 import type { LeadValue } from "@/v4/explore/reads";
 import type { TransectCell } from "./transect";
+import type { ObsPixel, ObsTransectCell, Sampler } from "./obsGrid";
+import { nativeLabel } from "@/lib/layers";
+import { sensorLabel } from "@/lib/stamp";
 
 /**
  * Research exports (CSV). Every file opens with `#` lines that say what the numbers are: product
@@ -100,6 +103,88 @@ export function areaCsv(bbox: [number, number, number, number], cells: AreaCell[
     "Not an average for any harbour.",
   ]);
   return rows(head, "row,col,lat,lon,value", cells.map((c) => [c.row, c.col, +c.lat.toFixed(5), +c.lon.toFixed(5), c.value]));
+}
+
+// ---------------------------------------------------------------- observations (satellite chlorophyll, HF radar)
+
+type Run = Pick<Manifest, "pipeline_run_id" | "pipeline_version" | "generated_at">;
+
+/** Sensor or platform of a layer, in words. */
+function platformOf(l: LayerArtifact): string {
+  if (l.group_id === "currents") return (l.platforms ?? []).join(", ") || "HF radar";
+  return sensorLabel(l);
+}
+
+/**
+ * The `#` block for observation exports: what was observed, by which sensor and dataset, at what
+ * native resolution, when (each row carries its own date or hour), under which licence and pipeline
+ * run, and how an empty value reads. Never a forecast; chlorophyll never a toxin.
+ */
+export function obsHeader(title: string, s: Pick<Sampler, "kind" | "layer" | "sources">, manifest: Run, extra: string[] = []): string[] {
+  const l = s.layer;
+  const radar = s.kind === "radar";
+  const srcs = s.sources;
+  const ids = [...new Set(srcs.flatMap((x) => (x.provenance.dataset_id ?? "").split(",")).filter(Boolean))];
+  const lic = [...new Set(srcs.map((x) => x.provenance.license))];
+  return [
+    `# Neritic research export: ${title}`,
+    line(`Product class: observation (${radar ? "HF-radar surface currents" : "satellite chlorophyll-a"}), not a forecast`),
+    line(`Layer: ${l.title} (${l.layer_id})`),
+    line(radar ? "Variable: surface current; units: m/s (u eastward, v northward; speed and direction toward, degrees clockwise from north, computed from u and v)" : `Variable: chlorophyll-a; units: mg/m³ (${l.units ?? "mg m-3"})`),
+    line(`Sensor / platform: ${srcs.map((x) => `${platformOf(x)}${nativeLabel(x) ? `, native ${nativeLabel(x)}` : ""}`).join("; ")}`),
+    line(`Source dataset: ${ids.join(", ") || "—"} (${l.provenance.institution ?? "—"}); ${l.provenance.source_url ?? ""}`),
+    line(`Licence: ${lic.join(" / ")}`),
+    line(`Pipeline run: ${manifest.pipeline_run_id} (version ${manifest.pipeline_version}), manifest generated ${manifest.generated_at}`),
+    ...extra.map(line),
+    radar
+      ? "# Empty value = no observation (no radar coverage that hour, or dropped by QC): no data, not calm water; never zero, never interpolated"
+      : "# Empty value = no observation (cloud, fog, glint, land or no overpass): not low chlorophyll; never zero, never interpolated or filled",
+    radar ? "# Observed surface water movement; not where a bloom will go and not a forecast." : "# Chlorophyll-a is algal biomass near the surface: not a toxin measurement and not Pseudo-nitzschia.",
+    DISCLAIMER,
+  ];
+}
+
+const when = (s: Pick<Sampler, "kind" | "layer">) => (s.kind === "radar" ? (s.layer.layer_id.endsWith("mean24h") ? `24-hour mean ending ${s.layer.time.valid_time}` : `hour ${s.layer.time.valid_time}`) : s.layer.composite || s.layer.multisensor ? `latest clear view to ${s.layer.time.observed_date}` : `overpass day ${s.layer.time.observed_date}`);
+const sensorWord = (k: 1 | 2 | null | undefined, s: Pick<Sampler, "sources">) => (k ? (k === 1 ? platformOf(s.sources[0]) : platformOf(s.sources[1])) : "");
+const r5 = (x: number) => +x.toFixed(5);
+const v4 = (x: number | null | undefined) => (x == null ? null : +x.toPrecision(6));
+
+function obsCols(s: Pick<Sampler, "kind" | "layer">): string[] {
+  if (s.kind === "radar") return ["observed_hour_utc", "u_ms", "v_ms", "speed_ms", "direction_toward_deg"];
+  return s.layer.multisensor ? ["sensor", "observed_date", "chlorophyll_mg_m3"] : ["observed_date", "chlorophyll_mg_m3"];
+}
+function obsVals(s: Pick<Sampler, "kind" | "layer" | "sources">, p: Partial<Pick<ObsPixel, "value" | "date" | "sensor" | "u" | "v" | "dir">>): (string | number | null)[] {
+  if (s.kind === "radar") return p.value == null ? [null, null, null, null, null] : [p.date ?? null, v4(p.u), v4(p.v), v4(p.value), p.dir == null ? null : +p.dir.toFixed(1)];
+  const base = [p.value == null ? null : (p.date ?? null), v4(p.value)];
+  return s.layer.multisensor ? [p.value == null ? null : sensorWord(p.sensor, s), ...base] : base;
+}
+
+/** One pixel, with any other published reading of the same pixel (single days, or radar hours). */
+export function obsPointCsv(s: Pick<Sampler, "kind" | "layer" | "sources" | "g">, px: ObsPixel, others: { label: string; px: Partial<ObsPixel> | null }[], manifest: Run): string {
+  const head = obsHeader(`${s.kind === "radar" ? "HF-radar cell" : "satellite pixel"} row ${px.row}, column ${px.col} (centre ${px.lat.toFixed(5)}°N, ${px.lon.toFixed(5)}°E)`, s, manifest, [
+    `Exactly the published pixel containing the chosen point; no neighbouring pixel is used. Selected: ${when(s)}`,
+    "Each row is one published layer at this same pixel; observed_date / observed_hour_utc is that pixel's own time",
+  ]);
+  const body = [["selected", ...obsVals(s, px)], ...others.map((o) => [o.label, ...obsVals(s, o.px ?? {})])];
+  return rows(head, ["layer", ...obsCols(s)].join(","), body);
+}
+
+export function obsTransectCsv(s: Pick<Sampler, "kind" | "layer" | "sources">, a: { lat: number; lon: number }, b: { lat: number; lon: number }, cells: ObsTransectCell[], manifest: Run): string {
+  const head = obsHeader(`${s.kind === "radar" ? "HF-radar" : "satellite chlorophyll"} transect, ${when(s)}`, s, manifest, [
+    `From ${a.lat.toFixed(4)}°N ${a.lon.toFixed(4)}°E to ${b.lat.toFixed(4)}°N ${b.lon.toFixed(4)}°E; km = distance along the line to where it enters the pixel`,
+    "Every pixel the line crosses is listed once, in order; gaps stay empty rows (nothing carried across them); in_domain = no means outside the product's grid",
+  ]);
+  return rows(head, ["km", "row", "col", "lat", "lon", ...obsCols(s), "in_domain"].join(","), cells.map((c) => [+c.km.toFixed(3), c.inDomain ? c.row : null, c.inDomain ? c.col : null, r5(c.lat), r5(c.lon), ...obsVals(s, c), c.inDomain ? "yes" : "no"]));
+}
+
+export function obsAreaCsv(s: Pick<Sampler, "kind" | "layer" | "sources">, bbox: [number, number, number, number], cells: ObsPixel[], manifest: Run): string {
+  const [w, so, e, n] = bbox;
+  const head = obsHeader(`${s.kind === "radar" ? "HF-radar cells" : "satellite pixels"} in a box, ${when(s)}`, s, manifest, [
+    `Box: ${so.toFixed(4)} to ${n.toFixed(4)}°N, ${w.toFixed(4)} to ${e.toFixed(4)}°E; a pixel is inside when its centre is`,
+    ...(s.layer.multisensor ? ["Multi-sensor display: each row is one sensor's own value and date on the 300 m lattice (VIIRS values repeat over the 300 m pixels inside one 750 m VIIRS pixel); nothing is averaged"] : []),
+    "Not an average for any harbour.",
+  ]);
+  return rows(head, ["row", "col", "lat", "lon", ...obsCols(s)].join(","), cells.map((c) => [c.row, c.col, r5(c.lat), r5(c.lon), ...obsVals(s, c)]));
 }
 
 /** Save a CSV in the browser. */

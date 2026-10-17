@@ -1,5 +1,5 @@
 import type { ValueGrid } from "@/generated/schema";
-import { cellAt, distanceKm, valueOf } from "@/lib/grid";
+import { cellAt, distanceKm, valueOf, type Cell } from "@/lib/grid";
 
 export type TransectCell = { km: number; row: number; col: number; lat: number; lon: number; value: number | null; inDomain: boolean };
 
@@ -12,6 +12,12 @@ export type TransectCell = { km: number; row: number; col: number; lat: number; 
  * stretch outside the grid is one entry marked outside the domain.
  */
 export function transect(g: ValueGrid, codes: Uint16Array, a: { lat: number; lon: number }, b: { lat: number; lon: number }): TransectCell[] {
+  return transectWith(g, (c) => valueOf(g, codes, c), a, b);
+}
+
+/** The same exact walk over any lattice, with the value of each crossed cell read by `valueAt`
+ *  (satellite pixels from their chunks, radar cells from the decoded field). */
+export function transectWith(g: Pick<ValueGrid, "lat_first" | "lat_step" | "lon_first" | "lon_step" | "width" | "height">, valueAt: (c: Cell) => number | null, a: { lat: number; lon: number }, b: { lat: number; lon: number }): TransectCell[] {
   const total = distanceKm(a.lat, a.lon, b.lat, b.lon);
   // positions in cell units, shifted so that cell k spans [k, k + 1)
   const u = (lat: number) => (lat - g.lat_first) / g.lat_step + 0.5;
@@ -35,13 +41,13 @@ export function transect(g: ValueGrid, codes: Uint16Array, a: { lat: number; lon
     if (f1 - f0 < 1e-12) continue;
     // the middle of each piece lies strictly inside one cell
     const fm = (f0 + f1) / 2;
-    const c = cellAt(g, a.lat + (b.lat - a.lat) * fm, a.lon + (b.lon - a.lon) * fm);
+    const c = cellAt(g as ValueGrid, a.lat + (b.lat - a.lat) * fm, a.lon + (b.lon - a.lon) * fm);
     const last = out[out.length - 1];
     if (c && last && last.row === c.row && last.col === c.col) continue;
     if (!c && last && !last.inDomain) continue;
     const lat = a.lat + (b.lat - a.lat) * f0;
     const lon = a.lon + (b.lon - a.lon) * f0;
-    out.push(c ? { km: total * f0, row: c.row, col: c.col, lat: c.lat, lon: c.lon, value: valueOf(g, codes, c), inDomain: true } : { km: total * f0, row: -1, col: -1, lat, lon, value: null, inDomain: false });
+    out.push(c ? { km: total * f0, row: c.row, col: c.col, lat: c.lat, lon: c.lon, value: valueAt(c), inDomain: true } : { km: total * f0, row: -1, col: -1, lat, lon, value: null, inDomain: false });
   }
   return out;
 }
