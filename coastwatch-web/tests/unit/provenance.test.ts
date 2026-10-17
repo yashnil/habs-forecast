@@ -77,9 +77,9 @@ describe("the harbour view (carto T3)", async () => {
     expect(lastHabSample(stations[2])).toBeNull();
     const fc = stationFeatures(stations, now, "2026-10-08");
     expect(fc.features.map((f) => f.properties!.id)).toEqual(["HABs-SantaCruzWharf", "HABs-MontereyWharf", "HABs-None"]);
-    expect(fc.features[0].properties).toMatchObject({ kind: "station", name: "Santa Cruz Wharf", last: "2026-09-30", recent: true, label: "Santa Cruz Wharf · last sample Sep 30" });
+    expect(fc.features[0].properties).toMatchObject({ kind: "station", name: "Santa Cruz Wharf", last: "2026-09-30", recent: true, label: "Santa Cruz Wharf · last HAB sample Sep 30" });
     // an older sample says its year, and the station is drawn as a ring
-    expect(fc.features[1].properties).toMatchObject({ recent: false, label: "Monterey Wharf · last sample Aug 27, 2025" });
+    expect(fc.features[1].properties).toMatchObject({ recent: false, label: "Monterey Wharf · last HAB sample Aug 27, 2025" });
     expect(fc.features[2].properties).toMatchObject({ recent: false, last: null, label: "Nowhere · no HAB sample published" });
     expect((fc.features[1].geometry as GeoJSON.Point).coordinates).toEqual([-121.8893, 36.6037]);
     // without a clock nothing is called recent

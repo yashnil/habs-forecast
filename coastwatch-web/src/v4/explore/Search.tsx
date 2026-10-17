@@ -7,6 +7,18 @@ import { Icon } from "@/v4/ui/Icon";
 
 export type SearchHit = { kind: "harbor" | "station" | "region"; id: string; label: string; sub: string };
 
+/** Offered when the box is empty: the harbours and piers most of Neritic's questions are about. */
+const FEATURED: [SearchHit["kind"], string][] = [
+  ["harbor", "Monterey"],
+  ["harbor", "Moss Landing"],
+  ["harbor", "Santa Cruz"],
+  ["station", "Santa Cruz Wharf"],
+  ["station", "Monterey Wharf"],
+  ["harbor", "Crescent City"],
+  ["harbor", "Half Moon Bay"],
+  ["harbor", "Morro Bay"],
+];
+
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 /** Places to go: harbours, shore stations and regions. "/" focuses it from anywhere in the workspace. */
@@ -26,7 +38,11 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
   );
   const hits = useMemo(() => {
     const n = norm(q.trim());
-    if (!n) return all.filter((h) => h.kind !== "station").slice(0, 12);
+    // an empty box offers the places most looked at (then the regions), so the common question is two taps
+    if (!n) {
+      const featured = FEATURED.map(([kind, label]) => all.find((h) => h.kind === kind && h.label === label)).filter((h): h is SearchHit => !!h);
+      return [...featured, ...all.filter((h) => h.kind === "region")].slice(0, 12);
+    }
     return all.filter((h) => norm(h.label).includes(n) || norm(h.sub).includes(n)).slice(0, 12);
   }, [q, all]);
   useEffect(() => setI(0), [q]);

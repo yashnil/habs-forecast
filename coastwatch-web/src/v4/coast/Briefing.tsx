@@ -19,6 +19,7 @@ import { useReportSource } from "@/v4/readiness/store";
 import { TopBar, NavTabs } from "@/v4/shell/TopBar";
 import { NoticesButton } from "@/v4/shell/Notices";
 import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { distanceKm } from "@/lib/grid";
 import type { Step } from "@/lib/nextSteps";
 import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel, relTime } from "@/v4/ui/time";
@@ -329,6 +330,28 @@ export function Briefing(props: Props) {
             <SinceLastCheck />
           </div>
 
+          {/* what to do comes right after what matters and what changed; the evidence follows (v2 order) */}
+          <Section id="checks" title="Before you go" kicker={`For ${species.id === "any" ? (audience === "all" ? "any activity" : AUDIENCES.find((a) => a.id === audience)?.label.toLowerCase()) : species.label.toLowerCase()} at ${place.name}${b.tripDay ? `, ${b.tripDay.label.toLowerCase() === "today" ? "today" : `${b.tripDay.label} ${b.tripDay.day}`}` : ""}.`}>
+            <ol className="flex flex-col gap-3" data-testid="checks">
+              {b.checks.shown.map((s, i) => (
+                <CheckItem key={s.id} s={s} n={i + 1} />
+              ))}
+            </ol>
+            {/* at most five checks up front; the rest stay one tap away, never dropped */}
+            {b.checks.more.length > 0 && (
+              <details className="mt-3" data-testid="checks-more">
+                <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center font-semibold text-n-accent">
+                  {b.checks.more.length} more {b.checks.more.length === 1 ? "check" : "checks"}
+                </summary>
+                <ol className="mt-2 flex flex-col gap-3">
+                  {b.checks.more.map((s, i) => (
+                    <CheckItem key={s.id} s={s} n={b.checks.shown.length + i + 1} />
+                  ))}
+                </ol>
+              </details>
+            )}
+          </Section>
+
           <Section id="measured" title="The evidence near you" kicker="Measurements and observations that describe these waters, with where and when each was taken.">
             {!g ? (
               <p className="text-[15px] text-n-ink-2">Reading…</p>
@@ -381,27 +404,6 @@ export function Briefing(props: Props) {
             </ul>
           </Section>
 
-          <Section id="checks" title="Before you go" kicker={`For ${species.id === "any" ? (audience === "all" ? "any activity" : AUDIENCES.find((a) => a.id === audience)?.label.toLowerCase()) : species.label.toLowerCase()} at ${place.name}${b.tripDay ? `, ${b.tripDay.label.toLowerCase() === "today" ? "today" : `${b.tripDay.label} ${b.tripDay.day}`}` : ""}.`}>
-            <ol className="flex flex-col gap-3" data-testid="checks">
-              {b.checks.shown.map((s, i) => (
-                <CheckItem key={s.id} s={s} n={i + 1} />
-              ))}
-            </ol>
-            {/* at most five checks up front; the rest stay one tap away, never dropped */}
-            {b.checks.more.length > 0 && (
-              <details className="mt-3" data-testid="checks-more">
-                <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center font-semibold text-n-accent">
-                  {b.checks.more.length} more {b.checks.more.length === 1 ? "check" : "checks"}
-                </summary>
-                <ol className="mt-2 flex flex-col gap-3">
-                  {b.checks.more.map((s, i) => (
-                    <CheckItem key={s.id} s={s} n={b.checks.shown.length + i + 1} />
-                  ))}
-                </ol>
-              </details>
-            )}
-          </Section>
-
           <footer className="flex flex-col gap-3 border-t border-n-line pt-6 text-[14px] text-n-ink-3">
             <div className="flex flex-wrap gap-2">
               <Link href={exploreHref(placeSel!, back)} className="nx-press nx-focus flex min-h-12 items-center gap-2 rounded-xl border border-n-line-strong px-4 font-semibold text-n-ink">
@@ -443,7 +445,9 @@ function Locator({ place, g, ports, official, stations, back, basemapPmtiles = n
     return { type: "FeatureCollection", features: out };
   }, [place, g, stations]);
   const geom = useMemo(() => labelledGeometry(official), [official]);
-  const pts = feats.features.map((f) => (f.geometry as GeoJSON.Point).coordinates);
+  // frame the place and what lies within 40 km (a station far up the coast is drawn, not framed:
+  // framing it zoomed the locator out to the whole coast)
+  const pts = feats.features.map((f) => (f.geometry as GeoJSON.Point).coordinates).filter(([lo, la]) => distanceKm(place.lat, place.lon, la, lo) <= 40);
   const lons = pts.map((p) => p[0]);
   const lats = pts.map((p) => p[1]);
   const w = Math.min(...lons, place.lon - 0.2) - 0.03;
@@ -469,6 +473,17 @@ function Locator({ place, g, ports, official, stations, back, basemapPmtiles = n
   return (
     <div ref={box} className="env-instrument overflow-hidden rounded-2xl border border-n-line">
       <div className="relative h-[220px] lg:h-[420px]">
+        {/* until the map has drawn: the same quiet bathymetric lines as Explore's start, never a blank box */}
+        {!map && (
+          <div className="absolute inset-0 grid place-items-center" data-testid="locator-loading" role="status">
+            <svg className="absolute inset-0 h-full w-full text-n-accent opacity-25" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <path key={i} className={i === 2 && near ? "nx-sweep" : undefined} d={`M-20 ${70 + i * 38} C 80 ${40 + i * 40}, 160 ${120 + i * 30}, 240 ${80 + i * 38} S 380 ${110 + i * 34}, 430 ${90 + i * 38}`} fill="none" stroke="currentColor" strokeWidth={i === 2 ? 1.6 : 0.8} />
+              ))}
+            </svg>
+            <p className="relative text-[13.5px] text-n-ink-2">{near ? `Drawing ${place.name} and its stations…` : `Map of ${place.name}`}</p>
+          </div>
+        )}
         {near && <MapCanvas
           forecast={null}
           satellite={null}

@@ -8,7 +8,8 @@ import { BRAND } from "@/content/brand";
 import { OfficialDrawer, OfficialProvider } from "@/components/shell/OfficialShell";
 import type { Manifest, SourceStatus } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
-import { sourceStatus } from "@/lib/layers";
+import { isFixture, sourceStatus } from "@/lib/layers";
+import { RegistryDisclosure } from "@/v4/shell/Disclosure";
 import { ReadinessProvider, useReportSource } from "@/v4/readiness/store";
 import { NavTabs, TopBar } from "@/v4/shell/TopBar";
 import { NoticesButton } from "@/v4/shell/Notices";
@@ -24,7 +25,6 @@ export function AppShell({
   children,
   manifest,
   official = null,
-  banner,
 }: {
   scroll?: "app" | "page";
   children: React.ReactNode;
@@ -32,13 +32,12 @@ export function AppShell({
   manifest: Manifest | null;
   official?: OfficialDataset | null;
   officialStatus?: SourceStatus | null;
-  banner?: React.ReactNode;
 }) {
   return (
     <MotionConfig reducedMotion="user">
       <ReadinessProvider>
         <OfficialProvider official={official} status={null}>
-          <Frame manifest={manifest} official={official} banner={banner}>
+          <Frame manifest={manifest} official={official}>
             {children}
           </Frame>
           <OfficialDrawer />
@@ -48,7 +47,7 @@ export function AppShell({
   );
 }
 
-function Frame({ children, manifest, official, banner }: { children: React.ReactNode; manifest: Manifest | null; official: OfficialDataset | null; banner?: React.ReactNode }) {
+function Frame({ children, manifest, official }: { children: React.ReactNode; manifest: Manifest | null; official: OfficialDataset | null }) {
   const now = useNow();
   useReportSource({ id: "data", label: "Neritic dataset", state: manifest ? "ready" : "unavailable", detail: manifest ? `Published ${manifest.generated_at.slice(0, 16).replace("T", " ")} UTC` : "Could not be loaded", asOf: manifest?.generated_at ?? null });
   return (
@@ -57,8 +56,15 @@ function Frame({ children, manifest, official, banner }: { children: React.React
         Skip to main content
       </a>
       <TopBar active="page" now={now} notices={<NoticesButton official={official} status={manifest ? sourceStatus(manifest, "official") : null} />} />
-      {/* the v2 status strip was drawn for the navy masthead: it keeps a navy band of its own */}
-      {banner && <div className="bg-[#06111e] text-[#e8eef5]">{banner}</div>}
+      {/* the same line as the workspaces (not v2's navy band): what Neritic is, the notices' state, the agencies */}
+      <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-8">
+        {!manifest && (
+          <p role="alert" className="pb-1 text-[14px] font-semibold text-n-down" data-testid="data-unavailable">
+            Neritic&rsquo;s data could not be loaded. Official closures and advisories are always on the CDFW and CDPH sites.
+          </p>
+        )}
+        <RegistryDisclosure fixture={!!manifest && isFixture(manifest)} />
+      </div>
       <main id="main" tabIndex={-1} className="flex min-h-0 flex-1 flex-col outline-none">
         <PageIn kind="page">{children}</PageIn>
       </main>

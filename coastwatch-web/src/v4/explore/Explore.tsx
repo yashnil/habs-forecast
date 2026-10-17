@@ -32,8 +32,8 @@ import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel } from "@/v4/ui/time";
 import { decodeSelection, encodeSelection, sameSelection, type Camera, type HistoryEntry, type Selection } from "@/v4/state/selection";
 import { choiceParams, parseChoice, resolve, runDays, VARIABLE_WORDS, type LayerChoice } from "./layers";
-import { LayerList, LayerOptions, Legend, Provenance, ReferenceLines } from "./LayerPanel";
-import { Timebar } from "./Timebar";
+import { LayerChips, LayerList, LayerOptions, Legend, Provenance, ReferenceLines } from "./LayerPanel";
+import { Timebar, timeSteps } from "./Timebar";
 import { PlaceSearch, type SearchHit } from "./Search";
 import { AreaModel, CellBody, HarborView, Header, PointView, StationView } from "./Inspect";
 import { boxFeature, useAreaDrag } from "./AreaDrag";
@@ -79,6 +79,13 @@ function useBreakpoint(): "phone" | "tablet" | "desktop" | null {
     return () => window.removeEventListener("resize", f);
   }, []);
   return bp;
+}
+
+/** The newest sample date (YYYY-MM-DD) among a station's latest values, of any variable. */
+function newestSample(latest: { date: string }[] | undefined): string | null {
+  let best: string | null = null;
+  for (const l of latest ?? []) if (l.date && (!best || l.date.slice(0, 10) > best)) best = l.date.slice(0, 10);
+  return best;
 }
 
 export function Explore({ manifest, ports, official, portIntel, stations, stationsError, baseUrl, initialParams }: Props) {
@@ -179,6 +186,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     };
   }, [resolved.forecastLayer, baseUrl, edges?.id]);
   const [mapReady, setMapReady] = useState(false);
+  const [zoom, setZoom] = useState<number | null>(null);
   const [harbour, setHarbour] = useState<{ id: string; labels: GeoJSON.FeatureCollection; gap: GeoJSON.FeatureCollection | null } | null>(null);
   useEffect(() => {
     const m = mapRef.current;
@@ -239,6 +247,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const cellAtSel = selection?.kind === "cell" ? { lat: selection.lat, lon: selection.lon } : null;
   const cellRead = useCellRead(manifest, baseUrl, ports, cellAtSel, variable, lead);
   const station = selection?.kind === "station" ? (stations?.find((s) => s.station_id === selection.id) ?? null) : null;
+  // the station's newest sample of any variable (its HAB sample may be older: the panel lists each)
+  const stationLast = useMemo(() => newestSample(station?.latest), [station]);
   const harborF = selection?.kind === "harbor" ? (ports?.features.find((f) => f.properties.port_code === selection.port) ?? null) : null;
   const highlight = useMemo<GeoJSON.FeatureCollection | null>(() => {
     const feats: GeoJSON.Feature[] = [];
@@ -439,7 +449,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       )}
       {selection.kind === "station" && (
         <>
-          <Header icon="station" kind="Shore station" title={station?.name ?? selection.id} sub="CalHABMAP · SCCOOS" onClose={() => select(null)} onBack={back} canBack={stack.length > 0} />
+          <Header icon="station" kind="Shore station" title={station?.name ?? selection.id} sub={`CalHABMAP · SCCOOS${stationLast ? ` · last sampled ${dayLabel(stationLast)}${stationLast.slice(0, 4) !== String(new Date().getUTCFullYear()) ? `, ${stationLast.slice(0, 4)}` : ""}` : ""}`} onClose={() => select(null)} onBack={back} canBack={stack.length > 0} />
           <StationView id={selection.id} ctx={ctx} />
         </>
       )}
@@ -464,6 +474,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     </div>
   ) : null;
 
+  const hasTime = active.kind !== "none" && !!timeSteps(manifest, active, now)?.steps.length;
   const nothingCurrent =
     active.kind === "none" && opening?.reason === "nothing-current" ? (
       <div className="flex flex-col gap-2 rounded-xl border border-n-stale/50 bg-n-surface-2 p-3 text-[13.5px] leading-snug text-n-ink-2" data-testid="nothing-current">
@@ -480,12 +491,29 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         )}
       </div>
     ) : null;
+  // a data layer at state scale: its 3 km cells are a few pixels wide, so say how to read one
+  const readHint =
+    (active.kind === "forecast" || active.kind === "satellite") && !selection && zoom != null && zoom < 7 ? (
+      <p className="flex flex-wrap items-center gap-x-2 text-[13.5px] text-n-ink-2" data-testid="read-hint">
+        Zoom in and tap the water to read a {active.kind === "forecast" ? "model cell" : "pixel"}.
+        <button
+          type="button"
+          onClick={() => mapRef.current && journeyTo(mapRef.current, { bounds: (VIEW.monterey_bay ?? [[-122.3, 36.5], [-121.7, 37.05]]) as [[number, number], [number, number]], padding: padding() })}
+          className="nx-focus inline-flex min-h-11 items-center font-semibold text-n-accent underline underline-offset-2"
+          data-testid="zoom-monterey"
+        >
+          Go to Monterey Bay
+        </button>
+      </p>
+    ) : null;
   const activeCard = (
     <div className="flex flex-col gap-3" data-testid="active-layer">
+      <LayerChips manifest={manifest} choice={active} onChoice={setChoiceRaw} defaults={{ lead: firstLead }} />
       {nothingCurrent}
+      {readHint}
       <p className="nx-eyebrow">On the map</p>
       {/* the time control first, so it stays within reach at the sheet's peek; then what it shows */}
-      {active.kind !== "none" && <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} compact />}
+      {hasTime && <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} compact />}
       <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} />
       <Legend choice={active} resolved={resolved} />
     </div>
@@ -498,6 +526,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       <div className="border-t border-n-line pt-3">
         <Legend choice={active} resolved={resolved} />
       </div>
+      {readHint}
       <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} />
       <div className="border-t border-n-line pt-3">
         <ReferenceLines prefs={counties} onChange={setCounties} />
@@ -567,6 +596,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         }
         // through the ref: a handler captured here would write the selection of the first render
         m.on("moveend", () => writeUrlRef.current());
+        m.on("zoomend", () => setZoom(m.getZoom()));
+        setZoom(m.getZoom());
       }}
     />
   );
@@ -585,8 +616,10 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   }, []);
 
   const starting = !mapReady;
+  // clip, not hidden: a hidden overflow can still be scrolled by focus or scrollIntoView, which slid
+  // the whole workspace (and the dock) up the screen on phones
   return (
-    <div className="env-instrument relative h-dvh w-full overflow-hidden" data-testid="explore">
+    <div className="env-instrument relative h-dvh w-full overflow-clip" data-testid="explore">
       <h1 className="sr-only">Explore: harmful algal bloom evidence on the California coast{placeName ? `, ${placeName}` : ""}</h1>
       <div className="absolute inset-0" data-testid="map">
         {basemapPm !== undefined ? map : null}
@@ -646,7 +679,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
             </div>
           </aside>
           <div className="absolute bottom-4 z-20" style={{ left: LAYERS + 28, right: (panelOpen ? PANEL + 28 : 0) + 84 }}>
-            {active.kind !== "none" && (
+            {/* a deck only for a layer that has published frames (the multi-sensor view has none) */}
+            {hasTime && (
               <div className="nx-deck mx-auto max-w-[760px] p-3" data-testid="timebar-deck">
                 <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} />
               </div>
@@ -678,7 +712,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                 <Attribution />
               </div>
             </details>
-            {active.kind !== "none" && (
+            {hasTime && (
               <div className="nx-deck p-3">
                 <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} compact />
               </div>
@@ -702,10 +736,11 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
             <RegistryDisclosure className="w-fit rounded-full border border-n-line bg-n-surface px-3 py-1" fixture={isFixture(manifest)} compact />
           </div>
           {/* the sheet ends above the dock; the map stays live above it (non-modal) */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-30" style={{ bottom: `calc(${DOCK}px + env(safe-area-inset-bottom, 0px))` }}>
-            {snap === "peek" && (
-              <p className="pointer-events-auto absolute left-3 max-w-[60%] text-[10.5px] leading-tight text-[#b9c9d3] [text-shadow:0_1px_2px_#04121a]" style={{ bottom: PEEK + 8 }} data-testid="attribution-short">
-                <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">OpenMapTiles</a> · NOAA relief · not for navigation
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-30 overflow-clip" style={{ bottom: `calc(${DOCK}px + env(safe-area-inset-bottom, 0px))` }}>
+            {/* the map's credits (ODbL, CC-BY) stay on the map at every sheet height, just above the sheet */}
+            {snap !== "full" && (
+              <p className="pointer-events-auto absolute left-3 max-w-[64%] text-[10.5px] leading-tight text-[#b9c9d3] [text-shadow:0_1px_2px_#04121a]" style={{ bottom: (snap === "peek" ? PEEK : Math.round((vh - DOCK) * 0.5)) + 8 }} data-testid="attribution-short">
+                <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">© OpenMapTiles</a> · NOAA relief · not for navigation
               </p>
             )}
             {snap === "peek" && (

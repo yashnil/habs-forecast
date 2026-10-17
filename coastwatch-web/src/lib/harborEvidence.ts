@@ -378,7 +378,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         kind: "measured",
         tone: "note",
         headline: `${e.station.name}, ${km(e.km)} km ${e.bearing}: ${v}, ${shortDate(e.date)}`,
-        detail: `${cap(ageWords(e.ageDays))}. ${closer ? `${closer.station.name}, ${km(closer.km)} km, is closer but its last sample is from ${shortDate(closer.date)} (${ageWords(closer.ageDays)}). ` : ""}${modelLine ? `${cap(modelLine)}. ` : ""}Seawater, not seafood.`,
+        detail: `${cap(ageWords(e.ageDays))}. ${closer ? `${closer.station.name}, ${km(closer.km)} km, is closer but its last toxin or Pseudo-nitzschia sample is from ${shortDate(closer.date)} (${ageWords(closer.ageDays)}). ` : ""}${modelLine ? `${cap(modelLine)}. ` : ""}Seawater, not seafood.`,
         focus: e.kind === "cells" ? "cells" : "toxin",
         aged: e.ageDays > 14,
         text: `${e.station.name} reported ${best.node.text} ${e.kind === "cells" ? "Pseudo-nitzschia" : "particulate domoic acid"} on ${longDate(e.date)}, ${km(e.km)} km ${e.bearing} of ${P.name}.${closer ? ` ${closer.station.name} is closer (${km(closer.km)} km) but has no comparable sample since ${longDate(closer.date, x.now)}.` : ""}`,

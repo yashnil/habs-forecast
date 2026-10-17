@@ -1,5 +1,4 @@
 import { AppShell } from "@/components/AppShell";
-import { DataBanners } from "@/components/Banners";
 import { BloomIntelligence } from "@/components/bloom/BloomIntelligence";
 import { OfficialStatusCard } from "@/components/panels/OfficialStatusCard";
 import { Notice } from "@/components/ui/Primitives";
@@ -17,10 +16,9 @@ export default async function BloomPage({ searchParams }: { searchParams: Promis
   const data = await loadBloomData();
   const sp = await searchParams;
   const manifest = data.ok ? data.manifest : null;
-  const banner = <DataBanners manifest={manifest} error={data.ok ? null : data.error} />;
   if (!data.ok || !data.observations) {
     return (
-      <AppShell active="bloom" manifest={manifest} official={data.ok ? data.official : null} officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null} banner={banner} scroll="page">
+      <AppShell active="bloom" manifest={manifest} official={data.ok ? data.official : null} officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null} scroll="page">
         <div className="mx-auto w-full max-w-2xl space-y-4 px-4 py-6" data-testid="bloom-unavailable">
           <h1 className="text-[22px] font-semibold tracking-tight text-ink">{BLOOM_COPY.heading}</h1>
           <Notice tone="warning" title={BLOOM_COPY.unavailable}>
@@ -41,7 +39,7 @@ export default async function BloomPage({ searchParams }: { searchParams: Promis
   const relations = data.portIntel?.ports.find((p) => p.port_code === station.nearest_port_code)?.official_relations ?? [];
   const { variables, method, caveats, provenance, generated_at, window_start, program } = obs;
   return (
-    <AppShell active="bloom" manifest={manifest} official={data.ok ? data.official : null} officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null} banner={banner} scroll="page">
+    <AppShell active="bloom" manifest={manifest} official={data.ok ? data.official : null} officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null} scroll="page">
       <BloomIntelligence
           key={station.station_id}
           stations={lite}

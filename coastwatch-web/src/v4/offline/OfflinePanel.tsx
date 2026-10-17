@@ -205,7 +205,8 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
               type="button"
               disabled={!items || state === "sizing" || sw !== "ready"}
               onClick={start}
-              className="nx-press nx-focus flex min-h-14 items-center justify-center gap-2 rounded-xl bg-n-ink text-[16px] font-semibold text-n-bg disabled:opacity-40"
+              // stays in view while the dialog scrolls (a phone sees the plan and the button together)
+              className="nx-press nx-focus sticky bottom-0 z-10 flex min-h-14 items-center justify-center gap-2 rounded-xl bg-n-ink text-[16px] font-semibold text-n-bg shadow-[0_-8px_16px_var(--nx-surface)] disabled:opacity-40"
               data-testid="pack-download"
             >
               <Icon name="download" /> {record ? (record.complete ? (record.dataGeneratedAt < manifest.generated_at ? "Download the newer data" : "Download again") : "Finish the download") : `Download ${items ? mb(total) : ""}`}

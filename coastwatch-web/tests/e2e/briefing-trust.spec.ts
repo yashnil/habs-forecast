@@ -80,6 +80,9 @@ test("Dungeness, commercial, Crescent City: the season status leads, quoted with
   await settled(page);
   await expect(page.getByTestId("matters").locator(":scope > li").first()).toHaveAttribute("data-testid", "claim-season");
   await expect(page.getByTestId("claim-season").getByRole("link").first()).toHaveAttribute("href", /^https:\/\/wildlife\.ca\.gov\//);
+  // the agency's own words, quoted in full, beside the headline (never only "season status")
+  await expect(page.getByTestId("claim-season").getByTestId("claim-quote")).toContainText("Season is");
+  await expect(page.getByTestId("claim-season")).toHaveAttribute("data-tone", /alert|note/);
   await expect(page.getByTestId("checks").locator(":scope > li").first()).toContainText("Confirm the season status on CDFW's page");
   const tel = page.getByTestId("brief-checks").getByTestId("check-tel").first();
   await expect(tel).toHaveAttribute("href", /^tel:\+?1?8316492883$/);

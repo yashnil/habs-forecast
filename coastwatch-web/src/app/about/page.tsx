@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { BRAND } from "@/content/brand";
 import { AppShell } from "@/components/AppShell";
-import { DataBanners } from "@/components/Banners";
 import { KindChip, type Kind } from "@/components/ui/Kinds";
 import { PurposeSwitch } from "@/components/welcome/PurposeSwitch";
 import { ABOUT, RESEARCH } from "@/content/copy";
@@ -24,7 +23,6 @@ export default async function AboutPage() {
       manifest={manifest}
       official={data.ok ? data.official : null}
       officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null}
-      banner={<DataBanners manifest={manifest} error={data.ok ? null : data.error} />}
       scroll="page"
     >
       <article className="mx-auto w-full max-w-[1120px] px-4 pb-20 pt-8 sm:px-8 sm:pt-12" data-testid="about-page">
