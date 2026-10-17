@@ -215,8 +215,28 @@ export async function readRecord(id: string): Promise<PackRecord | null> {
   }
 }
 
+/** A note on this device that a pack was saved, so a pack the browser later evicts can be said to be gone
+ *  (rather than silently never having existed). Removed with the pack. */
+const savedMark = (id: string) => `neritic-pack-saved-${id}`;
+export function packWasSaved(id: string): string | null {
+  try {
+    return window.localStorage.getItem(savedMark(id));
+  } catch {
+    return null;
+  }
+}
+function markSaved(id: string, at: string | null) {
+  try {
+    if (at) window.localStorage.setItem(savedMark(id), at);
+    else window.localStorage.removeItem(savedMark(id));
+  } catch {
+    // not remembered: an eviction then goes unremarked, nothing else changes
+  }
+}
+
 export async function deletePack(id: string) {
   await caches.delete(cacheName(id));
+  markSaved(id, null);
 }
 
 export type Progress = { done: number; total: number; bytes: number; totalBytes: number; failed: string[]; current: Group | null; rate: number | null };
@@ -309,5 +329,6 @@ export async function download(pack: PackDef, items: PlanItem[], meta: Omit<Pack
   };
   if (quota) throw Object.assign(new Error("Storage is full"), { name: "QuotaExceededError", record });
   await c.put(RECORD, new Response(JSON.stringify(record), { headers: { "content-type": "application/json" } }));
+  markSaved(pack.id, record.savedAt);
   return record;
 }

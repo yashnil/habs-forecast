@@ -18,7 +18,7 @@ const mb = (b: number) => `${(b / 1_048_576).toFixed(b < 10_485_760 ? 1 : 0)} MB
  * download the pack is verified (every file, and the basemap's checksum).
  */
 export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackDef; manifest: Manifest; official?: OfficialDataset | null; baseUrl: string; onClose?: () => void }) {
-  const { record, online, sw, refresh } = useOfflinePack(pack.id);
+  const { record, online, sw, refresh, evicted } = useOfflinePack(pack.id);
   const [items, setItems] = useState<PlanItem[] | null>(null);
   const [planErr, setPlanErr] = useState<string | null>(null);
   const [prog, setProg] = useState<Progress | null>(null);
@@ -143,6 +143,11 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
         </div>
       )}
 
+      {!record && evicted && (
+        <p className="rounded-xl border border-n-official-line bg-n-official-bg p-3 text-[14px] font-semibold" data-testid="pack-evicted">
+          The copy saved {clockLabel(evicted)} is gone: the browser removed it (low storage or a site left unused). Download it again to use {pack.name} offline.
+        </p>
+      )}
       {!online && !record && <p className="text-[14.5px] font-semibold text-n-offline">You are offline. A field pack can only be saved with a connection.</p>}
       {sw === "unsupported" || sw === "failed" ? <p className="text-[14px] text-n-down">This browser cannot keep pages for offline use (no service worker).</p> : null}
 
@@ -219,17 +224,22 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
   );
 }
 
-export function useRecordSource(record: PackRecord | null | undefined, name: string, online: boolean) {
+export function useRecordSource(record: PackRecord | null | undefined, name: string, online: boolean, evicted: string | null = null) {
   const setSource = useSetSource();
   useEffect(() => {
     if (record === undefined) return;
-    if (!record) return;
+    if (!record) {
+      if (evicted) setSource({ id: "pack", label: `Field pack: ${name}`, state: "unavailable", detail: "Removed by the browser; download it again for offline use", asOf: evicted });
+      return;
+    }
+    // more than a day old: C-HARM and the observations have moved on, so the copy is stale
+    const outdated = record.complete && packAge(record, new Date()).outdated;
     setSource({
       id: "pack",
       label: `Field pack: ${name}`,
-      state: !record.complete ? "incomplete" : !online ? "cached" : "ready",
-      detail: !record.complete ? "Download incomplete" : online ? `Saved ${mb(record.totalBytes)}, verified` : "Showing the saved copy (offline)",
+      state: !record.complete ? "incomplete" : !online ? "cached" : outdated ? "stale" : "ready",
+      detail: !record.complete ? "Download incomplete" : !online ? "Showing the saved copy (offline)" : outdated ? `Saved more than a day ago (${mb(record.totalBytes)}); download again for newer data` : `Saved ${mb(record.totalBytes)}, verified`,
       asOf: record.savedAt,
     });
-  }, [record, name, online, setSource]);
+  }, [record, name, online, evicted, setSource]);
 }
