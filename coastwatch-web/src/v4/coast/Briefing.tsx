@@ -19,6 +19,7 @@ import { useReportSource } from "@/v4/readiness/store";
 import { TopBar, NavTabs } from "@/v4/shell/TopBar";
 import { NoticesButton } from "@/v4/shell/Notices";
 import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { SkipLink } from "@/v4/shell/SkipLink";
 import { distanceKm } from "@/lib/grid";
 import type { Step } from "@/lib/nextSteps";
 import { Icon } from "@/v4/ui/Icon";
@@ -212,6 +213,7 @@ export function Briefing(props: Props) {
   if (!place) {
     return (
       <div className="env-chart min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="landing">
+        <SkipLink />
         <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} />} />
         <RegistryDisclosure className="mx-auto w-full max-w-[760px] px-4 sm:px-6" fixture={isFixture(props.manifest)} />
         <main id="main" className="mx-auto w-full max-w-[760px] px-4 pb-28 pt-6 sm:px-6">
@@ -267,6 +269,7 @@ export function Briefing(props: Props) {
 
   return (
     <div className="env-chart relative min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="trip">
+      <SkipLink />
       <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} />} />
       <RegistryDisclosure className="mx-auto w-full max-w-[1240px] px-4 sm:px-6" fixture={isFixture(props.manifest)} />
       {!off.online && (

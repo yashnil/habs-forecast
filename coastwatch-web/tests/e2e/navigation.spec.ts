@@ -112,3 +112,16 @@ test("with a harbour selected and on a phone, the notices stay one tap away", as
   await expect(page.getByTestId("notices-panel").locator('[data-testid^="notice-"]').first()).toBeVisible();
   await ctx.close();
 });
+
+test("the first Tab on each workspace offers to skip past the bar", async ({ page }) => {
+  for (const p of ["/", "/coast?place=port-550", "/research?place=port-550"]) {
+    await page.clock.setFixedTime(new Date(NOW));
+    await page.goto(`${OK}${p}`);
+    await page.keyboard.press("Tab");
+    const skip = page.getByTestId("skip-link");
+    await expect(skip, p).toBeFocused();
+    await expect(skip, p).toBeVisible();
+    const target = (await skip.getAttribute("href"))!.slice(1);
+    await expect(page.locator(`#${target}`), p).toHaveCount(1);
+  }
+});

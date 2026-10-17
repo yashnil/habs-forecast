@@ -17,6 +17,7 @@ import { labelledGeometry } from "@/lib/officialGeometry";
 import { TopBar, NavTabs } from "@/v4/shell/TopBar";
 import { NoticesButton } from "@/v4/shell/Notices";
 import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { SkipLink } from "@/v4/shell/SkipLink";
 import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel, relTime } from "@/v4/ui/time";
 import { SampleValue, SeriesChart, monthTicks, sampleOnDay } from "@/v4/charts/SeriesChart";
@@ -306,6 +307,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
 
   return (
     <div className="env-chart min-h-dvh bg-n-bg text-n-ink" data-testid="research">
+      <SkipLink />
       <TopBar active="research" now={now} notices={<NoticesButton official={official} status={sourceStatus(manifest, "official")} />} />
       <RegistryDisclosure className="mx-auto w-full max-w-[1440px] px-4 pb-2 sm:px-6" fixture={isFixture(manifest)} />
       <div className="mx-auto grid w-full max-w-[1440px] gap-6 px-4 pb-32 pt-2 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)]">
