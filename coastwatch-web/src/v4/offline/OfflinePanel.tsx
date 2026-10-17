@@ -203,7 +203,7 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
               className="nx-press nx-focus flex min-h-14 items-center justify-center gap-2 rounded-xl bg-n-ink text-[16px] font-semibold text-n-bg disabled:opacity-40"
               data-testid="pack-download"
             >
-              <Icon name="download" /> {record ? (record.complete ? "Download again (newer data)" : "Finish the download") : `Download ${items ? mb(total) : ""}`}
+              <Icon name="download" /> {record ? (record.complete ? (record.dataGeneratedAt < manifest.generated_at ? "Download the newer data" : "Download again") : "Finish the download") : `Download ${items ? mb(total) : ""}`}
             </button>
           )}
           {state === "done" && <p className="text-[14px] font-semibold text-n-ok" role="status">Saved and verified. {pack.name} now opens without a connection.</p>}
