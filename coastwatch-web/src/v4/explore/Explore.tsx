@@ -680,11 +680,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         notices={<NoticesButton official={official} status={officialStatus} compact={bp === "phone"} local={harbourNotices} />}
       />
 
-      {backTo && (
-        <a href={backTo.href} className="nx-press nx-focus env-chart absolute left-1/2 top-[70px] z-30 flex h-11 -translate-x-1/2 items-center gap-2 rounded-full border border-n-line bg-n-surface px-4 text-[14.5px] font-semibold text-n-ink shadow-[var(--nx-shadow)] max-md:top-[124px]" data-testid="back-to-briefing">
-          <Icon name="back" className="h-[18px] w-[18px]" /> Back to the {backTo.name} briefing
-        </a>
-      )}
+      {/* on a phone the way back sits in the search stack, under the disclosure */}
+      {backTo && bp !== "phone" && <BackToBriefing {...backTo} className="absolute left-1/2 top-[104px] z-[46] -translate-x-1/2" />}
       {bp === "desktop" && (
         <>
           <aside aria-label="Map layers" className="nx-deck absolute bottom-4 left-4 top-[76px] z-20 flex flex-col overflow-hidden" style={{ width: LAYERS }} data-testid="layer-deck">
@@ -749,6 +746,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           <div className="absolute inset-x-3 top-[68px] z-20 flex flex-col gap-1.5">
             <PlaceSearch ports={ports} stations={stations} regions={regions} onPick={onSearch} current={placeName ?? ""} />
             <RegistryDisclosure className="w-fit rounded-full border border-n-line bg-n-surface px-3 py-1" fixture={isFixture(manifest)} compact />
+            {backTo && <BackToBriefing {...backTo} className="w-fit max-w-full" />}
           </div>
           {/* the sheet ends above the dock; the map stays live above it (non-modal) */}
           <div className="pointer-events-none absolute inset-x-0 top-0 z-30 overflow-clip" style={{ bottom: `calc(${DOCK}px + env(safe-area-inset-bottom, 0px))` }}>
@@ -919,5 +917,14 @@ function AreaView({ bbox, ctx }: { bbox: [number, number, number, number]; ctx: 
       )}
       <p className="text-[12.5px] text-n-ink-3">Satellite and current statistics for an area are not computed in this version; use their layers and a point.</p>
     </div>
+  );
+}
+
+/** The way back to the briefing that opened this map. */
+function BackToBriefing({ href, name, className }: { href: string; name: string; className: string }) {
+  return (
+    <a href={href} className={`nx-press nx-focus env-chart flex min-h-11 items-center gap-2 rounded-full border border-n-line bg-n-surface px-4 text-[14.5px] font-semibold text-n-ink shadow-[var(--nx-shadow)] ${className}`} data-testid="back-to-briefing">
+      <Icon name="back" className="h-[18px] w-[18px] shrink-0" /> Back to the {name} briefing
+    </a>
   );
 }

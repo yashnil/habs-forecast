@@ -9,7 +9,7 @@ import { stampLines } from "@/lib/stamp";
 import { COUNTIES } from "@/content/copy";
 import type { CountyPrefs } from "@/components/map/Counties";
 import { Icon } from "@/v4/ui/Icon";
-import { SAT_WORDS, VARIABLE_WORDS, type LayerChoice, type Resolved } from "./layers";
+import { SAT_WORDS, VARIABLE_WORDS, coverageWhen, type LayerChoice, type Resolved } from "./layers";
 import { clockLabel, dayLabel, relTime } from "@/v4/ui/time";
 import { classifySource, classifyTime } from "@/lib/freshness";
 
@@ -430,8 +430,7 @@ export function ReferenceLines({ prefs, onChange }: { prefs: CountyPrefs; onChan
  *  (C-HARM's 3 km ocean cells with any clear pixel), when (the view's own dates) and where (by region). */
 function CoverageLine({ layer, regions }: { layer: LayerArtifact; regions: { id: string; label: string }[] }) {
   const cov = layer.coverage!;
-  const comp = layer.composite;
-  const when = comp ? `pixels observed ${dayLabel(comp.oldest_observed_date)}–${dayLabel(comp.newest_observed_date)}` : layer.time.observed_date ? `overpass of ${dayLabel(layer.time.observed_date)}` : "";
+  const when = coverageWhen(layer);
   const label = (id: string) => regions.find((r) => r.id === id)?.label ?? id.replace(/_/g, " ");
   const pct = (f: number) => `${Math.round(f * 100)}%`;
   return (

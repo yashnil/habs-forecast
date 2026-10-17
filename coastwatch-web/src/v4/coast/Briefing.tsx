@@ -233,7 +233,8 @@ export function Briefing(props: Props) {
     [place, b.assocs],
   );
   // another place keeps the trip (activity, species) and is a new entry in the history
-  const goPlace = useCallback((key: string) => router.push(coastHref({ place: key, for: audience, species: species.id }), { scroll: false }), [router, audience, species.id]);
+  // a new place is a new briefing: it opens at its top (on a phone the map is far below it)
+  const goPlace = useCallback((key: string) => router.push(coastHref({ place: key, for: audience, species: species.id })), [router, audience, species.id]);
   // the statements appear together once the model and the harbour conditions have answered (or 6 s
   // have passed), so the answer does not reshuffle as each source arrives
   const settledNow = b.outlook !== null && !b.cond.loading;
@@ -476,7 +477,7 @@ export function Briefing(props: Props) {
           </footer>
         </main>
 
-        <aside aria-label={`Map of ${place.name}`} className="lg:sticky lg:top-4 lg:self-start" data-testid="locator">
+        <aside id="coast-map" aria-label={`Map of ${place.name}`} className="scroll-mt-4 lg:sticky lg:top-4 lg:self-start" data-testid="locator">
           <Locator place={place} g={g} ports={ports} official={official} stations={stations} back={back} onPlace={goPlace} basemapPmtiles={off.record === undefined ? undefined : !navigator.onLine && off.record?.complete ? `/offline/${pack.id}/basemap.pmtiles` : null} />
         </aside>
       </div>
@@ -713,6 +714,9 @@ function PlaceBar({ place, ports, home, onHome, onPlace }: { place: CoastPlace; 
           )}
         </>
       )}
+      <a href="#coast-map" className="nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-full border border-n-line px-3.5 text-[14px] font-semibold text-n-accent lg:hidden" data-testid="coast-map-jump">
+        <Icon name="map" /> Choose waters on the map
+      </a>
       <span className="w-full text-[12.5px] text-n-ink-3">The home port is kept on this device only.</span>
     </div>
   );

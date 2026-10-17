@@ -142,3 +142,85 @@ test("trip checklist: the reader's own ticks, kept per trip on this device, neve
   await page.goto(`${OK}/coast?place=port-201&for=recreational`);
   await expect(page.getByTestId("checks-progress")).toContainText("0 of");
 });
+
+/* Defects found by the final scripted walkthrough (2026-10-17), each held here. */
+
+test("walkthrough H1: a radar hour's chip is dated by its Pacific day, as its stamp is", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/?layer=currents`);
+  await map(page);
+  // 01:00 UTC Oct 8 is 6 PM PDT Oct 7
+  const chip = page.getByTestId("time-20261008T01Z").first();
+  await expect(chip).toContainText("6:00 PM");
+  await expect(chip).toContainText("Oct 7");
+  await expect(page.getByTestId("time-20261008T07Z").first()).toContainText("Oct 8");
+});
+
+test("walkthrough H2: the multi-sensor coverage names the days its pixels come from, not one overpass", async ({ page }) => {
+  const l = manifest.layers.find((x: { layer_id: string }) => x.layer_id === "multisensor_chl_latest");
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/?layer=multi`);
+  await map(page);
+  const cov = page.getByTestId("sat-coverage").first();
+  await expect(cov).toContainText(`Seen clearly: ${Math.round(l.coverage.domain_observed_fraction * 100)}%`);
+  await expect(cov).toContainText("pixels observed Oct 1–Oct 6, each its latest clear day");
+  await expect(cov).not.toContainText("overpass of");
+});
+
+for (const width of [390, 320]) {
+  test(`walkthrough H3: at ${width} px the notices panel opens above the harbour sheet and its wording can be read`, async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width, height: width === 320 ? 640 : 844 }, isMobile: true, hasTouch: true });
+    const page = await ctx.newPage();
+    await page.clock.setFixedTime(new Date(NOW));
+    await page.goto(`${OK}/?layer=forecast&sel=harbor:550`);
+    await map(page);
+    await page.getByTestId("notices-button").click();
+    const panel = page.getByTestId("notices-panel");
+    await expect(panel).toBeVisible();
+    // the panel is the top-most thing at its own centre (not the sheet, not the map credits)
+    const top = await panel.evaluate((el) => { const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!hit && el.contains(hit); });
+    expect(top).toBe(true);
+    const words = panel.locator("summary", { hasText: "The agency’s wording, area and sources" }).first();
+    await words.scrollIntoViewIfNeeded();
+    await words.click({ timeout: 5000 });
+    await expect(words.locator("..")).toHaveAttribute("open", "");
+    await ctx.close();
+  });
+}
+
+test("walkthrough H4: on a phone the briefing offers the map at its top, and a tapped point opens at the top of its briefing", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date(BRIEF));
+  await page.goto(`${OK}/coast?place=port-550&for=recreational`);
+  const jump = page.getByTestId("coast-map-jump");
+  await expect(jump).toBeInViewport();
+  await jump.click();
+  await expect(page.getByTestId("locator-caption")).toBeInViewport();
+  await map(page);
+  await page.waitForTimeout(500);
+  const box = (await page.locator(".maplibregl-canvas").first().boundingBox())!;
+  const pt = await page.evaluate(() => (window as unknown as { __cwMap: M }).__cwMap.project([-121.95, 36.72]));
+  await page.mouse.click(box.x + pt.x, box.y + pt.y);
+  await expect(page).toHaveURL(/place=point-/);
+  await expect(page.getByTestId("coast-subtitle")).toContainText("Point chosen on the map");
+  await expect(page.getByTestId("coast-title")).toBeInViewport();
+  await ctx.close();
+});
+
+for (const width of [1440, 320]) {
+  test(`'Show on map' from a briefing: at ${width} px the way back is uncovered and returns to it`, async ({ browser }) => {
+    const ctx = await browser.newContext(width === 320 ? { viewport: { width, height: 640 }, isMobile: true, hasTouch: true } : { viewport: { width, height: 900 } });
+    const page = await ctx.newPage();
+    await page.clock.setFixedTime(new Date(NOW));
+    await page.goto(`${OK}/coast?place=port-550`);
+    await page.getByTestId("locator-explore").click();
+    const back = page.getByTestId("back-to-briefing");
+    await expect(back).toBeInViewport();
+    const top = await back.evaluate((el) => { const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!hit && el.contains(hit); });
+    expect(top).toBe(true);
+    await back.click();
+    await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
+    await ctx.close();
+  });
+}

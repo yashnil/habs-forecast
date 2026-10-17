@@ -215,6 +215,13 @@ describe("the briefing's claims", () => {
     expect(model.detail).toBe("Its newest run ends Oct 14.");
   });
 
+  it("more than three covering notices: the three named are followed by how many more, none dropped silently", () => {
+    const n = harborEvidence(brief({})).claims.find((c) => c.id === "notices")!;
+    expect(n.supports.length).toBeGreaterThan(3);
+    expect(n.detail).toContain(`and ${n.supports.length - 3} more, all in Notices`);
+    expect(n.text).toContain(`and ${n.supports.length - 3} more`);
+  });
+
   it("notices that apply by their own geography are named, restrictive ones as alerts, and a disputed one leads", () => {
     const g = harborEvidence(brief({ speciesId: "anchovy-sardine" }));
     const n = g.claims.find((c) => c.id === "notices")!;

@@ -84,10 +84,12 @@ export function NavTabs({ active, size = "bar" }: { active: Workspace; size?: "b
  * The top bar: floating over the map in Explore, a band over reading pages. Brand (provisional),
  * workspaces, a slot (search in Explore), the status centre, official notices, more.
  */
+// z-[45]: the header is a stacking context, so its menus and the notices panel can rise no higher
+// than it; it sits above the phone sheet (z-30) and dock (z-40), below modal dialogs (z-50).
 export function TopBar({ active, now, slot, notices, floating = false }: { active: Workspace; now: Date | null; slot?: ReactNode; notices?: ReactNode; floating?: boolean }) {
   return (
     <header
-      className={`pointer-events-none z-30 flex items-start gap-2 px-3 pt-3 md:gap-3 md:px-4 ${floating ? "absolute inset-x-0 top-0" : "relative pb-3"}`}
+      className={`pointer-events-none z-[45] flex items-start gap-2 px-3 pt-3 md:gap-3 md:px-4 ${floating ? "absolute inset-x-0 top-0" : "relative pb-3"}`}
       style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}
     >
       <Link href="/" aria-label="Neritic home" className="nx-focus pointer-events-auto flex h-11 shrink-0 items-center rounded-full border border-n-line bg-n-surface pl-1.5 pr-3.5 text-n-ink max-md:pr-1.5" data-testid="brand-home">

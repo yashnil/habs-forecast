@@ -4,6 +4,7 @@ import { currentsHourly, currentsMean } from "@/lib/currents";
 import { supportsGridTiles } from "@/lib/gridTiles";
 import { charmDays, type CharmDay } from "@/lib/charmDays";
 import type { ImageRaster, TileRaster } from "@/components/map/MapCanvas";
+import { dayLabel } from "@/v4/ui/time";
 
 /**
  * What the map shows: one primary field at a time (or none: the seafloor, the coast, harbours,
@@ -118,3 +119,17 @@ export function resolve(m: Manifest, c: LayerChoice, baseUrl: string): Resolved 
 export function hasForecast(m: Manifest) {
   return !!charmRun(m);
 }
+
+/** The dates a coverage figure belongs to. A composite or multi-sensor view counts pixels from
+ *  several days, so it names the span; only a single-day view is "the overpass of" one date. */
+export function coverageWhen(layer: Pick<LayerArtifact, "composite" | "multisensor" | "time">): string {
+  const comp = layer.composite;
+  if (comp) return span(comp.oldest_observed_date, comp.newest_observed_date);
+  const days = [...new Set((layer.time.observed_times ?? []).map((t) => t.slice(0, 10)))].sort();
+  if (layer.multisensor || days.length > 1) {
+    const first = days[0], last = days[days.length - 1] ?? layer.time.observed_date;
+    return first && last ? span(first, last) : last ? `pixels observed up to ${dayLabel(last)}` : "";
+  }
+  return layer.time.observed_date ? `overpass of ${dayLabel(layer.time.observed_date)}` : "";
+}
+const span = (a: string, b: string) => (a === b ? `pixels observed ${dayLabel(a)}` : `pixels observed ${dayLabel(a)}–${dayLabel(b)}, each its latest clear day`);
