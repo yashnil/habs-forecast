@@ -116,6 +116,11 @@ try {
   check(!!map && map.water > 0, "offline: basemap features are drawn from the pack");
   check(!!map && map.forecast, "offline: the C-HARM forecast is drawn from the saved grid");
   check((await p.getByTestId("inspect-title").innerText().catch(() => "")) === "Monterey", "offline: the harbour panel opens");
+  // the licences travel with the data: OpenStreetMap's credit on the saved map, the glyphs' licence
+  const credit = await p.locator("body").innerText().catch(() => "");
+  check(/OpenStreetMap contributors/.test(credit) && /OpenMapTiles/.test(credit), "offline: the map credits OpenStreetMap contributors and OpenMapTiles (ODbL, CC-BY)");
+  const ofl = await p.evaluate(() => fetch("/fonts/OFL.txt").then((r) => (r.ok ? r.text() : "")).catch(() => ""));
+  check(/SIL OPEN FONT LICENSE Version 1\.1/.test(ofl), "offline: the glyphs' licence (SIL OFL 1.1) is saved with them");
   const sameOrigin = failed.filter((u) => u.includes(`localhost:${PORT}`));
   if (failed.length) console.log(`  offline requests that failed (${failed.length}):\n   ${[...new Set(failed)].slice(0, 30).join("\n   ")}`);
   check(sameOrigin.length === 0, `offline: every resource of the saved pages is in the pack (${sameOrigin.length} same-origin failures)`);
