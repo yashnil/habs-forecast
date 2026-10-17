@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Neritic final: render parts</title>
+<!-- The v4 faces, as coastwatch-web/src/app/layout.tsx loads them (next/font/google) -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@200..800&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400..700&display=block" rel="stylesheet">
+<style>
+/* tokens copied from coastwatch-web/src/v4/theme.css (env-chart = light reading, env-instrument = dark map) */
+.env-chart{--nx-bg:#f2f5f6;--nx-surface:#fff;--nx-surface-2:#eef2f4;--nx-surface-3:#e3e9ec;--nx-line:#dbe2e6;--nx-line-strong:#c3ced4;--nx-ink:#0b1820;--nx-ink-2:#3a4e5b;--nx-ink-3:#526773;--nx-accent:#086a85;--nx-official:#a14b00;--nx-official-line:#efbb72;--nx-ok:#17784c;--nx-shadow:0 1px 2px rgba(11,24,32,.08),0 8px 24px rgba(11,24,32,.08)}
+.env-instrument{color-scheme:dark;--nx-bg:#061016;--nx-surface:#0c1921;--nx-surface-2:#12232e;--nx-surface-3:#1a2f3c;--nx-line:rgba(186,214,230,.12);--nx-line-strong:rgba(186,214,230,.24);--nx-ink:#ebf2f6;--nx-ink-2:#aabdc9;--nx-ink-3:#7c95a4;--nx-accent:#5fd0e6;--nx-official:#f4b552;--nx-official-line:rgba(244,181,82,.42);--nx-ok:#4fd3b0;--nx-shadow:0 1px 1px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35)}
+.env-chart,.env-instrument{font-family:"Atkinson Hyperlegible Next",system-ui,sans-serif;font-feature-settings:"tnum" 1,"lnum" 1;color:var(--nx-ink)}
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:#fff;width:max-content}
+.shot{margin:0 0 16px;width:max-content;position:relative;overflow:hidden}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
+.data{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+/* TopBar.tsx */
+.bar{display:flex;align-items:flex-start;gap:12px;padding:12px 16px 0;z-index:3}
+.bar.floating{position:absolute;left:0;right:0;top:0}
+.bar.flow{position:relative;padding-bottom:12px}
+.bar.phone{gap:8px;padding:12px 12px 0}
+.pill{display:flex;height:44px;align-items:center;border-radius:999px;background:var(--nx-surface);flex:none}
+.brand{border:1px solid var(--nx-line);padding:0 14px 0 6px}
+.phone .brand{padding:0 6px}
+.brand img{display:block}
+.tabsbar{display:flex;align-items:center;gap:4px;border-radius:999px;border:1px solid var(--nx-line);background:var(--nx-surface);padding:4px}
+.tabsbar a{display:flex;height:36px;align-items:center;border-radius:999px;padding:0 14px;font-size:14px;font-weight:600;color:var(--nx-ink-2);text-decoration:none}
+.tabsbar a.on{background:var(--nx-ink);color:var(--nx-bg)}
+.slot{flex:1;min-width:0}
+.search{display:flex;height:44px;align-items:center;gap:8px;border-radius:999px;border:1px solid var(--nx-line-strong);background:var(--nx-surface);padding:0 8px 0 14px;max-width:420px;font-size:15px;color:var(--nx-ink-2)}
+.search kbd{margin-left:auto;border:1px solid var(--nx-line);border-radius:4px;padding:0 6px;font:12px "Atkinson Hyperlegible Next";color:var(--nx-ink-3)}
+.disc{margin-top:6px;width:fit-content;border-radius:999px;border:1px solid var(--nx-line);background:var(--nx-surface);padding:4px 12px;font-size:13.5px;line-height:1.35;color:var(--nx-ink-2)}
+.disc b{color:var(--nx-ink)}.disc .o{color:var(--nx-official);font-weight:600}
+.right{display:flex;gap:8px;align-items:flex-start;flex:none}
+.notices{border:1px solid var(--nx-official-line);padding:0 12px;gap:8px;font-size:14px;font-weight:600}
+.notices svg.i{width:18px;height:18px;color:var(--nx-official)}
+.notices .w{color:var(--nx-official)}
+.status{border:1px solid var(--nx-line-strong);padding:0 14px;gap:8px;font-size:14px;font-weight:600}
+.status svg.i{width:18px;height:18px;color:var(--nx-ok)}
+.status.compact{width:44px;padding:0;justify-content:center}
+.more{width:44px;justify-content:center;border:1px solid var(--nx-line-strong);color:var(--nx-ink-2)}
+
+/* NavTabs size="dock" inside the bottom bar */
+.dock{position:absolute;left:0;right:0;bottom:0;border-top:1px solid var(--nx-line);background:var(--nx-surface);display:grid;grid-template-columns:repeat(3,1fr);z-index:3;padding-bottom:20px}
+.dock a{display:flex;min-height:60px;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12.5px;font-weight:600;color:var(--nx-ink-2);text-decoration:none}
+.dock a svg.i{width:24px;height:24px}
+.dock a.on{color:var(--nx-accent)}
+
+/* frames */
+.desk{width:1280px;background:var(--nx-bg)}
+.desk.dark{height:150px}
+.phonef{width:390px;height:600px;background:var(--nx-bg)}
+canvas.map{position:absolute;inset:0;display:block}
+.page{padding:6px 16px 0;max-width:760px;margin:0 auto}
+.eyebrow{font-size:12px;line-height:1.2;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--nx-ink-3)}
+.h1{margin:8px 0 0;font-family:"Source Serif 4",Georgia,serif;font-weight:600;font-size:40px;line-height:1.1}
+.phonef .h1{font-size:32px}
+.lede{margin:10px 0 0;font-size:16px;line-height:1.5;color:var(--nx-ink-2)}
+.card{margin-top:14px;border:1px solid var(--nx-line);border-radius:16px;background:var(--nx-surface);padding:14px 16px;font-size:15px;line-height:1.45;color:var(--nx-ink-2)}
+.card b{color:var(--nx-ink)}
+.pdisc{font-size:13.5px;color:var(--nx-ink-2);padding:0 16px}.pdisc b{color:var(--nx-ink)}.pdisc .o{color:var(--nx-official);font-weight:600}
+
+/* Chrome-like tabs (as round 2) */
+.strip{display:flex;align-items:flex-end;padding:6px 8px 0;gap:2px;width:max-content;font:12px/1 system-ui,-apple-system,"Segoe UI",sans-serif}
+.strip .t{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px;width:134px;border-radius:8px 8px 0 0;white-space:nowrap;overflow:hidden}
+.strip.crowd .t{width:34px;padding:0 9px;gap:0}
+.strip .t img,.strip .t svg{flex:none;display:block}
+.strip.light{background:#dee1e6;color:#3c4043}.strip.light .act{background:#fff;color:#202124}
+.strip.dark{background:#202124;color:#9aa0a6}.strip.dark .act{background:#35363a;color:#e8eaed}
+.strip .t span{overflow:hidden;text-overflow:ellipsis}
+.chips{display:flex;gap:6px;align-items:center;padding:6px}.chips.one{padding:2px}
+.chips.light{background:#f1f3f4}.chips.dark{background:#35363a}.chips img{display:block}
+.mono{display:flex;gap:10px;align-items:center;padding:8px}.mono.light{background:#f1f3f4}.mono.dark{background:#202124}.mono img{display:block}
+.mono.dark img.svgm{filter:invert(1)}
+</style>
+</head>
+<body>
+<div id="out"></div>
+<script>
+const SVG = '../../round2/svg/', ICO = '../../round2/icons/';
+const K = ['r2', 'c2'];
+// coastwatch-web/src/v4/ui/Icon.tsx paths
+const IC = {
+  map: '<path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5L9 4Z"/><path d="M9 4v13.5M15 6.5V20"/>',
+  harbor: '<circle cx="12" cy="5.5" r="2"/><path d="M12 7.5V20M7 11h10M4.5 14.5c1.2 3.4 4.2 5.5 7.5 5.5s6.3-2.1 7.5-5.5"/>',
+  research: '<circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/><path d="M7.5 12 9.5 9.5l2 2 2-3"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+  shield: '<path d="M12 3 4.8 6v5.4c0 4.4 3.1 7.9 7.2 9.4 4.1-1.5 7.2-5 7.2-9.4V6L12 3Z"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  more: '<circle cx="5.5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.3" fill="currentColor" stroke="none"/>',
+};
+const ic = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
+const NAV = [['explore', 'Explore', 'map'], ['coast', 'My Coast', 'harbor'], ['research', 'Research', 'research']];
+
+// the lockup at the app's mark size (Lockup size={30}); dark env takes the round-2 dark master
+const lockup = (k, dark) => `<img src="${SVG}${k}-lockup${dark ? '-dark' : ''}.svg" height="30" alt="">`;
+const mark = (k, dark, s = 32) => `<img src="${SVG}${k}-symbol${dark ? '-dark' : ''}.svg" width="${s}" height="${s}" alt="">`;
+
+function topbar(k, { dark, active, floating, phone, slot = '' }) {
+  const tabs = phone ? '' : `<nav class="tabsbar">${NAV.map(([id, l]) => `<a class="${id === active ? 'on' : ''}">${l}</a>`).join('')}</nav>`;
+  return `<header class="bar ${floating ? 'floating' : 'flow'} ${phone ? 'phone' : ''}">
+    <a class="pill brand">${phone ? mark(k, dark, 32) : lockup(k, dark)}</a>${tabs}
+    <div class="slot">${slot}</div>
+    <div class="right">
+      <button class="pill notices" style="color:var(--nx-ink)">${ic('shield')}<span class="data">3</span>${phone ? '' : '<span class="w">Not verified</span>'}</button>
+      <button class="pill status ${phone ? 'compact' : ''}" style="color:var(--nx-ink)">${ic('check')}${phone ? '' : '<span>Ready</span>'}</button>
+      <button class="pill more">${ic('more')}</button>
+    </div></header>`;
+}
+const dock = (active, envDark) => `<nav class="dock ${envDark ? 'env-instrument' : ''}">${NAV.map(([id, l, i]) => `<a class="${id === active ? 'on' : ''}">${ic(i)}${l}</a>`).join('')}</nav>`;
+
+const SEARCH = `<div class="search">${ic('search').replace('class="i"', 'class="i" style="width:18px;height:18px;color:var(--nx-ink-3)"')}<span>Search harbours, stations…</span><kbd>/</kbd></div>
+  <p class="disc"><b>Research preview</b> · <span class="o">Notices not verified</span>, may be incomplete ·</p>`;
+
+// ---------------- illustrative dark bathymetric backdrop (not a screenshot, not data)
+// A coast runs NW-SE with land to the east; depth grows slowly over a shelf, then quickly down the slope.
+function drawMap(cv, w, h, coast) {
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  cv.style.width = w + 'px'; cv.style.height = h + 'px';
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  const pts = coast.map(([x, y]) => [x * w * dpr, y * h * dpr]);
+  const img = ctx.createImageData(W, H), d = img.data;
+  const band = new Float32Array(W * H), land = new Uint8Array(W * H);
+  const s = 1 / dpr;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    let best = 1e9, side = 0;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+      const dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)));
+      const px = ax + t * dx - x, py = ay + t * dy - y, dd = px * px + py * py;
+      if (dd < best) { best = dd; side = dx * (y - ay) - dy * (x - ax); }
+    }
+    let dist = Math.sqrt(best) * s;
+    const X = x * s, Y = y * s;
+    dist += 5 * Math.sin(X / 41 + Y / 57) + 3 * Math.sin(X / 13 - Y / 23) + 2 * Math.sin((X + Y) / 7.3);
+    const isLand = side < 0;
+    const depth = dist < 46 ? dist * 0.55 : dist < 150 ? 25 + (dist - 46) * 1.7 : 202 + (dist - 150) * 0.22;
+    const o = (y * W + x);
+    land[o] = isLand ? 1 : 0;
+    band[o] = isLand ? -1 : Math.floor(depth / 18);
+    let r, g, b;
+    if (isLand) { const n = 3 * Math.sin(X / 9) * Math.sin(Y / 11); r = 17 + n; g = 25 + n; b = 30 + n; }
+    else { const f = Math.min(1, depth / 200); r = 12 - 7 * f; g = 38 - 23 * f; b = 52 - 28 * f; }
+    d[o * 4] = r; d[o * 4 + 1] = g; d[o * 4 + 2] = b; d[o * 4 + 3] = 255;
+  }
+  // contour pixels where the depth band changes; the coast line itself slightly brighter
+  for (let y = 0; y < H - 1; y++) for (let x = 0; x < W - 1; x++) {
+    const o = y * W + x, a = band[o], r = band[o + 1], u = band[o + W];
+    if (a !== r || a !== u) {
+      const coastPx = land[o] !== land[o + 1] || land[o] !== land[o + W];
+      const k = coastPx ? 0.55 : 0.16;
+      d[o * 4] += (120 - d[o * 4]) * k; d[o * 4 + 1] += (175 - d[o * 4 + 1]) * k; d[o * 4 + 2] += (200 - d[o * 4 + 2]) * k;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+const COAST_DESK = [[0.47, -0.05], [0.52, 0.30], [0.555, 0.62], [0.585, 0.78], [0.57, 0.92], [0.60, 1.05]];
+const COAST_PHONE = [[0.62, -0.02], [0.66, 0.18], [0.70, 0.36], [0.69, 0.47], [0.76, 0.55], [0.86, 0.72], [1.05, 0.86]];
+
+const out = document.getElementById('out');
+const add = (name, html, cls = '') => { out.insertAdjacentHTML('beforeend', `<div class="shot ${cls}" data-shot="${name}">${html}</div>`); return out.lastElementChild; };
+
+for (const k of K) {
+  // 1 · desktop navbar, dark map (Explore floats the bar over the map)
+  let el = add(`desk-${k}-dark`, `<div class="desk dark env-instrument" style="position:relative"><canvas class="map"></canvas>${topbar(k, { dark: true, active: 'explore', floating: true, slot: SEARCH })}</div>`);
+  drawMap(el.querySelector('canvas'), 1280, 150, COAST_DESK);
+  // 1 · desktop navbar, light reading environment (My Coast)
+  add(`desk-${k}-light`, `<div class="desk env-chart">${topbar(k, { dark: false, active: 'coast' })}
+    <p class="pdisc" style="max-width:1240px;margin:0 auto"><b>Research preview, not an official source.</b> <span class="o">Official notices are not verified.</span> The list may be incomplete; check CDFW and CDPH.</p>
+    <div class="page" style="padding-bottom:18px"><p class="eyebrow" style="margin-top:16px">My Coast</p><p class="h1">Morro Bay</p></div></div>`);
+  // 2 · phone, dark map + dock
+  el = add(`phone-${k}-dark`, `<div class="phonef env-instrument" style="position:relative"><canvas class="map"></canvas>${topbar(k, { dark: true, phone: true, floating: true })}${dock('explore', true)}</div>`);
+  drawMap(el.querySelector('canvas'), 390, 600, COAST_PHONE);
+  // 2 · phone, light My Coast (its dock is env-instrument: Briefing.tsx MobileDock)
+  add(`phone-${k}-light`, `<div class="phonef env-chart" style="position:relative">${topbar(k, { dark: false, phone: true })}
+    <p class="pdisc">Research preview · <span class="o">notices not verified</span></p>
+    <div class="page"><p class="eyebrow" style="margin-top:14px">My Coast</p><p class="h1">Morro Bay</p>
+    <div class="card"><b>Before harvesting or eating seafood,</b> check CDFW and CDPH. Neritic shows evidence, not toxin tests.</div></div>
+    ${dock('coast', true)}</div>`);
+}
+
+// 3 · favicons: 16/24 hand-drawn masters (favicon.ico), 32 = the favicon SVG; 2x slots use the SVG at double size
+const fav = (k, slot) => slot === 32 ? `<img src="${SVG}${k}-favicon.svg" width="32" height="32" alt="">`
+  : `<img src="${ICO}${k}-${slot}.png" srcset="${ICO}${k}-${slot}.png 1x, ${SVG}${k}-favicon.svg 2x" width="${slot}" height="${slot}" alt="">`;
+const NEIGH = [
+  ['Inbox (4)', '<rect x="0" y="1" width="16" height="14" rx="3" fill="#d1493f"/><path d="M3.5 5h9v6.5h-9z" fill="none" stroke="#fff" stroke-width="1.4"/><path d="M3.5 5l4.5 3.6L12.5 5" fill="none" stroke="#fff" stroke-width="1.4"/>'],
+  ['Tide tables · Harbor', '<circle cx="8" cy="8" r="8" fill="#1d4e89"/><path d="M2.5 7.2c1.4-1.2 2.4-1.2 3.7 0s2.4 1.2 3.7 0 2.4-1.2 3.6 0M2.5 10.6c1.4-1.2 2.4-1.2 3.7 0s2.4 1.2 3.7 0 2.4-1.2 3.6 0" fill="none" stroke="#fff" stroke-width="1.4"/>'],
+  ['Field notes – Docs', '<path d="M2.5 0h7.5l3.5 3.5V16h-11z" fill="#3b7ddd"/><path d="M10 0v3.5h3.5" fill="#a9c7f2"/><path d="M5 7h6M5 9.5h6M5 12h4" stroke="#fff" stroke-width="1.2"/>'],
+  ['Weather · 7-day', '<circle cx="8" cy="8" r="4.2" fill="#f2b42b"/><g stroke="#f2b42b" stroke-width="1.5" stroke-linecap="round"><path d="M8 .8v1.6M8 13.6v1.6M.8 8h1.6M13.6 8h1.6M2.9 2.9l1.1 1.1M12 12l1.1 1.1M2.9 13.1l1.1-1.1M12 4l1.1-1.1"/></g>'],
+  ['The Coast Daily', '<rect width="16" height="16" rx="3" fill="#1f1f1f"/><text x="8" y="12.4" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="12.5" fill="#fff">a</text>'],
+  ['Survey sheet', '<rect width="16" height="16" rx="2.5" fill="#1e8e3e"/><path d="M3 4h10v8H3zM3 8h10M8 4v8" fill="none" stroke="#fff" stroke-width="1.2"/>'],
+  ['Launch ramps – Map', '<path d="M8 0.6C4.9 0.6 2.6 3 2.6 6c0 4 5.4 9.4 5.4 9.4s5.4-5.4 5.4-9.4C13.4 3 11.1.6 8 .6z" fill="#0f8f8b"/><circle cx="8" cy="6" r="2.1" fill="#fff"/>'],
+  ['Surf report', '<rect width="16" height="16" rx="3.5" fill="#3aa6d6"/><path d="M1 11.5c2.5 0 3.5-6.5 8-6.5 2.6 0 4 1.6 4.4 3.2-1.6-1.1-3.6-.6-4.2 1.2-.6 2-2.3 3.1-4.8 3.1H1z" fill="#fff"/>'],
+];
+function strip(k, theme, crowd) {
+  const order = [0, 1, 2, 3, 'N', 4, 5, 6, 7];
+  return `<div class="strip ${theme} ${crowd ? 'crowd' : ''}">${order.map((it, pos) => {
+    const icon = it === 'N' ? fav(k, 16) : `<svg width="16" height="16" viewBox="0 0 16 16">${NEIGH[it][1]}</svg>`;
+    const title = it === 'N' ? 'Neritic · My Coast' : NEIGH[it][0];
+    return `<div class="t ${pos === 2 ? 'act' : ''}">${icon}${crowd ? '' : `<span>${title}</span>`}</div>`;
+  }).join('')}</div>`;
+}
+for (const k of K) for (const th of ['light', 'dark']) {
+  add(`tabs-${k}-${th}`, strip(k, th, false));
+  add(`crowd-${k}-${th}`, strip(k, th, true));
+  add(`chips-${k}-${th}`, `<div class="chips ${th}">${fav(k, 16)}${fav(k, 24)}${fav(k, 32)}</div>`);
+  add(`one-${k}-${th}`, `<div class="chips one ${th}">${fav(k, 16)}</div>`);
+}
+// 5 · one colour: 16 px master, 32 and 48 vector (R2 only with its mandatory rim)
+for (const k of K) {
+  const m16 = c => k === 'r2' ? `${ICO}r2-16-mono-rim-${c}.png` : `${ICO}c2-16-mono-${c}.png`;
+  const mv = k === 'r2' ? `${SVG}r2-mono-rim.svg` : `${SVG}c2-mono.svg`;
+  add(`mono-${k}`, `<div style="display:flex"><div class="mono light"><img src="${m16('black')}" width="16" height="16"><img src="${mv}" width="32" height="32"><img src="${mv}" width="48" height="48"></div>
+    <div class="mono dark"><img src="${m16('white')}" width="16" height="16"><img class="svgm" src="${mv}" width="32" height="32"><img class="svgm" src="${mv}" width="48" height="48"></div></div>`);
+  add(`mono16-${k}`, `<div style="display:flex"><div class="mono light" style="padding:2px"><img src="${m16('black')}" width="16" height="16"></div><div class="mono dark" style="padding:2px"><img src="${m16('white')}" width="16" height="16"></div></div>`);
+}
+</script>
+</body>
+</html>
