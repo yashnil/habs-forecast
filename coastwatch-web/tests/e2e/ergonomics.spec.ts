@@ -67,3 +67,24 @@ test("the briefing: what to do comes right after what matters and what changed",
   expect(order.slice(0, 3)).toEqual(["brief-now", "brief-changes", "brief-checks"]);
   expect(order.indexOf("brief-checks")).toBeLessThan(order.indexOf("brief-measured"));
 });
+
+test("phone: a place picked in search lands in the map strip above the sheet, not behind it", async ({ browser }) => {
+  const ctx = await browser.newContext(phone);
+  const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/?layer=forecast`);
+  await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { loaded(): boolean } }).__cwMap?.loaded());
+  await page.getByTestId("place-search-input").click();
+  await page.getByTestId("place-search-list").getByText("Moss Landing", { exact: true }).click();
+  await expect(page.getByTestId("mobile-sheet")).toHaveAttribute("data-snap", "half");
+  await page.waitForFunction(() => { const m = (window as unknown as { __cwMap: { isMoving(): boolean } }).__cwMap; return !m.isMoving(); });
+  await page.waitForTimeout(700);
+  const sheetTop = (await page.getByTestId("mobile-sheet").boundingBox())!.y;
+  const y = await page.evaluate(() => {
+    const m = (window as unknown as { __cwMap: { project(p: number[]): { y: number } } }).__cwMap;
+    return m.project([-121.7867, 36.8044]).y;
+  });
+  // centred in the visible strip (between the search bar's band, ~128 px, and the sheet), not at its edge
+  expect(Math.abs(y - (128 + sheetTop) / 2)).toBeLessThan(60);
+  await ctx.close();
+});

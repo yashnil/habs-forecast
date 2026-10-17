@@ -267,10 +267,15 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
 
   // fly to a selection made outside the map (search, a claim's "Show on map", a link)
   const panelOpen = selection != null;
-  const padding = useCallback(() => {
-    if (bp === "desktop") return { top: 84, bottom: 150, left: LAYERS + 28, right: (panelOpen ? PANEL + 24 : 0) + 24 };
-    if (bp === "tablet") return { top: 84, bottom: 200, left: 24, right: (panelOpen ? 380 : 0) + 24 };
-    return { top: 128, bottom: PEEK + DOCK + 24, left: 20, right: 20 };
+  // `open`: frame for the panel being open (a camera move made for a new selection, in the same
+  // step that selects it, before panelOpen has caught up)
+  const padding = useCallback((open: boolean = panelOpen) => {
+    if (bp === "desktop") return { top: 84, bottom: 150, left: LAYERS + 28, right: (open ? PANEL + 24 : 0) + 24 };
+    if (bp === "tablet") return { top: 84, bottom: 200, left: 24, right: (open ? 380 : 0) + 24 };
+    // phone: a selection opens the sheet to half height, so the camera centres it in the map strip
+    // that stays visible above the sheet (not behind it)
+    const sheet = open ? Math.round((window.innerHeight - DOCK) * 0.5) : PEEK;
+    return { top: 128, bottom: sheet + DOCK + 24, left: 20, right: 20 };
   }, [bp, panelOpen]);
   const focusOn = useCallback(
     (s: Selection) => {
@@ -279,8 +284,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       const pt = s.kind === "station" ? stations?.find((x) => x.station_id === s.id) : null;
       const pf = s.kind === "harbor" ? ports?.features.find((f) => f.properties.port_code === s.port) : null;
       const at: [number, number] | null = pt ? [pt.lon, pt.lat] : pf ? (pf.geometry.coordinates as [number, number]) : s.kind === "cell" || s.kind === "point" ? [s.lon, s.lat] : null;
-      if (s.kind === "area") return m.fitBounds([[s.bbox[0], s.bbox[1]], [s.bbox[2], s.bbox[3]]], { padding: padding(), duration: 500 });
-      if (at) journeyTo(m, { center: at, zoom: Math.max(m.getZoom(), s.kind === "harbor" ? 10.6 : 10.2), padding: padding() });
+      if (s.kind === "area") return m.fitBounds([[s.bbox[0], s.bbox[1]], [s.bbox[2], s.bbox[3]]], { padding: padding(true), duration: 500 });
+      if (at) journeyTo(m, { center: at, zoom: Math.max(m.getZoom(), s.kind === "harbor" ? 10.6 : 10.2), padding: padding(true) });
     },
     [stations, ports, padding],
   );
@@ -741,7 +746,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           <div className="pointer-events-none absolute inset-x-0 top-0 z-30 overflow-clip" style={{ bottom: `calc(${DOCK}px + env(safe-area-inset-bottom, 0px))` }}>
             {/* the map's credits (ODbL, CC-BY) stay on the map at every sheet height, just above the sheet */}
             {snap !== "full" && (
-              <p className="pointer-events-auto absolute left-3 max-w-[64%] text-[10.5px] leading-tight text-[#b9c9d3] [text-shadow:0_1px_2px_#04121a]" style={{ bottom: (snap === "peek" ? PEEK : Math.round((vh - DOCK) * 0.5)) + 8 }} data-testid="attribution-short">
+              <p className="pointer-events-none absolute left-3 max-w-[64%] text-[10.5px] leading-tight text-[#b9c9d3] [text-shadow:0_1px_2px_#04121a] [&_a]:pointer-events-auto" style={{ bottom: (snap === "peek" ? PEEK : Math.round((vh - DOCK) * 0.5)) + 8 }} data-testid="attribution-short">
                 <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">© OpenMapTiles</a> · NOAA relief · not for navigation
               </p>
             )}
