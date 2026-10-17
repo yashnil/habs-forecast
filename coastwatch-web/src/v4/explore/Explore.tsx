@@ -35,7 +35,8 @@ import { choiceParams, parseChoice, resolve, runDays, VARIABLE_WORDS, type Layer
 import { LayerList, LayerOptions, Legend, Provenance, ReferenceLines } from "./LayerPanel";
 import { Timebar } from "./Timebar";
 import { PlaceSearch, type SearchHit } from "./Search";
-import { CellBody, HarborView, Header, PointView, StationView, areaStats } from "./Inspect";
+import { AreaModel, CellBody, HarborView, Header, PointView, StationView } from "./Inspect";
+import { boxFeature, useAreaDrag } from "./AreaDrag";
 import { useCellRead } from "./reads";
 import { PACKS } from "@/v4/offline/packs";
 import { useOfflinePack } from "@/v4/offline/useOfflinePack";
@@ -282,21 +283,10 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
 
   // ------------------------------------------------------------------ area tool
   const [areaMode, setAreaMode] = useState(false);
-  const [drag, setDrag] = useState<{ a: [number, number]; b: [number, number] } | null>(null);
-  const areaOverlay = useRef<HTMLDivElement | null>(null);
-  const toLngLat = (e: React.PointerEvent): [number, number] | null => {
-    const m = mapRef.current;
-    const el = areaOverlay.current;
-    if (!m || !el) return null;
-    const r = el.getBoundingClientRect();
-    const p = m.unproject([e.clientX - r.left, e.clientY - r.top]);
-    return [p.lng, p.lat];
-  };
-  const dragBox = useMemo(() => (drag ? ([Math.min(drag.a[0], drag.b[0]), Math.min(drag.a[1], drag.b[1]), Math.max(drag.a[0], drag.b[0]), Math.max(drag.a[1], drag.b[1])] as [number, number, number, number]) : null), [drag]);
+  const { dragBox, handlers: areaHandlers } = useAreaDrag(() => mapRef.current, (b) => select({ kind: "area", bbox: b }), () => setAreaMode(false));
   const shownHighlight = useMemo<GeoJSON.FeatureCollection | null>(() => {
     if (!dragBox) return highlight;
-    const [w, s, e, n] = dragBox;
-    return { type: "FeatureCollection", features: [{ type: "Feature", geometry: { type: "Polygon", coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] }, properties: { kind: "area" } }] };
+    return { type: "FeatureCollection", features: [boxFeature(dragBox)] };
   }, [dragBox, highlight]);
 
   // county reference lines: the remembered v2 choice, now with its control back in the layer panel
@@ -619,23 +609,9 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       {starting && <StartCard now={now} />}
       {areaMode && (
         <div
-          ref={areaOverlay}
+          {...areaHandlers}
           className="absolute inset-0 z-[5] cursor-crosshair touch-none"
           data-testid="area-overlay"
-          onPointerDown={(e) => {
-            const p = toLngLat(e);
-            if (p) setDrag({ a: p, b: p });
-            (e.target as HTMLElement).setPointerCapture(e.pointerId);
-          }}
-          onPointerMove={(e) => {
-            const p = toLngLat(e);
-            if (p && drag) setDrag({ ...drag, b: p });
-          }}
-          onPointerUp={() => {
-            if (dragBox && dragBox[2] - dragBox[0] > 0.01 && dragBox[3] - dragBox[1] > 0.01) select({ kind: "area", bbox: dragBox });
-            setDrag(null);
-            setAreaMode(false);
-          }}
         >
           <p className="pointer-events-none absolute left-1/2 top-24 -translate-x-1/2 rounded-full bg-n-surface px-4 py-2 text-[14px] font-semibold text-n-ink shadow-[var(--nx-shadow)]">Drag across the water to select an area · Esc to cancel</p>
         </div>
@@ -843,21 +819,7 @@ function StartCard({ now }: { now: Date | null }) {
 }
 
 function AreaView({ bbox, ctx }: { bbox: [number, number, number, number]; ctx: { manifest: Manifest; baseUrl: string; stations: StationLite[] | null; ports: PortsCollection | null; variable: CharmVariable; lead: number; onSelect: (s: Selection) => void } }) {
-  const [grid, setGrid] = useState<{ grid: import("@/generated/schema").ValueGrid; codes: Uint16Array } | null>(null);
-  const [err, setErr] = useState<string | null>(null);
   const layer = useMemo(() => resolve(ctx.manifest, { kind: "forecast", variable: ctx.variable, lead: ctx.lead }, ctx.baseUrl).forecastLayer, [ctx.manifest, ctx.variable, ctx.lead, ctx.baseUrl]);
-  useEffect(() => {
-    let live = true;
-    setGrid(null);
-    if (!layer?.grid) return;
-    loadGrid(artifactUrl(ctx.baseUrl, layer.grid.url))
-      .then((codes) => live && setGrid({ grid: layer.grid!, codes }))
-      .catch((e) => live && setErr((e as Error).message));
-    return () => {
-      live = false;
-    };
-  }, [layer, ctx.baseUrl]);
-  const stats = useMemo(() => areaStats(grid, bbox), [grid, bbox]);
   const [w, s, e, n] = bbox;
   const inBox = (lat: number, lon: number) => lat >= s && lat <= n && lon >= w && lon <= e;
   const sts = (ctx.stations ?? []).filter((x) => inBox(x.lat, x.lon));
@@ -865,43 +827,12 @@ function AreaView({ bbox, ctx }: { bbox: [number, number, number, number]; ctx: 
     const [lon, lat] = f.geometry.coordinates as number[];
     return inBox(lat, lon);
   });
-  const pct = (v: number | null) => (v == null ? "—" : `${Math.round(v * 100)}%`);
   return (
     <div className="flex flex-col gap-4" data-testid="inspect-area">
       <p className="nx-data text-[12.5px] text-n-ink-3">
         {s.toFixed(3)}–{n.toFixed(3)}°N, {Math.abs(e).toFixed(3)}–{Math.abs(w).toFixed(3)}°W
       </p>
-      <section className="flex flex-col gap-2 border-t border-n-line pt-4" data-testid="area-model">
-        <h3 className="nx-eyebrow">C-HARM cells in the box ({VARIABLE_WORDS[ctx.variable].short}, {layer?.time.valid_date ? dayLabel(layer.time.valid_date, true) : "—"})</h3>
-        {err ? (
-          <p className="text-[14px] text-n-down">The grid could not be loaded: {err}</p>
-        ) : !stats ? (
-          <p className="text-[14px] text-n-ink-2">Reading the grid…</p>
-        ) : stats.valued === 0 ? (
-          <p className="text-[14px] text-n-ink-2">None of the {stats.domain} grid cells in this box has a published value (land, nearshore or outside the model).</p>
-        ) : (
-          <>
-            <p className="text-[14.5px] leading-snug">
-              <span className="nx-data font-semibold">{stats.valued}</span> of {stats.domain} grid cells have a published value (land and nearshore cells have none).
-            </p>
-            <dl className="grid grid-cols-3 gap-2 text-center">
-              {(
-                [
-                  ["Lowest", stats.min],
-                  ["Median", stats.median],
-                  ["Highest", stats.max],
-                ] as const
-              ).map(([k, v]) => (
-                <div key={k} className="rounded-lg bg-n-surface-2 py-2">
-                  <dt className="text-[12px] text-n-ink-3">{k}</dt>
-                  <dd className="nx-data text-[18px] font-semibold">{pct(v)}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="text-[12.5px] leading-snug text-n-ink-3">A summary of the published cell probabilities inside the box: not an average for any harbour and not a measurement. Other variables are not mixed in.</p>
-          </>
-        )}
-      </section>
+      <AreaModel layer={layer} baseUrl={ctx.baseUrl} bbox={bbox} variable={ctx.variable} />
       <section className="flex flex-col gap-2 border-t border-n-line pt-4">
         <h3 className="nx-eyebrow">Shore stations in the box</h3>
         {sts.length ? (
