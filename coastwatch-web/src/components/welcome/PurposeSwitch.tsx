@@ -57,12 +57,13 @@ export function PurposeSwitch({ showReset = false, compact = false }: { showRese
             } catch {
               // nothing stored
             }
-            window.location.assign("/");
+            // v4 has no welcome card: start again from My Coast's choice of place
+            window.location.assign("/coast");
           }}
           className="min-h-[36px] font-medium text-accent hover:underline"
           data-testid="purpose-reset"
         >
-          Show the welcome again
+          Forget this device&rsquo;s setup and start again
         </button>
       )}
     </div>

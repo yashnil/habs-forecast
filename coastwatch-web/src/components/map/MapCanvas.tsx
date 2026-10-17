@@ -3,7 +3,8 @@
 import { FORECAST_RASTER_OPACITY } from "@/lib/palette";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLayerMouseEvent } from "react-map-gl/maplibre";
-import { setWorkerUrl, type ExpressionSpecification, type GeoJSONSource, type Map as MlMap } from "maplibre-gl";
+import { PMTiles, Protocol } from "pmtiles";
+import { addProtocol, setWorkerUrl, type ExpressionSpecification, type GeoJSONSource, type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { PortsCollection } from "@/generated/schema";
 import type { LayerArtifact } from "@/generated/schema";
@@ -27,9 +28,9 @@ import { GRID_TILE_SIZE } from "@/lib/gridTiles";
 import { gridTiles } from "@/lib/gridTileProtocol";
 import { indexedTiles } from "@/lib/tileIndex";
 import { loadWaterFallback, waterGeoJSON } from "@/lib/waterFallback";
-import { onBasemapSlow } from "@/lib/waterMask";
+import { basemapArchive, onBasemapSlow, setBasemapArchive } from "@/lib/waterMask";
 import FlowParticles from "./FlowParticles";
-import { CountyControl, CountyLayers, useCountyPrefs } from "./Counties";
+import { CountyControl, CountyLayers, useCountyPrefs, type CountyPrefs } from "./Counties";
 
 // MapLibre's module worker is copied to public/ by scripts/copy-maplibre-worker.mjs
 setWorkerUrl("/vendor/maplibre/maplibre-gl-worker.mjs");
@@ -90,6 +91,25 @@ type Props = {
    * "link" (from the waters to that cell). Drawn above the data, below the ports.
    */
   overlay?: GeoJSON.FeatureCollection | null;
+  /** v4: "none" leaves the map's own controls to the workspace (zoom, scale, counties) */
+  chrome?: "v2" | "none";
+  /** v4: the county reference lines, controlled by the workspace (unset: the map's own remembered choice) */
+  counties?: CountyPrefs;
+  /** v4: a shore station was chosen on the map (the station itself is selected, not the water beside it) */
+  onStationPick?: (stationId: string) => void;
+  /** v4: stations as counted clusters below harbour zoom, so the regional view stays calm */
+  clusterStations?: boolean;
+  /**
+   * v4: the selection, drawn above every data layer and label (it is never covered): features with
+   * properties.kind "cell" or "area" (polygons, outlined), "station" or "point" (a ring), "pixel" (an
+   * observation pixel, outlined) or "footprint" (the outline of observed pixels), optional label
+   */
+  highlight?: GeoJSON.FeatureCollection | null;
+  /** v4: readiness of the basemap and of the data field, for the status centre */
+  onStatus?: (s: { basemap: "ok" | "slow" | "down"; field: "none" | "loading" | "ready" | "failed" }) => void;
+  maxZoom?: number;
+  /** v4 offline: the basemap from a saved regional PMTiles archive instead of OpenFreeMap */
+  basemapPmtiles?: string | null;
 };
 
 const OFFICIAL = "#f6bb5c";
@@ -137,6 +157,43 @@ const RASTER_PAINT = { "raster-opacity": 1, "raster-resampling": "nearest", "ras
 const RASTER_FADE = { ...RASTER_PAINT, "raster-fade-duration": 220 } as const;
 const FORECAST_RASTER = { ...RASTER_PAINT, "raster-opacity": FORECAST_RASTER_OPACITY } as const;
 const FORECAST_FADE = { ...FORECAST_RASTER, "raster-fade-duration": 220 } as const;
+// a mild fade only: any lower and the no-value hatch under the field shows through valued cells,
+// which would read as "no value" (the cells' outlines and printed values carry harbour zoom instead)
+const V4_FORECAST_OPACITY = ["interpolate", ["linear"], ["zoom"], 9, FORECAST_RASTER_OPACITY, 12, 0.6] as unknown as number;
+
+/** The selection ring (v4): 30 px, accent stroke, faint fill; drawn as a symbol so labels avoid it. */
+function ringImage(): ImageData {
+  const s = 60;
+  const c = document.createElement("canvas");
+  c.width = c.height = s;
+  const g = c.getContext("2d")!;
+  g.beginPath();
+  g.arc(s / 2, s / 2, s / 2 - 4, 0, Math.PI * 2);
+  g.fillStyle = "rgba(95,208,230,0.14)";
+  g.fill();
+  g.lineWidth = 4.4;
+  g.strokeStyle = "#5fd0e6";
+  g.stroke();
+  return g.getImageData(0, 0, s, s);
+}
+
+let protocol: Protocol | null = null;
+const archives = new globalThis.Map<string, PMTiles>();
+/** The pmtiles:// protocol (once) and one shared archive per URL: the map and the water mask read
+ *  the same file (lib/waterMask), so data are clipped at the shore the map draws. */
+function registerPmtiles(url: string): PMTiles {
+  if (!protocol) {
+    protocol = new Protocol();
+    addProtocol("pmtiles", protocol.tile);
+  }
+  let a = archives.get(url);
+  if (!a) {
+    a = new PMTiles(url);
+    protocol.add(a);
+    archives.set(url, a);
+  }
+  return a;
+}
 
 export default function MapCanvas(p: Props) {
   const [wide] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
@@ -150,11 +207,33 @@ export default function MapCanvas(p: Props) {
     if (!id) return forecast ? FORECAST_RASTER : RASTER_PAINT;
     if (!fadeOf.current.has(id)) fadeOf.current.set(id, !!p.fade);
     const fade = fadeOf.current.get(id);
-    return forecast ? (fade ? FORECAST_FADE : FORECAST_RASTER) : fade ? RASTER_FADE : RASTER_PAINT;
+    const paint = forecast ? (fade ? FORECAST_FADE : FORECAST_RASTER) : fade ? RASTER_FADE : RASTER_PAINT;
+    // v4: the forecast recedes as the reader zooms to a harbour, so the coast and the harbour read
+    // through 3 km cells (outlined and labelled with their values from z 10.5); values unchanged
+    return forecast && p.chrome === "none" ? { ...paint, "raster-opacity": V4_FORECAST_OPACITY } : paint;
   };
+  // fixed for the map's life: an offline map keeps its saved basemap until the page reloads online
+  // (the water that clips the data rasters is read from the same archive, set before the map asks
+  // for any data tile, so an offline map never asks the tile server for it)
+  const [archive] = useState(() => (p.basemapPmtiles ? registerPmtiles(`${window.location.origin}${p.basemapPmtiles}`) : null));
+  const [style] = useState(() => {
+    if (!archive) return BASEMAP_STYLE;
+    setBasemapArchive(archive);
+    const omt = BASEMAP_STYLE.sources.omt as { type: "vector"; attribution?: string };
+    // glyphs from this site only (the pack holds every range the labels use): an offline map never asks a font server
+    return { ...BASEMAP_STYLE, glyphs: `${window.location.origin}/fonts/{fontstack}/{range}.pbf`, sources: { ...BASEMAP_STYLE.sources, omt: { type: "vector" as const, url: `pmtiles://${archive.source.getKey()}`, attribution: omt.attribution } } };
+  });
+  useEffect(() => {
+    if (!archive) return;
+    setBasemapArchive(archive);
+    return () => {
+      if (basemapArchive() === archive) setBasemapArchive(null);
+    };
+  }, [archive]);
   const fg = p.forecast?.grid;
   const forecastTiles = useMemo(() => (fg ? gridTiles(fg.layer, fg.url) : null), [fg]);
-  const [counties, setCounties] = useCountyPrefs();
+  const [ownCounties, setCounties] = useCountyPrefs();
+  const counties = p.counties ?? ownCounties;
 
   // When the basemap's tiles fail (tile server down, offline) or are late (a data tile stopped
   // waiting for them), draw the bundled water instead, so the sea, the coastline and the no-data
@@ -199,6 +278,10 @@ export default function MapCanvas(p: Props) {
   const [failedKey, setFailedKey] = useState<string | null>(null);
   const fieldReady = hasRaster && loadedKey === rasterKey;
   const fieldFailed = hasRaster && !fieldReady && failedKey === rasterKey;
+  const { onStatus } = p;
+  useEffect(() => {
+    onStatus?.({ basemap, field: !hasRaster ? "none" : fieldReady ? "ready" : fieldFailed ? "failed" : "loading" });
+  }, [onStatus, basemap, hasRaster, fieldReady, fieldFailed]);
   useEffect(() => {
     if (!map || !hasRaster) return;
     const ids = ["forecast", "satellite", "satellite-age"].filter((id) => (id === "forecast" ? p.forecast : id === "satellite" ? p.satellite : p.satelliteAge));
@@ -283,8 +366,23 @@ export default function MapCanvas(p: Props) {
     return () => cancelAnimationFrame(raf);
   }, [map, overlay]);
 
+  const { onStationPick } = p;
   const onClick = useCallback(
     (e: MapLayerMouseEvent) => {
+      if (onStationPick) {
+        const cl = e.features?.find((x) => x.layer.id === "map-station-cluster");
+        if (cl && cl.geometry.type === "Point") {
+          // a cluster opens up: zoom in on it, select nothing
+          const [lon, lat] = cl.geometry.coordinates as [number, number];
+          e.target.easeTo({ center: [lon, lat], zoom: Math.min(10, e.target.getZoom() + 2), duration: 450 });
+          return;
+        }
+        const ms = e.features?.find((x) => x.layer.id === "map-station" || x.layer.id === "map-station-point");
+        if (ms) {
+          onStationPick(String((ms.properties as Record<string, unknown>).id));
+          return;
+        }
+      }
       const st = e.features?.find((x) => x.layer.id === "coast-station");
       if (st && onStation) {
         onStation(String((st.properties as Record<string, unknown>).id));
@@ -305,7 +403,7 @@ export default function MapCanvas(p: Props) {
       }
       onPoint({ lat: e.lngLat.lat, lon: e.lngLat.lng });
     },
-    [onPort, onPoint, onStation],
+    [onPort, onPoint, onStation, onStationPick],
   );
 
   const portsData = useMemo(
@@ -318,7 +416,7 @@ export default function MapCanvas(p: Props) {
         : null,
     [p.ports],
   );
-  const interactive = [...(p.showPorts && portsData ? ["ports-hit", "ports-circle"] : []), ...(p.onStation && p.overlay ? ["coast-station"] : []), ...(p.stations ? ["map-station"] : [])];
+  const interactive = [...(p.showPorts && portsData ? ["ports-hit", "ports-circle"] : []), ...(p.onStation && p.overlay ? ["coast-station"] : []), ...(p.stations ? ["map-station"] : []), ...(p.stations && p.clusterStations ? ["map-station-cluster", "map-station-point"] : [])];
   // a station the provenance overlay already draws (the thread's end) is not drawn twice
   const overlayStationIds = useMemo(
     () => (p.overlay?.features ?? []).filter((f) => (f.properties as { kind?: string } | null)?.kind === "station").map((f) => String((f.properties as { id?: unknown }).id ?? "")),
@@ -330,10 +428,12 @@ export default function MapCanvas(p: Props) {
     if (inited.current === m || !m.getLayer("land")) return;
     inited.current = m;
     if (!m.hasImage("nodata")) m.addImage("nodata", noDataImage(), { pixelRatio: 2 });
+    if (!m.hasImage("v4-ring")) m.addImage("v4-ring", ringImage(), { pixelRatio: 2 });
     addArrows(m);
     m.on("styleimagemissing", (ev: { id: string }) => {
       if (ev.id === "nodata" && !m.hasImage("nodata")) m.addImage("nodata", noDataImage(), { pixelRatio: 2 });
       if (ev.id.startsWith("cw-arrow-")) addArrows(m);
+      if (ev.id === "v4-ring" && !m.hasImage("v4-ring")) m.addImage("v4-ring", ringImage(), { pixelRatio: 2 });
     });
     setMap(m);
     // exposed for end-to-end tests and debugging
@@ -343,14 +443,15 @@ export default function MapCanvas(p: Props) {
 
   return (
     <Map
-      mapStyle={BASEMAP_STYLE}
+      mapStyle={style}
       transformRequest={transformRequest}
       initialViewState={{ bounds: p.initialBounds, fitBoundsOptions: { padding: p.initialPadding } }}
       maxBounds={[CA_BOUNDS[0][0], CA_BOUNDS[0][1], CA_BOUNDS[1][0], CA_BOUNDS[1][1]]}
       minZoom={4.2}
-      maxZoom={12.5}
+      maxZoom={p.maxZoom ?? 12.5}
       renderWorldCopies={false}
-      attributionControl={{ compact: true }}
+      // v4 states the attribution in its own interface (it stays visible beside the map)
+      attributionControl={p.chrome === "none" ? false : { compact: true }}
       interactiveLayerIds={interactive}
       onClick={onClick}
       onMouseMove={onHover ? (e) => onHover({ lat: e.lngLat.lat, lon: e.lngLat.lng }, { x: e.point.x, y: e.point.y }) : undefined}
@@ -370,9 +471,9 @@ export default function MapCanvas(p: Props) {
       cursor="crosshair"
       style={{ width: "100%", height: "100%" }}
     >
-      <NavigationControl position="bottom-right" showCompass={false} />
-      {wide && <ScaleControl position="bottom-right" unit="metric" />}
-      <CountyControl prefs={counties} onChange={setCounties} />
+      {p.chrome !== "none" && <NavigationControl position="bottom-right" showCompass={false} />}
+      {wide && p.chrome !== "none" && <ScaleControl position="bottom-right" unit="metric" />}
+      {p.chrome !== "none" && <CountyControl prefs={counties} onChange={setCounties} />}
       {/* county reference lines and names: under town names, above nothing that holds data on land */}
       <CountyLayers prefs={counties} beforeId="place-city" />
 
@@ -595,6 +696,40 @@ export default function MapCanvas(p: Props) {
         </Source>
       )}
 
+      {p.stations && p.clusterStations && (
+        // below harbour zoom the stations are counted clusters (a calm regional view); a single
+        // station keeps its own mark and opens on tap
+        <Source id="map-stations-clustered" type="geojson" data={p.stations} cluster clusterRadius={38} clusterMaxZoom={9}>
+          <Layer
+            id="map-station-cluster"
+            type="circle"
+            maxzoom={9.5}
+            filter={["has", "point_count"]}
+            paint={{ "circle-radius": ["step", ["get", "point_count"], 11, 4, 14], "circle-color": "rgba(6,17,30,0.82)", "circle-stroke-color": MEASURED_MARK, "circle-stroke-width": 1.6 }}
+          />
+          <Layer
+            id="map-station-cluster-count"
+            type="symbol"
+            maxzoom={9.5}
+            filter={["has", "point_count"]}
+            layout={{ "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Regular"], "text-size": 11.5, "text-allow-overlap": true }}
+            paint={{ "text-color": "#cdeee6" }}
+          />
+          <Layer
+            id="map-station-point"
+            type="circle"
+            maxzoom={9.5}
+            filter={["!", ["has", "point_count"]]}
+            paint={{
+              "circle-radius": 4.5,
+              "circle-color": ["case", ["boolean", ["get", "recent"], false], MEASURED_MARK, "rgba(6,17,30,0.7)"],
+              "circle-stroke-color": ["case", ["boolean", ["get", "recent"], false], "#06111e", MEASURED_MARK],
+              "circle-stroke-width": 1.6,
+            }}
+          />
+        </Source>
+      )}
+
       {p.showPorts && portsData && (
         <Source id="ports" type="geojson" data={portsData}>
           <Layer id="ports-hit" type="circle" paint={{ "circle-radius": 14, "circle-opacity": 0 }} />
@@ -609,6 +744,8 @@ export default function MapCanvas(p: Props) {
             id="ports-label"
             type="symbol"
             minzoom={7.4}
+            // a selected harbour is named by the selection's own label (v4), never twice
+            filter={p.highlight ? ["!=", ["get", "port_code"], p.selectedPort ?? -1] : ["boolean", true]}
             layout={{ "text-field": ["get", "display_name"], "text-font": ["Noto Sans Regular"], "text-size": 12.5, "text-offset": [0.9, 0], "text-anchor": "left", "text-optional": true }}
             paint={{ "text-color": "#ffffff", "text-halo-color": "#06111e", "text-halo-width": 1.8 }}
           />
@@ -645,7 +782,32 @@ export default function MapCanvas(p: Props) {
         </Source>
       )}
 
-      {hasRaster && !fieldReady && map && (
+      {p.highlight && (
+        // v4: the selection, last in the stack so nothing covers it; its label is always placed
+        // and the other labels move out of its way
+        <Source id="v4-highlight" type="geojson" data={p.highlight}>
+          <Layer id="v4-hl-fill" type="fill" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "fill-color": ["match", ["get", "kind"], "cell", MODEL_MARK, "#5fd0e6"], "fill-opacity": ["match", ["get", "kind"], "cell", 0.16, 0.07] }} />
+          <Layer id="v4-hl-halo" type="line" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "line-color": "#04121a", "line-width": 5, "line-opacity": 0.55 }} />
+          <Layer id="v4-hl-line" type="line" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "line-color": ["match", ["get", "kind"], "cell", "#e6dbff", "#5fd0e6"], "line-width": 2, "line-dasharray": ["match", ["get", "kind"], "area", ["literal", [3, 2]], ["literal", [1, 0]]] }} />
+          {/* observation pixels and footprints (Research): neutral white, never the model's colour */}
+          <Layer id="v4-hl-pixel-halo" type="line" filter={["in", ["get", "kind"], ["literal", ["pixel", "footprint"]]]} paint={{ "line-color": "#04121a", "line-width": ["match", ["get", "kind"], "pixel", 4.5, 2.6], "line-opacity": 0.6 }} />
+          <Layer id="v4-hl-pixel" type="line" filter={["in", ["get", "kind"], ["literal", ["pixel", "footprint"]]]} paint={{ "line-color": "#ffffff", "line-width": ["match", ["get", "kind"], "pixel", 2, 1], "line-opacity": 0.95 }} />
+          {/* the ring is a symbol, so it takes part in label placement: other labels move off it */}
+          <Layer id="v4-hl-transect-halo" type="line" filter={["==", ["get", "kind"], "transect"]} layout={{ "line-cap": "round" }} paint={{ "line-color": "#04121a", "line-width": 5, "line-opacity": 0.6 }} />
+          <Layer id="v4-hl-transect" type="line" filter={["==", ["get", "kind"], "transect"]} layout={{ "line-cap": "round" }} paint={{ "line-color": "#5fd0e6", "line-width": 2.4 }} />
+          <Layer id="v4-hl-ring" type="symbol" filter={["in", ["get", "kind"], ["literal", ["station", "point", "harbor"]]]} layout={{ "icon-image": "v4-ring", "icon-allow-overlap": true, "icon-padding": 4 }} />
+          <Layer id="v4-hl-dot" type="circle" filter={["in", ["get", "kind"], ["literal", ["station", "point", "harbor"]]]} paint={{ "circle-radius": 4, "circle-color": "#ffffff", "circle-stroke-color": "#04121a", "circle-stroke-width": 1.5 }} />
+          <Layer
+            id="v4-hl-label"
+            type="symbol"
+            filter={["has", "label"]}
+            layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 12.5, "text-variable-anchor": ["top", "bottom", "left", "right"], "text-radial-offset": 1.5, "text-justify": "auto", "text-max-width": 16, "text-allow-overlap": true }}
+            paint={{ "text-color": "#ffffff", "text-halo-color": "#04121a", "text-halo-width": 1.8 }}
+          />
+        </Source>
+      )}
+
+      {hasRaster && !fieldReady && map && p.chrome !== "none" && (
         <div className="pointer-events-none absolute inset-x-0 top-[72px] z-[1] flex justify-center" role="status" aria-live="polite">
           {fieldFailed ? (
             <span className="rounded-full bg-[rgba(11,26,43,0.92)] px-3 py-1.5 text-[13px] text-[#e9eff6] shadow-[0_6px_20px_rgba(6,17,30,0.3)]" data-testid="map-field-failed">

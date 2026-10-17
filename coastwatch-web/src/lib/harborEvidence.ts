@@ -294,10 +294,10 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         kind: "official",
         tone: applying.some((a) => RESTRICTIVE.has(a.record.action) || CLOSED.test(a.record.title)) ? "alert" : "note",
         headline: applying.length === 1 ? first.record.title : `${applying.length} notices cover these waters${forWhat}`,
-        detail: applying.length === 1 ? `${first.record.agency}${first.record.effective_date ? ` · since ${shortDate(first.record.effective_date)}` : ""}${limit ? ` · ${limit}` : ""}` : applying.slice(0, 3).map((a) => a.record.title).join(" · "),
+        detail: applying.length === 1 ? `${first.record.agency}${first.record.effective_date ? ` · since ${shortDate(first.record.effective_date)}` : ""}${limit ? ` · ${limit}` : ""}` : `${applying.slice(0, 3).map((a) => a.record.title).join(" · ")}${applying.length > 3 ? ` · and ${applying.length - 3} more, all in Notices` : ""}`,
         source: src ? { label: `${first.record.agency} notice`, url: src.url } : undefined,
         focus: "official",
-        text: `${applying.length} agency notice${applying.length === 1 ? "" : "s"} ${applying.length === 1 ? "names" : "name"} these waters${forWhat}: ${applying.slice(0, 3).map((a) => `${a.record.agency}: ${a.record.title}`).join("; ")}.${unverified ? " Neritic's copy, not verified by a person; the agency pages are the authority." : ""}`,
+        text: `${applying.length} agency notice${applying.length === 1 ? "" : "s"} ${applying.length === 1 ? "names" : "name"} these waters${forWhat}: ${applying.slice(0, 3).map((a) => `${a.record.agency}: ${a.record.title}`).join("; ")}${applying.length > 3 ? `; and ${applying.length - 3} more` : ""}.${unverified ? " Neritic's copy, not verified by a person; the agency pages are the authority." : ""}`,
         supports: applying.map((a) => `official:${a.record.id}`),
       });
     } else if (!season) {
@@ -378,7 +378,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         kind: "measured",
         tone: "note",
         headline: `${e.station.name}, ${km(e.km)} km ${e.bearing}: ${v}, ${shortDate(e.date)}`,
-        detail: `${cap(ageWords(e.ageDays))}. ${closer ? `${closer.station.name}, ${km(closer.km)} km, is closer but its last sample is from ${shortDate(closer.date)} (${ageWords(closer.ageDays)}). ` : ""}${modelLine ? `${cap(modelLine)}. ` : ""}Seawater, not seafood.`,
+        detail: `${cap(ageWords(e.ageDays))}. ${closer ? `${closer.station.name}, ${km(closer.km)} km, is closer but its last toxin or Pseudo-nitzschia sample is from ${shortDate(closer.date)} (${ageWords(closer.ageDays)}). ` : ""}${modelLine ? `${cap(modelLine)}. ` : ""}Seawater, not seafood.`,
         focus: e.kind === "cells" ? "cells" : "toxin",
         aged: e.ageDays > 14,
         text: `${e.station.name} reported ${best.node.text} ${e.kind === "cells" ? "Pseudo-nitzschia" : "particulate domoic acid"} on ${longDate(e.date)}, ${km(e.km)} km ${e.bearing} of ${P.name}.${closer ? ` ${closer.station.name} is closer (${km(closer.km)} km) but has no comparable sample since ${longDate(closer.date, x.now)}.` : ""}`,

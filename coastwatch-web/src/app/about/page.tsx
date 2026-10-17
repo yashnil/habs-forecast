@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { BRAND } from "@/content/brand";
 import { AppShell } from "@/components/AppShell";
-import { DataBanners } from "@/components/Banners";
 import { KindChip, type Kind } from "@/components/ui/Kinds";
 import { PurposeSwitch } from "@/components/welcome/PurposeSwitch";
 import { ABOUT, RESEARCH } from "@/content/copy";
@@ -24,7 +23,6 @@ export default async function AboutPage() {
       manifest={manifest}
       official={data.ok ? data.official : null}
       officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null}
-      banner={<DataBanners manifest={manifest} error={data.ok ? null : data.error} />}
       scroll="page"
     >
       <article className="mx-auto w-full max-w-[1120px] px-4 pb-20 pt-8 sm:px-8 sm:pt-12" data-testid="about-page">
@@ -33,8 +31,8 @@ export default async function AboutPage() {
           <h1 className="text-balance font-display text-[34px] font-medium leading-[1.08] text-ink sm:text-[46px]">{ABOUT.title}</h1>
           <p className="font-display text-[19px] leading-[1.5] text-ink-2 sm:text-[21px]">{ABOUT.lede}</p>
           <p className="text-[16px]">
-            <Link href="/?tour=1" className="font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent" data-testid="about-tour">
-              Take the tour of the Ocean Map →
+            <Link href="/" className="font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent" data-testid="about-tour">
+              Open Explore, the map →
             </Link>
           </p>
           <p className="max-w-[68ch] text-[14px] leading-relaxed text-ink-3" data-testid="about-independence">

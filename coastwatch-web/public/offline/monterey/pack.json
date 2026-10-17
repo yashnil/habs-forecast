@@ -1,0 +1,20 @@
+{
+  "id": "monterey",
+  "name": "Monterey Bay",
+  "version": 1,
+  "bbox": [-122.124, 36.44, -121.676, 36.8],
+  "basemap": {
+    "url": "/offline/monterey/basemap.pmtiles",
+    "bytes": 7015532,
+    "sha256": "bfe8d3ee720caef6f38f2a12c0192e8c7c1740b29131a94a855b68eff404b10c",
+    "minzoom": 0,
+    "maxzoom": 14,
+    "tiles": 628,
+    "source": "OpenFreeMap planet run 20261011_080001_pt (https://btrfs.openfreemap.com/areas/planet/20261011_080001_pt/tiles.pmtiles), OpenMapTiles schema",
+    "osm_data_as_of": "2026-10-05",
+    "made_with": "pmtiles extract <planet> basemap.pmtiles --bbox=-122.124,36.44,-121.676,36.8 --maxzoom=14",
+    "licence": "OpenStreetMap data under the Open Database License (ODbL 1.0); this file is an unmodified regional extract and is offered under the same licence. Map design © OpenMapTiles (CC-BY 4.0).",
+    "attribution": "© OpenStreetMap contributors · © OpenMapTiles · OpenFreeMap"
+  },
+  "notes": ["Not for navigation.", "Outside this box, zoomed in, the offline map shows the bundled seafloor relief only (no coastline, roads or names)."]
+}

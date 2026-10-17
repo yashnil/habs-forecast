@@ -4,12 +4,15 @@ import { OK } from "./ports";
 /** While the notice registry is not human-verified, every page says so and links to the agencies;
  *  the Del Norte razor clam records (2026-10-09) are listed, unverified. */
 
-for (const path of ["/", "/bloom", "/fisheries", "/sources", "/about"]) {
+for (const path of ["/", "/coast?place=port-550", "/research", "/bloom", "/fisheries", "/sources", "/about"]) {
   test(`${path}: the unverified-notices disclosure is on the page with agency links`, async ({ page }) => {
     await page.goto(`${OK}${path}`);
-    const d = page.getByTestId("registry-disclosure");
-    await expect(d).toContainText("Official notices are not verified.");
-    await expect(d).toContainText("may be incomplete");
+    const d = page.getByTestId("registry-disclosure").first();
+    // what is visible, not only what is in the page (Explore floats the compact wording over the map)
+    await expect(d).toContainText(/(Official notices are|Notices) not verified/, { useInnerText: true });
+    await expect(d).toContainText("may be incomplete", { useInnerText: true });
+    // the workspaces say it in the line itself; the reference pages say it in their footer (navigation.spec)
+    if (["/", "/coast?place=port-550", "/research"].includes(path)) await expect(d).toContainText("Research preview", { useInnerText: true });
     await expect(d.getByRole("link", { name: "CDFW" })).toHaveAttribute("href", "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories");
     await expect(d.getByRole("link", { name: "CDPH" })).toHaveAttribute("href", "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx");
   });
@@ -19,7 +22,7 @@ test("on a phone the disclosure is one short line that still links to the agenci
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   await page.goto(OK);
-  const d = page.getByTestId("registry-disclosure");
+  const d = page.getByTestId("registry-disclosure").first();
   await expect(d).toContainText("Notices not verified");
   expect((await d.boundingBox())!.height).toBeLessThan(60);
   await expect(d.getByRole("link", { name: "CDFW" }).first()).toBeVisible();
@@ -28,8 +31,8 @@ test("on a phone the disclosure is one short line that still links to the agenci
 
 test("the Del Norte razor clam closure and CDPH warning are listed, not verified", async ({ page }) => {
   await page.goto(OK);
-  await page.getByTestId("registry-disclosure").getByRole("button", { name: "See the list" }).click();
-  const drawer = page.getByTestId("official-drawer");
+  await page.getByTestId("notices-button").click();
+  const drawer = page.getByTestId("notices-panel");
   await expect(drawer).toContainText("Recreational razor clam fishery closed in Del Norte County");
   await expect(drawer).toContainText("Do not eat sport-harvested razor clams from Del Norte County");
   await expect(drawer).toContainText("Not verified");

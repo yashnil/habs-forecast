@@ -69,21 +69,26 @@ test.describe("Neritic brand", () => {
     await expect(page.getByTestId("footer-independence")).toContainText("not affiliated with or endorsed by NOAA");
   });
 
-  test("settings saved under the old name still apply, and old links still open", async ({ browser }) => {
+  test("settings saved under the old name do not break anything, and old links still open", async ({ browser }) => {
     const ctx = await browser.newContext({
       viewport: { width: 1440, height: 900 },
-      storageState: { cookies: [], origins: [{ origin: OK, localStorage: [{ name: "cw-intro-dismissed-v1", value: "1" }, { name: "cw-mode-v1", value: "research" }] }] },
+      storageState: { cookies: [], origins: [{ origin: OK, localStorage: [{ name: "cw-intro-dismissed-v1", value: "1" }, { name: "cw-mode-v1", value: "research" }, { name: "cw-home-port", value: "port-550" }] }] },
     });
     const page = await ctx.newPage();
     await page.goto(`${OK}/coast?place=port-550`);
-    // the saved Research mode still applies: the Science sections render, not the trip briefing
-    await expect(page.getByTestId("coast-observed")).toBeVisible();
-    // shared links from before the rename
-    for (const link of ["/?port=550", "/coast?place=port-201&for=commercial&species=dungeness", "/bloom", "/fisheries"]) {
+    await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
+    // shared links from before the rename (and before v4)
+    for (const link of ["/?port=550", "/?region=monterey_bay&layer=forecast&var=pseudo_nitzschia&lead=1", "/coast?place=port-201&for=commercial&species=dungeness", "/bloom", "/fisheries"]) {
       const r = await page.goto(`${OK}${link}`);
       expect(r?.status(), link).toBe(200);
       await expect(page.getByTestId("brand-home")).toBeVisible();
     }
+    // a v2 port link opens that harbour; a v2 Research-mode link opens the Research workspace
+    await page.goto(`${OK}/?port=550`);
+    await expect(page.getByTestId("inspect-panel")).toHaveAttribute("data-kind", "harbor");
+    await page.goto(`${OK}/coast?place=port-550&mode=research`);
+    await expect(page).toHaveURL(/\/research\?place=port-550/);
+    await expect(page.getByTestId("research-title")).toBeVisible();
     await ctx.close();
   });
 
@@ -94,7 +99,7 @@ test.describe("Neritic brand", () => {
       await page.goto(`${OK}/bloom`);
       const fit = await page.evaluate(() => {
         const home = document.querySelector('[data-testid="brand-home"]')!.getBoundingClientRect();
-        const pill = document.querySelector('[data-testid="official-pill"]')!.getBoundingClientRect();
+        const pill = document.querySelector('[data-testid="notices-button"]')!.getBoundingClientRect();
         return { overlap: home.right > pill.left, sideScroll: document.documentElement.scrollWidth > innerWidth };
       });
       expect(fit, `${w}px`).toEqual({ overlap: false, sideScroll: false });

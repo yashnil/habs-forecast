@@ -3,7 +3,6 @@ import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { FAILED, M2, OK } from "./ports";
-import { openPlaces } from "./helpers";
 
 const FIX = path.resolve(__dirname, "../fixture-data/v1");
 const read = (prefix: string) => JSON.parse(readFileSync(path.join(FIX, readdirSync(FIX).find((f) => f.startsWith(prefix))!), "utf8"));
@@ -162,12 +161,12 @@ test.describe("published M2 data (before any M3 artifact exists)", () => {
     await open(page, `${M2}/fisheries`);
     await expect(page.getByTestId("fisheries-unavailable")).toContainText("published before fisheries data were added");
     await open(page, `${M2}/`);
-    await expect(page.getByTestId("official-summary")).toBeVisible();
-    await openPlaces(page);
-    await expect(page.getByTestId("region-ports")).toBeVisible();
-    // M2 data has no satellite layers: the satellite group says so instead of drawing anything
-    await page.getByTestId("group-satellite").click();
-    await expect(page.getByTestId("satellite-unavailable")).toBeVisible();
+    await expect(page.getByTestId("notices-button")).toBeVisible();
+    await page.getByTestId("place-search-input").fill("Monterey");
+    await expect(page.getByTestId("place-search-list")).toContainText("Monterey");
+    // M2 data has no satellite layers: the satellite choice says so instead of drawing anything
+    await expect(page.getByTestId("layer-satellite")).toBeDisabled();
+    await expect(page.getByTestId("layer-satellite")).toContainText("not available");
   });
 });
 
@@ -214,8 +213,9 @@ test.describe("mobile", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   });
   test("map: legend is reachable on the map", async ({ page }) => {
-    await open(page, `${OK}/`);
-    await expect(page.getByTestId("mobile-legend").getByTestId("probability-legend")).toBeVisible();
-    await expect(page.getByTestId("mobile-legend").getByTestId("native-resolution")).toHaveText("native 3 km");
+    await open(page, `${OK}/?layer=forecast`);
+    const sheet = page.getByTestId("mobile-sheet");
+    await expect(sheet.getByTestId("legend-forecast")).toBeVisible();
+    await expect(sheet.getByTestId("legend-forecast")).toContainText("3 km model cell");
   });
 });

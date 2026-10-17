@@ -1,117 +1,100 @@
+"use client";
+
 import Link from "next/link";
 import { MotionConfig } from "motion/react";
 import { PageIn } from "@/components/motion/PageIn";
 import { RESEARCH } from "@/content/copy";
 import { BRAND } from "@/content/brand";
-import { BrandMark, Wordmark } from "@/components/brand/BrandMark";
-import { ModeSwitch, PrimaryNav } from "@/components/shell/ModeNav";
-import { SourceHealthDot } from "@/components/SourceHealthDot";
-import { OfficialDrawer, OfficialPill, OfficialProvider, TabBar } from "@/components/shell/OfficialShell";
-import { MastheadMenu } from "@/components/shell/MastheadMenu";
+import { OfficialDrawer, OfficialProvider } from "@/components/shell/OfficialShell";
 import type { Manifest, SourceStatus } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
+import { isFixture, sourceStatus } from "@/lib/layers";
+import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { ReadinessProvider, useReportSource } from "@/v4/readiness/store";
+import { NavTabs, TopBar } from "@/v4/shell/TopBar";
+import { NoticesButton } from "@/v4/shell/Notices";
+import { useNow } from "@/lib/useNow";
 
 /**
- * Page frame (design reset §4): a navy masthead on every page with the primary navigation,
- * the official-notices pill and data status; a bottom tab bar on phones. Reading pages sit
- * on light paper; the map ("app") variant puts its content on the dark sea theme.
+ * The frame of the reference pages (Blooms, Fisheries, Data status, About) in v4: the shared top bar
+ * (workspaces, status centre, official notices), the page on the light reading environment, the
+ * footer, and the dock on phones. The pages' own content is unchanged; inside `.env-chart` the v2
+ * tokens resolve to the v4 palette and faces (src/v4/theme.css), so it reads as one system.
  */
 export function AppShell({
   children,
-  active,
   manifest,
   official = null,
-  officialStatus = null,
-  banner,
-  scroll = "app",
 }: {
-  /** "app": fixed-height viewport on the dark map theme; "page": the document scrolls, on paper */
   scroll?: "app" | "page";
   children: React.ReactNode;
   active: "map" | "coast" | "bloom" | "fisheries" | "sources" | "about";
   manifest: Manifest | null;
   official?: OfficialDataset | null;
   officialStatus?: SourceStatus | null;
-  banner?: React.ReactNode;
 }) {
   return (
-    // every animation follows the device's reduced-motion setting
     <MotionConfig reducedMotion="user">
-    <OfficialProvider official={official} status={officialStatus}>
-      {/* keyboard users skip the masthead and the status line */}
-      <a
-        href="#main"
-        className="sr-only z-50 rounded-md bg-surface px-3 py-2 text-[14px] font-medium text-accent shadow focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:flex focus:min-h-11 focus:items-center"
-        data-testid="skip-link"
-      >
+      <ReadinessProvider>
+        <OfficialProvider official={official} status={null}>
+          <Frame manifest={manifest} official={official}>
+            {children}
+          </Frame>
+          <OfficialDrawer />
+        </OfficialProvider>
+      </ReadinessProvider>
+    </MotionConfig>
+  );
+}
+
+function Frame({ children, manifest, official }: { children: React.ReactNode; manifest: Manifest | null; official: OfficialDataset | null }) {
+  const now = useNow();
+  useReportSource({ id: "data", label: "Neritic dataset", state: manifest ? "ready" : "unavailable", detail: manifest ? `Published ${manifest.generated_at.slice(0, 16).replace("T", " ")} UTC` : "Could not be loaded", asOf: manifest?.generated_at ?? null });
+  return (
+    <div className="env-chart flex min-h-dvh flex-col bg-n-bg pb-[72px] text-n-ink lg:pb-0">
+      <a href="#main" className="sr-only z-50 rounded-md bg-n-surface px-3 py-2 text-[14px] font-semibold text-n-accent focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:flex focus:min-h-11 focus:items-center" data-testid="skip-link">
         Skip to main content
       </a>
-      <div className={`flex min-h-dvh flex-col bg-page pb-[var(--cw-tabbar-h)] md:pb-0 ${scroll === "app" ? "lg:h-dvh" : ""}`}>
-        <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-navy-950 text-on-navy">
-          <div className="flex h-[52px] min-w-0 items-center gap-3 px-3 min-[360px]:px-4 min-[400px]:gap-6 md:h-[var(--cw-masthead-h)] md:gap-5 md:px-6 lg:gap-8">
-            <Link href="/" className="flex min-h-11 shrink-0 items-center gap-2 min-[360px]:gap-2.5" aria-label={`${BRAND.name} home`} data-testid="brand-home">
-              <BrandMark size={26} />
-              <Wordmark className="text-[17px] text-white" />
-              {/* not independently validated: said on every page, beside the name (phones: the footer and the welcome) */}
-              <span className="hidden whitespace-nowrap border-l border-white/15 pl-2.5 text-[13px] text-on-navy-2 lg:inline" data-testid="research-preview-badge">
-                Research preview
-              </span>
-            </Link>
-            <PrimaryNav active={active} />
-            <div className="ml-auto flex items-center gap-2 min-[360px]:gap-3">
-              <div className="hidden xl:block">
-                <ModeSwitch />
-              </div>
-              <Link
-                href="/about"
-                data-testid="nav-about"
-                aria-current={active === "about" ? "page" : undefined}
-                className={`hidden px-1.5 text-[14px] md:block ${active === "about" ? "text-white" : "text-on-navy-2 hover:text-on-navy"}`}
-              >
-                About
-              </Link>
-              <OfficialPill />
-              <Link
-                href="/sources"
-                data-testid="data-status-link"
-                aria-current={active === "sources" ? "page" : undefined}
-                className={`items-center gap-2 rounded-md px-1.5 py-1.5 text-[14px] max-md:hidden md:flex ${active === "sources" ? "text-white" : "text-on-navy-2 hover:text-on-navy"}`}
-              >
-                <SourceHealthDot manifest={manifest} />
-                <span className="hidden whitespace-nowrap lg:inline">Data status</span>
-                <span className="sr-only lg:hidden">Data status</span>
-              </Link>
-              <MastheadMenu active={active} />
-            </div>
-          </div>
-          {/* the status line is part of the masthead: one navy band, not a second cream bar (signature P1) */}
-          {banner}
-        </header>
-        <main id="main" tabIndex={-1} className={`flex min-h-0 flex-1 flex-col outline-none ${scroll === "app" ? "theme-dark" : ""}`}>
-          <PageIn kind={scroll}>{children}</PageIn>
-        </main>
-        {scroll === "page" && (
-          <footer className="border-t border-hairline bg-page" data-testid="site-footer">
-            <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6 text-[14px] text-ink-2 sm:px-8">
-              <span className="font-semibold text-ink" data-testid="footer-brand">{BRAND.name} · research preview</span>
-              <span className="text-ink-3" data-testid="footer-disclaimer">
-                Not an official source and not independently validated. It does not replace CDFW or CDPH: closures, advisories and seafood safety come from them.
-              </span>
-              <span className="w-full text-[13px] text-ink-3 sm:order-last" data-testid="footer-independence">
-                {BRAND.independence}
-              </span>
-              <nav aria-label={`About ${BRAND.name}`} className="flex flex-wrap gap-x-5 gap-y-2 sm:ml-auto">
-                <Link href="/about" className="inline-flex min-h-[44px] min-w-[44px] items-center font-medium text-accent hover:underline">About</Link>
-                <Link href="/sources" className="inline-flex min-h-[44px] items-center font-medium text-accent hover:underline">Data &amp; sources</Link>
-                <a href={RESEARCH.doi} target="_blank" rel="noreferrer" className="inline-flex min-h-[44px] items-center font-medium text-accent hover:underline">Research paper ↗</a>
-              </nav>
-            </div>
-          </footer>
+      <TopBar active="page" now={now} notices={<NoticesButton official={official} status={manifest ? sourceStatus(manifest, "official") : null} />} />
+      {/* the same line as the workspaces (not v2's navy band): what Neritic is, the notices' state, the agencies */}
+      <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-8">
+        {!manifest && (
+          <p role="alert" className="pb-1 text-[14px] font-semibold text-n-down" data-testid="data-unavailable">
+            Neritic&rsquo;s data could not be loaded. Official closures and advisories are always on the CDFW and CDPH sites.
+          </p>
         )}
-        <TabBar active={active} />
+        <RegistryDisclosure fixture={!!manifest && isFixture(manifest)} />
       </div>
-      <OfficialDrawer />
-    </OfficialProvider>
-    </MotionConfig>
+      <main id="main" tabIndex={-1} className="flex min-h-0 flex-1 flex-col outline-none">
+        <PageIn kind="page">{children}</PageIn>
+      </main>
+      <footer className="border-t border-n-line" data-testid="site-footer">
+        <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6 text-[14px] text-n-ink-2 sm:px-8">
+          <span className="font-semibold text-n-ink" data-testid="footer-brand">
+            {BRAND.name} · research preview
+          </span>
+          <span className="text-n-ink-3" data-testid="footer-disclaimer">
+            Not an official source and not independently validated. It does not replace CDFW or CDPH: closures, advisories and seafood safety come from them.
+          </span>
+          <span className="w-full text-[13px] text-n-ink-3 sm:order-last" data-testid="footer-independence">
+            {BRAND.independence}
+          </span>
+          <nav aria-label={`About ${BRAND.name}`} className="flex flex-wrap gap-x-5 gap-y-2 sm:ml-auto">
+            <Link href="/about" className="inline-flex min-h-[44px] min-w-[44px] items-center font-semibold text-n-accent hover:underline">
+              About
+            </Link>
+            <Link href="/sources" className="inline-flex min-h-[44px] items-center font-semibold text-n-accent hover:underline">
+              Data &amp; sources
+            </Link>
+            <a href={RESEARCH.doi} target="_blank" rel="noreferrer" className="inline-flex min-h-[44px] items-center font-semibold text-n-accent hover:underline">
+              Research paper ↗
+            </a>
+          </nav>
+        </div>
+      </footer>
+      <div className="env-instrument fixed inset-x-0 bottom-0 z-40 border-t border-n-line bg-n-surface lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <NavTabs active="page" size="dock" />
+      </div>
+    </div>
   );
 }
