@@ -3,7 +3,7 @@
 import { FORECAST_RASTER_OPACITY } from "@/lib/palette";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLayerMouseEvent } from "react-map-gl/maplibre";
-import { Protocol } from "pmtiles";
+import { PMTiles, Protocol } from "pmtiles";
 import { addProtocol, setWorkerUrl, type ExpressionSpecification, type GeoJSONSource, type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { PortsCollection } from "@/generated/schema";
@@ -28,7 +28,7 @@ import { GRID_TILE_SIZE } from "@/lib/gridTiles";
 import { gridTiles } from "@/lib/gridTileProtocol";
 import { indexedTiles } from "@/lib/tileIndex";
 import { loadWaterFallback, waterGeoJSON } from "@/lib/waterFallback";
-import { onBasemapSlow } from "@/lib/waterMask";
+import { basemapArchive, onBasemapSlow, setBasemapArchive } from "@/lib/waterMask";
 import FlowParticles from "./FlowParticles";
 import { CountyControl, CountyLayers, useCountyPrefs, type CountyPrefs } from "./Counties";
 
@@ -177,12 +177,22 @@ function ringImage(): ImageData {
   return g.getImageData(0, 0, s, s);
 }
 
-let pmtilesReady = false;
-function registerPmtiles() {
-  if (pmtilesReady) return;
-  pmtilesReady = true;
-  const protocol = new Protocol();
-  addProtocol("pmtiles", protocol.tile);
+let protocol: Protocol | null = null;
+const archives = new globalThis.Map<string, PMTiles>();
+/** The pmtiles:// protocol (once) and one shared archive per URL: the map and the water mask read
+ *  the same file (lib/waterMask), so data are clipped at the shore the map draws. */
+function registerPmtiles(url: string): PMTiles {
+  if (!protocol) {
+    protocol = new Protocol();
+    addProtocol("pmtiles", protocol.tile);
+  }
+  let a = archives.get(url);
+  if (!a) {
+    a = new PMTiles(url);
+    protocol.add(a);
+    archives.set(url, a);
+  }
+  return a;
 }
 
 export default function MapCanvas(p: Props) {
@@ -203,12 +213,23 @@ export default function MapCanvas(p: Props) {
     return forecast && p.chrome === "none" ? { ...paint, "raster-opacity": V4_FORECAST_OPACITY } : paint;
   };
   // fixed for the map's life: an offline map keeps its saved basemap until the page reloads online
+  // (the water that clips the data rasters is read from the same archive, set before the map asks
+  // for any data tile, so an offline map never asks the tile server for it)
+  const [archive] = useState(() => (p.basemapPmtiles ? registerPmtiles(`${window.location.origin}${p.basemapPmtiles}`) : null));
   const [style] = useState(() => {
-    if (!p.basemapPmtiles) return BASEMAP_STYLE;
-    registerPmtiles();
+    if (!archive) return BASEMAP_STYLE;
+    setBasemapArchive(archive);
     const omt = BASEMAP_STYLE.sources.omt as { type: "vector"; attribution?: string };
-    return { ...BASEMAP_STYLE, sources: { ...BASEMAP_STYLE.sources, omt: { type: "vector" as const, url: `pmtiles://${window.location.origin}${p.basemapPmtiles}`, attribution: omt.attribution } } };
+    // glyphs from this site only (the pack holds every range the labels use): an offline map never asks a font server
+    return { ...BASEMAP_STYLE, glyphs: `${window.location.origin}/fonts/{fontstack}/{range}.pbf`, sources: { ...BASEMAP_STYLE.sources, omt: { type: "vector" as const, url: `pmtiles://${archive.source.getKey()}`, attribution: omt.attribution } } };
   });
+  useEffect(() => {
+    if (!archive) return;
+    setBasemapArchive(archive);
+    return () => {
+      if (basemapArchive() === archive) setBasemapArchive(null);
+    };
+  }, [archive]);
   const fg = p.forecast?.grid;
   const forecastTiles = useMemo(() => (fg ? gridTiles(fg.layer, fg.url) : null), [fg]);
   const [ownCounties, setCounties] = useCountyPrefs();
