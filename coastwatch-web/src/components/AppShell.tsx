@@ -8,6 +8,7 @@ import { BRAND } from "@/content/brand";
 import { OfficialDrawer, OfficialProvider } from "@/components/shell/OfficialShell";
 import type { Manifest, SourceStatus } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
+import { sourceStatus } from "@/lib/layers";
 import { ReadinessProvider, useReportSource } from "@/v4/readiness/store";
 import { NavTabs, TopBar } from "@/v4/shell/TopBar";
 import { NoticesButton } from "@/v4/shell/Notices";
@@ -55,7 +56,7 @@ function Frame({ children, manifest, official, banner }: { children: React.React
       <a href="#main" className="sr-only z-50 rounded-md bg-n-surface px-3 py-2 text-[14px] font-semibold text-n-accent focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:flex focus:min-h-11 focus:items-center" data-testid="skip-link">
         Skip to main content
       </a>
-      <TopBar active="page" now={now} notices={<NoticesButton official={official} />} />
+      <TopBar active="page" now={now} notices={<NoticesButton official={official} status={manifest ? sourceStatus(manifest, "official") : null} />} />
       {/* the v2 status strip was drawn for the navy masthead: it keeps a navy band of its own */}
       {banner && <div className="bg-[#06111e] text-[#e8eef5]">{banner}</div>}
       <main id="main" tabIndex={-1} className="flex min-h-0 flex-1 flex-col outline-none">

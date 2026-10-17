@@ -33,8 +33,8 @@ export default async function AboutPage() {
           <h1 className="text-balance font-display text-[34px] font-medium leading-[1.08] text-ink sm:text-[46px]">{ABOUT.title}</h1>
           <p className="font-display text-[19px] leading-[1.5] text-ink-2 sm:text-[21px]">{ABOUT.lede}</p>
           <p className="text-[16px]">
-            <Link href="/?tour=1" className="font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent" data-testid="about-tour">
-              Take the tour of the Ocean Map →
+            <Link href="/" className="font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent" data-testid="about-tour">
+              Open Explore, the map →
             </Link>
           </p>
           <p className="max-w-[68ch] text-[14px] leading-relaxed text-ink-3" data-testid="about-independence">

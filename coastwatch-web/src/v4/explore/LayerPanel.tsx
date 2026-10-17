@@ -6,9 +6,12 @@ import { currentsHourly } from "@/lib/currents";
 import { AGE_COLOURS, SENSOR_COLOURS, displayPalette, gradientCss } from "@/lib/palette";
 import { SPEED_CLASSES, ARROW_LENGTHS } from "@/lib/basemap";
 import { stampLines, sensorLabel } from "@/lib/stamp";
+import { COUNTIES } from "@/content/copy";
+import type { CountyPrefs } from "@/components/map/Counties";
 import { Icon } from "@/v4/ui/Icon";
 import { SAT_WORDS, VARIABLE_WORDS, type LayerChoice, type Resolved } from "./layers";
-import { dayLabel, relTime } from "@/v4/ui/time";
+import { clockLabel, dayLabel, relTime } from "@/v4/ui/time";
+import { classifySource, classifyTime } from "@/lib/freshness";
 
 type Family = "none" | "forecast" | "satellite" | "currents";
 
@@ -57,7 +60,23 @@ export function LayerList({ manifest, choice, onChoice, now, defaults }: { manif
     currents: currentsHourly(manifest).length > 0,
   };
   return (
-    <div role="radiogroup" aria-label="What the map shows" className="flex flex-col gap-1" data-testid="layer-list">
+    <div
+      role="radiogroup"
+      aria-label="What the map shows"
+      className="flex flex-col gap-1"
+      data-testid="layer-list"
+      // a radio group moves with the arrow keys (one tab stop, the checked layer)
+      onKeyDown={(e) => {
+        const order = (Object.keys(FAMILY) as Family[]).filter((f) => available[f]);
+        const i = order.indexOf(active);
+        const step = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
+        if (!step || i < 0) return;
+        e.preventDefault();
+        const next = order[(i + step + order.length) % order.length];
+        pick(next);
+        (e.currentTarget.querySelector(`[data-testid="layer-${next}"]`) as HTMLElement | null)?.focus();
+      }}
+    >
       {(Object.keys(FAMILY) as Family[]).map((f) => {
         const on = f === active;
         const meta = FAMILY[f];
@@ -68,6 +87,7 @@ export function LayerList({ manifest, choice, onChoice, now, defaults }: { manif
             type="button"
             role="radio"
             aria-checked={on}
+            tabIndex={on ? 0 : -1}
             disabled={!available[f]}
             onClick={() => pick(f)}
             data-testid={`layer-${f}`}
@@ -192,7 +212,9 @@ export function Legend({ choice, resolved }: { choice: LayerChoice; resolved: Re
       <figure className="flex flex-col gap-2" data-testid="legend-forecast" aria-label={`Legend: ${VARIABLE_WORDS[choice.variable].what}`}>
         <figcaption className="text-[13.5px] leading-snug text-n-ink-2">{VARIABLE_WORDS[choice.variable].what}</figcaption>
         <Ramp palette={resolved.forecastLayer.palette} labels={["0%", "50%", "100%"]} />
-        <p className="text-[12.5px] leading-snug text-n-ink-3">A probability for each 3 km model cell, not a toxin measurement. Classes are display steps, not risk levels.</p>
+        <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="forecast-caveat">
+          A probability for each 3 km model cell, not a toxin measurement and not a closure decision. A low probability does not mean an area is safe. Classes are display steps, not risk levels.
+        </p>
         <NoData />
       </figure>
     );
@@ -252,8 +274,10 @@ export function Legend({ choice, resolved }: { choice: LayerChoice; resolved: Re
   return null;
 }
 
-/** Where the field comes from and when it is valid: one line per source, its own date. */
-export function Provenance({ manifest, choice, resolved, now }: { manifest: Manifest; choice: LayerChoice; resolved: Resolved; now: Date | null }) {
+/** Where the field comes from and when it is valid: one line per source, its own date; how old it is
+ *  against the source's published freshness policy (stale, or historical: not current conditions);
+ *  a failed update; a day with nothing observed; regions the radar did not see. */
+export function Provenance({ manifest, choice, resolved, now, regions = [] }: { manifest: Manifest; choice: LayerChoice; resolved: Resolved; now: Date | null; regions?: { id: string; label: string }[] }) {
   const stamps = stampLines({
     group: choice.kind === "none" ? null : choice.kind,
     forecast: resolved.forecastLayer,
@@ -262,23 +286,87 @@ export function Provenance({ manifest, choice, resolved, now }: { manifest: Mani
     currents: resolved.curLayer,
     now,
   });
-  if (!stamps.length) return null;
+  // the radar's coverage, region by region: the regions it did not see are named, in one line
+  if (choice.kind === "currents" && resolved.curLayer?.coverage) {
+    const cl = resolved.curLayer;
+    const unseen = regions.filter((r) => stampLines({ group: "currents", currents: cl, region: r }).some((x) => x.testid === "stamp-currents-gap"));
+    if (unseen.length)
+      stamps.push({
+        kind: "gap",
+        testid: "stamp-currents-gap",
+        text: `No radar observations ${cl.layer_id.endsWith("mean24h") ? "for the 24 h mean" : "this hour"} in ${unseen.map((r) => r.label).join(", ")}: no data, not calm water`,
+      });
+  }
+  const sat = choice.kind === "satellite" ? resolved.satLayer : null;
+  // a daily overpass with nothing clear: said, never drawn as an empty sea
+  const clouded = !!sat && !sat.grid && !sat.tiles && !!sat.time.observed_date;
+  if (!stamps.length && !clouded) return null;
   const status = choice.kind === "forecast" ? sourceStatus(manifest, "charm") : choice.kind === "satellite" ? sourceStatus(manifest, "satellite_chl") : choice.kind === "currents" ? sourceStatus(manifest, "hf_radar") : null;
+  const layer = choice.kind === "forecast" ? resolved.forecastLayer : choice.kind === "satellite" ? resolved.satLayer : choice.kind === "currents" ? resolved.curLayer : null;
+  // forecast freshness follows the run's issue date; observations follow the newest observation shown
+  const fresh = status && now ? (choice.kind === "forecast" ? classifySource(status, now) : layer ? classifyTime(layer.freshness, layer.composite ? { ...layer.time, observed_date: layer.composite.newest_observed_date } : layer.time, now) : null) : null;
   return (
     <div className="flex flex-col gap-1" data-testid="provenance">
-      {stamps.map((s) => (
-        <p key={s.testid} data-testid={s.testid} className={`flex items-start gap-2 text-[13px] leading-snug ${s.kind === "gap" ? "text-n-stale" : "text-n-ink-2"}`}>
+      {stamps.map((s, i) => (
+        <p key={`${s.testid}-${i}`} data-testid={s.testid} className={`flex items-start gap-2 text-[13px] leading-snug ${s.kind === "gap" ? "text-n-stale" : "text-n-ink-2"}`}>
           <span className={`mt-[5px] h-2 w-2 shrink-0 rounded-full ${s.kind === "model" ? "bg-n-model" : s.kind === "gap" ? "bg-n-stale" : "bg-n-measured"}`} aria-hidden />
           {s.text}
         </p>
       ))}
+      {clouded && (
+        <p className="flex items-start gap-2 text-[13px] font-semibold leading-snug text-n-stale" data-testid="sat-clouded">
+          <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0" />
+          No clear observation on {dayLabel(sat!.time.observed_date!)}: clouds, fog or no overpass. Nothing is shown for that day; it is not clear water.
+        </p>
+      )}
+      {choice.kind === "forecast" && charmRun(manifest)?.issued_date_derived && (
+        <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="issued-inferred">
+          Issue date inferred: NOAA does not publish it; Neritic infers it from the forecast&rsquo;s own valid dates.
+        </p>
+      )}
+      {fresh?.state === "stale" && (
+        <p className="flex items-start gap-2 text-[13px] leading-snug text-n-stale" data-testid="stale-note">
+          <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0" />
+          {choice.kind === "forecast"
+            ? `No newer C-HARM run has been published since ${dayLabel(fresh.basisDate!)} (${fresh.ageDays} days). This is the newest available forecast; its dates are shown as issued.`
+            : `Older than usual: newest observation ${fresh.ageDays} days ago.`}
+        </p>
+      )}
+      {fresh?.state === "historical" && (
+        <p className="flex items-start gap-2 text-[13px] font-semibold leading-snug text-n-down" data-testid="historical-note">
+          <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0" />
+          {choice.kind === "forecast" ? "This forecast is out of date" : "These observations are out of date"} ({fresh.ageDays} days). Shown for reference only; it does not describe current conditions.
+        </p>
+      )}
       {status && status.outcome !== "updated" && (
         <p className="flex items-start gap-2 text-[13px] text-n-stale" data-testid="provenance-status">
           <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0" />
-          The last update did not complete; the newest published data is shown.
+          The last update {status.outcome === "failed" ? "failed" : "did not complete"}
+          {status.last_attempt_at ? ` (${clockLabel(status.last_attempt_at)})` : ""}; the newest published data is shown.
         </p>
       )}
       {choice.kind === "satellite" && resolved.satLayer && <p className="text-[12.5px] text-n-ink-3">{sensorLabel(resolved.satLayer as LayerArtifact)}</p>}
     </div>
+  );
+}
+
+/** Reference lines on land: county borders and names, with what they do not mean. */
+export function ReferenceLines({ prefs, onChange }: { prefs: CountyPrefs; onChange: (p: CountyPrefs) => void }) {
+  const row = "nx-focus flex min-h-11 items-center gap-2.5 text-[14px] text-n-ink";
+  return (
+    <fieldset className="flex flex-col gap-0.5" data-testid="reference-lines">
+      <legend className="nx-eyebrow mb-1">Reference on land</legend>
+      <label className={row}>
+        <input type="checkbox" className="h-[18px] w-[18px] accent-[var(--nx-accent)]" checked={prefs.lines} onChange={(e) => onChange({ ...prefs, lines: e.target.checked })} data-testid="county-lines" />
+        County lines
+      </label>
+      <label className={row}>
+        <input type="checkbox" className="h-[18px] w-[18px] accent-[var(--nx-accent)]" checked={prefs.labels} onChange={(e) => onChange({ ...prefs, labels: e.target.checked })} data-testid="county-labels" />
+        County names
+      </label>
+      <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="county-note">
+        {COUNTIES.note}
+      </p>
+    </fieldset>
   );
 }
