@@ -1,5 +1,4 @@
 import { AppShell } from "@/components/AppShell";
-import { DataBanners } from "@/components/Banners";
 import { FisheriesExposure } from "@/components/fisheries/FisheriesExposure";
 import { FisheriesByMode } from "@/components/fisheries/FisheriesByMode";
 import { OfficialStatusCard } from "@/components/panels/OfficialStatusCard";
@@ -24,7 +23,6 @@ export default async function FisheriesPage({ searchParams }: { searchParams: Pr
       manifest={manifest}
       official={data.ok ? data.official : null}
       officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null}
-      banner={<DataBanners manifest={manifest} error={data.ok ? null : data.error} />}
       scroll="page"
     >
       {data.ok && data.fisheries ? (

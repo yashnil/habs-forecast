@@ -199,7 +199,8 @@
 
 html,
 body {
-  background: var(--cw-page);
+  /* v4: the reading environment's ground (not v2's cream), so no first frame or overscroll shows another page */
+  background: var(--nx-bg, var(--cw-page));
   color: var(--cw-ink);
   font-family: var(--font-plex-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
   /* tabular lining figures everywhere, so numbers align in tables and readouts */

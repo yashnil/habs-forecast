@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { BRAND } from "@/content/brand";
 import { AppShell } from "@/components/AppShell";
-import { DataBanners } from "@/components/Banners";
 import { OfficialStatusCard } from "@/components/panels/OfficialStatusCard";
 import { SourceTable } from "@/components/SourceTable";
 import { DISCLAIMER, RESEARCH } from "@/content/copy";
@@ -20,7 +19,7 @@ export default async function SourcesPage() {
       manifest={manifest}
       official={data.ok ? data.official : null}
       officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null}
-      banner={<DataBanners manifest={manifest} error={data.ok ? null : data.error} />} scroll="page">
+      scroll="page">
       <div className="mx-auto w-full max-w-4xl space-y-6 overflow-y-auto px-4 py-6">
         <header className="space-y-2">
           <h1 className="font-display text-[34px] font-medium leading-tight text-ink">Data &amp; sources</h1>

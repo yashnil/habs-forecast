@@ -1,11 +1,11 @@
 "use client";
 
-import type { LayerArtifact, Manifest, Palette } from "@/generated/schema";
+import type { Manifest, Palette } from "@/generated/schema";
 import { CHARM_VARIABLES, charmRun, satelliteLatest, sourceStatus, type CharmVariable } from "@/lib/layers";
 import { currentsHourly } from "@/lib/currents";
 import { AGE_COLOURS, SENSOR_COLOURS, displayPalette, gradientCss } from "@/lib/palette";
 import { SPEED_CLASSES, ARROW_LENGTHS } from "@/lib/basemap";
-import { stampLines, sensorLabel } from "@/lib/stamp";
+import { stampLines } from "@/lib/stamp";
 import { COUNTIES } from "@/content/copy";
 import type { CountyPrefs } from "@/components/map/Counties";
 import { Icon } from "@/v4/ui/Icon";
@@ -44,7 +44,8 @@ function familyOf(c: LayerChoice): Family {
   return c.kind;
 }
 
-export function LayerList({ manifest, choice, onChoice, now, defaults }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; now: Date | null; defaults: { lead: number } }) {
+/** Choosing a layer family: its default choice, and which families the dataset can show. */
+function useFamilies(manifest: Manifest, choice: LayerChoice, onChoice: (c: LayerChoice) => void, defaults: { lead: number }) {
   const active = familyOf(choice);
   const pick = (f: Family) => {
     if (f === active) return;
@@ -59,6 +60,37 @@ export function LayerList({ manifest, choice, onChoice, now, defaults }: { manif
     satellite: !!(satelliteLatest(manifest, "olci300") || satelliteLatest(manifest, "viirs750")),
     currents: currentsHourly(manifest).length > 0,
   };
+  return { active, pick, available };
+}
+
+const CHIP_NAME: Record<Family, string> = { none: "Seafloor", forecast: "Forecast", satellite: "Satellite", currents: "Currents" };
+
+/** On a phone, the layer families as one row of chips at the sheet's peek: one tap from any state. */
+export function LayerChips({ manifest, choice, onChoice, defaults }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; defaults: { lead: number } }) {
+  const { active, pick, available } = useFamilies(manifest, choice, onChoice, defaults);
+  return (
+    <div role="radiogroup" aria-label="Map layer" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none]" data-testid="layer-chips">
+      {(Object.keys(FAMILY) as Family[]).map((f) => (
+        <button
+          key={f}
+          type="button"
+          role="radio"
+          aria-checked={f === active}
+          disabled={!available[f]}
+          onClick={() => pick(f)}
+          data-testid={`chip-${f}`}
+          className={`nx-press nx-focus flex min-h-14 shrink-0 items-center gap-2 rounded-xl border px-3 text-[14.5px] font-semibold disabled:opacity-40 ${f === active ? "border-n-accent bg-n-accent-bg text-n-ink" : "border-n-line-strong text-n-ink-2"}`}
+        >
+          <Icon name={FAMILY[f].icon} className={`h-[18px] w-[18px] ${FAMILY[f].tone}`} />
+          {CHIP_NAME[f]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function LayerList({ manifest, choice, onChoice, now, defaults }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; now: Date | null; defaults: { lead: number } }) {
+  const { active, pick, available } = useFamilies(manifest, choice, onChoice, defaults);
   return (
     <div
       role="radiogroup"
@@ -345,7 +377,6 @@ export function Provenance({ manifest, choice, resolved, now, regions = [] }: { 
           {status.last_attempt_at ? ` (${clockLabel(status.last_attempt_at)})` : ""}; the newest published data is shown.
         </p>
       )}
-      {choice.kind === "satellite" && resolved.satLayer && <p className="text-[12.5px] text-n-ink-3">{sensorLabel(resolved.satLayer as LayerArtifact)}</p>}
     </div>
   );
 }

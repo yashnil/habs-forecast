@@ -217,13 +217,20 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
   }, [st.station_id]); // eslint-disable-line react-hooks/exhaustive-deps
   const vmeta = observations.variables.find((v) => v.id === variable)!;
   const unit = unitLabel(vmeta.units);
-  const [range, setRange] = useState<(typeof RANGES)[number]["id"]>("1y");
   const first = Date.parse(st.sample_times[0] ?? new Date().toISOString());
   const last = Date.parse(st.sample_times[st.sample_times.length - 1] ?? new Date().toISOString());
+  // a year by default; the whole record when the last year never measured this variable (never an
+  // empty frame on arrival). A reader's own choice holds for this station and variable.
+  const ssAll = useMemo(() => samples(st, variable), [st, variable]);
+  const recent = ssAll.some((x) => x.value != null && x.t >= last + 4 * DAY - 365 * DAY);
+  const [rangeChoice, setRangeChoice] = useState<{ k: string; id: (typeof RANGES)[number]["id"] } | null>(null);
+  const rangeKey = `${st.station_id}|${variable}`;
+  const range: (typeof RANGES)[number]["id"] = rangeChoice?.k === rangeKey ? rangeChoice.id : recent ? "1y" : "all";
+  const setRange = (id: (typeof RANGES)[number]["id"]) => setRangeChoice({ k: rangeKey, id });
   const days = RANGES.find((r) => r.id === range)!.days;
   const to = last + 4 * DAY;
   const from = Number.isFinite(days) ? Math.max(first - 4 * DAY, to - days * DAY) : first - 4 * DAY;
-  const ss = useMemo(() => samples(st, variable), [st, variable]);
+  const ss = ssAll;
   const win = ss.filter((s) => s.t >= from && s.t <= to);
   const measured = win.filter((s) => s.value != null && s.q !== "rejected_negative");
   const zeros = measured.filter((s) => s.q === "reported_zero" || s.value === 0).length;

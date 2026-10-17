@@ -38,13 +38,13 @@ type Ctx = {
   reads?: { forecast: LayerArtifact | null; satellite: LayerArtifact | null; currents: { layer: LayerArtifact; field: CurrentField } | null };
 };
 
-const KIND: Record<string, { word: string; tone: string; dot: string }> = {
-  official: { word: "Official", tone: "text-n-official", dot: "bg-n-official" },
-  measured: { word: "Measured", tone: "text-n-measured", dot: "bg-n-measured" },
-  model: { word: "Model", tone: "text-n-model", dot: "bg-n-model" },
-  satellite: { word: "Satellite", tone: "text-n-measured", dot: "bg-n-measured" },
-  conditions: { word: "Conditions", tone: "text-n-conditions", dot: "bg-n-conditions" },
-  gap: { word: "Not known", tone: "text-n-ink-3", dot: "bg-n-gap" },
+const KIND: Record<string, { word: string; tone: string; dot: string; hollow: string }> = {
+  official: { word: "Official", tone: "text-n-official", dot: "bg-n-official", hollow: "border-2 border-n-official" },
+  measured: { word: "Measured", tone: "text-n-measured", dot: "bg-n-measured", hollow: "border-2 border-n-measured" },
+  model: { word: "Model", tone: "text-n-model", dot: "bg-n-model", hollow: "border-2 border-n-model" },
+  satellite: { word: "Satellite", tone: "text-n-measured", dot: "bg-n-measured", hollow: "border-2 border-n-measured" },
+  conditions: { word: "Conditions", tone: "text-n-conditions", dot: "bg-n-conditions", hollow: "border-2 border-n-conditions" },
+  gap: { word: "Not known", tone: "text-n-ink-3", dot: "bg-n-gap", hollow: "border-2 border-n-gap" },
 };
 
 export function Header({ icon, kind, title, sub, onClose, onBack, canBack }: { icon: string; kind: string; title: string; sub?: string; onClose: () => void; onBack?: () => void; canBack?: boolean }) {
@@ -100,12 +100,27 @@ export function ClaimRow({ c, graph, stations, onSelect, fallback = null }: { c:
   const nodes = new Map(graph.nodes.map((n) => [n.id, n]));
   const target = (c.supports ?? []).map((id) => nodeSelection(nodes.get(id), stations)).find(Boolean) ?? fallback;
   return (
-    <li className="flex gap-3" data-testid={`claim-${c.id}`} data-kind={c.kind} data-supports={(c.supports ?? []).join(" ")}>
-      <span className={`mt-2 h-2.5 w-2.5 shrink-0 rounded-full ${k.dot}`} aria-hidden />
+    <li className={`flex gap-3 ${c.tone === "alert" ? "-ml-3 rounded-r-xl border-l-[3px] border-n-official bg-n-official-bg/60 py-2 pl-3 pr-2" : ""}`} data-testid={`claim-${c.id}`} data-kind={c.kind} data-tone={c.tone} data-supports={(c.supports ?? []).join(" ")}>
+      {/* older evidence is drawn hollow (its age is in the line itself), as in v2 */}
+      <span className={`mt-2 h-2.5 w-2.5 shrink-0 rounded-full ${c.aged ? k.hollow : k.dot}`} data-aged={c.aged ? "true" : undefined} aria-hidden />
       <div className="min-w-0 flex-1">
         <p className="text-[15.5px] font-semibold leading-snug text-n-ink" data-headline>
           {c.headline}
         </p>
+        {/* the agency's own words: quoted in full, never paraphrased into the headline */}
+        {c.quote && (
+          <blockquote className="mt-1 border-l-2 border-n-official-line pl-2.5 font-serif text-[15.5px] leading-snug text-n-ink" data-testid="claim-quote">
+            &ldquo;{c.quote}&rdquo;
+          </blockquote>
+        )}
+        {c.also && (
+          <p className="mt-1.5 text-[14px] leading-snug text-n-ink-2" data-testid="claim-also">
+            <span className="font-semibold text-n-ink">{c.also.label}:</span> &ldquo;{c.also.quote}&rdquo;{" "}
+            <a href={c.also.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex items-center gap-1 font-semibold text-n-accent">
+              source <Icon name="external" className="h-3.5 w-3.5" />
+            </a>
+          </p>
+        )}
         {c.detail && <p className="mt-0.5 text-[14px] leading-snug text-n-ink-2">{c.detail}</p>}
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
           <span className={`font-semibold ${k.tone}`}>{k.word}</span>
@@ -253,6 +268,17 @@ export function StationView({ id, ctx }: { id: string; ctx: Ctx }) {
   })();
   return (
     <div className="flex flex-col gap-4" data-testid="inspect-station">
+      {/* the data themselves, one tap from the station's name (a researcher's first question) */}
+      <div className="-mt-1 flex flex-wrap gap-2">
+        {st.request_url && (
+          <a href={st.request_url} target="_blank" rel="noreferrer" className="nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-n-line-strong px-3 text-[14px] font-semibold text-n-ink" data-testid="station-csv">
+            <Icon name="download" className="h-4 w-4" /> Original data (CSV)
+          </a>
+        )}
+        <Link href={`/research?station=${encodeURIComponent(st.station_id)}`} className="nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-n-line-strong px-3 text-[14px] font-semibold text-n-ink" data-testid="station-research">
+          <Icon name="research" className="h-4 w-4" /> Full record in Research
+        </Link>
+      </div>
       <Section title="Latest samples" testid="station-latest">
         <ul className="flex flex-col gap-2">
           {st.latest.map((l) => (
@@ -291,11 +317,6 @@ export function StationView({ id, ctx }: { id: string; ctx: Ctx }) {
           <a href={st.source_url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-10 items-center gap-1 text-[13.5px] font-semibold text-n-accent">
             SCCOOS ERDDAP record <Icon name="external" className="h-3.5 w-3.5" />
           </a>
-          {st.request_url && (
-            <a href={st.request_url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-10 items-center gap-1 text-[13.5px] font-semibold text-n-accent">
-              Original data (CSV) <Icon name="download" className="h-3.5 w-3.5" />
-            </a>
-          )}
         </div>
       </Section>
     </div>
