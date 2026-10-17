@@ -18,6 +18,10 @@ import { loadWaterFallback, rasterWater } from "@/lib/waterFallback";
  * geometry (lib/waterFallback): the basemap's OpenMapTiles water, simplified to 8 m near the
  * forecast, so data stay off land. Only if that cannot be loaded either is the tile drawn
  * unclipped (data are never hidden because of a basemap failure).
+ *
+ * Offline with a field pack the map draws its basemap from the pack's PMTiles archive; the water
+ * then comes from that same archive (setBasemapArchive), so the data stop at the shoreline the map
+ * draws and nothing is asked of the tile server. Outside the archive's area the bundled water is used.
  */
 const TILEJSON = "https://tiles.openfreemap.org/planet";
 const MAX_Z = 14; // the vector tiles' maximum zoom
@@ -25,6 +29,20 @@ let template: Promise<string | null> | null = null;
 const masks = new Map<string, Promise<Uint8ClampedArray | null>>();
 const fallbacks = new Map<string, Uint8ClampedArray>();
 const MAX_CACHED = 256;
+
+/** A basemap archive the water is read from instead of the tile server (pmtiles' PMTiles). */
+export type BasemapArchive = { getZxy(z: number, x: number, y: number): Promise<{ data: ArrayBuffer } | undefined> };
+let archive: BasemapArchive | null = null;
+/** Read the water from this archive (the map's own offline basemap), or from the tile server (null). */
+export function setBasemapArchive(a: BasemapArchive | null) {
+  if (archive === a) return;
+  archive = a;
+  // masks read from the other source no longer match the drawn shore
+  masks.clear();
+}
+export function basemapArchive() {
+  return archive;
+}
 /** How long a data tile waits for the basemap's water before using the bundled water. */
 export const BASEMAP_WAIT_MS = 3000;
 
@@ -86,14 +104,26 @@ export function basemapWater(z: number, x: number, y: number, size: number): Pro
 
 async function build(z: number, x: number, y: number, size: number): Promise<Uint8ClampedArray | null> {
   if (typeof OffscreenCanvas === "undefined") return null;
-  const t = await tileTemplate();
-  if (!t) return null;
   // above the vector tiles' maximum zoom, use the ancestor tile and the matching quarter of it
   const dz = Math.max(0, z - MAX_Z);
   const [tz, tx, ty] = [z - dz, x >> dz, y >> dz];
-  const r = await fetch(t.replace("{z}", String(tz)).replace("{x}", String(tx)).replace("{y}", String(ty)));
-  if (!r.ok) return null;
-  const vt = new VectorTile(new PbfReader(new Uint8Array(await r.arrayBuffer())));
+  let bytes: ArrayBuffer;
+  const src = archive;
+  if (src) {
+    // the pack's archive: a tile it does not hold (outside its area) uses the bundled water
+    const t = await src.getZxy(tz, tx, ty);
+    if (!t) return null;
+    bytes = t.data;
+  } else {
+    // offline with no pack the tile server cannot answer: the bundled water, without asking
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return null;
+    const t = await tileTemplate();
+    if (!t) return null;
+    const r = await fetch(t.replace("{z}", String(tz)).replace("{x}", String(tx)).replace("{y}", String(ty)));
+    if (!r.ok) return null;
+    bytes = await r.arrayBuffer();
+  }
+  const vt = new VectorTile(new PbfReader(new Uint8Array(bytes)));
   const c = new OffscreenCanvas(size, size);
   const g = c.getContext("2d");
   if (!g) return null;

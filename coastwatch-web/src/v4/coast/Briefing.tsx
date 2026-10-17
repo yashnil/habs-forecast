@@ -477,7 +477,7 @@ export function Briefing(props: Props) {
         </main>
 
         <aside aria-label={`Map of ${place.name}`} className="lg:sticky lg:top-4 lg:self-start" data-testid="locator">
-          <Locator place={place} g={g} ports={ports} official={official} stations={stations} back={back} onPlace={goPlace} basemapPmtiles={!off.online && off.record?.complete ? `/offline/${pack.id}/basemap.pmtiles` : null} />
+          <Locator place={place} g={g} ports={ports} official={official} stations={stations} back={back} onPlace={goPlace} basemapPmtiles={off.record === undefined ? undefined : !navigator.onLine && off.record?.complete ? `/offline/${pack.id}/basemap.pmtiles` : null} />
         </aside>
       </div>
       <MobileDock />
@@ -486,8 +486,10 @@ export function Briefing(props: Props) {
 }
 
 /** A small map that says where the evidence is; the full spatial view is Explore. */
-/** `basemapPmtiles`: offline with a saved field pack, the locator draws the pack's own map, not the tile server's. */
-function Locator({ place, g, ports, official, stations, back, onPlace, basemapPmtiles = null }: { place: CoastPlace; g: EvidenceGraph | null; ports: PortsCollection | null; official: OfficialDataset | null; stations: StationLite[] | null; back: string; onPlace: (key: string) => void; basemapPmtiles?: string | null }) {
+/** `basemapPmtiles`: offline with a saved field pack, the locator draws the pack's own map, not the tile server's.
+ *  Undefined until the pack has been read: the map waits for that decision (its basemap is fixed for its life,
+ *  so a map made before it would ask the tile server offline). */
+function Locator({ place, g, ports, official, stations, back, onPlace, basemapPmtiles }: { place: CoastPlace; g: EvidenceGraph | null; ports: PortsCollection | null; official: OfficialDataset | null; stations: StationLite[] | null; back: string; onPlace: (key: string) => void; basemapPmtiles?: string | null }) {
   const feats = useMemo<GeoJSON.FeatureCollection>(() => {
     const out: GeoJSON.Feature[] = [{ type: "Feature", geometry: { type: "Point", coordinates: [place.lon, place.lat] }, properties: { kind: place.kind === "port" ? "harbor" : "point", label: place.name } }];
     for (const n of g?.nodes ?? []) {
@@ -537,7 +539,7 @@ function Locator({ place, g, ports, official, stations, back, onPlace, basemapPm
             <p className="relative text-[13.5px] text-n-ink-2">{near ? `Drawing ${place.name} and its stations…` : `Map of ${place.name}`}</p>
           </div>
         )}
-        {near && <MapCanvas
+        {near && basemapPmtiles !== undefined && <MapCanvas
           forecast={null}
           satellite={null}
           satelliteAge={null}
