@@ -10,6 +10,8 @@ or release. This folder holds the audits behind it; the PR (#68) and the report 
 | [test-reconciliation-C-shell-kept.md](test-reconciliation-C-shell-kept.md) | The 47 deleted shell tests (shell, release, tour, welcome) and every assertion weakened in kept specs |
 | [research-audit.md](research-audit.md) | Research against the brief's nine scientific functions, before the Research tools were built |
 | [task-walkthrough.md](task-walkthrough.md) | A scripted v2/v4 walkthrough of eight tasks (keystroke-level, not a user study) |
+| [feature-parity.md](feature-parity.md) | The final v2 → v4 parity matrix: each capability, where it is now, its provenance, its test |
+| [final-walkthrough.md](final-walkthrough.md) | The final scripted walkthrough: 5 harbours × 3 viewports × 10 tasks, defects and their status (not a user study) |
 
 The audits were written by reading code (A–D) or scripting the running apps (E); each row cites
 file and line. Paths are relative to the repository.
@@ -39,10 +41,10 @@ search with the common places, readiness); the region-scoped landing ("Go to Mon
 the v2 layer dock (layer panel, phone chips); the notices drawer (notices panel); My Coast's map
 column (a locator and "Show on map"); the Coastal/Research mode switch (workspaces).
 
-Removed, and said so: home-port set and clear; choosing waters by clicking My Coast's map; the
+Removed at the first acceptance pass, and **restored in the final pass** (see feature-parity.md): home-port set and clear; choosing waters by clicking My Coast's map; the
 combined currents and chlorophyll view (`chl=1`); per-region satellite coverage percentages;
 multi-sensor agreement and VIIRS-age lines; the per-harbour notice count chip; Explore's
-per-variable port medians; the briefing checklist's tick boxes. Each is an owner decision.
+per-variable port medians; the briefing checklist's tick boxes.
 
 ## Gate
 
