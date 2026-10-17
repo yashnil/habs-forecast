@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import type { LayerArtifact, Manifest, PortsCollection } from "@/generated/schema";
+import type { LayerArtifact, Manifest, PortsCollection, ValueGrid } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 import type { PortIntelCollection } from "@/generated/port_intel";
 import type { StationLite } from "@/lib/data";
-import { charmRun, type CharmVariable } from "@/lib/layers";
+import { artifactUrl, charmRun, type CharmVariable } from "@/lib/layers";
+import { areaCells, areaStats, type AreaCell } from "@/lib/area";
 import { pageClaims, type Claim, type EvidenceGraph, type EvidenceNode } from "@/lib/harborEvidence";
 import { stationsNear, coastHref } from "@/lib/coast";
-import { distanceKm } from "@/lib/grid";
+import { distanceKm, loadGrid } from "@/lib/grid";
 import { DAY } from "@/lib/observations";
 import { OFFICIAL_STATUS } from "@/content/copy";
 import { disputeOf, officialAt } from "@/lib/official";
@@ -307,7 +308,16 @@ function pct(v: number | null) {
   return v == null ? "—" : `${Math.round(v * 100)}%`;
 }
 
-export function CellBody({ read, ctx, variable }: { read: CellRead | null; ctx: Ctx; variable: CharmVariable }) {
+/** A probability as stored, to 3 decimals, with the grid's own rounding bound (16-bit storage). */
+export function preciseProbability(v: number, quantErr: number | null | undefined): string {
+  return `${v.toFixed(3)}${quantErr != null ? ` ± ${Number(quantErr.toPrecision(2)).toFixed(Math.max(0, -Math.floor(Math.log10(quantErr)) + 1))}` : ""}`;
+}
+
+/**
+ * One C-HARM cell. `precise` (Research) adds the stored probability to 3 decimals with the
+ * grid's quantisation error, and says plainly what the number is.
+ */
+export function CellBody({ read, ctx, variable, precise }: { read: CellRead | null; ctx: Ctx; variable: CharmVariable; precise?: { quantErr: number | null } }) {
   const run = charmRun(ctx.manifest);
   if (!read || read.status === "loading") return <Loading what="Reading the published grid…" />;
   if (read.status === "error") return <Failed what="The C-HARM grid" message={read.message} />;
@@ -323,8 +333,14 @@ export function CellBody({ read, ctx, variable }: { read: CellRead | null; ctx: 
           </span>
           {own != null && <span className="ml-2 text-[14px] text-n-ink-2">for {read.leads[ctx.lead]?.date ? dayLabel(read.leads[ctx.lead].date!, true) : "this day"}</span>}
         </p>
+        {precise && own != null && (
+          <p className="nx-data mt-1.5 text-[14px] text-n-ink" data-testid="cell-precise">
+            probability {preciseProbability(own, precise.quantErr)}
+            <span className="font-sans text-[12.5px] text-n-ink-3"> (± storage rounding)</span>
+          </p>
+        )}
         <p className="mt-1 text-[13px] text-n-ink-3">
-          A published probability for one {read.sizeKm.toFixed(1)} km cell, not a toxin measurement
+          {precise ? `Model output for one ${read.sizeKm.toFixed(0)} km cell, not a toxin measurement` : `A published probability for one ${read.sizeKm.toFixed(1)} km cell, not a toxin measurement`}
           {run ? ` · run issued ${dayLabel(run.issued_date)}${run.issued_date_derived ? " (inferred)" : ""}` : ""}
         </p>
       </div>
@@ -506,24 +522,65 @@ function PointReads({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
 
 // ------------------------------------------------------------------------------------- area
 
-export function areaStats(read: { grid: import("@/generated/schema").ValueGrid; codes: Uint16Array } | null, bbox: [number, number, number, number]) {
-  if (!read) return null;
-  const g = read.grid;
-  const [w, s, e, n] = bbox;
-  let domain = 0;
-  const vals: number[] = [];
-  for (let row = 0; row < g.height; row++) {
-    const lat = g.lat_first + row * g.lat_step;
-    if (lat < s || lat > n) continue;
-    for (let col = 0; col < g.width; col++) {
-      const lon = g.lon_first + col * g.lon_step;
-      if (lon < w || lon > e) continue;
-      domain++;
-      const c = read.codes[row * g.width + col];
-      if (c !== g.nodata) vals.push(c * g.scale_factor + g.add_offset);
-    }
-  }
-  vals.sort((a, b) => a - b);
-  const q = (p: number) => vals[Math.min(vals.length - 1, Math.floor(p * (vals.length - 1)))];
-  return { domain, valued: vals.length, min: vals[0] ?? null, median: vals.length ? q(0.5) : null, max: vals[vals.length - 1] ?? null };
+export { areaStats } from "@/lib/area";
+
+/**
+ * The C-HARM cells of one layer inside a box: how many have a published value and the spread of
+ * those values. Shared by Explore's area tool and Research; `footer` receives the cell list (e.g.
+ * for an export). Nothing is filled or averaged into a harbour value.
+ */
+export function AreaModel({ layer, baseUrl, bbox, variable, footer }: { layer: LayerArtifact | null; baseUrl: string; bbox: [number, number, number, number]; variable: CharmVariable; footer?: (cells: AreaCell[]) => React.ReactNode }) {
+  const [grid, setGrid] = useState<{ key: string; grid: ValueGrid; codes: Uint16Array } | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    if (!layer?.grid) return;
+    loadGrid(artifactUrl(baseUrl, layer.grid.url))
+      .then((codes) => live && setGrid({ key: layer.layer_id, grid: layer.grid!, codes }))
+      .catch((e) => live && setErr((e as Error).message));
+    return () => {
+      live = false;
+    };
+  }, [layer, baseUrl]);
+  const read = grid && grid.key === layer?.layer_id ? grid : null;
+  const cells = useMemo(() => areaCells(read, bbox), [read, bbox]);
+  const stats = useMemo(() => areaStats(read, bbox), [read, bbox]);
+  return (
+    <section className="flex flex-col gap-2 border-t border-n-line pt-4" data-testid="area-model">
+      <h3 className="nx-eyebrow">
+        C-HARM cells in the box ({VARIABLE_WORDS[variable].short}, {layer?.time.valid_date ? dayLabel(layer.time.valid_date, true) : "—"})
+      </h3>
+      {err ? (
+        <p className="text-[14px] text-n-down">The grid could not be loaded: {err}</p>
+      ) : !layer?.grid ? (
+        <p className="text-[14px] text-n-ink-2">No C-HARM grid is published for this variable and day.</p>
+      ) : !stats ? (
+        <p className="text-[14px] text-n-ink-2">Reading the grid…</p>
+      ) : stats.valued === 0 ? (
+        <p className="text-[14px] text-n-ink-2">None of the {stats.domain} grid cells in this box has a published value (land, nearshore or outside the model).</p>
+      ) : (
+        <>
+          <p className="text-[14.5px] leading-snug">
+            <span className="nx-data font-semibold">{stats.valued}</span> of {stats.domain} grid cells have a published value (land and nearshore cells have none).
+          </p>
+          <dl className="grid grid-cols-3 gap-2 text-center">
+            {(
+              [
+                ["Lowest", stats.min],
+                ["Median", stats.median],
+                ["Highest", stats.max],
+              ] as const
+            ).map(([k, v]) => (
+              <div key={k} className="rounded-lg bg-n-surface-2 py-2">
+                <dt className="text-[12px] text-n-ink-3">{k}</dt>
+                <dd className="nx-data text-[18px] font-semibold">{pct(v)}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-[12.5px] leading-snug text-n-ink-3">A summary of the published cell probabilities inside the box: not an average for any harbour and not a measurement. Other variables are not mixed in.</p>
+        </>
+      )}
+      {cells && footer?.(cells)}
+    </section>
+  );
 }
