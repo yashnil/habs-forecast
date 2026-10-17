@@ -10,7 +10,8 @@ import type { ObservationDataset, ObsStation } from "@/generated/observations";
 import type { OfficialDataset } from "@/generated/official";
 import { DAY, samples, sourceCsvUrl, unitLabel, type ObsVariableId, type Sample } from "@/lib/observations";
 import { modelOnAxis, modelSegments, type ModelPoint } from "@/lib/bloom";
-import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, charmRun, isFixture, sourceStatus, type CharmVariable } from "@/lib/layers";
+import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, charmRun, isFixture, satelliteLatest, sourceStatus, tileIndexUrl, type CharmVariable } from "@/lib/layers";
+import { currentsHourly, fieldFeatures } from "@/lib/currents";
 import { cellEdges, distanceKm, loadGrid } from "@/lib/grid";
 import { useNow } from "@/lib/useNow";
 import { labelledGeometry } from "@/lib/officialGeometry";
@@ -30,6 +31,8 @@ import { transect, type TransectCell } from "./transect";
 import { areaCsv, cellLeadsCsv, download, modelHistoryCsv, stationCsv, transectCsv } from "./exports";
 import { Lineage } from "./Lineage";
 import { useWidth } from "@/v4/charts/useWidth";
+import { footprintOf, footprintOutline, obsArea, obsPoint, obsTransect, pixelPolygon, radarLayerFor, satLayerFor, type BBox as ObsBox, type RadarChoice, type SatChoice } from "./obsGrid";
+import { ObsArea, ObsControls, ObsNote, ObsPointPanel, ObsTransect, obsSensor, obsWhen, useObsSampler, type ObsSource } from "./ObsTools";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
 
@@ -292,15 +295,56 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
   const active = forecastLayer?.grid && codes?.id === forecastLayer.layer_id ? codes.codes : null;
   const edges = useMemo(() => (forecastLayer?.grid && active ? cellEdges(forecastLayer.grid, active) : null), [forecastLayer, active]);
   const profile = useMemo<TransectCell[] | null>(() => (line.length === 2 && forecastLayer?.grid && active ? transect(forecastLayer.grid, active, line[0], line[1]) : null), [line, forecastLayer, active]);
+  // ------------------------------------------------------------------ observation grids: satellite chlorophyll, HF radar
+  const [source, setSource] = useState<ObsSource>("charm");
+  const [sat, setSat] = useState<SatChoice>(() => ({ product: satelliteLatest(manifest, "multi") ? "multi" : "olci300", day: null }));
+  const [radar, setRadar] = useState<RadarChoice>({ hour: null, mean: false });
+  const hasSat = !!(satelliteLatest(manifest, "multi") ?? satelliteLatest(manifest, "olci300") ?? satelliteLatest(manifest, "viirs750"));
+  const hasRadar = currentsHourly(manifest).length > 0;
+  const obsLayer = source === "satellite" ? satLayerFor(manifest, sat) : source === "radar" ? radarLayerFor(manifest, radar) : null;
+  // satellite grids are chunked: read only around the selection (with a margin for the coverage reference)
+  const obsBox = useMemo<ObsBox | null>(() => {
+    if (tool === "cell" && cellAtPt) return [cellAtPt.lon - 0.01, cellAtPt.lat - 0.01, cellAtPt.lon + 0.01, cellAtPt.lat + 0.01];
+    if (tool === "transect" && line.length === 2) return [Math.min(line[0].lon, line[1].lon), Math.min(line[0].lat, line[1].lat), Math.max(line[0].lon, line[1].lon), Math.max(line[0].lat, line[1].lat)];
+    if (tool === "area" && area) return [area[0] - 0.02, area[1] - 0.02, area[2] + 0.02, area[3] + 0.02];
+    return null;
+  }, [tool, cellAtPt, line, area]);
+  const obsRead = useObsSampler(manifest, baseUrl, obsLayer, obsBox);
+  const obsS = obsRead.sampler;
+  const obsPx = useMemo(() => (obsS && tool === "cell" && cellAtPt ? obsPoint(obsS, cellAtPt.lat, cellAtPt.lon) : null), [obsS, tool, cellAtPt]);
+  const obsProfile = useMemo(() => (obsS && tool === "transect" && line.length === 2 ? obsTransect(obsS, line[0], line[1]) : null), [obsS, tool, line]);
+  const obsCells = useMemo(() => (obsS && tool === "area" && area ? obsArea(obsS, area) : null), [obsS, tool, area]);
+  const obsFootprint = useMemo<GeoJSON.Feature[]>(() => {
+    if (!obsS) return [];
+    if (obsPx?.value != null) {
+      const fp = footprintOf(obsS, obsPx);
+      return [{ type: "Feature", geometry: pixelPolygon(fp.g, fp.row, fp.col), properties: { kind: "pixel" } }];
+    }
+    const on = (obsProfile ?? obsCells ?? []).filter((c) => c.value != null && ("inDomain" in c ? c.inDomain : true));
+    return on.length ? [{ type: "Feature", geometry: footprintOutline(obsS.g, on), properties: { kind: "footprint" } }] : [];
+  }, [obsS, obsPx, obsProfile, obsCells]);
+  const satRaster = useMemo(() => {
+    const t = source === "satellite" ? obsLayer?.tiles : null;
+    return obsLayer && t ? { id: `r-${obsLayer.layer_id}`, template: t.relative ? artifactUrl(baseUrl, t.url_template) : t.url_template, minzoom: t.min_zoom ?? 0, maxzoom: t.max_native_zoom, bounds: t.bounds_lnglat, indexUrl: tileIndexUrl(baseUrl, t) } : null;
+  }, [source, obsLayer, baseUrl]);
+  const radarField = source === "radar" && obsS?.kind === "radar" ? obsS.field : null;
+  const currentsOverlay = useMemo(() => (radarField && obsS ? { id: `r-${obsS.layer.layer_id}`, field: radarField, features: fieldFeatures(radarField), mode: "arrows" as const } : null), [radarField, obsS]);
+  const pickSource = (x: ObsSource) => {
+    setSource(x);
+    setLine([]);
+  };
+
   const highlight = useMemo<GeoJSON.FeatureCollection>(() => {
     const f: GeoJSON.Feature[] = [{ type: "Feature", geometry: { type: "Point", coordinates: [st.lon!, st.lat!] }, properties: { kind: "station", label: st.name } }];
-    if (tool === "cell" && cellRead?.status === "ready" && cellRead.polygon) f.push({ type: "Feature", geometry: cellRead.polygon, properties: { kind: "cell" } });
+    if (source === "charm" && tool === "cell" && cellRead?.status === "ready" && cellRead.polygon) f.push({ type: "Feature", geometry: cellRead.polygon, properties: { kind: "cell" } });
+    if (source !== "charm" && tool === "cell" && cellAtPt) f.push({ type: "Feature", geometry: { type: "Point", coordinates: [cellAtPt.lon, cellAtPt.lat] }, properties: { kind: "point" } });
+    if (source !== "charm") f.push(...obsFootprint);
     if (tool === "transect" && line.length === 2) f.push({ type: "Feature", geometry: { type: "LineString", coordinates: line.map((p) => [p.lon, p.lat]) }, properties: { kind: "transect" } });
     else if (tool === "transect" && line.length === 1) f.push({ type: "Feature", geometry: { type: "Point", coordinates: [line[0].lon, line[0].lat] }, properties: { kind: "point" } });
     const box = tool === "area" ? (dragBox ?? area) : null;
     if (box) f.push(boxFeature(box));
     return { type: "FeatureCollection", features: f };
-  }, [st, cellRead, line, tool, dragBox, area]);
+  }, [st, cellRead, line, tool, dragBox, area, source, cellAtPt, obsFootprint]);
   const runLayers = CHARM_LEADS.map((l) => charmLayer(manifest, gridVar, l)).filter((l): l is NonNullable<typeof l> => !!l);
   const fileTag = `${gridVar}-${forecastLayer?.time.valid_date ?? "na"}`;
   const stationsIn = area ? stations.filter((s) => s.lat! >= area[1] && s.lat! <= area[3] && s.lon! >= area[0] && s.lon! <= area[2]) : [];
@@ -492,7 +536,9 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
           <section className="nx-deck flex flex-col gap-3 p-4 sm:p-5" data-testid="research-grid">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="nx-eyebrow" data-testid="grid-heading">
-                Native C-HARM grid · {VARIABLE_WORDS[gridVar].short} · {forecastLayer?.time.valid_date ? `${lead === 0 ? "nowcast" : "forecast"} for ${dayLabel(forecastLayer.time.valid_date, true)}` : "—"}
+                {source === "charm"
+                  ? `Native C-HARM grid · ${VARIABLE_WORDS[gridVar].short} · ${forecastLayer?.time.valid_date ? `${lead === 0 ? "nowcast" : "forecast"} for ${dayLabel(forecastLayer.time.valid_date, true)}` : "—"}`
+                  : `${source === "satellite" ? "Satellite chlorophyll" : "Surface currents"} · ${obsSensor(obsLayer)} · ${obsWhen(obsLayer)}`}
               </h2>
               <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Map tool">
                 {(["cell", "transect", "area"] as const).map((t) => (
@@ -509,12 +555,38 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
                     className={`nx-press nx-focus min-h-11 rounded-lg px-3 text-[14px] font-semibold ${tool === t ? "bg-n-ink text-n-bg" : "text-n-ink-2"}`}
                     data-testid={`tool-${t}`}
                   >
-                    {t === "cell" ? "Inspect a cell" : t === "transect" ? "Draw a transect" : "Select an area"}
+                    {t === "cell" ? (source === "satellite" ? "Inspect a pixel" : "Inspect a cell") : t === "transect" ? "Draw a transect" : "Select an area"}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="flex flex-wrap items-end gap-x-5 gap-y-3" data-testid="grid-controls">
+            <fieldset className="min-w-0">
+              <legend className="mb-1 text-[12.5px] text-n-ink-3">Data source</legend>
+              <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Data source">
+                {(
+                  [
+                    ["charm", "C-HARM model", true],
+                    ["satellite", "Satellite chlorophyll", hasSat],
+                    ["radar", "Surface currents (HF radar)", hasRadar],
+                  ] as const
+                )
+                  .filter(([, , ok]) => ok)
+                  .map(([id, label]) => (
+                    <button key={id} type="button" role="radio" aria-checked={source === id} onClick={() => pickSource(id)} className={`nx-press nx-focus min-h-11 rounded-lg px-3 text-[14px] font-semibold ${source === id ? "bg-n-ink text-n-bg" : "border border-n-line-strong text-n-ink-2"}`} data-testid={`gsrc-${id}`}>
+                      {label}
+                    </button>
+                  ))}
+              </div>
+            </fieldset>
+            {source !== "charm" && (
+              <>
+                <div className="flex flex-wrap items-end gap-x-5 gap-y-3" data-testid="obs-controls">
+                  <ObsControls manifest={manifest} source={source} sat={sat} onSat={setSat} radar={radar} onRadar={setRadar} now={now} />
+                </div>
+                <ObsNote source={source} />
+              </>
+            )}
+            <div className={`flex flex-wrap items-end gap-x-5 gap-y-3 ${source === "charm" ? "" : "hidden"}`} data-testid="grid-controls">
               <fieldset className="min-w-0">
                 <legend className="mb-1 text-[12.5px] text-n-ink-3">C-HARM variable</legend>
                 <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="C-HARM variable">
@@ -544,14 +616,15 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
                 Cell edges
               </label>
             </div>
-            <p className="text-[12.5px] leading-snug text-n-ink-3">Only the days this run published; nothing beyond its horizon. Each value is model output for one 3 km cell, not a toxin measurement.</p>
+            {source === "charm" && <p className="text-[12.5px] leading-snug text-n-ink-3">Only the days this run published; nothing beyond its horizon. Each value is model output for one 3 km cell, not a toxin measurement.</p>}
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
               <div className="flex min-w-0 flex-col gap-2">
                 <div className="env-instrument relative h-[380px] overflow-hidden rounded-xl">
                   <MapCanvas
-                    forecast={forecastLayer?.image ? { id: `r-${forecastLayer.layer_id}`, url: artifactUrl(baseUrl, forecastLayer.image.url), corners: forecastLayer.image.corners_lnglat, grid: forecastLayer.grid ? { layer: forecastLayer, url: artifactUrl(baseUrl, forecastLayer.grid.url) } : null } : null}
-                    satellite={null}
+                    forecast={source === "charm" && forecastLayer?.image ? { id: `r-${forecastLayer.layer_id}`, url: artifactUrl(baseUrl, forecastLayer.image.url), corners: forecastLayer.image.corners_lnglat, grid: forecastLayer.grid ? { layer: forecastLayer, url: artifactUrl(baseUrl, forecastLayer.grid.url) } : null } : null}
+                    satellite={satRaster}
                     satelliteAge={null}
+                    currents={currentsOverlay}
                     imagery={null}
                     ports={ports}
                     showPorts
@@ -561,7 +634,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
                     inspect={null}
                     chrome="none"
                     highlight={highlight}
-                    cellEdges={showEdges ? edges : null}
+                    cellEdges={source === "charm" && showEdges ? edges : null}
                     initialBounds={[[st.lon! - 0.35, st.lat! - 0.25], [st.lon! + 0.35, st.lat! + 0.25]]}
                     initialPadding={16}
                     onPort={() => undefined}
@@ -583,7 +656,9 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
                 {tool === "transect" && (
                   <div data-testid="transect" className="flex flex-col gap-2">
                     {line.length < 2 ? (
-                      <p className="text-[14px] text-n-ink-2">Click two points on the map. The profile lists every published cell the line crosses; cells without a value stay gaps.</p>
+                      <p className="text-[14px] text-n-ink-2">Click two points on the map. The profile lists every published {source === "satellite" ? "pixel" : "cell"} the line crosses; {source === "charm" ? "cells without a value stay gaps" : "those without an observation stay gaps, never joined"}.</p>
+                    ) : source !== "charm" ? (
+                      <ObsTransect manifest={manifest} read={obsRead} cells={obsProfile} a={line[0]} b={line[1]} />
                     ) : profile && forecastLayer ? (
                       <>
                         <TransectChart cells={profile} a={line[0]} b={line[1]} />
@@ -598,7 +673,13 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
                 )}
               </div>
               <div className="min-w-0">
-                {tool === "cell" &&
+                {tool === "cell" && source !== "charm" &&
+                  (cellAtPt ? (
+                    <ObsPointPanel manifest={manifest} baseUrl={baseUrl} read={obsRead} px={obsPx} point={cellAtPt} sat={sat} now={now} />
+                  ) : (
+                    <p className="text-[14px] text-n-ink-2">{source === "satellite" ? "Click the water to read one published pixel: its own observation date, sensor, native size and footprint. An empty pixel is no observation, never low chlorophyll." : "Click the water to read one published 2 km radar cell: speed and direction at this hour, and every published hour at the same cell. An empty cell is no observation, never calm water."}</p>
+                  ))}
+                {tool === "cell" && source === "charm" &&
                   (cellAtPt ? (
                     <div className="flex flex-col gap-3">
                       <CellBody read={cellRead} ctx={{ manifest, baseUrl, ports, portIntel: null, stations: null, now, variable: gridVar, lead, onSelect: (s) => s.kind === "cell" && setCellAtPt({ lat: s.lat, lon: s.lon }) }} variable={gridVar} precise={{ quantErr: forecastLayer?.grid?.max_quantization_error ?? null }} />
@@ -617,6 +698,9 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
                       <p className="nx-data text-[12.5px] text-n-ink-3">
                         {area[1].toFixed(3)}–{area[3].toFixed(3)}°N, {Math.abs(area[2]).toFixed(3)}–{Math.abs(area[0]).toFixed(3)}°W
                       </p>
+                      {source !== "charm" ? (
+                        <ObsArea manifest={manifest} baseUrl={baseUrl} read={obsRead} cells={obsCells} bbox={area} now={now} />
+                      ) : (
                       <AreaModel
                         layer={forecastLayer}
                         baseUrl={baseUrl}
@@ -630,6 +714,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
                           )
                         }
                       />
+                      )}
                       <section className="flex flex-col gap-1 border-t border-n-line pt-3">
                         <h3 className="nx-eyebrow">Shore stations in the box</h3>
                         {stationsIn.length ? (
@@ -651,13 +736,17 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
                       </button>
                     </div>
                   ) : (
-                    <p className="text-[14px] text-n-ink-2">Drag a box across the water. It counts the cells with and without a published value and gives the spread of the published probabilities; gaps are counted, never filled.</p>
+                    <p className="text-[14px] text-n-ink-2">
+                      {source === "charm"
+                        ? "Drag a box across the water. It counts the cells with and without a published value and gives the spread of the published probabilities; gaps are counted, never filled."
+                        : `Drag a box across the water. It counts the ${source === "satellite" ? "pixels" : "radar cells"} with and without an observation, their dates${source === "satellite" ? " and sensors" : ""}, and the spread of the observed values; gaps are counted, never filled.`}
+                    </p>
                   ))}
               </div>
             </div>
           </section>
 
-          {forecastLayer && <Lineage layer={forecastLayer} manifest={manifest} />}
+          {source === "charm" ? forecastLayer && <Lineage layer={forecastLayer} manifest={manifest} /> : obsLayer && <Lineage layer={obsLayer} manifest={manifest} />}
         </main>
       </div>
       <div className="env-instrument fixed inset-x-0 bottom-0 z-40 border-t border-n-line bg-n-surface lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>

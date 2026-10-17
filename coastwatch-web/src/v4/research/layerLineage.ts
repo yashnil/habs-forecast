@@ -16,6 +16,8 @@ export type Lineage = {
   failed: number;
   coverage: string | null;
   quantErr: number | null;
+  /** the stored values are log10 of the quantity (satellite chlorophyll): the error is in log10 units */
+  quantLog: boolean;
   caveats: string[];
   pipeline: LineageRow[];
   citation: string | null;
@@ -62,7 +64,8 @@ export function layerLineage(l: LayerArtifact, m: Pick<Manifest, "pipeline_run_i
     checks: qc?.checks ?? [],
     failed: (qc?.checks ?? []).filter((c) => !c.passed).length,
     coverage: qc ? `${qc.n_valid.toLocaleString("en-US")} of ${qc.n_cells.toLocaleString("en-US")} cells have a value (${(qc.valid_fraction * 100).toFixed(1)}%)` : null,
-    quantErr: l.grid?.max_quantization_error ?? null,
+    quantErr: l.grid?.max_quantization_error ?? l.vectors?.u_grid.max_quantization_error ?? null,
+    quantLog: l.grid?.transform === "log10",
     caveats: l.caveats ?? [],
     pipeline: [
       { label: "Pipeline run", value: m.pipeline_run_id, testid: "lineage-run" },
