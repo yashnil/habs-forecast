@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { loadBloomData, loadData } from "@/lib/data";
 import { Research } from "@/v4/research/Research";
 import { ReadinessProvider } from "@/v4/readiness/store";
@@ -14,9 +13,9 @@ export default async function ResearchPage() {
   if (!bloom.ok || !bloom.observations) return <DataUnavailable error={bloom.ok ? (bloom.observationsError ?? "The observations are not published") : bloom.error} />;
   return (
     <ReadinessProvider>
-      <Suspense fallback={null}>
-        <Research manifest={data.manifest} ports={data.ports} observations={bloom.observations} official={data.official} baseUrl={data.baseUrl} />
-      </Suspense>
+      {/* no Suspense boundary: the page is dynamic, so the search params are read on the server and the
+          content is in the first HTML (a streamed boundary is revealed only after React's ~300 ms batching) */}
+      <Research manifest={data.manifest} ports={data.ports} observations={bloom.observations} official={data.official} baseUrl={data.baseUrl} />
     </ReadinessProvider>
   );
 }

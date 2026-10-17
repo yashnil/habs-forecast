@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { loadData } from "@/lib/data";
 import { Briefing } from "@/v4/coast/Briefing";
@@ -17,9 +16,9 @@ export default async function CoastPage({ searchParams }: { searchParams: Promis
   if (!data.ok) return <DataUnavailable error={data.error} />;
   return (
     <ReadinessProvider>
-      <Suspense fallback={null}>
-        <Briefing manifest={data.manifest} ports={data.ports} official={data.official} stations={data.stations} stationsError={data.stationsError} baseUrl={data.baseUrl} portIntel={data.portIntel} />
-      </Suspense>
+      {/* no Suspense boundary: the page is dynamic, so the search params are read on the server and the
+          content is in the first HTML (a streamed boundary is revealed only after React's ~300 ms batching) */}
+      <Briefing manifest={data.manifest} ports={data.ports} official={data.official} stations={data.stations} stationsError={data.stationsError} baseUrl={data.baseUrl} portIntel={data.portIntel} />
     </ReadinessProvider>
   );
 }
