@@ -235,7 +235,94 @@ export function HarborView({ code, ctx }: { code: number; ctx: Ctx }) {
           <p className="text-[14px] text-n-ink-2">No CalHABMAP shore station within 40 km. No sample is not a clean result.</p>
         )}
       </Section>
+      {intel && <HarbourSummary intel={intel} lead={ctx.lead} />}
     </div>
+  );
+}
+
+const PCT = (v: number | null | undefined) => (v == null ? "—" : `${Math.round(v * 100)}%`);
+const CHL = (v: number | null | undefined) => (v == null ? "—" : v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(2));
+
+/**
+ * Advanced: what each product says in the harbour's neighbourhood, as the pipeline published it
+ * (port intel): per variable the median, range and how many cells or pixels it rests on, with their
+ * native size and dates. Neighbourhood statistics, never a value at the harbour itself.
+ */
+function HarbourSummary({ intel, lead }: { intel: PortIntelCollection["ports"][number]; lead: number }) {
+  const c = intel.charm;
+  const day = c?.leads.find((l) => l.lead_days === lead) ?? c?.leads[0] ?? null;
+  const chl = intel.chlorophyll;
+  return (
+    <details className="rounded-xl border border-n-line px-3 py-2" data-testid="harbor-summary">
+      <summary className="nx-focus flex min-h-11 cursor-pointer items-center justify-between text-[14px] font-semibold text-n-ink">
+        Advanced: each product near {intel.display_name}
+        <Icon name="chevronDown" className="h-4 w-4 text-n-ink-3" />
+      </summary>
+      <div className="flex flex-col gap-3 pb-2 text-[13.5px]">
+        {c && day ? (
+          <div data-testid="harbor-summary-charm">
+            <p className="font-semibold text-n-model">NOAA C-HARM model · 3 km cells</p>
+            <p className="text-[12.5px] text-n-ink-3">
+              Cells whose centres lie within {c.radius_km} km of the port point: {c.cells_in_radius}{c.nearest_cell_km != null ? ` (nearest cell ${kmLabel(c.nearest_cell_km)})` : ""}. Valid {dayLabel(day.valid_date)}{c.issued_date ? `, run issued ${dayLabel(c.issued_date)}` : ""}.
+            </p>
+            <table className="mt-1 w-full text-left">
+              <thead className="text-[12px] text-n-ink-3">
+                <tr>
+                  <th className="py-1 font-semibold">Variable</th>
+                  <th className="py-1 text-right font-semibold">Median</th>
+                  <th className="py-1 text-right font-semibold">Range</th>
+                  <th className="py-1 text-right font-semibold">Cells</th>
+                </tr>
+              </thead>
+              <tbody className="nx-data">
+                {(Object.keys(VARIABLE_WORDS) as CharmVariable[]).map((v) => {
+                  const x = day.variables[v as keyof typeof day.variables];
+                  return (
+                    <tr key={v} className="border-t border-n-line" data-testid={`harbor-summary-${v}`}>
+                      <td className="py-1 font-sans text-n-ink-2">{VARIABLE_WORDS[v].short}</td>
+                      <td className="py-1 text-right">{PCT(x?.median)}</td>
+                      <td className="py-1 text-right text-n-ink-2">{x?.n ? `${PCT(x.min)}–${PCT(x.max)}` : "—"}</td>
+                      <td className="py-1 text-right text-n-ink-2">{x?.n ?? 0}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <p className="mt-1 text-[12.5px] text-n-ink-3">Probabilities over the neighbourhood&rsquo;s cells, not at the harbour, not a toxin measurement. A count below {c.cells_in_radius} means cells without a value (no value is never zero).</p>
+          </div>
+        ) : null}
+        {chl && (
+          <div data-testid="harbor-summary-chl">
+            <p className="font-semibold text-n-measured">Satellite chlorophyll · VIIRS 750 m pixels</p>
+            {chl.latest ? (
+              <>
+                <p>
+                  Median <span className="nx-data font-semibold">{CHL(chl.latest.median)} mg/m³</span> (range {CHL(chl.latest.min)}–{CHL(chl.latest.max)}) over <span className="nx-data">{chl.latest.n}</span> pixels within {chl.radius_km} km
+                  {chl.latest_valid_fraction != null ? `; ${Math.round(chl.latest_valid_fraction * 100)}% of the neighbourhood's pixels had a value` : ""}.
+                </p>
+                <p className="text-[12.5px] text-n-ink-3">
+                  Each pixel&rsquo;s median over {chl.composite_days} days centred on {chl.latest_center_date ? dayLabel(chl.latest_center_date) : "—"}. Algae of every kind, not toxin; a pixel without a value is cloud or no overpass.
+                </p>
+              </>
+            ) : (
+              <p className="text-n-ink-2">Not available{chl.error ? `: ${chl.error.split(":")[0]}` : ""}. No value is not low chlorophyll.</p>
+            )}
+            {chl.source_url && (
+              <a href={chl.source_url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-9 items-center gap-1 font-semibold text-n-accent">
+                NOAA CoastWatch ERDDAP <Icon name="external" className="h-3.5 w-3.5" />
+              </a>
+            )}
+          </div>
+        )}
+        {intel.caveats?.length ? (
+          <ul className="list-disc space-y-0.5 pl-4 text-[12.5px] text-n-ink-3">
+            {intel.caveats.map((x) => (
+              <li key={x}>{x}</li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </details>
   );
 }
 

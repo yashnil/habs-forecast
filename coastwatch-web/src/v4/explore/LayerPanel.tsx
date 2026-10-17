@@ -1,6 +1,6 @@
 "use client";
 
-import type { Manifest, Palette } from "@/generated/schema";
+import type { LayerArtifact, Manifest, Palette } from "@/generated/schema";
 import { CHARM_VARIABLES, charmRun, satelliteLatest, sourceStatus, type CharmVariable } from "@/lib/layers";
 import { KNOTS_PER_MS, currentsHourly } from "@/lib/currents";
 import { AGE_COLOURS, SENSOR_COLOURS, displayPalette, gradientCss } from "@/lib/palette";
@@ -212,6 +212,16 @@ export function LayerOptions({ manifest, choice, onChoice }: { manifest: Manifes
       </div>
     );
   }
+  if (choice.kind === "currents" && (satelliteLatest(manifest, "olci300") || satelliteLatest(manifest, "viirs750")))
+    return (
+      <label className="nx-focus flex min-h-11 items-start gap-2.5 text-[14px] text-n-ink" data-testid="currents-chl">
+        <input type="checkbox" className="mt-[3px] h-[18px] w-[18px] accent-[var(--nx-accent)]" checked={!!choice.chl} onChange={(e) => onChoice({ ...choice, chl: e.target.checked })} data-testid="currents-chl-toggle" />
+        <span>
+          <span className="font-semibold">Compare with chlorophyll</span>
+          <span className="block text-[12.5px] leading-snug text-n-ink-3">The newest clear satellite view underneath. Two observations from different times, shown together, not combined into one value.</span>
+        </span>
+      </label>
+    );
   return null;
 }
 
@@ -284,6 +294,13 @@ export function Legend({ choice, resolved }: { choice: LayerChoice; resolved: Re
         <NoData />
       </figure>
     );
+  if (choice.kind === "currents" && choice.chl && resolved.satLayer?.palette)
+    return (
+      <div className="flex flex-col gap-4" data-testid="legend-compare">
+        <Legend choice={{ kind: "satellite", product: "olci300", day: null }} resolved={resolved} />
+        <Legend choice={{ ...choice, chl: false }} resolved={resolved} />
+      </div>
+    );
   if (choice.kind === "currents")
     return (
       <figure className="flex flex-col gap-2" data-testid="legend-currents" aria-label="Legend: current speed classes, metres per second">
@@ -319,6 +336,8 @@ export function Provenance({ manifest, choice, resolved, now, regions = [] }: { 
     run: charmRun(manifest),
     satellite: resolved.satLayer,
     currents: resolved.curLayer,
+    // currents compared with chlorophyll: both sources, each with its own time, and how far apart they are
+    combined: choice.kind === "currents" && !!choice.chl,
     now,
   });
   // the radar's coverage, region by region: the regions it did not see are named, in one line
@@ -348,6 +367,8 @@ export function Provenance({ manifest, choice, resolved, now, regions = [] }: { 
           {s.text}
         </p>
       ))}
+      {sat && sat.coverage && !clouded && <CoverageLine layer={sat} regions={regions} />}
+      {choice.kind === "currents" && choice.chl && resolved.satLayer?.coverage && <CoverageLine layer={resolved.satLayer} regions={regions} />}
       {clouded && (
         <p className="flex items-start gap-2 text-[13px] font-semibold leading-snug text-n-stale" data-testid="sat-clouded">
           <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0" />
@@ -402,5 +423,31 @@ export function ReferenceLines({ prefs, onChange }: { prefs: CountyPrefs; onChan
         {COUNTIES.note}
       </p>
     </fieldset>
+  );
+}
+
+/** How much of the sea a satellite view actually saw: the published coverage, with what it counts
+ *  (C-HARM's 3 km ocean cells with any clear pixel), when (the view's own dates) and where (by region). */
+function CoverageLine({ layer, regions }: { layer: LayerArtifact; regions: { id: string; label: string }[] }) {
+  const cov = layer.coverage!;
+  const comp = layer.composite;
+  const when = comp ? `pixels observed ${dayLabel(comp.oldest_observed_date)}–${dayLabel(comp.newest_observed_date)}` : layer.time.observed_date ? `overpass of ${dayLabel(layer.time.observed_date)}` : "";
+  const label = (id: string) => regions.find((r) => r.id === id)?.label ?? id.replace(/_/g, " ");
+  const pct = (f: number) => `${Math.round(f * 100)}%`;
+  return (
+    <div className="flex flex-col gap-0.5 text-[13px] leading-snug text-n-ink-2" data-testid="sat-coverage">
+      <p>
+        <span className="font-semibold text-n-ink">Seen clearly: {pct(cov.domain_observed_fraction)}</span> of the {cov.domain_reference_cells != null ? `${cov.domain_reference_cells.toLocaleString("en-US")} ` : ""}ocean cells in this view&rsquo;s area{when ? ` (${when})` : ""}. The rest is cloud, glare or no overpass, not low chlorophyll.
+      </p>
+      {cov.regions.length > 0 && (
+        <p data-testid="sat-coverage-regions">
+          By region: {cov.regions.map((r) => `${label(r.region_id)} ${pct(r.observed_fraction)}`).join(" · ")}
+        </p>
+      )}
+      <details className="text-[12.5px] text-n-ink-3">
+        <summary className="nx-focus inline-flex min-h-9 cursor-pointer items-center font-semibold">What is counted</summary>
+        {cov.reference}
+      </details>
+    </div>
   );
 }

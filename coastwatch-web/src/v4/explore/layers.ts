@@ -15,7 +15,8 @@ export type LayerChoice =
   | { kind: "forecast"; variable: CharmVariable; lead: number }
   /** view: the chlorophyll colours, or the age of each pixel / which sensor (latest views only) */
   | { kind: "satellite"; product: Exclude<SatProduct, "multi"> | "multi"; day: string | null; view?: "chl" | "age" | "sensor" }
-  | { kind: "currents"; hour: string | null; mean: boolean };
+  /** chl: the newest clear chlorophyll view underneath, to compare the two (v2 `chl=1`) */
+  | { kind: "currents"; hour: string | null; mean: boolean; chl?: boolean };
 
 export const VARIABLE_WORDS: Record<CharmVariable, { name: string; short: string; what: string }> = {
   particulate_domoic: { name: "Domoic acid in seawater", short: "Domoic acid (pDA)", what: "Probability that particulate domoic acid exceeds 500 ng per litre" },
@@ -39,7 +40,8 @@ export function parseChoice(q: URLSearchParams): LayerChoice | null {
   if (v === "forecast") return { kind: "forecast", variable, lead };
   if (v.startsWith("currents")) {
     const rest = v.split(":")[1] ?? null;
-    return rest === "mean" ? { kind: "currents", hour: null, mean: true } : { kind: "currents", hour: rest && /^\d{8}T\d{2}Z$/.test(rest) ? rest : null, mean: false };
+    const chl = q.get("chl") === "1";
+    return rest === "mean" ? { kind: "currents", hour: null, mean: true, chl } : { kind: "currents", hour: rest && /^\d{8}T\d{2}Z$/.test(rest) ? rest : null, mean: false, chl };
   }
   const [prod, day] = v.split(":");
   const view = q.get("age") === "1" ? "age" : q.get("sensor") === "1" ? "sensor" : "chl";
@@ -56,7 +58,7 @@ export function choiceParams(c: LayerChoice): Record<string, string> {
     case "satellite":
       return { layer: c.day ? `${c.product}:${c.day}` : c.product, ...(c.view === "age" ? { age: "1" } : c.view === "sensor" ? { sensor: "1" } : {}) };
     case "currents":
-      return { layer: c.mean ? "currents:mean" : c.hour ? `currents:${c.hour}` : "currents" };
+      return { layer: c.mean ? "currents:mean" : c.hour ? `currents:${c.hour}` : "currents", ...(c.chl ? { chl: "1" } : {}) };
   }
 }
 
@@ -102,6 +104,13 @@ export function resolve(m: Manifest, c: LayerChoice, baseUrl: string): Resolved 
   if (c.kind === "currents") {
     const hourly = currentsHourly(m);
     out.curLayer = c.mean ? currentsMean(m) : c.hour ? (hourly.find((l) => l.layer_id.endsWith(c.hour!)) ?? hourly[hourly.length - 1] ?? null) : (hourly[hourly.length - 1] ?? null);
+    // compare: the newest clear chlorophyll view underneath (each pixel keeps its own date)
+    if (c.chl) {
+      const l = satelliteLatest(m, "olci300") ?? satelliteLatest(m, "viirs750");
+      const t = l?.tiles;
+      out.satLayer = l;
+      if (l && t) out.satellite = { id: l.layer_id, template: t.relative ? artifactUrl(baseUrl, t.url_template) : t.url_template, minzoom: t.min_zoom ?? 0, maxzoom: t.max_native_zoom, bounds: t.bounds_lnglat, indexUrl: tileIndexUrl(baseUrl, t) };
+    }
   }
   return out;
 }
