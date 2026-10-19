@@ -154,6 +154,9 @@ test("walkthrough H1: a radar hour's chip is dated by its Pacific day, as its st
   await expect(chip).toContainText("6:00 PM");
   await expect(chip).toContainText("Oct 7");
   await expect(page.getByTestId("time-20261008T07Z").first()).toContainText("Oct 8");
+  // each chip holds its whole label ("10:00 AM PDT" did not fit an 84 px chip and ran into the next)
+  const overflow = await page.locator('[data-testid^="time-"][role="radio"]').evaluateAll((els) => els.filter((e) => [...e.children].some((c) => c.scrollWidth > e.clientWidth)).map((e) => e.textContent));
+  expect(overflow).toEqual([]);
 });
 
 test("walkthrough H2: the multi-sensor coverage names the days its pixels come from, not one overpass", async ({ page }) => {
