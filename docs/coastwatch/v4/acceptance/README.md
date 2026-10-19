@@ -13,6 +13,7 @@ or release. This folder holds the audits behind it; the PR (#68) and the report 
 | [feature-parity.md](feature-parity.md) | The final v2 → v4 parity matrix: each capability, where it is now, its provenance, its test |
 | [final-walkthrough.md](final-walkthrough.md) | The final scripted walkthrough: 5 harbours × 3 viewports × 10 tasks, defects and their status (not a user study) |
 | [real-device-test-script.md](real-device-test-script.md) | The first real-phone and real-people checks: iPhone and Android, airplane mode, 5 fishers and 5 researchers (moderated script and results sheet) |
+| [integration-66.md](integration-66.md) | v4 on main with Harbor Intelligence v3 (#66): merge checks, rollback references, the species-line schema change and the small-sample disclosure |
 
 The audits were written by reading code (A–D) or scripting the running apps (E); each row cites
 file and line. Paths are relative to the repository.
