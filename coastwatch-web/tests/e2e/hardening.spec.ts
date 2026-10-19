@@ -72,8 +72,17 @@ test("L6: offline at 320 px, the banner never covers the 'Notices not verified' 
   await expect(page.getByTestId("offline-banner")).toBeVisible();
   const warn = page.getByTestId("registry-disclosure").getByText("Notices not verified").filter({ visible: true });
   await expect(warn).toBeInViewport();
-  const top = await warn.evaluate((el) => { const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!hit && el.contains(hit); });
-  expect(top).toBe(true);
+  // every line box of the warning is the top-most thing where it is drawn (it can wrap onto two lines,
+  // and the centre of its bounding box then falls between them, on its own paragraph)
+  const covered = await warn.evaluate((el) =>
+    [...el.getClientRects()].filter((r) => {
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return !hit || !(el.contains(hit) || hit.contains(el));
+    }).length,
+  );
+  expect(covered).toBe(0);
+  // and the banner sits below it
+  expect((await page.getByTestId("offline-banner").boundingBox())!.y).toBeGreaterThan((await warn.boundingBox())!.y);
   await ctx.setOffline(false);
   await ctx.close();
 });
