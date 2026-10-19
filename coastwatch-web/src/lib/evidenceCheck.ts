@@ -44,10 +44,12 @@ const norm = (n: string) => String(Number(n.replace(/,/g, "")));
 
 /** counts of agency notices ("3 notices cover…", "2 more may apply") are counts, not readings */
 const COUNT_RE = /\b\d+ (more|notices?|agency notices?)\b/g;
+/** agency release identifiers ("SN26-021", CDPH's numbering) are names, not readings */
+const RELEASE_RE = /\b[A-Z]{2,}\d{2}-\d{2,4}\b/g;
 
-/** the numbers in a string, with dates, clock times, years, month ranges and notice counts taken out first */
+/** the numbers in a string, with dates, clock times, years, month ranges, notice counts and agency release ids taken out first */
 export function numbersIn(s: string): string[] {
-  const t = s.replace(COUNT_RE, " ").replace(DATE_RE, " ").replace(MONTH_RANGE_RE, " ").replace(CLOCK_RE, " ").replace(YEAR_RANGE_RE, " ").replace(YEAR_RE, " ");
+  const t = s.replace(COUNT_RE, " ").replace(RELEASE_RE, " ").replace(DATE_RE, " ").replace(MONTH_RANGE_RE, " ").replace(CLOCK_RE, " ").replace(YEAR_RANGE_RE, " ").replace(YEAR_RE, " ");
   return (t.match(NUM_RE) ?? []).map(norm);
 }
 

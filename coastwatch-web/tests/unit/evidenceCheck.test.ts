@@ -100,6 +100,9 @@ describe("evidence consistency rules", () => {
     expect(numbersIn("Santa Cruz Wharf, 41 km NNW: Pseudo-nitzschia 4,900 cells/L, Sep 30")).toEqual(["41", "4900"]);
     expect(numbersIn("higher than 98% of the Aug–Oct samples there in 2014–2025. Lowest tide -0.3 ft at 10:40 AM")).toEqual(["98", "0.3"]);
     expect(datesIn("Sep 30 and October 15, 2025")).toEqual(["09-30", "10-15"]);
+    // a release id is a name: found on live data (CDPH SN26-021 disputing SN26-018), absent from the fixtures
+    expect(numbersIn("Release SN26-021. Confirm with CDPH which applies")).toEqual([]);
+    expect(numbersIn("CDPH SN26-018: 4 sites, 0.21 ng/mL")).toEqual(["4", "0.21"]);
   });
 
   for (const now of [new Date("2026-10-13T06:00:00Z"), new Date("2026-09-03T06:00:00Z"), new Date("2026-04-20T06:00:00Z")]) {
