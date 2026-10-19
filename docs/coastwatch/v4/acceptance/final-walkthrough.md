@@ -60,12 +60,12 @@ They do not show whether a person would find a path, understand the answer or tr
 | — | (found while fixing H3) "Back to the briefing" sat over the disclosure row | Fixed. On phones it sits in the search stack (e2e, 1440 and 320 px) |
 | — | (from the screenshots) Hour chips too narrow for "10:00 AM PDT"; the labels ran together | Fixed `5ffe70868`: a chip is at least as wide as its label (e2e; fails on the old build) |
 | — | (from the screenshots) The closure line printed "(831) 649-2883: +18316492883" | Fixed `62abdc980`: the number is shown once (e2e) |
-| M2 | Research: picking another station leaves the grid map where it was | Open |
-| M4 | The latest shore sample is dated three ways (Research list, briefing, Explore) | Open |
-| M5 | Currents/chlorophyll stamps are below the fold in the layer panel | Open |
-| M6 | On phones, reaching layers means closing the harbour; the count falls from "N here" to the statewide count | Open |
-| M7 | Research on phones: tools 2,600–3,150 px down (18–26 actions) | Open |
-| M8 | A map-chosen point's first statement has no date | Open |
+| M2 | Research: picking another station leaves the grid map where it was | Fixed `9b60c80`: a new station moves the map to it and clears the old point, line and area (e2e) |
+| M4 | The latest shore sample is dated three ways (Research list, briefing, Explore) | Fixed `9b60c80`: one date everywhere (the map label's variables), with its year when not this year (e2e) |
+| M5 | Currents/chlorophyll stamps are below the fold in the layer panel | Fixed `9b60c80`: the stamps and coverage come before the legend; both times above the fold at 1440×900 (e2e) |
+| M6 | On phones, reaching layers means closing the harbour; the count falls from "N here" to the statewide count | Fixed `9b60c80`: layer chips at the top of a place's sheet; a count with no place says "in CA" (e2e) |
+| M7 | Research on phones: tools 2,600–3,150 px down (18–26 actions) | Fixed `9b60c80`: "Record · Statistics · Map tools" jump links at the top; the tools are one tap away (e2e) |
+| M8 | A map-chosen point's first statement has no date | Fixed `9b60c80`: each listed notice carries "(since <date>)" (e2e) |
 | L1–L9 | Small tap targets (32–39 px), label collisions, a truncated subtitle, dates without a year, offline banner over a pill at 320 px, extra taps past sheets, ~70 refused requests per offline reopen | Open (v2 has more small targets: 10–14 per screen) |
 
 The scripts, every screenshot and the per-run results are kept outside the repository with the
