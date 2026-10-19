@@ -58,6 +58,8 @@ They do not show whether a person would find a path, understand the answer or tr
 | M1 | "N notices cover these waters" named 3 and dropped the rest silently | Fixed: "· and N more, all in Notices" (unit) |
 | M3 | One observation "2 days ago" in one row, "3 days ago" in another | Fixed. Ages over 36 h count Pacific calendar days (unit) |
 | — | (found while fixing H3) "Back to the briefing" sat over the disclosure row | Fixed. On phones it sits in the search stack (e2e, 1440 and 320 px) |
+| — | (from the screenshots) Hour chips too narrow for "10:00 AM PDT"; the labels ran together | Fixed `5ffe70868`: a chip is at least as wide as its label (e2e; fails on the old build) |
+| — | (from the screenshots) The closure line printed "(831) 649-2883: +18316492883" | Fixed `62abdc980`: the number is shown once (e2e) |
 | M2 | Research: picking another station leaves the grid map where it was | Open |
 | M4 | The latest shore sample is dated three ways (Research list, briefing, Explore) | Open |
 | M5 | Currents/chlorophyll stamps are below the fold in the layer panel | Open |
