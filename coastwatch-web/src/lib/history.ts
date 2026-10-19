@@ -78,6 +78,11 @@ export type RecordContext = {
 
 export const MIN_SEASON_SAMPLES = 12;
 export const MIN_SEASON_YEARS = 3;
+/** below this many samples a rank is said to rest on a small sample, with what one sample is worth (1/30 ≈ 3 points) */
+export const SMALL_SAMPLE = 30;
+
+/** "(a small sample: each of the 16 is 6 points of the rank)", or "" from SMALL_SAMPLE up */
+export const smallWords = (n: number) => (n > 0 && n < SMALL_SAMPLE ? ` (a small sample: each of the ${n} is ${Math.round(100 / n)} points of the rank)` : "");
 
 type SeriesIn = { variable: string; values: (number | null)[]; qualifiers?: Record<string, string> | null };
 type StationIn = { sample_times: string[]; series: SeriesIn[] };
@@ -177,7 +182,7 @@ export function rankWords(r: RecordContext): string | null {
   const span = `${months} samples there in ${s.firstYear}–${s.lastYear}`;
   if (r.value === 0) {
     if (s.equal == null) return null;
-    return `${r.variable === "pn" ? "no cells counted" : "not quantified (reported 0)"}, as in ${Math.round(s.equal * 100)}% of the ${s.n} ${span}`;
+    return `${r.variable === "pn" ? "no cells counted" : "not quantified (reported 0)"}, as in ${Math.round(s.equal * 100)}% of the ${s.n} ${span}${smallWords(s.n)}`;
   }
   const enoughSeason = s.n >= MIN_SEASON_SAMPLES && s.years >= MIN_SEASON_YEARS;
   if (s.below == null) {
@@ -190,7 +195,8 @@ export function rankWords(r: RecordContext): string | null {
       : `${qb} of the ${s.quantified} quantified ${qb === 1 ? "was" : "were"} lower`;
     return `of the ${s.n} ${span}, ${zeroWords(r.variable, s.zeros)}, and ${qPart}`;
   }
-  const qSpan = `${s.quantified}${s.zeros ? " quantified" : ""} ${span}`;
+  // the sample size is always said; a small one is said as small, with what one sample is worth
+  const qSpan = `${s.quantified}${s.zeros ? " quantified" : ""} ${span}${smallWords(s.quantified)}`;
   const rest = s.zeros ? `; another ${zeroWords(r.variable, s.zeros)} and ${s.zeros === 1 ? "is" : "are"} not ranked` : "";
   if (s.below === 1) return `higher than all ${qSpan}${rest}`;
   if (s.below === 0) return `none of the ${qSpan} was lower${rest}`;

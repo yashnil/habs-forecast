@@ -5,7 +5,7 @@ import type { ObservationDataset } from "@/generated/observations";
 import type { StationEvidence } from "@/lib/hab";
 import { slimStations } from "@/lib/data";
 import { harborEvidence, historySentence } from "@/lib/harborEvidence";
-import { rankWords, recordContext, recordSamples, seasonWords, MIN_SEASON_SAMPLES } from "@/lib/history";
+import { rankWords, recordContext, recordSamples, seasonWords, smallWords, MIN_SEASON_SAMPLES } from "@/lib/history";
 
 /**
  * A station's newest HAB sample against its own record as Neritic holds it: the counting rules
@@ -58,7 +58,7 @@ describe("station record", () => {
     expect(r.season.zeros).toBe(4);
     expect(r.season.quantified).toBe(16);
     expect(r.season.below).toBeCloseTo(0.5);
-    expect(rankWords(r)).toBe("higher than 50% of the 16 quantified Sep–Nov samples there in 2015–2018; another 4 had no cells counted (not necessarily none present) and are not ranked");
+    expect(rankWords(r)).toBe("higher than 50% of the 16 quantified Sep–Nov samples there in 2015–2018 (a small sample: each of the 16 is 6 points of the rank); another 4 had no cells counted (not necessarily none present) and are not ranked");
     // the June 2026 sample (99,999) is earlier and higher: the last sample at least as high
     expect(r.lastAsHigh).toEqual({ date: "2026-06-01", value: 99999 });
     expect(r.previous).toEqual({ date: "2026-06-01", value: 99999 });
@@ -75,12 +75,12 @@ describe("station record", () => {
 
   it("never rounds to 0% or 100% unless every sample is lower (or none is)", () => {
     const top = recordContext(synthetic(4, 5, 100000), "pn")!;
-    expect(rankWords(top)).toBe("higher than all 16 quantified Sep–Nov samples there in 2015–2018; another 4 had no cells counted (not necessarily none present) and are not ranked");
+    expect(rankWords(top)).toBe("higher than all 16 quantified Sep–Nov samples there in 2015–2018 (a small sample: each of the 16 is 6 points of the rank); another 4 had no cells counted (not necessarily none present) and are not ranked");
     const low = recordContext(synthetic(4, 5, 0), "pn")!;
-    expect(rankWords(low)).toBe("no cells counted, as in 20% of the 20 Sep–Nov samples there in 2015–2018");
+    expect(rankWords(low)).toBe("no cells counted, as in 20% of the 20 Sep–Nov samples there in 2015–2018 (a small sample: each of the 20 is 5 points of the rank)");
     // 1 cell/L: higher than the four zeros only, which are censored, so it is higher than none of the quantified
     const rows = synthetic(4, 5, 1);
-    expect(rankWords(recordContext(rows, "pn")!)).toBe("none of the 16 quantified Sep–Nov samples there in 2015–2018 was lower; another 4 had no cells counted (not necessarily none present) and are not ranked");
+    expect(rankWords(recordContext(rows, "pn")!)).toBe("none of the 16 quantified Sep–Nov samples there in 2015–2018 (a small sample: each of the 16 is 6 points of the rank) was lower; another 4 had no cells counted (not necessarily none present) and are not ranked");
   });
 
   // #66 review 1.1: a reported 0 is "at or below the laboratory's limit, not that toxin was absent" (pipeline)
@@ -96,7 +96,7 @@ describe("station record", () => {
     // Santa Cruz Wharf: of 139 samples "lower" before, 126 were zero counts; ranked among the 16 quantified only
     const sc = slim.find((x) => x.station_id === "HABs-SantaCruzWharf")!.record!.pn!;
     expect([sc.season.n, sc.season.zeros, sc.season.quantified, sc.season.quantifiedBelow]).toEqual([142, 126, 16, 13]);
-    expect(rankWords(sc)).toBe("higher than 81% of the 16 quantified Aug–Oct samples there in 2014–2025; another 126 had no cells counted (not necessarily none present) and are not ranked");
+    expect(rankWords(sc)).toBe("higher than 81% of the 16 quantified Aug–Oct samples there in 2014–2025 (a small sample: each of the 16 is 6 points of the rank); another 126 had no cells counted (not necessarily none present) and are not ranked");
   });
 
   it("says the counts when the season has zeros but too few quantified samples, and stays silent when the season itself is short", () => {
@@ -107,6 +107,23 @@ describe("station record", () => {
     const r = recordContext(st(rows), "pn")!;
     expect(rankWords(r)).toBe("of the 16 Sep–Nov samples there in 2015–2018, 12 had no cells counted (not necessarily none present), and 0 of the 4 quantified were lower");
     expect(rankWords(recordContext(synthetic(2, 10, 250), "pn")!)).toBeNull();
+  });
+
+  // v4 integration, owner's check 7: a rank says its sample size, says a small one is small, and says how
+  // values below the detection limit were handled (counted apart, never ranked)
+  it("discloses a small sample and the below-detection-limit handling in the same sentence", () => {
+    const slim = slimStations(obs);
+    const sc = slim.find((x) => x.station_id === "HABs-SantaCruzWharf")!.record!;
+    const pn = rankWords(sc.pn!)!;
+    expect(pn).toContain("16 quantified");
+    expect(pn).toContain("(a small sample: each of the 16 is 6 points of the rank)");
+    expect(pn).toContain("another 126 had no cells counted (not necessarily none present) and are not ranked");
+    const pda = rankWords(sc.pDA!)!; // 57 quantified: no small-sample clause, the zeros still said
+    expect(pda).toContain("57 quantified");
+    expect(pda).not.toContain("small sample");
+    expect(pda).toContain("were reported 0 (not quantified, not absent) and are not ranked");
+    expect(smallWords(29)).toBe(" (a small sample: each of the 29 is 3 points of the rank)");
+    expect(smallWords(30)).toBe("");
   });
 
   // #66 review 1.2: 2014 is where Neritic's copy starts, not where the station's record began
@@ -143,7 +160,7 @@ describe("station record", () => {
     const e: StationEvidence = { kind: "cells", station: sc, km: 41.2, bearing: "NNW", date: r.date, values: [{ variable: "pn_seriata", value: r.value }], ageDays: 0, series: {}, near: true };
     const g = harborEvidence({ place: { name: "Monterey", lat: 36.6, lon: -121.89 }, now, tripDate: r.date, measured: { cells: e, toxin: null, nearest: null }, model: null, sat: null, conditions: null, official: null });
     const hab = g.claims.find((c) => c.id === "hab")!;
-    expect(hab.history).toMatch(/^Compared with earlier years at Santa Cruz Wharf: higher than \d+% of the \d+ quantified Aug–Oct samples there in 2014–2025; another \d+ had no cells counted \(not necessarily none present\) and are not ranked\. /);
+    expect(hab.history).toMatch(/^Compared with earlier years at Santa Cruz Wharf: higher than \d+% of the \d+ quantified Aug–Oct samples there in 2014–2025( \(a small sample: each of the \d+ is \d+ points of the rank\))?; another \d+ had no cells counted \(not necessarily none present\) and are not ranked\. /);
     expect(hab.text).not.toContain(hab.history!);
     const node = g.nodes.find((n) => n.id === `record:pn:HABs-SantaCruzWharf`)!;
     expect(node.class).toBe("record_statistic");

@@ -41,6 +41,8 @@ type Ctx = {
 
 const KIND: Record<string, { word: string; tone: string; dot: string; hollow: string }> = {
   official: { word: "Official", tone: "text-n-official", dot: "bg-n-official", hollow: "border-2 border-n-official" },
+  // the agencies' standing pages in Neritic's unreviewed copy: the official colour, drawn hollow, never a notice's mark
+  agency_page: { word: "Agency page · Neritic's copy", tone: "text-n-official", dot: "border-2 border-n-official", hollow: "border-2 border-n-official" },
   measured: { word: "Measured", tone: "text-n-measured", dot: "bg-n-measured", hollow: "border-2 border-n-measured" },
   model: { word: "Model", tone: "text-n-model", dot: "bg-n-model", hollow: "border-2 border-n-model" },
   satellite: { word: "Satellite", tone: "text-n-measured", dot: "bg-n-measured", hollow: "border-2 border-n-measured" },
@@ -123,6 +125,37 @@ export function ClaimRow({ c, graph, stations, onSelect, fallback = null }: { c:
           </p>
         )}
         {c.detail && <p className="mt-0.5 text-[14px] leading-snug text-n-ink-2">{c.detail}</p>}
+        {/* the measurement against the station's own record (its own node in the evidence); zeros said apart, never ranked */}
+        {c.history && (
+          <p className="mt-0.5 text-[14px] leading-snug text-n-ink-2" data-testid={`claim-${c.id}-history`}>
+            {c.history}
+          </p>
+        )}
+        {/* where the line's words come from: the species line is Neritic's unreviewed copy of the agencies' pages */}
+        {c.provenance && (
+          <p className="mt-0.5 text-[13px] leading-snug text-n-ink-3" data-testid={`claim-${c.id}-provenance`}>
+            {c.provenance}
+          </p>
+        )}
+        {/* every agency sentence one tap away, each quoted under its own agency and page */}
+        {c.agencyWords && c.agencyWords.length > 0 && (
+          <details className="group mt-0.5 text-[14px]" data-testid={`claim-${c.id}-agency`}>
+            <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center font-semibold text-n-accent">
+              <span className="group-open:hidden">What the agencies&rsquo; pages say</span>
+              <span className="hidden group-open:inline">Hide the agencies&rsquo; words</span>
+            </summary>
+            <ul className="flex flex-col gap-2">
+              {c.agencyWords.map((w) => (
+                <li key={w.url + w.quote.slice(0, 24)} data-testid={`claim-${c.id}-word`} data-agency={w.agency}>
+                  <blockquote className="border-l-2 border-n-official-line pl-2.5 font-serif text-[15.5px] leading-snug text-n-ink">&ldquo;{w.quote}&rdquo;</blockquote>
+                  <a href={w.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 text-[13px] font-semibold text-n-accent">
+                    {w.label} <Icon name="external" className="h-3.5 w-3.5" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
           <span className={`font-semibold ${k.tone}`}>{k.word}</span>
           {c.source?.url && (
