@@ -21,6 +21,13 @@ Licence (dataset metadata): "These data may be used and redistributed for free b
 intended for legal use, since they may contain inaccuracies. For use for publications please
 reference … CeNCOOS and NOAA." Carried as a caveat on every node.
 
+Credit (corrected 2026-10-18, `04-scientific-corrections.md` item 2.1): each dataset's creator is a
+university operator, read from its own `creator_institution` attribute. The operators are Cal Poly San
+Luis Obispo (Morro Bay), Humboldt State University, now Cal Poly Humboldt (Humboldt Bay, Trinidad), UC
+Davis Bodega Marine Laboratory, and UC Santa Cruz (Santa Cruz Wharf). A source is named
+"<station> (<operator>), via CeNCOOS ERDDAP". The lineage says CeNCOOS publishes it as a regional
+association of NOAA's U.S. IOOS. The data are never labelled NOAA's.
+
 ## Rules
 
 - One request per harbour: the newest row at or before the clock (`time<=T&orderByMax("time")`,

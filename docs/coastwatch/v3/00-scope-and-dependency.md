@@ -28,8 +28,8 @@ release session ("Terminal 1") owns the #62 → #63 → #65 stack, the Vercel pr
 
 1. **Historical change**: a shore measurement against its own station's record
    (`src/lib/history.ts`). See `01-history-species-consistency.md`.
-2. **Species and activity**: which toxins the agencies watch for in the chosen species, in their own
-   words, and what Neritic's readings can and cannot say about them (`src/content/speciesEvidence.ts`).
+2. **Species and activity**: which toxins the agencies' pages name for the chosen species, in their own
+   words (Neritic's unreviewed copy, each sentence under its own agency), and what Neritic's readings can and cannot say about them (`src/content/speciesEvidence.ts`).
 3. **Evidence consistency**: mechanical rules every claim must keep against its nodes
    (`src/lib/evidenceCheck.ts`), run over every harbour, activity, species and source state.
 4. **Verified nearshore observations**: CeNCOOS shore stations (QARTOD-flagged) through
