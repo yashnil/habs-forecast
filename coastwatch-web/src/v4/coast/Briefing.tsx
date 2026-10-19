@@ -628,7 +628,8 @@ function CheckItem({ s, n, done, onToggle }: { s: Step; n: number; done: boolean
             </a>
           ) : (
             <a href={`tel:${s.source.tel.replace(/[^\d+]/g, "")}`} className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent" data-testid="check-tel">
-              {s.source.label}: <span className="nx-data">{s.source.tel}</span>
+              {/* the label is the number as the agency writes it; the dialled form is in the link */}
+              <span className="nx-data">{s.source.label}</span>
             </a>
           )}
           {s.when && <span className="inline-flex min-h-9 items-center text-n-ink-3">{s.when}</span>}
