@@ -31,7 +31,7 @@ import { associationsAt } from "@/lib/applicability";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { useCountyPrefs } from "@/components/map/Counties";
 import { Icon } from "@/v4/ui/Icon";
-import { dayLabel, kmLabel } from "@/v4/ui/time";
+import { dayLabel, kmLabel, lastHabWords } from "@/v4/ui/time";
 import { decodeSelection, encodeSelection, sameSelection, type Camera, type HistoryEntry, type Selection } from "@/v4/state/selection";
 import { choiceParams, parseChoice, resolve, runDays, VARIABLE_WORDS, type LayerChoice } from "./layers";
 import { LayerChips, LayerList, LayerOptions, Legend, Provenance, ReferenceLines } from "./LayerPanel";
@@ -537,11 +537,12 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       {nothingCurrent}
       <LayerList manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} defaults={{ lead: firstLead }} />
       <LayerOptions manifest={manifest} choice={active} onChoice={setChoiceRaw} />
+      {readHint}
+      {/* what the map shows and when, before how to read its colours: the stamps stay above the fold */}
+      <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} />
       <div className="border-t border-n-line pt-3">
         <Legend choice={active} resolved={resolved} />
       </div>
-      {readHint}
-      <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} />
       <div className="border-t border-n-line pt-3">
         <ReferenceLines prefs={counties} onChange={setCounties} />
       </div>
@@ -781,6 +782,12 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                 field
               >
                 <div className="px-1 pb-6 text-n-ink">
+                  {/* with a place open, the layers stay one tap away: no need to close the place to change the map */}
+                  {inspection && (
+                    <div className="mb-3 border-b border-n-line pb-3" data-testid="sheet-layer-chips">
+                      <LayerChips manifest={manifest} choice={active} onChoice={setChoiceRaw} defaults={{ lead: firstLead }} />
+                    </div>
+                  )}
                   {inspection ?? (
                     <div className="flex flex-col gap-4">
                       {activeCard}
@@ -889,10 +896,7 @@ function AreaView({ bbox, ctx }: { bbox: [number, number, number, number]; ctx: 
               <li key={x.station_id}>
                 <button type="button" onClick={() => ctx.onSelect({ kind: "station", id: x.station_id })} className="nx-focus flex min-h-12 w-full items-center justify-between rounded-lg px-1 text-left hover:bg-n-surface-2">
                   <span className="text-[14.5px] font-semibold">{x.name}</span>
-                  <span className="text-[12.5px] text-n-ink-3">{(() => {
-                    const d = lastHabSample(x);
-                    return d ? `last HAB sample ${dayLabel(d)}${d.slice(0, 4) !== new Date().toISOString().slice(0, 4) ? `, ${d.slice(0, 4)}` : ""}` : "no HAB sample";
-                  })()}</span>
+                  <span className="text-[12.5px] text-n-ink-3">{lastHabWords(lastHabSample(x))}</span>
                 </button>
               </li>
             ))}

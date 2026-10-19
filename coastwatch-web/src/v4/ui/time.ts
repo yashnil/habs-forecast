@@ -38,6 +38,16 @@ export function dayLabel(date: string, weekday = false): string {
 }
 
 /** "Oct 16, 9:24 AM PDT": a measured time, in Pacific time with the zone named. */
+/** "Aug 27, 2025" when the date is not in the current (Pacific) year, else "Aug 27": a date never reads as this year's when it is not. */
+export function dayYearLabel(date: string, now: Date | null = null): string {
+  const day = date.length > 10 && date.includes("T") ? pacificDay(date) : date.slice(0, 10);
+  const thisYear = pacificToday(now ?? new Date()).slice(0, 4);
+  return `${dayLabel(day)}${day.slice(0, 4) !== thisYear ? `, ${day.slice(0, 4)}` : ""}`;
+}
+
+/** "last HAB sample Aug 27, 2025" (toxin or Pseudo-nitzschia, the date every view uses for a station) */
+export const lastHabWords = (d: string | null, now: Date | null = null) => (d ? `last HAB sample ${dayYearLabel(d, now)}` : "no HAB sample published");
+
 export function clockLabel(iso: string): string {
   return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: TZ, timeZoneName: "short" });
 }

@@ -20,7 +20,8 @@ import { NoticesButton } from "@/v4/shell/Notices";
 import { RegistryDisclosure } from "@/v4/shell/Disclosure";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { Icon } from "@/v4/ui/Icon";
-import { dayLabel, kmLabel, relTime } from "@/v4/ui/time";
+import { dayLabel, kmLabel, lastHabWords, relTime } from "@/v4/ui/time";
+import { HAB_SAMPLE_VARIABLES } from "@/lib/provenance";
 import { SampleValue, SeriesChart, monthTicks, sampleOnDay } from "@/v4/charts/SeriesChart";
 import { useReportSource } from "@/v4/readiness/store";
 import { AreaModel, CellBody, preciseProbability } from "@/v4/explore/Inspect";
@@ -62,6 +63,21 @@ const AXIS_NAME: Record<ObsVariableId, string> = {
 
 const dayKey = (t: number) => new Date(t).toISOString().slice(0, 10);
 const pct = (v: number) => `${Math.round(v * 100)}%`;
+
+/** The newest HAB sample (the variables lastHabSample uses elsewhere), from a station's full series: the same date the map, Explore and the briefing give. */
+function lastHabObs(s: { sample_times: string[]; series: { variable: string; values: (number | null)[] }[] }): string | null {
+  let best: string | null = null;
+  for (const se of s.series) {
+    if (!(HAB_SAMPLE_VARIABLES as readonly string[]).includes(se.variable)) continue;
+    for (let i = se.values.length - 1; i >= 0; i--) {
+      if (se.values[i] == null) continue;
+      const d = s.sample_times[i]?.slice(0, 10);
+      if (d && (!best || d > best)) best = d;
+      break;
+    }
+  }
+  return best;
+}
 
 const BTN = "nx-press nx-focus flex min-h-11 items-center gap-2 rounded-lg border border-n-line-strong px-3 text-[14px] font-semibold";
 
@@ -277,6 +293,15 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
   const [areaArmed, setAreaArmed] = useState(true);
   const mapRef = useRef<MlMap | null>(null);
   const { dragBox, handlers: areaHandlers } = useAreaDrag(() => mapRef.current, setArea, () => setAreaArmed(false));
+  // a new station moves the grid map to it; a point, line or area chosen near the old one no longer applies
+  const chooseStation = (id: string) => {
+    const next = stations.find((x) => x.station_id === id);
+    setCellAtPt(null);
+    setLine([]);
+    setArea(null);
+    if (next?.lat != null && next.lon != null) mapRef.current?.fitBounds([[next.lon - 0.35, next.lat - 0.25], [next.lon + 0.35, next.lat + 0.25]], { padding: 16, duration: 500 });
+    setStation(id);
+  };
   const cellRead = useCellRead(manifest, baseUrl, ports, cellAtPt, gridVar, lead);
   const forecastLayer = charmLayer(manifest, gridVar, lead);
   // the active layer's codes: cell edges and transects read the same published grid
@@ -360,7 +385,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
           <label htmlFor="r-station" className="sr-only">
             Station
           </label>
-          <select id="r-station" value={st.station_id} onChange={(e) => setStation(e.target.value)} className="nx-focus min-h-12 w-full rounded-xl border border-n-line-strong bg-n-surface px-3 text-[15px] font-semibold lg:hidden">
+          <select id="r-station" value={st.station_id} onChange={(e) => chooseStation(e.target.value)} className="nx-focus min-h-12 w-full rounded-xl border border-n-line-strong bg-n-surface px-3 text-[15px] font-semibold lg:hidden">
             {stations.map((s) => (
               <option key={s.station_id} value={s.station_id}>
                 {s.name}
@@ -369,14 +394,13 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
           </select>
           <ul className="hidden flex-col gap-0.5 lg:flex">
             {stations.map((s) => {
-              const lastD = s.sample_times[s.sample_times.length - 1]?.slice(0, 10);
               const on = s.station_id === st.station_id;
               return (
                 <li key={s.station_id}>
-                  <button type="button" onClick={() => setStation(s.station_id)} aria-current={on ? "true" : undefined} className={`nx-focus flex min-h-12 w-full flex-col justify-center rounded-lg px-3 py-1.5 text-left ${on ? "bg-n-ink text-n-bg" : "hover:bg-n-surface-2"}`}>
+                  <button type="button" onClick={() => chooseStation(s.station_id)} aria-current={on ? "true" : undefined} className={`nx-focus flex min-h-12 w-full flex-col justify-center rounded-lg px-3 py-1.5 text-left ${on ? "bg-n-ink text-n-bg" : "hover:bg-n-surface-2"}`}>
                     <span className="text-[14.5px] font-semibold leading-tight">{s.name}</span>
                     <span className={`text-[12.5px] ${on ? "opacity-80" : "text-n-ink-3"}`}>
-                      {lastD ? `last ${dayLabel(lastD)}${lastD.slice(0, 4) !== String(new Date().getUTCFullYear()) ? ` ${lastD.slice(0, 4)}` : ""}` : "no samples"} · {s.sample_times.length} visits
+                      {lastHabWords(lastHabObs(s), now)} · {s.sample_times.length} visits
                     </span>
                   </button>
                 </li>
@@ -403,7 +427,20 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
             </Link>
           </header>
 
-          <section className="nx-deck flex flex-col gap-4 p-4 sm:p-5" data-testid="research-chart">
+          {/* on a phone the page is long: the map tools are one tap away, not 2,600 px down */}
+          <nav aria-label="On this page" className="-mt-2 flex flex-wrap gap-1.5 lg:hidden" data-testid="research-jump">
+            {[
+              ["r-record", "Record"],
+              ["r-stats", "Statistics"],
+              ["r-tools", "Map tools: model, satellite, radar"],
+            ].map(([id, label]) => (
+              <a key={id} href={`#${id}`} className="nx-press nx-focus inline-flex min-h-11 items-center rounded-full border border-n-line-strong px-3.5 text-[14px] font-semibold text-n-accent" data-testid={`research-jump-${id}`}>
+                {label}
+              </a>
+            ))}
+          </nav>
+
+          <section id="r-record" className="nx-deck flex scroll-mt-4 flex-col gap-4 p-4 sm:p-5" data-testid="research-chart">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Quantity">
                 {vars.map((v) => (
@@ -446,7 +483,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
             )}
           </section>
 
-          <section className="grid gap-4 md:grid-cols-2">
+          <section id="r-stats" className="grid scroll-mt-4 gap-4 md:grid-cols-2">
             <div className="nx-deck p-4" data-testid="research-stats">
               <h2 className="nx-eyebrow">In this window</h2>
               <dl className="mt-3 grid grid-cols-2 gap-3">
@@ -533,7 +570,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
             </div>
           </section>
 
-          <section className="nx-deck flex flex-col gap-3 p-4 sm:p-5" data-testid="research-grid">
+          <section id="r-tools" className="nx-deck flex scroll-mt-4 flex-col gap-3 p-4 sm:p-5" data-testid="research-grid">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="nx-eyebrow" data-testid="grid-heading">
                 {source === "charm"
@@ -721,7 +758,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
                           <ul className="text-[14px]">
                             {stationsIn.map((s) => (
                               <li key={s.station_id}>
-                                <button type="button" onClick={() => setStation(s.station_id)} className="nx-focus min-h-11 text-left font-semibold text-n-accent underline-offset-2 hover:underline">
+                                <button type="button" onClick={() => chooseStation(s.station_id)} className="nx-focus min-h-11 text-left font-semibold text-n-accent underline-offset-2 hover:underline">
                                   {s.name}
                                 </button>
                               </li>
