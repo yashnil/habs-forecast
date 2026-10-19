@@ -28,6 +28,7 @@ export function MobileSheet({
   label,
   testid = "mobile-sheet",
   field = false,
+  edge = null,
 }: {
   snaps: SnapPoint[];
   snap: SnapId;
@@ -39,6 +40,8 @@ export function MobileSheet({
   testid?: string;
   /** v4 field ergonomics: a 44 px handle */
   field?: boolean;
+  /** a fixed line under the handle, outside the scrolling body (v4: the map's credits, which then cover no map label) */
+  edge?: ReactNode;
 }) {
   const i = Math.max(0, snaps.findIndex((s) => s.id === snap));
   const target = snaps[i]?.height ?? 0;
@@ -131,6 +134,8 @@ export function MobileSheet({
       >
         <span className="h-1 w-10 rounded-full bg-hairline-strong" aria-hidden />
       </button>
+      {/* below the handle's whole hit area: a tap on a credit link never resizes the sheet */}
+      {edge && <div className="shrink-0 px-4 pb-1">{edge}</div>}
       <div ref={body} className="cw-fade-in min-h-0 flex-1 overflow-y-auto overscroll-contain px-4" style={{ paddingBottom: 20 + full - target }}>
         {header}
         {children}

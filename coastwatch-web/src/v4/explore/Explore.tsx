@@ -764,11 +764,6 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           {/* the sheet ends above the dock; the map stays live above it (non-modal) */}
           <div className="pointer-events-none absolute inset-x-0 top-0 z-30 overflow-clip" style={{ bottom: `calc(${DOCK}px + env(safe-area-inset-bottom, 0px))` }}>
             {/* the map's credits (ODbL, CC-BY) stay on the map at every sheet height, just above the sheet */}
-            {snap !== "full" && (
-              <p className="pointer-events-none absolute left-3 max-w-[64%] rounded-md bg-[rgba(4,18,26,0.62)] px-1.5 py-0.5 text-[10.5px] leading-tight text-[#c8d6de] [&_a]:pointer-events-auto" style={{ bottom: (snap === "peek" ? PEEK : Math.round((vh - DOCK) * 0.5)) + 8 }} data-testid="attribution-short">
-                <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">© OpenMapTiles</a> · NOAA relief · not for navigation
-              </p>
-            )}
             {snap === "peek" && (
               <div className="pointer-events-auto absolute right-3 flex flex-col gap-2" style={{ bottom: PEEK + 12 }} data-testid="map-controls">
                 <button type="button" aria-label={selection ? "Centre on the selection" : "Show all California"} onClick={() => (selection ? focusOn(selection) : mapRef.current?.fitBounds(STATEWIDE.bounds, { padding: padding(), duration: 500 }))} className="nx-press nx-focus grid h-14 w-14 place-items-center rounded-2xl border border-n-line bg-n-surface text-n-ink shadow-[var(--nx-shadow)]" data-testid="recenter">
@@ -792,6 +787,12 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                 label={selection ? "Selected" : "Layers and time"}
                 header={null}
                 field
+                // the map's credits sit on the sheet's top edge, right under the map: always visible with it, over no label
+                edge={
+                  <p className="text-[11px] leading-snug text-n-ink-3 [&_a]:underline [&_a]:underline-offset-2" data-testid="attribution-short">
+                    <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">© OpenMapTiles</a> · NOAA relief · not for navigation
+                  </p>
+                }
               >
                 <div className="px-1 pb-6 text-n-ink">
                   {/* with a place open, the layers stay one tap away: no need to close the place to change the map */}

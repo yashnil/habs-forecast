@@ -103,3 +103,23 @@ test("L8: on a phone, choosing a layer from the peeking sheet opens it, so its t
   await expect(page.locator('[data-testid^="time-"][role="radio"]').last()).toBeInViewport();
   await ctx.close();
 });
+
+test("320 px: the map's credits stay visible, on the sheet's edge under the map, covering no map label", async ({ browser }) => {
+  const ctx = await browser.newContext(phone(320));
+  const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/?layer=forecast&sel=harbor:215`);
+  await mapReady(page);
+  const credit = page.getByTestId("attribution-short");
+  await expect(credit).toBeVisible();
+  await expect(credit).toContainText("© OpenStreetMap contributors");
+  await expect(credit).toContainText("© OpenMapTiles");
+  await expect(credit.getByRole("link", { name: "© OpenStreetMap contributors" })).toHaveAttribute("href", "https://www.openstreetmap.org/copyright");
+  // inside the sheet, not over the map's canvas
+  const inSheet = await credit.evaluate((el) => !!el.closest('[data-testid="mobile-sheet"]'));
+  expect(inSheet).toBe(true);
+  const c = (await credit.boundingBox())!;
+  const top = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('[data-testid="attribution-short"]') !== null, [c.x + 4, c.y + c.height / 2]);
+  expect(top).toBe(true);
+  await ctx.close();
+});
