@@ -305,7 +305,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         kind: "official",
         tone: applying.some((a) => RESTRICTIVE.has(a.record.action) || CLOSED.test(a.record.title)) ? "alert" : "note",
         headline: applying.length === 1 ? first.record.title : `${applying.length} notices cover these waters${forWhat}`,
-        detail: applying.length === 1 ? `${first.record.agency}${first.record.effective_date ? ` · since ${shortDate(first.record.effective_date)}` : ""}${limit ? ` · ${limit}` : ""}` : `${applying.slice(0, 3).map((a) => a.record.title).join(" · ")}${applying.length > 3 ? ` · and ${applying.length - 3} more, all in Notices` : ""}`,
+        detail: applying.length === 1 ? `${first.record.agency}${first.record.effective_date ? ` · since ${shortDate(first.record.effective_date)}` : ""}${limit ? ` · ${limit}` : ""}` : `${applying.slice(0, 3).map((a) => `${a.record.title}${a.record.effective_date ? ` (since ${shortDate(a.record.effective_date)})` : ""}`).join(" · ")}${applying.length > 3 ? ` · and ${applying.length - 3} more, all in Notices` : ""}`,
         source: src ? { label: `${first.record.agency} notice`, url: src.url } : undefined,
         focus: "official",
         text: `${applying.length} agency notice${applying.length === 1 ? "" : "s"} ${applying.length === 1 ? "names" : "name"} these waters${forWhat}: ${applying.slice(0, 3).map((a) => `${a.record.agency}: ${a.record.title}`).join("; ")}${applying.length > 3 ? `; and ${applying.length - 3} more` : ""}.${unverified ? " Neritic's copy, not verified by a person; the agency pages are the authority." : ""}`,

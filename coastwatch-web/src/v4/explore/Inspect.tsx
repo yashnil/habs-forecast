@@ -17,7 +17,8 @@ import { disputeOf, officialAt } from "@/lib/official";
 import { currentsAt, forecastAt, pnSibling, satelliteAt, type Readout } from "@/lib/readout";
 import { KNOTS_PER_MS, type CurrentField } from "@/lib/currents";
 import { Icon } from "@/v4/ui/Icon";
-import { clockLabel, dayLabel, kmLabel, relTime } from "@/v4/ui/time";
+import { clockLabel, dayLabel, kmLabel, lastHabWords, relTime } from "@/v4/ui/time";
+import { lastHabSample } from "@/lib/provenance";
 import { SeriesChart, recentSamples } from "@/v4/charts/SeriesChart";
 import { useConditions, useEvidence, type CellRead } from "./reads";
 import { VARIABLE_WORDS } from "./layers";
@@ -223,8 +224,11 @@ export function HarborView({ code, ctx }: { code: number; ctx: Ctx }) {
             {near.near.slice(0, 4).map((n) => (
               <li key={n.station.station_id}>
                 <button type="button" onClick={() => ctx.onSelect({ kind: "station", id: n.station.station_id })} className="nx-focus flex min-h-12 w-full items-center justify-between gap-3 rounded-lg px-1 text-left hover:bg-n-surface-2">
-                  <span className="text-[14.5px] font-semibold">{n.station.name}</span>
-                  <span className="nx-data text-[13px] text-n-ink-3">
+                  <span className="flex min-w-0 flex-col">
+                    <span className="text-[14.5px] font-semibold">{n.station.name}</span>
+                    <span className="text-[12.5px] text-n-ink-3" data-testid="harbor-station-last">{lastHabWords(lastHabSample(n.station), ctx.now)}</span>
+                  </span>
+                  <span className="nx-data shrink-0 text-[13px] text-n-ink-3">
                     {kmLabel(n.km)} {n.bearing}
                   </span>
                 </button>
@@ -552,8 +556,11 @@ export function PointView({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ct
             {(near.near.length ? near.near.slice(0, 3) : [near.nearestBeyond!]).map((n) => (
               <li key={n.station.station_id}>
                 <button type="button" onClick={() => ctx.onSelect({ kind: "station", id: n.station.station_id })} className="nx-focus flex min-h-12 w-full items-center justify-between gap-3 rounded-lg px-1 text-left hover:bg-n-surface-2">
-                  <span className="text-[14.5px] font-semibold">{n.station.name}</span>
-                  <span className="nx-data text-[13px] text-n-ink-3">
+                  <span className="flex min-w-0 flex-col">
+                    <span className="text-[14.5px] font-semibold">{n.station.name}</span>
+                    <span className="text-[12.5px] text-n-ink-3" data-testid="harbor-station-last">{lastHabWords(lastHabSample(n.station), ctx.now)}</span>
+                  </span>
+                  <span className="nx-data shrink-0 text-[13px] text-n-ink-3">
                     {kmLabel(n.km)} {n.bearing}
                   </span>
                 </button>

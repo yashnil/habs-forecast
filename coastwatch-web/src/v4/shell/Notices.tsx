@@ -65,6 +65,8 @@ export function NoticesButton({ official, status = null, compact = false, local 
         <Icon name="shield" className="h-[18px] w-[18px] text-n-official" />
         <span className="nx-data" data-testid="notices-count">{official ? (local ? here.length : recs.length) : "?"}</span>
         {local && official && <span className="text-n-ink-2" data-testid="notices-here">here</span>}
+        {/* without a place, the count is statewide and says so (it never reads as this place's count) */}
+        {!local && official && <span className="text-n-ink-2" data-testid="notices-statewide">in CA</span>}
         {/* below 400 px the word gives way (the count, the shield and the label still say it) so the bar fits */}
         {!compact && <span className="text-n-official max-[399px]:hidden">{word}</span>}
       </button>

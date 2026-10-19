@@ -24,7 +24,7 @@ import { SkipLink } from "@/v4/shell/SkipLink";
 import { distanceKm } from "@/lib/grid";
 import type { Step } from "@/lib/nextSteps";
 import { Icon } from "@/v4/ui/Icon";
-import { dayLabel, kmLabel, relTime } from "@/v4/ui/time";
+import { dayLabel, dayYearLabel, kmLabel, relTime } from "@/v4/ui/time";
 import { ClaimRow, nodeSelection } from "@/v4/explore/Inspect";
 import { SinceLastCheck } from "@/components/coast/SinceLastCheck";
 import { useBriefing } from "./useBriefing";
@@ -99,7 +99,7 @@ function NodeRow({ n, now, back }: { n: EvidenceNode; now: Date | null; back: st
         <p className="mt-0.5 text-[14px] leading-snug text-n-ink-2">
           {n.where?.name ?? n.source.name}
           {n.where && n.where.km > 0 ? ` · ${kmLabel(n.where.km)}${n.where.bearing ? ` ${n.where.bearing}` : ""}` : ""}
-          {when ? ` · ${dayLabel(when)}${now ? ` (${relTime(when, now)})` : ""}` : ""}
+          {when ? ` · ${dayYearLabel(when, now)}${now ? ` (${relTime(when, now)})` : ""}` : ""}
         </p>
         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
           <span className="font-semibold text-n-ink-3">{k.word}</span>
