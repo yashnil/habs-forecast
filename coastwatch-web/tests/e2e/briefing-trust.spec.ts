@@ -86,6 +86,8 @@ test("Dungeness, commercial, Crescent City: the season status leads, quoted with
   await expect(page.getByTestId("checks").locator(":scope > li").first()).toContainText("Confirm the season status on CDFW's page");
   const tel = page.getByTestId("brief-checks").getByTestId("check-tel").first();
   await expect(tel).toHaveAttribute("href", /^tel:\+?1?8316492883$/);
+  // the number is shown once, as the agency writes it
+  await expect(tel).toHaveText("(831) 649-2883");
   expect(await page.getByTestId("checks").locator(":scope > li").count()).toBeLessThanOrEqual(5);
 });
 
