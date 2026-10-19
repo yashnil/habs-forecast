@@ -8,6 +8,9 @@ import type { StationLite } from "@/lib/data";
 import type { Verification } from "@/lib/official";
 import { runAgeWords } from "@/lib/charmDays";
 import { recordNamesSpecies, speciesPhrase, type Species } from "@/content/species";
+import { copyWords, rankWords, type RecordContext } from "@/lib/history";
+import { SHORE_STATIONS, shoreCredit, SHORE_UNITS, type ShoreVariable } from "@/lib/shoreStations";
+import { READINGS_FOR, SPECIES_EVIDENCE, TOXIN_WORDS, type Toxin } from "@/content/speciesEvidence";
 
 /**
  * The harbor evidence graph: everything Neritic knows about one place, as typed nodes that each
@@ -23,7 +26,8 @@ import { recordNamesSpecies, speciesPhrase, type Species } from "@/content/speci
  * speaks of safety.
  */
 
-export type EvidenceClass = "measurement" | "satellite_retrieval" | "published_forecast" | "reconstruction" | "experimental";
+/** record_statistic: a measurement compared with the same station's own earlier samples (lib/history) */
+export type EvidenceClass = "measurement" | "record_statistic" | "satellite_retrieval" | "published_forecast" | "reconstruction" | "experimental";
 
 /** How well a reading at `km` from the place can stand for the place, by the variable's own scale. */
 export type Representative = "at" | "near" | "context" | "far";
@@ -51,7 +55,8 @@ export type Gap = { id: string; variable: string; reason: string; nearest?: { na
 /** What the map shows when a claim or node is chosen. */
 export type EvidenceFocus = "toxin" | "cells" | "chl" | "satellite" | "model" | "official" | "conditions" | null;
 
-export type ClaimKind = "official" | "measured" | "model" | "satellite" | "conditions" | "gap";
+/** agency_page: the agencies' standing pages, quoted from Neritic's unreviewed copy (never styled as an official notice) */
+export type ClaimKind = "official" | "agency_page" | "measured" | "model" | "satellite" | "conditions" | "gap";
 
 export type Claim = {
   id: string;
@@ -61,6 +66,12 @@ export type Claim = {
   /** the line as the page shows it */
   headline: string;
   detail?: string;
+  /** the measurement against the station's own record (lib/history): one sentence, its own node */
+  history?: string;
+  /** the agencies' own sentences behind a disclosure, each quoted with its own page (the species line) */
+  agencyWords?: { agency: "CDPH" | "CDFW"; quote: string; label: string; url: string; read: string }[];
+  /** where the line's words come from, said on the page (the species line: Neritic's unreviewed copy) */
+  provenance?: string;
   /** the agency's own words, quoted */
   quote?: string;
   /** a second statement from the agency about the same fishery, quoted with its own page */
@@ -372,6 +383,26 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
     if (best) {
       const e = best.e;
       const closer = c && c.station.station_id !== e.station.station_id && c.km < e.km ? c : null;
+      // the closer station's silence is evidence too: its own node, with its last sample date
+      const closerNode: EvidenceNode | null = closer
+        ? {
+            id: `silent:${closer.station.station_id}`,
+            class: "measurement",
+            variable: "shore station's last sample",
+            units: "",
+            value: null,
+            text: `last sample ${longDate(closer.date, x.now)}`,
+            source: { id: "calhabmap", name: "CalHABMAP via SCCOOS ERDDAP", url: closer.station.source_url, product: "HABs shore station" },
+            time: { observed: closer.date, ageDays: closer.ageDays },
+            support: { kind: "point" },
+            where: { lat: closer.station.lat, lon: closer.station.lon, name: closer.station.name, km: closer.km, bearing: null, representative: representative("pn_cells", closer.km), setting: stationSetting(closer.station.name) },
+            freshness: { state: closer.ageDays <= RECENT_DAYS ? "current" : closer.ageDays <= 90 ? "stale" : "historical" },
+            quality: { flags: [] },
+            lineage: ["CalHABMAP shore station", "read by Neritic's pipeline"],
+            caveats: ["A station with no comparable recent sample: no sample is not a clean result."],
+          }
+        : null;
+      if (closerNode) nodes.push(closerNode);
       const v = e.kind === "cells" ? `Pseudo-nitzschia ${best.node.text}` : `domoic acid in seawater ${best.node.text}`;
       claims.push({
         id: "hab",
@@ -382,8 +413,19 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         focus: e.kind === "cells" ? "cells" : "toxin",
         aged: e.ageDays > 14,
         text: `${e.station.name} reported ${best.node.text} ${e.kind === "cells" ? "Pseudo-nitzschia" : "particulate domoic acid"} on ${longDate(e.date)}, ${km(e.km)} km ${e.bearing} of ${P.name}.${closer ? ` ${closer.station.name} is closer (${km(closer.km)} km) but has no comparable sample since ${longDate(closer.date, x.now)}.` : ""}`,
-        supports: [best.node.id],
+        supports: [best.node.id, ...(closerNode ? [closerNode.id] : [])],
       });
+      // the same sample against the station's own record (only when the record's newest sample is this one)
+      const rv = e.kind === "cells" ? "pn" : "pDA";
+      const r = e.station.record?.[rv];
+      if (r && r.date === e.date) {
+        const rn = recordNode(r, best.node, e.station.name, x.now);
+        nodes.push(rn);
+        const hab = claims.at(-1)!;
+        // its own field, not appended to `text`: the HAB detail's summary paragraph repeats `text`, and nothing is said twice
+        hab.history = historySentence(r, e.station.name, x.now);
+        hab.supports.push(rn.id);
+      }
     } else if (nb?.here != null) {
       claims.push({
         id: "hab",
@@ -412,6 +454,9 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       });
     }
   }
+
+  // ---- the chosen species: what the agencies test it for, and what Neritic's readings can say about that
+  if (x.official && x.official.species.id !== "any") speciesClaim(x.official.species, x.official.assocs, nodes, claims);
 
   // ---- C-HARM (published forecast): the waters' own cell, or the offshore cells as context
   if (x.model === "error") gaps.push({ id: "model", variable: "C-HARM", reason: "No C-HARM run could be read." });
@@ -549,6 +594,50 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       parts.push(`Water ${n.text} ${inHarbour ? "in the harbour" : `at ${stationName(st.name)} tide station, ${km(st.km)} km`}`);
       source ??= { label: `NOAA tide station ${st.id}`, url: h.url };
     }
+    // a CeNCOOS shore station: QARTOD-passed temperature, salinity and chlorophyll fluorescence, each its own node
+    if (c.shore?.status === "ok" && c.shore.station) {
+      const sh = c.shore;
+      const st = sh.station!;
+      const meta = SHORE_STATIONS.find((x) => x.id === st.id);
+      const words: Record<ShoreVariable, string> = { water_temperature: "water temperature", salinity: "salinity", chlorophyll_fluorescence: "chlorophyll fluorescence" };
+      const fmt: Record<ShoreVariable, (v: number) => string> = { water_temperature: (v) => `${v.toFixed(1)} °C`, salinity: (v) => `${v.toFixed(1)} PSU`, chlorophyll_fluorescence: (v) => `${Number(v.toPrecision(2))} µg/L` };
+      for (const [v, r] of Object.entries(sh.data.readings) as [ShoreVariable, { value: number; at: string }][]) {
+        const n: EvidenceNode = {
+          id: `cencoos:${st.id}:${v}`,
+          class: "measurement",
+          variable: words[v],
+          units: SHORE_UNITS[v],
+          value: r.value,
+          text: fmt[v](r.value),
+          source: { id: "cencoos", name: meta ? shoreCredit(meta) : `${st.name}, via CeNCOOS ERDDAP`, url: sh.url, product: st.id },
+          time: { observed: r.at, ageDays: 0 },
+          support: { kind: "point" },
+          where: { lat: st.lat ?? null, lon: st.lon ?? null, name: st.name, km: st.km, bearing: null, representative: representative("water_temp", st.km), setting: meta?.setting ?? "unclassified" },
+          freshness: { state: "current" },
+          quality: { flags: ["QARTOD: passed"] },
+          lineage: [
+            `sensor at ${meta?.place ?? "the shore station"}, 10–15 minute readings`,
+            ...(meta ? [`operated by ${meta.operator} (the dataset's creator: ${meta.operatorAsPublished})`] : []),
+            "QARTOD automated quality tests (CeNCOOS)",
+            "published on CeNCOOS ERDDAP; CeNCOOS is a regional association of NOAA's U.S. IOOS (credit: the operator, CeNCOOS and NOAA, per the dataset licence)",
+            "read live by Neritic's server",
+          ],
+          caveats: [
+            v === "chlorophyll_fluorescence" ? "In-water fluorescence: algae of every kind, not toxin, and not the same measurement as satellite or laboratory chlorophyll." : "Measured at the station's intake; the open coast and the harbour can differ.",
+            "CeNCOOS: not intended for legal use; may contain inaccuracies.",
+          ],
+        };
+        nodes.push(n);
+        supports.push(n.id);
+      }
+      for (const [v, why] of Object.entries(sh.data.withheld) as [ShoreVariable, string][]) gaps.push({ id: `shore-${v}`, variable: words[v], reason: `${st.name}: its latest ${words[v]} reading ${why === "not flagged" ? "carries no quality flag" : `was flagged “${why}” by its quality tests`}, so it is not shown.` });
+      // the harbour's water temperature on the line, when NOAA's tide station did not give one
+      const t = sh.data.readings.water_temperature;
+      if (t && !(c.harbor?.status === "ok")) {
+        parts.push(`Water ${t.value.toFixed(1)} °C at ${st.name}${st.km > REPRESENTATIVE_KM.water_temp.at ? `, ${km(st.km)} km` : ""}`);
+        source ??= { label: meta ? `${st.name} (${meta.operator}, via CeNCOOS)` : `${st.name} (via CeNCOOS)`, url: sh.url };
+      }
+    } else if (c.shore?.status === "unavailable") gaps.push({ id: "shore", variable: "shore station", reason: c.shore.reason });
     if (c.buoy.status === "ok" && c.buoy.station) {
       const b = c.buoy.data;
       const st = c.buoy.station;
@@ -587,6 +676,27 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
     if (c.tides.status === "ok") {
       const dayTides = tidesOn(c.tides.data, x.tripDate);
       const lows = dayTides.filter((t) => t.type === "L").sort((a, b) => a.ft - b.ft);
+      if (dayTides.length) {
+        const st = c.tides.station;
+        const n: EvidenceNode = {
+          id: `tides:${st?.id ?? "nearest"}:${x.tripDate}`,
+          class: "published_forecast",
+          variable: "tide predictions",
+          units: "ft above mean lower low water",
+          value: lows[0]?.ft ?? null,
+          text: dayTides.map((t) => `${t.type === "H" ? "high" : "low"} ${t.ft.toFixed(1)} ft at ${clock(t.at)}`).join(", "),
+          source: { id: "coops-tides", name: "NOAA CO-OPS tide predictions", url: c.tides.url, product: st ? `station ${st.id}` : undefined },
+          time: { valid: x.tripDate, ageDays: null },
+          support: { kind: "point" },
+          where: { lat: st?.lat ?? null, lon: st?.lon ?? null, name: st ? `${stationName(st.name)} tide station` : "the nearest tide station", km: st?.km ?? 0, bearing: null, representative: st ? representative("tide", st.km) : "near" },
+          freshness: { state: "current" },
+          quality: { flags: [] },
+          lineage: ["astronomical tide predictions by NOAA CO-OPS", "read live by Neritic's server"],
+          caveats: ["Predicted tides: wind and swell change the water level actually reached."],
+        };
+        nodes.push(n);
+        supports.push(n.id);
+      }
       if (x.official?.audience === "shellfish" && lows.length) parts.unshift(`Lowest tide ${lows[0].ft.toFixed(1)} ft at ${clock(lows[0].at)}`);
       else if (dayTides.length) parts.push(`tides ${dayTides.map((t) => `${t.type === "H" ? "high" : "low"} ${t.ft.toFixed(1)} ft`).slice(0, 2).join(", ")}`);
       source ??= { label: "NOAA tide predictions", url: c.tides.url };
@@ -629,11 +739,131 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
   };
 }
 
-/** The claims the page shows as its "right now" lines: the model's own line is folded into the HAB line when that line already said it. */
+/** The most "Right now" lines the page shows (the owner's limit, 2026-10-16). */
+export const PAGE_MAX = 6;
+/** Lines that give way first when there are more than PAGE_MAX: least relevant to a harbour decision first. */
+const GIVE_WAY: string[] = ["satellite", "model", "conditions"];
+
+/**
+ * The claims the page shows as its "right now" lines, ranked by relevance and never more than PAGE_MAX:
+ * - the model's own line is folded into the HAB line when that line already said it;
+ * - a species line that is only a gap (no agency names a biotoxin test for that species) stays in the
+ *   API and adds no line: a line is added for what it says, not because the feature exists;
+ * - past PAGE_MAX, satellite chlorophyll gives way first, then the model, then the sea.
+ * Official words, the measurement and the species' toxins always stay, in the graph's order.
+ */
 export function pageClaims(g: EvidenceGraph): Claim[] {
   const hab = g.claims.find((c) => c.id === "hab");
   const saidWithHab = hab && (hab.kind === "measured" || hab.kind === "model");
-  return g.claims.filter((c) => !(c.id === "model" && saidWithHab));
+  let out = g.claims.filter((c) => !(c.id === "model" && saidWithHab) && !(c.id === "species" && c.kind === "gap"));
+  for (const id of GIVE_WAY) if (out.length > PAGE_MAX) out = out.filter((c) => c.id !== id);
+  return out;
+}
+
+/** the animal as the species line names it ("not in the crab") */
+const ANIMAL: Partial<Record<Species["id"], string>> = { dungeness: "crab", "rock-crab": "crab", lobster: "lobster", "razor-clam": "clams", mussel: "mussels", bivalve: "shellfish", "anchovy-sardine": "fish", salmon: "fish", groundfish: "fish", halibut: "fish", squid: "squid" };
+
+/**
+ * "What the readings mean for Dungeness crab": the agency's own sentences about testing the animal,
+ * then which of Neritic's readings bear on those toxins. Never says a species is safe or affected.
+ */
+function speciesClaim(sp: Species, assocs: Association[], nodes: EvidenceNode[], claims: Claim[]) {
+  const ev = SPECIES_EVIDENCE[sp.id];
+  const phrase = speciesPhrase(sp);
+  // the toxins the agencies name for it: their pages, and the notices here that name the species
+  const fromNotices = assocs.filter((a) => recordNamesSpecies(a.record.species, sp)).flatMap((a) => a.record.toxins ?? []);
+  const toxins = [...new Set<Toxin>([...(ev?.toxins ?? []), ...fromNotices.filter((t): t is Toxin => t === "domoic_acid" || t === "psp")])];
+  const factNodes = (ev?.facts ?? []).map((f, i): EvidenceNode => ({
+    id: `agency-fact:${sp.id}:${i}`,
+    class: "measurement",
+    variable: "agency page",
+    units: "",
+    value: null,
+    text: f.text,
+    source: { id: "official", name: f.source.label, url: f.source.url },
+    time: { ageDays: null },
+    support: { kind: "zone" },
+    where: { lat: null, lon: null, name: "statewide", km: 0, bearing: null, representative: "at" },
+    freshness: { state: "current" },
+    quality: { flags: [`the agency's sentence, read ${f.read}`] },
+    lineage: ["agency page", "quoted by Neritic"],
+    caveats: ["The agency's page is the authority; it can change between Neritic's readings of it."],
+  }));
+  nodes.push(...factNodes);
+  const animal = ANIMAL[sp.id] ?? "animal";
+  const readings = toxins.length
+    ? toxins.map((t) =>
+        READINGS_FOR[t] === "carried"
+          ? // cells and chlorophyll are not toxin: only the particulate domoic acid samples measure it (#66 review 3.4)
+            `Neritic's shore samples (Pseudo-nitzschia cells and particulate domoic acid in seawater) and NOAA's model describe the water, not the ${animal}.`
+          : `Neritic carries no seawater reading of the algae behind ${TOXIN_WORDS[t]}; CDPH's tests of the shellfish are the evidence.`,
+      )
+    : [`The shore readings describe the water, not the ${animal}.`];
+  const read = ev?.facts[0]?.read;
+  claims.push({
+    id: "species",
+    // the agencies' standing pages, in Neritic's unreviewed copy: not an official notice (#66 review 3.2)
+    kind: toxins.length ? "agency_page" : "gap",
+    tone: toxins.length ? "note" : "gap",
+    headline: toxins.length ? `For ${phrase}, the agencies' pages name ${toxins.map((t) => TOXIN_WORDS[t]).join(" and ")}` : `Neritic's sources name no biotoxin test specific to ${phrase}`,
+    // on the page: the headline and what the readings can say; the agencies' own sentences one tap away
+    detail: readings.join(" "),
+    // every sentence quoted with its own agency and page, never a paraphrase under the agency's name (#66 review 3.3)
+    agencyWords: ev?.facts.map((f) => ({ agency: f.source.agency, quote: f.quote, label: f.source.label, url: f.source.url, read: f.read })),
+    provenance: read && toxins.length ? `Neritic's copy of the agencies' pages, read ${longDate(read)}, ${read.slice(0, 4)}; not reviewed by a person. The agency pages are the authority.` : undefined,
+    focus: null,
+    text: `${[...(ev?.facts.map((f) => f.text) ?? []), ...readings].join(" ")}`,
+    supports: factNodes.map((n) => n.id),
+  });
+}
+
+const fmtRecord = (r: RecordContext, v: number) => fmtMeasured(r.variable === "pDA" ? "pDA" : "pn_seriata", v);
+
+/** "Compared with earlier years at Santa Cruz Wharf: higher than 98% of the 13 quantified Aug–Oct samples there in 2014–2025; another 129 had no cells counted … Last as high or higher: September 2 (…). Previous sample September 23: …." */
+export function historySentence(r: RecordContext, station: string, now: Date): string {
+  const rank = rankWords(r);
+  const head = rank
+    ? `Compared with earlier years at ${station}: ${rank}.`
+    : `Too few samples at ${station} to compare by season (${r.season.n} from the same months of earlier years; ${copyWords(r)}).`;
+  // "as high or higher" says nothing about a zero (every earlier sample is at least 0); "the highest" is said only
+  // against quantified samples (a reported 0 is censored: it may hide any value up to the lab's limit)
+  const high = r.value === 0 ? "" : r.lastAsHigh ? ` Last as high or higher: ${longDate(r.lastAsHigh.date, now)} (${fmtRecord(r, r.lastAsHigh.value)}).` : r.quantifiedEarlier > 0 ? ` The highest in ${copyWords(r)}.` : "";
+  const prev = r.previous ? ` Previous sample ${longDate(r.previous.date, now)}: ${fmtRecord(r, r.previous.value)}.` : "";
+  return `${head}${high}${prev}`;
+}
+
+function recordNode(r: RecordContext, m: EvidenceNode, station: string, now: Date): EvidenceNode {
+  const s = r.season;
+  return {
+    id: `record:${r.variable}:${m.id.split(":").slice(1).join(":")}`,
+    class: "record_statistic",
+    variable: `${m.variable}, against the station's own record`,
+    units: r.value > 0 ? "share of quantified same-season samples from earlier years that were lower" : "share of same-season samples from earlier years with the same value",
+    value: s.below,
+    // the sentence the briefing says, so every number in it is this node's
+    text: historySentence(r, station, now),
+    source: m.source,
+    time: { observed: r.date, ageDays: m.time.ageDays },
+    support: { kind: "point", n: r.value > 0 ? s.quantified : s.n },
+    where: m.where,
+    freshness: m.freshness,
+    quality: {
+      flags: [
+        ...(s.below == null ? [r.value > 0 && s.zeros ? `${s.quantified} quantified same-season samples from ${s.quantifiedYears} earlier years; at least 12 from 3 years are needed to rank` : `${s.n} same-season samples from ${s.years} earlier years; at least 12 from 3 years are needed`] : []),
+        ...(s.zeros ? [`${s.zeros} same-season samples were reported 0: censored (at or below a limit that is not published), not ranked as lower`] : []),
+      ],
+    },
+    lineage: [
+      `Neritic's copy of ${station}'s CalHABMAP series: ${r.n} samples from ${longDate(r.since, now)}${r.windowStart ? ` (Neritic keeps samples from ${r.windowStart.slice(0, 4)} on; the station's own series may begin earlier)` : ""}`,
+      `${s.n} samples from the same months in ${s.years} earlier years: ${s.quantified} quantified, ${s.zeros} reported 0`,
+      "compared by Neritic, values unchanged",
+    ],
+    caveats: [
+      "A comparison with this station's own past samples: not with other waters, not a statement about seafood, and not a forecast.",
+      "Sampling has not been even across years; weeks without a sample are not counted.",
+      "A reported 0 is at or below the laboratory's limit, which is not published; it is never counted as lower than a measured value.",
+    ],
+  };
 }
 
 function statementNode(s: Statement): EvidenceNode {

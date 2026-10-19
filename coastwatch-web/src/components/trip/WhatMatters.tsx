@@ -8,7 +8,7 @@ const ext = { target: "_blank", rel: "noopener noreferrer" } as const;
 
 /**
  * "Right now": the briefing's claims, straight from the evidence graph (lib/harborEvidence), at most
- * five lines, each led by the mark of how it is known (official line, measured point, model cells,
+ * six lines ranked by relevance (pageClaims), each led by the mark of how it is known (official line, measured point, model cells,
  * conditions diamond, hatching for not known). An item that needs action sits on an amber rule; a
  * gap is grey and says what is not known, never a reassurance. Choosing an item shows where it comes
  * from on the map. Every line carries the ids of the nodes it rests on (data-supports), so the page,
@@ -38,7 +38,7 @@ export function WhatMatters({ items, onFocus, focus, sourceNote, placeName }: { 
               {m.tone === "alert" && <span aria-hidden className="absolute inset-y-3 left-0 w-[3px] rounded-r bg-official-line" />}
               <Mark kind={m.kind} aged={m.aged} className="absolute left-[9px] top-[21px]" />
               <p className={`text-[17px] font-semibold leading-snug ${m.tone === "gap" ? "text-ink-2" : "text-ink"}`}>{m.headline}</p>
-              {m.quote && <blockquote className="mt-1 text-[16px] leading-snug text-ink">“{m.quote}”</blockquote>}
+              {m.quote && m.id !== "species" && <blockquote className="mt-1 text-[16px] leading-snug text-ink">“{m.quote}”</blockquote>}
               {m.also && (
                 <p className="mt-1.5 text-[15px] leading-snug text-ink-2" data-testid={`matter-${m.id}-also`}>
                   <span className="font-medium text-ink">{m.also.label}:</span> “{m.also.quote}”{" "}
@@ -50,6 +50,34 @@ export function WhatMatters({ items, onFocus, focus, sourceNote, placeName }: { 
                 </p>
               )}
               {m.detail && <p className="mt-0.5 text-[15px] leading-snug text-ink-2">{m.detail}</p>}
+              {m.provenance && (
+                <p className="mt-0.5 text-[14px] leading-snug text-ink-3" data-testid={`matter-${m.id}-provenance`}>
+                  {m.provenance}
+                </p>
+              )}
+              {m.agencyWords && m.agencyWords.length > 0 && (
+                <details className="group mt-0.5" data-testid={`matter-${m.id}-agency`}>
+                  <summary className="cw-press inline-flex min-h-[44px] cursor-pointer list-none items-center text-[15px] font-semibold text-accent [&::-webkit-details-marker]:hidden">
+                    <span className="group-open:hidden">What the agencies&apos; pages say</span>
+                    <span className="hidden group-open:inline">Hide the agencies&apos; words</span>
+                  </summary>
+                  <ul className="flex flex-col gap-2">
+                    {m.agencyWords.map((w) => (
+                      <li key={w.url + w.quote.slice(0, 24)} data-testid={`matter-${m.id}-word`} data-agency={w.agency}>
+                        <blockquote className="text-[16px] leading-snug text-ink">“{w.quote}”</blockquote>
+                        <a href={w.url} {...ext} className="inline-flex min-h-[44px] items-center text-[14px] font-semibold text-accent hover:underline">
+                          {w.label} ↗
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              {m.history && (
+                <p className="mt-0.5 text-[15px] leading-snug text-ink-2" data-testid={`matter-${m.id}-history`}>
+                  {m.history}
+                </p>
+              )}
               {(m.source || m.focus) && (
                 <p className="mt-1 flex flex-wrap items-center gap-x-4 text-[14px]">
                   {m.source && (

@@ -6,9 +6,9 @@ import { formatDateTimePT } from "@/lib/time";
 
 const ext = { target: "_blank", rel: "noopener noreferrer" } as const;
 
-const KIND: Record<EvidenceNode["class"], MarkKind> = { measurement: "measured", satellite_retrieval: "satellite", published_forecast: "model", reconstruction: "model", experimental: "model" };
+const KIND: Record<EvidenceNode["class"], MarkKind> = { measurement: "measured", record_statistic: "measured", satellite_retrieval: "satellite", published_forecast: "model", reconstruction: "model", experimental: "model" };
 const REP: Record<EvidenceNode["where"]["representative"], string> = { at: "at these waters", near: "nearby", context: "context only", far: "too far to describe these waters" };
-const CLASS_WORD: Record<EvidenceNode["class"], string> = { measurement: "measured", satellite_retrieval: "satellite", published_forecast: "forecast", reconstruction: "reconstructed", experimental: "experimental" };
+const CLASS_WORD: Record<EvidenceNode["class"], string> = { measurement: "measured", record_statistic: "station record", satellite_retrieval: "satellite", published_forecast: "forecast", reconstruction: "reconstructed", experimental: "experimental" };
 
 function when(n: EvidenceNode): string {
   const t = n.time.observed ?? n.time.valid ?? n.time.issued;
@@ -19,15 +19,16 @@ function when(n: EvidenceNode): string {
   return age == null || age === 0 ? d : `${d} · ${age === 1 ? "1 day" : `${age} days`} ago`;
 }
 
-const isSea = (n: EvidenceNode) => n.id.startsWith("buoy:") || n.id.startsWith("coops:") || n.id.startsWith("nws:");
+const isSea = (n: EvidenceNode) => n.id.startsWith("buoy:") || n.id.startsWith("coops:") || n.id.startsWith("nws:") || n.id.startsWith("cencoos:") || n.id.startsWith("tides:");
 
 function focusOf(n: EvidenceNode): EvidenceFocus {
   if (n.id.startsWith("pn_cells:")) return "cells";
-  if (n.id.startsWith("pda:")) return "toxin";
+  if (n.id.startsWith("pda:") || n.id.startsWith("record:pDA:")) return "toxin";
+  if (n.id.startsWith("record:pn:")) return "cells";
   if (n.id.startsWith("charm:")) return "model";
   if (n.id.startsWith("chl:")) return "satellite";
   if (n.id.startsWith("official:") || n.id.startsWith("statement:")) return "official";
-  if (n.id.startsWith("buoy:") || n.id.startsWith("coops:") || n.id.startsWith("nws:")) return "conditions";
+  if (n.id.startsWith("buoy:") || n.id.startsWith("coops:") || n.id.startsWith("nws:") || n.id.startsWith("cencoos:") || n.id.startsWith("tides:")) return "conditions";
   return null;
 }
 
