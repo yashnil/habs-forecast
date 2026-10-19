@@ -118,7 +118,7 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false }: { 
                 disabled={s.disabled}
                 onClick={() => onChoice(s.choice)}
                 data-testid={`time-${s.key}`}
-                className={`nx-focus relative flex min-w-[84px] flex-1 shrink-0 basis-[84px] flex-col items-center justify-center rounded-lg px-2 py-1 text-center disabled:opacity-35 max-md:min-h-[56px] md:min-h-12 ${
+                className={`nx-focus relative flex min-w-fit flex-1 shrink-0 basis-[84px] flex-col items-center justify-center rounded-lg px-2 py-1 text-center disabled:opacity-35 max-md:min-h-[56px] md:min-h-12 ${
                   on ? "bg-n-ink text-n-bg" : "bg-n-surface-2 text-n-ink hover:bg-n-surface-3"
                 }`}
                 style={s.forecast && !on ? { backgroundImage: "repeating-linear-gradient(135deg, transparent 0 6px, rgba(194,168,245,0.10) 6px 8px)" } : undefined}
