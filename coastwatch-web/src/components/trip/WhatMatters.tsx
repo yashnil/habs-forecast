@@ -50,14 +50,27 @@ export function WhatMatters({ items, onFocus, focus, sourceNote, placeName }: { 
                 </p>
               )}
               {m.detail && <p className="mt-0.5 text-[15px] leading-snug text-ink-2">{m.detail}</p>}
-              {m.id === "species" && (m.quote || m.more) && (
-                <details className="group mt-0.5" data-testid="matter-species-agency">
+              {m.provenance && (
+                <p className="mt-0.5 text-[14px] leading-snug text-ink-3" data-testid={`matter-${m.id}-provenance`}>
+                  {m.provenance}
+                </p>
+              )}
+              {m.agencyWords && m.agencyWords.length > 0 && (
+                <details className="group mt-0.5" data-testid={`matter-${m.id}-agency`}>
                   <summary className="cw-press inline-flex min-h-[44px] cursor-pointer list-none items-center text-[15px] font-semibold text-accent [&::-webkit-details-marker]:hidden">
-                    <span className="group-open:hidden">What {m.source?.label.startsWith("CDFW") ? "CDFW" : "CDPH"} says</span>
-                    <span className="hidden group-open:inline">Hide the agency&apos;s words</span>
+                    <span className="group-open:hidden">What the agencies&apos; pages say</span>
+                    <span className="hidden group-open:inline">Hide the agencies&apos; words</span>
                   </summary>
-                  {m.quote && <blockquote className="text-[16px] leading-snug text-ink">“{m.quote}”</blockquote>}
-                  {m.more && <p className="mt-1 text-[15px] leading-snug text-ink-2">{m.more}</p>}
+                  <ul className="flex flex-col gap-2">
+                    {m.agencyWords.map((w) => (
+                      <li key={w.url + w.quote.slice(0, 24)} data-testid={`matter-${m.id}-word`} data-agency={w.agency}>
+                        <blockquote className="text-[16px] leading-snug text-ink">“{w.quote}”</blockquote>
+                        <a href={w.url} {...ext} className="inline-flex min-h-[44px] items-center text-[14px] font-semibold text-accent hover:underline">
+                          {w.label} ↗
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
                 </details>
               )}
               {m.history && (

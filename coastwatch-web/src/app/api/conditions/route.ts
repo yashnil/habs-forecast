@@ -19,7 +19,7 @@ import {
   type Part,
   type WaterTempSeries,
 } from "@/lib/conditions";
-import { parseShoreCsv, shoreCandidate, shorePage, shoreUrl, SHORE_MAX_AGE_H, SHORE_MAX_KM } from "@/lib/shoreStations";
+import { parseShoreCsv, shoreCandidate, shoreCredit, shorePage, shoreUrl, SHORE_MAX_AGE_H, SHORE_MAX_KM } from "@/lib/shoreStations";
 import { headlineAlerts, parseCoastalText, zoneNear, zonePageUrl, zoneTextUrl } from "@/lib/nwsText";
 
 /**
@@ -244,9 +244,10 @@ async function harborPart(lat: number, lon: number): Promise<Conditions["harbor"
  * hours is "not reporting since …", said with the last report's time, never shown as current.
  */
 async function shorePart(lat: number, lon: number): Promise<Conditions["shore"]> {
-  const source = "CeNCOOS shore station";
   const s = shoreCandidate(lat, lon);
-  if (!s) return { status: "none", reason: `No CeNCOOS shore station within ${SHORE_MAX_KM} km.`, source };
+  if (!s) return { status: "none", reason: `No CeNCOOS shore station within ${SHORE_MAX_KM} km.`, source: "CeNCOOS shore station" };
+  // the operator credited by name, CeNCOOS as the publisher
+  const source = shoreCredit(s);
   const d = now();
   const page = shorePage(s);
   const station = { id: s.id, name: s.name, km: s.km, lat: s.lat, lon: s.lon, sensorNote: s.place };
@@ -258,7 +259,7 @@ async function shorePart(lat: number, lon: number): Promise<Conditions["shore"]>
   }
   if (!obs) return { status: "unavailable", reason: `${s.name}: no rows.`, source, url: page };
   const ageH = (d.getTime() - Date.parse(obs.at)) / 3600_000;
-  if (ageH > SHORE_MAX_AGE_H) return { status: "unavailable", reason: `${s.name} (${s.km.toFixed(1)} km) has not reported since ${new Date(obs.at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}.`, source, url: page };
+  if (ageH > SHORE_MAX_AGE_H) return { status: "unavailable", reason: `${s.name} (${s.km.toFixed(1)} km) has not reported since ${new Date(obs.at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/Los_Angeles" })}.`, source, url: page };
   return { status: "ok", data: obs, source, url: page, fetchedAt: d.toISOString(), station };
 }
 

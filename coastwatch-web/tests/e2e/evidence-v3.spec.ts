@@ -31,6 +31,9 @@ test("Morro Bay: the shore station's water temperature, with its QARTOD pass, wh
   const t = g.nodes.find((n) => n.id === "cencoos:edu_calpoly_marine_morro:water_temperature")!;
   expect(t.text).toBe("19.0 °C");
   expect(t.quality.flags).toEqual(["QARTOD: passed"]);
+  // #66 review 2.1: the operator is credited, CeNCOOS as the publisher
+  expect(t.source.name).toBe("Morro Bay shore station (Cal Poly San Luis Obispo), via CeNCOOS ERDDAP");
+  expect(c.shore.source).toBe("Morro Bay shore station (Cal Poly San Luis Obispo), via CeNCOOS ERDDAP");
   expect(g.claims.find((x) => x.id === "conditions")!.supports).toContain(t.id);
 });
 
@@ -45,16 +48,45 @@ test("My Coast shows the species line and, where the sample is the station's new
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-593&for=commercial&species=dungeness`);
   await expect(page.getByTestId("matter-hab")).not.toContainText("Reading");
-  await expect(page.getByTestId("matter-species")).toContainText("For Dungeness crab, the agencies watch for domoic acid");
-  await expect(page.getByTestId("matter-species")).toContainText("not in the crab");
-  // the agency's words are one tap away, not on the first read of the line
+  const species = page.getByTestId("matter-species");
+  await expect(species).toContainText("For Dungeness crab, the agencies' pages name domoic acid");
+  await expect(species).toContainText("describe the water, not the crab");
+  // #66 review 3.2: an agency page in Neritic's unreviewed copy, never styled as an official notice
+  await expect(species).toHaveAttribute("data-kind", "agency_page");
+  await expect(species.locator('[data-mark="agency_page"]')).toHaveCount(1);
+  await expect(page.getByTestId("matter-species-provenance")).toHaveText("Neritic's copy of the agencies' pages, read October 16, 2026; not reviewed by a person. The agency pages are the authority.");
+  // the agencies' words are one tap away, each its own quote with its own page (#66 review 3.3)
   const agency = page.getByTestId("matter-species-agency");
   await expect(agency).not.toHaveAttribute("open", "");
-  await expect(agency.locator("blockquote")).toBeHidden();
+  await expect(agency.locator("blockquote").first()).toBeHidden();
   await agency.locator("summary").click();
-  await expect(agency.locator("blockquote")).toContainText("pre-season testing of Dungeness crab");
-  // Santa Cruz Wharf's September 30 count is its newest: the line places it in the wharf's record since 2014
-  await expect(page.getByTestId("matter-hab-history")).toHaveText(/^Compared with earlier years at Santa Cruz Wharf: higher than \d+% of the (Aug|Sep)–(Oct|Nov) samples there in 2014–2025\. /);
+  await expect(agency.locator("summary")).toContainText("Hide the agencies' words");
+  const words = agency.getByTestId("matter-species-word");
+  await expect(words).toHaveCount(2);
+  await expect(words.nth(0).locator("blockquote")).toContainText("pre-season testing of Dungeness crab");
+  await expect(words.nth(1).locator("blockquote")).toContainText("CDPH recommends consumers not eat the viscera");
+  for (const i of [0, 1]) await expect(words.nth(i).locator("a")).toHaveAttribute("href", "https://www.cdph.ca.gov/Programs/CEH/DRSEM/Pages/EMB/Shellfish/Domoic-Acid.aspx");
+  // Santa Cruz Wharf's September 30 count is its newest: placed among the wharf's quantified samples, zeros said apart (#66 review 1.1)
+  await expect(page.getByTestId("matter-hab-history")).toHaveText(/^Compared with earlier years at Santa Cruz Wharf: higher than \d+% of the \d+ quantified (Aug|Sep)–(Oct|Nov) samples there in 2014–2025; another \d+ had no cells counted \(not necessarily none present\) and are not ranked\. /);
+  await expect(page.getByTestId("matter-hab-history")).not.toContainText("record began");
+  await ctx.close();
+});
+
+test("the mussel line quotes CDFW's sentence under CDFW, and leaves the quarantine's dates to the official notice", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, storageState: { cookies: [], origins: [{ origin: OK, localStorage: [{ name: "cw-intro-dismissed-v1", value: "1" }, { name: "cw-mode-v1", value: "coastal" }] }] } });
+  const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/coast?place=port-550&for=shellfish&species=mussel`);
+  const species = page.getByTestId("matter-species");
+  await expect(species).toContainText("paralytic shellfish toxins (saxitoxins) and domoic acid");
+  await expect(species).not.toContainText("October 31");
+  const agency = page.getByTestId("matter-species-agency");
+  await agency.locator("summary").click();
+  const word = agency.getByTestId("matter-species-word");
+  await expect(word).toHaveCount(1);
+  await expect(word).toHaveAttribute("data-agency", "CDFW");
+  await expect(word.locator("a")).toHaveText(/^CDFW ocean fishing health advisories/);
+  await expect(word.locator("a")).toHaveAttribute("href", "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories");
   await ctx.close();
 });
 

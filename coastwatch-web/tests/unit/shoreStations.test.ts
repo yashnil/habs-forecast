@@ -68,6 +68,27 @@ describe("CeNCOOS shore stations", () => {
     expect(checkGraph(g)).toEqual([]);
   });
 
+  // #66 review 2.1: the operator that created each dataset is credited, with CeNCOOS as the publisher; never "NOAA data"
+  it("credits each station's operator by name, via CeNCOOS ERDDAP, as the dataset's own metadata names it", () => {
+    // creator_institution read from erddap.cencoos.org/erddap/info/<dataset>/index.csv on 2026-10-18
+    expect(Object.fromEntries(SHORE_STATIONS.map((s) => [s.dataset, [s.operator, s.operatorAsPublished]]))).toEqual({
+      edu_calpoly_marine_morro: ["Cal Poly San Luis Obispo", "California Polytechnic State Univeristy, San Luis Obispo"],
+      edu_humboldt_humboldt: ["Cal Poly Humboldt", "Humboldt State University"],
+      edu_humboldt_tdp: ["Cal Poly Humboldt", "Humboldt State University"],
+      "bodega-bay-bml_wts": ["UC Davis Bodega Marine Laboratory", "Bodega Marine Laboratory"],
+      edu_ucsc_scwharf1: ["UC Santa Cruz", "University of California, Santa Cruz"],
+    });
+    const data = parseShoreCsv(csv("edu_calpoly_marine_morro"))!;
+    const g = graph({ status: "ok", data, source: "CeNCOOS", url: "https://erddap.cencoos.org/erddap/tabledap/edu_calpoly_marine_morro.html", fetchedAt: NOW.toISOString(), station: { id: "edu_calpoly_marine_morro", name: "Morro Bay shore station", km: 1.0, lat: 35.37085, lon: -120.8589 } });
+    for (const n of g.nodes.filter((x) => x.id.startsWith("cencoos:"))) {
+      expect(n.source.name).toBe("Morro Bay shore station (Cal Poly San Luis Obispo), via CeNCOOS ERDDAP");
+      expect(n.source.name).not.toMatch(/NOAA/);
+      expect(n.lineage).toContain("operated by Cal Poly San Luis Obispo (the dataset's creator: California Polytechnic State Univeristy, San Luis Obispo)");
+      expect(n.lineage.join(" ")).toMatch(/credit: the operator, CeNCOOS and NOAA, per the dataset licence/);
+    }
+    expect(g.claims.find((c) => c.id === "conditions")!.source?.label).toBe("Morro Bay shore station (Cal Poly San Luis Obispo, via CeNCOOS)");
+  });
+
   it("says withheld values and a silent station as gaps, never as numbers", () => {
     const data = parseShoreCsv(csv("edu_ucsc_scwharf1"))!;
     const g = graph({ status: "ok", data: { ...data, at: NOW.toISOString() }, source: "CeNCOOS", url: "u", fetchedAt: NOW.toISOString(), station: { id: "edu_ucsc_scwharf1", name: "Santa Cruz Wharf shore station", km: 1.8 } });

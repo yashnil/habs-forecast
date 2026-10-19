@@ -130,4 +130,21 @@ describe("evidence consistency rules", () => {
     expect(plant((h) => (hab(h).detail = "A low probability does not mean the water is safe. Seawater, not seafood."))).not.toContain("safety");
     expect(plant((h) => (h.claims.find((c) => c.id === "satellite")!.detail = hab(h).detail))).toContain("once");
   });
+
+  // the #66 review's species-line mistakes, each caught: 3.4 readings said to be about toxin, 3.2 an agency
+  // page line without its "Neritic's copy, not reviewed" provenance, 3.1 an end date in a standing line
+  it("catches the species-line mistakes the #66 review found", () => {
+    const g = graphs(new Date("2026-10-13T06:00:00Z")).find((x) => x.claims.some((c) => c.id === "species" && c.kind === "agency_page"))!;
+    const plant = (f: (sp: EvidenceGraph["claims"][number]) => void) => {
+      const h: EvidenceGraph = structuredClone(g);
+      f(h.claims.find((c) => c.id === "species")!);
+      return checkGraph(h).map((v) => `${v.rule}: ${v.message}`);
+    };
+    expect(checkGraph(g)).toEqual([]);
+    expect(plant((c) => (c.detail = "Neritic's shore readings and NOAA's model are about domoic acid in the water, not in the crab."))).toContain("kind-words: readings, cells or chlorophyll said to be about toxin");
+    expect(plant((c) => (c.detail = "The chlorophyll fluorescence at the pier is about toxin."))).toContain("kind-words: readings, cells or chlorophyll said to be about toxin");
+    expect(plant((c) => (c.provenance = undefined))).toContain("kind-words: an agency-page line without “Neritic's copy … not reviewed by a person”");
+    expect(plant((c) => (c.provenance = "The agency's page."))).toContain("kind-words: an agency-page line without “Neritic's copy … not reviewed by a person”");
+    expect(plant((c) => (c.detail = "CDPH quarantines sport-harvested mussels from May 1 to October 31 every year."))).toContain("kind-words: an agency-page line with a calendar end date (reads as over once it passes)");
+  });
 });

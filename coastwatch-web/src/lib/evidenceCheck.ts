@@ -17,7 +17,10 @@ import { pageClaims, type Claim, type EvidenceGraph, type EvidenceNode } from "@
  *  3. dates       every date in a claim's headline is a date of a node it cites.
  *  4. kind words  satellite chlorophyll is said with "not toxin"; a model probability is called a
  *                 probability and not a measurement; a measurement is never called a forecast or a
- *                 prediction; seawater is never seafood.
+ *                 prediction; seawater is never seafood; cell counts, chlorophyll and readings in
+ *                 general are never said to be "about" domoic acid or toxin (#66 review 3.4); an
+ *                 agency-page line says it is Neritic's unreviewed copy (3.2) and carries no calendar
+ *                 end date that could read as "over" (3.1).
  *  5. safety      no claim calls waters or seafood safe or unsafe, or speaks of risk scores or
  *                 catches, except to say that a reading does *not* mean safe.
  *  6. reach       a claim resting only on context or far nodes says so (context, not the harbour,
@@ -84,6 +87,10 @@ function nodeDates(n: EvidenceNode): Set<string> {
 }
 
 const SAFE_RE = /\b(un)?safe(ty)?\b/gi;
+/** "shore readings … are about domoic acid": cells and chlorophyll are not toxin */
+const ABOUT_TOXIN_RE = /\b(readings?|samples?|cells|chlorophyll|fluorescence)\b[^.]{0,60}\b(are|is) (all )?about (domoic acid|toxins?|biotoxins?)\b/i;
+/** "until October 31", "to October 31 every year": an end date in a standing line */
+const END_DATE_RE = new RegExp(`\\b(until|through|to|till) (${MONTHS}) \\d{1,2}\\b`, "i");
 const NEGATION_RE = /\b(not|n't|never|no|nor|neither)\b[^.]{0,60}$/i;
 
 export function checkGraph(g: EvidenceGraph): Violation[] {
@@ -98,7 +105,7 @@ export function checkGraph(g: EvidenceGraph): Violation[] {
 
   for (const c of g.claims) {
     const cited = c.supports.map((id) => byId.get(id));
-    const all = [c.headline, c.detail, c.history, c.more, c.text].filter(Boolean).join(" ");
+    const all = [c.headline, c.detail, c.history, c.provenance, c.text].filter(Boolean).join(" ");
 
     // 1. cites
     for (const [i, n] of cited.entries()) if (!n) out.push({ rule: "cites", claim: c.id, message: `cites ${c.supports[i]}, which is not a node` });
@@ -110,15 +117,16 @@ export function checkGraph(g: EvidenceGraph): Violation[] {
     for (const n of nodes) for (const x of nodeNumbers(n)) own.add(x);
     for (const x of numbersIn(c.quote ?? "")) own.add(x);
     for (const x of numbersIn(c.also?.quote ?? "")) own.add(x);
-    if (c.kind !== "official") {
+    for (const w of c.agencyWords ?? []) for (const x of numbersIn(w.quote)) own.add(x);
+    if (c.kind !== "official" && c.kind !== "agency_page") {
       for (const x of numbersIn(c.headline)) if (!own.has(x) && !RULE_NUMBERS.has(x)) out.push({ rule: "numbers", claim: c.id, message: `headline number ${x} is not in the nodes it cites` });
     }
-    for (const field of [c.detail, c.history, c.more, c.text]) {
+    for (const field of [c.detail, c.history, c.text]) {
       for (const x of numbersIn(field ?? "")) if (!graphNumbers.has(x) && !own.has(x)) out.push({ rule: "numbers", claim: c.id, message: `number ${x} appears in no node or gap` });
     }
 
     // 3. dates
-    if (c.kind !== "official" && nodes.length) {
+    if (c.kind !== "official" && c.kind !== "agency_page" && nodes.length) {
       const ds = new Set<string>();
       for (const n of nodes) for (const d of nodeDates(n)) ds.add(d);
       for (const d of datesIn(c.headline)) if (!ds.has(d)) out.push({ rule: "dates", claim: c.id, message: `headline date ${d} is not a date of the nodes it cites` });
@@ -126,13 +134,19 @@ export function checkGraph(g: EvidenceGraph): Violation[] {
 
     // 4. kind words
     // each surface on its own: what the page shows (headline, detail, history) and the plain statement (text)
-    const shown = [c.headline, c.detail, c.history, c.more].filter(Boolean).join(" ");
+    const shown = [c.headline, c.detail, c.history, c.provenance].filter(Boolean).join(" ");
     for (const [where, t] of [["page", shown], ["text", c.text]] as const) {
       if (/chlorophyll/i.test(t) && !/not toxin/i.test(t)) out.push({ rule: "kind-words", claim: c.id, message: `chlorophyll without “not toxin” (${where})` });
       if (c.kind === "model" && !(/probability|chance/i.test(t) && /not a measurement/i.test(t))) out.push({ rule: "kind-words", claim: c.id, message: `a model claim not called a probability and not a measurement (${where})` });
     }
     if (c.kind === "measured" && /\b(forecast|predict(ed|ion)?|will be)\b/i.test(`${c.headline} ${c.history ?? ""}`)) out.push({ rule: "kind-words", claim: c.id, message: "a measurement called a forecast" });
     if (nodes.some((n) => n.id.startsWith("pda:") || n.id.startsWith("pn_cells:")) && !/seawater, not seafood|not a test of seafood|seawater measurement/i.test(shown)) out.push({ rule: "kind-words", claim: c.id, message: "a seawater measurement without “seawater, not seafood”" });
+    if (ABOUT_TOXIN_RE.test(all)) out.push({ rule: "kind-words", claim: c.id, message: "readings, cells or chlorophyll said to be about toxin" });
+    if (c.kind === "agency_page") {
+      if (!c.provenance || !/Neritic's copy/.test(c.provenance) || !/not reviewed by a person/.test(c.provenance))
+        out.push({ rule: "kind-words", claim: c.id, message: "an agency-page line without “Neritic's copy … not reviewed by a person”" });
+      if (END_DATE_RE.test([c.headline, c.detail].filter(Boolean).join(" "))) out.push({ rule: "kind-words", claim: c.id, message: "an agency-page line with a calendar end date (reads as over once it passes)" });
+    }
 
     // 5. safety
     for (const m of all.matchAll(SAFE_RE)) {
@@ -149,7 +163,7 @@ export function checkGraph(g: EvidenceGraph): Violation[] {
   // 7. once
   const seen = new Map<string, string>();
   for (const c of pageClaims(g)) {
-    for (const s of [c.headline, c.detail, c.history, c.more].filter(Boolean).flatMap((x) => x!.split(/(?<=[.!?])\s+/))) {
+    for (const s of [c.headline, c.detail, c.history].filter(Boolean).flatMap((x) => x!.split(/(?<=[.!?])\s+/))) {
       const k = s.trim().toLowerCase();
       if (k.length < 24) continue; // "Seawater, not seafood." and other short tags may recur
       const prev = seen.get(k);

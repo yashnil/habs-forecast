@@ -4,10 +4,12 @@ import type { SpeciesId } from "@/content/species";
  * What the evidence can and cannot say for one species: which marine biotoxins the agencies test
  * it for, which part of the animal matters, and which of Neritic's readings bear on that toxin.
  *
- * Every fact is the agency's own sentence, quoted with its page and the date it was read; nothing
- * here is Neritic's judgement of a species' safety. Pages read on 2026-10-16 (HTTP 200):
+ * Every fact is the agency's own sentence, quoted with its page and the date it was read; `text` is
+ * Neritic's short paraphrase for the API and is never shown as the agency's words. Nothing here is
+ * Neritic's judgement of a species' safety, and no fact carries a date range that could read as an end
+ * (notices with status and expected ends belong to the official registry). Pages read on 2026-10-16 and
+ * every quote re-checked verbatim on 2026-10-18 (HTTP 200):
  * - CDPH Food and Drug Branch, "Domoic Acid" FAQ (crab and lobster);
- * - CDPH Shellfish Program, "Marine Biotoxin Monitoring Program" (bivalves; the mussel quarantine);
  * - CDFW, "Ocean Fishing Health Advisories" (CDPH's shellfish and seawater monitoring).
  * The toxins an agency has acted on for a species are also read from the official records'
  * own `toxins` field (lib/harborEvidence), so a new notice can add to this list without a code change.
@@ -19,11 +21,10 @@ export const TOXIN_WORDS: Record<Toxin, string> = { domoic_acid: "domoic acid", 
 /** Neritic's readings and what they are evidence of: Pseudo-nitzschia and particulate domoic acid in seawater, C-HARM's domoic acid probability */
 export const READINGS_FOR: Record<Toxin, "carried" | "not-carried"> = { domoic_acid: "carried", psp: "not-carried" };
 
-export type AgencyFact = { text: string; quote: string; source: { label: string; url: string }; read: string };
+export type AgencyFact = { text: string; quote: string; source: { label: string; url: string; agency: "CDPH" | "CDFW" }; read: string };
 
-const DA_FAQ = { label: "CDPH: domoic acid in crab and lobster", url: "https://www.cdph.ca.gov/Programs/CEH/DRSEM/Pages/EMB/Shellfish/Domoic-Acid.aspx" };
-const BIOTOXIN = { label: "CDPH Marine Biotoxin Monitoring Program", url: "https://www.cdph.ca.gov/Programs/CEH/DRSEM/Pages/EMB/Shellfish/Marine-Biotoxin-Monitoring-Program.aspx" };
-const CDFW_ADVISORIES = { label: "CDFW ocean fishing health advisories", url: "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories" };
+const DA_FAQ = { agency: "CDPH" as const, label: "CDPH: domoic acid in crab and lobster", url: "https://www.cdph.ca.gov/Programs/CEH/DRSEM/Pages/EMB/Shellfish/Domoic-Acid.aspx" };
+const CDFW_ADVISORIES = { agency: "CDFW" as const, label: "CDFW ocean fishing health advisories", url: "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories" };
 const READ = "2026-10-16";
 
 const VISCERA: AgencyFact = {
@@ -71,18 +72,11 @@ export const SPECIES_EVIDENCE: Partial<Record<SpeciesId, SpeciesEvidence>> = {
       },
     ],
   },
-  mussel: {
-    toxins: ["psp", "domoic_acid"],
-    facts: [
-      {
-        text: "CDPH quarantines sport-harvested mussels from May 1 to October 31 every year.",
-        quote: "CDPH issues a mussel quarantine from May 1 to October 31 each year.",
-        source: BIOTOXIN,
-        read: READ,
-      },
-      BIVALVES,
-    ],
-  },
+  // The annual quarantine is not a species fact: it is an official notice with a status, an expected end that
+  // CDPH can extend (SN26-018: "will continue through at least October 31") and a review state. The registry
+  // record (cdph-…-annual-mussel-quarantine) speaks for it; a dated sentence here would read as "over" after
+  // October 31 (#66 review 3.1).
+  mussel: { toxins: ["psp", "domoic_acid"], facts: [BIVALVES] },
   bivalve: { toxins: ["psp", "domoic_acid"], facts: [BIVALVES] },
   "razor-clam": { toxins: ["psp", "domoic_acid"], facts: [BIVALVES] },
   "anchovy-sardine": {

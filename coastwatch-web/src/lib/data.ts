@@ -78,14 +78,14 @@ export function slimStations(obs: ObservationDataset): StationLite[] {
         return { variable: sm.variable, label: v?.label ?? sm.variable, units: v?.units ?? "", kind: v?.kind ?? "", value: sm.last_value ?? null, date: sm.last_date!, qualifier: sm.last_qualifier ?? null, n_last_365d: sm.n_last_365d };
       }),
     recent: recentSeries(st, newest),
-    record: stationRecord(st),
+    record: stationRecord(st, obs.window_start ?? null),
   }]));
 }
 
-function stationRecord(st: ObservationDataset["stations"][number]): Partial<Record<RecordVariable, RecordContext>> {
+function stationRecord(st: ObservationDataset["stations"][number], windowStart: string | null): Partial<Record<RecordVariable, RecordContext>> {
   const out: Partial<Record<RecordVariable, RecordContext>> = {};
   for (const v of ["pDA", "pn"] as const) {
-    const r = recordContext(st as Parameters<typeof recordContext>[0], v);
+    const r = recordContext(st as Parameters<typeof recordContext>[0], v, windowStart);
     if (r) out[v] = r;
   }
   return out;

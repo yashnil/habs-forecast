@@ -13,17 +13,23 @@ import type { Setting } from "@/lib/harborEvidence";
  * inaccuracies"; publications credit CeNCOOS and NOAA. Only values whose flag is PASS are
  * reported as readings; any other flag is said as a withheld value, never shown as a number.
  *
+ * Credit (2.1 of the #66 review): each dataset is created by a university station operator and
+ * published by CeNCOOS (a regional association of NOAA's U.S. IOOS). The operator is credited by
+ * name with "via CeNCOOS ERDDAP"; `operatorAsPublished` is the dataset's own `creator_institution`
+ * attribute, read from erddap.cencoos.org/erddap/info/<dataset>/index.csv on 2026-10-18. The data
+ * are never labelled NOAA's.
+ *
  * Chlorophyll here is in-water fluorescence (µg/L), a different measurement from the satellite's
  * ocean-colour chlorophyll and from a laboratory's extracted chlorophyll: algae of every kind, not toxin.
  */
-export type ShoreStation = Station & { dataset: string; setting: Setting; place: string };
+export type ShoreStation = Station & { dataset: string; setting: Setting; place: string; operator: string; operatorAsPublished: string };
 
 export const SHORE_STATIONS: ShoreStation[] = [
-  { id: "edu_calpoly_marine_morro", dataset: "edu_calpoly_marine_morro", name: "Morro Bay shore station", place: "the Cal Poly T-pier in Morro Bay harbour", lat: 35.37085, lon: -120.8589, setting: "sheltered-harbor" },
-  { id: "edu_humboldt_humboldt", dataset: "edu_humboldt_humboldt", name: "Humboldt Bay shore station", place: "the Humboldt Bay pier", lat: 40.7775, lon: -124.19652, setting: "sheltered-harbor" },
-  { id: "edu_humboldt_tdp", dataset: "edu_humboldt_tdp", name: "Trinidad shore station", place: "the Trinidad Head pier, on the open coast", lat: 41.055, lon: -124.14703, setting: "exposed-pier" },
-  { id: "bodega-bay-bml_wts", dataset: "bodega-bay-bml_wts", name: "Bodega Marine Lab shore station", place: "the Bodega Marine Laboratory seawater intake, on the open coast", lat: 38.31652, lon: -123.0709, setting: "exposed-pier" },
-  { id: "edu_ucsc_scwharf1", dataset: "edu_ucsc_scwharf1", name: "Santa Cruz Wharf shore station", place: "the Santa Cruz municipal wharf", lat: 36.9603, lon: -122.0203, setting: "exposed-pier" },
+  { id: "edu_calpoly_marine_morro", dataset: "edu_calpoly_marine_morro", name: "Morro Bay shore station", place: "the Cal Poly T-pier in Morro Bay harbour", operator: "Cal Poly San Luis Obispo", operatorAsPublished: "California Polytechnic State Univeristy, San Luis Obispo", lat: 35.37085, lon: -120.8589, setting: "sheltered-harbor" },
+  { id: "edu_humboldt_humboldt", dataset: "edu_humboldt_humboldt", name: "Humboldt Bay shore station", place: "the Humboldt Bay pier", operator: "Cal Poly Humboldt", operatorAsPublished: "Humboldt State University", lat: 40.7775, lon: -124.19652, setting: "sheltered-harbor" },
+  { id: "edu_humboldt_tdp", dataset: "edu_humboldt_tdp", name: "Trinidad shore station", place: "the Trinidad Head pier, on the open coast", operator: "Cal Poly Humboldt", operatorAsPublished: "Humboldt State University", lat: 41.055, lon: -124.14703, setting: "exposed-pier" },
+  { id: "bodega-bay-bml_wts", dataset: "bodega-bay-bml_wts", name: "Bodega Marine Lab shore station", place: "the Bodega Marine Laboratory seawater intake, on the open coast", operator: "UC Davis Bodega Marine Laboratory", operatorAsPublished: "Bodega Marine Laboratory", lat: 38.31652, lon: -123.0709, setting: "exposed-pier" },
+  { id: "edu_ucsc_scwharf1", dataset: "edu_ucsc_scwharf1", name: "Santa Cruz Wharf shore station", place: "the Santa Cruz municipal wharf", operator: "UC Santa Cruz", operatorAsPublished: "University of California, Santa Cruz", lat: 36.9603, lon: -122.0203, setting: "exposed-pier" },
 ];
 
 export const ERDDAP = "https://erddap.cencoos.org/erddap";
@@ -64,6 +70,8 @@ export function shoreUrl(s: ShoreStation, now: Date): string {
   return `${ERDDAP}/tabledap/${s.dataset}.csv?${cols}&time%3C=${iso(now)}&orderByMax(%22time%22)`;
 }
 export const shorePage = (s: ShoreStation) => `${ERDDAP}/tabledap/${s.dataset}.html`;
+/** "Santa Cruz Wharf shore station (UC Santa Cruz), via CeNCOOS ERDDAP": the operator credited, CeNCOOS as publisher */
+export const shoreCredit = (s: Pick<ShoreStation, "name" | "operator">) => `${s.name} (${s.operator}), via CeNCOOS ERDDAP`;
 
 /**
  * The newest row of an ERDDAP CSV (header row, units row, data rows oldest first), per variable the
