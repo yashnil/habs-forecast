@@ -41,7 +41,8 @@ export type EvidenceNode = {
   /** the value as the briefing says it ("4,900 cells/L") */
   text: string;
   source: { id: string; name: string; url?: string | null; product?: string; version?: string };
-  time: { observed?: string | null; valid?: string | null; issued?: string | null; ageDays: number | null };
+  /** dates are Pacific calendar dates; `observedAt` keeps the source's original UTC timestamp when there is one */
+  time: { observed?: string | null; observedAt?: string | null; valid?: string | null; issued?: string | null; ageDays: number | null };
   support: { kind: "point" | "cell" | "cells" | "pixel" | "pixels" | "zone"; nativeM?: number | null; radiusKm?: number; n?: number };
   where: { lat: number | null; lon: number | null; name: string | null; km: number; bearing: string | null; representative: Representative; setting?: Setting | null };
   freshness: { state: Freshness["state"] | "unknown"; note?: string };
@@ -338,12 +339,17 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       value: total,
       text: fmtMeasured(variable === "pda" ? "pDA" : "pn_seriata", total),
       source: { id: "calhabmap", name: "CalHABMAP via SCCOOS ERDDAP", url: e.station.source_url, product: "HABs shore station" },
-      time: { observed: e.date, ageDays: e.ageDays },
+      time: { observed: e.date, observedAt: e.at ?? null, ageDays: e.ageDays },
       support: { kind: "point" },
       where: { lat: e.station.lat, lon: e.station.lon, name: e.station.name, km: e.km, bearing: e.bearing, representative: rep, setting },
       freshness: { state: e.ageDays <= RECENT_DAYS ? "current" : e.ageDays <= 90 ? "stale" : "historical" },
       quality: { flags: [] },
-      lineage: ["sampled at the pier", "counted or assayed in a laboratory", "published on SCCOOS ERDDAP", "read by Neritic's pipeline"],
+      lineage: [
+        e.at ? `sampled at the pier at ${e.at} (UTC, as published), shown as its Pacific date` : "sampled at the pier",
+        "counted or assayed in a laboratory",
+        "published on SCCOOS ERDDAP",
+        "read by Neritic's pipeline",
+      ],
       caveats: ["Seawater, not seafood: only CDPH and CDFW test shellfish and fish.", ...(setting === "sheltered-harbor" ? ["Sampled inside a harbor: sheltered water can differ from the coast outside."] : setting === "exposed-pier" ? ["Sampled at an open pier: exposed coastal water, which can differ from sheltered harbor water."] : [])],
     };
   };
@@ -822,13 +828,15 @@ const fmtRecord = (r: RecordContext, v: number) => fmtMeasured(r.variable === "p
 /** "Compared with earlier years at Santa Cruz Wharf: higher than 98% of the 13 quantified Aug–Oct samples there in 2014–2025; another 129 had no cells counted … Last as high or higher: September 2 (…). Previous sample September 23: …." */
 export function historySentence(r: RecordContext, station: string, now: Date): string {
   const rank = rankWords(r);
-  const head = rank
-    ? `Compared with earlier years at ${station}: ${rank}.`
-    : `Too few samples at ${station} to compare by season (${r.season.n} from the same months of earlier years; ${copyWords(r)}).`;
+  const head = r.flagged
+    ? `This value is above the pipeline's plausibility ceiling and is flagged for review, so it is not compared with earlier years at ${station}.`
+    : rank
+      ? `Compared with earlier years at ${station}: ${rank}.`
+      : `Too few samples at ${station} to compare by season (${r.season.n} from the same months of earlier years; ${copyWords(r)}).`;
   // "as high or higher" says nothing about a zero (every earlier sample is at least 0); "the highest" is said only
   // against quantified samples (a reported 0 is censored: it may hide any value up to the lab's limit)
-  const high = r.value === 0 ? "" : r.lastAsHigh ? ` Last as high or higher: ${longDate(r.lastAsHigh.date, now)} (${fmtRecord(r, r.lastAsHigh.value)}).` : r.quantifiedEarlier > 0 ? ` The highest in ${copyWords(r)}.` : "";
-  const prev = r.previous ? ` Previous sample ${longDate(r.previous.date, now)}: ${fmtRecord(r, r.previous.value)}.` : "";
+  const high = r.value === 0 || r.flagged ? "" : r.lastAsHigh ? ` Last as high or higher: ${longDate(r.lastAsHigh.date, now)} (${fmtRecord(r, r.lastAsHigh.value)}).` : r.quantifiedEarlier > 0 ? ` The highest in ${copyWords(r)}.` : "";
+  const prev = r.previous ? ` Previous sample ${longDate(r.previous.date, now)}: ${fmtRecord(r, r.previous.value)}${r.previous.flagged ? " (flagged for review)" : ""}.` : "";
   return `${head}${high}${prev}`;
 }
 
@@ -843,7 +851,7 @@ function recordNode(r: RecordContext, m: EvidenceNode, station: string, now: Dat
     // the sentence the briefing says, so every number in it is this node's
     text: historySentence(r, station, now),
     source: m.source,
-    time: { observed: r.date, ageDays: m.time.ageDays },
+    time: { observed: r.date, observedAt: r.at, ageDays: m.time.ageDays },
     support: { kind: "point", n: r.value > 0 ? s.quantified : s.n },
     where: m.where,
     freshness: m.freshness,
@@ -851,6 +859,8 @@ function recordNode(r: RecordContext, m: EvidenceNode, station: string, now: Dat
       flags: [
         ...(s.below == null ? [r.value > 0 && s.zeros ? `${s.quantified} quantified same-season samples from ${s.quantifiedYears} earlier years; at least 12 from 3 years are needed to rank` : `${s.n} same-season samples from ${s.years} earlier years; at least 12 from 3 years are needed`] : []),
         ...(s.zeros ? [`${s.zeros} same-season samples were reported 0: censored (at or below a limit that is not published), not ranked as lower`] : []),
+        ...(s.flagged ? [`${s.flagged} same-season samples are flagged for review (above the pipeline's plausibility ceiling): left out`] : []),
+        ...(r.flagged ? ["this value is flagged for review (above the plausibility ceiling): not ranked"] : []),
       ],
     },
     lineage: [

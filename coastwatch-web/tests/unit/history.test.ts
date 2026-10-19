@@ -41,7 +41,7 @@ describe("station record", () => {
       ["2024-01-22", -5, null, "rejected_negative"],
       ["2024-01-29", null, null],
     ]);
-    expect(recordSamples(s, "pn")).toEqual([
+    expect(recordSamples(s, "pn").map(({ date, value }) => ({ date, value }))).toEqual([
       { date: "2024-01-01", value: 150 },
       { date: "2024-01-08", value: 70 },
       { date: "2024-01-15", value: 0 },
@@ -61,7 +61,7 @@ describe("station record", () => {
     expect(rankWords(r)).toBe("higher than 50% of the 16 quantified Sep–Nov samples there in 2015–2018 (a small sample: each of the 16 is 6 points of the rank); another 4 had no cells counted (not necessarily none present) and are not ranked");
     // the June 2026 sample (99,999) is earlier and higher: the last sample at least as high
     expect(r.lastAsHigh).toEqual({ date: "2026-06-01", value: 99999 });
-    expect(r.previous).toEqual({ date: "2026-06-01", value: 99999 });
+    expect(r.previous).toEqual({ date: "2026-06-01", value: 99999, flagged: false });
   });
 
   it("refuses to rank a record that is too short, and says so", () => {
@@ -124,6 +124,36 @@ describe("station record", () => {
     expect(pda).toContain("were reported 0 (not quantified, not absent) and are not ranked");
     expect(smallWords(29)).toBe(" (a small sample: each of the 29 is 3 points of the rank)");
     expect(smallWords(30)).toBe("");
+  });
+
+  // release hardening: a value above the plausibility ceiling (flag_high, kept for review) is never a comparison point
+  it("leaves values flagged for review out of every comparison and says so; a flagged newest value is not ranked", () => {
+    const rows: [string, number | null, number | null, string?][] = [];
+    for (let y = 0; y < 4; y++) for (let i = 1; i <= 5; i++) rows.push([`${2015 + y}-10-${String(i).padStart(2, "0")}`, i * 100, null]);
+    rows.push(["2019-10-06", 900000, null, "flag_high"]); // would be "last as high" and in the season set
+    rows.push(["2026-10-05", 450, null]);
+    const r = recordContext(st(rows), "pn")!;
+    expect(r.season.flagged).toBe(1);
+    expect(r.season.quantified).toBe(20);
+    expect(r.lastAsHigh?.value).toBe(500); // not the flagged 900,000
+    expect(rankWords(r)).toBe("higher than 80% of the 20 Sep–Nov samples there in 2015–2018 (a small sample: each of the 20 is 5 points of the rank); 1 flagged for review (above the plausibility ceiling) is left out");
+    const newest = recordContext(st([...rows.slice(0, -1), ["2026-10-05", 900000, null, "flag_high"]]), "pn")!;
+    expect(newest.flagged).toBe(true);
+    expect(rankWords(newest)).toBeNull();
+    const words = historySentence(newest, "Santa Cruz Wharf", new Date("2026-10-06T20:00:00Z"));
+    expect(words).toMatch(/^This value is above the pipeline's plausibility ceiling and is flagged for review, so it is not compared with earlier years at Santa Cruz Wharf\./);
+    expect(words).not.toMatch(/higher than|highest|Last as high/);
+  });
+
+  // release hardening: the source's UTC timestamp is kept; the page shows the sample's Pacific date
+  it("dates a sample by its Pacific day and keeps the original UTC timestamp beside it", () => {
+    const evening = { sample_times: ["2025-10-01T17:00:00Z", "2026-10-02T01:30:00Z"], series: [{ variable: "pDA", values: [0.1, 0.4] }] };
+    const r = recordContext(evening, "pDA")!;
+    expect(r.at).toBe("2026-10-02T01:30:00Z"); // 6:30 PM PDT on Oct 1
+    expect(r.date).toBe("2026-10-01");
+    const slim = slimStations(obs);
+    const tr = slim.find((x) => x.station_id === "HABs-TrinidadPier")!;
+    for (const l of tr.latest.filter((x) => x.at)) expect(l.date).toBe(new Date(l.at!).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" }));
   });
 
   // #66 review 1.2: 2014 is where Neritic's copy starts, not where the station's record began

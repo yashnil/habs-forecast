@@ -35,6 +35,17 @@ export function pacificToday(now: Date): string {
   return PT_DAY.format(now); // en-CA yields YYYY-MM-DD
 }
 
+/**
+ * The Pacific calendar date (YYYY-MM-DD) of a source's UTC timestamp. A sample taken at 6 PM PDT
+ * carries the next day's UTC date; it is shown on its local day, and the original UTC timestamp
+ * travels beside it (never re-dated). A date-only string is returned as it is.
+ */
+export function pacificDate(iso: string): string {
+  if (iso.length <= 10) return iso;
+  const t = new Date(iso);
+  return Number.isNaN(t.getTime()) ? iso.slice(0, 10) : PT_DAY.format(t);
+}
+
 /** Whole days from Pacific today to a YYYY-MM-DD date (negative in the past). */
 function dayDiff(date: string, now: Date): number {
   const today = Date.parse(`${pacificToday(now)}T00:00:00Z`);

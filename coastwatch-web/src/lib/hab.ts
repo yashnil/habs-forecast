@@ -35,8 +35,10 @@ export type StationEvidence = {
   station: StationLite;
   km: number;
   bearing: string;
-  /** the newest sample of this kind at the station (value per variable on that date) */
+  /** the newest sample of this kind at the station (its Pacific date; value per variable on that date) */
   date: string;
+  /** that sample's original UTC timestamp, when known */
+  at?: string | null;
   values: { variable: string; value: number }[];
   ageDays: number;
   /** that sample's timeline at this station (last ~400 days), per variable */
@@ -45,7 +47,7 @@ export type StationEvidence = {
   near: boolean;
 };
 
-function newestOf(st: StationLite, vars: string[]): { date: string; values: { variable: string; value: number }[] } | null {
+function newestOf(st: StationLite, vars: string[]): { date: string; at: string | null; values: { variable: string; value: number }[] } | null {
   let date: string | null = null;
   for (const v of vars) {
     const l = st.latest.find((x) => x.variable === v && x.value != null);
@@ -62,7 +64,8 @@ function newestOf(st: StationLite, vars: string[]): { date: string; values: { va
     const val = fromLatest?.value ?? fromRecent?.[1] ?? null;
     if (val != null) values.push({ variable: v, value: val });
   }
-  return values.length ? { date, values } : null;
+  const at = st.latest.find((x) => vars.includes(x.variable) && x.date === date && x.at)?.at ?? null;
+  return values.length ? { date, at, values } : null;
 }
 
 /**
@@ -80,7 +83,7 @@ export function measuredEvidence(stations: StationLite[] | null, lat: number, lo
       const ageDays = Math.max(0, Math.floor((now.getTime() - Date.parse(`${n.date}T12:00:00Z`)) / DAY));
       const series: Record<string, [string, number | null][]> = {};
       for (const v of vars) if (st.recent?.[v]) series[v] = st.recent[v];
-      return { kind, station: st, km, bearing: bearingName(lat, lon, st.lat, st.lon), date: n.date, values: n.values, ageDays, series, near: km <= EVIDENCE_RADIUS_KM } as StationEvidence;
+      return { kind, station: st, km, bearing: bearingName(lat, lon, st.lat, st.lon), date: n.date, at: n.at, values: n.values, ageDays, series, near: km <= EVIDENCE_RADIUS_KM } as StationEvidence;
     })
     .filter((x): x is StationEvidence => !!x)
     .sort((a, b) => a.km - b.km);
