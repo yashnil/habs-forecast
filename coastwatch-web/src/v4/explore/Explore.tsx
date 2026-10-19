@@ -463,7 +463,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       )}
       {selection.kind === "station" && (
         <>
-          <Header icon="station" kind="Shore station" title={station?.name ?? selection.id} sub={`CalHABMAP · SCCOOS${stationLast ? ` · last sampled ${dayLabel(stationLast)}${stationLast.slice(0, 4) !== String(new Date().getUTCFullYear()) ? `, ${stationLast.slice(0, 4)}` : ""}` : ""}`} onClose={() => select(null)} onBack={back} canBack={stack.length > 0} />
+          <Header icon="station" kind="Shore station" title={station?.name ?? selection.id} sub={`CalHABMAP · SCCOOS${stationLast ? ` · last sampled ${dayLabel(stationLast, false, now)}` : ""}`} onClose={() => select(null)} onBack={back} canBack={stack.length > 0} />
           <StationView id={selection.id} ctx={ctx} />
         </>
       )}
@@ -520,9 +520,16 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         </button>
       </p>
     ) : null;
+  const [snap, setSnap] = useState<SnapId>("peek");
+  useEffect(() => setSnap(selection ? "half" : "peek"), [selection]);
+  // on a phone, choosing a layer from the peeking sheet opens it to half: its time and options are then in view
+  const pickFromSheet = (c: LayerChoice) => {
+    setChoiceRaw(c);
+    if (bp === "phone") setSnap((x) => (x === "peek" ? "half" : x));
+  };
   const activeCard = (
     <div className="flex flex-col gap-3" data-testid="active-layer">
-      <LayerChips manifest={manifest} choice={active} onChoice={setChoiceRaw} defaults={{ lead: firstLead }} />
+      <LayerChips manifest={manifest} choice={active} onChoice={pickFromSheet} defaults={{ lead: firstLead }} />
       {nothingCurrent}
       {readHint}
       <p className="nx-eyebrow">On the map</p>
@@ -620,8 +627,6 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   writeUrlRef.current = writeUrl;
 
   // phone sheet
-  const [snap, setSnap] = useState<SnapId>("peek");
-  useEffect(() => setSnap(selection ? "half" : "peek"), [selection]);
   const [vh, setVh] = useState(800);
   useEffect(() => {
     const f = () => setVh(window.innerHeight);
@@ -646,7 +651,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           <HoverReadout manifest={manifest} baseUrl={baseUrl} source={hoverSource} point={hover.p} screen={hover.s} bounds={{ w: typeof window === "undefined" ? 1440 : window.innerWidth - (panelOpen ? PANEL + 24 : 0), h: typeof window === "undefined" ? 900 : window.innerHeight }} />
         </div>
       )}
-      {!off.online && <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} />}
+      {/* on a phone the banner sits in the search stack, under the "Notices not verified" disclosure, never over it */}
+      {!off.online && bp !== "phone" && <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} />}
       {packOpen && (
         <div className="absolute inset-0 z-50 grid place-items-center bg-[rgba(4,16,22,0.55)] p-3" onClick={(e) => e.target === e.currentTarget && setPackOpen(false)}>
           <div role="dialog" aria-modal="true" aria-label={`Field pack: ${pack.name}`} className="env-chart nx-deck nx-rise max-h-[92dvh] w-[min(520px,100%)] overflow-y-auto p-5 text-n-ink">
@@ -747,13 +753,19 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           <div className="absolute inset-x-3 top-[68px] z-20 flex flex-col gap-1.5">
             <PlaceSearch ports={ports} stations={stations} regions={regions} onPick={onSearch} current={placeName ?? ""} />
             <RegistryDisclosure className="w-fit rounded-full border border-n-line bg-n-surface px-3 py-1" fixture={isFixture(manifest)} compact />
+            {/* clear of the map controls' column on the right */}
+            {!off.online && (
+              <div className="pr-[68px]">
+                <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline />
+              </div>
+            )}
             {backTo && <BackToBriefing {...backTo} className="w-fit max-w-full" />}
           </div>
           {/* the sheet ends above the dock; the map stays live above it (non-modal) */}
           <div className="pointer-events-none absolute inset-x-0 top-0 z-30 overflow-clip" style={{ bottom: `calc(${DOCK}px + env(safe-area-inset-bottom, 0px))` }}>
             {/* the map's credits (ODbL, CC-BY) stay on the map at every sheet height, just above the sheet */}
             {snap !== "full" && (
-              <p className="pointer-events-none absolute left-3 max-w-[64%] text-[10.5px] leading-tight text-[#b9c9d3] [text-shadow:0_1px_2px_#04121a] [&_a]:pointer-events-auto" style={{ bottom: (snap === "peek" ? PEEK : Math.round((vh - DOCK) * 0.5)) + 8 }} data-testid="attribution-short">
+              <p className="pointer-events-none absolute left-3 max-w-[64%] rounded-md bg-[rgba(4,18,26,0.62)] px-1.5 py-0.5 text-[10.5px] leading-tight text-[#c8d6de] [&_a]:pointer-events-auto" style={{ bottom: (snap === "peek" ? PEEK : Math.round((vh - DOCK) * 0.5)) + 8 }} data-testid="attribution-short">
                 <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">© OpenMapTiles</a> · NOAA relief · not for navigation
               </p>
             )}

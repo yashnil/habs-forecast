@@ -197,6 +197,22 @@ function registerPmtiles(url: string): PMTiles {
 
 export default function MapCanvas(p: Props) {
   const [wide] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
+  // one label point per latitude limit, at the line's eastern (coast) end
+  const limitLabels = useMemo<GeoJSON.FeatureCollection | null>(() => {
+    const fc = p.officialGeometry;
+    if (!fc) return null;
+    const features: GeoJSON.Feature[] = [];
+    for (const f of fc.features) {
+      const pr = (f.properties ?? {}) as { kind?: string; label?: string };
+      if (pr.kind !== "lat_limit" || !pr.label) continue;
+      const g = f.geometry;
+      const lines = g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates : [];
+      let east: GeoJSON.Position | null = null;
+      for (const l of lines) for (const c of l) if (!east || c[0] > east[0]) east = c;
+      if (east) features.push({ type: "Feature", geometry: { type: "Point", coordinates: east }, properties: { label: pr.label } });
+    }
+    return { type: "FeatureCollection", features };
+  }, [p.officialGeometry]);
   const { onPort, onPoint, onStation } = p;
   const [map, setMap] = useState<MlMap | null>(null);
   const hasRaster = !!(p.forecast || p.satellite || p.satelliteAge);
@@ -570,12 +586,17 @@ export default function MapCanvas(p: Props) {
           <Layer id="official-casing" type="line" paint={{ "line-color": "#06111e", "line-width": 3.6, "line-opacity": 0.55 }} />
           <Layer id="official-county" type="line" filter={["!=", ["get", "kind"], "lat_limit"]} paint={{ "line-color": OFFICIAL, "line-width": 1.6, "line-dasharray": [2, 1.5] }} />
           <Layer id="official-limit" type="line" filter={["==", ["get", "kind"], "lat_limit"]} paint={{ "line-color": OFFICIAL, "line-width": 2 }} />
+        </Source>
+      )}
+      {p.showOfficial && limitLabels && (
+        // each latitude limit is named where it meets the coast (its eastern end), the text running out to sea:
+        // the map is centred on the coast, so a side panel never hides the name (it did, placed at the line's centre)
+        <Source id="official-limit-labels" type="geojson" data={limitLabels}>
           <Layer
             id="official-limit-label"
             type="symbol"
             minzoom={7.4}
-            filter={["==", ["get", "kind"], "lat_limit"]}
-            layout={{ "symbol-placement": "line-center", "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, -1.15], "text-allow-overlap": false }}
+            layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-anchor": "bottom-right", "text-justify": "right", "text-offset": [-0.6, -0.35], "text-max-width": 14, "text-allow-overlap": false }}
             paint={{ "text-color": OFFICIAL, "text-halo-color": "#06111e", "text-halo-width": 1.2, "text-halo-blur": 0.4 }}
           />
         </Source>
@@ -740,6 +761,14 @@ export default function MapCanvas(p: Props) {
             paint={{ "circle-radius": 13, "circle-color": "rgba(255,255,255,0.22)", "circle-stroke-color": "#ffffff", "circle-stroke-width": 1.5 }}
           />
           <Layer id="ports-circle" type="circle" paint={{ "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 3, 10, 6], "circle-color": "#ffffff", "circle-stroke-color": "#06111e", "circle-stroke-width": 1.6 }} />
+          {/* circles take no part in label collision: an invisible symbol the size of the dot reserves its place, so a
+              city or station label is never drawn into a harbour's marker ("San Dieg●San Diego") */}
+          <Layer
+            id="ports-collider"
+            type="symbol"
+            layout={{ "icon-image": "v4-ring", "icon-size": ["interpolate", ["linear"], ["zoom"], 4, 0.25, 10, 0.5], "icon-allow-overlap": true, "icon-padding": 1 }}
+            paint={{ "icon-opacity": 0 }}
+          />
           <Layer
             id="ports-label"
             type="symbol"

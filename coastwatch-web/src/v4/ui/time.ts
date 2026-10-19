@@ -29,20 +29,22 @@ export function pacificDay(iso: string): string {
   return Number.isFinite(t.getTime()) ? t.toLocaleDateString("en-CA", { timeZone: TZ }) : iso.slice(0, 10);
 }
 
-/** "Oct 16" for a date; "Thu, Oct 16" with the weekday. Dates are calendar dates, read at noon UTC;
- *  a full timestamp is read as its Pacific day. */
-export function dayLabel(date: string, weekday = false): string {
+/** "Oct 16" for a date in the current (Pacific) year, "Aug 27, 2025" otherwise; "Thu, Oct 16" with the
+ *  weekday. Dates are calendar dates, read at noon UTC; a full timestamp is read as its Pacific day. A date
+ *  never reads as this year's when it is not. */
+export function dayLabel(date: string, weekday = false, now: Date | null = null): string {
   // a timestamp is an instant: its day is the Pacific day (7 PM PDT on Oct 16 is 02:00 UTC on Oct 17)
   if (date.length > 10 && date.includes("T")) date = pacificDay(date);
-  return new Date(`${date.slice(0, 10)}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", ...(weekday ? { weekday: "short" } : {}), timeZone: "UTC" });
+  const day = date.slice(0, 10);
+  const year = day.slice(0, 4);
+  const other = /^\d{4}$/.test(year) && year !== pacificToday(now ?? new Date()).slice(0, 4);
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", ...(weekday ? { weekday: "short" } : {}), ...(other ? { year: "numeric" } : {}), timeZone: "UTC" });
 }
 
 /** "Oct 16, 9:24 AM PDT": a measured time, in Pacific time with the zone named. */
 /** "Aug 27, 2025" when the date is not in the current (Pacific) year, else "Aug 27": a date never reads as this year's when it is not. */
 export function dayYearLabel(date: string, now: Date | null = null): string {
-  const day = date.length > 10 && date.includes("T") ? pacificDay(date) : date.slice(0, 10);
-  const thisYear = pacificToday(now ?? new Date()).slice(0, 4);
-  return `${dayLabel(day)}${day.slice(0, 4) !== thisYear ? `, ${day.slice(0, 4)}` : ""}`;
+  return dayLabel(date, false, now);
 }
 
 /** "last HAB sample Aug 27, 2025" (toxin or Pseudo-nitzschia, the date every view uses for a station) */

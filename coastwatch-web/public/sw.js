@@ -5,7 +5,9 @@
  * - /_next/static/* (hashed, immutable): cache-first, kept in "neritic-static-v1".
  * - Anything a downloaded field pack holds ("neritic-pack-*" caches): served from the pack when the
  *   network fails. Pages, data and API answers are network-first, so online the reader always gets
- *   current information; the pack is only the fallback.
+ *   current information; the pack is only the fallback. When the browser says it is offline, the
+ *   pack is asked first (no request that cannot succeed is made); the network is still tried for
+ *   anything the pack lacks.
  * - The pack's PMTiles basemap: answered from the pack with byte ranges (206), online or not.
  * - A page with no saved copy, offline: the saved Explore or briefing page for that path, else a
  *   short offline page. Nothing is invented: every saved answer keeps its original time.
@@ -94,9 +96,16 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // offline (as the browser reports it): the saved copy first, so a reopen does not log a failed request per file
+  const offline = self.navigator && self.navigator.onLine === false;
+
   if (req.mode === "navigate") {
     event.respondWith(
       (async () => {
+        if (offline) {
+          const saved = (await packMatch(req)) || (await packMatch(req, { ignoreSearch: true }));
+          if (saved) return saved;
+        }
         try {
           return await fetch(req);
         } catch {
@@ -107,9 +116,13 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // everything else: network first; a pack's saved copy when the network fails
+  // everything else: network first; a pack's saved copy when the network fails (first, when offline)
   event.respondWith(
     (async () => {
+      if (offline) {
+        const saved = await packMatch(req);
+        if (saved) return saved;
+      }
       try {
         return await fetch(req);
       } catch (err) {

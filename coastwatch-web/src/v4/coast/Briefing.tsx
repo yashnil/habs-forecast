@@ -109,12 +109,12 @@ function NodeRow({ n, now, back }: { n: EvidenceNode; now: Date | null; back: st
             </span>
           )}
           {n.source.url && (
-            <a href={n.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-8 items-center gap-1 font-semibold text-n-accent">
+            <a href={n.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
               {n.source.name} <Icon name="external" className="h-3.5 w-3.5" />
             </a>
           )}
           {target && (
-            <Link href={exploreHref(target, back)} className="nx-focus inline-flex min-h-8 items-center gap-1 font-semibold text-n-ink-2 hover:text-n-ink" data-testid="node-show">
+            <Link href={exploreHref(target, back)} className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-ink-2 hover:text-n-ink" data-testid="node-show">
               <Icon name="locate" className="h-3.5 w-3.5" /> Show on map
             </Link>
           )}
@@ -293,7 +293,7 @@ export function Briefing(props: Props) {
             <ul className="mt-2 columns-2 gap-4 text-[15px]">
               {all.map((p) => (
                 <li key={p.key}>
-                  <Link className="nx-focus inline-flex min-h-10 items-center hover:underline" href={coastHref({ place: p.key, for: audience })}>
+                  <Link className="nx-focus inline-flex min-h-11 items-center hover:underline" href={coastHref({ place: p.key, for: audience })}>
                     {p.name}
                   </Link>
                 </li>
@@ -437,7 +437,7 @@ export function Briefing(props: Props) {
                     <p className="mt-1 flex flex-wrap gap-x-3 text-[13px]">
                       <span className="font-semibold text-n-official">Not verified</span>
                       {n.source.url && (
-                        <a href={n.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-8 items-center gap-1 font-semibold text-n-accent">
+                        <a href={n.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
                           {n.source.name} notice <Icon name="external" className="h-3.5 w-3.5" />
                         </a>
                       )}
@@ -623,7 +623,7 @@ function CheckItem({ s, n, done, onToggle }: { s: Step; n: number; done: boolean
         </p>
         <p className="mt-1.5 flex flex-wrap gap-x-3 text-[13.5px]">
           {"url" in s.source ? (
-            <a href={s.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-9 items-center gap-1 font-semibold text-n-accent">
+            <a href={s.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
               {s.source.label} <Icon name="external" className="h-3.5 w-3.5" />
             </a>
           ) : (
@@ -632,7 +632,7 @@ function CheckItem({ s, n, done, onToggle }: { s: Step; n: number; done: boolean
               <span className="nx-data">{s.source.label}</span>
             </a>
           )}
-          {s.when && <span className="inline-flex min-h-9 items-center text-n-ink-3">{s.when}</span>}
+          {s.when && <span className="inline-flex min-h-11 items-center text-n-ink-3">{s.when}</span>}
         </p>
       </div>
       {/* the reader's own acknowledgement: never a verification of the step */}

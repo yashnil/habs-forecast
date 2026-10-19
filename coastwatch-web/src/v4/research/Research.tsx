@@ -22,6 +22,7 @@ import { SkipLink } from "@/v4/shell/SkipLink";
 import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel, lastHabWords, relTime } from "@/v4/ui/time";
 import { HAB_SAMPLE_VARIABLES } from "@/lib/provenance";
+import { pacificDate } from "@/lib/time";
 import { SampleValue, SeriesChart, monthTicks, sampleOnDay } from "@/v4/charts/SeriesChart";
 import { useReportSource } from "@/v4/readiness/store";
 import { AreaModel, CellBody, preciseProbability } from "@/v4/explore/Inspect";
@@ -71,7 +72,7 @@ function lastHabObs(s: { sample_times: string[]; series: { variable: string; val
     if (!(HAB_SAMPLE_VARIABLES as readonly string[]).includes(se.variable)) continue;
     for (let i = se.values.length - 1; i >= 0; i--) {
       if (se.values[i] == null) continue;
-      const d = s.sample_times[i]?.slice(0, 10);
+      const d = s.sample_times[i] ? pacificDate(s.sample_times[i]) : null;
       if (d && (!best || d > best)) best = d;
       break;
     }
@@ -418,7 +419,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
               </h1>
               <p className="mt-1 text-[14.5px] text-n-ink-2">
                 {st.lat!.toFixed(3)}°N {Math.abs(st.lon!).toFixed(3)}°W
-                {st.nearest_port_name ? ` · ${kmLabel(st.nearest_port_km ?? 0)} from ${st.nearest_port_name}` : ""} · sampled {dayLabel(st.sample_times[0] ?? "")} {st.sample_times[0]?.slice(0, 4)} to {dayLabel(st.sample_times[st.sample_times.length - 1] ?? "")} {st.sample_times[st.sample_times.length - 1]?.slice(0, 4)}
+                {st.nearest_port_name ? ` · ${kmLabel(st.nearest_port_km ?? 0)} from ${st.nearest_port_name}` : ""} · sampled {dayLabel(st.sample_times[0] ?? "", false, now)} to {dayLabel(st.sample_times[st.sample_times.length - 1] ?? "", false, now)}
                 {st.status !== "updated" ? ` · last update ${st.status.replace("_", " ")}` : ""}
               </p>
             </div>

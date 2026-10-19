@@ -130,7 +130,7 @@ export function LayerList({ manifest, choice, onChoice, now, defaults }: { manif
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-[15px] font-semibold leading-tight text-n-ink">{meta.name}</span>
-              <span className={`block truncate text-[13px] leading-snug ${on ? "text-n-ink-2" : "text-n-ink-3"}`}>
+              <span className={`block text-[13px] leading-snug ${on ? "text-n-ink-2" : "text-n-ink-3"}`}>
                 <span className={meta.tone}>{meta.kind}</span>
                 {line ? ` · ${line}` : ""}
                 {!available[f] ? " · not available" : ""}
@@ -444,7 +444,7 @@ function CoverageLine({ layer, regions }: { layer: LayerArtifact; regions: { id:
         </p>
       )}
       <details className="text-[12.5px] text-n-ink-3">
-        <summary className="nx-focus inline-flex min-h-9 cursor-pointer items-center font-semibold">What is counted</summary>
+        <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center font-semibold">What is counted</summary>
         {cov.reference}
       </details>
     </div>

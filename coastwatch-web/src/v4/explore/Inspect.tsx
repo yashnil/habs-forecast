@@ -159,12 +159,12 @@ export function ClaimRow({ c, graph, stations, onSelect, fallback = null }: { c:
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
           <span className={`font-semibold ${k.tone}`}>{k.word}</span>
           {c.source?.url && (
-            <a href={c.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-8 items-center gap-1 font-semibold text-n-accent">
+            <a href={c.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
               {c.source.label} <Icon name="external" className="h-3.5 w-3.5" />
             </a>
           )}
           {target && onSelect && (
-            <button type="button" onClick={() => onSelect(target)} className="nx-focus inline-flex min-h-8 items-center gap-1 font-semibold text-n-ink-2 hover:text-n-ink" data-testid={`claim-show-${c.id}`}>
+            <button type="button" onClick={() => onSelect(target)} className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-ink-2 hover:text-n-ink" data-testid={`claim-show-${c.id}`}>
               <Icon name="locate" className="h-3.5 w-3.5" /> Show on map
             </button>
           )}
@@ -243,7 +243,7 @@ export function HarborView({ code, ctx }: { code: number; ctx: Ctx }) {
             <p className="text-n-ink-3">
               {clockLabel(harbor.data.waterC.at)} · {harbor.station.sensorNote} · {harbor.data.flagNote}
             </p>
-            <a href={harbor.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-9 items-center gap-1 text-[13px] font-semibold text-n-accent">
+            <a href={harbor.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 text-[13px] font-semibold text-n-accent">
               NOAA CO-OPS {harbor.station.id} <Icon name="external" className="h-3.5 w-3.5" />
             </a>
           </div>
@@ -345,7 +345,7 @@ function HarbourSummary({ intel, lead }: { intel: PortIntelCollection["ports"][n
               <p className="text-n-ink-2">Not available{chl.error ? `: ${chl.error.split(":")[0]}` : ""}. No value is not low chlorophyll.</p>
             )}
             {chl.source_url && (
-              <a href={chl.source_url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-9 items-center gap-1 font-semibold text-n-accent">
+              <a href={chl.source_url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
                 NOAA CoastWatch ERDDAP <Icon name="external" className="h-3.5 w-3.5" />
               </a>
             )}
@@ -424,7 +424,7 @@ export function StationView({ id, ctx }: { id: string; ctx: Ctx }) {
         {avail.length > 1 && (
           <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Measurement">
             {avail.map((x) => (
-              <button key={x.id} type="button" role="radio" aria-checked={v === x.id} onClick={() => setV(x.id)} className={`nx-press nx-focus min-h-10 rounded-lg px-2.5 text-[13px] font-semibold ${v === x.id ? "bg-n-ink text-n-bg" : "border border-n-line-strong text-n-ink-2"}`}>
+              <button key={x.id} type="button" role="radio" aria-checked={v === x.id} onClick={() => setV(x.id)} className={`nx-press nx-focus min-h-11 rounded-lg px-2.5 text-[13px] font-semibold ${v === x.id ? "bg-n-ink text-n-bg" : "border border-n-line-strong text-n-ink-2"}`}>
                 {x.label.replace("Pseudo-nitzschia", "PN").replace("Particulate domoic acid", "pDA")}
               </button>
             ))}
@@ -438,7 +438,7 @@ export function StationView({ id, ctx }: { id: string; ctx: Ctx }) {
           {harbor ? ` ${kmLabel(harbor.km)} from ${harbor.name}.` : ""} Sampling is roughly weekly; no sample is not a clean result.
         </p>
         <div className="flex flex-wrap gap-x-4">
-          <a href={st.source_url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-10 items-center gap-1 text-[13.5px] font-semibold text-n-accent">
+          <a href={st.source_url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 text-[13.5px] font-semibold text-n-accent">
             SCCOOS ERDDAP record <Icon name="external" className="h-3.5 w-3.5" />
           </a>
         </div>

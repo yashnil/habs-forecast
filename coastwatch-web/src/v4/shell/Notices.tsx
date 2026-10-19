@@ -26,6 +26,7 @@ export function NoticesButton({ official, status = null, compact = false, local 
   const box = useRef<HTMLDivElement | null>(null);
   const button = useRef<HTMLButtonElement | null>(null);
   const recs = official ? currentRecords(official) : [];
+  const meta = official ? noticeMeta(official) : null;
   // with a place open: its own notices first (current records only: a disputed one is never counted)
   const here = local ? recs.filter((r) => local.covering.includes(r.id)) : [];
   const maybe = local ? recs.filter((r) => local.unsettled.includes(r.id) && !local.covering.includes(r.id)) : [];
@@ -87,7 +88,7 @@ export function NoticesButton({ official, status = null, compact = false, local 
             </p>
             {v && v.state !== "verified" && v.reasons.length > 0 && (
               <details className="mt-1.5 text-[13px] text-n-ink-2" data-testid="notices-reasons">
-                <summary className="nx-focus inline-flex min-h-9 cursor-pointer items-center font-semibold text-n-ink">Why not verified</summary>
+                <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center font-semibold text-n-ink">Why not verified</summary>
                 <ul className="ml-4 list-disc space-y-0.5">
                   {v.reasons.map((r) => (
                     <li key={r}>{r}</li>
@@ -116,7 +117,7 @@ export function NoticesButton({ official, status = null, compact = false, local 
                 <h3 className="text-[13.5px] font-semibold text-n-stale">Reported lifted by the agency · awaiting review · {disputed.length}</h3>
                 <ul className="mt-1 divide-y divide-n-line">
                   {disputed.map(({ record: r, dispute: d }) => (
-                    <NoticeRow key={r.id} r={r} now={now} dispute={d} />
+                    <NoticeRow key={r.id} r={r} now={now} dispute={d} meta={meta} />
                   ))}
                 </ul>
               </section>
@@ -130,7 +131,7 @@ export function NoticesButton({ official, status = null, compact = false, local 
                 {here.length ? (
                   <ul className="divide-y divide-n-line">
                     {here.map((r) => (
-                      <NoticeRow key={r.id} r={r} now={now} />
+                      <NoticeRow key={r.id} r={r} now={now} meta={meta} />
                     ))}
                   </ul>
                 ) : (
@@ -141,7 +142,7 @@ export function NoticesButton({ official, status = null, compact = false, local 
                     <h3 className="pt-2 text-[13.5px] font-semibold text-n-stale">May apply here: not settled · {maybe.length}</h3>
                     <ul className="divide-y divide-n-line">
                       {maybe.map((r) => (
-                        <NoticeRow key={r.id} r={r} now={now} />
+                        <NoticeRow key={r.id} r={r} now={now} meta={meta} />
                       ))}
                     </ul>
                   </div>
@@ -151,13 +152,13 @@ export function NoticesButton({ official, status = null, compact = false, local 
             {local && <h3 className="px-4 pt-3 text-[13.5px] font-semibold text-n-ink-2">Elsewhere in California · {elsewhere.length}</h3>}
             <ul className="divide-y divide-n-line px-4" data-testid="notices-current">
               {elsewhere.map((r) => (
-                <NoticeRow key={r.id} r={r} now={now} />
+                <NoticeRow key={r.id} r={r} now={now} meta={meta} />
               ))}
               {!official && <li className="py-3 text-[14px] text-n-ink-2">Neritic&rsquo;s copy of the notices could not be loaded. Check CDFW and CDPH directly.</li>}
             </ul>
             {official && official.registry.statements.length > 0 && (
               <details className="border-t border-n-line px-4 py-3 text-[13px] text-n-ink-2" data-testid="notices-statements">
-                <summary className="nx-focus inline-flex min-h-9 cursor-pointer items-center font-semibold text-n-ink">{OFFICIAL_STATUS.statementsHeading}</summary>
+                <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center font-semibold text-n-ink">{OFFICIAL_STATUS.statementsHeading}</summary>
                 <p className="text-n-ink-3">{OFFICIAL_STATUS.statementsNote}</p>
                 <ul className="mt-1.5 space-y-1.5">
                   {official.registry.statements.map((s) => (
@@ -184,7 +185,7 @@ export function NoticesButton({ official, status = null, compact = false, local 
                 <div key={h.tel} className="flex flex-wrap items-baseline justify-between gap-x-3">
                   <dt className="text-n-ink-3">{h.label}</dt>
                   <dd>
-                    <a href={`tel:${h.tel}`} className="nx-focus nx-data inline-flex min-h-8 items-center font-semibold text-n-ink">
+                    <a href={`tel:${h.tel}`} className="nx-focus nx-data inline-flex min-h-11 items-center font-semibold text-n-ink">
                       {h.phone}
                     </a>
                   </dd>
@@ -200,8 +201,22 @@ export function NoticesButton({ official, status = null, compact = false, local 
 
 const TOXIN: Record<string, string> = { domoic_acid: "domoic acid", psp: "paralytic shellfish poisoning toxins" };
 
+/** The registry's own dates and review state: when Neritic transcribed it, who did, when each agency's pages were last fetched. */
+type NoticeMeta = { transcribedAt: string; reviewedByPerson: boolean; reviewedBy: string; checked: Record<string, string> };
+function noticeMeta(o: OfficialDataset): NoticeMeta {
+  const rv = o.registry.review;
+  const checked: Record<string, string> = {};
+  // the watcher's latest successful fetch of each agency's pages (source ids are "cdph_…", "cdfw_…")
+  for (const w of o.watch ?? []) {
+    const agency = w.source_id.split("_")[0].toUpperCase();
+    if (w.ok && (!checked[agency] || w.checked_at > checked[agency])) checked[agency] = w.checked_at;
+  }
+  return { transcribedAt: rv.reviewed_at, reviewedByPerson: rv.status !== "pending_human_review", reviewedBy: rv.reviewed_by, checked };
+}
+
 /** One notice: what, since when, warnings always visible; the agency's wording, area and sources on demand. */
-function NoticeRow({ r, now, dispute = null }: { r: OfficialRecord; now: Date | null; dispute?: Dispute | null }) {
+function NoticeRow({ r, now, dispute = null, meta = null }: { r: OfficialRecord; now: Date | null; dispute?: Dispute | null; meta?: NoticeMeta | null }) {
+  const published = r.sources.filter((x) => x.published_date);
   const critical = now || dispute ? criticalFlags(r, now ?? new Date(0), dispute) : [];
   const flags = now ? recordFlags(r, now, dispute).filter((f) => !critical.includes(f)) : [];
   return (
@@ -211,7 +226,7 @@ function NoticeRow({ r, now, dispute = null }: { r: OfficialRecord; now: Date | 
       </p>
       <p className="mt-0.5 text-[14.5px] font-semibold leading-snug">{r.title}</p>
       <p className="mt-0.5 text-[13px] text-n-ink-2" data-testid="notice-dates">
-        {r.effective_date ? `Since ${dayLabel(r.effective_date)}, ${r.effective_date.slice(0, 4)}` : "Start date not published"}
+        {r.effective_date ? `Since ${dayLabel(r.effective_date, false, now)}` : "Start date not published"}
         {r.expected_end_date ? ` · through at least ${dayLabel(r.expected_end_date)}` : ""}
       </p>
       {critical.length > 0 && (
@@ -225,12 +240,12 @@ function NoticeRow({ r, now, dispute = null }: { r: OfficialRecord; now: Date | 
         </ul>
       )}
       {dispute && (
-        <a href={dispute.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-9 items-center gap-1 text-[13px] font-semibold text-n-accent">
+        <a href={dispute.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 text-[13px] font-semibold text-n-accent">
           {dispute.agency} {dispute.release} <Icon name="external" className="h-3.5 w-3.5" />
         </a>
       )}
       <details className="mt-1 text-[13px] text-n-ink-2">
-        <summary className="nx-focus inline-flex min-h-9 cursor-pointer items-center font-semibold text-n-accent">The agency&rsquo;s wording, area and sources</summary>
+        <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center font-semibold text-n-accent">The agency&rsquo;s wording, area and sources</summary>
         <div className="space-y-2 pt-1">
           <p>{r.summary}</p>
           <blockquote className="border-l-2 border-n-official-line pl-2 text-n-ink" data-testid="official-text">
@@ -253,6 +268,26 @@ function NoticeRow({ r, now, dispute = null }: { r: OfficialRecord; now: Date | 
               </>
             )}
           </dl>
+          {/* three different things, never merged: the agency's dates, Neritic's retrieval, and whether a person reviewed it */}
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 border-t border-n-line pt-2" data-testid="notice-provenance">
+            <dt className="text-n-ink-3">Took effect</dt>
+            <dd>{r.effective_date ? `${dayLabel(r.effective_date, false, now)} (the agency's date)` : "not stated by the agency"}</dd>
+            <dt className="text-n-ink-3">Agency published</dt>
+            <dd data-testid="notice-published">{published.length ? published.map((x) => `${dayLabel(x.published_date!, false, now)} (${x.label.split(":")[0]})`).join("; ") : "date not stated on the agency's page"}</dd>
+            {meta && (
+              <>
+                <dt className="text-n-ink-3">Neritic transcribed</dt>
+                <dd data-testid="notice-retrieved">
+                  {dayLabel(meta.transcribedAt, false, now)}
+                  {meta.checked[r.agency] ? `; ${r.agency}'s pages last checked ${clockLabel(meta.checked[r.agency])}` : ""}
+                </dd>
+                <dt className="text-n-ink-3">Reviewed by a person</dt>
+                <dd className={meta.reviewedByPerson ? "" : "font-semibold text-n-stale"} data-testid="notice-review">
+                  {meta.reviewedByPerson ? `Yes (${meta.reviewedBy}, ${dayLabel(meta.transcribedAt, false, now)})` : "No. Transcribed by an AI assistant; not yet checked by a person against the agency's page"}
+                </dd>
+              </>
+            )}
+          </dl>
           {r.expected_end_note && <p className="text-n-ink-3">{r.expected_end_note}</p>}
           {flags.length > 0 && (
             <ul className="space-y-0.5 text-n-stale" data-testid="notice-flags">
@@ -264,7 +299,7 @@ function NoticeRow({ r, now, dispute = null }: { r: OfficialRecord; now: Date | 
           <ul className="flex flex-wrap gap-x-3">
             {r.sources.map((s) => (
               <li key={s.url}>
-                <a href={s.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-9 items-center gap-1 font-semibold text-n-accent">
+                <a href={s.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
                   {s.label} <Icon name="external" className="h-3.5 w-3.5" />
                 </a>
               </li>

@@ -5,7 +5,7 @@ import type { Manifest } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 import { charmRun, satelliteLatest, sourceStatus } from "@/lib/layers";
 import { Icon } from "@/v4/ui/Icon";
-import { clockLabel } from "@/v4/ui/time";
+import { clockLabel, dayYearLabel } from "@/v4/ui/time";
 import { useSetSource } from "@/v4/readiness/store";
 import { GROUP_WORDS, PACK_VERSION, deletePack, download, isQuota, keepPublishedTiles, pageAssetsOf, plan, sizeOf, type Group, type PackDef, type PackProblem, type PackRecord, type PlanItem, type Progress } from "./packs";
 import { packAge, useOfflinePack } from "./useOfflinePack";
@@ -122,9 +122,9 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
           <p className="font-semibold">{record.complete ? `Saved ${clockLabel(record.savedAt)} · ${mb(record.totalBytes)} · verified` : `Incomplete: ${record.verified?.missing ?? "?"} of ${record.items.length + (record.verified?.missing ?? 0)} files missing`}</p>
           <p className="mt-1 text-n-ink-2">
             Data published {clockLabel(record.dataGeneratedAt)}
-            {record.charmIssued ? ` · C-HARM run of ${record.charmIssued}` : ""}
+            {record.charmIssued ? ` · C-HARM run of ${dayYearLabel(record.charmIssued)}` : ""}
             {record.noticesCheckedAt ? ` · notices last checked ${clockLabel(record.noticesCheckedAt)}` : ""}
-            {record.osmDataAsOf ? ` · map data (OpenStreetMap) of ${record.osmDataAsOf}` : ""}.
+            {record.osmDataAsOf ? ` · map data (OpenStreetMap) of ${dayYearLabel(record.osmDataAsOf)}` : ""}.
           </p>
           {age?.outdated && <p className="mt-1 font-semibold text-n-stale">More than a day old: download again when you have a connection.</p>}
           {problem === "older-format" && (
