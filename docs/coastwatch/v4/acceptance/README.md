@@ -16,6 +16,7 @@ or release. This folder holds the audits behind it; the PR (#68) and the report 
 | [integration-66.md](integration-66.md) | v4 on main with Harbor Intelligence v3 (#66): merge checks, rollback references, the species-line schema change and the small-sample disclosure |
 | [release-hardening.md](release-hardening.md) | Release hardening: #66's open science notes, the nine low-severity walkthrough issues, accessibility, the CI "crashes" and v2-vs-v4 performance |
 | [real-device-checklist.md](real-device-checklist.md) | The concise iPhone/Android acceptance checklist: touch, map responsiveness, sunlight, offline pack persistence in airplane mode |
+| [release-plan.md](release-plan.md) | The exact merge, production deploy, smoke test and rollback plan (each step needs the owner's approval) |
 
 The audits were written by reading code (A–D) or scripting the running apps (E); each row cites
 file and line. Paths are relative to the repository.

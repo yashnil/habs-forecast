@@ -57,14 +57,20 @@ The network was not the cause.
 (`willReadFrequently`) changed nothing: Linux long tasks were 7.3 s without it and 7.5 s with it. The
 change was reverted.
 
-**v2 and v4 compared fairly.** Both ran in Linux (software WebGL), with 4× CPU throttling, 5 runs each
-and the same camera (Monterey Bay, z 9.2–9.3):
+**v2 and v4, final measurement (2026-10-19).** Both builds ran on the same production data and the
+same camera (Monterey Bay, z 9.2–9.3), in Linux with software WebGL and 4× CPU throttling. They were
+**alternated run by run** (7 runs each) so that drift hits both:
 
 | View | Map loaded, v2 | Map loaded, v4 | Main-thread long tasks, v2 | v4 |
 |---|---|---|---|---|
-| Forecast | 4.5 s | 5.1 s | 4.6 s | 4.0 s |
-| Satellite, both sensors | 5.4 s | 7.0 s | 4.8 s | 5.4 s |
+| Satellite, both sensors | 5.77 s | 5.56 s | 4.95 s | 5.17 s |
+| Forecast | 4.58 s | 4.86 s | 4.34 s | 4.71 s |
 
-The forecast view is on par. The multi-sensor satellite view is a modest real regression: about
-1.5 s later to load and 12 % more main-thread work in this harsh setting. Not yet fixed. An earlier
-"+60 %" figure compared different zoom levels and is withdrawn.
+**There is no multi-sensor regression.** v4 loads 0.2 s sooner, with 4 % more main-thread work,
+within run-to-run spread. A CPU profile and request log of both builds agree:
+- the same 18 satellite tiles and 32 basemap tiles, with the same bytes;
+- similar CPU per bundle.
+
+The earlier "+1.5 s" came from running all v2 runs and then all v4 runs, so machine drift landed on
+one side. It is withdrawn, and no code was changed for it. An even earlier "+60 %" compared different
+zoom levels and was already withdrawn.

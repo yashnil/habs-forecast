@@ -50,6 +50,16 @@
 - [ ] Airplane mode off, reload. The banner goes and the status centre says what is current.
 - [ ] Optional: fill the phone's storage, then try a new save. The app says storage is full and never says "saved".
 
+## Saved briefings
+
+- [ ] My Coast, Monterey: "Keep a dated copy". The file saves to the phone (Files on iPhone, Downloads on Android).
+- [ ] Airplane mode: open that file. It shows:
+  - its date and time;
+  - its sources;
+  - "Notices not verified".
+- [ ] Back online, reopen the briefing. "Since you last checked" lists what changed, or says nothing changed.
+- [ ] "Make my home port", then close and reopen the browser. Monterey is still the home port. "Forget" removes it.
+
 ## Result
 
 | Device | Passed | Failed (what you saw) | Photos |
