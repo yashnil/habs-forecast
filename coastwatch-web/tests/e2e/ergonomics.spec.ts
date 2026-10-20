@@ -64,7 +64,7 @@ test("the briefing: what to do comes right after what matters and what changed",
   await page.clock.setFixedTime(new Date("2026-10-13T06:00:00Z"));
   await page.goto(`${OK}/coast?place=port-201&for=commercial&species=dungeness`);
   const order = await page.locator('[data-testid^="brief-"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
-  expect(order.slice(0, 3)).toEqual(["brief-now", "brief-changes", "brief-checks"]);
+  expect(order.slice(0, 4)).toEqual(["brief-glance", "brief-now", "brief-changes", "brief-checks"]);
   expect(order.indexOf("brief-checks")).toBeLessThan(order.indexOf("brief-measured"));
 });
 

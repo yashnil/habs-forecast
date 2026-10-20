@@ -9,6 +9,8 @@ import { ACTION_LABEL, currentRecords, disputedRecords } from "@/lib/official";
 import { useMode } from "@/lib/mode";
 import { formatDate } from "@/lib/time";
 import { Mark } from "@/components/ui/Mark";
+import { SEASON_REGIONS, SEASONS_READ, SPECIES_SEASON_IDS } from "@/content/seasons";
+import { MARK_SHORT, dollars, perPound, speciesValues } from "@/lib/speciesSeasons";
 
 const ext = { target: "_blank", rel: "noopener noreferrer" } as const;
 const link = "text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent";
@@ -105,6 +107,7 @@ export function FisheriesByMode({ official, children }: { official: OfficialData
               </ul>
             </div>
           )}
+          <SeasonsByRegion id={s.id} />
           <div className="rounded-[18px] border border-hairline bg-surface px-4 py-4 sm:px-5">
             <p className="text-[13px] font-medium text-ink-3">Before you go</p>
             <ul className="mt-2 space-y-2 text-[15px]">
@@ -135,6 +138,44 @@ export function FisheriesByMode({ official, children }: { official: OfficialData
         </summary>
         <div className={research ? "" : "border-t border-hairline"}>{children}</div>
       </details>
+    </div>
+  );
+}
+
+/**
+ * v5 (fishermen audit): where in California CDFW's sport summaries list this species, region by region,
+ * with CDFW's own date, and what it was worth at the dock (CDFW By The Numbers). Quoted lists, never
+ * Neritic's judgement of a season; the regional pages are the authority.
+ */
+function SeasonsByRegion({ id }: { id: SpeciesId }) {
+  const ids = SPECIES_SEASON_IDS[id] ?? [];
+  const values = speciesValues(id);
+  if (!ids.length && !values.length) return null;
+  return (
+    <div className="rounded-[18px] border border-hairline bg-surface px-4 py-4 sm:px-5" data-testid="fish-seasons">
+      {ids.length > 0 && (
+        <>
+          <p className="text-[13px] font-medium text-ink-3">CDFW sport-fishing lists, by region</p>
+          <ul className="mt-2 divide-y divide-hairline text-[14.5px]">
+            {SEASON_REGIONS.map((r) => {
+              const items = r.items.filter((i) => ids.includes(i.id));
+              return (
+                <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-x-3 py-1.5" data-testid={`fish-season-${r.id}`}>
+                  <a href={r.url} {...ext} className={link}>{r.label} ↗</a>
+                  <span className="text-ink-2">{items.length ? items.map((i) => `${i.name}: ${MARK_SHORT[i.mark].toLowerCase()}`).join("; ") : "no entry of its own"} <span className="text-ink-3">· CDFW {r.updated}</span></span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-1 text-[12.5px] text-ink-3">Neritic&apos;s copy of CDFW&apos;s regional pages, read {formatDate(SEASONS_READ, { year: true })}; not reviewed by a person. Sport fishing only.</p>
+        </>
+      )}
+      {values.length > 0 && (
+        <p className="mt-3 text-[14.5px] text-ink" data-testid="fish-worth">
+          {values.map((v) => `${v.year}: ${v.fishery} ${dollars(v.dollars)} at the dock statewide, ~${perPound(v.perLb)}`).join(" · ")}
+          <span className="block text-[12.5px] text-ink-3">CDFW By The Numbers, calendar years; per-pound is CDFW&apos;s dollars ÷ pounds. History, not this season&apos;s price.</span>
+        </p>
+      )}
     </div>
   );
 }
