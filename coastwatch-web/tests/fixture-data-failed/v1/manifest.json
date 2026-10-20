@@ -3391,7 +3391,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/latest-2026-10-12-df869442f6/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/latest-2026-10-12-04f404c139/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3407,14 +3407,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/latest-2026-10-12-df869442f6/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/latest-2026-10-12-04f404c139/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/latest-2026-10-12-df869442f6/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/latest-2026-10-12-04f404c139/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -3490,7 +3490,8 @@
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
-        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
+        "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values."
       ],
       "qc": {
         "checks": [
@@ -3604,7 +3605,7 @@
         "request_urls": [],
         "upstream_metadata": {
           "days": "2026-10-05, 2026-10-06, 2026-10-07",
-          "processing": "satellite-processing-3"
+          "processing": "satellite-processing-4"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -3675,7 +3676,7 @@
           }
         ],
         "age_grid": {
-          "url": "satellite/olci300/latest-2026-10-12-df869442f6/age/{row}_{col}.u16.gz",
+          "url": "satellite/olci300/latest-2026-10-12-04f404c139/age/{row}_{col}.u16.gz",
           "encoding": "uint16le+gzip",
           "width": 341,
           "height": 321,
@@ -3691,14 +3692,14 @@
           "chunks": {
             "rows": 512,
             "cols": 512,
-            "url_template": "satellite/olci300/latest-2026-10-12-df869442f6/age/{row}_{col}.u16.gz",
+            "url_template": "satellite/olci300/latest-2026-10-12-04f404c139/age/{row}_{col}.u16.gz",
             "present": [
               "0_0"
             ]
           }
         },
         "age_tiles": {
-          "url_template": "satellite/olci300/latest-2026-10-12-df869442f6/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/olci300/latest-2026-10-12-04f404c139/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
@@ -3757,7 +3758,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-05-e8b048e1c1/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-05-81cc990737/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3773,14 +3774,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-05-e8b048e1c1/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-05-81cc990737/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-05-e8b048e1c1/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-05-81cc990737/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -3855,7 +3856,8 @@
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
-        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
+        "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values."
       ],
       "qc": {
         "checks": [
@@ -3911,7 +3913,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-05T19:15:21Z",
-          "processing": "satellite-processing-3"
+          "processing": "satellite-processing-4"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -3970,7 +3972,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-06-ebd50939dc/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-06-4b7aa0d9c1/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3986,14 +3988,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-06-ebd50939dc/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-06-4b7aa0d9c1/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-06-ebd50939dc/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-06-4b7aa0d9c1/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -4068,7 +4070,8 @@
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
-        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
+        "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values."
       ],
       "qc": {
         "checks": [
@@ -4124,7 +4127,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-06T18:50:40Z",
-          "processing": "satellite-processing-3"
+          "processing": "satellite-processing-4"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4236,7 +4239,8 @@
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
-        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
+        "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values."
       ],
       "qc": {
         "checks": [
@@ -4292,7 +4296,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-07T19:16:29Z",
-          "processing": "satellite-processing-3"
+          "processing": "satellite-processing-4"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4358,7 +4362,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/viirs750/latest-2026-10-08-3af56abd1a/grid/{row}_{col}.u16.gz",
+        "url": "satellite/viirs750/latest-2026-10-08-3171349c1c/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 114,
         "height": 107,
@@ -4374,14 +4378,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/viirs750/latest-2026-10-08-3171349c1c/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/viirs750/latest-2026-10-08-3171349c1c/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 10,
         "legend_url": null,
@@ -4457,7 +4461,8 @@
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
-        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
+        "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values."
       ],
       "qc": {
         "checks": [
@@ -4710,9 +4715,9 @@
         ],
         "upstream_metadata": {
           "days": "2026-10-01, 2026-10-02, 2026-10-03, 2026-10-04",
-          "processing": "satellite-processing-3",
+          "processing": "satellite-processing-4",
           "scenes": "NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-01T19:02:52Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-01T19:06:26Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-02T19:28:03Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-02T19:35:10Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-03T19:11:16Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-03T19:20:30Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-04T19:37:51Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-04T19:02:17Z",
-          "platform_grid": "satellite/viirs750/latest-2026-10-08-3af56abd1a/platform/{row}_{col}.u16.gz",
+          "platform_grid": "satellite/viirs750/latest-2026-10-08-3171349c1c/platform/{row}_{col}.u16.gz",
           "platform_codes": "1=NOAA-21, 2=NOAA-20; a cell without a value has no code. Same chunks (512 x 512 cells) and lattice as the value grid; one platform per cell, never averaged.",
           "platform_rule": "NOAA-21 first; NOAA-20 only in cells the platforms before it have no value for. No averaging, no bias correction.",
           "pixels_by_platform": "NOAA-21 5048, NOAA-20 3365",
@@ -4815,7 +4820,7 @@
           }
         ],
         "age_grid": {
-          "url": "satellite/viirs750/latest-2026-10-08-3af56abd1a/age/{row}_{col}.u16.gz",
+          "url": "satellite/viirs750/latest-2026-10-08-3171349c1c/age/{row}_{col}.u16.gz",
           "encoding": "uint16le+gzip",
           "width": 114,
           "height": 107,
@@ -4831,14 +4836,14 @@
           "chunks": {
             "rows": 512,
             "cols": 512,
-            "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/age/{row}_{col}.u16.gz",
+            "url_template": "satellite/viirs750/latest-2026-10-08-3171349c1c/age/{row}_{col}.u16.gz",
             "present": [
               "0_0"
             ]
           }
         },
         "age_tiles": {
-          "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/viirs750/latest-2026-10-08-3171349c1c/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 10,
           "legend_url": null,
@@ -4907,7 +4912,7 @@
       "image": null,
       "grid": null,
       "tiles": {
-        "url_template": "satellite/multisensor/latest-2026-10-12-994e6b2302/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/multisensor/latest-2026-10-12-2d2d3fda82/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -4984,7 +4989,8 @@
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
-        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
+        "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values."
       ],
       "qc": {
         "checks": [
@@ -5065,7 +5071,7 @@
           }
         ],
         "sensor_tiles": {
-          "url_template": "satellite/multisensor/latest-2026-10-12-994e6b2302/sensor-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/multisensor/latest-2026-10-12-2d2d3fda82/sensor-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
@@ -5089,7 +5095,7 @@
           ]
         },
         "age_tiles": {
-          "url_template": "satellite/multisensor/latest-2026-10-12-994e6b2302/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/multisensor/latest-2026-10-12-2d2d3fda82/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
