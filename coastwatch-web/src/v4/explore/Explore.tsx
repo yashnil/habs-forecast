@@ -27,7 +27,8 @@ import { SourceList } from "@/v4/readiness/StatusCenter";
 import { TopBar, NavTabs } from "@/v4/shell/TopBar";
 import { NoticesButton, type LocalNotices } from "@/v4/shell/Notices";
 import { RegistryDisclosure } from "@/v4/shell/Disclosure";
-import { associationsAt } from "@/lib/applicability";
+import { associationsAt, localNotices } from "@/lib/applicability";
+import { pointKey } from "@/lib/coast";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { useCountyPrefs } from "@/components/map/Counties";
 import { Icon } from "@/v4/ui/Icon";
@@ -42,7 +43,8 @@ import { boxFeature, useAreaDrag } from "./AreaDrag";
 import { useCellRead } from "./reads";
 import { PACKS } from "@/v4/offline/packs";
 import { useOfflinePack } from "@/v4/offline/useOfflinePack";
-import { OfflinePanel, useRecordSource } from "@/v4/offline/OfflinePanel";
+import { useRecordSource } from "@/v4/offline/OfflinePanel";
+import { PackDialog } from "@/v4/offline/PackDialog";
 import { OfflineBanner } from "@/v4/offline/OfflineBanner";
 import { readHomePort } from "@/v4/state/homePort";
 
@@ -313,6 +315,12 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     const a = associationsAt(official, `port-${harborF.properties.port_code}`, lat, lon);
     return { name: harborF.properties.display_name ?? harborF.properties.name, covering: a.filter((x) => x.tier === "geographic").map((x) => x.record.id), unsettled: a.filter((x) => x.tier === "unresolved").map((x) => x.record.id) };
   }, [harborF, official]);
+  // a point or model cell selected: the notices whose geography covers that water, as its panel lists them
+  const pointNotices = useMemo<LocalNotices | null>(() => {
+    if (!official || (selection?.kind !== "point" && selection?.kind !== "cell")) return null;
+    const { lat, lon } = selection;
+    return localNotices(official, pointKey(lat, lon), "this point", lat, lon, "water");
+  }, [selection, official]);
   const highlight = useMemo<GeoJSON.FeatureCollection | null>(() => {
     const feats: GeoJSON.Feature[] = [];
     if (selection?.kind === "cell" && cellRead?.status === "ready" && cellRead.polygon) feats.push({ type: "Feature", geometry: cellRead.polygon, properties: { kind: "cell" } });
@@ -480,6 +488,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     const k = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
+      // the field-pack dialog is modal: its own Escape closes it, never the panel behind
+      if (packOpen) return;
       if (e.key === "Escape") {
         if (areaMode) setAreaMode(false);
         else if (selection) select(null);
@@ -488,7 +498,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
-  }, [areaMode, selection, select]);
+  }, [areaMode, selection, select, packOpen]);
 
   // ------------------------------------------------------------------ pieces
   const regions = useMemo(() => [STATEWIDE, ...(ports?.regions ?? []).map((r) => ({ id: r.id, label: r.label, bounds: (VIEW[r.id] ?? r.bounds) as [[number, number], [number, number]] }))], [ports]);
@@ -814,13 +824,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         {basemapPm !== undefined && synced ? map : null}
       </div>
       {hoverSource && bp !== "phone" && <HoverLayer sink={hoverSink} manifest={manifest} baseUrl={baseUrl} source={hoverSource} panelOpen={panelOpen} />}
-      {packOpen && (
-        <div className="absolute inset-0 z-50 grid place-items-center bg-[rgba(4,16,22,0.55)] p-3" onClick={(e) => e.target === e.currentTarget && setPackOpen(false)}>
-          <div role="dialog" aria-modal="true" aria-label={`Field pack: ${pack.name}`} className="env-chart nx-deck nx-rise max-h-[92dvh] w-[min(520px,100%)] overflow-y-auto p-5 text-n-ink">
-            <OfflinePanel pack={pack} manifest={manifest} official={official} baseUrl={baseUrl} onClose={() => setPackOpen(false)} />
-          </div>
-        </div>
-      )}
+      {packOpen && <PackDialog pack={pack} manifest={manifest} baseUrl={baseUrl} official={official} onClose={() => setPackOpen(false)} />}
       {/* the start card: what is loading, what can be done meanwhile (never a bare spinner) */}
       {starting && <StartCard now={now} />}
       {areaMode && (
@@ -848,7 +852,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
             </div>
           ) : null
         }
-        notices={<NoticesButton official={official} status={officialStatus} compact={bp === "phone"} local={harbourNotices} />}
+        notices={<NoticesButton official={official} status={officialStatus} compact={bp === "phone"} local={harbourNotices ?? pointNotices} />}
       />
 
       {bp === "desktop" && (

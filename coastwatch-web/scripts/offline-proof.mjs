@@ -162,6 +162,9 @@ try {
   p.on("pageerror", (e) => errors.push(e.message));
   await p.goto(`${BASE}/?sel=harbor:550&layer=forecast`, { waitUntil: "load" });
   await p.waitForTimeout(5000);
+  // with a place open the layer deck is folded to its capsule: open it, or the walk below reaches no control
+  await p.getByTestId("layer-capsule").click();
+  await p.getByTestId("variable-select").waitFor();
   const [w, s, e, n] = record.items.length ? [-122.124, 36.44, -121.676, 36.8] : [0, 0, 0, 0];
   const VIEWS = [
     ["inside z8", (w + e) / 2, (s + n) / 2, 8],
