@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Lockup, Mark } from "@/v4/brand/Brand";
 import { Icon } from "@/v4/ui/Icon";
 import { StatusCenter } from "@/v4/readiness/StatusCenter";
+import { readHomePlace } from "@/v4/state/homePort";
 
 export type Workspace = "explore" | "coast" | "research" | "page";
 
@@ -15,7 +16,8 @@ const NAV: { id: Exclude<Workspace, "page">; label: string; href: string; icon: 
 ];
 
 const MORE = [
-  { label: "Bloom stations", href: "/bloom" },
+  // the shore stations' samples and trends live in Research (the v2 bloom page stays at /bloom)
+  { label: "Bloom stations", href: "/research" },
   { label: "Fisheries", href: "/fisheries" },
   { label: "Data status", href: "/sources" },
   { label: "About Neritic", href: "/about" },
@@ -55,6 +57,9 @@ function MoreMenu() {
 }
 
 export function NavTabs({ active, size = "bar" }: { active: Workspace; size?: "bar" | "dock" }) {
+  // with a home port kept on this device, My Coast opens on its briefing (read after hydration)
+  const [home, setHome] = useState<string | null>(null);
+  useEffect(() => setHome(readHomePlace()), []);
   return (
     <nav aria-label="Workspaces" className={size === "bar" ? "flex items-center gap-1 rounded-full border border-n-line bg-n-surface p-1" : "grid grid-cols-3"} data-testid={`nav-${size}`}>
       {NAV.map((n) => {
@@ -62,7 +67,7 @@ export function NavTabs({ active, size = "bar" }: { active: Workspace; size?: "b
         return (
           <Link
             key={n.id}
-            href={n.href}
+            href={n.id === "coast" && home ? `/coast?place=${encodeURIComponent(home)}` : n.href}
             aria-current={on ? "page" : undefined}
             data-testid={`nav-${n.id}`}
             className={

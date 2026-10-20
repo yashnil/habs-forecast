@@ -46,6 +46,34 @@ test("a slow model grid: the status centre says the forecast is loading, and Rea
   await expect.poll(() => status(page, "model"), { timeout: 20000 }).toBe("ready");
 });
 
+// a failed request for the active layer's tiles beats "loaded" (MapLibre counts an errored tile as
+// loaded): the map says what failed with Try again, the status centre is not Ready, the no-data hatch
+// is not drawn as if the field had arrived, and Try again recovers once the server answers
+for (const [name, url, pattern, source] of [
+  ["satellite tiles", "/?layer=olci300", /\/satellite\/.*\.png/, "satellite"],
+  ["the C-HARM grid", "/?layer=forecast&lead=1", /\/charm\/.*\.(gz|png)/, "model"],
+] as const) {
+  test(`${name} failing: said on the map with Try again, never Ready, and recovered`, async ({ browser }) => {
+    // no service worker: its own fetches would go round the route (a real failure reaches it too)
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: "block" });
+    const page = await ctx.newPage();
+    await page.clock.setFixedTime(new Date(NOW));
+    let failing = true;
+    await page.route(pattern, (r) => (failing ? r.abort("failed") : r.continue()));
+    await page.goto(`${OK}${url}`);
+    await expect(page.getByTestId("field-failed")).toBeVisible({ timeout: 20000 });
+    await expect(page.getByTestId("status-center")).not.toHaveAttribute("data-state", "ready");
+    expect(await status(page, source)).toBe("unavailable");
+    const hatch = await page.evaluate(() => (window as unknown as { __cwMap: { getLayoutProperty: (l: string, p: string) => string } }).__cwMap.getLayoutProperty("water-nodata", "visibility"));
+    expect(hatch).toBe("none");
+    failing = false;
+    await page.getByTestId("field-retry").click();
+    await expect(page.getByTestId("field-failed")).toHaveCount(0, { timeout: 20000 });
+    await expect.poll(() => status(page, source), { timeout: 20000 }).not.toBe("unavailable");
+    await ctx.close();
+  });
+}
+
 test("going offline is said at once and persistently; coming back clears it and the page works again", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();

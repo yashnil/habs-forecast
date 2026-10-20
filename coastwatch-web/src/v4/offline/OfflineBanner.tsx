@@ -27,7 +27,7 @@ export function OfflineBanner({ record, name, problem = null, inline = false, ou
       ? `Offline · ${name} pack incomplete`
       : "Offline · no field pack saved";
   return (
-    <div role="status" className={`env-chart ${inline ? "relative" : "absolute inset-x-3 top-[64px] z-40 max-md:top-[118px]"} mx-auto max-w-[640px] rounded-2xl border border-n-line-strong bg-n-surface text-n-ink shadow-[var(--nx-shadow)]`} data-testid="offline-banner">
+    <div role="status" className={`${inline ? "relative" : "env-chart absolute inset-x-3 top-[64px] z-40 max-md:top-[118px]"} mx-auto max-w-[640px] rounded-2xl border border-n-line-strong bg-n-surface text-n-ink shadow-[var(--nx-shadow)]`} data-testid="offline-banner">
       <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="nx-focus flex min-h-12 w-full items-center gap-3 px-4 text-left">
         <Icon name="offline" className="h-5 w-5 shrink-0 text-n-offline" />
         <span className="min-w-0 flex-1 text-[14.5px] font-semibold leading-snug">{short}</span>

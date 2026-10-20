@@ -104,7 +104,7 @@ test("L8: on a phone, choosing a layer from the peeking sheet opens it, so its t
   await ctx.close();
 });
 
-test("320 px: the map's credits stay visible, on the sheet's edge under the map, covering no map label", async ({ browser }) => {
+test("320 px: the map's credits stay visible in one line on the map's edge, just above the sheet", async ({ browser }) => {
   const ctx = await browser.newContext(phone(320));
   const page = await ctx.newPage();
   await page.clock.setFixedTime(new Date(NOW));
@@ -115,10 +115,15 @@ test("320 px: the map's credits stay visible, on the sheet's edge under the map,
   await expect(credit).toContainText("© OpenStreetMap contributors");
   await expect(credit).toContainText("© OpenMapTiles");
   await expect(credit.getByRole("link", { name: "© OpenStreetMap contributors" })).toHaveAttribute("href", "https://www.openstreetmap.org/copyright");
-  // inside the sheet, not over the map's canvas
+  // a strip on the map's edge, not a line of the sheet: one line, just above the sheet's top
+  await page.waitForTimeout(700); // the sheet has settled at half height
   const inSheet = await credit.evaluate((el) => !!el.closest('[data-testid="mobile-sheet"]'));
-  expect(inSheet).toBe(true);
+  expect(inSheet).toBe(false);
   const c = (await credit.boundingBox())!;
+  expect(c.height).toBeLessThanOrEqual(20);
+  const sheetTop = await page.getByTestId("mobile-sheet").evaluate((el) => el.getBoundingClientRect().top);
+  expect(c.y + c.height).toBeLessThanOrEqual(sheetTop + 1);
+  expect(sheetTop - (c.y + c.height)).toBeLessThan(12);
   const top = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('[data-testid="attribution-short"]') !== null, [c.x + 4, c.y + c.height / 2]);
   expect(top).toBe(true);
   await ctx.close();

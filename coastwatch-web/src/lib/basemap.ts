@@ -303,15 +303,15 @@ export const CA_BOUNDS: [[number, number], [number, number]] = [
 
 /** No data: a fine diagonal hatch (the "not known" mark of the design language), faint enough
  *  that a large gap reads as quiet texture rather than noise, never as a low value, and the
- *  seafloor relief shows through. A seamless 8 px tile, drawn at 2x for sharp lines. */
+ *  seafloor relief shows through. A seamless 11 px tile, drawn at 2x for sharp lines. */
 export function noDataImage(): { width: number; height: number; data: Uint8Array } {
-  const n = 16; // 8 css px at pixelRatio 2
+  const n = 22; // 11 css px at pixelRatio 2: calmer over a large gap
   const data = new Uint8Array(n * n * 4);
   for (let y = 0; y < n; y++)
     for (let x = 0; x < n; x++) {
       const d = (x + y) % n;
       // a 1.5 css px line with soft edges, so it does not shimmer as the map moves
-      const a = d === 0 || d === 1 ? 66 : d === 2 || d === n - 1 ? 24 : 0;
+      const a = d === 0 || d === 1 ? 52 : d === 2 || d === n - 1 ? 18 : 0;
       if (a) data.set([170, 196, 224, a], (y * n + x) * 4);
     }
   return { width: n, height: n, data };

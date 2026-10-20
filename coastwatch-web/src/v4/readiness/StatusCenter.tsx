@@ -150,7 +150,9 @@ export function StatusCenter({ now, align = "right", compact = false }: { now: D
           id={id}
           role="dialog"
           aria-label="Data and connection status"
-          className={`nx-rise absolute top-[52px] z-50 w-[min(380px,calc(100vw-24px))] rounded-2xl border border-n-line bg-n-surface p-4 text-n-ink shadow-[var(--nx-shadow)] ${align === "right" ? "right-0" : "left-0"}`}
+          // on a phone the panel spans the screen under the top bar (as the notices panel does): hung from
+          // the button it ran off the left edge; elsewhere it hangs from the button
+          className={`nx-rise fixed inset-x-3 top-[64px] z-50 max-h-[calc(100dvh-80px)] overflow-y-auto overscroll-contain rounded-2xl border border-n-line bg-n-surface p-4 text-n-ink shadow-[var(--nx-shadow)] md:absolute md:inset-x-auto md:top-[52px] md:max-h-[min(72vh,680px)] md:w-[380px] ${align === "right" ? "md:right-0" : "md:left-0"}`}
           data-testid="status-panel"
         >
           <div className="flex items-center justify-between">

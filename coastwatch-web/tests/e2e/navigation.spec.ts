@@ -53,6 +53,9 @@ test("v2 links open the same view: a port, a region, a research-mode briefing", 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?region=monterey_bay&port=550&layer=forecast`);
   await expect(page.getByTestId("inspect-title")).toHaveText("Monterey");
+  // with the place open the layer deck is folded (desktop): its capsule names the layer, and opens the deck
+  await expect(page.getByTestId("layer-capsule")).toContainText("C-HARM forecast");
+  await page.getByTestId("layer-capsule").click();
   await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
   await page.goto(`${OK}/coast?place=port-550&mode=research`);
   await expect(page).toHaveURL(/\/research\?place=port-550/);

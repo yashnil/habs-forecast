@@ -52,7 +52,7 @@ const KIND: Record<string, { word: string; tone: string; dot: string; hollow: st
   gap: { word: "Not known", tone: "text-n-ink-3", dot: "bg-n-gap", hollow: "border-2 border-n-gap" },
 };
 
-export function Header({ icon, kind, title, sub, onClose, onBack, canBack }: { icon: string; kind: string; title: string; sub?: string; onClose: () => void; onBack?: () => void; canBack?: boolean }) {
+export function Header({ icon, kind, title, sub, onClose, onBack, canBack, action }: { icon: string; kind: string; title: string; sub?: string; onClose: () => void; onBack?: () => void; canBack?: boolean; action?: React.ReactNode }) {
   return (
     <header className="flex items-start gap-2">
       {canBack && onBack && (
@@ -70,6 +70,7 @@ export function Header({ icon, kind, title, sub, onClose, onBack, canBack }: { i
         </h2>
         {sub && <p className="mt-1 text-[14px] text-n-ink-2">{sub}</p>}
       </div>
+      {action}
       <button type="button" onClick={onClose} aria-label="Close" data-testid="inspect-close" className="nx-press nx-focus grid h-11 w-11 shrink-0 place-items-center rounded-lg text-n-ink-2 hover:bg-n-surface-2">
         <Icon name="close" />
       </button>

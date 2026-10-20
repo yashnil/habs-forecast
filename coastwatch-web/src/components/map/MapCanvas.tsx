@@ -32,6 +32,9 @@ import { basemapArchive, onBasemapSlow, setBasemapArchive } from "@/lib/waterMas
 import FlowParticles from "./FlowParticles";
 import { CountyControl, CountyLayers, useCountyPrefs, type CountyPrefs } from "./Counties";
 
+/** Marks with a name: a pointer over one shows the name (and a pointer cursor). */
+const MARK_LAYERS = ["ports-hit", "ports-circle", "map-station", "map-station-point", "map-station-cluster", "coast-station"];
+
 // MapLibre's module worker is copied to public/ by scripts/copy-maplibre-worker.mjs
 setWorkerUrl("/vendor/maplibre/maplibre-gl-worker.mjs");
 
@@ -110,6 +113,8 @@ type Props = {
   maxZoom?: number;
   /** v4 offline: the basemap from a saved regional PMTiles archive instead of OpenFreeMap */
   basemapPmtiles?: string | null;
+  /** v4 "Try again": a new value asks for the data rasters afresh (a failed field is forgotten) */
+  retry?: number;
 };
 
 const OFFICIAL = "#f6bb5c";
@@ -289,11 +294,15 @@ export default function MapCanvas(p: Props) {
   // data" (signature P11, the hatch flash). The basemap stays calm until then; loading words
   // appear only after 400 ms. Keyed by the raster ids, so a new day starts unloaded again (the
   // swap dips through the basemap; two days are never blended).
-  const rasterKey = [p.forecast?.id, p.satellite?.id, p.satelliteAge?.id].filter(Boolean).join("|");
+  // "Try again" is part of the key: the sources are asked for again and start unloaded
+  const retry = p.retry ?? 0;
+  const rasterKey = `${[p.forecast?.id, p.satellite?.id, p.satelliteAge?.id].filter(Boolean).join("|")}#${retry}`;
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [failedKey, setFailedKey] = useState<string | null>(null);
-  const fieldReady = hasRaster && loadedKey === rasterKey;
-  const fieldFailed = hasRaster && !fieldReady && failedKey === rasterKey;
+  // a source error beats "loaded": MapLibre counts an errored tile as loaded, so a field whose
+  // tiles failed would otherwise read as drawn (and its gaps as the no-data hatch)
+  const fieldFailed = hasRaster && failedKey === rasterKey;
+  const fieldReady = hasRaster && loadedKey === rasterKey && !fieldFailed;
   const { onStatus } = p;
   useEffect(() => {
     onStatus?.({ basemap, field: !hasRaster ? "none" : fieldReady ? "ready" : fieldFailed ? "failed" : "loading" });
@@ -351,6 +360,38 @@ export default function MapCanvas(p: Props) {
     };
   }, [map, hasRaster, fieldReady, showFallback]);
   const { onHover } = p;
+  // a harbour or station under the pointer: its name in a small tip at its mark, a pointer cursor,
+  // and no value readout over it (fine pointers only; set only when the mark changes, not per move)
+  const [tip, setTip] = useState<{ key: string; text: string; x: number; y: number } | null>(null);
+  const tipKey = useRef<string | null>(null);
+  const onMove = useCallback(
+    (e: MapLayerMouseEvent) => {
+      const f = e.features?.find((x) => MARK_LAYERS.includes(x.layer.id));
+      const pr = (f?.properties ?? {}) as Record<string, unknown>;
+      const text = !f
+        ? null
+        : f.layer.id === "map-station-cluster"
+          ? `${pr.point_count} shore stations · click to zoom in`
+          : String(pr.display_name ?? pr.name ?? "") || null;
+      const key = f && text ? `${f.layer.id}:${String(pr.port_code ?? pr.id ?? pr.cluster_id ?? text)}` : null;
+      if (key !== tipKey.current) {
+        tipKey.current = key;
+        if (f && text && key) {
+          const at = f.geometry.type === "Point" ? e.target.project(f.geometry.coordinates as [number, number]) : e.point;
+          setTip({ key, text, x: at.x, y: at.y });
+        } else setTip(null);
+      }
+      if (onHover) {
+        if (key) onHover(null, null);
+        else onHover({ lat: e.lngLat.lat, lon: e.lngLat.lng }, { x: e.point.x, y: e.point.y });
+      }
+    },
+    [onHover],
+  );
+  const clearTip = useCallback(() => {
+    tipKey.current = null;
+    setTip(null);
+  }, []);
 
   // threads draw out once per selection (reduced motion: drawn at once); a new selection restarts
   const overlay = p.overlay;
@@ -470,8 +511,12 @@ export default function MapCanvas(p: Props) {
       attributionControl={p.chrome === "none" ? false : { compact: true }}
       interactiveLayerIds={interactive}
       onClick={onClick}
-      onMouseMove={onHover ? (e) => onHover({ lat: e.lngLat.lat, lon: e.lngLat.lng }, { x: e.point.x, y: e.point.y }) : undefined}
-      onMouseOut={onHover ? () => onHover(null, null) : undefined}
+      onMouseMove={onMove}
+      onMouseOut={() => {
+        clearTip();
+        onHover?.(null, null);
+      }}
+      onMoveStart={clearTip}
       // any other failed request (a tile server error) is reported without a repaint; ask for
       // one so the map still reaches its load event and renders what did arrive
       onError={(e) => {
@@ -484,7 +529,7 @@ export default function MapCanvas(p: Props) {
       // tile server
       onStyleData={(e) => init(e.target)}
       onLoad={(e) => init(e.target)}
-      cursor="crosshair"
+      cursor={tip ? "pointer" : "crosshair"}
       style={{ width: "100%", height: "100%" }}
     >
       {p.chrome !== "none" && <NavigationControl position="bottom-right" showCompass={false} />}
@@ -494,12 +539,12 @@ export default function MapCanvas(p: Props) {
       <CountyLayers prefs={counties} beforeId="place-city" />
 
       {p.forecast && forecastTiles && (
-        <Source key={`${p.forecast.id}-grid`} id="forecast" type="raster" tiles={[forecastTiles.template]} tileSize={GRID_TILE_SIZE} bounds={forecastTiles.bounds} minzoom={0} maxzoom={13}>
+        <Source key={`${p.forecast.id}-grid-${retry}`} id="forecast" type="raster" tiles={[forecastTiles.template]} tileSize={GRID_TILE_SIZE} bounds={forecastTiles.bounds} minzoom={0} maxzoom={13}>
           <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id, true)} />
         </Source>
       )}
       {p.forecast && !forecastTiles && (
-        <Source key={p.forecast.id} id="forecast" type="image" url={p.forecast.url} coordinates={p.forecast.corners as [[number, number], [number, number], [number, number], [number, number]]}>
+        <Source key={`${p.forecast.id}-${retry}`} id="forecast" type="image" url={p.forecast.url} coordinates={p.forecast.corners as [[number, number], [number, number], [number, number], [number, number]]}>
           <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id, true)} />
         </Source>
       )}
@@ -530,7 +575,7 @@ export default function MapCanvas(p: Props) {
       )}
       {p.satellite && (
         <Source
-          key={p.satellite.id}
+          key={`${p.satellite.id}-${retry}`}
           id="satellite"
           type="raster"
           tiles={[indexedTiles(p.satellite.template, p.satellite.indexUrl)]}
@@ -543,7 +588,7 @@ export default function MapCanvas(p: Props) {
         </Source>
       )}
       {p.satelliteAge && (
-        <Source key={p.satelliteAge.id} id="satellite-age" type="raster" tiles={[indexedTiles(p.satelliteAge.template, p.satelliteAge.indexUrl)]} tileSize={256} minzoom={p.satelliteAge.minzoom} maxzoom={p.satelliteAge.maxzoom} bounds={p.satelliteAge.bounds as [number, number, number, number] | undefined}>
+        <Source key={`${p.satelliteAge.id}-${retry}`} id="satellite-age" type="raster" tiles={[indexedTiles(p.satelliteAge.template, p.satelliteAge.indexUrl)]} tileSize={256} minzoom={p.satelliteAge.minzoom} maxzoom={p.satelliteAge.maxzoom} bounds={p.satelliteAge.bounds as [number, number, number, number] | undefined}>
           <Layer id="satellite-age-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.satelliteAge?.id)} />
         </Source>
       )}
@@ -847,6 +892,12 @@ export default function MapCanvas(p: Props) {
               Drawing the data…
             </span>
           )}
+        </div>
+      )}
+
+      {tip && (
+        <div className="pointer-events-none absolute z-[2] -translate-x-1/2 whitespace-nowrap rounded-md bg-[rgba(6,17,30,0.9)] px-2 py-1 text-[12.5px] font-semibold text-[#e9eff6] shadow-[0_4px_14px_rgba(6,17,30,0.35)]" style={{ left: tip.x, top: tip.y - 36 }} data-testid="map-mark-tip">
+          {tip.text}
         </div>
       )}
 

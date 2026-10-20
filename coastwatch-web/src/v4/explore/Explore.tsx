@@ -33,7 +33,7 @@ import { useCountyPrefs } from "@/components/map/Counties";
 import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel, lastHabWords } from "@/v4/ui/time";
 import { decodeSelection, encodeSelection, sameSelection, type Camera, type HistoryEntry, type Selection } from "@/v4/state/selection";
-import { choiceParams, parseChoice, resolve, runDays, VARIABLE_WORDS, type LayerChoice } from "./layers";
+import { choiceParams, parseChoice, resolve, runDays, SAT_WORDS, VARIABLE_WORDS, type LayerChoice } from "./layers";
 import { LayerChips, LayerList, LayerOptions, Legend, Provenance, ReferenceLines } from "./LayerPanel";
 import { Timebar, timeSteps } from "./Timebar";
 import { PlaceSearch, type SearchHit } from "./Search";
@@ -44,6 +44,7 @@ import { PACKS } from "@/v4/offline/packs";
 import { useOfflinePack } from "@/v4/offline/useOfflinePack";
 import { OfflinePanel, useRecordSource } from "@/v4/offline/OfflinePanel";
 import { OfflineBanner } from "@/v4/offline/OfflineBanner";
+import { readHomePort } from "@/v4/state/homePort";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
 
@@ -69,6 +70,7 @@ const VIEW: Record<string, [[number, number], [number, number]]> = {
 };
 const PANEL = 404; // inspection panel width (desktop)
 const DOCK = 64; // phone navigation dock height
+const CREDITS = 24; // phone: the one-line map credits above the sheet
 const PEEK = 196; // phone sheet: the timebar or the selection's heading
 const LAYERS = 340; // layer deck width (desktop)
 
@@ -103,7 +105,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     setBasemapPm(!navigator.onLine && off.record?.complete ? `/offline/${pack.id}/basemap.pmtiles` : null);
   }, [off.record, basemapPm, pack.id]);
   const [packOpen, setPackOpen] = useState(false);
-  const q0 = useMemo(() => new URLSearchParams(initialParams), [initialParams]);
+  // the address as the server saw it; read again in the browser before the map mounts (below)
+  const [q0, setQ0] = useState(() => new URLSearchParams(initialParams));
   const run = charmRun(manifest);
   const days = runDays(manifest, now);
   const firstLead = now ? defaultLead(days, pacificToday(now)) : (run?.leads_available.includes(1) ? 1 : (run?.leads_available[0] ?? 0));
@@ -156,9 +159,58 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     });
   }, []);
 
+  // focus: a place picked in search moves focus to its panel; closing a panel returns focus to what
+  // opened it (the search box, the map, a button), never to the top of the page
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  const focusPanel = useRef(false);
+  const prevSel = useRef<Selection | null>(selection);
+  useEffect(() => {
+    const was = prevSel.current;
+    prevSel.current = selection;
+    if (!was && selection) {
+      const a = document.activeElement as HTMLElement | null;
+      opener.current = a && a !== document.body ? a : null;
+    } else if (was && !selection) {
+      const o = opener.current;
+      opener.current = null;
+      const a = document.activeElement;
+      // only when focus was lost with the panel (or is on nothing): never pulled from where the reader went
+      // (to the search field's frame, not the field itself, so its list does not open again)
+      const to = o?.closest<HTMLElement>("#place-search") ?? o;
+      if (to?.isConnected && (!a || a === document.body || !a.isConnected)) to.focus({ preventScroll: true });
+    }
+    if (selection && focusPanel.current) {
+      focusPanel.current = false;
+      requestAnimationFrame(() => panelRef.current?.focus({ preventScroll: true }));
+    }
+  }, [selection]);
+
   // URL: layer and selection; the camera is written when the view settles (replaceState, not history)
   const [region, setRegion] = useState<string>(q0.get("region") ?? "california");
+  // In the browser, the address is the truth: offline, the service worker answers with the saved
+  // page (rendered for the pack's harbour), whatever was asked for. And with a home port kept on
+  // this device, a bare Explore opens on its region. Decided once, before the map mounts.
+  const [synced, setSynced] = useState(false);
+  useEffect(() => {
+    const live = new URLSearchParams(window.location.search);
+    if (!decodeSelection(live) && !live.has("region") && !live.has("at")) {
+      const code = readHomePort();
+      const r = code != null ? ports?.features.find((f) => f.properties.port_code === code)?.properties.region : null;
+      if (r) live.set("region", r);
+    }
+    if (live.toString() !== q0.toString()) {
+      setQ0(live);
+      setChoiceRaw(parseChoice(live));
+      setSelectionRaw(decodeSelection(live));
+      setRegion(live.get("region") ?? "california");
+    }
+    setSynced(true);
+    // once, on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const writeUrl = useCallback(() => {
+    if (!synced) return;
     const q = new URLSearchParams();
     if (choice) for (const [k, v] of Object.entries(choiceParams(choice))) q.set(k, v);
     if (q0.get("from")?.startsWith("/coast")) q.set("from", q0.get("from")!);
@@ -171,7 +223,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     } else if (q0.get("at")) q.set("at", q0.get("at")!);
     else if (region !== "california") q.set("region", region);
     window.history.replaceState(window.history.state, "", `?${q.toString()}`);
-  }, [choice, selection, region, q0]);
+  }, [choice, selection, region, q0, synced]);
   useEffect(writeUrl, [writeUrl]);
 
   // ------------------------------------------------------------------ map data
@@ -210,6 +262,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
 
   const [curField, setCurField] = useState<{ id: string; field: CurrentField } | null>(null);
   const [curState, setCurState] = useState<"idle" | "loading" | "ready" | "failed">("idle");
+  // "Try again" for the currents grids (a failed grid is never kept in lib/grid's cache)
+  const [curRetry, setCurRetry] = useState(0);
   const curLayer = resolved.curLayer;
   useEffect(() => {
     if (!curLayer) return setCurState("idle");
@@ -225,7 +279,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     return () => {
       live = false;
     };
-  }, [curLayer, baseUrl]);
+  }, [curLayer, baseUrl, curRetry]);
   const currents: CurrentsOverlay | null = useMemo(
     () => (curLayer && curField?.id === curLayer.layer_id ? { id: curField.id, field: curField.field, features: fieldFeatures(curField.field), mode: "arrows" } : null),
     [curLayer, curField],
@@ -275,16 +329,29 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
 
   // fly to a selection made outside the map (search, a claim's "Show on map", a link)
   const panelOpen = selection != null;
+  // desktop: while a selection is open the layer deck folds to a capsule (reopened on demand), so
+  // the map between the panel and the left edge stays open; a new selection folds it again
+  const [deckOpen, setDeckOpen] = useState(false);
+  useEffect(() => setDeckOpen(false), [selection]);
+  const deckCompact = bp === "desktop" && panelOpen && !deckOpen;
   // `open`: frame for the panel being open (a camera move made for a new selection, in the same
   // step that selects it, before panelOpen has caught up)
   const padding = useCallback((open: boolean = panelOpen) => {
-    if (bp === "desktop") return { top: 84, bottom: 150, left: LAYERS + 28, right: (open ? PANEL + 24 : 0) + 24 };
+    if (bp === "desktop") return { top: 84, bottom: 150, left: open && !deckOpen ? 24 : LAYERS + 28, right: (open ? PANEL + 24 : 0) + 24 };
     if (bp === "tablet") return { top: 84, bottom: 200, left: 24, right: (open ? 380 : 0) + 24 };
     // phone: a selection opens the sheet to half height, so the camera centres it in the map strip
     // that stays visible above the sheet (not behind it)
     const sheet = open ? Math.round((window.innerHeight - DOCK) * 0.5) : PEEK;
     return { top: 128, bottom: sheet + DOCK + 24, left: 20, right: 20 };
-  }, [bp, panelOpen]);
+  }, [bp, panelOpen, deckOpen]);
+  // the whole state: on a wide window the map cannot zoom out past its pannable area, so the fit
+  // keeps the north coast clear of the top bar and lets the far south run under the timebar
+  const fitState = useCallback(() => {
+    const m = mapRef.current;
+    if (!m) return;
+    const p = padding();
+    m.fitBounds(STATEWIDE.bounds, { padding: bp === "phone" ? p : { ...p, top: 112, bottom: 24 }, duration: 500 });
+  }, [padding, bp]);
   const focusOn = useCallback(
     (s: Selection) => {
       const m = mapRef.current;
@@ -320,6 +387,10 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const [mapStatus, setMapStatus] = useState<{ basemap: "ok" | "slow" | "down"; field: "none" | "loading" | "ready" | "failed" } | null>(null);
   const onStatus = useCallback((s: { basemap: "ok" | "slow" | "down"; field: "none" | "loading" | "ready" | "failed" }) => setMapStatus(s), []);
   const reload = useCallback(() => window.location.reload(), []);
+  // "Try again" for a data field whose tiles failed: the map asks for its sources afresh
+  const [fieldRetry, setFieldRetry] = useState(0);
+  const retryField = useCallback(() => setFieldRetry((n) => n + 1), []);
+  const retryCurrents = useCallback(() => setCurRetry((n) => n + 1), []);
   useReportSource({
     id: "map",
     label: "Coastline and map",
@@ -355,7 +426,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           state: mapStatus?.field === "failed" ? "unavailable" : mapStatus?.field === "ready" ? modelField.state : "loading",
           detail: [run ? `${VARIABLE_WORDS[active.variable].short}, run issued ${run.issued_date}` : "No run published", modelField.note].filter(Boolean).join(". "),
           asOf: run?.issued_date ?? null,
-          actions: mapStatus?.field === "failed" ? [{ label: "Try again", run: reload }] : undefined,
+          actions: mapStatus?.field === "failed" ? [{ label: "Try again", run: retryField }] : undefined,
         }
       : null,
   );
@@ -368,23 +439,25 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const satField = fieldState(satF.fresh, satF.st);
   useReportSource(
     active.kind === "satellite" || (active.kind === "currents" && active.chl)
-      ? { id: "satellite", label: "Satellite chlorophyll", state: mapStatus?.field === "failed" ? "unavailable" : mapStatus?.field === "ready" ? satField.state : "loading", detail: [resolved.satLayer ? `${resolved.satLayer.layer_id.split("_")[0].toUpperCase()} tiles` : "No layer", satField.note].filter(Boolean).join(". "), asOf: resolved.satLayer?.time.observed_date ?? null }
+      ? { id: "satellite", label: "Satellite chlorophyll", state: mapStatus?.field === "failed" ? "unavailable" : mapStatus?.field === "ready" ? satField.state : "loading", detail: [resolved.satLayer ? `${resolved.satLayer.layer_id.split("_")[0].toUpperCase()} tiles` : "No layer", mapStatus?.field === "failed" ? "Some tiles could not be loaded" : satField.note].filter(Boolean).join(". "), asOf: resolved.satLayer?.time.observed_date ?? null, actions: mapStatus?.field === "failed" ? [{ label: "Try again", run: retryField }] : undefined }
       : null,
   );
   const curF = obsFresh("hf_radar", curLayer);
   const curReady = fieldState(curF.fresh, curF.st);
   useReportSource(
     active.kind === "currents"
-      ? { id: "currents", label: "Surface currents (HF radar)", state: curState === "failed" ? "unavailable" : curState === "ready" ? curReady.state : "loading", detail: ["Hourly, 2 km cells", curReady.note].filter(Boolean).join(". "), asOf: curLayer?.time.valid_time ?? null }
+      ? { id: "currents", label: "Surface currents (HF radar)", state: curState === "failed" ? "unavailable" : curState === "ready" ? curReady.state : "loading", detail: ["Hourly, 2 km cells", curState === "failed" ? "This hour could not be loaded" : curReady.note].filter(Boolean).join(". "), asOf: curLayer?.time.valid_time ?? null, actions: curState === "failed" ? [{ label: "Try again", run: retryCurrents }] : undefined }
       : null,
   );
   const placeName = harborF?.properties.display_name ?? station?.name ?? null;
   useReportSource(stationsError && !stations ? { id: "conditions", label: "Shore stations", state: "unavailable", detail: stationsError } : null);
 
   // ------------------------------------------------------------------ hover readout (fine pointers): the exact published value
-  const [hover, setHover] = useState<{ p: MapPoint; s: { x: number; y: number } } | null>(null);
+  // The pointer's position lives in a small child (HoverLayer), not here: a pointer move re-renders
+  // only the readout, never the layer deck, the timebar or the selected panel.
+  const hoverSink = useRef<((h: HoverAt | null) => void) | null>(null);
   const hoverRaf = useRef<number | null>(null);
-  const hoverNext = useRef<{ p: MapPoint; s: { x: number; y: number } } | null>(null);
+  const hoverNext = useRef<HoverAt | null>(null);
   const [canHover, setCanHover] = useState(false);
   useEffect(() => setCanHover(window.matchMedia("(hover: hover) and (pointer: fine)").matches), []);
   const onHover = useCallback((pt: MapPoint | null, scr: { x: number; y: number } | null) => {
@@ -392,7 +465,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     if (hoverRaf.current == null)
       hoverRaf.current = requestAnimationFrame(() => {
         hoverRaf.current = null;
-        setHover(hoverNext.current);
+        hoverSink.current?.(hoverNext.current);
       });
   }, []);
   const hoverSource: HoverSource = useMemo(() => {
@@ -410,7 +483,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       if (e.key === "Escape") {
         if (areaMode) setAreaMode(false);
         else if (selection) select(null);
-      } else if (e.key === "a" && !e.metaKey && !e.ctrlKey) setAreaMode((v) => !v);
+        // the area tool's letter works only with the map focused: typed elsewhere, "a" is just a letter
+      } else if (e.key === "a" && !e.metaKey && !e.ctrlKey && !e.altKey && t?.closest('[data-testid="map"]')) setAreaMode((v) => !v);
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
@@ -419,6 +493,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // ------------------------------------------------------------------ pieces
   const regions = useMemo(() => [STATEWIDE, ...(ports?.regions ?? []).map((r) => ({ id: r.id, label: r.label, bounds: (VIEW[r.id] ?? r.bounds) as [[number, number], [number, number]] }))], [ports]);
   const onSearch = (h: SearchHit) => {
+    if (h.kind !== "region") focusPanel.current = true;
     if (h.kind === "harbor") selectAndGo({ kind: "harbor", port: Number(h.id) });
     else if (h.kind === "station") selectAndGo({ kind: "station", id: h.id });
     else {
@@ -448,16 +523,44 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     return { href: f, name };
   }, [q0, ports]);
   const initialAt = q0.get("at")?.split(",").map(Number);
-  const initialBounds = (() => {
-    const r = regions.find((x) => x.id === (q0.get("region") ?? "")) ?? STATEWIDE;
-    return r.bounds;
-  })();
+  const initialBounds = (regions.find((x) => x.id === (q0.get("region") ?? "")) ?? STATEWIDE).bounds;
 
+  // offline with a saved pack: a place outside it is said to be outside, with the way to the saved one
+  const selAt: [number, number] | null = !selection
+    ? null
+    : selection.kind === "harbor"
+      ? harborF
+        ? [(harborF.geometry.coordinates as number[])[0], (harborF.geometry.coordinates as number[])[1]]
+        : null
+      : selection.kind === "station"
+        ? station
+          ? [station.lon, station.lat]
+          : null
+        : selection.kind === "area"
+          ? [(selection.bbox[0] + selection.bbox[2]) / 2, (selection.bbox[1] + selection.bbox[3]) / 2]
+          : [selection.lon, selection.lat];
+  const outsidePack = !off.online && !!off.record?.complete && selAt != null && !(selAt[0] >= pack.bbox[0] && selAt[0] <= pack.bbox[2] && selAt[1] >= pack.bbox[1] && selAt[1] <= pack.bbox[3]);
+  const packNote = outsidePack ? (
+    <p className="rounded-xl border border-n-line-strong bg-n-surface-2 p-3 text-[14px] leading-snug text-n-ink-2" data-testid="outside-pack">
+      <span className="font-semibold text-n-ink">Offline, and this place is outside the saved {pack.name} pack.</span> What follows may be missing or older than it looks.{" "}
+      <button type="button" onClick={() => selectAndGo({ kind: "harbor", port: pack.port })} className="nx-focus inline-flex min-h-11 items-center font-semibold text-n-accent underline underline-offset-2" data-testid="outside-pack-go">
+        Go to {pack.name}
+      </button>
+    </p>
+  ) : null;
+  // on a phone the briefing is a link on the title row, so the evidence starts higher in the sheet
+  const briefingLink =
+    selection?.kind === "harbor" && bp === "phone" ? (
+      <a href={`/coast?place=port-${selection.port}`} className="nx-press nx-focus mt-1 inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-full border border-n-line-strong pl-3 pr-1.5 text-[14px] font-semibold text-n-ink" data-testid="open-briefing-link">
+        Briefing <Icon name="chevronRight" className="h-4 w-4 shrink-0" />
+      </a>
+    ) : undefined;
   const inspection = selection ? (
-    <div className="flex flex-col gap-4" data-testid="inspect-panel" data-kind={selection.kind}>
+    <div ref={panelRef} tabIndex={-1} className="flex flex-col gap-4 outline-none" data-testid="inspect-panel" data-kind={selection.kind}>
+      {packNote}
       {selection.kind === "harbor" && (
         <>
-          <Header icon="harbor" kind="Harbour" title={placeName ?? "Harbour"} sub={harborF?.properties.county ? `${harborF.properties.county} County · CDFW port` : undefined} onClose={() => select(null)} onBack={back} canBack={stack.length > 0} />
+          <Header icon="harbor" kind="Harbour" title={placeName ?? "Harbour"} sub={harborF?.properties.county ? `${harborF.properties.county} County · CDFW port` : undefined} onClose={() => select(null)} onBack={back} canBack={stack.length > 0} action={briefingLink} />
           <HarborView code={selection.port} ctx={ctx} />
         </>
       )}
@@ -527,9 +630,13 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     setChoiceRaw(c);
     if (bp === "phone") setSnap((x) => (x === "peek" ? "half" : x));
   };
+  // phone: the layer chips as one compact row (44 px targets), so the sheet's first lines carry content
+  const compactChips = "[&_[role=radio]]:min-h-11 [&_[role=radio]]:rounded-full [&_[role=radio]]:px-3 [&_[role=radio]]:text-[14px]";
   const activeCard = (
     <div className="flex flex-col gap-3" data-testid="active-layer">
-      <LayerChips manifest={manifest} choice={active} onChoice={pickFromSheet} defaults={{ lead: firstLead }} />
+      <div className={compactChips}>
+        <LayerChips manifest={manifest} choice={active} onChoice={pickFromSheet} defaults={{ lead: firstLead }} />
+      </div>
       {nothingCurrent}
       {readHint}
       <p className="nx-eyebrow">On the map</p>
@@ -556,24 +663,79 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     </div>
   );
 
+  // the folded deck (desktop, with a selection open): what the map shows, in one line, and the way back to the deck
+  const steps = hasTime ? timeSteps(manifest, active, now) : null;
+  const step = steps?.steps.find((x) => x.key === steps.current);
+  const capsuleWords = [
+    active.kind === "forecast" ? "C-HARM forecast" : active.kind === "satellite" ? "Satellite chlorophyll" : active.kind === "currents" ? "Surface currents" : "Seafloor and coast",
+    active.kind === "forecast" ? VARIABLE_WORDS[active.variable].short : active.kind === "satellite" ? SAT_WORDS[active.product]?.name : null,
+    step ? [step.top, step.label].filter(Boolean).join(" ") : null,
+  ].filter(Boolean);
+  const capsule = (
+    <div className="absolute left-4 top-[76px] z-20 flex max-w-[480px] flex-col items-start gap-1.5">
+      <button
+        type="button"
+        aria-expanded={false}
+        aria-label={`Map layers: ${capsuleWords.join(", ")}. Show the layers and legend`}
+        onClick={() => setDeckOpen(true)}
+        className="nx-press nx-focus flex min-h-11 max-w-full items-center gap-2 rounded-full border border-n-line bg-n-surface pl-3 pr-2.5 text-[14px] font-semibold text-n-ink shadow-[var(--nx-shadow)]"
+        data-testid="layer-capsule"
+      >
+        <Icon name="layers" className="h-[18px] w-[18px] shrink-0 text-n-accent" />
+        <span className="truncate">{capsuleWords.join(" · ")}</span>
+        <Icon name="chevronDown" className="h-4 w-4 shrink-0 text-n-ink-3" />
+      </button>
+      {/* the deck carried the credits: folded, they stay on the map */}
+      <MapCredits />
+    </div>
+  );
+
+  // a data layer that could not be drawn: said on the map, with a way to try again (never a silent gap)
+  const satFailed = mapStatus?.field === "failed" && (active.kind === "satellite" || (active.kind === "currents" && !!active.chl));
+  const fieldProblem =
+    mapStatus?.field === "failed" || (active.kind === "currents" && curState === "failed") ? (
+      <div role="status" className="flex w-full max-w-[420px] items-center gap-2.5 rounded-2xl border border-n-line-strong bg-n-surface py-1 pl-3.5 pr-1.5 text-n-ink shadow-[var(--nx-shadow)]" data-testid="field-failed">
+        <Icon name="alert" className="h-5 w-5 shrink-0 text-n-down" />
+        <span className="min-w-0 flex-1 text-[14px] leading-snug">
+          {active.kind === "currents" && curState === "failed" ? "These currents could not be loaded." : satFailed ? "Part of the satellite view could not be loaded." : "Part of the C-HARM forecast could not be loaded."} Nothing is drawn in its place.
+        </span>
+        <button type="button" onClick={active.kind === "currents" && curState === "failed" ? retryCurrents : retryField} className="nx-press nx-focus inline-flex min-h-11 shrink-0 items-center rounded-xl px-3 text-[14px] font-semibold text-n-accent hover:bg-n-surface-2" data-testid="field-retry">
+          Try again
+        </button>
+      </div>
+    ) : null;
+
+  // the map's tools, in two attached stacks: the zoom pair, then recentre, area, share and the field pack
+  const stackCls = "pointer-events-auto flex flex-col divide-y divide-n-line rounded-xl border border-n-line bg-n-surface shadow-[var(--nx-shadow)]";
+  const toolCls = "nx-press nx-focus grid h-12 w-12 place-items-center text-n-ink first:rounded-t-xl last:rounded-b-xl max-md:h-14 max-md:w-14";
+  const recenter = (
+    <button type="button" aria-label={selection ? "Centre on the selection" : "Show all California"} onClick={() => (selection ? focusOn(selection) : fitState())} className={toolCls} data-testid="recenter">
+      <Icon name="locate" />
+    </button>
+  );
+  const packButton = (
+    <button type="button" aria-label={`Field pack: save ${pack.name} for offline use`} onClick={() => setPackOpen(true)} className={toolCls} data-testid="pack-open">
+      <Icon name={off.record?.complete ? "check" : "download"} />
+    </button>
+  );
   const mapControls = (
     <div className="pointer-events-auto flex flex-col gap-2" data-testid="map-controls">
-      <button type="button" aria-label="Zoom in" onClick={() => mapRef.current?.zoomIn({ duration: 200 })} className="nx-press nx-focus grid [@media(max-height:560px)]:hidden h-12 w-12 place-items-center rounded-xl border border-n-line bg-n-surface text-n-ink shadow-[var(--nx-shadow)] max-md:h-14 max-md:w-14">
-        <Icon name="plus" />
-      </button>
-      <button type="button" aria-label="Zoom out" onClick={() => mapRef.current?.zoomOut({ duration: 200 })} className="nx-press nx-focus grid [@media(max-height:560px)]:hidden h-12 w-12 place-items-center rounded-xl border border-n-line bg-n-surface text-n-ink shadow-[var(--nx-shadow)] max-md:h-14 max-md:w-14">
-        <Icon name="minus" />
-      </button>
-      <button type="button" aria-label={selection ? "Centre on the selection" : "Show all California"} onClick={() => (selection ? focusOn(selection) : mapRef.current?.fitBounds(STATEWIDE.bounds, { padding: padding(), duration: 500 }))} className="nx-press nx-focus grid h-12 w-12 place-items-center rounded-xl border border-n-line bg-n-surface text-n-ink shadow-[var(--nx-shadow)] max-md:h-14 max-md:w-14" data-testid="recenter">
-        <Icon name="locate" />
-      </button>
-      <button type="button" aria-label="Select an area" aria-pressed={areaMode} onClick={() => setAreaMode((v) => !v)} className={`nx-press nx-focus grid h-12 w-12 place-items-center rounded-xl border shadow-[var(--nx-shadow)] max-md:h-14 max-md:w-14 ${areaMode ? "border-n-accent bg-n-accent text-n-on-accent" : "border-n-line bg-n-surface text-n-ink"}`} data-testid="area-tool">
-        <Icon name="area" />
-      </button>
-      <ShareButton />
-      <button type="button" aria-label={`Field pack: save ${pack.name} for offline use`} onClick={() => setPackOpen(true)} className="nx-press nx-focus grid h-12 w-12 place-items-center rounded-xl border border-n-line bg-n-surface text-n-ink shadow-[var(--nx-shadow)] max-md:h-14 max-md:w-14" data-testid="pack-open">
-        <Icon name={off.record?.complete ? "check" : "download"} />
-      </button>
+      <div className={`${stackCls} [@media(max-height:560px)]:hidden`}>
+        <button type="button" aria-label="Zoom in" onClick={() => mapRef.current?.zoomIn({ duration: 200 })} className={toolCls}>
+          <Icon name="plus" />
+        </button>
+        <button type="button" aria-label="Zoom out" onClick={() => mapRef.current?.zoomOut({ duration: 200 })} className={toolCls}>
+          <Icon name="minus" />
+        </button>
+      </div>
+      <div className={stackCls}>
+        {recenter}
+        <button type="button" aria-label="Select an area" aria-pressed={areaMode} onClick={() => setAreaMode((v) => !v)} className={`${toolCls} ${areaMode ? "bg-n-accent text-n-on-accent" : ""}`} data-testid="area-tool">
+          <Icon name="area" />
+        </button>
+        <ShareButton className={toolCls} />
+        {packButton}
+      </div>
     </div>
   );
 
@@ -596,6 +758,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       clusterStations
       highlight={shownHighlight}
       onStatus={onStatus}
+      retry={fieldRetry}
       initialBounds={initialBounds}
       initialPadding={{ top: 84, bottom: 150, left: 24, right: 24 }}
       cellEdges={active.kind === "forecast" && edges && edges.id === resolved.forecastLayer?.layer_id ? edges.fc : null}
@@ -612,7 +775,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         setMapReady(true);
         if (initialAt && initialAt.length === 3 && initialAt.every(Number.isFinite)) m.jumpTo({ center: [initialAt[1], initialAt[0]], zoom: initialAt[2] });
         else {
-          m.fitBounds(initialBounds, { padding: padding(), duration: 0 });
+          const p = padding();
+          m.fitBounds(initialBounds, { padding: initialBounds === STATEWIDE.bounds && bp !== "phone" ? { ...p, top: 112, bottom: 24 } : p, duration: 0 });
           const s = decodeSelection(q0);
           if (s) m.once("idle", () => focusOn(s));
         }
@@ -628,6 +792,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
 
   // phone sheet
   const [vh, setVh] = useState(800);
+  const sheetHalf = Math.round((vh - DOCK) * 0.5);
   useEffect(() => {
     const f = () => setVh(window.innerHeight);
     f();
@@ -636,6 +801,9 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   }, []);
 
   const starting = !mapReady;
+  // under the search box (desktop and tablet in the top bar, phones in their own stack): the way back to
+  // a briefing, the offline state and a layer that failed, one under another and never over each other
+  const offlineBanner = !off.online ? <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline /> : null;
   // clip, not hidden: a hidden overflow can still be scrolled by focus or scrollIntoView, which slid
   // the whole workspace (and the dock) up the screen on phones
   return (
@@ -643,16 +811,9 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       <SkipLink to="place-search" label="Skip to search places" />
       <h1 className="sr-only">Explore: harmful algal bloom evidence on the California coast{placeName ? `, ${placeName}` : ""}</h1>
       <div className="absolute inset-0" data-testid="map">
-        {basemapPm !== undefined ? map : null}
+        {basemapPm !== undefined && synced ? map : null}
       </div>
-      {hover && hoverSource && bp !== "phone" && (
-        // the readout takes the dark tokens but must never paint over the map: transparent wrapper
-        <div className="theme-dark pointer-events-none absolute inset-0 z-[12] !bg-transparent">
-          <HoverReadout manifest={manifest} baseUrl={baseUrl} source={hoverSource} point={hover.p} screen={hover.s} bounds={{ w: typeof window === "undefined" ? 1440 : window.innerWidth - (panelOpen ? PANEL + 24 : 0), h: typeof window === "undefined" ? 900 : window.innerHeight }} />
-        </div>
-      )}
-      {/* on a phone the banner sits in the search stack, under the "Notices not verified" disclosure, never over it */}
-      {!off.online && bp !== "phone" && <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} />}
+      {hoverSource && bp !== "phone" && <HoverLayer sink={hoverSink} manifest={manifest} baseUrl={baseUrl} source={hoverSource} panelOpen={panelOpen} />}
       {packOpen && (
         <div className="absolute inset-0 z-50 grid place-items-center bg-[rgba(4,16,22,0.55)] p-3" onClick={(e) => e.target === e.currentTarget && setPackOpen(false)}>
           <div role="dialog" aria-modal="true" aria-label={`Field pack: ${pack.name}`} className="env-chart nx-deck nx-rise max-h-[92dvh] w-[min(520px,100%)] overflow-y-auto p-5 text-n-ink">
@@ -678,26 +839,39 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         floating
         slot={
           bp && bp !== "phone" ? (
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col items-start gap-1.5">
               <PlaceSearch ports={ports} stations={stations} regions={regions} onPick={onSearch} current={placeName ?? ""} />
               <RegistryDisclosure className="w-fit rounded-full border border-n-line bg-n-surface px-3 py-1" fixture={isFixture(manifest)} compact />
+              {offlineBanner && <div className="w-full max-w-[420px]">{offlineBanner}</div>}
+              {fieldProblem}
+              {backTo && <BackToBriefing {...backTo} className="w-fit max-w-full" />}
             </div>
           ) : null
         }
         notices={<NoticesButton official={official} status={officialStatus} compact={bp === "phone"} local={harbourNotices} />}
       />
 
-      {/* on a phone the way back sits in the search stack, under the disclosure */}
-      {backTo && bp !== "phone" && <BackToBriefing {...backTo} className="absolute left-1/2 top-[104px] z-[46] -translate-x-1/2" />}
       {bp === "desktop" && (
         <>
-          <aside aria-label="Map layers" className="nx-deck absolute bottom-4 left-4 top-[76px] z-20 flex flex-col overflow-hidden" style={{ width: LAYERS }} data-testid="layer-deck">
-            <div className="flex-1 overflow-y-auto p-3 [scrollbar-width:thin]">{layerDeck}</div>
-            <div className="border-t border-n-line px-3 py-2">
-              <Attribution />
-            </div>
-          </aside>
-          <div className="absolute bottom-4 z-20" style={{ left: LAYERS + 28, right: (panelOpen ? PANEL + 28 : 0) + 84 }}>
+          {deckCompact ? (
+            capsule
+          ) : (
+            <aside aria-label="Map layers" className="nx-deck absolute bottom-4 left-4 top-[76px] z-20 flex flex-col overflow-hidden" style={{ width: LAYERS }} data-testid="layer-deck">
+              {panelOpen && (
+                <button type="button" aria-expanded onClick={() => setDeckOpen(false)} className="nx-focus flex min-h-11 shrink-0 items-center justify-between border-b border-n-line px-3 text-[14px] font-semibold text-n-ink-2 hover:text-n-ink" data-testid="layer-deck-fold">
+                  <span className="flex items-center gap-2">
+                    <Icon name="layers" className="h-[18px] w-[18px] shrink-0" /> Layers and legend
+                  </span>
+                  <Icon name="chevronDown" className="h-4 w-4 shrink-0 rotate-180" />
+                </button>
+              )}
+              <div className="flex-1 overflow-y-auto p-3 [scrollbar-width:thin]">{layerDeck}</div>
+              <div className="border-t border-n-line px-3 py-2">
+                <Attribution />
+              </div>
+            </aside>
+          )}
+          <div className="absolute bottom-4 z-20" style={{ left: deckCompact ? 16 : LAYERS + 28, right: (panelOpen ? PANEL + 28 : 0) + 84 }}>
             {/* a deck only for a layer that has published frames (the multi-sensor view has none) */}
             {hasTime && (
               <div className="nx-deck mx-auto max-w-[760px] p-3" data-testid="timebar-deck">
@@ -718,7 +892,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
 
       {bp === "tablet" && (
         <>
-          <div className="absolute bottom-4 left-4 z-20 w-[min(420px,calc(100%-120px))]">
+          {/* the deck and timebar end where the map's tools begin: the tools never cover the timebar */}
+          <div className="absolute bottom-4 left-4 z-20" style={{ width: `min(420px, calc(100% - ${(panelOpen ? 396 : 0) + 16 + 56 + 24 + 16}px))` }} data-testid="tablet-deck">
             <details className="nx-deck group mb-2 max-h-[55vh] overflow-y-auto p-3" data-testid="layer-deck">
               <summary className="nx-focus flex min-h-12 cursor-pointer list-none items-center justify-between text-[15px] font-semibold">
                 <span className="flex items-center gap-2">
@@ -736,6 +911,10 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                 <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} compact />
               </div>
             )}
+            {/* the deck carries the full credits once opened; closed, the short line stays on the map */}
+            <div className="mt-1.5">
+              <MapCredits />
+            </div>
           </div>
           <div className="absolute bottom-4 z-20" style={{ right: (panelOpen ? 396 : 0) + 16 }}>
             {mapControls}
@@ -752,34 +931,35 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         <>
           <div className="absolute inset-x-3 top-[68px] z-20 flex flex-col gap-1.5">
             <PlaceSearch ports={ports} stations={stations} regions={regions} onPick={onSearch} current={placeName ?? ""} />
-            <RegistryDisclosure className="w-fit rounded-full border border-n-line bg-n-surface px-3 py-1" fixture={isFixture(manifest)} compact />
+            <RegistryDisclosure className="w-fit max-w-full rounded-full border border-n-line bg-n-surface px-3 py-1" fixture={isFixture(manifest)} compact />
             {/* clear of the map controls' column on the right */}
-            {!off.online && (
-              <div className="pr-[68px]">
-                <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline />
-              </div>
-            )}
+            {offlineBanner && <div className="pr-[68px]">{offlineBanner}</div>}
+            {fieldProblem}
             {backTo && <BackToBriefing {...backTo} className="w-fit max-w-full" />}
           </div>
           {/* the sheet ends above the dock; the map stays live above it (non-modal) */}
           <div className="pointer-events-none absolute inset-x-0 top-0 z-30 overflow-clip" style={{ bottom: `calc(${DOCK}px + env(safe-area-inset-bottom, 0px))` }}>
-            {/* the map's credits (ODbL, CC-BY) stay on the map at every sheet height, just above the sheet */}
             {snap === "peek" && (
-              <div className="pointer-events-auto absolute right-3 flex flex-col gap-2" style={{ bottom: PEEK + 12 }} data-testid="map-controls">
-                <button type="button" aria-label={selection ? "Centre on the selection" : "Show all California"} onClick={() => (selection ? focusOn(selection) : mapRef.current?.fitBounds(STATEWIDE.bounds, { padding: padding(), duration: 500 }))} className="nx-press nx-focus grid h-14 w-14 place-items-center rounded-2xl border border-n-line bg-n-surface text-n-ink shadow-[var(--nx-shadow)]" data-testid="recenter">
-                  <Icon name="locate" />
-                </button>
-                <ShareButton />
-                <button type="button" aria-label={`Field pack: save ${pack.name} for offline use`} onClick={() => setPackOpen(true)} className="nx-press nx-focus grid h-14 w-14 place-items-center rounded-2xl border border-n-line bg-n-surface text-n-ink shadow-[var(--nx-shadow)]" data-testid="pack-open">
-                  <Icon name={off.record?.complete ? "check" : "download"} />
-                </button>
+              <div className="pointer-events-auto absolute right-3" style={{ bottom: PEEK + CREDITS + 10 }} data-testid="map-controls">
+                <div className={stackCls}>
+                  {recenter}
+                  <ShareButton className={toolCls} />
+                  {packButton}
+                </div>
               </div>
             )}
-            <div className="env-chart pointer-events-auto">
+            {/* the map's credits (ODbL) on the map's edge, one line just above the sheet at every height
+                the map shows; at full height (the map all but covered) they ride on the sheet's edge */}
+            {snap !== "full" && (
+              <div className="pointer-events-auto absolute left-2 right-2 transition-[bottom] duration-200" style={{ bottom: (snap === "peek" ? PEEK : sheetHalf) + 4 }}>
+                <MapCredits short />
+              </div>
+            )}
+            <div className={`env-chart pointer-events-auto ${bp === "phone" ? "[&_[data-testid=open-briefing]]:hidden" : ""}`}>
               <MobileSheet
                 snaps={[
                   { id: "peek", height: PEEK },
-                  { id: "half", height: Math.round((vh - DOCK) * 0.5) },
+                  { id: "half", height: sheetHalf },
                   { id: "full", height: Math.round((vh - DOCK) * 0.9) },
                 ]}
                 snap={snap}
@@ -787,17 +967,12 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                 label={selection ? "Selected" : "Layers and time"}
                 header={null}
                 field
-                // the map's credits sit on the sheet's top edge, right under the map: always visible with it, over no label
-                edge={
-                  <p className="text-[11px] leading-snug text-n-ink-3 [&_a]:underline [&_a]:underline-offset-2" data-testid="attribution-short">
-                    <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">© OpenMapTiles</a> · NOAA relief · not for navigation
-                  </p>
-                }
+                edge={snap === "full" ? <MapCredits short /> : null}
               >
                 <div className="px-1 pb-6 text-n-ink">
                   {/* with a place open, the layers stay one tap away: no need to close the place to change the map */}
                   {inspection && (
-                    <div className="mb-3 border-b border-n-line pb-3" data-testid="sheet-layer-chips">
+                    <div className={`mb-3 border-b border-n-line pb-3 ${compactChips}`} data-testid="sheet-layer-chips">
                       <LayerChips manifest={manifest} choice={active} onChoice={setChoiceRaw} defaults={{ lead: firstLead }} />
                     </div>
                   )}
@@ -827,6 +1002,18 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   );
 }
 
+/**
+ * The map's credits in one line (ODbL asks that OpenStreetMap be credited wherever its map is seen):
+ * on the map's edge on phones, under the folded deck on desktop, under the tablet's deck.
+ */
+function MapCredits({ short = false }: { short?: boolean }) {
+  return (
+    <p className="w-fit max-w-full truncate rounded-md bg-[rgba(6,17,30,0.72)] px-2 py-0.5 text-[11px] leading-[16px] text-[#c9d6e2] [&_a]:underline [&_a]:underline-offset-2" data-testid={short ? "attribution-short" : "attribution-line"}>
+      <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">© OpenMapTiles</a> · NOAA relief · not for navigation
+    </p>
+  );
+}
+
 /** Basemap and relief credits, in the interface (the map's own control is off in v4). */
 function Attribution() {
   return (
@@ -841,7 +1028,7 @@ function Attribution() {
   );
 }
 
-function ShareButton() {
+function ShareButton({ className }: { className: string }) {
   const [done, setDone] = useState(false);
   return (
     <button
@@ -856,7 +1043,7 @@ function ShareButton() {
           setDone(false);
         }
       }}
-      className="nx-press nx-focus grid h-12 w-12 place-items-center rounded-xl border border-n-line bg-n-surface text-n-ink shadow-[var(--nx-shadow)] max-md:h-14 max-md:w-14"
+      className={className}
       data-testid="share-view"
     >
       <Icon name={done ? "check" : "share"} />
@@ -943,5 +1130,25 @@ function BackToBriefing({ href, name, className }: { href: string; name: string;
     <a href={href} className={`nx-press nx-focus env-chart flex min-h-11 items-center gap-2 rounded-full border border-n-line bg-n-surface px-4 text-[14.5px] font-semibold text-n-ink shadow-[var(--nx-shadow)] ${className}`} data-testid="back-to-briefing">
       <Icon name="back" className="h-[18px] w-[18px] shrink-0" /> Back to the {name} briefing
     </a>
+  );
+}
+
+type HoverAt = { p: MapPoint; s: { x: number; y: number } };
+
+/** The hover readout and the pointer state behind it: the workspace hands it positions through `sink`. */
+function HoverLayer({ sink, manifest, baseUrl, source, panelOpen }: { sink: React.RefObject<((h: HoverAt | null) => void) | null>; manifest: Manifest; baseUrl: string; source: HoverSource; panelOpen: boolean }) {
+  const [hover, setHover] = useState<HoverAt | null>(null);
+  useEffect(() => {
+    sink.current = setHover;
+    return () => {
+      sink.current = null;
+    };
+  }, [sink]);
+  if (!hover || !source) return null;
+  return (
+    // the readout takes the dark tokens but must never paint over the map: transparent wrapper
+    <div className="theme-dark pointer-events-none absolute inset-0 z-[12] !bg-transparent">
+      <HoverReadout manifest={manifest} baseUrl={baseUrl} source={source} point={hover.p} screen={hover.s} bounds={{ w: window.innerWidth - (panelOpen ? PANEL + 24 : 0), h: window.innerHeight }} />
+    </div>
   );
 }

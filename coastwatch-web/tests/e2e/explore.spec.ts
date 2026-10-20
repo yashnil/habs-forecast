@@ -61,6 +61,9 @@ test.describe("layers, legend, time", () => {
 
   test("v2 links still open their view (region, var, lead, port, inspect)", async ({ page }) => {
     await open(page, "/?region=monterey_bay&layer=forecast&var=pseudo_nitzschia&lead=2&port=550");
+    // a place is open: the layer deck is folded to its capsule, which names the variable; open it
+    await expect(page.getByTestId("layer-capsule")).toContainText("Pseudo-nitzschia");
+    await page.getByTestId("layer-capsule").click();
     await expect(page.getByTestId("variable-select")).toHaveValue("pseudo_nitzschia");
     await expect(page.getByTestId("timebar").locator('[aria-checked="true"]')).toContainText("Oct 9");
     await expect(page.getByTestId("inspect-panel")).toHaveAttribute("data-kind", "harbor");
