@@ -361,6 +361,41 @@ def outlook_layer(ctx: RunContext, latest: LayerArtifact | None, notes: list[str
     return layer, n1 + n2, {"bay_under_cells_pct": bay_cov, "cells_with_anomaly": r["cells_with_anomaly"], "predictor": p0.isoformat(), "mean_anomaly_ln": r["mean_anomaly_ln"]}
 
 
+def sst_layer(ctx: RunContext) -> tuple[dict, int, dict]:
+    from . import sst as S
+
+    domain = ctx.options.get("satellite_domain", satellite.CALIFORNIA)
+    day, target, vals, urls = S.fetch_latest(ctx, domain)
+    if not np.isfinite(vals).any():
+        raise ValueError(f"MUR SST {day}: no value inside the coastal scope")
+    geo = (target.lat_first, -target.step, target.lon_first, target.step)
+    base = f"{DERIVED}/sst-{day.isoformat()}-{_h(urls[-1], ctx.run_id)}"
+    g, n = write_grid(ctx.out_dir, f"{base}/values", vals, geo, *S.RANGE_C, log=False)
+    f = vals[np.isfinite(vals)]
+    layer = {
+        "id": "sst_latest",
+        "kind": "sst",
+        "label": "Sea surface temperature",
+        "units": "degC",
+        "observed_dates": [day.isoformat()],
+        "product_class": "analysis",
+        "source": "JPL MUR SST v4.1 (Multi-scale Ultra-high Resolution analysis, GHRSST L4), via NOAA CoastWatch West Coast ERDDAP jplMURSST41",
+        "source_url": f"{S.SERVER}/griddap/{S.DATASET}.html",
+        "request_urls": urls,
+        "resolution_km": 1.0,
+        "method": "Daily gap-free analysis blending several satellite sensors (infrared and microwave) with in-situ data; published as received (quantized to 0.001 degC), clipped to the coastal ocean and connected bays.",
+        "caveats": [
+            "An analysis, not a direct observation: where clouds or fog hide the sea, MUR interpolates from other sensors and nearby days.",
+            "The grid is 0.01 degrees (about 1 km), but under clouds the effective detail is coarser (microwave data are about 25 km); near shore and in bays values lean on interpolation.",
+            "Surface skin/foundation temperature of the open water, not the temperature at depth where fish may hold.",
+            f"Analysis day {day.isoformat()} (about one day behind real time).",
+        ],
+        "stats": {"cells": int(f.size), "min_c": round(float(f.min()), 2), "max_c": round(float(f.max()), 2)},
+        "grid": g,
+    }
+    return layer, n, {"day": day.isoformat(), "cells": int(f.size)}
+
+
 def charm_extension_entry(path: Path = CHARM_PIER_VALIDATION) -> dict | None:
     """Validation of showing the nearest valued C-HARM cell's nowcast at nearshore points (piers),
     from pipeline/scripts/validate_charm_nearshore.py. Not a layer: the readout's skill statement."""
@@ -462,6 +497,13 @@ def run(ctx: RunContext, manifest: Manifest | None = None) -> dict:
         stats["outlook"] = st
     except Exception as e:
         notes.append(f"outlook not built: {e}")
+    try:
+        lyr, n, st = sst_layer(ctx)
+        layers.append(lyr)
+        nbytes += n
+        stats["sst"] = st
+    except Exception as e:
+        notes.append(f"sea surface temperature not built: {e}")
     ext = charm_extension_entry()
     if ext:
         layers.append(ext)

@@ -50,6 +50,8 @@ Model output, never observations, listed in `derived/index.json` (the released a
 - `chl_outlook_8d`: mean chlorophyll of the next NASA 8-day period, climatology + AR(1) on the 4 km
   research grid, driven by the newest MODIS-Aqua 8-day composite (`derived/outlook.py`; reference and
   held-out skill: `scripts/build_chl_outlook_reference.py` -> `data/reference/chl_outlook_reference.json`).
+- `sst_latest` (kind `sst`): JPL MUR SST v4.1 analysis (0.01 deg, daily), clipped to the coastal scope
+  (`derived/sst.py`); an analysis, not a direct observation.
 - `charm_nearshore_extension` (kind `validation`): skill of showing the nearest valued C-HARM cell at the
   shore, against CalHABMAP pier samples (`scripts/validate_charm_nearshore.py` ->
   `data/reference/charm_nearshore_validation.json`).

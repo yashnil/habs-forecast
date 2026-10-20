@@ -157,7 +157,7 @@ def dataset(tmp_path_factory) -> Path:
 def test_pipeline_writes_derived_index_and_leaves_manifest_alone(dataset: Path, tmp_path: Path):
     idx = json.loads((dataset / "derived" / "index.json").read_text())
     ids = [lyr["id"] for lyr in idx["layers"]]
-    assert ids == ["chl_estimate_latest", "chl_outlook_8d", "charm_nearshore_extension"]
+    assert ids == ["chl_estimate_latest", "chl_outlook_8d", "sst_latest", "charm_nearshore_extension"]
     manifest = (dataset / "manifest.json").read_text()
     assert "derived/" not in manifest and "chl_estimate" not in manifest and "chl_outlook" not in manifest
     est = idx["layers"][0]
@@ -166,7 +166,10 @@ def test_pipeline_writes_derived_index_and_leaves_manifest_alone(dataset: Path, 
     assert out["valid_from"] == "2026-10-04" and out["valid_to"] == "2026-10-11"
     assert out["skill"]["model"] < out["skill"]["climatology"] < out["skill"]["persistence"]
     assert any("not covered" in c for c in out["caveats"])
-    ext = idx["layers"][2]
+    sst = idx["layers"][2]
+    assert sst["kind"] == "sst" and sst["units"] == "degC" and sst["observed_dates"] == ["2026-10-07"]
+    assert sst["grid"]["transform"] == "none" and any("analysis" in c.lower() for c in sst["caveats"])
+    ext = idx["layers"][3]
     assert ext["kind"] == "validation" and ext["has_demonstrated_skill"] is False
     assert ext["readout"].startswith("Context only")
     # a re-run of derive alone leaves the manifest byte-identical
@@ -238,3 +241,18 @@ def test_missing_olci_still_writes_a_valid_index(tmp_path: Path, dataset: Path):
     idx = json.loads((copy / "derived" / "index.json").read_text())
     assert "chl_estimate_latest" not in [lyr["id"] for lyr in idx["layers"]]
     assert any("no estimate" in n for n in idx["notes"])
+
+
+def test_sst_is_clipped_to_the_coastal_scope(dataset: Path):
+    from coastwatch_pipeline.derived import sst as S
+    from coastwatch_pipeline.sources import satellite
+
+    idx = json.loads((dataset / "derived" / "index.json").read_text())
+    lyr = next(x for x in idx["layers"] if x["id"] == "sst_latest")
+    v = R.read_grid(dataset, lyr["grid"])
+    g = lyr["grid"]
+    t = satellite.Target(g["lat_first"], g["lon_first"], S.STEP, g["height"], g["width"])
+    scope = satellite.marine_water(t) & satellite.coastal_mask(t)
+    assert np.isfinite(v).any() and not np.isfinite(v[~scope]).any()
+    f = v[np.isfinite(v)]
+    assert 5 < f.min() and f.max() < 30

@@ -279,6 +279,11 @@ class FixtureFetcher:
         # MODIS-Aqua 8-day composite for the chlorophyll outlook (derived/outlook.py): the composite
         # of 2026-09-26 over the 4 km reference grid, recorded 2026-10-20 from ERDDAP; the listing
         # holds the dataset's real composite start dates up to the fixture date.
+        # MUR SST (derived sea surface temperature) over the Monterey fixture domain, recorded 2026-10-20
+        if "jplMURSST41.csv0?time" in url:
+            return self._file(url, "sst/times.csv", "text/csv")
+        if "jplMURSST41.nc?" in url and "2026-10-07T09:00:00Z" in url:
+            return self._file(url, "sst/mur-2026-10-07.nc", "application/x-netcdf")
         if "erdMH1chla8day_R2022NRT.csv0?time" in url:
             return self._file(url, "modis/times.csv", "text/csv")
         if "erdMH1chla8day_R2022NRT.nc?" in url and "2026-09-26T00:00:00Z" in url:

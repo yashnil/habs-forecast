@@ -251,7 +251,7 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
 
 
 DERIVED_INDEX = "derived/index.json"
-DERIVED_KINDS = {"chl_estimate", "chl_outlook", "validation"}
+DERIVED_KINDS = {"chl_estimate", "chl_outlook", "sst", "validation"}
 
 
 def check_derived(base: str, remote: bool, record) -> None:
@@ -272,7 +272,8 @@ def check_derived(base: str, remote: bool, record) -> None:
                 assert lyr.get("id") and lyr.get("kind") in DERIVED_KINDS, f"layer {lyr.get('id')!r}: unknown kind {lyr.get('kind')!r}"
                 if lyr["kind"] != "validation":
                     assert lyr.get("grid") and lyr.get("caveats") and lyr.get("method"), f"layer {lyr['id']}: grid, method and caveats required"
-                    assert lyr.get("skill") or lyr.get("validation"), f"layer {lyr['id']}: skill or validation required"
+                    if lyr["kind"] != "sst":  # an observed/analysed field, not a model estimate
+                        assert lyr.get("skill") or lyr.get("validation"), f"layer {lyr['id']}: skill or validation required"
             detail = f"{len(idx['layers'])} derived layers"
         except Exception as e:
             ok, detail = False, f"invalid derived index: {str(e)[:200]}"
