@@ -250,7 +250,7 @@ describe("the briefing's claims", () => {
     const g = harborEvidence(brief({ conditions: cond([]) }));
     const c = g.claims.find((x) => x.id === "conditions")!;
     // NWS's own period name, anchored to its date; the buoy's own clock time, never "now" (S6: the text is cached)
-    expect(c.headline).toBe("NWS for Tonight, Oct 13: NW wind 10 to 15 kt · Seas 4 to 6 ft");
+    expect(c.headline).toBe("NWS for “Tonight”, Oct 13: NW wind 10 to 15 kt · Seas 4 to 6 ft");
     expect(c.detail).toMatch(/^Water 17\.6 °C in the harbour · Wind 10 kt NNW, waves 3\.6 ft at Monterey Canyon Outer buoy, 12:50 PM PDT · tides low 2\.2 ft, high 5\.8 ft\./);
     expect(`${c.headline} ${c.detail} ${c.text}`).not.toMatch(/\b(now|tonight|today)\b/);
     expect(c.supports).toEqual(expect.arrayContaining(["nws:PZZ535:Tonight", "coops:9413450:water_temperature", "buoy:46236:windKt", "buoy:46236:waveFt"]));
@@ -261,7 +261,7 @@ describe("the briefing's claims", () => {
     expect(periodFor([{ name: "Tonight", text: "" }, { name: "Thu", text: "" }], "2026-10-15", "2026-10-13")?.name).toBe("Thu");
     const sca = harborEvidence(brief({ conditions: cond([{ event: "Small craft advisory", headline: "Small craft advisory in effect until 9 pm pdt this evening" }]) })).claims.find((x) => x.id === "conditions")!;
     expect(sca.tone).toBe("alert");
-    expect(sca.headline).toMatch(/^Small craft advisory · NWS for Tonight, Oct 13/);
+    expect(sca.headline).toMatch(/^Small craft advisory · NWS for “Tonight”, Oct 13/);
     // shellfish harvest leads with the lowest tide
     const shell = harborEvidence(brief({ conditions: cond([], false), audience: "shellfish" })).claims.find((x) => x.id === "conditions")!;
     expect(shell.detail).toMatch(/^Lowest tide 2\.2 ft at 4:51 AM/);

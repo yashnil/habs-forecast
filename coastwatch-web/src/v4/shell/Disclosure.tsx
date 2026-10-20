@@ -7,9 +7,9 @@ import Link from "next/link";
  * and, on a phone, one short line.
  */
 export function RegistryDisclosure({ className = "", fixture = false, compact = false }: { className?: string; fixture?: boolean; compact?: boolean }) {
-  const link = "nx-focus -my-2.5 inline-flex min-h-11 items-center px-1 font-semibold text-n-accent underline underline-offset-2";
+  const link = "nx-focus -my-2.5 inline-flex min-h-11 items-center px-1 max-[359px]:px-0.5 font-semibold text-n-accent underline underline-offset-2";
   return (
-    <p className={`text-[13.5px] leading-snug text-n-ink-2 ${className}`} data-testid="registry-disclosure">
+    <p className={`text-[13.5px] leading-snug text-n-ink-2 max-[359px]:text-[12px] ${className}`} data-testid="registry-disclosure">
       {fixture && (
         <span className="mr-1.5 inline-flex rounded-full border border-n-official-line px-2 text-[12.5px] font-semibold text-n-official" role="status" data-testid="fixture-banner">
           Test data<span className="sr-only">: recorded fixture data, not a live feed</span>

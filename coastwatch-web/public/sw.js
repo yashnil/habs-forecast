@@ -73,10 +73,12 @@ async function marked(resp, keyUrl) {
   }
   const mark = `<script>self.__NERITIC_SAVED__=${JSON.stringify({ at, url }).replace(/</g, "\\u003c")}</script>`;
   const html = await resp.text();
-  const i = html.indexOf("<head>");
+  // after the opening <head …> tag, or else after the doctype: never before it (quirks mode)
+  const m = /<head[^>]*>/i.exec(html) || /<!doctype[^>]*>/i.exec(html);
+  const i = m ? m.index + m[0].length : 0;
   const headers = new Headers(resp.headers);
   headers.delete("content-length");
-  return new Response(i >= 0 ? html.slice(0, i + 6) + mark + html.slice(i + 6) : mark + html, { status: 200, headers });
+  return new Response(html.slice(0, i) + mark + html.slice(i), { status: 200, headers });
 }
 
 /** A byte range of a saved file (PMTiles reads its archive by ranges): sliced from the stored blob,

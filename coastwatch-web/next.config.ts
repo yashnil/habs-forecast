@@ -8,8 +8,9 @@ const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_NERITIC_BUILD: BUILD },
   async headers() {
     // the icons never change under the same name between deploys of the same brand: no revalidation per visit
-    const year = "public, max-age=31536000, immutable";
-    return ["/favicon.ico", "/icon.svg", "/apple-icon.png"].map((source) => ({ source, headers: [{ key: "Cache-Control", value: year }] }));
+    // a day, not a year: the mark is provisional and a new one must reach returning browsers
+    const day = "public, max-age=86400";
+    return ["/favicon.ico", "/icon.svg", "/apple-icon.png"].map((source) => ({ source, headers: [{ key: "Cache-Control", value: day }] }));
   },
 };
 

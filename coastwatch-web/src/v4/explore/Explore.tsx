@@ -358,7 +358,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     const m = mapRef.current;
     if (!m) return;
     const p = padding();
-    m.fitBounds(STATEWIDE.bounds, { padding: bp === "phone" ? p : { ...p, top: 112, bottom: 24 }, duration: 500 });
+    m.fitBounds(STATEWIDE.bounds, { padding: bp === "phone" ? p : { ...p, top: 112, bottom: bp === "tablet" ? 168 : 24 }, duration: 500 });
   }, [padding, bp]);
   const focusOn = useCallback(
     (s: Selection) => {
@@ -489,7 +489,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
       // the field-pack dialog is modal: its own Escape closes it, never the panel behind
-      if (packOpen) return;
+      // a panel or dialog above it that handled Escape marks the key as used (preventDefault)
+      if (packOpen || e.defaultPrevented) return;
       if (e.key === "Escape") {
         if (areaMode) setAreaMode(false);
         else if (selection) select(null);
@@ -523,7 +524,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     }),
     [manifest, variable, lead, baseUrl, active.kind, resolved.satLayer, hoverSource],
   );
-  const ctx = { manifest, baseUrl, ports, portIntel, stations, now, variable, lead, onSelect: selectAndGo, official, reads: pointReads };
+  const ctx = { manifest, baseUrl, ports, portIntel, stations, now, variable, lead, layer: active.kind, onSelect: selectAndGo, official, reads: pointReads };
   // opened from a briefing ("Show on map"): a way back to it, only to a My Coast address
   const backTo = useMemo(() => {
     const f = q0.get("from");
@@ -786,7 +787,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         if (initialAt && initialAt.length === 3 && initialAt.every(Number.isFinite)) m.jumpTo({ center: [initialAt[1], initialAt[0]], zoom: initialAt[2] });
         else {
           const p = padding();
-          m.fitBounds(initialBounds, { padding: initialBounds === STATEWIDE.bounds && bp !== "phone" ? { ...p, top: 112, bottom: 24 } : p, duration: 0 });
+          m.fitBounds(initialBounds, { padding: initialBounds === STATEWIDE.bounds && bp !== "phone" ? { ...p, top: 112, bottom: bp === "tablet" ? 168 : 24 } : p, duration: 0 });
           const s = decodeSelection(q0);
           if (s) m.once("idle", () => focusOn(s));
         }
@@ -1012,7 +1013,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
  */
 function MapCredits({ short = false }: { short?: boolean }) {
   return (
-    <p className="w-fit max-w-full truncate rounded-md bg-[rgba(6,17,30,0.72)] px-2 py-0.5 text-[11px] leading-[16px] text-[#c9d6e2] [&_a]:underline [&_a]:underline-offset-2" data-testid={short ? "attribution-short" : "attribution-line"}>
+    <p className="w-fit max-w-full rounded-md bg-[rgba(6,17,30,0.72)] px-2 py-0.5 text-[11px] leading-[16px] text-[#c9d6e2] [&_a]:underline [&_a]:underline-offset-2" data-testid={short ? "attribution-short" : "attribution-line"}>
       <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">© OpenMapTiles</a> · NOAA relief · not for navigation
     </p>
   );

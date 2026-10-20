@@ -284,9 +284,12 @@ test("the pack dialog: focus moves in and stays, Escape closes it and returns fo
     await page.keyboard.press("Tab");
     expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
   }
+  const selBefore = new URL(page.url()).searchParams.get("sel");
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(page.getByTestId("pack-open")).toBeFocused();
+  // Escape closed the dialog only: the selection behind it is still open
+  expect(new URL(page.url()).searchParams.get("sel")).toBe(selBefore);
 
   // slow the download so it is still running when the dialog closes
   await ctx.route(/\/charm\/|\/satellite\//, async (r) => {

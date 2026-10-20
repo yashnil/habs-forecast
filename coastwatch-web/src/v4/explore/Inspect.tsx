@@ -35,6 +35,8 @@ type Ctx = {
   now: Date | null;
   variable: CharmVariable;
   lead: number;
+  /** the map's layer: the C-HARM day is named only while the forecast is on the map */
+  layer?: string;
   onSelect: (s: Selection) => void;
   official?: OfficialDataset | null;
   /** what can be read at a point: the forecast for the chosen variable and day, the satellite view, and the currents hour once loaded */
@@ -229,7 +231,7 @@ export function HarborView({ code, ctx }: { code: number; ctx: Ctx }) {
         {evDay && (
           <p className="-mt-1 text-[13px] leading-snug text-n-ink-3" data-testid="harbor-day">
             For {dayLabel(evDay, true)}
-            {mapDay?.date ? (mapDay.date === evDay ? ", the C-HARM day on the map" : ` · the map shows C-HARM for ${dayLabel(mapDay.date, true)} (${mapDay.lead === 0 ? "nowcast" : "forecast"})`) : ""}
+            {mapDay?.date && ctx.layer === "forecast" ? (mapDay.date === evDay ? ", the C-HARM day on the map" : ` · the map shows C-HARM for ${dayLabel(mapDay.date, true)} (${mapDay.lead === 0 ? "nowcast" : "forecast"})`) : ""}
           </p>
         )}
         {!ev || ev.status === "loading" ? (

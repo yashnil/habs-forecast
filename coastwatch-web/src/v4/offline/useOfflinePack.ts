@@ -24,8 +24,13 @@ export function useOfflinePack(id: string | null) {
   }, [id]);
   useEffect(() => {
     const on = () => setOnline(navigator.onLine);
+    // back online (the event, not the first read): a page that came from a pack stops being a saved copy
+    const back = () => {
+      delete (window as unknown as { __NERITIC_SAVED__?: unknown }).__NERITIC_SAVED__;
+      on();
+    };
     on();
-    window.addEventListener("online", on);
+    window.addEventListener("online", back);
     window.addEventListener("offline", on);
     if (!("serviceWorker" in navigator)) setSw("unsupported");
     else
@@ -36,7 +41,7 @@ export function useOfflinePack(id: string | null) {
         .then(() => setSw("ready"))
         .catch(() => setSw("failed"));
     return () => {
-      window.removeEventListener("online", on);
+      window.removeEventListener("online", back);
       window.removeEventListener("offline", on);
     };
   }, []);

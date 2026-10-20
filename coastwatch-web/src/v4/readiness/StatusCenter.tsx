@@ -113,7 +113,11 @@ export function StatusCenter({ now, align = "right", compact = false }: { now: D
   const said = useCalmAnnouncement(state, snap.online);
   useEffect(() => {
     if (!open) return;
-    const key = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      setOpen(false);
+    };
     const click = (e: MouseEvent) => box.current && !box.current.contains(e.target as Node) && setOpen(false);
     window.addEventListener("keydown", key);
     window.addEventListener("mousedown", click);

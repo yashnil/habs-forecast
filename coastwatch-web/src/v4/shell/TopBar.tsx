@@ -28,7 +28,11 @@ function MoreMenu() {
   const box = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!open) return;
-    const k = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const k = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      setOpen(false);
+    };
     const c = (e: MouseEvent) => box.current && !box.current.contains(e.target as Node) && setOpen(false);
     window.addEventListener("keydown", k);
     window.addEventListener("mousedown", c);

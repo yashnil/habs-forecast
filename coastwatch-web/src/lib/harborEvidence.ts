@@ -7,7 +7,7 @@ import { fmtMeasured, fmtPct, EVIDENCE_RADIUS_KM, NEIGHBOURHOOD_KM, RECENT_DAYS,
 import type { StationLite } from "@/lib/data";
 import type { Verification } from "@/lib/official";
 import { runAgeWords } from "@/lib/charmDays";
-import { clockPT, dtf } from "@/lib/time";
+import { clockPT, dtf, pacificDate } from "@/lib/time";
 import { recordNamesSpecies, speciesPhrase, type Species } from "@/content/species";
 import { copyWords, rankWords, type RecordContext } from "@/lib/history";
 import { SHORE_STATIONS, shoreCredit, SHORE_UNITS, type ShoreVariable } from "@/lib/shoreStations";
@@ -616,7 +616,8 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         supports.push(n.id);
         // NWS's own period name, anchored to its date: a saved "tonight" must still say which night
         const pDay = x.tripDate ?? today;
-        nws = `NWS for ${p.name}${/tonight|today|this afternoon|overnight/i.test(p.name) && pDay ? `, ${shortDate(pDay)}` : ""}: ${marineHeadline(p)}`;
+        const rel = /tonight|today|this afternoon|overnight/i.test(p.name) && pDay;
+        nws = `NWS for ${rel ? `“${p.name}”, ${shortDate(pDay)}` : p.name}: ${marineHeadline(p)}`;
         source = { label: `NWS forecast, ${c.marine.data.zoneName}`, url: c.marine.url };
       }
     }
@@ -723,7 +724,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       if (w) {
         // the reading's own clock time, never "now": the sentence is cached and saved for offline use
         const at = (wind ?? wave)!.time.observed;
-        parts.push(`${cap(w)} at ${stationName(st.name)} buoy${at ? `, ${clockPT(at)}` : ""}`);
+        parts.push(`${cap(w)} at ${stationName(st.name)} buoy${at ? `, ${clockPT(at)}${x.today && pacificDate(at) !== x.today ? ` ${shortDate(pacificDate(at))}` : ""}` : ""}`);
         source ??= { label: `NDBC ${st.id}`, url: c.buoy.url };
       }
     }

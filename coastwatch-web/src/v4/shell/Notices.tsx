@@ -40,6 +40,8 @@ export function NoticesButton({ official, status = null, compact = false, local 
     if (!open) return;
     const k = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
+      // used here: the selection behind the panel stays open
+      e.preventDefault();
       setOpen(false);
       button.current?.focus();
     };
