@@ -357,6 +357,8 @@ export async function download(pack: PackDef, items: PlanItem[], meta: Omit<Pack
     const headers = new Headers(r.headers);
     headers.set("content-length", String(buf.byteLength));
     headers.set("x-neritic-saved-at", new Date().toISOString());
+    // the address it was saved for: a saved page answers other addresses offline, and must say which it is
+    headers.set("x-neritic-saved-url", it.url);
     const resp = new Response(buf, { status: 200, headers });
     await c.put(it.url, resp.clone());
     if (it.key) await c.put(it.key, resp);

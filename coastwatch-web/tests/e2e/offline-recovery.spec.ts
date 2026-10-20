@@ -19,7 +19,7 @@ const RECORD = "/__pack__/record.json";
 
 async function openPanel(page: Page) {
   await page.goto(`${OK}/coast?place=port-550`);
-  await page.evaluate(() => navigator.serviceWorker.register("/sw.js").then(() => navigator.serviceWorker.ready));
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
   await page.getByTestId("pack-open").click();
   await expect(page.getByTestId("pack-download")).toBeEnabled({ timeout: 60_000 });
 }
@@ -193,13 +193,18 @@ test("a new service worker with a renamed code cache, and code files renamed by 
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
   await save(page);
-  expect(await page.evaluate(() => caches.has("neritic-static-v1"))).toBe(true);
+  // the app registers its worker as /sw.js?b=<build>, and the code cache is named for that build
+  const staticCaches = () => page.evaluate(() => caches.keys().then((k) => k.filter((x) => x.startsWith("neritic-static-"))));
+  const script = await page.evaluate(() => navigator.serviceWorker.ready.then((r) => r.active?.scriptURL ?? ""));
+  const build = new URL(script).searchParams.get("b");
+  expect(build).toBeTruthy();
+  await expect.poll(staticCaches).toContain(`neritic-static-${build}`);
 
   // (a) a worker update (a new script URL: Playwright cannot serve a changed worker script). A version
   // with a renamed code cache removes the old one on activation (states.spec: neritic-static-v0 goes);
   // here its result: the old code cache is gone and the new one starts empty.
   const active = await page.evaluate(async () => {
-    const reg = await navigator.serviceWorker.register("/sw.js?v=2", { scope: "/" });
+    const reg = await navigator.serviceWorker.register("/sw.js?b=next-build&v=2", { scope: "/" });
     await new Promise<void>((done) => {
       const w = reg.installing ?? reg.waiting;
       if (!w) return done();
@@ -208,7 +213,9 @@ test("a new service worker with a renamed code cache, and code files renamed by 
     return reg.active?.scriptURL ?? "";
   });
   expect(active).toContain("v=2");
-  await page.evaluate(() => caches.delete("neritic-static-v1"));
+  // the new build's worker dropped the old build's code cache; its own starts empty
+  await expect.poll(staticCaches).not.toContain(`neritic-static-${build}`);
+  await page.evaluate(() => caches.keys().then((k) => Promise.all(k.filter((x) => x.startsWith("neritic-static-")).map((x) => caches.delete(x)))));
   expect(await page.evaluate(() => caches.has("neritic-pack-monterey"))).toBe(true);
 
   // (d) a deploy renamed every code file while the device was away: the server no longer has the saved
@@ -227,5 +234,77 @@ test("a new service worker with a renamed code cache, and code files renamed by 
   expect(refused.filter((u) => u.includes("/_next/static/"))).toEqual([]);
   expect(errors).toEqual([]);
   await goOnline(ctx);
+  await ctx.close();
+});
+
+test("offline, the saved briefing is dated, never 'now'; its age is said once outdated; a place no pack holds says so; no hydration error", async ({ browser }) => {
+  test.setTimeout(180_000);
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  await save(page);
+  // online, the briefing is live
+  await page.reload();
+  await expect(page.getByTestId("matters-heading")).toHaveText("What matters now");
+
+  await goOffline(ctx);
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  // three days later, another trip of the same harbour: the pack's saved page answers it
+  await page.clock.setFixedTime(new Date(Date.now() + 3 * 86_400_000 + 3_600_000));
+  await page.goto(`${OK}/coast?place=port-550&for=commercial`);
+  await expect(page.getByTestId("coast-title")).toHaveText("Monterey", { timeout: 20_000 });
+  await expect(page.getByTestId("matters-heading")).toContainText(/What mattered when saved · \w{3} \d{1,2}, \d{1,2}:\d{2} [AP]M/);
+  await expect(page.getByTestId("matters-heading")).not.toContainText("now");
+  await expect(page.getByTestId("offline-banner")).toContainText(/Offline · Monterey Bay saved .* · 3 days old/);
+  // the address bar's own trip, after hydrating the saved HTML
+  await expect(page.getByTestId("trip-summary")).toContainText("Commercial fishing");
+
+  // a harbour no pack holds: said, with the way to the saved one; never Monterey's banner over it
+  await page.goto(`${OK}/coast?place=port-201`);
+  await expect(page.getByTestId("coast-title")).toHaveText("Crescent City", { timeout: 20_000 });
+  await expect(page.getByTestId("offline-banner")).toContainText("Crescent City is not saved for offline use");
+  await expect(page.getByTestId("offline-banner")).not.toContainText("Monterey Bay saved");
+  await expect(page.getByTestId("matters-heading")).toHaveText("What matters now");
+  await page.getByTestId("offline-outside").getByRole("link", { name: /Open Monterey Bay/ }).click();
+  await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
+  expect(errors.filter((e) => /#418|[Hh]ydrat/.test(e))).toEqual([]);
+  await goOnline(ctx);
+  await ctx.close();
+});
+
+test("the pack dialog: focus moves in and stays, Escape closes it and returns focus; a running download survives closing and shows its progress when reopened", async ({ browser }) => {
+  test.setTimeout(180_000);
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await ctx.newPage();
+  await openPanel(page);
+  const dialog = page.getByTestId("pack-dialog");
+  await expect(dialog).toBeFocused();
+  // Tab never leaves the dialog
+  for (let i = 0; i < 12; i++) {
+    await page.keyboard.press("Tab");
+    expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
+  }
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByTestId("pack-open")).toBeFocused();
+
+  // slow the download so it is still running when the dialog closes
+  await ctx.route(/\/charm\/|\/satellite\//, async (r) => {
+    await new Promise((d) => setTimeout(d, 150));
+    await r.continue();
+  });
+  await page.getByTestId("pack-open").click();
+  await expect(page.getByTestId("pack-download")).toBeEnabled({ timeout: 60_000 });
+  await page.getByTestId("pack-download").click();
+  await expect(page.getByTestId("pack-progress")).toBeVisible();
+  // a tap on the backdrop does not close it while downloading
+  await page.mouse.click(10, 10);
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await page.getByTestId("pack-open").click();
+  await expect(page.getByTestId("pack-progress")).toBeVisible();
+  await expect(page.getByTestId("pack-status")).toHaveAttribute("data-complete", "true", { timeout: 120_000 });
+  await ctx.unrouteAll({ behavior: "ignoreErrors" });
   await ctx.close();
 });

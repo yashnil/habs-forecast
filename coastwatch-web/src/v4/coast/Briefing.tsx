@@ -24,15 +24,18 @@ import { SkipLink } from "@/v4/shell/SkipLink";
 import { distanceKm } from "@/lib/grid";
 import type { Step } from "@/lib/nextSteps";
 import { Icon } from "@/v4/ui/Icon";
-import { dayLabel, dayYearLabel, kmLabel, relTime } from "@/v4/ui/time";
+import { clockLabel, dayLabel, dayYearLabel, kmLabel, relTime } from "@/v4/ui/time";
 import { ClaimRow, nodeSelection } from "@/v4/explore/Inspect";
 import { SinceLastCheck } from "@/components/coast/SinceLastCheck";
 import { useBriefing } from "./useBriefing";
 import { PACKS, packForPort } from "@/v4/offline/packs";
 import { isFixture, sourceStatus } from "@/lib/layers";
 import { useOfflinePack } from "@/v4/offline/useOfflinePack";
-import { OfflinePanel, useRecordSource } from "@/v4/offline/OfflinePanel";
+import { useRecordSource } from "@/v4/offline/OfflinePanel";
 import { OfflineBanner } from "@/v4/offline/OfflineBanner";
+import { PackDialog } from "@/v4/offline/PackDialog";
+import { savedSearch, savedSnapshot } from "@/v4/offline/snapshot";
+import { homeHref, readHome, writeHome, type HomePort } from "./home";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
 
@@ -47,7 +50,6 @@ type Props = {
 };
 
 const EXAMPLES = ["port-550", "port-201", "port-220", "port-593", "port-880", "port-770", "site-clam-beach"];
-const HOME_KEY = "cw-home-port";
 
 function exploreHref(s: Selection, back: string): string {
   const q = new URLSearchParams({ sel: encodeSelection(s)!, from: back });
@@ -66,6 +68,43 @@ function Section({ id, title, kicker, children }: { id: string; title: string; k
       {children}
     </section>
   );
+}
+
+/**
+ * A section below "Before you go", folded: its title, how many items it holds and one line saying what
+ * they are, so the page reads as an answer first and the evidence stays one tap away (never removed).
+ */
+function Fold({ id, title, count, summary, kicker, children }: { id: string; title: string; count: number; summary: string; kicker?: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section aria-labelledby={`${id}-h`} className="border-t border-n-line pt-3" data-testid={`brief-${id}`} data-open={open}>
+      <h2 id={`${id}-h`} className="font-serif text-[21px] font-semibold leading-tight text-n-ink">
+        <button type="button" aria-expanded={open} aria-controls={`${id}-body`} onClick={() => setOpen((o) => !o)} className="nx-focus group flex min-h-14 w-full items-start gap-3 rounded-lg py-2 text-left" data-testid={`brief-${id}-toggle`}>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-baseline gap-2">
+              {title}
+              <span className="nx-data rounded-full bg-n-surface-2 px-2 py-0.5 font-ui text-[13px] font-semibold text-n-ink-2">{count}</span>
+            </span>
+            <span className="mt-1 block font-ui text-[14.5px] font-normal leading-snug text-n-ink-2">{summary}</span>
+          </span>
+          <Icon name="chevronDown" className={`mt-1 text-n-ink-3 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+      </h2>
+      <div id={`${id}-body`} hidden={!open} className="flex flex-col gap-4 pb-4 pt-2">
+        {kicker && <p className="text-[15px] text-n-ink-2">{kicker}</p>}
+        {children}
+      </div>
+    </section>
+  );
+}
+
+const cap = (v: string) => v.charAt(0).toUpperCase() + v.slice(1);
+
+/** "Water temperature, Pseudo-nitzschia cells and 2 more": what a list of evidence is, in one line. */
+function whatList(ns: EvidenceNode[]): string {
+  const names = [...new Set(ns.map((n) => cap(n.variable)))];
+  if (names.length <= 3) return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "");
+  return `${names.slice(0, 2).join(", ")} and ${names.length - 2} more`;
 }
 
 const CLASS_WORD: Record<string, { word: string; dot: string }> = {
@@ -141,7 +180,7 @@ function Select({ id, label, value, onChange, options }: { id: string; label: st
   return (
     <label htmlFor={id} className="flex min-w-0 flex-1 flex-col gap-1">
       <span className="nx-eyebrow">{label}</span>
-      <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className="nx-focus min-h-[52px] w-full rounded-xl border border-n-line-strong bg-n-surface px-3 text-[16px] font-semibold text-n-ink" data-testid={id}>
+      <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className="nx-select nx-focus min-h-[52px] w-full rounded-xl border border-n-line-strong bg-n-surface pl-3 text-[16px] font-semibold text-n-ink" data-testid={id}>
         {options.map((o) => (
           <option key={o.id} value={o.id}>
             {o.label}
@@ -155,7 +194,12 @@ function Select({ id, label, value, onChange, options }: { id: string; label: st
 export function Briefing(props: Props) {
   const { ports, official, stations } = props;
   const router = useRouter();
-  const sp = useSearchParams();
+  const liveSp = useSearchParams();
+  // offline, a saved briefing answers other trips and places: hydrate the HTML it holds, then render the
+  // address bar's own (otherwise React throws #418 and the first render is thrown away)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const sp = (!mounted && savedSearch("/coast")) || liveSp;
   const now = useNow();
   const [purpose] = usePurpose();
   const placeKey = sp.get("place");
@@ -163,23 +207,12 @@ export function Briefing(props: Props) {
   const species = speciesById(sp.get("species"));
   const place = useMemo(() => resolvePlace(placeKey, ports), [placeKey, ports]);
   const b = useBriefing({ ...props, place, audience, species, dateParam: sp.get("date"), now });
-  const [home, setHomeState] = useState<string | null>(null);
-  useEffect(() => {
-    try {
-      setHomeState(window.localStorage.getItem(HOME_KEY));
-    } catch {
-      setHomeState(null);
-    }
-  }, []);
-  // the home port is remembered on this device only, and never assumed to be where anyone fishes
-  const setHome = useCallback((key: string | null) => {
-    try {
-      if (key) window.localStorage.setItem(HOME_KEY, key);
-      else window.localStorage.removeItem(HOME_KEY);
-    } catch {
-      // not remembered on this device
-    }
-    setHomeState(key);
+  const [home, setHomeState] = useState<HomePort | null>(null);
+  useEffect(() => setHomeState(readHome()), []);
+  // the home port (with the reader's own trip) is remembered on this device only, and never assumed to be where anyone fishes
+  const setHome = useCallback((h: HomePort | null) => {
+    writeHome(h);
+    setHomeState(h);
   }, []);
   const go = useCallback(
     (next: { place?: string | null; for?: Audience; species?: SpeciesId; date?: string | null }) => {
@@ -191,12 +224,18 @@ export function Briefing(props: Props) {
     [router, placeKey, audience, species.id, sp],
   );
   const [tripOpen, setTripOpen] = useState(false);
-  const pack = packForPort(place?.kind === "port" ? Number(place.key.slice(5)) : null) ?? PACKS.monterey;
+  const [placeOpen, setPlaceOpen] = useState(false);
+  // the field pack that covers this place, if one does (else Monterey's, to say what is saved)
+  const covering = place?.kind === "port" ? packForPort(Number(place.key.slice(5))) : null;
+  const pack = covering ?? PACKS.monterey;
   const off = useOfflinePack(pack.id);
   useRecordSource(off.record, pack.name, off.online, off.evicted, off.problem);
   const [packOpen, setPackOpen] = useState(false);
-  const hasPack = place?.kind === "port" && !!packForPort(Number(place.key.slice(5)));
-  const back = typeof window === "undefined" ? `/coast?${sp.toString()}` : `${window.location.pathname}${window.location.search}`;
+  const hasPack = !!covering;
+  // served from the saved pack (offline, or the page itself came from it): headings say when it was saved,
+  // never "now"; null on the server and the first render, so no device time meets server HTML
+  const snap = covering ? savedSnapshot(off.record, off.online) : null;
+  const back = `/coast?${sp.toString()}`;
   const placeSel: Selection | null = !place ? null : place.kind === "port" ? { kind: "harbor", port: Number(place.key.slice(5)) } : { kind: "point", lat: place.lat, lon: place.lon };
 
   useReportSource(place ? { id: "conditions", label: "Harbour conditions", state: b.cond.loading ? "loading" : b.cond.error ? "unavailable" : b.cond.data ? "ready" : "waiting", detail: b.cond.error ?? "NOAA CO-OPS, NDBC and NWS, read live" } : null);
@@ -250,7 +289,9 @@ export function Briefing(props: Props) {
   const g = b.graph;
   const measured = useMemo(() => (g ? g.nodes.filter((n) => n.variable !== "official notice") : []), [g]);
   const near = measured.filter((n) => (n.where?.representative === "at" || n.where?.representative === "near") && (!n.freshness || n.freshness.state === "current"));
-  const far = measured.filter((n) => !near.includes(n));
+  // a station's sample against its own record is already said, whole, by the statement it supports above
+  const said = new Set(b.matters.filter((c) => c.history).flatMap((c) => c.supports));
+  const far = measured.filter((n) => !near.includes(n) && !(n.id?.startsWith("record:") && said.has(n.id)));
   const notices = g ? g.nodes.filter((n) => n.variable === "official notice") : [];
 
   // ---------------------------------------------------------------- no place yet: choose one
@@ -272,15 +313,16 @@ export function Briefing(props: Props) {
             </p>
           )}
           <ul className="mt-6 grid gap-2 sm:grid-cols-2" data-testid="coast-landing">
-            {[...(home ? [home] : []), ...EXAMPLES.filter((k) => k !== home)].map((k) => {
+            {[...(home ? [home.place] : []), ...EXAMPLES.filter((k) => k !== home?.place)].map((k) => {
               const p = resolvePlace(k, ports);
               if (!p) return null;
+              const isHome = k === home?.place;
               return (
                 <li key={k}>
-                  <Link href={coastHref({ place: k, for: audience })} className="nx-press nx-focus flex min-h-[64px] items-center justify-between gap-3 rounded-2xl border border-n-line bg-n-surface px-4" data-testid={`coast-start-${k}`}>
+                  <Link href={isHome && home ? homeHref(home) : coastHref({ place: k, for: audience })} className="nx-press nx-focus flex min-h-[64px] items-center justify-between gap-3 rounded-2xl border border-n-line bg-n-surface px-4" data-testid={`coast-start-${k}`}>
                     <span>
                       <span className="block text-[17px] font-semibold">{p.name}</span>
-                      <span className="block text-[13.5px] text-n-ink-3">{k === home ? "Your home port" : p.note}</span>
+                      <span className="block text-[13.5px] text-n-ink-3">{isHome ? "Your home port" : p.note}</span>
                     </span>
                     <Icon name="chevronRight" className="text-n-ink-3" />
                   </Link>
@@ -318,17 +360,12 @@ export function Briefing(props: Props) {
       <RegistryDisclosure className="mx-auto w-full max-w-[1240px] px-4 sm:px-6" fixture={isFixture(props.manifest)} />
       {!off.online && (
         <div className="px-3 pt-3">
-          {/* in the page's flow: on the briefing it must never cover the title */}
-          <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline />
+          {/* in the page's flow: on the briefing it must never cover the title. A place no pack covers says
+              so, rather than showing the saved pack's banner over a briefing it does not hold */}
+          <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline outside={covering ? null : { place: place.name, href: coastHref({ place: pack.place }) }} />
         </div>
       )}
-      {packOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-[rgba(4,16,22,0.55)] p-3" onClick={(e) => e.target === e.currentTarget && setPackOpen(false)}>
-          <div role="dialog" aria-modal="true" aria-label={`Field pack: ${pack.name}`} className="nx-deck nx-rise max-h-[92dvh] w-[min(520px,100%)] overflow-y-auto p-5">
-            <OfflinePanel pack={pack} manifest={props.manifest} baseUrl={props.baseUrl} onClose={() => setPackOpen(false)} />
-          </div>
-        </div>
-      )}
+      {packOpen && <PackDialog pack={pack} manifest={props.manifest} baseUrl={props.baseUrl} official={official} onClose={() => setPackOpen(false)} />}
       <div className="mx-auto grid w-full max-w-[1240px] gap-8 px-4 pb-32 pt-4 sm:px-6 lg:grid-cols-[minmax(0,720px)_minmax(0,1fr)] lg:pt-6">
         <main id="main" className="flex min-w-0 flex-col gap-7">
           <header className="flex flex-col gap-4" data-testid="coast-header">
@@ -336,16 +373,34 @@ export function Briefing(props: Props) {
               <div className="min-w-0">
                 <p className="nx-eyebrow">Your trip briefing</p>
                 <h1 className="mt-1 text-balance font-serif text-[38px] font-semibold leading-[1.05] sm:text-[48px]" data-testid="coast-title">
-                  {place.name}
+                  {/* the title is the place control: other harbours, waters on the map, the home port */}
+                  <button type="button" aria-expanded={placeOpen} aria-controls={placeOpen ? "coast-place-menu" : undefined} aria-describedby="coast-place-hint" onClick={() => setPlaceOpen((o) => !o)} className="nx-focus group inline-flex max-w-full items-center gap-2 rounded-lg text-left hover:text-n-accent" data-testid="coast-place-button">
+                    <span className="min-w-0">{place.name}</span>
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-n-line-strong bg-n-surface text-n-ink-2 group-hover:text-n-accent sm:h-10 sm:w-10">
+                      <Icon name="chevronDown" className={`h-5 w-5 transition-transform ${placeOpen ? "rotate-180" : ""}`} />
+                    </span>
+                  </button>
                 </h1>
-                <p className="mt-1 text-[15.5px] text-n-ink-2" data-testid="coast-subtitle">
-                  {place.note}
-                  {place.county ? ` · ${place.county} County` : ""}
+                <span id="coast-place-hint" hidden>
+                  Change the place, choose waters on the map, or keep it as your home port
+                </span>
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[15.5px] text-n-ink-2" data-testid="coast-subtitle">
+                  <span>
+                    {place.note}
+                    {place.county ? ` · ${place.county} County` : ""}
+                  </span>
+                  {home?.place === place.key ? (
+                    <span className="inline-flex items-center gap-1 font-semibold text-n-ink" data-testid="coast-home">
+                      <Icon name="harbor" className="h-4 w-4 text-n-accent" /> Your home port
+                    </span>
+                  ) : home ? (
+                    <HomeLink home={home} ports={ports} />
+                  ) : null}
                 </p>
               </div>
               <CopyLink />
             </div>
-            <PlaceBar place={place} ports={ports} home={home} onHome={setHome} onPlace={goPlace} />
+            {placeOpen && <PlaceMenu place={place} ports={ports} home={home} audience={audience} species={species.id} onHome={setHome} onPlace={(k) => { setPlaceOpen(false); goPlace(k); }} onClose={() => setPlaceOpen(false)} />}
             <TripSummary audience={audience} species={species.label} day={b.tripDay ? `${b.tripDay.label}, ${b.tripDay.day}` : "Today"} open={tripOpen} onToggle={() => setTripOpen((o) => !o)} />
             <div className={`flex-col gap-2 sm:flex sm:flex-row ${tripOpen ? "flex" : "hidden"}`} data-testid="trip-controls">
               <Select id="trip-activity" label="Activity" value={audience} onChange={(v) => go({ for: v as Audience, species: v === "all" || species.activities.includes(v as never) ? species.id : "any" })} options={activityOptions} />
@@ -355,8 +410,14 @@ export function Briefing(props: Props) {
           </header>
 
           <section aria-labelledby="now-h" className="flex flex-col gap-4" data-testid="brief-now">
-            <h2 id="now-h" className="font-serif text-[26px] font-semibold leading-tight">
-              What matters now
+            <h2 id="now-h" className="font-serif text-[26px] font-semibold leading-tight" data-testid="matters-heading">
+              {snap ? (
+                <>
+                  What mattered when saved <span className="font-ui text-[17px] font-semibold text-n-ink-2">· {clockLabel(snap.savedAt)}</span>
+                </>
+              ) : (
+                "What matters now"
+              )}
             </h2>
             {!g || !settled ? (
               <p className="text-[15px] text-n-ink-2" role="status" data-testid="matters-reading">
@@ -406,7 +467,15 @@ export function Briefing(props: Props) {
             )}
           </Section>
 
-          <Section id="measured" title="The evidence near you" kicker="Measurements and observations that describe these waters, with where and when each was taken.">
+          {/* the evidence behind the answer, folded: each says how much it holds and what, one tap away */}
+          <div className="flex flex-col">
+          <Fold
+            id="measured"
+            title="The evidence near you"
+            count={near.length}
+            summary={!g ? "Reading…" : near.length ? `${whatList(near)}${snap ? `, as saved ${clockLabel(snap.savedAt)}` : ""}` : "Nothing measured recently in these waters themselves"}
+            kicker="Measurements and observations that describe these waters, with where and when each was taken."
+          >
             {!g ? (
               <p className="text-[15px] text-n-ink-2">Reading…</p>
             ) : near.length ? (
@@ -414,15 +483,21 @@ export function Briefing(props: Props) {
             ) : (
               <p className="text-[15px] text-n-ink-2">Nothing measured recently in these waters themselves. What exists is farther away or older, below.</p>
             )}
-          </Section>
+          </Fold>
 
           {far.length > 0 && (
-            <Section id="context" title="Farther away or older" kicker="Context only: useful to know, but not a reading of these waters on this day.">
+            <Fold id="context" title="Farther away or older" count={far.length} summary={`Context only: ${whatList(far).toLowerCase()}`} kicker="Context only: useful to know, but not a reading of these waters on this day.">
               <ul className="divide-y divide-n-line">{far.map((n) => <NodeRow key={n.id ?? n.variable} n={n} now={now} back={back} />)}</ul>
-            </Section>
+            </Fold>
           )}
 
-          <Section id="official" title="Official restrictions" kicker="Neritic's transcription of the agencies' notices: not verified by a person. Check the agency before you rely on any of them.">
+          <Fold
+            id="official"
+            title="Official restrictions"
+            count={notices.length}
+            summary={notices.length ? `Neritic's copy of the CDFW and CDPH notices tied to these waters: not verified by a person` : "None in Neritic's list is tied to these waters; the list may be incomplete"}
+            kicker="Neritic's transcription of the agencies' notices: not verified by a person. Check the agency before you rely on any of them."
+          >
             {notices.length ? (
               <ul className="divide-y divide-n-line">
                 {notices.map((n) => (
@@ -448,15 +523,16 @@ export function Briefing(props: Props) {
             ) : (
               <p className="text-[15px] text-n-ink-2">No notice in Neritic&rsquo;s list is tied to these waters. The list may be incomplete: check CDFW and CDPH.</p>
             )}
-          </Section>
+          </Fold>
 
-          <Section id="unknown" title="What is not known" kicker="Missing evidence is said, never filled in.">
+          <Fold id="unknown" title="What is not known" count={b.unknowns.length} summary="Missing evidence is said, never filled in" kicker="Each gap in what Neritic can say about these waters.">
             <ul className="flex list-disc flex-col gap-2 pl-5 text-[15.5px] leading-relaxed text-n-ink-2" data-testid="unknowns">
               {b.unknowns.map((u) => (
                 <li key={u}>{u}</li>
               ))}
             </ul>
-          </Section>
+          </Fold>
+          </div>
 
           <footer className="flex flex-col gap-3 border-t border-n-line pt-6 text-[14px] text-n-ink-3">
             <div className="flex flex-wrap gap-2">
@@ -643,29 +719,48 @@ function CheckItem({ s, n, done, onToggle }: { s: Step; n: number; done: boolean
   );
 }
 
+/** One tap back to the home briefing, with the reader's own trip. */
+function HomeLink({ home, ports }: { home: HomePort; ports: PortsCollection | null }) {
+  const p = resolvePlace(home.place, ports);
+  if (!p) return null;
+  return (
+    <Link href={homeHref(home)} className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent underline underline-offset-2" data-testid="coast-home-open">
+      <Icon name="harbor" className="h-4 w-4" /> Home: {p.name}
+    </Link>
+  );
+}
+
 /**
- * Which waters, and the reader's home port: change the place (harbours by region, CDPH harvest sites),
- * keep one harbour as home on this device, and get back to it in one tap. A point chosen on the map is
- * a place too, but not a home port.
+ * Which waters, and the reader's home port, opened from the title: change the place (harbours by region,
+ * CDPH harvest sites), choose waters on the map, keep this harbour as home on this device (with this
+ * trip). A point chosen on the map is a place too, but not a home port.
  */
-function PlaceBar({ place, ports, home, onHome, onPlace }: { place: CoastPlace; ports: PortsCollection | null; home: string | null; onHome: (k: string | null) => void; onPlace: (k: string) => void }) {
-  const homePlace = home ? resolvePlace(home, ports) : null;
+function PlaceMenu({ place, ports, home, audience, species, onHome, onPlace, onClose }: { place: CoastPlace; ports: PortsCollection | null; home: HomePort | null; audience: Audience; species: string; onHome: (h: HomePort | null) => void; onPlace: (k: string) => void; onClose: () => void }) {
+  const homePlace = home ? resolvePlace(home.place, ports) : null;
   const regions = ports?.regions ?? [];
   const byRegion = regions.map((r) => ({ r, items: (ports?.features ?? []).filter((f) => f.properties.region === r.id).map((f) => ({ key: `port-${f.properties.port_code}`, name: f.properties.display_name })) }));
   const sites = sitePlaces();
-  const isHome = home === place.key;
+  const isHome = home?.place === place.key;
   const canBeHome = place.kind !== "point";
+  const box = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    box.current?.querySelector<HTMLElement>("select")?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const trip = [audience !== "all" ? AUDIENCES.find((a) => a.id === audience)?.label : null, species !== "any" ? speciesById(species).label : null].filter(Boolean).join(" · ");
   return (
-    <div className="flex flex-wrap items-center gap-2" data-testid="coast-place-bar">
-      <label className="relative inline-flex min-h-11 items-center">
-        <span className="sr-only">Change the place</span>
+    <div ref={box} id="coast-place-menu" className="nx-rise flex flex-col gap-3 rounded-2xl border border-n-line bg-n-surface p-4 shadow-[var(--nx-shadow)]" data-testid="coast-place-bar">
+      <label className="flex flex-col gap-1">
+        <span className="nx-eyebrow">Another place</span>
         <select
           value=""
           onChange={(e) => e.target.value && onPlace(e.target.value)}
-          className="nx-focus min-h-11 cursor-pointer appearance-none rounded-full border border-n-line-strong bg-n-surface py-2 pl-3.5 pr-9 text-[14.5px] font-semibold text-n-ink"
+          className="nx-select nx-focus min-h-12 w-full cursor-pointer rounded-xl border border-n-line-strong bg-n-surface pl-3 text-[16px] font-semibold text-n-ink"
           data-testid="coast-place-picker"
         >
-          <option value="">Change place…</option>
+          <option value="">Choose a harbour or harvest site…</option>
           {homePlace && homePlace.key !== place.key && (
             <optgroup label="Your home port">
               <option value={homePlace.key}>{homePlace.name}</option>
@@ -690,35 +785,29 @@ function PlaceBar({ place, ports, home, onHome, onPlace }: { place: CoastPlace; 
             ))}
           </optgroup>
         </select>
-        <Icon name="chevronDown" className="pointer-events-none absolute right-3 h-4 w-4 text-n-ink-3" />
       </label>
-      {isHome ? (
-        <span className="inline-flex min-h-11 items-center gap-2 text-[14px] text-n-ink-2" data-testid="coast-home">
-          <span className="inline-flex items-center gap-1.5 font-semibold text-n-ink">
-            <Icon name="harbor" className="h-4 w-4 text-n-accent" /> Your home port
-          </span>
-          <button type="button" onClick={() => onHome(null)} className="nx-focus inline-flex min-h-11 items-center px-1 font-semibold text-n-accent underline underline-offset-2" data-testid="coast-home-clear">
-            Forget
-          </button>
-        </span>
-      ) : (
-        <>
-          {canBeHome && (
-            <button type="button" onClick={() => onHome(place.key)} className="nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-full border border-n-line-strong px-3.5 text-[14px] font-semibold text-n-ink" data-testid="coast-home-set">
-              <Icon name="harbor" className="h-4 w-4 text-n-accent" /> Make my home port
-            </button>
-          )}
-          {homePlace && (
-            <button type="button" onClick={() => onPlace(homePlace.key)} className="nx-focus inline-flex min-h-11 items-center px-1 text-[14px] font-semibold text-n-accent underline underline-offset-2" data-testid="coast-home-open">
-              Home: {homePlace.name}
-            </button>
-          )}
-        </>
-      )}
-      <a href="#coast-map" className="nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-full border border-n-line px-3.5 text-[14px] font-semibold text-n-accent lg:hidden" data-testid="coast-map-jump">
+      <a href="#coast-map" onClick={onClose} className="nx-press nx-focus inline-flex min-h-12 items-center gap-2 rounded-xl border border-n-line px-3.5 text-[15px] font-semibold text-n-accent lg:hidden" data-testid="coast-map-jump">
         <Icon name="map" /> Choose waters on the map
       </a>
-      <span className="w-full text-[12.5px] text-n-ink-3">The home port is kept on this device only.</span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-n-line pt-3 text-[14.5px]">
+        {isHome ? (
+          <>
+            <span className="inline-flex items-center gap-1.5 font-semibold text-n-ink">
+              <Icon name="harbor" className="h-4 w-4 text-n-accent" /> {place.name} is your home port
+            </span>
+            <button type="button" onClick={() => onHome(null)} className="nx-focus inline-flex min-h-11 items-center px-1 font-semibold text-n-accent underline underline-offset-2" data-testid="coast-home-clear">
+              Forget
+            </button>
+          </>
+        ) : canBeHome ? (
+          <button type="button" onClick={() => onHome({ place: place.key, for: audience, species })} className="nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-full border border-n-line-strong px-3.5 font-semibold text-n-ink" data-testid="coast-home-set">
+            <Icon name="harbor" className="h-4 w-4 text-n-accent" /> Make {place.name} my home port{trip ? ` (${trip})` : ""}
+          </button>
+        ) : (
+          <span className="text-n-ink-3">A point on the map cannot be a home port.</span>
+        )}
+        <span className="w-full text-[12.5px] text-n-ink-3">The home port and its trip are kept on this device only.</span>
+      </div>
     </div>
   );
 }

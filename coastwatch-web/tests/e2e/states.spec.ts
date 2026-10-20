@@ -69,7 +69,7 @@ test("a saved pack: older than a day it is marked stale; it survives a service-w
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
   await page.goto(`${OK}/coast?place=port-550`);
-  await page.evaluate(() => navigator.serviceWorker.register("/sw.js").then(() => navigator.serviceWorker.ready));
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
   await page.getByTestId("pack-open").click();
   const go = page.getByTestId("pack-download");
   await expect(go).toBeEnabled({ timeout: 60_000 });

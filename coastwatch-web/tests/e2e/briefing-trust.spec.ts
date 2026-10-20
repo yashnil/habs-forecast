@@ -13,6 +13,9 @@ test("Crescent City: its notices, not verified; what no person has reviewed; no 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-201`);
   await settled(page);
+  // the official restrictions are folded below "Before you go", with their count; opened, each is there
+  await expect(page.getByTestId("brief-official-toggle")).toContainText(/Official restrictions\s*\d/);
+  await page.getByTestId("brief-official-toggle").click();
   await expect(page.getByTestId("notice-official:cdfw-2026-razor-clam-del-norte")).toContainText("Not verified");
   await expect(page.getByTestId("notice-official:cdph-2026-sn26-020-razor-clam-del-norte")).toBeVisible();
   await expect(page.getByTestId("unknowns")).toContainText("no person has reviewed these associations");

@@ -13,7 +13,7 @@ test("the Monterey pack: plan, download, verify, remove", async ({ browser }) =>
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
   await page.goto(`${OK}/coast?place=port-550`);
-  await page.evaluate(() => navigator.serviceWorker.register("/sw.js").then(() => navigator.serviceWorker.ready));
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
   await page.getByTestId("pack-open").click();
   const plan = page.getByTestId("pack-plan");
   await expect(plan).toContainText("Map of the region", { timeout: 60_000 });
@@ -32,8 +32,13 @@ test("the Monterey pack: plan, download, verify, remove", async ({ browser }) =>
   expect(rec.verified).toMatchObject({ basemapSha256: true, missing: 0 });
   expect(rec.items.some((i) => i.url.endsWith("basemap.pmtiles"))).toBe(true);
   expect(rec.items.some((i) => i.url.startsWith("/api/evidence"))).toBe(true);
-  // removing it is one action, and it is gone
+  // removing it takes a confirmation (a pack is minutes of download), and then it is gone
   await page.getByTestId("pack-delete").click();
+  await expect(page.getByTestId("pack-status")).toContainText("Remove Monterey Bay");
+  await page.getByTestId("pack-delete-keep").click();
+  expect(await page.evaluate(() => caches.has("neritic-pack-monterey"))).toBe(true);
+  await page.getByTestId("pack-delete").click();
+  await page.getByTestId("pack-delete-confirm").click();
   await expect(page.getByTestId("pack-status")).toHaveCount(0);
   expect(await page.evaluate(() => caches.has("neritic-pack-monterey"))).toBe(false);
   await ctx.close();

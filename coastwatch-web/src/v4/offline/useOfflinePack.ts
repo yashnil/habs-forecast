@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { packState, packWasSaved, type PackProblem, type PackRecord } from "./packs";
+import { useRun } from "./runStore";
+
+export const SW_URL = `/sw.js${process.env.NEXT_PUBLIC_NERITIC_BUILD ? `?b=${process.env.NEXT_PUBLIC_NERITIC_BUILD}` : ""}`;
 
 /** Registers the service worker (once) and reads a pack's record; re-reads it on demand. */
 export function useOfflinePack(id: string | null) {
@@ -27,7 +30,8 @@ export function useOfflinePack(id: string | null) {
     if (!("serviceWorker" in navigator)) setSw("unsupported");
     else
       navigator.serviceWorker
-        .register("/sw.js", { scope: "/" })
+        // one worker URL per build: a deploy installs a worker that drops the old build's code cache
+        .register(SW_URL, { scope: "/" })
         .then(() => navigator.serviceWorker.ready)
         .then(() => setSw("ready"))
         .catch(() => setSw("failed"));
@@ -36,9 +40,11 @@ export function useOfflinePack(id: string | null) {
       window.removeEventListener("offline", on);
     };
   }, []);
+  // a download finished or the pack was removed (from any view): read the record again
+  const version = useRun(id).version;
   useEffect(() => {
     void refresh();
-  }, [refresh]);
+  }, [refresh, version]);
   return { record, problem, online, sw, refresh, evicted };
 }
 

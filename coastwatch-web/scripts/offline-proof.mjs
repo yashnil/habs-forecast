@@ -82,7 +82,8 @@ try {
   check((await p.getByTestId("pack-status").getAttribute("data-complete")) === "true", "the pack is complete and verified online");
   const record = await p.evaluate(async () => (await (await caches.open("neritic-pack-monterey")).match("/__pack__/record.json")).json());
   // as after a deploy with new code file names: nothing but the pack holds the saved pages' code
-  check(await p.evaluate(() => caches.delete("neritic-static-v1")), "the service worker's static code cache is emptied before going offline");
+  // the code cache is named for the build (/sw.js?b=<build>): empty every one
+  check(await p.evaluate(async () => { const k = (await caches.keys()).filter((x) => x.startsWith("neritic-static-")); return k.length > 0 && (await Promise.all(k.map((x) => caches.delete(x)))).every(Boolean); }), "the service worker's static code cache is emptied before going offline");
   await ctx.close();
 
   // no app server, no network
@@ -246,7 +247,7 @@ try {
   const rows = new Map();
   const unsavedInside = new Set();
   for (const r of requests) {
-    if (r.external || r.sw || r.type === "document" || /[?&]_rsc=/.test(r.path) || r.path === "/sw.js") continue;
+    if (r.external || r.sw || r.type === "document" || /[?&]_rsc=/.test(r.path) || /^\/sw\.js(\?|$)/.test(r.path)) continue;
     const k = kindOf(r.path);
     const row = rows.get(k) ?? { asked: new Set(), unsaved: new Set(), outsideUnsaved: new Set() };
     row.asked.add(r.path);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Manifest } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 import { charmRun, satelliteLatest, sourceStatus } from "@/lib/layers";
@@ -9,6 +9,7 @@ import { clockLabel, dayYearLabel } from "@/v4/ui/time";
 import { useSetSource } from "@/v4/readiness/store";
 import { GROUP_WORDS, PACK_VERSION, deletePack, download, isQuota, keepPublishedTiles, pageAssetsOf, plan, sizeOf, type Group, type PackDef, type PackProblem, type PackRecord, type PlanItem, type Progress } from "./packs";
 import { packAge, useOfflinePack } from "./useOfflinePack";
+import { getRun, packChanged, setRun, useRun } from "./runStore";
 
 const mb = (b: number) => `${(b / 1_048_576).toFixed(b < 10_485_760 ? 1 : 0)} MB`;
 
@@ -21,11 +22,15 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
   const { record, problem, online, sw, refresh, evicted } = useOfflinePack(pack.id);
   const [items, setItems] = useState<PlanItem[] | null>(null);
   const [planErr, setPlanErr] = useState<string | null>(null);
-  const [prog, setProg] = useState<Progress | null>(null);
-  const [state, setState] = useState<"idle" | "sizing" | "downloading" | "done" | "failed" | "quota" | "cancelled">("idle");
+  // the download itself lives in a module store: closing this panel neither stops nor forgets it
+  const run = useRun(pack.id);
+  const prog: Progress | null = run.prog;
+  const [sizing, setSizing] = useState(false);
+  const state = run.state === "downloading" ? "downloading" : sizing ? "sizing" : planErr ? "failed" : run.state;
   const [quota, setQuota] = useState<{ usage: number; quota: number } | null>(null);
   const [persisted, setPersisted] = useState<boolean | null>(null);
-  const ac = useRef<AbortController | null>(null);
+  // removing a pack takes two steps: a field pack is minutes of download, and gone with one tap
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const setSource = useSetSource();
 
   useEffect(() => {
@@ -34,19 +39,19 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
   }, [record, state]);
 
   const prepare = async () => {
-    setState("sizing");
+    setSizing(true);
     setPlanErr(null);
     try {
       const assets = await pageAssetsOf([`/?sel=harbor:${pack.port}&layer=forecast`, `/coast?place=${pack.place}`]);
       setItems(await sizeOf(await keepPublishedTiles(plan(pack, manifest, baseUrl, assets), manifest, baseUrl)));
-      setState("idle");
     } catch (e) {
       setPlanErr((e as Error).message);
-      setState("failed");
     }
+    setSizing(false);
   };
   useEffect(() => {
-    if (online && !items && state === "idle") void prepare();
+    // reopened during a download: its progress is shown, nothing is measured again meanwhile
+    if (online && !items && !sizing && getRun(pack.id).state !== "downloading") void prepare();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [online]);
 
@@ -64,9 +69,9 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
   const total = (items ?? []).reduce((a, x) => a + (x.bytes ?? 0), 0);
 
   const start = async () => {
-    if (!items) return;
-    ac.current = new AbortController();
-    setState("downloading");
+    if (!items || getRun(pack.id).state === "downloading") return;
+    const ac = new AbortController();
+    setRun(pack.id, { state: "downloading", prog: null, ac });
     try {
       // ask the browser to keep it (it may still decide not to)
       if (navigator.storage?.persist) setPersisted(await navigator.storage.persist());
@@ -84,17 +89,17 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
           satelliteNewest: satelliteLatest(manifest, "olci300")?.composite?.newest_observed_date ?? null,
           noticesCheckedAt: sourceStatus(manifest, "official")?.last_success_at ?? null,
         },
-        setProg,
-        ac.current.signal,
+        (p) => setRun(pack.id, { prog: p }),
+        ac.signal,
       );
-      await refresh();
-      setState(ac.current.signal.aborted ? "cancelled" : rec.complete ? "done" : "failed");
+      packChanged(pack.id);
+      setRun(pack.id, { state: ac.signal.aborted ? "cancelled" : rec.complete ? "done" : "failed", ac: null });
       setSource({ id: "pack", label: `Field pack: ${pack.name}`, state: rec.complete ? "ready" : "incomplete", detail: rec.complete ? `Saved ${mb(rec.totalBytes)}, verified` : `${rec.verified?.missing ?? "Some"} files missing; download again to finish`, asOf: rec.savedAt });
     } catch (e) {
       const q = isQuota(e);
-      setState(q ? "quota" : "failed");
+      setRun(pack.id, { state: q ? "quota" : "failed", ac: null });
       setSource({ id: "pack", label: `Field pack: ${pack.name}`, state: "incomplete", detail: q ? "The device's storage for this site is full" : (e as Error).message });
-      await refresh();
+      packChanged(pack.id);
     }
   };
 
@@ -137,19 +142,33 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
               Some saved files are no longer on this device (the browser may have removed them). Finish the download to use {pack.name} offline.
             </p>
           )}
-          <button
-            type="button"
-            onClick={async () => {
-              await deletePack(pack.id);
-              await refresh();
-              setState("idle");
-              setProg(null);
-            }}
-            className="nx-press nx-focus mt-2 min-h-11 rounded-lg border border-n-line-strong px-3 font-semibold"
-            data-testid="pack-delete"
-          >
-            Remove from this device
-          </button>
+          {confirmDelete ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="Remove the field pack?">
+              <p className="w-full font-semibold">Remove {pack.name} ({mb(record.totalBytes)}) from this device? Offline use needs a new download.</p>
+              <button
+                type="button"
+                autoFocus
+                onClick={async () => {
+                  await deletePack(pack.id);
+                  setConfirmDelete(false);
+                  setRun(pack.id, { state: "idle", prog: null });
+                  packChanged(pack.id);
+                  await refresh();
+                }}
+                className="nx-press nx-focus min-h-11 rounded-lg bg-n-down px-3 font-semibold text-white"
+                data-testid="pack-delete-confirm"
+              >
+                Remove
+              </button>
+              <button type="button" onClick={() => setConfirmDelete(false)} className="nx-press nx-focus min-h-11 rounded-lg border border-n-line-strong px-3 font-semibold" data-testid="pack-delete-keep">
+                Keep it
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setConfirmDelete(true)} className="nx-press nx-focus mt-2 min-h-11 rounded-lg border border-n-line-strong px-3 font-semibold" data-testid="pack-delete">
+              Remove from this device
+            </button>
+          )}
         </div>
       )}
 
@@ -218,7 +237,7 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
                 {mb(prog.bytes)} of {mb(prog.totalBytes)} · {prog.done}/{prog.total} files{prog.current ? ` · ${GROUP_WORDS[prog.current].name.toLowerCase()}` : ""}
                 {eta != null ? ` · about ${eta < 60 ? `${Math.max(1, Math.round(eta))} s` : `${Math.round(eta / 60)} min`} left` : ""}
               </p>
-              <button type="button" onClick={() => ac.current?.abort()} className="nx-press nx-focus min-h-12 rounded-xl border border-n-line-strong font-semibold" data-testid="pack-cancel">
+              <button type="button" onClick={() => getRun(pack.id).ac?.abort()} className="nx-press nx-focus min-h-12 rounded-xl border border-n-line-strong font-semibold" data-testid="pack-cancel">
                 Stop
               </button>
             </div>

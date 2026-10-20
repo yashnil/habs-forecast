@@ -17,27 +17,43 @@ const intel = JSON.parse(readFileSync(path.join(FIX, manifest.port_intel_url), "
 type M = { loaded(): boolean; getSource(id: string): unknown; jumpTo(o: unknown): void; project(p: number[]): { x: number; y: number } };
 const map = (p: Page) => p.waitForFunction(() => !!(window as unknown as { __cwMap?: M }).__cwMap?.loaded());
 
-test("home port: set it on a briefing, it survives a reload, another harbour offers the way back, and it can be forgotten", async ({ page }) => {
+test("home port: set it from the title's place menu with the trip, it survives a reload, another harbour offers the way back, and it can be forgotten", async ({ page }) => {
   await page.clock.setFixedTime(new Date(BRIEF));
   await page.goto(`${OK}/coast?place=port-550&for=commercial`);
+  // the title is the place control
+  await page.getByTestId("coast-place-button").click();
+  await expect(page.getByTestId("coast-place-button")).toHaveAttribute("aria-expanded", "true");
   await page.getByTestId("coast-home-set").click();
   await expect(page.getByTestId("coast-home")).toContainText("Your home port");
+  // stored with its trip, on this device only
+  expect(JSON.parse((await page.evaluate(() => localStorage.getItem("cw-home-port")))!)).toEqual({ place: "port-550", for: "commercial", species: "any" });
   await page.reload();
   await expect(page.getByTestId("coast-home")).toContainText("Your home port");
-  // change harbour from the place picker: the trip is kept, the home port is one tap away
+  // change harbour from the place menu: the trip is kept, the home port is one tap away
+  await page.getByTestId("coast-place-button").click();
   await page.getByTestId("coast-place-picker").selectOption("port-201");
   await expect(page).toHaveURL(/place=port-201/);
   await expect(page).toHaveURL(/for=commercial/);
   await expect(page.getByTestId("coast-title")).toHaveText("Crescent City");
   await page.getByTestId("coast-home-open").click();
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
+  await expect(page).toHaveURL(/for=commercial/);
   // the landing lists it first
   await page.goto(`${OK}/coast`);
   await expect(page.getByTestId("coast-landing")).toContainText("Your home port");
   await page.goto(`${OK}/coast?place=port-550`);
+  await page.getByTestId("coast-place-button").click();
   await page.getByTestId("coast-home-clear").click();
   await expect(page.getByTestId("coast-home-set")).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem("cw-home-port"))).toBeNull();
+});
+
+test("an older home port (a plain place key) still opens as home", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("cw-home-port", "port-550"));
+  await page.goto(`${OK}/coast?place=port-550`);
+  await expect(page.getByTestId("coast-home")).toContainText("Your home port");
+  await page.goto(`${OK}/coast?place=port-201`);
+  await expect(page.getByTestId("coast-home-open")).toContainText("Home: Monterey");
 });
 
 test("My Coast's map: tapping the water briefs that point, with the trip kept", async ({ page }) => {
@@ -55,6 +71,8 @@ test("My Coast's map: tapping the water briefs that point, with the trip kept", 
   await expect(page).toHaveURL(/for=recreational/);
   await expect(page.getByTestId("coast-subtitle")).toContainText("Point chosen on the map");
   // a point is not a home port
+  await page.getByTestId("coast-place-button").click();
+  await expect(page.getByTestId("coast-place-bar")).toContainText("cannot be a home port");
   await expect(page.getByTestId("coast-home-set")).toHaveCount(0);
 });
 
@@ -196,6 +214,8 @@ test("walkthrough H4: on a phone the briefing offers the map at its top, and a t
   const page = await ctx.newPage();
   await page.clock.setFixedTime(new Date(BRIEF));
   await page.goto(`${OK}/coast?place=port-550&for=recreational`);
+  // the title's place menu offers the map, at the top of the page
+  await page.getByTestId("coast-place-button").click();
   const jump = page.getByTestId("coast-map-jump");
   await expect(jump).toBeInViewport();
   await jump.click();
