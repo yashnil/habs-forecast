@@ -663,6 +663,7 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
     track = p.platform_grid and all(d.source is not None for d in days)
     src = np.zeros((target.height, target.width), dtype=np.uint8)
     used: list[CompositeDay] = []
+    contributing: list[Day] = []
     for d in sorted(days, key=lambda x: x.date, reverse=True):
         fill = np.isnan(comp) & np.isfinite(d.values)
         comp[fill] = d.values[fill]
@@ -670,9 +671,13 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
         if track:
             src[fill] = d.source[fill]  # type: ignore[index]
         used.append(CompositeDay(date=d.date.isoformat(), platforms=platform_labels(p, d.platforms), observed_times=sorted(d.observed_times), pixels_used=int(fill.sum())))
+        if fill.any():
+            contributing.append(d)
     if not np.isfinite(comp).any():
         return None, 0
-    observed_days = [d for d in days if np.isfinite(d.values).any()]
+    # The stated dates, overpass times and platforms are those of the days whose pixels the view
+    # shows: a day entirely covered by newer days is listed (pixels_used 0) but dates nothing.
+    observed_days = contributing
     newest, oldest = max(d.date for d in observed_days), min(d.date for d in observed_days)
     h = hashlib.sha256((p.key + "|".join(f"{d.date}:{d.key}" for d in days) + ref.isoformat()).encode()).hexdigest()[:10]
     base = f"satellite/{p.key}/latest-{ref.isoformat()}-{h}"
@@ -859,19 +864,23 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
     return SatelliteResult(layers, errors, notes, latest.isoformat() if latest else None, nbytes)
 
 
-def newest_listed(ctx: RunContext, p: Product) -> str | None:
-    """Newest day a product's datasets list in its window (one small time listing each), or None."""
+def newest_listed(ctx: RunContext, p: Product) -> tuple[str | None, list[str]]:
+    """Newest day a product's datasets list in its window (one small time listing each), or None,
+    and the listings that failed (coastwatch.pfeg.noaa.gov refuses runners with HTTP 403 at
+    times: a failed listing must be reported, not read as "nothing newer")."""
     start = ctx.now.date() - timedelta(days=p.window_days)
     newest = None
+    failed: list[str] = []
     for _, sectors in p.platforms:
         for ds, _, _, _ in sectors:
             try:
-                ts = list_times(ctx, p.server, ds, start)
-            except Exception:
+                ts = [t for t in list_times(ctx, p.server, ds, start) if start.isoformat() <= t[:10] <= ctx.now.date().isoformat()]
+            except Exception as e:
+                failed.append(f"{ds}: time listing failed: {e}")
                 continue
             if ts:
                 newest = max(newest or "", ts[-1][:10])
-    return newest
+    return newest, failed
 
 
 def run_viirs(ctx: RunContext, domain: Domain, prev_layers: list[LayerArtifact]) -> SatelliteResult:
@@ -883,7 +892,10 @@ def run_viirs(ctx: RunContext, domain: Domain, prev_layers: list[LayerArtifact])
     (2026-11-02) its listing has nothing new and it drops out."""
     res = run_product(ctx, VIIRS_JPSS, domain, prev_layers, VIIRS_ZOOMS, per_day=False)
     if res.layers:
-        listed = newest_listed(ctx, VIIRS_SNPP)
+        listed, failed = newest_listed(ctx, VIIRS_SNPP)
+        if failed:
+            # NOAA-21/NOAA-20 updated; whether S-NPP holds a newer day is unknown this run
+            res.notes.append(f"VIIRS: could not check the S-NPP composite for a day newer than {res.latest_date}: " + "; ".join(failed)[:300])
         if not listed or listed <= (res.latest_date or ""):
             return res
         snpp = run_product(ctx, VIIRS_SNPP, domain, prev_layers, VIIRS_ZOOMS, per_day=False)
