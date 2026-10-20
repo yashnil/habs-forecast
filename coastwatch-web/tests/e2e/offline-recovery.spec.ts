@@ -77,7 +77,8 @@ test("storage runs out during a download: said as full, nothing claimed saved, t
   await expect(page.getByTestId("pack-quota")).toContainText("not complete");
   // nothing claims to be saved or verified
   const status = page.getByTestId("pack-status");
-  await expect(status).toHaveAttribute("data-complete", "false");
+  // the status re-reads the stored record after the quota error: a slow runner can take a few seconds
+  await expect(status).toHaveAttribute("data-complete", "false", { timeout: 20_000 });
   await expect(status).toContainText("Incomplete");
   await expect(status).not.toContainText("verified");
   await expect(panel).not.toContainText("Saved and verified");
@@ -226,6 +227,9 @@ test("a new service worker with a renamed code cache, and code files renamed by 
   await page.goto(`${OK}/coast?place=port-550`);
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey", { timeout: 20_000 });
   await expect(page.getByTestId("offline-banner")).toContainText(/Offline · Monterey Bay saved/);
+  // the briefing settles first (its worker update check and link prefetches fail offline): a navigation
+  // started while those are in flight can be cancelled on a slow runner (net::ERR_ABORTED), not by the app
+  await page.waitForLoadState("networkidle");
   await page.goto(`${OK}/?sel=harbor:550&layer=forecast`);
   await expect(page.getByTestId("inspect-title")).toHaveText("Monterey", { timeout: 20_000 });
   await expect.poll(() => page.evaluate(() => !!(window as unknown as { __cwMap?: { getSource(id: string): unknown } }).__cwMap?.getSource("forecast")), { timeout: 20_000 }).toBe(true);
