@@ -7,7 +7,8 @@ import { PMTiles, Protocol } from "pmtiles";
 import { addProtocol, setWorkerUrl, type ExpressionSpecification, type GeoJSONSource, type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { PortsCollection } from "@/generated/schema";
-import type { LayerArtifact } from "@/generated/schema";
+import type { LayerArtifact, Palette } from "@/generated/schema";
+import type { DerivedGrid } from "@/lib/derived";
 import {
   ARROW_LENGTHS,
   arrowImage,
@@ -25,12 +26,12 @@ import {
 } from "@/lib/basemap";
 import type { CurrentField } from "@/lib/currents";
 import { GRID_TILE_SIZE } from "@/lib/gridTiles";
-import { gridTiles } from "@/lib/gridTileProtocol";
+import { derivedTiles, gridTiles } from "@/lib/gridTileProtocol";
 import { indexedTiles } from "@/lib/tileIndex";
 import { loadWaterFallback, waterGeoJSON } from "@/lib/waterFallback";
 import { basemapArchive, onBasemapSlow, setBasemapArchive } from "@/lib/waterMask";
 import FlowParticles from "./FlowParticles";
-import { CountyControl, CountyLayers, useCountyPrefs, type CountyPrefs } from "./Counties";
+import { CountyLayers } from "./Counties";
 
 /** Marks with a name: a pointer over one shows the name (and a pointer cursor). */
 const MARK_LAYERS = ["ports-hit", "ports-circle", "map-station", "map-station-point", "map-station-cluster", "coast-station"];
@@ -46,6 +47,8 @@ export type ImageRaster = {
   /** drawn from the value grid when present (exact cell edges); the published image otherwise */
   grid?: { layer: LayerArtifact; url: string } | null;
 };
+/** A derived chlorophyll product (lib/derived), drawn from its chunked grid on the satellite ramp. */
+export type DerivedRaster = { id: string; grid: DerivedGrid; baseUrl: string; palette: Palette; style?: "estimate" | "observed" };
 /** XYZ tiles: Neritic-rendered satellite tiles or third-party imagery. */
 export type TileRaster = { id: string; template: string; minzoom: number; maxzoom: number; bounds?: number[] | null; indexUrl?: string | null };
 
@@ -58,6 +61,17 @@ type Props = {
   satellite: TileRaster | null;
   satelliteAge: TileRaster | null;
   imagery: TileRaster | null;
+  /** v5: the chlorophyll outlook as the map's field (hatched: an outlook, not an observation) */
+  outlook?: DerivedRaster | null;
+  /** v5: observed (or analysed) sea-surface temperature as the map's field */
+  sst?: DerivedRaster | null;
+  /** v5: the chlorophyll estimate, under the observed satellite pixels (stippled: estimated, not observed) */
+  estimate?: DerivedRaster | null;
+  /**
+   * v5: water in the C-HARM grid without a value is drawn in one calm neutral tint, "outside NOAA's
+   * model near shore" (never with a probability); the workspace says so in its legend and readouts
+   */
+  contextFill?: boolean;
   currents?: CurrentsOverlay | null;
   ports: PortsCollection | null;
   showPorts: boolean;
@@ -94,10 +108,8 @@ type Props = {
    * "link" (from the waters to that cell). Drawn above the data, below the ports.
    */
   overlay?: GeoJSON.FeatureCollection | null;
-  /** v4: "none" leaves the map's own controls to the workspace (zoom, scale, counties) */
+  /** v4: "none" leaves the map's own controls to the workspace (zoom, scale) */
   chrome?: "v2" | "none";
-  /** v4: the county reference lines, controlled by the workspace (unset: the map's own remembered choice) */
-  counties?: CountyPrefs;
   /** v4: a shore station was chosen on the map (the station itself is selected, not the water beside it) */
   onStationPick?: (stationId: string) => void;
   /** v4: stations as counted clusters below harbour zoom, so the regional view stays calm */
@@ -220,7 +232,7 @@ export default function MapCanvas(p: Props) {
   }, [p.officialGeometry]);
   const { onPort, onPoint, onStation } = p;
   const [map, setMap] = useState<MlMap | null>(null);
-  const hasRaster = !!(p.forecast || p.satellite || p.satelliteAge);
+  const hasRaster = !!(p.forecast || p.satellite || p.satelliteAge || p.outlook || p.estimate || p.sst);
   // the fade is decided once per raster, when it first appears (a layer switch fades in; a new
   // time step cuts) and kept for that raster's life, so a later re-render never changes it
   const fadeOf = useRef(new globalThis.Map<string, boolean>());
@@ -252,9 +264,13 @@ export default function MapCanvas(p: Props) {
     };
   }, [archive]);
   const fg = p.forecast?.grid;
-  const forecastTiles = useMemo(() => (fg ? gridTiles(fg.layer, fg.url) : null), [fg]);
-  const [ownCounties, setCounties] = useCountyPrefs();
-  const counties = p.counties ?? ownCounties;
+  const contextFill = !!p.contextFill;
+  const forecastTiles = useMemo(() => (fg ? gridTiles(fg.layer, fg.url, { context: contextFill }) : null), [fg, contextFill]);
+  const { outlook, estimate, sst } = p;
+  const sstTiles = useMemo(() => (sst ? derivedTiles(sst.id, sst.grid, sst.baseUrl, sst.palette, "observed") : null), [sst]);
+
+  const outlookTiles = useMemo(() => (outlook ? derivedTiles(outlook.id, outlook.grid, outlook.baseUrl, outlook.palette, "outlook") : null), [outlook]);
+  const estimateTiles = useMemo(() => (estimate ? derivedTiles(estimate.id, estimate.grid, estimate.baseUrl, estimate.palette, "estimate") : null), [estimate]);
 
   // When the basemap's tiles fail (tile server down, offline) or are late (a data tile stopped
   // waiting for them), draw the bundled water instead, so the sea, the coastline and the no-data
@@ -296,7 +312,7 @@ export default function MapCanvas(p: Props) {
   // swap dips through the basemap; two days are never blended).
   // "Try again" is part of the key: the sources are asked for again and start unloaded
   const retry = p.retry ?? 0;
-  const rasterKey = `${[p.forecast?.id, p.satellite?.id, p.satelliteAge?.id].filter(Boolean).join("|")}#${retry}`;
+  const rasterKey = `${[p.forecast?.id, p.satellite?.id, p.satelliteAge?.id, p.outlook?.id, p.estimate?.id, p.sst?.id].filter(Boolean).join("|")}#${retry}`;
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [failedKey, setFailedKey] = useState<string | null>(null);
   // a source error beats "loaded": MapLibre counts an errored tile as loaded, so a field whose
@@ -309,7 +325,8 @@ export default function MapCanvas(p: Props) {
   }, [onStatus, basemap, hasRaster, fieldReady, fieldFailed]);
   useEffect(() => {
     if (!map || !hasRaster) return;
-    const ids = ["forecast", "satellite", "satellite-age"].filter((id) => (id === "forecast" ? p.forecast : id === "satellite" ? p.satellite : p.satelliteAge));
+    const on: Record<string, unknown> = { forecast: p.forecast, satellite: p.satellite, "satellite-age": p.satelliteAge, outlook: p.outlook, estimate: p.estimate, sst: p.sst };
+    const ids = Object.keys(on).filter((id) => on[id]);
     const check = () => {
       if (ids.every((id) => map.getSource(id) && map.isSourceLoaded(id))) setLoadedKey(rasterKey);
     };
@@ -327,8 +344,9 @@ export default function MapCanvas(p: Props) {
       map.off("idle", check);
       map.off("error", failed);
     };
-  }, [map, hasRaster, rasterKey, p.forecast, p.satellite, p.satelliteAge]);
+  }, [map, hasRaster, rasterKey, p.forecast, p.satellite, p.satelliteAge, p.outlook, p.estimate, p.sst]);
 
+  const tintOnly = !!(p.contextFill && forecastTiles && !p.satellite && !p.satelliteAge && !p.outlook && !p.estimate && !p.sst);
   // The no-data hatch shows only under a data field that has arrived: with currents alone (or
   // nothing) there is no "value" for a gap to be confused with. The bundled-water layers show
   // only while the basemap is slow or down.
@@ -336,9 +354,12 @@ export default function MapCanvas(p: Props) {
     if (!map) return;
     // idempotent: every style change fires "styledata" again
     const apply = () => {
+      // the C-HARM layer with its no-value water tinted (contextFill) leaves nothing for the hatch to
+      // mark inside its grid: the tint is the "outside NOAA's model near shore" mark, never hatched over
+      const hatch = fieldReady && !tintOnly;
       const want: [string, boolean][] = [
-        [NODATA_LAYER_ID, fieldReady],
-        [NODATA_FALLBACK_LAYER_ID, fieldReady && showFallback],
+        [NODATA_LAYER_ID, hatch],
+        [NODATA_FALLBACK_LAYER_ID, hatch && showFallback],
         ...WATER_FALLBACK_LAYER_IDS.map((id): [string, boolean] => [id, showFallback]),
       ];
       for (const [id, on] of want) {
@@ -358,7 +379,7 @@ export default function MapCanvas(p: Props) {
     return () => {
       map.off("styledata", apply);
     };
-  }, [map, hasRaster, fieldReady, showFallback]);
+  }, [map, hasRaster, fieldReady, showFallback, tintOnly]);
   const { onHover } = p;
   // a harbour or station under the pointer: its name in a small tip at its mark, a pointer cursor,
   // and no value readout over it (fine pointers only; set only when the mark changes, not per move)
@@ -534,9 +555,9 @@ export default function MapCanvas(p: Props) {
     >
       {p.chrome !== "none" && <NavigationControl position="bottom-right" showCompass={false} />}
       {wide && p.chrome !== "none" && <ScaleControl position="bottom-right" unit="metric" />}
-      {p.chrome !== "none" && <CountyControl prefs={counties} onChange={setCounties} />}
-      {/* county reference lines and names: under town names, above nothing that holds data on land */}
-      <CountyLayers prefs={counties} beforeId="place-city" />
+      {/* county borders and names, always on: part of the basemap, under town names (which are placed
+          first), above nothing that holds data on land */}
+      <CountyLayers beforeId="place-city" />
 
       {p.forecast && forecastTiles && (
         <Source key={`${p.forecast.id}-grid-${retry}`} id="forecast" type="raster" tiles={[forecastTiles.template]} tileSize={GRID_TILE_SIZE} bounds={forecastTiles.bounds} minzoom={0} maxzoom={13}>
@@ -573,6 +594,16 @@ export default function MapCanvas(p: Props) {
           />
         </Source>
       )}
+      {p.outlook && outlookTiles && (
+        <Source key={`${p.outlook.id}-${retry}`} id="outlook" type="raster" tiles={[outlookTiles.template]} tileSize={GRID_TILE_SIZE} bounds={outlookTiles.bounds} minzoom={0} maxzoom={13}>
+          <Layer id="outlook-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.outlook?.id)} />
+        </Source>
+      )}
+      {p.sst && sstTiles && (
+        <Source key={`${p.sst.id}-${retry}`} id="sst" type="raster" tiles={[sstTiles.template]} tileSize={GRID_TILE_SIZE} bounds={sstTiles.bounds} minzoom={0} maxzoom={13}>
+          <Layer id="sst-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.sst?.id)} />
+        </Source>
+      )}
       {p.satellite && (
         <Source
           key={`${p.satellite.id}-${retry}`}
@@ -585,6 +616,12 @@ export default function MapCanvas(p: Props) {
           bounds={p.satellite.bounds as [number, number, number, number] | undefined}
         >
           <Layer id="satellite-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.satellite?.id)} />
+        </Source>
+      )}
+      {/* the estimate lies under the observed pixels (added after them, placed before them): an observation is never covered by an estimate */}
+      {p.estimate && estimateTiles && (
+        <Source key={`${p.estimate.id}-${retry}`} id="estimate" type="raster" tiles={[estimateTiles.template]} tileSize={GRID_TILE_SIZE} bounds={estimateTiles.bounds} minzoom={0} maxzoom={13}>
+          <Layer id="estimate-raster" type="raster" beforeId={p.satellite ? "satellite-raster" : BEFORE_OVERLAY_ID} paint={paintFor(p.estimate?.id)} />
         </Source>
       )}
       {p.satelliteAge && (

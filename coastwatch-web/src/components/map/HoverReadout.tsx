@@ -3,13 +3,70 @@
 import { useEffect, useRef, useState } from "react";
 import type { LayerArtifact, Manifest } from "@/generated/schema";
 import type { CurrentField } from "@/lib/currents";
-import { currentsAt, forecastAt, pnSibling, satelliteAt, type Readout } from "@/lib/readout";
+import { currentsAt, forecastAt, NO_FORECAST, pnSibling, satelliteAt, type Readout } from "@/lib/readout";
+import { contextWords, forecastContext, OUTSIDE_WORDS } from "@/lib/gridTilesContext";
+import { checkSentence, cToF, derivedAt, fmtMg, sstIsAnalysis, type DerivedValidationEntry, type EstimateLayer, type OutlookLayer, type SstLayer } from "@/lib/derived";
+import { dayLabel } from "@/v4/ui/time";
 
 export type HoverSource =
-  | { kind: "forecast"; layer: LayerArtifact }
-  | { kind: "satellite"; layer: LayerArtifact }
+  /** context: the map draws nearshore context for cells without a value (lib/gridTilesContext) */
+  /** check: the pier-sample check of the nearest NOAA value near shore (lib/derived) */
+  | { kind: "forecast"; layer: LayerArtifact; context?: boolean; check?: DerivedValidationEntry | null }
+  /** estimate: the gap-filling estimate drawn under the observed pixels (lib/derived) */
+  | { kind: "satellite"; layer: LayerArtifact; estimate?: EstimateLayer | null }
+  | { kind: "outlook"; layer: OutlookLayer }
+  | { kind: "sst"; layer: SstLayer }
   | { kind: "currents"; layer: LayerArtifact; field: CurrentField }
   | null;
+
+/** A readout, with what kind of thing its value is when it is not a published value at that water. */
+type Read = Readout & { label?: string; tone?: "context" | "outside" | "estimate" | "outlook" };
+
+const rangeWords = (r: [number, number] | null) => (r ? ` · typically ${fmtMg(r[0])}–${fmtMg(r[1])} mg/m³` : "");
+
+/** The outlook at a point: never an observation, always with its window and its typical range. */
+export async function outlookRead(baseUrl: string, l: OutlookLayer, lat: number, lon: number): Promise<Read> {
+  const r = await derivedAt(baseUrl, l, lat, lon);
+  const when = `Neritic outlook, issued ${dayLabel(l.issued)} · mean ${dayLabel(l.valid_from)}–${dayLabel(l.valid_to)}`;
+  if (r.value == null) return { kind: "model", value: null, unit: "", what: "chlorophyll outlook", when, none: "No outlook for this water: outside the area the outlook covers. Not low chlorophyll." };
+  return { kind: "model", value: fmtMg(r.value), unit: "mg/m³", what: `chlorophyll expected on average over the 8 days${rangeWords(r.range)}`, when, label: "Outlook, not observed", tone: "outlook" };
+}
+
+/** Sea-surface temperature at a point: °C as published, with °F beside it. */
+export async function sstRead(baseUrl: string, l: SstLayer, lat: number, lon: number): Promise<Read> {
+  const r = await derivedAt(baseUrl, l, lat, lon);
+  const last = l.observed_dates[l.observed_dates.length - 1];
+  const when = `${l.source} · ${sstIsAnalysis(l) ? "analysis for" : "observed"} ${l.observed_dates.length > 1 ? `${dayLabel(l.observed_dates[0])}–${dayLabel(last)}` : dayLabel(last)}`;
+  if (r.value == null) return { kind: "observation", value: null, unit: "", what: "sea-surface temperature", when, none: "No temperature here: cloud, land or no observation. Not cold water." };
+  return { kind: "observation", value: r.value.toFixed(1), unit: "°C", what: `≈ ${cToF(r.value).toFixed(1)} °F · sea-surface temperature`, when, label: sstIsAnalysis(l) ? "Analysis" : "Observation" };
+}
+
+/** The estimate at a point, read only where the observation has no value. */
+export async function estimateRead(baseUrl: string, l: EstimateLayer, lat: number, lon: number): Promise<Read | null> {
+  const r = await derivedAt(baseUrl, l, lat, lon);
+  if (r.value == null) return null;
+  const days = [...l.based_on_days].sort();
+  const span = days.length ? (days[0] === days[days.length - 1] ? dayLabel(days[0]) : `${dayLabel(days[0])}–${dayLabel(days[days.length - 1])}`) : dayLabel(l.issued);
+  return { kind: "model", value: fmtMg(r.value), unit: "mg/m³", what: `chlorophyll-a, filled from nearby clear pixels${rangeWords(r.range)}`, when: `Neritic estimate from views of ${span}`, label: "Estimated, not observed", tone: "estimate" };
+}
+
+/**
+ * What the map shows at a point for the C-HARM layer (v5): the published value; or, where the cell
+ * has none and the map tints the water "outside NOAA's model near shore", what NOAA's model does not
+ * reach, the nearest NOAA cell within 6 km as text only, and the pipeline's pier-sample check of
+ * that nearest value. `water` says whether the point is water (null: unknown, read as water); over
+ * land the plain published message stays.
+ */
+export async function forecastRead(manifest: Manifest, baseUrl: string, l: LayerArtifact, lat: number, lon: number, context: boolean, water: boolean | null, check: DerivedValidationEntry | null = null): Promise<Read> {
+  const r = await forecastAt(baseUrl, l, lat, lon, pnSibling(manifest, l));
+  if (r.value != null || !context || water === false) return r;
+  const c = await forecastContext(baseUrl, l, lat, lon);
+  if (c.kind === "value") return r;
+  // the toxin mask keeps its reason (the same run has a Pseudo-nitzschia value in this cell)
+  const why = r.none === NO_FORECAST.toxinMask ? ` ${NO_FORECAST.toxinMask}` : "";
+  const checked = c.kind === "context" && check ? ` ${checkSentence(check)}` : "";
+  return { ...r, none: (c.kind === "context" ? contextWords(c) : OUTSIDE_WORDS) + why + checked, tone: c.kind === "context" ? "context" : "outside", label: "Outside NOAA's model near shore" };
+}
 
 /**
  * Desktop hover readout (M5): the exact published value of the cell under the pointer, with
@@ -17,8 +74,8 @@ export type HoverSource =
  * grids are fetched once and cached. Click opens the full inspector, which is also the
  * keyboard and screen-reader route to the same values, so this label is aria-hidden.
  */
-export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds }: { manifest: Manifest; baseUrl: string; source: HoverSource; point: { lat: number; lon: number } | null; screen: { x: number; y: number } | null; bounds: { w: number; h: number } }) {
-  const [r, setR] = useState<Readout | null>(null);
+export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds, waterAt }: { manifest: Manifest; baseUrl: string; source: HoverSource; point: { lat: number; lon: number } | null; screen: { x: number; y: number } | null; bounds: { w: number; h: number }; waterAt?: (screen: { x: number; y: number }) => boolean | null }) {
+  const [r, setR] = useState<Read | null>(null);
   const seq = useRef(0);
   useEffect(() => {
     const n = ++seq.current;
@@ -26,27 +83,42 @@ export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds 
       setR(null);
       return;
     }
-    const run = async (): Promise<Readout> => {
-      if (source.kind === "forecast") return forecastAt(baseUrl, source.layer, point.lat, point.lon, pnSibling(manifest, source.layer));
-      if (source.kind === "satellite") return satelliteAt(manifest, baseUrl, source.layer, point.lat, point.lon);
+    const run = async (): Promise<Read> => {
+      if (source.kind === "forecast") return forecastRead(manifest, baseUrl, source.layer, point.lat, point.lon, !!source.context, source.context && screen && waterAt ? waterAt(screen) : null, source.check);
+      if (source.kind === "outlook") return outlookRead(baseUrl, source.layer, point.lat, point.lon);
+      if (source.kind === "sst") return sstRead(baseUrl, source.layer, point.lat, point.lon);
+      if (source.kind === "satellite") {
+        const obs = await satelliteAt(manifest, baseUrl, source.layer, point.lat, point.lon);
+        // an observed pixel is always what is read; the estimate only where nothing was observed
+        if (obs.value != null || !source.estimate || (screen && waterAt?.(screen) === false)) return obs;
+        return (await estimateRead(baseUrl, source.estimate, point.lat, point.lon)) ?? obs;
+      }
       return currentsAt(source.field, source.layer, point.lat, point.lon);
     };
     run()
       .then((x) => n === seq.current && setR(x))
       .catch(() => n === seq.current && setR(null));
+    // the screen position follows the point (they arrive together)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manifest, baseUrl, source, point]);
 
   if (!r || !screen || !point) return null;
-  const W = 252;
+  const W = 264;
   const left = screen.x + 16 + W > bounds.w ? screen.x - 16 - W : screen.x + 16;
-  const top = Math.min(Math.max(8, screen.y + 16), bounds.h - 96);
+  const top = Math.min(Math.max(8, screen.y + 16), bounds.h - 120);
   return (
     <div
       aria-hidden
       data-testid="hover-readout"
+      data-tone={r.tone}
       className="pointer-events-none absolute z-30 rounded-lg bg-navy-950/[0.93] px-2.5 py-1.5 text-[13px] leading-snug text-on-navy-2 shadow-[0_6px_18px_rgba(4,11,23,0.4)] ring-1 ring-white/10 backdrop-blur-sm"
       style={{ left, top, width: W }}
     >
+      {r.label && (
+        <p className={`text-[11.5px] font-semibold uppercase tracking-[0.06em] ${r.tone === "outside" || r.tone === "context" ? "text-white/75" : "text-[#cbbcf7]"}`} data-testid="hover-label">
+          {r.label}
+        </p>
+      )}
       {r.value != null ? (
         <>
           <p className="flex items-baseline gap-1.5 text-white">
@@ -63,8 +135,9 @@ export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds 
           )}
         </>
       ) : (
-        <p className="text-[13px] text-white" data-testid="hover-none">
+        <p className="text-[13px] text-white" data-testid={r.tone === "context" ? "hover-context" : r.tone === "outside" ? "hover-outside" : "hover-none"}>
           {r.none}
+          {r.tone === "context" || r.tone === "outside" ? " Click for pier samples nearby and the filled chlorophyll." : ""}
         </p>
       )}
       <p className="text-[13px] leading-snug" data-testid="hover-when">

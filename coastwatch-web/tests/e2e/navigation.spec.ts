@@ -94,7 +94,7 @@ test("the bloom page links each station's original data on SCCOOS ERDDAP, encode
   await expect(page.getByTestId("source-csv-link")).toHaveAttribute("href", /\/tabledap\/HABs-MorroBayFrontBay\.csv\?/);
 });
 
-test("the layer list moves with the arrow keys, and county lines can be turned off and on again", async ({ page }) => {
+test("the layer list moves with the arrow keys, and county lines and names are always drawn (no switch)", async ({ page }) => {
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=none`);
   await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { loaded(): boolean } }).__cwMap?.loaded());
@@ -103,14 +103,28 @@ test("the layer list moves with the arrow keys, and county lines can be turned o
   await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
   await expect(page.getByTestId("layer-forecast")).toBeFocused();
   await expect(page.getByTestId("county-note")).toContainText("do not define fishery closures");
-  const vis = () => page.evaluate(() => (window as unknown as { __cwMap: { getLayoutProperty(l: string, p: string): string } }).__cwMap.getLayoutProperty("county-borders", "visibility"));
-  await page.getByTestId("county-lines").uncheck();
-  await expect.poll(vis).toBe("none");
+  // part of the basemap: no checkbox or map control, and every county layer is on
+  await expect(page.getByTestId("county-lines")).toHaveCount(0);
+  await expect(page.getByTestId("county-labels")).toHaveCount(0);
+  await expect(page.getByTestId("counties-toggle")).toHaveCount(0);
+  const vis = () =>
+    page.evaluate(() => {
+      const m = (window as unknown as { __cwMap: { getLayer(l: string): unknown; getLayoutProperty(l: string, p: string): string | undefined } }).__cwMap;
+      return ["county-borders-casing", "county-borders", "county-labels"].map((l) => (m.getLayer(l) ? (m.getLayoutProperty(l, "visibility") ?? "visible") : "missing"));
+    });
+  await expect.poll(vis).toEqual(["visible", "visible", "visible"]);
+  // a choice remembered by an earlier version is ignored
+  await page.evaluate(() => localStorage.setItem("cw-counties-v1", JSON.stringify({ lines: false, labels: false })));
   await page.reload();
   await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { loaded(): boolean } }).__cwMap?.loaded());
-  await expect(page.getByTestId("county-lines")).not.toBeChecked();
-  await page.getByTestId("county-lines").check();
-  await expect.poll(vis).toBe("visible");
+  await expect.poll(vis).toEqual(["visible", "visible", "visible"]);
+  // names are placed with collision handling, under towns and harbours (which claim their place first)
+  const order = await page.evaluate(() => {
+    const ids = (window as unknown as { __cwMap: { getStyle(): { layers: { id: string }[] } } }).__cwMap.getStyle().layers.map((l) => l.id);
+    return { county: ids.indexOf("county-labels"), city: ids.indexOf("place-city"), ports: ids.indexOf("ports-label") };
+  });
+  expect(order.county).toBeLessThan(order.city);
+  expect(order.county).toBeLessThan(order.ports);
 });
 
 test("with a harbour selected and on a phone, the notices stay one tap away", async ({ browser }) => {

@@ -25,6 +25,11 @@ import { VARIABLE_WORDS, runDays } from "./layers";
 import { packForPort } from "@/v4/offline/packs";
 import { useSavedSnapshot } from "@/v4/offline/snapshot";
 import type { Selection } from "@/v4/state/selection";
+import type { LayerChoice } from "./layers";
+import { checkSentence, type DerivedValidationEntry, type EstimateLayer, type OutlookLayer, type SstLayer } from "@/lib/derived";
+import { contextWords, forecastContext, OUTSIDE_WORDS, type ForecastContext } from "@/lib/gridTilesContext";
+import { estimateRead, sstRead, outlookRead } from "@/components/map/HoverReadout";
+import { satelliteLatest } from "@/lib/layers";
 
 type Ctx = {
   manifest: Manifest;
@@ -41,6 +46,12 @@ type Ctx = {
   official?: OfficialDataset | null;
   /** what can be read at a point: the forecast for the chosen variable and day, the satellite view, and the currents hour once loaded */
   reads?: { forecast: LayerArtifact | null; satellite: LayerArtifact | null; currents: { layer: LayerArtifact; field: CurrentField } | null };
+  /** v5: change the map's layer (the one-tap switch from a bay outside NOAA's model to chlorophyll) */
+  onLayer?: (c: LayerChoice) => void;
+  /** v5: the derived products and the pier-sample check of the nearest NOAA value near shore */
+  derived?: { outlook: OutlookLayer | null; estimate: EstimateLayer | null; sst?: SstLayer | null; check: DerivedValidationEntry | null };
+  /** v5: is this point water on the map? (null: unknown) */
+  waterAt?: (lat: number, lon: number) => boolean | null;
 };
 
 const KIND: Record<string, { word: string; tone: string; dot: string; hollow: string }> = {
@@ -479,7 +490,81 @@ export function preciseProbability(v: number, quantErr: number | null | undefine
  * One C-HARM cell. `precise` (Research) adds the stored probability to 3 decimals with the
  * grid's quantisation error, and says plainly what the number is.
  */
-export function CellBody({ read, ctx, variable, precise }: { read: CellRead | null; ctx: Ctx; variable: CharmVariable; precise?: { quantErr: number | null } }) {
+/**
+ * v5: a C-HARM cell without a value, drawn as "outside NOAA's model near shore": NOAA's model does
+ * not reach this water; the nearest NOAA cell within 6 km as text only, with the pipeline's
+ * pier-sample check of that value (no skill at the shore); the pier samples nearby, which are the
+ * measurements for this water; and one tap to the filled chlorophyll. Never a value for this water.
+ */
+function NoValueHere({ at, ctx, variable }: { at: { lat: number; lon: number }; ctx: Ctx; variable: CharmVariable }) {
+  const layer = useMemo(() => ctx.manifest.layers.find((l) => l.group_id === "charm" && l.variable === variable && l.time.lead_days === ctx.lead) ?? null, [ctx.manifest, variable, ctx.lead]);
+  const [c, setC] = useState<{ key: string; ctx: ForecastContext } | null>(null);
+  const key = `${layer?.layer_id}:${at.lat},${at.lon}`;
+  const water = ctx.waterAt?.(at.lat, at.lon) ?? null;
+  const near = useMemo(() => stationsNear(ctx.stations, at.lat, at.lon), [ctx.stations, at.lat, at.lon]);
+  useEffect(() => {
+    let live = true;
+    if (!layer?.grid) return;
+    forecastContext(ctx.baseUrl, layer, at.lat, at.lon)
+      .then((x) => live && setC({ key, ctx: x }))
+      .catch(() => live && setC(null));
+    return () => {
+      live = false;
+    };
+  }, [layer, ctx.baseUrl, at.lat, at.lon, key]);
+  if (water === false || !c || c.key !== key || c.ctx.kind === "value") return null;
+  const check = ctx.derived?.check ?? null;
+  const d = ctx.derived;
+  const product = satelliteLatest(ctx.manifest, "olci300") ? "olci300" : "viirs750";
+  const switches: { label: string; testid: string; choice: LayerChoice }[] = [];
+  if (d?.estimate) switches.push({ label: "Filled chlorophyll here", testid: "switch-estimate", choice: { kind: "satellite", product, day: null } });
+  else if (satelliteLatest(ctx.manifest, product)) switches.push({ label: "Satellite chlorophyll here", testid: "switch-satellite", choice: { kind: "satellite", product, day: null } });
+  if (d?.outlook) switches.push({ label: "8-day chlorophyll outlook", testid: "switch-outlook", choice: { kind: "outlook" } });
+  const piers = (near.near.length ? near.near : near.nearestBeyond ? [near.nearestBeyond] : []).slice(0, 3);
+  return (
+    <div className="rounded-xl border border-n-line-strong bg-n-surface-2 p-3 text-[14px] leading-snug" data-testid={c.ctx.kind === "context" ? "cell-context" : "cell-outside"}>
+      <p className="nx-eyebrow">Outside NOAA&rsquo;s model near shore</p>
+      <p className="mt-1 text-n-ink">{c.ctx.kind === "context" ? contextWords(c.ctx) : OUTSIDE_WORDS}</p>
+      {c.ctx.kind === "context" && check && (
+        <p className="mt-1 text-[13px] text-n-ink-2" data-testid="cell-context-check">
+          {checkSentence(check)}
+        </p>
+      )}
+      {piers.length > 0 && (
+        <div className="mt-2" data-testid="cell-piers">
+          <p className="text-[13px] font-semibold text-n-ink">Measured at the shore nearby (CalHABMAP pier samples)</p>
+          <ul>
+            {piers.map((n) => (
+              <li key={n.station.station_id}>
+                <button type="button" onClick={() => ctx.onSelect({ kind: "station", id: n.station.station_id })} className="nx-focus flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-1 text-left hover:bg-n-surface-3">
+                  <span className="flex min-w-0 flex-col">
+                    <span className="text-[14px] font-semibold">{n.station.name}</span>
+                    <span className="text-[12.5px] text-n-ink-3">{lastHabWords(lastHabSample(n.station), ctx.now)}</span>
+                  </span>
+                  <span className="nx-data shrink-0 text-[13px] text-n-ink-3">
+                    {kmLabel(n.km)} {n.bearing}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {ctx.onLayer && switches.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {switches.map((x) => (
+            <button key={x.testid} type="button" onClick={() => ctx.onLayer!(x.choice)} className="nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-n-line-strong bg-n-surface px-3 text-[14px] font-semibold text-n-ink" data-testid={x.testid}>
+              {x.label} <Icon name="chevronRight" className="h-4 w-4" />
+            </button>
+          ))}
+        </div>
+      )}
+      <p className="mt-2 text-[12.5px] text-n-ink-3">Chlorophyll is algae of every kind, not toxin.</p>
+    </div>
+  );
+}
+
+export function CellBody({ read, ctx, variable, precise, at }: { read: CellRead | null; ctx: Ctx; variable: CharmVariable; precise?: { quantErr: number | null }; at?: { lat: number; lon: number } }) {
   const run = charmRun(ctx.manifest);
   if (!read || read.status === "loading") return <Loading what="Reading the published grid…" />;
   if (read.status === "error") return <Failed what="The C-HARM grid" message={read.message} />;
@@ -506,6 +591,7 @@ export function CellBody({ read, ctx, variable, precise }: { read: CellRead | nu
           {run ? ` · run issued ${dayLabel(run.issued_date)}${run.issued_date_derived ? " (inferred)" : ""}` : ""}
         </p>
       </div>
+      {own == null && at && ctx.derived && <NoValueHere at={at} ctx={ctx} variable={variable} />}
       {own == null && (
         <div className="rounded-xl border border-dashed border-n-line-strong p-3 text-[14px] leading-snug" data-testid="cell-gap">
           {!read.gap.inDomain ? (
@@ -630,18 +716,32 @@ export function PointView({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ct
  *  nearest one and never interpolated, with its own product, resolution and time. */
 function PointReads({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
   const reads = ctx.reads!;
-  const [rows, setRows] = useState<{ id: string; label: string; r: Readout | null; err?: boolean }[] | null>(null);
+  const [rows, setRows] = useState<{ id: string; label: string; r: (Readout & { label?: string }) | null; err?: boolean }[] | null>(null);
+  const est = ctx.derived?.estimate ?? null;
+  const outlook = ctx.derived?.outlook ?? null;
+  const sst = ctx.derived?.sst ?? null;
   useEffect(() => {
     let live = true;
     const jobs: { id: string; label: string; run: () => Promise<Readout> }[] = [];
     if (reads.forecast) jobs.push({ id: "forecast", label: "NOAA C-HARM model", run: () => forecastAt(ctx.baseUrl, reads.forecast!, lat, lon, pnSibling(ctx.manifest, reads.forecast!)) });
-    if (reads.satellite) jobs.push({ id: "satellite", label: "Satellite chlorophyll", run: () => satelliteAt(ctx.manifest, ctx.baseUrl, reads.satellite!, lat, lon) });
+    if (reads.satellite)
+      jobs.push({
+        id: "satellite",
+        label: "Satellite chlorophyll",
+        // the observation when there is one; the estimate (labelled) only where nothing was observed
+        run: async () => {
+          const o = await satelliteAt(ctx.manifest, ctx.baseUrl, reads.satellite!, lat, lon);
+          return o.value == null && est ? ((await estimateRead(ctx.baseUrl, est, lat, lon)) ?? o) : o;
+        },
+      });
+    if (outlook) jobs.push({ id: "outlook", label: "Chlorophyll outlook", run: () => outlookRead(ctx.baseUrl, outlook, lat, lon) });
+    if (sst) jobs.push({ id: "sst", label: "Sea temperature", run: () => sstRead(ctx.baseUrl, sst, lat, lon) });
     if (reads.currents) jobs.push({ id: "currents", label: "Surface current", run: async () => currentsAt(reads.currents!.field, reads.currents!.layer, lat, lon) });
     Promise.all(jobs.map((j) => j.run().then((r) => ({ id: j.id, label: j.label, r }), () => ({ id: j.id, label: j.label, r: null, err: true })))).then((x) => live && setRows(x));
     return () => {
       live = false;
     };
-  }, [reads.forecast, reads.satellite, reads.currents, ctx.baseUrl, ctx.manifest, lat, lon]);
+  }, [reads.forecast, reads.satellite, reads.currents, ctx.baseUrl, ctx.manifest, lat, lon, est, outlook, sst]);
   return (
     <Section title="What is published here">
       {!rows ? (
@@ -653,7 +753,7 @@ function PointReads({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
           {rows.map(({ id, label, r, err }) => (
             <li key={id} className="py-2.5" data-testid={`point-${id}`}>
               <p className={`text-[12.5px] font-semibold uppercase tracking-[0.06em] ${r?.kind === "model" ? "text-n-model" : "text-n-measured"}`}>
-                {label} · {r?.kind === "model" ? "model" : "observation"}
+                {label} · {r?.label ?? (r?.kind === "model" ? "model" : "observation")}
               </p>
               {r?.value != null ? (
                 <>

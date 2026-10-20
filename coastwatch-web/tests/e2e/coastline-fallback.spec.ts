@@ -203,7 +203,7 @@ test("with the basemap's tiles 45 s late, the forecast is drawn before they arri
   await ctx.close();
 });
 
-test("with the basemap unavailable, no-value water and the toxin mask keep the no-data dots and their readout; land has neither", async ({ browser }) => {
+test("with the basemap unavailable, no-value water and the toxin mask keep their outside-model tint and readout; land has neither", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await ctx.route(OMT, (r) => r.abort("connectionrefused"));
   const page = await ctx.newPage();
@@ -236,17 +236,22 @@ test("with the basemap unavailable, no-value water and the toxin mask keep the n
       return out;
     }, pts);
   const pick = (pts: number[][], n: number) => pts.filter((_, i) => i % Math.max(1, Math.floor(pts.length / n)) === 0).slice(0, n);
-  // toxin mask and unmodelled water: on the bundled sea, with the no-data dots, and not coloured
+  // toxin mask and unmodelled water: on the bundled sea, tinted "outside NOAA's model near shore"
+  // (v5: the tint is their mark, so the no-data dots are not drawn under the forecast)
   let maskOnSea: number[] | undefined;
   for (const [name, set] of [["toxin mask", pick(mask, 6)], ["not modelled", pick(gaps, 8)]] as const) {
     const res = await probe(set as number[][]);
     const sea = (set as number[][]).filter((_, i) => res[i].sea);
     expect(sea.length, `${name}: cells on the sea`).toBeGreaterThan(0);
-    expect(res.filter((r) => r.sea && !r.dots).length, `${name}: sea cells without the no-data dots`).toBe(0);
+    expect(res.filter((r) => r.sea && r.dots).length, `${name}: sea cells hatched under the tint`).toBe(0);
     if (name === "toxin mask") maskOnSea = sea[0];
+    // v5: unmodelled water is tinted "outside NOAA's model near shore" (one neutral colour, never a
+    // probability; its readout says so), so the coast is not left blank
     for (const [x, y] of sea.slice(0, 2)) {
-      const d = await drawn(page, y, x, [{ lon: x, lat: y, kind: "ocean" }], true);
-      expect(d[0], `${name}: forecast colour at ${x}, ${y}`).toBe(false);
+      // a few pixels around the centre
+      const around = [[0, 0], [0.0011, 0.0007], [-0.0009, 0.0012], [0.0006, -0.0013]].map(([dx, dy]) => ({ lon: x + dx, lat: y + dy, kind: "ocean" as const }));
+      const d = await drawn(page, y, x, around, true);
+      expect(d.some(Boolean), `${name}: outside-model tint at ${x}, ${y}`).toBe(true);
     }
   }
   // land has neither the sea nor the dots
@@ -260,6 +265,7 @@ test("with the basemap unavailable, no-value water and the toxin mask keep the n
   const q = await page.evaluate(([x, y]) => (window as unknown as { __cwMap: MapLike }).__cwMap.project([x, y]), maskOnSea!);
   await page.mouse.move(box.x + q.x - 6, box.y + q.y - 6);
   await page.mouse.move(box.x + q.x, box.y + q.y, { steps: 3 });
-  await expect(page.getByTestId("hover-none")).toContainText("within about 3–6 km of shore");
+  await expect(page.getByTestId("hover-readout")).toContainText("within about 3–6 km of shore");
+  await expect(page.getByTestId("hover-value")).toHaveCount(0);
   await ctx.close();
 });

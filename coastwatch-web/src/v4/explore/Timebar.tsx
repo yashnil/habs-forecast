@@ -10,6 +10,7 @@ import { dtf, pacificToday } from "@/lib/time";
 import { Icon } from "@/v4/ui/Icon";
 import { clockLabel, dayLabel } from "@/v4/ui/time";
 import { runDays, type LayerChoice } from "./layers";
+import { derivedOutlook, type DerivedIndex, type OutlookLayer } from "@/lib/derived";
 
 const WEEKDAY = dtf("en-US", { weekday: "short", timeZone: "UTC" });
 /** "Thu" for a date; an unreadable date gives "Invalid Date", as toLocaleDateString did */
@@ -25,7 +26,17 @@ const weekdayOf = (d: string) => {
  */
 type Step = { key: string; label: string; top?: string; sub: string; forecast?: boolean; today?: boolean; incomplete?: boolean; choice: LayerChoice; disabled?: boolean };
 
-export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null): { title: string; steps: Step[]; current: string; latest?: LayerChoice } | null {
+export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null, derived: DerivedIndex | null = null): { title: string; steps: Step[]; current: string; latest?: LayerChoice } | null {
+  if (c.kind === "outlook") {
+    // one frame: the outlook is a single mean over its window, never a day-by-day series
+    const o = derivedOutlook(derived);
+    if (!o) return null;
+    return {
+      title: `Outlook issued ${dayLabel(o.issued)}: one mean over ${dayLabel(o.valid_from)}–${dayLabel(o.valid_to)}, not day by day`,
+      current: "outlook",
+      steps: [{ key: "outlook", label: `${dayLabel(o.valid_from)}–${dayLabel(o.valid_to)}`, top: "Next 8 days", sub: "outlook", forecast: true, choice: c }],
+    };
+  }
   if (c.kind === "forecast") {
     const run = charmRun(m);
     const today = now ? pacificToday(now) : null;
@@ -82,8 +93,45 @@ export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null): { titl
   return null;
 }
 
-export function Timebar({ manifest, choice, onChoice, now, compact = false }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; now: Date | null; compact?: boolean }) {
-  const t = timeSteps(manifest, choice, now);
+/** Day as a number of whole days after `from` (calendar dates). */
+const daysAfter = (from: string, d: string) => Math.round((Date.parse(`${d.slice(0, 10)}T12:00:00Z`) - Date.parse(`${from.slice(0, 10)}T12:00:00Z`)) / 86_400_000);
+
+/**
+ * The outlook's horizon, drawn to scale: the day it was issued (and today), then the window its one
+ * mean covers. Nothing is selectable inside the window: there is one value per pixel for all of it.
+ */
+export function OutlookHorizon({ layer, now, compact = false }: { layer: OutlookLayer; now: Date | null; compact?: boolean }) {
+  const span = Math.max(1, daysAfter(layer.issued, layer.valid_to) + 1);
+  const at = (d: string) => `${(Math.min(span, Math.max(0, daysAfter(layer.issued, d))) / span) * 100}%`;
+  const today = now ? pacificToday(now) : null;
+  const w0 = daysAfter(layer.issued, layer.valid_from);
+  const w1 = daysAfter(layer.issued, layer.valid_to) + 1;
+  return (
+    <div role="group" aria-label={`Outlook horizon: issued ${dayLabel(layer.issued)}, a mean over ${dayLabel(layer.valid_from)} to ${dayLabel(layer.valid_to)}`} data-testid="timebar" className="flex min-w-0 flex-col gap-2">
+      {!compact && <p className="truncate text-[13px] text-n-ink-2">Outlook: one 8-day mean, not a day-by-day forecast</p>}
+      <div className="relative h-[52px]" data-testid="outlook-horizon">
+        <div className="absolute inset-x-0 top-[22px] h-[3px] rounded-full bg-n-surface-3" aria-hidden />
+        <div
+          className="absolute top-[14px] h-[19px] rounded-md border border-n-model/60"
+          style={{ left: `${(w0 / span) * 100}%`, width: `${((w1 - w0) / span) * 100}%`, backgroundImage: "repeating-linear-gradient(135deg, transparent 0 6px, rgba(194,168,245,0.28) 6px 8px)" }}
+          aria-hidden
+        />
+        <span className="absolute top-[12px] h-[23px] w-[2px] -translate-x-1/2 rounded-full bg-n-ink" style={{ left: at(layer.issued) }} aria-hidden />
+        {today && today >= layer.issued && today <= layer.valid_to && <span className="absolute top-[16px] h-[15px] w-[2px] -translate-x-1/2 bg-n-accent" style={{ left: `${((daysAfter(layer.issued, today) + 0.5) / span) * 100}%` }} aria-hidden data-testid="outlook-today" />}
+        <span className="absolute left-0 top-[36px] whitespace-nowrap text-[12px] text-n-ink-2" data-testid="outlook-issued">
+          Issued {dayLabel(layer.issued)}
+        </span>
+        <span className="absolute top-0 whitespace-nowrap text-[12px] font-semibold text-n-ink" style={{ left: at(layer.valid_from) }} data-testid="outlook-window">
+          Mean {dayLabel(layer.valid_from)} → {dayLabel(layer.valid_to)}
+        </span>
+        <span className="absolute right-0 top-[36px] whitespace-nowrap text-[12px] text-n-ink-2">valid to {dayLabel(layer.valid_to)}</span>
+      </div>
+    </div>
+  );
+}
+
+export function Timebar({ manifest, choice, onChoice, now, compact = false, derived = null }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; now: Date | null; compact?: boolean; derived?: DerivedIndex | null }) {
+  const t = timeSteps(manifest, choice, now, derived);
   const row = useRef<HTMLDivElement | null>(null);
   // one selected pill that slides between frames (the map itself still cuts from frame to frame);
   // a held arrow key jumps it, so fast stepping never queues motion
@@ -96,6 +144,8 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false }: { 
     if (el && row.current) row.current.scrollLeft = Math.max(0, el.offsetLeft - row.current.clientWidth / 2 + el.clientWidth / 2);
   }, [current]);
   if (!t || !t.steps.length) return null;
+  const outlook = choice.kind === "outlook" ? derivedOutlook(derived) : null;
+  if (outlook) return <OutlookHorizon layer={outlook} now={now} compact={compact} />;
   const i = Math.max(0, t.steps.findIndex((s) => s.key === t.current));
   const go = (j: number) => {
     const s = t.steps[Math.max(0, Math.min(t.steps.length - 1, j))];

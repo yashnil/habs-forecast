@@ -31,11 +31,11 @@ import { RegistryDisclosure } from "@/v4/shell/Disclosure";
 import { associationsAt, localNotices } from "@/lib/applicability";
 import { pointKey } from "@/lib/coast";
 import { SkipLink } from "@/v4/shell/SkipLink";
-import { useCountyPrefs } from "@/components/map/Counties";
 import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel, lastHabWords } from "@/v4/ui/time";
 import { decodeSelection, encodeSelection, sameSelection, type Camera, type HistoryEntry, type Selection } from "@/v4/state/selection";
-import { choiceParams, parseChoice, resolve, runDays, SAT_WORDS, VARIABLE_WORDS, type LayerChoice } from "./layers";
+import { choiceParams, parseChoice, resolve, runDays, SAT_WORDS, useDerivedIndex, VARIABLE_WORDS, type LayerChoice } from "./layers";
+import { derivedEstimate, derivedOutlook, derivedSst, nearshoreCheck } from "@/lib/derived";
 import { LayerChips, LayerList, LayerOptions, Legend, Provenance, ReferenceLines } from "./LayerPanel";
 import { Timebar, timeSteps } from "./Timebar";
 import { PlaceSearch, type SearchHit } from "./Search";
@@ -133,7 +133,15 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     if (choice?.kind === "forecast" && choice.lead < 0 && now) setChoiceRaw({ ...choice, lead: firstLead });
   }, [choice, firstLead, now]);
   const active: LayerChoice = useMemo(() => choice ?? { kind: "none" }, [choice]);
-  const resolved = useMemo(() => resolve(manifest, active, baseUrl), [manifest, active, baseUrl]);
+  // derived chlorophyll products (lib/derived): offered only when the dataset publishes their index
+  const derivedRaw = useDerivedIndex(baseUrl);
+  const derived = derivedRaw ?? null;
+  const check = nearshoreCheck(derived);
+  useEffect(() => {
+    // a link to a derived layer (outlook, sea temperature) the dataset does not have: the default layer instead
+    if ((choice?.kind === "outlook" && !derivedOutlook(derivedRaw)) || (choice?.kind === "sst" && !derivedSst(derivedRaw))) if (derivedRaw !== undefined) setChoiceRaw(null);
+  }, [choice, derivedRaw]);
+  const resolved = useMemo(() => resolve(manifest, active, baseUrl, derived), [manifest, active, baseUrl, derived]);
   const variable: CharmVariable = active.kind === "forecast" ? active.variable : (CHARM_VARIABLES as readonly string[]).includes(q0.get("var") ?? "") ? (q0.get("var") as CharmVariable) : "particulate_domoic";
   const lead = active.kind === "forecast" ? active.lead : firstLead;
 
@@ -414,9 +422,6 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     return { type: "FeatureCollection", features: [boxFeature(dragBox)] };
   }, [dragBox, highlight]);
 
-  // county reference lines: the remembered v2 choice, now with its control back in the layer panel
-  const [counties, setCounties] = useCountyPrefs();
-
   // ------------------------------------------------------------------ readiness
   const [mapStatus, setMapStatus] = useState<{ basemap: "ok" | "slow" | "down"; field: "none" | "loading" | "ready" | "failed" } | null>(null);
   const onStatus = useCallback((s: { basemap: "ok" | "slow" | "down"; field: "none" | "loading" | "ready" | "failed" }) => setMapStatus(s), []);
@@ -503,11 +508,13 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       });
   }, []);
   const hoverSource: HoverSource = useMemo(() => {
-    if (active.kind === "forecast" && resolved.forecastLayer) return { kind: "forecast", layer: resolved.forecastLayer };
-    if (active.kind === "satellite" && resolved.satLayer) return { kind: "satellite", layer: resolved.satLayer };
+    if (active.kind === "forecast" && resolved.forecastLayer) return { kind: "forecast", layer: resolved.forecastLayer, context: !!resolved.forecast?.grid, check };
+    if (active.kind === "satellite" && resolved.satLayer) return { kind: "satellite", layer: resolved.satLayer, estimate: resolved.estimate ? resolved.estimateLayer : null };
+    if (active.kind === "outlook" && resolved.outlookLayer) return { kind: "outlook", layer: resolved.outlookLayer };
+    if (active.kind === "sst" && resolved.sstLayer) return { kind: "sst", layer: resolved.sstLayer };
     if (active.kind === "currents" && curField && curLayer && curField.id === curLayer.layer_id) return { kind: "currents", layer: curLayer, field: curField.field };
     return null;
-  }, [active.kind, resolved.forecastLayer, resolved.satLayer, curField, curLayer]);
+  }, [active.kind, resolved, curField, curLayer, check]);
 
   // ------------------------------------------------------------------ keyboard
   useEffect(() => {
@@ -550,7 +557,27 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     }),
     [manifest, variable, lead, baseUrl, active.kind, resolved.satLayer, hoverSource],
   );
-  const ctx = { manifest, baseUrl, ports, portIntel, stations, now, variable, lead, layer: active.kind, onSelect: selectAndGo, official, reads: pointReads };
+  // is this point water on the map (the basemap's own water, or the bundled water)? null when unknown
+  const waterAt = useCallback((scr: { x: number; y: number }): boolean | null => {
+    const m = mapRef.current;
+    if (!m) return null;
+    const ids = ["water", "water-fallback"].filter((id) => m.getLayer(id) && m.getLayoutProperty(id, "visibility") !== "none");
+    if (!ids.length) return null;
+    if (m.queryRenderedFeatures([scr.x, scr.y], { layers: ids }).length) return true;
+    // no water drawn here: land, unless the basemap has drawn nothing at all yet
+    return m.isSourceLoaded("omt") ? false : null;
+  }, []);
+  const waterAtPoint = useCallback((lat: number, lon: number) => {
+    const m = mapRef.current;
+    if (!m) return null;
+    const p = m.project([lon, lat]);
+    const c = m.getCanvas();
+    // only a point in view can be checked against the drawn water
+    if (p.x < 0 || p.y < 0 || p.x > c.clientWidth || p.y > c.clientHeight) return null;
+    return waterAt({ x: p.x, y: p.y });
+  }, [waterAt]);
+  const derivedCtx = { outlook: derivedOutlook(derived), estimate: derivedEstimate(derived), sst: derivedSst(derived), check };
+  const ctx = { manifest, baseUrl, ports, portIntel, stations, now, variable, lead, layer: active.kind, onSelect: selectAndGo, official, reads: pointReads, onLayer: setChoiceRaw, derived: derivedCtx, waterAt: waterAtPoint };
   // opened from a briefing ("Show on map"): a way back to it, only to a My Coast address
   const backTo = useMemo(() => {
     const f = q0.get("from");
@@ -610,7 +637,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       {selection.kind === "cell" && (
         <>
           <Header icon="cell" kind="C-HARM model cell" title={VARIABLE_WORDS[variable].name} sub={cellRead?.status === "ready" && cellRead.harbor ? `${kmLabel(cellRead.harbor.km)} from ${cellRead.harbor.name}` : undefined} onClose={() => select(null)} onBack={back} canBack={stack.length > 0} />
-          <CellBody read={cellRead} ctx={ctx} variable={variable} />
+          <CellBody read={cellRead} ctx={ctx} variable={variable} at={{ lat: selection.lat, lon: selection.lon }} />
         </>
       )}
       {selection.kind === "point" && (
@@ -628,7 +655,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     </div>
   ) : null;
 
-  const hasTime = active.kind !== "none" && !!timeSteps(manifest, active, now)?.steps.length;
+  const hasTime = active.kind !== "none" && !!timeSteps(manifest, active, now, derived)?.steps.length;
   const nothingCurrent =
     active.kind === "none" && opening?.reason === "nothing-current" ? (
       <div className="flex flex-col gap-2 rounded-xl border border-n-stale/50 bg-n-surface-2 p-3 text-[13.5px] leading-snug text-n-ink-2" data-testid="nothing-current">
@@ -647,7 +674,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     ) : null;
   // a data layer at state scale: its 3 km cells are a few pixels wide, so say how to read one
   const readHint =
-    (active.kind === "forecast" || active.kind === "satellite") && !selection && zoom != null && zoom < 7 ? (
+    (active.kind === "forecast" || active.kind === "satellite" || active.kind === "outlook" || active.kind === "sst") && !selection && zoom != null && zoom < 7 ? (
       <p className="flex flex-wrap items-center gap-x-2 text-[13.5px] text-n-ink-2" data-testid="read-hint">
         Zoom in and tap the water to read a {active.kind === "forecast" ? "model cell" : "pixel"}.
         <button
@@ -672,39 +699,39 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const activeCard = (
     <div className="flex flex-col gap-3" data-testid="active-layer">
       <div className={compactChips}>
-        <LayerChips manifest={manifest} choice={active} onChoice={pickFromSheet} defaults={{ lead: firstLead }} />
+        <LayerChips manifest={manifest} choice={active} onChoice={pickFromSheet} defaults={{ lead: firstLead }} derived={derived} />
       </div>
       {nothingCurrent}
       {readHint}
       <p className="nx-eyebrow">On the map</p>
       {/* the time control first, so it stays within reach at the sheet's peek; then what it shows */}
-      {hasTime && <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} compact />}
+      {hasTime && <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} compact derived={derived} />}
       <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} />
-      <Legend choice={active} resolved={resolved} />
+      <Legend choice={active} resolved={resolved} check={check} />
     </div>
   );
   const layerDeck = (
     <div className="flex flex-col gap-4">
       {nothingCurrent}
-      <LayerList manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} defaults={{ lead: firstLead }} />
-      <LayerOptions manifest={manifest} choice={active} onChoice={setChoiceRaw} />
+      <LayerList manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} defaults={{ lead: firstLead }} derived={derived} />
+      <LayerOptions manifest={manifest} choice={active} onChoice={setChoiceRaw} estimate={resolved.estimateLayer} />
       {readHint}
       {/* what the map shows and when, before how to read its colours: the stamps stay above the fold */}
       <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} />
       <div className="border-t border-n-line pt-3">
-        <Legend choice={active} resolved={resolved} />
+        <Legend choice={active} resolved={resolved} check={check} />
       </div>
       <div className="border-t border-n-line pt-3">
-        <ReferenceLines prefs={counties} onChange={setCounties} />
+        <ReferenceLines />
       </div>
     </div>
   );
 
   // the folded deck (desktop, with a selection open): what the map shows, in one line, and the way back to the deck
-  const steps = hasTime ? timeSteps(manifest, active, now) : null;
+  const steps = hasTime ? timeSteps(manifest, active, now, derived) : null;
   const step = steps?.steps.find((x) => x.key === steps.current);
   const capsuleWords = [
-    active.kind === "forecast" ? "C-HARM forecast" : active.kind === "satellite" ? "Satellite chlorophyll" : active.kind === "currents" ? "Surface currents" : "Seafloor and coast",
+    active.kind === "forecast" ? "C-HARM forecast" : active.kind === "satellite" ? "Satellite chlorophyll" : active.kind === "outlook" ? "Chlorophyll outlook, not observed" : active.kind === "sst" ? "Sea temperature" : active.kind === "currents" ? "Surface currents" : "Seafloor and coast",
     active.kind === "forecast" ? VARIABLE_WORDS[active.variable].short : active.kind === "satellite" ? SAT_WORDS[active.product]?.name : null,
     step ? [step.top, step.label].filter(Boolean).join(" ") : null,
   ].filter(Boolean);
@@ -787,6 +814,10 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       satellite={resolved.satellite}
       satelliteAge={resolved.satelliteAge}
       imagery={null}
+      outlook={resolved.outlook}
+      sst={resolved.sst}
+      estimate={resolved.estimate}
+      contextFill
       currents={currents}
       ports={ports}
       showPorts
@@ -795,7 +826,6 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       selectedPort={selection?.kind === "harbor" ? selection.port : null}
       inspect={null}
       chrome="none"
-      counties={counties}
       basemapPmtiles={basemapPm ?? null}
       clusterStations
       highlight={shownHighlight}
@@ -855,7 +885,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       <div className="absolute inset-0" data-testid="map">
         {basemapPm !== undefined && synced ? map : null}
       </div>
-      {hoverSource && bp !== "phone" && <HoverLayer sink={hoverSink} manifest={manifest} baseUrl={baseUrl} source={hoverSource} panelOpen={panelOpen} />}
+      {hoverSource && bp !== "phone" && <HoverLayer sink={hoverSink} manifest={manifest} baseUrl={baseUrl} source={hoverSource} panelOpen={panelOpen} waterAt={waterAt} />}
       {packOpen && <PackDialog pack={pack} manifest={manifest} baseUrl={baseUrl} official={official} onClose={() => setPackOpen(false)} />}
       {/* the start card: what is loading, what can be done meanwhile (never a bare spinner) */}
       <AnimatePresence>{starting && <StartCard key="start" now={now} />}</AnimatePresence>
@@ -913,7 +943,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
             {/* a deck only for a layer that has published frames (the multi-sensor view has none) */}
             {hasTime && (
               <div className="nx-deck mx-auto max-w-[760px] p-3" data-testid="timebar-deck">
-                <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} />
+                <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} derived={derived} />
               </div>
             )}
           </div>
@@ -948,7 +978,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
             </details>
             {hasTime && (
               <div className="nx-deck p-3">
-                <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} compact />
+                <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} compact derived={derived} />
               </div>
             )}
             {/* the deck carries the full credits once opened; closed, the short line stays on the map */}
@@ -1015,7 +1045,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                   {/* with a place open, the layers stay one tap away: no need to close the place to change the map */}
                   {inspection && (
                     <div className={`mb-3 border-b border-n-line pb-3 ${compactChips}`} data-testid="sheet-layer-chips">
-                      <LayerChips manifest={manifest} choice={active} onChoice={setChoiceRaw} defaults={{ lead: firstLead }} />
+                      <LayerChips manifest={manifest} choice={active} onChoice={setChoiceRaw} defaults={{ lead: firstLead }} derived={derived} />
                     </div>
                   )}
                   {inspection ?? (
@@ -1023,9 +1053,9 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                       {activeCard}
                       <div className="border-t border-n-line pt-4">
                         <p className="nx-eyebrow mb-2">Change what the map shows</p>
-                        <LayerList manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} defaults={{ lead: firstLead }} />
+                        <LayerList manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} defaults={{ lead: firstLead }} derived={derived} />
                         <div className="mt-3">
-                          <LayerOptions manifest={manifest} choice={active} onChoice={setChoiceRaw} />
+                          <LayerOptions manifest={manifest} choice={active} onChoice={setChoiceRaw} estimate={resolved.estimateLayer} />
                         </div>
                       </div>
                       <Attribution />
@@ -1213,7 +1243,7 @@ function BackToBriefing({ href, name, className }: { href: string; name: string;
 type HoverAt = { p: MapPoint; s: { x: number; y: number } };
 
 /** The hover readout and the pointer state behind it: the workspace hands it positions through `sink`. */
-function HoverLayer({ sink, manifest, baseUrl, source, panelOpen }: { sink: React.RefObject<((h: HoverAt | null) => void) | null>; manifest: Manifest; baseUrl: string; source: HoverSource; panelOpen: boolean }) {
+function HoverLayer({ sink, manifest, baseUrl, source, panelOpen, waterAt }: { sink: React.RefObject<((h: HoverAt | null) => void) | null>; manifest: Manifest; baseUrl: string; source: HoverSource; panelOpen: boolean; waterAt: (s: { x: number; y: number }) => boolean | null }) {
   const [hover, setHover] = useState<HoverAt | null>(null);
   useEffect(() => {
     sink.current = setHover;
@@ -1225,7 +1255,7 @@ function HoverLayer({ sink, manifest, baseUrl, source, panelOpen }: { sink: Reac
   return (
     // the readout takes the dark tokens but must never paint over the map: transparent wrapper
     <div className="theme-dark pointer-events-none absolute inset-0 z-[12] !bg-transparent">
-      <HoverReadout manifest={manifest} baseUrl={baseUrl} source={source} point={hover.p} screen={hover.s} bounds={{ w: window.innerWidth - (panelOpen ? PANEL + 24 : 0), h: window.innerHeight }} />
+      <HoverReadout manifest={manifest} baseUrl={baseUrl} source={source} point={hover.p} screen={hover.s} waterAt={waterAt} bounds={{ w: window.innerWidth - (panelOpen ? PANEL + 24 : 0), h: window.innerHeight }} />
     </div>
   );
 }

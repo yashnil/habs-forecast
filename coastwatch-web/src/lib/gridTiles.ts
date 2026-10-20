@@ -63,15 +63,38 @@ function axisIndex(n: number, first: number, step: number, count: number, coord:
 }
 
 /**
+ * How a tile marks what was not observed or not modelled at that water (v5), in screen pixels so the
+ * texture keeps its size at every zoom:
+ * - `tint`: every cell of the grid without a value is drawn in one calm neutral colour (C-HARM:
+ *   "outside NOAA's model near shore"). No value is drawn or implied: NOAA's nearest value is never
+ *   painted onto water it does not model (it showed no skill at the shore against pier samples).
+ * - `stipple`: valued pixels get a fine stipple (`dot`) over a lightened colour (`lut`): an
+ *   estimate, not an observation.
+ * - `hatch`: valued pixels get fine diagonal lines (`line`): an outlook, not an observation.
+ */
+export type TileMarks = {
+  tint?: number;
+  stipple?: { lut: Uint32Array; dot: Uint32Array };
+  hatch?: { line: Uint32Array };
+};
+
+/** The stipple: one dot every 4 px, rows staggered by 2 px (an even, quiet texture). */
+export const stippleAt = (px: number, py: number) => (py & 3) === 0 ? (px & 3) === 0 : (py & 3) === 2 && (px & 3) === 2;
+/** The outlook hatch: a 1 px line every 7 px, rising to the right. */
+export const hatchAt = (px: number, py: number) => (px + py) % 7 === 0;
+
+/**
  * RGBA pixels of Web Mercator tile z/x/y (size x size), each pixel the grid cell containing its
  * centre. Pure: tested against the published grid and the pipeline's palette rule.
  */
-export function renderGridTile(g: ValueGrid, codes: Uint16Array, lut: Uint32Array, z: number, x: number, y: number, size = GRID_TILE_SIZE): Uint8ClampedArray {
+export function renderGridTile(g: ValueGrid, codes: Uint16Array, lut: Uint32Array, z: number, x: number, y: number, size = GRID_TILE_SIZE, marks: TileMarks = {}): Uint8ClampedArray {
   const n = 2 ** z;
   const lonFirst = g.lon_first > 180 ? g.lon_first - 360 : g.lon_first;
   const cols = axisIndex(size, lonFirst, g.lon_step, g.width, (px) => ((x + (px + 0.5) / size) / n) * 360 - 180);
   const rows = axisIndex(size, g.lat_first, g.lat_step, g.height, (py) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * (y + (py + 0.5) / size)) / n))) * 180) / Math.PI);
   const out = new Uint32Array(size * size);
+  const nodata = g.nodata ?? 65535;
+  const { tint, stipple, hatch } = marks;
   for (let py = 0; py < size; py++) {
     const r = rows[py];
     if (r < 0) continue;
@@ -79,8 +102,90 @@ export function renderGridTile(g: ValueGrid, codes: Uint16Array, lut: Uint32Arra
     const o = py * size;
     for (let px = 0; px < size; px++) {
       const c = cols[px];
-      if (c >= 0) out[o + px] = lut[codes[base + c]];
+      if (c < 0) continue;
+      const code = codes[base + c];
+      if (code === nodata) {
+        if (tint) out[o + px] = tint;
+        continue;
+      }
+      if (stipple) out[o + px] = stippleAt(px, py) ? stipple.dot[code] : stipple.lut[code];
+      else if (hatch && hatchAt(px, py)) out[o + px] = hatch.line[code];
+      else out[o + px] = lut[code];
     }
   }
   return new Uint8ClampedArray(out.buffer);
+}
+
+const unpack = (c: number): [number, number, number, number] => [c & 255, (c >>> 8) & 255, (c >>> 16) & 255, c >>> 24];
+
+/** A LUT with every colour moved `f` of the way to `to` (an RGB triple); transparent stays transparent. */
+export function mixLut(lut: Uint32Array, to: [number, number, number], f: number, alpha = 255): Uint32Array {
+  const out = new Uint32Array(lut.length);
+  const memo = new Map<number, number>();
+  for (let i = 0; i < lut.length; i++) {
+    const c = lut[i];
+    if (!c) continue;
+    let m = memo.get(c);
+    if (m === undefined) {
+      const [r, g, b] = unpack(c);
+      m = pack(Math.round(r + (to[0] - r) * f), Math.round(g + (to[1] - g) * f), Math.round(b + (to[2] - b) * f), alpha);
+      memo.set(c, m);
+    }
+    out[i] = m;
+  }
+  return out;
+}
+
+/** The light, cool grey every "not observed / not modelled here" colour is moved towards. */
+export const VEIL: [number, number, number] = [201, 211, 223];
+/** The stipple's dot colour: the basemap's sea, so the dots read as texture, never as a value. */
+export const DOT: [number, number, number] = [11, 29, 51];
+
+/** "Outside NOAA's model near shore": a calm slate, apart from every probability class (MapCanvas
+ *  draws the forecast at 0.72 opacity, so it reads as a quiet grey-blue over the sea). */
+export const OUTSIDE_TINT_RGB: [number, number, number] = [126, 140, 156];
+export const OUTSIDE_TINT = pack(...OUTSIDE_TINT_RGB, 255);
+
+/**
+ * Colour of every possible code of a log10-stored grid (chlorophyll) on a linear ramp in log10
+ * units (the satellite palette, `palette.scale` "log10"): code x scale + offset is already log10,
+ * clipped to the palette's domain and interpolated between its stops; no-data is transparent.
+ */
+export function rampColours(g: Pick<ValueGrid, "scale_factor" | "add_offset" | "nodata" | "transform">, p: Palette): Uint32Array {
+  const xs = p.stops.map((s) => s.value);
+  const cs = p.stops.map((s) => hexRgb(s.color));
+  const [lo, hi] = p.domain;
+  const lut = new Uint32Array(65536);
+  for (let code = 0; code < 65536; code++) {
+    if (code === (g.nodata ?? 65535)) continue;
+    const q0 = code * g.scale_factor + g.add_offset;
+    const q = Math.min(hi, Math.max(lo, g.transform === "log10" || p.scale !== "log10" ? q0 : Math.log10(Math.max(q0, 1e-12))));
+    let i = 0;
+    while (i < xs.length - 2 && xs[i + 1] < q) i++;
+    const f = xs.length < 2 ? 0 : Math.min(1, Math.max(0, (q - xs[i]) / Math.max(1e-9, xs[i + 1] - xs[i])));
+    const a = cs[i];
+    const b = cs[Math.min(i + 1, cs.length - 1)];
+    lut[code] = pack(Math.round(a[0] + (b[0] - a[0]) * f), Math.round(a[1] + (b[1] - a[1]) * f), Math.round(a[2] + (b[2] - a[2]) * f), 255);
+  }
+  return lut;
+}
+
+/** The rows and columns of grid `g` that tile z/x/y touches (inclusive), or null if none. */
+export function tileBlock(g: Pick<ValueGrid, "lat_first" | "lat_step" | "lon_first" | "lon_step" | "width" | "height">, z: number, x: number, y: number, size = GRID_TILE_SIZE): { r0: number; r1: number; c0: number; c1: number } | null {
+  const n = 2 ** z;
+  const lonFirst = g.lon_first > 180 ? g.lon_first - 360 : g.lon_first;
+  const cols = axisIndex(size, lonFirst, g.lon_step, g.width, (px) => ((x + (px + 0.5) / size) / n) * 360 - 180);
+  const rows = axisIndex(size, g.lat_first, g.lat_step, g.height, (py) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * (y + (py + 0.5) / size)) / n))) * 180) / Math.PI);
+  let r0 = Infinity, r1 = -1, c0 = Infinity, c1 = -1;
+  for (const r of rows) {
+    if (r < 0) continue;
+    r0 = Math.min(r0, r);
+    r1 = Math.max(r1, r);
+  }
+  for (const c of cols) {
+    if (c < 0) continue;
+    c0 = Math.min(c0, c);
+    c1 = Math.max(c1, c);
+  }
+  return r1 < 0 || c1 < 0 ? null : { r0, r1, c0, c1 };
 }
