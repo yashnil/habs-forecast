@@ -23,7 +23,9 @@ export type SpeciesId =
   | "groundfish"
   | "halibut"
   | "squid"
-  | "lobster";
+  | "lobster"
+  | "tunas"
+  | "urchin";
 
 export type Species = {
   id: SpeciesId;
@@ -70,6 +72,9 @@ export const SPECIES: Species[] = [
   { id: "halibut", label: "California halibut", match: ["halibut"], activities: ["commercial", "recreational"], link: { label: "CDFW California halibut", url: "https://wildlife.ca.gov/Regions/Marine/California-Halibut" } },
   { id: "squid", label: "Market squid", match: ["squid"], activities: ["commercial"], link: { label: "CDFW market squid", url: "https://wildlife.ca.gov/Conservation/Marine/Pelagic-Fisheries/Market-Squid" } },
   { id: "lobster", label: "Spiny lobster", match: ["lobster"], activities: ["commercial", "recreational"], statementTopic: "lobster", link: { label: "CDFW spiny lobster", url: "https://wildlife.ca.gov/Regions/Marine/Lobster" } },
+  // v5 (fishermen audit): the offshore and dive fisheries people asked about; links checked 2026-10-20 (HTTP 200)
+  { id: "tunas", label: "Albacore and other tunas", match: ["tuna", "albacore"], activities: ["commercial", "recreational"], link: { label: "CDFW ocean sport fishing regulations", url: "https://wildlife.ca.gov/Fishing/Ocean/Regulations" } },
+  { id: "urchin", label: "Red sea urchin", match: ["urchin"], activities: ["commercial"], link: { label: "CDFW sea urchin", url: "https://wildlife.ca.gov/Conservation/Marine/Invertebrates/Sea-Urchin" } },
 ];
 
 /** The label inside a sentence: "razor clams", but "Dungeness crab" and "California halibut" keep their capital. */
