@@ -167,7 +167,7 @@ export function SeriesChart({
         ))}
         {months.filter((t) => x(t) <= W - pad.r - 18).map((t) => (
           <text key={t} x={x(t)} y={H - 6} fontSize="11.5" fill="var(--nx-ink-3)" textAnchor="middle">
-            {new Date(t).toLocaleDateString("en-US", { month: "short", year: "2-digit", timeZone: "UTC" })}
+            {tickLabel(t, from, to)}
           </text>
         ))}
         {refLine && axisPosition(refLine.value, axis) === "in" && (
@@ -277,19 +277,44 @@ export function sampleOnDay(ss: Sample[], t: number): number | null {
   return null;
 }
 
-/** First-of-month ticks inside [from, to], every 2 months (3 when narrow). */
+/** The plot's own width for a chart drawn `W` px wide (the same 50 px + 10 px margins as SeriesChart). */
+const plotWidth = (W: number) => Math.max(1, W - 60);
+/** Room one tick label needs: "Sep 25" at 11.5 px is about 38 px, plus a clear gap between labels. */
+export const TICK_LABEL_PX = 56;
+/** Beyond about three years the ticks are whole years and the labels say only the year. */
+const YEARS_FROM_DAYS = 3 * 365;
+
+/**
+ * Time-axis ticks inside [from, to], chosen from the pixels available: the smallest step of 1, 2, 3,
+ * 4 or 6 months (or 1, 2, 5, 10 years beyond ~3 years) whose ticks stand at least TICK_LABEL_PX apart,
+ * so labels never run into each other on a phone or over a long record.
+ */
 export function monthTicks(from: number, to: number, W: number): number[] {
-  const out: number[] = [];
+  const span = Math.max(1, to - from);
+  const px = plotWidth(W);
+  const years = span / 86_400_000 > YEARS_FROM_DAYS;
+  const steps = years ? [12, 24, 60, 120, 240] : [1, 2, 3, 4, 6, 12];
+  // a month is ~30.44 days: the smallest step whose shortest gap still leaves room for a label
+  const every = steps.find((m) => ((m * 28 * 86_400_000) / span) * px >= TICK_LABEL_PX) ?? steps[steps.length - 1];
   const d = new Date(from);
   d.setUTCDate(1);
   d.setUTCHours(0, 0, 0, 0);
-  const span = (to - from) / 86_400_000;
-  const every = span <= 200 ? 1 : W < 420 ? 3 : 2;
+  if (years) d.setUTCMonth(0);
+  // steps align to the calendar (Jan, Apr, Jul, Oct for 3 months; whole decades for 10 years)
+  if (years) d.setUTCFullYear(Math.floor(d.getUTCFullYear() / (every / 12)) * (every / 12));
+  else d.setUTCMonth(Math.floor(d.getUTCMonth() / every) * every);
+  const out: number[] = [];
   while (d.getTime() <= to) {
     if (d.getTime() >= from) out.push(d.getTime());
     d.setUTCMonth(d.getUTCMonth() + every);
   }
   return out;
+}
+
+/** A tick's label: "Sep 25" (month and two-digit year), or "2025" alone when the axis is in years. */
+export function tickLabel(t: number, from: number, to: number): string {
+  const years = (to - from) / 86_400_000 > YEARS_FROM_DAYS;
+  return new Date(t).toLocaleDateString("en-US", years ? { year: "numeric", timeZone: "UTC" } : { month: "short", year: "2-digit", timeZone: "UTC" });
 }
 
 /** StationLite.recent pairs → samples */

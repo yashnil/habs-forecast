@@ -23,7 +23,7 @@ import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel, lastHabWords, relTime } from "@/v4/ui/time";
 import { HAB_SAMPLE_VARIABLES } from "@/lib/provenance";
 import { pacificDate } from "@/lib/time";
-import { SampleValue, SeriesChart, monthTicks, sampleOnDay } from "@/v4/charts/SeriesChart";
+import { SampleValue, SeriesChart, monthTicks, sampleOnDay, tickLabel } from "@/v4/charts/SeriesChart";
 import { useReportSource } from "@/v4/readiness/store";
 import { AreaModel, CellBody, preciseProbability } from "@/v4/explore/Inspect";
 import { useCellRead } from "@/v4/explore/reads";
@@ -149,7 +149,7 @@ function ModelPanel({ st, variable, from, to, cursorT, onCursor, onExport }: { s
         ))}
         {months.filter((t) => x(t) <= W - pad.r - 18).map((t) => (
           <text key={t} x={x(t)} y={H - 6} fontSize="11.5" fill="var(--nx-ink-3)" textAnchor="middle">
-            {new Date(t).toLocaleDateString("en-US", { month: "short", year: "2-digit", timeZone: "UTC" })}
+            {tickLabel(t, from, to)}
           </text>
         ))}
         {historyStart != null && historyStart > from && (
@@ -386,7 +386,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
           <label htmlFor="r-station" className="sr-only">
             Station
           </label>
-          <select id="r-station" value={st.station_id} onChange={(e) => chooseStation(e.target.value)} className="nx-focus min-h-12 w-full rounded-xl border border-n-line-strong bg-n-surface px-3 text-[15px] font-semibold lg:hidden">
+          <select id="r-station" value={st.station_id} onChange={(e) => chooseStation(e.target.value)} className="nx-select nx-focus min-h-12 w-full rounded-xl border border-n-line-strong bg-n-surface pl-3 text-[15px] font-semibold lg:hidden">
             {stations.map((s) => (
               <option key={s.station_id} value={s.station_id}>
                 {s.name}
@@ -443,9 +443,10 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
 
           <section id="r-record" className="nx-deck flex scroll-mt-4 flex-col gap-4 p-4 sm:p-5" data-testid="research-chart">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Quantity">
+              {/* on a phone the quantities are one scrolling rail, not four rows of chips */}
+              <div className="-mx-4 flex w-[calc(100%+2rem)] gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0" role="radiogroup" aria-label="Quantity" data-testid="rvar-rail">
                 {vars.map((v) => (
-                  <button key={v.id} type="button" role="radio" aria-checked={variable === v.id} onClick={() => setVariable(v.id)} className={`nx-press nx-focus min-h-11 rounded-lg px-3 text-[14px] font-semibold ${variable === v.id ? "bg-n-ink text-n-bg" : "border border-n-line-strong text-n-ink-2"}`} data-testid={`rvar-${v.id}`}>
+                  <button key={v.id} type="button" role="radio" aria-checked={variable === v.id} onClick={() => setVariable(v.id)} className={`nx-press nx-focus min-h-11 shrink-0 whitespace-nowrap rounded-lg px-3 text-[14px] font-semibold ${variable === v.id ? "bg-n-ink text-n-bg" : "border border-n-line-strong text-n-ink-2"}`} data-testid={`rvar-${v.id}`}>
                     {v.label}
                   </button>
                 ))}

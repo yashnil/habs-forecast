@@ -238,7 +238,7 @@ export function ObsControls({ manifest, source, sat, onSat, radar, onRadar, now 
               id="r-radar-hour"
               value={value}
               onChange={(e) => onRadar(e.target.value === "mean" ? { hour: null, mean: true } : { hour: e.target.value, mean: false })}
-              className="nx-focus min-h-11 min-w-0 flex-1 rounded-lg border border-n-line-strong bg-n-surface px-2 text-[14px] font-semibold"
+              className="nx-select nx-focus min-h-11 min-w-0 flex-1 rounded-lg border border-n-line-strong bg-n-surface pl-2 text-[14px] font-semibold"
               data-testid="radar-hour"
             >
               {hours.map((h) => (

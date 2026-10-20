@@ -37,9 +37,18 @@ const P: Record<string, React.ReactNode> = {
 
 export type IconName = keyof typeof P;
 
-export function Icon({ name, className = "h-5 w-5", strokeWidth = 1.7 }: { name: IconName | string; className?: string; strokeWidth?: number }) {
+/** True when the caller's classes give the icon a height or width of its own. */
+const SIZED = /(^|\s)(?:[a-z0-9-]+:)*(?:h|w|size)-/;
+
+/** Always sized: 20 px unless the caller names a size (a caller class with only a colour once left the
+ *  SVG at its intrinsic 300 × 150 px), and never squeezed by a flex row. */
+export function iconClass(className = ""): string {
+  return `shrink-0 ${SIZED.test(className) ? "" : "h-5 w-5 "}${className}`.trim();
+}
+
+export function Icon({ name, className = "", strokeWidth = 1.7 }: { name: IconName | string; className?: string; strokeWidth?: number }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={iconClass(className)} aria-hidden="true" focusable="false">
       {P[name] ?? P.info}
     </svg>
   );

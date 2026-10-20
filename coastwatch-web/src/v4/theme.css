@@ -161,6 +161,51 @@
   --font-newsreader: var(--font-source-serif);
 }
 
+/* a v2 paper panel inside a v4 surface (the phone sheet is MobileSheet, a ".theme-paper"): that class
+   resets the v2 palette to warm paper on itself, so the remap is repeated on it here; the sheet reads cool
+   chart paper like everything around it, never cream */
+.env-chart .theme-paper {
+  color-scheme: light;
+  --cw-page: var(--nx-bg);
+  --cw-surface: var(--nx-surface);
+  --cw-surface-2: var(--nx-surface-2);
+  --cw-surface-3: var(--nx-surface-3);
+  --cw-hairline: var(--nx-line);
+  --cw-hairline-strong: var(--nx-line-strong);
+  --cw-ink: var(--nx-ink);
+  --cw-ink-2: var(--nx-ink-2);
+  --cw-ink-3: var(--nx-ink-3);
+  --cw-accent: var(--nx-accent);
+  --cw-official: var(--nx-official);
+  --cw-official-bg: var(--nx-official-bg);
+  --cw-official-line: var(--nx-official-line);
+  --cw-model-ink: var(--nx-model);
+  --cw-model-bg: var(--nx-model-bg);
+  --cw-model-line: var(--nx-model-line);
+  --cw-chl: var(--nx-measured);
+  --cw-measured-bg: var(--nx-measured-bg);
+  --cw-measured-line: var(--nx-measured-line);
+}
+
+/* one select for v4's reading surfaces: the native control (its list, its keyboard, its phone picker),
+   drawn with the v4 chevron so every select looks the same; text never runs under the chevron */
+.nx-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23526773' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.1rem;
+  text-overflow: ellipsis;
+}
+.env-instrument .nx-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c95a4' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+.env-instrument .env-chart .nx-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23526773' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
 /* v4 surfaces read in the v4 faces (v2 pages keep theirs until they move) */
 .env-chart,
 .env-instrument {
