@@ -443,6 +443,17 @@ def _run(ctx: RunContext, only: tuple[str, ...]) -> Manifest:
     )
     write_json(ctx.out_dir / "manifest.json", manifest.model_dump(mode="json"))
     prune(ctx.out_dir, manifest, prev)
+    if "satellite_chl" in only:
+        # Derived layers (estimate, outlook) go to v1/derived/, never into the manifest; a failure
+        # here never affects the published observations.
+        _progress("derived: start")
+        try:
+            from .derived import run as derived
+
+            r = derived.run(ctx, manifest)
+            _progress(f"derived: {r['layers']} ({r['bytes_written']} bytes)")
+        except Exception as e:  # pragma: no cover - logged, never fatal
+            _progress(f"derived: failed: {e}")
     return manifest
 
 
