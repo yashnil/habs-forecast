@@ -284,7 +284,7 @@ export function HarborView({ code, ctx }: { code: number; ctx: Ctx }) {
           <ul className="flex flex-col">
             {near.near.slice(0, 4).map((n) => (
               <li key={n.station.station_id}>
-                <button type="button" onClick={() => ctx.onSelect({ kind: "station", id: n.station.station_id })} className="nx-focus flex min-h-12 w-full items-center justify-between gap-3 rounded-lg px-1 text-left hover:bg-n-surface-2">
+                <button type="button" onClick={() => ctx.onSelect({ kind: "station", id: n.station.station_id })} className="nx-focus flex min-h-12 w-full items-center justify-between gap-3 rounded-lg px-1 text-left nx-row hover:bg-n-surface-2">
                   <span className="flex min-w-0 flex-col">
                     <span className="text-[14.5px] font-semibold">{n.station.name}</span>
                     <span className="text-[12.5px] text-n-ink-3" data-testid="harbor-station-last">{lastHabWords(lastHabSample(n.station), ctx.now)}</span>
@@ -691,7 +691,7 @@ export function PointView({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ct
           <ul>
             {(near.near.length ? near.near.slice(0, 3) : [near.nearestBeyond!]).map((n) => (
               <li key={n.station.station_id}>
-                <button type="button" onClick={() => ctx.onSelect({ kind: "station", id: n.station.station_id })} className="nx-focus flex min-h-12 w-full items-center justify-between gap-3 rounded-lg px-1 text-left hover:bg-n-surface-2">
+                <button type="button" onClick={() => ctx.onSelect({ kind: "station", id: n.station.station_id })} className="nx-focus flex min-h-12 w-full items-center justify-between gap-3 rounded-lg px-1 text-left nx-row hover:bg-n-surface-2">
                   <span className="flex min-w-0 flex-col">
                     <span className="text-[14.5px] font-semibold">{n.station.name}</span>
                     <span className="text-[12.5px] text-n-ink-3" data-testid="harbor-station-last">{lastHabWords(lastHabSample(n.station), ctx.now)}</span>

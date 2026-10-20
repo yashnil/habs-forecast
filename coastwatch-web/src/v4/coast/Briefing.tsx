@@ -97,7 +97,7 @@ function Fold({ id, title, count, summary, kicker, children }: { id: string; tit
   return (
     <section aria-labelledby={`${id}-h`} className="border-t border-n-line pt-3" data-testid={`brief-${id}`} data-open={open}>
       <h2 id={`${id}-h`} className="font-serif text-[21px] font-semibold leading-tight text-n-ink">
-        <button type="button" aria-expanded={open} aria-controls={`${id}-body`} onClick={toggle} className="nx-focus group flex min-h-14 w-full items-start gap-3 rounded-lg py-2 text-left" data-testid={`brief-${id}-toggle`}>
+        <button type="button" aria-expanded={open} aria-controls={`${id}-body`} onClick={toggle} className="nx-tint nx-focus group flex min-h-14 w-full items-start gap-3 rounded-lg py-2 text-left" data-testid={`brief-${id}-toggle`}>
           <span className="min-w-0 flex-1">
             <span className="flex items-baseline gap-2">
               {title}
@@ -408,7 +408,7 @@ export function Briefing(props: Props) {
                 <p className="nx-eyebrow">Your trip briefing</p>
                 <h1 className="mt-1 text-balance font-serif text-[38px] font-semibold leading-[1.05] sm:text-[48px]" data-testid="coast-title">
                   {/* the title is the place control: other harbours, waters on the map, the home port */}
-                  <button type="button" aria-expanded={placeOpen} aria-controls={placeOpen ? "coast-place-menu" : undefined} aria-describedby="coast-place-hint" onClick={() => setPlaceOpen((o) => !o)} className="nx-focus group inline-flex max-w-full items-center gap-2 rounded-lg text-left hover:text-n-accent" data-testid="coast-place-button">
+                  <button type="button" aria-expanded={placeOpen} aria-controls={placeOpen ? "coast-place-menu" : undefined} aria-describedby="coast-place-hint" onClick={() => setPlaceOpen((o) => !o)} className="nx-tint nx-focus group inline-flex max-w-full items-center gap-2 rounded-lg text-left hover:text-n-accent" data-testid="coast-place-button">
                     <span className="min-w-0">{place.name}</span>
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-n-line-strong bg-n-surface text-n-ink-2 group-hover:text-n-accent sm:h-10 sm:w-10">
                       <Icon name="chevronDown" className={`h-5 w-5 transition-transform ${placeOpen ? "rotate-180" : ""}`} />

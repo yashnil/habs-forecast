@@ -1201,7 +1201,7 @@ function AreaView({ bbox, ctx }: { bbox: [number, number, number, number]; ctx: 
           <ul>
             {sts.map((x) => (
               <li key={x.station_id}>
-                <button type="button" onClick={() => ctx.onSelect({ kind: "station", id: x.station_id })} className="nx-focus flex min-h-12 w-full items-center justify-between rounded-lg px-1 text-left hover:bg-n-surface-2">
+                <button type="button" onClick={() => ctx.onSelect({ kind: "station", id: x.station_id })} className="nx-focus flex min-h-12 w-full items-center justify-between rounded-lg px-1 text-left nx-row hover:bg-n-surface-2">
                   <span className="text-[14.5px] font-semibold">{x.name}</span>
                   <span className="text-[12.5px] text-n-ink-3">{lastHabWords(lastHabSample(x))}</span>
                 </button>
@@ -1218,7 +1218,7 @@ function AreaView({ bbox, ctx }: { bbox: [number, number, number, number]; ctx: 
           <ul>
             {prts.map((f) => (
               <li key={f.properties.port_code}>
-                <button type="button" onClick={() => ctx.onSelect({ kind: "harbor", port: f.properties.port_code })} className="nx-focus flex min-h-12 w-full items-center rounded-lg px-1 text-left text-[14.5px] font-semibold hover:bg-n-surface-2">
+                <button type="button" onClick={() => ctx.onSelect({ kind: "harbor", port: f.properties.port_code })} className="nx-focus flex min-h-12 w-full items-center rounded-lg px-1 text-left text-[14.5px] font-semibold nx-row hover:bg-n-surface-2">
                   {f.properties.display_name ?? f.properties.name}
                 </button>
               </li>

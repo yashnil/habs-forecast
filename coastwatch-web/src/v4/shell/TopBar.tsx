@@ -132,7 +132,7 @@ export function TopBar({ active, now, slot, notices, floating = false }: { activ
       className={`pointer-events-none z-[45] flex items-start gap-2 px-3 pt-3 md:gap-3 md:px-4 ${floating ? "absolute inset-x-0 top-0" : "relative pb-3"}`}
       style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}
     >
-      <Link href="/" aria-label="Neritic home" className="nx-focus pointer-events-auto flex h-11 shrink-0 items-center rounded-full border border-n-line bg-n-surface pl-1.5 pr-3.5 text-n-ink max-md:pr-1.5" data-testid="brand-home">
+      <Link href="/" aria-label="Neritic home" className="nx-press nx-focus pointer-events-auto flex h-11 shrink-0 items-center rounded-full border border-n-line bg-n-surface pl-1.5 pr-3.5 text-n-ink max-md:pr-1.5" data-testid="brand-home">
         <span className="max-md:hidden">
           <Lockup size={30} />
         </span>
