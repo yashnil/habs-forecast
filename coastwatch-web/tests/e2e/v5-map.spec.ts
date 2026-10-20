@@ -4,7 +4,7 @@ import { FAILED, OK } from "./ports";
 /**
  * v5 map: the coast filled honestly. The C-HARM layer extends the nearest NOAA cell to the shore
  * (labelled context, never a value), says "outside NOAA's model" in the bays and shows chlorophyll
- * there; the derived index (tests/fixture-data/v1/derived) adds the 8-day outlook and the
+ * there; the derived index (tests/fixture-derived/v1/derived, overlaid by copy-fixture-data) adds the 8-day outlook and the
  * gap-filling estimate, each with its provenance, and nothing breaks without it.
  */
 const NOW = "2026-10-13T18:00:00Z";

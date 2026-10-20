@@ -16,3 +16,7 @@ for (const [src, name] of [
   cpSync(src, dest, { recursive: true });
   console.log(`fixture data -> ${dest}`);
 }
+// the derived products (lib/derived) over the main fixture: kept apart because CI regenerates
+// tests/fixture-data from the pipeline, which does not write derived/ on this branch
+cpSync(join(root, "tests", "fixture-derived", "v1"), join(root, "public", "data", "fixture", "v1"), { recursive: true });
+console.log("derived fixture -> public/data/fixture/v1/derived");

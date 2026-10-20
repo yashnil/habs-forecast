@@ -87,7 +87,8 @@ test("a tap, a click or a key skips it at once", async ({ browser }) => {
     const leaving = await page.evaluate(() => [document.documentElement.classList.contains("nx-splash-out") || !document.documentElement.classList.contains("nx-splash-on"), performance.now()] as const);
     expect(leaving[0], how).toBe(true);
     await expect(splash).toBeHidden({ timeout: 1000 });
-    if (before < 1500) expect(leaving[1]).toBeLessThan(1800);
+    // it acted on the input itself, not on the hold ending: within moments of the skip (a slow runner adds round-trip time)
+    if (before < 1200) expect(leaving[1] - before, how).toBeLessThan(600);
     // the skip did not land on the map underneath: the page is simply there
     await expect(page.getByTestId("explore")).toBeVisible();
     await ctx.close();

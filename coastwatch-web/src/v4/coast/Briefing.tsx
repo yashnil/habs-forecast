@@ -196,11 +196,12 @@ function TripSummary({ audience: a, species: sp2, day, open, onToggle }: { audie
   );
 }
 
-function Select({ id, label, value, onChange, options }: { id: string; label: string; value: string; onChange: (v: string) => void; options: { id: string; label: string }[] }) {
+// `disabled` until hydrated: a choice made before the page is live would be dropped silently on a slow phone
+function Select({ id, label, value, onChange, options, disabled = false }: { id: string; label: string; value: string; onChange: (v: string) => void; options: { id: string; label: string }[]; disabled?: boolean }) {
   return (
     <label htmlFor={id} className="flex min-w-0 flex-1 flex-col gap-1">
       <span className="nx-eyebrow">{label}</span>
-      <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className="nx-select nx-focus min-h-[52px] w-full rounded-xl border border-n-line-strong bg-n-surface pl-3 text-[16px] font-semibold text-n-ink" data-testid={id}>
+      <select id={id} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} className="nx-select nx-focus min-h-[52px] w-full rounded-xl border border-n-line-strong bg-n-surface pl-3 text-[16px] font-semibold text-n-ink" data-testid={id}>
         {options.map((o) => (
           <option key={o.id} value={o.id}>
             {o.label}
@@ -437,9 +438,9 @@ export function Briefing(props: Props) {
             {placeOpen && <PlaceMenu place={place} ports={ports} home={home} audience={audience} species={species.id} onHome={setHome} onPlace={(k) => { setPlaceOpen(false); goPlace(k); }} onClose={() => setPlaceOpen(false)} />}
             <TripSummary audience={audience} species={species.label} day={b.tripDay ? `${b.tripDay.label}, ${b.tripDay.day}` : "Today"} open={tripOpen} onToggle={() => setTripOpen((o) => !o)} />
             <div className={`flex-col gap-2 sm:flex sm:flex-row ${tripOpen ? "flex" : "hidden"}`} data-testid="trip-controls">
-              <Select id="trip-activity" label="Activity" value={audience} onChange={(v) => go({ for: v as Audience, species: v === "all" || species.activities.includes(v as never) ? species.id : "any" })} options={activityOptions} />
-              <Select id="trip-species" label="Species" value={species.id} onChange={(v) => go({ species: v as SpeciesId })} options={speciesOptions} />
-              <Select id="trip-day" label="Day" value={b.tripDate ?? dayOptions[0]?.id ?? ""} onChange={(v) => go({ date: v === b.days[0]?.date ? null : v })} options={dayOptions.length ? dayOptions : [{ id: "", label: "Today" }]} />
+              <Select id="trip-activity" disabled={!mounted} label="Activity" value={audience} onChange={(v) => go({ for: v as Audience, species: v === "all" || species.activities.includes(v as never) ? species.id : "any" })} options={activityOptions} />
+              <Select id="trip-species" disabled={!mounted} label="Species" value={species.id} onChange={(v) => go({ species: v as SpeciesId })} options={speciesOptions} />
+              <Select id="trip-day" disabled={!mounted} label="Day" value={b.tripDate ?? dayOptions[0]?.id ?? ""} onChange={(v) => go({ date: v === b.days[0]?.date ? null : v })} options={dayOptions.length ? dayOptions : [{ id: "", label: "Today" }]} />
             </div>
           </header>
 

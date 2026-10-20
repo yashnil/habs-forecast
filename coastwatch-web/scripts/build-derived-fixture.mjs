@@ -1,5 +1,5 @@
 // Deterministic test fixture for the derived-products index (lib/derived; the C→B contract in the
-// v5 brief): tests/fixture-data/v1/derived/. Synthetic values over Monterey Bay and San Francisco
+// v5 brief): tests/fixture-derived/v1/derived/. Synthetic values over Monterey Bay and San Francisco
 // Bay, for end-to-end tests only; the published index carries the pipeline's own products and numbers.
 //   node scripts/build-derived-fixture.mjs
 import { gunzipSync, gzipSync } from "node:zlib";
@@ -9,7 +9,9 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const fx = join(root, "tests", "fixture-data", "v1");
-const out = join(fx, "derived");
+// kept outside tests/fixture-data: CI regenerates that folder from the pipeline (cwp fixture), which
+// does not write derived products yet; scripts/copy-fixture-data.mjs overlays this folder onto it
+const out = join(root, "tests", "fixture-derived", "v1", "derived");
 rmSync(out, { recursive: true, force: true });
 const NODATA = 65535;
 const SCALE = 9.155552842799158e-5; // log10 chlorophyll, as the satellite grids

@@ -36,7 +36,7 @@ describe("C-HARM nearshore context (lib/gridTilesContext)", () => {
 });
 
 describe("derived index (lib/derived)", () => {
-  const fixture = JSON.parse(readFileSync(path.resolve(__dirname, "../fixture-data/v1/derived/index.json"), "utf8"));
+  const fixture = JSON.parse(readFileSync(path.resolve(__dirname, "../fixture-derived/v1/derived/index.json"), "utf8"));
 
   it("reads the fixture's outlook, estimate and nearshore check", () => {
     const d = parseDerived(fixture)!;
