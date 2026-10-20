@@ -51,7 +51,11 @@ test("a My Coast place opens on its nearest station; a transect lists cells and 
 
 const manifest = JSON.parse(readFileSync("tests/fixture-data/v1/manifest.json", "utf8")) as { layers: { group_id: string; variable: string; time: { lead_days: number }; qc: { checks: { name: string }[] } }[] };
 type Win = { __cwMap?: { loaded(): boolean; getSource(id: string): unknown } };
-const mapReady = (page: import("@playwright/test").Page) => page.waitForFunction(() => !!(window as unknown as Win).__cwMap?.loaded());
+// the grid map is made only once it is within a screen of view (or a tool is chosen): bring it near first
+const mapReady = async (page: import("@playwright/test").Page) => {
+  await page.getByTestId("research-map").scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => !!(window as unknown as Win).__cwMap?.loaded());
+};
 const csvOf = async (page: import("@playwright/test").Page, testid: string) => {
   const [dl] = await Promise.all([page.waitForEvent("download"), page.getByTestId(testid).click()]);
   return readFileSync((await dl.path())!, "utf8");
@@ -301,4 +305,18 @@ test("radar: published hours only, a cell's every hour, gaps are no data and not
   await page.mouse.move(o.x + o.width * 0.5, o.y + o.height * 0.8, { steps: 6 });
   await page.mouse.up();
   await expect(page.getByTestId("obs-area-counts")).toContainText(/\d+ of \d+ radar cells in the box have an observation; \d+ have none \(no radar data or land: not calm water\)/);
+});
+
+test("the grid map is made only near the screen: a same-height placeholder until then", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
+  const box = page.getByTestId("research-map");
+  await expect(box).toHaveAttribute("data-mounted", "false");
+  expect(await page.evaluate(() => !!(window as unknown as Win).__cwMap)).toBe(false);
+  expect(Math.round((await box.boundingBox())!.height)).toBe(380);
+  await box.scrollIntoViewIfNeeded();
+  await expect(box).toHaveAttribute("data-mounted", "true");
+  await page.waitForFunction(() => !!(window as unknown as Win).__cwMap?.loaded());
+  await ctx.close();
 });

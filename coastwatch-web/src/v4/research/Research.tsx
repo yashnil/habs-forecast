@@ -293,6 +293,18 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
   const [area, setArea] = useState<BBox | null>(null);
   const [areaArmed, setAreaArmed] = useState(true);
   const mapRef = useRef<MlMap | null>(null);
+  // the grid map (WebGL, its style, tiles and worker) is made only when it comes within a screen of view,
+  // or a map tool is chosen: on a phone it sits far below the record, and many readers never reach it
+  const mapBox = useRef<HTMLDivElement | null>(null);
+  const [mapNear, setMapNear] = useState(false);
+  useEffect(() => {
+    const el = mapBox.current;
+    if (mapNear || !el) return;
+    if (typeof IntersectionObserver === "undefined") return setMapNear(true);
+    const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && setMapNear(true), { rootMargin: "100% 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [mapNear]);
   const { dragBox, handlers: areaHandlers } = useAreaDrag(() => mapRef.current, setArea, () => setAreaArmed(false));
   // a new station moves the grid map to it; a point, line or area chosen near the old one no longer applies
   const chooseStation = (id: string) => {
@@ -587,6 +599,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
                     role="radio"
                     aria-checked={tool === t}
                     onClick={() => {
+                      setMapNear(true);
                       setTool(t);
                       setLine([]);
                       if (t === "area") setAreaArmed(true);
@@ -658,8 +671,13 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
             {source === "charm" && <p className="text-[12.5px] leading-snug text-n-ink-3">Only the days this run published; nothing beyond its horizon. Each value is model output for one 3 km cell, not a toxin measurement.</p>}
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
               <div className="flex min-w-0 flex-col gap-2">
-                <div className="env-instrument relative h-[380px] overflow-hidden rounded-xl">
-                  <MapCanvas
+                <div ref={mapBox} className="env-instrument relative h-[380px] overflow-hidden rounded-xl" data-testid="research-map" data-mounted={mapNear}>
+                  {!mapNear && (
+                    <p className="absolute inset-0 grid place-items-center text-[13.5px] text-n-ink-2" data-testid="research-map-waiting">
+                      Map of the grid near {st.name}
+                    </p>
+                  )}
+                  {mapNear && <MapCanvas
                     forecast={source === "charm" && forecastLayer?.image ? { id: `r-${forecastLayer.layer_id}`, url: artifactUrl(baseUrl, forecastLayer.image.url), corners: forecastLayer.image.corners_lnglat, grid: forecastLayer.grid ? { layer: forecastLayer, url: artifactUrl(baseUrl, forecastLayer.grid.url) } : null } : null}
                     satellite={satRaster}
                     satelliteAge={null}
@@ -684,7 +702,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
                       if (tool === "cell") setCellAtPt(p);
                       else if (tool === "transect") setLine((l) => (l.length >= 2 ? [p] : [...l, p]));
                     }}
-                  />
+                  />}
                   {tool === "area" && areaArmed && (
                     <div {...areaHandlers} className="absolute inset-0 z-[5] cursor-crosshair touch-none" data-testid="area-overlay">
                       <p className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap rounded-full bg-n-surface px-4 py-2 text-[13.5px] font-semibold text-n-ink shadow-[var(--nx-shadow)]">Drag across the water to select an area</p>
