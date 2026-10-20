@@ -14,11 +14,11 @@
 
 :root,
 .env-chart {
-  /* C2 mark, light master (src/v4/brand/c2.ts) */
-  --nx-mark-tile: #12395a;
-  --nx-mark-stub: #bfe4ec;
-  --nx-mark-n: #e8eef2;
-  --nx-mark-word: #12395a;
+  /* the contour mark, light master (src/v4/brand/mark.ts) */
+  --nx-mark-tile: #0e3352;
+  --nx-mark-line: #a9d3df;
+  --nx-mark-index: #5fd0e6;
+  --nx-mark-word: #0e3352;
   --nx-bg: #f2f5f6;
   --nx-surface: #ffffff;
   --nx-surface-2: #eef2f4;
@@ -55,10 +55,10 @@
 }
 
 .env-instrument {
-  /* C2 mark, dark master: the same drawing re-tinted for the map's surfaces */
-  --nx-mark-tile: #2e86ab;
-  --nx-mark-stub: #0b1a24;
-  --nx-mark-n: #f6f4ef;
+  /* the contour mark, dark master: the tile lifted so it holds on the instrument ground */
+  --nx-mark-tile: #134a6e;
+  --nx-mark-line: #bfe4ec;
+  --nx-mark-index: #7fe3f5;
   --nx-mark-word: #e8eef2;
   color-scheme: dark;
   --nx-bg: #061016;
@@ -405,62 +405,146 @@
   color: transparent;
 }
 
-/* ---- launch screen (src/v4/shell/Splash.tsx): once per session, on the instrument ground ---- */
+/* ---- launch screen (src/v4/shell/Splash.tsx): once per session, on the instrument ground ----
+   Timeline (ms from navigation start): the symbol's isobaths draw outward from the canyon head
+   (80-1080) over a faint field of the bay drawing itself behind them (120-1850); the tile fills in
+   (420-1060); the symbol shrinks into the lockup (1080-1680) while the field drifts more slowly
+   (parallax); the wordmark wipes in (1320-1780). SplashGate holds it to at least 1800 and lets it
+   go when the map is ready; the exit (450) dives toward the map: the lockup and field scale up as
+   the screen fades. Base styles are the final frame, so reduced motion simply drops the animations. */
 .nx-splash { display: none; }
 html.nx-splash-on .nx-splash {
+  /* m: the final symbol's size; z: how much larger it starts (the field is drawn at that scale and
+     must cover the screen: 6.25 * m * z >= the longer side) */
+  --nx-m: clamp(44px, 6.15vmax, 92px);
+  --nx-z: 2.6;
+  --nx-dx: calc(var(--nx-m) * (0.25 + var(--nx-wr, 2)) / -2);
   position: fixed;
   inset: 0;
   z-index: 100;
-  display: grid;
-  place-items: center;
+  display: block;
   overflow: hidden;
   background: #061016;
-  /* the hard cap even if no script runs: gone by 2.8 s */
-  animation: nx-splash-gone 300ms var(--nx-ease-in) 2.5s both;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  /* the hard cap even if no script runs: gone by 3 s */
+  animation: nx-splash-gone var(--nx-t-splash-exit) var(--nx-ease-in) 2550ms both;
 }
-html.nx-splash-out .nx-splash {
-  opacity: 0;
-  pointer-events: none;
-  animation: none;
-  transition: opacity 300ms var(--nx-ease-in);
-}
+@media (min-width: 1500px) { html.nx-splash-on .nx-splash { --nx-z: 3.6; } }
+@media (min-width: 2200px) { html.nx-splash-on .nx-splash { --nx-z: 5; } }
+:root { --nx-t-splash-exit: 450ms; }
 @keyframes nx-splash-gone {
   to { opacity: 0; visibility: hidden; }
 }
-.nx-splash-sea { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.32; }
-.nx-splash-contour { stroke-dasharray: 1; animation: nx-draw 1400ms var(--nx-ease-out) both; }
-.nx-splash-mark {
-  position: relative;
-  display: flex;
-  align-items: center;
-  transition: transform 300ms var(--nx-ease-in);
+/* leaving: an animation, not a transition (a transition would not start from the cap animation's
+   held value); no clicks land on it while it fades */
+html.nx-splash-out .nx-splash {
+  pointer-events: none;
+  animation: nx-splash-gone var(--nx-t-splash-exit) var(--nx-ease-in) both;
 }
-/* a launch moment, not a header: larger on tablet and desktop (the `scale` property, so the exit's
-   transform still composes with it) */
-@media (min-width: 768px) {
-  .nx-splash-mark { scale: 1.45; }
+/* depth: a lit shelf over the canyon, falling off to the deep */
+.nx-splash-depth {
+  position: absolute;
+  inset: -10%;
+  background:
+    radial-gradient(ellipse 55% 48% at 50% 46%, rgba(30, 92, 128, 0.42), rgba(14, 45, 66, 0.18) 55%, transparent 80%),
+    radial-gradient(circle at 50% 50%, #0a1d2a 0%, #071520 50%, #050d13 100%);
+  animation: nx-fade 600ms var(--nx-ease-out) both;
 }
-html.nx-splash-out .nx-splash-mark { transform: scale(0.98); }
+.nx-splash-drift {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--nx-m) * var(--nx-z) * 6.25);
+  height: calc(var(--nx-m) * var(--nx-z) * 6.25);
+  margin: calc(var(--nx-m) * var(--nx-z) * -3.125) 0 0 calc(var(--nx-m) * var(--nx-z) * -3.125);
+  transform: translate(-1.2%, -0.8%) scale(1.06);
+  animation: nx-splash-drift 3200ms linear both;
+  transition: scale var(--nx-t-splash-exit) var(--nx-ease-in);
+  /* the field fades out toward the screen's edges (and hides where the survey grid ends) */
+  mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+}
+@keyframes nx-splash-drift {
+  from { transform: none; }
+}
+.nx-splash-field { width: 100%; height: 100%; display: block; overflow: visible; }
+.nx-splash-iso {
+  stroke: #7fb2c4;
+  stroke-width: 0.3;
+  stroke-opacity: 0.3;
+  stroke-dasharray: 1 1;
+  animation: nx-splash-draw 1000ms var(--nx-ease-out) calc(120ms + var(--i, 0) * 45ms) both;
+}
+.nx-splash-iso-index { stroke: #5fd0e6; stroke-width: 0.5; stroke-opacity: 0.6; }
+.nx-splash-iso-coast { stroke: #bfe4ec; stroke-opacity: 0.45; }
+@keyframes nx-splash-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.nx-splash-stage {
+  position: absolute;
+  inset: 0;
+  transition: scale var(--nx-t-splash-exit) var(--nx-ease-in);
+}
+.nx-splash-hero {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--nx-m) * var(--nx-z));
+  height: calc(var(--nx-m) * var(--nx-z));
+  margin: calc(var(--nx-m) * var(--nx-z) / -2) 0 0 calc(var(--nx-m) * var(--nx-z) / -2);
+  transform: translateX(var(--nx-dx)) scale(calc(1 / var(--nx-z)));
+  animation: nx-splash-settle 600ms var(--nx-ease-move) 1080ms both;
+  will-change: transform;
+}
+.nx-splash-hero svg { display: block; overflow: visible; }
+@keyframes nx-splash-settle {
+  from { transform: none; }
+}
+.nx-splash-line {
+  stroke-dasharray: 1 1;
+  animation: nx-splash-draw 820ms var(--nx-ease-out) calc(80ms + var(--i, 0) * 90ms) both;
+}
 .nx-splash-tile {
   transform-box: fill-box;
   transform-origin: center;
-  animation: nx-splash-tile 360ms var(--nx-ease-out) both;
+  animation: nx-splash-tile 640ms var(--nx-ease-out) 420ms both;
 }
 @keyframes nx-splash-tile {
-  from { opacity: 0; transform: scale(0.92); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; transform: scale(0.94); }
 }
-.nx-splash-stub { stroke-dasharray: 1; animation: nx-draw 320ms var(--nx-ease-out) 120ms both; }
-.nx-splash-n { animation: nx-rise-n 360ms var(--nx-ease-out) 220ms both; }
-@keyframes nx-rise-n {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: none; }
+.nx-splash-word {
+  position: absolute;
+  left: calc(50% + var(--nx-dx) + var(--nx-m) * 0.75 - var(--nx-m) / 48);
+  top: calc(50% - var(--nx-m) / 2);
+  height: var(--nx-m);
+  width: calc(var(--nx-m) * (var(--nx-wr, 2) + 2 / 48));
+  overflow: visible;
+  animation: nx-splash-word 460ms var(--nx-ease-out) 1320ms both;
 }
-.nx-splash-word { animation: nx-wipe 440ms var(--nx-ease-out) 320ms both; }
-@keyframes nx-wipe {
-  from { clip-path: inset(0 100% 0 0); }
-  to { clip-path: inset(0 0 0 0); }
+@keyframes nx-splash-word {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateX(calc(var(--nx-m) * -0.18)); }
+  to { opacity: 1; clip-path: inset(0 -2% 0 0); transform: none; }
 }
+.nx-splash-skip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+  font: 500 13px/1.2 var(--nx-font-ui);
+  letter-spacing: 0.02em;
+  color: rgba(214, 228, 236, 0.62);
+  animation: nx-fade 500ms var(--nx-ease-out) 700ms both;
+}
+.nx-splash-skip-mouse { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .nx-splash-skip-touch { display: none; }
+  .nx-splash-skip-mouse { display: inline; }
+}
+/* the exit leads into the map: the lockup and the field move toward the viewer as the screen fades */
+html.nx-splash-out .nx-splash-stage { scale: 1.14; }
+html.nx-splash-out .nx-splash-drift { scale: 1.08; }
 
 /* Reduced motion: fades stay, movement goes (--nx-shift: 0 above); loops and draws stop; the launch
    screen is a still mark that fades away in 150 ms */
@@ -470,9 +554,10 @@ html.nx-splash-out .nx-splash-mark { transform: scale(0.98); }
   .nx-draw, .nx-chart-draw .nx-chart-line, .nx-chart-draw .nx-chart-marks { animation: none; }
   .nx-chart-wait .nx-chart-line { stroke-dashoffset: 0; }
   .nx-chart-wait .nx-chart-marks { opacity: 1; }
-  .nx-splash *, .nx-splash-contour { animation: none !important; }
-  html.nx-splash-out .nx-splash { transition-duration: 150ms; }
-  html.nx-splash-out .nx-splash-mark { transform: none; }
+  /* the launch screen: its final frame, still (base styles), and a 200 ms fade */
+  .nx-splash * { animation: none !important; }
+  :root { --nx-t-splash-exit: 200ms; }
+  html.nx-splash-out .nx-splash-stage, html.nx-splash-out .nx-splash-drift { scale: none; }
   .nx-fold { transition: none; }
 }
 @media (prefers-contrast: more) {

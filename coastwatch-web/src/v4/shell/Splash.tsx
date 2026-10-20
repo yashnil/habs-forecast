@@ -1,56 +1,90 @@
-import { C2, C2_TONES } from "@/v4/brand/c2";
+import { MARK_INDEX_DEPTH, MARK_TILE, MARK_TONES, MARK_WORD, strokeOf } from "@/v4/brand/mark";
+import { MARK_FIELD, MARK_HERO } from "@/v4/brand/mark.geometry";
 
 /**
- * The launch screen: the C2 mark drawing itself on the instrument ground, once per browser session.
+ * The launch screen: Monterey Canyon draws itself, the mark resolves out of it, the wordmark follows,
+ * and the whole thing dives into the map. Once per browser session, only when a session opens on Explore.
  *
- * It is plain server HTML and CSS (theme.css, "launch screen"), so it paints and animates from the
- * first frame, before any script, and needs no network asset (it works on an offline reopen). The page
+ * The drawing is the mark's own data (src/v4/brand/mark.geometry.ts, real isobaths): the five lines
+ * of the symbol draw outward from the canyon head at full size, exactly over the same isobaths in a
+ * faint field of the bay around them; the tile fills in behind them; the symbol then shrinks into
+ * the lockup while the field drifts more slowly behind it (parallax), and the wordmark wipes in.
+ *
+ * It is plain server HTML and CSS (theme.css, "launch screen"): it paints and animates from the first
+ * frame, before any script, with no network asset (so it works on an offline reopen). The page
  * renders underneath at the same time. A tiny inline script decides, before the first paint, whether
- * it shows at all: only when a session opens on Explore (where it covers the map loading; a reading
- * page arrives complete in its HTML, and a launch screen there would only hide it), not after the
- * first load of the session, not for automated browsers (unless a test
- * asks for it with `nx-splash-force-v1`), not when `nx-splash-off-v1` is set. SplashGate (client)
- * dismisses it when the app is ready; a CSS animation removes it at 2.5 s even if no script runs.
+ * it shows at all (only when a session opens on Explore, where it covers the map loading; never on a
+ * reading page, whose content is in its first HTML; not after the first load of the session; not
+ * for automated browsers unless a test asks with `nx-splash-force-v1`; not when `nx-splash-off-v1`
+ * is set), and lets a tap, click or key skip it at once, even before the app's script has loaded.
+ * SplashGate (MotionRoot) holds it at least 1.8 s and steps it aside when the map is ready; a CSS
+ * animation removes it by 3 s even if no script runs.
  */
-const DECIDE = `(function(){try{var d=document.documentElement,s=sessionStorage,l=localStorage;if(location.pathname!=="/"||s.getItem("nx-splash-seen-v1")||l.getItem("nx-splash-off-v1")==="1")return;if(navigator.webdriver&&l.getItem("nx-splash-force-v1")!=="1")return;s.setItem("nx-splash-seen-v1","1");d.classList.add("nx-splash-on")}catch(e){}})()`;
+const EXIT_MS = 450;
+const DECIDE = `(function(){try{var d=document.documentElement,s=sessionStorage,l=localStorage;if(location.pathname!=="/"||s.getItem("nx-splash-seen-v1")||l.getItem("nx-splash-off-v1")==="1")return;if(navigator.webdriver&&l.getItem("nx-splash-force-v1")!=="1")return;s.setItem("nx-splash-seen-v1","1");d.classList.add("nx-splash-on");var skip=function(e){if(!d.classList.contains("nx-splash-on")||d.classList.contains("nx-splash-out"))return;if(e&&e.type==="keydown"&&(e.key==="Tab"||e.key==="Shift"))return;d.classList.add("nx-splash-out");setTimeout(function(){d.classList.remove("nx-splash-on","nx-splash-out")},${EXIT_MS});removeEventListener("pointerdown",skip,true);removeEventListener("keydown",skip,true)};addEventListener("pointerdown",skip,true);addEventListener("keydown",skip,true)}catch(e){}})()`;
 
-const D = C2_TONES.dark;
-// the right-hand stub drawn from the tile's edge inwards (the master draws it outwards)
-const STUBS = ["M0 26H7.37", "M48 23.2H40.43"];
-// two bathymetric contours behind the mark (the start card's family of lines)
-const CONTOURS = [0, 1].map((i) => `M-20 ${120 + i * 44} C 80 ${92 + i * 46}, 160 ${170 + i * 36}, 240 ${130 + i * 44} S 380 ${160 + i * 40}, 430 ${140 + i * 44}`);
+const D = MARK_TONES.dark;
+// the field's draw order: from the 200 m isobath outward, shallower and deeper alike
+const fieldDepths = [...new Set(MARK_FIELD.lines.map((l) => l.depth))].sort((a, b) => Math.abs(a - MARK_INDEX_DEPTH) - Math.abs(b - MARK_INDEX_DEPTH) || a - b);
+const heroDepths = [...new Set(MARK_HERO.map((l) => l.depth))].sort((a, b) => Math.abs(a - MARK_INDEX_DEPTH) - Math.abs(b - MARK_INDEX_DEPTH) || a - b);
+const H = MARK_FIELD.half;
 
 export function Splash() {
-  const size = 64;
-  const wordW = ((C2.lockupWidth - 58) / 48) * size;
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: DECIDE }} />
-      <div className="nx-splash" data-testid="splash">
+      <div className="nx-splash" data-testid="splash" style={{ "--nx-wr": MARK_WORD.width / 48 } as React.CSSProperties}>
         <p role="status" className="sr-only">
           Loading Neritic
         </p>
-        <svg className="nx-splash-sea" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-          {CONTOURS.map((d, i) => (
-            <path key={d} d={d} pathLength={1} className="nx-splash-contour" style={{ animationDelay: `${i * 90}ms` }} fill="none" stroke={D.tile} strokeWidth={0.9} />
-          ))}
-        </svg>
-        <div className="nx-splash-mark" aria-hidden="true">
-          <svg width={size} height={size} viewBox="0 0 48 48">
-            <path className="nx-splash-tile" d={C2.tile} fill={D.tile} />
-            <g stroke={D.stub} strokeWidth={C2.stubWidth}>
-              {STUBS.map((d) => (
-                <path key={d} d={d} pathLength={1} className="nx-splash-stub" />
+        <div className="nx-splash-depth" aria-hidden="true" />
+        <div className="nx-splash-drift" aria-hidden="true">
+          <svg className="nx-splash-field" viewBox={`${24 - H} ${24 - H} ${2 * H} ${2 * H}`}>
+            <g fill="none" strokeLinecap="round">
+              {MARK_FIELD.lines.map((l, i) => (
+                <path
+                  key={i}
+                  d={l.d}
+                  pathLength={1}
+                  className={l.depth === MARK_INDEX_DEPTH ? "nx-splash-iso nx-splash-iso-index" : l.depth === 0 ? "nx-splash-iso nx-splash-iso-coast" : "nx-splash-iso"}
+                  style={{ "--i": fieldDepths.indexOf(l.depth) } as React.CSSProperties}
+                />
               ))}
             </g>
-            <g className="nx-splash-n">
-              <path transform={C2.nAt} d={C2.n} fill={D.n} />
-            </g>
-          </svg>
-          <svg className="nx-splash-word" height={size} width={wordW} viewBox={`58 0 ${C2.lockupWidth - 58} 48`} style={{ marginLeft: (10 / 48) * size }}>
-            <path transform={C2.wordAt} d={C2.word} fill={D.word} />
           </svg>
         </div>
+        <div className="nx-splash-stage" aria-hidden="true">
+        <div className="nx-splash-hero">
+          <svg viewBox="0 0 48 48" width="100%" height="100%">
+            <defs>
+              <clipPath id="nx-splash-clip">
+                <path d={MARK_TILE} />
+              </clipPath>
+            </defs>
+            <path className="nx-splash-tile" d={MARK_TILE} fill={D.tile} />
+            <g clipPath="url(#nx-splash-clip)" fill="none" strokeLinecap="round">
+              {MARK_HERO.map((l, i) => (
+                <path
+                  key={i}
+                  d={l.d}
+                  pathLength={1}
+                  className="nx-splash-line"
+                  stroke={l.depth === MARK_INDEX_DEPTH ? D.index : D.line}
+                  strokeWidth={strokeOf("full", l.depth)}
+                  style={{ "--i": heroDepths.indexOf(l.depth) } as React.CSSProperties}
+                />
+              ))}
+            </g>
+          </svg>
+        </div>
+        <svg className="nx-splash-word" viewBox={`-1 0 ${MARK_WORD.width + 2} 48`}>
+          <path transform={`translate(0 ${MARK_WORD.baseline})`} d={MARK_WORD.d} fill={D.word} />
+        </svg>
+        </div>
+        <p className="nx-splash-skip" aria-hidden="true">
+          <span className="nx-splash-skip-touch">Tap to skip</span>
+          <span className="nx-splash-skip-mouse">Click or press any key to skip</span>
+        </p>
       </div>
     </>
   );

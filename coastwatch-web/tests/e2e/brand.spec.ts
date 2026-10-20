@@ -49,7 +49,11 @@ test.describe("Neritic brand", () => {
     await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", "Neritic — Coastal intelligence, grounded in evidence.");
     await expect(page.locator('meta[property="og:image"]').first()).toHaveAttribute("content", /opengraph-image/);
     await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute("content", "summary_large_image");
-    // the C2 favicon is the .ico (hand-drawn 16/24 px masters); an SVG icon would take precedence over it
+    // the header draws the contour mark (one clip per instance, so a hidden copy never blanks another)
+    await expect(page.locator('[data-testid="brand-home"] [data-brand="contour"]').first()).toBeVisible();
+    const clips = await page.evaluate(() => [...document.querySelectorAll('[data-brand="contour"] clipPath')].map((c) => c.id));
+    expect(new Set(clips).size).toBe(clips.length);
+    // the favicon is the .ico (its 16 px entry is the two-line optical size); an SVG icon would take precedence over it
     await expect(page.locator('link[rel="icon"][href^="/favicon.ico"]')).toHaveCount(1);
     await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveCount(0);
     await page.goto(`${OK}/about`);
@@ -57,7 +61,7 @@ test.describe("Neritic brand", () => {
     const m = await (await request.get(`${OK}/manifest.webmanifest`)).json();
     expect(m.short_name).toBe("Neritic");
     expect(m.icons.map((i: { src: string }) => i.src)).toEqual(expect.arrayContaining(["/icons/icon-192.png", "/icons/icon-512.png"]));
-    for (const p of ["/favicon.ico", "/apple-icon.png", "/opengraph-image", "/icons/icon-512.png"]) {
+    for (const p of ["/favicon.ico", "/apple-icon.png", "/opengraph-image", "/twitter-image", "/icons/icon-512.png", "/icons/maskable-512.png", "/icons/brand/mark-light.svg", "/icons/brand/lockup-dark.svg"]) {
       expect((await request.get(`${OK}${p}`)).status(), p).toBe(200);
     }
   });
