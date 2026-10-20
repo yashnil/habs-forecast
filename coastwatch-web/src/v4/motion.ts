@@ -39,3 +39,26 @@ export function usePresence(open: boolean, exitMs = 120): { mounted: boolean; st
 export function exitProps(state: "open" | "closed", testid?: string) {
   return state === "open" ? { "data-state": "open", "data-testid": testid } : { "data-state": "closed", inert: true, "aria-hidden": true as const };
 }
+
+/* ---- "the app is ready": the launch screen waits for this on Explore (map loaded) ---- */
+
+let ready = false;
+const waiting = new Set<() => void>();
+
+/** Explore calls this once its map has loaded (the moment the launch screen can step aside). */
+export function markAppReady() {
+  if (ready) return;
+  ready = true;
+  waiting.forEach((f) => f());
+  waiting.clear();
+}
+
+/** Calls `f` when the app reports ready (now, if it already has). Returns an unsubscribe. */
+export function onAppReady(f: () => void): () => void {
+  if (ready) {
+    f();
+    return () => {};
+  }
+  waiting.add(f);
+  return () => waiting.delete(f);
+}

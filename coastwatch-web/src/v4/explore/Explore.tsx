@@ -49,7 +49,7 @@ import { PackDialog } from "@/v4/offline/PackDialog";
 import { OfflineBanner } from "@/v4/offline/OfflineBanner";
 import { readHomePort } from "@/v4/state/homePort";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
-import { EASE_IN, EASE_OUT, SPRING, T } from "@/v4/motion";
+import { EASE_IN, EASE_OUT, SPRING, T, markAppReady } from "@/v4/motion";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
 
@@ -255,6 +255,10 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     };
   }, [resolved.forecastLayer, baseUrl, edges?.id]);
   const [mapReady, setMapReady] = useState(false);
+  // the launch screen (shown once a session) steps aside when the map has loaded
+  useEffect(() => {
+    if (mapReady) markAppReady();
+  }, [mapReady]);
   const [zoom, setZoom] = useState<number | null>(null);
   const [harbour, setHarbour] = useState<{ id: string; labels: GeoJSON.FeatureCollection; gap: GeoJSON.FeatureCollection | null } | null>(null);
   useEffect(() => {

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible_Next, IBM_Plex_Mono, IBM_Plex_Sans, Newsreader, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { BRAND } from "@/content/brand";
+import { Splash } from "@/v4/shell/Splash";
 import { MotionRoot } from "@/v4/shell/MotionRoot";
 
 // Self-hosted by next/font at build time: no runtime request to Google.
@@ -33,9 +34,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    // the font variables live on <html>, so the v4 tokens defined at :root can resolve them
-    <html lang="en" className={`${plexSans.variable} ${plexMono.variable} ${newsreader.variable} ${atkinson.variable} ${sourceSerif.variable}`}>
+    // the font variables live on <html>, so the v4 tokens defined at :root can resolve them;
+    // suppressHydrationWarning: the launch screen's inline script may add a class to <html> before hydration
+    <html lang="en" suppressHydrationWarning className={`${plexSans.variable} ${plexMono.variable} ${newsreader.variable} ${atkinson.variable} ${sourceSerif.variable}`}>
       <body className="antialiased">
+        <Splash />
         <MotionRoot>{children}</MotionRoot>
       </body>
     </html>

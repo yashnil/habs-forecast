@@ -1,21 +1,61 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { MotionConfig } from "motion/react";
-import { usePresence, exitProps } from "@/v4/motion";
+import { onAppReady, usePresence, exitProps } from "@/v4/motion";
 import { onToast } from "@/v4/ui/toast";
 
 /**
- * The root of every page: reduced motion for every motion component (fades stay, movement goes) and
- * the one toast.
+ * The root of every page: reduced motion for every motion component (fades stay, movement goes), the
+ * launch screen's dismissal, and the one toast.
  */
 export function MotionRoot({ children }: { children: React.ReactNode }) {
   return (
     <MotionConfig reducedMotion="user">
       {children}
+      <SplashGate />
       <Toaster />
     </MotionConfig>
   );
+}
+
+const FIRST_BEAT = 750; // the mark has drawn itself
+const PAGE_READY = 1200; // a reading page: its content is in the first HTML
+const CAP = 2500; // never longer than this
+
+/**
+ * Steps the launch screen (Splash) aside once the app is ready: Explore when its map has loaded, other
+ * pages after about 1.2 s; never before the mark's first beat, never after 2.5 s. Times are counted
+ * from the navigation's start (performance.now), the same clock as the CSS animation.
+ */
+function SplashGate() {
+  const path = usePathname();
+  useEffect(() => {
+    const d = document.documentElement;
+    if (!d.classList.contains("nx-splash-on")) return;
+    const exit = matchMedia("(prefers-reduced-motion: reduce)").matches ? 150 : 300;
+    const timers: number[] = [];
+    const after = (ms: number, f: () => void) => timers.push(window.setTimeout(f, Math.max(0, ms - performance.now())));
+    let left = false;
+    const leave = () => {
+      if (left) return;
+      left = true;
+      after(FIRST_BEAT, () => {
+        d.classList.add("nx-splash-out");
+        timers.push(window.setTimeout(() => d.classList.remove("nx-splash-on", "nx-splash-out"), exit));
+      });
+    };
+    after(CAP - exit, leave);
+    const off = path === "/" ? onAppReady(leave) : (after(PAGE_READY, leave), () => {});
+    return () => {
+      off();
+      timers.forEach((t) => window.clearTimeout(t));
+    };
+    // once, for the page the session opened on
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
 }
 
 /** A short confirmation at the bottom centre ("Link copied", "Pack saved"); the controls keep their own live text. */

@@ -405,13 +405,74 @@
   color: transparent;
 }
 
-/* Reduced motion: fades stay, movement goes (--nx-shift: 0 above); loops and draws stop */
+/* ---- launch screen (src/v4/shell/Splash.tsx): once per session, on the instrument ground ---- */
+.nx-splash { display: none; }
+html.nx-splash-on .nx-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #061016;
+  /* the hard cap even if no script runs: gone by 2.8 s */
+  animation: nx-splash-gone 300ms var(--nx-ease-in) 2.5s both;
+}
+html.nx-splash-out .nx-splash {
+  opacity: 0;
+  pointer-events: none;
+  animation: none;
+  transition: opacity 300ms var(--nx-ease-in);
+}
+@keyframes nx-splash-gone {
+  to { opacity: 0; visibility: hidden; }
+}
+.nx-splash-sea { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.32; }
+.nx-splash-contour { stroke-dasharray: 1; animation: nx-draw 1400ms var(--nx-ease-out) both; }
+.nx-splash-mark {
+  position: relative;
+  display: flex;
+  align-items: center;
+  transition: transform 300ms var(--nx-ease-in);
+}
+/* a launch moment, not a header: larger on tablet and desktop (the `scale` property, so the exit's
+   transform still composes with it) */
+@media (min-width: 768px) {
+  .nx-splash-mark { scale: 1.45; }
+}
+html.nx-splash-out .nx-splash-mark { transform: scale(0.98); }
+.nx-splash-tile {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: nx-splash-tile 360ms var(--nx-ease-out) both;
+}
+@keyframes nx-splash-tile {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: none; }
+}
+.nx-splash-stub { stroke-dasharray: 1; animation: nx-draw 320ms var(--nx-ease-out) 120ms both; }
+.nx-splash-n { animation: nx-rise-n 360ms var(--nx-ease-out) 220ms both; }
+@keyframes nx-rise-n {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+.nx-splash-word { animation: nx-wipe 440ms var(--nx-ease-out) 320ms both; }
+@keyframes nx-wipe {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+/* Reduced motion: fades stay, movement goes (--nx-shift: 0 above); loops and draws stop; the launch
+   screen is a still mark that fades away in 150 ms */
 @media (prefers-reduced-motion: reduce) {
   :root { --nx-shift: 0; }
   .nx-sweep { animation: none; stroke-dasharray: none; }
   .nx-draw, .nx-chart-draw .nx-chart-line, .nx-chart-draw .nx-chart-marks { animation: none; }
   .nx-chart-wait .nx-chart-line { stroke-dashoffset: 0; }
   .nx-chart-wait .nx-chart-marks { opacity: 1; }
+  .nx-splash *, .nx-splash-contour { animation: none !important; }
+  html.nx-splash-out .nx-splash { transition-duration: 150ms; }
+  html.nx-splash-out .nx-splash-mark { transform: none; }
   .nx-fold { transition: none; }
 }
 @media (prefers-contrast: more) {
