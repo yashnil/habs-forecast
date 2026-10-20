@@ -187,6 +187,8 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** "Oct 15" for a YYYY-MM-DD date. */
 export const shortDate = (d: string) => dtf("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${d.slice(0, 10)}T12:00:00Z`));
+/** "Oct 15", or "Aug 12, 2025" when the date is not in `today`'s year: an old sample never reads as this year's. */
+export const sampleDate = (d: string, today: string) => (d.slice(0, 4) === today.slice(0, 4) ? shortDate(d) : dtf("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${d.slice(0, 10)}T12:00:00Z`)));
 /** "September 30", or "August 27, 2025" when the date is not from the last 300 days of `now`. */
 export function longDate(d: string, now?: Date): string {
   const t = new Date(`${d.slice(0, 10)}T12:00:00Z`);
@@ -415,7 +417,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       const n = station(e, v);
       nodes.push(n);
       if (e.near && e.ageDays <= RECENT_DAYS) used.push({ node: n, e });
-      else gaps.push({ id: `${v}-recent`, variable: n.variable, reason: e.near ? `No ${n.variable} sample within ${EVIDENCE_RADIUS_KM} km in the last ${RECENT_DAYS} days; the latest nearby is from ${shortDate(e.date)} (${ageOn(e.ageDays, today)}) at ${e.station.name} (${km(e.km)} km).` : `No shore station within ${EVIDENCE_RADIUS_KM} km measures ${n.variable}; the nearest that does, ${e.station.name}, is ${km(e.km)} km away, too far to describe these waters.`, nearest: { name: e.station.name, km: e.km, date: e.date } });
+      else gaps.push({ id: `${v}-recent`, variable: n.variable, reason: e.near ? `No ${n.variable} sample within ${EVIDENCE_RADIUS_KM} km in the last ${RECENT_DAYS} days; the latest nearby is from ${sampleDate(e.date, today)} (${ageOn(e.ageDays, today)}) at ${e.station.name} (${km(e.km)} km).` : `No shore station within ${EVIDENCE_RADIUS_KM} km measures ${n.variable}; the nearest that does, ${e.station.name}, is ${km(e.km)} km away, too far to describe these waters.`, nearest: { name: e.station.name, km: e.km, date: e.date } });
     }
     const best = [...used].sort((a, b) => b.e.date.localeCompare(a.e.date) || a.e.km - b.e.km)[0];
     const c = x.measured.nearest;
@@ -442,13 +444,16 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
           }
         : null;
       if (closerNode) nodes.push(closerNode);
-      const v = e.kind === "cells" ? `Pseudo-nitzschia ${best.node.text}` : `domoic acid in seawater ${best.node.text}`;
+      // which size group was counted (CalHABMAP counts the seriata and delicatissima groups apart)
+      const groups = e.kind === "cells" ? [...new Set(e.values.map((x) => x.variable))] : [];
+      const group = groups.length === 1 ? ` (${groups[0] === "pn_seriata" ? "seriata" : "delicatissima"} group)` : groups.length > 1 ? " (both size groups)" : "";
+      const v = e.kind === "cells" ? `Pseudo-nitzschia${group} ${best.node.text}` : `domoic acid in seawater ${best.node.text}`;
       claims.push({
         id: "hab",
         kind: "measured",
         tone: "note",
-        headline: `${e.station.name}, ${km(e.km)} km ${e.bearing}: ${v}, ${shortDate(e.date)}`,
-        detail: `${cap(ageOn(e.ageDays, today))}. ${closer ? `${closer.station.name}, ${km(closer.km)} km, is closer but its last toxin or Pseudo-nitzschia sample is from ${shortDate(closer.date)} (${ageOn(closer.ageDays, today)}). ` : ""}${modelLine ? `${cap(modelLine)}. ` : ""}Seawater, not seafood.`,
+        headline: `${e.station.name}, ${km(e.km)} km ${e.bearing}: ${v}, ${sampleDate(e.date, today)}`,
+        detail: `${cap(ageOn(e.ageDays, today))}. ${closer ? `${closer.station.name}, ${km(closer.km)} km, is closer but its last toxin or Pseudo-nitzschia sample is from ${sampleDate(closer.date, today)} (${ageOn(closer.ageDays, today)}). ` : ""}${modelLine ? `${cap(modelLine)}. ` : ""}Seawater, not seafood.`,
         focus: e.kind === "cells" ? "cells" : "toxin",
         aged: e.ageDays > 14,
         text: `${e.station.name} reported ${best.node.text} ${e.kind === "cells" ? "Pseudo-nitzschia" : "particulate domoic acid"} on ${longDate(e.date)}, ${km(e.km)} km ${e.bearing} of ${P.name}.${closer ? ` ${closer.station.name} is closer (${km(closer.km)} km) but has no comparable sample since ${longDate(closer.date, x.now)}.` : ""}`,
@@ -486,9 +491,9 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         headline: `No recent HAB sample within ${EVIDENCE_RADIUS_KM} km`,
         // the model is the next line's own claim (pageClaims keeps it when the HAB line is a gap), so
         // this line says only what the shore stations say: nothing is said twice
-        detail: `${c ? `The nearest station, ${c.station.name} (${km(c.km)} km), last reported on ${shortDate(c.date)} (${ageOn(c.ageDays, today)}). ` : `No shore station within ${EVIDENCE_RADIUS_KM} km samples bloom algae or toxin. `}No sample is not a clean result.`,
+        detail: `${c ? `The nearest station, ${c.station.name} (${km(c.km)} km), last reported on ${sampleDate(c.date, today)} (${ageOn(c.ageDays, today)}). ` : `No shore station within ${EVIDENCE_RADIUS_KM} km samples bloom algae or toxin. `}No sample is not a clean result.`,
         focus: null,
-        text: `No shore station within ${EVIDENCE_RADIUS_KM} km of ${P.name} has a bloom or toxin sample from the last ${RECENT_DAYS} days${c ? `; the nearest, ${c.station.name} (${km(c.km)} km), last reported on ${shortDate(c.date)} (${ageOn(c.ageDays, today)})` : ""}. No sample is not a clean result.`,
+        text: `No shore station within ${EVIDENCE_RADIUS_KM} km of ${P.name} has a bloom or toxin sample from the last ${RECENT_DAYS} days${c ? `; the nearest, ${c.station.name} (${km(c.km)} km), last reported on ${sampleDate(c.date, today)} (${ageOn(c.ageDays, today)})` : ""}. No sample is not a clean result.`,
         supports: [],
       });
     }

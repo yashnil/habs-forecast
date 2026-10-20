@@ -16,7 +16,9 @@ export function relTime(iso: string, now: Date): string {
   const m = Math.round((now.getTime() - t) / 60000);
   if (m < 1) return "just now";
   if (m < 60) return `${m} min ago`;
-  const h = Math.round(m / 60);
+  // whole hours elapsed, as the map's source stamps count them (lib/currents hoursAgo), so the layer card
+  // and the stamp never disagree by an hour
+  const h = Math.floor((now.getTime() - t) / 3_600_000);
   if (h < 36) return `${h} h ago`;
   // older than a day and a half: Pacific calendar days, as for a date, so one observation never reads
   // "2 days ago" in one row and "3 days ago" in another

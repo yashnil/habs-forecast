@@ -57,6 +57,8 @@ describe("next steps", () => {
     const read = steps.find((s) => s.id === "read-notices")!;
     expect(read.title).toBe("Read the 2 notices that cover these waters, in the agencies' own words");
     expect(read.reason).toMatch(/south limit .* 8\.\d km south/);
+    // two notices listed: the limit names whose it is, never a bare "Its"
+    expect(read.reason).toMatch(/^“[^”]+”: its south limit/);
   });
 
   it("a commercial fisher sees the commercial statement, a recreational one the recreational", () => {

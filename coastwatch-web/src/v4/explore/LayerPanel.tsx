@@ -1,7 +1,7 @@
 "use client";
 
 import type { LayerArtifact, Manifest, Palette } from "@/generated/schema";
-import { CHARM_VARIABLES, charmRun, satelliteLatest, sourceStatus, type CharmVariable } from "@/lib/layers";
+import { CHARM_VARIABLES, charmRun, coveragePct, satelliteLatest, sourceStatus, type CharmVariable } from "@/lib/layers";
 import { KNOTS_PER_MS, currentsHourly, defaultHour } from "@/lib/currents";
 import { AGE_COLOURS, SENSOR_COLOURS, displayPalette, gradientCss } from "@/lib/palette";
 import { SPEED_CLASSES, ARROW_LENGTHS } from "@/lib/basemap";
@@ -158,7 +158,7 @@ export function LayerOptions({ manifest, choice, onChoice }: { manifest: Manifes
           id="nx-variable"
           value={choice.variable}
           onChange={(e) => onChoice({ ...choice, variable: e.target.value as CharmVariable })}
-          className="nx-focus min-h-11 rounded-lg border border-n-line-strong bg-n-surface px-3 text-[15px] text-n-ink"
+          className="nx-select nx-focus min-h-11 rounded-lg border border-n-line-strong bg-n-surface px-3 text-[15px] text-n-ink"
           data-testid="variable-select"
         >
           {CHARM_VARIABLES.map((v) => (
@@ -436,11 +436,11 @@ function CoverageLine({ layer, regions }: { layer: LayerArtifact; regions: { id:
   const cov = layer.coverage!;
   const when = coverageWhen(layer);
   const label = (id: string) => regions.find((r) => r.id === id)?.label ?? id.replace(/_/g, " ");
-  const pct = (f: number) => `${Math.round(f * 100)}%`;
+  const pct = coveragePct;
   return (
     <div className="flex flex-col gap-0.5 text-[13px] leading-snug text-n-ink-2" data-testid="sat-coverage">
       <p>
-        <span className="font-semibold text-n-ink">Seen clearly: {pct(cov.domain_observed_fraction)}</span> of the {cov.domain_reference_cells != null ? `${cov.domain_reference_cells.toLocaleString("en-US")} ` : ""}ocean cells in this view&rsquo;s area{when ? ` (${when})` : ""}. The rest is cloud, glare or no overpass, not low chlorophyll.
+        <span className="font-semibold text-n-ink">Seen clearly: {pct(cov.domain_observed_fraction)}</span> of the {cov.domain_reference_cells != null ? `${cov.domain_reference_cells.toLocaleString("en-US")} ` : ""}ocean cells across the California domain{when ? ` (${when})` : ""}. The rest is cloud, glare or no overpass, not low chlorophyll.
       </p>
       {cov.regions.length > 0 && (
         <p data-testid="sat-coverage-regions">

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dayLabel, pacificDay, relTime } from "@/v4/ui/time";
 import { coverageWhen } from "@/v4/explore/layers";
+import { hoursAgo } from "@/lib/currents";
 
 describe("v4 relTime", () => {
   it("counts a calendar date in Pacific days, also in the evening when UTC is already tomorrow", () => {
@@ -15,6 +16,9 @@ describe("v4 relTime", () => {
     expect(relTime("2026-10-16T23:30:00Z", now)).toBe("30 min ago");
     expect(relTime("2026-10-16T19:00:00Z", now)).toBe("5 h ago");
     expect(relTime("not a date", now)).toBe("");
+    // one age function: whole hours elapsed, as the map's source stamp counts them (lib/currents hoursAgo)
+    expect(relTime("2026-10-16T10:35:00Z", now)).toBe(`${hoursAgo("2026-10-16T10:35:00Z", now)} h ago`);
+    expect(relTime("2026-10-16T10:35:00Z", now)).toBe("13 h ago");
   });
 });
 

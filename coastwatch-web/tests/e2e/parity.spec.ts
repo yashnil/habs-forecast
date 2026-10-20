@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { OK } from "./ports";
+import { coveragePct } from "../../src/lib/layers";
 
 /**
  * Feature parity with v2, in v4's interaction architecture (the owner's list): home port, waters
@@ -101,11 +102,11 @@ test("satellite coverage: the share actually seen, what is counted, the dates an
   await page.goto(`${OK}/?layer=olci300`);
   await map(page);
   const cov = page.getByTestId("sat-coverage").first();
-  await expect(cov).toContainText(`Seen clearly: ${Math.round(l.coverage.domain_observed_fraction * 100)}%`);
-  await expect(cov).toContainText(`${l.coverage.domain_reference_cells} ocean cells`);
+  await expect(cov).toContainText(`Seen clearly: ${coveragePct(l.coverage.domain_observed_fraction)}`);
+  await expect(cov).toContainText(`${l.coverage.domain_reference_cells} ocean cells across the California domain`);
   await expect(cov).toContainText("not low chlorophyll");
   await expect(cov).toContainText(/pixels observed \w{3} \d+–\w{3} \d+/);
-  await expect(page.getByTestId("sat-coverage-regions").first()).toContainText(`Monterey Bay ${Math.round(l.coverage.regions[0].observed_fraction * 100)}%`);
+  await expect(page.getByTestId("sat-coverage-regions").first()).toContainText(`Monterey Bay ${coveragePct(l.coverage.regions[0].observed_fraction)}`);
   await cov.locator("summary").click();
   await expect(cov).toContainText(l.coverage.reference.slice(0, 40));
 });
@@ -183,7 +184,7 @@ test("walkthrough H2: the multi-sensor coverage names the days its pixels come f
   await page.goto(`${OK}/?layer=multi`);
   await map(page);
   const cov = page.getByTestId("sat-coverage").first();
-  await expect(cov).toContainText(`Seen clearly: ${Math.round(l.coverage.domain_observed_fraction * 100)}%`);
+  await expect(cov).toContainText(`Seen clearly: ${coveragePct(l.coverage.domain_observed_fraction)}`);
   await expect(cov).toContainText("pixels observed Oct 1–Oct 6, each its latest clear day");
   await expect(cov).not.toContainText("overpass of");
 });

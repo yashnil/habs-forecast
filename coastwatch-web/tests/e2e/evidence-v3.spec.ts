@@ -68,7 +68,7 @@ test("My Coast shows the species line and, where the sample is the station's new
   await expect(words.nth(1).locator("blockquote")).toContainText("CDPH recommends consumers not eat the viscera");
   for (const i of [0, 1]) await expect(words.nth(i).locator("a")).toHaveAttribute("href", "https://www.cdph.ca.gov/Programs/CEH/DRSEM/Pages/EMB/Shellfish/Domoic-Acid.aspx");
   // Santa Cruz Wharf's September 30 count is its newest: placed among the wharf's quantified samples, zeros said apart (#66 review 1.1)
-  await expect(page.getByTestId("claim-hab-history")).toHaveText(/^Compared with earlier years at Santa Cruz Wharf: higher than \d+% of the \d+ quantified (Aug|Sep)–(Oct|Nov) samples there in 2014–2025 \(a small sample: each of the \d+ is \d+ points of the rank\); another \d+ had no cells counted \(not necessarily none present\) and are not ranked\. /);
+  await expect(page.getByTestId("claim-hab-history")).toHaveText(/^Compared with earlier years at Santa Cruz Wharf: higher than \d+ of the \d+ quantified (Aug|Sep)–(Oct|Nov) samples there in 2014–2025 \(a small sample\); another \d+ had no cells counted \(not necessarily none present\) and are not ranked\. /);
   await expect(page.getByTestId("claim-hab-history")).not.toContainText("record began");
   await ctx.close();
 });

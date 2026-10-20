@@ -124,3 +124,23 @@ describe("S9: any place on the map can lead the notices control", () => {
     expect(localNotices(null, "x", "x", 0, 0)).toBeNull();
   });
 });
+
+describe("S7/S8: plain counts, named groups and years, honest coverage percents", () => {
+  it("coverage is floored, never rounded up to a whole sea", async () => {
+    const { coveragePct } = await import("@/lib/layers");
+    expect(coveragePct(0.996)).toBe(">99%");
+    expect(coveragePct(1)).toBe("100%");
+    expect(coveragePct(0.987)).toBe("98%");
+    expect(coveragePct(0.004)).toBe("<1%");
+    expect(coveragePct(0)).toBe("0%");
+  });
+  it("a cell count names its size group, and a sample from another year carries its year", () => {
+    const cells = { kind: "cells" as const, station: { station_id: "SantaCruzWharf", name: "Santa Cruz Wharf", lat: 36.958, lon: -122.017, status: "", source_url: "https://x", latest: [] }, km: 41.2, bearing: "NNW", date: "2026-10-12", values: [{ variable: "pn_seriata", value: 4900 }], ageDays: 7, series: {}, near: true };
+    const closer = { station: { station_id: "MontereyWharf", name: "Monterey Wharf", lat: 36.605, lon: -121.89, status: "", source_url: "", latest: [] }, km: 0.6, date: "2025-08-12", ageDays: 433 };
+    const g = harborEvidence(inputs({ measured: { cells, toxin: null, nearest: closer } as unknown as EvidenceInputs["measured"] }));
+    const hab = g.claims.find((c) => c.id === "hab")!;
+    expect(hab.headline).toBe("Santa Cruz Wharf, 41 km NNW: Pseudo-nitzschia (seriata group) 4,900 cells/L, Oct 12");
+    expect(hab.detail).toContain("its last toxin or Pseudo-nitzschia sample is from Aug 12, 2025");
+    expect(checkGraph(g).filter((v) => v.claim === "hab")).toEqual([]);
+  });
+});

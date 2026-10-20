@@ -88,8 +88,9 @@ export const MIN_SEASON_YEARS = 3;
 /** below this many samples a rank is said to rest on a small sample, with what one sample is worth (1/30 ≈ 3 points) */
 export const SMALL_SAMPLE = 30;
 
-/** "(a small sample: each of the 16 is 6 points of the rank)", or "" from SMALL_SAMPLE up */
-export const smallWords = (n: number) => (n > 0 && n < SMALL_SAMPLE ? ` (a small sample: each of the ${n} is ${Math.round(100 / n)} points of the rank)` : "");
+/** " (a small sample)", or "" from SMALL_SAMPLE up; a small sample's rank is said as counts ("13 of the 16"), not a percent */
+export const smallWords = (n: number) => (n > 0 && n < SMALL_SAMPLE ? " (a small sample)" : "");
+const isSmall = (n: number) => n > 0 && n < SMALL_SAMPLE;
 
 type SeriesIn = { variable: string; values: (number | null)[]; qualifiers?: Record<string, string> | null };
 type StationIn = { sample_times: string[]; series: SeriesIn[] };
@@ -214,7 +215,7 @@ export function rankWords(r: RecordContext): string | null {
   const left = s.flagged ? `; ${s.flagged} flagged for review (above the plausibility ceiling) ${s.flagged === 1 ? "is" : "are"} left out` : "";
   if (r.value === 0) {
     if (s.equal == null) return null;
-    return `${r.variable === "pn" ? "no cells counted" : "not quantified (reported 0)"}, as in ${Math.round(s.equal * 100)}% of the ${s.n} ${span}${smallWords(s.n)}${left}`;
+    return `${r.variable === "pn" ? "no cells counted" : "not quantified (reported 0)"}, as in ${isSmall(s.n) ? `${Math.round(s.equal * s.n)} of the ${s.n}` : `${Math.round(s.equal * 100)}% of the ${s.n}`} ${span}${smallWords(s.n)}${left}`;
   }
   const enoughSeason = s.n >= MIN_SEASON_SAMPLES && s.years >= MIN_SEASON_YEARS;
   if (s.below == null) {
@@ -232,6 +233,8 @@ export function rankWords(r: RecordContext): string | null {
   const rest = `${s.zeros ? `; another ${zeroWords(r.variable, s.zeros)} and ${s.zeros === 1 ? "is" : "are"} not ranked` : ""}${left}`;
   if (s.below === 1) return `higher than all ${qSpan}${rest}`;
   if (s.below === 0) return `none of the ${qSpan} was lower${rest}`;
+  // a small sample: plain counts ("higher than 13 of the 16 quantified …")
+  if (isSmall(s.quantified)) return `higher than ${s.quantifiedBelow} of the ${qSpan}${rest}`;
   // never round to "0%" or "100%" when the record says otherwise
   const pct = Math.min(99, Math.max(1, Math.round(s.below * 100)));
   return `higher than ${pct}% of the ${qSpan}${rest}`;

@@ -81,3 +81,12 @@ export function tileIndexUrl(base: string, t: TileLayer): string | null {
   if (!t.relative || (t.tile_size ?? 256) <= 256) return null;
   return artifactUrl(base, `${t.url_template.split("{z}")[0]}index.json`);
 }
+
+/** A coverage share as a percent, never rounded up to a whole sea or down to none: "100%" only when every
+ *  cell was seen, ">99%" just below, "<1%" for a sliver; otherwise floored (98.7% is "98%"). */
+export function coveragePct(f: number): string {
+  if (f >= 1) return "100%";
+  if (f > 0.99) return ">99%";
+  if (f > 0 && f < 0.01) return "<1%";
+  return `${Math.floor(f * 100)}%`;
+}
