@@ -8,7 +8,7 @@ import { measuredEvidence, neighbourhood, stationsAround, EVIDENCE_RADIUS_KM } f
 import { harborEvidence, type EvidenceInputs, type SatLite } from "@/lib/harborEvidence";
 import { CHARM_LEADS, artifactUrl, charmLayer, charmRun, sourceStatus } from "@/lib/layers";
 import { officialVerification } from "@/lib/official";
-import { readPlaceChl, waterProbe, type WaterProbe } from "@/lib/chlNear";
+import { readPlaceChl, satBasis, waterProbe, type WaterProbe } from "@/lib/chlNear";
 import { decodeWaterFallback, WATER_FALLBACK_URL } from "@/lib/waterFallback";
 import { speciesById } from "@/content/species";
 import { speciesStatements } from "@/lib/nextSteps";
@@ -79,7 +79,7 @@ export async function GET(req: Request) {
       const sensor = pc.layer.layer_id.startsWith("olci300") ? "Sentinel-3 OLCI, 300 m" : "VIIRS, 750 m";
       const r = pc.read;
       if (r.kind === "none" || r.kind === "flagged") sat = { value: null, sensor, windowDays: pc.layer.composite?.window_days ?? 7, flagged: r.kind === "flagged", radiusKm: r.radiusKm };
-      else sat = { value: r.value, date: r.date, km: r.kind === "at" ? 0 : r.nearest.km, sensor, layerId: pc.layer.layer_id, basis: r.kind === "median" ? { n: r.n, min: r.min, max: r.max, radiusKm: r.radiusKm } : null, aside: r.aside };
+      else sat = { value: r.value, date: r.date, km: r.kind === "at" ? 0 : r.nearest.km, sensor, layerId: pc.layer.layer_id, basis: satBasis(r), aside: r.aside };
     }
   } catch {
     sat = "error";

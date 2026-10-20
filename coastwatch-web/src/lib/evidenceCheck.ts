@@ -33,6 +33,8 @@ const READING_KINDS = new Set<Claim["kind"]>(["measured", "model", "satellite", 
 const MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec";
 const DATE_RE = new RegExp(`\\b(${MONTHS})\\.? (\\d{1,2})(?:, (\\d{4}))?\\b`, "g");
 const MONTH_RANGE_RE = new RegExp(`\\b(${MONTHS})–(${MONTHS})\\b`, "g");
+/** "Oct 13–16": a span of days within one month (a satellite median's pixels) */
+const DAY_RANGE_RE = new RegExp(`\\b(${MONTHS})\\.? (\\d{1,2})–(\\d{1,2})\\b`, "g");
 const CLOCK_RE = /\b\d{1,2}:\d{2}\s?(AM|PM)\b/gi;
 const YEAR_RANGE_RE = /\b(19|20)\d{2}–(19|20)\d{2}\b/g;
 const YEAR_RE = /\b(19|20)\d{2}\b/g;
@@ -49,7 +51,7 @@ const RELEASE_RE = /\b[A-Z]{2,}\d{2}-\d{2,4}\b/g;
 
 /** the numbers in a string, with dates, clock times, years, month ranges, notice counts and agency release ids taken out first */
 export function numbersIn(s: string): string[] {
-  const t = s.replace(COUNT_RE, " ").replace(RELEASE_RE, " ").replace(DATE_RE, " ").replace(MONTH_RANGE_RE, " ").replace(CLOCK_RE, " ").replace(YEAR_RANGE_RE, " ").replace(YEAR_RE, " ");
+  const t = s.replace(COUNT_RE, " ").replace(RELEASE_RE, " ").replace(DAY_RANGE_RE, " ").replace(DATE_RE, " ").replace(MONTH_RANGE_RE, " ").replace(CLOCK_RE, " ").replace(YEAR_RANGE_RE, " ").replace(YEAR_RE, " ");
   return (t.match(NUM_RE) ?? []).map(norm);
 }
 
@@ -60,6 +62,11 @@ export function datesIn(s: string): string[] {
     const i = MONTHS.split("|").findIndex((x) => x === m[1]);
     const month = i < 12 ? i + 1 : ({ Jan: 1, Feb: 2, Mar: 3, Apr: 4, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Sept: 9, Oct: 10, Nov: 11, Dec: 12 } as Record<string, number>)[m[1]];
     out.push(`${String(month).padStart(2, "0")}-${m[2].padStart(2, "0")}`);
+  }
+  // the last day of "Oct 13–16" (the first is matched above)
+  for (const m of s.matchAll(DAY_RANGE_RE)) {
+    const first = datesIn(`${m[1]} ${m[2]}`)[0];
+    out.push(`${first.slice(0, 3)}${m[3].padStart(2, "0")}`);
   }
   return out;
 }
@@ -85,7 +92,10 @@ function nodeNumbers(n: EvidenceNode): Set<string> {
 }
 
 function nodeDates(n: EvidenceNode): Set<string> {
-  return new Set([n.time.observed, n.time.valid, n.time.issued].filter((d): d is string => !!d).map((d) => d.slice(5, 10)));
+  const out = new Set([n.time.observed, n.time.observedFrom, n.time.valid, n.time.issued].filter((d): d is string => !!d).map((d) => d.slice(5, 10)));
+  // a reading made of several days' pixels: every day of its span is one of its dates
+  if (n.time.observedFrom && n.time.observed) for (let t = Date.parse(`${n.time.observedFrom.slice(0, 10)}T12:00:00Z`); t <= Date.parse(`${n.time.observed.slice(0, 10)}T12:00:00Z`); t += 86400000) out.add(new Date(t).toISOString().slice(5, 10));
+  return out;
 }
 
 const SAFE_RE = /\b(un)?safe(ty)?\b/gi;

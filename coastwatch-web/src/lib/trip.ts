@@ -2,6 +2,7 @@ import type { LayerArtifact } from "@/generated/schema";
 import type { Audience } from "@/lib/coast";
 import type { Step } from "@/lib/nextSteps";
 import { topicWords } from "@/lib/harborEvidence";
+import { dtf } from "@/lib/time";
 
 /**
  * The trip (My Coast, Coastal mode): the days a trip can be planned for and the checklist of what to
@@ -30,8 +31,8 @@ export function tripDays(today: string, leads: (LayerArtifact | null)[], span = 
     const lead = leads.findIndex((l) => l?.time.valid_date === date);
     return {
       date,
-      label: i === 0 ? "Today" : i === 1 ? "Tomorrow" : d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" }),
-      day: d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }),
+      label: i === 0 ? "Today" : i === 1 ? "Tomorrow" : dtf("en-US", { weekday: "short", timeZone: "UTC" }).format(d),
+      day: dtf("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(d),
       lead: lead >= 0 ? lead : null,
     };
   });

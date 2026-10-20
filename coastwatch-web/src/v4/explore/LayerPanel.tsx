@@ -2,7 +2,7 @@
 
 import type { LayerArtifact, Manifest, Palette } from "@/generated/schema";
 import { CHARM_VARIABLES, charmRun, satelliteLatest, sourceStatus, type CharmVariable } from "@/lib/layers";
-import { KNOTS_PER_MS, currentsHourly } from "@/lib/currents";
+import { KNOTS_PER_MS, currentsHourly, defaultHour } from "@/lib/currents";
 import { AGE_COLOURS, SENSOR_COLOURS, displayPalette, gradientCss } from "@/lib/palette";
 import { SPEED_CLASSES, ARROW_LENGTHS } from "@/lib/basemap";
 import { stampLines } from "@/lib/stamp";
@@ -33,8 +33,8 @@ function freshnessLine(m: Manifest, f: Family, now: Date | null): string | null 
     return d ? `Newest pixels ${now ? relTime(d, now) : d}` : "No recent clear view";
   }
   if (f === "currents") {
-    const h = currentsHourly(m);
-    const t = h[h.length - 1]?.time.valid_time;
+    // the hour the map opens on: the newest with usable coverage (the same rule as the timebar)
+    const t = defaultHour(m)?.time.valid_time;
     return t ? `Newest hour ${now ? relTime(t, now) : t}` : "No radar hour published";
   }
   return null;
@@ -384,7 +384,10 @@ export function Provenance({ manifest, choice, resolved, now, regions = [] }: { 
         <p className="flex items-start gap-2 text-[13px] leading-snug text-n-stale" data-testid="stale-note">
           <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0" />
           {choice.kind === "forecast"
-            ? `No newer C-HARM run has been published since ${dayLabel(fresh.basisDate!)} (${fresh.ageDays} days). This is the newest available forecast; its dates are shown as issued.`
+            ? // a failed update cannot say NOAA published nothing newer: only that Neritic's copy is this run
+              status?.outcome === "failed"
+              ? `Neritic's newest copy is the run of ${dayLabel(fresh.basisDate!)} (${fresh.ageDays} days old). It could not reach NOAA${status.last_attempt_at ? ` at ${clockLabel(status.last_attempt_at)}` : ""}, so a newer run may exist. Dates are shown as issued.`
+              : `No newer C-HARM run has been published since ${dayLabel(fresh.basisDate!)} (${fresh.ageDays} days). This is the newest available forecast; its dates are shown as issued.`
             : `Older than usual: newest observation ${fresh.ageDays} days ago.`}
         </p>
       )}
@@ -394,7 +397,8 @@ export function Provenance({ manifest, choice, resolved, now, regions = [] }: { 
           {choice.kind === "forecast" ? "This forecast is out of date" : "These observations are out of date"} ({fresh.ageDays} days). Shown for reference only; it does not describe current conditions.
         </p>
       )}
-      {status && status.outcome !== "updated" && (
+      {/* a failed forecast update is already said in the stale line above, with its time */}
+      {status && status.outcome !== "updated" && !(choice.kind === "forecast" && status.outcome === "failed" && fresh?.state === "stale") && (
         <p className="flex items-start gap-2 text-[13px] text-n-stale" data-testid="provenance-status">
           <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0" />
           The last update {status.outcome === "failed" ? "failed" : "did not complete"}

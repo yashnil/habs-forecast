@@ -1,29 +1,48 @@
 const PT = "America/Los_Angeles";
 
+/**
+ * One Intl.DateTimeFormat per locale and option set, built on first use and reused: building a
+ * formatter costs tens of microseconds and the map re-labels dates on every render. The output is
+ * identical to Date#toLocale*String with the same options.
+ */
+const FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+export function dtf(locale: string, opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale}|${JSON.stringify(opts)}`;
+  let f = FORMATTERS.get(key);
+  if (!f) FORMATTERS.set(key, (f = new Intl.DateTimeFormat(locale, opts)));
+  return f;
+}
+
+/** "3:00 PM PDT": a measured instant's clock time in Pacific time, with the zone named. */
+export function clockPT(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : dtf("en-US", { hour: "numeric", minute: "2-digit", timeZone: PT, timeZoneName: "short" }).format(d);
+}
+
 /** "Thu, Oct 8" for a YYYY-MM-DD calendar date (no time-zone shifting). */
 export function formatDate(date: string, opts: { year?: boolean } = {}): string {
   const d = new Date(`${date}T12:00:00Z`);
-  return d.toLocaleDateString("en-US", {
+  return dtf("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
     ...(opts.year ? { year: "numeric" } : {}),
     timeZone: "UTC",
-  });
+  }).format(d);
 }
 
 /** "Oct 8, 10:04 AM PDT" in Pacific time. */
 export function formatDateTimePT(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("en-US", {
+  return dtf("en-US", {
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
     timeZone: PT,
     timeZoneName: "short",
-  });
+  }).format(d);
 }
 
 /** Today's calendar date in Pacific time, YYYY-MM-DD. */

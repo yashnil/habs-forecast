@@ -1,4 +1,5 @@
 import { distanceKm, type Gap } from "@/lib/grid";
+import { dtf } from "@/lib/time";
 /**
  * Provenance threads (signature interaction, PR #43 04-interactions §1): when a reader selects a
  * water point, thin lines run from it to where each statement about it comes from:
@@ -179,5 +180,5 @@ export function stationFeatures(stations: StationPoint[] | null | undefined, now
 function sampleDateWords(date: string, year: string | null): string {
   const d = new Date(`${date}T12:00:00Z`);
   const sameYear = year == null || date.slice(0, 4) === year;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }), timeZone: "UTC" });
+  return dtf("en-US", { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }), timeZone: "UTC" }).format(d);
 }

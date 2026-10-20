@@ -3,10 +3,11 @@ import { AUDIENCE } from "@/lib/applicability";
 import type { Audience } from "@/lib/coast";
 import { compass, marineHeadline, stationName, type Conditions, type MarinePeriod, type Tide } from "@/lib/conditions";
 import type { Freshness } from "@/lib/freshness";
-import { ageWords, fmtMeasured, fmtPct, EVIDENCE_RADIUS_KM, NEIGHBOURHOOD_KM, RECENT_DAYS, type Neighbourhood, type StationEvidence } from "@/lib/hab";
+import { fmtMeasured, fmtPct, EVIDENCE_RADIUS_KM, NEIGHBOURHOOD_KM, RECENT_DAYS, type Neighbourhood, type StationEvidence } from "@/lib/hab";
 import type { StationLite } from "@/lib/data";
 import type { Verification } from "@/lib/official";
 import { runAgeWords } from "@/lib/charmDays";
+import { clockPT, dtf } from "@/lib/time";
 import { recordNamesSpecies, speciesPhrase, type Species } from "@/content/species";
 import { copyWords, rankWords, type RecordContext } from "@/lib/history";
 import { SHORE_STATIONS, shoreCredit, SHORE_UNITS, type ShoreVariable } from "@/lib/shoreStations";
@@ -42,7 +43,8 @@ export type EvidenceNode = {
   text: string;
   source: { id: string; name: string; url?: string | null; product?: string; version?: string };
   /** dates are Pacific calendar dates; `observedAt` keeps the source's original UTC timestamp when there is one */
-  time: { observed?: string | null; observedAt?: string | null; valid?: string | null; issued?: string | null; ageDays: number | null };
+  /** observedFrom: the oldest day of a reading made of several days' pixels (observed is the newest) */
+  time: { observed?: string | null; observedFrom?: string | null; observedAt?: string | null; valid?: string | null; issued?: string | null; ageDays: number | null };
   support: { kind: "point" | "cell" | "cells" | "pixel" | "pixels" | "zone"; nativeM?: number | null; radiusKm?: number; n?: number };
   where: { lat: number | null; lon: number | null; name: string | null; km: number; bearing: string | null; representative: Representative; setting?: Setting | null };
   freshness: { state: Freshness["state"] | "unknown"; note?: string };
@@ -150,7 +152,8 @@ export function stationSetting(name: string): Setting {
 export type OutlookDayLite = { lead: number; valid: string | null; pda: Neighbourhood | null; pn: Neighbourhood | null };
 
 export type SatLite =
-  | { value: number; date: string | null; km: number; sensor: string; layerId: string; basis: { n: number; min: number; max: number; radiusKm: number } | null; aside: { value: number; reason: "shore" | "spike" } | null }
+  /** basis.oldest / basis.most: the median's oldest pixel day and the day most pixels were seen (`date` is the newest) */
+  | { value: number; date: string | null; km: number; sensor: string; layerId: string; basis: { n: number; min: number; max: number; radiusKm: number; oldest?: string | null; most?: string | null } | null; aside: { value: number; reason: "shore" | "spike" } | null }
   | { value: null; sensor: string; windowDays: number; flagged: boolean; radiusKm: number }
   | null;
 
@@ -183,12 +186,34 @@ export const topicWords = (topic: string) => (topic.includes("—") ? topic.spli
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** "Oct 15" for a YYYY-MM-DD date. */
-export const shortDate = (d: string) => new Date(`${d.slice(0, 10)}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+export const shortDate = (d: string) => dtf("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${d.slice(0, 10)}T12:00:00Z`));
 /** "September 30", or "August 27, 2025" when the date is not from the last 300 days of `now`. */
 export function longDate(d: string, now?: Date): string {
   const t = new Date(`${d.slice(0, 10)}T12:00:00Z`);
   const old = now ? now.getTime() - t.getTime() > 300 * DAY : false;
-  return t.toLocaleDateString("en-US", { month: "long", day: "numeric", ...(old ? { year: "numeric" } : {}), timeZone: "UTC" });
+  return dtf("en-US", { month: "long", day: "numeric", ...(old ? { year: "numeric" } : {}), timeZone: "UTC" }).format(t);
+}
+
+/** "Oct 13–16", or "Sep 29–Oct 2" across a month. */
+export function dayRange(a: string, b: string): string {
+  return a.slice(5, 7) === b.slice(5, 7) ? `${shortDate(a)}–${Number(b.slice(8, 10))}` : `${shortDate(a)}–${shortDate(b)}`;
+}
+
+/** "849 m" below a kilometre, else "1.2 km" / "12 km". */
+const distWords = (k: number) => (k < 1 ? `${Math.round(k * 1000)} m` : `${km(k)} km`);
+
+/**
+ * An age stated against the briefing's own day, so a saved or cached copy never says "today" or
+ * "3 days ago" about a later day: "4 days old on Oct 19", "the briefing's day (Oct 19)".
+ */
+export function ageOn(days: number, today: string): string {
+  const on = shortDate(today);
+  if (days <= 0) return `from the briefing's day (${on})`;
+  if (days === 1) return `1 day old on ${on}`;
+  if (days < 14) return `${days} days old on ${on}`;
+  if (days < 60) return `${Math.round(days / 7)} weeks old on ${on}`;
+  if (days < 730) return `${Math.round(days / 30.4)} months old on ${on}`;
+  return `${Math.floor(days / 365)} years old on ${on}`;
 }
 
 /** The trip day's tides, low tides first for shellfish harvest. */
@@ -200,7 +225,7 @@ export function tidesOn(tides: Tide[], date: string | null): Tide[] {
 export function periodFor(periods: MarinePeriod[], date: string | null, today: string | null): MarinePeriod | null {
   if (!periods.length) return null;
   if (!date || !today || date === today) return periods[0];
-  const day = new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" }).toLowerCase();
+  const day = dtf("en-US", { weekday: "long", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`)).toLowerCase();
   return periods.find((p) => p.name.toLowerCase() === day || p.name.toLowerCase() === day.slice(0, 3)) ?? null;
 }
 
@@ -288,8 +313,9 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         id: `disputed-${a.record.id}`,
         kind: "official",
         tone: "alert",
-        headline: `${a.dispute!.agency} appears to have lifted “${a.record.title}”`,
-        detail: `Release ${a.dispute!.release}. Confirm with ${a.dispute!.agency} which applies before relying on either${src ? "; the original notice is linked in the evidence below" : ""}.`,
+        // led by what Neritic knows (the status is unclear), never by "lifted": the agency's title is quoted as published
+        headline: `Status unclear: ${a.record.agency} notice “${a.record.title}”`,
+        detail: `${a.dispute!.agency} release ${a.dispute!.release} appears to lift it; no person has reviewed that release. Confirm with ${a.dispute!.agency} which applies before relying on either${src ? "; the original notice is linked in the evidence below" : ""}.`,
         source: { label: `${a.dispute!.agency} ${a.dispute!.release}`, url: a.dispute!.url },
         focus: "official",
         text: `${a.dispute!.agency} release ${a.dispute!.release} appears to lift “${a.record.title}”; no person has reviewed it, so Neritic shows it as neither in effect nor lifted.`,
@@ -297,16 +323,19 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       });
     }
     // 3. the notices that cover these waters (by their own geography), the most restrictive first
+    // a disputed notice is never counted as covering these waters, but the count says it exists
+    const unclear = disputed.length ? `, plus ${disputed.length} whose status is unclear` : "";
     if (applying.length) {
       const first = applying[0];
       const src = first.record.sources.find((s) => s.url.startsWith("https://"));
       const limit = first.caveats.find((c) => /limit/.test(c));
+      const one = `${first.record.agency}${first.record.effective_date ? ` · since ${shortDate(first.record.effective_date)}` : ""}${limit ? ` · ${limit}` : ""}`;
       claims.push({
         id: "notices",
         kind: "official",
         tone: applying.some((a) => RESTRICTIVE.has(a.record.action) || CLOSED.test(a.record.title)) ? "alert" : "note",
-        headline: applying.length === 1 ? first.record.title : `${applying.length} notices cover these waters${forWhat}`,
-        detail: applying.length === 1 ? `${first.record.agency}${first.record.effective_date ? ` · since ${shortDate(first.record.effective_date)}` : ""}${limit ? ` · ${limit}` : ""}` : `${applying.slice(0, 3).map((a) => `${a.record.title}${a.record.effective_date ? ` (since ${shortDate(a.record.effective_date)})` : ""}`).join(" · ")}${applying.length > 3 ? ` · and ${applying.length - 3} more, all in Notices` : ""}`,
+        headline: applying.length === 1 && !unclear ? first.record.title : `${applying.length} notice${applying.length === 1 ? " covers" : "s cover"} these waters${forWhat}${unclear}`,
+        detail: applying.length === 1 ? (unclear ? `${first.record.title} · ${one}` : one) : `${applying.slice(0, 3).map((a) => `${a.record.title}${a.record.effective_date ? ` (since ${shortDate(a.record.effective_date)})` : ""}`).join(" · ")}${applying.length > 3 ? ` · and ${applying.length - 3} more, all in Notices` : ""}`,
         source: src ? { label: `${first.record.agency} notice`, url: src.url } : undefined,
         focus: "official",
         text: `${applying.length} agency notice${applying.length === 1 ? "" : "s"} ${applying.length === 1 ? "names" : "name"} these waters${forWhat}: ${applying.slice(0, 3).map((a) => `${a.record.agency}: ${a.record.title}`).join("; ")}${applying.length > 3 ? `; and ${applying.length - 3} more` : ""}.${unverified ? " Neritic's copy, not verified by a person; the agency pages are the authority." : ""}`,
@@ -317,7 +346,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         id: "notices",
         kind: "gap",
         tone: "gap",
-        headline: `No notice in Neritic's copy names these waters${forWhat}`,
+        headline: `No ${disputed.length ? "other " : ""}notice in Neritic's copy names these waters${forWhat}`,
         detail: unresolved.length ? `${unresolved.length === 1 ? "One more" : `${unresolved.length} more`} may apply; ${unresolved.length === 1 ? "its" : "their"} stated area does not settle it. Not the same as open or safe.` : "Not the same as open or safe: the copy can lag the agencies.",
         focus: "official",
         text: `No notice in Neritic's copy names these waters${forWhat}. Not the same as open or safe: the copy can lag the agencies.`,
@@ -358,8 +387,12 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
   const day = m ? (x.tripDate ? (m.days.find((d) => d.valid === x.tripDate) ?? null) : (m.days[0] ?? null)) : null;
   const nb = day?.pda ?? null;
   const freshNote = m?.fresh && m.fresh.state !== "current" ? runAgeWords(m.fresh) : null;
+  // the day is named, never "this day": "NOAA's newest run ends Oct 18; nothing for today (Oct 19)"
+  const lastRunDay = m?.days.at(-1)?.valid ?? null;
+  const tripWords = x.tripDate ? (x.tripDate === today ? `today (${shortDate(x.tripDate)})` : shortDate(x.tripDate)) : "that day";
+  const beyondWords = lastRunDay ? `NOAA's newest run ends ${shortDate(lastRunDay)}; nothing for ${tripWords}` : `NOAA's model has nothing for ${tripWords}`;
   const modelWords = x.modelBeyond
-    ? "NOAA's model does not reach this day"
+    ? beyondWords
     : nb?.here != null
       ? `NOAA's model gives these waters' own 3 km cell a ${fmtPct(nb.here)} chance of toxin above threshold`
       : nb && nb.n > 0
@@ -382,7 +415,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       const n = station(e, v);
       nodes.push(n);
       if (e.near && e.ageDays <= RECENT_DAYS) used.push({ node: n, e });
-      else gaps.push({ id: `${v}-recent`, variable: n.variable, reason: e.near ? `No ${n.variable} sample within ${EVIDENCE_RADIUS_KM} km in the last ${RECENT_DAYS} days; the latest nearby is ${ageWords(e.ageDays)} at ${e.station.name} (${km(e.km)} km).` : `No shore station within ${EVIDENCE_RADIUS_KM} km measures ${n.variable}; the nearest that does, ${e.station.name}, is ${km(e.km)} km away, too far to describe these waters.`, nearest: { name: e.station.name, km: e.km, date: e.date } });
+      else gaps.push({ id: `${v}-recent`, variable: n.variable, reason: e.near ? `No ${n.variable} sample within ${EVIDENCE_RADIUS_KM} km in the last ${RECENT_DAYS} days; the latest nearby is from ${shortDate(e.date)} (${ageOn(e.ageDays, today)}) at ${e.station.name} (${km(e.km)} km).` : `No shore station within ${EVIDENCE_RADIUS_KM} km measures ${n.variable}; the nearest that does, ${e.station.name}, is ${km(e.km)} km away, too far to describe these waters.`, nearest: { name: e.station.name, km: e.km, date: e.date } });
     }
     const best = [...used].sort((a, b) => b.e.date.localeCompare(a.e.date) || a.e.km - b.e.km)[0];
     const c = x.measured.nearest;
@@ -415,7 +448,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         kind: "measured",
         tone: "note",
         headline: `${e.station.name}, ${km(e.km)} km ${e.bearing}: ${v}, ${shortDate(e.date)}`,
-        detail: `${cap(ageWords(e.ageDays))}. ${closer ? `${closer.station.name}, ${km(closer.km)} km, is closer but its last toxin or Pseudo-nitzschia sample is from ${shortDate(closer.date)} (${ageWords(closer.ageDays)}). ` : ""}${modelLine ? `${cap(modelLine)}. ` : ""}Seawater, not seafood.`,
+        detail: `${cap(ageOn(e.ageDays, today))}. ${closer ? `${closer.station.name}, ${km(closer.km)} km, is closer but its last toxin or Pseudo-nitzschia sample is from ${shortDate(closer.date)} (${ageOn(closer.ageDays, today)}). ` : ""}${modelLine ? `${cap(modelLine)}. ` : ""}Seawater, not seafood.`,
         focus: e.kind === "cells" ? "cells" : "toxin",
         aged: e.ageDays > 14,
         text: `${e.station.name} reported ${best.node.text} ${e.kind === "cells" ? "Pseudo-nitzschia" : "particulate domoic acid"} on ${longDate(e.date)}, ${km(e.km)} km ${e.bearing} of ${P.name}.${closer ? ` ${closer.station.name} is closer (${km(closer.km)} km) but has no comparable sample since ${longDate(closer.date, x.now)}.` : ""}`,
@@ -438,7 +471,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         kind: "model",
         tone: "note",
         headline: `NOAA model: ${fmtPct(nb.here)} chance toxin in the water exceeds its threshold here${freshNote ? ` (${freshNote})` : ""}`,
-        detail: `A probability for this 3 km cell${day?.valid ? ` on ${shortDate(day.valid)}` : ""}, not a measurement.${freshNote ? " NOAA has published no newer run." : ""} No shore sample within ${EVIDENCE_RADIUS_KM} km in the last ${RECENT_DAYS} days.`,
+        detail: `A probability for this 3 km cell${day?.valid ? ` on ${shortDate(day.valid)}` : ""}, not a measurement.${freshNote ? " No newer run has reached Neritic." : ""} No shore sample within ${EVIDENCE_RADIUS_KM} km in the last ${RECENT_DAYS} days.`,
         focus: "model",
         aged: !!freshNote,
         text: `No shore sample within ${EVIDENCE_RADIUS_KM} km in the last ${RECENT_DAYS} days. NOAA's C-HARM gives the 3 km cell containing ${P.name} a ${fmtPct(nb.here)} chance that particulate domoic acid exceeds its threshold${day?.valid ? ` on ${longDate(day.valid)}` : ""}${freshNote ? ` (${freshNote})` : ""}; a probability, not a measurement.`,
@@ -453,9 +486,9 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         headline: `No recent HAB sample within ${EVIDENCE_RADIUS_KM} km`,
         // the model is the next line's own claim (pageClaims keeps it when the HAB line is a gap), so
         // this line says only what the shore stations say: nothing is said twice
-        detail: `${c ? `The nearest station, ${c.station.name} (${km(c.km)} km), last reported ${ageWords(c.ageDays)}. ` : `No shore station within ${EVIDENCE_RADIUS_KM} km samples bloom algae or toxin. `}No sample is not a clean result.`,
+        detail: `${c ? `The nearest station, ${c.station.name} (${km(c.km)} km), last reported on ${shortDate(c.date)} (${ageOn(c.ageDays, today)}). ` : `No shore station within ${EVIDENCE_RADIUS_KM} km samples bloom algae or toxin. `}No sample is not a clean result.`,
         focus: null,
-        text: `No shore station within ${EVIDENCE_RADIUS_KM} km of ${P.name} has a bloom or toxin sample from the last ${RECENT_DAYS} days${c ? `; the nearest, ${c.station.name} (${km(c.km)} km), last reported ${ageWords(c.ageDays)}` : ""}. No sample is not a clean result.`,
+        text: `No shore station within ${EVIDENCE_RADIUS_KM} km of ${P.name} has a bloom or toxin sample from the last ${RECENT_DAYS} days${c ? `; the nearest, ${c.station.name} (${km(c.km)} km), last reported on ${shortDate(c.date)} (${ageOn(c.ageDays, today)})` : ""}. No sample is not a clean result.`,
         supports: [],
       });
     }
@@ -482,7 +515,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
     if (x.modelBeyond || !day) {
       const last = m.days.at(-1)?.valid ?? null;
       gaps.push({ id: "model-day", variable: "C-HARM", reason: `NOAA's model does not reach ${x.tripDate ? shortDate(x.tripDate) : "that day"}${last ? ` (last day ${shortDate(last)})` : ""}.` });
-      claims.push({ id: "model", kind: "gap", tone: "gap", headline: `NOAA's model does not reach ${x.tripDate ? shortDate(x.tripDate) : "this day"}`, detail: last ? `Its newest run ends ${shortDate(last)}.` : undefined, focus: null, text: `NOAA's C-HARM run does not reach ${x.tripDate ? longDate(x.tripDate) : "that day"}.`, supports: [] });
+      claims.push({ id: "model", kind: "gap", tone: "gap", headline: beyondWords, detail: "Only the run's own days are shown; nothing is carried past its last day.", focus: null, text: `NOAA's C-HARM run does not reach ${x.tripDate ? longDate(x.tripDate) : "that day"}.`, supports: [] });
     } else if (nb?.here != null) {
       const n: EvidenceNode = { ...base, id: `charm:own:${day.valid}`, value: nb.here, text: fmtPct(nb.here), support: { kind: "cell", nativeM: 3000 }, where: { lat: P.lat, lon: P.lon, name: "these waters' own 3 km cell", km: 0, bearing: null, representative: "at" } };
       nodes.push(n);
@@ -512,6 +545,11 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
   else if (x.sat && x.sat.value != null) {
     const s = x.sat;
     const age = s.date ? Math.floor((x.now.getTime() - Date.parse(`${s.date}T12:00:00Z`)) / DAY) : null;
+    // a median of several days' pixels names its real span ("Oct 13–16, most Oct 16"), never only the newest day
+    const from = s.basis?.oldest && s.date && s.basis.oldest < s.date ? s.basis.oldest : null;
+    const when = s.date ? (from ? `${dayRange(from, s.date)}${s.basis?.most ? `, most ${shortDate(s.basis.most)}` : ""}` : shortDate(s.date)) : null;
+    const whenLong = s.date ? (from ? `between ${longDate(from)} and ${longDate(s.date)}${s.basis?.most ? ` (most on ${longDate(s.basis.most)})` : ""}` : `on ${longDate(s.date)}`) : null;
+    const nearestWords = s.basis ? `nearest clear pixel ${distWords(s.km)} away` : null;
     const n: EvidenceNode = {
       id: `chl:${s.layerId}`,
       class: "satellite_retrieval",
@@ -520,9 +558,9 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       value: s.value,
       text: `${Number(s.value.toPrecision(2))} mg/m³`,
       source: { id: "satellite_chl", name: `NOAA CoastWatch, ${s.sensor}`, product: s.layerId },
-      time: { observed: s.date, ageDays: age },
+      time: { observed: s.date, ...(from ? { observedFrom: from } : {}), ageDays: age },
       support: s.basis ? { kind: "pixels", radiusKm: s.basis.radiusKm, n: s.basis.n, nativeM: /300/.test(s.sensor) ? 300 : 750 } : { kind: "pixel", nativeM: /300/.test(s.sensor) ? 300 : 750 },
-      where: { lat: null, lon: null, name: s.basis ? `median of ${s.basis.n} clear pixels within ${s.basis.radiusKm} km` : "the pixel at these waters", km: s.km, bearing: null, representative: representative("chl_satellite", s.km) },
+      where: { lat: null, lon: null, name: s.basis ? `median of ${s.basis.n} clear pixels within ${s.basis.radiusKm} km; ${nearestWords}` : "the pixel at these waters", km: s.km, bearing: null, representative: representative("chl_satellite", s.km) },
       freshness: { state: age == null ? "unknown" : age <= 3 ? "current" : age <= 7 ? "stale" : "historical" },
       quality: { flags: s.aside ? [`a ${s.aside.reason === "shore" ? "shore-adjacent" : "spike"} pixel (${Number(s.aside.value.toPrecision(2))}) was set aside`] : [] },
       lineage: ["ocean-colour retrieval by NOAA CoastWatch", "latest clear pixel within 7 days", "median within 5 km when the pixel is unclear"],
@@ -533,11 +571,11 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       id: "satellite",
       kind: "satellite",
       tone: "note",
-      headline: `Satellite chlorophyll ${n.text}${s.date ? `, ${shortDate(s.date)}` : ""}`,
-      detail: `${s.basis ? `Median of ${s.basis.n} clear pixels within ${s.basis.radiusKm} km` : "The pixel at these waters"} · ${s.sensor}${age != null ? ` · ${ageWords(age)}` : ""}. Algae of every kind, not toxin.`,
+      headline: `Satellite chlorophyll ${n.text}${when ? `, ${when}` : ""}`,
+      detail: `${s.basis ? `Median of ${s.basis.n} clear pixels within ${s.basis.radiusKm} km, ${nearestWords}` : "The pixel at these waters"} · ${s.sensor}${age != null ? ` · ${ageOn(age, today)}` : ""}. Algae of every kind, not toxin.`,
       focus: "satellite",
       aged: age != null && age > 3,
-      text: `Satellite chlorophyll ${s.basis ? `near ${P.name} (median of ${s.basis.n} clear pixels within ${s.basis.radiusKm} km)` : `at ${P.name}`} was ${n.text}${s.date ? ` on ${longDate(s.date)}` : ""} (${s.sensor}). Algae, not toxin.`,
+      text: `Satellite chlorophyll ${s.basis ? `near ${P.name} (median of ${s.basis.n} clear pixels within ${s.basis.radiusKm} km, ${nearestWords})` : `at ${P.name}`} was ${n.text}${whenLong ? ` ${whenLong}` : ""} (${s.sensor}). Algae, not toxin.`,
       supports: [n.id],
     });
   } else if (x.sat) gaps.push({ id: "satellite", variable: "satellite chlorophyll", reason: x.sat.flagged ? `No open-water chlorophyll reading within ${x.sat.radiusKm} km: the pixels there are shore-adjacent or flagged.` : `No clear satellite view within ${x.sat.radiusKm} km in the last ${x.sat.windowDays} days: cloud, fog or no overpass, not low chlorophyll.` });
@@ -560,7 +598,8 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
           value: null,
           text: p.text,
           source: { id: "nws", name: "NOAA National Weather Service", url: c.marine.url, product: c.marine.data.zone },
-          time: { issued: c.marine.data.updated, ageDays: null },
+          // valid: the day the period belongs to (the briefing's trip day), named in the line
+          time: { issued: c.marine.data.updated, valid: x.tripDate ?? today, ageDays: null },
           support: { kind: "zone" },
           where: { lat: null, lon: null, name: c.marine.data.zoneName, km: 0, bearing: null, representative: "near" },
           freshness: { state: "current" },
@@ -570,7 +609,9 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         };
         nodes.push(n);
         supports.push(n.id);
-        nws = `NWS ${/tonight|today|this afternoon/i.test(p.name) ? p.name.toLowerCase() : `for ${p.name}`}: ${marineHeadline(p)}`;
+        // NWS's own period name, anchored to its date: a saved "tonight" must still say which night
+        const pDay = x.tripDate ?? today;
+        nws = `NWS for ${p.name}${/tonight|today|this afternoon|overnight/i.test(p.name) && pDay ? `, ${shortDate(pDay)}` : ""}: ${marineHeadline(p)}`;
         source = { label: `NWS forecast, ${c.marine.data.zoneName}`, url: c.marine.url };
       }
     }
@@ -675,7 +716,9 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       const wave = add("waveFt", "significant wave height", "ft", "waves", (v) => `${v.toFixed(1)} ft${b.periodS ? ` at ${Math.round(b.periodS.value)} s` : ""}`);
       const w = [wind && `wind ${wind.text}`, wave && `waves ${wave.text}`].filter(Boolean).join(", ");
       if (w) {
-        parts.push(`${cap(w)} at ${stationName(st.name)} buoy now`);
+        // the reading's own clock time, never "now": the sentence is cached and saved for offline use
+        const at = (wind ?? wave)!.time.observed;
+        parts.push(`${cap(w)} at ${stationName(st.name)} buoy${at ? `, ${clockPT(at)}` : ""}`);
         source ??= { label: `NDBC ${st.id}`, url: c.buoy.url };
       }
     }

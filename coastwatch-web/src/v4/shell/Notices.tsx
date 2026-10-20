@@ -51,6 +51,25 @@ export function NoticesButton({ official, status = null, compact = false, local 
       window.removeEventListener("mousedown", c);
     };
   }, [open]);
+  const disputedSection = disputed.length > 0 && (
+    <section className="border-b border-n-line px-4 py-3" data-testid="notices-disputed">
+      <h3 className="text-[13.5px] font-semibold text-n-stale">Status unclear · awaiting review · {disputed.length}</h3>
+      <p className="text-[12.5px] text-n-ink-3">An agency release appears to lift {disputed.length === 1 ? "this notice" : "these notices"}. Until a person reviews it, Neritic shows {disputed.length === 1 ? "it" : "them"} as neither in effect nor lifted.</p>
+      <ul className="mt-1 divide-y divide-n-line">
+        {disputed.map(({ record: r, dispute: d }) => (
+          <NoticeRow key={r.id} r={r} now={now} dispute={d} meta={meta} />
+        ))}
+      </ul>
+    </section>
+  );
+  const currentList = (
+    <ul className="divide-y divide-n-line px-4" data-testid="notices-current">
+      {elsewhere.map((r) => (
+        <NoticeRow key={r.id} r={r} now={now} meta={meta} />
+      ))}
+      {!official && <li className="py-3 text-[14px] text-n-ink-2">Neritic&rsquo;s copy of the notices could not be loaded. Check CDFW and CDPH directly.</li>}
+    </ul>
+  );
   return (
     <div ref={box} className="relative">
       <button
@@ -80,8 +99,9 @@ export function NoticesButton({ official, status = null, compact = false, local 
           data-testid="notices-panel"
         >
           <div className="border-b border-n-line p-4">
+            {/* with a place open, the heading leads with that place's count; the statewide count follows */}
             <p className="text-[16px] font-semibold" data-testid="notices-heading">
-              {recs.length} active notices in California
+              {local && official ? `${here.length} ${here.length === 1 ? "notice covers" : "notices cover"} ${local.name}’s waters · ${recs.length} in California` : `${recs.length} active notices in California`}
             </p>
             <p className="mt-1 text-[13.5px] leading-snug text-n-official" data-testid="notices-unverified" data-state={state}>
               {state === "verified" ? `Checked by a person against the agencies' pages${v?.reviewedAt ? ` on ${clockLabel(v.reviewedAt)}` : ""}.` : `${word}. ${OFFICIAL_STATUS.notVerifiedLead}`} Before harvesting or eating seafood, check CDFW and CDPH.
@@ -112,16 +132,7 @@ export function NoticesButton({ official, status = null, compact = false, local 
             </div>
           </div>
           <div className="flex-1 overflow-auto">
-            {disputed.length > 0 && (
-              <section className="border-b border-n-line px-4 py-3" data-testid="notices-disputed">
-                <h3 className="text-[13.5px] font-semibold text-n-stale">Reported lifted by the agency · awaiting review · {disputed.length}</h3>
-                <ul className="mt-1 divide-y divide-n-line">
-                  {disputed.map(({ record: r, dispute: d }) => (
-                    <NoticeRow key={r.id} r={r} now={now} dispute={d} meta={meta} />
-                  ))}
-                </ul>
-              </section>
-            )}
+            {!local && disputedSection}
             {local && (
               <section className="border-b border-n-line px-4 pt-3" data-testid="notices-local">
                 <h3 className="text-[13.5px] font-semibold text-n-ink">
@@ -149,13 +160,19 @@ export function NoticesButton({ official, status = null, compact = false, local 
                 )}
               </section>
             )}
-            {local && <h3 className="px-4 pt-3 text-[13.5px] font-semibold text-n-ink-2">Elsewhere in California · {elsewhere.length}</h3>}
-            <ul className="divide-y divide-n-line px-4" data-testid="notices-current">
-              {elsewhere.map((r) => (
-                <NoticeRow key={r.id} r={r} now={now} meta={meta} />
-              ))}
-              {!official && <li className="py-3 text-[14px] text-n-ink-2">Neritic&rsquo;s copy of the notices could not be loaded. Check CDFW and CDPH directly.</li>}
-            </ul>
+            {local && disputedSection}
+            {/* with a place open, the rest of California is one tap away (never removed) */}
+            {local ? (
+              <details className="group border-b border-n-line" data-testid="notices-elsewhere">
+                <summary className="nx-focus flex min-h-11 cursor-pointer items-center justify-between px-4 text-[13.5px] font-semibold text-n-ink-2">
+                  Elsewhere in California · {elsewhere.length}
+                  <Icon name="chevronDown" className="h-4 w-4 text-n-ink-3 transition-transform group-open:rotate-180" />
+                </summary>
+                {currentList}
+              </details>
+            ) : (
+              currentList
+            )}
             {official && official.registry.statements.length > 0 && (
               <details className="border-t border-n-line px-4 py-3 text-[13px] text-n-ink-2" data-testid="notices-statements">
                 <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center font-semibold text-n-ink">{OFFICIAL_STATUS.statementsHeading}</summary>

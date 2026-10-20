@@ -22,28 +22,35 @@ test.describe("agency source discrepancy", () => {
     await button.click();
     const panel = page.getByTestId("notices-panel");
     const disputed = panel.getByTestId("notices-disputed");
-    await expect(disputed).toContainText("Reported lifted by the agency · awaiting review · 1");
+    await expect(disputed).toContainText("Status unclear · awaiting review · 1");
+    await expect(disputed).not.toContainText(/reported lifted/i);
     const card = disputed.getByTestId(`notice-${ID}`);
     await expect(card).toHaveAttribute("data-disputed", "true");
     await expect(card.getByRole("link", { name: /SN26-021/ })).toHaveAttribute("href", "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx");
     // the reason is always visible beside it, never behind "details"
     await expect(card.getByTestId("notice-critical")).toContainText("release SN26-021");
     await expect(card.getByTestId("notice-critical")).toContainText("appears to lift this notice");
-    await expect(card.getByTestId("notice-critical")).toContainText("not shown as in effect");
+    await expect(card.getByTestId("notice-critical")).toContainText("Status unclear");
+    await expect(card.getByTestId("notice-critical")).toContainText("neither in effect nor lifted");
     await expect(panel.getByTestId("notices-current").getByTestId(`notice-${ID}`)).toHaveCount(0);
     // once, in the disputed group only; neither the place's count nor the statewide heading counts it
     await expect(panel.getByTestId(`notice-${ID}`)).toHaveCount(1);
     await expect(panel.getByTestId("notices-local").getByTestId(`notice-${ID}`)).toHaveCount(0);
     const listed = await panel.locator('li[data-testid^="notice-"]:not([data-disputed])').count();
-    await expect(panel.getByTestId("notices-heading")).toHaveText(`${listed} active notices in California`);
     expect(count).toBe(await panel.getByTestId("notices-local").locator('li[data-testid^="notice-"]').count());
+    // the place's count leads the heading, the statewide count follows; the disputed one is in neither (S9)
+    await expect(panel.getByTestId("notices-heading")).toHaveText(`${count} ${count === 1 ? "notice covers" : "notices cover"} Monterey’s waters · ${listed} in California`);
     await expect(panel.getByTestId("notices-unverified")).toContainText("Not verified");
   });
 
-  test("the briefing says the agency reports it lifted, links the release, and lists it as unknown", async ({ page }) => {
+  test("the briefing says its status is unclear (never lifted), links the release, and lists it as unknown", async ({ page }) => {
     await open(page, `${FAILED}/coast?place=port-550`);
     const claim = page.getByTestId(`claim-disputed-${ID}`);
-    await expect(claim).toContainText("appears to have lifted");
+    await expect(claim.locator("[data-headline]")).toHaveText(/^Status unclear: CDPH notice “Do not eat sport-harvested bivalve shellfish from Monterey County”/);
+    await expect(claim).toContainText("appears to lift it");
+    await expect(claim.locator("[data-headline]")).not.toContainText(/lifted/i);
+    // the count of notices covering the waters says the unclear one exists without counting it
+    await expect(page.getByTestId("claim-notices").locator("[data-headline]")).toContainText("plus 1 whose status is unclear");
     await expect(claim.getByRole("link", { name: /SN26-021/ })).toHaveAttribute("href", /SN26-021\.aspx$/);
     await expect(page.getByTestId("unknowns")).toContainText("release SN26-021 appears to lift");
     // in the official list it carries the release, never a plain "in effect"
@@ -54,7 +61,7 @@ test.describe("agency source discrepancy", () => {
 
   test("Explore's harbour panel flags it", async ({ page }) => {
     await open(page, `${FAILED}/?sel=harbor:550&layer=forecast`);
-    await expect(page.getByTestId("harbor-claims").getByTestId(`claim-disputed-${ID}`)).toContainText("appears to have lifted");
+    await expect(page.getByTestId("harbor-claims").getByTestId(`claim-disputed-${ID}`)).toContainText("Status unclear: CDPH notice");
   });
 
   test("without a discrepancy nothing changes", async ({ page }) => {

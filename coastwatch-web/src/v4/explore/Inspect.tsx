@@ -21,7 +21,9 @@ import { clockLabel, dayLabel, kmLabel, lastHabWords, relTime } from "@/v4/ui/ti
 import { lastHabSample } from "@/lib/provenance";
 import { SeriesChart, recentSamples } from "@/v4/charts/SeriesChart";
 import { useConditions, useEvidence, type CellRead } from "./reads";
-import { VARIABLE_WORDS } from "./layers";
+import { VARIABLE_WORDS, runDays } from "./layers";
+import { packForPort } from "@/v4/offline/packs";
+import { useSavedSnapshot } from "@/v4/offline/snapshot";
 import type { Selection } from "@/v4/state/selection";
 
 type Ctx = {
@@ -103,7 +105,8 @@ export function ClaimRow({ c, graph, stations, onSelect, fallback = null }: { c:
   const nodes = new Map(graph.nodes.map((n) => [n.id, n]));
   const target = (c.supports ?? []).map((id) => nodeSelection(nodes.get(id), stations)).find(Boolean) ?? fallback;
   return (
-    <li className={`flex gap-3 ${c.tone === "alert" ? "-ml-3 rounded-r-xl border-l-[3px] border-n-official bg-n-official-bg/60 py-2 pl-3 pr-2" : ""}`} data-testid={`claim-${c.id}`} data-kind={c.kind} data-tone={c.tone} data-supports={(c.supports ?? []).join(" ")}>
+    // an alert keeps its dot, its "Official" label and a 2 px official rule; no filled card
+    <li className={`flex gap-3 ${c.tone === "alert" ? "-ml-3 border-l-2 border-n-official pl-[10px]" : ""}`} data-testid={`claim-${c.id}`} data-kind={c.kind} data-tone={c.tone} data-supports={(c.supports ?? []).join(" ")}>
       {/* older evidence is drawn hollow (its age is in the line itself), as in v2 */}
       <span className={`mt-2 h-2.5 w-2.5 shrink-0 rounded-full ${c.aged ? k.hollow : k.dot}`} data-aged={c.aged ? "true" : undefined} aria-hidden />
       <div className="min-w-0 flex-1">
@@ -211,18 +214,29 @@ export function HarborView({ code, ctx }: { code: number; ctx: Ctx }) {
   const claims = useMemo(() => (ev?.status === "ready" ? pageClaims(ev.data) : []), [ev]);
   const near = useMemo(() => stationsNear(ctx.stations, lat, lon), [ctx.stations, lat, lon]);
   const harbor = cond?.status === "ready" ? cond.data.harbor : null;
+  // served from a saved field pack (offline): the evidence is dated by when it was saved, never "now"
+  const saved = useSavedSnapshot(packForPort(code)?.id ?? null);
+  // the day the lines are for (the evidence's own day) and the model day chosen on the map's timebar
+  const evDay = ev?.status === "ready" ? ev.data.window.to : null;
+  const mapDay = useMemo(() => runDays(ctx.manifest, ctx.now).find((d) => d.lead === ctx.lead) ?? null, [ctx.manifest, ctx.now, ctx.lead]);
   return (
     <div className="flex flex-col gap-4" data-testid="inspect-harbor">
       <Link href={coastHref({ place: `port-${code}` })} className="nx-press nx-focus flex min-h-[52px] items-center justify-between gap-3 rounded-xl bg-n-ink px-4 text-[15.5px] font-semibold text-n-bg" data-testid="open-briefing">
         Open the {name} briefing <Icon name="chevronRight" />
       </Link>
-      <Section title="What the evidence says now" testid="harbor-claims">
+      <Section title={saved ? `As saved ${clockLabel(saved.savedAt)}` : "What the evidence says now"} testid="harbor-claims">
+        {evDay && (
+          <p className="-mt-1 text-[13px] leading-snug text-n-ink-3" data-testid="harbor-day">
+            For {dayLabel(evDay, true)}
+            {mapDay?.date ? ` · the map's C-HARM day: ${dayLabel(mapDay.date, true)}${mapDay.date === evDay ? "" : mapDay.lead === 0 ? " (nowcast)" : " (forecast)"}` : ""}
+          </p>
+        )}
         {!ev || ev.status === "loading" ? (
           <Loading what="Reading the evidence for these waters…" />
         ) : ev.status === "error" ? (
           <Failed what="The evidence" message={ev.message} retry={retryEv} />
         ) : (
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col divide-y divide-n-line [&>li]:py-3 [&>li:first-child]:pt-0 [&>li:last-child]:pb-0">
             {claims.map((c) => (
               <ClaimRow key={c.id} c={c} graph={ev.data} stations={ctx.stations} onSelect={ctx.onSelect} />
             ))}

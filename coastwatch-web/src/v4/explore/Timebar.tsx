@@ -3,18 +3,25 @@
 import { useEffect, useRef } from "react";
 import type { Manifest } from "@/generated/schema";
 import { charmRun, satelliteDays, satelliteLatest, type SatProduct } from "@/lib/layers";
-import { currentsHourly, currentsMean } from "@/lib/currents";
-import { pacificToday } from "@/lib/time";
+import { currentsHourly, currentsMean, defaultHour, observedCells, usableHours } from "@/lib/currents";
+import { dtf, pacificToday } from "@/lib/time";
 import { Icon } from "@/v4/ui/Icon";
 import { clockLabel, dayLabel } from "@/v4/ui/time";
 import { runDays, type LayerChoice } from "./layers";
+
+const WEEKDAY = dtf("en-US", { weekday: "short", timeZone: "UTC" });
+/** "Thu" for a date; an unreadable date gives "Invalid Date", as toLocaleDateString did */
+const weekdayOf = (d: string) => {
+  const t = new Date(`${d}T12:00:00Z`);
+  return Number.isNaN(t.getTime()) ? "Invalid Date" : WEEKDAY.format(t);
+};
 
 /**
  * Time for the layer on the map, and only for a layer that has time. Every step is a frame that
  * was actually published, labelled with its own date (forecast days are marked as forecasts);
  * there is no free date picker and nothing is interpolated between frames. ← → step, Home/End jump.
  */
-type Step = { key: string; label: string; top?: string; sub: string; forecast?: boolean; today?: boolean; choice: LayerChoice; disabled?: boolean };
+type Step = { key: string; label: string; top?: string; sub: string; forecast?: boolean; today?: boolean; incomplete?: boolean; choice: LayerChoice; disabled?: boolean };
 
 export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null): { title: string; steps: Step[]; current: string; latest?: LayerChoice } | null {
   if (c.kind === "forecast") {
@@ -27,7 +34,7 @@ export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null): { titl
       steps: days.map((d) => ({
         key: `lead${d.lead}`,
         label: d.date ? dayLabel(d.date) : "—",
-        top: d.date ? new Date(`${d.date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" }) : undefined,
+        top: d.date ? WEEKDAY.format(new Date(`${d.date}T12:00:00Z`)) : undefined,
         sub: d.lead === 0 ? "nowcast" : "forecast",
         forecast: d.lead > 0,
         today: !!d.date && d.date === today,
@@ -45,7 +52,7 @@ export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null): { titl
       current: c.day ?? "latest",
       latest: { ...c, day: null },
       steps: [
-        ...days.slice(-7).map((d) => ({ key: d.time.observed_date ?? d.layer_id, label: dayLabel(d.time.observed_date ?? ""), top: new Date(`${(d.time.observed_date ?? "").slice(0, 10)}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" }), sub: "overpass", choice: { ...c, day: d.time.observed_date ?? null } as LayerChoice })),
+        ...days.slice(-7).map((d) => ({ key: d.time.observed_date ?? d.layer_id, label: dayLabel(d.time.observed_date ?? ""), top: weekdayOf((d.time.observed_date ?? "").slice(0, 10)), sub: "overpass", choice: { ...c, day: d.time.observed_date ?? null } as LayerChoice })),
         ...(latest ? [{ key: "latest", label: "Latest clear", sub: "per-pixel dates", choice: { ...c, day: null } as LayerChoice }] : []),
       ],
     };
@@ -53,15 +60,18 @@ export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null): { titl
   if (c.kind === "currents") {
     const hours = currentsHourly(m).slice(-12);
     const mean = currentsMean(m);
+    const usable = usableHours(m);
     return {
       title: "HF radar: hourly observations",
-      current: c.mean ? "mean" : (c.hour ?? hours[hours.length - 1]?.layer_id.split("_").pop() ?? ""),
+      current: c.mean ? "mean" : (c.hour ?? defaultHour(m)?.layer_id.split("_").pop() ?? ""),
       latest: { ...c, hour: null, mean: false },
       steps: [
         ...hours.map((h) => {
           const id = h.layer_id.split("_").pop()!;
           const t = h.time.valid_time ?? "";
-          return { key: id, label: t ? clockLabel(t).replace(/^\w+ \d+, /, "") : id, sub: t ? dayLabel(t) : "", choice: { ...c, hour: id, mean: false } as LayerChoice };
+          // an hour whose coverage collapsed stays selectable, labelled with how little it saw
+          const n = usable.get(h.layer_id) === false ? observedCells(h) : null;
+          return { key: id, label: t ? clockLabel(t).replace(/^\w+ \d+, /, "") : id, sub: usable.get(h.layer_id) === false ? `incomplete${n != null ? ` (${n.toLocaleString("en-US")} cells)` : ""}` : t ? dayLabel(t) : "", incomplete: usable.get(h.layer_id) === false, choice: { ...c, hour: id, mean: false } as LayerChoice };
         }),
         ...(mean ? [{ key: "mean", label: "24 h mean", sub: "averaged", choice: { ...c, hour: null, mean: true } as LayerChoice }] : []),
       ],
@@ -118,6 +128,7 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false }: { 
                 disabled={s.disabled}
                 onClick={() => onChoice(s.choice)}
                 data-testid={`time-${s.key}`}
+                data-incomplete={s.incomplete ? "true" : undefined}
                 className={`nx-focus relative flex min-w-fit flex-1 shrink-0 basis-[84px] flex-col items-center justify-center rounded-lg px-2 py-1 text-center disabled:opacity-35 max-md:min-h-[56px] md:min-h-12 ${
                   on ? "bg-n-ink text-n-bg" : "bg-n-surface-2 text-n-ink hover:bg-n-surface-3"
                 }`}

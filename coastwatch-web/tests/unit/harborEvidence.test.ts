@@ -101,7 +101,7 @@ describe("harbor evidence graph", () => {
     );
     expect(g.claims.find((c) => c.id === "hab")!.kind).toBe("gap");
     expect(g.gaps.map((x) => x.id)).toEqual(["pn_cells-recent", "model-day", "satellite"]);
-    expect(g.gaps[0].reason).toMatch(/No Pseudo-nitzschia cells sample within 60 km in the last 30 days; the latest nearby is 7 months ago at Santa Cruz Wharf \(41 km\)/);
+    expect(g.gaps[0].reason).toMatch(/No Pseudo-nitzschia cells sample within 60 km in the last 30 days; the latest nearby is from Mar 29 \(7 months old on Oct 15\) at Santa Cruz Wharf \(41 km\)/);
     expect(g.gaps[2].reason).toMatch(/not low chlorophyll/);
     // the old sample is still a node, flagged historical, so nothing is hidden
     expect(g.nodes.find((n) => n.id === "pn_cells:SantaCruzWharf")!.freshness.state).toBe("historical");
@@ -205,14 +205,14 @@ describe("the briefing's claims", () => {
     expect(pageClaims(g).map((c) => c.id)).not.toContain("model");
   });
 
-  it("a day beyond the model says the model does not reach it", () => {
+  it("a day beyond the model names the run's last day and the day asked for (S4)", () => {
     const hab = claim(brief({ tripDate: "2026-10-16", modelBeyond: true, model: { days: [{ lead: 3, valid: "2026-10-14", pda: nb({ n: 3, median: 0.5 }), pn: null }], issued: "2026-10-11", fresh: null } }), "hab");
     // the HAB gap line leaves the model to the model line, which the page keeps beside it
     expect(hab.kind).toBe("gap");
     expect(hab.detail).not.toMatch(/model/);
     const model = claim(brief({ tripDate: "2026-10-16", modelBeyond: true, model: { days: [{ lead: 3, valid: "2026-10-14", pda: nb({ n: 3, median: 0.5 }), pn: null }], issued: "2026-10-11", fresh: null } }), "model");
-    expect(model.headline).toBe("NOAA's model does not reach Oct 16");
-    expect(model.detail).toBe("Its newest run ends Oct 14.");
+    expect(model.headline).toBe("NOAA's newest run ends Oct 14; nothing for Oct 16");
+    expect(model.headline).not.toMatch(/this day/);
   });
 
   it("more than three covering notices: the three named are followed by how many more, none dropped silently", () => {
@@ -231,7 +231,9 @@ describe("the briefing's claims", () => {
     const d = g.claims.find((c) => c.id.startsWith("disputed-"));
     if (d) {
       expect(g.claims.indexOf(d)).toBeLessThan(g.claims.indexOf(n));
-      expect(d.headline).toMatch(/appears to have lifted/);
+      // never led by "lifted": the status is unclear until a person reviews the release (S1)
+      expect(d.headline).toMatch(/^Status unclear: /);
+      expect(d.headline).not.toMatch(/lifted/i);
     }
   });
 
@@ -247,8 +249,10 @@ describe("the briefing's claims", () => {
     });
     const g = harborEvidence(brief({ conditions: cond([]) }));
     const c = g.claims.find((x) => x.id === "conditions")!;
-    expect(c.headline).toBe("NWS tonight: NW wind 10 to 15 kt · Seas 4 to 6 ft");
-    expect(c.detail).toMatch(/^Water 17\.6 °C in the harbour · Wind 10 kt NNW, waves 3\.6 ft at Monterey Canyon Outer buoy now · tides low 2\.2 ft, high 5\.8 ft\./);
+    // NWS's own period name, anchored to its date; the buoy's own clock time, never "now" (S6: the text is cached)
+    expect(c.headline).toBe("NWS for Tonight, Oct 13: NW wind 10 to 15 kt · Seas 4 to 6 ft");
+    expect(c.detail).toMatch(/^Water 17\.6 °C in the harbour · Wind 10 kt NNW, waves 3\.6 ft at Monterey Canyon Outer buoy, 12:50 PM PDT · tides low 2\.2 ft, high 5\.8 ft\./);
+    expect(`${c.headline} ${c.detail} ${c.text}`).not.toMatch(/\b(now|tonight|today)\b/);
     expect(c.supports).toEqual(expect.arrayContaining(["nws:PZZ535:Tonight", "coops:9413450:water_temperature", "buoy:46236:windKt", "buoy:46236:waveFt"]));
     expect(g.nodes.find((n) => n.id === "coops:9413450:water_temperature")!.where.representative).toBe("at");
     // the trip day's own period, by name
@@ -257,7 +261,7 @@ describe("the briefing's claims", () => {
     expect(periodFor([{ name: "Tonight", text: "" }, { name: "Thu", text: "" }], "2026-10-15", "2026-10-13")?.name).toBe("Thu");
     const sca = harborEvidence(brief({ conditions: cond([{ event: "Small craft advisory", headline: "Small craft advisory in effect until 9 pm pdt this evening" }]) })).claims.find((x) => x.id === "conditions")!;
     expect(sca.tone).toBe("alert");
-    expect(sca.headline).toMatch(/^Small craft advisory · NWS tonight/);
+    expect(sca.headline).toMatch(/^Small craft advisory · NWS for Tonight, Oct 13/);
     // shellfish harvest leads with the lowest tide
     const shell = harborEvidence(brief({ conditions: cond([], false), audience: "shellfish" })).claims.find((x) => x.id === "conditions")!;
     expect(shell.detail).toMatch(/^Lowest tide 2\.2 ft at 4:51 AM/);

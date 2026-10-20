@@ -1,6 +1,6 @@
 import type { LayerArtifact, Manifest } from "@/generated/schema";
 import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, charmRun, satelliteDays, satelliteLatest, tileIndexUrl, type CharmVariable, type SatProduct } from "@/lib/layers";
-import { currentsHourly, currentsMean } from "@/lib/currents";
+import { currentsHourly, currentsMean, defaultHour } from "@/lib/currents";
 import { supportsGridTiles } from "@/lib/gridTiles";
 import { charmDays, type CharmDay } from "@/lib/charmDays";
 import type { ImageRaster, TileRaster } from "@/components/map/MapCanvas";
@@ -104,7 +104,8 @@ export function resolve(m: Manifest, c: LayerChoice, baseUrl: string): Resolved 
   }
   if (c.kind === "currents") {
     const hourly = currentsHourly(m);
-    out.curLayer = c.mean ? currentsMean(m) : c.hour ? (hourly.find((l) => l.layer_id.endsWith(c.hour!)) ?? hourly[hourly.length - 1] ?? null) : (hourly[hourly.length - 1] ?? null);
+    // no hour chosen: the newest hour with usable coverage (an hour still filling in stays one tap away)
+    out.curLayer = c.mean ? currentsMean(m) : c.hour ? (hourly.find((l) => l.layer_id.endsWith(c.hour!)) ?? defaultHour(m)) : defaultHour(m);
     // compare: the newest clear chlorophyll view underneath (each pixel keeps its own date)
     if (c.chl) {
       const l = satelliteLatest(m, "olci300") ?? satelliteLatest(m, "viirs750");

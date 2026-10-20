@@ -1,6 +1,6 @@
 /** Times in the reader's words, from the source's own timestamp (never re-dated). */
 
-import { pacificToday } from "@/lib/time";
+import { dtf, pacificToday } from "@/lib/time";
 
 const TZ = "America/Los_Angeles";
 
@@ -26,7 +26,7 @@ export function relTime(iso: string, now: Date): string {
 /** The Pacific calendar date (YYYY-MM-DD) of an instant. */
 export function pacificDay(iso: string): string {
   const t = new Date(iso);
-  return Number.isFinite(t.getTime()) ? t.toLocaleDateString("en-CA", { timeZone: TZ }) : iso.slice(0, 10);
+  return Number.isFinite(t.getTime()) ? dtf("en-CA", { timeZone: TZ }).format(t) : iso.slice(0, 10);
 }
 
 /** "Oct 16" for a date in the current (Pacific) year, "Aug 27, 2025" otherwise; "Thu, Oct 16" with the
@@ -38,7 +38,7 @@ export function dayLabel(date: string, weekday = false, now: Date | null = null)
   const day = date.slice(0, 10);
   const year = day.slice(0, 4);
   const other = /^\d{4}$/.test(year) && year !== pacificToday(now ?? new Date()).slice(0, 4);
-  return new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", ...(weekday ? { weekday: "short" } : {}), ...(other ? { year: "numeric" } : {}), timeZone: "UTC" });
+  return dtf("en-US", { month: "short", day: "numeric", ...(weekday ? { weekday: "short" } : {}), ...(other ? { year: "numeric" } : {}), timeZone: "UTC" }).format(new Date(`${day}T12:00:00Z`));
 }
 
 /** "Oct 16, 9:24 AM PDT": a measured time, in Pacific time with the zone named. */
@@ -51,7 +51,9 @@ export function dayYearLabel(date: string, now: Date | null = null): string {
 export const lastHabWords = (d: string | null, now: Date | null = null) => (d ? `last HAB sample ${dayYearLabel(d, now)}` : "no HAB sample published");
 
 export function clockLabel(iso: string): string {
-  return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: TZ, timeZoneName: "short" });
+  const d = new Date(iso);
+  // an unparseable stamp stays as it was published (toLocaleString would say "Invalid Date")
+  return Number.isNaN(d.getTime()) ? "Invalid Date" : dtf("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: TZ, timeZoneName: "short" }).format(d);
 }
 
 export function kmLabel(km: number): string {

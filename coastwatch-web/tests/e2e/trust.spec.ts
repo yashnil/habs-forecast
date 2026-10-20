@@ -115,6 +115,15 @@ test.describe("freshness: old or failed data never reads as current", () => {
     expect(await statusOf(page, "model")).not.toBe("ready");
   });
 
+  test("a failed update on an older run never claims NOAA published nothing newer (S3)", async ({ page }) => {
+    await open(page, "/?layer=forecast", "2026-10-12T20:00:00Z", FAILED);
+    const note = page.getByTestId("stale-note").first();
+    await expect(note).toContainText("Neritic's newest copy is the run of Oct 8 (4 days old)");
+    await expect(note).toContainText("could not reach NOAA");
+    await expect(note).toContainText("a newer run may exist");
+    await expect(note).not.toContainText("No newer C-HARM run has been published");
+  });
+
   test("the forecast says what it is not: no toxin measurement, no closure decision, a low value is not safe; its issue date is inferred", async ({ page }) => {
     await open(page, "/?layer=forecast");
     const c = page.getByTestId("forecast-caveat").first();
@@ -213,7 +222,7 @@ test.describe("values: the published cell, with its product and time, reachable 
     // San Diego lies outside the fixture's C-HARM subset: the model's absence is said (folded into the
     // station line, so it is not said twice), and no forecast value is invented
     await open(page, "/?layer=forecast&sel=harbor:880");
-    await expect(page.getByTestId("harbor-claims")).toContainText("NOAA's model does not reach this day");
+    await expect(page.getByTestId("harbor-claims")).toContainText(/NOAA's newest run ends \w+ \d+; nothing for/);
     // no model probability is invented for it (a percentile of a station's own record is not one)
     await expect(page.getByTestId("harbor-claims")).not.toContainText(/\d+% (chance|probability)|NOAA model: \d/);
     await expect(page.getByTestId("harbor-claims").locator('[data-kind="model"]')).toHaveCount(0);
