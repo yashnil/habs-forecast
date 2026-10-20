@@ -33,11 +33,22 @@ test("the launch screen shows on a session's first load, steps aside, and the pa
   await ctx.close();
 });
 
-test("a reading page: the launch screen leaves within its cap and takes no clicks while fading", async ({ browser }) => {
+test("a reading page opens without the launch screen: its content is in the first HTML and is never hidden", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   await ctx.addInitScript(force);
   const page = await ctx.newPage();
   await page.goto(`${OK}/coast?place=port-550`);
+  await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
+  expect(await page.evaluate(() => document.documentElement.classList.contains("nx-splash-on"))).toBe(false);
+  await expect(page.getByTestId("splash")).toBeHidden();
+  await ctx.close();
+});
+
+test("Explore: the launch screen leaves within its cap and takes no clicks while fading", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await ctx.addInitScript(force);
+  const page = await ctx.newPage();
+  await page.goto(`${OK}/`);
   await expect(page.getByTestId("splash")).toBeVisible();
   // the moment it starts to leave: after the mark's first beat, before the cap, and already click-through
   const out = await page.evaluate(
@@ -54,7 +65,6 @@ test("a reading page: the launch screen leaves within its cap and takes no click
   expect(out.at).toBeGreaterThanOrEqual(700);
   expect(out.at).toBeLessThanOrEqual(2600);
   await expect(page.getByTestId("splash")).toBeHidden({ timeout: 2000 });
-  await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
   await ctx.close();
 });
 
@@ -62,7 +72,7 @@ test("reduced motion: a still mark that fades", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
   await ctx.addInitScript(force);
   const page = await ctx.newPage();
-  await page.goto(`${OK}/about`);
+  await page.goto(`${OK}/`);
   await expect(page.getByTestId("splash")).toBeVisible();
   // (the overlay's own 2.5 s cap is a fade; nothing inside it draws or moves)
   const moving = await page.evaluate(() => document.getAnimations().filter((a) => ((a.effect as KeyframeEffect | null)?.target as Element | null)?.parentElement?.closest(".nx-splash")).length);

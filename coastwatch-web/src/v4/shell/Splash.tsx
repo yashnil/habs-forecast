@@ -6,11 +6,13 @@ import { C2, C2_TONES } from "@/v4/brand/c2";
  * It is plain server HTML and CSS (theme.css, "launch screen"), so it paints and animates from the
  * first frame, before any script, and needs no network asset (it works on an offline reopen). The page
  * renders underneath at the same time. A tiny inline script decides, before the first paint, whether
- * it shows at all: not after the first load of the session, not for automated browsers (unless a test
+ * it shows at all: only when a session opens on Explore (where it covers the map loading; a reading
+ * page arrives complete in its HTML, and a launch screen there would only hide it), not after the
+ * first load of the session, not for automated browsers (unless a test
  * asks for it with `nx-splash-force-v1`), not when `nx-splash-off-v1` is set. SplashGate (client)
  * dismisses it when the app is ready; a CSS animation removes it at 2.5 s even if no script runs.
  */
-const DECIDE = `(function(){try{var d=document.documentElement,s=sessionStorage,l=localStorage;if(s.getItem("nx-splash-seen-v1")||l.getItem("nx-splash-off-v1")==="1")return;if(navigator.webdriver&&l.getItem("nx-splash-force-v1")!=="1")return;s.setItem("nx-splash-seen-v1","1");d.classList.add("nx-splash-on")}catch(e){}})()`;
+const DECIDE = `(function(){try{var d=document.documentElement,s=sessionStorage,l=localStorage;if(location.pathname!=="/"||s.getItem("nx-splash-seen-v1")||l.getItem("nx-splash-off-v1")==="1")return;if(navigator.webdriver&&l.getItem("nx-splash-force-v1")!=="1")return;s.setItem("nx-splash-seen-v1","1");d.classList.add("nx-splash-on")}catch(e){}})()`;
 
 const D = C2_TONES.dark;
 // the right-hand stub drawn from the tile's edge inwards (the master draws it outwards)
