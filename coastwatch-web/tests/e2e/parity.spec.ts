@@ -125,6 +125,13 @@ test("notices for a place: the count of those covering its waters leads, the res
   await expect(local.locator('li[data-testid^="notice-"]')).toHaveCount(here);
   await expect(local.getByTestId("notice-cdph-2026-sn26-019-anchovy-central-coast")).toBeVisible();
   await expect(page.getByTestId("notices-panel")).toContainText("Elsewhere in California");
+  // S9: the heading leads with the place's count; the rest of California is one tap away, closed
+  await expect(page.getByTestId("notices-heading")).toHaveText(new RegExp(`^${here} notices? covers? Monterey’s waters · \\d+ in California$`));
+  const elsewhere = page.getByTestId("notices-elsewhere");
+  await expect(elsewhere).not.toHaveAttribute("open", "");
+  await expect(elsewhere.getByTestId("notices-current")).toBeHidden();
+  await elsewhere.locator(":scope > summary").click();
+  await expect(elsewhere.getByTestId("notices-current").locator("li").first()).toBeVisible();
 });
 
 test("advanced harbour summary: each product's neighbourhood statistic with its cells or pixels, size and dates", async ({ page }) => {

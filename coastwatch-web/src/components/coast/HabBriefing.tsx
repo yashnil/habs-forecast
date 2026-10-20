@@ -8,7 +8,7 @@ import type { StationLite } from "@/lib/data";
 import { CHARM_LEADS, artifactUrl, charmLayer } from "@/lib/layers";
 import { charmDays, roleWords, runNotes } from "@/lib/charmDays";
 import { loadGrid } from "@/lib/grid";
-import { CHL_PLACE_RADIUS_KM, chlStaleWord, fmtChlValue, readPlaceChl, type ChlAside } from "@/lib/chlNear";
+import { CHL_PLACE_RADIUS_KM, chlStaleWord, fmtChlValue, readPlaceChl, satBasis, type ChlAside } from "@/lib/chlNear";
 import { CHL_NEAR_COPY } from "@/content/copy";
 import { formatDate } from "@/lib/time";
 import { Mark } from "@/components/ui/Mark";
@@ -63,7 +63,7 @@ export type SatReading =
       pixelLon: number;
       layerId: string;
       /** set when the value is a median of the clear water pixels nearby */
-      basis: { n: number; min: number; max: number; radiusKm: number } | null;
+      basis: { n: number; min: number; max: number; radiusKm: number; oldest?: string | null; most?: string | null } | null;
       aside: ChlAside | null;
       /** whether pixels on land and against the shore could be set aside */
       water: boolean;
@@ -95,7 +95,7 @@ export function useSatellite(manifest: Manifest, baseUrl: string, lat: number | 
           pixelLat: px.lat,
           pixelLon: px.lon,
           layerId: layer.layer_id,
-          basis: s.kind === "median" ? { n: s.n, min: s.min, max: s.max, radiusKm: s.radiusKm } : null,
+          basis: satBasis(s),
           aside: s.aside,
           water: s.water,
         });

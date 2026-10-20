@@ -228,7 +228,7 @@ export function HarborView({ code, ctx }: { code: number; ctx: Ctx }) {
         {evDay && (
           <p className="-mt-1 text-[13px] leading-snug text-n-ink-3" data-testid="harbor-day">
             For {dayLabel(evDay, true)}
-            {mapDay?.date ? ` · the map's C-HARM day: ${dayLabel(mapDay.date, true)}${mapDay.date === evDay ? "" : mapDay.lead === 0 ? " (nowcast)" : " (forecast)"}` : ""}
+            {mapDay?.date ? (mapDay.date === evDay ? ", the C-HARM day on the map" : ` · the map shows C-HARM for ${dayLabel(mapDay.date, true)} (${mapDay.lead === 0 ? "nowcast" : "forecast"})`) : ""}
           </p>
         )}
         {!ev || ev.status === "loading" ? (
