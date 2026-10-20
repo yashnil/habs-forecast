@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible_Next, IBM_Plex_Mono, IBM_Plex_Sans, Newsreader, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { BRAND } from "@/content/brand";
+import { MotionRoot } from "@/v4/shell/MotionRoot";
 
 // Self-hosted by next/font at build time: no runtime request to Google.
 // v2 faces: every v4 surface maps them to the v4 faces, so they are not preloaded (src/v4/theme.css)
@@ -34,7 +35,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     // the font variables live on <html>, so the v4 tokens defined at :root can resolve them
     <html lang="en" className={`${plexSans.variable} ${plexMono.variable} ${newsreader.variable} ${atkinson.variable} ${sourceSerif.variable}`}>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <MotionRoot>{children}</MotionRoot>
+      </body>
     </html>
   );
 }

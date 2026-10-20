@@ -53,7 +53,7 @@ export function PackDialog({ pack, manifest, baseUrl, official, onClose }: { pac
   }, []);
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-[rgba(4,16,22,0.55)] p-3"
+      className="nx-veil fixed inset-0 z-50 grid place-items-center bg-[rgba(4,16,22,0.55)] p-3"
       onClick={(e) => e.target === e.currentTarget && getRun(pack.id).state !== "downloading" && onClose()}
       data-testid="pack-dialog-backdrop"
     >

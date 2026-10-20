@@ -651,7 +651,7 @@ export default function MapCanvas(p: Props) {
         // provenance (lib/provenance): exact cell edges, threads from the point to each source, a dot
         // in the source's mark colour at each end. Threads are connectors, never data colours.
         <Source id="coast-overlay" type="geojson" data={p.overlay} lineMetrics>
-          <Layer id="coast-cell-fill" type="fill" filter={["==", ["get", "kind"], "cell"]} paint={{ "fill-color": MODEL_MARK, "fill-opacity": 0.12 }} />
+          <Layer id="coast-cell-fill" type="fill" filter={["==", ["get", "kind"], "cell"]} paint={{ "fill-color": MODEL_MARK, "fill-opacity": 0.12, "fill-opacity-transition": { duration: 200, delay: 0 } }} />
           <Layer id="coast-cell-line" type="line" filter={["==", ["get", "kind"], "cell"]} paint={{ "line-color": "#d9ccff", "line-width": 1.6 }} />
           {THREADS.map(({ to, color }) => (
             <Layer
@@ -860,8 +860,8 @@ export default function MapCanvas(p: Props) {
         // v4: the selection, last in the stack so nothing covers it; its label is always placed
         // and the other labels move out of its way
         <Source id="v4-highlight" type="geojson" data={p.highlight}>
-          <Layer id="v4-hl-fill" type="fill" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "fill-color": ["match", ["get", "kind"], "cell", MODEL_MARK, "#5fd0e6"], "fill-opacity": ["match", ["get", "kind"], "cell", 0.16, 0.07] }} />
-          <Layer id="v4-hl-halo" type="line" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "line-color": "#04121a", "line-width": 5, "line-opacity": 0.55 }} />
+          <Layer id="v4-hl-fill" type="fill" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "fill-color": ["match", ["get", "kind"], "cell", MODEL_MARK, "#5fd0e6"], "fill-opacity": ["match", ["get", "kind"], "cell", 0.16, 0.07], "fill-opacity-transition": { duration: 200, delay: 0 } }} />
+          <Layer id="v4-hl-halo" type="line" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "line-color": "#04121a", "line-width": 5, "line-opacity": 0.55, "line-opacity-transition": { duration: 200, delay: 0 } }} />
           <Layer id="v4-hl-line" type="line" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "line-color": ["match", ["get", "kind"], "cell", "#e6dbff", "#5fd0e6"], "line-width": 2, "line-dasharray": ["match", ["get", "kind"], "area", ["literal", [3, 2]], ["literal", [1, 0]]] }} />
           {/* observation pixels and footprints (Research): neutral white, never the model's colour */}
           <Layer id="v4-hl-pixel-halo" type="line" filter={["in", ["get", "kind"], ["literal", ["pixel", "footprint"]]]} paint={{ "line-color": "#04121a", "line-width": ["match", ["get", "kind"], "pixel", 4.5, 2.6], "line-opacity": 0.6 }} />

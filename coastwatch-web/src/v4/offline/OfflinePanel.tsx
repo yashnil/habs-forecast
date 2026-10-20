@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/v4/ui/toast";
 import { useEffect, useMemo, useState } from "react";
 import type { Manifest } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
@@ -93,6 +94,7 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
         ac.signal,
       );
       packChanged(pack.id);
+      if (rec.complete && !ac.signal.aborted) toast(`${pack.name} saved for offline use`);
       setRun(pack.id, { state: ac.signal.aborted ? "cancelled" : rec.complete ? "done" : "failed", ac: null });
       setSource({ id: "pack", label: `Field pack: ${pack.name}`, state: rec.complete ? "ready" : "incomplete", detail: rec.complete ? `Saved ${mb(rec.totalBytes)}, verified` : `${rec.verified?.missing ?? "Some"} files missing; download again to finish`, asOf: rec.savedAt });
     } catch (e) {

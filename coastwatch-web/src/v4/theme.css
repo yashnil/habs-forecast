@@ -105,13 +105,26 @@
   --nx-font-display: var(--font-source-serif), "Iowan Old Style", Georgia, serif;
   --nx-font-data: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* motion: short, ease-out, interruptible; frequent map operations are instant */
+  /* motion: short, ease-out, interruptible; frequent map operations are instant. Exits are about a
+     third faster than entrances and ease in. Data values never animate (src/v4/motion.ts). */
+  --nx-t-press: 110ms;
+  --nx-t-hover: 150ms;
+  --nx-t-pop: 180ms;
+  --nx-t-pop-exit: 120ms;
+  --nx-t-panel: 240ms;
+  --nx-t-panel-exit: 160ms;
+  --nx-t-page: 260ms;
+  --nx-t-sheet: 460ms;
   --nx-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --nx-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --nx-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --nx-ease-move: cubic-bezier(0.77, 0, 0.175, 1);
   --nx-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-  --nx-t-quick: 120ms;
-  --nx-t-base: 180ms;
-  --nx-t-sheet: 300ms;
+  /* older names, kept for the components that use them */
+  --nx-ease-in-out: var(--nx-ease-move);
+  --nx-t-quick: var(--nx-t-press);
+  --nx-t-base: var(--nx-t-pop);
+  /* movement multiplier: 1, or 0 under reduced motion (fades stay, nothing travels) */
+  --nx-shift: 1;
 
   /* field ergonomics: primary controls on phones are 56 px, secondary ones at least 44 px */
   --nx-hit-field: 56px;
@@ -244,30 +257,94 @@
   color: var(--nx-ink-3);
 }
 .nx-press {
-  transition: transform var(--nx-t-quick) var(--nx-ease-out), background-color var(--nx-t-quick) var(--nx-ease-out), color var(--nx-t-quick) var(--nx-ease-out);
+  transition: transform var(--nx-t-press) var(--nx-ease-out), background-color var(--nx-t-hover) var(--nx-ease-out), color var(--nx-t-hover) var(--nx-ease-out), border-color var(--nx-t-hover) var(--nx-ease-out);
 }
 .nx-press:active {
-  transform: scale(0.97);
+  transform: scale(calc(1 - 0.03 * var(--nx-shift)));
+}
+/* the focus ring settles in (4 px out to 2 px) instead of snapping */
+.nx-focus {
+  outline: 2px solid transparent;
+  outline-offset: 4px;
+  transition-property: outline-color, outline-offset, transform, background-color, color, border-color;
+  transition-duration: 120ms, 120ms, var(--nx-t-press), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover);
+  transition-timing-function: var(--nx-ease-out);
 }
 .nx-focus:focus-visible {
   outline: 2px solid var(--nx-accent);
   outline-offset: 2px;
 }
+@media (forced-colors: active) {
+  .nx-focus { outline-style: none; }
+  .nx-focus:focus-visible { outline-style: solid; }
+}
+/* rows and options: the hover tint eases in */
+.nx-row {
+  transition: background-color var(--nx-t-hover) var(--nx-ease-out), color var(--nx-t-hover) var(--nx-ease-out);
+}
+/* cards that lead somewhere lift a pixel under a mouse (never on touch) */
+@media (hover: hover) {
+  .nx-lift {
+    transition-property: transform, border-color, background-color, outline-color, outline-offset;
+    transition-duration: var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), 120ms, 120ms;
+    transition-timing-function: var(--nx-ease-out);
+  }
+  .nx-lift:hover {
+    transform: translateY(calc(-1px * var(--nx-shift)));
+  }
+  .nx-lift.nx-press:hover:active {
+    transform: translateY(calc(-1px * var(--nx-shift))) scale(calc(1 - 0.03 * var(--nx-shift)));
+  }
+}
 
 @keyframes nx-rise {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(calc(6px * var(--nx-shift))); }
   to { opacity: 1; transform: none; }
 }
-@keyframes nx-sheet {
-  from { transform: translateY(100%); }
-  to { transform: none; }
+@keyframes nx-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes nx-panel {
-  from { opacity: 0; transform: translateX(12px); }
+  from { opacity: 0; transform: translateX(calc(16px * var(--nx-shift))); }
   to { opacity: 1; transform: none; }
 }
-.nx-rise { animation: nx-rise var(--nx-t-base) var(--nx-ease-out) both; }
-.nx-panel { animation: nx-panel 220ms var(--nx-ease-out) both; }
+.nx-rise { animation: nx-rise var(--nx-t-pop) var(--nx-ease-out) both; }
+.nx-fade { animation: nx-fade var(--nx-t-pop) var(--nx-ease-out) both; }
+.nx-panel { animation: nx-panel var(--nx-t-panel) var(--nx-ease-out) both; }
+
+/* popovers grow from their trigger (scale 0.96 and a fade) and leave faster than they came; while
+   leaving (data-state=closed, src/v4/motion.ts usePresence) they are inert and take no clicks */
+@keyframes nx-pop-in {
+  from { opacity: 0; transform: scale(calc(1 - 0.04 * var(--nx-shift))); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nx-pop-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: scale(calc(1 - 0.03 * var(--nx-shift))); }
+}
+.nx-pop {
+  transform-origin: var(--nx-origin, top right);
+  animation: nx-pop-in var(--nx-t-pop) var(--nx-ease-out) both;
+}
+.nx-pop[data-state="closed"] {
+  animation: nx-pop-out var(--nx-t-pop-exit) var(--nx-ease-in) both;
+  pointer-events: none;
+}
+.nx-origin-left { --nx-origin: top left; }
+/* a modal's veil fades; a modal rises from just below */
+.nx-veil { animation: nx-fade var(--nx-t-pop) var(--nx-ease-out) both; }
+
+/* the toast: up 8 px and in; out faster */
+@keyframes nx-toast-in {
+  from { opacity: 0; transform: translateY(calc(8px * var(--nx-shift))); }
+  to { opacity: 1; transform: none; }
+}
+.nx-toast { animation: nx-toast-in 200ms var(--nx-ease-out) both; }
+.nx-toast[data-state="closed"] { animation: nx-pop-out 150ms var(--nx-ease-in) both; }
+
+/* loading words and placeholders appear only after 400 ms of real waiting (a fast answer never flickers) */
+.nx-late { animation: nx-fade 200ms var(--nx-ease-out) 400ms both; }
 
 /* the loading contour: one slow sweep along a bathymetric line, only while something loads */
 @keyframes nx-sweep {
@@ -275,6 +352,51 @@
   to { stroke-dashoffset: 0; }
 }
 .nx-sweep { stroke-dasharray: 60 180; animation: nx-sweep 1.6s linear infinite; }
+/* contour lines draw themselves in once (pathLength=1), staggered by --i */
+@keyframes nx-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.nx-draw {
+  stroke-dasharray: 1;
+  animation: nx-draw 600ms var(--nx-ease-out) calc(var(--i, 0) * 60ms) both;
+}
+/* a chart's line draws once, the first time it is seen; its points follow */
+.nx-chart-wait .nx-chart-line { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.nx-chart-wait .nx-chart-marks { opacity: 0; }
+.nx-chart-draw .nx-chart-line { stroke-dasharray: 1; animation: nx-draw 500ms var(--nx-ease-out) both; }
+.nx-chart-draw .nx-chart-marks { animation: nx-fade 300ms var(--nx-ease-out) 300ms both; }
+
+/* a disclosure opens by height (grid rows 0fr to 1fr) and its body fades in just after */
+.nx-fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--nx-t-panel) var(--nx-ease-move);
+}
+.nx-fold[data-open="true"] { grid-template-rows: 1fr; }
+.nx-fold > * { min-height: 0; overflow: clip; overflow-clip-margin: 4px; }
+.nx-fold > * { opacity: 0; transition: opacity var(--nx-t-pop) var(--nx-ease-out); }
+.nx-fold[data-open="true"] > * { opacity: 1; transition-delay: 60ms; }
+/* native disclosures in v4 do the same where the browser can (::details-content, interpolate-size) */
+@supports selector(::details-content) {
+  .env-chart details,
+  .env-instrument details {
+    interpolate-size: allow-keywords;
+  }
+  .env-chart details::details-content,
+  .env-instrument details::details-content {
+    block-size: 0;
+    overflow: clip;
+    overflow-clip-margin: 4px;
+    opacity: 0;
+    transition: block-size var(--nx-t-panel) var(--nx-ease-move), opacity var(--nx-t-pop) var(--nx-ease-out), content-visibility var(--nx-t-panel) allow-discrete;
+  }
+  .env-chart details[open]::details-content,
+  .env-instrument details[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
+}
 
 /* skeleton text: a flat tone, no shimmer (a shimmer reads as activity that is not happening) */
 .nx-skeleton {
@@ -283,8 +405,14 @@
   color: transparent;
 }
 
+/* Reduced motion: fades stay, movement goes (--nx-shift: 0 above); loops and draws stop */
 @media (prefers-reduced-motion: reduce) {
+  :root { --nx-shift: 0; }
   .nx-sweep { animation: none; stroke-dasharray: none; }
+  .nx-draw, .nx-chart-draw .nx-chart-line, .nx-chart-draw .nx-chart-marks { animation: none; }
+  .nx-chart-wait .nx-chart-line { stroke-dashoffset: 0; }
+  .nx-chart-wait .nx-chart-marks { opacity: 1; }
+  .nx-fold { transition: none; }
 }
 @media (prefers-contrast: more) {
   .env-instrument {

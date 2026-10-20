@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/v4/ui/toast";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MlMap } from "maplibre-gl";
@@ -47,6 +48,8 @@ import { useRecordSource } from "@/v4/offline/OfflinePanel";
 import { PackDialog } from "@/v4/offline/PackDialog";
 import { OfflineBanner } from "@/v4/offline/OfflineBanner";
 import { readHomePort } from "@/v4/state/homePort";
+import { AnimatePresence, motion, useIsPresent } from "motion/react";
+import { EASE_IN, EASE_OUT, SPRING, T } from "@/v4/motion";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
 
@@ -180,13 +183,23 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       // only when focus was lost with the panel (or is on nothing): never pulled from where the reader went
       // (to the search field's frame, not the field itself, so its list does not open again)
       const to = o?.closest<HTMLElement>("#place-search") ?? o;
-      if (to?.isConnected && (!a || a === document.body || !a.isConnected)) to.focus({ preventScroll: true });
+      // (the closing panel stays a moment for its exit, inert: focus inside it counts as lost)
+      if (to?.isConnected && (!a || a === document.body || !a.isConnected || a.closest("[inert]"))) to.focus({ preventScroll: true });
     }
     if (selection && focusPanel.current) {
       focusPanel.current = false;
       requestAnimationFrame(() => panelRef.current?.focus({ preventScroll: true }));
     }
   }, [selection]);
+
+  // a new selection in an open panel: the body cross-fades (the panel itself stays put)
+  const selKey = selection ? JSON.stringify(selection) : null;
+  const lastKey = useRef(selKey);
+  useEffect(() => {
+    const was = lastKey.current;
+    lastKey.current = selKey;
+    if (was && selKey && was !== selKey) panelRef.current?.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: "cubic-bezier(0.23, 1, 0.32, 1)" });
+  }, [selKey]);
 
   // URL: layer and selection; the camera is written when the view settles (replaceState, not history)
   const [region, setRegion] = useState<string>(q0.get("region") ?? "california");
@@ -342,6 +355,15 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const [deckOpen, setDeckOpen] = useState(false);
   useEffect(() => setDeckOpen(false), [selection]);
   const deckCompact = bp === "desktop" && panelOpen && !deckOpen;
+  // the capsule and the deck are one surface that folds and unfolds (shared layout); the content
+  // inside fades in once the shape has mostly arrived. Only after the first fold: the deck never fades on load.
+  const [prevCompact, setPrevCompact] = useState(deckCompact);
+  const [morphed, setMorphed] = useState(false);
+  if (prevCompact !== deckCompact) {
+    setPrevCompact(deckCompact);
+    setMorphed(true);
+  }
+  const inner = morphed ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { delay: 0.12, duration: 0.12 } } : { initial: false as const };
   // `open`: frame for the panel being open (a camera move made for a new selection, in the same
   // step that selects it, before panelOpen has caught up)
   const padding = useCallback((open: boolean = panelOpen) => {
@@ -684,18 +706,23 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   ].filter(Boolean);
   const capsule = (
     <div className="absolute left-4 top-[76px] z-20 flex max-w-[480px] flex-col items-start gap-1.5">
-      <button
+      <motion.button
         type="button"
+        layoutId="layer-deck"
+        transition={SPRING}
+        style={{ borderRadius: 22 }}
         aria-expanded={false}
         aria-label={`Map layers: ${capsuleWords.join(", ")}. Show the layers and legend`}
         onClick={() => setDeckOpen(true)}
-        className="nx-press nx-focus flex min-h-11 max-w-full items-center gap-2 rounded-full border border-n-line bg-n-surface pl-3 pr-2.5 text-[14px] font-semibold text-n-ink shadow-[var(--nx-shadow)]"
+        className="nx-press nx-focus flex min-h-11 max-w-full items-center gap-2 border border-n-line bg-n-surface pl-3 pr-2.5 text-[14px] font-semibold text-n-ink shadow-[var(--nx-shadow)]"
         data-testid="layer-capsule"
       >
-        <Icon name="layers" className="h-[18px] w-[18px] shrink-0 text-n-accent" />
-        <span className="truncate">{capsuleWords.join(" · ")}</span>
-        <Icon name="chevronDown" className="h-4 w-4 shrink-0 text-n-ink-3" />
-      </button>
+        <motion.span layout="position" {...inner} className="flex min-w-0 items-center gap-2">
+          <Icon name="layers" className="h-[18px] w-[18px] shrink-0 text-n-accent" />
+          <span className="truncate">{capsuleWords.join(" · ")}</span>
+          <Icon name="chevronDown" className="h-4 w-4 shrink-0 text-n-ink-3" />
+        </motion.span>
+      </motion.button>
       {/* the deck carried the credits: folded, they stay on the map */}
       <MapCredits />
     </div>
@@ -818,7 +845,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // clip, not hidden: a hidden overflow can still be scrolled by focus or scrollIntoView, which slid
   // the whole workspace (and the dock) up the screen on phones
   return (
-    <div className="env-instrument relative h-dvh w-full overflow-clip" data-testid="explore">
+    <div className="env-instrument cw-fade-in relative h-dvh w-full overflow-clip" data-testid="explore">
       <SkipLink to="place-search" label="Skip to search places" />
       <h1 className="sr-only">Explore: harmful algal bloom evidence on the California coast{placeName ? `, ${placeName}` : ""}</h1>
       <div className="absolute inset-0" data-testid="map">
@@ -827,7 +854,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       {hoverSource && bp !== "phone" && <HoverLayer sink={hoverSink} manifest={manifest} baseUrl={baseUrl} source={hoverSource} panelOpen={panelOpen} />}
       {packOpen && <PackDialog pack={pack} manifest={manifest} baseUrl={baseUrl} official={official} onClose={() => setPackOpen(false)} />}
       {/* the start card: what is loading, what can be done meanwhile (never a bare spinner) */}
-      {starting && <StartCard now={now} />}
+      <AnimatePresence>{starting && <StartCard key="start" now={now} />}</AnimatePresence>
       {areaMode && (
         <div
           {...areaHandlers}
@@ -861,7 +888,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           {deckCompact ? (
             capsule
           ) : (
-            <aside aria-label="Map layers" className="nx-deck absolute bottom-4 left-4 top-[76px] z-20 flex flex-col overflow-hidden" style={{ width: LAYERS }} data-testid="layer-deck">
+            <motion.aside layoutId="layer-deck" transition={SPRING} aria-label="Map layers" className="nx-deck absolute bottom-4 left-4 top-[76px] z-20 flex flex-col overflow-hidden" style={{ width: LAYERS, borderRadius: 18 }} data-testid="layer-deck">
+              <motion.div layout="position" {...inner} className="flex min-h-0 flex-1 flex-col">
               {panelOpen && (
                 <button type="button" aria-expanded onClick={() => setDeckOpen(false)} className="nx-focus flex min-h-11 shrink-0 items-center justify-between border-b border-n-line px-3 text-[14px] font-semibold text-n-ink-2 hover:text-n-ink" data-testid="layer-deck-fold">
                   <span className="flex items-center gap-2">
@@ -874,7 +902,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
               <div className="border-t border-n-line px-3 py-2">
                 <Attribution />
               </div>
-            </aside>
+              </motion.div>
+            </motion.aside>
           )}
           <div className="absolute bottom-4 z-20" style={{ left: deckCompact ? 16 : LAYERS + 28, right: (panelOpen ? PANEL + 28 : 0) + 84 }}>
             {/* a deck only for a layer that has published frames (the multi-sensor view has none) */}
@@ -887,11 +916,13 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           <div className="absolute bottom-4 z-20" style={{ right: (panelOpen ? PANEL + 28 : 0) + 16 }}>
             {mapControls}
           </div>
-          {inspection && (
-            <aside aria-label="Selected" className="env-chart nx-deck nx-panel absolute bottom-4 right-4 top-[76px] z-20 overflow-y-auto overscroll-contain p-5 text-n-ink [scrollbar-width:thin]" style={{ width: PANEL }}>
-              {inspection}
-            </aside>
-          )}
+          <AnimatePresence>
+            {inspection && (
+              <InspectAside key="inspect" className="env-chart nx-deck absolute bottom-4 right-4 top-[76px] z-20 overflow-y-auto overscroll-contain p-5 text-n-ink [scrollbar-width:thin]" style={{ width: PANEL }}>
+                {inspection}
+              </InspectAside>
+            )}
+          </AnimatePresence>
         </>
       )}
 
@@ -924,11 +955,13 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           <div className="absolute bottom-4 z-20" style={{ right: (panelOpen ? 396 : 0) + 16 }}>
             {mapControls}
           </div>
-          {inspection && (
-            <aside aria-label="Selected" className="env-chart nx-deck nx-panel absolute bottom-4 right-4 top-[76px] z-20 w-[380px] overflow-y-auto p-4 text-n-ink">
-              {inspection}
-            </aside>
-          )}
+          <AnimatePresence>
+            {inspection && (
+              <InspectAside key="inspect" className="env-chart nx-deck absolute bottom-4 right-4 top-[76px] z-20 w-[380px] overflow-y-auto p-4 text-n-ink">
+                {inspection}
+              </InspectAside>
+            )}
+          </AnimatePresence>
         </>
       )}
 
@@ -1043,6 +1076,7 @@ function ShareButton({ className }: { className: string }) {
         try {
           await navigator.clipboard.writeText(window.location.href);
           setDone(true);
+          toast("Link copied");
           setTimeout(() => setDone(false), 1800);
         } catch {
           setDone(false);
@@ -1060,11 +1094,22 @@ function ShareButton({ className }: { className: string }) {
 }
 
 function StartCard({ now }: { now: Date | null }) {
+  // it appears only after 400 ms of real waiting, and steps back (fade, 0.98) as the map arrives;
+  // while leaving it is inert and has no test id
+  const present = useIsPresent();
   return (
-    <div className="pointer-events-none absolute inset-0 z-[15] grid place-items-center p-4" data-testid="start-card">
+    <motion.div
+      className="pointer-events-none absolute inset-0 z-[15] grid place-items-center p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1, transition: { delay: 0.4, duration: 0.2, ease: EASE_OUT } }}
+      exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.22, ease: EASE_IN } }}
+      data-testid={present ? "start-card" : undefined}
+      inert={!present}
+      aria-hidden={!present || undefined}
+    >
       <svg className="absolute inset-0 h-full w-full text-n-accent opacity-25" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden>
         {[0, 1, 2, 3, 4].map((i) => (
-          <path key={i} className={i === 2 ? "nx-sweep" : undefined} d={`M-20 ${70 + i * 38} C 80 ${40 + i * 40}, 160 ${120 + i * 30}, 240 ${80 + i * 38} S 380 ${110 + i * 34}, 430 ${90 + i * 38}`} fill="none" stroke="currentColor" strokeWidth={i === 2 ? 1.6 : 0.8} />
+          <path key={i} className={i === 2 ? "nx-sweep" : "nx-draw"} pathLength={i === 2 ? undefined : 1} style={{ "--i": i } as React.CSSProperties} d={`M-20 ${70 + i * 38} C 80 ${40 + i * 40}, 160 ${120 + i * 30}, 240 ${80 + i * 38} S 380 ${110 + i * 34}, 430 ${90 + i * 38}`} fill="none" stroke="currentColor" strokeWidth={i === 2 ? 1.6 : 0.8} />
         ))}
       </svg>
       <div className="nx-deck pointer-events-auto relative w-[min(440px,100%)] p-5">
@@ -1074,7 +1119,30 @@ function StartCard({ now }: { now: Date | null }) {
           <SourceList now={now} compact />
         </div>
       </div>
-    </div>
+    </motion.div>
+  );
+}
+
+/**
+ * The selection's panel: slides in 16 px and fades (240 ms); leaves 8 px and fades faster (160 ms),
+ * inert and hidden from assistive tech while it goes. A new selection keeps the panel and only
+ * cross-fades its body (Explore). Reduced motion: fades only (MotionConfig).
+ */
+function InspectAside({ className, style, children }: { className: string; style?: React.CSSProperties; children: React.ReactNode }) {
+  const present = useIsPresent();
+  return (
+    <motion.aside
+      aria-label="Selected"
+      className={className}
+      style={style}
+      initial={{ opacity: 0, x: 16 }}
+      animate={{ opacity: 1, x: 0, transition: { duration: T.panel, ease: EASE_OUT } }}
+      exit={{ opacity: 0, x: 8, transition: { duration: T.panelExit, ease: EASE_IN } }}
+      inert={!present}
+      aria-hidden={!present || undefined}
+    >
+      {children}
+    </motion.aside>
   );
 }
 

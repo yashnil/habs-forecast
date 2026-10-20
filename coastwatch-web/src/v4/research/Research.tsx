@@ -422,7 +422,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
           </ul>
         </nav>
 
-        <main id="main" className="flex min-w-0 flex-col gap-6">
+        <main id="main" className="cw-page-in flex min-w-0 flex-col gap-6">
           <header className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
               <p className="nx-eyebrow">Research · station record</p>

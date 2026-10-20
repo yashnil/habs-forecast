@@ -182,7 +182,7 @@ export function ClaimRow({ c, graph, stations, onSelect, fallback = null }: { c:
 
 function Loading({ what }: { what: string }) {
   return (
-    <p className="flex items-center gap-2 text-[14px] text-n-ink-2" role="status">
+    <p className="nx-late flex items-center gap-2 text-[14px] text-n-ink-2" role="status">
       <svg width="28" height="10" viewBox="0 0 28 10" aria-hidden className="text-n-accent">
         <path className="nx-sweep" d="M1 6c4-4 7-4 11 0s7 4 11 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
       </svg>

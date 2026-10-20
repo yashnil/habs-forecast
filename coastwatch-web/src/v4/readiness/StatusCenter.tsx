@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@/v4/ui/Icon";
+import { exitProps, usePresence } from "@/v4/motion";
 import { OVERALL_WORDS, STATE_WORDS, overall, sortedSources, useReadinessSnapshot, type Overall, type SourceState } from "./store";
 import { relTime } from "@/v4/ui/time";
 
@@ -108,6 +109,7 @@ export function StatusCenter({ now, align = "right", compact = false }: { now: D
   const snap = useReadinessSnapshot();
   const state = overall(snap);
   const [open, setOpen] = useState(false);
+  const pop = usePresence(open);
   const id = useId();
   const box = useRef<HTMLDivElement | null>(null);
   const said = useCalmAnnouncement(state, snap.online);
@@ -149,15 +151,15 @@ export function StatusCenter({ now, align = "right", compact = false }: { now: D
       <span className="sr-only" role="status" aria-live="polite">
         {said}
       </span>
-      {open && (
+      {pop.mounted && (
         <div
           id={id}
           role="dialog"
           aria-label="Data and connection status"
           // on a phone the panel spans the screen under the top bar (as the notices panel does): hung from
           // the button it ran off the left edge; elsewhere it hangs from the button
-          className={`nx-rise fixed inset-x-3 top-[64px] z-50 max-h-[calc(100dvh-80px)] overflow-y-auto overscroll-contain rounded-2xl border border-n-line bg-n-surface p-4 text-n-ink shadow-[var(--nx-shadow)] md:absolute md:inset-x-auto md:top-[52px] md:max-h-[min(72vh,680px)] md:w-[380px] ${align === "right" ? "md:right-0" : "md:left-0"}`}
-          data-testid="status-panel"
+          className={`nx-pop fixed inset-x-3 top-[64px] z-50 max-h-[calc(100dvh-80px)] overflow-y-auto overscroll-contain rounded-[18px] border border-n-line bg-n-surface p-4 text-n-ink shadow-[var(--nx-shadow)] md:absolute md:inset-x-auto md:top-[52px] md:max-h-[min(72vh,680px)] md:w-[380px] ${align === "right" ? "md:right-0" : "md:left-0 nx-origin-left"}`}
+          {...exitProps(pop.state, "status-panel")}
         >
           <div className="flex items-center justify-between">
             <p className="text-[16px] font-semibold">{OVERALL_WORDS[state]}</p>

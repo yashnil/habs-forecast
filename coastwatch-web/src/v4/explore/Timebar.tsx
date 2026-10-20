@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { motion } from "motion/react";
+import { SPRING } from "@/v4/motion";
 import type { Manifest } from "@/generated/schema";
 import { charmRun, satelliteDays, satelliteLatest, type SatProduct } from "@/lib/layers";
 import { currentsHourly, currentsMean, defaultHour, observedCells, usableHours } from "@/lib/currents";
@@ -83,6 +85,10 @@ export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null): { titl
 export function Timebar({ manifest, choice, onChoice, now, compact = false }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; now: Date | null; compact?: boolean }) {
   const t = timeSteps(manifest, choice, now);
   const row = useRef<HTMLDivElement | null>(null);
+  // one selected pill that slides between frames (the map itself still cuts from frame to frame);
+  // a held arrow key jumps it, so fast stepping never queues motion
+  const pill = `time-pill-${useId()}`;
+  const [instant, setInstant] = useState(false);
   const current = t?.current;
   // the selected frame is always in view (a narrow timebar scrolls)
   useEffect(() => {
@@ -101,6 +107,7 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false }: { 
       aria-label="Time"
       data-testid="timebar"
       onKeyDown={(e) => {
+        setInstant(e.repeat);
         if (e.key === "ArrowRight") go(i + 1);
         else if (e.key === "ArrowLeft") go(i - 1);
         else if (e.key === "Home") go(0);
@@ -115,7 +122,7 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false }: { 
         <button type="button" aria-label="Earlier" onClick={() => go(i - 1)} disabled={i === 0} className="nx-press nx-focus grid w-11 shrink-0 place-items-center rounded-lg border border-n-line-strong text-n-ink-2 disabled:opacity-35 max-md:min-h-[56px] md:min-h-11">
           <Icon name="back" className="h-5 w-5" />
         </button>
-        <div ref={row} className="relative flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none]" role="radiogroup" aria-label={t.title}>
+        <motion.div layoutScroll ref={row} className="relative flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none]" role="radiogroup" aria-label={t.title}>
           {t.steps.map((s) => {
             const on = s.key === t.current;
             return (
@@ -126,14 +133,18 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false }: { 
                 aria-checked={on}
                 tabIndex={on ? 0 : -1}
                 disabled={s.disabled}
-                onClick={() => onChoice(s.choice)}
+                onClick={() => {
+                  setInstant(false);
+                  onChoice(s.choice);
+                }}
                 data-testid={`time-${s.key}`}
                 data-incomplete={s.incomplete ? "true" : undefined}
-                className={`nx-focus relative flex min-w-fit flex-1 shrink-0 basis-[84px] flex-col items-center justify-center rounded-lg px-2 py-1 text-center disabled:opacity-35 max-md:min-h-[56px] md:min-h-12 ${
-                  on ? "bg-n-ink text-n-bg" : "bg-n-surface-2 text-n-ink hover:bg-n-surface-3"
+                className={`nx-focus relative isolate flex min-w-fit flex-1 shrink-0 basis-[84px] flex-col items-center justify-center rounded-lg px-2 py-1 text-center disabled:opacity-35 max-md:min-h-[56px] md:min-h-12 ${
+                  on ? "text-n-bg" : "nx-row bg-n-surface-2 text-n-ink hover:bg-n-surface-3"
                 }`}
                 style={s.forecast && !on ? { backgroundImage: "repeating-linear-gradient(135deg, transparent 0 6px, rgba(194,168,245,0.10) 6px 8px)" } : undefined}
               >
+                {on && <motion.span aria-hidden layoutId={pill} transition={instant ? { duration: 0 } : SPRING} className="absolute inset-0 -z-10 rounded-lg bg-n-ink" />}
                 {s.top && <span className={`text-[11.5px] leading-tight ${on ? "opacity-80" : "text-n-ink-3"}`}>{s.top}</span>}
                 <span className="whitespace-nowrap text-[14px] font-semibold leading-tight">{s.label}</span>
                 <span className={`whitespace-nowrap text-[11.5px] ${on ? "opacity-80" : "text-n-ink-3"}`}>
@@ -143,7 +154,7 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false }: { 
               </button>
             );
           })}
-        </div>
+        </motion.div>
         <button type="button" aria-label="Later" onClick={() => go(i + 1)} disabled={i === t.steps.length - 1} className="nx-press nx-focus grid w-11 shrink-0 place-items-center rounded-lg border border-n-line-strong text-n-ink-2 disabled:opacity-35 max-md:min-h-[56px] md:min-h-11">
           <Icon name="chevronRight" className="h-5 w-5" />
         </button>

@@ -90,6 +90,7 @@ export function SeriesChart({
   const flagged = inWin.filter((s) => s.q === "flag_high" && s.value != null);
   const zeros = inWin.some((s) => s.q === "reported_zero" || s.value === 0);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const draw = useDrawOnce(svgRef);
   const id = useId();
   const color = tone === "model" ? "var(--nx-model)" : "var(--nx-measured)";
   const sel = cur != null ? inWin[cur] : null;
@@ -137,7 +138,7 @@ export function SeriesChart({
         viewBox={`0 0 ${W} ${H}`}
         width={W}
         height={H}
-        className="block touch-pan-y select-none"
+        className={`block touch-pan-y select-none ${draw === "wait" ? "nx-chart-wait" : draw === "draw" ? "nx-chart-draw" : ""}`}
         role="img"
         aria-labelledby={`${id}-t`}
         tabIndex={0}
@@ -179,8 +180,9 @@ export function SeriesChart({
           </g>
         )}
         {segs.map((sg, i) => (
-          <polyline key={i} points={sg.map((s) => `${x(s.t)},${y(s.value!)}`).join(" ")} fill="none" stroke={color} strokeWidth={1.8} strokeLinejoin="round" />
+          <polyline key={i} className="nx-chart-line" pathLength={1} points={sg.map((s) => `${x(s.t)},${y(s.value!)}`).join(" ")} fill="none" stroke={color} strokeWidth={1.8} strokeLinejoin="round" />
         ))}
+        <g className="nx-chart-marks">
         {inWin.map((s, i) => {
           if (s.q === "rejected_negative") {
             const cx = x(s.t);
@@ -212,6 +214,7 @@ export function SeriesChart({
             </g>
           );
         })}
+        </g>
         {(sel || (controlled && cursorT != null && cursorT >= from && cursorT <= to)) && (
           <line x1={x(sel?.t ?? cursorT!)} x2={x(sel?.t ?? cursorT!)} y1={pad.t} y2={pad.t + ih} stroke="var(--nx-ink-3)" strokeDasharray="2 3" data-testid="series-cursor" />
         )}
@@ -320,4 +323,36 @@ export function tickLabel(t: number, from: number, to: number): string {
 /** StationLite.recent pairs → samples */
 export function recentSamples(pairs: [string, number | null][] | undefined): Sample[] {
   return (pairs ?? []).map(([d, v], i) => ({ t: Date.parse(`${d}T12:00:00Z`), time: d, value: v, q: v === 0 ? "reported_zero" : null, index: i }));
+}
+
+/**
+ * A chart's line draws itself once, the first time it comes into view (a chart already on the screen
+ * when the page opens is left as drawn). Never again: not on a new window, a hover or new data.
+ */
+function useDrawOnce(ref: React.RefObject<SVGSVGElement | null>): "idle" | "wait" | "draw" | "done" {
+  const [phase, setPhase] = useState<"idle" | "wait" | "draw" | "done">("idle");
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const r = el.getBoundingClientRect();
+    if (r.width > 0 && r.top < window.innerHeight && r.bottom > 0) return;
+    let t = 0;
+    const io = new IntersectionObserver(
+      (es) => {
+        if (!es.some((e) => e.isIntersecting)) return setPhase("wait");
+        io.disconnect();
+        setPhase("draw");
+        t = window.setTimeout(() => setPhase("done"), 700);
+      },
+      { threshold: 0.25 },
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      window.clearTimeout(t);
+    };
+    // once per chart
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return phase;
 }

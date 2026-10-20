@@ -154,7 +154,7 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
         <kbd className="hidden rounded border border-n-line px-1.5 text-[12px] text-n-ink-3 md:block">/</kbd>
       </div>
       {open && hits.length > 0 && (
-        <ul id={`${id}-list`} role="listbox" aria-label="Places" className="nx-rise absolute left-0 right-0 top-[52px] z-50 max-h-[60vh] overflow-auto rounded-2xl border border-n-line bg-n-surface p-1.5 shadow-[var(--nx-shadow)]" data-testid="place-search-list">
+        <ul id={`${id}-list`} role="listbox" aria-label="Places" className="nx-pop nx-origin-left absolute left-0 right-0 top-[52px] z-50 max-h-[60vh] overflow-auto rounded-[18px] border border-n-line bg-n-surface p-1.5 shadow-[var(--nx-shadow)]" data-testid="place-search-list">
           {hits.map((h, k) => (
             <li
               key={`${h.kind}-${h.id}`}
@@ -166,7 +166,7 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
                 pick(h);
               }}
               onMouseEnter={() => setI(k)}
-              className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-lg px-3 ${k === i ? "bg-n-surface-2" : ""}`}
+              className={`nx-row flex min-h-12 cursor-pointer items-center gap-3 rounded-lg px-3 ${k === i ? "bg-n-surface-2" : ""}`}
             >
               <Icon name={h.kind === "harbor" ? "harbor" : h.kind === "station" ? "station" : "map"} className="h-[18px] w-[18px] shrink-0 text-n-ink-3" />
               <span className="min-w-0">
@@ -182,7 +182,7 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
       )}
       {open && q.trim() !== "" && hits.length === 0 && (
         // nothing matched: say so, and offer the next step instead of an empty box
-        <div role="status" className="nx-rise absolute left-0 right-0 top-[52px] z-50 rounded-2xl border border-n-line bg-n-surface p-3 text-n-ink shadow-[var(--nx-shadow)]" data-testid="place-search-empty">
+        <div role="status" className="nx-pop nx-origin-left absolute left-0 right-0 top-[52px] z-50 rounded-[18px] border border-n-line bg-n-surface p-3 text-n-ink shadow-[var(--nx-shadow)]" data-testid="place-search-empty">
           <p className="text-[14.5px] font-semibold">No harbour, station or region matches “{q.trim()}”</p>
           <p className="mt-0.5 text-[13.5px] leading-snug text-n-ink-2">Try a harbour or town name, or a county. Or tap the water on the map to read any point.</p>
           <button

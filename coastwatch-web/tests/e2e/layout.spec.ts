@@ -91,14 +91,28 @@ test("phone: the map keeps most of the screen with the sheet at its peek", async
   await ctx.close();
 });
 
-test("reduced motion: nothing animates on load or on selecting", async ({ browser }) => {
+test("reduced motion: nothing moves on load or on selecting, and every fade settles", async ({ browser }) => {
+  // Reduced motion keeps short opacity fades (they orient without movement) and drops all travel:
+  // nothing running may carry a transform, and everything settles within a second (no loops).
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
   const page = await ctx.newPage();
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=forecast&sel=harbor:550`);
   await expect(page.getByTestId("inspect-panel")).toBeVisible();
-  const running = await page.evaluate(() => document.getAnimations().filter((a) => a.playState === "running" && Number(a.effect?.getTiming().duration) > 10).length);
-  expect(running).toBe(0);
+  const moving = () =>
+    page.evaluate(() =>
+      document
+        .getAnimations()
+        .filter((a) => a.playState === "running" && Number(a.effect?.getTiming().duration) > 10)
+        .filter((a) => {
+          const el = (a.effect as KeyframeEffect | null)?.target as Element | null;
+          const t = el ? getComputedStyle(el).transform : "none";
+          return t !== "none" && t !== "matrix(1, 0, 0, 1, 0, 0)";
+        }).length,
+    );
+  expect(await moving()).toBe(0);
+  const running = () => page.evaluate(() => document.getAnimations().filter((a) => a.playState === "running" && Number(a.effect?.getTiming().duration) > 10).length);
+  await expect.poll(running, { timeout: 1500 }).toBe(0);
   await ctx.close();
 });
 

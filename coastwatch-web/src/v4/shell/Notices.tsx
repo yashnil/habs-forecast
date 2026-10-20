@@ -6,6 +6,7 @@ import type { SourceStatus } from "@/generated/schema";
 import { OFFICIAL_STATUS } from "@/content/copy";
 import { ACTION_LABEL, FISHERY_LABEL, criticalFlags, currentRecords, disputedRecords, officialVerification, recordFlags, type Dispute, type Verification } from "@/lib/official";
 import { Icon } from "@/v4/ui/Icon";
+import { exitProps, usePresence } from "@/v4/motion";
 import { clockLabel, dayLabel } from "@/v4/ui/time";
 
 /**
@@ -21,6 +22,7 @@ export type LocalNotices = { name: string; covering: string[]; unsettled: string
 
 export function NoticesButton({ official, status = null, compact = false, local = null }: { official: OfficialDataset | null; status?: SourceStatus | null; compact?: boolean; local?: LocalNotices | null }) {
   const [open, setOpen] = useState(false);
+  const pop = usePresence(open);
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => setNow(new Date()), []);
   const box = useRef<HTMLDivElement | null>(null);
@@ -92,13 +94,13 @@ export function NoticesButton({ official, status = null, compact = false, local 
         {/* below 400 px the word gives way (the count, the shield and the label still say it) so the bar fits */}
         {!compact && <span className="text-n-official max-[399px]:hidden">{word}</span>}
       </button>
-      {open && (
+      {pop.mounted && (
         <div
           role="dialog"
           aria-label="Official notices"
           // on a phone the panel spans the screen under the top bar; elsewhere it hangs from the button
-          className="nx-rise fixed inset-x-3 top-[64px] z-50 flex max-h-[calc(100dvh-80px)] flex-col rounded-2xl border border-n-line bg-n-surface text-n-ink shadow-[var(--nx-shadow)] md:absolute md:inset-x-auto md:right-0 md:top-[52px] md:max-h-[min(72vh,680px)] md:w-[440px]"
-          data-testid="notices-panel"
+          className="nx-pop fixed inset-x-3 top-[64px] z-50 flex max-h-[calc(100dvh-80px)] flex-col rounded-[18px] border border-n-line bg-n-surface text-n-ink shadow-[var(--nx-shadow)] md:absolute md:inset-x-auto md:right-0 md:top-[52px] md:max-h-[min(72vh,680px)] md:w-[440px]"
+          {...exitProps(pop.state, "notices-panel")}
         >
           <div className="border-b border-n-line p-4">
             {/* with a place open, the heading leads with that place's count; the statewide count follows */}

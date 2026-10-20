@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/v4/ui/toast";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -76,10 +77,26 @@ function Section({ id, title, kicker, children }: { id: string; title: string; k
  */
 function Fold({ id, title, count, summary, kicker, children }: { id: string; title: string; count: number; summary: string; kicker?: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  // it opens by height (.nx-fold, 240 ms) and is `hidden` again once it has closed
+  const [bodyHidden, setBodyHidden] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+  const timer = useRef<number | null>(null);
+  const toggle = () => {
+    if (timer.current != null) window.clearTimeout(timer.current);
+    if (!open) {
+      setOpen(true);
+      setBodyHidden(false);
+      timer.current = window.setTimeout(() => setExpanded(true), 16);
+    } else {
+      setOpen(false);
+      setExpanded(false);
+      timer.current = window.setTimeout(() => setBodyHidden(true), 240);
+    }
+  };
   return (
     <section aria-labelledby={`${id}-h`} className="border-t border-n-line pt-3" data-testid={`brief-${id}`} data-open={open}>
       <h2 id={`${id}-h`} className="font-serif text-[21px] font-semibold leading-tight text-n-ink">
-        <button type="button" aria-expanded={open} aria-controls={`${id}-body`} onClick={() => setOpen((o) => !o)} className="nx-focus group flex min-h-14 w-full items-start gap-3 rounded-lg py-2 text-left" data-testid={`brief-${id}-toggle`}>
+        <button type="button" aria-expanded={open} aria-controls={`${id}-body`} onClick={toggle} className="nx-focus group flex min-h-14 w-full items-start gap-3 rounded-lg py-2 text-left" data-testid={`brief-${id}-toggle`}>
           <span className="min-w-0 flex-1">
             <span className="flex items-baseline gap-2">
               {title}
@@ -87,12 +104,14 @@ function Fold({ id, title, count, summary, kicker, children }: { id: string; tit
             </span>
             <span className="mt-1 block font-ui text-[14.5px] font-normal leading-snug text-n-ink-2">{summary}</span>
           </span>
-          <Icon name="chevronDown" className={`mt-1 text-n-ink-3 transition-transform ${open ? "rotate-180" : ""}`} />
+          <Icon name="chevronDown" className={`mt-1 text-n-ink-3 transition-transform duration-[240ms] ease-[var(--nx-ease-move)] ${open ? "rotate-180" : ""}`} />
         </button>
       </h2>
-      <div id={`${id}-body`} hidden={!open} className="flex flex-col gap-4 pb-4 pt-2">
-        {kicker && <p className="text-[15px] text-n-ink-2">{kicker}</p>}
-        {children}
+      <div className="nx-fold" data-open={expanded}>
+        <div id={`${id}-body`} hidden={bodyHidden} className="flex flex-col gap-4 pb-4 pt-2">
+          {kicker && <p className="text-[15px] text-n-ink-2">{kicker}</p>}
+          {children}
+        </div>
       </div>
     </section>
   );
@@ -301,7 +320,7 @@ export function Briefing(props: Props) {
         <SkipLink />
         <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} />} />
         <RegistryDisclosure className="mx-auto w-full max-w-[760px] px-4 sm:px-6" fixture={isFixture(props.manifest)} />
-        <main id="main" className="mx-auto w-full max-w-[760px] px-4 pb-28 pt-6 sm:px-6">
+        <main id="main" className="cw-page-in mx-auto w-full max-w-[760px] px-4 pb-28 pt-6 sm:px-6">
           <p className="nx-eyebrow">My Coast</p>
           <h1 className="mt-2 text-balance font-serif text-[36px] font-semibold leading-[1.1] sm:text-[44px]" data-testid="coast-title">
             Where are you going next?
@@ -319,7 +338,7 @@ export function Briefing(props: Props) {
               const isHome = k === home?.place;
               return (
                 <li key={k}>
-                  <Link href={isHome && home ? homeHref(home) : coastHref({ place: k, for: audience })} className="nx-press nx-focus flex min-h-[64px] items-center justify-between gap-3 rounded-2xl border border-n-line bg-n-surface px-4" data-testid={`coast-start-${k}`}>
+                  <Link href={isHome && home ? homeHref(home) : coastHref({ place: k, for: audience })} className="nx-press nx-focus nx-lift flex min-h-[64px] items-center justify-between gap-3 rounded-2xl border border-n-line bg-n-surface px-4 hover:border-n-line-strong" data-testid={`coast-start-${k}`}>
                     <span>
                       <span className="block text-[17px] font-semibold">{p.name}</span>
                       <span className="block text-[13.5px] text-n-ink-3">{isHome ? "Your home port" : p.note}</span>
@@ -367,7 +386,7 @@ export function Briefing(props: Props) {
       )}
       {packOpen && <PackDialog pack={pack} manifest={props.manifest} baseUrl={props.baseUrl} official={official} onClose={() => setPackOpen(false)} />}
       <div className="mx-auto grid w-full max-w-[1240px] gap-8 px-4 pb-32 pt-4 sm:px-6 lg:grid-cols-[minmax(0,720px)_minmax(0,1fr)] lg:pt-6">
-        <main id="main" className="flex min-w-0 flex-col gap-7">
+        <main id="main" className="cw-page-in flex min-w-0 flex-col gap-7">
           <header className="flex flex-col gap-4" data-testid="coast-header">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -610,10 +629,10 @@ function Locator({ place, g, ports, official, stations, back, onPlace, basemapPm
           <div className="absolute inset-0 grid place-items-center" data-testid="locator-loading" role="status">
             <svg className="absolute inset-0 h-full w-full text-n-accent opacity-25" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden>
               {[0, 1, 2, 3, 4].map((i) => (
-                <path key={i} className={i === 2 && near ? "nx-sweep" : undefined} d={`M-20 ${70 + i * 38} C 80 ${40 + i * 40}, 160 ${120 + i * 30}, 240 ${80 + i * 38} S 380 ${110 + i * 34}, 430 ${90 + i * 38}`} fill="none" stroke="currentColor" strokeWidth={i === 2 ? 1.6 : 0.8} />
+                <path key={i} className={i === 2 ? (near ? "nx-sweep" : undefined) : "nx-draw"} pathLength={i === 2 ? undefined : 1} style={{ "--i": i } as React.CSSProperties} d={`M-20 ${70 + i * 38} C 80 ${40 + i * 40}, 160 ${120 + i * 30}, 240 ${80 + i * 38} S 380 ${110 + i * 34}, 430 ${90 + i * 38}`} fill="none" stroke="currentColor" strokeWidth={i === 2 ? 1.6 : 0.8} />
               ))}
             </svg>
-            <p className="relative text-[13.5px] text-n-ink-2">{near ? `Drawing ${place.name} and its stations…` : `Map of ${place.name}`}</p>
+            <p className="nx-late relative text-[13.5px] text-n-ink-2">{near ? `Drawing ${place.name} and its stations…` : `Map of ${place.name}`}</p>
           </div>
         )}
         {near && basemapPmtiles !== undefined && <MapCanvas
@@ -660,6 +679,7 @@ function CopyLink() {
         try {
           await navigator.clipboard.writeText(window.location.href);
           setDone(true);
+          toast("Link copied");
           setTimeout(() => setDone(false), 1800);
         } catch {
           setDone(false);
@@ -751,7 +771,7 @@ function PlaceMenu({ place, ports, home, audience, species, onHome, onPlace, onC
   }, [onClose]);
   const trip = [audience !== "all" ? AUDIENCES.find((a) => a.id === audience)?.label : null, species !== "any" ? speciesById(species).label : null].filter(Boolean).join(" · ");
   return (
-    <div ref={box} id="coast-place-menu" className="nx-rise flex flex-col gap-3 rounded-2xl border border-n-line bg-n-surface p-4 shadow-[var(--nx-shadow)]" data-testid="coast-place-bar">
+    <div ref={box} id="coast-place-menu" className="nx-pop nx-origin-left flex flex-col gap-3 rounded-[18px] border border-n-line bg-n-surface p-4 shadow-[var(--nx-shadow)]" data-testid="coast-place-bar">
       <label className="flex flex-col gap-1">
         <span className="nx-eyebrow">Another place</span>
         <select
