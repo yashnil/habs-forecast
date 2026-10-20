@@ -119,6 +119,15 @@
   --nx-ease-in: cubic-bezier(0.4, 0, 1, 1);
   --nx-ease-move: cubic-bezier(0.77, 0, 0.175, 1);
   --nx-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  /* a soft spring (one small overshoot, settled by 85 %) for releases and settles; a cubic fallback
+     where linear() easing is not supported */
+  --nx-ease-spring: cubic-bezier(0.34, 1.32, 0.64, 1);
+  --nx-t-release: 320ms;
+  --nx-t-ring: 200ms;
+  /* hover and press tints laid over whatever surface a control has (a gradient layer, so the
+     control's own background colour is untouched): this much of the environment's ink */
+  --nx-tint-hover: 6%;
+  --nx-tint-press: 10%;
   /* older names, kept for the components that use them */
   --nx-ease-in-out: var(--nx-ease-move);
   --nx-t-quick: var(--nx-t-press);
@@ -131,6 +140,18 @@
   --nx-hit: 44px;
   --nx-radius: 12px;
   --nx-radius-lg: 18px;
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --nx-ease-spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017 19.4%, 1.067, 1.099 24.3%, 1.108 26%, 1.105, 1.094 30.2%, 1.035 37.4%, 1.006 41.8%, 0.991 46.7%, 0.996 61.1%, 1);
+  }
+}
+/* the hover tint is a registered colour, so it eases instead of snapping */
+@property --nx-tint {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
 }
 
 @theme inline {
@@ -256,19 +277,52 @@
   text-transform: uppercase;
   color: var(--nx-ink-3);
 }
+/* ---- interaction: one feel for every control ----
+   Every control in a v4 surface eases its colours, borders and focus ring (zero specificity, so any
+   component's own transition wins). The shared classes add the physical part: .nx-press gives under
+   the finger quickly and springs back; .nx-tint lays a hover/press tint over any surface; .nx-lift
+   rises a pixel under a mouse; .nx-focus's ring glides in from 4 px out. No blur, no heavy shadow. */
+:where(.env-chart, .env-instrument) :where(button, a[href], [role="button"], [role="tab"], [role="option"], [role="menuitem"], [role="switch"], summary, select, input, textarea) {
+  transition-property: color, background-color, border-color, outline-color, outline-offset, box-shadow, opacity, --nx-tint;
+  transition-duration: var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-ring), var(--nx-t-ring), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover);
+  transition-timing-function: var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-spring), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out);
+}
 .nx-press {
-  transition: transform var(--nx-t-press) var(--nx-ease-out), background-color var(--nx-t-hover) var(--nx-ease-out), color var(--nx-t-hover) var(--nx-ease-out), border-color var(--nx-t-hover) var(--nx-ease-out);
+  transition-property: transform, background-color, color, border-color, box-shadow, --nx-tint, outline-color, outline-offset;
+  transition-duration: var(--nx-t-release), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-ring), var(--nx-t-ring);
+  transition-timing-function: var(--nx-ease-spring), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-spring);
+  -webkit-tap-highlight-color: transparent;
 }
-.nx-press:active {
-  transform: scale(calc(1 - 0.03 * var(--nx-shift)));
+/* pressing is quick and direct; letting go springs back (the duration above) */
+.nx-press:active:not(:disabled):not([aria-disabled="true"]) {
+  transform: scale(calc(1 - 0.035 * var(--nx-shift)));
+  transition-duration: 90ms, 60ms, 60ms, 60ms, 60ms, 60ms, var(--nx-t-ring), var(--nx-t-ring);
+  transition-timing-function: var(--nx-ease-out);
 }
-/* the focus ring settles in (4 px out to 2 px) instead of snapping */
+/* a tint over any surface: hover (mouse only) and press */
+.nx-tint,
+.nx-press {
+  background-image: linear-gradient(var(--nx-tint), var(--nx-tint));
+}
+@media (hover: hover) {
+  .nx-tint:hover:not(:disabled),
+  .nx-press:hover:not(:disabled):not([aria-disabled="true"]) {
+    --nx-tint: color-mix(in srgb, var(--nx-ink) var(--nx-tint-hover), transparent);
+  }
+}
+.nx-tint:active:not(:disabled),
+.nx-press:active:not(:disabled):not([aria-disabled="true"]) {
+  --nx-tint: color-mix(in srgb, var(--nx-ink) var(--nx-tint-press), transparent);
+}
+/* the focus ring glides in (4 px out to 2 px, with a little spring) instead of snapping */
 .nx-focus {
   outline: 2px solid transparent;
   outline-offset: 4px;
-  transition-property: outline-color, outline-offset, transform, background-color, color, border-color;
-  transition-duration: 120ms, 120ms, var(--nx-t-press), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover);
-  transition-timing-function: var(--nx-ease-out);
+}
+.nx-focus:not(.nx-press) {
+  transition-property: outline-color, outline-offset, transform, background-color, color, border-color, --nx-tint;
+  transition-duration: var(--nx-t-ring), var(--nx-t-ring), var(--nx-t-release), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover);
+  transition-timing-function: var(--nx-ease-out), var(--nx-ease-spring), var(--nx-ease-spring), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out);
 }
 .nx-focus:focus-visible {
   outline: 2px solid var(--nx-accent);
@@ -277,24 +331,31 @@
 @media (forced-colors: active) {
   .nx-focus { outline-style: none; }
   .nx-focus:focus-visible { outline-style: solid; }
+  .nx-press, .nx-tint { background-image: none; }
 }
 /* rows and options: the hover tint eases in */
 .nx-row {
-  transition: background-color var(--nx-t-hover) var(--nx-ease-out), color var(--nx-t-hover) var(--nx-ease-out);
+  transition: background-color var(--nx-t-hover) var(--nx-ease-out), color var(--nx-t-hover) var(--nx-ease-out), --nx-tint var(--nx-t-hover) var(--nx-ease-out);
 }
-/* cards that lead somewhere lift a pixel under a mouse (never on touch) */
+/* cards that lead somewhere lift a pixel under a mouse (never on touch), their edge firming up */
 @media (hover: hover) {
   .nx-lift {
-    transition-property: transform, border-color, background-color, outline-color, outline-offset;
-    transition-duration: var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), 120ms, 120ms;
-    transition-timing-function: var(--nx-ease-out);
+    transition-property: transform, border-color, background-color, box-shadow, outline-color, outline-offset, --nx-tint;
+    transition-duration: var(--nx-t-release), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-ring), var(--nx-t-ring), var(--nx-t-hover);
+    transition-timing-function: var(--nx-ease-spring), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-spring), var(--nx-ease-out);
   }
   .nx-lift:hover {
-    transform: translateY(calc(-1px * var(--nx-shift)));
+    transform: translateY(calc(-2px * var(--nx-shift)));
+    border-color: var(--nx-line-strong);
+    box-shadow: 0 6px 16px -10px rgba(4, 16, 24, 0.35);
   }
   .nx-lift.nx-press:hover:active {
     transform: translateY(calc(-1px * var(--nx-shift))) scale(calc(1 - 0.03 * var(--nx-shift)));
   }
+}
+/* the deck: its edge and shadow ease when it changes state (open, selected) */
+.nx-deck {
+  transition: border-color var(--nx-t-hover) var(--nx-ease-out), box-shadow var(--nx-t-panel) var(--nx-ease-out);
 }
 
 @keyframes nx-rise {
@@ -554,6 +615,12 @@ html.nx-splash-out .nx-splash-drift { scale: 1.08; }
   .nx-draw, .nx-chart-draw .nx-chart-line, .nx-chart-draw .nx-chart-marks { animation: none; }
   .nx-chart-wait .nx-chart-line { stroke-dashoffset: 0; }
   .nx-chart-wait .nx-chart-marks { opacity: 1; }
+  /* controls: colour changes only (the global rule in globals.css drops transform), one short duration */
+  .nx-press, .nx-focus, .nx-lift, .nx-row, .nx-deck,
+  :where(.env-chart, .env-instrument) :where(button, a[href], [role="button"], [role="tab"], [role="option"], [role="menuitem"], [role="switch"], summary, select, input, textarea) {
+    transition-duration: var(--nx-t-hover) !important;
+    transition-timing-function: var(--nx-ease-out) !important;
+  }
   /* the launch screen: its final frame, still (base styles), and a 200 ms fade */
   .nx-splash * { animation: none !important; }
   :root { --nx-t-splash-exit: 200ms; }
