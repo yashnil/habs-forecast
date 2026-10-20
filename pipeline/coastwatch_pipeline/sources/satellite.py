@@ -27,6 +27,7 @@ Rules (docs/coastwatch/05-science-and-safety.md, forecast-upgrade/04):
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import math
@@ -75,14 +76,21 @@ VIIRS_WINDOW_DAYS = WINDOW_DAYS
 # published days are reused across runs only when made by the same processing version.
 # 3: VIIRS from NOAA-21/NOAA-20 (per-cell platform grid) instead of S-NPP; no S-NPP day is
 # ever reused as a NOAA-21/NOAA-20 one.
-PROCESSING_VERSION = "satellite-processing-3"
+# 4: scope adds the marine bays and estuaries connected to the coastal ocean (MARINE_WATER_MASK).
+PROCESSING_VERSION = "satellite-processing-4"
 CHUNK = 512
 LOG_RANGE = (-3.0, 3.0)  # quantization domain for log10(chl): 0.001 .. 1000 mg m-3
 IMPLAUSIBLE_MG_M3 = 200.0  # flagged in QC, never silently removed
-# Product scope: the coastal ocean. The C-HARM ocean domain (3 km) extended this many
-# cells (about 12 km) landward keeps the nearshore strip and bays, and drops inland lakes,
-# reservoirs and the mixed land/water pixels the upstream L3 product carries inland.
+# Product scope: the coastal ocean plus the marine bays and estuaries connected to it.
+# - The C-HARM ocean domain (3 km) extended this many cells (about 12 km) landward keeps the
+#   offshore extent and the open-coast nearshore strip, and drops inland lakes, reservoirs and the
+#   mixed land/water pixels the upstream L3 product carries inland.
+# - Enclosed water farther from the model's ocean cells (95% of San Francisco Bay, with San Pablo
+#   and Suisun Bays) is added from MARINE_WATER_MASK: OpenStreetMap ocean water (bays and
+#   estuaries up to the OSM coastline; never lakes or reservoirs) connected to that scope, built
+#   by pipeline/scripts/build_marine_water_mask.py. The C-HARM layers are not affected.
 COASTAL_DILATE_CELLS = 4
+MARINE_WATER_MASK = "marine_water_mask.json"
 MAX_IMPLAUSIBLE_FRACTION = 0.01
 
 LICENSE_OLCI = (
@@ -108,14 +116,20 @@ CAVEATS_BASE = [
     "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
 ]
 CAVEAT_SCOPE = (
-    "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; "
-    "bays within about 12 km of the coastal ocean are included."
+    "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); "
+    "inland lakes, reservoirs and inland land/water pixels are left out."
+)
+CAVEAT_TURBID = (
+    "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is "
+    "often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic "
+    "matter there can make them read too high or too low, so treat bay values as approximate and do not compare them "
+    "directly with open-coast values."
 )
 CAVEAT_COMPOSITE = (
     "Latest clear view: each pixel shows its most recent valid observation within {n} days; neighbouring pixels can come "
     "from different days. Check the observation date in the readout."
 )
-CAVEATS = CAVEATS_BASE + [CAVEAT_SCOPE]
+CAVEATS = CAVEATS_BASE + [CAVEAT_SCOPE, CAVEAT_TURBID]
 
 
 @dataclass(frozen=True)
@@ -447,20 +461,46 @@ def _load_reference():
     return mask, ocean, regions
 
 
-def coastal_mask(target: Target) -> np.ndarray:
-    """True where a target cell lies in the coastal-ocean scope (see COASTAL_DILATE_CELLS)."""
+def _on_target(mask_meta: dict, cells: np.ndarray, target: Target) -> np.ndarray:
+    """Sample a reference mask (nearest cell) at each target cell centre; False outside it."""
+    ref = SourceGrid(mask_meta["lat_first"], mask_meta["lat_step"], mask_meta["lon_first"], mask_meta["lon_step"], mask_meta["height"], mask_meta["width"])
+    lats, lons = target.lats(), target.lons()
+    r, _ = ref.cell_index(lats, np.full_like(lats, mask_meta["lon_first"]))
+    _, c = ref.cell_index(np.full_like(lons, mask_meta["lat_first"]), lons)
+    ok = (r[:, None] >= 0) & (c[None, :] >= 0)
+    out = np.zeros((target.height, target.width), dtype=bool)
+    out[ok] = cells[np.broadcast_to(r[:, None], ok.shape)[ok], np.broadcast_to(c[None, :], ok.shape)[ok]]
+    return out
+
+
+def charm_scope(target: Target) -> np.ndarray:
+    """True where a target cell lies within COASTAL_DILATE_CELLS of a C-HARM ocean cell."""
     from scipy.ndimage import binary_dilation
 
     mask, ocean, _ = _load_reference()
-    scope = binary_dilation(ocean, iterations=COASTAL_DILATE_CELLS)
-    ref = SourceGrid(mask["lat_first"], mask["lat_step"], mask["lon_first"], mask["lon_step"], mask["height"], mask["width"])
-    lats, lons = target.lats(), target.lons()
-    r3, _ = ref.cell_index(lats, np.full_like(lats, mask["lon_first"]))
-    _, c3 = ref.cell_index(np.full_like(lons, mask["lat_first"]), lons)
-    ok = (r3[:, None] >= 0) & (c3[None, :] >= 0)
-    out = np.zeros((target.height, target.width), dtype=bool)
-    out[ok] = scope[np.broadcast_to(r3[:, None], ok.shape)[ok], np.broadcast_to(c3[None, :], ok.shape)[ok]]
-    return out
+    return _on_target(mask, binary_dilation(ocean, iterations=COASTAL_DILATE_CELLS), target)
+
+
+@functools.lru_cache(maxsize=1)
+def _load_marine() -> tuple[dict, np.ndarray]:
+    m = json.loads((REPO / "data" / "reference" / MARINE_WATER_MASK).read_text())
+    cells = np.zeros((m["height"], m["width"]), dtype=bool)
+    for r, runs in enumerate(m["rows_rle"]):
+        for s, n in runs:
+            cells[r, s : s + n] = True
+    return m, cells
+
+
+def marine_water(target: Target) -> np.ndarray:
+    """True where a target cell is a marine bay or estuary connected to the coastal ocean."""
+    m, cells = _load_marine()
+    return _on_target(m, cells, target)
+
+
+def coastal_mask(target: Target) -> np.ndarray:
+    """True where a target cell lies in the satellite scope: the dilated C-HARM ocean
+    (COASTAL_DILATE_CELLS) or connected marine water (MARINE_WATER_MASK)."""
+    return charm_scope(target) | marine_water(target)
 
 
 def coverage(values: np.ndarray, target: Target) -> Coverage:
@@ -623,6 +663,7 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
     track = p.platform_grid and all(d.source is not None for d in days)
     src = np.zeros((target.height, target.width), dtype=np.uint8)
     used: list[CompositeDay] = []
+    contributing: list[Day] = []
     for d in sorted(days, key=lambda x: x.date, reverse=True):
         fill = np.isnan(comp) & np.isfinite(d.values)
         comp[fill] = d.values[fill]
@@ -630,9 +671,13 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
         if track:
             src[fill] = d.source[fill]  # type: ignore[index]
         used.append(CompositeDay(date=d.date.isoformat(), platforms=platform_labels(p, d.platforms), observed_times=sorted(d.observed_times), pixels_used=int(fill.sum())))
+        if fill.any():
+            contributing.append(d)
     if not np.isfinite(comp).any():
         return None, 0
-    observed_days = [d for d in days if np.isfinite(d.values).any()]
+    # The stated dates, overpass times and platforms are those of the days whose pixels the view
+    # shows: a day entirely covered by newer days is listed (pixels_used 0) but dates nothing.
+    observed_days = contributing
     newest, oldest = max(d.date for d in observed_days), min(d.date for d in observed_days)
     h = hashlib.sha256((p.key + "|".join(f"{d.date}:{d.key}" for d in days) + ref.isoformat()).encode()).hexdigest()[:10]
     base = f"satellite/{p.key}/latest-{ref.isoformat()}-{h}"
@@ -819,19 +864,23 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
     return SatelliteResult(layers, errors, notes, latest.isoformat() if latest else None, nbytes)
 
 
-def newest_listed(ctx: RunContext, p: Product) -> str | None:
-    """Newest day a product's datasets list in its window (one small time listing each), or None."""
+def newest_listed(ctx: RunContext, p: Product) -> tuple[str | None, list[str]]:
+    """Newest day a product's datasets list in its window (one small time listing each), or None,
+    and the listings that failed (coastwatch.pfeg.noaa.gov refuses runners with HTTP 403 at
+    times: a failed listing must be reported, not read as "nothing newer")."""
     start = ctx.now.date() - timedelta(days=p.window_days)
     newest = None
+    failed: list[str] = []
     for _, sectors in p.platforms:
         for ds, _, _, _ in sectors:
             try:
-                ts = list_times(ctx, p.server, ds, start)
-            except Exception:
+                ts = [t for t in list_times(ctx, p.server, ds, start) if start.isoformat() <= t[:10] <= ctx.now.date().isoformat()]
+            except Exception as e:
+                failed.append(f"{ds}: time listing failed: {e}")
                 continue
             if ts:
                 newest = max(newest or "", ts[-1][:10])
-    return newest
+    return newest, failed
 
 
 def run_viirs(ctx: RunContext, domain: Domain, prev_layers: list[LayerArtifact]) -> SatelliteResult:
@@ -843,7 +892,10 @@ def run_viirs(ctx: RunContext, domain: Domain, prev_layers: list[LayerArtifact])
     (2026-11-02) its listing has nothing new and it drops out."""
     res = run_product(ctx, VIIRS_JPSS, domain, prev_layers, VIIRS_ZOOMS, per_day=False)
     if res.layers:
-        listed = newest_listed(ctx, VIIRS_SNPP)
+        listed, failed = newest_listed(ctx, VIIRS_SNPP)
+        if failed:
+            # NOAA-21/NOAA-20 updated; whether S-NPP holds a newer day is unknown this run
+            res.notes.append(f"VIIRS: could not check the S-NPP composite for a day newer than {res.latest_date}: " + "; ".join(failed)[:300])
         if not listed or listed <= (res.latest_date or ""):
             return res
         snpp = run_product(ctx, VIIRS_SNPP, domain, prev_layers, VIIRS_ZOOMS, per_day=False)

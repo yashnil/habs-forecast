@@ -145,7 +145,8 @@ def test_inland_water_is_left_out_and_counted(tmp_path):
     day = by_id(res, "olci300_chl_2026-10-01")
     note = next(c for c in day.qc.checks if c.name == "coastal_scope")
     assert int(note.detail.split()[0]) > 0
-    assert any("coastal ocean only" in c for c in latest.caveats)
+    assert any("inland lakes, reservoirs" in c for c in latest.caveats)
+    assert any("turbid" in c for c in latest.caveats)
 
 
 def _shifted_scene(blob: bytes, dlat: float) -> bytes:
