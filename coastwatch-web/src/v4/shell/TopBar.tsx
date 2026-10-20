@@ -90,7 +90,7 @@ export function NavTabs({ active, size = "bar" }: { active: Workspace; size?: "b
 }
 
 /**
- * The top bar: floating over the map in Explore, a band over reading pages. Brand (provisional),
+ * The top bar: floating over the map in Explore, a band over reading pages. Brand (C2),
  * workspaces, a slot (search in Explore), the status centre, official notices, more.
  */
 // z-[45]: the header is a stacking context, so its menus and the notices panel can rise no higher
@@ -103,7 +103,7 @@ export function TopBar({ active, now, slot, notices, floating = false }: { activ
     >
       <Link href="/" aria-label="Neritic home" className="nx-focus pointer-events-auto flex h-11 shrink-0 items-center rounded-full border border-n-line bg-n-surface pl-1.5 pr-3.5 text-n-ink max-md:pr-1.5" data-testid="brand-home">
         <span className="max-md:hidden">
-          <Lockup size={30} wordClass="text-[18px]" />
+          <Lockup size={30} />
         </span>
         <span className="md:hidden">
           <Mark size={32} />

@@ -14,6 +14,11 @@
 
 :root,
 .env-chart {
+  /* C2 mark, light master (src/v4/brand/c2.ts) */
+  --nx-mark-tile: #12395a;
+  --nx-mark-stub: #bfe4ec;
+  --nx-mark-n: #e8eef2;
+  --nx-mark-word: #12395a;
   --nx-bg: #f2f5f6;
   --nx-surface: #ffffff;
   --nx-surface-2: #eef2f4;
@@ -50,6 +55,11 @@
 }
 
 .env-instrument {
+  /* C2 mark, dark master: the same drawing re-tinted for the map's surfaces */
+  --nx-mark-tile: #2e86ab;
+  --nx-mark-stub: #0b1a24;
+  --nx-mark-n: #f6f4ef;
+  --nx-mark-word: #e8eef2;
   color-scheme: dark;
   --nx-bg: #061016;
   --nx-surface: #0c1921;

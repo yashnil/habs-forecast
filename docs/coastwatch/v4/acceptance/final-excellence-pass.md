@@ -43,7 +43,7 @@
 
 - No pipeline, schema or manifest change.
 - No new dependency.
-- No logo change: C2 is not installed.
+- Logo: C2 "Chart label" installed after this pass at the owner's request (2026-10-19): header lockup, v2 masthead, sharing cards, favicon (.ico with the hand-drawn 16/24 px masters; no SVG favicon), app and maskable icons, all from `src/v4/brand/c2.ts`.
 - No capability removed. Rarely used controls moved behind disclosure. The removed-capability list in `feature-parity.md` was rechecked (home port, waters from the map, currents/chlorophyll compare, coverage, multi-sensor agreement, per-place notices, harbour summaries, checklist ticks, field packs, research sampling and exports, provenance/QC/timestamps).
 
 ## Verification (exact head)
