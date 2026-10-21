@@ -14,7 +14,7 @@ import { pacificToday } from "@/lib/time";
 import { harborEvidence, pageClaims, type EvidenceGraph } from "@/lib/harborEvidence";
 import { fmtMeasured } from "@/lib/hab";
 import { nextSteps, speciesStatements, type NearSample } from "@/lib/nextSteps";
-import { checklist, parseTripDate, tripDays } from "@/lib/trip";
+import { checklist, parseTripDate, periodFor, tripDays } from "@/lib/trip";
 import { CHL_NEAR_COPY } from "@/content/copy";
 import type { Species } from "@/content/species";
 import { useModel } from "@/components/coast/CoastSections";
@@ -69,6 +69,15 @@ export function useBriefing(p: {
   const runAge = runFresh?.ageDays;
   const verState = verification?.state;
   const statusKey = status.map((x) => x.id).join();
+  // the graph reads the NWS period for the trip day only, matched by the period's own date (lib/trip
+  // periodFor): a saved copy read days later has none, and never says "Tonight" for a past night
+  const tripPeriod = periodFor(cond.data, tripDate, today);
+  const condForGraph = useMemo(() => {
+    const c = cond.data;
+    if (!c || c.marine.status !== "ok") return c;
+    return { ...c, marine: { ...c.marine, data: { ...c.marine.data, periods: tripPeriod ? [{ name: tripPeriod.name, text: tripPeriod.text }] : [] } } };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cond.data, tripPeriod?.name, tripPeriod?.date]);
   const graph = useMemo<EvidenceGraph | null>(
     () =>
       place && now
@@ -82,14 +91,30 @@ export function useBriefing(p: {
             model: outlook === null ? "loading" : outlook === "error" ? "error" : { days: outlook, issued: runLayer?.time.issued_date ?? null, fresh: runFresh },
             modelBeyond,
             sat: satNow,
-            conditions: cond.data,
+            conditions: condForGraph,
             official: { assocs, verification, audience, species, statements: status },
           })
         : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [place, nowDay, tripDate, hab, stationsError, outlook, issuedKey, runState, runAge, modelBeyond, satNow, cond.data, assocs, verState, audience, species, statusKey],
+    [place, nowDay, tripDate, hab, stationsError, outlook, issuedKey, runState, runAge, modelBeyond, satNow, condForGraph, assocs, verState, audience, species, statusKey],
   );
   const matters = useMemo(() => (graph ? pageClaims(graph) : []), [graph]);
+
+  // the one count of notices (v6 P0 1): those tied to these waters by official geography (not disputed),
+  // which the top bar, the glance and the notices section all use; and of those, the ones the graph
+  // keeps for the reader's activity and species. "None here" is never said when any are tied.
+  const notices = useMemo(() => {
+    const here = assocs.filter((a) => a.tier === "geographic" && !a.dispute);
+    const hereIds = new Set(here.map((a) => a.record.id));
+    const naming = (graph?.nodes ?? []).filter((n) => n.variable === "official notice" && n.id?.startsWith("official:") && hereIds.has(n.id.slice(9)));
+    return {
+      here: here.length,
+      namingSpecies: naming.length,
+      hereAssocs: here,
+      namingIds: new Set(naming.map((n) => n.id!.slice(9))),
+      unsettled: assocs.filter((a) => a.tier === "unresolved" && !a.dispute).map((a) => a.record.id),
+    };
+  }, [assocs, graph]);
 
   const unknowns = useMemo(() => {
     if (!place) return [];
@@ -140,5 +165,5 @@ export function useBriefing(p: {
   const checks = useMemo(() => checklist(steps), [steps]);
   const officialHeadline = officialAnswer(assocs, audience, species);
 
-  return { graph, matters, unknowns, steps, checks, assocs, verification, days, tripDate, tripDay, lead, model, outlook, outDay, satNow, hab, cond, st, status, officialHeadline, today };
+  return { graph, matters, notices, tripPeriod, unknowns, steps, checks, assocs, verification, days, tripDate, tripDay, lead, model, outlook, outDay, satNow, hab, cond, st, status, officialHeadline, today };
 }
