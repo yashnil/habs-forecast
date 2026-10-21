@@ -464,6 +464,59 @@ def charm_extension_entry(path: Path = CHARM_PIER_VALIDATION) -> dict | None:
     }
 
 
+# ---------------------------------------------------------------- last known good
+CARRIED = "Not updated this run"
+SST_CARRY_MAX_AGE_DAYS = satellite.FRESHNESS.stale_max_age_days  # older analyses are dropped, not shown
+
+
+def _grids_present(out: Path, lyr: dict) -> bool:
+    for key in ("grid", "uncertainty_grid", "class_grid"):
+        g = lyr.get(key)
+        if not g:
+            continue
+        ch = g.get("chunks") or {}
+        for k in ch.get("present") or []:
+            r, c = k.split("_")
+            if not (out / ch["url_template"].format(row=r, col=c)).exists():
+                return False
+    return True
+
+
+def carry_forward(ctx: RunContext, prev_index: dict | None, layer_id: str, err: Exception, notes: list[str]) -> dict | None:
+    """The previous published entry of a layer this run could not build (last known good), kept
+    unchanged with its own dates and grid files and a caveat saying it was not updated. None
+    when there is none, its grid files are gone, or it is out of date: an outlook whose period
+    has ended, or a sea surface temperature analysis older than SST_CARRY_MAX_AGE_DAYS."""
+    prev = next((lyr for lyr in (prev_index or {}).get("layers", []) if lyr.get("id") == layer_id), None)
+    if prev is None:
+        return None
+    today = ctx.now.date()
+    if layer_id == "chl_outlook_8d":
+        if date.fromisoformat(prev["valid_to"]) < today:
+            notes.append(f"previous outlook (valid {prev['valid_from']}..{prev['valid_to']}) has ended: not shown")
+            return None
+        what = f"showing the outlook issued {prev['issued']} for {prev['valid_from']}..{prev['valid_to']}"
+    elif layer_id == "sst_latest":
+        day = max(prev.get("observed_dates") or ["0001-01-01"])
+        if (today - date.fromisoformat(day)).days > SST_CARRY_MAX_AGE_DAYS:
+            notes.append(f"previous sea surface temperature analysis ({day}) is older than {SST_CARRY_MAX_AGE_DAYS} days: not shown")
+            return None
+        what = f"showing the analysis of {day}"
+    else:
+        what = "showing the previous run's layer"
+    if not _grids_present(ctx.out_dir, prev):
+        notes.append(f"{layer_id}: previous grid files missing; not carried forward")
+        return None
+    refused = getattr(err, "refused", False) or "HTTP 403" in str(err)
+    reason = "NOAA's server refused the request" if refused else "its input could not be fetched"
+    lyr = json.loads(json.dumps(prev))
+    lyr["caveats"] = [f"{CARRIED}: {reason}; {what}."] + [c for c in lyr.get("caveats", []) if not c.startswith(CARRIED)]
+    first = (prev.get("carried_forward") or {}).get("built_at") or (prev_index or {}).get("generated_at")
+    lyr["carried_forward"] = {"built_at": first, "built_by_run": (prev.get("carried_forward") or {}).get("built_by_run") or (prev_index or {}).get("pipeline_run_id"), "reason": reason}
+    notes.append(f"{layer_id}: last known good carried forward ({what}; built {first})")
+    return lyr
+
+
 # ---------------------------------------------------------------- run
 def referenced_dirs(doc: dict | None) -> set[str]:
     """Top-level folders under derived/ an index or state document points to."""
@@ -534,6 +587,9 @@ def run(ctx: RunContext, manifest: Manifest | None = None) -> dict:
         stats["outlook"] = st
     except Exception as e:
         notes.append(f"outlook not built: {e}")
+        kept = carry_forward(ctx, prev_index, "chl_outlook_8d", e, notes)
+        if kept:
+            layers.append(kept)
     try:
         lyr, n, st = sst_layer(ctx)
         layers.append(lyr)
@@ -541,6 +597,9 @@ def run(ctx: RunContext, manifest: Manifest | None = None) -> dict:
         stats["sst"] = st
     except Exception as e:
         notes.append(f"sea surface temperature not built: {e}")
+        kept = carry_forward(ctx, prev_index, "sst_latest", e, notes)
+        if kept:
+            layers.append(kept)
     ext = charm_extension_entry()
     if ext:
         layers.append(ext)

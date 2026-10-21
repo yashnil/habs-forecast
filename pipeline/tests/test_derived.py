@@ -378,3 +378,60 @@ def test_sst_is_clipped_to_the_coastal_scope(dataset: Path):
     assert np.isfinite(v).any() and not np.isfinite(v[~scope]).any()
     f = v[np.isfinite(v)]
     assert 5 < f.min() and f.max() < 30
+
+
+# ---------------------------------------------------------------- last known good
+def _refusing_fetcher():
+    from coastwatch_pipeline.fixtures import FixtureFetcher
+    from coastwatch_pipeline.http import FetchError
+
+    def refuse(url):
+        raise FetchError(f"coastwatch.pfeg.noaa.gov not asked again this run: it refused 3 datasets (HTTP 403 on every attempt): {url}", refused=True)
+
+    return FixtureFetcher(overrides={r"erdMH1chla8day_R2022NRT|jplMURSST41": refuse})
+
+
+def test_outlook_and_sst_are_carried_forward_when_noaa_refuses(dataset: Path, tmp_path: Path):
+    copy = tmp_path / "v1"
+    shutil.copytree(dataset, copy)
+    before = {lyr["id"]: lyr for lyr in json.loads((copy / "derived" / "index.json").read_text())["layers"]}
+    ctx = fixture_context(copy, fetcher=_refusing_fetcher())
+    ctx.run_id = "refused-1"
+    R.run(ctx)
+    ctx.run_id = "refused-2"  # a second refused run carries the carried entry again
+    R.run(ctx)
+    idx = json.loads((copy / "derived" / "index.json").read_text())
+    after = {lyr["id"]: lyr for lyr in idx["layers"]}
+    assert list(after) == ["chl_estimate_latest", "chl_outlook_8d", "sst_latest", "charm_nearshore_extension"]
+    for lid in ("chl_outlook_8d", "sst_latest"):
+        a, b = after[lid], before[lid]
+        # unchanged: same dates, same grid files (still on disk after pruning)
+        for k in ("issued", "valid_from", "valid_to", "observed_dates", "grid", "uncertainty_grid", "method", "basis"):
+            assert a.get(k) == b.get(k), (lid, k)
+        assert a["caveats"][0].startswith("Not updated this run: NOAA's server refused the request")
+        assert sum(c.startswith("Not updated this run") for c in a["caveats"]) == 1 and a["caveats"][1:] == b["caveats"]
+        assert a["carried_forward"]["built_by_run"] == "fixture" and a["carried_forward"]["built_at"]
+        assert np.isfinite(R.read_grid(copy, a["grid"])).any()
+    o = after["chl_outlook_8d"]
+    assert f"showing the outlook issued {o['issued']} for {o['valid_from']}..{o['valid_to']}" in o["caveats"][0]
+    assert any("last known good" in n for n in idx["notes"])
+    rep = check_published(str(copy))
+    assert all(c["ok"] for c in rep["checked"] if c["kind"].startswith("derived")), rep["problems"]
+
+
+def test_an_ended_outlook_and_an_old_sst_are_dropped_not_carried(dataset: Path, tmp_path: Path):
+    copy = tmp_path / "v1"
+    shutil.copytree(dataset, copy)
+    idx0 = json.loads((copy / "derived" / "index.json").read_text())
+    out0 = next(lyr for lyr in idx0["layers"] if lyr["id"] == "chl_outlook_8d")
+    later = (date.fromisoformat(out0["valid_to"]) + __import__("datetime").timedelta(days=1)).isoformat() + "T12:00:00Z"
+    R.run(fixture_context(copy, now=later, fetcher=_refusing_fetcher()))
+    idx = json.loads((copy / "derived" / "index.json").read_text())
+    ids = [lyr["id"] for lyr in idx["layers"]]
+    assert "chl_outlook_8d" not in ids
+    assert any("has ended: not shown" in n for n in idx["notes"])
+    # the SST analysis (2026-10-07) is still within 7 days on 2026-10-12: kept; after that dropped
+    assert ("sst_latest" in ids) == ((date.fromisoformat(later[:10]) - date(2026, 10, 7)).days <= R.SST_CARRY_MAX_AGE_DAYS)
+    R.run(fixture_context(copy, now="2026-10-20T12:00:00Z", fetcher=_refusing_fetcher()))
+    idx = json.loads((copy / "derived" / "index.json").read_text())
+    assert "sst_latest" not in [lyr["id"] for lyr in idx["layers"]]
