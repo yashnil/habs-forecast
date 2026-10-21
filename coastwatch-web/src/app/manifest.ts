@@ -7,7 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     name: `${BRAND.name} — research preview`,
     short_name: BRAND.name,
     description: BRAND.tagline,
-    start_url: "/",
+    // an installed app opens on the briefing (My Coast keeps the home harbour on the device)
+    start_url: "/coast",
     display: "standalone",
     background_color: "#f5f3ee",
     theme_color: "#06111e",

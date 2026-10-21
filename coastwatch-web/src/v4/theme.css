@@ -466,7 +466,7 @@
   color: transparent;
 }
 
-/* ---- launch screen (src/v4/shell/Splash.tsx): once per session, on the instrument ground ----
+/* ---- launch screen (src/v4/shell/Splash.tsx): a device's first visit only, on the instrument ground ----
    Timeline (ms from navigation start): the symbol's isobaths draw outward from the canyon head
    (80-1080) over a faint field of the bay drawing itself behind them (120-1850); the tile fills in
    (420-1060); the symbol shrinks into the lockup (1080-1680) while the field drifts more slowly
@@ -639,4 +639,65 @@ html.nx-splash-out .nx-splash-drift { scale: 1.08; }
     --nx-ink-2: #22343f;
     --nx-ink-3: #3a4e5b;
   }
+}
+
+/* ---- daylight mode (html[data-daylight], the ⋯ menu, stored in nx-daylight-v1) ----
+   For bright sun on a phone: the high-contrast set (darker secondary ink, firmer lines) plus darker
+   data and state colours, each at least 7:1 on the page's white. Every deck over the map (the
+   instrument environment) reads on the same light paper; the basemap itself stays dark (its style is
+   the map's, not these tokens). Data families keep their hues and meanings. */
+html[data-daylight],
+html[data-daylight] .env-chart,
+html[data-daylight] .env-instrument {
+  color-scheme: light;
+  --nx-mark-tile: #0e3352;
+  --nx-mark-line: #a9d3df;
+  --nx-mark-index: #5fd0e6;
+  --nx-mark-word: #0e3352;
+  --nx-bg: #f5f7f8;
+  --nx-surface: #ffffff;
+  --nx-surface-2: #f3f6f7;
+  --nx-surface-3: #e6ecef;
+  --nx-line: #8a9ba5;
+  --nx-line-strong: #6d7f89;
+  --nx-ink: #0b1820;
+  --nx-ink-2: #22343f;
+  --nx-ink-3: #3a4e5b;
+  --nx-accent: #04566c;
+  --nx-accent-bg: #e3f2f6;
+  --nx-on-accent: #ffffff;
+  --nx-official: #7f3a00;
+  --nx-official-bg: #fdf1df;
+  --nx-official-line: #c98a3a;
+  --nx-model: #55309a;
+  --nx-model-bg: #f2edfb;
+  --nx-model-line: #9f86d6;
+  --nx-measured: #055a50;
+  --nx-measured-bg: #e2f3ef;
+  --nx-measured-line: #6fb5a8;
+  --nx-conditions: #164f78;
+  --nx-conditions-bg: #e6f0f8;
+  --nx-ok: #0f5e3b;
+  --nx-partial: #04566c;
+  --nx-stale: #6b4500;
+  --nx-offline: #3a4e5b;
+  --nx-down: #922a16;
+  --nx-gap: #45565f;
+  --nx-shadow: 0 1px 2px rgba(11, 24, 32, 0.12), 0 8px 24px rgba(11, 24, 32, 0.14);
+}
+html[data-daylight] .env-instrument .nx-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233a4e5b' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* ---- a short screen (a phone held sideways): one compact top bar line ----
+   The bar keeps its 44 px controls but loses its padding; the preview disclosure folds into the
+   notices pill ("Preview ·", the panel holds the agencies' links and the unverified state). */
+.nx-short-only { display: none; }
+@media (max-height: 500px) {
+  .nx-topbar {
+    padding-top: max(4px, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: 4px;
+  }
+  .nx-disclosure { display: none !important; }
+  .nx-short-only { display: inline !important; }
 }

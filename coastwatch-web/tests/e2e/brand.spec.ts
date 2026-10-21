@@ -60,6 +60,8 @@ test.describe("Neritic brand", () => {
     expect(await page.title()).toBe("About — Neritic");
     const m = await (await request.get(`${OK}/manifest.webmanifest`)).json();
     expect(m.short_name).toBe("Neritic");
+    // an installed app opens on the briefing (v6)
+    expect(m.start_url).toBe("/coast");
     expect(m.icons.map((i: { src: string }) => i.src)).toEqual(expect.arrayContaining(["/icons/icon-192.png", "/icons/icon-512.png"]));
     for (const p of ["/favicon.ico", "/apple-icon.png", "/opengraph-image", "/twitter-image", "/icons/icon-512.png", "/icons/maskable-512.png", "/icons/brand/mark-light.svg", "/icons/brand/lockup-dark.svg"]) {
       expect((await request.get(`${OK}${p}`)).status(), p).toBe(200);

@@ -86,6 +86,10 @@ export function NoticesButton({ official, status = null, compact = false, local 
         data-state={state}
         className="nx-press nx-focus flex h-11 items-center gap-2 rounded-full border border-n-official-line bg-n-surface px-3 text-[14px] font-semibold text-n-ink"
       >
+        {/* a short screen: the preview disclosure folds in here (theme.css, .nx-short-only) */}
+        <span className="nx-short-only hidden text-n-ink" data-testid="notices-preview">
+          Preview ·
+        </span>
         <Icon name="shield" className="h-[18px] w-[18px] text-n-official" />
         <span className="nx-data" data-testid="notices-count">{official ? (local ? here.length : recs.length) : "?"}</span>
         {local && official && <span className="text-n-ink-2" data-testid="notices-here">here</span>}

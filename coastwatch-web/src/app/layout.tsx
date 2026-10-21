@@ -4,6 +4,7 @@ import "./globals.css";
 import { BRAND } from "@/content/brand";
 import { Splash } from "@/v4/shell/Splash";
 import { MotionRoot } from "@/v4/shell/MotionRoot";
+import { DAYLIGHT_SCRIPT } from "@/v4/shell/daylight";
 
 // Self-hosted by next/font at build time: no runtime request to Google.
 // v2 faces: every v4 surface maps them to the v4 faces, so they are not preloaded (src/v4/theme.css)
@@ -35,9 +36,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     // the font variables live on <html>, so the v4 tokens defined at :root can resolve them;
-    // suppressHydrationWarning: the launch screen's inline script may add a class to <html> before hydration
+    // suppressHydrationWarning: the launch screen's and daylight mode's inline scripts may mark <html> before hydration
     <html lang="en" suppressHydrationWarning className={`${plexSans.variable} ${plexMono.variable} ${newsreader.variable} ${atkinson.variable} ${sourceSerif.variable}`}>
       <body className="antialiased">
+        {/* daylight mode before the first paint (src/v4/shell/daylight.ts) */}
+        <script dangerouslySetInnerHTML={{ __html: DAYLIGHT_SCRIPT }} />
         <Splash />
         <MotionRoot>{children}</MotionRoot>
       </body>
