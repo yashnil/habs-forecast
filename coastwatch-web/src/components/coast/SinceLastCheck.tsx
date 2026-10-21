@@ -78,7 +78,7 @@ function SinceLastCheckInner() {
   if (!place || forgotten) return null;
   if (state.phase === "error")
     return (
-      <p className="mt-3 text-[14px] text-ink-3" data-testid="since-error">
+      <p className="mt-3 text-[14px] text-n-ink-3" data-testid="since-error">
         Could not compare with your last visit just now.
       </p>
     );
@@ -114,21 +114,21 @@ function SinceLastCheckInner() {
   const actions = (
     <>
       {kept ? (
-        <span className="inline-flex flex-wrap items-center gap-x-3" data-testid="kept-done">
-          <span className="text-ink-2">Kept {formatDateTimePT(kept.keptAt)}.</span>
-          <button type="button" onClick={() => download(kept)} className="cw-press inline-flex min-h-[44px] items-center font-medium text-accent" data-testid="kept-download">
+        <span data-testid="kept-done">
+          <span className="mr-3 text-n-ink-2">Kept {formatDateTimePT(kept.keptAt)}.</span>
+          <button type="button" onClick={() => download(kept)} className="nx-press nx-focus -my-3 mr-3 inline-flex min-h-[44px] items-center font-semibold text-n-accent" data-testid="kept-download">
             Save file
           </button>
-          <Link href={`/coast/kept?id=${encodeURIComponent(kept.id)}`} className="inline-flex min-h-[44px] items-center font-medium text-accent" data-testid="kept-open">
+          <Link href={`/coast/kept?id=${encodeURIComponent(kept.id)}`} className="-my-3 mr-3 inline-flex min-h-[44px] items-center font-semibold text-n-accent" data-testid="kept-open">
             Print
           </Link>
         </span>
       ) : (
-        <button type="button" onClick={keep} className="cw-press inline-flex min-h-[44px] items-center font-medium text-accent" data-testid="kept-make">
+        <button type="button" onClick={keep} className="nx-press nx-focus -my-3 mr-3 inline-flex min-h-[44px] items-center font-semibold text-n-accent" data-testid="kept-make">
           Keep a dated copy
         </button>
       )}
-      <button type="button" onClick={forget} className="cw-press inline-flex min-h-[44px] items-center text-ink-3 underline decoration-ink-3/40 underline-offset-2" data-testid="since-forget">
+      <button type="button" onClick={forget} className="nx-press nx-focus -my-3 inline-flex min-h-[44px] items-center text-n-ink-3 underline decoration-n-line-strong underline-offset-2" data-testid="since-forget">
         Forget on this device
       </button>
     </>
@@ -137,29 +137,29 @@ function SinceLastCheckInner() {
   return (
     <section
       aria-labelledby="since-h"
-      className={!quiet || resume ? "max-w-[62ch] rounded-[14px] border border-hairline bg-surface px-4 py-3" : "max-w-[62ch]"}
+      className="max-w-[68ch]"
       data-testid="since-last-check" data-state={since ? (changes.length ? "changes" : "none") : "first"}>
       {resume ? (
         <p className="mb-2">
-          <Link href={coastHref({ place: snap.place.key, for: parseAudience(resume.audience), species: resume.species })} className="cw-press inline-flex min-h-[44px] items-center rounded-full border border-hairline px-4 text-[15px] font-medium text-accent" data-testid="since-resume">
+          <Link href={coastHref({ place: snap.place.key, for: parseAudience(resume.audience), species: resume.species })} className="nx-press nx-focus inline-flex min-h-[44px] items-center rounded-xl border border-n-line-strong px-4 text-[15px] font-semibold text-n-ink" data-testid="since-resume">
             Continue with {activityLabel(resume.audience)} · {resume.speciesLabel}
           </Link>
         </p>
       ) : null}
       {!quiet ? (
         <>
-          <h2 id="since-h" className="text-[15px] font-semibold text-ink">
-            Since you last checked <span className="font-normal text-ink-2">· {formatDateTimePT(since!)}</span>
+          <h2 id="since-h" className="text-[14px] font-semibold text-n-ink">
+            Since you last checked <span className="font-normal text-n-ink-2">· {formatDateTimePT(since!)}</span>
           </h2>
-          <ul className="mt-1 divide-y divide-hairline" data-testid="since-list">
+          <ul className="mt-1 divide-y divide-n-line" data-testid="since-list">
             {shown.map((c, i) => (
               <li key={`${c.kind}-${i}`} className="grid grid-cols-[16px_1fr] gap-x-2 py-2" data-testid={`since-item-${c.kind}`} data-for-you={c.forYou}>
                 <Mark kind={MARK[c.group]} aged={c.group === "coastwatch"} className="translate-y-[3px]" />
                 <div className="min-w-0">
-                  <p className="text-[15px] font-medium leading-snug text-ink">{c.forYou ? "" : "Other species here: "}{c.title}</p>
-                  <p className="text-[14px] leading-snug text-ink-2">{c.detail}</p>
+                  <p className="text-[15px] font-semibold leading-snug text-n-ink">{c.forYou ? "" : "Other species here: "}{c.title}</p>
+                  <p className="text-[14px] leading-snug text-n-ink-2">{c.detail}</p>
                   {c.source ? (
-                    <a href={c.source.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent underline-offset-2 hover:underline">
+                    <a href={c.source.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center text-[14px] font-semibold text-n-accent underline-offset-2 hover:underline">
                       {c.source.label} ↗
                     </a>
                   ) : null}
@@ -168,28 +168,31 @@ function SinceLastCheckInner() {
             ))}
           </ul>
           {hidden > 0 ? (
-            <button type="button" onClick={() => setAll(true)} className="cw-press min-h-[44px] text-[14px] font-medium text-accent" data-testid="since-more">
+            <button type="button" onClick={() => setAll(true)} className="nx-press nx-focus min-h-[44px] text-[14px] font-semibold text-n-accent" data-testid="since-more">
               {hidden} more (other species, data and model)
             </button>
           ) : null}
-          <p className="mt-2 text-[13px] text-ink-3" data-testid="since-checked">
+          <p className="mt-2 text-[13px] text-n-ink-3" data-testid="since-checked">
             {checkedLine}
           </p>
           <div className="flex flex-wrap items-center gap-x-4 text-[14px]">{actions}</div>
         </>
       ) : since ? (
-        <p className="flex flex-wrap items-center gap-x-3 text-[13px] leading-snug text-ink-3" data-testid="since-none">
+        // v7: a quiet state is one line (the caveat and the check time are for screen readers and the title)
+        <p className="flex flex-wrap items-center gap-x-3 text-[13px] leading-6 text-n-ink-3" data-testid="since-none" title={checkedLine}>
           <span>
-            <span id="since-h" className="font-medium text-ink-2">No change in Neritic&rsquo;s information</span> since your last check, {formatDateTimePT(since)}; that does not mean nothing changed at the agencies.{" "}
-            <span data-testid="since-checked">{checkedLine}</span>
+            <span id="since-h" className="font-semibold text-n-ink-2">No change in Neritic&rsquo;s information</span> since {formatDateTimePT(since)}
+            <span className="sr-only">; that does not mean nothing changed at the agencies. </span>
+            <span className="sr-only" data-testid="since-checked">{checkedLine}</span>
           </span>
           {actions}
         </p>
       ) : (
-        <p className="flex flex-wrap items-center gap-x-3 text-[13px] leading-snug text-ink-3" data-testid="since-first">
+        <p className="flex flex-wrap items-center gap-x-3 text-[13px] leading-6 text-n-ink-3" data-testid="since-first" title={checkedLine}>
           <span>
-            <span id="since-h" className="font-medium text-ink-2">Remembered on this device</span>, to list what changed next time.{" "}
-            <span data-testid="since-checked">{checkedLine}</span>
+            <span id="since-h" className="font-semibold text-n-ink-2">Remembered on this device</span>
+            <span className="sr-only">, to list what changed next time. </span>
+            <span className="sr-only" data-testid="since-checked">{checkedLine}</span>
           </span>
           {actions}
         </p>

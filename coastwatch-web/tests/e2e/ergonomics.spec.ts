@@ -60,11 +60,11 @@ test("the empty search offers the common places; a station's panel says when it 
   await expect(page.getByTestId("station-research")).toHaveAttribute("href", "/research?station=HABs-SantaCruzWharf");
 });
 
-test("the briefing (v6): the glance, what matters and what changed, then trip economics, sea, seasons and the checks, before the evidence", async ({ page }) => {
+test("the briefing (v7): what changed, the conditions and official position, trip economics, what matters, then the notes: sea, seasons and the checks before the evidence", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-10-13T06:00:00Z"));
   await page.goto(`${OK}/coast?place=port-201&for=commercial&species=dungeness`);
-  const order = await page.locator('[data-testid^="brief-"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
-  expect(order.slice(0, 7)).toEqual(["brief-glance", "brief-now", "brief-changes", "brief-econ", "brief-sea", "brief-seasons", "brief-checks"]);
+  const order = await page.locator('[data-testid^="brief-"]:not([data-testid$="-toggle"])').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
+  expect(order.slice(0, 8)).toEqual(["brief-changes", "brief-glance", "brief-econ", "brief-now", "brief-sea", "brief-seasons", "brief-checks", "brief-evidence"]);
   expect(order.indexOf("brief-checks")).toBeLessThan(order.indexOf("brief-measured"));
 });
 

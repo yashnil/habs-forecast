@@ -260,3 +260,28 @@ describe("copy", () => {
     expect(text).toContain("Scenario from your inputs, not a forecast.");
   });
 });
+
+describe("rock crab price reference (v7)", () => {
+  it("is CDFW's 2024 Yellow Rock Crab line, the same figure the briefing's dock value quotes", async () => {
+    const { LANDINGS } = await import("@/content/landings");
+    const line = LANDINGS[0].topByValue.find((f) => f.fishery === "Yellow Rock Crab")!;
+    const r = priceRef("rock-crab")!;
+    expect(r.fishery).toBe("Yellow Rock Crab");
+    expect([r.dollars, r.pounds]).toEqual([line.dollars, line.pounds]);
+    expect(Math.round(r.usdPerLb * 100) / 100).toBe(2.35);
+    expect(r.period).toContain("2024");
+    // not in CDFW's 2023 top ten: no prior year is invented
+    expect(r.prior).toBeNull();
+  });
+  it("is shown beside a fresh rock crab worksheet, never filled in, and no preset is invented", async () => {
+    const { initialDraft } = await import("@/v4/coast/economics/draft");
+    expect(presetForSpecies("rock-crab")).toBeNull();
+    const d = initialDraft("rock-crab");
+    expect(d.preset).toBeNull();
+    expect(d.inputs.catch).toEqual([{ species: "Rock crab", ref: "rock-crab", lb: null, usdPerLb: null }]);
+    expect(d.basis).toEqual({});
+    // a species without its own reference still starts blank
+    expect(presetForSpecies("razor-clam")).toBeNull();
+    expect(initialDraft("razor-clam").inputs.catch).toEqual([{ species: "Main catch", ref: null, lb: null, usdPerLb: null }]);
+  });
+});

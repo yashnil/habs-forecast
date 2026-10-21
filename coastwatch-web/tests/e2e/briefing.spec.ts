@@ -13,9 +13,12 @@ test("the briefing answers first, in order, and every statement says its kind", 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-550`);
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
-  const order = await page.locator('[data-testid^="brief-"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
-  expect(order.slice(0, 3)).toEqual(["brief-glance", "brief-now", "brief-changes"]);
+  // v7: the trip (conditions, official position), trip economics, what matters; then the folded notes
+  const order = await page.locator('[data-testid^="brief-"]:not([data-testid$="-toggle"])').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
+  expect(order.indexOf("brief-glance")).toBeLessThan(order.indexOf("brief-econ"));
+  expect(order.indexOf("brief-econ")).toBeLessThan(order.indexOf("brief-now"));
   expect(order).toEqual(expect.arrayContaining(["brief-measured", "brief-official", "brief-unknown", "brief-checks"]));
+  for (const id of ["brief-checks", "brief-evidence", "brief-official", "brief-unknown"]) expect(order.indexOf(id)).toBeGreaterThan(order.indexOf("brief-now"));
   await expect(page.getByTestId("matters")).toBeVisible();
   const kinds = await page.locator('[data-testid="matters"] [data-kind]').evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")));
   expect(kinds.length).toBeGreaterThanOrEqual(3);
@@ -52,6 +55,37 @@ test("an unknown place says so and offers places; the landing lists harbours", a
   await page.goto(`${OK}/coast?place=Santa%20Cruz`);
   await expect(page.getByTestId("coast-unknown-place")).toContainText("not one Neritic knows");
   await expect(page.getByTestId("coast-landing").getByTestId("coast-start-port-550")).toBeVisible();
+});
+
+test("v7 first visit: one question and one place search (an ARIA combobox over every harbour and site), no species chips, no directory", async ({ page }) => {
+  await page.goto(`${OK}/coast`);
+  await expect(page.getByTestId("coast-title")).toHaveText("Where are you fishing?");
+  await expect(page.locator('[data-testid^="coast-pick-"]')).toHaveCount(0);
+  expect(await page.getByTestId("coast-landing").locator("a").count()).toBeLessThanOrEqual(6);
+  const box = page.getByTestId("coast-place-search").getByRole("combobox");
+  await expect(box).toHaveAttribute("aria-expanded", "false");
+  await box.fill("santa");
+  await expect(box).toHaveAttribute("aria-expanded", "true");
+  const list = page.getByRole("listbox", { name: "Places" });
+  await expect(list.getByRole("option", { name: /Santa Cruz/ }).first()).toBeVisible();
+  // by county too: a harvest site or harbour in Humboldt
+  await box.fill("humboldt");
+  await expect(list.getByRole("option").first()).toBeVisible();
+  // keyboard: arrow to the first result, Enter opens its briefing
+  await box.fill("Monter");
+  await box.press("ArrowDown");
+  await box.press("ArrowUp");
+  await box.press("Enter");
+  await expect(page).toHaveURL(/place=port-550/);
+  await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
+});
+
+test("v7: a bare /coast with a saved home port opens the home briefing with its trip", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("cw-home-port", JSON.stringify({ place: "port-201", for: "commercial", species: "dungeness" })));
+  await page.goto(`${OK}/coast`);
+  await expect(page).toHaveURL(/place=port-201.*for=commercial.*species=dungeness/);
+  await expect(page.getByTestId("coast-title")).toHaveText("Crescent City");
+  await expect(page.getByTestId("coast-home")).toContainText("Your home port");
 });
 
 test("on a phone the trip is one line, the answer is near the top, and nothing scrolls sideways", async ({ browser }) => {
@@ -96,7 +130,8 @@ test("one count of notices: the top bar, the glance and the notices section agre
   expect(here).toBeGreaterThan(0);
   const line = new RegExp(`${here} notices? tied to these waters · (none|\\d+) names? Dungeness crab`);
   await expect(page.getByTestId("glance-notices")).toHaveText(new RegExp(`^${line.source}`));
-  await expect(page.getByTestId("glance-notices")).toContainText("not verified");
+  // v7: the per-record "Not verified" tag lives on each notice (the glance suffix is gone)
+  await expect(page.getByTestId("brief-official")).toContainText("Not verified");
   const toggle = page.getByTestId("brief-official-toggle");
   await expect(toggle).toContainText(String(here));
   await expect(toggle).toContainText(line);

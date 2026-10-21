@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import type { Audience } from "@/lib/coast";
 import type { SpeciesId } from "@/content/species";
@@ -23,7 +23,6 @@ type Props = {
   tripDate: string | null;
   shared: Draft | null;
   initial: Draft;
-  onLive: (d: Draft) => void;
 };
 
 type WUnit = "lb" | "kg" | "ton";
@@ -40,7 +39,7 @@ const ext = { target: "_blank", rel: "noreferrer" } as const;
 const clone = (d: Draft): Draft => JSON.parse(JSON.stringify(d));
 const pct = (x: number) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.round(Math.abs(x) * 100)} %`;
 
-export default function Worksheet({ place, species, tripDate, shared, initial, onLive }: Props) {
+export default function Worksheet({ place, species, tripDate, shared, initial }: Props) {
   const data = useTripData();
   const key = draftKey(place.key, species);
   const [draft, setDraft] = useState<Draft>(() => clone(shared ?? initial));
@@ -51,8 +50,6 @@ export default function Worksheet({ place, species, tripDate, shared, initial, o
   const preset = presetById(draft.preset);
   const wUnit: WUnit = preset?.unit === "ton" ? "ton" : unitPref;
   const r = useMemo(() => computeTrip(draftInputs(draft)), [draft]);
-
-  useEffect(() => onLive(draft), [draft, onLive]);
 
   const update = (fn: (d: Draft) => void) => {
     const d = clone(draft);
@@ -74,19 +71,31 @@ export default function Worksheet({ place, species, tripDate, shared, initial, o
     return s ? <SourceNote text={s.text} url={s.url} note={s.note} /> : null;
   };
 
-  // the results bar on phones shows only while the worksheet is on screen
+  // the results bar on phones shows while the worksheet is on screen and its own result line is not
   const root = useRef<HTMLDivElement | null>(null);
+  const line = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
+  const [lineSeen, setLineSeen] = useState(true);
   useEffect(() => {
     const el = root.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
+    const ln = line.current;
+    if (!el || !ln || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { rootMargin: "0px 0px -120px 0px" });
+    const lo = new IntersectionObserver(([e]) => setLineSeen(e.isIntersecting), { rootMargin: "-56px 0px -80px 0px" });
     io.observe(el);
-    return () => io.disconnect();
+    lo.observe(ln);
+    return () => {
+      io.disconnect();
+      lo.disconnect();
+    };
   }, []);
 
+  const c0 = draft.inputs.catch?.[0] ?? null;
+  const priceUnit = wUnit === "ton" ? "$/ton" : wUnit === "kg" ? "$/kg" : "$/lb";
+  const moreLines = (draft.inputs.catch ?? []).length - 1;
+
   return (
-    <div ref={root} className="@container flex flex-col gap-6" data-testid="econ-worksheet">
+    <div ref={root} className="@container mt-4 flex flex-col gap-5" data-testid="econ-worksheet">
       {fromLink && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-n-official-line bg-n-official-bg px-4 py-3 text-[15px]" role="status" data-testid="econ-shared">
           <span className="min-w-0 font-semibold">From a shared link, not saved.</span>
@@ -108,23 +117,69 @@ export default function Worksheet({ place, species, tripDate, shared, initial, o
       )}
       <StoreStatus />
 
-      <div className="grid gap-6 @[760px]:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="flex min-w-0 flex-col gap-6">
-          <Group title="Trip" testId="econ-g-trip">
-            <Select
-              label="Fishery"
-              value={(draft.preset ?? "") as string}
-              options={FISHERY_OPTIONS}
-              testId="econ-fishery"
-              hint={preset?.note}
+      {/* the live result line: always the reader's own numbers worked through, "—" until they are there */}
+      <ResultLine r={r} wUnit={wUnit} lineRef={line} />
+
+      {/* the quick block: the four numbers a skipper changes between trips */}
+      <div className="flex flex-col gap-4" data-testid="econ-quick">
+        <div className="grid grid-cols-1 gap-4 @[520px]:grid-cols-2">
+          <Select
+            label="Fishery (starting values)"
+            value={(draft.preset ?? "") as string}
+            options={FISHERY_OPTIONS}
+            testId="econ-fishery"
+            hint={preset?.note}
+            onChange={(v) =>
+              update((d) => {
+                const p = presetById(v);
+                if (p) applyPreset(d, p);
+                else d.preset = null;
+              })
+            }
+          />
+          <VesselSelect update={update} />
+        </div>
+        <NumberField label="Fuel price, $/gal" kind="usdPerGal" decimals={3} step={0.1} value={draft.inputs.fuelUsdPerGal ?? null} onChange={setNum("fuelUsdPerGal")} testId="econ-fuel-price" hint={<DieselRef used={draft.basis.fuelUsdPerGal === "eia"} onUse={() => update((d) => ((d.inputs.fuelUsdPerGal = DIESEL_REF.usdPerGal), (d.basis.fuelUsdPerGal = "eia")))} />} />
+        {c0 && (
+          <div className="grid grid-cols-1 gap-x-3 gap-y-4 @[340px]:grid-cols-2">
+            <NumberField label={`Catch landed, ${wUnit}`} kind="lb" decimals={wUnit === "ton" ? 2 : 0} step={wUnit === "ton" ? 1 : wUnit === "kg" ? 25 : 50} scale={W_SCALE[wUnit]} value={c0.lb} onChange={(v) => update((d) => (d.inputs.catch![0].lb = v))} testId="econ-catch-0-lb" />
+            <NumberField
+              label={`Your price, ${priceUnit}`}
+              kind="usdPerLb"
+              decimals={wUnit === "ton" ? 0 : 2}
+              step={wUnit === "ton" ? 50 : 0.25}
+              scale={P_SCALE[wUnit]}
+              value={c0.usdPerLb}
+
               onChange={(v) =>
                 update((d) => {
-                  const p = presetById(v);
-                  if (p) applyPreset(d, p);
-                  else d.preset = null;
+                  d.inputs.catch![0].usdPerLb = v;
+                  delete d.basis["catch.0.usdPerLb"];
                 })
               }
+              testId="econ-catch-0-price"
             />
+          </div>
+        )}
+        {c0 && <PriceRefNote i={0} draft={draft} wUnit={wUnit} update={update} />}
+        {moreLines > 0 && (
+          <p className="text-[13.5px] text-n-ink-2" data-testid="econ-more-lines">
+            {moreLines} more catch {moreLines === 1 ? "line" : "lines"} in the full worksheet, counted above.
+          </p>
+        )}
+      </div>
+
+      {/* everything else, folded in the same panel (mounted, so it works offline and is in the page) */}
+      <details className="nx-note group -mx-1 border-t border-n-line px-1" open={shared !== null || undefined} data-testid="econ-advanced">
+        <summary className="nx-focus flex min-h-[56px] cursor-pointer items-center gap-3 py-2" data-testid="econ-toggle">
+          <span className="min-w-0 flex-1">
+            <span className="block text-[16px] font-semibold text-n-ink">Full worksheet</span>
+            <span className="block text-[13px] leading-5 text-n-ink-2 group-open:hidden">Distance and burn, costs and fees, crew pay, more catch lines, scenarios and share</span>
+          </span>
+          <Icon name="chevronDown" className="nx-note-chev h-[18px] w-[18px] shrink-0 text-n-ink-3" />
+        </summary>
+        <div className="nx-note-body flex flex-col gap-6 pb-2 pt-2">
+          <Group title="Trip" testId="econ-g-trip">
             {wUnit !== "ton" ? (
               <Select
                 label="Weigh in"
@@ -157,7 +212,7 @@ export default function Worksheet({ place, species, tripDate, shared, initial, o
           </Group>
 
           <Group title="Vessel and fuel" testId="econ-g-vessel">
-            <VesselPicker draft={draft} update={update} readOnly={readOnly} />
+            <VesselSave draft={draft} readOnly={readOnly} />
             <NumberField label="Fuel burn steaming" unit="gal/h" kind="gph" decimals={1} value={draft.inputs.steamGph ?? null} onChange={setNum("steamGph")} testId="econ-steam-gph" hint={src("steamGph")} />
             <NumberField label="Fuel burn fishing" unit="gal/h" kind="gph" decimals={1} value={draft.inputs.fishingGph ?? null} onChange={setNum("fishingGph")} testId="econ-fish-gph" hint={src("fishingGph")} />
             <NumberField
@@ -170,7 +225,6 @@ export default function Worksheet({ place, species, tripDate, shared, initial, o
               testId="econ-fuel-gal"
               hint={r.fuelGal !== null && draft.inputs.fuelGal == null ? `Worked out: ${num(r.fuelGal, 1)} gal` : "Replaces the burn estimate when filled."}
             />
-            <NumberField label="Fuel price" unit="$/gal" kind="usdPerGal" decimals={3} value={draft.inputs.fuelUsdPerGal ?? null} onChange={setNum("fuelUsdPerGal")} testId="econ-fuel-price" hint={<DieselRef used={draft.basis.fuelUsdPerGal === "eia"} onUse={() => update((d) => ((d.inputs.fuelUsdPerGal = DIESEL_REF.usdPerGal), (d.basis.fuelUsdPerGal = "eia")))} />} />
             <div className="@[480px]:col-span-2">
               <Check label="Fuel comes off the top before crew shares" checked={draft.inputs.fuelShared !== false} onChange={(v) => update((d) => (d.inputs.fuelShared = v))} testId="econ-fuel-shared" />
             </div>
@@ -180,7 +234,7 @@ export default function Worksheet({ place, species, tripDate, shared, initial, o
           <Group title="Costs and crew" testId="econ-g-costs">
             <div className="flex flex-col gap-3 @[480px]:col-span-2">
               {(draft.inputs.costs ?? []).map((c, i) => (
-                <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,9rem)_auto] items-end gap-2" data-testid={`econ-cost-${i}`}>
+                <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,8rem)_auto] items-end gap-2" data-testid={`econ-cost-${i}`}>
                   <TextField label={`Cost ${i + 1}`} value={c.label} onChange={(v) => update((d) => (d.inputs.costs![i].label = v))} />
                   <NumberField label={<span className="sr-only">{c.label || `Cost ${i + 1}`} amount</span>} unit="$" kind="usd" value={c.usd} onChange={(v) => update((d) => (d.inputs.costs![i].usd = v))} testId={`econ-cost-${i}-usd`} />
                   <IconButton label={`Remove ${c.label || `cost ${i + 1}`}`} icon="close" onClick={() => update((d) => d.inputs.costs!.splice(i, 1))} />
@@ -227,11 +281,10 @@ export default function Worksheet({ place, species, tripDate, shared, initial, o
             )}
           </Group>
 
-          <Group title="Catch and price" testId="econ-g-catch" note="Your own pounds and price. Neritic never estimates a catch or a price.">
+          <Group title="Catch lines" testId="econ-g-catch" note="Your own pounds and price. Neritic never estimates a catch or a price.">
             <div className="flex flex-col gap-5 @[480px]:col-span-2">
-              {(draft.inputs.catch ?? []).map((c, i) => (
-                <CatchRow key={i} i={i} draft={draft} wUnit={wUnit} update={update} canRemove={i > 0} />
-              ))}
+              {c0 && <TextField label="Main catch" value={c0.species} onChange={(v) => update((d) => (d.inputs.catch![0].species = v))} testId="econ-catch-0-name" />}
+              {(draft.inputs.catch ?? []).map((c, i) => (i === 0 ? null : <CatchRow key={i} i={i} draft={draft} wUnit={wUnit} update={update} canRemove />))}
               {(draft.inputs.catch ?? []).length < 10 && (
                 <TextButton onClick={() => update((d) => (d.inputs.catch = [...(d.inputs.catch ?? []), { species: `Catch ${(d.inputs.catch ?? []).length + 1}`, ref: null, lb: null, usdPerLb: null }]))} testId="econ-add-catch">
                   <Icon name="plus" className="h-4 w-4" /> Add a catch line
@@ -239,37 +292,36 @@ export default function Worksheet({ place, species, tripDate, shared, initial, o
               )}
             </div>
           </Group>
-        </div>
 
-        <div className="flex min-w-0 flex-col gap-6 @[760px]:sticky @[760px]:top-20 @[760px]:self-start">
           <Results r={r} wUnit={wUnit} />
           <Sensitivity r={r} />
-        </div>
-      </div>
 
-      <Scenarios place={place} species={species} draft={draft} scenarioId={scenarioId} setScenarioId={setScenarioId} readOnly={readOnly} onOpen={(d) => update((x) => Object.assign(x, clone(d)))} />
-      <ShareLink draft={draft} />
-      <TripDataPanel />
+          <Scenarios place={place} species={species} draft={draft} scenarioId={scenarioId} setScenarioId={setScenarioId} readOnly={readOnly} onOpen={(d) => update((x) => Object.assign(x, clone(d)))} />
+          <ShareLink draft={draft} />
+          <TripDataPanel />
+        </div>
+      </details>
 
       {/* in a portal: the worksheet is a size container and the page may carry a transform, either of which would pin a fixed bar to them */}
       {inView &&
+        !lineSeen &&
         createPortal(
-        <div className="env-chart fixed inset-x-0 z-30 border-t border-n-line bg-n-surface px-4 py-2 shadow-[0_-6px_16px_-12px_rgba(11,24,32,0.4)] lg:hidden" style={{ bottom: "calc(60px + env(safe-area-inset-bottom, 0px))" }} data-testid="econ-bar" aria-hidden>
-          <div className="nx-data mx-auto flex max-w-[640px] items-baseline justify-between gap-3 text-[15px]">
-            <span>
-              <span className="font-ui text-[12.5px] text-n-ink-3">Net </span>
-              <span className="font-semibold">{usd(r.netUsd, { signed: true })}</span>
-            </span>
-            <span>
-              <span className="font-ui text-[12.5px] text-n-ink-3">Cost </span>
-              {usd(r.tripCostUsd)}
-            </span>
-            <span>
-              <span className="font-ui text-[12.5px] text-n-ink-3">B/E </span>
-              {beLb(r, wUnit)}
-            </span>
-          </div>
-        </div>,
+          <div className="env-chart fixed inset-x-0 z-30 border-t border-n-line bg-n-surface px-4 py-2 shadow-[0_-6px_16px_-12px_rgba(11,24,32,0.4)] lg:hidden" style={{ bottom: "calc(60px + env(safe-area-inset-bottom, 0px))" }} data-testid="econ-bar" aria-hidden>
+            <div className="nx-num mx-auto flex max-w-[640px] items-baseline justify-between gap-3 text-[15px]">
+              <span>
+                <span className="text-[12.5px] text-n-ink-3">Net </span>
+                <span className="font-semibold">{usd(r.netUsd, { signed: true })}</span>
+              </span>
+              <span>
+                <span className="text-[12.5px] text-n-ink-3">Cost </span>
+                {usd(r.tripCostUsd)}
+              </span>
+              <span>
+                <span className="text-[12.5px] text-n-ink-3">Break-even </span>
+                {beLb(r, wUnit)}
+              </span>
+            </div>
+          </div>,
           document.body,
         )}
     </div>
@@ -318,7 +370,7 @@ function IconButton({ label, icon, onClick }: { label: string; icon: string; onC
 
 function UseButton({ onClick, testId, children }: { onClick: () => void; testId: string; children?: ReactNode }) {
   return (
-    <button type="button" onClick={onClick} className="nx-press nx-focus mt-1 inline-flex min-h-11 items-center rounded-xl border border-n-line-strong bg-n-surface px-3 text-[14px] font-semibold text-n-ink" data-testid={testId}>
+    <button type="button" onClick={onClick} className="nx-press nx-focus inline-flex min-h-11 items-center rounded-xl border border-n-line-strong bg-n-surface px-3 text-[14px] font-semibold text-n-ink" data-testid={testId}>
       {children ?? "Use as a starting assumption"}
     </button>
   );
@@ -329,19 +381,29 @@ function DieselRef({ used, onUse }: { used: boolean; onUse: () => void }) {
   const age = dieselAge(now);
   return (
     <span className="block" data-testid="econ-diesel-ref">
-      <span className="font-semibold text-n-ink-2">
-        EIA California diesel, week of Oct 19, 2026: <span className="nx-data">${DIESEL_REF.usdPerGal.toFixed(3)}</span>/gal
-      </span>{" "}
-      (a year earlier <span className="nx-data">${DIESEL_REF.prior.usdPerGal.toFixed(3)}</span>). {DIESEL_REF.label}.{" "}
-      <a href={DIESEL_REF.url} {...ext} className="nx-focus underline underline-offset-2">
-        EIA
-      </a>
-      {age.stale && (
-        <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-n-official-line bg-n-official-bg px-2 py-0.5 text-[12.5px] font-semibold text-n-official" data-testid="econ-diesel-stale">
-          <Icon name="clock" className="h-3.5 w-3.5" /> {age.days} days old
+      <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="font-semibold text-n-ink-2">
+          EIA diesel, week of Oct 19: <span className="nx-num">${DIESEL_REF.usdPerGal.toFixed(3)}</span>/gal
         </span>
-      )}
-      {used ? <span className="mt-1 block font-semibold text-n-ink-2">In use as your starting assumption (basis: EIA).</span> : <UseButton onClick={onUse} testId="econ-use-diesel" />}
+        {age.stale && (
+          <span className="inline-flex items-center gap-1 font-semibold text-n-official" data-testid="econ-diesel-stale">
+            <Icon name="clock" className="h-3.5 w-3.5" /> {age.days} days old
+          </span>
+        )}
+        {used ? (
+          <span className="font-semibold text-n-ink-2">In use as your starting assumption (basis: EIA).</span>
+        ) : (
+          <UseButton onClick={onUse} testId="econ-use-diesel">
+            Use ${DIESEL_REF.usdPerGal.toFixed(3)}
+          </UseButton>
+        )}
+      </span>
+      <span className="mt-1 block">
+        California retail, week of Oct 19, 2026; a year earlier <span className="nx-num">${DIESEL_REF.prior.usdPerGal.toFixed(3)}</span>. {DIESEL_REF.label}.{" "}
+        <a href={DIESEL_REF.url} {...ext} className="nx-focus underline underline-offset-2">
+          EIA
+        </a>
+      </span>
     </span>
   );
 }
@@ -367,32 +429,37 @@ function PotFields({ draft, preset, update }: { draft: Draft; preset: FisheryPre
   );
 }
 
-function VesselPicker({ draft, update, readOnly }: { draft: Draft; update: (fn: (d: Draft) => void) => void; readOnly: boolean }) {
+/** A saved vessel fills speed, burn, crew and pots (only offered once one is saved). */
+function VesselSelect({ update }: { update: (fn: (d: Draft) => void) => void }) {
   const data = useTripData();
   const vessels = data?.vessels ?? [];
+  if (!vessels.length) return null;
+  return (
+    <Select
+      label="Your vessel"
+      value=""
+      options={[{ value: "", label: "Choose to fill speed, burn, crew…" }, ...vessels.map((v) => ({ value: v.id, label: v.name }))]}
+      testId="econ-vessel"
+      onChange={(id) => {
+        const v = vessels.find((x) => x.id === id);
+        if (!v) return;
+        update((d) => {
+          for (const [k, val] of [["cruiseKt", v.cruiseKt], ["steamGph", v.steamGph], ["fishingGph", v.fishingGph], ["crew.crew", v.crew], ["pots", v.pots]] as const) {
+            if (val === null) continue;
+            setField(d, k, val);
+            delete d.basis[k];
+          }
+        });
+      }}
+    />
+  );
+}
+
+function VesselSave({ draft, readOnly }: { draft: Draft; readOnly: boolean }) {
   const [name, setName] = useState("");
   const [naming, setNaming] = useState(false);
   return (
     <div className="flex flex-col gap-2 @[480px]:col-span-2">
-      {vessels.length > 0 && (
-        <Select
-          label="Your vessel"
-          value=""
-          options={[{ value: "", label: "Choose to fill speed, burn, crew…" }, ...vessels.map((v) => ({ value: v.id, label: v.name }))]}
-          testId="econ-vessel"
-          onChange={(id) => {
-            const v = vessels.find((x) => x.id === id);
-            if (!v) return;
-            update((d) => {
-              for (const [k, val] of [["cruiseKt", v.cruiseKt], ["steamGph", v.steamGph], ["fishingGph", v.fishingGph], ["crew.crew", v.crew], ["pots", v.pots]] as const) {
-                if (val === null) continue;
-                setField(d, k, val);
-                delete d.basis[k];
-              }
-            });
-          }}
-        />
-      )}
       {naming ? (
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-0 flex-1">
@@ -423,18 +490,66 @@ function VesselPicker({ draft, update, readOnly }: { draft: Draft; update: (fn: 
   );
 }
 
-function CatchRow({ i, draft, wUnit, update, canRemove }: { i: number; draft: Draft; wUnit: WUnit; update: (fn: (d: Draft) => void) => void; canRemove: boolean }) {
+/** The CDFW dock value beside a price field: history, labelled so, copied in only on a tap. */
+function PriceRefNote({ i, draft, wUnit, update }: { i: number; draft: Draft; wUnit: WUnit; update: (fn: (d: Draft) => void) => void }) {
   const c = draft.inputs.catch![i];
   const ref = priceRef(c.ref);
   const basisKey = `catch.${i}.usdPerLb`;
-  const priceUnit = wUnit === "ton" ? "$/ton" : wUnit === "kg" ? "$/kg" : "$/lb";
   const refShown = ref ? (wUnit === "ton" ? `$${num(ref.usdPerLb * LB_PER_TON)}/ton` : wUnit === "kg" ? `$${(ref.usdPerLb * LB_PER_KG).toFixed(2)}/kg` : `$${ref.usdPerLb.toFixed(2)}/lb`) : null;
-  const priorShown = ref ? (wUnit === "ton" ? `$${num(ref.prior.usdPerLb * LB_PER_TON)}` : wUnit === "kg" ? `$${(ref.prior.usdPerLb * LB_PER_KG).toFixed(2)}` : `$${ref.prior.usdPerLb.toFixed(2)}`) : null;
+  const priorShown = ref?.prior ? (wUnit === "ton" ? `$${num(ref.prior.usdPerLb * LB_PER_TON)}` : wUnit === "kg" ? `$${(ref.prior.usdPerLb * LB_PER_KG).toFixed(2)}` : `$${ref.prior.usdPerLb.toFixed(2)}`) : null;
+  return (
+    <div className="text-[13px] leading-snug text-n-ink-3" data-testid={`econ-catch-${i}-ref`}>
+      {ref ? (
+        <>
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="font-semibold text-n-ink-2">
+              CDFW history, not today&rsquo;s price: <span className="nx-num">{refShown}</span> in 2024
+              {ref.prior && priorShown && (
+                <span className="font-normal">
+                  {" "}
+                  ({ref.prior.year}: <span className="nx-num">{priorShown}</span>)
+                </span>
+              )}
+            </span>
+            {draft.basis[basisKey] === "cdfw" ? (
+              <span className="font-semibold text-n-ink-2">In use as your starting assumption (basis: CDFW history).</span>
+            ) : (
+              <UseButton
+                testId={`econ-catch-${i}-use`}
+                onClick={() =>
+                  update((d) => {
+                    d.inputs.catch![i].usdPerLb = ref.usdPerLb;
+                    d.basis[basisKey] = "cdfw";
+                  })
+                }
+              >
+                Use {refShown}
+              </UseButton>
+            )}
+          </p>
+          <p className="mt-1">
+            {ref.fishery}. {PRICE_REF_LABEL.replace("calendar year,", `calendar year${ref.caveat ? ` (${ref.fishery.split(" ")[0]}: ${ref.caveat})` : ""},`)}{" "}
+            <a href={ref.url} {...ext} className="nx-focus underline underline-offset-2">
+              Report
+            </a>
+          </p>
+        </>
+      ) : (
+        <span>{NO_PRICE_REF}. Ask your buyer.</span>
+      )}
+    </div>
+  );
+}
+
+function CatchRow({ i, draft, wUnit, update, canRemove }: { i: number; draft: Draft; wUnit: WUnit; update: (fn: (d: Draft) => void) => void; canRemove: boolean }) {
+  const c = draft.inputs.catch![i];
+  const basisKey = `catch.${i}.usdPerLb`;
+  const priceUnit = wUnit === "ton" ? "$/ton" : wUnit === "kg" ? "$/kg" : "$/lb";
   return (
     <div className="flex flex-col gap-3 border-l-2 border-n-line pl-3" data-testid={`econ-catch-${i}`}>
       <div className="flex items-end gap-2">
         <div className="min-w-0 flex-1">
-          <TextField label={i === 0 ? "Main catch" : `Catch line ${i + 1}`} value={c.species} onChange={(v) => update((d) => (d.inputs.catch![i].species = v))} testId={`econ-catch-${i}-name`} />
+          <TextField label={`Catch line ${i + 1}`} value={c.species} onChange={(v) => update((d) => (d.inputs.catch![i].species = v))} testId={`econ-catch-${i}-name`} />
         </div>
         {canRemove && <IconButton label={`Remove ${c.species || `catch line ${i + 1}`}`} icon="close" onClick={() => update((d) => d.inputs.catch!.splice(i, 1))} />}
       </div>
@@ -456,34 +571,7 @@ function CatchRow({ i, draft, wUnit, update, canRemove }: { i: number; draft: Dr
           testId={`econ-catch-${i}-price`}
         />
       </div>
-      <div className="text-[13px] leading-snug text-n-ink-3" data-testid={`econ-catch-${i}-ref`}>
-        {ref ? (
-          <>
-            <span className="font-semibold text-n-ink-2">
-              CDFW {ref.fishery}: <span className="nx-data">{refShown}</span> in 2024
-            </span>{" "}
-            ({ref.prior.year}: <span className="nx-data">{priorShown}</span>). {PRICE_REF_LABEL.replace("calendar year,", `calendar year${ref.caveat ? ` (${ref.fishery.split(" ")[0]}: ${ref.caveat})` : ""},`)}{" "}
-            <a href={ref.url} {...ext} className="nx-focus underline underline-offset-2">
-              Report
-            </a>
-            {draft.basis[basisKey] === "cdfw" ? (
-              <span className="mt-1 block font-semibold text-n-ink-2">In use as your starting assumption (basis: CDFW history).</span>
-            ) : (
-              <UseButton
-                testId={`econ-catch-${i}-use`}
-                onClick={() =>
-                  update((d) => {
-                    d.inputs.catch![i].usdPerLb = ref.usdPerLb;
-                    d.basis[basisKey] = "cdfw";
-                  })
-                }
-              />
-            )}
-          </>
-        ) : (
-          <span>{NO_PRICE_REF}. Ask your buyer.</span>
-        )}
-      </div>
+      <PriceRefNote i={i} draft={draft} wUnit={wUnit} update={update} />
     </div>
   );
 }
@@ -504,6 +592,35 @@ function bePrice(r: TripResult, w: WUnit): string {
   return `${usd(b.value * P_SCALE[w], { cents: w !== "ton" })}/${w}`;
 }
 
+function ResultLine({ r, wUnit, lineRef }: { r: TripResult; wUnit: WUnit; lineRef: RefObject<HTMLDivElement | null> }) {
+  const be = r.breakEvenLb.note === "none" ? "None at this price" : r.breakEvenLb.note === "covered" ? `0 ${wUnit}` : r.breakEvenLb.value !== null ? beLb(r, wUnit) : r.breakEvenUsdPerLb.value !== null ? `${bePrice(r, wUnit)}` : "—";
+  return (
+    <div ref={lineRef} className="border-y border-n-line py-3" data-testid="econ-summary" aria-live="polite" aria-atomic="true">
+      <dl className="grid grid-cols-3 gap-3">
+        <Fig label="Net to boat" value={usd(r.netUsd, { signed: true })} testId="econ-sum-net" strong />
+        <Fig label="Trip cost" value={usd(r.tripCostUsd)} testId="econ-sum-cost" />
+        <Fig label="Break-even" value={be} testId="econ-sum-breakeven" />
+      </dl>
+      {r.missing.length > 0 && (
+        <p className="mt-2 text-[13.5px] leading-snug text-n-ink-2" data-testid="econ-needs">
+          Needs: {r.missing.map((m) => MISSING_LABEL[m]).join("; ")}.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Fig({ label, value, testId, strong }: { label: string; value: string; testId: string; strong?: boolean }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[12.5px] font-semibold text-n-ink-3">{label}</dt>
+      <dd className={`nx-num truncate font-semibold leading-tight ${strong ? "text-[24px] text-n-ink" : "text-[20px] text-n-ink"} ${value === "—" ? "!text-n-ink-3" : ""}`} data-testid={testId}>
+        {value}
+      </dd>
+    </div>
+  );
+}
+
 function Results({ r, wUnit }: { r: TripResult; wUnit: WUnit }) {
   const rows: [string, string, string][] = [
     ["Trip cost (fuel and costs)", usd(r.tripCostUsd), "econ-r-cost"],
@@ -515,8 +632,8 @@ function Results({ r, wUnit }: { r: TripResult; wUnit: WUnit }) {
     ["Break-even price", bePrice(r, wUnit), "econ-r-be-price"],
   ];
   return (
-    <div className="rounded-2xl border border-n-line bg-n-surface p-4" data-testid="econ-results" aria-live="polite" aria-atomic="false">
-      <h3 className="text-[17px] font-semibold">Results</h3>
+    <div className="rounded-2xl border border-n-line bg-n-surface p-4" data-testid="econ-results">
+      <h3 className="text-[16px] font-semibold">Breakdown</h3>
       <dl className="mt-2 divide-y divide-n-line">
         {rows.map(([k, v, id]) => (
           <div key={id} className={`flex items-baseline justify-between gap-3 py-2 ${id === "econ-r-net" ? "font-semibold" : ""}`}>

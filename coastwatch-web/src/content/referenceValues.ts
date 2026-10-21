@@ -18,7 +18,8 @@ export type PriceRef = {
   pounds: number;
   /** dollars ÷ pounds, computed by Neritic */
   usdPerLb: number;
-  prior: { dollars: number; pounds: number; usdPerLb: number; year: number };
+  /** the year before, when CDFW lists the same fishery line in it (null when it is not in that year's top ten) */
+  prior: { dollars: number; pounds: number; usdPerLb: number; year: number } | null;
   unit: "$/lb";
   period: string;
   source: string;
@@ -31,14 +32,14 @@ export type PriceRef = {
 const CDFW_2024 = { label: "CDFW Marine Region, 2024 By The Numbers", url: "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=229396&inline=", asOf: "data as of 02/14/2025" };
 const per = (d: number, p: number) => d / p;
 
-function ref(key: string, fishery: string, y24: [number, number], y23: [number, number], caveat?: string): PriceRef {
+function ref(key: string, fishery: string, y24: [number, number], y23: [number, number] | null, caveat?: string): PriceRef {
   return {
     key,
     fishery,
     dollars: y24[0],
     pounds: y24[1],
     usdPerLb: per(y24[0], y24[1]),
-    prior: { dollars: y23[0], pounds: y23[1], usdPerLb: per(y23[0], y23[1]), year: 2023 },
+    prior: y23 ? { dollars: y23[0], pounds: y23[1], usdPerLb: per(y23[0], y23[1]), year: 2023 } : null,
     unit: "$/lb",
     period: "calendar year 2024 (January 1 – December 31)",
     source: CDFW_2024.label,
@@ -48,7 +49,7 @@ function ref(key: string, fishery: string, y24: [number, number], y23: [number, 
   };
 }
 
-/** [dollars, pounds] from "Top Fisheries by Ex-Vessel Value", 2024 and 2023 reports. */
+/** [dollars, pounds] from "Top Fisheries by Ex-Vessel Value", 2024 and 2023 reports (the same figures as content/landings.ts). */
 export const PRICE_REFS: Record<string, PriceRef> = {
   dungeness: ref("dungeness", "Dungeness Crab", [49_744_974, 14_173_811], [54_078_572, 21_019_733], "mixes two seasons"),
   squid: ref("squid", "Market Squid", [67_854_320, 126_430_905], [30_397_059, 52_270_346]),
@@ -58,6 +59,9 @@ export const PRICE_REFS: Record<string, PriceRef> = {
   petrale: ref("petrale", "Petrale Sole", [1_788_001, 1_492_852], [2_298_081, 1_959_754]),
   "spot-prawn": ref("spot-prawn", "Spot Prawn", [3_942_641, 176_968], [4_570_767, 216_125]),
   lobster: ref("lobster", "California Spiny Lobster", [20_893_435, 1_080_004], [21_506_406, 1_095_802]),
+  // the same CDFW 2024 line the briefing's dock value quotes (content/landings.ts); Yellow Rock Crab is not
+  // in CDFW's 2023 top ten, so it has no prior year here
+  "rock-crab": ref("rock-crab", "Yellow Rock Crab", [1_801_066, 765_516], null),
 };
 
 export const PRICE_REF_LABEL =
