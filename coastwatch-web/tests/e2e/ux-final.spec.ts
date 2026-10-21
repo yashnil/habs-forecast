@@ -31,6 +31,7 @@ test("M2: choosing another station moves Research's map to it and clears the old
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
+  await page.getByTestId("research-tab-grid").click();
   await page.getByTestId("research-grid").scrollIntoViewIfNeeded();
   await mapReady(page);
   const before = await page.evaluate(() => (window as unknown as { __cwMap: M }).__cwMap.getCenter());
@@ -44,7 +45,7 @@ test("M4: a station's latest HAB sample is the same date, with its year, in Rese
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
-  const inResearch = (await page.getByTestId("research-stations").getByRole("button", { name: /Monterey Wharf/ }).innerText()).match(/last HAB sample [A-Z][a-z]{2} \d+(, \d{4})?/)?.[0];
+  const inResearch = (await page.getByTestId("research-stations").getByRole("button", { name: /Monterey Wharf/ }).textContent())!.match(/last HAB sample [A-Z][a-z]{2} \d+(, \d{4})?/)?.[0];
   // Monterey Wharf's newest toxin or cell sample is from 2025: the year is said, never read as this year's
   expect(inResearch).toMatch(/, 2025$/);
   await page.goto(`${OK}/?layer=forecast&sel=harbor:550`);

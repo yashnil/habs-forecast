@@ -37,6 +37,7 @@ for (const [label, viewport] of [["desktop", { width: 1440, height: 900 }], ["ph
     test("Research with its map tools", async ({ page }) => {
       await page.clock.setFixedTime(new Date(NOW));
       await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
+      await page.getByTestId("research-tab-grid").click();
       await page.getByTestId("research-grid").scrollIntoViewIfNeeded();
       expect(await serious(page)).toEqual([]);
     });

@@ -217,7 +217,7 @@ describe("station chart: per-sample QC and units", () => {
 
 describe("no model-vs-observation arithmetic in Research", () => {
   it("the Research source carries no skill, correlation or accuracy wording", () => {
-    const src = ["Research.tsx", "Lineage.tsx", "exports.ts", "layerLineage.ts"].map((f) => readFileSync(path.join(__dirname, "../../src/v4/research", f), "utf8")).join("\n");
+    const src = ["Research.tsx", "parts.tsx", "CoastLadder.tsx", "Lineage.tsx", "exports.ts", "layerLineage.ts"].map((f) => readFileSync(path.join(__dirname, "../../src/v4/research", f), "utf8")).join("\n");
     expect(src).not.toMatch(/correlat|skill score|hit rate|accuracy|R²|r-squared/i);
     expect(src).not.toMatch(/\b(ROC|AUC|RMSE)\b/);
   });

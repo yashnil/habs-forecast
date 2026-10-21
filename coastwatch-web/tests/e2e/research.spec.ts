@@ -19,12 +19,15 @@ test("a station's record: ranges, the model beside it, provenance, QC", async ({
   await page.getByTestId("range-all").click();
   await expect(page.getByTestId("research-stats")).toContainText("never a zero");
   await expect(page.getByTestId("research-provenance")).toContainText("Method");
+  // provenance and QC are one tab away (v7): mounted throughout, shown when their tab is chosen
+  await page.getByTestId("research-tab-provenance").click();
   await expect(page.getByTestId("research-qc").locator("li").first()).toBeVisible();
 });
 
 test("the export is the window's samples with a provenance header", async ({ page }) => {
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
+  await page.getByTestId("research-export-menu").click();
   const [dl] = await Promise.all([page.waitForEvent("download"), page.getByTestId("research-export").click()]);
   const text = readFileSync((await dl.path())!, "utf8");
   expect(text).toContain("# Neritic research export: Santa Cruz Wharf");
@@ -37,9 +40,12 @@ test("a My Coast place opens on its nearest station; a transect lists cells and 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/research?place=port-550`);
   await expect(page.getByTestId("research-title")).toHaveText("Monterey Wharf");
+  await page.getByTestId("research-tab-grid").click();
   await page.getByTestId("tool-transect").click();
   const map = page.getByTestId("research-grid").locator(".maplibregl-canvas");
   await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { loaded(): boolean } }).__cwMap?.loaded());
+  // the map sits under the tab's controls: in view before it is clicked
+  await map.scrollIntoViewIfNeeded();
   const b = (await map.boundingBox())!;
   await page.mouse.click(b.x + b.width * 0.15, b.y + b.height * 0.4);
   await page.mouse.click(b.x + b.width * 0.85, b.y + b.height * 0.6);
@@ -51,8 +57,10 @@ test("a My Coast place opens on its nearest station; a transect lists cells and 
 
 const manifest = JSON.parse(readFileSync("tests/fixture-data/v1/manifest.json", "utf8")) as { layers: { group_id: string; variable: string; time: { lead_days: number }; qc: { checks: { name: string }[] } }[] };
 type Win = { __cwMap?: { loaded(): boolean; getSource(id: string): unknown } };
-// the grid map is made only once it is within a screen of view (or a tool is chosen): bring it near first
+// the grid map is in the Native grid tab (v7), made only once it is shown: open the tab, bring it near
+const gridTab = (page: import("@playwright/test").Page) => page.getByTestId("research-tab-grid").click();
 const mapReady = async (page: import("@playwright/test").Page) => {
+  await gridTab(page);
   await page.getByTestId("research-map").scrollIntoViewIfNeeded();
   await page.waitForFunction(() => !!(window as unknown as Win).__cwMap?.loaded());
 };
@@ -72,6 +80,7 @@ test("lineage and QC of the grid layer; lead and variable come from the run itse
   await expect(page.getByTestId("lineage-licence")).toContainText("NOAA CoastWatch");
   await expect(page.getByTestId("lineage-quant")).toContainText("16-bit");
   const checks = manifest.layers.find((l) => l.group_id === "charm" && l.variable === "particulate_domoic" && l.time.lead_days === 0)!.qc.checks;
+  await gridTab(page);
   await expect(page.getByTestId("lineage-qc").locator("li")).toHaveCount(checks.length);
   for (const c of checks) await expect(page.getByTestId("lineage-qc")).toContainText(c.name);
   // only the run's own four days, labelled
@@ -127,7 +136,8 @@ test("units in words, the PN reference line, and the shared cursor reads both li
   expect(Math.abs(Number(await page.getByTestId("model-cursor").getAttribute("x1")) - m.width * 0.6)).toBeLessThan(m.width * 0.02);
   const text = await page.getByTestId("research").innerText();
   expect(text).not.toMatch(/correlat|skill score|hit rate|accuracy|R²/i);
-  // model history export
+  // model history export (in the header's Export menu)
+  await page.getByTestId("research-export-menu").click();
   const csv = await csvOf(page, "export-model");
   expect(csv).toContain("date,value,n_cells,partial");
   expect(csv).toContain("# Model probability, not a toxin measurement.");
@@ -307,15 +317,16 @@ test("radar: published hours only, a cell's every hour, gaps are no data and not
   await expect(page.getByTestId("obs-area-counts")).toContainText(/\d+ of \d+ radar cells in the box have an observation; \d+ have none \(no radar data or land: not calm water\)/);
 });
 
-test("the grid map is made only near the screen: a same-height placeholder until then", async ({ browser }) => {
+test("the grid map is made only when its tab is opened, at its full height", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
   const box = page.getByTestId("research-map");
   await expect(box).toHaveAttribute("data-mounted", "false");
   expect(await page.evaluate(() => !!(window as unknown as Win).__cwMap)).toBe(false);
-  expect(Math.round((await box.boundingBox())!.height)).toBe(380);
+  await page.getByTestId("research-tab-grid").click();
   await box.scrollIntoViewIfNeeded();
+  expect(Math.round((await box.boundingBox())!.height)).toBe(380);
   await expect(box).toHaveAttribute("data-mounted", "true");
   await page.waitForFunction(() => !!(window as unknown as Win).__cwMap?.loaded());
   await ctx.close();
