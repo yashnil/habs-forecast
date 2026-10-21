@@ -14,7 +14,7 @@ const BANNED = /\b(safe|go\/no-go|good day|hotspot|expected catch|price forecast
 async function openWorksheet(page: Page) {
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(URL);
-  const s = page.getByTestId("brief-trip-economics");
+  const s = page.getByTestId("trip-economics-section");
   await expect(s).toBeVisible();
   await expect(s.getByTestId("econ-kicker")).toHaveText("Scenario from your inputs, not a forecast.");
   await s.getByTestId("econ-toggle").click();
@@ -23,7 +23,7 @@ async function openWorksheet(page: Page) {
 }
 
 async function fillTrip(page: Page) {
-  const s = page.getByTestId("brief-trip-economics");
+  const s = page.getByTestId("trip-economics-section");
   await s.getByTestId("econ-nm").fill("20");
   await s.getByTestId("econ-kt").fill("8");
   await s.getByTestId("econ-hours").fill("8");
@@ -97,7 +97,7 @@ test("scenarios: save, duplicate, compare only the differing inputs; kept across
   await expect(diff).toHaveCount(1);
   await expect(diff).toContainText("Dungeness crab, lb");
   await page.reload();
-  const s2 = page.getByTestId("brief-trip-economics");
+  const s2 = page.getByTestId("trip-economics-section");
   await expect(s2.getByTestId("econ-sum-cost")).toHaveText("$490");
   await s2.getByTestId("econ-toggle").click();
   await expect(s2.getByTestId("econ-scenarios")).toContainText("2 of 20");
@@ -117,7 +117,7 @@ test("a scenario link carries numbers only and opens unsaved", async ({ page, co
   const other = await context.newPage();
   await other.clock.setFixedTime(new Date(NOW));
   await other.goto(link);
-  const o = other.getByTestId("brief-trip-economics");
+  const o = other.getByTestId("trip-economics-section");
   await expect(o.getByTestId("econ-shared")).toContainText("From a shared link, not saved");
   await expect(o.getByTestId("econ-r-gross")).toHaveText("$3,500");
   await o.getByTestId("econ-shared-save").click();

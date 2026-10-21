@@ -45,7 +45,7 @@ function sharedFromHash(): Draft | null {
 export function TripEconomics(props: TripEconomicsProps) {
   const mounted = useMounted();
   return (
-    <section id="trip-economics" aria-labelledby="trip-economics-h" className="flex scroll-mt-24 flex-col gap-4 border-t border-n-line pt-7" data-testid="brief-trip-economics">
+    <section id="trip-economics" aria-labelledby="trip-economics-h" className="flex scroll-mt-24 flex-col gap-4 border-t border-n-line pt-7" data-testid="trip-economics-section">
       <div>
         <h2 id="trip-economics-h" className="font-serif text-[24px] font-semibold leading-tight text-n-ink">
           Trip economics
