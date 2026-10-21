@@ -51,6 +51,9 @@ test.describe("agency source discrepancy", () => {
     await expect(claim.locator("[data-headline]")).not.toContainText(/lifted/i);
     // the count of notices covering the waters says the unclear one exists without counting it
     await expect(page.getByTestId("claim-notices").locator("[data-headline]")).toContainText("plus 1 whose status is unclear");
+    // v6: a statement is one line; its links open on tap (it may be behind "more statements")
+    if (await page.getByTestId("matters-more").isVisible()) await page.getByTestId("matters-more").click();
+    await claim.locator('[data-testid^="claim-open-"]').click();
     await expect(claim.getByRole("link", { name: /SN26-021/ })).toHaveAttribute("href", /SN26-021\.aspx$/);
     await expect(page.getByTestId("unknowns")).toContainText("release SN26-021 appears to lift");
     // in the official list it carries the release, never a plain "in effect"
