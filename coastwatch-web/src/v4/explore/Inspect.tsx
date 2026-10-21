@@ -59,14 +59,15 @@ type Ctx = {
   here?: string;
 };
 
+// v7: the family colour is the dot (and the rule of an alert); the kind word itself is quiet ink
 const KIND: Record<string, { word: string; tone: string; dot: string; hollow: string }> = {
-  official: { word: "Official", tone: "text-n-official", dot: "bg-n-official", hollow: "border-2 border-n-official" },
+  official: { word: "Official", tone: "text-n-ink-2", dot: "bg-n-official", hollow: "border-2 border-n-official" },
   // the agencies' standing pages in Neritic's unreviewed copy: the official colour, drawn hollow, never a notice's mark
-  agency_page: { word: "Agency page · Neritic's copy", tone: "text-n-official", dot: "border-2 border-n-official", hollow: "border-2 border-n-official" },
-  measured: { word: "Measured", tone: "text-n-measured", dot: "bg-n-measured", hollow: "border-2 border-n-measured" },
-  model: { word: "Model", tone: "text-n-model", dot: "bg-n-model", hollow: "border-2 border-n-model" },
-  satellite: { word: "Satellite", tone: "text-n-measured", dot: "bg-n-measured", hollow: "border-2 border-n-measured" },
-  conditions: { word: "Conditions", tone: "text-n-conditions", dot: "bg-n-conditions", hollow: "border-2 border-n-conditions" },
+  agency_page: { word: "Agency page · Neritic's copy", tone: "text-n-ink-2", dot: "border-2 border-n-official", hollow: "border-2 border-n-official" },
+  measured: { word: "Measured", tone: "text-n-ink-2", dot: "bg-n-measured", hollow: "border-2 border-n-measured" },
+  model: { word: "Model", tone: "text-n-ink-2", dot: "bg-n-model", hollow: "border-2 border-n-model" },
+  satellite: { word: "Satellite", tone: "text-n-ink-2", dot: "bg-n-measured", hollow: "border-2 border-n-measured" },
+  conditions: { word: "Conditions", tone: "text-n-ink-2", dot: "bg-n-conditions", hollow: "border-2 border-n-conditions" },
   gap: { word: "Not known", tone: "text-n-ink-3", dot: "bg-n-gap", hollow: "border-2 border-n-gap" },
 };
 

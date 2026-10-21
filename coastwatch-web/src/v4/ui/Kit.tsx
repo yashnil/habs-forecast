@@ -13,10 +13,14 @@ import { Icon } from "@/v4/ui/Icon";
 
 export type Family = "official" | "model" | "measured" | "conditions" | "unknown";
 
-export function Sounding({ label, value, unit, note, testId, tone }: { label: ReactNode; value: ReactNode; unit?: ReactNode; note?: ReactNode; testId?: string; tone?: "muted" }) {
+export function Sounding({ label, kind, value, unit, note, testId, tone }: { label: ReactNode; kind?: ReactNode; value: ReactNode; unit?: ReactNode; note?: ReactNode; testId?: string; tone?: "muted" }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5" data-testid={testId}>
-      <span className="text-[13px] font-semibold leading-4 text-n-ink-2">{label}</span>
+      <span className="text-[13px] font-semibold leading-4 text-n-ink-2">
+        {label}
+        {/* what kind of value it is (forecast, measured) always sits with its label */}
+        {kind && <span className="font-normal text-n-ink-3"> · {kind}</span>}
+      </span>
       <span className={`nx-sounding-v ${tone === "muted" ? "!text-n-ink-3" : ""}`}>
         {value}
         {unit && <span className="ml-1 text-[15px] font-semibold text-n-ink-2">{unit}</span>}

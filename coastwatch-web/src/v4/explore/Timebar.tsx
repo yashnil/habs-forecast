@@ -43,7 +43,7 @@ export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null, derived
     const days = runDays(m, now);
     return {
       title: run ? `C-HARM run issued ${dayLabel(run.issued_date)}${run.issued_date_derived ? " (inferred)" : ""}: nowcast, then forecasts` : "C-HARM",
-      short: run ? `C-HARM run ${dayLabel(run.issued_date)}${run.issued_date_derived ? " (inferred)" : ""} · nowcast, then forecasts` : "C-HARM",
+      short: run ? `NOAA model run ${dayLabel(run.issued_date)}${run.issued_date_derived ? " (inferred)" : ""} · nowcast, then forecasts` : "C-HARM",
       current: `lead${c.lead}`,
       steps: days.map((d) => ({
         key: `lead${d.lead}`,

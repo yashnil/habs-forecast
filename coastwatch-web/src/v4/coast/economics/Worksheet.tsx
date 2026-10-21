@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import type { Audience } from "@/lib/coast";
-import type { SpeciesId } from "@/content/species";
+import { speciesById, type SpeciesId } from "@/content/species";
 import { presetById, type FisheryPreset } from "@/content/fisheryPresets";
 import { DIESEL_REF, NO_PRICE_REF, PRICE_REF_LABEL, dieselAge, priceRef } from "@/content/referenceValues";
 import { LB_PER_KG, LB_PER_TON, MISSING_LABEL, computeTrip, num, usd, type CrewKind, type TripResult } from "@/lib/tripEconomics";
@@ -118,15 +118,28 @@ export default function Worksheet({ place, species, tripDate, shared, initial }:
       <StoreStatus />
 
       {/* the live result line: always the reader's own numbers worked through, "—" until they are there */}
-      <ResultLine r={r} wUnit={wUnit} lineRef={line} />
+      <div className="z-10 -mx-1 bg-n-surface px-1 lg:sticky lg:top-0">
+        <ResultLine r={r} wUnit={wUnit} lineRef={line} />
+      </div>
+      {/* how the result line is made, beside it (not at the far end of the worksheet) */}
+      <details className="nx-note group -mt-3" data-testid="econ-breakdown">
+        <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center gap-1.5 text-[14px] font-semibold text-n-ink-2 hover:text-n-ink">
+          Breakdown and sensitivity <Icon name="chevronDown" className="nx-note-chev h-4 w-4" />
+        </summary>
+        <div className="nx-note-body flex flex-col gap-4 pt-1">
+          <Results r={r} wUnit={wUnit} />
+          <Sensitivity r={r} />
+        </div>
+      </details>
 
       {/* the quick block: the four numbers a skipper changes between trips */}
       <div className="flex flex-col gap-4" data-testid="econ-quick">
         <div className="grid grid-cols-1 gap-4 @[520px]:grid-cols-2">
           <Select
-            label="Fishery (starting values)"
+            label="Starting values"
             value={(draft.preset ?? "") as string}
-            options={FISHERY_OPTIONS}
+            // the trip's own species names the blank choice: "Rock crab: no preset" rather than "Other"
+            options={FISHERY_OPTIONS.map((o) => (o.value === "" && species !== "any" ? { ...o, label: `${speciesById(species).label}: no preset, start blank` } : o))}
             testId="econ-fishery"
             hint={preset?.note}
             onChange={(v) =>
@@ -293,9 +306,6 @@ export default function Worksheet({ place, species, tripDate, shared, initial }:
             </div>
           </Group>
 
-          <Results r={r} wUnit={wUnit} />
-          <Sensitivity r={r} />
-
           <Scenarios place={place} species={species} draft={draft} scenarioId={scenarioId} setScenarioId={setScenarioId} readOnly={readOnly} onOpen={(d) => update((x) => Object.assign(x, clone(d)))} />
           <ShareLink draft={draft} />
           <TripDataPanel />
@@ -303,11 +313,12 @@ export default function Worksheet({ place, species, tripDate, shared, initial }:
       </details>
 
       {/* in a portal: the worksheet is a size container and the page may carry a transform, either of which would pin a fixed bar to them */}
-      {inView &&
-        !lineSeen &&
+      {/* phones: the trip's numbers stay one tap away from anywhere in the briefing (before and after the panel) */}
+      {!lineSeen &&
         createPortal(
-          <div className="env-chart fixed inset-x-0 z-30 border-t border-n-line bg-n-surface px-4 py-2 shadow-[0_-6px_16px_-12px_rgba(11,24,32,0.4)] lg:hidden" style={{ bottom: "calc(60px + env(safe-area-inset-bottom, 0px))" }} data-testid="econ-bar" aria-hidden>
-            <div className="nx-num mx-auto flex max-w-[640px] items-baseline justify-between gap-3 text-[15px]">
+          <a href="#trip-economics" className="env-chart nx-focus fixed inset-x-0 z-30 block border-t border-n-line bg-n-surface px-4 py-2 shadow-[0_-6px_16px_-12px_rgba(11,24,32,0.4)] lg:hidden" style={{ bottom: "calc(60px + env(safe-area-inset-bottom, 0px))" }} data-testid="econ-bar" data-in-view={inView || undefined} aria-label={`Trip economics: net ${usd(r.netUsd, { signed: true })}, cost ${usd(r.tripCostUsd)}, break-even ${beLb(r, wUnit)}`}>
+            <div className="nx-num mx-auto flex max-w-[640px] items-baseline justify-between gap-3 text-[15px]" aria-hidden>
+              <span className="text-[13px] font-semibold text-n-ink">Trip</span>
               <span>
                 <span className="text-[12.5px] text-n-ink-3">Net </span>
                 <span className="font-semibold">{usd(r.netUsd, { signed: true })}</span>
@@ -320,8 +331,9 @@ export default function Worksheet({ place, species, tripDate, shared, initial }:
                 <span className="text-[12.5px] text-n-ink-3">Break-even </span>
                 {beLb(r, wUnit)}
               </span>
+              <Icon name="chevronRight" className="h-4 w-4 self-center text-n-ink-3" />
             </div>
-          </div>,
+          </a>,
           document.body,
         )}
     </div>
@@ -398,12 +410,16 @@ function DieselRef({ used, onUse }: { used: boolean; onUse: () => void }) {
           </UseButton>
         )}
       </span>
+      {/* the reference's basis on demand: the label line above already says what and when */}
+      <details className="mt-0.5">
+        <summary className="nx-focus inline-flex min-h-8 cursor-pointer items-center text-[12.5px] font-semibold text-n-ink-3 hover:text-n-ink-2">About this reference</summary>
       <span className="mt-1 block">
         California retail, week of Oct 19, 2026; a year earlier <span className="nx-num">${DIESEL_REF.prior.usdPerGal.toFixed(3)}</span>. {DIESEL_REF.label}.{" "}
         <a href={DIESEL_REF.url} {...ext} className="nx-focus underline underline-offset-2">
           EIA
         </a>
       </span>
+      </details>
     </span>
   );
 }
@@ -527,12 +543,15 @@ function PriceRefNote({ i, draft, wUnit, update }: { i: number; draft: Draft; wU
               </UseButton>
             )}
           </p>
+          <details className="mt-0.5">
+            <summary className="nx-focus inline-flex min-h-8 cursor-pointer items-center text-[12.5px] font-semibold text-n-ink-3 hover:text-n-ink-2">About this reference</summary>
           <p className="mt-1">
             {ref.fishery}. {PRICE_REF_LABEL.replace("calendar year,", `calendar year${ref.caveat ? ` (${ref.fishery.split(" ")[0]}: ${ref.caveat})` : ""},`)}{" "}
             <a href={ref.url} {...ext} className="nx-focus underline underline-offset-2">
               Report
             </a>
           </p>
+          </details>
         </>
       ) : (
         <span>{NO_PRICE_REF}. Ask your buyer.</span>
@@ -655,7 +674,7 @@ function Results({ r, wUnit }: { r: TripResult; wUnit: WUnit }) {
           {w}
         </p>
       ))}
-      <p className="mt-3 text-[13px] text-n-ink-3">Net to the boat is after fuel, costs, fees and crew. Your numbers worked through, not a forecast.</p>
+      <p className="mt-3 text-[13px] text-n-ink-3">Net to the boat is after fuel, costs, fees and crew.</p>
     </div>
   );
 }

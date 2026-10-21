@@ -35,7 +35,7 @@ export function ExportButton({ onClick, testid, children }: { onClick: () => voi
  */
 export function Seg<T extends string | number>({ label, value, options, onChange, testId, scroll = false }: { label: string; value: T; options: { id: T; label: ReactNode; testId?: string; title?: string }[]; onChange: (v: T) => void; testId?: string; scroll?: boolean }) {
   return (
-    <div className={scroll ? "-mx-4 min-w-0 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0" : "min-w-0"}>
+    <div className={scroll ? "-mx-4 min-w-0 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-40px),transparent)] max-sm:pr-10" : "min-w-0"}>
       <div role="radiogroup" aria-label={label} className={`inline-flex rounded-xl bg-n-surface-2 p-1 ${scroll ? "" : "flex-wrap"}`} data-testid={testId}>
         {options.map((o) => (
           <button
@@ -68,7 +68,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, idBase }: { tabs
     refs.current[j]?.focus();
   };
   return (
-    <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
+    <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-40px),transparent)] max-sm:pr-10">
       <div role="tablist" aria-label="Station record sections" className="flex min-w-max gap-5 border-b border-n-line sm:gap-7">
         {tabs.map((t, i) => {
           const on = t.id === value;

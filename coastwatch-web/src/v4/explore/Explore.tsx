@@ -995,7 +995,13 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                 </div>
               )}
               <div className="grid grid-cols-1 gap-x-4 gap-y-2 [grid-template-areas:'layer'_'legend'_'time'] @[560px]:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] @[560px]:[grid-template-areas:'layer_time'_'legend_legend'] @[900px]:grid-cols-[minmax(0,16rem)_minmax(0,1fr)_auto] @[900px]:[grid-template-areas:'layer_legend_time']">
-                <div className="min-w-0 self-start [grid-area:layer]">{layerButton}</div>
+                {/* the layer and, under it, its own date line and anything wrong with it (old, failed, clouded, unseen) */}
+                <div className="flex min-w-0 flex-col gap-1 self-start [grid-area:layer] @[900px]:self-center">
+                  {layerButton}
+                  <div className="px-2.5 pb-0.5 empty:hidden [&_[data-testid=provenance]]:gap-0.5 [&_p]:text-[12.5px] [&_p]:leading-[17px]">
+                    <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} part="dock" />
+                  </div>
+                </div>
                 <div className="flex min-w-0 flex-col gap-1.5 border-n-line px-2.5 py-1 [grid-area:legend] @[560px]:border-t @[560px]:pt-2 @[900px]:border-l @[900px]:border-t-0 @[900px]:pl-4 @[900px]:pt-1">
                   <Legend choice={active} resolved={resolved} check={check} />
                 </div>
@@ -1004,10 +1010,6 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                     <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} dense derived={derived} />
                   </div>
                 )}
-              </div>
-              {/* the layer's own date line and anything wrong with it (old, failed, clouded, unseen), the dock's width */}
-              <div className="mt-1.5 border-t border-n-line px-2.5 pb-0.5 pt-2 empty:hidden [&_[data-testid=provenance]]:gap-0.5 [&_p]:text-[12.5px]">
-                <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} part="dock" />
               </div>
               {/* the layer list opens upward from the layer button; mounted, so its words stay in the page */}
               <section
@@ -1127,7 +1129,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
 function MapCredits({ short = false, className = "" }: { short?: boolean; className?: string }) {
   return (
     <p
-      className={`max-w-full text-[11.5px] leading-[16px] [&_a]:underline [&_a]:decoration-white/40 [&_a]:underline-offset-2 ${short ? "w-fit rounded-md bg-[rgba(6,17,30,0.72)] px-2 py-0.5 text-[#c9d6e2]" : "nx-on-map"} ${className}`}
+      // the short line keeps a backing (its contrast must hold over any raster); smaller, so it stays on one line
+      className={`max-w-full [&_a]:underline [&_a]:decoration-white/40 [&_a]:underline-offset-2 ${short ? "w-fit rounded bg-[rgba(6,17,30,0.72)] px-1.5 text-[10.5px] leading-[15px] text-[#c9d6e2]" : "nx-on-map text-[11.5px] leading-[16px]"} ${className}`}
       data-testid={short ? "attribution-short" : "attribution-line"}
     >
       <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">© OpenMapTiles</a> · NOAA relief · not for navigation

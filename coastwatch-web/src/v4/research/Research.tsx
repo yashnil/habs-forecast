@@ -816,7 +816,7 @@ const HASH_TAB: Record<string, TabId> = { "r-stats": "window", "r-tools": "grid"
 
 /** Short names for the quantity control (the full name is its title and the readout's). */
 const SHORT: Record<ObsVariableId, string> = {
-  pDA: "pDA",
+  pDA: "Domoic acid",
   dDA: "dDA",
   tDA: "tDA",
   pn_seriata: "P.-n. seriata",

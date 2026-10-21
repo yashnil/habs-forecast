@@ -154,15 +154,19 @@ export function seasValue(text: string, max: number | null): string | null {
 /** The highest number of a value like "5–10", to say when the text goes higher (gusts, building seas). */
 const top = (v: string | null) => (v ? Number(v.match(/(\d+(?:\.\d+)?)(?!.*\d)/)?.[1] ?? NaN) : NaN);
 
-function Sounding({ label, value, unit, note, testId }: { label: string; value: string | null; unit?: string; note: React.ReactNode; testId?: string }) {
+function Sounding({ label, kind, value, unit, note, testId }: { label: string; kind: string; value: string | null; unit?: string; note?: React.ReactNode; testId?: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5" data-testid={testId}>
-      <span className="text-[13px] font-semibold leading-4 text-n-ink-2">{label}</span>
+      {/* what kind of value it is (forecast, measured) always sits with its label */}
+      <span className="text-[13px] font-semibold leading-4 text-n-ink-2">
+        {label}
+        <span className="font-normal text-n-ink-3"> · {kind}</span>
+      </span>
       <span className={`nx-sounding-v whitespace-nowrap ${value ? "" : "!text-n-ink-3"}`}>
         {value ?? "—"}
         {value && unit && <span className="ml-1 text-[15px] font-semibold text-n-ink-2">{unit}</span>}
       </span>
-      <span className="nx-note-t">{note}</span>
+      {note && <span className="nx-note-t">{note}</span>}
     </div>
   );
 }
@@ -219,10 +223,10 @@ export function TripConditions({
         </p>
       )}
       <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
-        <Sounding label="Wind" value={wind} unit="kt" note={`${fcNote}${higher(wind, max?.windKt, "kt")}`} testId="glance-wind" />
-        <Sounding label="Seas" value={seas} unit="ft" note={`${fcNote}${higher(seas, max?.seasFt, "ft")}`} testId="glance-seas" />
-        <Sounding label="Waves" value={wave ? wave.value.toFixed(1) : null} unit={wave ? `ft${buoy?.data.periodS ? ` · ${Math.round(buoy.data.periodS.value)} s` : ""}` : undefined} note={wave ? "Measured" : cond.loading ? "Reading…" : "Not measured nearby"} testId="glance-waves" />
-        <Sounding label="Water" value={water ? String(water.f) : null} unit="°F" note={water ? "Measured" : cond.loading ? "Reading…" : "Not measured nearby"} testId="glance-water-t" />
+        <Sounding label="Wind" kind={fcNote.toLowerCase()} value={wind} unit="kt" note={higher(wind, max?.windKt, "kt").replace(/^, /, "") || undefined} testId="glance-wind" />
+        <Sounding label="Seas" kind={fcNote.toLowerCase()} value={seas} unit="ft" note={higher(seas, max?.seasFt, "ft").replace(/^, /, "") || undefined} testId="glance-seas" />
+        <Sounding label="Waves" kind={wave ? "measured" : cond.loading ? "reading…" : "not measured nearby"} value={wave ? wave.value.toFixed(1) : null} unit={wave ? `ft${buoy?.data.periodS ? ` · ${Math.round(buoy.data.periodS.value)} s` : ""}` : undefined} testId="glance-waves" />
+        <Sounding label="Water" kind={water ? "measured" : cond.loading ? "reading…" : "not measured nearby"} value={water ? String(water.f) : null} unit="°F" testId="glance-water-t" />
       </div>
       <p className="nx-note-t !text-[12.5px] leading-[18px] text-n-ink-3">
         <a href="#sea-h" className="nx-focus rounded font-semibold text-n-ink-2 underline decoration-n-line-strong underline-offset-2 hover:text-n-ink" data-testid="glance-sea-link">
@@ -293,7 +297,8 @@ export function OfficialPosition({
   const link = "nx-focus font-semibold text-n-accent underline decoration-n-accent/40 underline-offset-2";
   return (
     <div className="mt-3 flex gap-3" data-testid="glance-official">
-      <span aria-hidden className="nx-tick" data-family="official" />
+      {/* the official colour only when a notice here names this trip's species; otherwise a neutral rule */}
+      <span aria-hidden className="nx-tick" data-family={notices.namingSpecies > 0 ? "official" : "unknown"} />
       <div className="min-w-0 flex-1">
         <p className="text-[16.5px] leading-[25px] text-n-ink">
           <a href="#seasons-h" className="nx-focus rounded font-semibold hover:text-n-accent" data-testid="glance-season">

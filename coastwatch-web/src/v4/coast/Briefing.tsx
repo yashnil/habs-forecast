@@ -316,7 +316,8 @@ export function Briefing(props: Props) {
         {/* desktop: decisions on the left, trip economics as the sticky right column; phone: economics right after the official position */}
         <div className="grid grid-cols-1 pt-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] lg:grid-rows-[auto_auto_1fr] lg:gap-x-12 lg:pt-7 xl:gap-x-16">
           <div className="flex min-w-0 flex-col gap-5 lg:col-start-1 lg:row-start-1 lg:gap-7">
-            <div data-testid="brief-changes" className="empty:hidden">
+            {/* what changed leads only when something did; the quiet "remembered" line follows the decision content */}
+            <div data-testid="brief-changes" className="empty:hidden has-[[data-state=first]]:order-last has-[[data-state=none]]:order-last">
               <SinceLastCheck />
             </div>
             <section aria-labelledby="glance-h" className="flex flex-col gap-4 lg:gap-5" data-testid="brief-glance">
@@ -329,7 +330,8 @@ export function Briefing(props: Props) {
             </section>
           </div>
 
-          <div className="mt-8 min-w-0 self-start lg:sticky lg:top-4 lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:mt-0" data-testid="brief-econ">
+          {/* desktop: a sticky instrument with its own scroll; its result line stays pinned while any field changes */}
+          <div className="mt-8 min-w-0 self-start lg:sticky lg:top-4 lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:mt-0 lg:max-h-[calc(100dvh-32px)] lg:overflow-y-auto lg:overscroll-contain lg:rounded-[20px] lg:[scrollbar-width:thin]" data-testid="brief-econ">
             <TripEconomics place={{ key: place.key, name: place.name, portCode }} species={species.id} audience={audience} tripDate={b.tripDate} />
           </div>
 
