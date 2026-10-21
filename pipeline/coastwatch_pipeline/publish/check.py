@@ -235,6 +235,8 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
                 ok, detail = False, f"invalid {kind}: {str(e)[:200]}"
         record(rel, kind, f, ok, detail)
 
+    check_derived(base, remote, record)
+
     return {
         "base": base,
         "manifest_generated_at": manifest.generated_at,
@@ -246,6 +248,60 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
         "problems": problems,
         "checked": checked,
     }
+
+
+DERIVED_INDEX = "derived/index.json"
+DERIVED_KINDS = {"chl_estimate", "chl_outlook", "sst", "validation"}
+
+
+def check_derived(base: str, remote: bool, record) -> None:
+    """v1/derived/index.json (derived layers, read only by clients that know it; never referenced
+    by the manifest) is optional. When present it must be valid JSON in the documented shape and
+    every grid chunk it lists must exist and decode to its declared size (all chunks for a local
+    tree; the first chunk of each grid at a URL)."""
+    f = _get(base, DERIVED_INDEX)
+    if f.status == 404:
+        return
+    ok, detail = f.status == 200, f"HTTP {f.status}"
+    idx = None
+    if ok:
+        try:
+            idx = json.loads(f.body)
+            assert idx.get("version") == 1 and isinstance(idx.get("layers"), list), "version 1 with a layers list expected"
+            for lyr in idx["layers"]:
+                assert lyr.get("id") and lyr.get("kind") in DERIVED_KINDS, f"layer {lyr.get('id')!r}: unknown kind {lyr.get('kind')!r}"
+                if lyr["kind"] != "validation":
+                    assert lyr.get("grid") and lyr.get("caveats") and lyr.get("method"), f"layer {lyr['id']}: grid, method and caveats required"
+                    if lyr["kind"] != "sst":  # an observed/analysed field, not a model estimate
+                        assert lyr.get("skill") or lyr.get("validation"), f"layer {lyr['id']}: skill or validation required"
+            detail = f"{len(idx['layers'])} derived layers"
+        except Exception as e:
+            ok, detail = False, f"invalid derived index: {str(e)[:200]}"
+    record(DERIVED_INDEX, "derived_index", f, ok, detail)
+    if not ok or idx is None:
+        return
+    for lyr in idx["layers"]:
+        for key in ("grid", "uncertainty_grid", "class_grid"):
+            g = lyr.get(key)
+            if not g:
+                continue
+            ch = g.get("chunks") or {}
+            present = ch.get("present") or []
+            for k in present if not remote else present[:1]:
+                r, c = (int(x) for x in k.split("_"))
+                rel = ch["url_template"].format(row=r, col=c)
+                h = min(ch["rows"], g["height"] - r * ch["rows"])
+                w = min(ch["cols"], g["width"] - c * ch["cols"])
+                fc = _get(base, rel)
+                okc, d = fc.status == 200, f"HTTP {fc.status}"
+                if okc:
+                    try:
+                        n = len(gzip.decompress(fc.body))
+                        okc = n == w * h * 2
+                        d = f"{n} bytes decoded" + ("" if okc else f" != {w * h * 2}")
+                    except Exception as e:
+                        okc, d = False, f"not gzip: {e}"
+                record(rel, f"derived_{key}", fc, okc, d)
 
 
 def guard_publish_tree(root: Path, allowed_top: str = "v1") -> list[str]:

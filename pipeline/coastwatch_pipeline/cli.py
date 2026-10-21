@@ -1,4 +1,4 @@
-"""Command line entry point: `cwp run | schema | verify-charm | verify-satellite | verify-currents | health | fixture | …`."""
+"""Command line entry point: `cwp run | derive | schema | verify-charm | verify-satellite | verify-currents | health | fixture | …`."""
 
 from __future__ import annotations
 
@@ -26,6 +26,14 @@ def cmd_run(a: argparse.Namespace) -> int:
     failed = [s.source_id for s in m.sources if s.outcome == "failed" and s.source_id in only]
     # Exit non-zero so CI makes the failure visible; artifacts for healthy sources were still written.
     return 1 if failed and a.strict else 0
+
+
+def cmd_derive(a: argparse.Namespace) -> int:
+    from .derived import run as derived
+
+    r = derived.run(RunContext(out_dir=Path(a.out)))
+    print(derived.summary_line(r))
+    return 0
 
 
 def cmd_schema(a: argparse.Namespace) -> int:
@@ -194,6 +202,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--only", help=f"comma list of {','.join(ALL_SOURCES)}")
     r.add_argument("--strict", action="store_true", help="exit 1 if any selected source failed")
     r.set_defaults(fn=cmd_run)
+    dv = sub.add_parser("derive", help="build derived chlorophyll layers (estimate, 8-day outlook) into v1/derived/ from the published OLCI layers")
+    dv.add_argument("--out", default=str(DEFAULT_OUT))
+    dv.set_defaults(fn=cmd_derive)
     s = sub.add_parser("schema", help="export JSON Schema")
     s.add_argument("--out", default=str(REPO / "schemas" / "v1"))
     s.set_defaults(fn=cmd_schema)
