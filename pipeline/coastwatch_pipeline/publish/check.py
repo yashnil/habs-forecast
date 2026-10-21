@@ -281,7 +281,7 @@ def check_derived(base: str, remote: bool, record) -> None:
     if not ok or idx is None:
         return
     for lyr in idx["layers"]:
-        for key in ("grid", "uncertainty_grid"):
+        for key in ("grid", "uncertainty_grid", "class_grid"):
             g = lyr.get(key)
             if not g:
                 continue

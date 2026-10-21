@@ -159,6 +159,34 @@ for _b in BANDS:
             CLASS_KEYS.append(f"{_b[2]}|{_t}|{_g}")
 
 
+# Plain classes for readers (the class_grid of chl_estimate_latest), from the detailed class:
+# 0 observed (no estimate); 1 filled from nearby clear water (the pixel's own background, or one
+# borrowed without the shoreward offset); 2 extrapolated shoreward: open coast within 0.6 km,
+# background borrowed from farther out and raised by the open-coast offset; 3 bay or estuary,
+# background borrowed from nearby bay water (raised by the bay offset within 0.6 km).
+OBSERVED, FILLED, SHOREWARD, BAY_BORROWED = 0, 1, 2, 3
+
+
+def plain_class(key: str) -> int:
+    band, typ, tier = key.split("|")
+    if tier == "own":
+        return FILLED
+    if typ == "bay":
+        return BAY_BORROWED
+    return SHOREWARD if band == BANDS[0][2] else FILLED
+
+
+PLAIN_OF_CODE = np.array([OBSERVED] + [plain_class(k) for k in CLASS_KEYS], dtype=np.uint8)
+
+
+def plain_class_grid(obs_log10: np.ndarray, code: np.ndarray) -> np.ndarray:
+    """0 at observed pixels, 1-3 at estimated ones (PLAIN_OF_CODE of the estimate's class code),
+    NaN where there is neither (land, or a gap left empty)."""
+    out = np.where(code > 0, PLAIN_OF_CODE[code], np.nan).astype(np.float64)
+    out[np.isfinite(obs_log10)] = OBSERVED
+    return out
+
+
 def class_codes(dist: np.ndarray, bay: np.ndarray, tier: np.ndarray) -> np.ndarray:
     """Per-cell class code (1..len(CLASS_KEYS)); 0 = none. tier: 0 own, 1 borrowed, 2 wide, -1 none."""
     code = np.zeros(dist.shape, dtype=np.uint8)

@@ -72,6 +72,28 @@ def test_strip_without_history_borrows_with_the_shoreward_offset():
     assert keys == {"0-0.6 km|open|borrowed"}
 
 
+def test_plain_classes_follow_what_the_estimator_did():
+    water, dist, bay, b, w, obs = _scene()
+    bay[:, 50:70] = True  # an enclosed strip of water by the eastern shore
+    strip = water & (dist <= 0.3)
+    b[strip] = np.nan  # never observed next to the shore: borrowed background
+    w[strip] = 0
+    obs[strip] = np.nan
+    obs[10:30, 10:30] = np.nan  # a cloud over open water with its own history
+    est, code = E.estimate(obs, b, w, water, dist, bay, 0.278, 0.222, {"open": 0.5, "bay": 0.2})
+    cls = E.plain_class_grid(obs, code)
+    assert (cls[np.isfinite(obs)] == E.OBSERVED).all() and not np.isfinite(est[cls == E.OBSERVED]).any()
+    assert np.array_equal(np.isfinite(est), np.isin(cls, [1, 2, 3]))
+    assert (cls[10:30, 10:30] == E.FILLED).all()
+    assert (cls[strip & ~bay] == E.SHOREWARD).all() and (cls[strip & bay] == E.BAY_BORROWED).all()
+    # the plain class is a function of the detailed (uncertainty) class
+    for c in np.unique(code[code > 0]):
+        band, typ, tier = E.CLASS_KEYS[c - 1].split("|")
+        want = E.FILLED if tier == "own" else E.BAY_BORROWED if typ == "bay" else E.SHOREWARD if band == "0-0.6 km" else E.FILLED
+        assert (cls[code == c] == want).all()
+    assert not np.isfinite(cls[~water]).any()
+
+
 def test_no_recent_data_nearby_stays_empty():
     water, dist, bay, b, w, obs = _scene()
     b[:] = np.nan
@@ -266,6 +288,33 @@ def test_estimate_grid_holds_values_only_in_observed_gaps(dataset: Path):
     assert not (np.isfinite(est) & np.isfinite(obs)).any()
     assert np.array_equal(np.isfinite(est), np.isfinite(unc))
     assert idx["layers"][0]["grid"]["transform"] == "log10" and idx["layers"][0]["uncertainty_grid"]["transform"] == "none"
+
+
+def test_class_grid_matches_the_estimate_and_its_uncertainty(dataset: Path):
+    from coastwatch_pipeline.models import Manifest
+    from coastwatch_pipeline.sources import satellite
+
+    m = Manifest.model_validate_json((dataset / "manifest.json").read_text())
+    latest = next(lyr for lyr in m.layers if lyr.layer_id == "olci300_chl_latest")
+    obs = satellite.load_published(dataset, latest.grid)
+    lyr = json.loads((dataset / "derived" / "index.json").read_text())["layers"][0]
+    est, unc = R.read_grid(dataset, lyr["grid"]), R.read_grid(dataset, lyr["uncertainty_grid"])
+    cg = lyr["class_grid"]
+    cls = R.read_grid(dataset, cg)
+    assert cg["transform"] == "none" and cg["scale_factor"] == 1.0 and cg["add_offset"] == 0.0
+    assert (cg["width"], cg["height"], cg["chunks"]["rows"], cg["chunks"]["cols"]) == (lyr["grid"]["width"], lyr["grid"]["height"], lyr["grid"]["chunks"]["rows"], lyr["grid"]["chunks"]["cols"])
+    assert set(lyr["class_legend"]) == {"1", "2", "3"} == set(lyr["class_validation"])
+    assert all(isinstance(v, str) and v for v in lyr["class_legend"].values())
+    assert set(np.unique(cls[np.isfinite(cls)])) <= {0.0, 1.0, 2.0, 3.0}
+    # observed pixels are class 0 and never get an estimate; estimated pixels are 1-3
+    assert (cls[np.isfinite(obs)] == 0).all() and not np.isfinite(est[cls == 0]).any()
+    assert np.array_equal(np.isfinite(est), np.isfinite(cls) & (cls > 0))
+    # each class carries the uncertainty of the detailed classes it stands for
+    v = R.load_validation()["uncertainty_by_class"]
+    for k in (1, 2, 3):
+        allowed = np.array([v[key]["rmse_log10"] for key in E.CLASS_KEYS if E.plain_class(key) == k])
+        got = unc[cls == k]
+        assert got.size and (np.abs(got[:, None] - allowed[None, :]).min(axis=1) < 1e-3).all(), k
 
 
 def test_published_tree_checks_pass_and_catch_a_missing_chunk(dataset: Path, tmp_path: Path):

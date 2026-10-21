@@ -40,6 +40,7 @@ VALIDATION = satellite.REPO / "data" / "reference" / "chl_estimate_validation.js
 CHARM_PIER_VALIDATION = satellite.REPO / "data" / "reference" / "charm_nearshore_validation.json"
 LOG_RANGE = satellite.LOG_RANGE
 UNC_RANGE = (0.0, 3.0)  # log10 RMSE
+CLASS_RANGE = (0.0, float(gridcodec.MAX_CODE))  # scale factor 1: codes are the class values
 WEIGHT_RANGE = (0.0, 32.0)
 STATE_VERSION = f"estimate-state-1|tau={E.TAU_DAYS}|{satellite.PROCESSING_VERSION}"
 CHUNK = satellite.CHUNK
@@ -198,7 +199,10 @@ def estimate_layer(ctx: RunContext, latest: LayerArtifact, b: np.ndarray, w: np.
     base = f"{DERIVED}/estimate-{issued}-{_h(latest.grid.url if latest.grid else '', through, ctx.run_id)}"
     g, n1 = write_grid(out, f"{base}/values", est, geo, *LOG_RANGE, log=True)
     ug, n2 = write_grid(out, f"{base}/uncertainty", unc, geo, *UNC_RANGE, log=False)
+    cls = E.plain_class_grid(obs, code)
+    cg, n3 = write_grid(out, f"{base}/class", cls, geo, *CLASS_RANGE, log=False)
     stats = coverage_stats(obs, est, area, dist, bay, target)
+    stats["class_pixels"] = {str(k): int((cls == k).sum()) for k in range(4)}
     s = val["summary"]
     comp = latest.composite
     layer = {
@@ -243,8 +247,38 @@ def estimate_layer(ctx: RunContext, latest: LayerArtifact, b: np.ndarray, w: np.
         "uncertainty_units": "RMSE log10(mg m-3) measured for the pixel's class (distance band, open coast or bay, own or borrowed background)",
         "grid": g,
         "uncertainty_grid": ug,
+        "class_grid": cg,
+        "class_legend": class_legend(val),
+        "class_validation": class_validation(val),
+        "class_note": "class_grid values: 0 observed (the value is in the observed layer; no estimate here); 1, 2, 3 as in class_legend; "
+        "empty where there is neither an observation nor an estimate. Each estimated pixel's class is the method the estimate used for it.",
     }
-    return layer, n1 + n2, stats
+    return layer, n1 + n2 + n3, stats
+
+
+def class_legend(val: dict) -> dict[str, str]:
+    off = val["nearshore_offset_log10"]
+    return {
+        str(E.FILLED): "Filled from nearby clear water: the pixel's recent typical value (from its own recent views or water close by) "
+        "plus today's change seen in the clear pixels around it.",
+        str(E.SHOREWARD): f"Extrapolated toward the shore, never observed: the strip within about 0.6 km of the open coast that the satellite "
+        f"rarely sees. The value is borrowed from water farther out and raised x{10 ** off['open']:.1f}, because chlorophyll rises toward shore.",
+        str(E.BAY_BORROWED): "Bay or estuary, borrowed background: too few recent views of its own, so the typical value is borrowed from "
+        f"nearby bay water (raised x{10 ** off['bay']:.1f} within about 0.6 km of shore). Turbid bay water can read as chlorophyll.",
+    }
+
+
+def class_validation(val: dict) -> dict[str, dict]:
+    """Held-out RMSE (log10 mg m-3) per plain class, where the validation measured it."""
+    s = val["summary"]
+    rm = lambda sc, band: s[sc][band]["estimate"]["rmse_log10"]  # noqa: E731
+    clouds = "clouds: real observations hidden in realistic cloud shapes for 7 days, estimated causally"
+    never = "never observed: every pixel within 0.3 km (or 0.6 km) of shore hidden on every day; shoreward offset fitted leave-one-region-out"
+    return {
+        str(E.FILLED): {"scenario": clouds + " (open coast)", "rmse_log10": {"0-0.6 km": rm("clouds", "0-0.6 km"), "0.6-3 km": rm("clouds", "0.6-3 km"), "over 3 km": rm("clouds", "over 3 km")}},
+        str(E.SHOREWARD): {"scenario": never + " (open coast)", "rmse_log10": {"0-0.3 km": rm("never_observed_0.3", "0-0.6 km"), "0-0.6 km": rm("never_observed_0.6", "0-0.6 km")}},
+        str(E.BAY_BORROWED): {"scenario": f"{clouds}; {never} (bays)", "rmse_log10": {"clouds": rm("clouds", "bays"), "never observed 0-0.3 km": rm("never_observed_0.3", "bays"), "never observed 0-0.6 km": rm("never_observed_0.6", "bays")}},
+    }
 
 
 def coverage_stats(obs: np.ndarray, est: np.ndarray, area: np.ndarray, dist: np.ndarray, bay: np.ndarray, target: satellite.Target) -> dict:
