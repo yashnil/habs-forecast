@@ -407,7 +407,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       : nb && nb.n > 0
         ? `NOAA's C-HARM has no valid estimate for these nearshore waters; its offshore cells within ${NEIGHBOURHOOD_KM} km read ${fmtPct(nb.min)}–${fmtPct(nb.max)} (context only, not the harbour)`
         : m
-          ? "these waters are outside NOAA's toxin model"
+          ? "NOAA publishes no toxin probability for these waters"
           : null;
   const modelLine = modelWords && freshNote && !x.modelBeyond ? `${modelWords} (${freshNote})` : modelWords;
 
@@ -538,11 +538,11 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       gaps.push({ id: "model-here", variable: "C-HARM", reason: `NOAA's C-HARM model has no valid estimate in these nearshore waters; its nearest cell with a value is ${km(nb.nearest!.km)} km out.`, nearest: { name: "nearest C-HARM cell", km: nb.nearest!.km } });
       claims.push({ id: "model", kind: "gap", tone: "gap", headline: "No valid NOAA model estimate for these nearshore waters", detail: `Nearest cell ${km(nb.nearest!.km)} km out; the ${nb.n} offshore cells within ${NEIGHBOURHOOD_KM} km read ${fmtPct(nb.min)}–${fmtPct(nb.max)} for ${shortDate(day.valid!)}, context for the open water, not the harbour.`, focus: "model", text: `NOAA's C-HARM model has no valid estimate in these nearshore waters. Its nearest cell is ${km(nb.nearest!.km)} km out; the ${nb.n} offshore cells within ${NEIGHBOURHOOD_KM} km read ${fmtPct(nb.min)}–${fmtPct(nb.max)} for ${longDate(day.valid!)}, context for the open water, not the harbor.`, supports: [n.id] });
     } else if (nb?.nearest) {
-      gaps.push({ id: "model-here", variable: "C-HARM", reason: `These waters are outside NOAA's model: no cell within ${NEIGHBOURHOOD_KM} km. Its nearest cell, ${km(nb.nearest.km)} km away, reads ${fmtPct(nb.nearest.value)}; that describes that cell, not these waters.`, nearest: { name: "nearest C-HARM cell", km: nb.nearest.km } });
-      claims.push({ id: "model", kind: "gap", tone: "gap", headline: `Outside NOAA's toxin model: no cell within ${NEIGHBOURHOOD_KM} km`, detail: `Nearest cell ${km(nb.nearest.km)} km away reads ${fmtPct(nb.nearest.value)}; it describes that cell, not these waters.`, focus: null, text: `NOAA's C-HARM model has no estimate within ${NEIGHBOURHOOD_KM} km of ${P.name}; its nearest cell is ${km(nb.nearest.km)} km away.`, supports: [] });
+      gaps.push({ id: "model-here", variable: "C-HARM", reason: `NOAA publishes no C-HARM value for these waters: no cell within ${NEIGHBOURHOOD_KM} km. Its nearest cell, ${km(nb.nearest.km)} km away, reads ${fmtPct(nb.nearest.value)}; that describes that cell, not these waters.`, nearest: { name: "nearest C-HARM cell", km: nb.nearest.km } });
+      claims.push({ id: "model", kind: "gap", tone: "gap", headline: `NOAA publishes no toxin probability here: no cell within ${NEIGHBOURHOOD_KM} km`, detail: `Nearest cell ${km(nb.nearest.km)} km away reads ${fmtPct(nb.nearest.value)}; it describes that cell, not these waters.`, focus: null, text: `NOAA's C-HARM model has no estimate within ${NEIGHBOURHOOD_KM} km of ${P.name}; its nearest cell is ${km(nb.nearest.km)} km away.`, supports: [] });
     } else if (nb) {
-      gaps.push({ id: "model-here", variable: "C-HARM", reason: "These waters are outside NOAA's model: no cell within 80 km." });
-      claims.push({ id: "model", kind: "gap", tone: "gap", headline: "Outside NOAA's toxin model", detail: "No model cell within 80 km.", focus: null, text: `${P.name} is outside NOAA's C-HARM model: no cell within 80 km.`, supports: [] });
+      gaps.push({ id: "model-here", variable: "C-HARM", reason: "NOAA publishes no C-HARM value for these waters: no cell within 80 km." });
+      claims.push({ id: "model", kind: "gap", tone: "gap", headline: "NOAA publishes no toxin probability here", detail: "No model cell within 80 km.", focus: null, text: `NOAA publishes no C-HARM value for ${P.name}: no cell within 80 km.`, supports: [] });
     }
     // the HAB line already carried the model (its own cell, or the context sentence): the model's own line is a
     // detail for the API and the evidence list, not a second line on the page
