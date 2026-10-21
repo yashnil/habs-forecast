@@ -19,11 +19,12 @@ import { MARK_FIELD, MARK_HERO } from "@/v4/brand/mark.geometry";
  * (where it covers the map loading; never on a reading page, whose content is in its first HTML), never
  * on a saved copy reopened from a field pack (the service worker's mark, set before this script runs),
  * not for automated browsers unless a test asks with `nx-splash-force-v1`, not when `nx-splash-off-v1`
- * is set. A tap, click or key skips it at once, even before the app's script has loaded. SplashGate
- * (MotionRoot) holds that one first showing at least 1.8 s and steps it aside when the map is ready; a
- * CSS animation removes it by 3 s even if no script runs. A returning reader is never held.
+ * is set. A tap, click or key skips it at once, even before the app's script has loaded. v7: it sits
+ * under the header (the workspaces, search and notices stay usable), the mark resolves by ~1 s, and
+ * SplashGate (MotionRoot) steps it aside as soon as the mark has resolved and the map is ready; a CSS
+ * animation removes it by 2.2 s even if no script runs (only a slow map is covered that long). A returning reader is never held.
  */
-const EXIT_MS = 450;
+const EXIT_MS = 380;
 const SEEN = "nx-splash-seen-v2";
 const DECIDE = `(function(){try{var d=document.documentElement,l=localStorage;if(l.getItem("nx-splash-off-v1")==="1"||self.__NERITIC_SAVED__||l.getItem("${SEEN}"))return;var force=l.getItem("nx-splash-force-v1")==="1";if(navigator.webdriver&&!force)return;var back=false;if(!force)for(var i=0;i<l.length;i++){var k=l.key(i)||"";if(/^(nx-|cw-|neritic-)/.test(k)&&k.indexOf("nx-splash-")!==0){back=true;break}}l.setItem("${SEEN}","1");if(back||location.pathname!=="/")return;d.classList.add("nx-splash-on");var skip=function(e){if(!d.classList.contains("nx-splash-on")||d.classList.contains("nx-splash-out"))return;if(e&&e.type==="keydown"&&(e.key==="Tab"||e.key==="Shift"))return;d.classList.add("nx-splash-out");setTimeout(function(){d.classList.remove("nx-splash-on","nx-splash-out")},${EXIT_MS});removeEventListener("pointerdown",skip,true);removeEventListener("keydown",skip,true)};addEventListener("pointerdown",skip,true);addEventListener("keydown",skip,true)}catch(e){}})()`;
 
@@ -33,10 +34,18 @@ const fieldDepths = [...new Set(MARK_FIELD.lines.map((l) => l.depth))].sort((a, 
 const heroDepths = [...new Set(MARK_HERO.map((l) => l.depth))].sort((a, b) => Math.abs(a - MARK_INDEX_DEPTH) - Math.abs(b - MARK_INDEX_DEPTH) || a - b);
 const H = MARK_FIELD.half;
 
+/**
+ * The decision, on every page (root layout): a few hundred bytes that mark the device's first visit
+ * whatever page it opens, and switch the launch screen on only when that visit opens on Explore.
+ */
+export function SplashDecide() {
+  return <script dangerouslySetInnerHTML={{ __html: DECIDE }} />;
+}
+
+/** The launch screen itself (v7): only in Explore's HTML, so reading pages carry none of its drawing. */
 export function Splash() {
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: DECIDE }} />
       <div className="nx-splash" data-testid="splash" style={{ "--nx-wr": MARK_WORD.width / 48 } as React.CSSProperties}>
         <p role="status" className="sr-only">
           Loading Neritic

@@ -164,7 +164,7 @@ Banned: outlined pill navigation, ALL-CAPS eyebrows as hierarchy, coloured statu
 - Content first. No opening animation delays ready content.
 - Panels 240 ms ease-out with 8–12 px travel; folds by height + fade, 180 ms; reduced motion means fades only.
 - Opening effect: Explore only (moved out of the root layout). The Monterey Canyon isobaths draw and resolve into the mark *inside the map area while it loads*. The header is interactive throughout.
-  - It exits when the map is ready, capped at 1.2 s, with no minimum hold.
+  - It exits once the mark has resolved (~1.05 s) and the map is ready; a slow map is covered at most 2.2 s.
   - It is skippable by any input; reduced motion shows a still frame.
   - It is CSS + SVG only (no particle renderer, no dependency).
 - OriginKit (proprietary licence, the relevant component is paid, WebGL) and Casberry (no licence, three.js + MediaPipe) were reviewed and not used.

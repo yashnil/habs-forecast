@@ -468,12 +468,13 @@
 }
 
 /* ---- launch screen (src/v4/shell/Splash.tsx): a device's first visit only, on the instrument ground ----
-   Timeline (ms from navigation start): the symbol's isobaths draw outward from the canyon head
-   (80-1080) over a faint field of the bay drawing itself behind them (120-1850); the tile fills in
-   (420-1060); the symbol shrinks into the lockup (1080-1680) while the field drifts more slowly
-   (parallax); the wordmark wipes in (1320-1780). SplashGate holds it to at least 1800 and lets it
-   go when the map is ready; the exit (450) dives toward the map: the lockup and field scale up as
-   the screen fades. Base styles are the final frame, so reduced motion simply drops the animations. */
+   v7 timeline (ms from navigation start), compressed so it never holds ready content: the symbol's
+   isobaths draw outward from the canyon head (40-620) over a faint field of the bay (60-900); the
+   tile fills in (240-620); the symbol settles into the lockup (600-980) and the wordmark wipes in
+   (760-1060). SplashGate lets it go once the mark has resolved (1050) and the map is ready, and the
+   CSS cap removes it by 2.2 s even if no script runs (a ready map never waits past ~1 s). It sits under the header (z 44 < 45), so the
+   workspaces, search and notices are usable throughout; the exit (380) dives toward the map.
+   Base styles are the final frame, so reduced motion simply drops the animations. */
 .nx-splash { display: none; }
 html.nx-splash-on .nx-splash {
   /* m: the final symbol's size; z: how much larger it starts (the field is drawn at that scale and
@@ -483,18 +484,18 @@ html.nx-splash-on .nx-splash {
   --nx-dx: calc(var(--nx-m) * (0.25 + var(--nx-wr, 2)) / -2);
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 44;
   display: block;
   overflow: hidden;
   background: #061016;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  /* the hard cap even if no script runs: gone by 3 s */
-  animation: nx-splash-gone var(--nx-t-splash-exit) var(--nx-ease-in) 2550ms both;
+  /* the hard cap even if no script runs: gone by 2.2 s (only a slow map is ever covered that long) */
+  animation: nx-splash-gone var(--nx-t-splash-exit) var(--nx-ease-in) 1820ms both;
 }
 @media (min-width: 1500px) { html.nx-splash-on .nx-splash { --nx-z: 3.6; } }
 @media (min-width: 2200px) { html.nx-splash-on .nx-splash { --nx-z: 5; } }
-:root { --nx-t-splash-exit: 450ms; }
+:root { --nx-t-splash-exit: 380ms; }
 @keyframes nx-splash-gone {
   to { opacity: 0; visibility: hidden; }
 }
@@ -521,7 +522,7 @@ html.nx-splash-out .nx-splash {
   height: calc(var(--nx-m) * var(--nx-z) * 6.25);
   margin: calc(var(--nx-m) * var(--nx-z) * -3.125) 0 0 calc(var(--nx-m) * var(--nx-z) * -3.125);
   transform: translate(-1.2%, -0.8%) scale(1.06);
-  animation: nx-splash-drift 3200ms linear both;
+  animation: nx-splash-drift 1800ms linear both;
   transition: scale var(--nx-t-splash-exit) var(--nx-ease-in);
   /* the field fades out toward the screen's edges (and hides where the survey grid ends) */
   mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
@@ -535,7 +536,7 @@ html.nx-splash-out .nx-splash {
   stroke-width: 0.3;
   stroke-opacity: 0.3;
   stroke-dasharray: 1 1;
-  animation: nx-splash-draw 1000ms var(--nx-ease-out) calc(120ms + var(--i, 0) * 45ms) both;
+  animation: nx-splash-draw 620ms var(--nx-ease-out) calc(60ms + var(--i, 0) * 28ms) both;
 }
 .nx-splash-iso-index { stroke: #5fd0e6; stroke-width: 0.5; stroke-opacity: 0.6; }
 .nx-splash-iso-coast { stroke: #bfe4ec; stroke-opacity: 0.45; }
@@ -556,7 +557,7 @@ html.nx-splash-out .nx-splash {
   height: calc(var(--nx-m) * var(--nx-z));
   margin: calc(var(--nx-m) * var(--nx-z) / -2) 0 0 calc(var(--nx-m) * var(--nx-z) / -2);
   transform: translateX(var(--nx-dx)) scale(calc(1 / var(--nx-z)));
-  animation: nx-splash-settle 600ms var(--nx-ease-move) 1080ms both;
+  animation: nx-splash-settle 380ms var(--nx-ease-move) 600ms both;
   will-change: transform;
 }
 .nx-splash-hero svg { display: block; overflow: visible; }
@@ -565,12 +566,12 @@ html.nx-splash-out .nx-splash {
 }
 .nx-splash-line {
   stroke-dasharray: 1 1;
-  animation: nx-splash-draw 820ms var(--nx-ease-out) calc(80ms + var(--i, 0) * 90ms) both;
+  animation: nx-splash-draw 500ms var(--nx-ease-out) calc(40ms + var(--i, 0) * 30ms) both;
 }
 .nx-splash-tile {
   transform-box: fill-box;
   transform-origin: center;
-  animation: nx-splash-tile 640ms var(--nx-ease-out) 420ms both;
+  animation: nx-splash-tile 380ms var(--nx-ease-out) 240ms both;
 }
 @keyframes nx-splash-tile {
   from { opacity: 0; transform: scale(0.94); }
@@ -582,7 +583,7 @@ html.nx-splash-out .nx-splash {
   height: var(--nx-m);
   width: calc(var(--nx-m) * (var(--nx-wr, 2) + 2 / 48));
   overflow: visible;
-  animation: nx-splash-word 460ms var(--nx-ease-out) 1320ms both;
+  animation: nx-splash-word 300ms var(--nx-ease-out) 760ms both;
 }
 @keyframes nx-splash-word {
   from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateX(calc(var(--nx-m) * -0.18)); }
@@ -597,7 +598,7 @@ html.nx-splash-out .nx-splash {
   font: 500 13px/1.2 var(--nx-font-ui);
   letter-spacing: 0.02em;
   color: rgba(214, 228, 236, 0.62);
-  animation: nx-fade 500ms var(--nx-ease-out) 700ms both;
+  animation: nx-fade 300ms var(--nx-ease-out) 400ms both;
 }
 .nx-splash-skip-mouse { display: none; }
 @media (hover: hover) and (pointer: fine) {

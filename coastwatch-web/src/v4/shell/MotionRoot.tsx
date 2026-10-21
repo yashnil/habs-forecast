@@ -20,10 +20,11 @@ export function MotionRoot({ children }: { children: React.ReactNode }) {
   );
 }
 
-// the first visit's lockup has resolved: long enough to land (a returning reader never sees the screen)
-const MIN_HOLD = 1800;
-const PAGE_READY = 1800; // a page that never reports ready (not Explore)
-const CAP = 3000; // never longer than this (the CSS animation in theme.css enforces it too)
+// v7: only until the mark has resolved (the CSS timeline's last frame); a map that is ready earlier
+// waits at most this long, and a slower one never holds the screen past CAP
+const MIN_HOLD = 1050;
+const PAGE_READY = 1050; // a page that never reports ready (not Explore)
+const CAP = 2200; // never longer than this (the CSS animation in theme.css enforces it too)
 
 /**
  * Steps the launch screen (Splash) aside: once the app is ready (Explore: its map has loaded), never
@@ -36,7 +37,7 @@ function SplashGate() {
   useEffect(() => {
     const d = document.documentElement;
     if (!d.classList.contains("nx-splash-on")) return;
-    const exit = matchMedia("(prefers-reduced-motion: reduce)").matches ? 200 : 450;
+    const exit = matchMedia("(prefers-reduced-motion: reduce)").matches ? 200 : 380;
     const timers: number[] = [];
     const after = (ms: number, f: () => void) => timers.push(window.setTimeout(f, Math.max(0, ms - performance.now())));
     let left = false;

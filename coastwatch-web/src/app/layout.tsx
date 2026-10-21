@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible_Next, IBM_Plex_Mono, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { BRAND } from "@/content/brand";
-import { Splash } from "@/v4/shell/Splash";
+import { SplashDecide } from "@/v4/shell/Splash";
 import { MotionRoot } from "@/v4/shell/MotionRoot";
 import { DAYLIGHT_SCRIPT } from "@/v4/shell/daylight";
 
@@ -39,7 +39,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="antialiased">
         {/* daylight mode before the first paint (src/v4/shell/daylight.ts) */}
         <script dangerouslySetInnerHTML={{ __html: DAYLIGHT_SCRIPT }} />
-        <Splash />
+        <SplashDecide />
         <MotionRoot>{children}</MotionRoot>
       </body>
     </html>
