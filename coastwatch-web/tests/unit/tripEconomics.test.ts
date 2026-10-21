@@ -249,3 +249,14 @@ describe("references and presets", () => {
     expect(FISHERY_PRESETS.find((p) => p.id === "groundfish-trawl")!.feesPct!.value).toBe(2.25);
   });
 });
+
+describe("copy", () => {
+  it("uses none of the banned words in the economics UI", async () => {
+    const { readdirSync, readFileSync } = await import("node:fs");
+    const path = await import("node:path");
+    const dir = path.resolve(__dirname, "../../src/v4/coast/economics");
+    const text = readdirSync(dir).map((f) => readFileSync(path.join(dir, f), "utf8")).join("\n").replace(/safe-area-inset/g, "");
+    expect(text).not.toMatch(/\b(safe|go\/no-go|good day|hotspot|expected catch|price forecast)\b/i);
+    expect(text).toContain("Scenario from your inputs, not a forecast.");
+  });
+});
