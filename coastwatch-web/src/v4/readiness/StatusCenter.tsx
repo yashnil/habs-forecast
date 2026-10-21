@@ -132,6 +132,8 @@ export function StatusCenter({ now, align = "right", compact = false }: { now: D
   // offline, the phone's chip says so in a word (Explore folds its offline banner into it); the saved
   // pack's time is its first line once opened
   const offlineChip = compact && !snap.online;
+  // v7: when everything is ready the status is a quiet icon; words appear only when something is not
+  const quiet = compact || state === "ready";
   const pack = snap.sources.pack;
   return (
     <div ref={box} className="relative">
@@ -142,13 +144,14 @@ export function StatusCenter({ now, align = "right", compact = false }: { now: D
         aria-controls={id}
         data-testid={compact ? "status-center-compact" : "status-center"}
         data-state={state}
-        aria-label={compact ? `Status: ${OVERALL_WORDS[state]}` : undefined}
-        className={`nx-press nx-focus flex h-11 items-center gap-2 rounded-full border border-n-line-strong bg-n-surface text-[14px] font-semibold text-n-ink ${offlineChip ? "px-3" : compact ? "w-11 justify-center" : "px-3.5"}`}
+        aria-label={quiet ? `Status: ${OVERALL_WORDS[state]}` : undefined}
+        title={quiet ? OVERALL_WORDS[state] : undefined}
+        className={`nx-press nx-focus nx-tint flex h-11 items-center gap-2 rounded-full text-[14px] font-semibold text-n-ink ${offlineChip ? "px-3" : quiet ? "w-11 justify-center" : "px-3"}`}
       >
         <span className={`relative grid place-items-center ${OVERALL_TONE[state]}`}>
           <Icon name={OVERALL_ICON[state]} className="h-[18px] w-[18px]" />
         </span>
-        {!compact && <span className="whitespace-nowrap">{OVERALL_WORDS[state]}</span>}
+        {!quiet && <span className="whitespace-nowrap">{OVERALL_WORDS[state]}</span>}
         {offlineChip && (
           <span className="whitespace-nowrap" aria-hidden data-testid="status-offline-word">
             Offline

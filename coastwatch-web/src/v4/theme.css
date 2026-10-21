@@ -269,12 +269,13 @@
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1, "zero" 1;
 }
+/* v7: labels are sentence case; small tracked capitals no longer carry the hierarchy */
 .nx-eyebrow {
-  font-size: 12px;
-  line-height: 1.2;
+  font-size: 13px;
+  line-height: 1.25;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--nx-ink-3);
 }
 /* ---- interaction: one feel for every control ----
@@ -693,6 +694,101 @@ html[data-daylight] .env-instrument .nx-select {
    The bar keeps its 44 px controls but loses its padding; the preview disclosure folds into the
    notices pill ("Preview ·", the panel holds the agencies' links and the unverified state). */
 .nx-short-only { display: none; }
+
+/* ---------------------------------------------------------------- v7 composition (docs/coastwatch/v7/design.md) */
+
+/* the header's two quiet surfaces */
+.nx-bar {
+  background: var(--nx-surface);
+  border: 1px solid var(--nx-line);
+  box-shadow: 0 1px 2px rgba(11, 24, 32, 0.05);
+}
+.env-instrument .nx-bar {
+  background: color-mix(in srgb, var(--nx-surface) 94%, transparent);
+  box-shadow: var(--nx-shadow);
+}
+/* numbers in reading text: the interface face with tabular figures (an instrument readout, not code) */
+.nx-num {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+/* a sounding: label, a large value, one quiet source line */
+.nx-sounding-v {
+  font-size: 26px;
+  line-height: 30px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--nx-ink);
+}
+@media (max-width: 639px) {
+  .nx-sounding-v { font-size: 22px; line-height: 26px; }
+}
+.nx-title {
+  font-family: var(--nx-font-display);
+  font-size: 21px;
+  line-height: 28px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.nx-display {
+  font-family: var(--nx-font-display);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  font-size: 40px;
+  line-height: 44px;
+}
+@media (max-width: 639px) {
+  .nx-display { font-size: 31px; line-height: 35px; }
+}
+.nx-note-t { font-size: 12.5px; line-height: 17px; color: var(--nx-ink-3); }
+/* a statement's family tick */
+.nx-tick { width: 3px; border-radius: 2px; align-self: stretch; flex: none; background: var(--nx-gap); }
+.nx-tick[data-family="official"] { background: var(--nx-official); }
+.nx-tick[data-family="model"] { background: var(--nx-model); }
+.nx-tick[data-family="measured"] { background: var(--nx-measured); }
+.nx-tick[data-family="conditions"] { background: var(--nx-conditions); }
+.nx-tick[data-family="unknown"] { background: var(--nx-line-strong); }
+/* a folded note: one row, opens by height and fade */
+.nx-note > summary { list-style: none; }
+.nx-note > summary::-webkit-details-marker { display: none; }
+.nx-note[open] > summary .nx-note-chev { transform: rotate(180deg); }
+.nx-note-chev { transition: transform var(--nx-t-pop) var(--nx-ease-out); }
+.nx-note[open] > .nx-note-body { animation: nx-rise var(--nx-t-pop) var(--nx-ease-out) both; }
+/* the stepper: big targets, the value in the middle */
+.nx-step {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  border: 1px solid var(--nx-line-strong);
+  border-radius: 12px;
+  background: var(--nx-surface);
+  min-height: 48px;
+}
+.nx-step:focus-within { border-color: var(--nx-accent); box-shadow: 0 0 0 3px var(--nx-accent-bg); }
+.nx-step > button { height: 46px; display: grid; place-items: center; color: var(--nx-ink-2); border-radius: 10px; }
+.nx-step > button:hover { color: var(--nx-ink); background: var(--nx-surface-2); }
+.nx-step input {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--nx-ink);
+  outline: none;
+}
+.nx-step input::placeholder { color: var(--nx-ink-3); font-weight: 400; }
+/* the one contour hairline per page: a section edge drawn as an isobath */
+.nx-contour-rule { display: block; width: 100%; height: 10px; color: var(--nx-line-strong); }
+/* words laid on the map (its bottom margin): legible over any raster without a card */
+.nx-on-map {
+  color: #c9d6e2;
+  text-shadow: 0 0 6px rgba(4, 12, 18, 0.95), 0 0 2px rgba(4, 12, 18, 0.95);
+}
+.nx-on-map .text-n-ink, .nx-on-map a { color: #eef4f8; }
+
 @media (max-height: 500px) {
   .nx-topbar {
     padding-top: max(4px, env(safe-area-inset-top, 0px)) !important;

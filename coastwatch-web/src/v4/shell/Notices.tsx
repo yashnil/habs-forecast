@@ -84,7 +84,7 @@ export function NoticesButton({ official, status = null, compact = false, local 
         aria-label={local ? `${here.length} official notices cover ${local.name}'s waters, ${recs.length} in California, ${word.toLowerCase()}` : `${recs.length} official notices, ${word.toLowerCase()}`}
         data-testid="notices-button"
         data-state={state}
-        className="nx-press nx-focus flex h-11 items-center gap-2 rounded-full border border-n-official-line bg-n-surface px-3 text-[14px] font-semibold text-n-ink"
+        className="nx-press nx-focus nx-tint flex h-11 items-center gap-1.5 rounded-full px-3 text-[14px] font-semibold text-n-ink"
       >
         {/* a short screen: the preview disclosure folds in here (theme.css, .nx-short-only) */}
         <span className="nx-short-only hidden text-n-ink" data-testid="notices-preview">
@@ -96,7 +96,7 @@ export function NoticesButton({ official, status = null, compact = false, local 
         {/* without a place, the count is statewide and says so (it never reads as this place's count) */}
         {!local && official && <span className="text-n-ink-2" data-testid="notices-statewide">in CA</span>}
         {/* below 400 px the word gives way (the count, the shield and the label still say it) so the bar fits */}
-        {!compact && <span className="text-n-official max-[399px]:hidden">{word}</span>}
+        {!compact && <span className="ml-0.5 border-l border-n-line-strong pl-2 font-medium text-n-ink-2 max-[399px]:hidden">{word}</span>}
       </button>
       {pop.mounted && (
         <div

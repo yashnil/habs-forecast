@@ -99,7 +99,8 @@ test("a home port: Explore opens on its region, search offers it first, and My C
   expect(c.lat).toBeGreaterThan(39.9); // the north coast, not the whole state
   await page.getByTestId("place-search-input").click();
   await expect(page.getByTestId("place-search-list").getByRole("option").first()).toContainText("Your home port");
-  await expect(page.getByTestId("nav-bar").getByTestId("nav-coast")).toHaveAttribute("href", "/coast?place=port-201");
+  // the whole trip, not only the place (v7): the reader lands on their own activity and species
+  await expect(page.getByTestId("nav-bar").getByTestId("nav-coast")).toHaveAttribute("href", "/coast?place=port-201&for=commercial");
   // a link with its own place is not overridden
   await page.goto(`${OK}/?sel=harbor:550`);
   await mapReady(page);
