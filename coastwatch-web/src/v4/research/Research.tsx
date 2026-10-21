@@ -14,6 +14,7 @@ import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, charmRun, isFixt
 import { currentsHourly, fieldFeatures } from "@/lib/currents";
 import { cellEdges, distanceKm, loadGrid } from "@/lib/grid";
 import { useNow } from "@/lib/useNow";
+import { coastHref, resolvePlace } from "@/lib/coast";
 import { labelledGeometry } from "@/lib/officialGeometry";
 import { TopBar, NavTabs } from "@/v4/shell/TopBar";
 import { NoticesButton } from "@/v4/shell/Notices";
@@ -217,22 +218,47 @@ function CursorReadout({ t, sample, unit, fmt, model, variable, radiusKm, histor
   );
 }
 
+/** The station nearest a place: one whose nearest harbour is that port first (as published), else the nearest by distance. */
+export function nearestStation<S extends { station_id: string; lat: number | null; lon: number | null; nearest_port_code?: number | null; nearest_port_km?: number | null }>(stations: S[], lat: number, lon: number, key: string): { station: S; km: number } | null {
+  const pc = key.startsWith("port-") ? Number(key.slice(5)) : null;
+  const own = pc == null ? [] : stations.filter((s) => s.nearest_port_code === pc).sort((a, b) => (a.nearest_port_km ?? 99) - (b.nearest_port_km ?? 99));
+  let best: { station: S; km: number } | null = null;
+  for (const s of own.length ? own.slice(0, 1) : stations) {
+    if (s.lat == null || s.lon == null) continue;
+    const km = distanceKm(lat, lon, s.lat, s.lon);
+    if (!best || km < best.km) best = { station: s, km };
+  }
+  return best;
+}
+
+/** A `variable` link parameter as a pier quantity: its own id, or a C-HARM variable's counterpart. */
+export function researchVar(v: string | null): ObsVariableId | null {
+  if (!v) return null;
+  if (v === "particulate_domoic" || v === "cellular_domoic") return "pDA";
+  if (v === "pseudo_nitzschia") return "pn_seriata";
+  return ["pDA", "dDA", "tDA", "pn_seriata", "pn_delicatissima", "chl_extracted", "temp"].includes(v) ? (v as ObsVariableId) : null;
+}
+
 export function Research({ manifest, ports, observations, official, baseUrl }: Props) {
   const router = useRouter();
   const sp = useSearchParams();
   const now = useNow();
   const stations = useMemo(() => observations.stations.filter((s) => s.lat != null && s.lon != null), [observations]);
-  // a My Coast place opens on its nearest station
+  // a place (My Coast, or Explore's "Research this") opens on its nearest station, and says so (v6)
   const fromPlace = sp.get("place");
-  const nearestTo = useMemo(() => {
-    const pc = fromPlace?.startsWith("port-") ? Number(fromPlace.slice(5)) : null;
-    if (pc == null) return null;
-    return [...stations].filter((s) => s.nearest_port_code === pc).sort((a, b) => (a.nearest_port_km ?? 99) - (b.nearest_port_km ?? 99))[0] ?? null;
-  }, [fromPlace, stations]);
-  const sid = sp.get("station") ?? nearestTo?.station_id ?? "HABs-SantaCruzWharf";
+  const place = useMemo(() => resolvePlace(fromPlace, ports), [fromPlace, ports]);
+  const nearestTo = useMemo(() => (place ? nearestStation(stations, place.lat, place.lon, place.key) : null), [place, stations]);
+  const sid = sp.get("station") ?? nearestTo?.station.station_id ?? "HABs-SantaCruzWharf";
   const st = stations.find((s) => s.station_id === sid) ?? stations[0];
+  const arrived = place && st.lat != null && st.lon != null ? { name: place.name, km: distanceKm(place.lat, place.lon, st.lat, st.lon) } : null;
+  const backHref = (() => {
+    const f = sp.get("from");
+    return f && f.startsWith("/") && !f.startsWith("//") ? f : place ? coastHref({ place: place.key }) : null;
+  })();
   const vars = observations.variables.filter((v) => st.series.some((x) => x.variable === v.id && x.values.some((y) => y != null)));
-  const [variable, setVariable] = useState<ObsVariableId>(vars.find((v) => v.id === "pDA")?.id ?? vars[0]?.id ?? "pDA");
+  // the quantity asked for (`variable`: a pier quantity, or a C-HARM variable read as its pier counterpart)
+  const askedVar = researchVar(sp.get("variable"));
+  const [variable, setVariable] = useState<ObsVariableId>((askedVar && vars.find((v) => v.id === askedVar)?.id) ?? vars.find((v) => v.id === "pDA")?.id ?? vars[0]?.id ?? "pDA");
   useEffect(() => {
     if (!vars.some((v) => v.id === variable)) setVariable(vars.find((v) => v.id === "pDA")?.id ?? vars[0]?.id ?? "pDA");
   }, [st.station_id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -246,7 +272,10 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
   const recent = ssAll.some((x) => x.value != null && x.t >= last + 4 * DAY - 365 * DAY);
   const [rangeChoice, setRangeChoice] = useState<{ k: string; id: (typeof RANGES)[number]["id"] } | null>(null);
   const rangeKey = `${st.station_id}|${variable}`;
-  const range: (typeof RANGES)[number]["id"] = rangeChoice?.k === rangeKey ? rangeChoice.id : recent ? "1y" : "all";
+  // the day asked for (`day`): the window reaches back to it and the cursor starts on it
+  const askedDay = /^\d{4}-\d{2}-\d{2}$/.test(sp.get("day") ?? "") ? Date.parse(`${sp.get("day")}T12:00:00Z`) : null;
+  const dayFits = askedDay != null && askedDay >= first - 4 * DAY && askedDay <= last + 4 * DAY;
+  const range: (typeof RANGES)[number]["id"] = rangeChoice?.k === rangeKey ? rangeChoice.id : dayFits && askedDay < last + 4 * DAY - 365 * DAY ? "all" : recent ? "1y" : "all";
   const setRange = (id: (typeof RANGES)[number]["id"]) => setRangeChoice({ k: rangeKey, id });
   const days = RANGES.find((r) => r.id === range)!.days;
   const to = last + 4 * DAY;
@@ -270,7 +299,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
   // the shared time cursor (station chart + model panel): by default the window's newest sample
   const cursorKey = `${st.station_id}|${variable}|${range}`;
   const [cursor, setCursor] = useState<{ k: string; t: number } | null>(null);
-  const defaultT = win.length ? win[win.length - 1].t : null;
+  const defaultT = dayFits && askedDay != null && askedDay >= from ? askedDay : win.length ? win[win.length - 1].t : null;
   const cursorT = cursor?.k === cursorKey ? cursor.t : defaultT;
   const onCursor = (t: number) => setCursor({ k: cursorKey, t });
   const model = useMemo(() => modelOnAxis(st.charm?.history?.[modelVar], from, to), [st, modelVar, from, to]);
@@ -423,6 +452,20 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
         </nav>
 
         <main id="main" className="cw-page-in flex min-w-0 flex-col gap-6">
+          {(arrived || backHref) && (
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-n-line bg-n-surface-2 px-3 py-1.5 text-[14px] leading-snug text-n-ink-2" data-testid="research-arrived">
+              {arrived && (
+                <span>
+                  Arrived from <span className="font-semibold text-n-ink">{arrived.name}</span> · nearest station {st.name}, {kmLabel(arrived.km)}
+                </span>
+              )}
+              {backHref && (
+                <Link href={backHref} className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent" data-testid="research-back">
+                  <Icon name="back" className="h-4 w-4" /> Back{arrived ? ` to ${arrived.name}` : ""}
+                </Link>
+              )}
+            </p>
+          )}
           <header className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
               <p className="nx-eyebrow">Research · station record</p>

@@ -29,7 +29,8 @@ import { TopBar, NavTabs } from "@/v4/shell/TopBar";
 import { NoticesButton, type LocalNotices } from "@/v4/shell/Notices";
 import { RegistryDisclosure } from "@/v4/shell/Disclosure";
 import { associationsAt, localNotices } from "@/lib/applicability";
-import { pointKey } from "@/lib/coast";
+import { coastHref, pointKey, sitePlaces } from "@/lib/coast";
+import { readHome } from "@/v4/coast/home";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel, lastHabWords } from "@/v4/ui/time";
@@ -39,7 +40,7 @@ import { derivedEstimate, derivedOutlook, derivedSst, nearshoreCheck } from "@/l
 import { LayerChips, LayerList, LayerOptions, Legend, Provenance, ReferenceLines } from "./LayerPanel";
 import { Timebar, timeSteps } from "./Timebar";
 import { PlaceSearch, type SearchHit } from "./Search";
-import { AreaModel, CellBody, HarborView, Header, PointView, StationView } from "./Inspect";
+import { AreaModel, CellBody, CrossLinks, HarborView, Header, PointView, StationView, briefHref, tripOf, type InspectCtx } from "./Inspect";
 import { boxFeature, useAreaDrag } from "./AreaDrag";
 import { useCellRead } from "./reads";
 import { PACKS } from "@/v4/offline/packs";
@@ -537,9 +538,18 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // ------------------------------------------------------------------ pieces
   const regions = useMemo(() => [STATEWIDE, ...(ports?.regions ?? []).map((r) => ({ id: r.id, label: r.label, bounds: (VIEW[r.id] ?? r.bounds) as [[number, number], [number, number]] }))], [ports]);
   const onSearch = (h: SearchHit) => {
+    // a species: My Coast for it, at the harbour on the map or the reader's home port, else its species-first landing
+    if (h.kind === "species") {
+      const home = readHome();
+      const trip = tripOf(q0.get("from"), home);
+      const place = selection?.kind === "harbor" ? `port-${selection.port}` : (home?.place ?? null);
+      window.location.assign(coastHref({ place, for: place ? trip.for : undefined, species: h.id, date: place ? trip.date : undefined }));
+      return;
+    }
     if (h.kind !== "region") focusPanel.current = true;
     if (h.kind === "harbor") selectAndGo({ kind: "harbor", port: Number(h.id) });
     else if (h.kind === "station") selectAndGo({ kind: "station", id: h.id });
+    else if (h.kind === "site" && h.lat != null && h.lon != null) selectAndGo({ kind: "point", lat: h.lat, lon: h.lon });
     else {
       const r = regions.find((x) => x.id === h.id);
       setRegion(h.id);
@@ -577,7 +587,18 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     return waterAt({ x: p.x, y: p.y });
   }, [waterAt]);
   const derivedCtx = { outlook: derivedOutlook(derived), estimate: derivedEstimate(derived), sst: derivedSst(derived), check };
-  const ctx = { manifest, baseUrl, ports, portIntel, stations, now, variable, lead, layer: active.kind, onSelect: selectAndGo, official, reads: pointReads, onLayer: setChoiceRaw, derived: derivedCtx, waterAt: waterAtPoint };
+  // this view's own address (layer and selection, no camera): where Research's back link returns
+  const here = useMemo(() => {
+    const q = new URLSearchParams();
+    if (choice) for (const [k, v] of Object.entries(choiceParams(choice))) q.set(k, v);
+    const sel = encodeSelection(selection);
+    if (sel) q.set("sel", sel);
+    const f = q0.get("from");
+    if (f?.startsWith("/coast")) q.set("from", f);
+    const s = q.toString().replace(/%3A/g, ":").replace(/%2C/g, ",");
+    return s ? `/?${s}` : "/";
+  }, [choice, selection, q0]);
+  const ctx: InspectCtx = { manifest, baseUrl, ports, portIntel, stations, now, variable, lead, layer: active.kind, onSelect: selectAndGo, official, reads: pointReads, onLayer: setChoiceRaw, derived: derivedCtx, waterAt: waterAtPoint, from: q0.get("from"), here };
   // opened from a briefing ("Show on map"): a way back to it, only to a My Coast address
   const backTo = useMemo(() => {
     const f = q0.get("from");
@@ -615,10 +636,12 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // on a phone the briefing is a link on the title row, so the evidence starts higher in the sheet
   const briefingLink =
     selection?.kind === "harbor" && bp === "phone" ? (
-      <a href={`/coast?place=port-${selection.port}`} className="nx-press nx-focus mt-1 inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-full border border-n-line-strong pl-3 pr-1.5 text-[14px] font-semibold text-n-ink" data-testid="open-briefing-link">
+      <a href={briefHref(`port-${selection.port}`, q0.get("from"))} className="nx-press nx-focus mt-1 inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-full border border-n-line-strong pl-3 pr-1.5 text-[14px] font-semibold text-n-ink" data-testid="open-briefing-link">
         Briefing <Icon name="chevronRight" className="h-4 w-4 shrink-0" />
       </a>
     ) : undefined;
+  // a harvest site chosen in search: its point, named
+  const siteHere = selection?.kind === "point" ? (sitePlaces().find((p) => Math.abs(p.lat - selection.lat) < 1e-4 && Math.abs(p.lon - selection.lon) < 1e-4) ?? null) : null;
   const inspection = selection ? (
     <div ref={panelRef} tabIndex={-1} className="flex flex-col gap-4 outline-none" data-testid="inspect-panel" data-kind={selection.kind}>
       {packNote}
@@ -642,8 +665,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       )}
       {selection.kind === "point" && (
         <>
-          <Header icon="locate" kind="A point in the water" title="This point" onClose={() => select(null)} onBack={back} canBack={stack.length > 0} />
-          <PointView lat={selection.lat} lon={selection.lon} ctx={ctx} />
+          <Header icon="locate" kind={siteHere ? "Harvest site" : "A point in the water"} title={siteHere?.name ?? "This point"} sub={siteHere?.note ?? undefined} onClose={() => select(null)} onBack={back} canBack={stack.length > 0} />
+          <PointView lat={selection.lat} lon={selection.lon} ctx={ctx} site={siteHere} />
         </>
       )}
       {selection.kind === "area" && (
@@ -908,6 +931,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
             <div className="flex flex-col items-start gap-1.5">
               <PlaceSearch ports={ports} stations={stations} regions={regions} onPick={onSearch} current={placeName ?? ""} />
               <RegistryDisclosure className="w-fit rounded-full border border-n-line bg-n-surface px-3 py-1" fixture={isFixture(manifest)} compact />
+              <PurposeLine className="w-full max-w-[420px]" />
               {offlineBanner && <div className="w-full max-w-[420px]">{offlineBanner}</div>}
               {fieldProblem}
               {backTo && <BackToBriefing {...backTo} className="w-fit max-w-full" />}
@@ -1004,6 +1028,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           <div className="absolute inset-x-3 top-[68px] z-20 flex flex-col gap-1.5">
             <PlaceSearch ports={ports} stations={stations} regions={regions} onPick={onSearch} current={placeName ?? ""} />
             <RegistryDisclosure className="w-fit max-w-full rounded-full border border-n-line bg-n-surface px-3 py-1" fixture={isFixture(manifest)} compact />
+            <PurposeLine className="pr-[68px]" />
             {/* clear of the map controls' column on the right */}
             {offlineBanner && <div className="pr-[68px]">{offlineBanner}</div>}
             {fieldProblem}
@@ -1180,7 +1205,7 @@ function InspectAside({ className, style, children }: { className: string; style
   );
 }
 
-function AreaView({ bbox, ctx }: { bbox: [number, number, number, number]; ctx: { manifest: Manifest; baseUrl: string; stations: StationLite[] | null; ports: PortsCollection | null; variable: CharmVariable; lead: number; onSelect: (s: Selection) => void } }) {
+function AreaView({ bbox, ctx }: { bbox: [number, number, number, number]; ctx: InspectCtx }) {
   const layer = useMemo(() => resolve(ctx.manifest, { kind: "forecast", variable: ctx.variable, lead: ctx.lead }, ctx.baseUrl).forecastLayer, [ctx.manifest, ctx.variable, ctx.lead, ctx.baseUrl]);
   const [w, s, e, n] = bbox;
   const inBox = (lat: number, lon: number) => lat >= s && lat <= n && lon >= w && lon <= e;
@@ -1227,6 +1252,41 @@ function AreaView({ bbox, ctx }: { bbox: [number, number, number, number]; ctx: 
         </section>
       )}
       <p className="text-[12.5px] text-n-ink-3">Satellite and current statistics for an area are not computed in this version; use their layers and a point.</p>
+      <CrossLinks ctx={ctx} place={pointKey((s + n) / 2, (w + e) / 2)} lat={(s + n) / 2} lon={(w + e) / 2} name="the middle of this area" />
+    </div>
+  );
+}
+
+/** First visit (v6): what Neritic is, in one line, until dismissed; remembered on this device. */
+export const PURPOSE_SEEN_KEY = "cw-intro-dismissed-v1";
+function PurposeLine({ className }: { className: string }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    try {
+      setShow(window.localStorage.getItem(PURPOSE_SEEN_KEY) !== "1");
+    } catch {
+      setShow(false);
+    }
+  }, []);
+  if (!show) return null;
+  const dismiss = () => {
+    setShow(false);
+    try {
+      window.localStorage.setItem(PURPOSE_SEEN_KEY, "1");
+    } catch {
+      // not remembered on this device
+    }
+  };
+  return (
+    <div className={className}>
+      <p className="flex items-center gap-1 rounded-2xl border border-n-line bg-n-surface py-1 pl-3 pr-1 text-[13.5px] leading-snug text-n-ink shadow-[var(--nx-shadow)]" data-testid="explore-purpose">
+        <span className="min-w-0 flex-1">
+          <span className="font-semibold">Neritic:</span> California coastal conditions, models and notices — tap a harbour for its briefing
+        </span>
+        <button type="button" onClick={dismiss} aria-label="Dismiss" className="nx-press nx-focus grid h-11 w-11 shrink-0 place-items-center rounded-full text-n-ink-2 hover:bg-n-surface-2" data-testid="explore-purpose-dismiss">
+          <Icon name="close" className="h-4 w-4" />
+        </button>
+      </p>
     </div>
   );
 }

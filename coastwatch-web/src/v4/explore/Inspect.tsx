@@ -9,7 +9,7 @@ import type { StationLite } from "@/lib/data";
 import { artifactUrl, charmRun, type CharmVariable } from "@/lib/layers";
 import { areaCells, areaStats, type AreaCell } from "@/lib/area";
 import { pageClaims, type Claim, type EvidenceGraph, type EvidenceNode } from "@/lib/harborEvidence";
-import { stationsNear, coastHref } from "@/lib/coast";
+import { stationsNear, coastHref, parseAudience, pointKey } from "@/lib/coast";
 import { distanceKm, loadGrid } from "@/lib/grid";
 import { DAY, unitLabel } from "@/lib/observations";
 import { OFFICIAL_STATUS } from "@/content/copy";
@@ -27,8 +27,9 @@ import { useSavedSnapshot } from "@/v4/offline/snapshot";
 import type { Selection } from "@/v4/state/selection";
 import type { LayerChoice } from "./layers";
 import { checkSentence, type DerivedValidationEntry, type EstimateLayer, type OutlookLayer, type SstLayer } from "@/lib/derived";
-import { contextWords, forecastContext, OUTSIDE_WORDS, type ForecastContext } from "@/lib/gridTilesContext";
-import { estimateRead, sstRead, outlookRead } from "@/components/map/HoverReadout";
+import { contextWords, forecastContext, outsideLabel, outsideWords, type ForecastContext } from "@/lib/gridTilesContext";
+import { estimateRead, sstRead, outlookRead, withBayCaveat } from "@/components/map/HoverReadout";
+import { readHome } from "@/v4/coast/home";
 import { satelliteLatest } from "@/lib/layers";
 
 type Ctx = {
@@ -46,12 +47,16 @@ type Ctx = {
   official?: OfficialDataset | null;
   /** what can be read at a point: the forecast for the chosen variable and day, the satellite view, and the currents hour once loaded */
   reads?: { forecast: LayerArtifact | null; satellite: LayerArtifact | null; currents: { layer: LayerArtifact; field: CurrentField } | null };
-  /** v5: change the map's layer (the one-tap switch from a bay outside NOAA's model to chlorophyll) */
+  /** v5: change the map's layer (the one-tap switch from a bay where NOAA publishes no probability to chlorophyll) */
   onLayer?: (c: LayerChoice) => void;
   /** v5: the derived products and the pier-sample check of the nearest NOAA value near shore */
   derived?: { outlook: OutlookLayer | null; estimate: EstimateLayer | null; sst?: SstLayer | null; check: DerivedValidationEntry | null };
   /** v5: is this point water on the map? (null: unknown) */
   waterAt?: (lat: number, lon: number) => boolean | null;
+  /** v6: the My Coast address that opened this map (its trip: for, species, date), if any */
+  from?: string | null;
+  /** v6: this Explore view's own address (layer and selection), so Research can link back to it */
+  here?: string;
 };
 
 const KIND: Record<string, { word: string; tone: string; dot: string; hollow: string }> = {
@@ -218,6 +223,8 @@ function Failed({ what, message, retry }: { what: string; message: string; retry
 
 // ------------------------------------------------------------------------------------- harbour
 
+export type InspectCtx = Ctx;
+
 export function HarborView({ code, ctx }: { code: number; ctx: Ctx }) {
   const intel = ctx.portIntel?.ports.find((p) => p.port_code === code) ?? null;
   const f = ctx.ports?.features.find((x) => x.properties.port_code === code);
@@ -235,7 +242,7 @@ export function HarborView({ code, ctx }: { code: number; ctx: Ctx }) {
   const mapDay = useMemo(() => runDays(ctx.manifest, ctx.now).find((d) => d.lead === ctx.lead) ?? null, [ctx.manifest, ctx.now, ctx.lead]);
   return (
     <div className="flex flex-col gap-4" data-testid="inspect-harbor">
-      <Link href={coastHref({ place: `port-${code}` })} className="nx-press nx-focus flex min-h-[52px] items-center justify-between gap-3 rounded-xl bg-n-ink px-4 text-[15.5px] font-semibold text-n-bg" data-testid="open-briefing">
+      <Link href={briefHref(`port-${code}`, ctx.from)} className="nx-press nx-focus flex min-h-[52px] items-center justify-between gap-3 rounded-xl bg-n-ink px-4 text-[15.5px] font-semibold text-n-bg" data-testid="open-briefing">
         Open the {name} briefing <Icon name="chevronRight" />
       </Link>
       <Section title={saved ? `As saved ${clockLabel(saved.savedAt)}` : "What the evidence says now"} testid="harbor-claims">
@@ -301,6 +308,7 @@ export function HarborView({ code, ctx }: { code: number; ctx: Ctx }) {
         )}
       </Section>
       {intel && <HarbourSummary intel={intel} lead={ctx.lead} />}
+      <CrossLinks ctx={ctx} place={`port-${code}`} lat={lat} lon={lon} name={name} />
     </div>
   );
 }
@@ -471,6 +479,7 @@ export function StationView({ id, ctx }: { id: string; ctx: Ctx }) {
           </a>
         </div>
       </Section>
+      <CrossLinks ctx={ctx} place={pointKey(st.lat, st.lon)} lat={st.lat} lon={st.lon} name={st.name} station={st.station_id} obsVariable={v} />
     </div>
   );
 }
@@ -491,8 +500,8 @@ export function preciseProbability(v: number, quantErr: number | null | undefine
  * grid's quantisation error, and says plainly what the number is.
  */
 /**
- * v5: a C-HARM cell without a value, drawn as "outside NOAA's model near shore": NOAA's model does
- * not reach this water; the nearest NOAA cell within 6 km as text only, with the pipeline's
+ * v5: a C-HARM cell without a value, drawn as "NOAA publishes no toxin probability here" (v6
+ * wording, by variable); the nearest NOAA cell within 6 km as text only, with the pipeline's
  * pier-sample check of that value (no skill at the shore); the pier samples nearby, which are the
  * measurements for this water; and one tap to the filled chlorophyll. Never a value for this water.
  */
@@ -523,8 +532,8 @@ function NoValueHere({ at, ctx, variable }: { at: { lat: number; lon: number }; 
   const piers = (near.near.length ? near.near : near.nearestBeyond ? [near.nearestBeyond] : []).slice(0, 3);
   return (
     <div className="rounded-xl border border-n-line-strong bg-n-surface-2 p-3 text-[14px] leading-snug" data-testid={c.ctx.kind === "context" ? "cell-context" : "cell-outside"}>
-      <p className="nx-eyebrow">Outside NOAA&rsquo;s model near shore</p>
-      <p className="mt-1 text-n-ink">{c.ctx.kind === "context" ? contextWords(c.ctx) : OUTSIDE_WORDS}</p>
+      <p className="nx-eyebrow">{outsideLabel(variable)}</p>
+      <p className="mt-1 text-n-ink">{c.ctx.kind === "context" ? contextWords(c.ctx, variable) : outsideWords(variable)}</p>
       {c.ctx.kind === "context" && check && (
         <p className="mt-1 text-[13px] text-n-ink-2" data-testid="cell-context-check">
           {checkSentence(check)}
@@ -578,7 +587,11 @@ export function CellBody({ read, ctx, variable, precise, at }: { read: CellRead 
           <span className="nx-data text-[34px] font-semibold leading-none text-n-ink" data-testid="cell-value">
             {own == null ? "No value" : pct(own)}
           </span>
-          {own != null && <span className="ml-2 text-[14px] text-n-ink-2">for {read.leads[ctx.lead]?.date ? dayLabel(read.leads[ctx.lead].date!, true) : "this day"}</span>}
+          {own != null && (
+            <span className="ml-2 text-[14px] text-n-ink-2" data-testid="cell-day">
+              for {read.leads[ctx.lead]?.date ? dayLabel(read.leads[ctx.lead].date!, true) : "this day"} · {ctx.lead === 0 ? "nowcast" : `forecast, day ${ctx.lead}`}
+            </span>
+          )}
         </p>
         {precise && own != null && (
           <p className="nx-data mt-1.5 text-[14px] text-n-ink" data-testid="cell-precise">
@@ -643,13 +656,15 @@ export function CellBody({ read, ctx, variable, precise, at }: { read: CellRead 
           Cell centre {read.cell.lat.toFixed(3)}°N {Math.abs(read.cell.lon).toFixed(3)}°W · row {read.cell.row}, column {read.cell.col}
         </p>
       )}
+      {at && !precise && <CrossLinks ctx={ctx} place={pointKey(at.lat, at.lon)} lat={at.lat} lon={at.lon} name="this water" />}
     </div>
   );
 }
 
 // ------------------------------------------------------------------------------------- point
 
-export function PointView({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
+/** `site`: the My Coast harvest site at this point (chosen in search), briefed under its own key. */
+export function PointView({ lat, lon, ctx, site = null }: { lat: number; lon: number; ctx: Ctx; site?: { key: string; name: string } | null }) {
   const near = useMemo(() => stationsNear(ctx.stations, lat, lon), [ctx.stations, lat, lon]);
   const notices = useMemo(() => officialAt(ctx.official ?? null, lon, lat), [ctx.official, lat, lon]);
   return (
@@ -707,6 +722,7 @@ export function PointView({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ct
           <p className="text-[14px] text-n-ink-2">No shore station nearby.</p>
         )}
       </Section>
+      <CrossLinks ctx={ctx} place={site?.key ?? pointKey(lat, lon)} lat={lat} lon={lon} name={site?.name ?? "this point"} />
     </div>
   );
 }
@@ -730,7 +746,7 @@ function PointReads({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
         label: "Satellite chlorophyll",
         // the observation when there is one; the estimate (labelled) only where nothing was observed
         run: async () => {
-          const o = await satelliteAt(ctx.manifest, ctx.baseUrl, reads.satellite!, lat, lon);
+          const o = withBayCaveat(await satelliteAt(ctx.manifest, ctx.baseUrl, reads.satellite!, lat, lon), lat, lon);
           return o.value == null && est ? ((await estimateRead(ctx.baseUrl, est, lat, lon)) ?? o) : o;
         },
       });
@@ -784,6 +800,89 @@ function PointReads({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
         </ul>
       )}
     </Section>
+  );
+}
+
+// ------------------------------------------------------------------------------------- cross-links
+
+/** The Research quantity for the map's layer and variable: pier pDA for the toxin layers, the PN groups for the bloom layer, chlorophyll and temperature for theirs. */
+export function researchVariable(layer: string | undefined, variable: CharmVariable): string {
+  if (layer === "satellite" || layer === "outlook") return "chl_extracted";
+  if (layer === "sst") return "temp";
+  return variable === "pseudo_nitzschia" ? "pn_seriata" : "pDA";
+}
+
+/**
+ * The trip My Coast should keep (v6): the `for`, `species` and `date` of the briefing that opened
+ * this map, else the reader's own activity and species kept on this device (home port). Never a
+ * guess: absent values stay absent.
+ */
+export function tripOf(from: string | null | undefined, home: { for: string; species: string } | null): { for?: ReturnType<typeof parseAudience>; species?: string; date?: string } {
+  if (from?.startsWith("/coast")) {
+    const q = new URLSearchParams(from.split("?")[1] ?? "");
+    return { for: parseAudience(q.get("for")), species: q.get("species") ?? undefined, date: q.get("date") ?? undefined };
+  }
+  return home ? { for: parseAudience(home.for), species: home.species } : {};
+}
+
+/** My Coast for a place, keeping the trip of the briefing that opened the map (the home trip is added after mount by CrossLinks). */
+export function briefHref(place: string, from: string | null | undefined): string {
+  const t = tripOf(from, null);
+  return coastHref({ place, for: t.for, species: t.species, date: t.date });
+}
+
+/** "Brief this" (My Coast for the place, keeping the trip) and "Research this" (its station or the nearest one, with the variable, the day and the way back). */
+export function crossHrefs(o: { place: string; lat: number; lon: number; station?: string | null; stations: StationLite[] | null; variable: string; day?: string | null; from?: string | null; here?: string; home?: { for: string; species: string } | null }): { brief: string; research: string; stationName: string | null } {
+  const trip = tripOf(o.from, o.home ?? null);
+  const brief = coastHref({ place: o.place, for: trip.for, species: trip.species, date: trip.date });
+  let sid = o.station ?? null;
+  let stationName: string | null = sid ? (o.stations?.find((s) => s.station_id === sid)?.name ?? null) : null;
+  if (!sid && o.stations?.length) {
+    let best: { id: string; name: string; km: number } | null = null;
+    for (const s of o.stations) {
+      const km = distanceKm(o.lat, o.lon, s.lat, s.lon);
+      if (!best || km < best.km) best = { id: s.station_id, name: s.name, km };
+    }
+    sid = best?.id ?? null;
+    stationName = best?.name ?? null;
+  }
+  const q = new URLSearchParams();
+  if (sid) q.set("station", sid);
+  // the place itself, so Research can say where the reader came from (unless it is the station)
+  if (!o.station) q.set("place", o.place);
+  q.set("variable", o.variable);
+  if (o.day && /^\d{4}-\d{2}-\d{2}$/.test(o.day)) q.set("day", o.day);
+  if (o.here) q.set("from", o.here);
+  return { brief, research: `/research?${q.toString().replace(/%2C/g, ",")}`, stationName };
+}
+
+export function CrossLinks({ ctx, place, lat, lon, name, station = null, obsVariable }: { ctx: Ctx; place: string; lat: number; lon: number; name: string; station?: string | null; obsVariable?: string }) {
+  // the reader's home trip is read after mount (localStorage); the server renders without it
+  const [home, setHome] = useState<{ for: string; species: string } | null>(null);
+  useEffect(() => setHome(readHome()), []);
+  const day = useMemo(() => runDays(ctx.manifest, ctx.now).find((d) => d.lead === ctx.lead)?.date ?? null, [ctx.manifest, ctx.now, ctx.lead]);
+  const h = crossHrefs({ place, lat, lon, station, stations: ctx.stations, variable: obsVariable ?? researchVariable(ctx.layer, ctx.variable), day, from: ctx.from, here: ctx.here, home });
+  const cls = "nx-press nx-focus flex min-h-12 flex-1 items-center justify-between gap-2 rounded-xl border border-n-line-strong px-3 text-[14.5px] font-semibold text-n-ink";
+  return (
+    <nav aria-label={`Next steps for ${name}`} className="flex flex-col gap-2 border-t border-n-line pt-4" data-testid="inspect-crosslinks">
+      <div className="flex flex-wrap gap-2">
+        <Link href={h.brief} className={cls} data-testid="brief-this">
+          <span className="flex items-center gap-2">
+            <Icon name="harbor" className="h-4 w-4 shrink-0" /> Brief this
+          </span>
+          <Icon name="chevronRight" className="h-4 w-4 shrink-0" />
+        </Link>
+        <Link href={h.research} className={cls} data-testid="research-this">
+          <span className="flex items-center gap-2">
+            <Icon name="research" className="h-4 w-4 shrink-0" /> Research this
+          </span>
+          <Icon name="chevronRight" className="h-4 w-4 shrink-0" />
+        </Link>
+      </div>
+      <p className="text-[12.5px] leading-snug text-n-ink-3">
+        My Coast briefing for {name}; the {station ? "station's" : "nearest station's"} record{h.stationName && !station ? ` (${h.stationName})` : ""} in Research.
+      </p>
+    </nav>
   );
 }
 
