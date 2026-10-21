@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { OK } from "./ports";
+import { openLayers } from "./helpers";
 
 /**
  * The six usability issues the final scripted walkthrough left open (M2, M4–M8), each held here:
@@ -59,7 +60,8 @@ test("M5: comparing currents with chlorophyll, both times are above the fold on 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=currents&chl=1`);
   await mapReady(page);
-  for (const id of ["stamp-currents", "stamp-satellite"]) await expect(page.getByTestId("layer-deck").getByTestId(id).first()).toBeInViewport();
+  // v7: both lines sit under the legend in the dock (a layer list is not needed to read them)
+  for (const id of ["stamp-currents", "stamp-satellite"]) await expect(page.getByTestId("timebar-deck").getByTestId(id).first()).toBeInViewport();
 });
 
 test("M6: on a phone with a harbour open the layers are one tap away, and a statewide notice count says it is statewide", async ({ browser }) => {
@@ -69,9 +71,10 @@ test("M6: on a phone with a harbour open the layers are one tap away, and a stat
   await page.goto(`${OK}/?layer=forecast&sel=harbor:550`);
   await mapReady(page);
   await expect(page.getByTestId("notices-here")).toBeVisible();
-  const chips = page.getByTestId("sheet-layer-chips");
-  await expect(chips).toBeVisible();
-  await chips.getByTestId("chip-currents").click();
+  // the sheet keeps the dock's layer button above the place: the list is one tap away
+  await expect(page.getByTestId("layer-capsule")).toBeVisible();
+  await openLayers(page);
+  await page.getByTestId("layer-currents").click();
   await expect(page).toHaveURL(/layer=currents/);
   await expect(page).toHaveURL(/sel=harbor(:|%3A)550/);
   await expect(page.getByTestId("notices-here")).toBeVisible();

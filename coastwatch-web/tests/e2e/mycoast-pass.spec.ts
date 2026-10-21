@@ -60,13 +60,14 @@ test("the title is the place control on a phone: one button instead of three pil
   await ctx.close();
 });
 
-test("the phone sheet over the map is cool chart paper, not cream", async ({ browser }) => {
+test("the phone sheet over the map is the instrument's own dark surface (v7), never cream or a white card", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   await page.goto(`${OK}/?sel=harbor:550&layer=forecast`);
   const sheet = page.getByTestId("mobile-sheet");
   await expect(sheet).toBeVisible({ timeout: 20_000 });
-  expect(await sheet.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(255, 255, 255)");
+  // the env-instrument surface token (#0c1921)
+  expect(await sheet.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(12, 25, 33)");
   await ctx.close();
 });
 

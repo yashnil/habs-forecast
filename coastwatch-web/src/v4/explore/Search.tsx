@@ -128,6 +128,15 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, []);
+  // a phone: the search shares the header row, so its prompt is one word and its list spans the screen
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 699px)");
+    const f = () => setNarrow(mq.matches);
+    f();
+    mq.addEventListener("change", f);
+    return () => mq.removeEventListener("change", f);
+  }, []);
   // the workspace moves focus to what was picked (and back here when it is closed)
   const pick = (h: SearchHit) => {
     onPick(h);
@@ -135,8 +144,9 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
     setOpen(false);
   };
   return (
-    <div className="relative w-full max-w-[420px]" id="place-search" tabIndex={-1} data-testid="place-search">
-      <div className="flex h-12 items-center gap-2 rounded-full md:h-11 border border-n-line-strong bg-n-surface pl-3.5 pr-2 focus-within:ring-2 focus-within:ring-n-accent">
+    // a phone: the field shares the header row; focused, it spans the row (over the brand and the notices)
+    <div className="@container relative w-full max-w-[420px] max-[699px]:focus-within:fixed max-[699px]:focus-within:inset-x-3 max-[699px]:focus-within:top-3 max-[699px]:focus-within:z-[60] max-[699px]:focus-within:w-auto max-[699px]:focus-within:max-w-none" id="place-search" tabIndex={-1} data-testid="place-search">
+      <div className="relative flex h-12 items-center gap-2 rounded-full border border-n-line-strong bg-n-surface pl-3.5 pr-2 focus-within:ring-2 focus-within:ring-n-accent md:h-11 @max-[96px]:justify-center @max-[96px]:px-0">
         <Icon name="search" className="h-[18px] w-[18px] shrink-0 text-n-ink-3" />
         <input
           ref={input}
@@ -146,7 +156,7 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
           aria-controls={`${id}-list`}
           aria-activedescendant={open && hits[i] ? `${id}-o${i}` : undefined}
           aria-label="Search harbours, stations, harvest sites, regions and species"
-          placeholder={current || "Search harbours, stations, species…"}
+          placeholder={current || (narrow ? "Search" : "Search harbours, stations, species…")}
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
@@ -164,14 +174,14 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
             } else return;
             e.preventDefault();
           }}
-          className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-n-ink outline-none placeholder:text-n-ink-2"
+          className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-n-ink outline-none placeholder:text-n-ink-2 @max-[96px]:absolute @max-[96px]:inset-0 @max-[96px]:rounded-full @max-[96px]:opacity-0"
           data-ring="container"
           data-testid="place-search-input"
         />
         <kbd className="hidden rounded border border-n-line px-1.5 text-[12px] text-n-ink-3 md:block">/</kbd>
       </div>
       {open && hits.length > 0 && (
-        <ul id={`${id}-list`} role="listbox" aria-label="Places" className="nx-pop nx-origin-left absolute left-0 right-0 top-[52px] z-50 max-h-[60vh] overflow-auto rounded-[18px] border border-n-line bg-n-surface p-1.5 shadow-[var(--nx-shadow)]" data-testid="place-search-list">
+        <ul id={`${id}-list`} role="listbox" aria-label="Places" className="nx-pop nx-origin-left absolute left-0 right-0 top-[52px] z-50 max-h-[60vh] overflow-auto max-[699px]:fixed max-[699px]:inset-x-3 max-[699px]:top-[64px] rounded-[18px] border border-n-line bg-n-surface p-1.5 shadow-[var(--nx-shadow)]" data-testid="place-search-list">
           {hits.map((h, k) => (
             <li
               key={`${h.kind}-${h.id}`}
@@ -199,7 +209,7 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
       )}
       {open && q.trim() !== "" && hits.length === 0 && (
         // nothing matched: say so, and offer the next step instead of an empty box
-        <div role="status" className="nx-pop nx-origin-left absolute left-0 right-0 top-[52px] z-50 rounded-[18px] border border-n-line bg-n-surface p-3 text-n-ink shadow-[var(--nx-shadow)]" data-testid="place-search-empty">
+        <div role="status" className="nx-pop nx-origin-left absolute left-0 right-0 top-[52px] z-50 max-[699px]:fixed max-[699px]:inset-x-3 max-[699px]:top-[64px] rounded-[18px] border border-n-line bg-n-surface p-3 text-n-ink shadow-[var(--nx-shadow)]" data-testid="place-search-empty">
           <p className="text-[14.5px] font-semibold">No harbour, station or region matches “{q.trim()}”</p>
           <p className="mt-0.5 text-[13.5px] leading-snug text-n-ink-2">Try a harbour or town name, a county, a harvest site or a species. Or tap the water on the map to read any point.</p>
           <button

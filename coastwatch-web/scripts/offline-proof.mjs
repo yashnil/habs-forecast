@@ -162,8 +162,12 @@ try {
   p.on("pageerror", (e) => errors.push(e.message));
   await p.goto(`${BASE}/?sel=harbor:550&layer=forecast`, { waitUntil: "load" });
   await p.waitForTimeout(5000);
-  // with a place open the layer deck is folded to its capsule: open it, or the walk below reaches no control
-  await p.getByTestId("layer-capsule").click();
+  // v7: the layer list is a popover from the dock's layer button; open it (again) before each choice in it
+  const deck = async () => {
+    if (!(await p.getByTestId("layer-deck").isVisible())) await p.getByTestId("layer-capsule").click();
+    await p.getByTestId("layer-deck").waitFor({ state: "visible" });
+  };
+  await deck();
   await p.getByTestId("variable-select").waitFor();
   const [w, s, e, n] = record.items.length ? [-122.124, 36.44, -121.676, 36.8] : [0, 0, 0, 0];
   const VIEWS = [
@@ -191,6 +195,7 @@ try {
   };
   await walk("forecast");
   for (const v of await p.getByTestId("variable-select").locator("option").evaluateAll((os) => os.map((o) => o.value))) {
+    await deck();
     await p.getByTestId("variable-select").selectOption(v).catch(() => null);
     for (const t of await p.locator('[data-testid^="time-"]:not([disabled])').all()) {
       await t.click().catch(() => null);
@@ -198,18 +203,22 @@ try {
     }
   }
   await walk("forecast, last day");
+  await deck();
   await p.getByTestId("layer-satellite").click();
   await p.waitForTimeout(2000);
   for (const sensor of await p.locator('[data-testid^="sensor-"]').evaluateAll((bs) => bs.map((b) => b.dataset.testid))) {
+    await deck();
     await p.getByTestId(sensor).click();
     await p.waitForTimeout(1500);
     await walk(sensor);
     if (await p.getByTestId("satview-age").count()) {
+      await deck();
       await p.getByTestId("satview-age").click();
       await walk(`${sensor} age`);
       await p.getByTestId("satview-chl").click().catch(() => null);
     }
   }
+  await deck();
   await p.getByTestId("layer-currents").click();
   await p.waitForTimeout(2000);
   await walk("currents");

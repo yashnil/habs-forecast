@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { openAbout, openEvidence, openLayers } from "./helpers";
 import { OK } from "./ports";
 import { coveragePct } from "../../src/lib/layers";
 
@@ -84,6 +85,7 @@ test("currents compared with chlorophyll: both drawn, each with its own time, ne
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=currents`);
   await map(page);
+  await openLayers(page);
   await page.getByTestId("currents-chl-toggle").check();
   await expect(page).toHaveURL(/chl=1/);
   await page.waitForFunction(() => { const m = (window as unknown as { __cwMap: M }).__cwMap; return !!m.getSource("satellite"); });
@@ -110,6 +112,7 @@ test("satellite coverage: the share actually seen, what is counted, the dates an
   await expect(cov).toContainText("not low chlorophyll");
   await expect(cov).toContainText(/pixels observed \w{3} \d+–\w{3} \d+/);
   await expect(page.getByTestId("sat-coverage-regions").first()).toContainText(`Monterey Bay ${coveragePct(l.coverage.regions[0].observed_fraction)}`);
+  await openAbout(page);
   await cov.locator("summary").click();
   await expect(cov).toContainText(l.coverage.reference.slice(0, 40));
 });
@@ -144,6 +147,7 @@ test("advanced harbour summary: each product's neighbourhood statistic with its 
   await page.goto(`${OK}/?layer=forecast&var=particulate_domoic&lead=1&sel=harbor:550`);
   await map(page);
   const sum = page.getByTestId("harbor-summary");
+  await openEvidence(page);
   await sum.locator("summary").click();
   const row = sum.getByTestId("harbor-summary-particulate_domoic");
   await expect(row).toContainText(`${Math.round(lead1.median * 100)}%`);

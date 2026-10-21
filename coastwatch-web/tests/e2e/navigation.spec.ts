@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
+import { openLayers } from "./helpers";
 import { OK } from "./ports";
 
 /**
@@ -53,8 +54,8 @@ test("v2 links open the same view: a port, a region, a research-mode briefing", 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?region=monterey_bay&port=550&layer=forecast`);
   await expect(page.getByTestId("inspect-title")).toHaveText("Monterey");
-  // with the place open the layer deck is folded (desktop): its capsule names the layer, and opens the deck
-  await expect(page.getByTestId("layer-capsule")).toContainText("C-HARM forecast");
+  // the dock's layer button names the layer, and opens the layer list
+  await expect(page.getByTestId("layer-capsule")).toContainText("NOAA bloom forecast");
   await page.getByTestId("layer-capsule").click();
   await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
   await page.goto(`${OK}/coast?place=port-550&mode=research`);
@@ -98,6 +99,7 @@ test("the layer list moves with the arrow keys, and county lines and names are a
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=none`);
   await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { loaded(): boolean } }).__cwMap?.loaded());
+  await openLayers(page);
   await page.getByTestId("layer-none").focus();
   await page.keyboard.press("ArrowDown");
   await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");

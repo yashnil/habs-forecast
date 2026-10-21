@@ -26,7 +26,7 @@ const weekdayOf = (d: string) => {
  */
 type Step = { key: string; label: string; top?: string; sub: string; forecast?: boolean; today?: boolean; incomplete?: boolean; choice: LayerChoice; disabled?: boolean };
 
-export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null, derived: DerivedIndex | null = null): { title: string; steps: Step[]; current: string; latest?: LayerChoice } | null {
+export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null, derived: DerivedIndex | null = null): { title: string; short?: string; steps: Step[]; current: string; latest?: LayerChoice } | null {
   if (c.kind === "outlook") {
     // one frame: the outlook is a single mean over its window, never a day-by-day series
     const o = derivedOutlook(derived);
@@ -43,6 +43,7 @@ export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null, derived
     const days = runDays(m, now);
     return {
       title: run ? `C-HARM run issued ${dayLabel(run.issued_date)}${run.issued_date_derived ? " (inferred)" : ""}: nowcast, then forecasts` : "C-HARM",
+      short: run ? `C-HARM run ${dayLabel(run.issued_date)}${run.issued_date_derived ? " (inferred)" : ""} · nowcast, then forecasts` : "C-HARM",
       current: `lead${c.lead}`,
       steps: days.map((d) => ({
         key: `lead${d.lead}`,
@@ -62,6 +63,7 @@ export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null, derived
     const latest = satelliteLatest(m, c.product as SatProduct);
     return {
       title: `${c.product === "olci300" ? "Sentinel-3 OLCI" : "VIIRS"}: daily overpasses, or the latest clear view of each pixel`,
+      short: "Daily overpasses, or the latest clear view",
       current: c.day ?? "latest",
       latest: { ...c, day: null },
       steps: [
@@ -76,6 +78,7 @@ export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null, derived
     const usable = usableHours(m);
     return {
       title: "HF radar: hourly observations",
+      short: "Hourly radar observations",
       current: c.mean ? "mean" : (c.hour ?? defaultHour(m)?.layer_id.split("_").pop() ?? ""),
       latest: { ...c, hour: null, mean: false },
       steps: [
@@ -130,7 +133,11 @@ export function OutlookHorizon({ layer, now, compact = false }: { layer: Outlook
   );
 }
 
-export function Timebar({ manifest, choice, onChoice, now, compact = false, derived = null }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; now: Date | null; compact?: boolean; derived?: DerivedIndex | null }) {
+/**
+ * `dense` (v7 dock): one short caption ("Run Oct 20 (inferred) · nowcast, then forecasts") and day steps of
+ * two lines (weekday and date, then nowcast / forecast), 44 px on a desktop and 56 px on a phone.
+ */
+export function Timebar({ manifest, choice, onChoice, now, compact = false, dense = false, caption = true, derived = null }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; now: Date | null; compact?: boolean; dense?: boolean; caption?: boolean; derived?: DerivedIndex | null }) {
   const t = timeSteps(manifest, choice, now, derived);
   const row = useRef<HTMLDivElement | null>(null);
   // one selected pill that slides between frames (the map itself still cuts from frame to frame);
@@ -145,8 +152,10 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false, deri
   }, [current]);
   if (!t || !t.steps.length) return null;
   const outlook = choice.kind === "outlook" ? derivedOutlook(derived) : null;
-  if (outlook) return <OutlookHorizon layer={outlook} now={now} compact={compact} />;
+  if (outlook) return <OutlookHorizon layer={outlook} now={now} compact={compact || dense} />;
   const i = Math.max(0, t.steps.findIndex((s) => s.key === t.current));
+  // dense: a short run (the forecast's four days) shows every step, so no Earlier / Later buttons (← → still step)
+  const arrows = !dense || t.steps.length > 5;
   const go = (j: number) => {
     const s = t.steps[Math.max(0, Math.min(t.steps.length - 1, j))];
     if (s && !s.disabled) onChoice(s.choice);
@@ -165,13 +174,21 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false, deri
         else return;
         e.preventDefault();
       }}
-      className="flex min-w-0 flex-col gap-2"
+      className={`flex min-w-0 flex-col ${dense ? "gap-1.5" : "gap-2"}`}
     >
-      {!compact && <p className="truncate text-[13px] text-n-ink-2">{t.title}</p>}
+      {dense ? (
+        <p className={caption ? "truncate text-[12.5px] leading-4 text-n-ink-3" : "sr-only"} title={t.title}>
+          {t.short ?? t.title}
+        </p>
+      ) : (
+        !compact && <p className="truncate text-[13px] text-n-ink-2">{t.title}</p>
+      )}
       <div className="flex min-w-0 items-stretch gap-1.5">
-        <button type="button" aria-label="Earlier" onClick={() => go(i - 1)} disabled={i === 0} className="nx-press nx-focus grid w-11 shrink-0 place-items-center rounded-lg border border-n-line-strong text-n-ink-2 disabled:opacity-35 max-md:min-h-[56px] md:min-h-11">
+        {arrows && (
+        <button type="button" aria-label="Earlier" onClick={() => go(i - 1)} disabled={i === 0} className={`nx-press nx-focus grid shrink-0 place-items-center rounded-lg text-n-ink-2 hover:text-n-ink disabled:opacity-35 max-md:min-h-[56px] md:min-h-11 ${dense ? "w-11 max-md:w-11" : "w-11 border border-n-line-strong"}`}>
           <Icon name="back" className="h-5 w-5" />
         </button>
+        )}
         <motion.div layoutScroll ref={row} className="relative flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none]" role="radiogroup" aria-label={t.title}>
           {t.steps.map((s) => {
             const on = s.key === t.current;
@@ -189,25 +206,45 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false, deri
                 }}
                 data-testid={`time-${s.key}`}
                 data-incomplete={s.incomplete ? "true" : undefined}
-                className={`nx-focus relative isolate flex min-w-fit flex-1 shrink-0 basis-[84px] flex-col items-center justify-center rounded-lg px-2 py-1 text-center disabled:opacity-35 max-md:min-h-[56px] md:min-h-12 ${
+                className={`nx-focus relative isolate flex min-w-fit flex-1 shrink-0 flex-col items-center justify-center rounded-lg px-2 text-center disabled:opacity-35 max-md:min-h-[56px] ${dense ? "basis-[64px] py-0.5 md:min-h-11" : "basis-[84px] py-1 md:min-h-12"} ${
                   on ? "text-n-bg" : "nx-row bg-n-surface-2 text-n-ink hover:bg-n-surface-3"
                 }`}
-                style={s.forecast && !on ? { backgroundImage: "repeating-linear-gradient(135deg, transparent 0 6px, rgba(194,168,245,0.10) 6px 8px)" } : undefined}
               >
                 {on && <motion.span aria-hidden layoutId={pill} transition={instant ? { duration: 0 } : SPRING} className="absolute inset-0 -z-10 rounded-lg bg-n-ink" />}
-                {s.top && <span className={`text-[11.5px] leading-tight ${on ? "opacity-80" : "text-n-ink-3"}`}>{s.top}</span>}
-                <span className="whitespace-nowrap text-[14px] font-semibold leading-tight">{s.label}</span>
-                <span className={`whitespace-nowrap text-[11.5px] ${on ? "opacity-80" : "text-n-ink-3"}`}>
-                  {s.today ? "today · " : ""}
+                {dense ? (
+                  <span className="whitespace-nowrap text-[13.5px] font-semibold leading-tight">
+                    {s.today && <span aria-hidden className={`mr-1 inline-block h-1.5 w-1.5 -translate-y-0.5 rounded-full ${on ? "bg-n-bg" : "bg-n-accent"}`} />}
+                    {s.top ? (
+                      <>
+                        <span className={`mr-1 font-normal ${on ? "opacity-80" : "text-n-ink-2"}`}>{s.top}</span>
+                        {/* the weekday and the day of the month; the full date is the step's name */}
+                        <span aria-hidden>{s.label.split(" ").pop()}</span>
+                        <span className="sr-only">{s.label}</span>
+                      </>
+                    ) : (
+                      s.label
+                    )}
+                  </span>
+                ) : (
+                  <>
+                    {s.top && <span className={`text-[11.5px] leading-tight ${on ? "opacity-80" : "text-n-ink-3"}`}>{s.top}</span>}
+                    <span className="whitespace-nowrap text-[14px] font-semibold leading-tight">{s.label}</span>
+                  </>
+                )}
+                <span className={`whitespace-nowrap text-[11.5px] leading-tight ${on ? "opacity-80" : "text-n-ink-3"}`}>
+                  {/* dense: today is the dot before the date (and said to a screen reader) */}
+                  {s.today ? (dense ? <span className="sr-only">today · </span> : "today · ") : ""}
                   {s.sub}
                 </span>
               </button>
             );
           })}
         </motion.div>
-        <button type="button" aria-label="Later" onClick={() => go(i + 1)} disabled={i === t.steps.length - 1} className="nx-press nx-focus grid w-11 shrink-0 place-items-center rounded-lg border border-n-line-strong text-n-ink-2 disabled:opacity-35 max-md:min-h-[56px] md:min-h-11">
+        {arrows && (
+        <button type="button" aria-label="Later" onClick={() => go(i + 1)} disabled={i === t.steps.length - 1} className={`nx-press nx-focus grid shrink-0 place-items-center rounded-lg text-n-ink-2 hover:text-n-ink disabled:opacity-35 max-md:min-h-[56px] md:min-h-11 ${dense ? "w-11" : "w-11 border border-n-line-strong"}`}>
           <Icon name="chevronRight" className="h-5 w-5" />
         </button>
+        )}
       </div>
     </div>
   );

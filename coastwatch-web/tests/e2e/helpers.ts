@@ -30,3 +30,28 @@ export function tileSource(tiles0: string | null | undefined): { template: strin
   const [template, index] = raw.split("#cw-index=");
   return { template, index: index ? decodeURIComponent(index) : null };
 }
+
+/** v7 Explore: the layer list is a popover from the dock's layer button (in the sheet on a phone). */
+export async function openLayers(page: Page) {
+  const deck = page.getByTestId("layer-deck");
+  if (!(await deck.isVisible())) await page.getByTestId("layer-capsule").click();
+  await expect(deck).toBeVisible();
+  return deck;
+}
+
+/** v7 Explore: "About this layer" (provenance, coverage, method and skill, credits), folded in the layer list. */
+export async function openAbout(page: Page) {
+  await openLayers(page);
+  const d = page.getByTestId("layer-about");
+  if ((await d.getAttribute("open")) == null) await d.locator("summary").first().click();
+  return d;
+}
+
+/** v7 Explore: the selection panel's "Evidence and sources" fold (and the claims past the first three). */
+export async function openEvidence(page: Page) {
+  const d = page.getByTestId("inspect-evidence");
+  if ((await d.getAttribute("open")) == null) await d.locator("summary").first().click();
+  const more = page.getByTestId("harbor-claims-more");
+  if ((await more.count()) && (await more.getAttribute("open")) == null) await more.locator("summary").first().click();
+  return d;
+}

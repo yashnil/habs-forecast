@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { OK } from "./ports";
+import { openEvidence } from "./helpers";
 
 /**
  * Map, panel, chart, evidence and URL stay in step (v4): what is selected on the map is what the panel
@@ -74,6 +75,8 @@ test("a model cell: its outline is the published 3 km footprint containing the p
 
 test("a harbour's measured claim: 'Show on map' selects the station it rests on, whose newest sample has the claim's date", async ({ page }) => {
   await open(page, "/?layer=forecast&sel=harbor:593");
+  // the panel leads with three lines; the rest of the evidence is one tap away
+  await openEvidence(page);
   const measured = page.getByTestId("harbor-claims").locator('[data-kind="measured"]').first();
   await expect(measured).toBeVisible();
   const supports = (await measured.getAttribute("data-supports")) ?? "";
@@ -93,6 +96,7 @@ test("a harbour's measured claim: 'Show on map' selects the station it rests on,
 
 test("Back walks the selections in order and the map follows", async ({ page }) => {
   await open(page, "/?layer=forecast&sel=harbor:550");
+  await openEvidence(page);
   await page.getByTestId("harbor-stations").getByRole("button").first().click();
   await expect(page.getByTestId("inspect-panel")).toHaveAttribute("data-kind", "station");
   await page.getByTestId("inspect-back").click();
