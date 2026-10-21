@@ -48,7 +48,7 @@ export type ImageRaster = {
   grid?: { layer: LayerArtifact; url: string } | null;
 };
 /** A derived chlorophyll product (lib/derived), drawn from its chunked grid on the satellite ramp. */
-export type DerivedRaster = { id: string; grid: DerivedGrid; baseUrl: string; palette: Palette; style?: "estimate" | "observed" };
+export type DerivedRaster = { id: string; grid: DerivedGrid; baseUrl: string; palette: Palette; style?: "estimate" | "observed"; /** v6: the estimate's class grid (its shoreline strip is marked apart) */ classGrid?: DerivedGrid | null };
 /** XYZ tiles: Neritic-rendered satellite tiles or third-party imagery. */
 export type TileRaster = { id: string; template: string; minzoom: number; maxzoom: number; bounds?: number[] | null; indexUrl?: string | null };
 
@@ -68,8 +68,8 @@ type Props = {
   /** v5: the chlorophyll estimate, under the observed satellite pixels (stippled: estimated, not observed) */
   estimate?: DerivedRaster | null;
   /**
-   * v5: water in the C-HARM grid without a value is drawn in one calm neutral tint, "outside NOAA's
-   * model near shore" (never with a probability); the workspace says so in its legend and readouts
+   * v5: water in the C-HARM grid without a value is drawn in one calm neutral tint, "NOAA publishes
+   * no toxin probability here" (never with a probability); the workspace says so in its legend and readouts
    */
   contextFill?: boolean;
   currents?: CurrentsOverlay | null;
@@ -270,7 +270,7 @@ export default function MapCanvas(p: Props) {
   const sstTiles = useMemo(() => (sst ? derivedTiles(sst.id, sst.grid, sst.baseUrl, sst.palette, "observed") : null), [sst]);
 
   const outlookTiles = useMemo(() => (outlook ? derivedTiles(outlook.id, outlook.grid, outlook.baseUrl, outlook.palette, "outlook") : null), [outlook]);
-  const estimateTiles = useMemo(() => (estimate ? derivedTiles(estimate.id, estimate.grid, estimate.baseUrl, estimate.palette, "estimate") : null), [estimate]);
+  const estimateTiles = useMemo(() => (estimate ? derivedTiles(estimate.id, estimate.grid, estimate.baseUrl, estimate.palette, "estimate", estimate.classGrid ?? null) : null), [estimate]);
 
   // When the basemap's tiles fail (tile server down, offline) or are late (a data tile stopped
   // waiting for them), draw the bundled water instead, so the sea, the coastline and the no-data
@@ -355,7 +355,7 @@ export default function MapCanvas(p: Props) {
     // idempotent: every style change fires "styledata" again
     const apply = () => {
       // the C-HARM layer with its no-value water tinted (contextFill) leaves nothing for the hatch to
-      // mark inside its grid: the tint is the "outside NOAA's model near shore" mark, never hatched over
+      // mark inside its grid: the tint is the "NOAA publishes no probability here" mark, never hatched over
       const hatch = fieldReady && !tintOnly;
       const want: [string, boolean][] = [
         [NODATA_LAYER_ID, hatch],

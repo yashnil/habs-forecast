@@ -5,8 +5,8 @@ import { cellAt, decodeCode, distanceKm, loadGrid } from "@/lib/grid";
 /**
  * Nearshore context for the C-HARM layer (v5): NOAA's 3 km model publishes no value for most water
  * within a few kilometres of the shore, and none inside the bays. So that the coast is not an empty
- * band, water in the grid without a value is drawn in one calm neutral tint, "outside NOAA's model
- * near shore" (lib/gridTiles OUTSIDE_TINT). Its readout gives the nearest NOAA cell within
+ * band, water in the grid without a value is drawn in one calm neutral tint, "NOAA publishes no
+ * toxin probability here" (lib/gridTiles OUTSIDE_TINT; v6 wording, by variable: outsideLabel). Its readout gives the nearest NOAA cell within
  * CONTEXT_KM as text only, with the pipeline's pier-sample check: against CalHABMAP samples the
  * nearest cell showed no skill at the shore, so its probability is never painted onto that water.
  */
@@ -66,7 +66,7 @@ export type ForecastContext =
   | { kind: "value" }
   /** no value here; the nearest NOAA cell within CONTEXT_KM, its value and its distance from the point */
   | { kind: "context"; value: number; km: number; cell: { lat: number; lon: number } }
-  /** no value here and none within CONTEXT_KM (a bay, an estuary, outside the grid): outside NOAA's model */
+  /** no value here and none within CONTEXT_KM (a bay, an estuary, outside the grid): NOAA publishes none here */
   | { kind: "outside" };
 
 /** What the map draws for a C-HARM layer at a point (lib/gridTilesContext): the cell's own value, context, or outside. */
@@ -87,12 +87,30 @@ export async function forecastContext(baseUrl: string, l: LayerArtifact, lat: nu
 }
 
 /**
- * The readout's words where NOAA's model does not reach (v5, after the pier-sample check showed the
- * nearest cell has no skill at the shore): the nearest NOAA value as text only, never as this water's.
+ * What NOAA publishes no value for, by variable (v6): "toxin probability" for the domoic acid layers,
+ * "Pseudo-nitzschia probability" for the bloom layer. Variable-specific on purpose: the same run can
+ * have a Pseudo-nitzschia value in a cell where it publishes no domoic acid probability, so the
+ * words never say NOAA "does not model" that water.
  */
-export function contextWords(x: { value: number; km: number }): string {
-  const km = x.km < 10 ? x.km.toFixed(1) : Math.round(x.km).toString();
-  return `NOAA's model does not reach this water. The nearest NOAA cell, ${km} km away, reads ${Math.round(x.value * 100)}%: text only, not a forecast for this water.`;
+export function noValueWhat(variable: string | null | undefined): string {
+  return variable === "pseudo_nitzschia" ? "Pseudo-nitzschia probability" : "toxin probability";
 }
 
-export const OUTSIDE_WORDS = "NOAA's model does not reach this water: C-HARM publishes no value here or within 6 km (bays, harbours and estuaries are not modelled). Not a forecast of zero.";
+/** The label of the tinted water: "NOAA publishes no toxin probability here". */
+export const outsideLabel = (variable?: string | null) => `NOAA publishes no ${noValueWhat(variable)} here`;
+
+/**
+ * The readout's words where NOAA publishes no value (v5, after the pier-sample check showed the
+ * nearest cell has no skill at the shore): the nearest NOAA value as text only, never as this water's.
+ */
+export function contextWords(x: { value: number; km: number }, variable?: string | null): string {
+  const km = x.km < 10 ? x.km.toFixed(1) : Math.round(x.km).toString();
+  return `NOAA publishes no ${noValueWhat(variable)} for this water. The nearest NOAA cell with one, ${km} km away, reads ${Math.round(x.value * 100)}%: text only, not a forecast for this water.`;
+}
+
+/** No value here or within CONTEXT_KM. */
+export function outsideWords(variable?: string | null): string {
+  return `NOAA publishes no ${noValueWhat(variable)} here or within 6 km (C-HARM gives none for most bays, harbours, estuaries and water next to the shore). Not a forecast of zero.`;
+}
+
+export const OUTSIDE_WORDS = outsideWords();

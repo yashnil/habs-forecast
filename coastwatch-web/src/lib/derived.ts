@@ -44,7 +44,26 @@ type Common = {
   observed_layer?: string;
 };
 export type OutlookLayer = Common & { kind: "chl_outlook"; valid_from: string; valid_to: string; basis: string; skill: DerivedSkill };
-export type EstimateLayer = Common & { kind: "chl_estimate"; based_on_days: string[]; validation: DerivedValidation; basis?: string };
+/**
+ * v6: what each estimate pixel is, per pixel (DATA → X contract): 0 observed (the estimate is
+ * empty there); 1 filled from nearby clear water; 2 extrapolated toward shore, never observed;
+ * 3 a bay or estuary pixel on a borrowed background. The words (`class_legend`) and each class's
+ * held-out error (`class_validation`) come from the pipeline and are quoted as published: the web
+ * never hard-codes a multiplier or an error. Optional: without a class grid every estimate is
+ * described conservatively.
+ */
+export type EstimateClass = 1 | 2 | 3;
+export type ClassValidation = { scenario?: string; rmse_log10: Record<string, number> };
+export type EstimateLayer = Common & {
+  kind: "chl_estimate";
+  based_on_days: string[];
+  validation: DerivedValidation;
+  basis?: string;
+  class_grid?: DerivedGrid | null;
+  class_legend?: Partial<Record<EstimateClass, string>> | null;
+  class_validation?: Partial<Record<EstimateClass, ClassValidation>> | null;
+  class_note?: string | null;
+};
 /** Observed (or analysed, e.g. MUR) sea-surface temperature, °C. */
 export type SstLayer = Common & { kind: "sst"; observed_dates: string[]; source: string; resolution_km?: number | null };
 export type DerivedLayer = OutlookLayer | EstimateLayer | SstLayer;
@@ -77,6 +96,40 @@ function validGrid(g: unknown): g is DerivedGrid {
     isStr(ch.url_template) &&
     Array.isArray(ch.present)
   );
+}
+
+const sameShape = (a: DerivedGrid, b: DerivedGrid) =>
+  a.width === b.width && a.height === b.height && Math.abs(a.lat_first - b.lat_first) < 1e-9 && Math.abs(a.lon_first - b.lon_first) < 1e-9 && Math.abs(a.lat_step - b.lat_step) < 1e-12 && Math.abs(a.lon_step - b.lon_step) < 1e-12;
+
+/** The class legend as published: {"1": "…"} or [{value|code|class, label|name}]; unknown codes are dropped. */
+function classLegend(l: unknown): Partial<Record<EstimateClass, string>> | null {
+  const out: Partial<Record<EstimateClass, string>> = {};
+  const put = (k: unknown, v: unknown) => {
+    const n = Number(k);
+    if ((n === 1 || n === 2 || n === 3) && isStr(v)) out[n as EstimateClass] = v;
+  };
+  if (Array.isArray(l)) {
+    for (const e of l) {
+      const o = e && typeof e === "object" ? (e as Record<string, unknown>) : null;
+      if (o) put(o.value ?? o.code ?? o.class, o.label ?? o.name);
+    }
+  } else if (l && typeof l === "object") {
+    for (const [k, v] of Object.entries(l)) put(k, typeof v === "string" ? v : v && typeof v === "object" ? ((v as Record<string, unknown>).label ?? (v as Record<string, unknown>).name) : null);
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+/** Each class's held-out error as published ({"2": {"rmse_log10": {"0-0.6 km": 0.576}}}); malformed entries are dropped. */
+function classValidation(v: unknown): Partial<Record<EstimateClass, ClassValidation>> | null {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+  const out: Partial<Record<EstimateClass, ClassValidation>> = {};
+  for (const [k, e] of Object.entries(v)) {
+    const n = Number(k);
+    const o = e && typeof e === "object" ? (e as Record<string, unknown>) : null;
+    const r = o?.rmse_log10 && typeof o.rmse_log10 === "object" ? Object.fromEntries(Object.entries(o.rmse_log10 as Record<string, unknown>).filter(([, x]) => isNum(x))) : null;
+    if ((n === 1 || n === 2 || n === 3) && r && Object.keys(r).length) out[n as EstimateClass] = { scenario: isStr(o?.scenario) ? (o!.scenario as string) : undefined, rmse_log10: r as Record<string, number> };
+  }
+  return Object.keys(out).length ? out : null;
 }
 
 /** One layer of the index, checked against the contract; anything malformed is dropped (never half-shown). */
@@ -114,7 +167,9 @@ export function validLayer(l: unknown): DerivedLayer | null {
     if (!Array.isArray(x.based_on_days) || !v || !isStr(v.metric) || !v.by_band || typeof v.by_band !== "object") return null;
     const bands = Object.fromEntries(Object.entries(v.by_band as Record<string, unknown>).filter(([, n]) => isNum(n))) as Record<string, number>;
     if (!Object.keys(bands).length) return null;
-    return { ...base, kind: "chl_estimate", based_on_days: x.based_on_days.filter(isDate), validation: { ...(v as object), metric: v.metric, by_band: bands } as DerivedValidation };
+    // the class grid must match the value grid cell for cell; anything else is ignored (never misread)
+    const cg = x.class_grid != null && validGrid(x.class_grid) && sameShape(x.class_grid as DerivedGrid, x.grid as DerivedGrid) ? (x.class_grid as DerivedGrid) : null;
+    return { ...base, kind: "chl_estimate", based_on_days: x.based_on_days.filter(isDate), validation: { ...(v as object), metric: v.metric, by_band: bands } as DerivedValidation, class_grid: cg, class_legend: cg ? classLegend(x.class_legend) : null, class_validation: cg ? classValidation(x.class_validation) : null, class_note: cg && isStr(x.class_note) ? x.class_note : null };
   }
   return null;
 }
@@ -202,9 +257,20 @@ export async function derivedAt(baseUrl: string, l: DerivedLayer, lat: number, l
   return { value: v, range };
 }
 
+/** The estimate's class at a point (1 nearby fill, 2 extrapolated shoreward, 3 bay), or null when no class grid is published or the cell has none. */
+export async function estimateClassAt(baseUrl: string, l: EstimateLayer, lat: number, lon: number): Promise<EstimateClass | null> {
+  const g = l.class_grid;
+  if (!g) return null;
+  const c = cellAt(g, lat, lon);
+  if (!c) return null;
+  const v = decodeCode(g, await chunkedCode(baseUrl, g, c.row, c.col));
+  const k = v == null ? null : Math.round(v);
+  return k === 1 || k === 2 || k === 3 ? k : null;
+}
+
 export const derivedSst = (d: DerivedIndex | null | undefined): SstLayer | null => (d?.layers.find((l): l is SstLayer => l.kind === "sst") ?? null);
 /** MUR (and other blended, gap-filled products) are analyses, not single observations. */
-export const sstIsAnalysis = (l: SstLayer) => /\bmur\b|analys/i.test(`${l.source} ${l.label}`);
+export const sstIsAnalysis = (l: SstLayer) => (l as { product_class?: unknown }).product_class === "analysis" || /\bmur\b|analys/i.test(`${l.source} ${l.label}`);
 export const cToF = (c: number) => (c * 9) / 5 + 32;
 /**
  * Sea-surface temperature on a perceptually even ramp (cmocean "thermal": lightness rises steadily
@@ -263,7 +329,7 @@ export const lowerIsBetter = (metric: string) => /rmse|mae|error|bias/i.test(met
 
 /** The skill rows to show: the model, then every baseline the index reports, in a fixed order. */
 export function skillRows(s: DerivedSkill): { key: string; label: string; value: number }[] {
-  const named: Record<string, string> = { model: "This outlook", climatology_ar1: "Climatology + AR(1)", clim_ar1: "Climatology + AR(1)", climatology: "Climatology", persistence: "Persistence (last view)" };
+  const named: Record<string, string> = { model: "This outlook (climatology + AR(1))", climatology_ar1: "Climatology + AR(1)", clim_ar1: "Climatology + AR(1)", climatology: "Climatology", persistence: "Persistence (last view)" };
   const keys = ["model", "climatology_ar1", "clim_ar1", "climatology", "persistence", ...Object.keys(s).filter((k) => !["model", "climatology_ar1", "clim_ar1", "climatology", "persistence", "n", "metric", "test_period", "note"].includes(k))];
   return keys.filter((k, i) => keys.indexOf(k) === i && isNum(s[k])).map((k) => ({ key: k, label: named[k] ?? k.replace(/_/g, " "), value: s[k] as number }));
 }

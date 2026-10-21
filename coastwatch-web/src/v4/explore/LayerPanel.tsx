@@ -10,6 +10,9 @@ import { SPEED_CLASSES, ARROW_LENGTHS } from "@/lib/basemap";
 import { stampLines } from "@/lib/stamp";
 import { COUNTIES } from "@/content/copy";
 import { OUTSIDE_TINT_RGB } from "@/lib/gridTiles";
+import { outsideLabel } from "@/lib/gridTilesContext";
+import { BAY_TURBID } from "@/lib/bays";
+import { ESTIMATE_WORDS, classWords } from "@/components/map/HoverReadout";
 import { Icon } from "@/v4/ui/Icon";
 import { CHL_PALETTE, SST_PALETTE, cToF, derivedSst, sstIsAnalysis, type SstLayer, bandLabel, checkSentence, derivedOutlook, lowerIsBetter, type DerivedValidationEntry, skillRows, type DerivedIndex, type EstimateLayer, type OutlookLayer } from "@/lib/derived";
 import { SAT_WORDS, VARIABLE_WORDS, coverageWhen, type LayerChoice, type Resolved } from "./layers";
@@ -23,7 +26,8 @@ const FAMILY: Record<Family, { name: string; kind: string; icon: string; tone: s
   forecast: { name: "NOAA C-HARM forecast", kind: "Model", icon: "cell", tone: "text-n-model" },
   satellite: { name: "Satellite chlorophyll", kind: "Observation", icon: "layers", tone: "text-n-measured" },
   outlook: { name: "Outlook (8 days)", kind: "Outlook, not observed", icon: "clock", tone: "text-n-model" },
-  sst: { name: "Sea temperature", kind: "Observation", icon: "chart", tone: "text-n-conditions" },
+  // MUR: a gap-free analysis blended from several sensors, not one observation
+  sst: { name: "Sea temperature", kind: "Analysis", icon: "chart", tone: "text-n-conditions" },
   currents: { name: "Surface currents", kind: "Observation", icon: "compass", tone: "text-n-conditions" },
 };
 
@@ -249,7 +253,7 @@ export function LayerOptions({ manifest, choice, onChoice, estimate = null }: { 
             <input type="checkbox" className="mt-[3px] h-[18px] w-[18px] accent-[var(--nx-accent)]" checked={choice.estimate !== false} onChange={(e) => onChoice({ ...choice, estimate: e.target.checked })} data-testid="sat-estimate-toggle" />
             <span>
               <span className="font-semibold">Fill the gaps with estimates</span>
-              <span className="block text-[12.5px] leading-snug text-n-ink-3">Where clouds or the coast hid the water, a stippled estimate from nearby clear pixels. Estimated, not observed; observed pixels are never changed.</span>
+              <span className="block text-[12.5px] leading-snug text-n-ink-3">Where clouds or the coast hid the water, a stippled estimate; next to the shore it may be extrapolated, not filled. Estimated, not observed; observed pixels are never changed.</span>
             </span>
           </label>
         )}
@@ -291,12 +295,14 @@ function NoData({ children = "No value (not modelled, cloud or no observation): 
   );
 }
 
-/** A legend swatch in the map's own texture: `stipple` (context, estimate) or `hatch` (outlook), over `color`. */
-export function Swatch({ color, texture }: { color: string; texture: "stipple" | "hatch" }) {
+/** A legend swatch in the map's own texture: `stipple` (context, estimate), `strip` (the estimate's shoreline strip: paler, denser dots) or `hatch` (outlook), over `color`. */
+export function Swatch({ color, texture }: { color: string; texture: "stipple" | "strip" | "hatch" }) {
   const bg =
     texture === "stipple"
       ? `radial-gradient(circle, rgba(11,29,51,0.85) 0.7px, transparent 0.9px) 0 0 / 4px 4px, radial-gradient(circle, rgba(11,29,51,0.85) 0.7px, transparent 0.9px) 2px 2px / 4px 4px, ${color}`
-      : `repeating-linear-gradient(135deg, transparent 0 5px, rgba(11,29,51,0.6) 5px 6px), ${color}`;
+      : texture === "strip"
+        ? `radial-gradient(circle, rgba(11,29,51,0.7) 0.7px, transparent 0.9px) 0 0 / 3px 3px, ${color}`
+        : `repeating-linear-gradient(135deg, transparent 0 5px, rgba(11,29,51,0.6) 5px 6px), ${color}`;
   return <span aria-hidden className="h-3 w-5 shrink-0 rounded-sm" style={{ background: bg, outline: "1px solid rgba(160,180,195,0.35)" }} />;
 }
 
@@ -314,7 +320,7 @@ export function Legend({ choice, resolved, check = null }: { choice: LayerChoice
           {/* the tint as drawn: OUTSIDE_TINT at the forecast's opacity over the sea */}
           <span aria-hidden className="mt-[3px] h-3 w-5 shrink-0 rounded-sm" style={{ background: `rgb(${OUTSIDE_TINT_RGB.join(",")})`, opacity: 0.8, outline: "1px solid rgba(160,180,195,0.35)" }} />
           <span>
-            <span className="font-semibold text-n-ink">Outside NOAA&rsquo;s model near shore.</span> The nearshore band, bays and harbours NOAA does not model: no probability is shown there, and it is not zero. Tap it for the nearest NOAA value (as text), the pier samples nearby and the filled chlorophyll.
+            <span className="font-semibold text-n-ink">{outsideLabel(choice.variable)}.</span> Most of the nearshore band, the bays and the harbours: no probability is shown there, and it is not zero.{choice.variable === "pseudo_nitzschia" ? "" : " Pseudo-nitzschia may still have a value where domoic acid has none."} Tap it for the nearest NOAA value (as text), the pier samples nearby and the filled chlorophyll.
             {check && (
               <span className="mt-0.5 block text-[12.5px] text-n-ink-3" data-testid="legend-context-check">
                 {checkSentence(check)}
@@ -332,11 +338,13 @@ export function Legend({ choice, resolved, check = null }: { choice: LayerChoice
       <figure className="flex flex-col gap-2" data-testid="legend-sst" aria-label="Legend: sea-surface temperature, degrees Fahrenheit">
         <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Sea-surface temperature, °F</figcaption>
         <Ramp palette={SST_PALETTE} labels={[`≤${Math.round(cToF(lo))}°F`, `${Math.round(cToF(mid))}°F`, `≥${Math.round(cToF(hi))}°F`]} />
-        <p className="text-[12.5px] leading-snug text-n-ink-3">
-          {sstIsAnalysis(resolved.sstLayer) ? "An analysis: satellite and buoy observations blended, with gaps filled. " : "Observed by satellite. "}
-          The skin of the sea, not the temperature at depth. A sharp change in colour is a front. Tap a point for °C and °F.
+        <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="sst-caveat">
+          {sstIsAnalysis(resolved.sstLayer)
+            ? "An analysis: several satellite sensors and in-situ observations blended, with gaps filled. The foundation temperature (just below the skin), not the temperature at depth. "
+            : "Observed by satellite: the skin of the sea, not the temperature at depth. "}
+          A sharp change in colour may mark a front where satellites saw clear sky. Tap a point for °C and °F.
         </p>
-        <NoData>No value (cloud, land or no observation): never cold water</NoData>
+        <NoData>{sstIsAnalysis(resolved.sstLayer) ? "No value (land, or outside the coastal scope): never cold water" : "No value (cloud, land or no observation): never cold water"}</NoData>
       </figure>
     );
   }
@@ -351,7 +359,7 @@ export function Legend({ choice, resolved, check = null }: { choice: LayerChoice
             <span className="font-semibold text-n-ink">Outlook, not observed.</span> Fine diagonal lines mark every outlook pixel.
           </span>
         </span>
-        <p className="text-[12.5px] leading-snug text-n-ink-3">Algae of every kind, not toxin, and not a day-by-day forecast. A 4 km grid of the open coast: it does not cover the bays. Its skill against plain baselines is below.</p>
+        <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="outlook-coverage">Algae of every kind, not toxin, and not a day-by-day forecast. A 4 km grid of the open coast, about 11–19 km offshore. No outlook in bays (turbid water; MODIS chlorophyll unreliable): never drawn or read there. Its skill against plain baselines is below.</p>
         <NoData>No outlook (outside the area it covers): never zero</NoData>
       </figure>
     );
@@ -386,16 +394,39 @@ export function Legend({ choice, resolved, check = null }: { choice: LayerChoice
         <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Chlorophyll-a, mg/m³ (log scale)</figcaption>
         <Ramp palette={resolved.satLayer.palette} labels={["0.05", "1.6", "50"]} />
         <p className="text-[12.5px] leading-snug text-n-ink-3">Algae of every kind, not toxin. Cloud and coastal glare leave gaps; a gap is not clear water.</p>
-        {resolved.estimate && (
-          <span className="flex items-start gap-2 text-[13px] leading-snug text-n-ink-2" data-testid="legend-estimate">
-            <span className="mt-[3px] flex">
-              <Swatch color="#8cc3a4" texture="stipple" />
+        <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="legend-turbid">
+          {BAY_TURBID}: San Francisco, San Pablo, Suisun, Tomales, Humboldt, Morro and San Diego Bays and Elkhorn Slough.
+        </p>
+        {resolved.estimate &&
+          (resolved.estimateLayer?.class_grid ? (
+            <>
+              <span className="flex items-start gap-2 text-[13px] leading-snug text-n-ink-2" data-testid="legend-estimate">
+                <span className="mt-[3px] flex">
+                  <Swatch color="#8cc3a4" texture="stipple" />
+                </span>
+                <span>
+                  <span className="font-semibold text-n-ink">Estimated, not observed.</span> {classWords(resolved.estimateLayer, 1)}. In bays: {classWords(resolved.estimateLayer, 3)}. Lightened and stippled; observed pixels are drawn over it, unchanged.
+                </span>
+              </span>
+              <span className="flex items-start gap-2 text-[13px] leading-snug text-n-ink-2" data-testid="legend-strip">
+                <span className="mt-[3px] flex">
+                  <Swatch color="#b4d4c2" texture="strip" />
+                </span>
+                <span>
+                  <span className="font-semibold text-n-ink">Extrapolated toward shore, never observed.</span> {classWords(resolved.estimateLayer, 2)}. Paler, densely stippled.
+                </span>
+              </span>
+            </>
+          ) : (
+            <span className="flex items-start gap-2 text-[13px] leading-snug text-n-ink-2" data-testid="legend-estimate">
+              <span className="mt-[3px] flex">
+                <Swatch color="#8cc3a4" texture="stipple" />
+              </span>
+              <span>
+                <span className="font-semibold text-n-ink">Estimated, not observed.</span> Gaps estimated from recent and nearby views; near shore it may be extrapolated. Lightened and stippled; observed pixels are drawn over it, unchanged.
+              </span>
             </span>
-            <span>
-              <span className="font-semibold text-n-ink">Estimated, not observed.</span> Gaps filled from nearby clear pixels, lightened and stippled; observed pixels are drawn over it, unchanged.
-            </span>
-          </span>
-        )}
+          ))}
         <NoData />
       </figure>
     );
@@ -600,6 +631,7 @@ export function OutlookCard({ layer, now }: { layer: OutlookLayer; now: Date | n
           Skill on held-out data{s.test_period ? ` (${s.test_period}` : ""}
           {s.n != null ? `${s.test_period ? ", " : " ("}n = ${s.n.toLocaleString("en-US")})` : s.test_period ? ")" : ""}
         </p>
+        <p className="text-[12.5px] text-n-ink-2" data-testid="outlook-is-baseline">This outlook is the climatology + AR(1) baseline (no learned model).</p>
         <SkillTable rows={skillRows(s)} metric={s.metric} testid="outlook-skill" />
         {s.note && <p className="mt-1 text-[12.5px] text-n-ink-3">{s.note}</p>}
       </div>
@@ -619,7 +651,7 @@ export function SstCard({ layer, now }: { layer: SstLayer; now: Date | null }) {
       <p className="flex items-start gap-2" data-testid="stamp-sst">
         <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full bg-n-conditions" aria-hidden />
         <span>
-          <span className="font-semibold text-n-ink">{analysis ? "Analysis, from observations." : "Observation."}</span> {layer.label}, {d.length > 1 ? `${dayLabel(d[0])}–${dayLabel(last)}` : dayLabel(last)}
+          <span className="font-semibold text-n-ink">{analysis ? "Analysis, from observations (foundation temperature)." : "Observation."}</span> {layer.label}, {d.length > 1 ? `${dayLabel(d[0])}–${dayLabel(last)}` : dayLabel(last)}
           {now ? ` (${relTime(last, now)})` : ""}. {layer.source}
           {layer.resolution_km ? `, ${layer.resolution_km < 1 ? `${Math.round(layer.resolution_km * 1000)} m` : `${layer.resolution_km} km`} cells` : ""}.
         </span>
@@ -668,6 +700,27 @@ export function EstimateCard({ layer }: { layer: EstimateLayer }) {
           </table>
           {v.baseline && <p className="mt-1 text-[12.5px] text-n-ink-3">Baseline: {v.baseline}</p>}
         </div>
+        {layer.class_validation && (
+          <div data-testid="estimate-class-validation">
+            <p className="font-semibold text-n-ink">By kind of pixel</p>
+            <table className="w-full text-left text-[13px]">
+              <caption className="pb-1 text-left text-[12px] text-n-ink-3">RMSE log10(mg m-3), lower is better, as published</caption>
+              <tbody className="nx-data">
+                {([1, 2, 3] as const).flatMap((k) =>
+                  Object.entries(layer.class_validation?.[k]?.rmse_log10 ?? {}).map(([b, x]) => (
+                    <tr key={`${k}-${b}`} className="border-t border-n-line">
+                      <td className="py-1 font-sans text-n-ink-2">
+                        {layer.class_legend?.[k] ?? ESTIMATE_WORDS[k]} · {bandLabel(b)}
+                      </td>
+                      <td className="py-1 text-right">{x.toFixed(2)}</td>
+                    </tr>
+                  )),
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {layer.class_note && <p className="text-[12.5px] text-n-ink-3" data-testid="estimate-class-note">{layer.class_note}</p>}
         <Caveats items={layer.caveats} />
       </div>
     </details>

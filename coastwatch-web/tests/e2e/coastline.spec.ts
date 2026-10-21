@@ -122,10 +122,10 @@ test("an empty toxin cell next to the shore says why; a cell C-HARM does not mod
   const ro = page.getByTestId("hover-readout");
   await expect(ro).toContainText("within about 3–6 km of shore");
   await expect(ro).toContainText("Pseudo-nitzschia value here");
-  await expect(ro).toContainText("NOAA's model does not reach this water");
+  await expect(ro).toContainText("NOAA publishes no toxin probability");
   await expect(page.getByTestId("hover-value")).toHaveCount(0);
   // a cell with no value in any C-HARM layer: never a value; the published reason, context or outside
   await hover(page, -121.59, 36.07);
-  await expect(ro).toContainText(/water C-HARM does not model|NOAA's model does not reach this water/);
+  await expect(ro).toContainText(/water C-HARM does not model|NOAA publishes no toxin probability/);
   await expect(page.getByTestId("hover-value")).toHaveCount(0);
 });

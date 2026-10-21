@@ -14,7 +14,6 @@
       "skill": {
         "metric": "RMSE ln(mg m-3)",
         "model": 0.754,
-        "climatology_ar1": 0.764,
         "climatology": 0.85,
         "persistence": 0.892,
         "test_period": "2019 to 2021-06",
@@ -24,8 +23,12 @@
       "caveats": [
         "Fixture data for tests, not a product.",
         "One 8-day mean, not a day-by-day forecast.",
-        "Chlorophyll is algae of every kind, not toxin."
+        "Chlorophyll is algae of every kind, not toxin.",
+        "Bays are masked: no outlook in San Francisco Bay."
       ],
+      "coverage": {
+        "bay_cells_masked": 3484
+      },
       "units": "mg m-3",
       "grid": {
         "url": "derived/chl_outlook_8d/grid/{row}_{col}.u16.gz",
@@ -152,7 +155,59 @@
             "1_1"
           ]
         }
-      }
+      },
+      "class_grid": {
+        "url": "derived/chl_estimate_latest/class/{row}_{col}.u16.gz",
+        "encoding": "uint16le+gzip",
+        "lat_first": 38.20125,
+        "lat_step": -0.0025,
+        "lon_first": -123.10125,
+        "lon_step": 0.0025,
+        "width": 540,
+        "height": 720,
+        "scale_factor": 1,
+        "add_offset": 0,
+        "nodata": 65535,
+        "max_quantization_error": 0.5,
+        "transform": "none",
+        "chunks": {
+          "rows": 512,
+          "cols": 512,
+          "url_template": "derived/chl_estimate_latest/class/{row}_{col}.u16.gz",
+          "present": [
+            "0_0",
+            "0_1",
+            "1_0",
+            "1_1"
+          ]
+        }
+      },
+      "class_legend": {
+        "1": "Fixture: filled from nearby clear water",
+        "2": "Fixture: extrapolated toward shore from water about 1 km out (x9.9 test multiplier), never observed",
+        "3": "Fixture: bay or estuary, borrowed background"
+      },
+      "class_validation": {
+        "1": {
+          "scenario": "clouds",
+          "rmse_log10": {
+            "0-0.6 km": 0.61,
+            "0.6-3 km": 0.51
+          }
+        },
+        "2": {
+          "rmse_log10": {
+            "0-0.3 km": 0.52,
+            "0-0.6 km": 0.58
+          }
+        },
+        "3": {
+          "rmse_log10": {
+            "clouds": 0.25
+          }
+        }
+      },
+      "class_note": "Fixture: class 0 is observed and never written; 65535 is neither."
     },
     {
       "id": "sst_latest",
@@ -160,14 +215,15 @@
       "label": "Sea surface temperature",
       "units": "degC",
       "observed_dates": [
-        "2026-10-11",
         "2026-10-12"
       ],
-      "source": "NOAA CoastWatch VIIRS SST (fixture)",
-      "resolution_km": 0.75,
+      "product_class": "analysis",
+      "source": "JPL MUR SST v4.1 analysis (fixture)",
+      "resolution_km": 1,
       "caveats": [
         "Fixture data for tests, not a product.",
-        "The skin of the sea, not the temperature at depth."
+        "An analysis, not a direct observation.",
+        "Foundation temperature, not the temperature at depth."
       ],
       "grid": {
         "url": "derived/sst_latest/grid/{row}_{col}.u16.gz",

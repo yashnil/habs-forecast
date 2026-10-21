@@ -62,6 +62,14 @@ const estPresent = writeGrid("chl_estimate_latest/grid", E.width, E.height, (r, 
   const [lat, lon] = at(E, r, c);
   return observed(lat, lon) ? null : code(field(lat, lon));
 });
+// v6 class grid (DATA → X contract), cell for cell with the estimate: 0 observed (never written
+// here: the estimate is empty there), 1 filled from nearby clear water, 2 extrapolated toward shore
+// (synthetic: a band along the San Mateo coast, 37.3–37.7° N east of 122.53° W), 3 a bay
+const estClass = (lat, lon) => (inSfBay(lat, lon) ? 3 : lon > -122.53 && lat > 37.3 && lat < 37.7 ? 2 : 1);
+const clsPresent = writeGrid("chl_estimate_latest/class", E.width, E.height, (r, c) => {
+  const [lat, lon] = at(E, r, c);
+  return observed(lat, lon) ? null : estClass(lat, lon);
+});
 const UNC_SCALE = 1e-4;
 const uncPresent = writeGrid("chl_estimate_latest/uncertainty", E.width, E.height, (r, c) => {
   const [lat, lon] = at(E, r, c);
@@ -69,7 +77,8 @@ const uncPresent = writeGrid("chl_estimate_latest/uncertainty", E.width, E.heigh
 });
 // outlook: 1 km, the whole box
 const O = { lat_first: 38.205, lat_step: -0.01, lon_first: -123.105, lon_step: 0.01, width: 136, height: 181 };
-const outPresent = writeGrid("chl_outlook_8d/grid", O.width, O.height, (r, c) => code(field(...at(O, r, c)) - 0.05));
+// the pipeline masks the outlook's bay cells (v6): San Francisco Bay is empty here, as published
+const outPresent = writeGrid("chl_outlook_8d/grid", O.width, O.height, (r, c) => (inSfBay(...at(O, r, c)) ? null : code(field(...at(O, r, c)) - 0.05)));
 // sea-surface temperature: 1 km, °C, a cool upwelling band near shore and a front offshore
 const SST_SCALE = 0.001;
 const sstPresent = writeGrid("sst_latest/grid", O.width, O.height, (r, c) => {
@@ -77,7 +86,9 @@ const sstPresent = writeGrid("sst_latest/grid", O.width, O.height, (r, c) => {
   const t = 11.2 + 3.6 / (1 + Math.exp(-(-(lon + 122.55) * 18))) + 0.6 * Math.sin(lat * 9) + (inSfBay(lat, lon) ? 2.4 : 0);
   return t / SST_SCALE;
 });
-const oUncPresent = writeGrid("chl_outlook_8d/uncertainty", O.width, O.height, () => 0.33 / UNC_SCALE);
+const oUncPresent = writeGrid("chl_outlook_8d/uncertainty", O.width, O.height, (r, c) => (inSfBay(...at(O, r, c)) ? null : 0.33 / UNC_SCALE));
+let bayCells = 0;
+for (let r = 0; r < O.height; r++) for (let c = 0; c < O.width; c++) if (inSfBay(...at(O, r, c))) bayCells++;
 
 const grid = (g, dir, present, scale = SCALE, offset = OFFSET, transform = "log10") => ({
   url: `derived/${dir}/{row}_{col}.u16.gz`,
@@ -104,8 +115,9 @@ const index = {
       valid_to: "2026-10-20",
       method: "Fixture: climatology plus a damped anomaly from the last clear views (test data only).",
       basis: "Fixture: synthetic values over Monterey Bay and San Francisco Bay.",
-      skill: { metric: "RMSE ln(mg m-3)", model: 0.754, climatology_ar1: 0.764, climatology: 0.85, persistence: 0.892, test_period: "2019 to 2021-06", n: 185000, note: "Fixture numbers for tests." },
-      caveats: ["Fixture data for tests, not a product.", "One 8-day mean, not a day-by-day forecast.", "Chlorophyll is algae of every kind, not toxin."],
+      skill: { metric: "RMSE ln(mg m-3)", model: 0.754, climatology: 0.85, persistence: 0.892, test_period: "2019 to 2021-06", n: 185000, note: "Fixture numbers for tests." },
+      caveats: ["Fixture data for tests, not a product.", "One 8-day mean, not a day-by-day forecast.", "Chlorophyll is algae of every kind, not toxin.", "Bays are masked: no outlook in San Francisco Bay."],
+      coverage: { bay_cells_masked: bayCells },
       units: "mg m-3",
       grid: grid(O, "chl_outlook_8d/grid", outPresent),
       uncertainty_grid: grid(O, "chl_outlook_8d/uncertainty", oUncPresent, UNC_SCALE, 0, "none"),
@@ -122,16 +134,21 @@ const index = {
       units: "mg m-3",
       grid: grid(E, "chl_estimate_latest/grid", estPresent),
       uncertainty_grid: grid(E, "chl_estimate_latest/uncertainty", uncPresent, UNC_SCALE, 0, "none"),
+      class_grid: grid(E, "chl_estimate_latest/class", clsPresent, 1, 0, "none"),
+      class_legend: { 1: "Fixture: filled from nearby clear water", 2: "Fixture: extrapolated toward shore from water about 1 km out (x9.9 test multiplier), never observed", 3: "Fixture: bay or estuary, borrowed background" },
+      class_validation: { 1: { scenario: "clouds", rmse_log10: { "0-0.6 km": 0.61, "0.6-3 km": 0.51 } }, 2: { rmse_log10: { "0-0.3 km": 0.52, "0-0.6 km": 0.58 } }, 3: { rmse_log10: { clouds: 0.25 } } },
+      class_note: "Fixture: class 0 is observed and never written; 65535 is neither.",
     },
     {
       id: "sst_latest",
       kind: "sst",
       label: "Sea surface temperature",
       units: "degC",
-      observed_dates: ["2026-10-11", "2026-10-12"],
-      source: "NOAA CoastWatch VIIRS SST (fixture)",
-      resolution_km: 0.75,
-      caveats: ["Fixture data for tests, not a product.", "The skin of the sea, not the temperature at depth."],
+      observed_dates: ["2026-10-12"],
+      product_class: "analysis",
+      source: "JPL MUR SST v4.1 analysis (fixture)",
+      resolution_km: 1.0,
+      caveats: ["Fixture data for tests, not a product.", "An analysis, not a direct observation.", "Foundation temperature, not the temperature at depth."],
       grid: grid(O, "sst_latest/grid", sstPresent, SST_SCALE, 0, "none"),
     },
     {

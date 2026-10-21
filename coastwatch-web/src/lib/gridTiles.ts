@@ -66,20 +66,27 @@ function axisIndex(n: number, first: number, step: number, count: number, coord:
  * How a tile marks what was not observed or not modelled at that water (v5), in screen pixels so the
  * texture keeps its size at every zoom:
  * - `tint`: every cell of the grid without a value is drawn in one calm neutral colour (C-HARM:
- *   "outside NOAA's model near shore"). No value is drawn or implied: NOAA's nearest value is never
- *   painted onto water it does not model (it showed no skill at the shore against pier samples).
+ *   "NOAA publishes no toxin probability here"). No value is drawn or implied: NOAA's nearest value is
+ *   never painted onto water it publishes nothing for (it showed no skill at the shore against pier samples).
  * - `stipple`: valued pixels get a fine stipple (`dot`) over a lightened colour (`lut`): an
  *   estimate, not an observation.
  * - `hatch`: valued pixels get fine diagonal lines (`line`): an outlook, not an observation.
+ * - `strip` (v6, with `stipple`): estimate pixels whose class (`cls`, the class grid's codes, cell
+ *   for cell with the values) is 2, extrapolated shoreward and never seen by the satellite, are
+ *   paler and carry a denser stipple of their own (`stripAt`), so the shoreline strip reads apart
+ *   from the fill between clear pixels.
  */
 export type TileMarks = {
   tint?: number;
   stipple?: { lut: Uint32Array; dot: Uint32Array };
   hatch?: { line: Uint32Array };
+  strip?: { lut: Uint32Array; dot: Uint32Array; cls: Uint16Array };
 };
 
 /** The stipple: one dot every 4 px, rows staggered by 2 px (an even, quiet texture). */
 export const stippleAt = (px: number, py: number) => (py & 3) === 0 ? (px & 3) === 0 : (py & 3) === 2 && (px & 3) === 2;
+/** The shoreline strip's stipple: a dot every 3 px on every row (denser than the fill's, so the strip reads apart). */
+export const stripAt = (px: number, py: number) => px % 3 === 0 && py % 3 === 0;
 /** The outlook hatch: a 1 px line every 7 px, rising to the right. */
 export const hatchAt = (px: number, py: number) => (px + py) % 7 === 0;
 
@@ -94,7 +101,7 @@ export function renderGridTile(g: ValueGrid, codes: Uint16Array, lut: Uint32Arra
   const rows = axisIndex(size, g.lat_first, g.lat_step, g.height, (py) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * (y + (py + 0.5) / size)) / n))) * 180) / Math.PI);
   const out = new Uint32Array(size * size);
   const nodata = g.nodata ?? 65535;
-  const { tint, stipple, hatch } = marks;
+  const { tint, stipple, hatch, strip } = marks;
   for (let py = 0; py < size; py++) {
     const r = rows[py];
     if (r < 0) continue;
@@ -108,7 +115,8 @@ export function renderGridTile(g: ValueGrid, codes: Uint16Array, lut: Uint32Arra
         if (tint) out[o + px] = tint;
         continue;
       }
-      if (stipple) out[o + px] = stippleAt(px, py) ? stipple.dot[code] : stipple.lut[code];
+      if (strip && strip.cls[base + c] === 2) out[o + px] = stripAt(px, py) ? strip.dot[code] : strip.lut[code];
+      else if (stipple) out[o + px] = stippleAt(px, py) ? stipple.dot[code] : stipple.lut[code];
       else if (hatch && hatchAt(px, py)) out[o + px] = hatch.line[code];
       else out[o + px] = lut[code];
     }
@@ -141,7 +149,7 @@ export const VEIL: [number, number, number] = [201, 211, 223];
 /** The stipple's dot colour: the basemap's sea, so the dots read as texture, never as a value. */
 export const DOT: [number, number, number] = [11, 29, 51];
 
-/** "Outside NOAA's model near shore": a calm slate, apart from every probability class (MapCanvas
+/** "NOAA publishes no toxin probability here": a calm slate, apart from every probability class (MapCanvas
  *  draws the forecast at 0.72 opacity, so it reads as a quiet grey-blue over the sea). */
 export const OUTSIDE_TINT_RGB: [number, number, number] = [126, 140, 156];
 export const OUTSIDE_TINT = pack(...OUTSIDE_TINT_RGB, 255);
