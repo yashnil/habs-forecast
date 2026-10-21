@@ -89,12 +89,48 @@ def _disk(r: int) -> np.ndarray:
     return x * x + y * y <= r * r
 
 
-def bay_mask(water: np.ndarray, step: float, lat_mid: float) -> np.ndarray:
+# Closing lines across the mouths of the named bays, as (lat, lon) polylines drawn land to land
+# on the marine water mask (data/reference/marine_water_mask.json). The mask counts a cell as
+# water when any part of it touches the sea, which widens mouths such as the Golden Gate (about
+# 2.5 km on the mask) beyond what the morphological opening below can close, and its simplified
+# outlines leave gaps in thin barrier spits (Humboldt Bay's South Spit, San Diego's Silver
+# Strand); the lines follow those spits. Water cut off from the open sea by these lines is a bay
+# whatever the width of its mouth. Checked against the mask by tests/test_derived.py.
+BAY_MOUTHS: tuple[tuple[str, tuple[tuple[float, float], ...]], ...] = (
+    ("San Francisco Bay (Golden Gate; with San Pablo and Suisun Bays)", ((37.800, -122.4788), (37.840, -122.4788))),
+    ("Tomales Bay", ((38.2375, -122.9950), (38.2420, -122.9660))),
+    ("Humboldt Bay (entrance and South Spit)", ((40.7638, -124.2265), (40.7510, -124.2345), (40.7313, -124.2488), (40.6925, -124.2600))),
+    ("Morro Bay (entrance and sand spit)", ((35.3740, -120.8613), (35.3300, -120.8613))),
+    ("Elkhorn Slough (Moss Landing)", ((36.8080, -121.7838), (36.8230, -121.7838))),
+    ("Mission Bay", ((32.7540, -117.2405), (32.7775, -117.2405))),
+    ("San Diego Bay (entrance)", ((32.6875, -117.2440), (32.6890, -117.2200))),
+    ("San Diego Bay (Silver Strand)", ((32.6863, -117.1813), (32.6713, -117.1650), (32.6588, -117.1563), (32.6463, -117.1463),
+                                       (32.6388, -117.1425), (32.6288, -117.1388), (32.6163, -117.1338), (32.6038, -117.1300))),
+)
+
+
+def mouth_cells(shape: tuple[int, int], lat_first: float, lon_first: float, step: float) -> np.ndarray:
+    """Cells crossed by the BAY_MOUTHS closing lines (8-connected lines: they block 4-connected water)."""
+    h, w = shape
+    out = np.zeros(shape, dtype=bool)
+    for _, pts in BAY_MOUTHS:
+        for (la0, lo0), (la1, lo1) in zip(pts[:-1], pts[1:]):
+            n = int(max(abs(la1 - la0), abs(lo1 - lo0)) / step * 4) + 2
+            r = np.round((lat_first - np.linspace(la0, la1, n)) / step).astype(int)
+            c = np.round((np.linspace(lo0, lo1, n) - lon_first) / step).astype(int)
+            ok = (r >= 0) & (r < h) & (c >= 0) & (c < w)
+            out[r[ok], c[ok]] = True
+    return out
+
+
+def bay_mask(water: np.ndarray, step: float, lat_mid: float, origin: tuple[float, float] | None = None) -> np.ndarray:
     """Enclosed water (bays, estuaries, harbours, sloughs): water that is not part of the open
     coastal ocean. The open ocean is the water that stays connected to the domain's western
     (offshore) edge after a morphological opening of radius BAY_OPEN_KM, which cuts narrow
-    mouths such as the Golden Gate or Humboldt Bay's entrance; it is then grown back by the
-    same radius so the open coast's own nearshore strip stays 'open coast'."""
+    mouths such as Humboldt Bay's entrance; it is then grown back by the same radius so the open
+    coast's own nearshore strip stays 'open coast'. With `origin` (lat, lon of the first cell
+    centre), water cut off from the western edge by the BAY_MOUTHS closing lines is a bay too
+    (San Francisco Bay's mouth is too wide on the mask for the opening)."""
     dy, _ = cell_km(step, lat_mid)
     r = max(1, int(round(BAY_OPEN_KM / dy)))
     k = _disk(r)
@@ -104,7 +140,14 @@ def bay_mask(water: np.ndarray, step: float, lat_mid: float) -> np.ndarray:
     edge = edge[edge > 0]
     open_sea = np.isin(lab, edge)
     open_sea = binary_dilation(open_sea, structure=_disk(r + 1)) & water
-    return water & ~open_sea
+    bay = water & ~open_sea
+    if origin is not None:
+        cut = water & ~mouth_cells(water.shape, origin[0], origin[1], step)
+        lab, _ = label(cut)  # 4-connected: a diagonal step across a closing line does not count
+        edge = np.unique(lab[:, 0])
+        edge = edge[edge > 0]
+        bay |= cut & ~np.isin(lab, edge)
+    return bay
 
 
 # ---------------------------------------------------------------- estimate

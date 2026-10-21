@@ -67,8 +67,8 @@
   ]
  },
  "nearshore_offset_log10": {
-  "open": 0.663,
-  "bay": 0.379
+  "open": 0.736,
+  "bay": 0.529
  },
  "nearshore_offset_rule": "added to borrowed backgrounds within 0.6 km of shore; mean bias of the never-observed (0.3 km) scenario, regions weighted equally; all scores apply leave-one-region-out offsets",
  "parameters": {
@@ -76,204 +76,214 @@
   "min_weight": 0.5,
   "background_l_km": 1.0,
   "anomaly_l_km": 3.0,
-  "bay_open_km": 1.0
+  "bay_open_km": 1.0,
+  "bay_mouth_lines": [
+   "San Francisco Bay (Golden Gate; with San Pablo and Suisun Bays)",
+   "Tomales Bay",
+   "Humboldt Bay (entrance and South Spit)",
+   "Morro Bay (entrance and sand spit)",
+   "Elkhorn Slough (Moss Landing)",
+   "Mission Bay",
+   "San Diego Bay (entrance)",
+   "San Diego Bay (Silver Strand)"
+  ]
  },
  "summary": {
   "clouds": {
    "0-0.6 km": {
     "estimate": {
-     "rmse_log10": 0.505,
-     "bias_log10": 0.102,
-     "n": 16922
+     "rmse_log10": 0.606,
+     "bias_log10": 0.163,
+     "n": 8937
     },
     "older_view": {
-     "rmse_log10": 0.53,
-     "bias_log10": 0.029,
-     "n": 13863
+     "rmse_log10": 0.609,
+     "bias_log10": 0.04,
+     "n": 6474
     },
     "background_only": {
-     "rmse_log10": 0.502,
-     "bias_log10": 0.109,
-     "n": 16843
+     "rmse_log10": 0.603,
+     "bias_log10": 0.182,
+     "n": 8858
     },
     "nearest_observed": {
-     "rmse_log10": 0.666,
-     "bias_log10": 0.102,
-     "n": 16922
+     "rmse_log10": 0.743,
+     "bias_log10": 0.073,
+     "n": 8937
     }
    },
    "0.6-3 km": {
     "estimate": {
-     "rmse_log10": 0.443,
-     "bias_log10": 0.085,
-     "n": 166642
+     "rmse_log10": 0.512,
+     "bias_log10": 0.12,
+     "n": 116677
     },
     "older_view": {
-     "rmse_log10": 0.525,
-     "bias_log10": 0.054,
-     "n": 160856
+     "rmse_log10": 0.604,
+     "bias_log10": 0.085,
+     "n": 111167
     },
     "background_only": {
-     "rmse_log10": 0.461,
-     "bias_log10": 0.086,
-     "n": 165221
+     "rmse_log10": 0.534,
+     "bias_log10": 0.131,
+     "n": 115256
     },
     "nearest_observed": {
-     "rmse_log10": 0.727,
-     "bias_log10": 0.337,
-     "n": 166642
+     "rmse_log10": 0.813,
+     "bias_log10": 0.378,
+     "n": 116677
     }
    },
    "over 3 km": {
     "estimate": {
-     "rmse_log10": 0.415,
-     "bias_log10": 0.086,
-     "n": 841475
+     "rmse_log10": 0.42,
+     "bias_log10": 0.09,
+     "n": 815021
     },
     "older_view": {
-     "rmse_log10": 0.498,
-     "bias_log10": 0.038,
-     "n": 830466
+     "rmse_log10": 0.503,
+     "bias_log10": 0.043,
+     "n": 804012
     },
     "background_only": {
-     "rmse_log10": 0.447,
-     "bias_log10": 0.079,
-     "n": 836062
+     "rmse_log10": 0.452,
+     "bias_log10": 0.084,
+     "n": 809608
     },
     "nearest_observed": {
-     "rmse_log10": 0.648,
-     "bias_log10": 0.257,
-     "n": 841475
+     "rmse_log10": 0.653,
+     "bias_log10": 0.258,
+     "n": 815021
     }
    },
    "bays": {
     "estimate": {
-     "rmse_log10": 0.306,
-     "bias_log10": 0.018,
-     "n": 16812
+     "rmse_log10": 0.245,
+     "bias_log10": -0.0,
+     "n": 101216
     },
     "older_view": {
-     "rmse_log10": 0.371,
-     "bias_log10": 0.022,
-     "n": 16066
+     "rmse_log10": 0.319,
+     "bias_log10": -0.03,
+     "n": 99598
     },
     "background_only": {
-     "rmse_log10": 0.3,
-     "bias_log10": 0.031,
-     "n": 16745
+     "rmse_log10": 0.255,
+     "bias_log10": -0.018,
+     "n": 101149
     },
     "nearest_observed": {
-     "rmse_log10": 0.536,
-     "bias_log10": 0.204,
-     "n": 16812
+     "rmse_log10": 0.482,
+     "bias_log10": 0.219,
+     "n": 101216
     }
    }
   },
   "never_observed_0.3": {
    "0-0.6 km": {
     "estimate": {
-     "rmse_log10": 0.528,
-     "bias_log10": 0.099,
-     "n": 3249
+     "rmse_log10": 0.518,
+     "bias_log10": -0.08,
+     "n": 1521
     },
     "background_only": {
-     "rmse_log10": 0.521,
-     "bias_log10": 0.127,
-     "n": 3248
+     "rmse_log10": 0.497,
+     "bias_log10": -0.042,
+     "n": 1520
     },
     "nearest_observed": {
-     "rmse_log10": 0.537,
-     "bias_log10": -0.239,
-     "n": 3249
+     "rmse_log10": 0.589,
+     "bias_log10": -0.281,
+     "n": 1521
     }
    },
    "bays": {
     "estimate": {
-     "rmse_log10": 0.466,
-     "bias_log10": -0.025,
-     "n": 1410
+     "rmse_log10": 0.468,
+     "bias_log10": 0.171,
+     "n": 3138
     },
     "background_only": {
-     "rmse_log10": 0.442,
-     "bias_log10": 0.049,
-     "n": 1308
+     "rmse_log10": 0.472,
+     "bias_log10": 0.214,
+     "n": 3036
     },
     "nearest_observed": {
-     "rmse_log10": 0.544,
-     "bias_log10": -0.185,
-     "n": 1410
+     "rmse_log10": 0.513,
+     "bias_log10": -0.195,
+     "n": 3138
     }
    }
   },
   "never_observed_0.6": {
    "0-0.6 km": {
     "estimate": {
-     "rmse_log10": 0.58,
-     "bias_log10": 0.281,
-     "n": 20988
+     "rmse_log10": 0.576,
+     "bias_log10": 0.151,
+     "n": 10129
     },
     "background_only": {
-     "rmse_log10": 0.597,
-     "bias_log10": 0.323,
-     "n": 20946
+     "rmse_log10": 0.595,
+     "bias_log10": 0.209,
+     "n": 10113
     },
     "nearest_observed": {
-     "rmse_log10": 0.527,
-     "bias_log10": -0.278,
-     "n": 20988
+     "rmse_log10": 0.634,
+     "bias_log10": -0.373,
+     "n": 10129
     }
    },
    "bays": {
     "estimate": {
-     "rmse_log10": 0.442,
-     "bias_log10": 0.121,
-     "n": 8958
+     "rmse_log10": 0.507,
+     "bias_log10": 0.319,
+     "n": 19817
     },
     "background_only": {
-     "rmse_log10": 0.433,
-     "bias_log10": 0.214,
-     "n": 7880
+     "rmse_log10": 0.527,
+     "bias_log10": 0.375,
+     "n": 18713
     },
     "nearest_observed": {
-     "rmse_log10": 0.446,
-     "bias_log10": -0.201,
-     "n": 8958
+     "rmse_log10": 0.422,
+     "bias_log10": -0.195,
+     "n": 19817
     }
    }
   },
   "never_observed_2.0": {
    "0-0.6 km": {
     "estimate": {
-     "rmse_log10": 0.422,
-     "bias_log10": -0.132,
-     "n": 155539
+     "rmse_log10": 0.447,
+     "bias_log10": -0.202,
+     "n": 94345
     },
     "background_only": {
-     "rmse_log10": 0.378,
-     "bias_log10": -0.084,
-     "n": 131336
+     "rmse_log10": 0.437,
+     "bias_log10": -0.14,
+     "n": 86982
     },
     "nearest_observed": {
-     "rmse_log10": 0.442,
-     "bias_log10": -0.175,
-     "n": 155539
+     "rmse_log10": 0.497,
+     "bias_log10": -0.209,
+     "n": 94345
     }
    },
    "bays": {
     "estimate": {
-     "rmse_log10": 0.479,
-     "bias_log10": -0.148,
-     "n": 20987
+     "rmse_log10": 0.389,
+     "bias_log10": -0.051,
+     "n": 82181
     },
     "background_only": {
-     "rmse_log10": 0.158,
-     "bias_log10": 0.032,
-     "n": 5124
+     "rmse_log10": 0.197,
+     "bias_log10": 0.026,
+     "n": 49478
     },
     "nearest_observed": {
-     "rmse_log10": 0.567,
-     "bias_log10": -0.201,
-     "n": 20987
+     "rmse_log10": 0.41,
+     "bias_log10": -0.143,
+     "n": 82181
     }
    }
   }
@@ -284,57 +294,57 @@
   "never_observed_0.6": 1.0,
   "never_observed_2.0": 0.981
  },
- "estimate_beats_older_view": "24 of 26 region x band cases (cloud scenario, n >= 200)",
+ "estimate_beats_older_view": "24 of 27 region x band cases (cloud scenario, n >= 200)",
  "by_class": {
   "0-0.6 km|open|own": {
    "estimate": {
-    "rmse_log10": 0.429,
-    "bias_log10": 0.032,
-    "n": 13038
+    "rmse_log10": 0.504,
+    "bias_log10": 0.043,
+    "n": 5964
    },
    "older_view": {
-    "rmse_log10": 0.521,
-    "bias_log10": 0.032,
-    "n": 12896
+    "rmse_log10": 0.602,
+    "bias_log10": 0.043,
+    "n": 5843
    },
    "background_only": {
-    "rmse_log10": 0.427,
-    "bias_log10": 0.041,
-    "n": 13038
+    "rmse_log10": 0.503,
+    "bias_log10": 0.07,
+    "n": 5964
    },
    "nearest_observed": {
-    "rmse_log10": 0.652,
-    "bias_log10": 0.14,
-    "n": 13038
+    "rmse_log10": 0.748,
+    "bias_log10": 0.116,
+    "n": 5964
    }
   },
   "0-0.6 km|open|borrowed": {
    "estimate": {
-    "rmse_log10": 0.592,
-    "bias_log10": 0.246,
-    "n": 36316
+    "rmse_log10": 0.605,
+    "bias_log10": 0.143,
+    "n": 19844
    },
    "older_view": {
-    "rmse_log10": 0.636,
-    "bias_log10": -0.007,
-    "n": 964
+    "rmse_log10": 0.666,
+    "bias_log10": 0.013,
+    "n": 628
    },
    "background_only": {
-    "rmse_log10": 0.603,
-    "bias_log10": 0.286,
-    "n": 36316
+    "rmse_log10": 0.616,
+    "bias_log10": 0.196,
+    "n": 19844
    },
    "nearest_observed": {
-    "rmse_log10": 0.601,
-    "bias_log10": -0.292,
-    "n": 36316
+    "rmse_log10": 0.718,
+    "bias_log10": -0.383,
+    "n": 19844
    }
   },
   "0-0.6 km|open|borrowed_wide": {
    "estimate": {
-    "rmse_log10": 0.676,
-    "bias_log10": 0.014,
-    "n": 12793
+    "rmse_log10": 0.759,
+    "bias_log10": -0.348,
+    "n": 4908
    },
    "older_view": {
     "rmse_log10": 0.89,
@@ -342,60 +352,60 @@
     "n": 3
    },
    "nearest_observed": {
-    "rmse_log10": 0.833,
-    "bias_log10": -0.56,
-    "n": 12793
+    "rmse_log10": 1.097,
+    "bias_log10": -0.84,
+    "n": 4908
    }
   },
   "0-0.6 km|bay|own": {
    "estimate": {
-    "rmse_log10": 0.393,
-    "bias_log10": 0.004,
-    "n": 5574
+    "rmse_log10": 0.371,
+    "bias_log10": 0.015,
+    "n": 12648
    },
    "older_view": {
-    "rmse_log10": 0.488,
-    "bias_log10": 0.034,
-    "n": 5546
+    "rmse_log10": 0.463,
+    "bias_log10": 0.028,
+    "n": 12599
    },
    "background_only": {
-    "rmse_log10": 0.387,
-    "bias_log10": 0.024,
-    "n": 5574
+    "rmse_log10": 0.367,
+    "bias_log10": 0.02,
+    "n": 12648
    },
    "nearest_observed": {
-    "rmse_log10": 0.58,
-    "bias_log10": 0.137,
-    "n": 5574
+    "rmse_log10": 0.568,
+    "bias_log10": 0.15,
+    "n": 12648
    }
   },
   "0-0.6 km|bay|borrowed": {
    "estimate": {
-    "rmse_log10": 0.425,
-    "bias_log10": 0.141,
-    "n": 10245
+    "rmse_log10": 0.499,
+    "bias_log10": 0.321,
+    "n": 26717
    },
    "older_view": {
-    "rmse_log10": 0.549,
-    "bias_log10": -0.024,
-    "n": 406
+    "rmse_log10": 0.561,
+    "bias_log10": -0.033,
+    "n": 742
    },
    "background_only": {
-    "rmse_log10": 0.44,
-    "bias_log10": 0.189,
-    "n": 10245
+    "rmse_log10": 0.52,
+    "bias_log10": 0.355,
+    "n": 26717
    },
    "nearest_observed": {
-    "rmse_log10": 0.461,
-    "bias_log10": -0.177,
-    "n": 10245
+    "rmse_log10": 0.436,
+    "bias_log10": -0.181,
+    "n": 26717
    }
   },
   "0-0.6 km|bay|borrowed_wide": {
    "estimate": {
-    "rmse_log10": 0.601,
-    "bias_log10": -0.147,
-    "n": 7913
+    "rmse_log10": 0.556,
+    "bias_log10": 0.091,
+    "n": 15798
    },
    "older_view": {
     "rmse_log10": 0.544,
@@ -403,60 +413,60 @@
     "n": 17
    },
    "nearest_observed": {
-    "rmse_log10": 0.746,
-    "bias_log10": -0.401,
-    "n": 7913
+    "rmse_log10": 0.683,
+    "bias_log10": -0.394,
+    "n": 15798
    }
   },
   "0.6-3 km|open|own": {
    "estimate": {
-    "rmse_log10": 0.434,
-    "bias_log10": 0.079,
-    "n": 161734
+    "rmse_log10": 0.504,
+    "bias_log10": 0.114,
+    "n": 112139
    },
    "older_view": {
-    "rmse_log10": 0.525,
-    "bias_log10": 0.054,
-    "n": 159911
+    "rmse_log10": 0.604,
+    "bias_log10": 0.086,
+    "n": 110358
    },
    "background_only": {
-    "rmse_log10": 0.455,
-    "bias_log10": 0.084,
-    "n": 161734
+    "rmse_log10": 0.529,
+    "bias_log10": 0.129,
+    "n": 112139
    },
    "nearest_observed": {
-    "rmse_log10": 0.723,
-    "bias_log10": 0.333,
-    "n": 161734
+    "rmse_log10": 0.81,
+    "bias_log10": 0.373,
+    "n": 112139
    }
   },
   "0.6-3 km|open|borrowed": {
    "estimate": {
-    "rmse_log10": 0.348,
-    "bias_log10": -0.134,
-    "n": 126506
+    "rmse_log10": 0.413,
+    "bias_log10": -0.186,
+    "n": 84782
    },
    "older_view": {
-    "rmse_log10": 0.578,
-    "bias_log10": -0.057,
-    "n": 813
+    "rmse_log10": 0.591,
+    "bias_log10": -0.084,
+    "n": 677
    },
    "background_only": {
-    "rmse_log10": 0.371,
-    "bias_log10": -0.097,
-    "n": 126506
+    "rmse_log10": 0.439,
+    "bias_log10": -0.143,
+    "n": 84782
    },
    "nearest_observed": {
-    "rmse_log10": 0.349,
-    "bias_log10": -0.089,
-    "n": 126506
+    "rmse_log10": 0.416,
+    "bias_log10": -0.122,
+    "n": 84782
    }
   },
   "0.6-3 km|open|borrowed_wide": {
    "estimate": {
-    "rmse_log10": 0.68,
-    "bias_log10": -0.307,
-    "n": 12953
+    "rmse_log10": 0.693,
+    "bias_log10": -0.124,
+    "n": 3972
    },
    "older_view": {
     "rmse_log10": 0.724,
@@ -464,87 +474,87 @@
     "n": 132
    },
    "nearest_observed": {
-    "rmse_log10": 0.636,
-    "bias_log10": -0.197,
-    "n": 12953
+    "rmse_log10": 0.737,
+    "bias_log10": 0.097,
+    "n": 3972
    }
   },
   "0.6-3 km|bay|own": {
    "estimate": {
-    "rmse_log10": 0.206,
-    "bias_log10": 0.017,
-    "n": 10058
+    "rmse_log10": 0.203,
+    "bias_log10": 0.004,
+    "n": 59653
    },
    "older_view": {
-    "rmse_log10": 0.273,
-    "bias_log10": 0.019,
-    "n": 10028
+    "rmse_log10": 0.275,
+    "bias_log10": -0.011,
+    "n": 59581
    },
    "background_only": {
-    "rmse_log10": 0.202,
-    "bias_log10": 0.019,
-    "n": 10058
+    "rmse_log10": 0.209,
+    "bias_log10": -0.013,
+    "n": 59653
    },
    "nearest_observed": {
-    "rmse_log10": 0.494,
-    "bias_log10": 0.273,
-    "n": 10058
+    "rmse_log10": 0.473,
+    "bias_log10": 0.248,
+    "n": 59653
    }
   },
   "0.6-3 km|bay|borrowed": {
    "estimate": {
-    "rmse_log10": 0.138,
-    "bias_log10": -0.029,
-    "n": 5180
+    "rmse_log10": 0.139,
+    "bias_log10": -0.027,
+    "n": 46904
    },
    "older_view": {
-    "rmse_log10": 0.522,
-    "bias_log10": -0.243,
-    "n": 69
+    "rmse_log10": 0.514,
+    "bias_log10": -0.031,
+    "n": 205
    },
    "background_only": {
-    "rmse_log10": 0.164,
-    "bias_log10": 0.03,
-    "n": 5180
+    "rmse_log10": 0.16,
+    "bias_log10": -0.0,
+    "n": 46904
    },
    "nearest_observed": {
-    "rmse_log10": 0.173,
-    "bias_log10": -0.026,
-    "n": 5180
+    "rmse_log10": 0.139,
+    "bias_log10": -0.024,
+    "n": 46904
    }
   },
   "0.6-3 km|bay|borrowed_wide": {
    "estimate": {
-    "rmse_log10": 0.506,
-    "bias_log10": -0.225,
-    "n": 9197
+    "rmse_log10": 0.594,
+    "bias_log10": -0.306,
+    "n": 18178
    },
    "nearest_observed": {
-    "rmse_log10": 0.544,
-    "bias_log10": -0.133,
-    "n": 9197
+    "rmse_log10": 0.565,
+    "bias_log10": -0.229,
+    "n": 18178
    }
   },
   "over 3 km|open|own": {
    "estimate": {
-    "rmse_log10": 0.412,
-    "bias_log10": 0.083,
-    "n": 831409
+    "rmse_log10": 0.417,
+    "bias_log10": 0.087,
+    "n": 804955
    },
    "older_view": {
-    "rmse_log10": 0.498,
-    "bias_log10": 0.039,
-    "n": 828340
+    "rmse_log10": 0.503,
+    "bias_log10": 0.043,
+    "n": 801886
    },
    "background_only": {
-    "rmse_log10": 0.446,
-    "bias_log10": 0.079,
-    "n": 831409
+    "rmse_log10": 0.451,
+    "bias_log10": 0.084,
+    "n": 804955
    },
    "nearest_observed": {
-    "rmse_log10": 0.645,
-    "bias_log10": 0.254,
-    "n": 831409
+    "rmse_log10": 0.651,
+    "bias_log10": 0.255,
+    "n": 804955
    }
   },
   "over 3 km|open|borrowed": {
@@ -585,72 +595,94 @@
     "bias_log10": 0.788,
     "n": 5413
    }
+  },
+  "over 3 km|bay|own": {
+   "estimate": {
+    "rmse_log10": 0.215,
+    "bias_log10": -0.036,
+    "n": 26454
+   },
+   "older_view": {
+    "rmse_log10": 0.315,
+    "bias_log10": -0.099,
+    "n": 26454
+   },
+   "background_only": {
+    "rmse_log10": 0.248,
+    "bias_log10": -0.069,
+    "n": 26454
+   },
+   "nearest_observed": {
+    "rmse_log10": 0.439,
+    "bias_log10": 0.214,
+    "n": 26454
+   }
   }
  },
  "uncertainty_by_class": {
   "0-0.6 km|open|own": {
-   "rmse_log10": 0.429,
-   "n": 13038,
+   "rmse_log10": 0.504,
+   "n": 5964,
    "basis": "measured"
   },
   "0-0.6 km|open|borrowed": {
-   "rmse_log10": 0.592,
-   "n": 36316,
+   "rmse_log10": 0.605,
+   "n": 19844,
    "basis": "measured"
   },
   "0-0.6 km|open|borrowed_wide": {
-   "rmse_log10": 0.676,
-   "n": 12793,
+   "rmse_log10": 0.759,
+   "n": 4908,
    "basis": "measured"
   },
   "0-0.6 km|bay|own": {
-   "rmse_log10": 0.393,
-   "n": 5574,
+   "rmse_log10": 0.371,
+   "n": 12648,
    "basis": "measured"
   },
   "0-0.6 km|bay|borrowed": {
-   "rmse_log10": 0.425,
-   "n": 10245,
+   "rmse_log10": 0.499,
+   "n": 26717,
    "basis": "measured"
   },
   "0-0.6 km|bay|borrowed_wide": {
-   "rmse_log10": 0.601,
-   "n": 7913,
+   "rmse_log10": 0.556,
+   "n": 15798,
    "basis": "measured"
   },
   "0.6-3 km|open|own": {
-   "rmse_log10": 0.434,
-   "n": 161734,
+   "rmse_log10": 0.504,
+   "n": 112139,
    "basis": "measured"
   },
   "0.6-3 km|open|borrowed": {
-   "rmse_log10": 0.348,
-   "n": 126506,
+   "rmse_log10": 0.413,
+   "n": 84782,
    "basis": "measured"
   },
   "0.6-3 km|open|borrowed_wide": {
-   "rmse_log10": 0.68,
-   "n": 12953,
+   "rmse_log10": 0.693,
+   "n": 3972,
    "basis": "measured"
   },
   "0.6-3 km|bay|own": {
-   "rmse_log10": 0.206,
-   "n": 10058,
+   "rmse_log10": 0.203,
+   "n": 59653,
    "basis": "measured"
   },
   "0.6-3 km|bay|borrowed": {
-   "rmse_log10": 0.138,
-   "n": 5180,
+   "rmse_log10": 0.139,
+   "n": 46904,
    "basis": "measured"
   },
   "0.6-3 km|bay|borrowed_wide": {
-   "rmse_log10": 0.506,
-   "n": 9197,
+   "rmse_log10": 0.594,
+   "n": 18178,
    "basis": "measured"
   },
   "over 3 km|open|own": {
-   "rmse_log10": 0.412,
-   "n": 831409,
+   "rmse_log10": 0.417,
+   "n": 804955,
    "basis": "measured"
   },
   "over 3 km|open|borrowed": {
@@ -664,17 +696,17 @@
    "basis": "measured"
   },
   "over 3 km|bay|own": {
-   "rmse_log10": 0.434,
-   "n": 0,
-   "basis": "too few validation pixels: largest measured RMSE of its background tier"
+   "rmse_log10": 0.215,
+   "n": 26454,
+   "basis": "measured"
   },
   "over 3 km|bay|borrowed": {
-   "rmse_log10": 0.6,
+   "rmse_log10": 0.605,
    "n": 0,
    "basis": "too few validation pixels: largest measured RMSE of its background tier"
   },
   "over 3 km|bay|borrowed_wide": {
-   "rmse_log10": 0.68,
+   "rmse_log10": 0.759,
    "n": 0,
    "basis": "too few validation pixels: largest measured RMSE of its background tier"
   }
@@ -684,46 +716,46 @@
    "clouds": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.59,
-      "bias_log10": 0.154,
-      "n": 1497
+      "rmse_log10": 0.609,
+      "bias_log10": 0.189,
+      "n": 1495
      },
      "older_view": {
-      "rmse_log10": 0.64,
+      "rmse_log10": 0.641,
       "bias_log10": 0.059,
-      "n": 990
+      "n": 988
      },
      "background_only": {
-      "rmse_log10": 0.589,
-      "bias_log10": 0.176,
-      "n": 1497
+      "rmse_log10": 0.61,
+      "bias_log10": 0.212,
+      "n": 1495
      },
      "nearest_observed": {
       "rmse_log10": 0.759,
-      "bias_log10": 0.022,
-      "n": 1497
+      "bias_log10": 0.023,
+      "n": 1495
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.632,
-      "bias_log10": -0.337,
-      "n": 17
+      "rmse_log10": 0.6,
+      "bias_log10": -0.319,
+      "n": 19
      },
      "older_view": {
-      "rmse_log10": 0.364,
-      "bias_log10": 0.012,
-      "n": 9
+      "rmse_log10": 0.358,
+      "bias_log10": -0.018,
+      "n": 11
      },
      "background_only": {
-      "rmse_log10": 0.439,
-      "bias_log10": 0.015,
-      "n": 8
+      "rmse_log10": 0.399,
+      "bias_log10": -0.005,
+      "n": 10
      },
      "nearest_observed": {
-      "rmse_log10": 0.748,
-      "bias_log10": -0.343,
-      "n": 17
+      "rmse_log10": 0.737,
+      "bias_log10": -0.372,
+      "n": 19
      }
     },
     "0.6-3 km open": {
@@ -774,93 +806,103 @@
    "never_observed_0.3": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.432,
-      "bias_log10": -0.129,
-      "n": 250
+      "rmse_log10": 0.415,
+      "bias_log10": -0.039,
+      "n": 248
      },
      "background_only": {
-      "rmse_log10": 0.376,
-      "bias_log10": -0.062,
-      "n": 250
+      "rmse_log10": 0.374,
+      "bias_log10": 0.026,
+      "n": 248
      },
      "nearest_observed": {
       "rmse_log10": 0.543,
-      "bias_log10": -0.24,
-      "n": 250
+      "bias_log10": -0.238,
+      "n": 248
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 1.105,
-      "bias_log10": -1.0,
-      "n": 5
+      "rmse_log10": 0.986,
+      "bias_log10": -0.892,
+      "n": 7
+     },
+     "background_only": {
+      "rmse_log10": 0.335,
+      "bias_log10": -0.332,
+      "n": 2
      },
      "nearest_observed": {
-      "rmse_log10": 0.687,
-      "bias_log10": -0.47,
-      "n": 5
+      "rmse_log10": 0.641,
+      "bias_log10": -0.481,
+      "n": 7
      }
     }
    },
    "never_observed_0.6": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.517,
-      "bias_log10": 0.007,
-      "n": 1689
+      "rmse_log10": 0.525,
+      "bias_log10": 0.095,
+      "n": 1687
      },
      "background_only": {
-      "rmse_log10": 0.543,
-      "bias_log10": 0.132,
-      "n": 1689
+      "rmse_log10": 0.571,
+      "bias_log10": 0.22,
+      "n": 1687
      },
      "nearest_observed": {
       "rmse_log10": 0.667,
-      "bias_log10": -0.375,
-      "n": 1689
+      "bias_log10": -0.376,
+      "n": 1687
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.993,
-      "bias_log10": -0.888,
-      "n": 18
+      "rmse_log10": 0.957,
+      "bias_log10": -0.857,
+      "n": 20
+     },
+     "background_only": {
+      "rmse_log10": 0.391,
+      "bias_log10": -0.385,
+      "n": 2
      },
      "nearest_observed": {
-      "rmse_log10": 0.674,
-      "bias_log10": -0.194,
-      "n": 18
+      "rmse_log10": 0.65,
+      "bias_log10": -0.19,
+      "n": 20
      }
     }
    },
    "never_observed_2.0": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.646,
-      "bias_log10": -0.326,
-      "n": 1689
+      "rmse_log10": 0.606,
+      "bias_log10": -0.237,
+      "n": 1687
      },
      "background_only": {
-      "rmse_log10": 0.533,
-      "bias_log10": 0.004,
+      "rmse_log10": 0.541,
+      "bias_log10": 0.092,
       "n": 888
      },
      "nearest_observed": {
-      "rmse_log10": 1.031,
-      "bias_log10": -0.834,
-      "n": 1689
+      "rmse_log10": 1.03,
+      "bias_log10": -0.833,
+      "n": 1687
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 1.155,
-      "bias_log10": -1.068,
-      "n": 18
+      "rmse_log10": 1.151,
+      "bias_log10": -1.071,
+      "n": 20
      },
      "nearest_observed": {
-      "rmse_log10": 1.327,
-      "bias_log10": -1.239,
-      "n": 18
+      "rmse_log10": 1.353,
+      "bias_log10": -1.271,
+      "n": 20
      }
     },
     "0.6-3 km open": {
@@ -886,254 +928,276 @@
    "clouds": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.459,
-      "bias_log10": 0.11,
-      "n": 8918
+      "rmse_log10": 0.726,
+      "bias_log10": 0.352,
+      "n": 1844
      },
      "older_view": {
-      "rmse_log10": 0.47,
-      "bias_log10": 0.026,
-      "n": 7647
+      "rmse_log10": 0.647,
+      "bias_log10": 0.054,
+      "n": 959
      },
      "background_only": {
-      "rmse_log10": 0.46,
-      "bias_log10": 0.113,
-      "n": 8918
+      "rmse_log10": 0.739,
+      "bias_log10": 0.391,
+      "n": 1844
      },
      "nearest_observed": {
-      "rmse_log10": 0.59,
-      "bias_log10": 0.127,
-      "n": 8918
+      "rmse_log10": 0.706,
+      "bias_log10": 0.073,
+      "n": 1844
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.397,
-      "bias_log10": 0.005,
-      "n": 5174
+      "rmse_log10": 0.38,
+      "bias_log10": 0.035,
+      "n": 12248
      },
      "older_view": {
-      "rmse_log10": 0.479,
-      "bias_log10": 0.03,
-      "n": 4826
+      "rmse_log10": 0.456,
+      "bias_log10": 0.025,
+      "n": 11514
      },
      "background_only": {
-      "rmse_log10": 0.393,
-      "bias_log10": 0.037,
-      "n": 5149
+      "rmse_log10": 0.377,
+      "bias_log10": 0.044,
+      "n": 12223
      },
      "nearest_observed": {
-      "rmse_log10": 0.576,
-      "bias_log10": 0.11,
-      "n": 5174
+      "rmse_log10": 0.564,
+      "bias_log10": 0.128,
+      "n": 12248
      }
     },
     "0.6-3 km open": {
      "estimate": {
-      "rmse_log10": 0.428,
-      "bias_log10": 0.072,
-      "n": 76682
+      "rmse_log10": 0.645,
+      "bias_log10": 0.183,
+      "n": 29516
      },
      "older_view": {
-      "rmse_log10": 0.494,
-      "bias_log10": 0.017,
-      "n": 75380
+      "rmse_log10": 0.729,
+      "bias_log10": 0.072,
+      "n": 28339
      },
      "background_only": {
-      "rmse_log10": 0.45,
-      "bias_log10": 0.067,
-      "n": 76682
+      "rmse_log10": 0.679,
+      "bias_log10": 0.203,
+      "n": 29516
      },
      "nearest_observed": {
-      "rmse_log10": 0.596,
-      "bias_log10": 0.252,
-      "n": 76682
+      "rmse_log10": 0.764,
+      "bias_log10": 0.266,
+      "n": 29516
      }
     },
     "0.6-3 km bay": {
      "estimate": {
-      "rmse_log10": 0.194,
-      "bias_log10": 0.006,
-      "n": 7453
+      "rmse_log10": 0.193,
+      "bias_log10": 0.003,
+      "n": 54619
      },
      "older_view": {
-      "rmse_log10": 0.251,
-      "bias_log10": 0.03,
-      "n": 7438
+      "rmse_log10": 0.264,
+      "bias_log10": -0.01,
+      "n": 54479
      },
      "background_only": {
-      "rmse_log10": 0.187,
-      "bias_log10": 0.009,
-      "n": 7453
+      "rmse_log10": 0.199,
+      "bias_log10": -0.015,
+      "n": 54619
      },
      "nearest_observed": {
-      "rmse_log10": 0.478,
-      "bias_log10": 0.274,
-      "n": 7453
+      "rmse_log10": 0.463,
+      "bias_log10": 0.248,
+      "n": 54619
      }
     },
     "over 3 km open": {
      "estimate": {
-      "rmse_log10": 0.511,
+      "rmse_log10": 0.534,
       "bias_log10": -0.038,
-      "n": 261350
+      "n": 234896
      },
      "older_view": {
-      "rmse_log10": 0.643,
-      "bias_log10": -0.103,
-      "n": 259277
+      "rmse_log10": 0.67,
+      "bias_log10": -0.104,
+      "n": 232823
      },
      "background_only": {
-      "rmse_log10": 0.557,
-      "bias_log10": -0.085,
-      "n": 261350
+      "rmse_log10": 0.582,
+      "bias_log10": -0.087,
+      "n": 234896
      },
      "nearest_observed": {
-      "rmse_log10": 0.654,
-      "bias_log10": 0.187,
-      "n": 261350
+      "rmse_log10": 0.674,
+      "bias_log10": 0.184,
+      "n": 234896
+     }
+    },
+    "over 3 km bay": {
+     "estimate": {
+      "rmse_log10": 0.215,
+      "bias_log10": -0.036,
+      "n": 26454
+     },
+     "older_view": {
+      "rmse_log10": 0.315,
+      "bias_log10": -0.099,
+      "n": 26454
+     },
+     "background_only": {
+      "rmse_log10": 0.248,
+      "bias_log10": -0.069,
+      "n": 26454
+     },
+     "nearest_observed": {
+      "rmse_log10": 0.439,
+      "bias_log10": 0.214,
+      "n": 26454
      }
     }
    },
    "never_observed_0.3": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.513,
-      "bias_log10": 0.29,
-      "n": 1906
+      "rmse_log10": 0.486,
+      "bias_log10": 0.181,
+      "n": 348
      },
      "background_only": {
-      "rmse_log10": 0.518,
-      "bias_log10": 0.321,
-      "n": 1906
+      "rmse_log10": 0.455,
+      "bias_log10": 0.243,
+      "n": 348
      },
      "nearest_observed": {
-      "rmse_log10": 0.482,
-      "bias_log10": -0.211,
-      "n": 1906
+      "rmse_log10": 0.515,
+      "bias_log10": -0.229,
+      "n": 348
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.454,
-      "bias_log10": -0.002,
-      "n": 1150
+      "rmse_log10": 0.465,
+      "bias_log10": 0.182,
+      "n": 2708
      },
      "background_only": {
-      "rmse_log10": 0.451,
-      "bias_log10": 0.052,
-      "n": 1103
+      "rmse_log10": 0.477,
+      "bias_log10": 0.219,
+      "n": 2661
      },
      "nearest_observed": {
-      "rmse_log10": 0.564,
-      "bias_log10": -0.195,
-      "n": 1150
+      "rmse_log10": 0.514,
+      "bias_log10": -0.202,
+      "n": 2708
      }
     }
    },
    "never_observed_0.6": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.598,
-      "bias_log10": 0.452,
-      "n": 11946
+      "rmse_log10": 0.635,
+      "bias_log10": 0.38,
+      "n": 2051
      },
      "background_only": {
-      "rmse_log10": 0.623,
-      "bias_log10": 0.492,
-      "n": 11926
+      "rmse_log10": 0.662,
+      "bias_log10": 0.461,
+      "n": 2048
      },
      "nearest_observed": {
-      "rmse_log10": 0.427,
-      "bias_log10": -0.209,
-      "n": 11946
+      "rmse_log10": 0.556,
+      "bias_log10": -0.305,
+      "n": 2051
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.419,
-      "bias_log10": 0.137,
-      "n": 7339
+      "rmse_log10": 0.498,
+      "bias_log10": 0.329,
+      "n": 17234
      },
      "background_only": {
-      "rmse_log10": 0.43,
-      "bias_log10": 0.218,
-      "n": 6463
+      "rmse_log10": 0.525,
+      "bias_log10": 0.38,
+      "n": 16341
      },
      "nearest_observed": {
-      "rmse_log10": 0.442,
-      "bias_log10": -0.201,
-      "n": 7339
+      "rmse_log10": 0.415,
+      "bias_log10": -0.194,
+      "n": 17234
      }
     }
    },
    "never_observed_2.0": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.573,
-      "bias_log10": 0.383,
-      "n": 11946
+      "rmse_log10": 0.603,
+      "bias_log10": 0.198,
+      "n": 2051
      },
      "background_only": {
-      "rmse_log10": 0.632,
-      "bias_log10": 0.518,
-      "n": 3998
+      "rmse_log10": 0.664,
+      "bias_log10": 0.447,
+      "n": 998
      },
      "nearest_observed": {
-      "rmse_log10": 0.537,
-      "bias_log10": -0.307,
-      "n": 11946
+      "rmse_log10": 0.809,
+      "bias_log10": -0.481,
+      "n": 2051
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.492,
-      "bias_log10": 0.004,
-      "n": 5123
+      "rmse_log10": 0.49,
+      "bias_log10": 0.254,
+      "n": 15018
      },
      "background_only": {
-      "rmse_log10": 0.413,
-      "bias_log10": 0.254,
-      "n": 38
+      "rmse_log10": 0.51,
+      "bias_log10": 0.415,
+      "n": 3038
      },
      "nearest_observed": {
-      "rmse_log10": 0.643,
-      "bias_log10": -0.343,
-      "n": 5123
+      "rmse_log10": 0.531,
+      "bias_log10": -0.295,
+      "n": 15018
      }
     },
     "0.6-3 km open": {
      "estimate": {
-      "rmse_log10": 0.233,
-      "bias_log10": -0.049,
-      "n": 65623
+      "rmse_log10": 0.373,
+      "bias_log10": -0.091,
+      "n": 18448
      },
      "background_only": {
-      "rmse_log10": 0.268,
-      "bias_log10": -0.019,
-      "n": 58885
+      "rmse_log10": 0.428,
+      "bias_log10": -0.055,
+      "n": 17531
      },
      "nearest_observed": {
-      "rmse_log10": 0.246,
-      "bias_log10": -0.04,
-      "n": 65623
+      "rmse_log10": 0.41,
+      "bias_log10": -0.068,
+      "n": 18448
      }
     },
     "0.6-3 km bay": {
      "estimate": {
-      "rmse_log10": 0.303,
-      "bias_log10": -0.086,
-      "n": 11451
+      "rmse_log10": 0.186,
+      "bias_log10": -0.043,
+      "n": 58626
      },
      "background_only": {
-      "rmse_log10": 0.154,
-      "bias_log10": 0.047,
-      "n": 3986
+      "rmse_log10": 0.156,
+      "bias_log10": 0.001,
+      "n": 45340
      },
      "nearest_observed": {
-      "rmse_log10": 0.347,
-      "bias_log10": -0.059,
-      "n": 11451
+      "rmse_log10": 0.195,
+      "bias_log10": -0.035,
+      "n": 58626
      }
     }
    }
@@ -1142,90 +1206,90 @@
    "clouds": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.812,
-      "bias_log10": 0.395,
-      "n": 980
+      "rmse_log10": 0.851,
+      "bias_log10": 0.435,
+      "n": 922
      },
      "older_view": {
-      "rmse_log10": 0.78,
-      "bias_log10": -0.102,
-      "n": 469
+      "rmse_log10": 0.773,
+      "bias_log10": -0.096,
+      "n": 442
      },
      "background_only": {
-      "rmse_log10": 0.789,
-      "bias_log10": 0.318,
-      "n": 901
+      "rmse_log10": 0.823,
+      "bias_log10": 0.354,
+      "n": 843
      },
      "nearest_observed": {
-      "rmse_log10": 0.731,
-      "bias_log10": 0.112,
-      "n": 980
+      "rmse_log10": 0.735,
+      "bias_log10": 0.104,
+      "n": 922
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.49,
-      "bias_log10": 0.166,
-      "n": 605
+      "rmse_log10": 0.555,
+      "bias_log10": 0.244,
+      "n": 663
      },
      "older_view": {
-      "rmse_log10": 0.556,
-      "bias_log10": 0.054,
-      "n": 497
+      "rmse_log10": 0.577,
+      "bias_log10": 0.041,
+      "n": 524
      },
      "background_only": {
-      "rmse_log10": 0.485,
-      "bias_log10": 0.162,
-      "n": 605
+      "rmse_log10": 0.55,
+      "bias_log10": 0.233,
+      "n": 663
      },
      "nearest_observed": {
-      "rmse_log10": 0.579,
-      "bias_log10": 0.151,
-      "n": 605
+      "rmse_log10": 0.587,
+      "bias_log10": 0.158,
+      "n": 663
      }
     },
     "0.6-3 km open": {
      "estimate": {
       "rmse_log10": 0.805,
       "bias_log10": 0.237,
-      "n": 9875
+      "n": 9863
      },
      "older_view": {
       "rmse_log10": 1.008,
       "bias_log10": 0.06,
-      "n": 7920
+      "n": 7911
      },
      "background_only": {
       "rmse_log10": 0.883,
       "bias_log10": 0.171,
-      "n": 8454
+      "n": 8442
      },
      "nearest_observed": {
       "rmse_log10": 0.917,
       "bias_log10": 0.431,
-      "n": 9875
+      "n": 9863
      }
     },
     "0.6-3 km bay": {
      "estimate": {
-      "rmse_log10": 0.292,
-      "bias_log10": 0.091,
-      "n": 690
+      "rmse_log10": 0.299,
+      "bias_log10": 0.097,
+      "n": 702
      },
      "older_view": {
-      "rmse_log10": 0.332,
-      "bias_log10": 0.043,
-      "n": 672
+      "rmse_log10": 0.341,
+      "bias_log10": 0.042,
+      "n": 681
      },
      "background_only": {
-      "rmse_log10": 0.286,
-      "bias_log10": 0.088,
-      "n": 690
+      "rmse_log10": 0.294,
+      "bias_log10": 0.092,
+      "n": 702
      },
      "nearest_observed": {
-      "rmse_log10": 0.469,
-      "bias_log10": 0.197,
-      "n": 690
+      "rmse_log10": 0.48,
+      "bias_log10": 0.205,
+      "n": 702
      }
     },
     "over 3 km open": {
@@ -1254,110 +1318,110 @@
    "never_observed_0.3": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.418,
-      "bias_log10": 0.025,
-      "n": 154
+      "rmse_log10": 0.432,
+      "bias_log10": 0.1,
+      "n": 143
      },
      "background_only": {
-      "rmse_log10": 0.399,
-      "bias_log10": 0.152,
-      "n": 154
+      "rmse_log10": 0.43,
+      "bias_log10": 0.224,
+      "n": 143
      },
      "nearest_observed": {
-      "rmse_log10": 0.589,
-      "bias_log10": -0.256,
-      "n": 154
+      "rmse_log10": 0.583,
+      "bias_log10": -0.264,
+      "n": 143
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.652,
-      "bias_log10": -0.11,
-      "n": 39
+      "rmse_log10": 0.595,
+      "bias_log10": 0.069,
+      "n": 50
      },
      "background_only": {
-      "rmse_log10": 0.615,
-      "bias_log10": -0.021,
-      "n": 39
+      "rmse_log10": 0.593,
+      "bias_log10": 0.175,
+      "n": 50
      },
      "nearest_observed": {
-      "rmse_log10": 0.667,
-      "bias_log10": -0.204,
-      "n": 39
+      "rmse_log10": 0.668,
+      "bias_log10": -0.195,
+      "n": 50
      }
     }
    },
    "never_observed_0.6": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.595,
-      "bias_log10": 0.259,
-      "n": 1124
+      "rmse_log10": 0.637,
+      "bias_log10": 0.342,
+      "n": 1060
      },
      "background_only": {
-      "rmse_log10": 0.615,
-      "bias_log10": 0.331,
-      "n": 1121
+      "rmse_log10": 0.666,
+      "bias_log10": 0.412,
+      "n": 1057
      },
      "nearest_observed": {
-      "rmse_log10": 0.61,
-      "bias_log10": -0.337,
-      "n": 1124
+      "rmse_log10": 0.613,
+      "bias_log10": -0.336,
+      "n": 1060
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.496,
-      "bias_log10": 0.167,
-      "n": 747
+      "rmse_log10": 0.584,
+      "bias_log10": 0.343,
+      "n": 811
      },
      "background_only": {
-      "rmse_log10": 0.47,
-      "bias_log10": 0.249,
-      "n": 733
+      "rmse_log10": 0.588,
+      "bias_log10": 0.426,
+      "n": 797
      },
      "nearest_observed": {
-      "rmse_log10": 0.451,
-      "bias_log10": -0.177,
-      "n": 747
+      "rmse_log10": 0.461,
+      "bias_log10": -0.192,
+      "n": 811
      }
     }
    },
    "never_observed_2.0": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.591,
-      "bias_log10": -0.014,
-      "n": 1124
+      "rmse_log10": 0.598,
+      "bias_log10": 0.079,
+      "n": 1060
      },
      "background_only": {
-      "rmse_log10": 0.613,
-      "bias_log10": 0.262,
+      "rmse_log10": 0.654,
+      "bias_log10": 0.347,
       "n": 431
      },
      "nearest_observed": {
-      "rmse_log10": 0.853,
-      "bias_log10": -0.494,
-      "n": 1124
+      "rmse_log10": 0.859,
+      "bias_log10": -0.496,
+      "n": 1060
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.702,
-      "bias_log10": -0.322,
-      "n": 747
+      "rmse_log10": 0.635,
+      "bias_log10": -0.142,
+      "n": 811
      },
      "nearest_observed": {
-      "rmse_log10": 0.99,
-      "bias_log10": -0.369,
-      "n": 747
+      "rmse_log10": 0.973,
+      "bias_log10": -0.377,
+      "n": 811
      }
     },
     "0.6-3 km open": {
      "estimate": {
       "rmse_log10": 0.448,
       "bias_log10": -0.169,
-      "n": 8589
+      "n": 8574
      },
      "background_only": {
       "rmse_log10": 0.529,
@@ -1367,19 +1431,19 @@
      "nearest_observed": {
       "rmse_log10": 0.5,
       "bias_log10": -0.091,
-      "n": 8589
+      "n": 8574
      }
     },
     "0.6-3 km bay": {
      "estimate": {
-      "rmse_log10": 0.734,
-      "bias_log10": -0.524,
-      "n": 1017
+      "rmse_log10": 0.731,
+      "bias_log10": -0.522,
+      "n": 1032
      },
      "nearest_observed": {
-      "rmse_log10": 0.899,
-      "bias_log10": -0.174,
-      "n": 1017
+      "rmse_log10": 0.895,
+      "bias_log10": -0.171,
+      "n": 1032
      }
     }
    }
@@ -1388,90 +1452,90 @@
    "clouds": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.509,
-      "bias_log10": 0.094,
-      "n": 578
+      "rmse_log10": 0.55,
+      "bias_log10": 0.152,
+      "n": 298
      },
      "older_view": {
-      "rmse_log10": 0.488,
-      "bias_log10": -0.059,
-      "n": 324
+      "rmse_log10": 0.544,
+      "bias_log10": -0.095,
+      "n": 121
      },
      "background_only": {
-      "rmse_log10": 0.508,
-      "bias_log10": 0.088,
-      "n": 578
+      "rmse_log10": 0.543,
+      "bias_log10": 0.132,
+      "n": 298
      },
      "nearest_observed": {
-      "rmse_log10": 0.751,
-      "bias_log10": -0.076,
-      "n": 578
+      "rmse_log10": 0.797,
+      "bias_log10": -0.271,
+      "n": 298
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.422,
-      "bias_log10": 0.003,
-      "n": 431
+      "rmse_log10": 0.441,
+      "bias_log10": 0.053,
+      "n": 711
      },
      "older_view": {
-      "rmse_log10": 0.525,
-      "bias_log10": 0.094,
-      "n": 328
+      "rmse_log10": 0.498,
+      "bias_log10": 0.043,
+      "n": 531
      },
      "background_only": {
-      "rmse_log10": 0.389,
-      "bias_log10": 0.059,
-      "n": 404
+      "rmse_log10": 0.436,
+      "bias_log10": 0.084,
+      "n": 684
      },
      "nearest_observed": {
-      "rmse_log10": 0.705,
-      "bias_log10": 0.1,
-      "n": 431
+      "rmse_log10": 0.703,
+      "bias_log10": 0.112,
+      "n": 711
      }
     },
     "0.6-3 km open": {
      "estimate": {
-      "rmse_log10": 0.509,
-      "bias_log10": -0.116,
-      "n": 6341
+      "rmse_log10": 0.53,
+      "bias_log10": -0.142,
+      "n": 5452
      },
      "older_view": {
-      "rmse_log10": 0.732,
-      "bias_log10": 0.058,
-      "n": 4927
+      "rmse_log10": 0.782,
+      "bias_log10": 0.069,
+      "n": 4157
      },
      "background_only": {
-      "rmse_log10": 0.525,
-      "bias_log10": -0.131,
-      "n": 6341
+      "rmse_log10": 0.548,
+      "bias_log10": -0.162,
+      "n": 5452
      },
      "nearest_observed": {
-      "rmse_log10": 0.714,
-      "bias_log10": -0.016,
-      "n": 6341
+      "rmse_log10": 0.722,
+      "bias_log10": -0.049,
+      "n": 5452
      }
     },
     "0.6-3 km bay": {
      "estimate": {
-      "rmse_log10": 0.167,
-      "bias_log10": 0.062,
-      "n": 1694
+      "rmse_log10": 0.244,
+      "bias_log10": 0.056,
+      "n": 2583
      },
      "older_view": {
-      "rmse_log10": 0.25,
-      "bias_log10": -0.027,
-      "n": 1661
+      "rmse_log10": 0.292,
+      "bias_log10": -0.018,
+      "n": 2431
      },
      "background_only": {
-      "rmse_log10": 0.175,
-      "bias_log10": 0.071,
-      "n": 1694
+      "rmse_log10": 0.25,
+      "bias_log10": 0.067,
+      "n": 2583
      },
      "nearest_observed": {
-      "rmse_log10": 0.563,
-      "bias_log10": 0.316,
-      "n": 1694
+      "rmse_log10": 0.6,
+      "bias_log10": 0.271,
+      "n": 2583
      }
     },
     "over 3 km open": {
@@ -1500,115 +1564,115 @@
    "never_observed_0.3": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.465,
-      "bias_log10": 0.225,
-      "n": 96
+      "rmse_log10": 0.477,
+      "bias_log10": 0.296,
+      "n": 67
      },
      "background_only": {
-      "rmse_log10": 0.413,
-      "bias_log10": 0.129,
-      "n": 95
+      "rmse_log10": 0.393,
+      "bias_log10": 0.187,
+      "n": 66
      },
      "nearest_observed": {
-      "rmse_log10": 0.512,
-      "bias_log10": -0.142,
-      "n": 96
+      "rmse_log10": 0.432,
+      "bias_log10": -0.083,
+      "n": 67
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.564,
-      "bias_log10": -0.278,
-      "n": 105
+      "rmse_log10": 0.497,
+      "bias_log10": -0.051,
+      "n": 134
      },
      "background_only": {
-      "rmse_log10": 0.414,
-      "bias_log10": 0.023,
-      "n": 61
+      "rmse_log10": 0.467,
+      "bias_log10": 0.155,
+      "n": 90
      },
      "nearest_observed": {
-      "rmse_log10": 0.376,
-      "bias_log10": -0.137,
-      "n": 105
+      "rmse_log10": 0.452,
+      "bias_log10": -0.168,
+      "n": 134
      }
     }
    },
    "never_observed_0.6": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.602,
-      "bias_log10": 0.373,
-      "n": 578
+      "rmse_log10": 0.541,
+      "bias_log10": 0.296,
+      "n": 298
      },
      "background_only": {
-      "rmse_log10": 0.571,
-      "bias_log10": 0.325,
-      "n": 562
+      "rmse_log10": 0.491,
+      "bias_log10": 0.236,
+      "n": 288
      },
      "nearest_observed": {
-      "rmse_log10": 0.477,
-      "bias_log10": -0.235,
-      "n": 578
+      "rmse_log10": 0.53,
+      "bias_log10": -0.341,
+      "n": 298
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.49,
-      "bias_log10": 0.019,
-      "n": 431
+      "rmse_log10": 0.554,
+      "bias_log10": 0.28,
+      "n": 711
      },
      "background_only": {
-      "rmse_log10": 0.428,
-      "bias_log10": 0.201,
-      "n": 339
+      "rmse_log10": 0.554,
+      "bias_log10": 0.376,
+      "n": 613
      },
      "nearest_observed": {
-      "rmse_log10": 0.462,
-      "bias_log10": -0.231,
-      "n": 431
+      "rmse_log10": 0.444,
+      "bias_log10": -0.189,
+      "n": 711
      }
     }
    },
    "never_observed_2.0": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.512,
-      "bias_log10": 0.053,
-      "n": 578
+      "rmse_log10": 0.488,
+      "bias_log10": 0.014,
+      "n": 298
      },
      "background_only": {
-      "rmse_log10": 0.438,
-      "bias_log10": -0.11,
+      "rmse_log10": 0.425,
+      "bias_log10": -0.025,
       "n": 144
      },
      "nearest_observed": {
-      "rmse_log10": 0.788,
-      "bias_log10": -0.581,
-      "n": 578
+      "rmse_log10": 0.911,
+      "bias_log10": -0.745,
+      "n": 298
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.562,
-      "bias_log10": -0.335,
-      "n": 431
+      "rmse_log10": 0.487,
+      "bias_log10": -0.076,
+      "n": 711
      },
      "background_only": {
-      "rmse_log10": 0.368,
-      "bias_log10": 0.259,
+      "rmse_log10": 0.512,
+      "bias_log10": 0.44,
       "n": 38
      },
      "nearest_observed": {
-      "rmse_log10": 0.66,
-      "bias_log10": -0.444,
-      "n": 431
+      "rmse_log10": 0.649,
+      "bias_log10": -0.429,
+      "n": 711
      }
     },
     "0.6-3 km open": {
      "estimate": {
-      "rmse_log10": 0.405,
-      "bias_log10": -0.197,
-      "n": 3600
+      "rmse_log10": 0.383,
+      "bias_log10": -0.162,
+      "n": 2719
      },
      "background_only": {
       "rmse_log10": 0.445,
@@ -1616,16 +1680,16 @@
       "n": 2671
      },
      "nearest_observed": {
-      "rmse_log10": 0.409,
-      "bias_log10": -0.19,
-      "n": 3600
+      "rmse_log10": 0.414,
+      "bias_log10": -0.177,
+      "n": 2719
      }
     },
     "0.6-3 km bay": {
      "estimate": {
-      "rmse_log10": 0.307,
-      "bias_log10": -0.15,
-      "n": 1374
+      "rmse_log10": 0.377,
+      "bias_log10": -0.211,
+      "n": 2255
      },
      "background_only": {
       "rmse_log10": 0.145,
@@ -1633,9 +1697,9 @@
       "n": 1062
      },
      "nearest_observed": {
-      "rmse_log10": 0.194,
-      "bias_log10": -0.081,
-      "n": 1374
+      "rmse_log10": 0.289,
+      "bias_log10": -0.14,
+      "n": 2255
      }
     }
    }
@@ -1644,90 +1708,90 @@
    "clouds": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.472,
-      "bias_log10": 0.009,
-      "n": 1574
+      "rmse_log10": 0.478,
+      "bias_log10": -0.018,
+      "n": 1003
      },
      "older_view": {
-      "rmse_log10": 0.606,
-      "bias_log10": -0.002,
-      "n": 1336
+      "rmse_log10": 0.633,
+      "bias_log10": -0.017,
+      "n": 867
      },
      "background_only": {
-      "rmse_log10": 0.461,
-      "bias_log10": 0.002,
-      "n": 1574
+      "rmse_log10": 0.465,
+      "bias_log10": -0.019,
+      "n": 1003
      },
      "nearest_observed": {
-      "rmse_log10": 0.71,
-      "bias_log10": 0.13,
-      "n": 1574
+      "rmse_log10": 0.749,
+      "bias_log10": 0.175,
+      "n": 1003
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.453,
-      "bias_log10": -0.006,
-      "n": 395
+      "rmse_log10": 0.464,
+      "bias_log10": 0.052,
+      "n": 966
      },
      "older_view": {
-      "rmse_log10": 0.55,
-      "bias_log10": -0.078,
-      "n": 309
+      "rmse_log10": 0.551,
+      "bias_log10": -0.016,
+      "n": 778
      },
      "background_only": {
-      "rmse_log10": 0.445,
-      "bias_log10": -0.011,
-      "n": 389
+      "rmse_log10": 0.46,
+      "bias_log10": 0.038,
+      "n": 960
      },
      "nearest_observed": {
-      "rmse_log10": 0.639,
-      "bias_log10": -0.112,
-      "n": 395
+      "rmse_log10": 0.637,
+      "bias_log10": -0.016,
+      "n": 966
      }
     },
     "0.6-3 km open": {
      "estimate": {
-      "rmse_log10": 0.309,
-      "bias_log10": -0.012,
-      "n": 12779
+      "rmse_log10": 0.303,
+      "bias_log10": -0.004,
+      "n": 10881
      },
      "older_view": {
-      "rmse_log10": 0.386,
-      "bias_log10": -0.027,
-      "n": 12578
+      "rmse_log10": 0.374,
+      "bias_log10": -0.024,
+      "n": 10709
      },
      "background_only": {
-      "rmse_log10": 0.302,
-      "bias_log10": -0.015,
-      "n": 12779
+      "rmse_log10": 0.294,
+      "bias_log10": -0.002,
+      "n": 10881
      },
      "nearest_observed": {
-      "rmse_log10": 1.019,
-      "bias_log10": 0.729,
-      "n": 12779
+      "rmse_log10": 1.078,
+      "bias_log10": 0.822,
+      "n": 10881
      }
     },
     "0.6-3 km bay": {
      "estimate": {
-      "rmse_log10": 0.423,
-      "bias_log10": -0.074,
-      "n": 353
+      "rmse_log10": 0.354,
+      "bias_log10": -0.064,
+      "n": 2251
      },
      "older_view": {
-      "rmse_log10": 0.615,
-      "bias_log10": -0.109,
-      "n": 326
+      "rmse_log10": 0.476,
+      "bias_log10": -0.054,
+      "n": 2195
      },
      "background_only": {
-      "rmse_log10": 0.432,
-      "bias_log10": -0.121,
-      "n": 353
+      "rmse_log10": 0.359,
+      "bias_log10": -0.093,
+      "n": 2251
      },
      "nearest_observed": {
-      "rmse_log10": 0.631,
-      "bias_log10": 0.172,
-      "n": 353
+      "rmse_log10": 0.578,
+      "bias_log10": 0.191,
+      "n": 2251
      }
     },
     "over 3 km open": {
@@ -1756,110 +1820,110 @@
    "never_observed_0.3": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.442,
-      "bias_log10": -0.023,
-      "n": 292
+      "rmse_log10": 0.378,
+      "bias_log10": -0.242,
+      "n": 164
      },
      "background_only": {
-      "rmse_log10": 0.435,
-      "bias_log10": -0.068,
-      "n": 292
+      "rmse_log10": 0.393,
+      "bias_log10": -0.278,
+      "n": 164
      },
      "nearest_observed": {
-      "rmse_log10": 0.594,
-      "bias_log10": -0.226,
-      "n": 292
+      "rmse_log10": 0.617,
+      "bias_log10": -0.309,
+      "n": 164
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.337,
-      "bias_log10": 0.042,
-      "n": 111
+      "rmse_log10": 0.423,
+      "bias_log10": 0.219,
+      "n": 239
      },
      "background_only": {
-      "rmse_log10": 0.248,
-      "bias_log10": 0.056,
-      "n": 105
+      "rmse_log10": 0.38,
+      "bias_log10": 0.195,
+      "n": 233
      },
      "nearest_observed": {
-      "rmse_log10": 0.394,
-      "bias_log10": -0.111,
-      "n": 111
+      "rmse_log10": 0.492,
+      "bias_log10": -0.116,
+      "n": 239
      }
     }
    },
    "never_observed_0.6": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.51,
-      "bias_log10": 0.076,
-      "n": 1664
+      "rmse_log10": 0.473,
+      "bias_log10": -0.053,
+      "n": 1046
      },
      "background_only": {
-      "rmse_log10": 0.508,
-      "bias_log10": 0.051,
-      "n": 1661
+      "rmse_log10": 0.483,
+      "bias_log10": -0.072,
+      "n": 1046
      },
      "nearest_observed": {
-      "rmse_log10": 0.61,
-      "bias_log10": -0.373,
-      "n": 1664
+      "rmse_log10": 0.674,
+      "bias_log10": -0.466,
+      "n": 1046
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 0.606,
-      "bias_log10": -0.102,
-      "n": 423
+      "rmse_log10": 0.55,
+      "bias_log10": 0.193,
+      "n": 1041
      },
      "background_only": {
-      "rmse_log10": 0.405,
-      "bias_log10": 0.076,
-      "n": 345
+      "rmse_log10": 0.485,
+      "bias_log10": 0.245,
+      "n": 960
      },
      "nearest_observed": {
-      "rmse_log10": 0.486,
-      "bias_log10": -0.204,
-      "n": 423
+      "rmse_log10": 0.484,
+      "bias_log10": -0.211,
+      "n": 1041
      }
     }
    },
    "never_observed_2.0": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.832,
-      "bias_log10": -0.662,
-      "n": 1664
+      "rmse_log10": 0.754,
+      "bias_log10": -0.55,
+      "n": 1046
      },
      "background_only": {
-      "rmse_log10": 0.556,
-      "bias_log10": -0.337,
+      "rmse_log10": 0.535,
+      "bias_log10": -0.3,
       "n": 454
      },
      "nearest_observed": {
-      "rmse_log10": 1.254,
-      "bias_log10": -1.141,
-      "n": 1664
+      "rmse_log10": 1.211,
+      "bias_log10": -1.085,
+      "n": 1046
      }
     },
     "0-0.6 km bay": {
      "estimate": {
-      "rmse_log10": 1.214,
-      "bias_log10": -1.151,
-      "n": 423
+      "rmse_log10": 1.011,
+      "bias_log10": -0.915,
+      "n": 1041
      },
      "nearest_observed": {
-      "rmse_log10": 1.446,
-      "bias_log10": -1.36,
-      "n": 423
+      "rmse_log10": 1.375,
+      "bias_log10": -1.286,
+      "n": 1041
      }
     },
     "0.6-3 km open": {
      "estimate": {
-      "rmse_log10": 0.746,
-      "bias_log10": -0.569,
-      "n": 10387
+      "rmse_log10": 0.511,
+      "bias_log10": -0.384,
+      "n": 8123
      },
      "background_only": {
       "rmse_log10": 0.505,
@@ -1867,21 +1931,21 @@
       "n": 7957
      },
      "nearest_observed": {
-      "rmse_log10": 0.644,
-      "bias_log10": -0.445,
-      "n": 10387
+      "rmse_log10": 0.443,
+      "bias_log10": -0.279,
+      "n": 8123
      }
     },
     "0.6-3 km bay": {
      "estimate": {
-      "rmse_log10": 1.319,
-      "bias_log10": -1.27,
-      "n": 403
+      "rmse_log10": 1.278,
+      "bias_log10": -1.236,
+      "n": 2667
      },
      "nearest_observed": {
-      "rmse_log10": 1.163,
-      "bias_log10": -1.056,
-      "n": 403
+      "rmse_log10": 1.106,
+      "bias_log10": -1.044,
+      "n": 2667
      }
     }
    }
@@ -1890,8 +1954,8 @@
    "clouds": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.479,
-      "bias_log10": 0.016,
+      "rmse_log10": 0.476,
+      "bias_log10": 0.028,
       "n": 3375
      },
      "older_view": {
@@ -1900,8 +1964,8 @@
       "n": 3097
      },
      "background_only": {
-      "rmse_log10": 0.485,
-      "bias_log10": 0.065,
+      "rmse_log10": 0.483,
+      "bias_log10": 0.077,
       "n": 3375
      },
      "nearest_observed": {
@@ -1958,13 +2022,13 @@
    "never_observed_0.3": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.676,
-      "bias_log10": -0.396,
+      "rmse_log10": 0.628,
+      "bias_log10": -0.309,
       "n": 551
      },
      "background_only": {
-      "rmse_log10": 0.656,
-      "bias_log10": -0.365,
+      "rmse_log10": 0.612,
+      "bias_log10": -0.278,
       "n": 551
      },
      "nearest_observed": {
@@ -1977,13 +2041,13 @@
    "never_observed_0.6": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.573,
-      "bias_log10": -0.038,
+      "rmse_log10": 0.574,
+      "bias_log10": 0.049,
       "n": 3987
      },
      "background_only": {
-      "rmse_log10": 0.575,
-      "bias_log10": 0.007,
+      "rmse_log10": 0.583,
+      "bias_log10": 0.094,
       "n": 3987
      },
      "nearest_observed": {
@@ -1996,13 +2060,13 @@
    "never_observed_2.0": {
     "0-0.6 km open": {
      "estimate": {
-      "rmse_log10": 0.769,
-      "bias_log10": -0.336,
+      "rmse_log10": 0.736,
+      "bias_log10": -0.249,
       "n": 3987
      },
      "background_only": {
       "rmse_log10": 0.579,
-      "bias_log10": -0.044,
+      "bias_log10": 0.043,
       "n": 2402
      },
      "nearest_observed": {

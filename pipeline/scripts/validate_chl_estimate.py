@@ -77,7 +77,7 @@ def main() -> None:
     water_all = satellite.marine_water(target)
     scope_all = satellite.coastal_mask(target)
     dist_all = E.distance_km(water_all, target.step, lat_mid)
-    bay_all = E.bay_mask(water_all, target.step, lat_mid)
+    bay_all = E.bay_mask(water_all, target.step, lat_mid, (target.lat_first, target.lon_first))
 
     rows: list[tuple] = []  # (region, scenario, class, method, sq_err_sum, err_sum, n)
     days_used: dict[str, list[str]] = {}
@@ -250,7 +250,7 @@ def main() -> None:
         "target_days": days_used,
         "nearshore_offset_log10": shipped,
         "nearshore_offset_rule": "added to borrowed backgrounds within 0.6 km of shore; mean bias of the never-observed (0.3 km) scenario, regions weighted equally; all scores apply leave-one-region-out offsets",
-        "parameters": {"tau_days": E.TAU_DAYS, "min_weight": E.MIN_WEIGHT, "background_l_km": E.BACKGROUND_L_KM, "anomaly_l_km": E.ANOMALY_L_KM, "bay_open_km": E.BAY_OPEN_KM},
+        "parameters": {"tau_days": E.TAU_DAYS, "min_weight": E.MIN_WEIGHT, "background_l_km": E.BACKGROUND_L_KM, "anomaly_l_km": E.ANOMALY_L_KM, "bay_open_km": E.BAY_OPEN_KM, "bay_mouth_lines": [name for name, _ in E.BAY_MOUTHS]},
         "summary": summary,
         "fill_rate_of_hidden": cov,
         "estimate_beats_older_view": f"{wins} of {cases} region x band cases (cloud scenario, n >= {MIN_N})",

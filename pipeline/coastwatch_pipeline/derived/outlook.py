@@ -33,6 +33,7 @@ MODIS_DATASET = "erdMH1chla8day_R2022NRT"
 MODIS_VARIABLE = "chlorophyll"
 FLOOR_MG = 0.056616  # the cube's ln(max(chl, 0.056616))
 MAX_PREDICTOR_AGE_DAYS = 16  # newest composite must have started within this many days of the run
+BAY_SHARE_MASK = 0.5  # a cell is masked when at least this share of its marine water is bay
 
 
 @functools.lru_cache(maxsize=1)
@@ -107,13 +108,60 @@ def fetch_latest(ctx, ref: dict) -> tuple[date, np.ndarray, list[str]]:
     return datetime.fromisoformat(t.replace("Z", "+00:00")).date(), grid, [u1, u2]
 
 
+# ---------------------------------------------------------------- bays
+_BAY: dict[tuple, np.ndarray] = {}
+
+
+def bay_share(ref: dict) -> np.ndarray:
+    """Per footprint pixel: the share of the 4 km cell's marine water that is bay (estimate.bay_mask
+    on the Sentinel-3 OLCI 300 m lattice of the marine water mask). A cell with no marine water of
+    its own (a land-contaminated coastal cell) takes the share of its 3 x 3 neighbourhood; NaN when
+    that has none either (outside the mask's domain)."""
+    from scipy.ndimage import uniform_filter
+
+    from ..sources import satellite
+    from . import estimate as E
+
+    g = ref["grid"]
+    key = (g["lat_first"], g["lat_step"], g["lon_first"], g["lon_step"], g["height"], g["width"], ref["_px"].tobytes())
+    if key not in _BAY:
+        t = satellite.target_for(satellite.OLCI, satellite.CALIFORNIA)
+        water = satellite.marine_water(t)
+        bay = E.bay_mask(water, t.step, t.lat_first - t.step * t.height / 2, (t.lat_first, t.lon_first))
+        # 4 km cell of each fine cell (cell edges half a step either side of the centres)
+        rr = np.floor((t.lats() - (g["lat_first"] - g["lat_step"] / 2)) / g["lat_step"]).astype(int)
+        cc = np.floor((t.lons() - (g["lon_first"] - g["lon_step"] / 2)) / g["lon_step"]).astype(int)
+        okr, okc = (rr >= 0) & (rr < g["height"]), (cc >= 0) & (cc < g["width"])
+        sub_w, sub_b = water[np.ix_(okr, okc)], bay[np.ix_(okr, okc)]
+        R, C = np.meshgrid(rr[okr], cc[okc], indexing="ij")
+        nw = np.zeros((g["height"], g["width"]))
+        nb = np.zeros_like(nw)
+        np.add.at(nw, (R[sub_w], C[sub_w]), 1.0)
+        np.add.at(nb, (R[sub_b], C[sub_b]), 1.0)
+        nw3, nb3 = uniform_filter(nw, 3, mode="constant"), uniform_filter(nb, 3, mode="constant")
+        with np.errstate(invalid="ignore", divide="ignore"):
+            share = np.where(nw > 0, nb / np.maximum(nw, 1.0), np.where(nw3 > 0, nb3 / np.maximum(nw3, 1e-12), np.nan))
+        px = ref["_px"]
+        _BAY.clear()
+        _BAY[key] = share[px[:, 0], px[:, 1]]
+    return _BAY[key]
+
+
+def bay_cells(ref: dict) -> np.ndarray:
+    """True for footprint pixels masked as bay (bay share >= BAY_SHARE_MASK)."""
+    s = bay_share(ref)
+    return np.isfinite(s) & (s >= BAY_SHARE_MASK)
+
+
 # ---------------------------------------------------------------- forecast
-def outlook(latest_ln_grid: np.ndarray, start: date, ref: dict | None = None) -> dict:
-    """Forecast of the next 8-day period after the composite that starts on `start`."""
+def outlook(latest_ln_grid: np.ndarray, start: date, ref: dict | None = None, masked: np.ndarray | None = None) -> dict:
+    """Forecast of the next 8-day period after the composite that starts on `start`. Footprint
+    pixels in `masked` (default: bay_cells) get NaN forecast and uncertainty."""
     ref = ref or load_reference()
     px = ref["_px"]
+    masked = bay_cells(ref) if masked is None else masked
     obs = latest_ln_grid[px[:, 0], px[:, 1]]
-    has = np.isfinite(obs)
+    has = np.isfinite(obs) & ~masked
     p_now = period(start, ref["periods"])
     v0, v1 = next_period(start)
     p_next = period(v0, ref["periods"])
@@ -122,12 +170,14 @@ def outlook(latest_ln_grid: np.ndarray, start: date, ref: dict | None = None) ->
     fc_ln = clim_t + ref["_phi8"] * anom
     rmse_ln = np.where(has, ref["_rmse_ar"], ref["_rmse_cl"])
     return {
-        "forecast_log10": fc_ln / LN10,
-        "climatology_log10": clim_t / LN10,
-        "uncertainty_log10": rmse_ln / LN10,
+        "forecast_log10": np.where(masked, np.nan, fc_ln / LN10),
+        "climatology_log10": np.where(masked, np.nan, clim_t / LN10),
+        "uncertainty_log10": np.where(masked, np.nan, rmse_ln / LN10),
         "has_anomaly": has,
+        "masked_bay": masked,
         "mean_anomaly_ln": float(anom[has].mean()) if has.any() else None,
-        "cells": int(len(has)),
+        "cells": int((~masked).sum()),
+        "cells_masked_bay": int(masked.sum()),
         "cells_with_anomaly": int(has.sum()),
         "valid_from": v0,
         "valid_to": v1,

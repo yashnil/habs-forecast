@@ -91,6 +91,39 @@ def test_bay_mask_finds_water_behind_a_narrow_mouth():
     assert bay[60, 90] and not bay[60, 10] and not bay[5, 38]
 
 
+BAY_POINTS = {  # (lat, lon) inside each named bay
+    "San Francisco Bay": (37.70, -122.28), "San Pablo Bay": (38.05, -122.38), "Suisun Bay": (38.08, -122.05),
+    "Tomales Bay": (38.161, -122.902), "Humboldt Bay (north)": (40.832, -124.131), "Humboldt Bay (south)": (40.72, -124.24),
+    "Morro Bay": (35.34, -120.84), "Elkhorn Slough": (36.815, -121.765), "Mission Bay": (32.78, -117.225),
+    "San Diego Bay": (32.717, -117.202), "South San Diego Bay": (32.62, -117.12),
+}
+OPEN_POINTS = {  # open coast, including open embayments
+    "Monterey Bay": (36.80, -121.90), "Half Moon Bay coast": (37.48, -122.50), "Gulf of the Farallones": (37.75, -122.60),
+    "Bodega Bay": (38.29, -123.05), "Santa Monica Bay": (33.90, -118.50), "off Point Loma": (32.68, -117.26),
+}
+
+
+def _cell(t, lat, lon):
+    return int(round((t.lat_first - lat) / t.step)), int(round((lon - t.lon_first) / t.step))
+
+
+def test_bay_mask_on_the_marine_water_mask_holds_every_named_bay():
+    from coastwatch_pipeline.sources import satellite
+
+    t = satellite.target_for(satellite.OLCI, satellite.CALIFORNIA)
+    _, _, bay, water = R.geometry(t)
+    for name, (lat, lon) in BAY_POINTS.items():
+        r, c = _cell(t, lat, lon)
+        assert water[r, c] and bay[r, c], name
+    for name, (lat, lon) in OPEN_POINTS.items():
+        r, c = _cell(t, lat, lon)
+        assert water[r, c] and not bay[r, c], name
+    # most of SF + San Pablo Bay is bay (east of the Golden Gate closing line)
+    lats, lons = t.lats()[:, None], t.lons()[None, :]
+    box = water & (lats > 37.45) & (lats < 38.15) & (lons > -122.47) & (lons < -122.0)
+    assert bay[box].mean() > 0.98
+
+
 def test_class_keys_cover_validation_table():
     v = json.loads((REF / "chl_estimate_validation.json").read_text())
     assert set(v["uncertainty_by_class"]) == set(E.CLASS_KEYS)
@@ -119,12 +152,45 @@ def test_outlook_is_climatology_plus_damped_anomaly():
     grid = np.full((g["height"], g["width"]), np.nan)
     grid[px[:, 0], px[:, 1]] = ref["_clim"][:, p_now] + 1.0  # +1 ln everywhere
     grid[px[0, 0], px[0, 1]] = np.nan  # one cloudy cell
-    r = O.outlook(grid, start, ref)
+    r = O.outlook(grid, start, ref, masked=np.zeros(len(px), bool))
     expect = (ref["_clim"][:, p_next] + ref["_phi8"] * 1.0) / O.LN10
     assert np.allclose(r["forecast_log10"][1:], expect[1:])
     assert r["forecast_log10"][0] == pytest.approx(ref["_clim"][0, p_next] / O.LN10)
     assert r["uncertainty_log10"][0] == pytest.approx(ref["_rmse_cl"][0] / O.LN10)
     assert r["cells_with_anomaly"] == r["cells"] - 1
+
+
+def test_outlook_is_masked_in_bays_and_unchanged_on_the_open_coast():
+    ref = O.load_reference()
+    g, px = ref["grid"], ref["_px"]
+    start = date(2026, 9, 26)
+    grid = np.full((g["height"], g["width"]), np.nan)
+    grid[px[:, 0], px[:, 1]] = ref["_clim"][:, O.period(start)] + 0.5
+    masked = O.bay_cells(ref)
+    r = O.outlook(grid, start, ref)
+    plain = O.outlook(grid, start, ref, masked=np.zeros(len(px), bool))
+    # open coast: exactly the unmasked forecast; bays: nothing
+    assert np.array_equal(r["forecast_log10"][~masked], plain["forecast_log10"][~masked])
+    assert np.array_equal(r["uncertainty_log10"][~masked], plain["uncertainty_log10"][~masked])
+    assert not np.isfinite(r["forecast_log10"][masked]).any() and not np.isfinite(r["uncertainty_log10"][masked]).any()
+    assert r["cells_masked_bay"] == int(masked.sum()) and r["cells"] + r["cells_masked_bay"] == len(px)
+    # every cell of the research grid over San Francisco and San Pablo Bays is masked (34 before)
+    lat = g["lat_first"] + px[:, 0] * g["lat_step"]
+    lon = g["lon_first"] + px[:, 1] * g["lon_step"]
+    sf = (lat >= 37.45) & (lat <= 38.10) & (lon >= -122.42) & (lon <= -122.0)
+    assert sf.sum() >= 30 and masked[sf].all()
+    # no outlook value in a cell holding a named bay's interior
+    out = O.to_grid(r["forecast_log10"], ref)
+    for name, (la, lo) in BAY_POINTS.items():
+        rr = int(np.floor((la - (g["lat_first"] - g["lat_step"] / 2)) / g["lat_step"]))
+        cc = int(np.floor((lo - (g["lon_first"] - g["lon_step"] / 2)) / g["lon_step"]))
+        if 0 <= rr < g["height"] and 0 <= cc < g["width"] and np.isfinite(out[rr, cc]):
+            share = O.bay_share(ref)[(px[:, 0] == rr) & (px[:, 1] == cc)][0]
+            assert share < O.BAY_SHARE_MASK, name  # a mostly open-coast cell that only touches the bay
+    # no cell with mostly bay water keeps a value; cells without bay water are all kept
+    share = O.bay_share(ref)
+    assert not np.isfinite(r["forecast_log10"][np.nan_to_num(share) >= O.BAY_SHARE_MASK]).any()
+    assert np.isfinite(r["forecast_log10"][np.nan_to_num(share) == 0]).all()
 
 
 def test_outlook_reference_is_compact_and_skilful():
@@ -166,6 +232,13 @@ def test_pipeline_writes_derived_index_and_leaves_manifest_alone(dataset: Path, 
     assert out["valid_from"] == "2026-10-04" and out["valid_to"] == "2026-10-11"
     assert out["skill"]["model"] < out["skill"]["climatology"] < out["skill"]["persistence"]
     assert any("not covered" in c for c in out["caveats"])
+    assert any(c.startswith("Bays are masked") for c in out["caveats"]) and out["coverage"]["bay_cells_masked"] > 30
+    ov = R.read_grid(dataset, out["grid"])
+    gg = out["grid"]
+    lats = gg["lat_first"] + gg["lat_step"] * np.arange(gg["height"])[:, None]
+    lons = gg["lon_first"] + gg["lon_step"] * np.arange(gg["width"])[None, :]
+    sf = (lats >= 37.52) & (lats <= 38.06) & (lons >= -122.40) & (lons <= -122.10)
+    assert np.isfinite(ov).any() and not np.isfinite(ov[sf]).any()
     sst = idx["layers"][2]
     assert sst["kind"] == "sst" and sst["units"] == "degC" and sst["observed_dates"] == ["2026-10-07"]
     assert sst["grid"]["transform"] == "none" and any("analysis" in c.lower() for c in sst["caveats"])

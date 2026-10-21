@@ -170,7 +170,7 @@ def geometry(target: satellite.Target) -> tuple[np.ndarray, np.ndarray, np.ndarr
         water = satellite.marine_water(target)
         area = water & satellite.coastal_mask(target)
         _GEOM.clear()
-        _GEOM[key] = (area, E.distance_km(water, target.step, lat_mid), E.bay_mask(water, target.step, lat_mid), water)
+        _GEOM[key] = (area, E.distance_km(water, target.step, lat_mid), E.bay_mask(water, target.step, lat_mid, (target.lat_first, target.lon_first)), water)
     return _GEOM[key]
 
 
@@ -300,7 +300,7 @@ def outlook_layer(ctx: RunContext, latest: LayerArtifact | None, notes: list[str
         target = _target_of(latest)
         area, _, bay, _ = geometry(target)
         fp = np.zeros((g["height"], g["width"]), bool)
-        fp[ref["_px"][:, 0], ref["_px"][:, 1]] = True
+        fp[ref["_px"][:, 0], ref["_px"][:, 1]] = ~r["masked_bay"]
         rr = np.round((target.lats() - g["lat_first"]) / g["lat_step"]).astype(int)
         cc = np.round((target.lons() - g["lon_first"]) / g["lon_step"]).astype(int)
         okr, okc = (rr >= 0) & (rr < g["height"]), (cc >= 0) & (cc < g["width"])
@@ -322,7 +322,7 @@ def outlook_layer(ctx: RunContext, latest: LayerArtifact | None, notes: list[str
             "Forecast of the MEAN chlorophyll over the 8 days, not a day-by-day map and not toxin. Each 4 km cell's typical chlorophyll for this 8-day period "
             "of the year (MODIS-Aqua climatology 2003-2021, smoothed over neighbouring periods), plus the cell's departure from its typical value in the newest "
             f"MODIS-Aqua 8-day composite ({p0.isoformat()}..{p1.isoformat()}), damped by the cell's AR(1) coefficient (about {ref['ar1_phi_by_lag_days']['8']:.2f} on average; "
-            "fitted on 2003-2015). Cells the composite has no value for (cloud) get the climatology alone."
+            "fitted on 2003-2015). Cells the composite has no value for (cloud) get the climatology alone. Cells mostly over bays are left empty."
         ),
         "basis": (
             f"MODIS-Aqua 8-day composite {p0.isoformat()}..{p1.isoformat()} (NASA L3 4 km R2022 NRT, NOAA CoastWatch ERDDAP {O.MODIS_DATASET}), values in "
@@ -348,12 +348,15 @@ def outlook_layer(ctx: RunContext, latest: LayerArtifact | None, notes: list[str
             "Typical error: a factor of about 2 either way. Read it as higher or lower than usual for the season, not as a precise value.",
             "Coverage: the 4 km cells of the research grid along the open coast (roughly the first 25-30 km offshore). Bays and harbours are not covered"
             + (f" ({bay_cov}% of bay water lies under a covered cell)" if bay_cov is not None else "")
-            + ": there is no outlook for San Francisco, San Pablo, Humboldt, Tomales or San Diego Bay or Elkhorn Slough.",
+            + ": there is no outlook for San Francisco, San Pablo, Suisun, Tomales, Humboldt, Morro, Mission or San Diego Bay or Elkhorn Slough.",
+            f"Bays are masked: the {r['cells_masked_bay']} cells of the research grid whose water is mostly enclosed bay or estuary (the same bay "
+            "definition as the chlorophyll estimate) carry no outlook. There the satellite reads sediment and dissolved matter as chlorophyll, so the "
+            "steady values and small error those cells showed in the test reflect turbid water, not skill at forecasting algae.",
             "4 km cells: the nearshore strip inside a cell can differ a lot from the cell's average.",
             "The climatology ends in mid-2021 and does not know about later changes. MODIS-Aqua is near the end of its mission; when its data stop, this outlook stops.",
         ]
         + ([f"This outlook's period began {late} day(s) before it was issued (satellite processing delay)."] if late > 0 else []),
-        "coverage": {"cells": r["cells"], "cells_with_live_anomaly": r["cells_with_anomaly"], "open_coast_water_under_cells_pct": strip_cov, "bay_water_under_cells_pct": bay_cov},
+        "coverage": {"cells": r["cells"], "cells_with_live_anomaly": r["cells_with_anomaly"], "bay_cells_masked": r["cells_masked_bay"], "open_coast_water_under_cells_pct": strip_cov, "bay_water_under_cells_pct": bay_cov},
         "uncertainty_units": "expected RMSE log10(mg m-3) per cell (held-out 2016-2021; the climatology's error where the composite has no value)",
         "grid": vg,
         "uncertainty_grid": ug,
