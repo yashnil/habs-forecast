@@ -411,7 +411,7 @@ export function Briefing(props: Props) {
               <div className="min-w-0">
                 <h1 className="text-balance font-serif text-[30px] font-semibold leading-[1.1] sm:text-[38px]" data-testid="coast-title">
                   {/* the title is the place control: other harbours, waters on the map, the home port */}
-                  <button type="button" aria-expanded={placeOpen} aria-controls={placeOpen ? "coast-place-menu" : undefined} aria-describedby="coast-place-hint" onClick={() => setPlaceOpen((o) => !o)} className="nx-tint nx-focus group inline-flex max-w-full items-center gap-2 rounded-lg text-left hover:text-n-accent" data-testid="coast-place-button">
+                  <button type="button" aria-expanded={placeOpen} aria-controls={placeOpen ? "coast-place-menu" : undefined} aria-describedby="coast-place-hint" onClick={() => setPlaceOpen((o) => !o)} className="nx-tint nx-focus group inline-flex max-w-full items-center gap-2 rounded-lg text-left hover:text-n-accent min-h-11" data-testid="coast-place-button">
                     <span className="min-w-0">{place.name}</span>
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-n-line-strong bg-n-surface text-n-ink-2 group-hover:text-n-accent">
                       <Icon name="chevronDown" className={`h-[18px] w-[18px] transition-transform ${placeOpen ? "rotate-180" : ""}`} />
