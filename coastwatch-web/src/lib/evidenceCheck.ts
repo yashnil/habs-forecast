@@ -1,3 +1,4 @@
+import { pacificDate } from "@/lib/time";
 import { EVIDENCE_RADIUS_KM, NEIGHBOURHOOD_KM, RECENT_DAYS } from "@/lib/hab";
 import { pageClaims, type Claim, type EvidenceGraph, type EvidenceNode } from "@/lib/harborEvidence";
 
@@ -92,7 +93,9 @@ function nodeNumbers(n: EvidenceNode): Set<string> {
 }
 
 function nodeDates(n: EvidenceNode): Set<string> {
-  const out = new Set([n.time.observed, n.time.observedFrom, n.time.valid, n.time.issued].filter((d): d is string => !!d).map((d) => d.slice(5, 10)));
+  const stamps = [n.time.observed, n.time.observedFrom, n.time.valid, n.time.issued].filter((d): d is string => !!d);
+  // a timestamp's own date, and its Pacific date (the dates the page shows: 05:42Z on the 13th is the 12th in California)
+  const out = new Set(stamps.flatMap((d) => (d.length > 10 && d.includes("T") ? [d.slice(5, 10), pacificDate(d).slice(5, 10)] : [d.slice(5, 10)])));
   // a reading made of several days' pixels: every day of its span is one of its dates
   if (n.time.observedFrom && n.time.observed) for (let t = Date.parse(`${n.time.observedFrom.slice(0, 10)}T12:00:00Z`); t <= Date.parse(`${n.time.observed.slice(0, 10)}T12:00:00Z`); t += 86400000) out.add(new Date(t).toISOString().slice(5, 10));
   return out;

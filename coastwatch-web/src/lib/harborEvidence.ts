@@ -1,3 +1,4 @@
+import { datePeriods, type DatedPeriod } from "@/lib/nwsPeriods";
 import type { Association } from "@/lib/applicability";
 import { AUDIENCE } from "@/lib/applicability";
 import type { Audience } from "@/lib/coast";
@@ -223,12 +224,18 @@ export function tidesOn(tides: Tide[], date: string | null): Tide[] {
   return date ? tides.filter((t) => t.at.startsWith(date)) : [];
 }
 
-/** The NWS forecast period for the trip day: "Tonight"/"Today" for today, else the day's name ("Thu"), never a night period first. */
-export function periodFor(periods: MarinePeriod[], date: string | null, today: string | null): MarinePeriod | null {
+/**
+ * The NWS forecast period for the trip day, matched by each period's own start date (lib/nwsPeriods),
+ * never by position: a saved copy read on a later day finds no period rather than "Tonight".
+ */
+export function periodFor(periods: MarinePeriod[], date: string | null, today: string | null, issued: string | null = null): DatedPeriod | null {
   if (!periods.length) return null;
-  if (!date || !today || date === today) return periods[0];
-  const day = dtf("en-US", { weekday: "long", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`)).toLowerCase();
-  return periods.find((p) => p.name.toLowerCase() === day || p.name.toLowerCase() === day.slice(0, 3)) ?? null;
+  // without NWS's issue time, the caller's "today" anchors the period names ("Tonight", "Thu")
+  const anchor = issued ?? (today ? `${today}T12:00:00-07:00` : null);
+  const ps = datePeriods(periods, anchor);
+  const want = date ?? today ?? ps.find((p) => p.date)?.date ?? null;
+  if (!want) return null;
+  return ps.find((p) => p.date === want && !p.night) ?? ps.find((p) => p.date === want) ?? null;
 }
 
 /** "11:02 AM" from a CO-OPS local time "2026-10-15 11:02". */
@@ -593,7 +600,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
     let source: Claim["source"];
     let nws: string | null = null;
     if (c.marine.status === "ok") {
-      const p = periodFor(c.marine.data.periods, x.tripDate, x.today ?? x.tripDate);
+      const p = periodFor(c.marine.data.periods, x.tripDate, x.today ?? x.tripDate, c.marine.data.updated ?? c.marine.fetchedAt ?? null);
       if (p) {
         const n: EvidenceNode = {
           id: `nws:${c.marine.data.zone}:${p.name.replace(/\s+/g, "-")}`,
@@ -603,8 +610,8 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
           value: null,
           text: p.text,
           source: { id: "nws", name: "NOAA National Weather Service", url: c.marine.url, product: c.marine.data.zone },
-          // valid: the day the period belongs to (the briefing's trip day), named in the line
-          time: { issued: c.marine.data.updated, valid: x.tripDate ?? today, ageDays: null },
+          // valid: the day the period itself starts on (dated from NWS's issue time), named in the line
+          time: { issued: c.marine.data.updated, valid: p.date ?? x.tripDate ?? today, ageDays: null },
           support: { kind: "zone" },
           where: { lat: null, lon: null, name: c.marine.data.zoneName, km: 0, bearing: null, representative: "near" },
           freshness: { state: "current" },
@@ -615,7 +622,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         nodes.push(n);
         supports.push(n.id);
         // NWS's own period name, anchored to its date: a saved "tonight" must still say which night
-        const pDay = x.tripDate ?? today;
+        const pDay = p.date ?? x.tripDate ?? today;
         const rel = /tonight|today|this afternoon|overnight/i.test(p.name) && pDay;
         nws = `NWS for ${rel ? `“${p.name}”, ${shortDate(pDay)}` : p.name}: ${marineHeadline(p)}`;
         source = { label: `NWS forecast, ${c.marine.data.zoneName}`, url: c.marine.url };
