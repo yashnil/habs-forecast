@@ -134,6 +134,7 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
             {record.osmDataAsOf ? ` · map data (OpenStreetMap) of ${dayYearLabel(record.osmDataAsOf)}` : ""}.
           </p>
           {age?.outdated && <p className="mt-1 font-semibold text-n-stale">More than a day old: download again when you have a connection.</p>}
+          {record.complete && <HomeScreenHint />}
           {problem === "older-format" && (
             <p className="mt-1 font-semibold text-n-stale" data-testid="pack-older">
               Saved by an earlier version of Neritic (pack format {record.version}, now {PACK_VERSION}). What it holds still opens offline, each value with its own time; download again so every part does.
@@ -269,6 +270,41 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
         </>
       )}
     </div>
+  );
+}
+
+/** Once a pack is saved: one quiet, dismissible hint, never shown in the installed app or after dismissal. */
+const HINT_KEY = "nx-a2hs-hint-v1";
+function HomeScreenHint() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    try {
+      const installed = matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
+      setShow(!installed && localStorage.getItem(HINT_KEY) !== "1");
+    } catch {
+      setShow(false);
+    }
+  }, []);
+  if (!show) return null;
+  return (
+    <p className="mt-2 flex items-center gap-2 text-[13.5px] text-n-ink-2" data-testid="a2hs-hint">
+      <span className="min-w-0 flex-1">Add to Home Screen keeps saved data longer on iPhone.</span>
+      <button
+        type="button"
+        onClick={() => {
+          try {
+            localStorage.setItem(HINT_KEY, "1");
+          } catch {
+            // not remembered: it is simply hidden for now
+          }
+          setShow(false);
+        }}
+        className="nx-press nx-focus min-h-11 shrink-0 rounded-lg px-2 font-semibold text-n-ink"
+        data-testid="a2hs-dismiss"
+      >
+        Dismiss
+      </button>
+    </p>
   );
 }
 

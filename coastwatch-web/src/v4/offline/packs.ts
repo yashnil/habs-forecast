@@ -131,43 +131,24 @@ export async function pageAssetsOf(urls: string[]): Promise<string[]> {
     const u = new URL(e.name);
     if (u.origin === location.origin && u.pathname.startsWith("/_next/static/")) found.add(u.pathname);
   }
-  // open each page once, off-screen, so the code it loads on demand (the map, its workers) is known too
-  for (const page of urls) {
-    await new Promise<void>((resolve) => {
-      const f = document.createElement("iframe");
-      f.setAttribute("aria-hidden", "true");
-      f.tabIndex = -1;
-      f.style.cssText = "position:fixed;left:-2000px;top:0;width:1024px;height:768px;opacity:0;pointer-events:none;border:0";
-      const done = () => {
-        try {
-          for (const e of f.contentWindow?.performance.getEntriesByType("resource") ?? []) {
-            const u = new URL(e.name);
-            if (u.origin === location.origin && u.pathname.startsWith("/_next/static/")) found.add(u.pathname);
-          }
-        } catch {
-          // not readable: its HTML is still read below
-        }
-        f.remove();
-        resolve();
-      };
-      f.onload = () => setTimeout(done, 6000);
-      setTimeout(done, 20000);
-      f.src = page;
-      document.body.appendChild(f);
-    });
-  }
-  for (const page of urls) {
-    try {
-      const html = await (await fetch(page, { cache: "no-store" })).text();
-      for (const m of html.matchAll(/\/_next\/static\/[^"'\\\s)]+/g)) found.add(m[0]);
-    } catch {
-      // the page could not be read now; its assets are picked up at runtime instead
-    }
-  }
+  // open each page once, off-screen and side by side, so the code it loads on demand (the map, its
+  // workers) is known too; a page is read once its requests go quiet (not after a fixed wait)
+  await Promise.all([
+    ...urls.map((page) => openQuietly(page, found)),
+    ...urls.map(async (page) => {
+      try {
+        const html = await (await fetch(page, { cache: "no-store" })).text();
+        for (const m of html.matchAll(/\/_next\/static\/[^"'\\\s)]+/g)) found.add(m[0]);
+      } catch {
+        // the page could not be read now; its assets are picked up at runtime instead
+      }
+    }),
+  ]);
   // code a page loads only on demand (a layer, a panel opened later) is named inside the code it has
-  // loaded: follow those names until no new file appears, so no interaction offline needs the server
+  // loaded (a lazy chunk, e.g. My Coast's trip economics worksheet, is listed by name in the chunk that
+  // imports it): follow those names until no new file appears, so no interaction offline needs the server
   const read = new Set<string>();
-  for (let round = 0; round < 6; round++) {
+  for (let round = 0; round < 12; round++) {
     const next = [...found].filter((x) => x.endsWith(".js") && !read.has(x));
     if (!next.length) break;
     await Promise.all(
@@ -191,6 +172,69 @@ export async function pageAssetsOf(urls: string[]): Promise<string[]> {
     }
   }
   return [...found];
+}
+
+/** Times for reading a page off-screen: quiet for QUIET_MS after its load (no new file), never before
+ *  MIN_MS, given up at MAX_MS after the load and CAP_MS in all. The code it did not load by then is
+ *  still found by following the names inside the code it did (pageAssetsOf). */
+export const QUIET_MS = 1000;
+const MIN_MS = 1200;
+const MAX_MS = 6000;
+const CAP_MS = 12000;
+
+function openQuietly(page: string, found: Set<string>): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const f = document.createElement("iframe");
+    f.setAttribute("aria-hidden", "true");
+    f.tabIndex = -1;
+    f.style.cssText = "position:fixed;left:-2000px;top:0;width:1024px;height:768px;opacity:0;pointer-events:none;border:0";
+    const timers: number[] = [];
+    let finished = false;
+    const read = () => {
+      try {
+        for (const e of f.contentWindow?.performance.getEntriesByType("resource") ?? []) {
+          const u = new URL(e.name);
+          if (u.origin === location.origin && u.pathname.startsWith("/_next/static/")) found.add(u.pathname);
+        }
+      } catch {
+        // not readable: its HTML is still read (pageAssetsOf)
+      }
+    };
+    const done = () => {
+      if (finished) return;
+      finished = true;
+      timers.forEach((t) => window.clearTimeout(t));
+      read();
+      f.remove();
+      resolve();
+    };
+    const count = () => {
+      try {
+        return f.contentWindow?.performance.getEntriesByType("resource").length ?? 0;
+      } catch {
+        return -1;
+      }
+    };
+    f.onload = () => {
+      const t0 = performance.now();
+      let last = count();
+      let since = t0;
+      const tick = () => {
+        const n = count();
+        const now = performance.now();
+        if (n !== last) {
+          last = n;
+          since = now;
+        }
+        if (n < 0 || now - t0 >= MAX_MS || (now - t0 >= MIN_MS && now - since >= QUIET_MS)) return done();
+        timers.push(window.setTimeout(tick, 200));
+      };
+      tick();
+    };
+    timers.push(window.setTimeout(done, CAP_MS));
+    f.src = page;
+    document.body.appendChild(f);
+  });
 }
 
 /** Every tile set of the latest satellite views Explore can show. */

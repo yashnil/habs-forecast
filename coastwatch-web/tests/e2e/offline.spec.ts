@@ -32,6 +32,11 @@ test("the Monterey pack: plan, download, verify, remove", async ({ browser }) =>
   expect(rec.verified).toMatchObject({ basemapSha256: true, missing: 0 });
   expect(rec.items.some((i) => i.url.endsWith("basemap.pmtiles"))).toBe(true);
   expect(rec.items.some((i) => i.url.startsWith("/api/evidence"))).toBe(true);
+  // once a pack is saved, one quiet hint (not in an installed app), dismissed for good
+  await expect(page.getByTestId("a2hs-hint")).toHaveText(/Add to Home Screen keeps saved data longer on iPhone/);
+  await page.getByTestId("a2hs-dismiss").click();
+  await expect(page.getByTestId("a2hs-hint")).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("nx-a2hs-hint-v1"))).toBe("1");
   // removing it takes a confirmation (a pack is minutes of download), and then it is gone
   await page.getByTestId("pack-delete").click();
   await expect(page.getByTestId("pack-status")).toContainText("Remove Monterey Bay");
