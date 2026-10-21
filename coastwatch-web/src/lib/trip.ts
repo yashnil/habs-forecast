@@ -1,8 +1,9 @@
 import type { LayerArtifact } from "@/generated/schema";
 import type { Audience } from "@/lib/coast";
 import type { Step } from "@/lib/nextSteps";
+import type { MarinePeriod } from "@/lib/conditions";
 import { topicWords } from "@/lib/harborEvidence";
-import { dtf } from "@/lib/time";
+import { dtf, pacificToday } from "@/lib/time";
 
 /**
  * The trip (My Coast, Coastal mode): the days a trip can be planned for and the checklist of what to
@@ -144,4 +145,59 @@ export function parseLimits(raw: string | null | undefined): SeaLimits {
 /** A period's stated maxima against the reader's limits: which limits the forecaster's own numbers go past. */
 export function overLimits(m: { windKt: number | null; seasFt: number | null }, l: SeaLimits): { wind: boolean; seas: boolean } {
   return { wind: l.windKt != null && m.windKt != null && m.windKt > l.windKt, seas: l.seasFt != null && m.seasFt != null && m.seasFt > l.seasFt };
+}
+
+// ---------------------------------------------------------------- the NWS period for the trip day
+
+const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const addDays = (date: string, n: number) => new Date(Date.parse(`${date}T12:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
+const weekdayOf = (date: string) => new Date(`${date}T12:00:00Z`).getUTCDay();
+
+/** A NWS zone-forecast period with the Pacific date and part of day it starts on, worked out from its own name and the forecast's issue time. */
+export type DatedPeriod = MarinePeriod & { date: string | null; night: boolean; start: string | null };
+
+/**
+ * Each period's own start, from the forecast's issue time and the period's name: "Today", "This
+ * Afternoon", "Tonight" and "Overnight" start on the day of issue; "Wed" and "Wednesday Night" on the next
+ * Wednesday on or after the previous period's day. A period that cannot be placed has no date (null),
+ * and is never matched to a trip day. `issued` is NWS's `updated` (ISO); without it nothing is dated.
+ */
+export function datePeriods(periods: MarinePeriod[], issued: string | null): DatedPeriod[] {
+  const t = issued ? Date.parse(issued) : NaN;
+  if (!Number.isFinite(t)) return periods.map((p) => ({ ...p, date: null, night: /night|tonight|overnight|evening/i.test(p.name), start: null }));
+  const day0 = pacificToday(new Date(t));
+  let off = 0;
+  return periods.map((p, i) => {
+    const name = p.name.trim().toLowerCase();
+    const night = /night|tonight|overnight|evening/.test(name);
+    let date: string | null = null;
+    if (/^(today|tonight|this |rest of|overnight|late tonight)/.test(name)) {
+      date = addDays(day0, off);
+    } else {
+      const w = WEEKDAYS.findIndex((d) => name.startsWith(d));
+      if (w >= 0) {
+        // the first period may be the day of issue itself; every later one is on or after the one before it
+        let j = i === 0 ? 0 : off;
+        while (j < off + 8 && weekdayOf(addDays(day0, j)) !== w) j++;
+        if (j < off + 8) {
+          off = j;
+          date = addDays(day0, j);
+        }
+      }
+    }
+    return { ...p, date, night, start: date ? `${date}T${night ? "18" : "06"}:00` : null };
+  });
+}
+
+/**
+ * The NWS period for a trip day, matched by each period's own start date (never by position): the
+ * day's daytime period, else its night period. Null when no period the forecast holds starts on that
+ * day, which a saved copy read on a later day must say ("no NWS period saved for this day").
+ */
+export function periodFor(c: { marine: { status: string; data?: { periods: MarinePeriod[]; updated: string | null } } } | null, day: string | null, today: string | null): DatedPeriod | null {
+  if (c?.marine.status !== "ok" || !c.marine.data) return null;
+  const want = day ?? today;
+  if (!want) return null;
+  const ps = datePeriods(c.marine.data.periods, c.marine.data.updated);
+  return ps.find((p) => p.date === want && !p.night) ?? ps.find((p) => p.date === want) ?? null;
 }

@@ -40,7 +40,7 @@ export const LANDINGS: LandingsReport[] = [
       { area: "Fort Bragg", pounds: 4_953_436, dollars: 5_423_659 },
       { area: "Morro Bay", pounds: 1_608_502, dollars: 3_678_279 },
     ],
-    portTotal: { pounds: 117_684_528, dollars: 189_051_663 },
+    portTotal: { pounds: 177_684_524, dollars: 189_051_663 },
     topByValue: [
       { fishery: "Market Squid", pounds: 126_430_905, dollars: 67_854_320 },
       { fishery: "Dungeness Crab", pounds: 14_173_811, dollars: 49_744_974 },
@@ -86,7 +86,7 @@ export const LANDINGS: LandingsReport[] = [
   },
 ];
 
-/** The CDFW fishery names in "Top Fisheries by Ex-Vessel Value" that are each of Neritic's species. */
+/** The CDFW fishery names in "Top Fisheries by Ex-Vessel Value" that are exactly each of Neritic's species. */
 export const SPECIES_FISHERIES: Partial<Record<SpeciesId, string[]>> = {
   dungeness: ["Dungeness Crab"],
   "rock-crab": ["Yellow Rock Crab"],
@@ -94,9 +94,10 @@ export const SPECIES_FISHERIES: Partial<Record<SpeciesId, string[]>> = {
   halibut: ["California Halibut"],
   squid: ["Market Squid"],
   urchin: ["Red Sea Urchin"],
-  groundfish: ["Sablefish", "Petrale Sole"],
-  tunas: ["Bluefin Tuna", "Bigeye Tuna"],
 };
+// Species-exact only (v6 P0 3): a neighbouring fishery's value is never shown as the reader's. Sablefish
+// and petrale sole are not "rockfish and groundfish" as a nearshore fisher means it, and bluefin or bigeye
+// is not albacore, so those species have no species-level reference here.
 
 /** CDFW's tool for port-level and recent landings, which Neritic does not copy (its terms ask users to consult it first). */
 export const CDFW_MFDE = { label: "CDFW Marine Fisheries Data Explorer", url: "https://wildlife.ca.gov/Conservation/Marine/Data-Management-Research/MFDE" };

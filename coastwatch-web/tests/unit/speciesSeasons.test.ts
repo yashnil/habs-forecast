@@ -3,7 +3,7 @@ import { SEASON_REGIONS, SPECIES_SEASON_IDS } from "@/content/seasons";
 import { LANDINGS } from "@/content/landings";
 import { SPECIES } from "@/content/species";
 import { groundfishOn, portAreaValues, regionFor, regionSeasons, seasonsAgeDays, speciesValues } from "@/lib/speciesSeasons";
-import { marineMaxima, overLimits, parseLimits } from "@/lib/trip";
+import { datePeriods, marineMaxima, overLimits, parseLimits, periodFor } from "@/lib/trip";
 
 describe("CDFW regions", () => {
   it("covers the coast without gaps, by CDFW's latitude lines", () => {
@@ -56,7 +56,16 @@ describe("CDFW By The Numbers", () => {
     for (const r of LANDINGS) {
       const sum = r.portAreas.reduce((s, a) => s + a.dollars, 0);
       expect(Math.abs(sum - r.portTotal.dollars)).toBeLessThan(5);
+      const lb = r.portAreas.reduce((s, a) => s + a.pounds, 0);
+      expect(Math.abs(lb - r.portTotal.pounds)).toBeLessThan(5);
     }
+    // CDFW's 2024 total, as printed (a transposed 117,684,528 was here before v6)
+    expect(LANDINGS.find((r) => r.year === 2024)!.portTotal.pounds).toBe(177_684_524);
+  });
+  it("gives a species only its own fishery's value, never a neighbour's", () => {
+    expect(speciesValues("tunas")).toEqual([]); // bluefin and bigeye are not albacore
+    expect(speciesValues("groundfish")).toEqual([]); // sablefish and petrale are not nearshore groundfish
+    expect(speciesValues("halibut").map((v) => v.fishery)).toEqual(["California Halibut", "California Halibut"]);
   });
   it("finds a port area and the reader's species, with the arithmetic labelled per pound", () => {
     const sf = portAreaValues("SAN FRANCISCO");
@@ -83,5 +92,34 @@ describe("the reader's sea limits against NWS's words", () => {
     expect(parseLimits("not json")).toEqual({ windKt: null, seasFt: null });
     expect(overLimits({ windKt: 20, seasFt: 6 }, { windKt: 15, seasFt: 6 })).toEqual({ wind: true, seas: false });
     expect(overLimits({ windKt: null, seasFt: 9 }, { windKt: 15, seasFt: null })).toEqual({ wind: false, seas: false });
+  });
+});
+
+describe("the NWS period for the trip day, by its own start", () => {
+  const periods = [
+    { name: "Tonight", text: "NW wind 10 kt. Seas 4 ft." },
+    { name: "Tue", text: "NW wind 15 kt. Seas 5 ft." },
+    { name: "Tue Night", text: "NW wind 20 kt. Seas 6 ft." },
+    { name: "Wed", text: "NW wind 25 kt. Seas 8 ft." },
+  ];
+  // issued Monday Oct 12, 2026, 8 PM PDT (Oct 13 03:00 UTC)
+  const c = { marine: { status: "ok", data: { periods, updated: "2026-10-13T03:00:00Z" } } };
+  it("dates each period from the issue time and its name", () => {
+    expect(datePeriods(periods, "2026-10-13T03:00:00Z").map((p) => [p.date, p.night])).toEqual([
+      ["2026-10-12", true],
+      ["2026-10-13", false],
+      ["2026-10-13", true],
+      ["2026-10-14", false],
+    ]);
+    expect(datePeriods(periods, null).every((p) => p.date === null)).toBe(true);
+  });
+  it("matches the trip day by date, daytime first, and never falls back to the first period", () => {
+    expect(periodFor(c, "2026-10-12", "2026-10-12")?.name).toBe("Tonight");
+    expect(periodFor(c, "2026-10-13", "2026-10-12")?.name).toBe("Tue");
+    expect(periodFor(c, "2026-10-14", "2026-10-12")?.name).toBe("Wed");
+    // a saved copy read three days later: nothing it holds starts on that day
+    expect(periodFor(c, "2026-10-15", "2026-10-15")).toBeNull();
+    expect(periodFor(c, null, "2026-10-16")).toBeNull();
+    expect(periodFor({ marine: { status: "error" } }, "2026-10-13", "2026-10-13")).toBeNull();
   });
 });
