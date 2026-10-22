@@ -224,3 +224,37 @@ Never: number tickers, animated readings, looping ambient motion on reading page
 - [ ] Opening on a mid phone profile (Pixel 6a-class, or Chrome 4× CPU throttle): ≤ 5% dropped frames in beats 4–5, no long task > 50 ms caused by the splash, and beat 5 is composited (no paint in the Performance panel during 2600–3400 except map tiles).
 - [ ] CLS = 0 on Explore with and without the opening. The map initialises once (one WebGL context; `document.querySelectorAll("canvas")` webgl count = 1).
 - [ ] Map time-to-ready with the opening ≤ without it + 50 ms (the opening must not slow the map).
+
+---
+
+## 6. As built (after an independent critique and QA)
+
+The build follows §§1–5 except where an independent visual critique and a QA pass found the result weaker than the spec intended. The changes:
+
+| Spec | As built | Why |
+|---|---|---|
+| Handoff (b): the chart turns to north and pulls back onto the map's Monterey Canyon (MARK_FIELD_GEO) | The chart recedes in place (scale .96) and is gone in 220 ms, before the ground clears. MARK_FIELD_GEO was not kept. | At statewide scale the 60 km field lands as about 40 px, so the landing was invisible. On the way there, canyon-scale contours lay across the Bay Area and Nevada for about 300 ms: depth lines over land is a trust problem. Registration was verified correct before the change (the overlay matched the coast and the map's own isobath labels). |
+| Handoff (c): the mark flies into the header mark | Kept, on its own layer above the header (z 46, transparent, no clicks), ending in a 120 ms cross-fade into the header's brand | Under the header (z 44 < 45), the flight slid beneath the top bar and the brand slot stayed empty for about 200 ms. |
+| Beat 3: weight 520 ms ease-out from 1150; tile from 1300 | Weight 450 ms `--nx-ease-move`. The minor lines keep the chart's colour, and their cut ends fade into the chart (a mask), until the tile surfaces at 2000 during the settle. | Ease-out made the mark snap to full weight in about 100 ms and freeze as a large pale-and-cyan "rainbow" with flat-cut ends: the "app icon on wallpaper" moment again. |
+| Beat 4: settle 1800, word 1950, hold to 2600 | Settle 1650–2200, word 2200–2550, hold to 2800 | One thing moves at a time: the word follows the settle instead of wiping over a still-large tile. |
+| Total ≈ 3.4 s | ≈ 3.5 s (2.8 s to the handoff, 0.7 s handoff); `--nx-o` stretches it | – |
+| Layer cross-fade on every layer or day change | Fade (220 ms) on a layer switch only; a day step of the same layer cuts | The old day's source is removed at once, so a day fade dips through the bare sea on every step, and on every frame of playback. |
+| – | The depth-tinted seafloor stays until the first data field has drawn, then cross-fades to it | Switching from the seafloor to satellite dropped to near-black relief for the second the new tiles took. |
+| – | A new selection in an open panel fades from 45 % opacity, not 0 | The panel read as an empty box between two places. |
+| Effect 5: the selection outline draws once on `moveend` | Not built | The harbour ring is a bitmap icon and cell outlines use `line-dasharray`, which MapLibre cannot transition without redrawing the dash pattern every frame. |
+
+QA defects fixed:
+- When the CSS cap ended the screen (a slow map or a late script), the header's brand stayed hidden: the gate now ends the screen after the cap's fade. The brand's hiding is also time-bound in CSS (4.2 s), so it returns even if no script runs.
+- A skip during the handoff now fades instead of cutting.
+
+Measured (QA, local production build, staging data, 4× CPU phone profile, median of 3):
+- Explore first-visit content: 3.6–3.7 s (v8 5.3 s).
+- My Coast, briefing and Research content time unchanged (±7 %).
+- CLS unchanged.
+- Handoff at 2.63–2.67 s when the map is ready early (2.8 s after the critique loop).
+- Mark lands on the header mark within 0.01 px.
+- No dropped frames in the handoff (headless, approximate).
+- Skip gone in ≤ 224 ms.
+- Reduced motion gone at about 0.85 s.
+- One WebGL canvas.
+- Shared JS +1.6 KB gzip.
