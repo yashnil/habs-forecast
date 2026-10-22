@@ -121,11 +121,12 @@ test("the handoff clears the chart before the map shows, and lands the mark exac
   for (const vp of [{ viewport: { width: 1440, height: 900 } }, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }]) {
     const ctx = await browser.newContext(vp);
     await ctx.addInitScript(force);
-    // hold the screen at the handoff's last frame: the gate's own removal is ignored while frozen
+    // hold the screen once it has landed: the gate's own removal is ignored (from the start: a loaded runner
+    // can take longer than the 120 ms cross-fade to get from the landing to the measurement)
     await ctx.addInitScript(() => {
       const rm = DOMTokenList.prototype.remove;
       DOMTokenList.prototype.remove = function (...c: string[]) {
-        if ((window as unknown as { __freeze?: boolean }).__freeze && c.some((x) => x.startsWith("nx-splash"))) return;
+        if (c.some((x) => x.startsWith("nx-splash"))) return;
         return rm.apply(this, c);
       };
     });
@@ -134,7 +135,6 @@ test("the handoff clears the chart before the map shows, and lands the mark exac
     // the flight starts once the handoff has begun and the lockup has settled
     await page.waitForFunction(() => !!document.documentElement?.classList.contains("nx-splash-land") && (document.querySelector(".nx-splash-stage")?.getAnimations().length ?? 0) > 0, null, { timeout: 15000, polling: 16 });
     const m = await page.evaluate(async () => {
-      (window as unknown as { __freeze: boolean }).__freeze = true;
       for (const a of document.getAnimations()) {
         const end = a.effect?.getComputedTiming().endTime;
         if (typeof end === "number" && Number.isFinite(end)) {

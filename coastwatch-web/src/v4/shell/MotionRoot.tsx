@@ -28,6 +28,19 @@ const STILL_MIN = 600; // reduced motion: the still lockup holds at least this l
 const STILL_MAX = 800;
 /** --nx-ease-move and --nx-ease-in, for the handoff's script animations. */
 const EASE_MOVE = "cubic-bezier(0.77, 0, 0.175, 1)";
+/** --nx-ease-move as a function, for the flight the gate drives frame by frame. */
+function easeMove(t: number): number {
+  // solve x(u) = t for the curve's parameter, then return y(u)
+  const bez = (u: number, a: number, b: number) => 3 * a * u * (1 - u) ** 2 + 3 * b * u * u * (1 - u) + u ** 3;
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 24; i++) {
+    const m = (lo + hi) / 2;
+    if (bez(m, 0.77, 0.175) < t) lo = m;
+    else hi = m;
+  }
+  return bez((lo + hi) / 2, 0, 1);
+}
 const EASE_IN = "cubic-bezier(0.4, 0, 1, 1)";
 
 /**
@@ -75,36 +88,43 @@ function SplashGate() {
     const fly = () => {
       if (!on()) return;
       const ms = HANDOFF * o;
+      const flight = ms * 0.83;
+      const land = () => {
+        d.classList.add("nx-splash-landed");
+        after(ms - flight, () => {
+          end();
+          after(150, () => d.classList.remove("nx-splash-landed"));
+        });
+      };
       const hero = document.querySelector<SVGSVGElement>(".nx-splash-hero svg");
       const stage = document.querySelector<HTMLElement>(".nx-splash-stage");
-      const target = [...document.querySelectorAll<SVGSVGElement>('[data-testid="brand-home"] svg')].find((s) => s.getBoundingClientRect().width > 0);
-      if (hero && stage && target) {
-        const h = hero.getBoundingClientRect();
-        const t = target.getBoundingClientRect();
-        const lockup = t.width > t.height * 1.5;
-        const mark = { x: t.left + t.height / 2, y: t.top + t.height / 2, size: t.height };
-        const from = { x: h.left + h.width / 2, y: h.top + h.height / 2 };
-        stage.style.transformOrigin = `${from.x}px ${from.y}px`;
-        // the flight, then a 120 ms cross-fade into the header's own drawing (the brand fades in over the same 120 ms)
-        stage.animate(
-          [
-            { transform: "none", opacity: 1, offset: 0, easing: EASE_MOVE },
-            { transform: `translate(${mark.x - from.x}px, ${mark.y - from.y}px) scale(${mark.size / h.height})`, opacity: 1, offset: 0.83 },
-            { transform: `translate(${mark.x - from.x}px, ${mark.y - from.y}px) scale(${mark.size / h.height})`, opacity: 0, offset: 1 },
-          ],
-          { duration: ms, fill: "forwards" },
-        );
-        if (!lockup) document.querySelector(".nx-splash-word")?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150 * o, easing: EASE_IN, fill: "forwards" });
-        // it arrives as the header's three-line mark: the 150 and 250 m lines go during the flight
-        document.querySelectorAll('.nx-splash-line[data-depth="150"], .nx-splash-line[data-depth="250"]').forEach((l) =>
-          l.animate([{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.4 }, { opacity: 0, offset: 0.8 }], { duration: ms, fill: "forwards" }),
-        );
-      }
-      after(ms * 0.83, () => d.classList.add("nx-splash-landed"));
-      after(ms, () => {
-        end();
-        after(150, () => d.classList.remove("nx-splash-landed"));
-      });
+      const brand = () => [...document.querySelectorAll<SVGSVGElement>('[data-testid="brand-home"] svg')].find((x) => x.getBoundingClientRect().width > 0);
+      const first = brand();
+      if (!hero || !stage || !first) return after(flight, land);
+      const h = hero.getBoundingClientRect();
+      const from = { x: h.left + h.width / 2, y: h.top + h.height / 2 };
+      stage.style.transformOrigin = `${from.x}px ${from.y}px`;
+      const f0 = first.getBoundingClientRect();
+      if (f0.width <= f0.height * 1.5) document.querySelector(".nx-splash-word")?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150 * o, easing: EASE_IN, fill: "forwards" });
+      // it arrives as the header's three-line mark: the 150 and 250 m lines go during the flight
+      document.querySelectorAll('.nx-splash-line[data-depth="150"], .nx-splash-line[data-depth="250"]').forEach((l) =>
+        l.animate([{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.4 }, { opacity: 0, offset: 0.8 }], { duration: ms, fill: "forwards" }),
+      );
+      // the flight, frame by frame toward wherever the header's brand is now (a late font or a resize can move
+      // it while the mark is in the air), then a 120 ms cross-fade into the header's own drawing
+      const t0 = performance.now();
+      const step = (now: number) => {
+        if (!on()) return;
+        const p = Math.min(1, (now - t0) / flight);
+        const e = easeMove(p);
+        const t = (brand() ?? first).getBoundingClientRect();
+        const to = { x: t.left + t.height / 2 - from.x, y: t.top + t.height / 2 - from.y, s: t.height / h.height };
+        stage.style.transform = `translate(${to.x * e}px, ${to.y * e}px) scale(${1 + (to.s - 1) * e})`;
+        if (p < 1) return void requestAnimationFrame(step);
+        stage.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms - flight, easing: "linear", fill: "forwards" });
+        land();
+      };
+      requestAnimationFrame(step);
     };
     const ready = () => {
       if (!on()) return;
