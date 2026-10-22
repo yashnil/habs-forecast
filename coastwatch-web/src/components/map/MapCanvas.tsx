@@ -132,6 +132,7 @@ type Props = {
 const OFFICIAL = "#f6bb5c";
 const MODEL_MARK = "#b58cf0";
 const MEASURED_MARK = "#4fd1ae";
+const CLUSTER_SHIFT = ["interpolate", ["linear"], ["zoom"], 5, ["literal", [-17, 0]], 8, ["literal", [-13, 0]], 9.5, ["literal", [0, 0]]] as unknown as [number, number];
 const CONDITIONS_MARK = "#74cfe6";
 // provenance threads: one layer per source so they draw out one after another (model, measured,
 // official), 520 ms each with a 90 ms stagger; white, never a data colour
@@ -171,6 +172,9 @@ function addArrows(m: MlMap) {
 // relief (docs/coastwatch/v2/carto, T1): the seafloor stays legible under a field of 3 km cells,
 // and the display classes were built for that opacity on the dark sea.
 const RASTER_PAINT = { "raster-opacity": 1, "raster-resampling": "nearest", "raster-fade-duration": 0 } as const;
+/** v8: data rasters are smoothed below this zoom and nearest-sampled (true cells) from it (see the effect in MapCanvas). */
+const SHARP_ZOOM = 8;
+const DATA_RASTERS = ["forecast-raster", "outlook-raster", "sst-raster", "satellite-raster", "estimate-raster", "satellite-age-raster"];
 const RASTER_FADE = { ...RASTER_PAINT, "raster-fade-duration": 220 } as const;
 const FORECAST_RASTER = { ...RASTER_PAINT, "raster-opacity": FORECAST_RASTER_OPACITY } as const;
 const FORECAST_FADE = { ...FORECAST_RASTER, "raster-fade-duration": 220 } as const;
@@ -444,6 +448,26 @@ export default function MapCanvas(p: Props) {
     return () => cancelAnimationFrame(raf);
   }, [map, overlay]);
 
+  // v8: at state and regional scale a 3 km cell is a few screen pixels, and nearest sampling draws a
+  // field of stair-steps; there the data rasters are smoothed. From harbour scale (SHARP_ZOOM) every
+  // pixel is a real source cell again, outlined and readable, and the legend colours are exact.
+  useEffect(() => {
+    if (!map) return;
+    // only a layer whose mode differs is touched, so this never feeds the style events it listens to
+    const apply = () => {
+      const want = map.getZoom() >= SHARP_ZOOM ? "nearest" : "linear";
+      for (const id of DATA_RASTERS) if (map.getLayer(id) && map.getPaintProperty(id, "raster-resampling") !== want) map.setPaintProperty(id, "raster-resampling", want);
+    };
+    apply();
+    map.on("zoomend", apply);
+    // a raster that appears later (a layer switch, a new day) starts in the current mode
+    map.on("styledata", apply);
+    return () => {
+      map.off("zoomend", apply);
+      map.off("styledata", apply);
+    };
+  }, [map]);
+
   const { onStationPick } = p;
   const onClick = useCallback(
     (e: MapLayerMouseEvent) => {
@@ -573,12 +597,12 @@ export default function MapCanvas(p: Props) {
           type="geojson"
           data={{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[forecastTiles.bounds[0], forecastTiles.bounds[3]], [forecastTiles.bounds[0], forecastTiles.bounds[1]]] } }}
         >
-          <Layer id="forecast-domain-edge" type="line" beforeId={BEFORE_OVERLAY_ID} paint={{ "line-color": "#9fc4d6", "line-opacity": 0.55, "line-width": 1, "line-dasharray": [3, 3] }} />
+          <Layer id="forecast-domain-edge" type="line" beforeId={BEFORE_OVERLAY_ID} paint={{ "line-color": "#9fc4d6", "line-opacity": 0.3, "line-width": 1, "line-dasharray": [1, 3] }} />
           <Layer
             id="forecast-domain-edge-label"
             type="symbol"
-            layout={{ "symbol-placement": "line-center", "text-field": "Edge of NOAA's model", "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, 0.9], "text-letter-spacing": 0.04 }}
-            paint={{ "text-color": "#b9d3e0", "text-halo-color": "#061016", "text-halo-width": 1.2 }}
+            layout={{ "symbol-placement": "line-center", "text-field": "Edge of NOAA's model", "text-font": ["Noto Sans Regular"], "text-size": 10.5, "text-offset": [0, 0.9], "text-letter-spacing": 0.04 }}
+            paint={{ "text-color": "rgba(185,211,224,0.66)", "text-halo-color": "#061016", "text-halo-width": 1.2 }}
           />
         </Source>
       )}
@@ -683,9 +707,10 @@ export default function MapCanvas(p: Props) {
 
       {p.showOfficial && p.officialGeometry && (
         <Source id="official" type="geojson" data={p.officialGeometry}>
-          <Layer id="official-casing" type="line" paint={{ "line-color": "#06111e", "line-width": 3.6, "line-opacity": 0.55 }} />
-          <Layer id="official-county" type="line" filter={["!=", ["get", "kind"], "lat_limit"]} paint={{ "line-color": OFFICIAL, "line-width": 1.6, "line-dasharray": [2, 1.5] }} />
-          <Layer id="official-limit" type="line" filter={["==", ["get", "kind"], "lat_limit"]} paint={{ "line-color": OFFICIAL, "line-width": 2 }} />
+          {/* v8: fine at state scale (a hairline that still reads as official amber), full weight from harbour zoom */}
+          <Layer id="official-casing" type="line" paint={{ "line-color": "#06111e", "line-width": ["interpolate", ["linear"], ["zoom"], 5, 2.2, 9, 3.6], "line-opacity": 0.5 }} />
+          <Layer id="official-county" type="line" filter={["!=", ["get", "kind"], "lat_limit"]} layout={{ "line-join": "round" }} paint={{ "line-color": OFFICIAL, "line-width": ["interpolate", ["linear"], ["zoom"], 5, 1, 9, 1.6], "line-opacity": ["interpolate", ["linear"], ["zoom"], 5, 0.7, 8, 1], "line-dasharray": [2, 1.5] }} />
+          <Layer id="official-limit" type="line" filter={["==", ["get", "kind"], "lat_limit"]} layout={{ "line-cap": "round" }} paint={{ "line-color": OFFICIAL, "line-width": ["interpolate", ["linear"], ["zoom"], 5, 1.4, 9, 2], "line-opacity": ["interpolate", ["linear"], ["zoom"], 5, 0.75, 8, 1] }} />
         </Source>
       )}
       {p.showOfficial && limitLabels && (
@@ -826,15 +851,17 @@ export default function MapCanvas(p: Props) {
             type="circle"
             maxzoom={9.5}
             filter={["has", "point_count"]}
-            paint={{ "circle-radius": ["step", ["get", "point_count"], 11, 4, 14], "circle-color": "rgba(6,17,30,0.82)", "circle-stroke-color": MEASURED_MARK, "circle-stroke-width": 1.6 }}
+            // v8: a cluster sits just offshore of its stations (the coast runs north-south), so a harbour's
+            // dot never lands on its count; it closes in on the stations as the reader zooms
+            paint={{ "circle-radius": ["step", ["get", "point_count"], 9.5, 4, 11.5], "circle-color": "rgba(6,17,30,0.88)", "circle-stroke-color": MEASURED_MARK, "circle-stroke-width": 1.4, "circle-translate": CLUSTER_SHIFT }}
           />
           <Layer
             id="map-station-cluster-count"
             type="symbol"
             maxzoom={9.5}
             filter={["has", "point_count"]}
-            layout={{ "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Regular"], "text-size": 11.5, "text-allow-overlap": true }}
-            paint={{ "text-color": "#cdeee6" }}
+            layout={{ "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Regular"], "text-size": 10.5, "text-allow-overlap": true }}
+            paint={{ "text-color": "#d6f3ec", "text-translate": CLUSTER_SHIFT }}
           />
           <Layer
             id="map-station-point"

@@ -32,6 +32,8 @@ const P: Record<string, React.ReactNode> = {
   keep: <><path d="M6.5 3.5h11v17l-5.5-4-5.5 4v-17Z" /></>,
   map: <><path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5L9 4Z" /><path d="M9 4v13.5M15 6.5V20" /></>,
   more: <><circle cx="5.5" cy="12" r="1.3" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" /><circle cx="18.5" cy="12" r="1.3" fill="currentColor" stroke="none" /></>,
+  play: <path d="M8 5.5v13l10.5-6.5L8 5.5Z" fill="currentColor" />,
+  pause: <><path d="M8.5 5.5v13M15.5 5.5v13" strokeWidth="2.6" /></>,
   keyboard: <><rect x="3" y="6.5" width="18" height="11" rx="2" /><path d="M7 10h.01M10 10h.01M13 10h.01M16 10h.01M8 14h8" /></>,
 };
 

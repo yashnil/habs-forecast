@@ -988,12 +988,11 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
               <div aria-hidden className="pointer-events-none absolute -top-[5px] left-6 right-6">
                 <ContourRule className="!text-n-accent opacity-50" />
               </div>
-              {(nothingCurrent || readHint) && (
-                <div className="mb-1.5 flex flex-col gap-2 border-b border-n-line px-2.5 pb-2 pt-0.5">
-                  {nothingCurrent}
-                  {readHint}
-                </div>
-              )}
+              {nothingCurrent && <div className="mb-1.5 flex flex-col gap-2 border-b border-n-line px-2.5 pb-2 pt-0.5">{nothingCurrent}</div>}
+              {/* v8: how to read the map floats just above the dock, a light pill, so the dock itself is only
+                  the layer, its legend and its time */}
+              {readHint && !nothingCurrent && !deckOpen && <div className="pointer-events-auto absolute bottom-[calc(100%+10px)] left-0 max-w-full rounded-full border border-n-line bg-n-surface/95 py-0.5 pl-4 pr-2 shadow-[var(--nx-shadow)]">{readHint}</div>}
+              {readHint && nothingCurrent && <div className="mb-1.5 px-2.5">{readHint}</div>}
               <div className="grid grid-cols-1 gap-x-4 gap-y-2 [grid-template-areas:'layer'_'legend'_'time'] @[560px]:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] @[560px]:[grid-template-areas:'layer_time'_'legend_legend'] @[900px]:grid-cols-[minmax(0,16rem)_minmax(0,1fr)_auto] @[900px]:[grid-template-areas:'layer_legend_time']">
                 {/* the layer and, under it, its own date line and anything wrong with it (old, failed, clouded, unseen) */}
                 <div className="flex min-w-0 flex-col gap-1 self-start [grid-area:layer] @[900px]:self-center">

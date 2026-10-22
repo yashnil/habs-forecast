@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { Fragment, useEffect, useId, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { SPRING } from "@/v4/motion";
 import type { Manifest } from "@/generated/schema";
@@ -12,6 +12,8 @@ import { clockLabel, dayLabel } from "@/v4/ui/time";
 import { runDays, type LayerChoice } from "./layers";
 import { derivedOutlook, type DerivedIndex, type OutlookLayer } from "@/lib/derived";
 
+/** One frame every PLAY_MS while playing: long enough for the map to draw and the eye to compare. */
+const PLAY_MS = 1200;
 const WEEKDAY = dtf("en-US", { weekday: "short", timeZone: "UTC" });
 /** "Thu" for a date; an unreadable date gives "Invalid Date", as toLocaleDateString did */
 const weekdayOf = (d: string) => {
@@ -145,6 +147,27 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false, dens
   const pill = `time-pill-${useId()}`;
   const [instant, setInstant] = useState(false);
   const current = t?.current;
+  // v8 playback (Windy, RainViewer, Worldview): the published frames in turn, one every PLAY_MS, looping;
+  // it never starts by itself, stops at any other input, and stops when the page is hidden
+  const [playing, setPlaying] = useState(false);
+  const live = useRef({ t, onChoice });
+  live.current = { t, onChoice };
+  useEffect(() => {
+    if (!playing) return;
+    const tick = window.setInterval(() => {
+      const { t: tt, onChoice: pick } = live.current;
+      if (!tt || document.hidden) return setPlaying(false);
+      const usable = tt.steps.filter((s) => !s.disabled);
+      if (usable.length < 2) return setPlaying(false);
+      const at = usable.findIndex((s) => s.key === tt.current);
+      setInstant(false);
+      pick(usable[(at + 1) % usable.length].choice);
+    }, PLAY_MS);
+    return () => window.clearInterval(tick);
+  }, [playing]);
+  // a new layer kind stops playback (its frames are another series)
+  const kind = choice.kind;
+  useEffect(() => setPlaying(false), [kind]);
   // the selected frame is always in view (a narrow timebar scrolls)
   useEffect(() => {
     const el = row.current?.querySelector<HTMLElement>('[aria-checked="true"]');
@@ -157,9 +180,13 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false, dens
   // dense: a short run (the forecast's four days) shows every step, so no Earlier / Later buttons (← → still step)
   const arrows = !dense || t.steps.length > 5;
   const go = (j: number) => {
+    setPlaying(false);
     const s = t.steps[Math.max(0, Math.min(t.steps.length - 1, j))];
     if (s && !s.disabled) onChoice(s.choice);
   };
+  const playable = t.steps.filter((s) => !s.disabled).length > 1;
+  // where the observed or nowcast frames end and the forecast frames begin: a visible break
+  const firstForecast = t.steps.findIndex((s) => s.forecast);
   return (
     <div
       role="group"
@@ -171,6 +198,7 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false, dens
         else if (e.key === "ArrowLeft") go(i - 1);
         else if (e.key === "Home") go(0);
         else if (e.key === "End") go(t.steps.length - 1);
+        else if (e.key === " " && playable && !(e.target instanceof HTMLButtonElement && e.target.getAttribute("role") !== "radio")) setPlaying((v) => !v);
         else return;
         e.preventDefault();
       }}
@@ -184,17 +212,31 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false, dens
         !compact && <p className="truncate text-[13px] text-n-ink-2">{t.title}</p>
       )}
       <div className="flex min-w-0 items-stretch gap-1.5">
+        {playable && (
+          <button
+            type="button"
+            aria-label={playing ? "Pause" : "Play the frames in turn"}
+            aria-pressed={playing}
+            title={playing ? "Pause (space)" : "Play (space)"}
+            onClick={() => setPlaying((v) => !v)}
+            data-testid="time-play"
+            className={`nx-press nx-focus grid w-11 shrink-0 place-items-center rounded-lg max-md:min-h-[56px] md:min-h-11 ${playing ? "bg-n-accent text-n-on-accent" : "bg-n-surface-2 text-n-ink hover:bg-n-surface-3"}`}
+          >
+            <Icon name={playing ? "pause" : "play"} className="h-[18px] w-[18px]" />
+          </button>
+        )}
         {arrows && (
         <button type="button" aria-label="Earlier" onClick={() => go(i - 1)} disabled={i === 0} className={`nx-press nx-focus grid shrink-0 place-items-center rounded-lg text-n-ink-2 hover:text-n-ink disabled:opacity-35 max-md:min-h-[56px] md:min-h-11 ${dense ? "w-11 max-md:w-11" : "w-11 border border-n-line-strong"}`}>
           <Icon name="back" className="h-5 w-5" />
         </button>
         )}
         <motion.div layoutScroll ref={row} className="relative flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none]" role="radiogroup" aria-label={t.title}>
-          {t.steps.map((s) => {
+          {t.steps.map((s, k) => {
             const on = s.key === t.current;
             return (
+              <Fragment key={s.key}>
+              {k > 0 && k === firstForecast && <span aria-hidden className="mx-0.5 w-px shrink-0 self-stretch bg-n-line-strong" data-testid="time-forecast-break" />}
               <button
-                key={s.key}
                 type="button"
                 role="radio"
                 aria-checked={on}
@@ -202,12 +244,13 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false, dens
                 disabled={s.disabled}
                 onClick={() => {
                   setInstant(false);
+                  setPlaying(false);
                   onChoice(s.choice);
                 }}
                 data-testid={`time-${s.key}`}
                 data-incomplete={s.incomplete ? "true" : undefined}
                 className={`nx-focus relative isolate flex min-w-fit flex-1 shrink-0 flex-col items-center justify-center rounded-lg px-2 text-center disabled:opacity-35 max-md:min-h-[56px] ${dense ? "basis-[64px] py-0.5 md:min-h-11" : "basis-[84px] py-1 md:min-h-12"} ${
-                  on ? "text-n-bg" : "nx-row bg-n-surface-2 text-n-ink hover:bg-n-surface-3"
+                  on ? "text-n-bg" : `nx-row text-n-ink hover:bg-n-surface-3 ${s.forecast ? "bg-[repeating-linear-gradient(135deg,var(--nx-surface-2)_0_5px,color-mix(in_srgb,var(--nx-surface-3)_70%,transparent)_5px_7px)]" : "bg-n-surface-2"}`
                 }`}
               >
                 {on && <motion.span aria-hidden layoutId={pill} transition={instant ? { duration: 0 } : SPRING} className="absolute inset-0 -z-10 rounded-lg bg-n-ink" />}
@@ -237,6 +280,7 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false, dens
                   {s.sub}
                 </span>
               </button>
+              </Fragment>
             );
           })}
         </motion.div>

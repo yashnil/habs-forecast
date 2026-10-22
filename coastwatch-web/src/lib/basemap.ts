@@ -19,7 +19,8 @@ import type { StyleSpecification } from "maplibre-gl";
  * coastline (the `*-fallback` layers, hidden otherwise).
  */
 export const SEA = "#0b1d33";
-export const LAND = "#2a3646";
+// the land tone matches the relief image as drawn (graphite), so its edges never show as a seam
+export const LAND = "#212529";
 export const BEFORE_OVERLAY_ID = "coastline";
 /** Layer ids of the no-data hatch, which MapCanvas shows only under a raster data layer. */
 export const NODATA_LAYER_ID = "water-nodata";
@@ -102,8 +103,9 @@ export const BASEMAP_STYLE: StyleSpecification = {
   },
   layers: [
     { id: "land", type: "background", paint: { "background-color": LAND } },
-    // land one step quieter (desaturated), so the sea carries the colour
-    { id: "relief-land", type: "raster", source: "relief-land", paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-saturation": -0.35 } },
+    // land recedes (v8, the Felt rule: basemap back, data forward): darker, nearly grey, the relief a
+    // texture rather than a picture, so the sea and its data carry the colour
+    { id: "relief-land", type: "raster", source: "relief-land", paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-saturation": -0.7, "raster-brightness-max": 0.62, "raster-contrast": -0.12, "raster-opacity": ["interpolate", ["linear"], ["zoom"], 4, 0.7, 9, 0.85] } },
     // under the basemap's water, which covers it wherever the basemap's tiles did arrive
     // (its polygons are cut along a tile grid: no anti-aliased outline, so the cuts never show)
     { id: "water-fallback", type: "fill", source: WATER_FALLBACK_SOURCE, filter: ["==", ["geometry-type"], "Polygon"], layout: { visibility: "none" }, paint: { "fill-color": SEA, "fill-antialias": false } },
@@ -112,7 +114,8 @@ export const BASEMAP_STYLE: StyleSpecification = {
       type: "fill",
       source: "omt",
       "source-layer": "water",
-      paint: { "fill-color": SEA },
+      // inland lakes and reservoirs stay quiet: the sea is the subject
+      paint: { "fill-color": ["match", ["get", "class"], ["lake", "river"], "#1b2938", SEA] },
     },
     { id: "relief-sea", type: "raster", source: "relief-sea", paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
     { id: "relief-sea-monterey", type: "raster", source: "relief-sea-monterey", minzoom: 7, paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
@@ -199,7 +202,7 @@ export const BASEMAP_STYLE: StyleSpecification = {
       "source-layer": "transportation",
       minzoom: 6.5,
       filter: ["in", ["get", "class"], ["literal", ["motorway", "trunk"]]],
-      paint: { "line-color": "#3e4c5e", "line-width": ["interpolate", ["linear"], ["zoom"], 6.5, 0.4, 12, 1.4] },
+      paint: { "line-color": "#2a3645", "line-width": ["interpolate", ["linear"], ["zoom"], 6.5, 0.4, 12, 1.4] },
     },
     {
       id: "roads-primary",
@@ -217,7 +220,7 @@ export const BASEMAP_STYLE: StyleSpecification = {
       "source-layer": "boundary",
       // land boundaries only; maritime limits would read as coastal features
       filter: ["all", ["<=", ["coalesce", ["get", "admin_level"], 99], 4], ["!=", ["coalesce", ["get", "maritime"], 0], 1]],
-      paint: { "line-color": "#5a6b80", "line-width": 0.8, "line-dasharray": [3, 2] },
+      paint: { "line-color": "rgba(150,170,190,0.24)", "line-width": 0.7, "line-dasharray": [3, 2] },
     },
     {
       // ocean, bay and strait names: italic, letter-spaced, in the colour of the water labels on charts
@@ -248,12 +251,12 @@ export const BASEMAP_STYLE: StyleSpecification = {
       layout: {
         "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]],
         "text-font": FONT,
-        "text-size": ["interpolate", ["linear"], ["zoom"], 5.5, 11, 10, 14],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 5.5, 10.5, 10, 13.5],
         "text-anchor": "left",
         "text-offset": [0.4, 0],
         "symbol-sort-key": ["get", "rank"],
       },
-      paint: { "text-color": "#c3cfdc", "text-halo-color": LAND, "text-halo-width": 1.2 },
+      paint: { "text-color": "#93a3b4", "text-halo-color": LAND, "text-halo-width": 1.2 },
     },
     {
       id: "place-town",
@@ -270,7 +273,7 @@ export const BASEMAP_STYLE: StyleSpecification = {
         "text-offset": [0.4, 0],
         "symbol-sort-key": ["get", "rank"],
       },
-      paint: { "text-color": "#a3b2c3", "text-halo-color": LAND, "text-halo-width": 1.2 },
+      paint: { "text-color": "#8494a6", "text-halo-color": LAND, "text-halo-width": 1.2 },
     },
     {
       id: "place-village",
