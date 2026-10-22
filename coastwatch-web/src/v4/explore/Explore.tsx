@@ -948,7 +948,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // clip, not hidden: a hidden overflow can still be scrolled by focus or scrollIntoView, which slid
   // the whole workspace (and the dock) up the screen on phones
   return (
-    <div className="env-instrument cw-fade-in relative h-dvh w-full overflow-clip" data-testid="explore">
+    <div className="env-instrument relative h-dvh w-full overflow-clip" data-testid="explore">
       <SkipLink to="place-search" label="Skip to search places" />
       <h1 className="sr-only">Explore: harmful algal bloom evidence on the California coast{placeName ? `, ${placeName}` : ""}</h1>
       <div className="absolute inset-0" data-testid="map">
