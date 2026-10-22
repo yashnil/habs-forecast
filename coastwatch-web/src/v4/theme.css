@@ -883,3 +883,15 @@ html[data-daylight] .env-instrument .nx-select {
 @media (prefers-reduced-motion: reduce) {
   .nx-landing-coast { animation: none; }
 }
+
+/* ---- browser surfaces (v8, Vercel Web Interface Guidelines and impeccable's craft floor) ----
+   controls never wait for a double-tap zoom; selected text, the caret and scrollbars take the palette */
+:where(button, a[href], [role="button"], [role="tab"], [role="radio"], [role="option"], summary, label, select) {
+  touch-action: manipulation;
+}
+::selection {
+  background: color-mix(in srgb, var(--nx-accent) 26%, transparent);
+  color: inherit;
+}
+:where(input, textarea) { caret-color: var(--nx-accent); }
+.env-instrument { scrollbar-color: var(--nx-line-strong) transparent; }

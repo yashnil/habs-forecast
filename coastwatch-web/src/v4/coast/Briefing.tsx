@@ -492,7 +492,7 @@ export function Briefing(props: Props) {
               </div>
             </div>
 
-            <footer className="flex flex-col gap-3 pt-6 text-[13px] leading-snug text-n-ink-3">
+            <footer className="flex max-w-[78ch] flex-col gap-3 pt-6 text-[13px] leading-snug text-n-ink-3">
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[14px]">
                 <Link href={exploreHref(placeSel!, back)} className="nx-focus inline-flex min-h-11 items-center gap-1.5 font-semibold text-n-ink-2 hover:text-n-ink">
                   <Icon name="map" className="h-4 w-4" /> Open in Explore
