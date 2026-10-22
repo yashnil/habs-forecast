@@ -106,6 +106,13 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
   };
 
   const age = record && record.complete ? packAge(record, new Date()) : null;
+  // the bar becomes a check only when this view saw the download finish (reopened later: just the check)
+  const [seen, setSeen] = useState(state);
+  const [justSaved, setJustSaved] = useState(false);
+  if (seen !== state) {
+    setSeen(state);
+    setJustSaved(seen === "downloading" && state === "done");
+  }
   const pct = prog && prog.totalBytes ? Math.min(100, Math.round((prog.bytes / prog.totalBytes) * 100)) : null;
   const eta = prog?.rate && prog.totalBytes ? Math.max(0, (prog.totalBytes - prog.bytes) / prog.rate) : null;
 
@@ -231,6 +238,7 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
             </ul>
           </section>
 
+          {state === "done" && <SavedMark play={justSaved} name={pack.name} />}
           {state === "downloading" && prog ? (
             <div className="flex flex-col gap-2" data-testid="pack-progress">
               <div className="h-2 w-full overflow-hidden rounded-full bg-n-surface-3" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? undefined} aria-label="Download progress">
@@ -256,7 +264,6 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
               <Icon name="download" /> {downloadLabel(record, problem, manifest.generated_at, items ? mb(total) : "")}
             </button>
           )}
-          {state === "done" && <p className="text-[14px] font-semibold text-n-ok" role="status">Saved and verified. {pack.name} now opens without a connection.</p>}
           {state === "cancelled" && <p className="text-[14px] text-n-ink-2" role="status">Stopped. What was saved is kept; download again to finish.</p>}
           {state === "quota" && (
             <p className="text-[14px] font-semibold text-n-down" role="alert" data-testid="pack-quota">
@@ -269,6 +276,27 @@ export function OfflinePanel({ pack, manifest, baseUrl, onClose }: { pack: PackD
           </p>
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * Saved and verified: the progress bar, full, gathers into a circle with a check, then the words come
+ * (theme.css .nx-saved-*). The bar reached 100 % on real bytes first; this only marks the end.
+ */
+function SavedMark({ play, name }: { play: boolean; name: string }) {
+  return (
+    <div className={`relative ${play ? "nx-saved-play" : ""}`} data-testid="pack-saved">
+      <span aria-hidden className="absolute inset-x-0 top-0 flex h-5 items-center">
+        <span className="nx-saved-mark grid h-5 w-5 place-items-center overflow-hidden rounded-full bg-n-accent">
+          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="var(--nx-bg)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <path className="nx-saved-tick" pathLength={1} d="m5 12.5 4.5 4.5L19 7.5" />
+          </svg>
+        </span>
+      </span>
+      <p className="nx-saved-words pl-7 text-[14px] font-semibold leading-5 text-n-ok" role="status">
+        Saved and verified. {name} now opens without a connection.
+      </p>
     </div>
   );
 }

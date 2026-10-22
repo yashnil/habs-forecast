@@ -104,8 +104,6 @@
   --cw-d-long: var(--nx-t-sheet);
   --cw-ease-standard: var(--nx-ease-out);
   --cw-ease-exit: var(--nx-ease-in);
-  /* a lightly damped spring (about 3 % overshoot): sheets and the selection ring only, never data */
-  --cw-ease-settle: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 18.1%, 1.017 23.8%, 1.031 28.6%, 1.022 35.7%, 1.004 47.6%, 0.998 59.5%, 1);
 
   --cw-masthead-h: 56px;
   --cw-tabbar-h: 64px;
@@ -274,12 +272,12 @@ body {
 
 /* Press feedback: buttons give a little under the finger (signature §11) */
 .cw-press {
-  transition: transform var(--nx-t-release) var(--nx-ease-spring), background-color var(--nx-t-hover) var(--nx-ease-out), color var(--nx-t-hover) var(--nx-ease-out), border-color var(--nx-t-hover) var(--nx-ease-out);
+  transition: transform var(--nx-t-release) var(--nx-ease-out), background-color var(--nx-t-hover) var(--nx-ease-out), color var(--nx-t-hover) var(--nx-ease-out), border-color var(--nx-t-hover) var(--nx-ease-out);
   -webkit-tap-highlight-color: transparent;
 }
 .cw-press:active:not(:disabled) {
   transform: scale(calc(1 - 0.035 * var(--nx-shift)));
-  transition-duration: 90ms, 60ms, 60ms, 60ms;
+  transition-duration: var(--nx-t-press), 60ms, 60ms, 60ms;
   transition-timing-function: var(--nx-ease-out);
 }
 
@@ -315,7 +313,7 @@ body {
   from { transform: scale(1.9); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
-.cw-settle { animation: cw-settle 420ms var(--cw-ease-settle) both; }
+.cw-settle { animation: cw-settle 420ms var(--nx-ease-out) both; }
 
 /* Loading words appear only after 400 ms of real waiting, so a fast answer never flickers */
 @keyframes cw-late {

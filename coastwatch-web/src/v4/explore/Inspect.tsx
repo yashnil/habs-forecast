@@ -31,6 +31,7 @@ import { contextWords, forecastContext, outsideLabel, outsideWords, type Forecas
 import { estimateRead, sstRead, outlookRead, withBayCaveat } from "@/components/map/HoverReadout";
 import { readHome } from "@/v4/coast/home";
 import { satelliteLatest } from "@/lib/layers";
+import { ContourLoader } from "@/v4/ui/ContourLoader";
 
 type Ctx = {
   manifest: Manifest;
@@ -232,9 +233,7 @@ export function ClaimRow({ c, graph, stations, onSelect, fallback = null, compac
 function Loading({ what }: { what: string }) {
   return (
     <p className="nx-late flex items-center gap-2 text-[14px] text-n-ink-2" role="status">
-      <svg width="28" height="10" viewBox="0 0 28 10" aria-hidden className="text-n-accent">
-        <path className="nx-sweep" d="M1 6c4-4 7-4 11 0s7 4 11 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      </svg>
+      <ContourLoader size="inline" className="h-4 w-7 shrink-0 text-n-accent" />
       {what}
     </p>
   );

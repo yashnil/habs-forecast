@@ -1,6 +1,7 @@
 "use client";
 
 import { FORECAST_RASTER_OPACITY } from "@/lib/palette";
+import { NEAR_MS, SHORT_MS, cameraTier } from "@/lib/camera";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import { PMTiles, Protocol } from "pmtiles";
@@ -100,8 +101,6 @@ type Props = {
   gap?: GeoJSON.FeatureCollection | null;
   /** the HAB shore stations (lib/provenance stationFeatures), drawn from z 9.5 with their last sample date */
   stations?: GeoJSON.FeatureCollection | null;
-  /** fade new data rasters in (switching layer); time steps always cut, never cross-fade */
-  fade?: boolean;
   /**
    * My Coast: where each fact was obtained. Features carry properties.kind: "target" (the chosen
    * waters), "station" (a monitoring station, with name), "cell" (a C-HARM cell with a value) and
@@ -174,13 +173,17 @@ function addArrows(m: MlMap) {
 // (verified on PR #79: readouts identical, gaps kept, satellite tiles unchanged). The forecast is drawn translucent over the
 // relief (docs/coastwatch/v2/carto, T1): the seafloor stays legible under a field of 3 km cells,
 // and the display classes were built for that opacity on the dark sea.
-const RASTER_PAINT = { "raster-opacity": 1, "raster-resampling": "nearest", "raster-fade-duration": 0 } as const;
+// v9: every data raster, observations included, fades its tiles in over 220 ms (--nx-t-layer) when the
+// reader switches layer: the new layer's tiles come up over the basemap (the old source is removed, so two
+// families never blend and no value is interpolated). A new day of the same layer cuts: its old day is
+// removed at once, so a fade would dip to the bare sea on every step (and on every frame of playback).
+// Reduced motion: a cut.
+export const RASTER_FADE_MS = 220;
+const RASTER_PAINT = { "raster-opacity": 1, "raster-resampling": "nearest", "raster-fade-duration": RASTER_FADE_MS } as const;
 /** v8: data rasters are smoothed below this zoom and nearest-sampled (true cells) from it (see the effect in MapCanvas). */
 const SHARP_ZOOM = 8;
 const DATA_RASTERS = ["forecast-raster", "outlook-raster", "sst-raster", "satellite-raster", "estimate-raster", "satellite-age-raster"];
-const RASTER_FADE = { ...RASTER_PAINT, "raster-fade-duration": 220 } as const;
 const FORECAST_RASTER = { ...RASTER_PAINT, "raster-opacity": FORECAST_RASTER_OPACITY } as const;
-const FORECAST_FADE = { ...FORECAST_RASTER, "raster-fade-duration": 220 } as const;
 // a mild fade only: any lower and the no-value hatch under the field shows through valued cells,
 // which would read as "no value" (the cells' outlines and printed values carry harbour zoom instead)
 const V4_FORECAST_OPACITY = ["interpolate", ["linear"], ["zoom"], 9, FORECAST_RASTER_OPACITY, 12, 0.6] as unknown as number;
@@ -240,14 +243,25 @@ export default function MapCanvas(p: Props) {
   const { onPort, onPoint, onStation } = p;
   const [map, setMap] = useState<MlMap | null>(null);
   const hasRaster = !!(p.forecast || p.satellite || p.satelliteAge || p.outlook || p.estimate || p.sst);
-  // the fade is decided once per raster, when it first appears (a layer switch fades in; a new
-  // time step cuts) and kept for that raster's life, so a later re-render never changes it
-  const fadeOf = useRef(new globalThis.Map<string, boolean>());
-  const paintFor = (id: string | undefined, forecast = false) => {
-    if (!id) return forecast ? FORECAST_RASTER : RASTER_PAINT;
-    if (!fadeOf.current.has(id)) fadeOf.current.set(id, !!p.fade);
-    const fade = fadeOf.current.get(id);
-    const paint = forecast ? (fade ? FORECAST_FADE : FORECAST_RASTER) : fade ? RASTER_FADE : RASTER_PAINT;
+  // read once for the map's life (reduced motion: data rasters cut instead of fading)
+  const [fadeMs] = useState(() => (window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : RASTER_FADE_MS));
+  // decided once per source, when it first appears, and kept for its life: it fades in when its raster layer
+  // was not on the map in the last render (a layer switch), and cuts when it replaces the same layer (a new day)
+  const shownLayers = useRef(new Set<string>());
+  const rendering = new Set<string>();
+  const fadeOf = useRef(new globalThis.Map<string, number>());
+  useEffect(() => {
+    shownLayers.current = new Set(rendering);
+  });
+  const fadeFor = (layer: string, key: string) => {
+    rendering.add(layer);
+    if (!fadeOf.current.has(key)) fadeOf.current.set(key, shownLayers.current.has(layer) ? 0 : fadeMs);
+    return fadeOf.current.get(key)!;
+  };
+  const paintFor = (layer: string, key: string, forecast = false) => {
+    const base = forecast ? FORECAST_RASTER : RASTER_PAINT;
+    const ms = fadeFor(layer, key);
+    const paint = ms === RASTER_FADE_MS ? base : { ...base, "raster-fade-duration": ms };
     // v4: the forecast recedes as the reader zooms to a harbour, so the coast and the harbour read
     // through 3 km cells (outlined and labelled with their values from z 10.5); values unchanged
     return forecast && p.chrome === "none" ? { ...paint, "raster-opacity": V4_FORECAST_OPACITY } : paint;
@@ -357,6 +371,13 @@ export default function MapCanvas(p: Props) {
   // The no-data hatch shows only under a data field that has arrived: with currents alone (or
   // nothing) there is no "value" for a gap to be confused with. The bundled-water layers show
   // only while the basemap is slow or down.
+  // v9: the depth-tinted seafloor stays until the first data field has drawn, then cross-fades to it (it
+  // dropped to the bare relief for the second the new tiles took); once a field has shown, later swaps
+  // (a day step, another layer) keep it off, so playback never pulses through it
+  const fieldShown = useRef(false);
+  if (!hasRaster) fieldShown.current = false;
+  else if (fieldReady) fieldShown.current = true;
+  const tintOff = hasRaster && fieldShown.current;
   useEffect(() => {
     if (!map) return;
     // idempotent: every style change fires "styledata" again
@@ -377,7 +398,7 @@ export default function MapCanvas(p: Props) {
       // depth-tinted seafloor only when no data colours are on the map: a cross-fade, not a cut
       for (const id of TINT_LAYER_IDS) {
         if (!map.getLayer(id)) continue;
-        const o = hasRaster ? 0 : 1;
+        const o = tintOff ? 0 : 1;
         if (map.getPaintProperty(id, "raster-opacity") !== o) map.setPaintProperty(id, "raster-opacity", o);
       }
     };
@@ -386,7 +407,7 @@ export default function MapCanvas(p: Props) {
     return () => {
       map.off("styledata", apply);
     };
-  }, [map, hasRaster, fieldReady, showFallback, tintOnly]);
+  }, [map, hasRaster, fieldReady, showFallback, tintOnly, tintOff]);
   const { onHover } = p;
   // a harbour or station under the pointer: its name in a small tip at its mark, a pointer cursor,
   // and no value readout over it (fine pointers only; set only when the mark changes, not per move)
@@ -477,9 +498,10 @@ export default function MapCanvas(p: Props) {
       if (onStationPick) {
         const cl = e.features?.find((x) => x.layer.id === "map-station-cluster");
         if (cl && cl.geometry.type === "Point") {
-          // a cluster opens up: zoom in on it, select nothing
+          // a cluster opens up: zoom in on it, select nothing (a near journey; reduced motion jumps)
           const [lon, lat] = cl.geometry.coordinates as [number, number];
-          e.target.easeTo({ center: [lon, lat], zoom: Math.min(10, e.target.getZoom() + 2), duration: 450 });
+          const tier = cameraTier();
+          e.target.easeTo({ center: [lon, lat], zoom: Math.min(10, e.target.getZoom() + 2), duration: tier === "none" ? 0 : tier === "short" ? SHORT_MS : NEAR_MS });
           return;
         }
         const ms = e.features?.find((x) => x.layer.id === "map-station" || x.layer.id === "map-station-point");
@@ -588,7 +610,7 @@ export default function MapCanvas(p: Props) {
 
       {p.forecast && forecastTiles && (
         <Source key={`${p.forecast.id}-grid-${retry}`} id="forecast" type="raster" tiles={[forecastTiles.template]} tileSize={GRID_TILE_SIZE} bounds={forecastTiles.bounds} minzoom={0} maxzoom={13}>
-          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id, true)} />
+          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor("forecast-raster", `${p.forecast.id}-grid-${retry}`, true)} />
         </Source>
       )}
       {/* v7: the model's western edge, drawn and named, so the ocean beyond NOAA's grid reads as outside
@@ -611,7 +633,7 @@ export default function MapCanvas(p: Props) {
       )}
       {p.forecast && !forecastTiles && (
         <Source key={`${p.forecast.id}-${retry}`} id="forecast" type="image" url={p.forecast.url} coordinates={p.forecast.corners as [[number, number], [number, number], [number, number], [number, number]]}>
-          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id, true)} />
+          <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor("forecast-raster", `${p.forecast.id}-${retry}`, true)} />
         </Source>
       )}
       {p.forecast && p.cellEdges && (
@@ -641,12 +663,12 @@ export default function MapCanvas(p: Props) {
       )}
       {p.outlook && outlookTiles && (
         <Source key={`${p.outlook.id}-${retry}`} id="outlook" type="raster" tiles={[outlookTiles.template]} tileSize={GRID_TILE_SIZE} bounds={outlookTiles.bounds} minzoom={0} maxzoom={13}>
-          <Layer id="outlook-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.outlook?.id)} />
+          <Layer id="outlook-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor("outlook-raster", `${p.outlook.id}-${retry}`)} />
         </Source>
       )}
       {p.sst && sstTiles && (
         <Source key={`${p.sst.id}-${retry}`} id="sst" type="raster" tiles={[sstTiles.template]} tileSize={GRID_TILE_SIZE} bounds={sstTiles.bounds} minzoom={0} maxzoom={13}>
-          <Layer id="sst-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.sst?.id)} />
+          <Layer id="sst-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor("sst-raster", `${p.sst.id}-${retry}`)} />
         </Source>
       )}
       {p.satellite && (
@@ -660,23 +682,23 @@ export default function MapCanvas(p: Props) {
           maxzoom={p.satellite.maxzoom}
           bounds={p.satellite.bounds as [number, number, number, number] | undefined}
         >
-          <Layer id="satellite-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.satellite?.id)} />
+          <Layer id="satellite-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor("satellite-raster", `${p.satellite.id}-${retry}`)} />
         </Source>
       )}
       {/* the estimate lies under the observed pixels (added after them, placed before them): an observation is never covered by an estimate */}
       {p.estimate && estimateTiles && (
         <Source key={`${p.estimate.id}-${retry}`} id="estimate" type="raster" tiles={[estimateTiles.template]} tileSize={GRID_TILE_SIZE} bounds={estimateTiles.bounds} minzoom={0} maxzoom={13}>
-          <Layer id="estimate-raster" type="raster" beforeId={p.satellite ? "satellite-raster" : BEFORE_OVERLAY_ID} paint={paintFor(p.estimate?.id)} />
+          <Layer id="estimate-raster" type="raster" beforeId={p.satellite ? "satellite-raster" : BEFORE_OVERLAY_ID} paint={paintFor("estimate-raster", `${p.estimate.id}-${retry}`)} />
         </Source>
       )}
       {p.satelliteAge && (
         <Source key={`${p.satelliteAge.id}-${retry}`} id="satellite-age" type="raster" tiles={[indexedTiles(p.satelliteAge.template, p.satelliteAge.indexUrl)]} tileSize={256} minzoom={p.satelliteAge.minzoom} maxzoom={p.satelliteAge.maxzoom} bounds={p.satelliteAge.bounds as [number, number, number, number] | undefined}>
-          <Layer id="satellite-age-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.satelliteAge?.id)} />
+          <Layer id="satellite-age-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor("satellite-age-raster", `${p.satelliteAge.id}-${retry}`)} />
         </Source>
       )}
       {p.imagery && (
         <Source key={p.imagery.id} id="observation" type="raster" tiles={[p.imagery.template]} tileSize={256} maxzoom={p.imagery.maxzoom}>
-          <Layer id="observation-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={{ "raster-opacity": 1, "raster-fade-duration": 0 }} />
+          <Layer id="observation-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={{ "raster-opacity": 1, "raster-fade-duration": fadeFor("observation-raster", p.imagery.id) }} />
         </Source>
       )}
 

@@ -106,32 +106,32 @@
   --nx-font-data: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
   /* motion: short, ease-out, interruptible; frequent map operations are instant. Exits are about a
-     third faster than entrances and ease in. Data values never animate (src/v4/motion.ts). */
-  --nx-t-press: 110ms;
+     third faster than entrances and ease in. Data values never animate (src/v4/motion.ts). Nothing
+     overshoots except under a finger (the sheet's drag release and the time pill). */
+  --nx-t-press: 90ms;
   --nx-t-hover: 150ms;
+  --nx-t-ring: 200ms;
+  --nx-t-release: 220ms;
   --nx-t-pop: 180ms;
   --nx-t-pop-exit: 120ms;
   --nx-t-panel: 240ms;
   --nx-t-panel-exit: 160ms;
-  --nx-t-page: 260ms;
+  /* a data raster's cross-fade (a legend's swap is 120 ms) */
+  --nx-t-layer: 220ms;
+  /* a reading page's content fades in (opacity only, never the map canvas) */
+  --nx-t-page: 200ms;
   --nx-t-sheet: 460ms;
   --nx-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --nx-ease-in: cubic-bezier(0.4, 0, 1, 1);
   --nx-ease-move: cubic-bezier(0.77, 0, 0.175, 1);
   --nx-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-  /* a soft spring (one small overshoot, settled by 85 %) for releases and settles; a cubic fallback
-     where linear() easing is not supported */
-  --nx-ease-spring: cubic-bezier(0.34, 1.32, 0.64, 1);
-  --nx-t-release: 320ms;
-  --nx-t-ring: 200ms;
+  /* the one spring (src/v4/motion.ts SPRING: bounce 0.08, so it settles without a visible overshoot),
+     for the sheet's drag release only; an ease-out where linear() easing is not supported */
+  --nx-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
   /* hover and press tints laid over whatever surface a control has (a gradient layer, so the
      control's own background colour is untouched): this much of the environment's ink */
   --nx-tint-hover: 6%;
   --nx-tint-press: 10%;
-  /* older names, kept for the components that use them */
-  --nx-ease-in-out: var(--nx-ease-move);
-  --nx-t-quick: var(--nx-t-press);
-  --nx-t-base: var(--nx-t-pop);
   /* movement multiplier: 1, or 0 under reduced motion (fades stay, nothing travels) */
   --nx-shift: 1;
 
@@ -144,7 +144,8 @@
 
 @supports (transition-timing-function: linear(0, 1)) {
   :root {
-    --nx-ease-spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017 19.4%, 1.067, 1.099 24.3%, 1.108 26%, 1.105, 1.094 30.2%, 1.035 37.4%, 1.006 41.8%, 0.991 46.7%, 0.996 61.1%, 1);
+    /* sampled from SPRING (visualDuration 0.32 s, bounce 0.08) over its 385 ms settle: peak 1.0006 */
+    --nx-ease-spring: linear(0, 0.061, 0.193, 0.345, 0.489, 0.615, 0.718, 0.799, 0.86, 0.904, 0.937, 0.959, 0.974, 0.985, 0.991, 0.995, 1);
   }
 }
 /* the hover tint is a registered colour, so it eases instead of snapping */
@@ -287,23 +288,24 @@
 /* ---- interaction: one feel for every control ----
    Every control in a v4 surface eases its colours, borders and focus ring (zero specificity, so any
    component's own transition wins). The shared classes add the physical part: .nx-press gives under
-   the finger quickly and springs back; .nx-tint lays a hover/press tint over any surface; .nx-lift
-   rises a pixel under a mouse; .nx-focus's ring glides in from 4 px out. No blur, no heavy shadow. */
+   the finger quickly and eases back, with no overshoot; .nx-tint lays a hover/press tint over any
+   surface; .nx-lift rises a pixel under a mouse; .nx-focus's ring eases in from 4 px out. No blur,
+   no heavy shadow. */
 :where(.env-chart, .env-instrument) :where(button, a[href], [role="button"], [role="tab"], [role="option"], [role="menuitem"], [role="switch"], summary, select, input, textarea) {
   transition-property: color, background-color, border-color, outline-color, outline-offset, box-shadow, opacity, --nx-tint;
   transition-duration: var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-ring), var(--nx-t-ring), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover);
-  transition-timing-function: var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-spring), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out);
+  transition-timing-function: var(--nx-ease-out);
 }
 .nx-press {
   transition-property: transform, background-color, color, border-color, box-shadow, --nx-tint, outline-color, outline-offset;
   transition-duration: var(--nx-t-release), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-ring), var(--nx-t-ring);
-  transition-timing-function: var(--nx-ease-spring), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-spring);
+  transition-timing-function: var(--nx-ease-out);
   -webkit-tap-highlight-color: transparent;
 }
-/* pressing is quick and direct; letting go springs back (the duration above) */
+/* pressing is quick and direct (scale .965 in 90 ms); letting go eases back (the duration above) */
 .nx-press:active:not(:disabled):not([aria-disabled="true"]) {
   transform: scale(calc(1 - 0.035 * var(--nx-shift)));
-  transition-duration: 90ms, 60ms, 60ms, 60ms, 60ms, 60ms, var(--nx-t-ring), var(--nx-t-ring);
+  transition-duration: var(--nx-t-press), 60ms, 60ms, 60ms, 60ms, 60ms, var(--nx-t-ring), var(--nx-t-ring);
   transition-timing-function: var(--nx-ease-out);
 }
 /* a tint over any surface: hover (mouse only) and press */
@@ -321,7 +323,7 @@
 .nx-press:active:not(:disabled):not([aria-disabled="true"]) {
   --nx-tint: color-mix(in srgb, var(--nx-ink) var(--nx-tint-press), transparent);
 }
-/* the focus ring glides in (4 px out to 2 px, with a little spring) instead of snapping */
+/* the focus ring eases in (4 px out to 2 px) instead of snapping */
 .nx-focus {
   outline: 2px solid transparent;
   outline-offset: 4px;
@@ -329,7 +331,7 @@
 .nx-focus:not(.nx-press) {
   transition-property: outline-color, outline-offset, transform, background-color, color, border-color, --nx-tint;
   transition-duration: var(--nx-t-ring), var(--nx-t-ring), var(--nx-t-release), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover);
-  transition-timing-function: var(--nx-ease-out), var(--nx-ease-spring), var(--nx-ease-spring), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out);
+  transition-timing-function: var(--nx-ease-out);
 }
 .nx-focus:focus-visible {
   outline: 2px solid var(--nx-accent);
@@ -349,7 +351,7 @@
   .nx-lift {
     transition-property: transform, border-color, background-color, box-shadow, outline-color, outline-offset, --nx-tint;
     transition-duration: var(--nx-t-release), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-ring), var(--nx-t-ring), var(--nx-t-hover);
-    transition-timing-function: var(--nx-ease-spring), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-spring), var(--nx-ease-out);
+    transition-timing-function: var(--nx-ease-out);
   }
   .nx-lift:hover {
     transform: translateY(calc(-2px * var(--nx-shift)));
@@ -374,7 +376,7 @@
   to { opacity: 1; }
 }
 @keyframes nx-panel {
-  from { opacity: 0; transform: translateX(calc(16px * var(--nx-shift))); }
+  from { opacity: 0; transform: translateX(calc(12px * var(--nx-shift))); }
   to { opacity: 1; transform: none; }
 }
 .nx-rise { animation: nx-rise var(--nx-t-pop) var(--nx-ease-out) both; }
@@ -414,26 +416,41 @@
 /* loading words and placeholders appear only after 400 ms of real waiting (a fast answer never flickers) */
 .nx-late { animation: nx-fade 200ms var(--nx-ease-out) 400ms both; }
 
-/* the loading contour: one slow sweep along a bathymetric line, only while something loads */
-@keyframes nx-sweep {
-  from { stroke-dashoffset: 240; }
-  to { stroke-dashoffset: 0; }
+/* the loading contour (src/v4/ui/ContourLoader.tsx): one real isobath whose soundings join into a
+   line and part again, 1.6 s a cycle, only while something loads. Dots and their spacing are in the
+   line's own units (--nx-sound, 2.4 by default). Reduced motion: the line, still. */
+@keyframes nx-sound {
+  0%, 100% { stroke-dasharray: 0 var(--nx-sound, 2.4); }
+  50% { stroke-dasharray: var(--nx-sound, 2.4) 0; }
 }
-.nx-sweep { stroke-dasharray: 60 180; animation: nx-sweep 1.6s linear infinite; }
-/* contour lines draw themselves in once (pathLength=1), staggered by --i */
+.nx-sound { animation: nx-sound 1.6s var(--nx-ease-move) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .nx-sound { animation: none; }
+}
+/* a line draws itself in once (pathLength=1, stroke-dasharray 1): a chart, My Coast's coast, a check */
 @keyframes nx-draw {
   from { stroke-dashoffset: 1; }
   to { stroke-dashoffset: 0; }
-}
-.nx-draw {
-  stroke-dasharray: 1;
-  animation: nx-draw 600ms var(--nx-ease-out) calc(var(--i, 0) * 60ms) both;
 }
 /* a chart's line draws once, the first time it is seen; its points follow */
 .nx-chart-wait .nx-chart-line { stroke-dasharray: 1; stroke-dashoffset: 1; }
 .nx-chart-wait .nx-chart-marks { opacity: 0; }
 .nx-chart-draw .nx-chart-line { stroke-dasharray: 1; animation: nx-draw 500ms var(--nx-ease-out) both; }
 .nx-chart-draw .nx-chart-marks { animation: nx-fade 300ms var(--nx-ease-out) 300ms both; }
+
+/* a field pack saved (OfflinePanel): the full progress bar gathers into a 20 px circle (240 ms), the
+   check strokes in (200 ms), then the words fade in (180 ms); only right after a download in view,
+   otherwise the saved state is simply drawn. Reduced motion: circle and check at once, words fade. */
+@keyframes nx-gather {
+  from { inline-size: 100%; block-size: 8px; }
+}
+.nx-saved-play .nx-saved-mark { animation: nx-gather 240ms var(--nx-ease-move) both; }
+.nx-saved-play .nx-saved-tick { stroke-dasharray: 1; animation: nx-draw 200ms var(--nx-ease-out) 240ms both; }
+.nx-saved-play .nx-saved-words { animation: nx-fade 180ms var(--nx-ease-out) 440ms both; }
+@media (prefers-reduced-motion: reduce) {
+  .nx-saved-play .nx-saved-mark, .nx-saved-play .nx-saved-tick { animation: none; }
+  .nx-saved-play .nx-saved-words { animation-delay: 0ms; }
+}
 
 /* a disclosure opens by height (grid rows 0fr to 1fr) and its body fades in just after */
 .nx-fold {
@@ -642,7 +659,6 @@ html.nx-splash-land .nx-splash {
    screen is a still mark that fades away in 150 ms */
 @media (prefers-reduced-motion: reduce) {
   :root { --nx-shift: 0; }
-  .nx-sweep { animation: none; stroke-dasharray: none; }
   .nx-draw, .nx-chart-draw .nx-chart-line, .nx-chart-draw .nx-chart-marks { animation: none; }
   .nx-chart-wait .nx-chart-line { stroke-dashoffset: 0; }
   .nx-chart-wait .nx-chart-marks { opacity: 1; }
@@ -838,10 +854,10 @@ html[data-daylight] .env-instrument .nx-select {
     #061016;
   box-shadow: inset 0 1px 0 rgba(214, 240, 248, 0.06), 0 20px 40px -24px rgba(6, 16, 22, 0.55);
 }
-/* the coast draws once, as the opening screen's isobaths do */
+/* the coast draws once, briefly (a reading page, not a splash) */
 .nx-landing-coast {
   stroke-dasharray: 1 1;
-  animation: nx-splash-draw 1400ms cubic-bezier(0.45, 0.05, 0.25, 1) 120ms both;
+  animation: nx-draw 900ms var(--nx-ease-out) both;
 }
 @media (prefers-reduced-motion: reduce) {
   .nx-landing-coast { animation: none; }
