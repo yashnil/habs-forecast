@@ -142,7 +142,9 @@ export const BASEMAP_STYLE: StyleSpecification = {
     },
     // no data: fine dots on the water, shown by MapCanvas only under a raster data layer
     // (image "nodata", registered by MapCanvas); the data rasters cover them where a value exists
-    { id: NODATA_LAYER_ID, type: "fill", source: "omt", "source-layer": "water", layout: { visibility: "none" }, paint: { "fill-pattern": "nodata" } },
+    // v8: over a whole ocean at state scale the hatch was the loudest thing on the map; it is half as
+    // strong there and full strength from harbour zoom, where a gap beside a value matters most
+    { id: NODATA_LAYER_ID, type: "fill", source: "omt", "source-layer": "water", layout: { visibility: "none" }, paint: { "fill-pattern": "nodata", "fill-opacity": ["interpolate", ["linear"], ["zoom"], 5, 0.5, 9, 1] } },
     {
       id: NODATA_FALLBACK_LAYER_ID,
       type: "fill",
