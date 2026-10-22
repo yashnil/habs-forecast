@@ -167,8 +167,11 @@ function addArrows(m: MlMap) {
     if (!m.hasImage(`cw-arrow-${i}`)) m.addImage(`cw-arrow-${i}`, arrowImage(len), { pixelRatio: 2 });
   });
 }
-// Every data raster is nearest-sampled: a pixel is a real source cell, and the legend colours are
-// the colours on the map (design reset rev. 2, §5.1). The forecast is drawn translucent over the
+// Data rasters start nearest-sampled (a pixel is a real source cell, and the legend colours are the
+// colours on the map: design reset rev. 2, §5.1). v8 relaxes that below SHARP_ZOOM only, where the GPU
+// blends neighbouring texels of each tile when it magnifies them (the effect further down): display
+// only, about one texel wide; the tiles themselves, every readout and every legend value are untouched
+// (verified on PR #79: readouts identical, gaps kept, satellite tiles unchanged). The forecast is drawn translucent over the
 // relief (docs/coastwatch/v2/carto, T1): the seafloor stays legible under a field of 3 km cells,
 // and the display classes were built for that opacity on the dark sea.
 const RASTER_PAINT = { "raster-opacity": 1, "raster-resampling": "nearest", "raster-fade-duration": 0 } as const;

@@ -8,7 +8,8 @@ import { coastHref, portPlaces, resolvePlace, sitePlaces, type Audience, type Co
 import { EXAMPLES } from "@/content/coast";
 import { Icon } from "@/v4/ui/Icon";
 import { homeHref, type HomePort } from "./home";
-import { compass, stationName, type Conditions } from "@/lib/conditions";
+import { compass } from "@/lib/conditions";
+import { placeReadings, type Reading as Obs } from "@/lib/placeReadings";
 import { useConditions } from "@/v4/explore/reads";
 import { relTime } from "@/v4/ui/time";
 
@@ -55,7 +56,7 @@ export function Landing({ ports, home, audience, unknownKey }: { ports: PortsCol
           <h2 id="coast-start-h" className="text-[17px] font-semibold text-n-ink">
             Start with
           </h2>
-          <p className="text-[13px] text-n-ink-3">Measured now, from the nearest buoy and shore station</p>
+          <p className="text-[13px] text-n-ink-3">Latest measurements, from the harbour tide gauge and the nearest buoy, each dated</p>
         </div>
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="coast-landing">
           {starters.map((p) => (
@@ -68,19 +69,6 @@ export function Landing({ ports, home, audience, unknownKey }: { ports: PortsCol
 }
 
 const C_TO_F = (c: number) => (c * 9) / 5 + 32;
-
-/** What is measured at a place now: water temperature (in the harbour, else the shore station, else the buoy), waves and wind from the buoy. */
-function readings(c: Conditions | null) {
-  if (!c) return null;
-  const buoy = c.buoy.status === "ok" ? c.buoy : null;
-  const harbor = c.harbor?.status === "ok" && !c.harbor.data.stale ? c.harbor : null;
-  const water = harbor ? { c: harbor.data.waterC.value, at: harbor.data.waterC.at, from: harbor.station?.name ?? "harbour gauge" } : buoy?.data.waterC ? { c: buoy.data.waterC.value, at: buoy.data.waterC.at, from: buoy.station?.name ?? "buoy" } : null;
-  const waves = buoy?.data.waveFt ? { ft: buoy.data.waveFt.value, s: buoy.data.periodS?.value ?? null, at: buoy.data.waveFt.at } : null;
-  const wind = buoy?.data.windKt ? { kt: buoy.data.windKt.value, dir: buoy.data.windDirDeg?.value ?? null, at: buoy.data.windKt.at } : null;
-  const at = [water?.at, waves?.at, wind?.at].filter(Boolean).sort().pop() ?? null;
-  const station = buoy?.station ? `${stationName(buoy.station.name)} buoy, ${Math.round(buoy.station.km)} km` : null;
-  return { water, waves, wind, at, station };
-}
 
 function PlaceCard({ place, href, home, hot, onHot }: { place: CoastPlace; href: string; home: boolean; hot: boolean; onHot: (k: string | null) => void }) {
   const ref = useRef<HTMLLIElement | null>(null);
@@ -96,7 +84,7 @@ function PlaceCard({ place, href, home, hot, onHot }: { place: CoastPlace; href:
   }, [seen]);
   const [r] = useConditions(seen ? { lat: place.lat, lon: place.lon } : null);
   const now = useNow();
-  const v = r?.status === "ready" ? readings(r.data) : null;
+  const v = r?.status === "ready" ? placeReadings(r.data) : null;
   const loading = !r || r.status === "loading";
   return (
     <li ref={ref} onPointerEnter={() => onHot(place.key)} onPointerLeave={() => onHot(null)}>
@@ -122,34 +110,62 @@ function PlaceCard({ place, href, home, hot, onHot }: { place: CoastPlace; href:
           <Icon name="chevronRight" className="mt-1 h-4 w-4 text-n-ink-3 transition-transform group-hover:translate-x-0.5 group-hover:text-n-accent" />
         </span>
         <span className="grid grid-cols-3 gap-2" data-testid="landing-readings">
-          <Reading label="Water" loading={loading} value={v?.water ? `${Math.round(C_TO_F(v.water.c))}` : null} unit="°F" />
-          <Reading label="Waves" loading={loading} value={v?.waves ? v.waves.ft.toFixed(1) : null} unit={v?.waves?.s ? `ft · ${Math.round(v.waves.s)} s` : "ft"} />
-          <Reading label="Wind" loading={loading} value={v?.wind ? `${Math.round(v.wind.kt)}` : null} unit={v?.wind ? `kt${v.wind.dir != null ? ` ${compass(v.wind.dir)}` : ""}` : "kt"} dir={v?.wind?.dir ?? null} />
+          <Reading label="Water" testId="landing-water" loading={loading} r={v?.water ?? null} now={now} value={(w) => ({ v: `${Math.round(C_TO_F(w.c))}`, unit: "°F" })} />
+          <Reading label="Waves" testId="landing-waves" loading={loading} r={v?.waves ?? null} now={now} value={(w) => ({ v: w.ft.toFixed(1), unit: w.s ? `ft · ${Math.round(w.s)} s` : "ft" })} />
+          <Reading label="Wind" testId="landing-wind" loading={loading} r={v?.wind ?? null} now={now} value={(w) => ({ v: `${Math.round(w.kt)}`, unit: `kt${w.dir != null ? ` ${compass(w.dir)}` : ""}`, dir: w.dir })} />
         </span>
-        <span className="mt-auto block min-h-[17px] truncate text-[12.5px] leading-[17px] text-n-ink-3">
-          {loading ? "\u00a0" : v && (v.water || v.waves || v.wind) ? `Measured${v.at && now ? ` ${relTime(v.at, now)}` : ""}${v.station ? ` · ${v.station}` : ""}` : "No reading near here just now"}
+        {/* each instrument named once; every reading above carries its own age and which of these measured it */}
+        <span className="mt-auto min-h-[17px] text-[12.5px] leading-[17px] text-n-ink-3" data-testid="landing-sources">
+          {loading ? "\u00a0" : v && v.sources.length ? `Measured by ${v.sources.map((x) => x.full).join(" · ")}` : "No reading near here just now"}
         </span>
       </Link>
     </li>
   );
 }
 
-function Reading({ label, value, unit, loading, dir = null }: { label: string; value: string | null; unit: string; loading: boolean; dir?: number | null }) {
+function Reading<T>({
+  label,
+  r,
+  value,
+  loading,
+  now,
+  testId,
+}: {
+  label: string;
+  r: Obs<T> | null;
+  value: (r: T) => { v: string; unit: string; dir?: number | null };
+  loading: boolean;
+  now: Date | null;
+  testId: string;
+}) {
+  const shown = r?.ok ? value(r as unknown as T) : null;
   return (
-    <span className="min-w-0">
+    <span className="min-w-0" data-testid={testId}>
       <span className="block text-[12.5px] leading-4 text-n-ink-3">{label}</span>
-      {loading ? (
+      {loading || !r ? (
         <span aria-hidden className="nx-skeleton mt-1.5 block h-6 w-12 rounded-md" />
-      ) : value ? (
-        <span className="mt-0.5 flex items-baseline gap-1 whitespace-nowrap">
-          {/* the arrow points where the wind blows toward (from its direction, plus 180 degrees) */}
-          {dir != null && <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 self-center text-n-ink-2" style={{ transform: `rotate(${dir + 180}deg)` }}><path d="M6 1.5v9M2.8 4.7 6 1.5l3.2 3.2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-          <span className="text-[24px] font-semibold leading-7 tabular-nums tracking-[-0.01em] text-n-ink">{value}</span>
-          <span className="truncate text-[12.5px] text-n-ink-2">{unit}</span>
-        </span>
-      ) : (
-        <span className="mt-0.5 block text-[24px] leading-7 text-n-ink-3">–</span>
-      )}
+      ) : r.ok && shown ? (
+        <>
+          <span className="mt-0.5 flex items-baseline gap-1 whitespace-nowrap">
+            {/* the arrow points where the wind blows toward (from its direction, plus 180 degrees) */}
+            {shown.dir != null && <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 self-center text-n-ink-2" style={{ transform: `rotate(${shown.dir + 180}deg)` }}><path d="M6 1.5v9M2.8 4.7 6 1.5l3.2 3.2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+            <span className="text-[24px] font-semibold leading-7 tabular-nums tracking-[-0.01em] text-n-ink">{shown.v}</span>
+            <span className="truncate text-[12.5px] text-n-ink-2">{shown.unit}</span>
+          </span>
+          {/* this reading's own observation time and instrument, never the card's newest */}
+          <span className="block truncate text-[12px] leading-4 text-n-ink-2" data-testid={`${testId}-age`}>
+            {now ? relTime(r.at, now) : "\u00a0"}
+          </span>
+          <span className="block truncate text-[12px] leading-4 text-n-ink-3">{r.source.short}</span>
+        </>
+      ) : !r.ok ? (
+        <>
+          <span className="mt-0.5 flex min-h-7 items-center text-[14px] font-medium leading-[18px] text-n-ink-3" data-testid={`${testId}-none`}>
+            {r.why}
+          </span>
+          {r.source && <span className="block truncate text-[12px] leading-4 text-n-ink-3">{r.source.short}</span>}
+        </>
+      ) : null}
     </span>
   );
 }

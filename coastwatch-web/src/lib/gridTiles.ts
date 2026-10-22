@@ -14,7 +14,9 @@ import type { LayerArtifact, Palette, ValueGrid } from "@/generated/schema";
  * centre (nearest neighbour, the same rule as the pipeline), at the zoom being viewed, so a cell
  * edge is within half a screen pixel of its true position at every zoom. Values come from the
  * same published grid the readout uses, coloured with the layer's own published palette using
- * the pipeline's step rule; cells without a value stay transparent. Nothing is interpolated.
+ * the pipeline's step rule; cells without a value stay transparent. Nothing is interpolated in the
+ * tiles. (Below MapCanvas's SHARP_ZOOM the map blends neighbouring tile pixels as it magnifies them,
+ * a display filter only; from that zoom every screen pixel shows one of these tile pixels.)
  * Each tile is then clipped to the basemap's water (lib/waterMask), so a cell that straddles the
  * shore stops at the drawn coastline.
  */

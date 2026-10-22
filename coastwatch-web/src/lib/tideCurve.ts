@@ -61,3 +61,44 @@ export function tideNow(tides: Tide[], day: string, t: number): { rising: boolea
   // heading to a high is rising; heading to a low is falling
   return { rising: next.type === "H", next };
 }
+
+/** The width of one character of a turn label (11.5 px tabular figures), a little generous so a box never undercounts. */
+export const LABEL_CHAR_W = 6.6;
+
+/**
+ * Where a turn's label goes: centred on its turn (or held inside the strip at either end), unless its box
+ * would cross the now line; then wholly on the turn's own side of the line when it fits there. A label is
+ * never moved across the line, away from its turn: where it cannot clear the line it stays put, and the
+ * line passes behind its halo.
+ */
+export function placeLabel(tx: number, width: number, W: number, nowX: number | null): { lx: number; anchor: "start" | "middle" | "end" } {
+  const edge = 2;
+  const pref: { lx: number; anchor: "start" | "middle" | "end" } =
+    tx - width / 2 < edge ? { lx: Math.max(edge, tx - 6), anchor: "start" } : tx + width / 2 > W - edge ? { lx: Math.min(W - edge, tx + 6), anchor: "end" } : { lx: tx, anchor: "middle" };
+  if (nowX == null) return pref;
+  const box = (c: { lx: number; anchor: string }) => (c.anchor === "start" ? [c.lx, c.lx + width] : c.anchor === "end" ? [c.lx - width, c.lx] : [c.lx - width / 2, c.lx + width / 2]);
+  const clear = (c: { lx: number; anchor: string }) => {
+    const [a, b] = box(c);
+    return a >= edge && b <= W - edge && (b < nowX - 5 || a > nowX + 5);
+  };
+  if (clear(pref)) return pref;
+  const side = tx < nowX ? { lx: nowX - 6, anchor: "end" as const } : { lx: nowX + 6, anchor: "start" as const };
+  return clear(side) ? side : pref;
+}
+
+/** The now line's drawn stretches from y0 to y1, leaving a gap (2 px either side) wherever a label's box sits across it. */
+export function nowLine(nx: number, y0: number, y1: number, labels: { box: { l: number; r: number; top: number; bottom: number } }[]): [number, number][] {
+  const cuts = labels
+    .map((x) => x.box)
+    .filter((b) => b.l - 2 <= nx && nx <= b.r + 2)
+    .map((b) => [b.top - 2, b.bottom + 2] as [number, number])
+    .sort((a, b) => a[0] - b[0]);
+  const out: [number, number][] = [];
+  let from = y0;
+  for (const [a, b] of cuts) {
+    if (a > from) out.push([from, Math.min(a, y1)]);
+    from = Math.max(from, b);
+  }
+  if (from < y1) out.push([from, y1]);
+  return out;
+}

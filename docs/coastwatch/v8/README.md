@@ -43,6 +43,22 @@ Start with [after-coast-landing-d.jpg](screens/after-coast-landing-d.jpg), [afte
    - A/B compare (swipe);
    - structured fleet reports.
 
+## Fix pass (after the verification of 9f971d3)
+
+The verification ([PR comment](https://github.com/yashnil/habs-forecast/pull/79#issuecomment-6342755829)) showed statewide smoothing is display-only: readouts were identical in 18 of 18 probes. It also found these defects, now fixed:
+
+| Defect | Fix |
+|---|---|
+| Place cards credited one buoy for every reading; water could come from the harbour's tide gauge | Each reading names its own instrument (`lib/placeReadings`); the card's source line names each instrument once |
+| "Measured N min ago" was the newest of the three readings | Each reading shows its own observation time |
+| A bare "–" where there was no value | A short reason: "Not reported" (with the instrument), "No buoy nearby", "Buoy not reached" |
+| Briefing wind "SE 5, to 15 kt" folded a change of direction into the first one | `windSteps` keeps the forecaster's sequence: "SE 5 kt, then SW early this afternoon, then W 10–15 kt late"; the marine headline keeps its whole wind sentence |
+| On a phone the tide's low-water label ran through the now line | Labels move off the line onto their own side when they fit; otherwise the line stops short of the label |
+| Comments said every data raster is nearest-sampled | Corrected in `MapCanvas` and `gridTiles` |
+| With nothing current, Explore offered "the latest forecast" undated | It names the run's date, and also offers the newest satellite view with its date; both open marked old |
+
+Also fixed: map labels showed through the phone header pill (now solid).
+
 ## Testing
 
 - Unit (vitest): 573, including the new `tests/unit/tideCurve.test.ts`.

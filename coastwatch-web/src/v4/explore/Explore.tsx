@@ -686,19 +686,30 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
 
   const steps = timeSteps(manifest, active, now, derived);
   const hasTime = active.kind !== "none" && !!steps?.steps.length;
+  // nothing current: say so, then offer what there is, each dated and marked old, never shown as current
+  const satDate = opening?.reason === "nothing-current" && opening.satellite ? (opening.satellite.layer.composite?.newest_observed_date ?? opening.satellite.layer.time.observed_date ?? null) : null;
   const nothingCurrent =
     active.kind === "none" && opening?.reason === "nothing-current" ? (
       <div className="flex flex-col gap-2 border-l-2 border-n-stale pl-3 text-[13.5px] leading-snug text-n-ink-2" data-testid="nothing-current">
         <p className="font-semibold text-n-ink">No current forecast or recent satellite view</p>
         <p>
           {run ? `The newest C-HARM forecast was issued ${dayLabel(run.issued_date)}. ` : "No C-HARM forecast could be loaded. "}
-          {opening.satellite?.layer.time.observed_date ? `The newest satellite view is from ${dayLabel(opening.satellite.layer.composite?.newest_observed_date ?? opening.satellite.layer.time.observed_date)}. ` : "No recent satellite view was published. "}
+          {satDate ? `The newest satellite view is from ${dayLabel(satDate)}. ` : "No recent satellite view was published. "}
           The map shows the coast and seafloor only. This does not mean conditions are normal.
         </p>
-        {run && (
-          <button type="button" onClick={() => setChoiceRaw({ kind: "forecast", variable: "particulate_domoic", lead: firstLead < 0 ? 0 : firstLead })} className="nx-press nx-focus inline-flex min-h-11 w-fit items-center rounded-lg border border-n-line-strong px-3 font-semibold text-n-ink" data-testid="show-latest-forecast">
-            Show the latest forecast, marked out of date
-          </button>
+        {(run || (opening.satellite && satDate)) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {run && (
+              <button type="button" onClick={() => setChoiceRaw({ kind: "forecast", variable: "particulate_domoic", lead: firstLead < 0 ? 0 : firstLead })} className="nx-press nx-focus inline-flex min-h-11 w-fit items-center rounded-lg border border-n-line-strong px-3 font-semibold text-n-ink" data-testid="show-latest-forecast">
+                Show the {dayLabel(run.issued_date)} forecast, marked out of date
+              </button>
+            )}
+            {opening.satellite && satDate && (
+              <button type="button" onClick={() => setChoiceRaw({ kind: "satellite", product: opening.satellite!.product, day: null })} className="nx-press nx-focus inline-flex min-h-11 w-fit items-center rounded-lg px-3 font-semibold text-n-accent" data-testid="show-latest-satellite">
+                Satellite view, newest {dayLabel(satDate)}
+              </button>
+            )}
+          </div>
         )}
       </div>
     ) : null;

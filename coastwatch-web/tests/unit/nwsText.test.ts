@@ -16,7 +16,8 @@ describe("NWS coastal waters forecast text (tgftp)", () => {
     expect(r.forecast.periods[0].name).toBe("Tonight");
     expect(r.forecast.periods[0].text).toMatch(/^NW wind 10 to 15 kt, becoming NE 5 to 10 kt after midnight\. Seas 3 to 5 ft\./);
     expect(r.forecast.periods.map((p) => p.name)).toEqual(["Tonight", "Wed", "Wed Night", "Thu"]);
-    expect(marineHeadline(r.forecast.periods[0])).toBe("NW wind 10 to 15 kt · Seas 3 to 5 ft");
+    // the change of direction stays in the headline: "NW 10 to 15" alone would stand for the whole night
+    expect(marineHeadline(r.forecast.periods[0])).toBe("NW wind 10 to 15 kt, becoming NE 5 to 10 kt after midnight · Seas 3 to 5 ft");
     expect(r.headlines).toEqual([]);
   });
 

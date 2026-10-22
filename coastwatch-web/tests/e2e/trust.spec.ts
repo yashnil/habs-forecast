@@ -139,9 +139,21 @@ test.describe("freshness: old or failed data never reads as current", () => {
     await open(page, "/", "2026-10-14T20:00:00Z");
     await expect(page.getByTestId("layer-none")).toHaveAttribute("aria-checked", "true");
     await expect(page.getByTestId("nothing-current").first()).toContainText("does not mean conditions are normal");
+    // each alternative says its own date (v8 fix pass): never an old forecast offered as if current
+    await expect(page.getByTestId("show-latest-forecast").first()).toHaveText(/^Show the (\w+, )?\w+ \d{1,2}(, \d{4})? forecast, marked out of date$/);
     await page.getByTestId("show-latest-forecast").first().click();
     await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
     await expect(page.getByTestId("historical-note").or(page.getByTestId("stale-note")).first()).toBeVisible();
+  });
+
+  test("with nothing current, the newest satellite view is offered with its date, and opens marked as old", async ({ page }) => {
+    await open(page, "/", "2026-10-14T20:00:00Z");
+    const sat = page.getByTestId("show-latest-satellite").first();
+    await expect(sat).toHaveText(/^Satellite view, newest (\w+, )?\w+ \d{1,2}(, \d{4})?$/);
+    await sat.click();
+    await expect(page.getByTestId("layer-satellite")).toHaveAttribute("aria-checked", "true");
+    // marked old on the dock: "older than usual" or, past its policy, "out of date … does not describe current conditions"
+    await expect(page.getByTestId("historical-note").or(page.getByTestId("stale-note")).first()).toContainText(/Older than usual|out of date/);
   });
 
   test("satellite: the view says its sensor and real observation dates, and a stale view is marked", async ({ page }) => {

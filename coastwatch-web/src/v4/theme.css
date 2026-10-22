@@ -772,7 +772,8 @@ html[data-daylight] .env-instrument .nx-select {
   box-shadow: 0 1px 2px rgba(11, 24, 32, 0.05);
 }
 .env-instrument .nx-bar {
-  background: color-mix(in srgb, var(--nx-surface) 94%, transparent);
+  /* solid over the map: at 94% the place names under it showed through its numbers */
+  background: var(--nx-surface);
   box-shadow: var(--nx-shadow);
 }
 /* numbers in reading text: the interface face with tabular figures (an instrument readout, not code) */
