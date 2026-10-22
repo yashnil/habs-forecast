@@ -19,12 +19,13 @@ import { MARK_FIELD, MARK_HERO } from "@/v4/brand/mark.geometry";
  * (where it covers the map loading; never on a reading page, whose content is in its first HTML), never
  * on a saved copy reopened from a field pack (the service worker's mark, set before this script runs),
  * not for automated browsers unless a test asks with `nx-splash-force-v1`, not when `nx-splash-off-v1`
- * is set. A tap, click or key skips it at once, even before the app's script has loaded. v7: it sits
- * under the header (the workspaces, search and notices stay usable), the mark resolves by ~1 s, and
- * SplashGate (MotionRoot) steps it aside as soon as the mark has resolved and the map is ready; a CSS
- * animation removes it by 2.2 s even if no script runs (only a slow map is covered that long). A returning reader is never held.
+ * is set. A tap, click or key skips it at once, even before the app's script has loaded. v8: it sits
+ * under the header (the workspaces, search and notices stay usable) and plays in full, about five
+ * seconds: the canyon draws, a sounding ping leaves it, the mark and wordmark resolve; SplashGate
+ * (MotionRoot) then dives it into the map once the map is ready; a CSS animation removes it by 6 s even
+ * if no script runs. A returning reader is never held.
  */
-const EXIT_MS = 380;
+const EXIT_MS = 700;
 const SEEN = "nx-splash-seen-v2";
 const DECIDE = `(function(){try{var d=document.documentElement,l=localStorage;if(l.getItem("nx-splash-off-v1")==="1"||self.__NERITIC_SAVED__||l.getItem("${SEEN}"))return;var force=l.getItem("nx-splash-force-v1")==="1";if(navigator.webdriver&&!force)return;var back=false;if(!force)for(var i=0;i<l.length;i++){var k=l.key(i)||"";if(/^(nx-|cw-|neritic-)/.test(k)&&k.indexOf("nx-splash-")!==0){back=true;break}}l.setItem("${SEEN}","1");if(back||location.pathname!=="/")return;d.classList.add("nx-splash-on");var skip=function(e){if(!d.classList.contains("nx-splash-on")||d.classList.contains("nx-splash-out"))return;if(e&&e.type==="keydown"&&(e.key==="Tab"||e.key==="Shift"))return;d.classList.add("nx-splash-out");setTimeout(function(){d.classList.remove("nx-splash-on","nx-splash-out")},${EXIT_MS});removeEventListener("pointerdown",skip,true);removeEventListener("keydown",skip,true)};addEventListener("pointerdown",skip,true);addEventListener("keydown",skip,true)}catch(e){}})()`;
 
@@ -66,6 +67,8 @@ export function Splash() {
             </g>
           </svg>
         </div>
+        <div className="nx-splash-ping" aria-hidden="true" />
+        <div className="nx-splash-ping" aria-hidden="true" />
         <div className="nx-splash-stage" aria-hidden="true">
         <div className="nx-splash-hero">
           <svg viewBox="0 0 48 48" width="100%" height="100%">
@@ -93,6 +96,7 @@ export function Splash() {
         <svg className="nx-splash-word" viewBox={`-1 0 ${MARK_WORD.width + 2} 48`}>
           <path transform={`translate(0 ${MARK_WORD.baseline})`} d={MARK_WORD.d} fill={D.word} />
         </svg>
+        <p className="nx-splash-tag">California&rsquo;s coastal waters, from satellite, model and shore</p>
         </div>
         <p className="nx-splash-skip" aria-hidden="true">
           <span className="nx-splash-skip-touch">Tap to skip</span>
