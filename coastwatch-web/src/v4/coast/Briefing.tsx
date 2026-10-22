@@ -207,8 +207,8 @@ export function Briefing(props: Props) {
       <div className="env-chart min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="landing">
         <SkipLink />
         <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} />} />
-        <RegistryDisclosure className="mx-auto w-full max-w-[880px] px-4 sm:px-6" fixture={isFixture(props.manifest)} />
-        <main id="main" className="cw-page-in mx-auto w-full max-w-[880px] overflow-x-clip px-4 pb-32 pt-4 sm:px-6">
+        <RegistryDisclosure className="mx-auto w-full max-w-[1120px] px-4 sm:px-6" fixture={isFixture(props.manifest)} />
+        <main id="main" className="cw-page-in mx-auto w-full max-w-[1120px] overflow-x-clip px-4 pb-32 pt-4 sm:px-6">
           <Landing ports={ports} home={home} audience={audience} unknownKey={placeKey} />
         </main>
         <MobileDock />

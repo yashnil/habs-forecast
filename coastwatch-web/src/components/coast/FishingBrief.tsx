@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { PortsCollection } from "@/generated/schema";
 import type { Audience, CoastPlace } from "@/lib/coast";
 import { compass, marineHeadline, stationName, NWS_MARINE_PAGE, type Conditions as SeaConditions } from "@/lib/conditions";
+import { TideStrip } from "@/v4/coast/TideStrip";
 import { distanceKm } from "@/lib/grid";
 import { LIMITS_KEY, datePeriods, marineMaxima, overLimits, parseLimits, periodFor, type DatedPeriod, type SeaLimits } from "@/lib/trip";
 import { MARK_SHORT, MARK_WORDS, dollars, groundfishOn, monthDay, perPound, portAreaValues, pounds, regionFor, regionSeasons, seasonsAgeDays, speciesValues } from "@/lib/speciesSeasons";
@@ -222,11 +223,19 @@ export function TripConditions({
           <Icon name="alert" className="h-4 w-4" /> {alerts[0].event}
         </p>
       )}
-      <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+      {/* v8: the soundings and the day's tide are one instrument, a single card */}
+      <div className="overflow-hidden rounded-2xl border border-n-line bg-n-surface shadow-[0_1px_2px_rgba(11,24,32,0.04)]">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-3 sm:grid-cols-4 sm:gap-y-4 sm:px-5 sm:py-4">
         <Sounding label="Wind" kind={fcNote.toLowerCase()} value={wind} unit="kt" note={higher(wind, max?.windKt, "kt").replace(/^, /, "") || undefined} testId="glance-wind" />
         <Sounding label="Seas" kind={fcNote.toLowerCase()} value={seas} unit="ft" note={higher(seas, max?.seasFt, "ft").replace(/^, /, "") || undefined} testId="glance-seas" />
         <Sounding label="Waves" kind={wave ? "measured" : cond.loading ? "reading…" : "not measured nearby"} value={wave ? wave.value.toFixed(1) : null} unit={wave ? `ft${buoy?.data.periodS ? ` · ${Math.round(buoy.data.periodS.value)} s` : ""}` : undefined} testId="glance-waves" />
         <Sounding label="Water" kind={water ? "measured" : cond.loading ? "reading…" : "not measured nearby"} value={water ? String(water.f) : null} unit="°F" testId="glance-water-t" />
+      </div>
+      {c?.tides.status === "ok" && (tripDate ?? today) && (
+        <div className="border-t border-n-line px-4 pb-2.5 pt-2.5 sm:px-5 sm:pb-3 sm:pt-3">
+          <TideStrip tides={c.tides.data} day={(tripDate ?? today)!} today={today} now={asSaved ? null : now} station={c.tides.station ? stationName(c.tides.station.name) : null} />
+        </div>
+      )}
       </div>
       <p className="nx-note-t !text-[12.5px] leading-[18px] text-n-ink-3">
         <a href="#sea-h" className="nx-focus rounded font-semibold text-n-ink-2 underline decoration-n-line-strong underline-offset-2 hover:text-n-ink" data-testid="glance-sea-link">

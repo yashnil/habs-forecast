@@ -865,3 +865,21 @@ html[data-daylight] .env-instrument .nx-select {
   .nx-disclosure { display: none !important; }
   .nx-short-only { display: inline !important; }
 }
+
+/* ---- My Coast front door (v8, src/v4/coast/Landing.tsx) ---- */
+/* the hero is the instrument ground of Explore, lit from the canyon at its upper left */
+.nx-landing-hero {
+  background:
+    radial-gradient(ellipse 70% 90% at 12% 0%, rgba(30, 92, 128, 0.55), transparent 70%),
+    radial-gradient(ellipse 60% 80% at 100% 100%, rgba(20, 74, 110, 0.35), transparent 70%),
+    #061016;
+  box-shadow: inset 0 1px 0 rgba(214, 240, 248, 0.06), 0 20px 40px -24px rgba(6, 16, 22, 0.55);
+}
+/* the coast draws once, as the opening screen's isobaths do */
+.nx-landing-coast {
+  stroke-dasharray: 1 1;
+  animation: nx-splash-draw 1400ms cubic-bezier(0.45, 0.05, 0.25, 1) 120ms both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nx-landing-coast { animation: none; }
+}
