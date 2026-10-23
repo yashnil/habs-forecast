@@ -75,7 +75,7 @@ export function SeriesChart({
     return pad.t + ih * (1 - Math.min(1, Math.max(0, f)));
   };
   const inWin = useMemo(() => samples.filter((s) => s.t >= from && s.t <= to), [samples, from, to]);
-  const segs = useMemo(() => segments(samples, axis, from, to), [samples, axis, from, to]);
+  const segs = useMemo(() => measuredSegments(samples, axis, from, to), [samples, axis, from, to]);
   const ticks = axis.scale === "log" ? decadeTicks(axis.domain).filter((_, i, a) => a.length < 6 || i % 2 === 0) : [axis.domain[0], (axis.domain[0] + axis.domain[1]) / 2, axis.domain[1]];
   const months = useMemo(() => monthTicks(from, to, W), [from, to, W]);
   const [own, setOwn] = useState<number | null>(inWin.length ? inWin.length - 1 : null);
@@ -320,10 +320,40 @@ export function monthTicks(from: number, to: number, W: number): number[] {
   return out;
 }
 
-/** A tick's label: "Sep 25" (month and two-digit year), or "2025" alone when the axis is in years. */
+/** A tick's label: "Sep ’25" (month and an apostrophed year, so it never reads as a day of the month),
+ *  or "2025" alone when the axis is in years. */
 export function tickLabel(t: number, from: number, to: number): string {
-  const years = (to - from) / 86_400_000 > YEARS_FROM_DAYS;
-  return new Date(t).toLocaleDateString("en-US", years ? { year: "numeric", timeZone: "UTC" } : { month: "short", year: "2-digit", timeZone: "UTC" });
+  const d = new Date(t);
+  if ((to - from) / 86_400_000 > YEARS_FROM_DAYS) return String(d.getUTCFullYear());
+  return `${d.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" })} \u2019${String(d.getUTCFullYear() % 100).padStart(2, "0")}`;
+}
+
+const unquantified = (s: Sample, axis: Axis) => s.q === "reported_zero" || s.q === "rejected_negative" || (axis.scale === "log" && s.value === 0);
+
+/**
+ * The measured line's runs: the shared rules (on the axis, inside the domain, under 21 days apart),
+ * and never across a sample that was not quantified. A reported 0 or a rejected sample between two
+ * values breaks the line: it sits on the floor as its own mark, and a line drawn over it would claim
+ * a level between its neighbours that nobody measured.
+ */
+export function measuredSegments(ss: Sample[], axis: Axis, from: number, to: number): Sample[][] {
+  const breaks = ss.filter((s) => s.t >= from && s.t <= to && unquantified(s, axis)).map((s) => s.t);
+  if (!breaks.length) return segments(ss, axis, from, to);
+  const out: Sample[][] = [];
+  for (const sg of segments(ss, axis, from, to)) {
+    let cur: Sample[] = [sg[0]];
+    for (let i = 1; i < sg.length; i++) {
+      const a = sg[i - 1].t;
+      const b = sg[i].t;
+      if (breaks.some((t) => t > a && t < b)) {
+        out.push(cur);
+        cur = [];
+      }
+      cur.push(sg[i]);
+    }
+    out.push(cur);
+  }
+  return out;
 }
 
 /** StationLite.recent pairs → samples */

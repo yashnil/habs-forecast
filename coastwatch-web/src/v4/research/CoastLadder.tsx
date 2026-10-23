@@ -25,8 +25,8 @@ const LAT_N = 42.2;
 const LAT_S = 32.3;
 const LON_W = -124.6;
 const LON_E = -116.9;
-const TICK_W = 30; // latitude labels
-const BAND = 78; // the coast drawing
+const TICK_W = 28; // latitude labels
+const BAND = 54; // the coast drawing
 const LABEL_X = TICK_W + BAND + 12;
 const PAD = 10;
 /** lastHabWords' lead: said to a screen reader; the column's heading says it to the eye */
@@ -54,13 +54,13 @@ export function CoastLadder({ stations, selected, onSelect, height = 640 }: { st
         {ticks.map((t) => (
           <g key={t}>
             <line x1={TICK_W - 6} x2={TICK_W} y1={y(t)} y2={y(t)} stroke="var(--nx-line-strong)" />
-            <text x={TICK_W - 9} y={y(t) + 3.5} textAnchor="end" fontSize="10.5" fill="var(--nx-ink-3)" className="nx-data">
+            <text x={TICK_W - 9} y={y(t) + 3.5} textAnchor="end" fontSize="10" fill="var(--nx-ink-3)" fontFamily="var(--nx-font-data)">
               {t}°
             </text>
           </g>
         ))}
         <line x1={TICK_W} x2={TICK_W} y1={y(LAT_N)} y2={y(LAT_S)} stroke="var(--nx-line)" />
-        <path d={coast} fill="none" stroke="var(--nx-ink-3)" strokeWidth={1.25} strokeLinejoin="round" strokeLinecap="round" opacity={0.75} />
+        <path d={coast} fill="none" stroke="var(--nx-ink-3)" strokeWidth={1} strokeLinejoin="round" strokeLinecap="round" opacity={0.6} />
         {sorted.map((s, i) => {
           const on = s.id === selected;
           const hot = on || s.id === hover;
@@ -69,9 +69,9 @@ export function CoastLadder({ stations, selected, onSelect, height = 640 }: { st
           const ly = top[i] + rowH / 2;
           return (
             <g key={s.id}>
-              <path d={`M${dx},${dy} H${TICK_W + BAND} L${LABEL_X - 4},${ly}`} fill="none" stroke={hot ? "var(--nx-accent)" : "var(--nx-line-strong)"} strokeWidth={hot ? 1.2 : 0.8} opacity={hot ? 1 : 0.8} />
-              {on && <circle cx={dx} cy={dy} r={7.5} fill="none" stroke="var(--nx-accent)" strokeWidth={1.6} />}
-              <circle cx={dx} cy={dy} r={on ? 4 : hot ? 3.6 : 2.8} fill={hot ? "var(--nx-accent)" : "var(--nx-measured)"} />
+              <path d={`M${dx},${dy} H${TICK_W + BAND} L${LABEL_X - 4},${ly}`} fill="none" stroke={on ? "var(--nx-measured)" : hot ? "var(--nx-ink-2)" : "var(--nx-line-strong)"} strokeWidth={on ? 1.2 : 0.8} opacity={hot ? 1 : 0.7} />
+              {on && <circle cx={dx} cy={dy} r={8} fill="var(--nx-measured-bg)" stroke="var(--nx-measured-line)" strokeWidth={1} />}
+              <circle cx={dx} cy={dy} r={on ? 4.2 : hot ? 3.4 : 2.6} fill={on ? "var(--nx-measured)" : hot ? "var(--nx-ink)" : "var(--nx-ink-3)"} />
             </g>
           );
         })}
@@ -89,10 +89,12 @@ export function CoastLadder({ stations, selected, onSelect, height = 640 }: { st
                 onFocus={() => setHover(s.id)}
                 onBlur={() => setHover((h) => (h === s.id ? null : h))}
                 aria-current={on ? "true" : undefined}
-                className={`nx-focus flex h-full w-full min-w-0 flex-col justify-center rounded-md px-2 text-left ${on ? "bg-n-accent-bg" : "hover:bg-n-surface-2"}`}
+                className={`nx-focus relative flex h-full w-full min-w-0 flex-col justify-center rounded-[3px] px-2 text-left transition-colors duration-150 ${on ? "bg-n-measured-bg" : "hover:bg-n-surface-2"}`}
+                data-testid={`ladder-${s.id}`}
               >
-                <span className={`block truncate text-[13.5px] leading-[17px] ${on ? "font-semibold text-n-ink" : "font-medium text-n-ink-2"}`}>{s.name}</span>
-                <span className="block truncate text-[11.5px] leading-[14px] text-n-ink-3">
+                {on && <span aria-hidden className="absolute inset-y-1 left-0 w-[2px] rounded-full bg-n-measured" />}
+                <span className={`block truncate text-[13px] leading-[15px] ${on ? "font-medium text-n-ink" : "text-n-ink-2"}`}>{s.name}</span>
+                <span className="block truncate font-[family-name:var(--nx-font-data)] text-[10.5px] leading-[13px] text-n-ink-3">
                   {s.last.startsWith(LAST) ? (
                     <>
                       <span className="sr-only">{LAST}</span>

@@ -1,9 +1,9 @@
 "use client";
 
 import { useId, useMemo, useRef, useState, type ReactNode } from "react";
-import { AXES, axisPosition, decadeTicks, highestInView, modelSegments, onAxis, segments, type Axis, type ModelPoint } from "@/lib/bloom";
+import { AXES, axisPosition, decadeTicks, highestInView, modelSegments, onAxis, type Axis, type ModelPoint } from "@/lib/bloom";
 import { DAY, unitLabel, type ObsVariableId, type Sample } from "@/lib/observations";
-import { monthTicks, sampleOnDay, tickLabel } from "./SeriesChart";
+import { measuredSegments, monthTicks, sampleOnDay, tickLabel } from "./SeriesChart";
 import { useWidth } from "./useWidth";
 
 /**
@@ -133,7 +133,10 @@ export function LinkedSeries({
   // ---------------------------------------------------------------- geometry
   const pad = { l: compact ? 46 : 58, r: compact ? 10 : 18 };
   const iw = Math.max(40, W - pad.l - pad.r);
-  const obsTop = 26;
+  // on a phone the threshold's label is a key above the plot (on the line it ran into the data)
+  const refIn = !!refLine && axisPosition(refLine.value, axis) === "in";
+  const refKey = compact && refIn;
+  const obsTop = refKey ? 36 : compact ? 22 : 26;
   const obsH = obsHeight;
   const obsBot = obsTop + obsH;
   const rugY = obsBot + 9;
@@ -154,7 +157,7 @@ export function LinkedSeries({
   // ---------------------------------------------------------------- data in view
   const inWin = useMemo(() => samples.filter((s) => s.t >= from && s.t <= to), [samples, from, to]);
   const real = useMemo(() => realSamples(inWin), [inWin]);
-  const segs = useMemo(() => segments(samples, axis, from, to), [samples, axis, from, to]);
+  const segs = useMemo(() => measuredSegments(samples, axis, from, to), [samples, axis, from, to]);
   const top = useMemo(() => highestInView(samples, axis, from, to), [samples, axis, from, to]);
   const msegs = useMemo(() => (model ? modelSegments(model.points) : []), [model]);
   // long stretches without a measurement: drawn as "not measured", never as a low value
@@ -330,12 +333,21 @@ export function LinkedSeries({
               </g>
             );
           })}
-          {refLine && axisPosition(refLine.value, axis) === "in" && (
+          {refLine && refIn && (
             <g data-testid="series-ref">
               <line x1={pad.l} x2={W - pad.r} y1={y(refLine.value)} y2={y(refLine.value)} stroke="var(--nx-model)" strokeDasharray="5 4" strokeWidth={1.1} opacity={0.9} />
-              <text x={W - pad.r - 2} y={y(refLine.value) - 6} textAnchor="end" fontSize="11.5" fill="var(--nx-model)" stroke="var(--nx-bg)" strokeWidth={4} strokeLinejoin="round" paintOrder="stroke">
-                {refLine.label}
-              </text>
+              {refKey ? (
+                <g data-testid="series-ref-key">
+                  <line x1={pad.l} x2={pad.l + 18} y1={24} y2={24} stroke="var(--nx-model)" strokeDasharray="5 4" strokeWidth={1.1} />
+                  <text x={pad.l + 24} y={28} fontSize="11.5" fill="var(--nx-model)">
+                    {refLine.label}
+                  </text>
+                </g>
+              ) : (
+                <text x={W - pad.r - 2} y={y(refLine.value) - 6} textAnchor="end" fontSize="11.5" fill="var(--nx-model)" stroke="var(--nx-bg)" strokeWidth={4} strokeLinejoin="round" paintOrder="stroke">
+                  {refLine.label}
+                </text>
+              )}
             </g>
           )}
           {segs.map((sg, i) => (
