@@ -102,10 +102,12 @@ describe("previews and the primary chart", () => {
     expect(p.filter((x) => x.zero)).toHaveLength(1);
     expect(p.at(-1)).toMatchObject({ v: 100, clipped: true });
   });
-  it("a reported zero never goes on the log axis; lines break at gaps over 21 days", () => {
+  it("a reported zero never goes on the log axis and breaks the line; lines break at gaps over 21 days", () => {
     const seg = segments(ss, AXES.pDA, x0, x1);
-    // index 6 (300 ng/mL) is above the 100 ng/mL axis top: an edge marker, not part of the line
-    expect(seg.map((s) => s.map((x) => x.index))).toEqual([[0, 3], [4]]);
+    // v10 (guardrail A3): the reported 0 on Jan 12 breaks the line, so Jan 5 and Jan 26 are never joined
+    // across it (a visit that did not measure pDA, Jan 19, does not break it). Index 6 (300 ng/mL) is above
+    // the 100 ng/mL axis top: an edge marker, not part of the line
+    expect(seg.map((s) => s.map((x) => x.index))).toEqual([[0], [3], [4]]);
   });
   it("a value below the axis floor is a marker, not a point on the line, and breaks the line (real case: 4.6e-5 ng/mL)", () => {
     const low = [S("2016-11-02", 0.002, null, 0), S("2016-11-09", 0.003, null, 1), S("2016-11-16", 4.6e-5, null, 2), S("2016-11-23", 0.004, null, 3)];

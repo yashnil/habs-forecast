@@ -128,7 +128,14 @@ export function segments(ss: Sample[], axis: Axis, x0: number, x1: number, gapDa
   const out: Sample[][] = [];
   let open = false;
   for (const p of ss) {
-    if (!inView(p, x0, x1) || !onAxis(p, axis)) continue;
+    if (!inView(p, x0, x1)) continue;
+    // a reported 0 (not quantified) or a rejected sample breaks the line: it sits on the floor as its own
+    // mark, and the line never joins the values either side of it (guardrail A3)
+    if (p.q === "reported_zero" || p.q === "rejected_negative") {
+      open = false;
+      continue;
+    }
+    if (!onAxis(p, axis)) continue;
     if (axisPosition(p.value!, axis) !== "in") {
       open = false;
       continue;
