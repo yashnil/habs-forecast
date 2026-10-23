@@ -12,88 +12,57 @@
  * and a word). Names are --nx-* so v2 components (--cw-*) keep working while routes migrate.
  */
 
+/* v10 "Ocean Instrument" (docs/coastwatch/design-research/concepts.md, direction A): one dark system for
+   every page. The ocean is the interface; reading surfaces are plates over the same abyss, not a second
+   light environment. Daylight mode (html[data-daylight], below) is the high-contrast choice for bright sun.
+   The old light "chart" values are retired; .env-chart now resolves to the same instrument tokens so every
+   component keeps working while pages are recomposed. */
 :root,
-.env-chart {
-  /* the contour mark, light master (src/v4/brand/mark.ts) */
-  --nx-mark-tile: #0e3352;
-  --nx-mark-line: #a9d3df;
-  --nx-mark-index: #5fd0e6;
-  --nx-mark-word: #0e3352;
-  --nx-bg: #f2f5f6;
-  --nx-surface: #ffffff;
-  --nx-surface-2: #eef2f4;
-  --nx-surface-3: #e3e9ec;
-  --nx-line: #dbe2e6;
-  --nx-line-strong: #c3ced4;
-  --nx-ink: #0b1820;
-  --nx-ink-2: #3a4e5b;
-  --nx-ink-3: #526773;
-  --nx-accent: #086a85;
-  --nx-accent-bg: #e3f2f6;
-  --nx-on-accent: #ffffff;
-
-  --nx-official: #a14b00;
-  --nx-official-bg: #fdf1df;
-  --nx-official-line: #efbb72;
-  --nx-model: #6b3fb3;
-  --nx-model-bg: #f2edfb;
-  --nx-model-line: #cbbbee;
-  --nx-measured: #0b7468;
-  --nx-measured-bg: #e2f3ef;
-  --nx-measured-line: #a3d5cc;
-  --nx-conditions: #1f6496;
-  --nx-conditions-bg: #e6f0f8;
-
-  --nx-ok: #17784c;
-  --nx-partial: #086a85;
-  --nx-stale: #8a5a00;
-  --nx-offline: #4b5d6a;
-  --nx-down: #b3361f;
-
-  --nx-gap: #5d707b;
-  --nx-shadow: 0 1px 2px rgba(11, 24, 32, 0.08), 0 8px 24px rgba(11, 24, 32, 0.08);
-}
-
+.env-chart,
 .env-instrument {
-  /* the contour mark, dark master: the tile lifted so it holds on the instrument ground */
+  /* the contour mark, dark master */
   --nx-mark-tile: #134a6e;
   --nx-mark-line: #bfe4ec;
   --nx-mark-index: #7fe3f5;
-  --nx-mark-word: #e8eef2;
+  --nx-mark-word: #e6eef2;
   color-scheme: dark;
-  --nx-bg: #061016;
-  --nx-surface: #0c1921;
-  --nx-surface-2: #12232e;
-  --nx-surface-3: #1a2f3c;
-  --nx-line: rgba(186, 214, 230, 0.12);
-  --nx-line-strong: rgba(186, 214, 230, 0.24);
-  --nx-ink: #ebf2f6;
-  --nx-ink-2: #aabdc9;
-  --nx-ink-3: #7c95a4;
-  --nx-accent: #5fd0e6;
-  --nx-accent-bg: rgba(95, 208, 230, 0.13);
-  --nx-on-accent: #04141b;
+  /* depth ramp of the ground: abyss (page), deep (plates), shelf (raised), slope (controls) */
+  --nx-bg: #05090d;
+  --nx-surface: #0a1219;
+  --nx-surface-2: #0f1a23;
+  --nx-surface-3: #16242f;
+  --nx-line: rgba(190, 215, 230, 0.14);
+  --nx-line-strong: rgba(190, 215, 230, 0.28);
+  --nx-ink: #e6eef2;
+  --nx-ink-2: #a9bac5;
+  --nx-ink-3: #8193a0;
+  --nx-accent: #74c7ff;
+  --nx-accent-bg: rgba(116, 199, 255, 0.12);
+  --nx-on-accent: #04121c;
 
-  --nx-official: #f4b552;
-  --nx-official-bg: rgba(244, 181, 82, 0.1);
-  --nx-official-line: rgba(244, 181, 82, 0.42);
-  --nx-model: #c2a8f5;
-  --nx-model-bg: rgba(194, 168, 245, 0.11);
-  --nx-model-line: rgba(194, 168, 245, 0.4);
-  --nx-measured: #4fd3b0;
-  --nx-measured-bg: rgba(79, 211, 176, 0.1);
-  --nx-measured-line: rgba(79, 211, 176, 0.4);
-  --nx-conditions: #7cc4f0;
-  --nx-conditions-bg: rgba(124, 196, 240, 0.1);
+  --nx-official: #f0a94a;
+  --nx-official-bg: rgba(240, 169, 74, 0.1);
+  --nx-official-line: rgba(240, 169, 74, 0.45);
+  --nx-model: #b39cff;
+  --nx-model-bg: rgba(179, 156, 255, 0.11);
+  --nx-model-line: rgba(179, 156, 255, 0.42);
+  --nx-measured: #3fd6bd;
+  --nx-measured-bg: rgba(63, 214, 189, 0.1);
+  --nx-measured-line: rgba(63, 214, 189, 0.42);
+  --nx-conditions: #74c7ff;
+  --nx-conditions-bg: rgba(116, 199, 255, 0.1);
 
-  --nx-ok: #4fd3b0;
-  --nx-partial: #5fd0e6;
+  --nx-ok: #3fd6bd;
+  --nx-partial: #74c7ff;
   --nx-stale: #e5b25a;
   --nx-offline: #9fb2be;
   --nx-down: #f08a74;
 
   --nx-gap: #8ea2af;
-  --nx-shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.35);
+  --nx-shadow: 0 1px 1px rgba(0, 0, 0, 0.35), 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+.env-chart,
+.env-instrument {
   background: var(--nx-bg);
   color: var(--nx-ink);
 }
@@ -101,8 +70,10 @@
 :root {
   /* type: one sans for the interface and reading (Atkinson Hyperlegible Next: built for
      legibility, which also serves bright sun), a serif for editorial headlines, a mono for values */
-  --nx-font-ui: var(--font-atkinson), system-ui, -apple-system, "Segoe UI", sans-serif;
-  --nx-font-display: var(--font-source-serif), "Iowan Old Style", Georgia, serif;
+  --nx-font-ui: var(--font-plex-sans-v10), system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* v10: the editorial voice (places, headlines, margin notes) and the instrument's small capitals */
+  --nx-font-display: var(--font-newsreader-v10), "Iowan Old Style", Georgia, serif;
+  --nx-font-caps: var(--font-plex-cond), var(--font-plex-sans-v10), system-ui, sans-serif;
   --nx-font-data: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
   /* motion: short, ease-out, interruptible; frequent map operations are instant. Exits are about a
@@ -202,15 +173,15 @@
   --cw-ink-2: var(--nx-ink-2);
   --cw-ink-3: var(--nx-ink-3);
   --cw-accent: var(--nx-accent);
-  --font-plex-sans: var(--font-atkinson);
-  --font-newsreader: var(--font-source-serif);
+  --font-plex-sans: var(--font-plex-sans-v10);
+  --font-newsreader: var(--font-newsreader-v10);
 }
 
 /* a v2 paper panel inside a v4 surface (the phone sheet is MobileSheet, a ".theme-paper"): that class
    resets the v2 palette to warm paper on itself, so the remap is repeated on it here; the sheet reads cool
    chart paper like everything around it, never cream */
 .env-chart .theme-paper {
-  color-scheme: light;
+  color-scheme: dark;
   --cw-page: var(--nx-bg);
   --cw-surface: var(--nx-surface);
   --cw-surface-2: var(--nx-surface-2);
@@ -744,10 +715,12 @@ html[data-daylight] .env-instrument .nx-select {
 /* ---------------------------------------------------------------- v7 composition (docs/coastwatch/v7/design.md) */
 
 /* the header's two quiet surfaces */
+/* v10: the header's two surfaces are instrument plates, not pills: square-shouldered, a hairline, solid
+   over the map (no blur over WebGL) */
 .nx-bar {
   background: var(--nx-surface);
   border: 1px solid var(--nx-line);
-  box-shadow: 0 1px 2px rgba(11, 24, 32, 0.05);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
 }
 .env-instrument .nx-bar {
   /* solid over the map: at 94% the place names under it showed through its numbers */
@@ -874,3 +847,42 @@ html[data-daylight] .env-instrument .nx-select {
 }
 :where(input, textarea) { caret-color: var(--nx-accent); }
 .env-instrument { scrollbar-color: var(--nx-line-strong) transparent; }
+
+/* ---- v10 Ocean Instrument vocabulary (docs/coastwatch/v10/system.md) ----
+   Shared by every page; pages compose with these instead of inventing their own. */
+/* a small-capital label: what a value is and which family it belongs to (colour it with a family) */
+.nx-caps {
+  font: 500 10.5px/1.2 var(--nx-font-caps);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nx-ink-3);
+}
+/* a reading value: light mono figures, large, tabular; units small beside them */
+.nx-value {
+  font: 300 30px/1 var(--nx-font-data);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--nx-ink);
+}
+.nx-value small { font-size: 0.4em; letter-spacing: 0; margin-left: 0.2em; color: var(--nx-ink-2); }
+/* the editorial voice: places and headlines */
+.nx-display {
+  font-family: var(--nx-font-display);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+/* a margin note: caveats and context set as an italic aside, never grey fine print */
+.nx-margin {
+  font: italic 400 13px/1.5 var(--nx-font-display);
+  color: var(--nx-ink-2);
+}
+.nx-margin b, .nx-margin strong { font-style: normal; font-weight: 600; color: var(--nx-ink); }
+/* a plate: a reading surface over the abyss (one hairline, square shoulders, no card stack) */
+.nx-plate {
+  background: var(--nx-surface);
+  border: 1px solid var(--nx-line);
+  border-radius: 4px;
+}
+/* a hairline rule between rows */
+.nx-rule { border-top: 1px solid var(--nx-line); }
