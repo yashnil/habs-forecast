@@ -6,8 +6,8 @@ import { OK } from "./ports";
  * never on a saved copy reopened from a field pack, never for a returning reader, never for automated
  * browsers unless asked (every other suite runs without it). Forced on here (each test opens a fresh
  * context, so a first visit): soundings join into the canyon's contours, the mark and lockup form, and
- * once the map is ready (never before 2.8 s) the chart recedes, the map shows and the lockup lands in
- * the header's brand (about 3.5 s); without that, the CSS cap fades it by 4.2 s. A tap, click or key skips it in
+ * once the map is ready (never before 3.3 s) an aperture opens on the live map from Monterey Canyon and
+ * the lockup lands in the header's brand (about 4.4 s); without that, the CSS cap fades it by 4.7 s. A tap, click or key skips it in
  * 200 ms; the header stays usable throughout.
  */
 const force = () => localStorage.setItem("nx-splash-force-v1", "1");
@@ -109,15 +109,15 @@ test("Explore: the handoff starts once the lockup has formed and the map is read
         const t = setInterval(() => check() && clearInterval(t), 50);
       }),
   );
-  // never before the lockup has formed and held (2.8 s on the screen's clock, which starts after navigation)
-  expect(out.at).toBeGreaterThanOrEqual(2780);
+  // never before the lockup has formed and held (3.3 s on the screen's clock, which starts after navigation)
+  expect(out.at).toBeGreaterThanOrEqual(3280);
   if (out.how === "land") expect(out.pe).toBe("none");
-  // the cap: gone by 4.2 s on its own clock (a busy two-worker runner can delay the start of that clock)
+  // the cap or the reveal: gone by 4.7 s on its own clock (a busy two-worker runner can delay the start of that clock)
   await expect(page.getByTestId("splash")).toBeHidden({ timeout: 4000 });
   await ctx.close();
 });
 
-test("the handoff clears the chart before the map shows, and lands the mark exactly on the header's mark", async ({ browser }) => {
+test("the reveal opens an aperture on the live map from Monterey Canyon, and lands the mark exactly on the header's mark", async ({ browser }) => {
   for (const vp of [{ viewport: { width: 1440, height: 900 } }, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }]) {
     const ctx = await browser.newContext(vp);
     await ctx.addInitScript(force);
@@ -145,7 +145,15 @@ test("the handoff clears the chart before the map shows, and lands the mark exac
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       const hero = document.querySelector(".nx-splash-hero svg")!.getBoundingClientRect();
       const brand = [...document.querySelectorAll('[data-testid="brand-home"] svg')].find((s) => s.getBoundingClientRect().width > 0)!.getBoundingClientRect();
-      const chart = getComputedStyle(document.querySelector(".nx-splash-chart")!).opacity;
+      // the aperture: the ground (with the chart on it) is masked open from the canyon's place on the map
+      const ground = document.querySelector<HTMLElement>(".nx-splash:not(.nx-splash-top)")!;
+      const mask = getComputedStyle(ground).maskImage || getComputedStyle(ground).webkitMaskImage;
+      const map = (window as unknown as { __cwMap: { project(l: [number, number]): { x: number; y: number }; getContainer(): HTMLElement } }).__cwMap;
+      const box = map.getContainer().getBoundingClientRect();
+      const c = map.project([-121.879, 36.79]);
+      const ax = parseFloat(ground.style.getPropertyValue("--nx-ax"));
+      const ay = parseFloat(ground.style.getPropertyValue("--nx-ay"));
+      const chart = { mask, off: Math.hypot(ax - (box.left + c.x), ay - (box.top + c.y)) };
       // the lockup's layer sits above the header, so the mark is never hidden under the bar
       const z = Number(getComputedStyle(document.querySelector(".nx-splash-top")!).zIndex);
       return { hero: [hero.x, hero.y, hero.height], brand: [brand.x, brand.y, brand.height], chart, z };
@@ -154,8 +162,10 @@ test("the handoff clears the chart before the map shows, and lands the mark exac
     expect(Math.abs(m.hero[0] - m.brand[0])).toBeLessThan(2);
     expect(Math.abs(m.hero[1] - m.brand[1])).toBeLessThan(2);
     expect(Math.abs(m.hero[2] - m.brand[2])).toBeLessThan(2);
-    // no contours are left over the map (they would lie across land), and the mark lands above the header
-    expect(Number(m.chart)).toBeLessThan(0.02);
+    // the map opens from the canyon's true place (contours stay outside the aperture, never on the map), and
+    // the mark lands above the header
+    expect(m.chart.mask).toContain("radial-gradient");
+    expect(m.chart.off).toBeLessThan(2);
     expect(m.z).toBeGreaterThan(45);
     await ctx.close();
   }

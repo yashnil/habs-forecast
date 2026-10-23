@@ -461,21 +461,20 @@
   color: transparent;
 }
 
-/* ---- launch screen "Sounding" (src/v4/shell/Splash.tsx; docs/coastwatch/v9/motion.md §3) ----
-   A device's first visit to Explore only, on the map's own ground (#061016). One clock: ms from the
-   screen's first style, times --nx-o (the tempo; 1 is the designed play of about 3.5 s).
-   1. soundings (100-730): points appear along the real isobaths, from the 200 m index outward;
-   2. contours (420-1470): the points stretch into dashes, then lines (a survey becoming a chart);
-   3. mark (1150-1600): the canyon head's own contours, in the chart's colour, grow into the symbol (their
-      cut ends fade into the chart until the tile is behind them); the chart steps back;
-   4. lockup (1650-2550): the symbol settles to its size as its tile surfaces and its lines take their
-      own colours, then the wordmark wipes in; a still hold to 2800;
-   5. handoff (SplashGate, once the map is ready, 700): the chart recedes and fades before the map
-      shows (contours are never drawn over land), the ground clears to the live map, and the lockup
-      settles into the header's brand, above the header, cross-fading into it with no empty frame.
-   Without a script, the cap fades it out by 4.2 s. A tap, click or key skips it in 200 ms. It sits under
-   the header (z 44 < 45); only the lockup's own transparent layer sits above it (46). Base styles are the final frame of beat 4, so reduced motion
-   drops the animations and keeps a still lockup. One thing moves at a time; no glow, ping or gradient. */
+/* ---- launch screen "Sounding" (src/v4/shell/Splash.tsx; docs/coastwatch/v10/opening.md) ----
+   A device's first visit to Explore only, on the map's own ground. One clock: ms from the screen's first
+   style, times --nx-o (the tempo; 1 is the designed play of about 4.4 s).
+   1. soundings (100-900): points appear along the real Monterey Canyon isobaths, the 200 m index first;
+      the camera eases in on the chart the whole time (scale .94 -> 1, never stopping until the reveal);
+   2. contours (520-1860): the points stretch into dashes, then lines: a survey becoming a chart;
+   3. mark (1500-2000): the canyon head's own contours, in the chart's colour, grow into the symbol, their
+      cut ends fading into the chart; the chart steps back;
+   4. lockup (2000-2950): the symbol settles to its size as its tile surfaces, then the wordmark; a hold;
+   5. reveal (SplashGate, once the map is ready, never before 3.3 s, 1.1 s): an aperture opens on the live
+      map from the canyon's true place on it (the chart, outside the aperture, is gone with the ground, so
+      no depth line ever lies on land), and the lockup lands on the header's brand.
+   Without a script, the cap fades it out by 4.7 s. A tap, click or key skips it in 200 ms. Reduced
+   motion: the still lockup (base styles), gone within a second. */
 .nx-splash { display: none; }
 html.nx-splash-on .nx-splash {
   /* m: the final symbol's size; z: how much larger the symbol and the chart are drawn (the chart must
@@ -493,7 +492,7 @@ html.nx-splash-on .nx-splash {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   /* the cap, even if no script runs: a plain fade, gone by 4.2 s */
-  animation: nx-splash-gone 300ms var(--nx-ease-in) calc(3900ms * var(--nx-o)) both;
+  animation: nx-splash-gone 300ms var(--nx-ease-in) calc(4400ms * var(--nx-o)) both;
 }
 @media (min-width: 1500px) { html.nx-splash-on .nx-splash { --nx-z: 3.6; } }
 @media (min-width: 2200px) { html.nx-splash-on .nx-splash { --nx-z: 5; } }
@@ -511,7 +510,7 @@ html.nx-splash-on:not(.nx-splash-out):not(.nx-splash-landed) [data-testid="brand
   opacity: 0;
   /* never longer than the cap, even if no script ever ends the screen (an animation, on the brand's own
      first style: hidden until 4.2 s, then shown) */
-  animation: nx-brand-wait 4200ms step-end both;
+  animation: nx-brand-wait 4700ms step-end both;
 }
 @keyframes nx-brand-wait {
   0% { opacity: 0; }
@@ -523,12 +522,25 @@ html.nx-splash-out [data-testid="brand-home"] svg { transition: opacity 150ms va
    reach the map; the lockup, on its layer above the header, lands on the header's brand, not under it */
 /* the lockup's own layer: above the header, transparent, never in the way of a click */
 html.nx-splash-on .nx-splash-top { z-index: 46; background-color: transparent; pointer-events: none; cursor: default; }
-html.nx-splash-land .nx-splash {
+/* the reveal: an aperture on the live map, opening from the canyon's place on it (--nx-ax/--nx-ay set by the
+   gate; the screen's centre without a script) */
+@property --nx-ar { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@keyframes nx-splash-aperture {
+  from { --nx-ar: 0px; }
+  to { --nx-ar: var(--nx-arm, 150vmax); }
+}
+html.nx-splash-land .nx-splash:not(.nx-splash-top) {
+  -webkit-mask-image: radial-gradient(circle at var(--nx-ax, 50%) var(--nx-ay, 50%), transparent var(--nx-ar), #000 calc(var(--nx-ar) + 1px));
+  mask-image: radial-gradient(circle at var(--nx-ax, 50%) var(--nx-ay, 50%), transparent var(--nx-ar), #000 calc(var(--nx-ar) + 1px));
+  animation: nx-splash-aperture calc(1200ms * var(--nx-o)) cubic-bezier(0.55, 0, 0.3, 1) both;
+}
+html.nx-splash-land .nx-splash.nx-splash-top {
   animation: none;
   pointer-events: none;
-  background-color: transparent;
-  transition: background-color calc(300ms * var(--nx-o)) var(--nx-ease-move) calc(100ms * var(--nx-o));
 }
+html.nx-splash-land .nx-splash { pointer-events: none; }
+/* a skip during the reveal still fades (doubled class: this must win over the aperture rule above) */
+html.nx-splash-out .nx-splash.nx-splash { animation: nx-splash-gone var(--nx-t-skip, 200ms) var(--nx-ease-in) both; }
 
 .nx-splash-chart {
   position: absolute;
@@ -539,12 +551,18 @@ html.nx-splash-land .nx-splash {
   margin: calc(var(--nx-m) * var(--nx-z) * -3.125) 0 0 calc(var(--nx-m) * var(--nx-z) * -3.125);
   /* 3: the chart steps back behind the mark */
   opacity: 0.55;
-  animation: nx-splash-dim 500ms var(--nx-ease-out) calc(1300ms * var(--nx-o)) both;
+  /* the camera eases in on the chart through the whole play */
+  animation:
+    nx-splash-dim 600ms var(--nx-ease-out) calc(1600ms * var(--nx-o)) both,
+    nx-splash-push calc(3300ms * var(--nx-o)) cubic-bezier(0.25, 0.1, 0.25, 1) both;
   /* the survey's edge: the chart fades out toward the screen's edges */
   mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
 }
 @keyframes nx-splash-dim {
   from { opacity: 1; }
+}
+@keyframes nx-splash-push {
+  from { scale: 0.94; }
 }
 .nx-splash-field { width: 100%; height: 100%; display: block; overflow: visible; }
 /* 1-2: a sounding every 2.4 units along each isobath (0.48 km), then the line; the dots are drawn a
@@ -554,8 +572,8 @@ html.nx-splash-land .nx-splash {
   stroke-width: 0.3;
   stroke-opacity: var(--o, 0.3);
   animation:
-    nx-splash-sound 180ms var(--nx-ease-out) calc((100ms + var(--i, 0) * 28ms) * var(--nx-o)) both,
-    nx-splash-join 600ms var(--nx-ease-move) calc((420ms + var(--i, 0) * 28ms) * var(--nx-o)) both;
+    nx-splash-sound 200ms var(--nx-ease-out) calc((100ms + var(--i, 0) * 40ms) * var(--nx-o)) both,
+    nx-splash-join 700ms var(--nx-ease-move) calc((520ms + var(--i, 0) * 40ms) * var(--nx-o)) both;
 }
 .nx-splash-iso-index { stroke: #7fe3f5; stroke-width: 0.5; }
 .nx-splash-iso-coast { stroke: #bfe4ec; }
@@ -580,8 +598,8 @@ html.nx-splash-land .nx-splash {
   --nx-cut: 130%;
   mask-image: linear-gradient(to bottom, #000 calc(var(--nx-cut) - 24%), transparent var(--nx-cut));
   animation:
-    nx-splash-settle 550ms var(--nx-ease-move) calc(1650ms * var(--nx-o)) both,
-    nx-splash-uncut 300ms var(--nx-ease-out) calc(2000ms * var(--nx-o)) both;
+    nx-splash-settle 600ms var(--nx-ease-move) calc(2000ms * var(--nx-o)) both,
+    nx-splash-uncut 300ms var(--nx-ease-out) calc(2350ms * var(--nx-o)) both;
 }
 @property --nx-cut { syntax: "<percentage>"; inherits: false; initial-value: 130%; }
 @keyframes nx-splash-uncut {
@@ -592,14 +610,14 @@ html.nx-splash-land .nx-splash {
   from { transform: none; }
 }
 /* 3: the symbol's lines appear at the chart's own weight, over the chart's lines, then thicken */
-.nx-splash-lines { animation: nx-fade 120ms var(--nx-ease-out) calc(1150ms * var(--nx-o)) both; }
+.nx-splash-lines { animation: nx-fade 120ms var(--nx-ease-out) calc(1500ms * var(--nx-o)) both; }
 .nx-splash-line {
   stroke-width: var(--w);
   animation:
-    nx-splash-weight 450ms var(--nx-ease-move) calc(1150ms * var(--nx-o)) both,
-    nx-splash-tone 300ms var(--nx-ease-out) calc(2000ms * var(--nx-o)) both;
+    nx-splash-weight 500ms var(--nx-ease-move) calc(1500ms * var(--nx-o)) both,
+    nx-splash-tone 300ms var(--nx-ease-out) calc(2350ms * var(--nx-o)) both;
 }
-.nx-splash-line-index { animation: nx-splash-weight-index 450ms var(--nx-ease-move) calc(1150ms * var(--nx-o)) both; }
+.nx-splash-line-index { animation: nx-splash-weight-index 500ms var(--nx-ease-move) calc(1500ms * var(--nx-o)) both; }
 /* the minor lines keep the chart's colour until the tile is behind them */
 @keyframes nx-splash-tone {
   from { stroke: #7fb2c4; }
@@ -611,7 +629,7 @@ html.nx-splash-land .nx-splash {
   from { stroke-width: 0.5; stroke-opacity: 0.7; }
 }
 /* the tile surfaces as the symbol settles: never a large icon on the chart */
-.nx-splash-tile { animation: nx-fade 280ms var(--nx-ease-out) calc(2000ms * var(--nx-o)) both; }
+.nx-splash-tile { animation: nx-fade 300ms var(--nx-ease-out) calc(2350ms * var(--nx-o)) both; }
 .nx-splash-word {
   position: absolute;
   left: calc(50% + var(--nx-dx) + var(--nx-m) * 0.75 - var(--nx-m) / 48);
@@ -619,7 +637,7 @@ html.nx-splash-land .nx-splash {
   height: var(--nx-m);
   width: calc(var(--nx-m) * (var(--nx-wr, 2) + 2 / 48));
   overflow: visible;
-  animation: nx-splash-word 350ms var(--nx-ease-out) calc(2200ms * var(--nx-o)) both;
+  animation: nx-splash-word 400ms var(--nx-ease-out) calc(2600ms * var(--nx-o)) both;
 }
 @keyframes nx-splash-word {
   from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateX(-4px); }

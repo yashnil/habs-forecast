@@ -21,13 +21,16 @@ export function MotionRoot({ children }: { children: React.ReactNode }) {
 }
 
 // the launch screen's clock (ms from its first style, times its tempo --nx-o): see theme.css, "launch screen"
-const LOCKUP = 2800; // the lockup has formed and held: the earliest handoff
-const HANDOFF = 700; // the lockup settles into the header's brand
-const LATEST = 3900; // the CSS cap starts here: a map not ready by then gets its plain fade instead
+const LOCKUP = 3300; // the lockup has formed and held: the earliest reveal
+const REVEAL = 1200; // the aperture opens on the live map (theme.css nx-splash-aperture)
+const FLIGHT_AT = 450; // the lockup leaves for the header this far into the reveal
+const HANDOFF = 760; // the lockup's flight and its cross-fade into the header's brand
+const LATEST = 4400; // the CSS cap starts here: a map not ready by then gets its plain fade instead
+/** The head of Monterey Canyon (the mark's own tile centre): the aperture opens from its place on the map. */
+const CANYON: [number, number] = [-121.879, 36.79];
 const STILL_MIN = 600; // reduced motion: the still lockup holds at least this long, and at most
 const STILL_MAX = 800;
 /** --nx-ease-move and --nx-ease-in, for the handoff's script animations. */
-const EASE_MOVE = "cubic-bezier(0.77, 0, 0.175, 1)";
 /** --nx-ease-move as a function, for the flight the gate drives frame by frame. */
 function easeMove(t: number): number {
   // solve x(u) = t for the curve's parameter, then return y(u)
@@ -77,13 +80,24 @@ function SplashGate() {
     const land = () => {
       if (started || !on() || clock() > LATEST * o) return;
       started = true;
+      // the aperture's centre: the canyon head's place on the live map (the screen's centre if it is not in view)
+      const map = (window as unknown as { __cwMap?: { project(ll: [number, number]): { x: number; y: number }; getContainer(): HTMLElement } }).__cwMap;
+      let at = { x: innerWidth / 2, y: innerHeight / 2 };
+      if (map) {
+        const box = map.getContainer().getBoundingClientRect();
+        const p = map.project(CANYON);
+        const c = { x: box.left + p.x, y: box.top + p.y };
+        if (c.x > 0 && c.y > 0 && c.x < innerWidth && c.y < innerHeight) at = c;
+      }
+      el.style.setProperty("--nx-ax", `${at.x}px`);
+      el.style.setProperty("--nx-ay", `${at.y}px`);
+      // it opens exactly to the farthest corner: an even pace to the last pixel, never a jump past the screen
+      el.style.setProperty("--nx-arm", `${Math.ceil(Math.hypot(Math.max(at.x, innerWidth - at.x), Math.max(at.y, innerHeight - at.y))) + 2}px`);
       d.classList.add("nx-splash-land");
-      // the chart steps back and is gone in 220 ms, before the ground has cleared
-      el.querySelector(".nx-splash-chart")?.animate([{ opacity: 0.55, scale: "1" }, { opacity: 0, scale: "0.96" }], { duration: 220 * o, easing: EASE_IN, fill: "forwards" });
-      // the lockup: into the header's brand (a phone's header has the mark only: the wordmark fades). It is
-      // measured once its settle has finished (on a loaded device the CSS play can trail the screen's clock).
+      // the lockup leaves once the aperture is under way, measured after its settle has finished (on a loaded
+      // device the CSS play can trail the screen's clock)
       const settled = document.querySelector(".nx-splash-hero")?.getAnimations().map((a) => a.finished) ?? [];
-      Promise.all(settled).then(fly, fly);
+      after(FLIGHT_AT * o, () => void Promise.all(settled).then(fly, fly));
     };
     const fly = () => {
       if (!on()) return;
@@ -91,7 +105,8 @@ function SplashGate() {
       const flight = ms * 0.83;
       const land = () => {
         d.classList.add("nx-splash-landed");
-        after(ms - flight, () => {
+        // gone once the cross-fade and the aperture have both finished
+        after(Math.max(ms - flight, (REVEAL - FLIGHT_AT) * o - flight), () => {
           end();
           after(150, () => d.classList.remove("nx-splash-landed"));
         });
