@@ -118,9 +118,14 @@ test("an empty toxin cell next to the shore says why; a cell C-HARM does not mod
   const lon = lon0 > 180 ? lon0 - 360 : lon0;
   await open(page, `${OK}/?layer=forecast&var=particulate_domoic&lead=0`);
   await hover(page, lon, lat);
-  await expect(page.getByTestId("hover-none")).toContainText("within about 3–6 km of shore");
-  await expect(page.getByTestId("hover-none")).toContainText("Pseudo-nitzschia value here");
-  // a cell with no value in any C-HARM layer
+  // v5: the cell is tinted "outside NOAA's model near shore"; the reason stays
+  const ro = page.getByTestId("hover-readout");
+  await expect(ro).toContainText("within about 3–6 km of shore");
+  await expect(ro).toContainText("Pseudo-nitzschia value here");
+  await expect(ro).toContainText("NOAA's model does not reach this water");
+  await expect(page.getByTestId("hover-value")).toHaveCount(0);
+  // a cell with no value in any C-HARM layer: never a value; the published reason, context or outside
   await hover(page, -121.59, 36.07);
-  await expect(page.getByTestId("hover-none")).toContainText("water C-HARM does not model");
+  await expect(ro).toContainText(/water C-HARM does not model|NOAA's model does not reach this water/);
+  await expect(page.getByTestId("hover-value")).toHaveCount(0);
 });

@@ -274,10 +274,13 @@ body {
 
 /* Press feedback: buttons give a little under the finger (signature §11) */
 .cw-press {
-  transition: transform var(--cw-d-micro) var(--cw-ease-standard);
+  transition: transform var(--nx-t-release) var(--nx-ease-spring), background-color var(--nx-t-hover) var(--nx-ease-out), color var(--nx-t-hover) var(--nx-ease-out), border-color var(--nx-t-hover) var(--nx-ease-out);
+  -webkit-tap-highlight-color: transparent;
 }
-.cw-press:active {
-  transform: scale(calc(1 - 0.03 * var(--nx-shift)));
+.cw-press:active:not(:disabled) {
+  transform: scale(calc(1 - 0.035 * var(--nx-shift)));
+  transition-duration: 90ms, 60ms, 60ms, 60ms;
+  transition-timing-function: var(--nx-ease-out);
 }
 
 /* Kind labels: sentence case led by the matching mark, never tracked capitals (signature P5) */
@@ -330,7 +333,7 @@ body {
   *,
   *::before,
   *::after {
-    transition-property: opacity, color, background-color, border-color, outline-color, fill, stroke !important;
+    transition-property: opacity, color, background-color, border-color, outline-color, fill, stroke, --nx-tint !important;
     scroll-behavior: auto !important;
   }
   .cw-ping,

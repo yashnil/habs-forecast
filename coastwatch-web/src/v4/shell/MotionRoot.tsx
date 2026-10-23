@@ -20,28 +20,31 @@ export function MotionRoot({ children }: { children: React.ReactNode }) {
   );
 }
 
-const FIRST_BEAT = 750; // the mark has drawn itself
-const PAGE_READY = 1200; // a reading page: its content is in the first HTML
-const CAP = 2500; // never longer than this
+const MIN_HOLD = 1800; // the lockup has resolved: long enough to land
+const PAGE_READY = 1800; // a page that never reports ready (not Explore)
+const CAP = 3000; // never longer than this (the CSS animation in theme.css enforces it too)
 
 /**
- * Steps the launch screen (Splash) aside once the app is ready: Explore when its map has loaded, other
- * pages after about 1.2 s; never before the mark's first beat, never after 2.5 s. Times are counted
- * from the navigation's start (performance.now), the same clock as the CSS animation.
+ * Steps the launch screen (Splash) aside: once the app is ready (Explore: its map has loaded), never
+ * before MIN_HOLD, and gone by CAP. A tap, click or key skips it at once (the inline script in
+ * Splash.tsx, which works before this has hydrated). Times are counted from the navigation's start
+ * (performance.now), the same clock as the CSS animation.
  */
 function SplashGate() {
   const path = usePathname();
   useEffect(() => {
     const d = document.documentElement;
     if (!d.classList.contains("nx-splash-on")) return;
-    const exit = matchMedia("(prefers-reduced-motion: reduce)").matches ? 150 : 300;
+    const exit = matchMedia("(prefers-reduced-motion: reduce)").matches ? 200 : 450;
     const timers: number[] = [];
     const after = (ms: number, f: () => void) => timers.push(window.setTimeout(f, Math.max(0, ms - performance.now())));
     let left = false;
     const leave = () => {
       if (left) return;
       left = true;
-      after(FIRST_BEAT, () => {
+      after(MIN_HOLD, () => {
+        // skipped meanwhile: the inline script has already taken it away
+        if (!d.classList.contains("nx-splash-on") || d.classList.contains("nx-splash-out")) return;
         d.classList.add("nx-splash-out");
         timers.push(window.setTimeout(() => d.classList.remove("nx-splash-on", "nx-splash-out"), exit));
       });

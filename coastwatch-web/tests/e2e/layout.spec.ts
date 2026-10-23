@@ -111,8 +111,11 @@ test("reduced motion: nothing moves on load or on selecting, and every fade sett
         }).length,
     );
   expect(await moving()).toBe(0);
+  // no loops at all, and the one-off fades settle (a slow runner starts some later, as data arrives)
+  const loops = () => page.evaluate(() => document.getAnimations().filter((a) => a.playState === "running" && a.effect?.getTiming().iterations === Infinity).length);
+  expect(await loops()).toBe(0);
   const running = () => page.evaluate(() => document.getAnimations().filter((a) => a.playState === "running" && Number(a.effect?.getTiming().duration) > 10).length);
-  await expect.poll(running, { timeout: 1500 }).toBe(0);
+  await expect.poll(running, { timeout: 4000 }).toBe(0);
   await ctx.close();
 });
 

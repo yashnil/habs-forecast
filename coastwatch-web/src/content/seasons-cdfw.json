@@ -1,0 +1,974 @@
+[
+ {
+  "id": "northern",
+  "label": "Northern",
+  "bounds": "CA–OR border to 40°10′ N (near Cape Mendocino)",
+  "south": 40.1667,
+  "north": 42.1,
+  "url": "https://wildlife.ca.gov/Fishing/Ocean/Regulations/Fishing-Map/northern",
+  "updated": "October 9, 2026",
+  "items": [
+   {
+    "id": "rockfish",
+    "name": "Rockfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the Northern Management Area Recreational Groundfish Regulations Summary table for current rockfish recreational fishing regulations."
+   },
+   {
+    "id": "cabezon",
+    "name": "Cabezon",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the Northern Management Area Recreational Groundfish Regulations Summary table for current cabezon recreational fishing regulations."
+   },
+   {
+    "id": "greenlings",
+    "name": "Kelp and Rock Greenlings",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the Northern Management Area Recreational Groundfish Regulations Summary table for current kelp greenling and rock greenling recreational fishing regulations."
+   },
+   {
+    "id": "lingcod",
+    "name": "Lingcod",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the Northern Management Area Recreational Groundfish Regulations Summary table for current lingcod recreational fishing regulations."
+   },
+   {
+    "id": "leopard",
+    "name": "Leopard Shark",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for leopard shark (Triakis semifasciata) is open year-round, at all depths. The daily bag and possession limit is 3 fish with a minimum size limit of 36 inches total length. Refer to California ocean sport fishing regulations for other regulations pertaining to this species."
+   },
+   {
+    "id": "sanddab",
+    "name": "Pacific Sanddab and Other Flatfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery is open year-round, at all depths for the following species: Pacific sanddab (Citharichthys sordidus), butter sole (Isopsetta isolepis), curlfin sole (Pleuronichthys decurrens), flathead sole (Hippoglossoides elassodon), rex sole (PDF) (Glyptocephalus zachirus), rock sole (Lepidopsetta bilineata), and sand sole (Psettichthys melanostictus). When filleting fish on a vessel, each fillet must bear a one-inch square patch of skin. Refer to California ocean sport fishing regulations for size limits, bag limits, and other regulations pertaining to these species."
+   },
+   {
+    "id": "petrale",
+    "name": "Petrale Sole and Starry Flounder",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fisheries for petrale sole (Eopsetta jordani) and starry flounder (Platichthys stellatus) are open year-round, at all depths. There are no bag or size limits for petrale sole or starry flounder. Refer to California ocean sport fishing regulations for complete information pertaining to these species."
+   },
+   {
+    "id": "groundfish",
+    "name": "Other Federally Managed Groundfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fisheries for all other federally managed groundfish species (soupfin shark, Dover sole, English sole, arrowtooth flounder, spiny dogfish, skates, ratfish, grenadiers, finescale codling, Pacific cod, Pacific whiting, sablefish, and thornyheads) are open year-round, at all depths. Refer to California ocean sport fishing regulations for size limits, bag limits, and other regulations pertaining to these species."
+   },
+   {
+    "id": "sharks",
+    "name": "Sharks (State-managed)",
+    "list": "open",
+    "mark": "open",
+    "quote": "Open year-round, except that white sharks (Carcharodon carcharias) may not be taken or possessed at any time. The bag limits for sixgill shark (YouTube) (Hexanchus griseus) and broadnose sevengill shark (Notorynchus cepedianus) allow take of one fish per day with no size limit. The bag limits for shortfin mako shark (Isurus oxyrinchus), common thresher shark (Alopias vulpinus), and blue shark (Prionace glauca) allow take of two fish per day with no size limit."
+   },
+   {
+    "id": "pachalibut",
+    "name": "Pacific Halibut",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for Pacific halibut (Hippoglossus stenolepis) is open as of April 1, 2026. North of Point Arena, the season will continue through November 15, 2026 or until the quota is reached, whichever is earlier. The daily bag and possession limit for Pacific halibut is one fish, with no minimum size limit. When angling, no more than one line with two hooks attached may be used. For complete regulation information, see current California ocean sport fishing regulations. For further information about Pacific halibut, please visit the CDFW Pacific Halibut web page."
+   },
+   {
+    "id": "halibut",
+    "name": "California Halibut",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for California halibut (Paralichthys californicus) remains open year-round. The daily bag and total possession limit is two fish north of Point Sur, Monterey County. The minimum size limit is 22 inches total length."
+   },
+   {
+    "id": "surfperch",
+    "name": "Surfperch",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for surfperch (PDF) (family Embiotocidae) is open year-round. The daily bag and possession limit is 20 fish in combination of all species (except shiner perch), with not more than 10 fish of any one species. Shiner perch (Cymatogaster aggregata) have a separate bag and possession limit of 20 fish. Redtail surfperch (Amphistichus rhodoterus) have a minimum size limit of 10½ inches total length."
+   },
+   {
+    "id": "sturgeon",
+    "name": "Sturgeon",
+    "list": "open",
+    "mark": "alert",
+    "quote": "Catch-and-Release Fishing Only for White Sturgeon. The recreational fishery for white sturgeon (Acipenser transmontanus) is open from October 1, 2026 through June 30, 2027 in ocean waters, except for the long-standing area closure between January 1 and March 15 as described in California Code of Regulations Title 14, Section 27.90(i). The daily bag and possession limit for white sturgeon is zero (0) fish. The annual limit is zero (0) sturgeon per person."
+   },
+   {
+    "id": "tunas",
+    "name": "Tunas",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for tunas is open year-round. Refer to California ocean sport fishing regulations for bag limits, possession limits, fillet procedures on vessels, and other regulations pertaining to these species."
+   },
+   {
+    "id": "herring",
+    "name": "Pacific Herring",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for Pacific herring (Clupea pallasi) is open year-round. Ten gallons of Pacific herring may be taken per day (approximately 100 lb. or 520 fish). No specialized measuring device is required."
+   },
+   {
+    "id": "rock",
+    "name": "Rock Crab",
+    "list": "open",
+    "mark": "alert",
+    "quote": "NOTE: The California Department of Public Health (CDPH) warns crabbers to avoid eating rock crab viscera (internal organs, also known as \"butter\" or \"guts\") to avoid potential exposure to domoic acid. Crab should be cleaned before cooking. For the latest advisory information, call CDPH's toll-free Shellfish Information Line at (800) 553-4133 or visit CDPH's Shellfish Advisories web page."
+   },
+   {
+    "id": "mussels",
+    "name": "Mussels",
+    "list": "open",
+    "mark": "alert",
+    "quote": "NOTE: CDPH has issued its annual quarantine on the collection of mussels intended for human consumption. The quarantine is usually in effect from May 1 through October 31 each year. Again, for the latest advisory information, call CDPH's toll-free Shellfish Information Line at (800) 553-4133 or check CDPH's recreational bivalve shellfish advisory interactive map."
+   },
+   {
+    "id": "clams",
+    "name": "Clams",
+    "list": "open",
+    "mark": "alert",
+    "quote": "Razor Clams The razor clam fishery is closed in Humboldt and Del Norte counties."
+   },
+   {
+    "id": "kelp",
+    "name": "Kelp",
+    "list": "open",
+    "mark": "open",
+    "quote": "The daily bag limit on all marine aquatic plants for which the take is authorized is 10 pounds wet weight in the aggregate, except that 25 pounds of herring eggs on kelp may be collected. No eelgrass, surfgrass, or sea palm may be cut or disturbed at any time."
+   },
+   {
+    "id": "other",
+    "name": "Other species",
+    "list": "open",
+    "mark": "open",
+    "quote": "See California ocean sport fishing regulations for complete regulations, including regulations for species not covered here."
+   },
+   {
+    "id": "rclam",
+    "name": "Razor Clam",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The fishery for Pacific razor clam (Siliqua patula) is closed in Humboldt County and Del Norte County. This closure will remain in effect until further notice, due to the California Department of Public Health advisory that consumers avoid eating sport-harvested razor clams from Humboldt County and Del Norte County beaches. Dangerous levels of domoic acid have been found in sport-harvested razor clams."
+   },
+   {
+    "id": "abalone",
+    "name": "Red Abalone",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The recreational fishery for red abalone (Haliotis rufescens) is closed through at least April 1, 2036. For more information about red abalone, visit the Invertebrate Management Project web page."
+   },
+   {
+    "id": "salmon",
+    "name": "Ocean Salmon",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The recreational fishery for ocean salmon (Onchorynchus spp.) is closed in the Klamath Management Zone for the remainder of 2026. The 2027 ocean salmon season dates will be available in April, 2027 after federal and state review of 2026 spawning escapements, 2027 ocean abundance forecasts, annual management objectives, and other relevant issues. For further season information, please visit the Ocean Salmon Fishery Information web page."
+   },
+   {
+    "id": "dungeness",
+    "name": "Dungeness Crab",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The season for Dungeness crab (Metacarcinus magister) is closed as of July 31, 2026. The season is scheduled to reopen on November 7, 2026. Before the season opens up again, it's a good idea to sign up for notifications of in-season gear restriction changes on CDFW's Whale Safe Fisheries web page. Further information about Dungeness crab is available on the CDFW Crabs web page."
+   }
+  ]
+ },
+ {
+  "id": "mendocino",
+  "label": "Mendocino",
+  "bounds": "40°10′ N (near Cape Mendocino) to 38°57.5′ N (Point Arena)",
+  "south": 38.9583,
+  "north": 40.1667,
+  "url": "https://wildlife.ca.gov/Fishing/Ocean/Regulations/Fishing-Map/mendocino",
+  "updated": "October 1, 2026",
+  "items": [
+   {
+    "id": "rockfish",
+    "name": "Rockfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the Mendocino Management Area Recreational Groundfish Regulations Summary table for current rockfish recreational fishing regulations."
+   },
+   {
+    "id": "cabezon",
+    "name": "Cabezon",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the Mendocino Management Area Recreational Groundfish Regulations Summary table for current cabezon recreational fishing regulations."
+   },
+   {
+    "id": "greenlings",
+    "name": "Kelp and Rock Greenlings",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the Mendocino Management Area Recreational Groundfish Regulations Summary table for current kelp greenling and rock greenling recreational fishing regulations."
+   },
+   {
+    "id": "lingcod",
+    "name": "Lingcod",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the Mendocino Management Area Recreational Groundfish Regulations Summary table for current lingcod recreational fishing regulations."
+   },
+   {
+    "id": "leopard",
+    "name": "Leopard Shark",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for leopard shark (Triakis semifasciata) is open year-round, at all depths. The daily bag and possession limit is 3 fish with a minimum size limit of 36 inches total length. For complete regulation information, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "sanddab",
+    "name": "Pacific Sanddab and Other Flatfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery is open year-round, at all depths for the following species: Pacific sanddab (Citharichthys sordidus), butter sole (Isopsetta isolepis), curlfin sole (Pleuronichthys decurrens), flathead sole (Hippoglossoides elassodon), rex sole (PDF)(opens in new tab) (Glyptocephalus zachirus), rock sole (Lepidopsetta bilineata), and sand sole (Psettichthys melanostictus). When filleting fish on a vessel, each fillet must bear a one-inch square patch of skin. Refer to California ocean sport fishing regulations for size limits, bag limits, and other regulations pertaining to these species."
+   },
+   {
+    "id": "petrale",
+    "name": "Petrale Sole and Starry Flounder",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fisheries for petrale sole (Eopsetta jordani) and starry flounder (Platichthys stellatus) are open year-round, at all depths. There are no bag or size limits for petrale sole or starry flounder. For complete regulation information, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "scorpionfish",
+    "name": "California Scorpionfish (a.k.a. sculpin)",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for California scorpionfish (Scorpaena guttata) is open year-round, at all depths. The daily bag and possession limit is 5 fish with no minimum size limit. For complete regulation information, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "groundfish",
+    "name": "Other Federally Managed Groundfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fisheries for all other federally managed groundfish species (soupfin shark, Dover sole, English sole, arrowtooth flounder, spiny dogfish, skates, ratfish, grenadiers, finescale codling, Pacific cod, Pacific whiting, sablefish, and thornyheads) are open year-round, at all depths. Refer to California ocean sport fishing regulations for size limits, bag limits, and other regulations pertaining to these species."
+   },
+   {
+    "id": "pachalibut",
+    "name": "Pacific Halibut",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for Pacific halibut (Hippoglossus stenolepis) is open as of April 1, 2026. North of Point Arena, the season will continue through November 15, 2026 or until the quota is reached, whichever is earlier. The daily bag and possession limit for Pacific halibut is one fish, with no minimum size limit. When angling, no more than one line with two hooks attached may be used. For complete regulation information, see current California ocean sport fishing regulations. For further information about Pacific halibut, please visit the CDFW Pacific Halibut web page."
+   },
+   {
+    "id": "halibut",
+    "name": "California Halibut",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for California halibut (Paralichthys californicus) remains open year-round. The daily bag and total possession limit is two fish north of Point Sur, Monterey County. The minimum size limit is 22 inches total length."
+   },
+   {
+    "id": "sharks",
+    "name": "Sharks (State-managed)",
+    "list": "open",
+    "mark": "open",
+    "quote": "Open year-round, except that white sharks (Carcharodon carcharias) may not be taken or possessed at any time. The bag limits for sixgill shark (YouTube)(opens in new tab) (Hexanchus griseus) and broadnose sevengill shark (Notorynchus cepedianus) allow take of one fish per day with no size limit. The bag limits for shortfin mako shark (Isurus oxyrinchus), common thresher shark (Alopias vulpinus), and blue shark (Prionace glauca) allow take of two fish per day with no size limit."
+   },
+   {
+    "id": "surfperch",
+    "name": "Surfperch",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for surfperch (PDF)(opens in new tab) (family Embiotocidae) is open year-round. The daily bag and possession limit is 20 fish in combination of all species (except shiner perch), with not more than 10 fish of any one species. Shiner perch (Cymatogaster aggregata) have a separate bag and possession limit of 20 fish. Redtail surfperch (Amphistichus rhodoterus) have a minimum size limit of 10½ inches total length."
+   },
+   {
+    "id": "sturgeon",
+    "name": "Sturgeon",
+    "list": "open",
+    "mark": "alert",
+    "quote": "Catch-and-Release Fishing Only for White Sturgeon. The recreational fishery for white sturgeon (Acipenser transmontanus) is open from October 1, 2026 through June 30, 2027 in ocean waters, except for the long-standing area closure between January 1 and March 15 as described in California Code of Regulations Title 14, Section 27.90(i). The daily bag and possession limit for white sturgeon is zero (0) fish. The annual limit is zero (0) sturgeon per person."
+   },
+   {
+    "id": "tunas",
+    "name": "Tunas",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for tunas is open year-round. Refer to California ocean sport fishing regulations for bag limits, possession limits, fillet procedures on vessels, and other regulations pertaining to these species."
+   },
+   {
+    "id": "herring",
+    "name": "Pacific Herring",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for Pacific herring (Clupea pallasi) is open year-round. Ten gallons of Pacific herring may be taken per day (approximately 100 lb. or 520 fish). No specialized measuring device is required."
+   },
+   {
+    "id": "rock",
+    "name": "Rock Crab",
+    "list": "open",
+    "mark": "alert",
+    "quote": "NOTE: The California Department of Public Health (CDPH) warns the public to avoid eating rock crab viscera(opens in new tab) (internal organs, also known as \"crab butter\" or \"guts\") to avoid potential exposure to domoic acid. Crab should be cleaned before cooking. For the latest advisory information, call CDPH's toll-free Shellfish Information Line at (800) 553-4133 or visit CDPH's Shellfish Advisories web page."
+   },
+   {
+    "id": "mussels",
+    "name": "Mussels",
+    "list": "open",
+    "mark": "alert",
+    "quote": "NOTE: The California Department of Public Health (CDPH) has issued its annual quarantine on the collection of mussels intended for human consumption. The quarantine is usually in effect from May 1 through October 31 each year. For the latest advisory information, call CDPH's toll-free Shellfish Information Line at (800) 553-4133 or check CDPH's recreational bivalve shellfish advisory interactive map."
+   },
+   {
+    "id": "clams",
+    "name": "Clams",
+    "list": "open",
+    "mark": "alert",
+    "quote": "Razor Clams The razor clam fishery is closed in Humboldt County."
+   },
+   {
+    "id": "kelp",
+    "name": "Kelp",
+    "list": "open",
+    "mark": "open",
+    "quote": "The daily bag limit on all marine aquatic plants for which the take is authorized is 10 pounds wet weight in the aggregate, except that 25 pounds of herring eggs on kelp may be collected. No eelgrass, surfgrass, or sea palm may be cut or disturbed at any time."
+   },
+   {
+    "id": "other",
+    "name": "Other species",
+    "list": "open",
+    "mark": "open",
+    "quote": "See California ocean sport fishing regulations for complete regulations, including regulations for species not covered here."
+   },
+   {
+    "id": "salmon",
+    "name": "Ocean Salmon",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The recreational fishery for ocean salmon (Onchorynchus spp.) is closed in the Fort Bragg Management Area for the remainder of 2026. The 2027 ocean salmon season dates will be available in April, 2027 after federal and state review of 2026 spawning escapements, 2027 ocean abundance forecasts, annual management objectives, and other relevant issues. For further season information, please visit the Ocean Salmon Fishery Information web page."
+   },
+   {
+    "id": "abalone",
+    "name": "Abalone",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The recreational fishery for red abalone (Haliotis rufescens) is closed until at least April 1, 2036(opens in new tab). For more information about red abalone, visit the Invertebrate Management Project page."
+   },
+   {
+    "id": "dungeness",
+    "name": "Dungeness Crab",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The season for Dungeness crab (Metacarcinus magister) is closed as of July 31, 2026. The season is scheduled to reopen on November 7, 2026. Before the season opens up again, it's a good idea to sign up for notifications of in-season gear restriction changes on CDFW's Whale Safe Fisheries web page. Further information about Dungeness crab is available on the CDFW Crabs web page."
+   },
+   {
+    "id": "rclam",
+    "name": "Razor Clam",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The fishery for Pacific razor clam (Siliqua patula) in Humboldt County is closed until further notice. The fishery will reopen when a health risk no longer exists due to unhealthy levels of domoic acid in Humboldt County razor clams."
+   }
+  ]
+ },
+ {
+  "id": "san-francisco",
+  "label": "San Francisco",
+  "bounds": "38°57.5′ N (Point Arena) to 37°11′ N (Pigeon Point)",
+  "south": 37.1833,
+  "north": 38.9583,
+  "url": "https://wildlife.ca.gov/Fishing/Ocean/Regulations/Fishing-Map/san-francisco",
+  "updated": "October 1, 2026",
+  "items": [
+   {
+    "id": "rockfish",
+    "name": "Rockfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the San Francisco Management Area Recreational Groundfish Regulations Summary table for current rockfish recreational fishing regulations."
+   },
+   {
+    "id": "cabezon",
+    "name": "Cabezon",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the San Francisco Management Area Recreational Groundfish Regulations Summary table for current cabezon recreational fishing regulations."
+   },
+   {
+    "id": "greenlings",
+    "name": "Kelp and Rock Greenlings",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the San Francisco Management Area Recreational Groundfish Regulations Summary table for current kelp greenling and rock greenling recreational fishing regulations."
+   },
+   {
+    "id": "lingcod",
+    "name": "Lingcod",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the San Francisco Management Area Recreational Groundfish Regulations Summary table for current lingcod recreational fishing regulations."
+   },
+   {
+    "id": "leopard",
+    "name": "Leopard Shark",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for leopard shark (Triakis semifasciata) is open year-round, at all depths. The daily bag and possession limit is 3 fish with a minimum size limit of 36 inches total length. For complete regulation information, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "sanddab",
+    "name": "Pacific Sanddab and Other Flatfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery is open year-round, at all depths for the following species: Pacific sanddab (Citharichthys sordidus), butter sole (Isopsetta isolepis), curlfin sole (Pleuronichthys decurrens), flathead sole (Hippoglossoides elassodon), rex sole (PDF) (Glyptocephalus zachirus), rock sole (Lepidopsetta bilineata), and sand sole (Psettichthys melanostictus). Refer to California ocean sport fishing regulations for size limits, bag limits, and other regulations pertaining to these species."
+   },
+   {
+    "id": "petrale",
+    "name": "Petrale Sole and Starry Flounder",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fisheries for petrale sole (Eopsetta jordani) and starry flounder (Platichthys stellatus) are open year-round, at all depths. There are no bag or size limits for petrale sole or starry flounder. For complete regulation information, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "scorpionfish",
+    "name": "California Scorpionfish (a.k.a. sculpin)",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for California scorpionfish (Scorpaena guttata) is open year-round, at all depths. The daily bag and possession limit is 5 fish with no minimum size limit. For complete regulation information, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "groundfish",
+    "name": "Other Federally Managed Groundfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fisheries for all other federally managed groundfish species (soupfin shark, Dover sole, English sole, arrowtooth flounder, spiny dogfish, skates, ratfish, grenadiers, finescale codling, Pacific cod, Pacific whiting, sablefish, and thornyheads) are open year-round, at all depths. Refer to California ocean sport fishing regulations for size limits, bag limits, and other regulations pertaining to these species."
+   },
+   {
+    "id": "salmon",
+    "name": "Ocean Salmon",
+    "list": "open",
+    "mark": "alert",
+    "quote": "The recreational fishery for ocean salmon (Oncorhynchus spp.) is open as of September 1, 2026 from 38°02' N. lat. (near Point Reyes) to Pigeon Point. In this area, the season will continue through October 31, 2026 or until the 20,000 fish harvest guideline is reached, whichever is earlier."
+   },
+   {
+    "id": "pachalibut",
+    "name": "Pacific Halibut",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for Pacific halibut (Hippoglossus stenolepis) is open as of April 1, 2026. South of Point Arena, the season will continue through December 31, 2026 or until the quota is reached, whichever is earlier."
+   },
+   {
+    "id": "halibut",
+    "name": "California Halibut",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for California halibut (Paralichthys californicus) remains open year-round. The daily bag and total possession limit is two fish north of Point Sur, Monterey County. The minimum size limit is 22 inches total length."
+   },
+   {
+    "id": "sharks",
+    "name": "Sharks (State-managed)",
+    "list": "open",
+    "mark": "open",
+    "quote": "Open year-round, except that white sharks (Carcharodon carcharias) may not be taken or possessed at any time. The bag limits for sixgill shark (YouTube) (Hexanchus griseus) and broadnose sevengill shark (Notorynchus cepedianus) allow take of one fish per day with no size limit. The bag limits for shortfin mako shark (Isurus oxyrinchus), common thresher shark (Alopias vulpinus), and blue shark (Prionace glauca) allow take of two fish per day with no size limit."
+   },
+   {
+    "id": "surfperch",
+    "name": "Surfperch",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for surfperch (PDF) (family Embiotocidae) is open year-round. The daily bag and possession limit is 20 fish in combination of all species (except shiner perch), with not more than 10 fish of any one species. Shiner perch (Cymatogaster aggregata) have a separate bag and possession limit of 20 fish. Redtail surfperch (Amphistichus rhodoterus) have a minimum size limit of 10½ inches total length."
+   },
+   {
+    "id": "whiteseabass",
+    "name": "White Seabass",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for white seabass (Atractoscion nobilis) remains open year-round. The daily bag and possession limit is three fish. The minimum size limit is 28 inches total length or 20 inches alternate length."
+   },
+   {
+    "id": "sturgeon",
+    "name": "Sturgeon",
+    "list": "open",
+    "mark": "alert",
+    "quote": "Catch-and-Release Fishing Only for White Sturgeon. The recreational fishery for white sturgeon (Acipenser transmontanus) is open from October 1, 2026 through June 30, 2027 in ocean waters, except for the long-standing area closure between January 1 and March 15 as described in California Code of Regulations Title 14, Section 27.90(i). The daily bag and possession limit for white sturgeon is zero (0) fish. The annual limit is zero (0) sturgeon per person."
+   },
+   {
+    "id": "tunas",
+    "name": "Tunas",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for tunas is open year-round. Refer to California ocean sport fishing regulations for bag limits, possession limits, filleting procedures on vessels, and other regulations pertaining to these species."
+   },
+   {
+    "id": "herring",
+    "name": "Pacific Herring",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for Pacific herring (Clupea pallasi) is open year-round. Ten gallons of Pacific herring may be taken per day (approximately 100 lb. or 520 fish). No specialized measuring device is required."
+   },
+   {
+    "id": "rock",
+    "name": "Rock Crab",
+    "list": "open",
+    "mark": "alert",
+    "quote": "NOTE: The California Department of Public Health warns the public to avoid eating rock crab viscera (internal organs, also known as \"crab butter\" or \"guts\") from crab taken north of the Sonoma/Mendocino county line* to avoid potential exposure to domoic acid. Crab should be cleaned before cooking. For the latest advisory information, call CDPH's toll-free Shellfish Information Line at (800) 553-4133 or visit CDPH's Shellfish Advisories web page."
+   },
+   {
+    "id": "mussels",
+    "name": "Mussels",
+    "list": "open",
+    "mark": "alert",
+    "quote": "NOTE: The California Department of Public Health (CDPH) has issued its annual quarantine on the collection of mussels intended for human consumption. The quarantine is usually in effect from May 1 through October 31 each year. For the latest advisory information, call CDPH's toll-free Shellfish Information Line at (800) 553-4133 or check CDPH's recreational bivalve shellfish advisory interactive map."
+   },
+   {
+    "id": "clams",
+    "name": "Clams",
+    "list": "open",
+    "mark": "open",
+    "quote": "During the open season, clams may be taken from one-half hour before sunrise to one-half hour after sunset. Each person must dig only their own limit of clams. Each person is required to keep a separate container for their clams and not commingle with clams taken by another person. Hydraulic pumps may not be used to take clams, and may not be possessed anywhere clams may be taken. It is unlawful to be on any clam beach with any instrument capable of being used to dig clams during the closed night time hours."
+   },
+   {
+    "id": "kelp",
+    "name": "Kelp",
+    "list": "open",
+    "mark": "open",
+    "quote": "The daily bag limit on all marine aquatic plants for which the take is authorized is 10 pounds wet weight in the aggregate, except that 25 pounds of herring eggs on kelp may be collected. No eelgrass, surfgrass, or sea palm may be cut or disturbed at any time."
+   },
+   {
+    "id": "other",
+    "name": "Other species",
+    "list": "open",
+    "mark": "open",
+    "quote": "See the California ocean sport fishing regulations for complete information, including regulations for species not covered here."
+   },
+   {
+    "id": "dungenessclosed",
+    "name": "Dungeness Crab",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The season for Dungeness crab (Metacarcinus magister) is closed. The season is scheduled to reopen on November 7, 2026. Before the season opens up again, it's a good idea to sign up for notifications of in-season gear restriction changes on CDFW's Whale Safe Fisheries web page. Further information about Dungeness crab is available on the CDFW Crabs web page."
+   },
+   {
+    "id": "abalone",
+    "name": "Abalone",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The recreational fishery for red abalone (Haliotis rufescens) is closed until at least April 1, 2036. For more information about red abalone, visit the Invertebrate Management Project page."
+   }
+  ]
+ },
+ {
+  "id": "central",
+  "label": "Central",
+  "bounds": "37°11′ N (Pigeon Point) to 34°27′ N (Point Conception)",
+  "south": 34.45,
+  "north": 37.1833,
+  "url": "https://wildlife.ca.gov/Fishing/Ocean/Regulations/Fishing-Map/central",
+  "updated": "October 13, 2026",
+  "items": [
+   {
+    "id": "rockfish",
+    "name": "Rockfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the Central Management Area Recreational Groundfish Regulations Summary table for current rockfish fishing regulations."
+   },
+   {
+    "id": "cabezon",
+    "name": "Cabezon",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the Central Management Area Recreational Groundfish Regulations Summary table for current cabezon fishing regulations."
+   },
+   {
+    "id": "greenlings",
+    "name": "Kelp and Rock Greenlings",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the Central Management Area Recreational Groundfish Regulations Summary table for current kelp greenling and rock greenling fishing regulations."
+   },
+   {
+    "id": "lingcod",
+    "name": "Lingcod",
+    "list": "open",
+    "mark": "open",
+    "quote": "Please see the Central Management Area Recreational Groundfish Regulations Summary table for current lingcod fishing regulations."
+   },
+   {
+    "id": "leopard",
+    "name": "Leopard Shark",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for leopard shark (Triakis semifasciata) is open year-round, at all depths. The daily bag and possession limit is 3 fish with a minimum size limit of 36 inches total length. For complete regulation information, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "sanddab",
+    "name": "Pacific Sanddab and Other Flatfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery is open year-round, at all depths for the following species: Pacific sanddab (Citharichthys sordidus), butter sole (Isopsetta isolepis), curlfin sole (Pleuronichthys decurrens), flathead sole (Hippoglossoides elassodon), rex sole (PDF)(opens in new tab) (Glyptocephalus zachirus), rock sole (Lepidopsetta bilineata), and sand sole (Psettichthys melanostictus). Refer to groundfish sport fishing regulations for further information. For complete regulation information, including size limits, bag limits, and other regulations pertaining to these species, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "petrale",
+    "name": "Petrale Sole and Starry Flounder",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fisheries for petrale sole (Eopsetta jordani) and starry flounder (Platichthys stellatus) are open year-round, at all depths. There are no bag or size limits for petrale sole or starry flounder. For complete regulation information, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "scorpionfish",
+    "name": "California Scorpionfish (a.k.a. sculpin)",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for California scorpionfish (Scorpaena guttata) is open year-round, at all depths. The daily bag and possession limit is 5 fish with no minimum size limit. For complete regulation information, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "groundfish",
+    "name": "Other Federally Managed Groundfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fisheries for all other federally managed groundfish species (soupfin shark, Dover sole, English sole, arrowtooth flounder, spiny dogfish, skates, ratfish, grenadiers, finescale codling, Pacific cod, Pacific whiting, sablefish, and thornyheads) are open year-round, at all depths. For complete regulation information, including size limits, bag limits, and other regulations pertaining to these species, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "pachalibut",
+    "name": "Pacific Halibut",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for Pacific halibut (Hippoglossus stenolepis) is open as of April 1, 2026. South of Point Arena, Mendocino County the season will remain open through December 31, 2026 or until the quota is reached, whichever is earlier. The daily bag and possession limit for Pacific halibut is one fish, with no minimum size limit. When angling, no more than one line with two hooks attached may be used. For complete regulation information, see current ocean sport fishing regulations. For further information about Pacific halibut, please visit the CDFW Pacific halibut web page."
+   },
+   {
+    "id": "halibut",
+    "name": "California Halibut",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for California halibut (Paralichthys californicus) remains open year-round. The daily bag and total possession limit is five fish south of Point Sur, Monterey County. The minimum size limit is 22 inches total length."
+   },
+   {
+    "id": "whiteseabass",
+    "name": "White Seabass",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for white seabass (Atractoscion nobilis) remains open year-round. The daily bag and possession limit is three fish except that only one fish may be taken in waters south of Point Conception between March 15 and June 15. The minimum size limit is 28 inches total length or 20 inches alternate length."
+   },
+   {
+    "id": "sheephead",
+    "name": "California Sheephead",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for California sheephead (Bodianus pulcher) is open year-round to divers and shore-based anglers. This fishery is open to boat-based anglers from March 1, 2026 through December 31, 2026. The daily bag and possession limit is 2 fish, with a minimum size limit of 12 inches total length. Review California sport fishing regulations for further information pertaining to California sheephead."
+   },
+   {
+    "id": "whitefish",
+    "name": "Ocean Whitefish",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for ocean whitefish (opens in new tab) (Caulolatilus princeps) is open year-round, at all depths. The daily bag and possession limit is 10 fish within the general daily bag limit of 20 fish total, with no minimum size limit. Review California sport fishing regulations for further information pertaining to ocean whitefish."
+   },
+   {
+    "id": "sharks",
+    "name": "Sharks (State-managed)",
+    "list": "open",
+    "mark": "open",
+    "quote": "Open year-round, except that white sharks (Carcharodon carcharias) may not be taken or possessed at any time. The bag limits for sixgill shark (YouTube)(opens in new tab) (Hexanchus griseus) and broadnose sevengill shark (Notorynchus cepedianus) allow take of one fish per day with no size limit. The bag limits for shortfin mako shark (Isurus oxyrinchus), common thresher shark (Alopias vulpinus), and blue shark (Prionace glauca) allow take of two fish per day with no size limit."
+   },
+   {
+    "id": "surfperch",
+    "name": "Surfperch",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for surfperch (PDF)(opens in new tab) (family Embiotocidae) is open year-round. The daily bag and possession limit is 20 fish in combination of all species (except shiner perch), with not more than 10 fish of any one species. Shiner perch (Cymatogaster aggregata) have a separate bag and possession limit of 20 fish. Redtail surfperch (Amphistichus rhodoterus) have a minimum size limit of 10½ inches total length."
+   },
+   {
+    "id": "sturgeon",
+    "name": "Sturgeon",
+    "list": "open",
+    "mark": "alert",
+    "quote": "Catch-and-Release Fishing Only for White Sturgeon. The recreational fishery for white sturgeon (Acipenser transmontanus) is open from October 1, 2026 through June 30, 2027 in ocean waters, except for the long-standing area closure between January 1 and March 15 as described in CCR T14, Section 27.90(i). The daily bag and possession limit for white sturgeon is zero (0) fish. The annual limit is zero (0) sturgeon per person."
+   },
+   {
+    "id": "tunas",
+    "name": "Tunas",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for tunas is open year-round. Refer to California ocean sport fishing regulations for bag limits, possession limits, filleting procedures on vessels, and other regulations pertaining to these species."
+   },
+   {
+    "id": "herring",
+    "name": "Pacific Herring",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for Pacific herring (Clupea pallasi) is open year-round. Ten gallons of Pacific herring may be taken per day (approximately 100 lb. or 520 fish). No specialized measuring device is required."
+   },
+   {
+    "id": "rock",
+    "name": "Rock Crab",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for all rock crab species, including red crab (Cancer productus), yellow crab (Metacarcinus anthonyi) and brown crab (Romaleon antennarium) is open year-round, statewide. The daily bag limit is 35 crab, and the minimum size limit is 4 inches."
+   },
+   {
+    "id": "mussels",
+    "name": "Mussels",
+    "list": "open",
+    "mark": "alert",
+    "quote": "NOTE: The California Department of Public Health (CDPH) has issued its annual, statewide quarantine on the collection of mussels (opens in new tab) intended for human consumption. The quarantine is usually in effect from May 1 through October 31 each year."
+   },
+   {
+    "id": "clams",
+    "name": "Clams",
+    "list": "open",
+    "mark": "open",
+    "quote": "During the open season, clams may be taken from one-half hour before sunrise to one-half hour after sunset. Each person must dig only their own limit of clams. Each person is required to keep a separate container for their clams and not commingle with clams taken by another person. Hydraulic pumps may not be used to take clams(opens in new tab), and may not be possessed anywhere clams may be taken. It is unlawful to be on any clam beach with any instrument capable of being used to dig clams during the closed nighttime hours."
+   },
+   {
+    "id": "kelp",
+    "name": "Kelp",
+    "list": "open",
+    "mark": "open",
+    "quote": "The daily bag limit on all marine aquatic plants for which the take is authorized is 10 pounds wet weight in the aggregate, except that 25 pounds of herring eggs on kelp may be collected. No eelgrass, surfgrass, or sea palm may be cut or disturbed at any time."
+   },
+   {
+    "id": "other",
+    "name": "Other species",
+    "list": "open",
+    "mark": "open",
+    "quote": "See California ocean sport fishing regulations for complete information, including regulations for species not covered here."
+   },
+   {
+    "id": "salmon",
+    "name": "Ocean Salmon",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The recreational fishery for ocean salmon (Onchorynchus spp.) is closed from Pigeon Point to the U.S./Mexico border, for the rest of the year. 2027 ocean salmon season dates will be available beginning in April, 2027 after federal and state review of 2026 spawning escapements, 2027 ocean abundance forecasts, annual management objectives, and other relevant issues. More information is available on the CDFW Ocean Salmon Seasons web page."
+   },
+   {
+    "id": "dungenessclosed",
+    "name": "Dungeness Crab",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The season for Dungeness crab (Metacarcinus magister) is closed as of July 1, 2026. The season is scheduled to reopen on November 7, 2026."
+   },
+   {
+    "id": "abalone",
+    "name": "Red Abalone",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The recreational fishery for red abalone (Haliotis rufescens) is closed year-round south of the mouth of San Francisco Bay. For more information about abalone, please visit the Invertebrate Management Project web page."
+   }
+  ]
+ },
+ {
+  "id": "southern",
+  "label": "Southern",
+  "bounds": "34°27′ N (Point Conception) to the U.S.–Mexico border",
+  "south": 32.4,
+  "north": 34.45,
+  "url": "https://wildlife.ca.gov/Fishing/Ocean/Regulations/Fishing-Map/southern",
+  "updated": "October 2, 2026",
+  "items": [
+   {
+    "id": "rockfish",
+    "name": "Rockfish",
+    "list": "open",
+    "mark": "alert",
+    "quote": "Please see the Southern Management Area Recreational Groundfish Regulations Summary table for current recreational rockfish fishing regulations."
+   },
+   {
+    "id": "cabezon",
+    "name": "Cabezon",
+    "list": "open",
+    "mark": "alert",
+    "quote": "Please see the Southern Management Area Recreational Groundfish Regulations Summary table for current recreational cabezon fishing regulations."
+   },
+   {
+    "id": "greenlings",
+    "name": "Kelp and Rock Greenlings",
+    "list": "open",
+    "mark": "alert",
+    "quote": "Please see the Southern Management Area Recreational Groundfish Regulations Summary table for current recreational kelp greenling and rock greenling fishing regulations."
+   },
+   {
+    "id": "lingcod",
+    "name": "Lingcod",
+    "list": "open",
+    "mark": "alert",
+    "quote": "Please see the Southern Management Area Recreational Groundfish Regulations Summary table for current recreational lingcod fishing regulations."
+   },
+   {
+    "id": "leopard",
+    "name": "Leopard Shark",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for leopard shark (Triakis semifasciata) is open year-round, at all depths. The daily bag and possession limit is 3 fish with a minimum size limit of 36 inches total length. For complete regulation information, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "sanddab",
+    "name": "Pacific Sanddab and Other Flatfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery is open year-round, at all depths for the following species: Pacific sanddab (Citharichthys sordidus), butter sole (Isopsetta isolepis), curlfin sole (Pleuronichthys decurrens), flathead sole (Hippoglossoides elassodon), rex sole (PDF) (Glyptocephalus zachirus), rock sole (Lepidopsetta bilineata), and sand sole (Psettichthys melanostictus). Refer to groundfish sport fishing regulations for complete regulation information, including size limits, bag limits, and other regulations pertaining to these species, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "petrale",
+    "name": "Petrale Sole and Starry Flounder",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fisheries for petrale sole (Eopsetta jordani) and starry flounder (Platichthys stellatus) are open year-round, at all depths. There are no bag or size limits for petrale sole or starry flounder. For complete regulation information, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "scorpionfish",
+    "name": "California Scorpionfish (a.k.a. sculpin)",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for California scorpionfish (Scorpaena guttata) is open year-round, at all depths. The daily bag and possession limit is 5 fish with no minimum size limit. For complete regulation information, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "groundfish",
+    "name": "Other Federally Managed Groundfish",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fisheries for all other federally managed groundfish species (soupfin shark, Dover sole, English sole, arrowtooth flounder, spiny dogfish, skates, ratfish, grenadiers, finescale codling, Pacific cod, Pacific whiting, sablefish, and thornyheads) are open year-round, at all depths. For complete regulation information, including size limits, bag limits, and other regulations pertaining to these species, see current ocean sport fishing regulations."
+   },
+   {
+    "id": "halibut",
+    "name": "California Halibut",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for California halibut (Paralichthys californicus) remains open year-round. The daily bag and possession limit is five fish south of Point Sur, Monterey County. The minimum size limit is 22 inches total length."
+   },
+   {
+    "id": "kelpbass",
+    "name": "Kelp Bass, Barred Sand Bass, Spotted Sand Bass",
+    "list": "open",
+    "mark": "open",
+    "quote": "The fisheries for kelp bass, barred sand bass, and spotted sand bass (Paralabrax species) remains open year-round. The daily bag and possession limit is five fish in any combination of species, except no more than 4 barred sand bass may be taken. The minimum size limit is 14 inches total length or 10 inches alternate length."
+   },
+   {
+    "id": "whiteseabass",
+    "name": "White Seabass",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for white seabass (Atractoscion nobilis) remains open year-round. The daily bag and possession limit is three fish except that only one fish may be taken in waters south of Point Conception between March 15 and June 15. The minimum size limit is 28 inches total length or 20 inches alternate length."
+   },
+   {
+    "id": "groupers",
+    "name": "Groupers",
+    "list": "open",
+    "mark": "alert",
+    "quote": "Note: Take of broomtail grouper, gulf grouper, and giant (black) sea bass (a type of grouper) is prohibited."
+   },
+   {
+    "id": "sheephead",
+    "name": "California Sheephead",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for California sheephead (Bodianus pulcher) is open year-round to divers and shore-based anglers. This fishery is open to boat-based anglers from March 1, 2026 through December 31, 2026. The daily bag and possession limit is 2 fish, with a minimum size limit of 12 inches total length. Review California sport fishing regulations for further information pertaining to California sheephead."
+   },
+   {
+    "id": "whitefish",
+    "name": "Ocean Whitefish",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for ocean whitefish (Caulolatilus princeps) is open year-round, at all depths. The daily bag and possession limit is 10 fish within the general daily bag limit of 20 fish total, with no minimum size limit. Review California sport fishing regulations for further information pertaining to ocean whitefish."
+   },
+   {
+    "id": "yellowtail",
+    "name": "Yellowtail",
+    "list": "open",
+    "mark": "open",
+    "quote": "The fishery for yellowtail (Seriola dorsalis) remains open year-round. The daily bag and possession limit is ten fish. The minimum size limit is 24 inches fork length (PDF), except that up to five fish less than 24 inches fork length may be taken or possessed."
+   },
+   {
+    "id": "tunas",
+    "name": "Tunas",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for tunas is open year-round. Refer to California ocean sport fishing regulations for bag limits, possession limits, fillet procedures on vessels, and other regulations pertaining to these species."
+   },
+   {
+    "id": "sharks",
+    "name": "Sharks (State-managed)",
+    "list": "open",
+    "mark": "open",
+    "quote": "Open year-round, except that white sharks (Carcharodon carcharias) may not be taken or possessed at any time. The bag limits for sixgill shark (YouTube) (Hexanchus griseus) and broadnose sevengill shark (PDF) (Notorynchus cepedianus) allow take of one fish per day with no size limit. The bag limits for shortfin mako shark (Isurus oxyrinchus), thresher shark (Alopias vulpinus), and blue shark (Prionace glauca) allow take of two fish per day with no size limit."
+   },
+   {
+    "id": "surfperch",
+    "name": "Surfperch",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for surfperch (PDF) (family Embiotocidae) is open year-round. The daily bag and possession limit is 20 fish in combination of all species (except shiner perch), with not more than 10 fish of any one species. Shiner perch (Cymatogaster aggregata) have a separate bag and possession limit of 20 fish. Redtail surfperch (Amphistichus rhodoterus) have a minimum size limit of 10½ inches total length."
+   },
+   {
+    "id": "grunion",
+    "name": "California Grunion",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for California grunion (Leuresthes tenuis) is open from July 1, 2026 through March 31, 2027. The bag limit is 30 fish. Grunion may only be taken by hand, and no holes may be dug in the beach to entrap them. Information about grunion, including a schedule of expected grunion runs, can be found on CDFW's California Grunion Facts and Expected Runs web page."
+   },
+   {
+    "id": "herring",
+    "name": "Pacific Herring",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for Pacific herring (Clupea pallasi) is open year-round. Ten gallons of Pacific herring may be taken per day (approximately 100 lb. or 520 fish). No specialized measuring device is required."
+   },
+   {
+    "id": "lobster",
+    "name": "Spiny Lobster",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for California spiny lobster (Panulirus interruptus) is open from 6:00 p.m. on October 2, 2026 through March 17, 2027. The daily bag limit is seven lobster. The minimum size limit is three and one-fourth inches measured along the midline of the upper body from the rear edge of the eye socket (between the horns) to the rear edge of the carapace (body shell)."
+   },
+   {
+    "id": "rock",
+    "name": "Rock Crab",
+    "list": "open",
+    "mark": "open",
+    "quote": "The recreational fishery for all rock crab species, including red crab (Cancer productus), yellow crab (Metacarcinus anthonyi) and brown crab (Romaleon antennarium) is open year-round, statewide. The daily bag limit is 35 crab, and the minimum size limit is 4 inches. Review crab measurement methods (PDF) and the current California Ocean Sport Fishing Regulations booklet for more rock crab fishing information."
+   },
+   {
+    "id": "mussels",
+    "name": "Mussels",
+    "list": "open",
+    "mark": "alert",
+    "quote": "NOTE: The California Department of Public Health (CDPH) is advising consumers not to eat sport-harvested mussels, clams, or whole scallops from the Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, and San Miguel islands) due to dangerous levels of domoic acid found in sport-harvested bivalve shellfish. For the latest advisory information, call CDPH's toll-free Shellfish Information Line at (800) 553-4133 or check CDPH's recreational bivalve shellfish advisory interactive map."
+   },
+   {
+    "id": "clams",
+    "name": "Clams",
+    "list": "open",
+    "mark": "alert",
+    "quote": "NOTE: The California Department of Public Health (CDPH) is advising consumers not to eat sport-harvested mussels, clams, or whole scallops from the Northern Channel Islands (Anacapa, Santa Cruz, Santa Rosa, and San Miguel islands) due to dangerous levels of domoic acid found in sport-harvested bivalve shellfish. For the latest advisory information, call CDPH's toll-free Shellfish Information Line at (800) 553-4133 or check CDPH's recreational bivalve shellfish advisory interactive map."
+   },
+   {
+    "id": "kelp",
+    "name": "Kelp",
+    "list": "open",
+    "mark": "open",
+    "quote": "The daily bag limit on all marine aquatic plants for which the take is authorized is 10 pounds wet weight in the aggregate, except that 25 pounds of herring eggs on kelp may be collected. No eelgrass, surfgrass, or sea palm may be cut or disturbed at any time."
+   },
+   {
+    "id": "other",
+    "name": "Other species",
+    "list": "open",
+    "mark": "open",
+    "quote": "See California ocean sport fishing regulations for complete regulations, including regulations for species not covered here."
+   },
+   {
+    "id": "salmon",
+    "name": "Ocean Salmon",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The recreational fishery for ocean salmon (Onchorynchus spp.) is closed from Pigeon Point to the U.S./Mexico border, for the rest of the year. 2027 ocean salmon season dates will be available beginning in April, 2027 after federal and state review of 2026 spawning escapements, 2027 ocean abundance forecasts, annual management objectives, and other relevant issues. More information is available on the CDFW Ocean Salmon Seasons web page."
+   },
+   {
+    "id": "giantseabass",
+    "name": "Giant Sea Bass (a.k.a. black sea bass)",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The recreational fishery for giant sea bass (Stereolepis gigas) is closed year-round."
+   },
+   {
+    "id": "abalone",
+    "name": "Abalone",
+    "list": "closed",
+    "mark": "closed",
+    "quote": "The recreational fishery for red abalone (Haliotis rufescens) is closed year-round south of the mouth of San Francisco Bay. No species of abalone may be taken at any time in Southern California. For more information, visit the Invertebrate Management Project page."
+   }
+  ]
+ }
+]

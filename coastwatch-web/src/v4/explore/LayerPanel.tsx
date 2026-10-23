@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import type { LayerArtifact, Manifest, Palette } from "@/generated/schema";
 import { CHARM_VARIABLES, charmRun, coveragePct, satelliteLatest, sourceStatus, type CharmVariable } from "@/lib/layers";
 import { KNOTS_PER_MS, currentsHourly, defaultHour } from "@/lib/currents";
@@ -7,22 +9,41 @@ import { AGE_COLOURS, SENSOR_COLOURS, displayPalette, gradientCss } from "@/lib/
 import { SPEED_CLASSES, ARROW_LENGTHS } from "@/lib/basemap";
 import { stampLines } from "@/lib/stamp";
 import { COUNTIES } from "@/content/copy";
-import type { CountyPrefs } from "@/components/map/Counties";
+import { OUTSIDE_TINT_RGB } from "@/lib/gridTiles";
 import { Icon } from "@/v4/ui/Icon";
+import { CHL_PALETTE, SST_PALETTE, cToF, derivedSst, sstIsAnalysis, type SstLayer, bandLabel, checkSentence, derivedOutlook, lowerIsBetter, type DerivedValidationEntry, skillRows, type DerivedIndex, type EstimateLayer, type OutlookLayer } from "@/lib/derived";
 import { SAT_WORDS, VARIABLE_WORDS, coverageWhen, type LayerChoice, type Resolved } from "./layers";
 import { clockLabel, dayLabel, relTime } from "@/v4/ui/time";
 import { classifySource, classifyTime } from "@/lib/freshness";
 
-type Family = "none" | "forecast" | "satellite" | "currents";
+type Family = "none" | "forecast" | "satellite" | "outlook" | "sst" | "currents";
 
 const FAMILY: Record<Family, { name: string; kind: string; icon: string; tone: string }> = {
   none: { name: "Seafloor and coast", kind: "Reference", icon: "map", tone: "text-n-ink-2" },
   forecast: { name: "NOAA C-HARM forecast", kind: "Model", icon: "cell", tone: "text-n-model" },
   satellite: { name: "Satellite chlorophyll", kind: "Observation", icon: "layers", tone: "text-n-measured" },
+  outlook: { name: "Outlook (8 days)", kind: "Outlook, not observed", icon: "clock", tone: "text-n-model" },
+  sst: { name: "Sea temperature", kind: "Observation", icon: "chart", tone: "text-n-conditions" },
   currents: { name: "Surface currents", kind: "Observation", icon: "compass", tone: "text-n-conditions" },
 };
 
-function freshnessLine(m: Manifest, f: Family, now: Date | null): string | null {
+/** "Oct 21–28" (or across months, "Oct 30–Nov 6"): an outlook's window. */
+export function windowLabel(from: string, to: string): string {
+  const a = dayLabel(from);
+  const b = dayLabel(to);
+  return a.split(" ")[0] === b.split(" ")[0] && !a.includes(",") ? `${a}–${b.split(" ")[1]}` : `${a}–${b}`;
+}
+
+function freshnessLine(m: Manifest, f: Family, now: Date | null, derived: DerivedIndex | null = null): string | null {
+  if (f === "sst") {
+    const t = derivedSst(derived);
+    const d = t?.observed_dates[t.observed_dates.length - 1];
+    return t && d ? `${sstIsAnalysis(t) ? "Analysis of" : "Observed"} ${dayLabel(d)}${now ? ` · ${relTime(d, now)}` : ""}` : null;
+  }
+  if (f === "outlook") {
+    const o = derivedOutlook(derived);
+    return o ? `Issued ${dayLabel(o.issued)} · mean ${windowLabel(o.valid_from, o.valid_to)}` : null;
+  }
   if (f === "forecast") {
     const run = charmRun(m);
     return run ? `Run of ${dayLabel(run.issued_date)}${now ? ` · ${relTime(run.issued_date, now)}` : ""}` : "No run published";
@@ -45,11 +66,13 @@ function familyOf(c: LayerChoice): Family {
 }
 
 /** Choosing a layer family: its default choice, and which families the dataset can show. */
-function useFamilies(manifest: Manifest, choice: LayerChoice, onChoice: (c: LayerChoice) => void, defaults: { lead: number }) {
+function useFamilies(manifest: Manifest, choice: LayerChoice, onChoice: (c: LayerChoice) => void, defaults: { lead: number }, derived: DerivedIndex | null) {
   const active = familyOf(choice);
   const pick = (f: Family) => {
     if (f === active) return;
     if (f === "none") onChoice({ kind: "none" });
+    if (f === "outlook") onChoice({ kind: "outlook" });
+    if (f === "sst") onChoice({ kind: "sst" });
     if (f === "forecast") onChoice({ kind: "forecast", variable: "particulate_domoic", lead: defaults.lead });
     if (f === "satellite") onChoice({ kind: "satellite", product: satelliteLatest(manifest, "olci300") ? "olci300" : "viirs750", day: null });
     if (f === "currents") onChoice({ kind: "currents", hour: null, mean: false });
@@ -58,19 +81,30 @@ function useFamilies(manifest: Manifest, choice: LayerChoice, onChoice: (c: Laye
     none: true,
     forecast: !!charmRun(manifest),
     satellite: !!(satelliteLatest(manifest, "olci300") || satelliteLatest(manifest, "viirs750")),
+    outlook: !!derivedOutlook(derived),
+    sst: !!derivedSst(derived),
     currents: currentsHourly(manifest).length > 0,
   };
-  return { active, pick, available };
+  // a family the dataset does not offer at all (the outlook without a derived index) is not listed
+  const listed = (Object.keys(FAMILY) as Family[]).filter((f) => (f !== "outlook" || available.outlook) && (f !== "sst" || available.sst));
+  return { active, pick, available, listed };
 }
 
-const CHIP_NAME: Record<Family, string> = { none: "Seafloor", forecast: "Forecast", satellite: "Satellite", currents: "Currents" };
+const CHIP_NAME: Record<Family, string> = { none: "Seafloor", forecast: "Forecast", satellite: "Satellite", outlook: "Outlook", sst: "Sea temp", currents: "Currents" };
 
 /** On a phone, the layer families as one row of chips at the sheet's peek: one tap from any state. */
-export function LayerChips({ manifest, choice, onChoice, defaults }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; defaults: { lead: number } }) {
-  const { active, pick, available } = useFamilies(manifest, choice, onChoice, defaults);
+export function LayerChips({ manifest, choice, onChoice, defaults, derived = null }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; defaults: { lead: number }; derived?: DerivedIndex | null }) {
+  const { active, pick, available, listed } = useFamilies(manifest, choice, onChoice, defaults, derived);
+  const row = useRef<HTMLDivElement | null>(null);
+  // the chosen chip is always in view (five chips scroll on a phone)
+  useEffect(() => {
+    const r = row.current;
+    const el = r?.querySelector<HTMLElement>('[aria-checked="true"]');
+    if (r && el && (el.offsetLeft < r.scrollLeft || el.offsetLeft + el.offsetWidth > r.scrollLeft + r.clientWidth)) r.scrollLeft = el.offsetLeft - 8;
+  }, [active]);
   return (
-    <div role="radiogroup" aria-label="Map layer" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none]" data-testid="layer-chips">
-      {(Object.keys(FAMILY) as Family[]).map((f) => (
+    <div ref={row} role="radiogroup" aria-label="Map layer" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none]" data-testid="layer-chips">
+      {listed.map((f) => (
         <button
           key={f}
           type="button"
@@ -89,8 +123,8 @@ export function LayerChips({ manifest, choice, onChoice, defaults }: { manifest:
   );
 }
 
-export function LayerList({ manifest, choice, onChoice, now, defaults }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; now: Date | null; defaults: { lead: number } }) {
-  const { active, pick, available } = useFamilies(manifest, choice, onChoice, defaults);
+export function LayerList({ manifest, choice, onChoice, now, defaults, derived = null }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; now: Date | null; defaults: { lead: number }; derived?: DerivedIndex | null }) {
+  const { active, pick, available, listed } = useFamilies(manifest, choice, onChoice, defaults, derived);
   return (
     <div
       role="radiogroup"
@@ -99,7 +133,7 @@ export function LayerList({ manifest, choice, onChoice, now, defaults }: { manif
       data-testid="layer-list"
       // a radio group moves with the arrow keys (one tab stop, the checked layer)
       onKeyDown={(e) => {
-        const order = (Object.keys(FAMILY) as Family[]).filter((f) => available[f]);
+        const order = listed.filter((f) => available[f]);
         const i = order.indexOf(active);
         const step = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
         if (!step || i < 0) return;
@@ -109,10 +143,10 @@ export function LayerList({ manifest, choice, onChoice, now, defaults }: { manif
         (e.currentTarget.querySelector(`[data-testid="layer-${next}"]`) as HTMLElement | null)?.focus();
       }}
     >
-      {(Object.keys(FAMILY) as Family[]).map((f) => {
+      {listed.map((f) => {
         const on = f === active;
         const meta = FAMILY[f];
-        const line = freshnessLine(manifest, f, now);
+        const line = freshnessLine(manifest, f, now, derived);
         return (
           <button
             key={f}
@@ -147,7 +181,7 @@ export function LayerList({ manifest, choice, onChoice, now, defaults }: { manif
 }
 
 /** Options of the active layer: the C-HARM variable, the satellite sensor. Time lives in the timebar. */
-export function LayerOptions({ manifest, choice, onChoice }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void }) {
+export function LayerOptions({ manifest, choice, onChoice, estimate = null }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; estimate?: EstimateLayer | null }) {
   if (choice.kind === "forecast")
     return (
       <div className="flex flex-col gap-1.5">
@@ -209,6 +243,16 @@ export function LayerOptions({ manifest, choice, onChoice }: { manifest: Manifes
             </div>
           </>
         )}
+        {/* the gap-filling estimate: under the observed pixels, never over them; on unless turned off */}
+        {estimate && !choice.day && (choice.view ?? "chl") === "chl" && (
+          <label className="nx-focus mt-2 flex min-h-11 items-start gap-2.5 text-[14px] text-n-ink" data-testid="sat-estimate">
+            <input type="checkbox" className="mt-[3px] h-[18px] w-[18px] accent-[var(--nx-accent)]" checked={choice.estimate !== false} onChange={(e) => onChoice({ ...choice, estimate: e.target.checked })} data-testid="sat-estimate-toggle" />
+            <span>
+              <span className="font-semibold">Fill the gaps with estimates</span>
+              <span className="block text-[12.5px] leading-snug text-n-ink-3">Where clouds or the coast hid the water, a stippled estimate from nearby clear pixels. Estimated, not observed; observed pixels are never changed.</span>
+            </span>
+          </label>
+        )}
       </div>
     );
   }
@@ -238,17 +282,26 @@ function Ramp({ palette, labels }: { palette: Palette; labels: [string, string, 
   );
 }
 
-function NoData() {
+function NoData({ children = "No value (not modelled, cloud or no observation): never zero", testid }: { children?: React.ReactNode; testid?: string }) {
   return (
-    <span className="flex items-center gap-2 text-[13px] text-n-ink-2">
-      <span aria-hidden className="h-3 w-5 rounded-sm" style={{ background: "repeating-linear-gradient(135deg, rgba(160,180,195,0.55) 0 1.5px, transparent 1.5px 4px)", outline: "1px solid rgba(160,180,195,0.4)" }} />
-      No value (not modelled, cloud or no observation): never zero
+    <span className="flex items-center gap-2 text-[13px] text-n-ink-2" data-testid={testid}>
+      <span aria-hidden className="h-3 w-5 shrink-0 rounded-sm" style={{ background: "repeating-linear-gradient(135deg, rgba(160,180,195,0.55) 0 1.5px, transparent 1.5px 4px)", outline: "1px solid rgba(160,180,195,0.4)" }} />
+      {children}
     </span>
   );
 }
 
+/** A legend swatch in the map's own texture: `stipple` (context, estimate) or `hatch` (outlook), over `color`. */
+export function Swatch({ color, texture }: { color: string; texture: "stipple" | "hatch" }) {
+  const bg =
+    texture === "stipple"
+      ? `radial-gradient(circle, rgba(11,29,51,0.85) 0.7px, transparent 0.9px) 0 0 / 4px 4px, radial-gradient(circle, rgba(11,29,51,0.85) 0.7px, transparent 0.9px) 2px 2px / 4px 4px, ${color}`
+      : `repeating-linear-gradient(135deg, transparent 0 5px, rgba(11,29,51,0.6) 5px 6px), ${color}`;
+  return <span aria-hidden className="h-3 w-5 shrink-0 rounded-sm" style={{ background: bg, outline: "1px solid rgba(160,180,195,0.35)" }} />;
+}
+
 /** The legend of the layer on the map: units, scale, the no-data mark. */
-export function Legend({ choice, resolved }: { choice: LayerChoice; resolved: Resolved }) {
+export function Legend({ choice, resolved, check = null }: { choice: LayerChoice; resolved: Resolved; check?: DerivedValidationEntry | null }) {
   if (choice.kind === "forecast" && resolved.forecastLayer?.palette)
     return (
       <figure className="flex flex-col gap-2" data-testid="legend-forecast" aria-label={`Legend: ${VARIABLE_WORDS[choice.variable].what}`}>
@@ -257,7 +310,49 @@ export function Legend({ choice, resolved }: { choice: LayerChoice; resolved: Re
         <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="forecast-caveat">
           A probability for each 3 km model cell, not a toxin measurement and not a closure decision. A low probability does not mean an area is safe. Classes are display steps, not risk levels.
         </p>
-        <NoData />
+        <span className="flex items-start gap-2 text-[13px] leading-snug text-n-ink-2" data-testid="legend-outside">
+          {/* the tint as drawn: OUTSIDE_TINT at the forecast's opacity over the sea */}
+          <span aria-hidden className="mt-[3px] h-3 w-5 shrink-0 rounded-sm" style={{ background: `rgb(${OUTSIDE_TINT_RGB.join(",")})`, opacity: 0.8, outline: "1px solid rgba(160,180,195,0.35)" }} />
+          <span>
+            <span className="font-semibold text-n-ink">Outside NOAA&rsquo;s model near shore.</span> The nearshore band, bays and harbours NOAA does not model: no probability is shown there, and it is not zero. Tap it for the nearest NOAA value (as text), the pier samples nearby and the filled chlorophyll.
+            {check && (
+              <span className="mt-0.5 block text-[12.5px] text-n-ink-3" data-testid="legend-context-check">
+                {checkSentence(check)}
+              </span>
+            )}
+          </span>
+        </span>
+        <NoData>Outside the model&rsquo;s area: no value, never zero</NoData>
+      </figure>
+    );
+  if (choice.kind === "sst" && resolved.sstLayer) {
+    const [lo, hi] = SST_PALETTE.domain;
+    const mid = (lo + hi) / 2;
+    return (
+      <figure className="flex flex-col gap-2" data-testid="legend-sst" aria-label="Legend: sea-surface temperature, degrees Fahrenheit">
+        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Sea-surface temperature, °F</figcaption>
+        <Ramp palette={SST_PALETTE} labels={[`≤${Math.round(cToF(lo))}°F`, `${Math.round(cToF(mid))}°F`, `≥${Math.round(cToF(hi))}°F`]} />
+        <p className="text-[12.5px] leading-snug text-n-ink-3">
+          {sstIsAnalysis(resolved.sstLayer) ? "An analysis: satellite and buoy observations blended, with gaps filled. " : "Observed by satellite. "}
+          The skin of the sea, not the temperature at depth. A sharp change in colour is a front. Tap a point for °C and °F.
+        </p>
+        <NoData>No value (cloud, land or no observation): never cold water</NoData>
+      </figure>
+    );
+  }
+  if (choice.kind === "outlook" && resolved.outlookLayer)
+    return (
+      <figure className="flex flex-col gap-2" data-testid="legend-outlook" aria-label="Legend: chlorophyll outlook, milligrams per cubic metre, log scale">
+        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Chlorophyll-a expected on average over {windowLabel(resolved.outlookLayer.valid_from, resolved.outlookLayer.valid_to)}, mg/m³ (log scale)</figcaption>
+        <Ramp palette={resolved.outlook?.palette ?? CHL_PALETTE} labels={["0.05", "1.6", "50"]} />
+        <span className="flex items-center gap-2 text-[13px] text-n-ink-2">
+          <Swatch color="#5bb267" texture="hatch" />
+          <span>
+            <span className="font-semibold text-n-ink">Outlook, not observed.</span> Fine diagonal lines mark every outlook pixel.
+          </span>
+        </span>
+        <p className="text-[12.5px] leading-snug text-n-ink-3">Algae of every kind, not toxin, and not a day-by-day forecast. A 4 km grid of the open coast: it does not cover the bays. Its skill against plain baselines is below.</p>
+        <NoData>No outlook (outside the area it covers): never zero</NoData>
       </figure>
     );
   if (choice.kind === "satellite" && choice.view === "age")
@@ -291,6 +386,16 @@ export function Legend({ choice, resolved }: { choice: LayerChoice; resolved: Re
         <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Chlorophyll-a, mg/m³ (log scale)</figcaption>
         <Ramp palette={resolved.satLayer.palette} labels={["0.05", "1.6", "50"]} />
         <p className="text-[12.5px] leading-snug text-n-ink-3">Algae of every kind, not toxin. Cloud and coastal glare leave gaps; a gap is not clear water.</p>
+        {resolved.estimate && (
+          <span className="flex items-start gap-2 text-[13px] leading-snug text-n-ink-2" data-testid="legend-estimate">
+            <span className="mt-[3px] flex">
+              <Swatch color="#8cc3a4" texture="stipple" />
+            </span>
+            <span>
+              <span className="font-semibold text-n-ink">Estimated, not observed.</span> Gaps filled from nearby clear pixels, lightened and stippled; observed pixels are drawn over it, unchanged.
+            </span>
+          </span>
+        )}
         <NoData />
       </figure>
     );
@@ -330,6 +435,18 @@ export function Legend({ choice, resolved }: { choice: LayerChoice; resolved: Re
  *  against the source's published freshness policy (stale, or historical: not current conditions);
  *  a failed update; a day with nothing observed; regions the radar did not see. */
 export function Provenance({ manifest, choice, resolved, now, regions = [] }: { manifest: Manifest; choice: LayerChoice; resolved: Resolved; now: Date | null; regions?: { id: string; label: string }[] }) {
+  if (choice.kind === "outlook") return resolved.outlookLayer ? <OutlookCard layer={resolved.outlookLayer} now={now} /> : null;
+  if (choice.kind === "sst") return resolved.sstLayer ? <SstCard layer={resolved.sstLayer} now={now} /> : null;
+  return (
+    <>
+      <ObservedProvenance manifest={manifest} choice={choice} resolved={resolved} now={now} regions={regions} />
+      {resolved.estimate && resolved.estimateLayer && <EstimateCard layer={resolved.estimateLayer} />}
+    </>
+  );
+}
+
+function ObservedProvenance({ manifest, choice, resolved, now, regions = [] }: { manifest: Manifest; choice: LayerChoice; resolved: Resolved; now: Date | null; regions?: { id: string; label: string }[] }) {
+  if (choice.kind === "outlook" || choice.kind === "sst") return null;
   const stamps = stampLines({
     group: choice.kind === "none" ? null : choice.kind,
     forecast: resolved.forecastLayer,
@@ -409,24 +526,151 @@ export function Provenance({ manifest, choice, resolved, now, regions = [] }: { 
   );
 }
 
-/** Reference lines on land: county borders and names, with what they do not mean. */
-export function ReferenceLines({ prefs, onChange }: { prefs: CountyPrefs; onChange: (p: CountyPrefs) => void }) {
-  const row = "nx-focus flex min-h-11 items-center gap-2.5 text-[14px] text-n-ink";
+/** County borders and names are part of the basemap (always drawn): what they are, and what they do not mean. */
+export function ReferenceLines() {
   return (
-    <fieldset className="flex flex-col gap-0.5" data-testid="reference-lines">
-      <legend className="nx-eyebrow mb-1">Reference on land</legend>
-      <label className={row}>
-        <input type="checkbox" className="h-[18px] w-[18px] accent-[var(--nx-accent)]" checked={prefs.lines} onChange={(e) => onChange({ ...prefs, lines: e.target.checked })} data-testid="county-lines" />
-        County lines
-      </label>
-      <label className={row}>
-        <input type="checkbox" className="h-[18px] w-[18px] accent-[var(--nx-accent)]" checked={prefs.labels} onChange={(e) => onChange({ ...prefs, labels: e.target.checked })} data-testid="county-labels" />
-        County names
-      </label>
+    <div className="flex flex-col gap-1" data-testid="reference-lines">
+      <p className="nx-eyebrow">Reference on land</p>
+      <p className="flex items-center gap-2 text-[13px] text-n-ink-2">
+        <svg width="28" height="8" aria-hidden className="shrink-0 text-n-ink-2">
+          <line x1="1" y1="4" x2="27" y2="4" stroke="currentColor" strokeWidth="1.2" strokeDasharray="5 2 1 2" />
+        </svg>
+        County borders and names
+      </p>
       <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="county-note">
         {COUNTIES.note}
       </p>
-    </fieldset>
+    </div>
+  );
+}
+
+/** One baseline row against the model: the number as published, with the metric's direction. */
+function SkillTable({ rows, metric, testid }: { rows: { key: string; label: string; value: number }[]; metric: string; testid: string }) {
+  const model = rows.find((r) => r.key === "model")?.value;
+  return (
+    <table className="w-full text-left text-[13px]" data-testid={testid}>
+      <caption className="pb-1 text-left text-[12px] text-n-ink-3">
+        {metric}
+        {lowerIsBetter(metric) ? ", lower is better" : ""}
+      </caption>
+      <tbody className="nx-data">
+        {rows.map((r) => (
+          <tr key={r.key} className="border-t border-n-line">
+            <td className={`py-1 font-sans ${r.key === "model" ? "font-semibold text-n-ink" : "text-n-ink-2"}`}>{r.label}</td>
+            <td className="py-1 text-right">{r.value.toFixed(3)}</td>
+            <td className="py-1 pl-2 text-right font-sans text-[12px] text-n-ink-3">{r.key !== "model" && model != null ? (lowerIsBetter(metric) ? (model < r.value ? "outlook better" : model > r.value ? "outlook worse" : "same") : "") : ""}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function Caveats({ items }: { items: string[] }) {
+  if (!items.length) return null;
+  return (
+    <ul className="list-disc space-y-0.5 pl-4 text-[12.5px] leading-snug text-n-ink-3" data-testid="derived-caveats">
+      {items.map((c) => (
+        <li key={c}>{c}</li>
+      ))}
+    </ul>
+  );
+}
+
+/** The outlook's provenance: what it is, when it was issued and what it covers, how it was made, its skill and its limits. */
+export function OutlookCard({ layer, now }: { layer: OutlookLayer; now: Date | null }) {
+  const s = layer.skill;
+  return (
+    <div className="flex flex-col gap-2 text-[13px] leading-snug text-n-ink-2" data-testid="provenance">
+      <p className="flex items-start gap-2" data-testid="stamp-outlook">
+        <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full bg-n-model" aria-hidden />
+        <span>
+          <span className="font-semibold text-n-ink">Outlook, not observed.</span> {layer.label}: issued {dayLabel(layer.issued)}
+          {now ? ` (${relTime(layer.issued, now)})` : ""}, the mean over {windowLabel(layer.valid_from, layer.valid_to)}.
+        </span>
+      </p>
+      <p data-testid="outlook-method">
+        <span className="font-semibold text-n-ink">Method.</span> {layer.method}
+      </p>
+      <p data-testid="outlook-basis">
+        <span className="font-semibold text-n-ink">Made from.</span> {layer.basis}
+      </p>
+      <div className="rounded-lg border border-n-line px-2.5 py-2">
+        <p className="font-semibold text-n-ink">
+          Skill on held-out data{s.test_period ? ` (${s.test_period}` : ""}
+          {s.n != null ? `${s.test_period ? ", " : " ("}n = ${s.n.toLocaleString("en-US")})` : s.test_period ? ")" : ""}
+        </p>
+        <SkillTable rows={skillRows(s)} metric={s.metric} testid="outlook-skill" />
+        {s.note && <p className="mt-1 text-[12.5px] text-n-ink-3">{s.note}</p>}
+      </div>
+      {layer.uncertainty_grid && <p className="text-[12.5px] text-n-ink-3">Each pixel&rsquo;s typical range comes from the outlook&rsquo;s own error on held-out data; tap a point to read it.</p>}
+      <Caveats items={layer.caveats} />
+    </div>
+  );
+}
+
+/** Sea-surface temperature: observed or analysed, by whom, when, at what resolution, and its limits. */
+export function SstCard({ layer, now }: { layer: SstLayer; now: Date | null }) {
+  const d = layer.observed_dates;
+  const last = d[d.length - 1];
+  const analysis = sstIsAnalysis(layer);
+  return (
+    <div className="flex flex-col gap-2 text-[13px] leading-snug text-n-ink-2" data-testid="provenance">
+      <p className="flex items-start gap-2" data-testid="stamp-sst">
+        <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full bg-n-conditions" aria-hidden />
+        <span>
+          <span className="font-semibold text-n-ink">{analysis ? "Analysis, from observations." : "Observation."}</span> {layer.label}, {d.length > 1 ? `${dayLabel(d[0])}–${dayLabel(last)}` : dayLabel(last)}
+          {now ? ` (${relTime(last, now)})` : ""}. {layer.source}
+          {layer.resolution_km ? `, ${layer.resolution_km < 1 ? `${Math.round(layer.resolution_km * 1000)} m` : `${layer.resolution_km} km`} cells` : ""}.
+        </span>
+      </p>
+      {layer.method && <p>{layer.method}</p>}
+      <Caveats items={layer.caveats} />
+    </div>
+  );
+}
+
+/** The estimate's provenance: what it fills, from which days, how, how well it did by distance from shore, and its limits. */
+export function EstimateCard({ layer }: { layer: EstimateLayer }) {
+  const v = layer.validation;
+  const days = [...layer.based_on_days].sort();
+  return (
+    <details className="rounded-lg border border-n-line px-2.5 py-1.5 text-[13px] leading-snug text-n-ink-2" data-testid="estimate-provenance">
+      <summary className="nx-focus flex min-h-11 cursor-pointer items-center gap-2 font-semibold text-n-ink">
+        <span className="h-2 w-2 shrink-0 rounded-full bg-n-model" aria-hidden />
+        Estimated, not observed: how the gaps are filled
+      </summary>
+      <div className="flex flex-col gap-2 pb-2">
+        <p>
+          {layer.label}. Issued {dayLabel(layer.issued)}
+          {days.length ? `, from the clear views of ${days.length === 1 ? dayLabel(days[0]) : `${dayLabel(days[0])}–${dayLabel(days[days.length - 1])}`}` : ""}.
+        </p>
+        <p data-testid="estimate-method">
+          <span className="font-semibold text-n-ink">Method.</span> {layer.method}
+        </p>
+        <div>
+          <p className="font-semibold text-n-ink">
+            Checked by hiding clear pixels{v.n != null ? ` (n = ${v.n.toLocaleString("en-US")})` : ""}
+          </p>
+          <table className="w-full text-left text-[13px]" data-testid="estimate-validation">
+            <caption className="pb-1 text-left text-[12px] text-n-ink-3">
+              {v.metric}
+              {lowerIsBetter(v.metric) ? ", lower is better" : ""}, by distance from shore
+            </caption>
+            <tbody className="nx-data">
+              {Object.entries(v.by_band).map(([b, x]) => (
+                <tr key={b} className="border-t border-n-line">
+                  <td className="py-1 font-sans text-n-ink-2">{bandLabel(b)}</td>
+                  <td className="py-1 text-right">{x.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {v.baseline && <p className="mt-1 text-[12.5px] text-n-ink-3">Baseline: {v.baseline}</p>}
+        </div>
+        <Caveats items={layer.caveats} />
+      </div>
+    </details>
   );
 }
 

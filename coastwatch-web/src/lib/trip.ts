@@ -109,3 +109,39 @@ export function checklist(steps: Step[], max = 5): { shown: Step[]; more: Step[]
 
 /** A stable key for the checklist's ticks: one trip (waters, activity, species, day). */
 export const checklistKey = (place: string, audience: Audience, species: string, date: string | null) => `cw-trip-checks-v1:${place}:${audience}:${species}:${date ?? "today"}`;
+
+// ---------------------------------------------------------------- the reader's own sea limits
+
+/**
+ * The highest wind (kt, gusts included) and sea height (ft) a NWS marine period states in its own
+ * words ("W wind 10 to 15 kt, rising to 15 to 20 kt with gusts up to 25 kt. Seas 4 to 6 ft."). Seas are
+ * read from "Seas …" or, when a zone states no seas, from its swell and wind-wave heights. Null where
+ * the text states none. This reads the forecaster's numbers; it never makes one.
+ */
+export function marineMaxima(text: string): { windKt: number | null; seasFt: number | null } {
+  const sentences = text.split(/(?<=\.)\s+/);
+  const allNums = (s: string, unit: RegExp) => [...s.matchAll(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(?:to\\s*(\\d+(?:\\.\\d+)?)\\s*)?${unit.source}`, "gi"))].flatMap((m) => [Number(m[1]), m[2] ? Number(m[2]) : NaN]).filter(Number.isFinite);
+  const wind = sentences.filter((s) => /\b(wind|gusts?)\b/i.test(s) && /\bkt\b/i.test(s)).flatMap((s) => allNums(s, /kt\b/));
+  let seas = sentences.filter((s) => /\bseas\b/i.test(s)).flatMap((s) => allNums(s.slice(s.search(/\bseas?\b/i)), /ft\b/));
+  if (!seas.length) seas = sentences.filter((s) => /\b(swell|wind waves?)\b/i.test(s)).flatMap((s) => allNums(s, /ft\b/));
+  return { windKt: wind.length ? Math.max(...wind) : null, seasFt: seas.length ? Math.max(...seas) : null };
+}
+
+/** The reader's own limits for going out, on this device only. Never a recommendation by Neritic. */
+export type SeaLimits = { windKt: number | null; seasFt: number | null };
+export const LIMITS_KEY = "cw-sea-limits-v1";
+
+export function parseLimits(raw: string | null | undefined): SeaLimits {
+  try {
+    const o = JSON.parse(raw ?? "null") as Partial<SeaLimits> | null;
+    const ok = (v: unknown, max: number) => (typeof v === "number" && Number.isFinite(v) && v > 0 && v <= max ? v : null);
+    return { windKt: ok(o?.windKt, 80), seasFt: ok(o?.seasFt, 40) };
+  } catch {
+    return { windKt: null, seasFt: null };
+  }
+}
+
+/** A period's stated maxima against the reader's limits: which limits the forecaster's own numbers go past. */
+export function overLimits(m: { windKt: number | null; seasFt: number | null }, l: SeaLimits): { wind: boolean; seas: boolean } {
+  return { wind: l.windKt != null && m.windKt != null && m.windKt > l.windKt, seas: l.seasFt != null && m.seasFt != null && m.seasFt > l.seasFt };
+}

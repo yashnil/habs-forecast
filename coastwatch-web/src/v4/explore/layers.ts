@@ -3,8 +3,10 @@ import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, charmRun, satell
 import { currentsHourly, currentsMean, defaultHour } from "@/lib/currents";
 import { supportsGridTiles } from "@/lib/gridTiles";
 import { charmDays, type CharmDay } from "@/lib/charmDays";
-import type { ImageRaster, TileRaster } from "@/components/map/MapCanvas";
+import type { DerivedRaster, ImageRaster, TileRaster } from "@/components/map/MapCanvas";
 import { dayLabel } from "@/v4/ui/time";
+import { CHL_PALETTE, SST_PALETTE, derivedEstimate, derivedOutlook, derivedSst, loadDerived, type DerivedIndex, type EstimateLayer, type OutlookLayer, type SstLayer } from "@/lib/derived";
+import { useEffect, useState } from "react";
 
 /**
  * What the map shows: one primary field at a time (or none: the seafloor, the coast, harbours,
@@ -14,8 +16,16 @@ import { dayLabel } from "@/v4/ui/time";
 export type LayerChoice =
   | { kind: "none" }
   | { kind: "forecast"; variable: CharmVariable; lead: number }
-  /** view: the chlorophyll colours, or the age of each pixel / which sensor (latest views only) */
-  | { kind: "satellite"; product: Exclude<SatProduct, "multi"> | "multi"; day: string | null; view?: "chl" | "age" | "sensor" }
+  /**
+   * view: the chlorophyll colours, or the age of each pixel / which sensor (latest views only);
+   * estimate: the gap-filling estimate under the observed pixels (latest chlorophyll view only; on
+   * unless turned off, `est=0`), when the derived index offers one
+   */
+  | { kind: "satellite"; product: Exclude<SatProduct, "multi"> | "multi"; day: string | null; view?: "chl" | "age" | "sensor"; estimate?: boolean }
+  /** the 8-day chlorophyll outlook of the derived index (lib/derived) */
+  | { kind: "outlook" }
+  /** observed (or analysed) sea-surface temperature of the derived index (lib/derived) */
+  | { kind: "sst" }
   /** chl: the newest clear chlorophyll view underneath, to compare the two (v2 `chl=1`) */
   | { kind: "currents"; hour: string | null; mean: boolean; chl?: boolean };
 
@@ -38,6 +48,8 @@ export function parseChoice(q: URLSearchParams): LayerChoice | null {
   const lead = q.has("lead") && (CHARM_LEADS as readonly number[]).includes(leadQ) ? leadQ : -1;
   if (v == null) return null;
   if (v === "none") return { kind: "none" };
+  if (v === "outlook") return { kind: "outlook" };
+  if (v === "sst") return { kind: "sst" };
   if (v === "forecast") return { kind: "forecast", variable, lead };
   if (v.startsWith("currents")) {
     const rest = v.split(":")[1] ?? null;
@@ -46,7 +58,7 @@ export function parseChoice(q: URLSearchParams): LayerChoice | null {
   }
   const [prod, day] = v.split(":");
   const view = q.get("age") === "1" ? "age" : q.get("sensor") === "1" ? "sensor" : "chl";
-  if (prod === "olci300" || prod === "viirs750" || prod === "multi") return { kind: "satellite", product: prod, day: prod === "multi" ? null : (day ?? null), view };
+  if (prod === "olci300" || prod === "viirs750" || prod === "multi") return { kind: "satellite", product: prod, day: prod === "multi" ? null : (day ?? null), view, ...(q.get("est") === "0" ? { estimate: false } : {}) };
   return null;
 }
 
@@ -54,10 +66,14 @@ export function choiceParams(c: LayerChoice): Record<string, string> {
   switch (c.kind) {
     case "none":
       return { layer: "none" };
+    case "outlook":
+      return { layer: "outlook" };
+    case "sst":
+      return { layer: "sst" };
     case "forecast":
       return { layer: "forecast", var: c.variable, lead: String(c.lead) };
     case "satellite":
-      return { layer: c.day ? `${c.product}:${c.day}` : c.product, ...(c.view === "age" ? { age: "1" } : c.view === "sensor" ? { sensor: "1" } : {}) };
+      return { layer: c.day ? `${c.product}:${c.day}` : c.product, ...(c.view === "age" ? { age: "1" } : c.view === "sensor" ? { sensor: "1" } : {}), ...(c.estimate === false ? { est: "0" } : {}) };
     case "currents":
       return { layer: c.mean ? "currents:mean" : c.hour ? `currents:${c.hour}` : "currents", ...(c.chl ? { chl: "1" } : {}) };
   }
@@ -79,10 +95,49 @@ export type Resolved = {
   /** categorical age or sensor tiles that replace the chlorophyll colours (latest views) */
   satelliteAge: TileRaster | null;
   curLayer: LayerArtifact | null;
+  /** derived products (lib/derived): the outlook as the field, or the estimate under the observed pixels */
+  outlookLayer: OutlookLayer | null;
+  outlook: DerivedRaster | null;
+  estimateLayer: EstimateLayer | null;
+  estimate: DerivedRaster | null;
+  sstLayer: SstLayer | null;
+  sst: DerivedRaster | null;
 };
 
-export function resolve(m: Manifest, c: LayerChoice, baseUrl: string): Resolved {
-  const out: Resolved = { forecastLayer: null, forecast: null, satLayer: null, satellite: null, satelliteAge: null, curLayer: null };
+/** The derived index for this dataset: undefined while loading, null when missing or invalid (then nothing derived is offered). */
+export function useDerivedIndex(baseUrl: string): DerivedIndex | null | undefined {
+  // undefined while loading; null when there is none
+  const [d, setD] = useState<DerivedIndex | null | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    loadDerived(baseUrl).then((x) => live && setD(x));
+    return () => {
+      live = false;
+    };
+  }, [baseUrl]);
+  return d;
+}
+
+/** Does the estimate belong under this satellite view: the latest clear chlorophyll view (of its own product, when it names one)? */
+export function estimateFits(est: EstimateLayer | null, c: LayerChoice, sat: LayerArtifact | null): boolean {
+  if (!est || c.kind !== "satellite" || c.day || (c.view ?? "chl") !== "chl" || !sat) return false;
+  const own = est.observed_layer_id ?? est.observed_layer;
+  return !own || own === sat.layer_id;
+}
+
+export function resolve(m: Manifest, c: LayerChoice, baseUrl: string, derived: DerivedIndex | null = null): Resolved {
+  const out: Resolved = { forecastLayer: null, forecast: null, satLayer: null, satellite: null, satelliteAge: null, curLayer: null, outlookLayer: null, outlook: null, estimateLayer: null, estimate: null, sstLayer: null, sst: null };
+  if (c.kind === "sst") {
+    const t = derivedSst(derived);
+    out.sstLayer = t;
+    if (t) out.sst = { id: `${t.id}@${t.observed_dates[t.observed_dates.length - 1]}`, grid: t.grid, baseUrl, palette: SST_PALETTE, style: "observed" };
+  }
+  const palette = satelliteLatest(m, "olci300")?.palette ?? satelliteLatest(m, "viirs750")?.palette ?? CHL_PALETTE;
+  if (c.kind === "outlook") {
+    const o = derivedOutlook(derived);
+    out.outlookLayer = o;
+    if (o) out.outlook = { id: `${o.id}@${o.issued}`, grid: o.grid, baseUrl, palette };
+  }
   if (c.kind === "forecast") {
     const l = charmLayer(m, c.variable, c.lead);
     out.forecastLayer = l;
@@ -101,6 +156,11 @@ export function resolve(m: Manifest, c: LayerChoice, baseUrl: string): Resolved 
     const at = c.view === "age" ? (l?.composite?.age_tiles ?? l?.multisensor?.age_tiles) : c.view === "sensor" ? l?.multisensor?.sensor_tiles : null;
     if (l && at) out.satelliteAge = { id: `${l.layer_id}-${c.view}`, template: artifactUrl(baseUrl, at.url_template), minzoom: at.min_zoom ?? 0, maxzoom: at.max_native_zoom, bounds: at.bounds_lnglat, indexUrl: tileIndexUrl(baseUrl, at) };
     else if (l && t) out.satellite = { id: l.layer_id, template: t.relative ? artifactUrl(baseUrl, t.url_template) : t.url_template, minzoom: t.min_zoom ?? 0, maxzoom: t.max_native_zoom, bounds: t.bounds_lnglat, indexUrl: tileIndexUrl(baseUrl, t) };
+    const est = derivedEstimate(derived);
+    if (est && estimateFits(est, c, l)) {
+      out.estimateLayer = est;
+      if (c.estimate !== false) out.estimate = { id: `${est.id}@${est.issued}`, grid: est.grid, baseUrl, palette };
+    }
   }
   if (c.kind === "currents") {
     const hourly = currentsHourly(m);

@@ -14,7 +14,7 @@ test("the briefing answers first, in order, and every statement says its kind", 
   await page.goto(`${OK}/coast?place=port-550`);
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
   const order = await page.locator('[data-testid^="brief-"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
-  expect(order.slice(0, 2)).toEqual(["brief-now", "brief-changes"]);
+  expect(order.slice(0, 3)).toEqual(["brief-glance", "brief-now", "brief-changes"]);
   expect(order).toEqual(expect.arrayContaining(["brief-measured", "brief-official", "brief-unknown", "brief-checks"]));
   await expect(page.getByTestId("matters")).toBeVisible();
   const kinds = await page.locator('[data-testid="matters"] [data-kind]').evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")));
@@ -58,9 +58,11 @@ test("on a phone the trip is one line, the answer is near the top, and nothing s
     await page.goto(`${OK}/coast?place=port-550&for=commercial&species=dungeness`);
     await expect(page.getByTestId("trip-summary")).toContainText("Commercial fishing");
     await expect(page.getByTestId("trip-controls")).toBeHidden();
-    await expect(page.getByTestId("brief-now")).toBeVisible();
-    const top = (await page.getByTestId("brief-now").boundingBox())!.y;
-    expect(top, `${width}px: "What matters now" starts within the first screen`).toBeLessThan(560);
+    // v5: the answer is the at-a-glance block (season, sea, notices, worth); "What matters now" follows it
+    await expect(page.getByTestId("brief-glance")).toBeVisible();
+    const top = (await page.getByTestId("brief-glance").boundingBox())!.y;
+    expect(top, `${width}px: the at-a-glance answer starts within the first screen`).toBeLessThan(560);
+    expect((await page.getByTestId("brief-now").boundingBox())!.y).toBeGreaterThan(top);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
     await page.getByTestId("trip-change").click();
     await expect(page.getByTestId("trip-controls")).toBeVisible();

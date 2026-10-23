@@ -37,6 +37,7 @@ import { OfflineBanner } from "@/v4/offline/OfflineBanner";
 import { PackDialog } from "@/v4/offline/PackDialog";
 import { savedSearch, savedSnapshot } from "@/v4/offline/snapshot";
 import { homeHref, readHome, writeHome, type HomePort } from "./home";
+import { AtAGlance, SeaCard, SeasonsCard, WorthBody, useSeaLimits } from "@/components/coast/FishingBrief";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
 
@@ -96,7 +97,7 @@ function Fold({ id, title, count, summary, kicker, children }: { id: string; tit
   return (
     <section aria-labelledby={`${id}-h`} className="border-t border-n-line pt-3" data-testid={`brief-${id}`} data-open={open}>
       <h2 id={`${id}-h`} className="font-serif text-[21px] font-semibold leading-tight text-n-ink">
-        <button type="button" aria-expanded={open} aria-controls={`${id}-body`} onClick={toggle} className="nx-focus group flex min-h-14 w-full items-start gap-3 rounded-lg py-2 text-left" data-testid={`brief-${id}-toggle`}>
+        <button type="button" aria-expanded={open} aria-controls={`${id}-body`} onClick={toggle} className="nx-tint nx-focus group flex min-h-14 w-full items-start gap-3 rounded-lg py-2 text-left" data-testid={`brief-${id}-toggle`}>
           <span className="min-w-0 flex-1">
             <span className="flex items-baseline gap-2">
               {title}
@@ -195,11 +196,12 @@ function TripSummary({ audience: a, species: sp2, day, open, onToggle }: { audie
   );
 }
 
-function Select({ id, label, value, onChange, options }: { id: string; label: string; value: string; onChange: (v: string) => void; options: { id: string; label: string }[] }) {
+// `disabled` until hydrated: a choice made before the page is live would be dropped silently on a slow phone
+function Select({ id, label, value, onChange, options, disabled = false }: { id: string; label: string; value: string; onChange: (v: string) => void; options: { id: string; label: string }[]; disabled?: boolean }) {
   return (
     <label htmlFor={id} className="flex min-w-0 flex-1 flex-col gap-1">
       <span className="nx-eyebrow">{label}</span>
-      <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className="nx-select nx-focus min-h-[52px] w-full rounded-xl border border-n-line-strong bg-n-surface pl-3 text-[16px] font-semibold text-n-ink" data-testid={id}>
+      <select id={id} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} className="nx-select nx-focus min-h-[52px] w-full rounded-xl border border-n-line-strong bg-n-surface pl-3 text-[16px] font-semibold text-n-ink" data-testid={id}>
         {options.map((o) => (
           <option key={o.id} value={o.id}>
             {o.label}
@@ -243,6 +245,9 @@ export function Briefing(props: Props) {
     [router, placeKey, audience, species.id, sp],
   );
   const [tripOpen, setTripOpen] = useState(false);
+  const [limits, setLimits] = useSeaLimits();
+  // species first (v5): on the landing, the reader can say what they fish before choosing where
+  const [pick, setPick] = useState<SpeciesId>(species.id);
   const [placeOpen, setPlaceOpen] = useState(false);
   // the field pack that covers this place, if one does (else Monterey's, to say what is saved)
   const covering = place?.kind === "port" ? packForPort(Number(place.key.slice(5))) : null;
@@ -325,7 +330,18 @@ export function Briefing(props: Props) {
           <h1 className="mt-2 text-balance font-serif text-[36px] font-semibold leading-[1.1] sm:text-[44px]" data-testid="coast-title">
             Where are you going next?
           </h1>
-          <p className="mt-3 max-w-[60ch] text-[17px] leading-relaxed text-n-ink-2">One briefing for the trip: the agencies&rsquo; notices, the latest bloom and toxin samples near you, NOAA&rsquo;s model, sea conditions and what to check before you leave. Every statement shows where it came from.</p>
+          <p className="mt-3 max-w-[60ch] text-[17px] leading-relaxed text-n-ink-2">One briefing for the trip: CDFW&rsquo;s season list for those waters, the sea forecast, the agencies&rsquo; notices, the latest bloom and toxin samples, and what to check before you leave. Every statement shows where it came from.</p>
+          <div className="mt-6" data-testid="coast-species-first">
+            <p className="nx-eyebrow" id="coast-species-first-h">What do you fish?</p>
+            <div role="group" aria-labelledby="coast-species-first-h" className="-mx-4 mt-2 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+              {SPECIES.map((x) => (
+                <button key={x.id} type="button" aria-pressed={x.id === pick} onClick={() => setPick(x.id)} className={`nx-press nx-focus min-h-11 shrink-0 rounded-full border px-3.5 text-[14.5px] font-semibold ${x.id === pick ? "border-n-ink bg-n-ink text-n-bg" : "border-n-line-strong bg-n-surface text-n-ink-2 hover:text-n-ink"}`} data-testid={`coast-pick-${x.id}`}>
+                  {x.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[14px] text-n-ink-2">Then choose where. The briefing opens with CDFW&rsquo;s season list for those waters, the sea forecast and what the catch has been worth.</p>
+          </div>
           {placeKey && (
             <p className="mt-4 rounded-xl border border-n-official-line bg-n-official-bg px-3 py-2 text-[15px]" role="status" data-testid="coast-unknown-place">
               The place in this link (&ldquo;{placeKey}&rdquo;) is not one Neritic knows. Choose a harbour or harvest site below.
@@ -338,7 +354,7 @@ export function Briefing(props: Props) {
               const isHome = k === home?.place;
               return (
                 <li key={k}>
-                  <Link href={isHome && home ? homeHref(home) : coastHref({ place: k, for: audience })} className="nx-press nx-focus nx-lift flex min-h-[64px] items-center justify-between gap-3 rounded-2xl border border-n-line bg-n-surface px-4 hover:border-n-line-strong" data-testid={`coast-start-${k}`}>
+                  <Link href={isHome && home && pick === "any" ? homeHref(home) : coastHref({ place: k, for: audience, species: pick })} className="nx-press nx-focus nx-lift flex min-h-[64px] items-center justify-between gap-3 rounded-2xl border border-n-line bg-n-surface px-4 hover:border-n-line-strong" data-testid={`coast-start-${k}`}>
                     <span>
                       <span className="block text-[17px] font-semibold">{p.name}</span>
                       <span className="block text-[13.5px] text-n-ink-3">{isHome ? "Your home port" : p.note}</span>
@@ -354,7 +370,7 @@ export function Briefing(props: Props) {
             <ul className="mt-2 columns-2 gap-4 text-[15px]">
               {all.map((p) => (
                 <li key={p.key}>
-                  <Link className="nx-focus inline-flex min-h-11 items-center hover:underline" href={coastHref({ place: p.key, for: audience })}>
+                  <Link className="nx-focus inline-flex min-h-11 items-center hover:underline" href={coastHref({ place: p.key, for: audience, species: pick })}>
                     {p.name}
                   </Link>
                 </li>
@@ -393,7 +409,7 @@ export function Briefing(props: Props) {
                 <p className="nx-eyebrow">Your trip briefing</p>
                 <h1 className="mt-1 text-balance font-serif text-[38px] font-semibold leading-[1.05] sm:text-[48px]" data-testid="coast-title">
                   {/* the title is the place control: other harbours, waters on the map, the home port */}
-                  <button type="button" aria-expanded={placeOpen} aria-controls={placeOpen ? "coast-place-menu" : undefined} aria-describedby="coast-place-hint" onClick={() => setPlaceOpen((o) => !o)} className="nx-focus group inline-flex max-w-full items-center gap-2 rounded-lg text-left hover:text-n-accent" data-testid="coast-place-button">
+                  <button type="button" aria-expanded={placeOpen} aria-controls={placeOpen ? "coast-place-menu" : undefined} aria-describedby="coast-place-hint" onClick={() => setPlaceOpen((o) => !o)} className="nx-tint nx-focus group inline-flex max-w-full items-center gap-2 rounded-lg text-left hover:text-n-accent" data-testid="coast-place-button">
                     <span className="min-w-0">{place.name}</span>
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-n-line-strong bg-n-surface text-n-ink-2 group-hover:text-n-accent sm:h-10 sm:w-10">
                       <Icon name="chevronDown" className={`h-5 w-5 transition-transform ${placeOpen ? "rotate-180" : ""}`} />
@@ -422,11 +438,13 @@ export function Briefing(props: Props) {
             {placeOpen && <PlaceMenu place={place} ports={ports} home={home} audience={audience} species={species.id} onHome={setHome} onPlace={(k) => { setPlaceOpen(false); goPlace(k); }} onClose={() => setPlaceOpen(false)} />}
             <TripSummary audience={audience} species={species.label} day={b.tripDay ? `${b.tripDay.label}, ${b.tripDay.day}` : "Today"} open={tripOpen} onToggle={() => setTripOpen((o) => !o)} />
             <div className={`flex-col gap-2 sm:flex sm:flex-row ${tripOpen ? "flex" : "hidden"}`} data-testid="trip-controls">
-              <Select id="trip-activity" label="Activity" value={audience} onChange={(v) => go({ for: v as Audience, species: v === "all" || species.activities.includes(v as never) ? species.id : "any" })} options={activityOptions} />
-              <Select id="trip-species" label="Species" value={species.id} onChange={(v) => go({ species: v as SpeciesId })} options={speciesOptions} />
-              <Select id="trip-day" label="Day" value={b.tripDate ?? dayOptions[0]?.id ?? ""} onChange={(v) => go({ date: v === b.days[0]?.date ? null : v })} options={dayOptions.length ? dayOptions : [{ id: "", label: "Today" }]} />
+              <Select id="trip-activity" disabled={!mounted} label="Activity" value={audience} onChange={(v) => go({ for: v as Audience, species: v === "all" || species.activities.includes(v as never) ? species.id : "any" })} options={activityOptions} />
+              <Select id="trip-species" disabled={!mounted} label="Species" value={species.id} onChange={(v) => go({ species: v as SpeciesId })} options={speciesOptions} />
+              <Select id="trip-day" disabled={!mounted} label="Day" value={b.tripDate ?? dayOptions[0]?.id ?? ""} onChange={(v) => go({ date: v === b.days[0]?.date ? null : v })} options={dayOptions.length ? dayOptions : [{ id: "", label: "Today" }]} />
             </div>
           </header>
+
+          <AtAGlance place={place} ports={ports} species={species} audience={audience} cond={b.cond} tripDate={b.tripDate} today={b.today} notices={notices.length} limits={limits} />
 
           <section aria-labelledby="now-h" className="flex flex-col gap-4" data-testid="brief-now">
             <h2 id="now-h" className="font-serif text-[26px] font-semibold leading-tight" data-testid="matters-heading">
@@ -458,7 +476,8 @@ export function Briefing(props: Props) {
             <SinceLastCheck />
           </div>
 
-          {/* what to do comes right after what matters and what changed; the evidence follows (v2 order) */}
+          {/* what to do comes right after what matters and what changed (v2 order); the at-a-glance answers above link here */}
+
           <Section id="checks" title="Before you go" kicker={`For ${species.id === "any" ? (audience === "all" ? "any activity" : AUDIENCES.find((a) => a.id === audience)?.label.toLowerCase()) : species.label.toLowerCase()} at ${place.name}${b.tripDay ? `, ${b.tripDay.label.toLowerCase() === "today" ? "today" : `${b.tripDay.label} ${b.tripDay.day}`}` : ""}.`}>
             <p className="text-[13.5px] text-n-ink-2" data-testid="checks-progress">
               <span className="font-semibold text-n-ink">
@@ -486,8 +505,15 @@ export function Briefing(props: Props) {
             )}
           </Section>
 
+          {/* the fishing questions in full (v5 fishermen audit): the sea, then CDFW's seasons for these waters */}
+          <SeaCard cond={b.cond} tripDate={b.tripDate} today={b.today} limits={limits} onLimits={setLimits} now={now} />
+          <SeasonsCard place={place} species={species} audience={audience} tripDate={b.tripDate} today={b.today} />
+
           {/* the evidence behind the answer, folded: each says how much it holds and what, one tap away */}
           <div className="flex flex-col">
+          <Fold id="worth" title="What the catch was worth" count={2} summary="CDFW's dock values for 2023 and 2024: history, not today's price" kicker="What fishermen were paid at the dock, as CDFW reports it.">
+            <WorthBody place={place} ports={ports} species={species} />
+          </Fold>
           <Fold
             id="measured"
             title="The evidence near you"

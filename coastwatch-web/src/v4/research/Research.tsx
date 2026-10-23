@@ -410,7 +410,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
               const on = s.station_id === st.station_id;
               return (
                 <li key={s.station_id}>
-                  <button type="button" onClick={() => chooseStation(s.station_id)} aria-current={on ? "true" : undefined} className={`nx-focus flex min-h-12 w-full flex-col justify-center rounded-lg px-3 py-1.5 text-left ${on ? "bg-n-ink text-n-bg" : "hover:bg-n-surface-2"}`}>
+                  <button type="button" onClick={() => chooseStation(s.station_id)} aria-current={on ? "true" : undefined} className={`nx-focus flex min-h-12 w-full flex-col justify-center rounded-lg px-3 py-1.5 text-left ${on ? "bg-n-ink text-n-bg" : "nx-row hover:bg-n-surface-2"}`}>
                     <span className="text-[14.5px] font-semibold leading-tight">{s.name}</span>
                     <span className={`text-[12.5px] ${on ? "opacity-80" : "text-n-ink-3"}`}>
                       {lastHabWords(lastHabObs(s), now)} · {s.sample_times.length} visits

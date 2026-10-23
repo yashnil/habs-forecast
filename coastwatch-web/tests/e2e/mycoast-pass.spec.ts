@@ -45,8 +45,8 @@ test("the title is the place control on a phone: one button instead of three pil
   await expect(page.getByTestId("coast-map-jump")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("coast-place-bar")).toHaveCount(0);
-  // "What matters" still starts within the first screen
-  expect((await page.getByTestId("brief-now").boundingBox())!.y).toBeLessThan(560);
+  // the answer (v5: the at-a-glance block, then "What matters") still starts within the first screen
+  expect((await page.getByTestId("brief-glance").boundingBox())!.y).toBeLessThan(560);
   // every v4 icon has a size of its own (none at the SVG default of 300 x 150)
   const big = await page.locator('svg[viewBox="0 0 24 24"]').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 64).length);
   expect(big).toBe(0);
