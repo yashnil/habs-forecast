@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { FAILED, OK } from "./ports";
+import { openAbout, openLayers } from "./helpers";
 
 /**
  * v5 map: the coast filled honestly. The C-HARM layer extends the nearest NOAA cell to the shore
@@ -36,7 +37,8 @@ test("the forecast tints the water NOAA does not model near shore; the nearest v
   await expect(page.getByTestId("legend-context-check")).toContainText("1,058 CalHABMAP pier samples");
   await expect(page.getByTestId("legend-context-check")).toContainText("no demonstrated skill at the shore");
   // nearshore cells of the fixture without a pDA value, next to one with a value (Monterey Bay's east shore)
-  await jump(page, 36.78, -121.82, 11);
+  // centred a little south, so every probe point is in the open map above the instrument dock
+  await jump(page, 36.74, -121.82, 11);
   const readout = page.getByTestId("hover-readout");
   let found = false;
   for (const [lat, lon] of [[36.76, -121.8], [36.73, -121.8], [36.79, -121.77], [36.82, -121.77], [36.7, -121.83]]) {
@@ -111,6 +113,7 @@ test("the estimate lies under the observed pixels, stippled and labelled, and ca
   // the pipeline's own words, verbatim (the fixture's multiplier is deliberately not a real one)
   await expect(page.getByTestId("legend-strip")).toContainText("x9.9 test multiplier");
   await expect(page.getByTestId("legend-turbid")).toContainText("Bay chlorophyll is approximate (turbid water)");
+  await openAbout(page);
   await page.getByTestId("estimate-provenance").locator("summary").click();
   await expect(page.getByTestId("estimate-validation")).toContainText("0.6–3 km");
   await expect(page.getByTestId("estimate-method")).toBeVisible();
@@ -122,6 +125,7 @@ test("the estimate lies under the observed pixels, stippled and labelled, and ca
   // class 3 of the fixture's class grid: a bay, on a borrowed background
   await expect(page.getByTestId("hover-readout")).toContainText("Fixture: bay or estuary, borrowed background; turbid water");
   await expect(page.getByTestId("hover-readout")).not.toContainText("clear pixels");
+  await openLayers(page);
   await page.getByTestId("sat-estimate-toggle").uncheck();
   await expect(page).toHaveURL(/est=0/);
   await expect.poll(() => page.evaluate(() => !!(window as unknown as Win).__cwMap.getSource("estimate"))).toBe(false);
@@ -129,6 +133,7 @@ test("the estimate lies under the observed pixels, stippled and labelled, and ca
 
 test("without a derived index nothing derived is offered and the map still works", async ({ page }) => {
   await open(page, "layer=olci300", FAILED);
+  await openLayers(page);
   await expect(page.getByTestId("layer-satellite")).toBeVisible();
   await expect(page.getByTestId("layer-outlook")).toHaveCount(0);
   await expect(page.getByTestId("legend-estimate")).toHaveCount(0);
@@ -141,13 +146,14 @@ test("without a derived index nothing derived is offered and the map still works
   }
 });
 
-test("on a phone the outlook is one chip away and its horizon reads", async ({ browser }) => {
+test("on a phone the outlook is two taps away (the layer button, then the outlook) and its horizon reads", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=forecast`);
-  await page.getByTestId("chip-outlook").first().click();
-  await expect(page.getByTestId("chip-outlook").first()).toHaveAttribute("aria-checked", "true");
+  await openLayers(page);
+  await page.getByTestId("layer-outlook").click();
+  await expect(page.getByTestId("layer-outlook")).toHaveAttribute("aria-checked", "true");
   await expect(page.getByTestId("outlook-horizon").first()).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
@@ -205,10 +211,11 @@ test("the shoreline strip reads as extrapolated, in the pipeline's words, never 
   await expect(page.getByTestId("hover-readout")).not.toContainText("clear pixels");
 });
 
-test("every inspector ends with Brief this (keeping the trip) and Research this (station, variable, day, way back)", async ({ page }) => {
+test("every inspector leads with its briefing (keeping the trip) and Research this (station, variable, day, way back)", async ({ page }) => {
   const from = encodeURIComponent("/coast?place=port-592&for=commercial&species=dungeness&date=2026-10-14");
   await open(page, `layer=forecast&var=particulate_domoic&lead=1&sel=harbor:592&from=${from}`);
-  const brief = page.getByTestId("brief-this");
+  // a harbour's one primary action is its briefing
+  const brief = page.getByTestId("open-briefing");
   await expect(brief).toHaveAttribute("href", "/coast?place=port-592&for=commercial&species=dungeness&date=2026-10-14");
   const href = (await page.getByTestId("research-this").getAttribute("href"))!;
   const u = new URL(href, OK);
@@ -242,20 +249,4 @@ test("search finds species and harvest sites; a species opens My Coast for it", 
   await expect(page.getByRole("option").first()).toContainText("Dungeness crab");
   await input.press("Enter");
   await expect(page).toHaveURL(/\/coast\?.*species=dungeness/);
-});
-
-test("a first-time visitor sees what Neritic is in one line, until dismissed", async ({ browser }) => {
-  // a fresh visitor: none of the suite's returning-visitor storage
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: { cookies: [], origins: [] } });
-  const page = await ctx.newPage();
-  await page.clock.setFixedTime(new Date(NOW));
-  await page.goto(`${OK}/?layer=forecast`);
-  const line = page.getByTestId("explore-purpose");
-  await expect(line).toContainText("Neritic: California coastal conditions, models and notices — tap a harbour for its briefing", { timeout: 15_000 });
-  await page.getByTestId("explore-purpose-dismiss").click();
-  await expect(line).toHaveCount(0);
-  await page.reload();
-  await page.waitForTimeout(500);
-  await expect(line).toHaveCount(0);
-  await ctx.close();
 });

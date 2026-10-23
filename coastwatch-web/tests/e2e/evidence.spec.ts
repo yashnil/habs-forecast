@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { OK } from "./ports";
+import { openEvidence } from "./helpers";
 
 /**
  * One evidence backbone (v4): the briefing's statements, its evidence rows, the Explore harbour
@@ -73,6 +74,7 @@ for (const place of PLACES) {
     const model = items.find((i) => i.kind === "model" || i.kind === "gap");
     const node = model?.supports.map((s) => api.nodes.find((n) => n.id === s)).find((n) => n?.class === "published_forecast" && n.where?.lat != null);
     if (model && node) {
+      await openEvidence(page);
       await page.getByTestId(`claim-show-${model.id}`).click();
       await expect(page.getByTestId("inspect-panel")).toHaveAttribute("data-kind", "cell");
       const sel = new URL(page.url()).searchParams.get("sel")!;

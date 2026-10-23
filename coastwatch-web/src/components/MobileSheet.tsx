@@ -31,6 +31,7 @@ export function MobileSheet({
   testid = "mobile-sheet",
   field = false,
   edge = null,
+  tone = "paper",
 }: {
   snaps: SnapPoint[];
   snap: SnapId;
@@ -44,6 +45,12 @@ export function MobileSheet({
   field?: boolean;
   /** a fixed line under the handle, outside the scrolling body (v4: the map's credits, which then cover no map label) */
   edge?: ReactNode;
+  /**
+   * v7: "instrument" is the dark Explore sheet (the map's own surface, never a white card over the
+   * instrument), whose handle sits at the top-right corner (56 px) beside the peek's first row, so the
+   * peek is the dock itself rather than a handle bar above it; a grip line marks the edge.
+   */
+  tone?: "paper" | "instrument";
 }) {
   const i = Math.max(0, snaps.findIndex((s) => s.id === snap));
   const target = snaps[i]?.height ?? 0;
@@ -79,7 +86,11 @@ export function MobileSheet({
       data-testid={testid}
       data-snap={snap}
       aria-label={label}
-      className="theme-paper absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-2xl bg-surface text-ink shadow-[0_-10px_30px_rgba(4,11,23,0.42)] will-change-transform"
+      className={
+        tone === "instrument"
+          ? "absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-[20px] border-t border-n-line bg-n-surface text-n-ink shadow-[0_-12px_32px_rgba(0,0,0,0.45)] will-change-transform"
+          : "theme-paper absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-2xl bg-surface text-ink shadow-[0_-10px_30px_rgba(4,11,23,0.42)] will-change-transform"
+      }
       style={{
         height: full,
         transform: `translateY(${full - (dragH ?? target)}px)`,
@@ -91,7 +102,11 @@ export function MobileSheet({
         aria-label={`${label}: ${LABEL[snap]}. Activate to resize, or use the arrow keys.`}
         aria-expanded={snap !== snaps[0]?.id}
         data-testid="sheet-handle"
-        className={`flex w-full shrink-0 touch-none items-center justify-center rounded-t-2xl ${field ? "h-14" : "h-6"}`}
+        className={
+          tone === "instrument"
+            ? "nx-focus absolute right-1.5 top-1 z-10 grid h-14 w-14 touch-none place-items-center rounded-full text-n-ink-2"
+            : `flex w-full shrink-0 touch-none items-center justify-center rounded-t-2xl ${field ? "h-14" : "h-6"}`
+        }
         onClick={() => {
           if (drag.current?.moved) return;
           go(i === snaps.length - 1 ? 0 : i + 1);
@@ -139,11 +154,18 @@ export function MobileSheet({
           setDragH(null);
         }}
       >
-        <span className={`h-1 w-10 rounded-full bg-hairline-strong transition-transform duration-150 ${dragH != null ? "scale-x-[1.15]" : ""}`} aria-hidden />
+        {tone === "instrument" ? (
+          <svg viewBox="0 0 24 24" aria-hidden className={`h-5 w-5 transition-transform duration-200 ${snap === snaps[snaps.length - 1]?.id ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <path d="m6 15 6-6 6 6" />
+          </svg>
+        ) : (
+          <span className={`h-1 w-10 rounded-full bg-hairline-strong transition-transform duration-150 ${dragH != null ? "scale-x-[1.15]" : ""}`} aria-hidden />
+        )}
       </button>
+      {tone === "instrument" && <span aria-hidden className="pointer-events-none absolute left-1/2 top-1.5 h-1 w-9 -translate-x-1/2 rounded-full bg-n-line-strong" />}
       {/* below the handle's whole hit area: a tap on a credit link never resizes the sheet */}
-      {edge && <div className="shrink-0 px-4 pb-1">{edge}</div>}
-      <div ref={body} className="cw-fade-in min-h-0 flex-1 overflow-y-auto overscroll-contain px-4" style={{ paddingBottom: 20 + full - target }}>
+      {edge && <div className={`shrink-0 px-4 pb-1 ${tone === "instrument" ? "pr-16 pt-3" : ""}`}>{edge}</div>}
+      <div ref={body} className={`cw-fade-in min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 ${tone === "instrument" ? "pt-3" : ""}`} style={{ paddingBottom: 20 + full - target }}>
         {header}
         {children}
       </div>

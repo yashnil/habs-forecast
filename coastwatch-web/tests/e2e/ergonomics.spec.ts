@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { OK } from "./ports";
+import { openEvidence } from "./helpers";
 
 /**
  * Fixes from the v2/v4 task walkthrough (scratchpad tasks-audit): the phone workspace never scrolls
@@ -16,6 +17,7 @@ test("phone: scrolling the selection into view never slides the workspace or the
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=forecast&var=particulate_domoic&lead=1&sel=cell:36.8,-121.95`);
   await expect(page.getByTestId("cell-leads")).toBeAttached();
+  await openEvidence(page);
   await page.getByTestId("cell-leads").scrollIntoViewIfNeeded();
   await page.evaluate(() => document.querySelector('[data-testid="inspect-panel"] > :last-child')?.scrollIntoView());
   expect(await page.evaluate(() => [document.scrollingElement!.scrollTop, document.querySelector('[data-testid="explore"]')!.scrollTop])).toEqual([0, 0]);
@@ -24,14 +26,16 @@ test("phone: scrolling the selection into view never slides the workspace or the
   await ctx.close();
 });
 
-test("phone: the layers are one tap from the sheet's peek", async ({ browser }) => {
+test("phone: the layer list is one tap from the sheet's peek (the dock's layer button)", async ({ browser }) => {
   const ctx = await browser.newContext(phone);
   const page = await ctx.newPage();
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=none`);
   await expect(page.getByTestId("mobile-sheet")).toHaveAttribute("data-snap", "peek");
-  await page.getByTestId("chip-forecast").click();
-  await expect(page.getByTestId("chip-forecast")).toHaveAttribute("aria-checked", "true");
+  await page.getByTestId("layer-capsule").click();
+  await expect(page.getByTestId("layer-deck")).toBeVisible();
+  await page.getByTestId("layer-forecast").click();
+  await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
   await expect(page).toHaveURL(/layer=forecast/);
   await ctx.close();
 });
@@ -60,11 +64,11 @@ test("the empty search offers the common places; a station's panel says when it 
   await expect(page.getByTestId("station-research")).toHaveAttribute("href", "/research?station=HABs-SantaCruzWharf");
 });
 
-test("the briefing (v6): the glance, what matters and what changed, then trip economics, sea, seasons and the checks, before the evidence", async ({ page }) => {
+test("the briefing (v7): what changed, the conditions and official position, trip economics, what matters, then the notes: sea, seasons and the checks before the evidence", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-10-13T06:00:00Z"));
   await page.goto(`${OK}/coast?place=port-201&for=commercial&species=dungeness`);
-  const order = await page.locator('[data-testid^="brief-"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
-  expect(order.slice(0, 7)).toEqual(["brief-glance", "brief-now", "brief-changes", "brief-econ", "brief-sea", "brief-seasons", "brief-checks"]);
+  const order = await page.locator('[data-testid^="brief-"]:not([data-testid$="-toggle"])').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
+  expect(order.slice(0, 8)).toEqual(["brief-changes", "brief-glance", "brief-econ", "brief-now", "brief-sea", "brief-seasons", "brief-checks", "brief-evidence"]);
   expect(order.indexOf("brief-checks")).toBeLessThan(order.indexOf("brief-measured"));
 });
 

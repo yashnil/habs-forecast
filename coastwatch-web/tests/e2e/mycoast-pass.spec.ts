@@ -9,12 +9,15 @@ import { OK } from "./ports";
  */
 const NOW = "2026-10-13T06:00:00Z";
 
-test("below 'Before you go' the sections are folded with a count and a line; opening one shows all of it", async ({ page }) => {
+test("v7: below what matters, every section is a folded note with a count and a line; opening one shows all of it", async ({ page }) => {
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-550`);
   await expect(page.getByTestId("matters")).toBeVisible();
+  for (const id of ["sea", "seasons", "checks", "evidence", "official", "unknown", "map"]) await expect(page.getByTestId(`brief-${id}-toggle`)).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByTestId("checks")).toBeHidden();
+  await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId("checks")).toBeVisible();
-  for (const id of ["measured", "official", "unknown"]) {
+  for (const id of ["evidence", "official", "unknown"]) {
     const t = page.getByTestId(`brief-${id}-toggle`);
     await expect(t).toHaveAttribute("aria-expanded", "false");
     await expect(t).toContainText(/\d/);
@@ -50,20 +53,21 @@ test("the title is the place control on a phone: one button instead of three pil
   // every v4 icon has a size of its own (none at the SVG default of 300 x 150)
   const big = await page.locator('svg[viewBox="0 0 24 24"]').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 64).length);
   expect(big).toBe(0);
-  // the landing's chevrons too
+  // the landing's search icon too
   await page.goto(`${OK}/coast`);
-  const w = await page.getByTestId("coast-start-port-550").locator("svg").evaluate((e) => e.getBoundingClientRect().width);
+  const w = await page.getByTestId("coast-place-search").locator("svg").first().evaluate((e) => e.getBoundingClientRect().width);
   expect(w).toBe(20);
   await ctx.close();
 });
 
-test("the phone sheet over the map is cool chart paper, not cream", async ({ browser }) => {
+test("the phone sheet over the map is the instrument's own dark surface (v7), never cream or a white card", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   await page.goto(`${OK}/?sel=harbor:550&layer=forecast`);
   const sheet = page.getByTestId("mobile-sheet");
   await expect(sheet).toBeVisible({ timeout: 20_000 });
-  expect(await sheet.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(255, 255, 255)");
+  // the env-instrument surface token (#0c1921)
+  expect(await sheet.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(12, 25, 33)");
   await ctx.close();
 });
 
@@ -80,7 +84,7 @@ test("v6 P0 4: offline three days later, the saved copy is dated 'as saved' and 
   await expect(page.getByTestId("pack-status")).toHaveAttribute("data-complete", "true", { timeout: 90_000 });
   await page.reload();
   // online, on the day it was issued, the glance reads Monday night's NWS period
-  await expect(page.getByTestId("glance-sea-link")).toContainText("NWS Tonight");
+  await expect(page.getByTestId("glance-sea-link")).toContainText("(NWS), Tonight");
 
   await ctx.route("**/*", (r) => r.abort("internetdisconnected"));
   await ctx.setOffline(true);
@@ -96,6 +100,7 @@ test("v6 P0 4: offline three days later, the saved copy is dated 'as saved' and 
   // the water temperature carries its own measured date and where
   await expect(page.getByTestId("glance-water")).toContainText(/measured Oct 1\d, .*\((CO-OPS|NDBC)/);
   // the saved periods are dated by their own day, never "Tonight"
+  await page.getByTestId("brief-sea-toggle").click();
   await page.getByTestId("sea-periods-more").locator("summary").first().click();
   await expect(page.getByTestId("sea-period").first()).toContainText(/Mon, Oct 12, night/);
   for (const id of ["brief-glance", "brief-sea", "brief-now"]) expect(await page.getByTestId(id).innerText(), id).not.toMatch(/\b(tonight|today)\b(?!'s price)/i); // "Not today's price" is the dock-value caveat, not a claim

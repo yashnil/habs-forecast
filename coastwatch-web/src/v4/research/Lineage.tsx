@@ -33,18 +33,18 @@ export function Lineage({ layer, manifest }: { layer: LayerArtifact; manifest: M
   const L = layerLineage(layer, manifest);
   const checks = [...L.checks].sort((a, b) => Number(a.passed) - Number(b.passed));
   return (
-    <section className="nx-deck grid gap-5 p-4 sm:p-5 lg:grid-cols-2" data-testid="research-lineage" aria-labelledby="lineage-h">
+    <section className="grid gap-8 lg:grid-cols-2" data-testid="research-lineage" aria-labelledby="lineage-h">
       <div className="flex min-w-0 flex-col gap-4">
         <div>
           <h2 id="lineage-h" className="nx-eyebrow">
             Lineage and quality · this layer
           </h2>
-          <p className="mt-1 text-[15px] font-semibold leading-snug">{L.title}</p>
+          <p className="nx-title mt-1">{L.title}</p>
           <p className="text-[13px] text-n-ink-2">{L.kind}</p>
         </div>
         <Rows rows={[...L.source, ...L.time]} />
         {(L.upstreamNote || L.inputs) && (
-          <div className="rounded-lg border border-n-line bg-n-surface-2 p-3 text-[13.5px] leading-snug" data-testid="lineage-upstream">
+          <div className="border-l-2 border-n-line-strong pl-3 text-[13.5px] leading-snug" data-testid="lineage-upstream">
             <p className="nx-eyebrow mb-1">Upstream, as stated by the producer</p>
             {L.inputs && <p className="text-n-ink-2">Inputs: {L.inputs}</p>}
             {L.upstreamNote && <p className="mt-1">&ldquo;{L.upstreamNote}&rdquo;</p>}

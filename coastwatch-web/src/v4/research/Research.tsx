@@ -6,10 +6,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MlMap } from "maplibre-gl";
 import type { Manifest, PortsCollection } from "@/generated/schema";
-import type { ObservationDataset, ObsStation } from "@/generated/observations";
+import type { ObservationDataset } from "@/generated/observations";
 import type { OfficialDataset } from "@/generated/official";
-import { DAY, samples, sourceCsvUrl, unitLabel, type ObsVariableId, type Sample } from "@/lib/observations";
-import { modelOnAxis, modelSegments, type ModelPoint } from "@/lib/bloom";
+import { DAY, samples, sourceCsvUrl, unitLabel, type ObsVariableId } from "@/lib/observations";
+import { modelOnAxis } from "@/lib/bloom";
 import { CHARM_LEADS, CHARM_VARIABLES, artifactUrl, charmLayer, charmRun, isFixture, satelliteLatest, sourceStatus, tileIndexUrl, type CharmVariable } from "@/lib/layers";
 import { currentsHourly, fieldFeatures } from "@/lib/currents";
 import { cellEdges, distanceKm, loadGrid } from "@/lib/grid";
@@ -24,16 +24,17 @@ import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel, lastHabWords, relTime } from "@/v4/ui/time";
 import { HAB_SAMPLE_VARIABLES } from "@/lib/provenance";
 import { pacificDate } from "@/lib/time";
-import { SampleValue, SeriesChart, monthTicks, sampleOnDay, tickLabel } from "@/v4/charts/SeriesChart";
+import { SeriesChart, sampleOnDay } from "@/v4/charts/SeriesChart";
 import { useReportSource } from "@/v4/readiness/store";
-import { AreaModel, CellBody, preciseProbability } from "@/v4/explore/Inspect";
+import { AreaModel, CellBody } from "@/v4/explore/Inspect";
 import { useCellRead } from "@/v4/explore/reads";
 import { VARIABLE_WORDS } from "@/v4/explore/layers";
 import { boxFeature, useAreaDrag, type BBox } from "@/v4/explore/AreaDrag";
 import { transect, type TransectCell } from "./transect";
+import { CoastLadder, type LadderStation } from "./CoastLadder";
+import { CursorReadout, ExportButton, ExportMenu, MENU_ITEM, ModelPanel, QUIET, Seg, TabPanel, Tabs, TransectChart } from "./parts";
 import { areaCsv, cellLeadsCsv, download, modelHistoryCsv, stationCsv, transectCsv } from "./exports";
 import { Lineage } from "./Lineage";
-import { useWidth } from "@/v4/charts/useWidth";
 import { footprintOf, footprintOutline, obsArea, obsPoint, obsTransect, pixelPolygon, radarLayerFor, satLayerFor, type BBox as ObsBox, type RadarChoice, type SatChoice } from "./obsGrid";
 import { ObsArea, ObsControls, ObsNote, ObsPointPanel, ObsTransect, obsSensor, obsWhen, useObsSampler, type ObsSource } from "./ObsTools";
 
@@ -42,10 +43,10 @@ const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: fal
 type Props = { manifest: Manifest; ports: PortsCollection | null; observations: ObservationDataset; official: OfficialDataset | null; baseUrl: string };
 
 const RANGES = [
-  { id: "90d", label: "90 days", days: 90 },
-  { id: "1y", label: "1 year", days: 365 },
-  { id: "3y", label: "3 years", days: 3 * 365 },
-  { id: "all", label: "All", days: Infinity },
+  { id: "90d", label: "90 days", short: "90 d", days: 90 },
+  { id: "1y", label: "1 year", short: "1 y", days: 365 },
+  { id: "3y", label: "3 years", short: "3 y", days: 3 * 365 },
+  { id: "all", label: "All", short: "All", days: Infinity },
 ] as const;
 
 /** C-HARM's own thresholds (its `threshold_text`): references, not safety limits. 500 ng/L = 0.5 ng/mL. */
@@ -64,7 +65,6 @@ const AXIS_NAME: Record<ObsVariableId, string> = {
 };
 
 const dayKey = (t: number) => new Date(t).toISOString().slice(0, 10);
-const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 /** The newest HAB sample (the variables lastHabSample uses elsewhere), from a station's full series: the same date the map, Explore and the briefing give. */
 function lastHabObs(s: { sample_times: string[]; series: { variable: string; values: (number | null)[] }[] }): string | null {
@@ -81,142 +81,7 @@ function lastHabObs(s: { sample_times: string[]; series: { variable: string; val
   return best;
 }
 
-const BTN = "nx-press nx-focus flex min-h-11 items-center gap-2 rounded-lg border border-n-line-strong px-3 text-[14px] font-semibold";
 
-function ExportButton({ onClick, testid, children }: { onClick: () => void; testid: string; children: React.ReactNode }) {
-  return (
-    <button type="button" onClick={onClick} className={`${BTN} self-start`} data-testid={testid}>
-      <Icon name="download" className="h-4 w-4" /> {children}
-    </button>
-  );
-}
-
-function ModelPanel({ st, variable, from, to, cursorT, onCursor, onExport }: { st: ObsStation; variable: CharmVariable; from: number; to: number; cursorT: number | null; onCursor: (t: number) => void; onExport: () => void }) {
-  const hist = st.charm?.history?.[variable];
-  const { points, historyStart } = modelOnAxis(hist, from, to);
-  const segs = modelSegments(points);
-  const [box, W] = useWidth<HTMLElement>(720);
-  const svg = useRef<SVGSVGElement | null>(null);
-  const H = 132;
-  const pad = { l: 50, r: 10, t: 8, b: 24 };
-  const x = (t: number) => pad.l + ((t - from) / Math.max(1, to - from)) * (W - pad.l - pad.r);
-  const y = (v: number) => pad.t + (1 - v) * (H - pad.t - pad.b);
-  const months = monthTicks(from, to, W);
-  if (!st.charm?.history?.[variable]?.length)
-    return (
-      <div className="rounded-lg border border-dashed border-n-line-strong px-3 py-3 text-[14px] text-n-ink-2" data-testid="model-panel-none">
-        <p>No C-HARM nowcast history is published for this station.</p>
-        {st.charm?.error && (
-          <details className="mt-1 text-[12.5px] text-n-ink-3">
-            <summary className="nx-focus min-h-11 cursor-pointer py-2 font-semibold text-n-accent">What the pipeline reported</summary>
-            <p className="break-all">{st.charm.error}</p>
-          </details>
-        )}
-      </div>
-    );
-  const near = (clientX: number) => {
-    const r = svg.current?.getBoundingClientRect();
-    if (!r || !points.length) return;
-    const t = from + ((clientX - r.left) / r.width * W - pad.l) / (W - pad.l - pad.r) * (to - from);
-    let best = points[0];
-    for (const p of points) if (Math.abs(p.t - t) < Math.abs(best.t - t)) best = p;
-    onCursor(best.t);
-  };
-  const curX = cursorT != null && cursorT >= from && cursorT <= to ? x(cursorT) : null;
-  const onDay = cursorT != null ? points.find((p) => p.date === dayKey(cursorT)) : undefined;
-  return (
-    <figure ref={box} className="flex flex-col gap-1.5" data-testid="model-panel">
-      <figcaption className="text-[13.5px] leading-snug text-n-ink-2">
-        NOAA C-HARM nowcast, {VARIABLE_WORDS[variable].what.toLowerCase()}: median of the valued cells within {st.charm!.radius_km} km of the station (nearest cell {st.charm!.nearest_cell_km != null ? kmLabel(st.charm!.nearest_cell_km) : "—"}). Shown beside the measurements on the same dates, never compared with them as numbers.
-      </figcaption>
-      <svg
-        ref={svg}
-        width={W}
-        height={H}
-        className="block touch-pan-y select-none"
-        role="img"
-        aria-label={`C-HARM nowcast probability near ${st.name}, ${points.length} days in view`}
-        onPointerMove={(e) => near(e.clientX)}
-        onPointerDown={(e) => near(e.clientX)}
-        data-testid="model-svg"
-      >
-        {[0, 0.5, 1].map((v) => (
-          <g key={v}>
-            <line x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="var(--nx-line)" />
-            <text x={pad.l - 6} y={y(v) + 4} textAnchor="end" fontSize="11" fill="var(--nx-ink-3)">
-              {Math.round(v * 100)}%
-            </text>
-          </g>
-        ))}
-        {months.filter((t) => x(t) <= W - pad.r - 18).map((t) => (
-          <text key={t} x={x(t)} y={H - 6} fontSize="11.5" fill="var(--nx-ink-3)" textAnchor="middle">
-            {tickLabel(t, from, to)}
-          </text>
-        ))}
-        {historyStart != null && historyStart > from && (
-          <g>
-            <rect x={pad.l} y={pad.t} width={Math.max(0, x(historyStart) - pad.l)} height={H - pad.t - pad.b} fill="url(#nx-hatch)" />
-            {x(historyStart) - pad.l > 230 && (
-              <text x={pad.l + 6} y={pad.t + 14} fontSize="11" fill="var(--nx-ink-3)">
-                no model history kept before {dayLabel(new Date(historyStart).toISOString().slice(0, 10))}
-              </text>
-            )}
-          </g>
-        )}
-        <defs>
-          <pattern id="nx-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="6" stroke="var(--nx-line-strong)" strokeWidth="1.5" />
-          </pattern>
-        </defs>
-        {segs.map((sg, i) => (
-          <polyline key={i} points={sg.map((p) => `${x(p.t)},${y(p.v)}`).join(" ")} fill="none" stroke="var(--nx-model)" strokeWidth={1.8} />
-        ))}
-        {points.map((p) => (
-          <circle key={p.t} cx={x(p.t)} cy={y(p.v)} r={p.partial ? 2.8 : 1.8} fill={p.partial ? "var(--nx-surface)" : "var(--nx-model)"} stroke="var(--nx-model)" strokeWidth={p.partial ? 1.2 : 0} />
-        ))}
-        {onDay && <circle cx={x(onDay.t)} cy={y(onDay.v)} r={4.5} fill="var(--nx-surface)" stroke="var(--nx-model)" strokeWidth={2} />}
-        {curX != null && <line x1={curX} x2={curX} y1={pad.t} y2={H - pad.b} stroke="var(--nx-ink-3)" strokeDasharray="2 3" data-testid="model-cursor" />}
-      </svg>
-      <p className="text-[12.5px] text-n-ink-3">
-        Open circles: days when fewer than 60% of the usual cells had a value (not joined). Days without a value are left out.
-        {historyStart != null && historyStart > from ? ` Hatched: before ${dayLabel(new Date(historyStart).toISOString().slice(0, 10))} ${new Date(historyStart).getUTCFullYear()}, no model history is kept.` : ""}
-      </p>
-      <ExportButton onClick={onExport} testid="export-model">
-        Model history (CSV)
-      </ExportButton>
-    </figure>
-  );
-}
-
-/**
- * The shared cursor's readout: what was measured at the pier that day and what C-HARM published for
- * the same day, as two separate labelled lines. Two different quantities; nothing is computed
- * between them.
- */
-function CursorReadout({ t, sample, unit, fmt, model, variable, radiusKm, historyStart }: { t: number | null; sample: Sample | null; unit: string; fmt: (v: number) => string; model: ModelPoint | null; variable: CharmVariable; radiusKm: number; historyStart: number | null }) {
-  if (t == null) return <p className="min-h-[52px] text-[14px] text-n-ink-2">Point at either chart to read a day.</p>;
-  const day = dayKey(t);
-  return (
-    <div className="flex min-h-[52px] flex-col gap-0.5 text-[14px]" aria-live="polite" data-testid="cursor-readout">
-      <p data-testid="cursor-measured">
-        <span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-n-measured align-middle" />
-        <span className="font-semibold">Measured at the pier, {dayLabel(day, true)}:</span>{" "}
-        {sample ? <SampleValue s={sample} unit={unit} fmt={fmt} /> : <span className="text-n-ink-2">no sample that day</span>}
-      </p>
-      <p data-testid="cursor-model">
-        <span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-n-model align-middle" />
-        <span className="font-semibold">C-HARM nowcast, same day ({VARIABLE_WORDS[variable].short}):</span>{" "}
-        {model ? (
-          <>
-            <span className="nx-data text-[17px] font-semibold">{pct(model.v)}</span> <span className="text-n-ink-2">probability ({preciseProbability(model.v, null)}), median of {model.n} cells within {radiusKm} km{model.partial ? "; fewer cells than usual" : ""}</span>
-          </>
-        ) : (
-          <span className="text-n-ink-2">{historyStart != null && t < historyStart ? "before the model history Neritic keeps" : "no model value kept for that day"}</span>
-        )}
-      </p>
-    </div>
-  );
-}
 
 /** The station nearest a place: one whose nearest harbour is that port first (as published), else the nearest by distance. */
 export function nearestStation<S extends { station_id: string; lat: number | null; lon: number | null; nearest_port_code?: number | null; nearest_port_km?: number | null }>(stations: S[], lat: number, lon: number, key: string): { station: S; km: number } | null {
@@ -416,105 +281,177 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
   const fileTag = `${gridVar}-${forecastLayer?.time.valid_date ?? "na"}`;
   const stationsIn = area ? stations.filter((s) => s.lat! >= area[1] && s.lat! <= area[3] && s.lon! >= area[0] && s.lon! <= area[2]) : [];
 
+
+  // ------------------------------------------------------------------ v7 composition: header strip, coast ladder, the chart, the sections
+  const ladder = useMemo<LadderStation[]>(() => stations.map((s) => ({ id: s.station_id, name: s.name, lat: s.lat!, lon: s.lon!, last: lastHabWords(lastHabObs(s), now) })), [stations, now]);
+  const [tab, setTabState] = useState<TabId>("window");
+  // an old "#r-tools" / "#r-stats" link (and a section's own hash) opens that section
+  useEffect(() => {
+    const h = window.location.hash.slice(1);
+    const t = HASH_TAB[h];
+    if (t) setTabState(t);
+  }, []);
+  const setTab = (t: TabId) => {
+    setTabState(t);
+    if (t === "grid") setMapNear(true);
+  };
+  const openSection = (t: TabId) => {
+    setTab(t);
+    requestAnimationFrame(() => document.getElementById("r-sections")?.scrollIntoView({ block: "start", behavior: "auto" }));
+  };
+  const wide = useWide();
+  // the model panel sits directly under the record, on the same time axis (or alone, when the window has no sample)
+  const seriesEmpty = !win.some((s) => s.value != null || s.q === "rejected_negative");
+  const modelPanel = showModel ? <ModelPanel st={st} variable={modelVar} from={from} to={to} cursorT={cursorT} onCursor={onCursor} /> : null;
+  const exportWindow = () => download(`neritic-${st.station_id}-${variable}.csv`, stationCsv(observations, st, vmeta, from, to));
+  const exportModel = () => download(`neritic-${st.station_id}-charm-${modelVar}.csv`, modelHistoryCsv(st, modelVar, charmLayer(manifest, modelVar, 0), manifest, observations.method.charm));
+  const varShort = (id: ObsVariableId) => (id === "pn_seriata" || id === "pn_delicatissima" ? (vars.some((v) => v.id === "pn_seriata") && vars.some((v) => v.id === "pn_delicatissima") ? SHORT[id] : "Pseudo-nitzschia") : SHORT[id]);
+  const sampledFrom = dayLabel(st.sample_times[0] ?? "", false, now);
+  const sampledTo = dayLabel(st.sample_times[st.sample_times.length - 1] ?? "", false, now);
+
   return (
     <div className="env-chart min-h-dvh bg-n-bg text-n-ink" data-testid="research">
       <SkipLink />
       <TopBar active="research" now={now} notices={<NoticesButton official={official} status={sourceStatus(manifest, "official")} />} />
       <RegistryDisclosure className="mx-auto w-full max-w-[1440px] px-4 pb-2 sm:px-6" fixture={isFixture(manifest)} />
-      <div className="mx-auto grid w-full max-w-[1440px] gap-6 px-4 pb-32 pt-2 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <nav aria-label="Stations" className="lg:sticky lg:top-4 lg:max-h-[calc(100dvh-110px)] lg:self-start lg:overflow-y-auto" data-testid="research-stations">
-          <p className="nx-eyebrow mb-2">Shore stations · CalHABMAP</p>
-          <label htmlFor="r-station" className="sr-only">
-            Station
-          </label>
-          <select id="r-station" value={st.station_id} onChange={(e) => chooseStation(e.target.value)} className="nx-select nx-focus min-h-12 w-full rounded-xl border border-n-line-strong bg-n-surface pl-3 text-[15px] font-semibold lg:hidden">
-            {stations.map((s) => (
-              <option key={s.station_id} value={s.station_id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-          <ul className="hidden flex-col gap-0.5 lg:flex">
-            {stations.map((s) => {
-              const on = s.station_id === st.station_id;
-              return (
-                <li key={s.station_id}>
-                  <button type="button" onClick={() => chooseStation(s.station_id)} aria-current={on ? "true" : undefined} className={`nx-focus flex min-h-12 w-full flex-col justify-center rounded-lg px-3 py-1.5 text-left ${on ? "bg-n-ink text-n-bg" : "nx-row hover:bg-n-surface-2"}`}>
-                    <span className="text-[14.5px] font-semibold leading-tight">{s.name}</span>
-                    <span className={`text-[12.5px] ${on ? "opacity-80" : "text-n-ink-3"}`}>
-                      {lastHabWords(lastHabObs(s), now)} · {s.sample_times.length} visits
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        <main id="main" className="cw-page-in flex min-w-0 flex-col gap-6">
-          {(arrived || backHref) && (
-            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-n-line bg-n-surface-2 px-3 py-1.5 text-[14px] leading-snug text-n-ink-2" data-testid="research-arrived">
-              {arrived && (
-                <span>
-                  Arrived from <span className="font-semibold text-n-ink">{arrived.name}</span> · nearest station {st.name}, {kmLabel(arrived.km)}
-                </span>
-              )}
-              {backHref && (
-                <Link href={backHref} className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent" data-testid="research-back">
-                  <Icon name="back" className="h-4 w-4" /> Back{arrived ? ` to ${arrived.name}` : ""}
-                </Link>
-              )}
-            </p>
-          )}
-          <header className="flex flex-wrap items-end justify-between gap-4">
-            <div className="min-w-0">
-              <p className="nx-eyebrow">Research · station record</p>
-              <h1 className="mt-1 font-serif text-[34px] font-semibold leading-tight" data-testid="research-title">
+      <div className="mx-auto grid w-full max-w-[1440px] gap-x-8 px-4 pb-32 pt-3 sm:px-6 lg:grid-cols-[296px_minmax(0,1fr)] lg:pb-16">
+        {/* header strip: the station (its name is the picker), where and when it was sampled, the page's actions */}
+        <header className="flex flex-col gap-1.5 pb-2 sm:gap-3 sm:pb-5 lg:col-span-2 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
+          <div className="min-w-0">
+            {(arrived || backHref) && (
+              <p className="mb-1.5 flex flex-wrap items-center gap-x-3 text-[13.5px] leading-snug text-n-ink-2" data-testid="research-arrived">
+                {arrived && (
+                  <span>
+                    Arrived from <span className="font-semibold text-n-ink">{arrived.name}</span> · nearest station {st.name}, {kmLabel(arrived.km)}
+                  </span>
+                )}
+                {backHref && (
+                  <Link href={backHref} className="nx-focus -my-2 inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent" data-testid="research-back">
+                    <Icon name="back" className="h-4 w-4" /> Back{arrived ? ` to ${arrived.name}` : ""}
+                  </Link>
+                )}
+              </p>
+            )}
+            <div className="relative inline-flex focus-within:outline focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-n-accent max-w-full items-center gap-2 rounded-lg">
+              <h1 className="min-w-0 font-serif text-[28px] font-semibold leading-[34px] tracking-[-0.01em] sm:text-[34px] sm:leading-[40px]" data-testid="research-title">
                 {st.name}
               </h1>
-              <p className="mt-1 text-[14.5px] text-n-ink-2">
+              <Icon name="chevronDown" className="mt-1 h-5 w-5 shrink-0 text-n-ink-3" />
+              <label htmlFor="r-station" className="sr-only">
+                Shore station
+              </label>
+              <select id="r-station" value={st.station_id} onChange={(e) => chooseStation(e.target.value)} className="nx-focus absolute inset-0 h-full w-full cursor-pointer opacity-0" data-testid="research-station-select">
+                {stations.map((s) => (
+                  <option key={s.station_id} value={s.station_id}>
+                    {s.name} · {lastHabWords(lastHabObs(s), now)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="mt-1 text-[13.5px] leading-5 text-n-ink-2">
+              <span className="nx-data text-[12.5px]">
                 {st.lat!.toFixed(3)}°N {Math.abs(st.lon!).toFixed(3)}°W
-                {st.nearest_port_name ? ` · ${kmLabel(st.nearest_port_km ?? 0)} from ${st.nearest_port_name}` : ""} · sampled {dayLabel(st.sample_times[0] ?? "", false, now)} to {dayLabel(st.sample_times[st.sample_times.length - 1] ?? "", false, now)}
-                {st.status !== "updated" ? ` · last update ${st.status.replace("_", " ")}` : ""}
-              </p>
-            </div>
-            <Link href={`/?sel=station:${st.station_id}`} className="nx-press nx-focus flex min-h-11 items-center gap-2 rounded-xl border border-n-line-strong px-3 text-[14.5px] font-semibold">
-              <Icon name="map" className="h-[18px] w-[18px]" /> Open in Explore
+              </span>
+              {st.nearest_port_name && <span className="max-sm:hidden"> · {kmLabel(st.nearest_port_km ?? 0)} from {st.nearest_port_name}</span>} · <span className="max-sm:hidden">sampled {sampledFrom} to {sampledTo}</span>
+              <span className="sm:hidden">
+                sampled {(st.sample_times[0] ?? "").slice(0, 4)} to {sampledTo}
+              </span>
+              {st.status !== "updated" ? ` · last update ${st.status.replace("_", " ")}` : ""}
+            </p>
+          </div>
+          <div className="-ml-2.5 flex flex-wrap items-center gap-x-1 gap-y-1 sm:ml-0 sm:gap-2">
+            <ExportMenu>
+              {(close) => (
+                <>
+                  <button
+                    type="button"
+                    className={MENU_ITEM}
+                    onClick={() => {
+                      exportWindow();
+                      close();
+                    }}
+                    data-testid="research-export"
+                  >
+                    <span className="text-[14px] font-semibold">This window (CSV)</span>
+                    <span className="nx-note-t">{vmeta.label}, {win.length} visits, with its provenance header</span>
+                  </button>
+                  {hasHistory && (
+                    <button
+                      type="button"
+                      className={MENU_ITEM}
+                      onClick={() => {
+                        exportModel();
+                        close();
+                      }}
+                      data-testid="export-model"
+                    >
+                      <span className="text-[14px] font-semibold">Model history (CSV)</span>
+                      <span className="nx-note-t">C-HARM nowcast near the station, every day kept</span>
+                    </button>
+                  )}
+                  {csv && (
+                    <a href={csv} target="_blank" rel="noreferrer" className={MENU_ITEM} onClick={close} data-testid="research-original">
+                      <span className="inline-flex items-center gap-1 text-[14px] font-semibold">
+                        Original data (SCCOOS) <Icon name="external" className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="nx-note-t">The station&rsquo;s own file, as published</span>
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    className={`${MENU_ITEM} mt-1 !rounded-t-none border-t border-n-line`}
+                    onClick={() => {
+                      close();
+                      openSection("exports");
+                    }}
+                  >
+                    <span className="text-[13.5px] font-semibold text-n-accent">What each file holds · grid exports</span>
+                  </button>
+                </>
+              )}
+            </ExportMenu>
+            <button type="button" onClick={() => openSection("grid")} className={`${ACTION} lg:hidden`} data-testid="research-jump-r-tools">
+              <Icon name="cell" className="h-4 w-4" /> Grid<span className="max-sm:hidden"> tools</span>
+            </button>
+            <Link href={`/?sel=station:${st.station_id}`} className={ACTION}>
+              <Icon name="map" className="h-4 w-4" />
+              <span>
+                <span className="max-sm:hidden">Open in </span>Explore
+              </span>
             </Link>
-          </header>
+          </div>
+        </header>
 
-          {/* on a phone the page is long: the map tools are one tap away, not 2,600 px down */}
-          <nav aria-label="On this page" className="-mt-2 flex flex-wrap gap-1.5 lg:hidden" data-testid="research-jump">
-            {[
-              ["r-record", "Record"],
-              ["r-stats", "Statistics"],
-              ["r-tools", "Map tools: model, satellite, radar"],
-            ].map(([id, label]) => (
-              <a key={id} href={`#${id}`} className="nx-press nx-focus inline-flex min-h-11 items-center rounded-full border border-n-line-strong px-3.5 text-[14px] font-semibold text-n-accent" data-testid={`research-jump-${id}`}>
-                {label}
-              </a>
-            ))}
-          </nav>
+        {/* the coast ladder: every station at its true latitude; the picker and the spatial context in one */}
+        <nav aria-label="Shore stations" className="hidden lg:sticky lg:top-4 lg:block lg:self-start" data-testid="research-stations">
+          <p className="nx-eyebrow mb-1 flex items-baseline justify-between pr-1">
+            <span>
+              Shore stations <span className="nx-num font-medium">· {stations.length}</span>
+            </span>
+            <span className="font-medium">last HAB sample</span>
+          </p>
+          <CoastLadder stations={ladder} selected={st.station_id} onSelect={chooseStation} height={Math.max(560, Math.min(680, stations.length * 36 + 24))} />
+          <p className="nx-note-t mt-2 pr-2">CalHABMAP shore stations, placed at their true latitude. Choose one to read its record.</p>
+        </nav>
 
-          <section id="r-record" className="nx-deck flex scroll-mt-4 flex-col gap-4 p-4 sm:p-5" data-testid="research-chart">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              {/* on a phone the quantities are one scrolling rail, not four rows of chips */}
-              <div className="-mx-4 flex w-[calc(100%+2rem)] gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0" role="radiogroup" aria-label="Quantity" data-testid="rvar-rail">
-                {vars.map((v) => (
-                  <button key={v.id} type="button" role="radio" aria-checked={variable === v.id} onClick={() => setVariable(v.id)} className={`nx-press nx-focus min-h-11 shrink-0 whitespace-nowrap rounded-lg px-3 text-[14px] font-semibold ${variable === v.id ? "bg-n-ink text-n-bg" : "border border-n-line-strong text-n-ink-2"}`} data-testid={`rvar-${v.id}`}>
-                    {v.label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Time range">
-                {RANGES.map((r) => (
-                  <button key={r.id} type="button" role="radio" aria-checked={range === r.id} onClick={() => setRange(r.id)} className={`nx-press nx-focus min-h-11 rounded-lg px-3 text-[14px] font-semibold ${range === r.id ? "bg-n-accent-bg text-n-accent ring-1 ring-n-accent" : "text-n-ink-2"}`} data-testid={`range-${r.id}`}>
-                    {r.label}
-                  </button>
-                ))}
-              </div>
+        <main id="main" className="cw-page-in flex min-w-0 flex-col">
+          {/* the instrument: quantity and range, the day's two readings, the record, the model on the same time axis */}
+          <section id="r-record" className="flex scroll-mt-4 flex-col gap-3 sm:gap-4 sm:rounded-[var(--nx-radius-lg)] sm:border sm:border-n-line sm:bg-n-surface sm:p-5 sm:shadow-[var(--nx-shadow)]" data-testid="research-chart">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <Seg label="Quantity" value={variable} onChange={setVariable} testId="rvar-rail" scroll options={vars.map((v) => ({ id: v.id, label: varShort(v.id), title: v.label, testId: `rvar-${v.id}` }))} />
+              <Seg label="Time range" value={range} onChange={setRange} options={RANGES.map((r) => ({ id: r.id, label: r.short, testId: `range-${r.id}` }))} />
             </div>
-            {hasHistory && <CursorReadout t={cursorT} sample={cursorSampleI != null ? win[cursorSampleI] : null} unit={unit} fmt={fmt} model={cursorModel} variable={modelVar} radiusKm={st.charm!.radius_km} historyStart={model.historyStart} />}
+            <CursorReadout
+              t={cursorT}
+              sample={cursorSampleI != null ? win[cursorSampleI] : null}
+              unit={unit}
+              fmt={fmt}
+              quantity={vmeta.label}
+              model={hasHistory ? cursorModel : undefined}
+              variable={hasHistory ? modelVar : null}
+              radiusKm={st.charm?.radius_km ?? 0}
+              historyStart={model.historyStart}
+            />
             <SeriesChart
               samples={ss}
               variable={variable}
@@ -522,331 +459,339 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
               label={vmeta.label}
               from={from}
               to={to}
-              height={250}
+              height={wide ? 280 : 220}
               axisTitle={`${AXIS_NAME[variable]} (${unit}${variable === "temp" ? "" : ", log scale"})`}
               refLine={variable === "pDA" ? PDA_REF : variable === "pn_seriata" || variable === "pn_delicatissima" ? PN_REF : undefined}
-              {...(hasHistory ? { cursorT, onCursor, hideReadout: true } : {})}
+              cursorT={cursorT}
+              onCursor={onCursor}
+              hideReadout
+              between={modelPanel}
             />
-            {showModel && (
-              <ModelPanel
-                st={st}
-                variable={modelVar}
-                from={from}
-                to={to}
-                cursorT={cursorT}
-                onCursor={onCursor}
-                onExport={() => download(`neritic-${st.station_id}-charm-${modelVar}.csv`, modelHistoryCsv(st, modelVar, charmLayer(manifest, modelVar, 0), manifest, observations.method.charm))}
-              />
-            )}
+            {seriesEmpty && modelPanel}
           </section>
 
-          <section id="r-stats" className="grid scroll-mt-4 gap-4 md:grid-cols-2">
-            <div className="nx-deck p-4" data-testid="research-stats">
-              <h2 className="nx-eyebrow">In this window</h2>
-              <dl className="mt-3 grid grid-cols-2 gap-3">
-                <div>
-                  <dt className="text-[12.5px] text-n-ink-3">Samples with a value</dt>
-                  <dd className="nx-data text-[22px] font-semibold">{measured.length}</dd>
+          {/* the record's sections: one tap away, every panel mounted (its wording stays in the page) */}
+          <div id="r-sections" className="mt-8 scroll-mt-4">
+            <Tabs idBase="r" tabs={TABS} value={tab} onChange={setTab} />
+
+            <TabPanel idBase="r" id="window" active={tab === "window"}>
+              <div id="r-stats" data-testid="research-stats">
+                <h2 className="sr-only">In this window</h2>
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
+                  <Stat label="Samples with a value" value={measured.length} />
+                  <Stat label="Reported as zero" value={zeros} />
+                  <Stat label="Median" value={median == null ? "—" : median.toLocaleString("en-US", { maximumSignificantDigits: 3 })} unit={unit} />
+                  <Stat label="Highest" value={max?.value == null ? "—" : max.value.toLocaleString("en-US", { maximumSignificantDigits: 3 })} unit={unit} note={max ? dayLabel(max.time) : undefined} />
+                </dl>
+                <p className="nx-note-t mt-4 max-w-[72ch]">
+                  {vmeta.label}, {RANGES.find((r) => r.id === range)!.label.toLowerCase()} window. Of {win.length} visits in the window; a visit without this measurement is not counted and is never a zero.
+                  {rejectedN ? ` ${rejectedN} rejected by QC (no value, not counted).` : ""}
+                  {flaggedN ? ` ${flaggedN} flagged high by QC (kept as published, counted).` : ""}
+                </p>
+              </div>
+            </TabPanel>
+
+            <TabPanel idBase="r" id="provenance" active={tab === "provenance"}>
+              <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]" data-testid="research-provenance">
+                <div className="min-w-0">
+                  <h2 className="nx-eyebrow mb-3">How {vmeta.label.toLowerCase()} is measured</h2>
+                  <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-[14px] leading-snug">
+                    <dt className="text-n-ink-3">Method</dt>
+                    <dd>{vmeta.method}</dd>
+                    <dt className="text-n-ink-3">Matrix</dt>
+                    <dd>{vmeta.matrix}</dd>
+                    <dt className="text-n-ink-3">Units</dt>
+                    <dd>{unit}</dd>
+                    <dt className="text-n-ink-3">Zeros</dt>
+                    <dd>{vmeta.zero_policy}</dd>
+                    {vmeta.detection_limit_note && (
+                      <>
+                        <dt className="text-n-ink-3">Detection</dt>
+                        <dd>{vmeta.detection_limit_note}</dd>
+                      </>
+                    )}
+                    <dt className="text-n-ink-3">QC rules</dt>
+                    <dd>{observations.method.qc ?? "—"}</dd>
+                    <dt className="text-n-ink-3">Retrieved</dt>
+                    <dd>{st.retrieved_at ? `${dayLabel(st.retrieved_at)}${now ? ` (${relTime(st.retrieved_at, now)})` : ""}` : "—"}</dd>
+                    <dt className="text-n-ink-3">Pipeline run</dt>
+                    <dd className="nx-data text-[13px]" data-testid="research-obs-run">
+                      {observations.provenance.pipeline_run_id} · version {observations.provenance.pipeline_version}
+                    </dd>
+                  </dl>
                 </div>
-                <div>
-                  <dt className="text-[12.5px] text-n-ink-3">Reported as zero</dt>
-                  <dd className="nx-data text-[22px] font-semibold">{zeros}</dd>
+                <div className="min-w-0">
+                  <h2 className="nx-eyebrow mb-3">
+                    Station checks · {st.qc.filter((q) => q.passed).length} of {st.qc.length} passed
+                  </h2>
+                  <ul className="flex flex-col gap-1.5 text-[13.5px] leading-snug" data-testid="research-qc">
+                    {st.qc.map((q) => (
+                      <li key={q.name} className="flex gap-2">
+                        <span className={`mt-px shrink-0 ${q.passed ? "text-n-ok" : "text-n-down"}`}>
+                          <Icon name={q.passed ? "check" : "alert"} className="h-4 w-4" />
+                        </span>
+                        <span>
+                          <b className="font-semibold">{q.name}</b> · <span className="text-n-ink-2">{q.detail}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <details className="nx-note mt-4 border-t border-n-line text-[13.5px] text-n-ink-2">
+                    <summary className="nx-focus flex min-h-11 cursor-pointer items-center justify-between py-2 font-semibold text-n-ink">
+                      Citation and licence <Icon name="chevronDown" className="nx-note-chev h-4 w-4 text-n-ink-3" />
+                    </summary>
+                    {observations.provenance.citation && <p className="mb-1">{observations.provenance.citation}</p>}
+                    <p>{observations.provenance.license}</p>
+                  </details>
                 </div>
-                <div>
-                  <dt className="text-[12.5px] text-n-ink-3">Median</dt>
-                  <dd className="nx-data text-[22px] font-semibold">
-                    {median == null ? "—" : median.toLocaleString("en-US", { maximumSignificantDigits: 3 })} <span className="text-[13px] font-normal text-n-ink-3">{unit}</span>
-                  </dd>
+              </div>
+            </TabPanel>
+
+            <TabPanel idBase="r" id="grid" active={tab === "grid"}>
+              <section id="r-tools" className="flex scroll-mt-4 flex-col gap-4" data-testid="research-grid">
+                <div className="flex flex-col gap-1">
+                  <h2 className="nx-title" data-testid="grid-heading">
+                    {source === "charm"
+                      ? `Native C-HARM grid · ${VARIABLE_WORDS[gridVar].short} · ${forecastLayer?.time.valid_date ? `${lead === 0 ? "nowcast" : "forecast"} for ${dayLabel(forecastLayer.time.valid_date, true)}` : "—"}`
+                      : `${source === "satellite" ? "Satellite chlorophyll" : "Surface currents"} · ${obsSensor(obsLayer)} · ${obsWhen(obsLayer)}`}
+                  </h2>
+                  <p className="nx-note-t">The published grid near {st.name}, cell by cell: read one, draw a transect, or count an area.</p>
                 </div>
-                <div>
-                  <dt className="text-[12.5px] text-n-ink-3">Highest</dt>
-                  <dd className="nx-data text-[22px] font-semibold">
-                    {max?.value == null ? "—" : max.value.toLocaleString("en-US", { maximumSignificantDigits: 3 })} <span className="text-[13px] font-normal text-n-ink-3">{max ? dayLabel(max.time) : ""}</span>
-                  </dd>
+                <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+                  <Field label="Data source">
+                    <Seg
+                      scroll
+                      label="Data source"
+                      value={source}
+                      onChange={pickSource}
+                      options={(
+                        [
+                          ["charm", "C-HARM model", true],
+                          ["satellite", "Satellite chlorophyll", hasSat],
+                          ["radar", "Surface currents (HF radar)", hasRadar],
+                        ] as const
+                      )
+                        .filter(([, , ok]) => ok)
+                        .map(([id, label]) => ({ id, label, testId: `gsrc-${id}` }))}
+                    />
+                  </Field>
+                  <Field label="Tool">
+                    <Seg
+                      scroll
+                      label="Map tool"
+                      value={tool}
+                      onChange={(t) => {
+                        setMapNear(true);
+                        setTool(t);
+                        setLine([]);
+                        if (t === "area") setAreaArmed(true);
+                      }}
+                      options={(["cell", "transect", "area"] as const).map((t) => ({ id: t, testId: `tool-${t}`, label: t === "cell" ? (source === "satellite" ? "Inspect a pixel" : "Inspect a cell") : t === "transect" ? "Draw a transect" : "Select an area" }))}
+                    />
+                  </Field>
                 </div>
-              </dl>
-              <p className="mt-3 text-[12.5px] leading-snug text-n-ink-3">
-                Of {win.length} visits in the window; a visit without this measurement is not counted and is never a zero.
-                {rejectedN ? ` ${rejectedN} rejected by QC (no value, not counted).` : ""}
-                {flaggedN ? ` ${flaggedN} flagged high by QC (kept as published, counted).` : ""}
-              </p>
-            </div>
-            <div className="nx-deck p-4" data-testid="research-provenance">
-              <h2 className="nx-eyebrow">Provenance and quality</h2>
-              <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-[13.5px]">
-                <dt className="text-n-ink-3">Method</dt>
-                <dd>{vmeta.method}</dd>
-                <dt className="text-n-ink-3">Matrix</dt>
-                <dd>{vmeta.matrix}</dd>
-                <dt className="text-n-ink-3">Units</dt>
-                <dd>{unit}</dd>
-                <dt className="text-n-ink-3">Zeros</dt>
-                <dd>{vmeta.zero_policy}</dd>
-                {vmeta.detection_limit_note && (
+                {source !== "charm" && (
                   <>
-                    <dt className="text-n-ink-3">Detection</dt>
-                    <dd>{vmeta.detection_limit_note}</dd>
+                    <div className="flex flex-wrap items-end gap-x-5 gap-y-3" data-testid="obs-controls">
+                      <ObsControls manifest={manifest} source={source} sat={sat} onSat={setSat} radar={radar} onRadar={setRadar} now={now} />
+                    </div>
+                    <ObsNote source={source} />
                   </>
                 )}
-                <dt className="text-n-ink-3">QC rules</dt>
-                <dd>{observations.method.qc ?? "—"}</dd>
-                <dt className="text-n-ink-3">Retrieved</dt>
-                <dd>{st.retrieved_at ? `${dayLabel(st.retrieved_at)}${now ? ` (${relTime(st.retrieved_at, now)})` : ""}` : "—"}</dd>
-                <dt className="text-n-ink-3">Pipeline run</dt>
-                <dd className="nx-data" data-testid="research-obs-run">
-                  {observations.provenance.pipeline_run_id} · version {observations.provenance.pipeline_version}
-                </dd>
-              </dl>
-              <ul className="mt-3 flex flex-col gap-1 text-[13px]" data-testid="research-qc">
-                {st.qc.map((q) => (
-                  <li key={q.name} className="flex gap-2">
-                    <span className={q.passed ? "text-n-ok" : "text-n-down"}>
-                      <Icon name={q.passed ? "check" : "alert"} className="h-4 w-4" />
-                    </span>
-                    <span>
-                      <b className="font-semibold">{q.name}</b> · {q.detail}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <details className="mt-2 text-[13px] text-n-ink-2">
-                <summary className="nx-focus min-h-11 cursor-pointer py-2 font-semibold text-n-accent">Citation and licence</summary>
-                {observations.provenance.citation && <p className="mb-1">{observations.provenance.citation}</p>}
-                <p>{observations.provenance.license}</p>
-              </details>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button type="button" onClick={() => download(`neritic-${st.station_id}-${variable}.csv`, stationCsv(observations, st, vmeta, from, to))} className={BTN} data-testid="research-export">
-                  <Icon name="download" className="h-4 w-4" /> Export window (CSV)
-                </button>
-                {csv && (
-                  <a href={csv} target="_blank" rel="noreferrer" className={BTN.replace("nx-press ", "")}>
-                    Original data (SCCOOS) <Icon name="external" className="h-4 w-4" />
-                  </a>
-                )}
-              </div>
-            </div>
-          </section>
-
-          <section id="r-tools" className="nx-deck flex scroll-mt-4 flex-col gap-3 p-4 sm:p-5" data-testid="research-grid">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="nx-eyebrow" data-testid="grid-heading">
-                {source === "charm"
-                  ? `Native C-HARM grid · ${VARIABLE_WORDS[gridVar].short} · ${forecastLayer?.time.valid_date ? `${lead === 0 ? "nowcast" : "forecast"} for ${dayLabel(forecastLayer.time.valid_date, true)}` : "—"}`
-                  : `${source === "satellite" ? "Satellite chlorophyll" : "Surface currents"} · ${obsSensor(obsLayer)} · ${obsWhen(obsLayer)}`}
-              </h2>
-              <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Map tool">
-                {(["cell", "transect", "area"] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    role="radio"
-                    aria-checked={tool === t}
-                    onClick={() => {
-                      setMapNear(true);
-                      setTool(t);
-                      setLine([]);
-                      if (t === "area") setAreaArmed(true);
-                    }}
-                    className={`nx-press nx-focus min-h-11 rounded-lg px-3 text-[14px] font-semibold ${tool === t ? "bg-n-ink text-n-bg" : "text-n-ink-2"}`}
-                    data-testid={`tool-${t}`}
-                  >
-                    {t === "cell" ? (source === "satellite" ? "Inspect a pixel" : "Inspect a cell") : t === "transect" ? "Draw a transect" : "Select an area"}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <fieldset className="min-w-0">
-              <legend className="mb-1 text-[12.5px] text-n-ink-3">Data source</legend>
-              <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Data source">
-                {(
-                  [
-                    ["charm", "C-HARM model", true],
-                    ["satellite", "Satellite chlorophyll", hasSat],
-                    ["radar", "Surface currents (HF radar)", hasRadar],
-                  ] as const
-                )
-                  .filter(([, , ok]) => ok)
-                  .map(([id, label]) => (
-                    <button key={id} type="button" role="radio" aria-checked={source === id} onClick={() => pickSource(id)} className={`nx-press nx-focus min-h-11 rounded-lg px-3 text-[14px] font-semibold ${source === id ? "bg-n-ink text-n-bg" : "border border-n-line-strong text-n-ink-2"}`} data-testid={`gsrc-${id}`}>
-                      {label}
-                    </button>
-                  ))}
-              </div>
-            </fieldset>
-            {source !== "charm" && (
-              <>
-                <div className="flex flex-wrap items-end gap-x-5 gap-y-3" data-testid="obs-controls">
-                  <ObsControls manifest={manifest} source={source} sat={sat} onSat={setSat} radar={radar} onRadar={setRadar} now={now} />
+                <div className={`flex flex-wrap items-end gap-x-6 gap-y-3 ${source === "charm" ? "" : "hidden"}`} data-testid="grid-controls">
+                  <Field label="C-HARM variable">
+                    <Seg scroll label="C-HARM variable" value={gridVar} onChange={setGridVar} options={CHARM_VARIABLES.map((v) => ({ id: v, label: VARIABLE_WORDS[v].short, testId: `gvar-${v}` }))} />
+                  </Field>
+                  <Field label={`Day of this run (issued ${run ? `${dayLabel(run.issued_date)}${run.issued_date_derived ? ", inferred" : ""}` : "—"})`}>
+                    <Seg
+                      scroll
+                      label="Day of the run"
+                      value={lead}
+                      onChange={setLead}
+                      options={leads.map((l) => {
+                        const d = charmLayer(manifest, gridVar, l)?.time.valid_date;
+                        return {
+                          id: l,
+                          testId: `lead-${l}`,
+                          label: (
+                            <span className="flex flex-col items-center py-0.5 leading-tight">
+                              <span className="text-[13.5px]">{d ? dayLabel(d, true) : "—"}</span>
+                              <span className="text-[11.5px] font-medium">{l === 0 ? "nowcast" : `forecast +${l}`}</span>
+                            </span>
+                          ),
+                        };
+                      })}
+                    />
+                  </Field>
+                  <label className="flex min-h-11 cursor-pointer items-center gap-2 text-[14px] font-semibold text-n-ink-2">
+                    <input type="checkbox" checked={showEdges} onChange={(e) => setShowEdges(e.target.checked)} className="nx-focus h-4 w-4 accent-[var(--nx-accent)]" data-testid="grid-edges" />
+                    Cell edges
+                  </label>
                 </div>
-                <ObsNote source={source} />
-              </>
-            )}
-            <div className={`flex flex-wrap items-end gap-x-5 gap-y-3 ${source === "charm" ? "" : "hidden"}`} data-testid="grid-controls">
-              <fieldset className="min-w-0">
-                <legend className="mb-1 text-[12.5px] text-n-ink-3">C-HARM variable</legend>
-                <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="C-HARM variable">
-                  {CHARM_VARIABLES.map((v) => (
-                    <button key={v} type="button" role="radio" aria-checked={gridVar === v} onClick={() => setGridVar(v)} className={`nx-press nx-focus min-h-11 rounded-lg px-3 text-[14px] font-semibold ${gridVar === v ? "bg-n-accent-bg text-n-accent ring-1 ring-n-accent" : "border border-n-line-strong text-n-ink-2"}`} data-testid={`gvar-${v}`}>
-                      {VARIABLE_WORDS[v].short}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-              <fieldset className="min-w-0">
-                <legend className="mb-1 text-[12.5px] text-n-ink-3">Day of this run (issued {run ? `${dayLabel(run.issued_date)}${run.issued_date_derived ? ", inferred" : ""}` : "—"})</legend>
-                <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Day of the run">
-                  {leads.map((l) => {
-                    const d = charmLayer(manifest, gridVar, l)?.time.valid_date;
-                    return (
-                      <button key={l} type="button" role="radio" aria-checked={lead === l} onClick={() => setLead(l)} className={`nx-press nx-focus flex min-h-11 flex-col items-center justify-center rounded-lg px-2.5 leading-tight ${lead === l ? "bg-n-accent-bg text-n-accent ring-1 ring-n-accent" : "border border-n-line-strong text-n-ink-2"}`} data-testid={`lead-${l}`}>
-                        <span className="text-[13.5px] font-semibold">{d ? dayLabel(d, true) : "—"}</span>
-                        <span className="text-[11.5px]">{l === 0 ? "nowcast" : `forecast +${l}`}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </fieldset>
-              <label className="flex min-h-11 cursor-pointer items-center gap-2 text-[14px] font-semibold text-n-ink-2">
-                <input type="checkbox" checked={showEdges} onChange={(e) => setShowEdges(e.target.checked)} className="nx-focus h-4 w-4 accent-[var(--nx-accent)]" data-testid="grid-edges" />
-                Cell edges
-              </label>
-            </div>
-            {source === "charm" && <p className="text-[12.5px] leading-snug text-n-ink-3">Only the days this run published; nothing beyond its horizon. Each value is model output for one 3 km cell, not a toxin measurement.</p>}
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-              <div className="flex min-w-0 flex-col gap-2">
-                <div ref={mapBox} className="env-instrument relative h-[380px] overflow-hidden rounded-xl" data-testid="research-map" data-mounted={mapNear}>
-                  {!mapNear && (
-                    <p className="absolute inset-0 grid place-items-center text-[13.5px] text-n-ink-2" data-testid="research-map-waiting">
-                      Map of the grid near {st.name}
-                    </p>
-                  )}
-                  {mapNear && <MapCanvas
-                    forecast={source === "charm" && forecastLayer?.image ? { id: `r-${forecastLayer.layer_id}`, url: artifactUrl(baseUrl, forecastLayer.image.url), corners: forecastLayer.image.corners_lnglat, grid: forecastLayer.grid ? { layer: forecastLayer, url: artifactUrl(baseUrl, forecastLayer.grid.url) } : null } : null}
-                    satellite={satRaster}
-                    satelliteAge={null}
-                    currents={currentsOverlay}
-                    imagery={null}
-                    ports={ports}
-                    showPorts
-                    officialGeometry={labelledGeometry(official)}
-                    showOfficial
-                    selectedPort={null}
-                    inspect={null}
-                    chrome="none"
-                    highlight={highlight}
-                    cellEdges={source === "charm" && showEdges ? edges : null}
-                    initialBounds={[[st.lon! - 0.35, st.lat! - 0.25], [st.lon! + 0.35, st.lat! + 0.25]]}
-                    initialPadding={16}
-                    onPort={() => undefined}
-                    onReady={(m) => {
-                      mapRef.current = m;
-                    }}
-                    onPoint={(p) => {
-                      if (tool === "cell") setCellAtPt(p);
-                      else if (tool === "transect") setLine((l) => (l.length >= 2 ? [p] : [...l, p]));
-                    }}
-                  />}
-                  {tool === "area" && areaArmed && (
-                    <div {...areaHandlers} className="absolute inset-0 z-[5] cursor-crosshair touch-none" data-testid="area-overlay">
-                      <p className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap rounded-full bg-n-surface px-4 py-2 text-[13.5px] font-semibold text-n-ink shadow-[var(--nx-shadow)]">Drag across the water to select an area</p>
+                {source === "charm" && <p className="nx-note-t">Only the days this run published; nothing beyond its horizon. Each value is model output for one 3 km cell, not a toxin measurement.</p>}
+                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+                  <div className="flex min-w-0 flex-col gap-2">
+                    <div ref={mapBox} className="env-instrument relative h-[380px] overflow-hidden rounded-xl" data-testid="research-map" data-mounted={mapNear}>
+                      {!mapNear && (
+                        <p className="absolute inset-0 grid place-items-center text-[13.5px] text-n-ink-2" data-testid="research-map-waiting">
+                          Map of the grid near {st.name}
+                        </p>
+                      )}
+                      {mapNear && (
+                        <MapCanvas
+                          forecast={source === "charm" && forecastLayer?.image ? { id: `r-${forecastLayer.layer_id}`, url: artifactUrl(baseUrl, forecastLayer.image.url), corners: forecastLayer.image.corners_lnglat, grid: forecastLayer.grid ? { layer: forecastLayer, url: artifactUrl(baseUrl, forecastLayer.grid.url) } : null } : null}
+                          satellite={satRaster}
+                          satelliteAge={null}
+                          currents={currentsOverlay}
+                          imagery={null}
+                          ports={ports}
+                          showPorts
+                          officialGeometry={labelledGeometry(official)}
+                          showOfficial
+                          selectedPort={null}
+                          inspect={null}
+                          chrome="none"
+                          highlight={highlight}
+                          cellEdges={source === "charm" && showEdges ? edges : null}
+                          initialBounds={[[st.lon! - 0.35, st.lat! - 0.25], [st.lon! + 0.35, st.lat! + 0.25]]}
+                          initialPadding={16}
+                          onPort={() => undefined}
+                          onReady={(m) => {
+                            mapRef.current = m;
+                          }}
+                          onPoint={(p) => {
+                            if (tool === "cell") setCellAtPt(p);
+                            else if (tool === "transect") setLine((l) => (l.length >= 2 ? [p] : [...l, p]));
+                          }}
+                        />
+                      )}
+                      {tool === "area" && areaArmed && (
+                        <div {...areaHandlers} className="absolute inset-0 z-[5] cursor-crosshair touch-none" data-testid="area-overlay">
+                          <p className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap rounded-full bg-n-surface px-4 py-2 text-[13.5px] font-semibold text-n-ink shadow-[var(--nx-shadow)]">Drag across the water to select an area</p>
+                        </div>
+                      )}
+                      <p className="pointer-events-none absolute bottom-2 left-2 rounded bg-[rgba(4,18,26,0.75)] px-2 py-1 text-[11px] text-[#c8d6de]">© OpenStreetMap · OpenMapTiles · NOAA relief · not for navigation</p>
                     </div>
-                  )}
-                  <p className="pointer-events-none absolute bottom-2 left-2 rounded bg-[rgba(4,18,26,0.75)] px-2 py-1 text-[11px] text-[#c8d6de]">© OpenStreetMap · OpenMapTiles · NOAA relief · not for navigation</p>
-                </div>
-                {tool === "transect" && (
-                  <div data-testid="transect" className="flex flex-col gap-2">
-                    {line.length < 2 ? (
-                      <p className="text-[14px] text-n-ink-2">Click two points on the map. The profile lists every published {source === "satellite" ? "pixel" : "cell"} the line crosses; {source === "charm" ? "cells without a value stay gaps" : "those without an observation stay gaps, never joined"}.</p>
-                    ) : source !== "charm" ? (
-                      <ObsTransect manifest={manifest} read={obsRead} cells={obsProfile} a={line[0]} b={line[1]} />
-                    ) : profile && forecastLayer ? (
-                      <>
-                        <TransectChart cells={profile} a={line[0]} b={line[1]} />
-                        <ExportButton testid="export-transect" onClick={() => download(`neritic-transect-${fileTag}.csv`, transectCsv(line[0], line[1], profile, forecastLayer, manifest))}>
-                          Transect cells (CSV)
-                        </ExportButton>
-                      </>
-                    ) : (
-                      <p className="text-[14px] text-n-ink-2">Reading the grid…</p>
+                    {tool === "transect" && (
+                      <div data-testid="transect" className="flex flex-col gap-2">
+                        {line.length < 2 ? (
+                          <p className="text-[14px] text-n-ink-2">Click two points on the map. The profile lists every published {source === "satellite" ? "pixel" : "cell"} the line crosses; {source === "charm" ? "cells without a value stay gaps" : "those without an observation stay gaps, never joined"}.</p>
+                        ) : source !== "charm" ? (
+                          <ObsTransect manifest={manifest} read={obsRead} cells={obsProfile} a={line[0]} b={line[1]} />
+                        ) : profile && forecastLayer ? (
+                          <>
+                            <TransectChart cells={profile} a={line[0]} b={line[1]} />
+                            <ExportButton testid="export-transect" onClick={() => download(`neritic-transect-${fileTag}.csv`, transectCsv(line[0], line[1], profile, forecastLayer, manifest))}>
+                              Transect cells (CSV)
+                            </ExportButton>
+                          </>
+                        ) : (
+                          <p className="text-[14px] text-n-ink-2">Reading the grid…</p>
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-              <div className="min-w-0">
-                {tool === "cell" && source !== "charm" &&
-                  (cellAtPt ? (
-                    <ObsPointPanel manifest={manifest} baseUrl={baseUrl} read={obsRead} px={obsPx} point={cellAtPt} sat={sat} now={now} />
-                  ) : (
-                    <p className="text-[14px] text-n-ink-2">{source === "satellite" ? "Click the water to read one published pixel: its own observation date, sensor, native size and footprint. An empty pixel is no observation, never low chlorophyll." : "Click the water to read one published 2 km radar cell: speed and direction at this hour, and every published hour at the same cell. An empty cell is no observation, never calm water."}</p>
-                  ))}
-                {tool === "cell" && source === "charm" &&
-                  (cellAtPt ? (
-                    <div className="flex flex-col gap-3">
-                      <CellBody read={cellRead} ctx={{ manifest, baseUrl, ports, portIntel: null, stations: null, now, variable: gridVar, lead, onSelect: (s) => s.kind === "cell" && setCellAtPt({ lat: s.lat, lon: s.lon }) }} variable={gridVar} precise={{ quantErr: forecastLayer?.grid?.max_quantization_error ?? null }} />
-                      {cellRead?.status === "ready" && cellRead.cell && (
-                        <ExportButton testid="export-cell" onClick={() => download(`neritic-cell-${cellRead.cell!.row}-${cellRead.cell!.col}-${gridVar}.csv`, cellLeadsCsv(cellRead.cell!, cellRead.leads, runLayers, manifest, gridVar))}>
-                          This cell, every day of the run (CSV)
-                        </ExportButton>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-[14px] text-n-ink-2">Click the water to read a native 3 km cell: its published value, footprint, the run&rsquo;s days and whether it represents a harbour.</p>
-                  ))}
-                {tool === "area" &&
-                  (area ? (
-                    <div className="flex flex-col gap-3" data-testid="inspect-area">
-                      <p className="nx-data text-[12.5px] text-n-ink-3">
-                        {area[1].toFixed(3)}–{area[3].toFixed(3)}°N, {Math.abs(area[2]).toFixed(3)}–{Math.abs(area[0]).toFixed(3)}°W
-                      </p>
-                      {source !== "charm" ? (
-                        <ObsArea manifest={manifest} baseUrl={baseUrl} read={obsRead} cells={obsCells} bbox={area} now={now} />
+                  <div className="min-w-0">
+                    {tool === "cell" &&
+                      source !== "charm" &&
+                      (cellAtPt ? (
+                        <ObsPointPanel manifest={manifest} baseUrl={baseUrl} read={obsRead} px={obsPx} point={cellAtPt} sat={sat} now={now} />
                       ) : (
-                      <AreaModel
-                        layer={forecastLayer}
-                        baseUrl={baseUrl}
-                        bbox={area}
-                        variable={gridVar}
-                        footer={(cells) =>
-                          forecastLayer && (
-                            <ExportButton testid="export-area" onClick={() => download(`neritic-area-${fileTag}.csv`, areaCsv(area, cells, forecastLayer, manifest))}>
-                              Cells in the box (CSV)
+                        <p className="text-[14px] text-n-ink-2">{source === "satellite" ? "Click the water to read one published pixel: its own observation date, sensor, native size and footprint. An empty pixel is no observation, never low chlorophyll." : "Click the water to read one published 2 km radar cell: speed and direction at this hour, and every published hour at the same cell. An empty cell is no observation, never calm water."}</p>
+                      ))}
+                    {tool === "cell" &&
+                      source === "charm" &&
+                      (cellAtPt ? (
+                        <div className="flex flex-col gap-3">
+                          <CellBody read={cellRead} ctx={{ manifest, baseUrl, ports, portIntel: null, stations: null, now, variable: gridVar, lead, onSelect: (s) => s.kind === "cell" && setCellAtPt({ lat: s.lat, lon: s.lon }) }} variable={gridVar} precise={{ quantErr: forecastLayer?.grid?.max_quantization_error ?? null }} />
+                          {cellRead?.status === "ready" && cellRead.cell && (
+                            <ExportButton testid="export-cell" onClick={() => download(`neritic-cell-${cellRead.cell!.row}-${cellRead.cell!.col}-${gridVar}.csv`, cellLeadsCsv(cellRead.cell!, cellRead.leads, runLayers, manifest, gridVar))}>
+                              This cell, every day of the run (CSV)
                             </ExportButton>
-                          )
-                        }
-                      />
-                      )}
-                      <section className="flex flex-col gap-1 border-t border-n-line pt-3">
-                        <h3 className="nx-eyebrow">Shore stations in the box</h3>
-                        {stationsIn.length ? (
-                          <ul className="text-[14px]">
-                            {stationsIn.map((s) => (
-                              <li key={s.station_id}>
-                                <button type="button" onClick={() => chooseStation(s.station_id)} className="nx-focus min-h-11 text-left font-semibold text-n-accent underline-offset-2 hover:underline">
-                                  {s.name}
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-[14px] text-n-ink-2">No CalHABMAP station in this box: no sample is not a clean result.</p>
-                        )}
-                      </section>
-                      <button type="button" onClick={() => setAreaArmed(true)} className={`${BTN} self-start`} data-testid="area-redraw">
-                        Draw another box
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="text-[14px] text-n-ink-2">
-                      {source === "charm"
-                        ? "Drag a box across the water. It counts the cells with and without a published value and gives the spread of the published probabilities; gaps are counted, never filled."
-                        : `Drag a box across the water. It counts the ${source === "satellite" ? "pixels" : "radar cells"} with and without an observation, their dates${source === "satellite" ? " and sensors" : ""}, and the spread of the observed values; gaps are counted, never filled.`}
-                    </p>
-                  ))}
-              </div>
-            </div>
-          </section>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-[14px] text-n-ink-2">Click the water to read a native 3 km cell: its published value, footprint, the run&rsquo;s days and whether it represents a harbour.</p>
+                      ))}
+                    {tool === "area" &&
+                      (area ? (
+                        <div className="flex flex-col gap-3" data-testid="inspect-area">
+                          <p className="nx-data text-[12.5px] text-n-ink-3">
+                            {area[1].toFixed(3)}–{area[3].toFixed(3)}°N, {Math.abs(area[2]).toFixed(3)}–{Math.abs(area[0]).toFixed(3)}°W
+                          </p>
+                          {source !== "charm" ? (
+                            <ObsArea manifest={manifest} baseUrl={baseUrl} read={obsRead} cells={obsCells} bbox={area} now={now} />
+                          ) : (
+                            <AreaModel
+                              layer={forecastLayer}
+                              baseUrl={baseUrl}
+                              bbox={area}
+                              variable={gridVar}
+                              footer={(cells) =>
+                                forecastLayer && (
+                                  <ExportButton testid="export-area" onClick={() => download(`neritic-area-${fileTag}.csv`, areaCsv(area, cells, forecastLayer, manifest))}>
+                                    Cells in the box (CSV)
+                                  </ExportButton>
+                                )
+                              }
+                            />
+                          )}
+                          <section className="flex flex-col gap-1 border-t border-n-line pt-3">
+                            <h3 className="nx-eyebrow">Shore stations in the box</h3>
+                            {stationsIn.length ? (
+                              <ul className="text-[14px]">
+                                {stationsIn.map((s) => (
+                                  <li key={s.station_id}>
+                                    <button type="button" onClick={() => chooseStation(s.station_id)} className="nx-focus min-h-11 text-left font-semibold text-n-accent underline-offset-2 hover:underline">
+                                      {s.name}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-[14px] text-n-ink-2">No CalHABMAP station in this box: no sample is not a clean result.</p>
+                            )}
+                          </section>
+                          <button type="button" onClick={() => setAreaArmed(true)} className={`${QUIET} self-start`} data-testid="area-redraw">
+                            Draw another box
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-[14px] text-n-ink-2">
+                          {source === "charm"
+                            ? "Drag a box across the water. It counts the cells with and without a published value and gives the spread of the published probabilities; gaps are counted, never filled."
+                            : `Drag a box across the water. It counts the ${source === "satellite" ? "pixels" : "radar cells"} with and without an observation, their dates${source === "satellite" ? " and sensors" : ""}, and the spread of the observed values; gaps are counted, never filled.`}
+                        </p>
+                      ))}
+                  </div>
+                </div>
+              </section>
+            </TabPanel>
 
-          {source === "charm" ? forecastLayer && <Lineage layer={forecastLayer} manifest={manifest} /> : obsLayer && <Lineage layer={obsLayer} manifest={manifest} />}
+            <TabPanel idBase="r" id="lineage" active={tab === "lineage"}>
+              {source === "charm" ? forecastLayer && <Lineage layer={forecastLayer} manifest={manifest} /> : obsLayer && <Lineage layer={obsLayer} manifest={manifest} />}
+            </TabPanel>
+
+            <TabPanel idBase="r" id="exports" active={tab === "exports"}>
+              <div className="flex max-w-[78ch] flex-col">
+                <p className="text-[14.5px] leading-6 text-n-ink-2">Every file starts with lines beginning with #: its source, the pipeline run, the licence and what kind of data it is. An empty value is never a zero.</p>
+                <ul className="mt-4 flex flex-col border-t border-n-line">
+                  <ExportRow title="This window (CSV)" what={`${vmeta.label} at ${st.name}: every visit in the ${RANGES.find((r) => r.id === range)!.label.toLowerCase()} window, with its QC qualifier.`} action={<button type="button" onClick={exportWindow} className={QUIET}><Icon name="download" className="h-4 w-4" /> Download</button>} />
+                  {hasHistory && <ExportRow title="Model history (CSV)" what="The C-HARM nowcast near the station, every day Neritic keeps: model probability, never a toxin measurement." action={<button type="button" onClick={exportModel} className={QUIET}><Icon name="download" className="h-4 w-4" /> Download</button>} />}
+                  {csv && <ExportRow title="Original data (SCCOOS)" what="The station's own file, as the data provider publishes it." action={<a href={csv} target="_blank" rel="noreferrer" className={QUIET}>Open <Icon name="external" className="h-4 w-4" /></a>} />}
+                  <ExportRow
+                    title="A cell, a transect or an area (CSV)"
+                    what="From the native grid: choose a tool, make a selection, and its export appears beside the result."
+                    action={
+                      <button type="button" onClick={() => openSection("grid")} className={QUIET}>
+                        Native grid
+                      </button>
+                    }
+                  />
+                </ul>
+              </div>
+            </TabPanel>
+          </div>
         </main>
       </div>
       <div className="env-instrument fixed inset-x-0 bottom-0 z-40 border-t border-n-line bg-n-surface lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
@@ -856,51 +801,73 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
   );
 }
 
-function TransectChart({ cells, a, b }: { cells: TransectCell[]; a: { lat: number; lon: number }; b: { lat: number; lon: number } }) {
-  const [box, W] = useWidth<HTMLElement>(640);
-  // the whole line, so the last cell keeps its own width
-  const end = Math.max(0.1, distanceKm(a.lat, a.lon, b.lat, b.lon));
-  const H = 150;
-  const pad = { l: 40, r: 8, t: 8, b: 26 };
-  const x = (km: number) => pad.l + (km / end) * (W - pad.l - pad.r);
-  const y = (v: number) => pad.t + (1 - v) * (H - pad.t - pad.b);
-  const valued = cells.filter((c) => c.value != null).length;
-  const ll = (p: { lat: number; lon: number }) => `${p.lat.toFixed(3)}°N ${Math.abs(p.lon).toFixed(3)}°W`;
+/** A header action: a quiet text button on a phone, outlined from sm up. */
+const ACTION = "nx-press nx-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-2.5 sm:px-3 text-[14px] font-semibold text-n-ink sm:border sm:border-n-line-strong";
+
+type TabId = "window" | "provenance" | "grid" | "lineage" | "exports";
+const TABS: { id: TabId; label: string }[] = [
+  { id: "window", label: "In this window" },
+  { id: "provenance", label: "Provenance & QC" },
+  { id: "grid", label: "Native grid" },
+  { id: "lineage", label: "Lineage & citation" },
+  { id: "exports", label: "Exports" },
+];
+const HASH_TAB: Record<string, TabId> = { "r-stats": "window", "r-tools": "grid", "r-provenance": "provenance", "r-lineage": "lineage", "r-exports": "exports" };
+
+/** Short names for the quantity control (the full name is its title and the readout's). */
+const SHORT: Record<ObsVariableId, string> = {
+  pDA: "Domoic acid",
+  dDA: "dDA",
+  tDA: "tDA",
+  pn_seriata: "P.-n. seriata",
+  pn_delicatissima: "P.-n. delicatissima",
+  chl_extracted: "Chlorophyll",
+  temp: "Temperature",
+};
+
+/** ≥ 1024 px: the taller chart (after hydration; the server draws the phone height). */
+function useWide() {
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const on = () => setWide(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return wide;
+}
+
+function Stat({ label, value, unit, note }: { label: string; value: React.ReactNode; unit?: string; note?: string }) {
   return (
-    <figure ref={box} className="flex flex-col gap-1">
-      <svg width={W} height={H} className="block" role="img" aria-label={`Transect of ${cells.length} cells; ${valued} with a published value`}>
-        {[0, 0.5, 1].map((v) => (
-          <g key={v}>
-            <line x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="var(--nx-line)" />
-            <text x={pad.l - 5} y={y(v) + 4} textAnchor="end" fontSize="11" fill="var(--nx-ink-3)">
-              {Math.round(v * 100)}%
-            </text>
-          </g>
-        ))}
-        {cells.map((c, i) => {
-          const x0 = x(c.km);
-          const x1 = x(cells[i + 1]?.km ?? end);
-          return c.value == null ? (
-            <rect key={i} x={x0} y={pad.t} width={Math.max(1, x1 - x0)} height={H - pad.t - pad.b} fill="url(#nx-hatch-t)" />
-          ) : (
-            <line key={i} x1={x0} x2={x1} y1={y(c.value)} y2={y(c.value)} stroke="var(--nx-model)" strokeWidth={2.2} />
-          );
-        })}
-        <defs>
-          <pattern id="nx-hatch-t" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="6" stroke="var(--nx-line-strong)" strokeWidth="1.5" />
-          </pattern>
-        </defs>
-        <text x={pad.l} y={H - 6} fontSize="11" fill="var(--nx-ink-3)">
-          0 km
-        </text>
-        <text x={W - pad.r} y={H - 6} fontSize="11" fill="var(--nx-ink-3)" textAnchor="end">
-          {end.toFixed(1)} km
-        </text>
-      </svg>
-      <figcaption className="text-[12.5px] text-n-ink-3">
-        {cells.length} cells crossed, {valued} with a published value; each value is held flat across its own cell (no interpolation). Hatched: no value (land, nearshore or masked). From {ll(a)} to {ll(b)}.
-      </figcaption>
-    </figure>
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <dt className="text-[13px] font-semibold leading-4 text-n-ink-2">{label}</dt>
+      <dd className="nx-sounding-v">
+        {value}
+        {unit && <span className="ml-1 text-[14px] font-semibold text-n-ink-3">{unit}</span>}
+        {note && <span className="nx-note-t block font-normal">{note}</span>}
+      </dd>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col max-sm:w-full gap-1">
+      <span className="text-[12.5px] font-semibold text-n-ink-3">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function ExportRow({ title, what, action }: { title: string; what: string; action: React.ReactNode }) {
+  return (
+    <li className="flex flex-col gap-2 border-b border-n-line py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <div className="min-w-0">
+        <p className="text-[15px] font-semibold">{title}</p>
+        <p className="text-[13.5px] leading-snug text-n-ink-2">{what}</p>
+      </div>
+      <div className="shrink-0">{action}</div>
+    </li>
   );
 }

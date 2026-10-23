@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { openAbout, openEvidence, openLayers } from "./helpers";
 import { OK } from "./ports";
 import { coveragePct } from "../../src/lib/layers";
 
@@ -39,9 +40,10 @@ test("home port: set it from the title's place menu with the trip, it survives a
   await page.getByTestId("coast-home-open").click();
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
   await expect(page).toHaveURL(/for=commercial/);
-  // the landing lists it first
+  // v7: a bare /coast opens the home briefing, with its trip
   await page.goto(`${OK}/coast`);
-  await expect(page.getByTestId("coast-landing")).toContainText("Your home port");
+  await expect(page).toHaveURL(/place=port-550.*for=commercial/);
+  await expect(page.getByTestId("coast-home")).toContainText("Your home port");
   await page.goto(`${OK}/coast?place=port-550`);
   await page.getByTestId("coast-place-button").click();
   await page.getByTestId("coast-home-clear").click();
@@ -60,6 +62,8 @@ test("an older home port (a plain place key) still opens as home", async ({ page
 test("My Coast's map: tapping the water briefs that point, with the trip kept", async ({ page }) => {
   await page.clock.setFixedTime(new Date(BRIEF));
   await page.goto(`${OK}/coast?place=port-550&for=recreational`);
+  // v7: the map is one folded note, opened on demand
+  await page.getByTestId("brief-map-toggle").click();
   const loc = page.getByTestId("locator-caption");
   await loc.scrollIntoViewIfNeeded();
   await expect(loc).toContainText("Tap a harbour or the water");
@@ -81,6 +85,7 @@ test("currents compared with chlorophyll: both drawn, each with its own time, ne
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=currents`);
   await map(page);
+  await openLayers(page);
   await page.getByTestId("currents-chl-toggle").check();
   await expect(page).toHaveURL(/chl=1/);
   await page.waitForFunction(() => { const m = (window as unknown as { __cwMap: M }).__cwMap; return !!m.getSource("satellite"); });
@@ -107,6 +112,7 @@ test("satellite coverage: the share actually seen, what is counted, the dates an
   await expect(cov).toContainText("not low chlorophyll");
   await expect(cov).toContainText(/pixels observed \w{3} \d+–\w{3} \d+/);
   await expect(page.getByTestId("sat-coverage-regions").first()).toContainText(`Monterey Bay ${coveragePct(l.coverage.regions[0].observed_fraction)}`);
+  await openAbout(page);
   await cov.locator("summary").click();
   await expect(cov).toContainText(l.coverage.reference.slice(0, 40));
 });
@@ -141,6 +147,7 @@ test("advanced harbour summary: each product's neighbourhood statistic with its 
   await page.goto(`${OK}/?layer=forecast&var=particulate_domoic&lead=1&sel=harbor:550`);
   await map(page);
   const sum = page.getByTestId("harbor-summary");
+  await openEvidence(page);
   await sum.locator("summary").click();
   const row = sum.getByTestId("harbor-summary-particulate_domoic");
   await expect(row).toContainText(`${Math.round(lead1.median * 100)}%`);
@@ -157,6 +164,7 @@ test("trip checklist: the reader's own ticks, kept per trip on this device, neve
   await page.goto(`${OK}/coast?place=port-201&for=commercial&species=dungeness`);
   const first = page.getByTestId("checks").locator(":scope > li").first();
   const id = (await first.getAttribute("data-testid"))!;
+  await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId("checks-progress")).toContainText("0 of");
   await expect(page.getByTestId("checks-progress")).toContainText("not a check by Neritic or by any agency");
   await page.getByTestId(`${id}-box`).check();
@@ -164,6 +172,7 @@ test("trip checklist: the reader's own ticks, kept per trip on this device, neve
   await expect(page.getByTestId("checks-progress")).toContainText("1 of");
   await page.reload();
   await expect(page.getByTestId(`${id}-box`)).toBeChecked();
+  await expect(page.getByTestId("brief-checks-toggle")).toContainText("1 of");
   // another trip has its own list
   await page.goto(`${OK}/coast?place=port-201&for=recreational`);
   await expect(page.getByTestId("checks-progress")).toContainText("0 of");
@@ -217,7 +226,7 @@ for (const width of [390, 320]) {
   });
 }
 
-test("walkthrough H4: on a phone the briefing offers the map at its top, and a tapped point opens at the top of its briefing", async ({ browser }) => {
+test("walkthrough H4 (v7): on a phone the place menu offers the map note at the top, and a tapped point opens at the top of its briefing", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   await page.clock.setFixedTime(new Date(BRIEF));
@@ -245,6 +254,7 @@ for (const width of [1440, 320]) {
     const page = await ctx.newPage();
     await page.clock.setFixedTime(new Date(NOW));
     await page.goto(`${OK}/coast?place=port-550`);
+    await page.getByTestId("brief-map-toggle").click();
     await page.getByTestId("locator-explore").click();
     const back = page.getByTestId("back-to-briefing");
     await expect(back).toBeInViewport();

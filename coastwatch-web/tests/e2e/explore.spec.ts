@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openEvidence, openLayers } from "./helpers";
 import { OK } from "./ports";
 
 /**
@@ -48,6 +49,7 @@ test.describe("layers, legend, time", () => {
   test("the seafloor-only view has no timebar; satellite and currents each bring their own legend", async ({ page }) => {
     await open(page, "/?layer=none");
     await expect(page.getByTestId("timebar")).toHaveCount(0);
+    await openLayers(page);
     await page.getByTestId("layer-satellite").click();
     await expect(page.getByTestId("legend-satellite")).toContainText("not toxin");
     await expect(page.getByTestId("legend-satellite")).toContainText("a gap is not clear water");
@@ -61,7 +63,7 @@ test.describe("layers, legend, time", () => {
 
   test("v2 links still open their view (region, var, lead, port, inspect)", async ({ page }) => {
     await open(page, "/?region=monterey_bay&layer=forecast&var=pseudo_nitzschia&lead=2&port=550");
-    // a place is open: the layer deck is folded to its capsule, which names the variable; open it
+    // the dock's layer button names the variable, and opens the layer list
     await expect(page.getByTestId("layer-capsule")).toContainText("Pseudo-nitzschia");
     await page.getByTestId("layer-capsule").click();
     await expect(page.getByTestId("variable-select")).toHaveValue("pseudo_nitzschia");
@@ -78,6 +80,8 @@ test.describe("selection: map, inspection surface, charts and URL in step", () =
     await expect(panel).toHaveAttribute("data-kind", "station");
     await expect(page.getByTestId("inspect-title")).toHaveText("Santa Cruz Wharf");
     await expect(page.getByTestId("station-latest")).toContainText("ng/mL");
+    // the year of samples is in the panel's "Evidence and sources"
+    await openEvidence(page);
     await expect(page.getByTestId("station-series").locator("svg[role=img]")).toBeVisible();
     await expect(page.getByTestId("station-provenance")).toContainText("seawater, not seafood");
     // the selection is drawn on the map, above everything
@@ -145,6 +149,7 @@ test.describe("selection: map, inspection surface, charts and URL in step", () =
     await open(page, "/?layer=forecast&sel=harbor:550");
     await expect(page.getByTestId("open-briefing")).toHaveAttribute("href", /\/coast\?place=port-550/);
     await page.goto(`${OK}/coast?place=port-550`);
+    await page.getByTestId("brief-map-toggle").click();
     const show = page.getByTestId("locator-explore");
     await show.click();
     await expect(page.getByTestId("back-to-briefing")).toContainText("Back to the Monterey briefing");

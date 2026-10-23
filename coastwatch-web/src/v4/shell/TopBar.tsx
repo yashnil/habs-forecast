@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { Lockup, Mark } from "@/v4/brand/Brand";
 import { Icon } from "@/v4/ui/Icon";
 import { StatusCenter } from "@/v4/readiness/StatusCenter";
-import { readHomePlace } from "@/v4/state/homePort";
+import { homeHref, readHome } from "@/v4/coast/home";
 import { exitProps, usePresence } from "@/v4/motion";
 import { readDaylight, setDaylight } from "./daylight";
 
@@ -49,7 +49,7 @@ function MoreMenu() {
   }, [open]);
   return (
     <div ref={box} className="relative">
-      <button type="button" aria-label="More pages" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="nx-press nx-focus grid h-11 w-11 place-items-center rounded-full border border-n-line-strong bg-n-surface text-n-ink-2" data-testid="more-menu">
+      <button type="button" aria-label="More pages" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="nx-press nx-focus nx-tint grid h-11 w-11 place-items-center rounded-full text-n-ink-2" data-testid="more-menu">
         <Icon name="more" />
       </button>
       {pop.mounted && (
@@ -88,23 +88,27 @@ function MoreMenu() {
 
 export function NavTabs({ active, size = "bar" }: { active: Workspace; size?: "bar" | "dock" }) {
   // with a home port kept on this device, My Coast opens on its briefing (read after hydration)
+  // the whole trip (place, activity, species), so a returning reader lands on their own briefing
   const [home, setHome] = useState<string | null>(null);
-  useEffect(() => setHome(readHomePlace()), []);
+  useEffect(() => {
+    const h = readHome();
+    setHome(h ? homeHref(h) : null);
+  }, []);
   const nav = useRef<HTMLElement | null>(null);
   useGlidePill(nav, size === "bar");
   return (
-    <nav ref={nav} aria-label="Workspaces" className={size === "bar" ? "flex items-center gap-1 rounded-full border border-n-line bg-n-surface p-1" : "grid grid-cols-3"} data-testid={`nav-${size}`}>
+    <nav ref={nav} aria-label="Workspaces" className={size === "bar" ? "flex items-center gap-0.5" : "grid grid-cols-3"} data-testid={`nav-${size}`}>
       {NAV.map((n) => {
         const on = n.id === active;
         return (
           <Link
             key={n.id}
-            href={n.id === "coast" && home ? `/coast?place=${encodeURIComponent(home)}` : n.href}
+            href={n.id === "coast" && home ? home : n.href}
             aria-current={on ? "page" : undefined}
             data-testid={`nav-${n.id}`}
             className={
               size === "bar"
-                ? `nx-press nx-focus relative isolate flex h-9 items-center rounded-full px-3.5 text-[14px] font-semibold ${on ? "text-n-bg" : "text-n-ink-2 hover:text-n-ink"}`
+                ? `nx-press nx-focus relative isolate flex h-9 items-center rounded-full px-3 text-[14px] font-semibold ${on ? "text-n-bg" : "text-n-ink-2 hover:text-n-ink"}`
                 : `nx-focus flex min-h-[60px] flex-col items-center justify-center gap-0.5 text-[12.5px] font-semibold ${on ? "text-n-accent" : "text-n-ink-2"}`
             }
           >
@@ -158,20 +162,24 @@ export function TopBar({ active, now, slot, notices, floating = false }: { activ
       className={`nx-topbar pointer-events-none z-[45] flex items-start gap-2 px-3 pt-3 md:gap-3 md:px-4 ${floating ? "absolute inset-x-0 top-0" : "relative pb-3"}`}
       style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}
     >
-      <Link href="/" aria-label="Neritic home" className="nx-press nx-focus pointer-events-auto flex h-11 shrink-0 items-center rounded-full border border-n-line bg-n-surface pl-1.5 pr-3.5 text-n-ink max-md:pr-1.5" data-testid="brand-home">
-        <span className="max-md:hidden">
-          <Lockup size={30} />
-        </span>
-        <span className="md:hidden">
-          <Mark size={32} />
-        </span>
-      </Link>
-      <div className="pointer-events-auto hidden lg:block">
-        <NavTabs active={active} />
+      {/* v7: two quiet surfaces, never a row of pills: the brand with the workspaces, then the status cluster */}
+      <div className="nx-bar pointer-events-auto flex h-11 shrink-0 items-center gap-1 rounded-full pl-1 pr-1">
+        <Link href="/" aria-label="Neritic home" className="nx-press nx-focus flex h-10 shrink-0 items-center rounded-full pl-1 pr-2.5 text-n-ink max-md:pr-1" data-testid="brand-home">
+          <span className="max-md:hidden">
+            <Lockup size={28} />
+          </span>
+          <span className="md:hidden">
+            <Mark size={30} />
+          </span>
+        </Link>
+        <div className="hidden border-l border-n-line pl-1 lg:block">
+          <NavTabs active={active} />
+        </div>
       </div>
       <div className="pointer-events-auto min-w-0 flex-1">{slot}</div>
-      <div className="pointer-events-auto flex shrink-0 items-start gap-2">
+      <div className="nx-bar pointer-events-auto flex h-11 shrink-0 items-center rounded-full px-0.5" data-testid="topbar-cluster">
         {notices}
+        <span aria-hidden className="h-5 w-px bg-n-line" />
         <span className="max-sm:hidden">
           <StatusCenter now={now} />
         </span>

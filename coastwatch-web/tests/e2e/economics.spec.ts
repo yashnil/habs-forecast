@@ -163,3 +163,36 @@ for (const width of [390, 320]) {
     expect(axe.violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
   });
 }
+
+test("v7: open by default; the live result line says what it needs, never a number it was not given", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(URL);
+  const s = page.getByTestId("trip-economics-section");
+  const line = s.getByTestId("econ-summary");
+  await expect(line).toBeVisible();
+  await expect(line).toHaveAttribute("aria-live", "polite");
+  await expect(line).not.toHaveAttribute("aria-hidden");
+  await expect(s.getByTestId("econ-sum-net")).toHaveText("—");
+  await expect(s.getByTestId("econ-needs")).toContainText("price per pound");
+  // the quick block is there without a click; the full worksheet is folded below it
+  await expect(s.getByTestId("econ-fuel-price")).toBeVisible();
+  await expect(s.getByTestId("econ-catch-0-lb")).toBeVisible();
+  await expect(s.getByTestId("econ-nm")).toBeHidden();
+  // a stepper press is the reader's own entry
+  await s.getByTestId("econ-catch-0-lb-inc").click();
+  await expect(s.getByTestId("econ-catch-0-lb")).toHaveValue("50");
+});
+
+test("rock crab: CDFW's 2024 statewide value sits beside the price as history, copied in only on a tap", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/coast?place=port-550&for=commercial&species=rock-crab`);
+  const s = page.getByTestId("trip-economics-section");
+  const ref = s.getByTestId("econ-catch-0-ref");
+  await expect(ref).toContainText("CDFW history, not today’s price");
+  await expect(ref).toContainText("$2.35/lb");
+  await expect(ref).toContainText("Past average, not today’s dock price");
+  await expect(s.getByTestId("econ-catch-0-price")).toHaveValue("");
+  await s.getByTestId("econ-catch-0-use").click();
+  await expect(s.getByTestId("econ-catch-0-price")).toHaveValue("2.35");
+  await expect(ref).toContainText("basis: CDFW history");
+});

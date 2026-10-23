@@ -59,14 +59,15 @@ type Ctx = {
   here?: string;
 };
 
+// v7: the family colour is the dot (and the rule of an alert); the kind word itself is quiet ink
 const KIND: Record<string, { word: string; tone: string; dot: string; hollow: string }> = {
-  official: { word: "Official", tone: "text-n-official", dot: "bg-n-official", hollow: "border-2 border-n-official" },
+  official: { word: "Official", tone: "text-n-ink-2", dot: "bg-n-official", hollow: "border-2 border-n-official" },
   // the agencies' standing pages in Neritic's unreviewed copy: the official colour, drawn hollow, never a notice's mark
-  agency_page: { word: "Agency page · Neritic's copy", tone: "text-n-official", dot: "border-2 border-n-official", hollow: "border-2 border-n-official" },
-  measured: { word: "Measured", tone: "text-n-measured", dot: "bg-n-measured", hollow: "border-2 border-n-measured" },
-  model: { word: "Model", tone: "text-n-model", dot: "bg-n-model", hollow: "border-2 border-n-model" },
-  satellite: { word: "Satellite", tone: "text-n-measured", dot: "bg-n-measured", hollow: "border-2 border-n-measured" },
-  conditions: { word: "Conditions", tone: "text-n-conditions", dot: "bg-n-conditions", hollow: "border-2 border-n-conditions" },
+  agency_page: { word: "Agency page · Neritic's copy", tone: "text-n-ink-2", dot: "border-2 border-n-official", hollow: "border-2 border-n-official" },
+  measured: { word: "Measured", tone: "text-n-ink-2", dot: "bg-n-measured", hollow: "border-2 border-n-measured" },
+  model: { word: "Model", tone: "text-n-ink-2", dot: "bg-n-model", hollow: "border-2 border-n-model" },
+  satellite: { word: "Satellite", tone: "text-n-ink-2", dot: "bg-n-measured", hollow: "border-2 border-n-measured" },
+  conditions: { word: "Conditions", tone: "text-n-ink-2", dot: "bg-n-conditions", hollow: "border-2 border-n-conditions" },
   gap: { word: "Not known", tone: "text-n-ink-3", dot: "bg-n-gap", hollow: "border-2 border-n-gap" },
 };
 
@@ -79,14 +80,16 @@ export function Header({ icon, kind, title, sub, onClose, onBack, canBack, actio
         </button>
       )}
       <div className="min-w-0 flex-1 pt-1">
-        <p className="nx-eyebrow flex items-center gap-1.5">
-          <Icon name={icon} className="h-3.5 w-3.5" />
-          {kind}
-        </p>
-        <h2 className="mt-1 text-balance font-serif text-[24px] font-semibold leading-tight text-n-ink" data-testid="inspect-title">
+        <h2 className="nx-title text-balance text-n-ink" data-testid="inspect-title">
           {title}
         </h2>
-        {sub && <p className="mt-1 text-[14px] text-n-ink-2">{sub}</p>}
+        <p className="mt-0.5 flex items-center gap-1.5 text-[13.5px] leading-snug text-n-ink-2">
+          <Icon name={icon} className="h-3.5 w-3.5 shrink-0 text-n-ink-3" />
+          <span className="min-w-0">
+            {kind}
+            {sub ? ` · ${sub}` : ""}
+          </span>
+        </p>
       </div>
       {action}
       <button type="button" onClick={onClose} aria-label="Close" data-testid="inspect-close" className="nx-press nx-focus grid h-11 w-11 shrink-0 place-items-center rounded-lg text-n-ink-2 hover:bg-n-surface-2">
@@ -105,6 +108,25 @@ function Section({ title, children, testid }: { title: string; children: React.R
   );
 }
 
+/**
+ * v7: everything past the panel's few facts, folded and mounted (its wording stays in the page): the
+ * rest of the evidence, measurements nearby, sources and the advanced summaries.
+ */
+export function EvidenceFold({ children, title = "Evidence and sources", summary }: { children: React.ReactNode; title?: string; summary?: React.ReactNode }) {
+  return (
+    <details className="nx-note group border-t border-n-line" data-testid="inspect-evidence">
+      <summary className="nx-focus flex min-h-12 cursor-pointer items-center gap-3 py-2">
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold text-n-ink">{title}</span>
+          {summary && <span className="block truncate text-[13px] text-n-ink-3 group-open:hidden">{summary}</span>}
+        </span>
+        <Icon name="chevronDown" className="nx-note-chev h-[18px] w-[18px] shrink-0 text-n-ink-3" />
+      </summary>
+      <div className="nx-note-body flex flex-col gap-4 pb-2">{children}</div>
+    </details>
+  );
+}
+
 /** A claim's supporting node, as a selection on the map (when it has a place). */
 export function nodeSelection(n: EvidenceNode | undefined, stations: StationLite[] | null): Selection | null {
   if (!n) return null;
@@ -119,19 +141,23 @@ export function nodeSelection(n: EvidenceNode | undefined, stations: StationLite
 }
 
 /** `fallback`: where "Show on map" goes when no supporting node has a place of its own (an official notice: the harbour's waters). */
-export function ClaimRow({ c, graph, stations, onSelect, fallback = null }: { c: Claim; graph: EvidenceGraph; stations: StationLite[] | null; onSelect?: (s: Selection) => void; fallback?: Selection | null }) {
+export function ClaimRow({ c, graph, stations, onSelect, fallback = null, compact = false }: { c: Claim; graph: EvidenceGraph; stations: StationLite[] | null; onSelect?: (s: Selection) => void; fallback?: Selection | null; compact?: boolean }) {
   const k = KIND[c.kind] ?? KIND.gap;
+  // v7 (Explore's panel): the headline and its kind lead; the agency's words, history and sources open on demand
+  const [more, setMore] = useState(false);
+  const hasMore = compact && !!(c.quote || c.also || c.detail || c.history || c.provenance || c.agencyWords?.length);
   const nodes = new Map(graph.nodes.map((n) => [n.id, n]));
   const target = (c.supports ?? []).map((id) => nodeSelection(nodes.get(id), stations)).find(Boolean) ?? fallback;
   return (
     // an alert keeps its dot, its "Official" label and a 2 px official rule; no filled card
-    <li className={`flex gap-3 ${c.tone === "alert" ? "-ml-3 border-l-2 border-n-official pl-[10px]" : ""}`} data-testid={`claim-${c.id}`} data-kind={c.kind} data-tone={c.tone} data-supports={(c.supports ?? []).join(" ")}>
+    <li className={`flex gap-3 ${c.tone === "alert" ? "-ml-3 border-l-2 border-l-n-official pl-[10px]" : ""}`} data-testid={`claim-${c.id}`} data-kind={c.kind} data-tone={c.tone} data-supports={(c.supports ?? []).join(" ")}>
       {/* older evidence is drawn hollow (its age is in the line itself), as in v2 */}
       <span className={`mt-2 h-2.5 w-2.5 shrink-0 rounded-full ${c.aged ? k.hollow : k.dot}`} data-aged={c.aged ? "true" : undefined} aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="text-[15.5px] font-semibold leading-snug text-n-ink" data-headline>
+        <p className={`${compact ? "text-[15px]" : "text-[15.5px]"} font-semibold leading-snug text-n-ink`} data-headline>
           {c.headline}
         </p>
+        <div hidden={compact && !more}>
         {/* the agency's own words: quoted in full, never paraphrased into the headline */}
         {c.quote && (
           <blockquote className="mt-1 border-l-2 border-n-official-line pl-2.5 font-serif text-[15.5px] leading-snug text-n-ink" data-testid="claim-quote">
@@ -178,9 +204,16 @@ export function ClaimRow({ c, graph, stations, onSelect, fallback = null }: { c:
             </ul>
           </details>
         )}
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
+        </div>
+        <div className={`flex flex-wrap items-center gap-x-3 gap-y-0 text-[13px] ${compact ? "" : "mt-1"}`}>
           <span className={`font-semibold ${k.tone}`}>{k.word}</span>
-          {c.source?.url && (
+          {hasMore && (
+            <button type="button" aria-expanded={more} onClick={() => setMore((m) => !m)} className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-ink-2 hover:text-n-ink" data-testid={`claim-more-${c.id}`}>
+              {more ? "Less" : "Details"}
+              <Icon name="chevronDown" className={`h-3.5 w-3.5 transition-transform ${more ? "rotate-180" : ""}`} />
+            </button>
+          )}
+          {c.source?.url && (!compact || more) && (
             <a href={c.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
               {c.source.label} <Icon name="external" className="h-3.5 w-3.5" />
             </a>
@@ -225,7 +258,7 @@ function Failed({ what, message, retry }: { what: string; message: string; retry
 
 export type InspectCtx = Ctx;
 
-export function HarborView({ code, ctx }: { code: number; ctx: Ctx }) {
+export function HarborView({ code, ctx, concise = false }: { code: number; ctx: Ctx; concise?: boolean }) {
   const intel = ctx.portIntel?.ports.find((p) => p.port_code === code) ?? null;
   const f = ctx.ports?.features.find((x) => x.properties.port_code === code);
   const [lon, lat] = (f?.geometry.coordinates as number[] | undefined) ?? [intel?.lon ?? 0, intel?.lat ?? 0];
@@ -240,30 +273,8 @@ export function HarborView({ code, ctx }: { code: number; ctx: Ctx }) {
   // the day the lines are for (the evidence's own day) and the model day chosen on the map's timebar
   const evDay = ev?.status === "ready" ? ev.data.window.to : null;
   const mapDay = useMemo(() => runDays(ctx.manifest, ctx.now).find((d) => d.lead === ctx.lead) ?? null, [ctx.manifest, ctx.now, ctx.lead]);
-  return (
-    <div className="flex flex-col gap-4" data-testid="inspect-harbor">
-      <Link href={briefHref(`port-${code}`, ctx.from)} className="nx-press nx-focus flex min-h-[52px] items-center justify-between gap-3 rounded-xl bg-n-ink px-4 text-[15.5px] font-semibold text-n-bg" data-testid="open-briefing">
-        Open the {name} briefing <Icon name="chevronRight" />
-      </Link>
-      <Section title={saved ? `As saved ${clockLabel(saved.savedAt)}` : "What the evidence says now"} testid="harbor-claims">
-        {evDay && (
-          <p className="-mt-1 text-[13px] leading-snug text-n-ink-3" data-testid="harbor-day">
-            For {dayLabel(evDay, true)}
-            {mapDay?.date && ctx.layer === "forecast" ? (mapDay.date === evDay ? ", the C-HARM day on the map" : ` · the map shows C-HARM for ${dayLabel(mapDay.date, true)} (${mapDay.lead === 0 ? "nowcast" : "forecast"})`) : ""}
-          </p>
-        )}
-        {!ev || ev.status === "loading" ? (
-          <Loading what="Reading the evidence for these waters…" />
-        ) : ev.status === "error" ? (
-          <Failed what="The evidence" message={ev.message} retry={retryEv} />
-        ) : (
-          <ul className="flex flex-col divide-y divide-n-line [&>li]:py-3 [&>li:first-child]:pt-0 [&>li:last-child]:pb-0">
-            {claims.map((c) => (
-              <ClaimRow key={c.id} c={c} graph={ev.data} stations={ctx.stations} onSelect={ctx.onSelect} />
-            ))}
-          </ul>
-        )}
-      </Section>
+  const water = (
+    <>
       <Section title="Harbour water" testid="harbor-water">
         {!cond || cond.status === "loading" ? (
           <Loading what="Asking NOAA CO-OPS…" />
@@ -307,8 +318,67 @@ export function HarborView({ code, ctx }: { code: number; ctx: Ctx }) {
           <p className="text-[14px] text-n-ink-2">No CalHABMAP shore station within 40 km. No sample is not a clean result.</p>
         )}
       </Section>
+    </>
+  );
+  const top = claims.slice(0, concise ? 3 : claims.length);
+  const later = concise ? claims.slice(3) : [];
+  const claimsSection = (
+    <Section title={saved ? `As saved ${clockLabel(saved.savedAt)}` : concise ? `Now${evDay ? ` · ${dayLabel(evDay, true)}` : ""}` : "What the evidence says now"} testid="harbor-claims">
+      {evDay && (
+        <p className={`-mt-1 text-[13px] leading-snug text-n-ink-3 ${concise && !(mapDay?.date && ctx.layer === "forecast" && mapDay.date !== evDay) ? "sr-only" : ""}`} data-testid="harbor-day">
+          For {dayLabel(evDay, true)}
+          {mapDay?.date && ctx.layer === "forecast" ? (mapDay.date === evDay ? ", the C-HARM day on the map" : ` · the map shows C-HARM for ${dayLabel(mapDay.date, true)} (${mapDay.lead === 0 ? "nowcast" : "forecast"})`) : ""}
+        </p>
+      )}
+      {!ev || ev.status === "loading" ? (
+        <Loading what="Reading the evidence for these waters…" />
+      ) : ev.status === "error" ? (
+        <Failed what="The evidence" message={ev.message} retry={retryEv} />
+      ) : (
+        <>
+          <ul className={`flex flex-col divide-y divide-n-line [&>li:first-child]:pt-0 [&>li:last-child]:pb-0 ${concise ? "[&>li]:py-2" : "[&>li]:py-3"}`}>
+            {top.map((c) => (
+              <ClaimRow key={c.id} c={c} graph={ev.data} stations={ctx.stations} onSelect={ctx.onSelect} compact={concise} />
+            ))}
+          </ul>
+          {later.length > 0 && (
+            <details className="group" data-testid="harbor-claims-more">
+              <summary className="nx-focus inline-flex min-h-11 cursor-pointer list-none items-center gap-1 text-[13.5px] font-semibold text-n-ink-2 hover:text-n-ink [&::-webkit-details-marker]:hidden">
+                {later.length} more {later.length === 1 ? "line" : "lines"} of evidence
+                <Icon name="chevronDown" className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+              </summary>
+              <ul className="flex flex-col divide-y divide-n-line border-t border-n-line [&>li]:py-2">
+                {later.map((c) => (
+                  <ClaimRow key={c.id} c={c} graph={ev.data} stations={ctx.stations} onSelect={ctx.onSelect} compact />
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
+      )}
+    </Section>
+  );
+  const actions = <CrossLinks ctx={ctx} place={`port-${code}`} lat={lat} lon={lon} name={name} variant={concise ? "actions" : "row"} primary="brief" briefTestId={concise ? "open-briefing" : undefined} briefLabel={concise ? "Open the briefing" : `Open the ${name} briefing`} />;
+  if (concise)
+    return (
+      <div className="flex flex-col gap-4" data-testid="inspect-harbor">
+        {actions}
+        {claimsSection}
+        <EvidenceFold summary="Harbour water, shore stations nearby, each product near the harbour">
+          {water}
+          {intel && <HarbourSummary intel={intel} lead={ctx.lead} />}
+        </EvidenceFold>
+      </div>
+    );
+  return (
+    <div className="flex flex-col gap-4" data-testid="inspect-harbor">
+      <Link href={briefHref(`port-${code}`, ctx.from)} className="nx-press nx-focus flex min-h-[52px] items-center justify-between gap-3 rounded-xl bg-n-ink px-4 text-[15.5px] font-semibold text-n-bg" data-testid="open-briefing">
+        Open the {name} briefing <Icon name="chevronRight" />
+      </Link>
+      {claimsSection}
+      {water}
       {intel && <HarbourSummary intel={intel} lead={ctx.lead} />}
-      <CrossLinks ctx={ctx} place={`port-${code}`} lat={lat} lon={lon} name={name} />
+      {actions}
     </div>
   );
 }
@@ -408,7 +478,7 @@ const VARS = [
   { id: "chl_extracted", label: "Chlorophyll (extracted)", units: "mg/m³" },
 ] as const;
 
-export function StationView({ id, ctx }: { id: string; ctx: Ctx }) {
+export function StationView({ id, ctx, concise = false }: { id: string; ctx: Ctx; concise?: boolean }) {
   const st = ctx.stations?.find((s) => s.station_id === id) ?? null;
   const avail = VARS.filter((v) => st?.recent?.[v.id]?.length);
   const [v, setV] = useState<string>(avail[0]?.id ?? "pDA");
@@ -426,6 +496,65 @@ export function StationView({ id, ctx }: { id: string; ctx: Ctx }) {
     }
     return best;
   })();
+  if (concise)
+    return (
+      <div className="flex flex-col gap-4" data-testid="inspect-station">
+        <CrossLinks ctx={ctx} place={pointKey(st.lat, st.lon)} lat={st.lat} lon={st.lon} name={st.name} station={st.station_id} obsVariable={v} variant="actions" primary="research" />
+      <Section title="Latest samples" testid="station-latest">
+        <ul className="flex flex-col gap-2">
+          {(concise ? st.latest.slice(0, 3) : st.latest).map((l) => (
+            <li key={l.variable} className="flex items-baseline justify-between gap-3 text-[14.5px]">
+              <span className="text-n-ink-2">{l.label}</span>
+              <span className="text-right">
+                <span className="nx-data font-semibold text-n-ink">{l.value == null ? "—" : l.qualifier === "reported_zero" ? "0" : l.value.toLocaleString("en-US", { maximumSignificantDigits: 3 })}</span> <span className="text-n-ink-3">{unitLabel(l.units)}</span>
+                <span className="block text-[12.5px] text-n-ink-3">
+                  {dayLabel(l.date, true)}
+                  {ctx.now ? ` · ${relTime(l.date, ctx.now)}` : ""}
+                  {l.qualifier === "reported_zero" ? " · reported as zero" : ""}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Section>
+        <EvidenceFold summary="The last year of samples, the original data, what this station is">
+      {/* the data themselves, one tap from the station's name (a researcher's first question) */}
+      <div className="-mt-1 flex flex-wrap gap-2">
+        {st.request_url && (
+          <a href={st.request_url} target="_blank" rel="noreferrer" className="nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-n-line-strong px-3 text-[14px] font-semibold text-n-ink" data-testid="station-csv">
+            <Icon name="download" className="h-4 w-4" /> Original data (CSV)
+          </a>
+        )}
+        <Link href={`/research?station=${encodeURIComponent(st.station_id)}`} className="nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-n-line-strong px-3 text-[14px] font-semibold text-n-ink" data-testid="station-research">
+          <Icon name="research" className="h-4 w-4" /> Full record in Research
+        </Link>
+      </div>
+      <Section title="The last year of samples" testid="station-series">
+        {avail.length > 1 && (
+          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Measurement">
+            {avail.map((x) => (
+              <button key={x.id} type="button" role="radio" aria-checked={v === x.id} onClick={() => setV(x.id)} className={`nx-press nx-focus min-h-11 rounded-lg px-2.5 text-[13px] font-semibold ${v === x.id ? "bg-n-ink text-n-bg" : "border border-n-line-strong text-n-ink-2"}`}>
+                {x.label.replace("Pseudo-nitzschia", "PN").replace("Particulate domoic acid", "pDA")}
+              </button>
+            ))}
+          </div>
+        )}
+        <SeriesChart samples={samples} variable={meta.id} units={meta.units} label={meta.label} from={from} to={to} />
+      </Section>
+      <Section title="What this station is" testid="station-provenance">
+        <p className="text-[14px] leading-snug text-n-ink-2">
+          CalHABMAP shore station, sampled from a pier: seawater, not seafood. A value describes the water at the pier on that day.
+          {harbor ? ` ${kmLabel(harbor.km)} from ${harbor.name}.` : ""} Sampling is roughly weekly; no sample is not a clean result.
+        </p>
+        <div className="flex flex-wrap gap-x-4">
+          <a href={st.source_url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 text-[13.5px] font-semibold text-n-accent">
+            SCCOOS ERDDAP record <Icon name="external" className="h-3.5 w-3.5" />
+          </a>
+        </div>
+      </Section>
+        </EvidenceFold>
+      </div>
+    );
   return (
     <div className="flex flex-col gap-4" data-testid="inspect-station">
       {/* the data themselves, one tap from the station's name (a researcher's first question) */}
@@ -573,7 +702,7 @@ function NoValueHere({ at, ctx, variable }: { at: { lat: number; lon: number }; 
   );
 }
 
-export function CellBody({ read, ctx, variable, precise, at }: { read: CellRead | null; ctx: Ctx; variable: CharmVariable; precise?: { quantErr: number | null }; at?: { lat: number; lon: number } }) {
+export function CellBody({ read, ctx, variable, precise, at, concise = false }: { read: CellRead | null; ctx: Ctx; variable: CharmVariable; precise?: { quantErr: number | null }; at?: { lat: number; lon: number }; concise?: boolean }) {
   const run = charmRun(ctx.manifest);
   if (!read || read.status === "loading") return <Loading what="Reading the published grid…" />;
   if (read.status === "error") return <Failed what="The C-HARM grid" message={read.message} />;
@@ -581,6 +710,7 @@ export function CellBody({ read, ctx, variable, precise, at }: { read: CellRead 
   const hr = read.harbor;
   return (
     <div className="flex flex-col gap-4" data-testid="inspect-cell">
+      {concise && at && <CrossLinks ctx={ctx} place={pointKey(at.lat, at.lon)} lat={at.lat} lon={at.lon} name="this water" variant="actions" primary="brief" briefLabel="Open the briefing" />}
       <div>
         <p className="text-[14px] text-n-ink-2">{VARIABLE_WORDS[variable].what}</p>
         <p className="mt-1">
@@ -624,6 +754,43 @@ export function CellBody({ read, ctx, variable, precise, at }: { read: CellRead 
           )}
         </div>
       )}
+      {concise ? (
+        <EvidenceFold summary="Whether it describes a harbour, this run day by day, the cell">
+      {hr && (
+        <Section title="Does it describe a harbour?" testid="cell-harbor">
+          <p className="text-[14px] leading-snug text-n-ink-2" data-testid="cell-harbor-text">
+            {hr.ownCell === "same"
+              ? own == null
+                ? `This is the cell containing ${hr.name}, and C-HARM publishes no value for it: there is no model estimate for the harbour.`
+                : `Yes: this is the cell containing ${hr.name}.`
+              : hr.ownCell === "no-value"
+                ? `No. ${hr.name} is ${kmLabel(hr.km)} away and its own cell has no value; an offshore cell is context, never the harbour's value.`
+                : hr.ownCell === "valued-other"
+                  ? `No. ${hr.name} (${kmLabel(hr.km)} away) has its own cell with a value; this is a neighbouring cell.`
+                  : `${hr.name} is ${kmLabel(hr.km)} away, outside the model domain.`}
+          </p>
+        </Section>
+      )}
+      <Section title="This run, day by day" testid="cell-leads">
+        <ol className="grid grid-cols-4 gap-1.5">
+          {read.leads.map((l) => (
+            <li key={l.lead} className={`flex flex-col items-center rounded-lg px-1 py-2 ${l.lead === ctx.lead ? "bg-n-accent-bg ring-1 ring-n-accent" : "bg-n-surface-2"}`}>
+              <span className="text-[12px] text-n-ink-3">{l.date ? dayLabel(l.date, true) : "—"}</span>
+              <span className="nx-data mt-0.5 text-[16px] font-semibold text-n-ink">{l.issued ? pct(l.value) : "not issued"}</span>
+              <span className="text-[11px] text-n-ink-3">{l.lead === 0 ? "nowcast" : "forecast"}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="text-[12.5px] text-n-ink-3">The run&rsquo;s own four days; nothing beyond its horizon is shown, and values are never blended between days.</p>
+      </Section>
+      {read.cell && (
+        <p className="nx-data text-[12.5px] text-n-ink-3">
+          Cell centre {read.cell.lat.toFixed(3)}°N {Math.abs(read.cell.lon).toFixed(3)}°W · row {read.cell.row}, column {read.cell.col}
+        </p>
+      )}
+        </EvidenceFold>
+      ) : (
+        <>
       {hr && (
         <Section title="Does it describe a harbour?" testid="cell-harbor">
           <p className="text-[14px] leading-snug text-n-ink-2" data-testid="cell-harbor-text">
@@ -657,6 +824,8 @@ export function CellBody({ read, ctx, variable, precise, at }: { read: CellRead 
         </p>
       )}
       {at && !precise && <CrossLinks ctx={ctx} place={pointKey(at.lat, at.lon)} lat={at.lat} lon={at.lon} name="this water" />}
+        </>
+      )}
     </div>
   );
 }
@@ -664,11 +833,72 @@ export function CellBody({ read, ctx, variable, precise, at }: { read: CellRead 
 // ------------------------------------------------------------------------------------- point
 
 /** `site`: the My Coast harvest site at this point (chosen in search), briefed under its own key. */
-export function PointView({ lat, lon, ctx, site = null }: { lat: number; lon: number; ctx: Ctx; site?: { key: string; name: string } | null }) {
+export function PointView({ lat, lon, ctx, site = null, concise = false }: { lat: number; lon: number; ctx: Ctx; site?: { key: string; name: string } | null; concise?: boolean }) {
   const near = useMemo(() => stationsNear(ctx.stations, lat, lon), [ctx.stations, lat, lon]);
   const notices = useMemo(() => officialAt(ctx.official ?? null, lon, lat), [ctx.official, lat, lon]);
   return (
     <div className="flex flex-col gap-4" data-testid="inspect-point">
+      {concise ? (
+        <>
+          <CrossLinks ctx={ctx} place={site?.key ?? pointKey(lat, lon)} lat={lat} lon={lon} name={site?.name ?? "this point"} variant="actions" primary="brief" briefLabel="Open the briefing" />
+      {ctx.reads && <PointReads lat={lat} lon={lon} ctx={ctx} />}
+          <EvidenceFold summary="Official notices here, nearest shore stations, the model cell">
+      <p className="nx-data text-[13px] text-n-ink-3">
+        {lat.toFixed(4)}°N {Math.abs(lon).toFixed(4)}°W
+      </p>
+      {ctx.official !== undefined && (
+        <Section title="Official notices at this point">
+          {notices.length ? (
+            <ul className="flex flex-col gap-2" data-testid="point-notices">
+              {notices.map(({ record: r, reason }) => {
+                const d = disputeOf(ctx.official ?? null, r.id);
+                return (
+                  <li key={r.id} className="text-[14px]" data-testid={`point-notice-${r.id}`} data-disputed={d ? "true" : undefined}>
+                    <p className="font-semibold leading-snug">{r.title}</p>
+                    <p className="text-[13px] text-n-ink-2">
+                      {r.agency} · {reason} · <span className="text-n-official">not verified</span>
+                      {d ? ` · ${d.agency} release ${d.release} appears to lift it; not shown as in effect` : ""}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-[14px] text-n-ink-2">No notice in Neritic&rsquo;s list covers this point.</p>
+          )}
+          <p className="mt-1 text-[13px] leading-snug text-n-ink-3" data-testid="point-missing-not-open">
+            {OFFICIAL_STATUS.missingNotOpen}
+          </p>
+        </Section>
+      )}
+      <Section title="Nearest shore stations">
+        {near.near.length || near.nearestBeyond ? (
+          <ul>
+            {(near.near.length ? near.near.slice(0, 3) : [near.nearestBeyond!]).map((n) => (
+              <li key={n.station.station_id}>
+                <button type="button" onClick={() => ctx.onSelect({ kind: "station", id: n.station.station_id })} className="nx-focus flex min-h-12 w-full items-center justify-between gap-3 rounded-lg px-1 text-left nx-row hover:bg-n-surface-2">
+                  <span className="flex min-w-0 flex-col">
+                    <span className="text-[14.5px] font-semibold">{n.station.name}</span>
+                    <span className="text-[12.5px] text-n-ink-3" data-testid="harbor-station-last">{lastHabWords(lastHabSample(n.station), ctx.now)}</span>
+                  </span>
+                  <span className="nx-data shrink-0 text-[13px] text-n-ink-3">
+                    {kmLabel(n.km)} {n.bearing}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-[14px] text-n-ink-2">No shore station nearby.</p>
+        )}
+      </Section>
+      <button type="button" onClick={() => ctx.onSelect({ kind: "cell", lat, lon })} className="nx-press nx-focus flex min-h-12 items-center justify-between rounded-xl border border-n-line-strong px-3 text-[15px] font-semibold">
+        What C-HARM publishes for this cell <Icon name="chevronRight" />
+      </button>
+          </EvidenceFold>
+        </>
+      ) : (
+        <>
       <p className="nx-data text-[13px] text-n-ink-3">
         {lat.toFixed(4)}°N {Math.abs(lon).toFixed(4)}°W
       </p>
@@ -723,6 +953,8 @@ export function PointView({ lat, lon, ctx, site = null }: { lat: number; lon: nu
         )}
       </Section>
       <CrossLinks ctx={ctx} place={site?.key ?? pointKey(lat, lon)} lat={lat} lon={lon} name={site?.name ?? "this point"} />
+        </>
+      )}
     </div>
   );
 }
@@ -768,7 +1000,7 @@ function PointReads({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
         <ul className="flex flex-col divide-y divide-n-line" data-testid="point-reads">
           {rows.map(({ id, label, r, err }) => (
             <li key={id} className="py-2.5" data-testid={`point-${id}`}>
-              <p className={`text-[12.5px] font-semibold uppercase tracking-[0.06em] ${r?.kind === "model" ? "text-n-model" : "text-n-measured"}`}>
+              <p className={`text-[13px] font-semibold ${r?.kind === "model" ? "text-n-model" : "text-n-measured"}`}>
                 {label} · {r?.label ?? (r?.kind === "model" ? "model" : "observation")}
               </p>
               {r?.value != null ? (
@@ -856,12 +1088,50 @@ export function crossHrefs(o: { place: string; lat: number; lon: number; station
   return { brief, research: `/research?${q.toString().replace(/%2C/g, ",")}`, stationName };
 }
 
-export function CrossLinks({ ctx, place, lat, lon, name, station = null, obsVariable }: { ctx: Ctx; place: string; lat: number; lon: number; name: string; station?: string | null; obsVariable?: string }) {
+/**
+ * "Brief this" (My Coast for the place, keeping the trip) and "Research this" (its station or the
+ * nearest one, with the variable, the day and the way back). `variant="actions"` (v7 panel): the one
+ * primary action as a filled button and the other as a quiet link beside it, at the top of the panel.
+ */
+export function CrossLinks({ ctx, place, lat, lon, name, station = null, obsVariable, variant = "row", primary = "brief", briefTestId, briefLabel }: { ctx: Ctx; place: string; lat: number; lon: number; name: string; station?: string | null; obsVariable?: string; variant?: "row" | "actions"; primary?: "brief" | "research"; briefTestId?: string; briefLabel?: string }) {
   // the reader's home trip is read after mount (localStorage); the server renders without it
   const [home, setHome] = useState<{ for: string; species: string } | null>(null);
   useEffect(() => setHome(readHome()), []);
   const day = useMemo(() => runDays(ctx.manifest, ctx.now).find((d) => d.lead === ctx.lead)?.date ?? null, [ctx.manifest, ctx.now, ctx.lead]);
   const h = crossHrefs({ place, lat, lon, station, stations: ctx.stations, variable: obsVariable ?? researchVariable(ctx.layer, ctx.variable), day, from: ctx.from, here: ctx.here, home });
+  if (variant === "actions") {
+    const fill = "nx-press nx-focus flex min-h-12 min-w-0 flex-1 items-center justify-between gap-2 rounded-xl bg-n-ink px-4 text-[15px] font-semibold text-n-bg";
+    const quiet = "nx-focus inline-flex min-h-12 shrink-0 items-center gap-1 rounded-xl px-2 text-[14px] font-semibold text-n-ink-2 hover:text-n-ink";
+    const brief = (
+      <Link key="b" href={h.brief} className={primary === "brief" ? fill : quiet} data-testid={briefTestId ?? "brief-this"}>
+        {primary === "brief" ? (
+          <>
+            <span className="truncate">{briefLabel ?? "Open the briefing"}</span>
+            <Icon name="chevronRight" className="h-[18px] w-[18px] shrink-0" />
+          </>
+        ) : (
+          "Brief this"
+        )}
+      </Link>
+    );
+    const research = (
+      <Link key="r" href={h.research} className={primary === "research" ? fill : quiet} data-testid="research-this" title={`The ${station ? "station's" : "nearest station's"} record${h.stationName && !station ? ` (${h.stationName})` : ""} in Research`}>
+        {primary === "research" ? (
+          <>
+            <span className="truncate">Research this station</span>
+            <Icon name="chevronRight" className="h-[18px] w-[18px] shrink-0" />
+          </>
+        ) : (
+          "Research this"
+        )}
+      </Link>
+    );
+    return (
+      <nav aria-label={`Next steps for ${name}`} className="flex items-center gap-1" data-testid="inspect-crosslinks">
+        {primary === "brief" ? [brief, research] : [research, brief]}
+      </nav>
+    );
+  }
   const cls = "nx-press nx-focus flex min-h-12 flex-1 items-center justify-between gap-2 rounded-xl border border-n-line-strong px-3 text-[14.5px] font-semibold text-n-ink";
   return (
     <nav aria-label={`Next steps for ${name}`} className="flex flex-col gap-2 border-t border-n-line pt-4" data-testid="inspect-crosslinks">

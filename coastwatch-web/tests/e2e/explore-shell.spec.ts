@@ -28,35 +28,49 @@ test("phone: the status centre opens inside the screen, under the top bar", asyn
   }
 });
 
-test("desktop: with a place open the layer deck folds to a capsule that reopens it; the credits stay on the map", async ({ page }) => {
+test("desktop: the dock's layer button opens the layer list upward and Escape closes it (not the place); the credits stay in the map's margin", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=forecast&lead=1`);
-  await expect(page.getByTestId("layer-deck")).toBeVisible();
-  await expect(page.getByTestId("layer-capsule")).toHaveCount(0);
-  await page.goto(`${OK}/?layer=forecast&lead=1&sel=harbor:550`);
+  // the default state: no permanent deck, the dock's button names the layer and its kind
   const capsule = page.getByTestId("layer-capsule");
   await expect(capsule).toBeVisible();
-  await expect(capsule).toContainText("C-HARM forecast");
-  await expect(page.getByTestId("layer-deck")).toHaveCount(0);
+  await expect(capsule).toContainText("NOAA bloom forecast");
+  await expect(capsule).toContainText("Model");
+  await expect(page.getByTestId("layer-deck")).toBeHidden();
+  await capsule.click();
+  await expect(page.getByTestId("layer-deck")).toBeVisible();
+  // the popover rises from the dock: its bottom is above the dock's top
+  const deck = (await page.getByTestId("layer-deck").boundingBox())!;
+  const dock = (await page.getByTestId("timebar-deck").boundingBox())!;
+  expect(deck.y + deck.height).toBeLessThanOrEqual(dock.y);
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("layer-deck")).toBeHidden();
+  // with a place open, Escape closes the list first and leaves the place
+  await page.goto(`${OK}/?layer=forecast&lead=1&sel=harbor:550`);
+  await expect(page.getByTestId("inspect-panel")).toBeVisible();
   await expect(page.getByTestId("attribution-line")).toContainText("© OpenStreetMap contributors");
   await capsule.click();
   await expect(page.getByTestId("layer-deck")).toBeVisible();
-  await page.getByTestId("layer-deck-fold").click();
-  await expect(capsule).toBeVisible();
-  // closing the place brings the full deck back
-  await page.getByTestId("inspect-close").click();
-  await expect(page.getByTestId("layer-deck")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("layer-deck")).toBeHidden();
+  await expect(page.getByTestId("inspect-panel")).toBeVisible();
+  // the dock, the tools and the panel never overlap, and the disclosure line is never under any of them
+  const panel = (await page.getByTestId("inspect-panel").locator("xpath=ancestor::aside").boundingBox())!;
+  const dock2 = (await page.getByTestId("timebar-deck").boundingBox())!;
+  const tools = (await page.getByTestId("map-controls").boundingBox())!;
+  const line = (await page.getByTestId("registry-disclosure").boundingBox())!;
+  for (const [a, b, what] of [[dock2, tools, "dock/tools"], [dock2, panel, "dock/panel"], [tools, panel, "tools/panel"], [line, dock2, "line/dock"], [line, panel, "line/panel"]] as const) expect(overlap(a, b), what).toBe(false);
 });
 
-test("tablet: the map's tools never cover the timebar, with or without a place open", async ({ browser }) => {
+test("tablet and short screens: the map's tools never cover the dock, with or without a place open", async ({ browser }) => {
   for (const viewport of [{ width: 834, height: 1112 }, { width: 1024, height: 768 }, { width: 844, height: 390 }]) {
     const ctx = await browser.newContext({ viewport, hasTouch: true });
     const page = await ctx.newPage();
     await page.clock.setFixedTime(new Date(NOW));
     for (const url of ["/?layer=forecast&lead=1", "/?layer=forecast&lead=1&sel=harbor:550"]) {
       await page.goto(`${OK}${url}`);
-      const deck = page.getByTestId("tablet-deck");
+      const deck = page.getByTestId("timebar-deck");
       await expect(deck).toBeVisible();
       const d = (await deck.boundingBox())!;
       for (const b of await page.getByTestId("map-controls").locator("button").all()) {
@@ -99,7 +113,8 @@ test("a home port: Explore opens on its region, search offers it first, and My C
   expect(c.lat).toBeGreaterThan(39.9); // the north coast, not the whole state
   await page.getByTestId("place-search-input").click();
   await expect(page.getByTestId("place-search-list").getByRole("option").first()).toContainText("Your home port");
-  await expect(page.getByTestId("nav-bar").getByTestId("nav-coast")).toHaveAttribute("href", "/coast?place=port-201");
+  // the whole trip, not only the place (v7): the reader lands on their own activity and species
+  await expect(page.getByTestId("nav-bar").getByTestId("nav-coast")).toHaveAttribute("href", "/coast?place=port-201&for=commercial");
   // a link with its own place is not overridden
   await page.goto(`${OK}/?sel=harbor:550`);
   await mapReady(page);

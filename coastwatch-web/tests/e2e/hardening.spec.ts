@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { OK } from "./ports";
+import { openLayers } from "./helpers";
 
 /**
  * Release hardening (2026-10-19): the official notices keep the agency's dates, Neritic's retrieval and
@@ -96,7 +97,7 @@ test("L6: offline at 320 px, Explore says so in the status chip (the banner fold
   await ctx.close();
 });
 
-test("L8: on a phone, choosing a layer from the peeking sheet opens it, so its time control is in view", async ({ browser }) => {
+test("L8: on a phone, choosing another layer from the sheet leaves it open at half height, so its time control is in view", async ({ browser }) => {
   const ctx = await browser.newContext(phone());
   const page = await ctx.newPage();
   await page.clock.setFixedTime(new Date(NOW));
@@ -105,8 +106,11 @@ test("L8: on a phone, choosing a layer from the peeking sheet opens it, so its t
   const card = page.getByTestId("active-layer");
   const peekTop = (await card.boundingBox())!.y;
   expect(peekTop).toBeGreaterThan(844 * 0.6); // the sheet peeks: only its first lines show
-  await page.getByTestId("chip-currents").click();
+  // the peek is the dock: the layer button opens the list in the sheet
+  await openLayers(page);
+  await page.getByTestId("layer-currents").click();
   await expect(page).toHaveURL(/layer=currents/);
+  await expect(page.getByTestId("mobile-sheet")).toHaveAttribute("data-snap", "half");
   // the sheet opened to half: the layer's time and what it shows are in view without a drag
   await expect.poll(async () => (await card.boundingBox())!.y).toBeLessThan(844 * 0.6);
   await expect(page.locator('[data-testid^="time-"][role="radio"]').last()).toBeInViewport();

@@ -131,3 +131,6 @@ export const COAST_COPY = {
   unreviewed: "Matched by location from each notice's official geography; not reviewed by a person.",
   noPsp: "Shellfish toxins from paralytic shellfish poisoning (PSP) are tested by CDPH and are not shown in Neritic.",
 } as const;
+
+/** My Coast's first visit: the few starting places under the search (every place is in the search). */
+export const EXAMPLES = ["port-550", "port-593", "port-452", "port-220", "port-201", "port-880"] as const;

@@ -30,6 +30,7 @@ export function SeriesChart({
   cursorT,
   onCursor,
   hideReadout = false,
+  between,
 }: {
   samples: Sample[];
   variable: ObsVariableId;
@@ -48,6 +49,8 @@ export function SeriesChart({
   onCursor?: (t: number) => void;
   /** the parent shows the readout (shared cursor) */
   hideReadout?: boolean;
+  /** drawn directly under the plot, before the legend and the table (Research: the model on the same time axis) */
+  between?: React.ReactNode;
 }) {
   const unit = unitLabel(units);
   const axis: Axis = AXES[variable];
@@ -219,6 +222,7 @@ export function SeriesChart({
           <line x1={x(sel?.t ?? cursorT!)} x2={x(sel?.t ?? cursorT!)} y1={pad.t} y2={pad.t + ih} stroke="var(--nx-ink-3)" strokeDasharray="2 3" data-testid="series-cursor" />
         )}
       </svg>
+      {between}
       {(zeros || flagged.length > 0 || rejected.length > 0) && (
         <p className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-n-ink-3" data-testid="series-legend">
           {zeros && <span>Bar on the floor: reported 0 (not quantified)</span>}
@@ -254,17 +258,19 @@ export function SeriesChart({
 }
 
 /** What one sample says, as the readout's value: a rejected sample is never a number. */
-export function SampleValue({ s, unit, fmt }: { s: Sample; unit: string; fmt: (v: number) => string }) {
+export function SampleValue({ s, unit, fmt, size = "md" }: { s: Sample; unit: string; fmt: (v: number) => string; size?: "md" | "lg" }) {
+  // "lg": a sounding (Research's readout), the interface face with tabular figures
+  const big = size === "lg" ? "nx-sounding-v" : "nx-data text-[20px] font-semibold";
   if (s.q === "rejected_negative")
     return (
       <>
-        <span className="nx-data text-[20px] font-semibold text-n-down">rejected (QC)</span> <span className="text-n-ink-2">not a measurement</span>
+        <span className={`${big} text-n-down`}>rejected (QC)</span> <span className="text-n-ink-2">not a measurement</span>
       </>
     );
   if (s.value == null) return <span className="text-n-ink-2">a visit, but this was not measured</span>;
   return (
     <>
-      <span className="nx-data text-[20px] font-semibold">{s.q === "reported_zero" || s.value === 0 ? "0" : fmt(s.value)}</span> <span className="text-n-ink-2">{unit}</span>
+      <span className={big}>{s.q === "reported_zero" || s.value === 0 ? "0" : fmt(s.value)}</span> <span className="text-n-ink-2">{unit}</span>
       {s.q === "reported_zero" && <span className="text-n-ink-3"> · reported as zero</span>}
       {s.q === "flag_high" && <span className="text-n-down"> · flagged high by QC (kept as published)</span>}
     </>

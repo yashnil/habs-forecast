@@ -5,8 +5,8 @@ import { OK } from "./ports";
  * The launch screen (src/v4/shell/Splash.tsx): a device's first visit ever only (v6), never on a saved
  * copy reopened from a field pack, never for a returning reader, never for automated browsers unless
  * asked (every other suite runs without it). Forced on here (each test opens a fresh context, so a first
- * visit): it appears over the page, the canyon and the mark draw, it holds at least 1.8 s and steps aside
- * by the 3 s cap, a tap, click or key skips it at once, and the page underneath is usable at once.
+ * visit): it appears over the page, the canyon and the mark draw, it holds only until the mark has resolved
+ * (~1 s) and steps aside by the 2.2 s cap, a tap, click or key skips it at once, and the page underneath is usable at once.
  */
 const force = () => localStorage.setItem("nx-splash-force-v1", "1");
 
@@ -15,7 +15,8 @@ test("the launch screen shows on a device's first visit, steps aside, and the pa
   await ctx.addInitScript(force);
   const page = await ctx.newPage();
   const t0 = Date.now();
-  await page.goto(`${OK}/?layer=forecast`);
+  // assert from the first paint: on a busy runner the load event can come after the screen has left
+  await page.goto(`${OK}/?layer=forecast`, { waitUntil: "commit" });
   const splash = page.getByTestId("splash");
   await expect(splash).toBeVisible();
   // the page renders underneath at the same time (never blocked by the launch screen)
@@ -81,10 +82,10 @@ test("Explore: the launch screen leaves within its cap and takes no clicks while
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   await ctx.addInitScript(force);
   const page = await ctx.newPage();
-  // assert from the first paint: on a slow runner the load event can come after the 3 s screen has left
+  // assert from the first paint: on a slow runner the load event can come after the 2.2 s screen has left
     await page.goto(`${OK}/`, { waitUntil: "commit" });
   await expect(page.getByTestId("splash")).toBeVisible();
-  // the moment it starts to leave: not before the 1.8 s hold, before the 3 s cap, and already click-through
+  // the moment it starts to leave: once the mark has resolved (~1 s), before the 2.2 s cap, and already click-through
   const out = await page.evaluate(
     () =>
       new Promise<{ at: number; pe: string }>((done) => {
@@ -96,9 +97,9 @@ test("Explore: the launch screen leaves within its cap and takes no clicks while
       }),
   );
   expect(out.pe).toBe("none");
-  expect(out.at).toBeGreaterThanOrEqual(1780);
-  // it begins to leave before its 3 s cap (scheduled at cap − exit; a busy main thread can fire the timer late)
-  expect(out.at).toBeLessThanOrEqual(3000);
+  expect(out.at).toBeGreaterThanOrEqual(1030);
+  // it begins to leave before its 2.2 s cap (scheduled at cap − exit; a busy main thread can fire the timer late)
+  expect(out.at).toBeLessThanOrEqual(2400);
   await expect(page.getByTestId("splash")).toBeHidden({ timeout: 2000 });
   await ctx.close();
 });
@@ -119,7 +120,7 @@ test("a tap, a click or a key skips it at once", async ({ browser }) => {
       }).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     });
     const page = await ctx.newPage();
-    // assert from the first paint: on a slow runner the load event can come after the 3 s screen has left
+    // assert from the first paint: on a slow runner the load event can come after the 2.2 s screen has left
     await page.goto(`${OK}/`, { waitUntil: "commit" });
     const splash = page.getByTestId("splash");
     await expect(splash).toBeVisible();
@@ -129,7 +130,7 @@ test("a tap, a click or a key skips it at once", async ({ browser }) => {
     if (how === "tap") await page.touchscreen.tap(200, 400);
     else if (how === "click") await page.mouse.click(700, 450);
     else await page.keyboard.press("Space");
-    // leaving at once (well before the 1.8 s hold, when the skip came early enough), gone in its 450 ms exit
+    // leaving at once (before the mark has resolved, when the skip came early enough), gone in its 380 ms exit
     const leaving = await page.evaluate(() => [document.documentElement.classList.contains("nx-splash-out") || !document.documentElement.classList.contains("nx-splash-on"), performance.now()] as const);
     expect(leaving[0], how).toBe(true);
     await expect(splash).toBeHidden({ timeout: 1000 });
@@ -147,13 +148,14 @@ test("reduced motion: a still mark that fades", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
   await ctx.addInitScript(force);
   const page = await ctx.newPage();
-  // assert from the first paint: on a slow runner the load event can come after the 3 s screen has left
+  // assert from the first paint: on a slow runner the load event can come after the 2.2 s screen has left
     await page.goto(`${OK}/`, { waitUntil: "commit" });
   await expect(page.getByTestId("splash")).toBeVisible();
-  // (the overlay's own 3 s cap is a fade; nothing inside it draws or moves: the composed final frame)
+  // the composed final frame at once (the wordmark is there from the first paint; the screen is short-lived)
+  await expect(page.getByTestId("splash").locator(".nx-splash-word")).toBeVisible({ timeout: 500 });
+  // (the overlay's own 2.2 s cap is a fade; nothing inside it draws or moves)
   const moving = await page.evaluate(() => document.getAnimations().filter((a) => ((a.effect as KeyframeEffect | null)?.target as Element | null)?.parentElement?.closest(".nx-splash")).length);
   expect(moving).toBe(0);
-  await expect(page.getByTestId("splash").locator(".nx-splash-word")).toBeVisible();
   await expect(page.getByTestId("splash")).toBeHidden({ timeout: 5000 });
   await ctx.close();
 });

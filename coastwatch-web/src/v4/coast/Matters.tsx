@@ -34,12 +34,12 @@ function MatterRow({ c, graph, stations, onSelect, fallback, hidden }: { c: Clai
   const body = `claim-body-${c.id}`;
   return (
     <li hidden={hidden} className={c.tone === "alert" ? "-ml-3 border-l-2 border-n-official pl-[10px]" : ""} data-testid={`claim-${c.id}`} data-kind={c.kind} data-tone={c.tone} data-supports={(c.supports ?? []).join(" ")} data-open={open}>
-      <button type="button" aria-expanded={open} aria-controls={body} onClick={() => setOpen((o) => !o)} className="nx-tint nx-focus flex min-h-11 w-full items-start gap-3 rounded-lg py-1.5 text-left" data-testid={`claim-open-${c.id}`}>
-        <span className={`mt-[7px] h-2.5 w-2.5 shrink-0 rounded-full ${c.aged ? k.hollow : k.dot}`} data-aged={c.aged ? "true" : undefined} aria-hidden />
-        <span className="min-w-0 flex-1 text-[15.5px] font-semibold leading-snug text-n-ink" data-headline>
+      <button type="button" aria-expanded={open} aria-controls={body} onClick={() => setOpen((o) => !o)} className="nx-tint nx-focus flex min-h-11 w-full items-start gap-3 rounded-lg py-2 text-left" data-testid={`claim-open-${c.id}`}>
+        <span className={`mt-[8px] h-2 w-2 shrink-0 rounded-full ${c.aged ? k.hollow : k.dot}`} data-aged={c.aged ? "true" : undefined} aria-hidden />
+        <span className="min-w-0 flex-1 text-[16px] font-medium leading-6 text-n-ink" data-headline>
           {c.headline}
         </span>
-        <span className={`mt-[3px] shrink-0 text-[12.5px] font-semibold ${k.tone} max-sm:sr-only`}>{k.word}</span>
+        <span className="mt-[3px] shrink-0 text-[12.5px] font-semibold text-n-ink-3 max-sm:sr-only">{k.word}</span>
         <Icon name="chevronDown" className={`mt-0.5 h-4 w-4 shrink-0 text-n-ink-3 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       <div id={body} hidden={!open} className="pb-2 pl-[22px]">
@@ -86,7 +86,7 @@ function MatterRow({ c, graph, stations, onSelect, fallback, hidden }: { c: Clai
           </details>
         )}
         <div className="flex flex-wrap items-center gap-x-3 text-[13px]">
-          <span className={`font-semibold ${k.tone} sm:hidden`}>{k.word}</span>
+          <span className="font-semibold text-n-ink-3 sm:hidden">{k.word}</span>
           {c.source?.url && (
             <a href={c.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
               {c.source.label} <Icon name="external" className="h-3.5 w-3.5" />

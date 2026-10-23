@@ -564,6 +564,24 @@ export default function MapCanvas(p: Props) {
           <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id, true)} />
         </Source>
       )}
+      {/* v7: the model's western edge, drawn and named, so the ocean beyond NOAA's grid reads as outside
+          the model (never as a gap or a low value) */}
+      {p.forecast && forecastTiles?.bounds && (
+        <Source
+          key={`${p.forecast.id}-edge`}
+          id="forecast-domain-edge"
+          type="geojson"
+          data={{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[forecastTiles.bounds[0], forecastTiles.bounds[3]], [forecastTiles.bounds[0], forecastTiles.bounds[1]]] } }}
+        >
+          <Layer id="forecast-domain-edge" type="line" beforeId={BEFORE_OVERLAY_ID} paint={{ "line-color": "#9fc4d6", "line-opacity": 0.55, "line-width": 1, "line-dasharray": [3, 3] }} />
+          <Layer
+            id="forecast-domain-edge-label"
+            type="symbol"
+            layout={{ "symbol-placement": "line-center", "text-field": "Edge of NOAA's model", "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, 0.9], "text-letter-spacing": 0.04 }}
+            paint={{ "text-color": "#b9d3e0", "text-halo-color": "#061016", "text-halo-width": 1.2 }}
+          />
+        </Source>
+      )}
       {p.forecast && !forecastTiles && (
         <Source key={`${p.forecast.id}-${retry}`} id="forecast" type="image" url={p.forecast.url} coordinates={p.forecast.corners as [[number, number], [number, number], [number, number], [number, number]]}>
           <Layer id="forecast-raster" type="raster" beforeId={BEFORE_OVERLAY_ID} paint={paintFor(p.forecast?.id, true)} />

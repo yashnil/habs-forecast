@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import type { LayerArtifact, Manifest, Palette } from "@/generated/schema";
 import { CHARM_VARIABLES, charmRun, coveragePct, satelliteLatest, sourceStatus, type CharmVariable } from "@/lib/layers";
@@ -23,7 +23,7 @@ type Family = "none" | "forecast" | "satellite" | "outlook" | "sst" | "currents"
 
 const FAMILY: Record<Family, { name: string; kind: string; icon: string; tone: string }> = {
   none: { name: "Seafloor and coast", kind: "Reference", icon: "map", tone: "text-n-ink-2" },
-  forecast: { name: "NOAA C-HARM forecast", kind: "Model", icon: "cell", tone: "text-n-model" },
+  forecast: { name: "NOAA bloom forecast (C-HARM)", kind: "Model", icon: "cell", tone: "text-n-model" },
   satellite: { name: "Satellite chlorophyll", kind: "Observation", icon: "layers", tone: "text-n-measured" },
   outlook: { name: "Outlook (8 days)", kind: "Outlook, not observed", icon: "clock", tone: "text-n-model" },
   // MUR: a gap-free analysis blended from several sensors, not one observation
@@ -94,39 +94,6 @@ function useFamilies(manifest: Manifest, choice: LayerChoice, onChoice: (c: Laye
   return { active, pick, available, listed };
 }
 
-const CHIP_NAME: Record<Family, string> = { none: "Seafloor", forecast: "Forecast", satellite: "Satellite", outlook: "Outlook", sst: "Sea temp", currents: "Currents" };
-
-/** On a phone, the layer families as one row of chips at the sheet's peek: one tap from any state. */
-export function LayerChips({ manifest, choice, onChoice, defaults, derived = null }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; defaults: { lead: number }; derived?: DerivedIndex | null }) {
-  const { active, pick, available, listed } = useFamilies(manifest, choice, onChoice, defaults, derived);
-  const row = useRef<HTMLDivElement | null>(null);
-  // the chosen chip is always in view (five chips scroll on a phone)
-  useEffect(() => {
-    const r = row.current;
-    const el = r?.querySelector<HTMLElement>('[aria-checked="true"]');
-    if (r && el && (el.offsetLeft < r.scrollLeft || el.offsetLeft + el.offsetWidth > r.scrollLeft + r.clientWidth)) r.scrollLeft = el.offsetLeft - 8;
-  }, [active]);
-  return (
-    <div ref={row} role="radiogroup" aria-label="Map layer" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none]" data-testid="layer-chips">
-      {listed.map((f) => (
-        <button
-          key={f}
-          type="button"
-          role="radio"
-          aria-checked={f === active}
-          disabled={!available[f]}
-          onClick={() => pick(f)}
-          data-testid={`chip-${f}`}
-          className={`nx-press nx-focus flex min-h-14 shrink-0 items-center gap-2 rounded-xl border px-3 text-[14.5px] font-semibold disabled:opacity-40 ${f === active ? "border-n-accent bg-n-accent-bg text-n-ink" : "border-n-line-strong text-n-ink-2"}`}
-        >
-          <Icon name={FAMILY[f].icon} className={`h-[18px] w-[18px] ${FAMILY[f].tone}`} />
-          {CHIP_NAME[f]}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function LayerList({ manifest, choice, onChoice, now, defaults, derived = null }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; now: Date | null; defaults: { lead: number }; derived?: DerivedIndex | null }) {
   const { active, pick, available, listed } = useFamilies(manifest, choice, onChoice, defaults, derived);
   return (
@@ -161,11 +128,9 @@ export function LayerList({ manifest, choice, onChoice, now, defaults, derived =
             disabled={!available[f]}
             onClick={() => pick(f)}
             data-testid={`layer-${f}`}
-            className={`nx-press nx-focus flex min-h-[56px] w-full items-center gap-3 rounded-xl px-3 text-left disabled:opacity-45 ${on ? "bg-n-accent-bg ring-1 ring-n-accent" : "hover:bg-n-surface-2"}`}
+            className={`nx-press nx-focus flex min-h-[52px] w-full items-center gap-3 rounded-xl px-2.5 py-1.5 text-left disabled:opacity-45 ${on ? "bg-n-accent-bg" : "hover:bg-n-surface-2"}`}
           >
-            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-n-surface-2 ${meta.tone}`}>
-              <Icon name={meta.icon} className="h-5 w-5" />
-            </span>
+            <Icon name={meta.icon} className={`h-5 w-5 shrink-0 ${meta.tone}`} />
             <span className="min-w-0 flex-1">
               <span className="block text-[15px] font-semibold leading-tight text-n-ink">{meta.name}</span>
               <span className={`block text-[13px] leading-snug ${on ? "text-n-ink-2" : "text-n-ink-3"}`}>
@@ -273,11 +238,19 @@ export function LayerOptions({ manifest, choice, onChoice, estimate = null }: { 
   return null;
 }
 
-function Ramp({ palette, labels }: { palette: Palette; labels: [string, string, string] }) {
+function Ramp({ palette, labels, inline = false }: { palette: Palette; labels: [string, string, string]; inline?: boolean }) {
+  if (inline)
+    return (
+      <div className="flex items-center gap-2">
+        <span className="nx-data shrink-0 text-[11.5px] text-n-ink-3">{labels[0]}</span>
+        <div className="h-2 min-w-0 flex-1 rounded-full" style={{ background: gradientCss(displayPalette(palette)) }} aria-hidden />
+        <span className="nx-data shrink-0 text-[11.5px] text-n-ink-3">{labels[2]}</span>
+      </div>
+    );
   return (
     <div>
-      <div className="h-3 w-full rounded-sm" style={{ background: gradientCss(displayPalette(palette)) }} aria-hidden />
-      <div className="nx-data mt-1 flex justify-between text-[12px] text-n-ink-3">
+      <div className="h-2 w-full rounded-full" style={{ background: gradientCss(displayPalette(palette)) }} aria-hidden />
+      <div className="nx-data mt-0.5 flex justify-between text-[11.5px] text-n-ink-3">
         <span>{labels[0]}</span>
         <span>{labels[1]}</span>
         <span>{labels[2]}</span>
@@ -306,17 +279,107 @@ export function Swatch({ color, texture }: { color: string; texture: "stipple" |
   return <span aria-hidden className="h-3 w-5 shrink-0 rounded-sm" style={{ background: bg, outline: "1px solid rgba(160,180,195,0.35)" }} />;
 }
 
-/** The legend of the layer on the map: units, scale, the no-data mark. */
-export function Legend({ choice, resolved, check = null }: { choice: LayerChoice; resolved: Resolved; check?: DerivedValidationEntry | null }) {
+/** The legend's short caption: what the colours are, with units, in one line. */
+const CAPTION: Record<CharmVariable, string> = {
+  particulate_domoic: "Chance domoic acid exceeds 500 ng/L",
+  pseudo_nitzschia: "Chance Pseudo-nitzschia exceeds 10,000 cells/L",
+  cellular_domoic: "Chance cellular domoic acid exceeds 10 pg/cell",
+};
+
+/**
+ * The ⓘ beside a legend: the longer explanation (every caveat, the no-data marks, the bay list) stays
+ * in the page, mounted and hidden, and opens above the dock (or in place on a phone). One tap, Escape
+ * or a tap elsewhere closes it.
+ */
+function MoreAbout({ label, children, inline }: { label: string; children: React.ReactNode; inline: boolean }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const box = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const k = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      setOpen(false);
+    };
+    const c = (e: PointerEvent) => !inline && box.current && !box.current.contains(e.target as Node) && setOpen(false);
+    window.addEventListener("keydown", k, true);
+    window.addEventListener("pointerdown", c);
+    return () => {
+      window.removeEventListener("keydown", k, true);
+      window.removeEventListener("pointerdown", c);
+    };
+  }, [open, inline]);
+  return (
+    // static: the explanation opens above the whole dock, aligned with the legend (its static position)
+    <div ref={box} className="static">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((o) => !o)}
+        className={`nx-focus nx-tint -my-2 -mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-full hover:text-n-ink ${open ? "text-n-accent" : "text-n-ink-3"}`}
+        data-testid="legend-more"
+      >
+        <Icon name="info" className="h-[18px] w-[18px]" />
+        <span className="sr-only">{open ? "Hide" : "More about"} {label}</span>
+      </button>
+      <div
+        id={id}
+        hidden={!open}
+        className={
+          inline
+            ? "mt-2 flex flex-col gap-2 border-t border-n-line pt-2 text-[13px] leading-snug text-n-ink-2"
+            : "nx-deck absolute bottom-[calc(100%+12px)] z-30 flex max-h-[min(60vh,520px)] w-[min(420px,calc(100vw-32px))] flex-col gap-2.5 overflow-y-auto p-4 text-[13px] leading-snug text-n-ink-2 [scrollbar-width:thin]"
+        }
+        data-testid="legend-detail"
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The map's one legend (v7 dock): what the colours mean with units, the ramp, and one line of what it
+ * is not; everything longer (the full caveats, the no-data marks, the bays) behind the ⓘ, in the page.
+ * `inline`: on a phone the explanation opens in place in the sheet; `noRamp`: the sheet's peek already
+ * draws the ramp.
+ */
+export function Legend({ choice, resolved, check = null, inline = false, noRamp = false }: { choice: LayerChoice; resolved: Resolved; check?: DerivedValidationEntry | null; inline?: boolean; noRamp?: boolean }) {
+  const frame = (testid: string, aria: string, caption: React.ReactNode, ramp: React.ReactNode, visible: React.ReactNode, detail: React.ReactNode, label: string) => (
+    <figure className="flex min-w-0 flex-col gap-1.5" data-testid={testid} aria-label={aria}>
+      <div className="flex items-start justify-between gap-2">
+        <figcaption className="min-w-0 text-[13px] font-semibold leading-snug text-n-ink">{caption}</figcaption>
+        {detail && (
+          <MoreAbout label={label} inline={inline}>
+            {detail}
+          </MoreAbout>
+        )}
+      </div>
+      {!noRamp && ramp}
+      {visible}
+    </figure>
+  );
+  const short = (t: React.ReactNode) => <p className="text-[12.5px] leading-snug text-n-ink-2">{t}</p>;
+
   if (choice.kind === "forecast" && resolved.forecastLayer?.palette)
-    return (
-      <figure className="flex flex-col gap-2" data-testid="legend-forecast" aria-label={`Legend: ${VARIABLE_WORDS[choice.variable].what}`}>
-        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">{VARIABLE_WORDS[choice.variable].what}</figcaption>
-        <Ramp palette={resolved.forecastLayer.palette} labels={["0%", "50%", "100%"]} />
-        <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="forecast-caveat">
-          A probability for each 3 km model cell, not a toxin measurement and not a closure decision. A low probability does not mean an area is safe. Classes are display steps, not risk levels.
-        </p>
-        <span className="flex items-start gap-2 text-[13px] leading-snug text-n-ink-2" data-testid="legend-outside">
+    return frame(
+      "legend-forecast",
+      `Legend: ${VARIABLE_WORDS[choice.variable].what}`,
+      CAPTION[choice.variable],
+      <Ramp palette={resolved.forecastLayer.palette} labels={["0%", "50%", "100%"]} />,
+      <>
+        {short("A model probability: not toxin, not a closure; low is not safe.")}
+        <span className="flex items-start gap-2 text-[12.5px] leading-snug text-n-ink-2">
+          <span aria-hidden className="mt-[2px] h-3 w-5 shrink-0 rounded-sm" style={{ background: `rgb(${OUTSIDE_TINT_RGB.join(",")})`, opacity: 0.8, outline: "1px solid rgba(160,180,195,0.35)" }} />
+          <span>Shaded near shore and in bays: no NOAA value, not zero</span>
+        </span>
+      </>,
+      <>
+        <p className="font-semibold text-n-ink">{VARIABLE_WORDS[choice.variable].what}</p>
+        <p data-testid="forecast-caveat">A probability for each 3 km model cell, not a toxin measurement and not a closure decision. A low probability does not mean an area is safe. Classes are display steps, not risk levels.</p>
+        <span className="flex items-start gap-2" data-testid="legend-outside">
           {/* the tint as drawn: OUTSIDE_TINT at the forecast's opacity over the sea */}
           <span aria-hidden className="mt-[3px] h-3 w-5 shrink-0 rounded-sm" style={{ background: `rgb(${OUTSIDE_TINT_RGB.join(",")})`, opacity: 0.8, outline: "1px solid rgba(160,180,195,0.35)" }} />
           <span>
@@ -329,96 +392,133 @@ export function Legend({ choice, resolved, check = null }: { choice: LayerChoice
           </span>
         </span>
         <NoData>Outside the model&rsquo;s area: no value, never zero</NoData>
-      </figure>
+      </>,
+      "the forecast's colours",
     );
   if (choice.kind === "sst" && resolved.sstLayer) {
     const [lo, hi] = SST_PALETTE.domain;
     const mid = (lo + hi) / 2;
-    return (
-      <figure className="flex flex-col gap-2" data-testid="legend-sst" aria-label="Legend: sea-surface temperature, degrees Fahrenheit">
-        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Sea-surface temperature, °F</figcaption>
-        <Ramp palette={SST_PALETTE} labels={[`≤${Math.round(cToF(lo))}°F`, `${Math.round(cToF(mid))}°F`, `≥${Math.round(cToF(hi))}°F`]} />
-        <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="sst-caveat">
-          {sstIsAnalysis(resolved.sstLayer)
+    const analysis = sstIsAnalysis(resolved.sstLayer);
+    return frame(
+      "legend-sst",
+      "Legend: sea-surface temperature, degrees Fahrenheit",
+      "Sea-surface temperature, °F",
+      <Ramp palette={SST_PALETTE} labels={[`≤${Math.round(cToF(lo))}°F`, `${Math.round(cToF(mid))}°F`, `≥${Math.round(cToF(hi))}°F`]} />,
+      short(analysis ? "An analysis (blended, gaps filled): the temperature just below the skin, not at depth." : "Observed by satellite: the skin of the sea, not at depth."),
+      <>
+        <p data-testid="sst-caveat">
+          {analysis
             ? "An analysis: several satellite sensors and in-situ observations blended, with gaps filled. The foundation temperature (just below the skin), not the temperature at depth. "
             : "Observed by satellite: the skin of the sea, not the temperature at depth. "}
           A sharp change in colour may mark a front where satellites saw clear sky. Tap a point for °C and °F.
         </p>
-        <NoData>{sstIsAnalysis(resolved.sstLayer) ? "No value (land, or outside the coastal scope): never cold water" : "No value (cloud, land or no observation): never cold water"}</NoData>
-      </figure>
+        <NoData>{analysis ? "No value (land, or outside the coastal scope): never cold water" : "No value (cloud, land or no observation): never cold water"}</NoData>
+      </>,
+      "sea temperature",
     );
   }
   if (choice.kind === "outlook" && resolved.outlookLayer)
-    return (
-      <figure className="flex flex-col gap-2" data-testid="legend-outlook" aria-label="Legend: chlorophyll outlook, milligrams per cubic metre, log scale">
-        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Chlorophyll-a expected on average over {windowLabel(resolved.outlookLayer.valid_from, resolved.outlookLayer.valid_to)}, mg/m³ (log scale)</figcaption>
-        <Ramp palette={resolved.outlook?.palette ?? CHL_PALETTE} labels={["0.05", "1.6", "50"]} />
-        <span className="flex items-center gap-2 text-[13px] text-n-ink-2">
+    return frame(
+      "legend-outlook",
+      "Legend: chlorophyll outlook, milligrams per cubic metre, log scale",
+      <>Chlorophyll-a, mean {windowLabel(resolved.outlookLayer.valid_from, resolved.outlookLayer.valid_to)}, mg/m³</>,
+      <Ramp palette={resolved.outlook?.palette ?? CHL_PALETTE} labels={["0.05", "1.6", "50"]} />,
+      <span className="flex items-start gap-2 text-[12.5px] leading-snug text-n-ink-2">
+        <span className="mt-[2px] flex">
           <Swatch color="#5bb267" texture="hatch" />
-          <span>
-            <span className="font-semibold text-n-ink">Outlook, not observed.</span> Fine diagonal lines mark every outlook pixel.
-          </span>
         </span>
-        <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="outlook-coverage">Algae of every kind, not toxin, and not a day-by-day forecast. A 4 km grid of the open coast, about 11–19 km offshore. No outlook in bays (turbid water; MODIS chlorophyll unreliable): never drawn or read there. Its skill against plain baselines is below.</p>
+        <span>
+          <span className="font-semibold text-n-ink">Outlook, not observed.</span> Algae, not toxin; not a daily forecast.
+        </span>
+      </span>,
+      <>
+        <p>Chlorophyll-a expected on average over {windowLabel(resolved.outlookLayer.valid_from, resolved.outlookLayer.valid_to)}, mg/m³ (log scale). Fine diagonal lines mark every outlook pixel.</p>
+        <p data-testid="outlook-coverage">Algae of every kind, not toxin, and not a day-by-day forecast. A 4 km grid of the open coast, about 11–19 km offshore. No outlook in bays (turbid water; MODIS chlorophyll unreliable): never drawn or read there. Its skill against plain baselines is in About this layer.</p>
         <NoData>No outlook (outside the area it covers): never zero</NoData>
-      </figure>
+      </>,
+      "the outlook",
     );
   if (choice.kind === "satellite" && choice.view === "age")
-    return (
-      <figure className="flex flex-col gap-2" data-testid="legend-age" aria-label="Legend: days since each pixel was observed">
-        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Days since each pixel was last seen clear</figcaption>
-        <div className="flex">
-          {AGE_COLOURS.map((c, i) => (
-            <span key={c} className="flex flex-1 flex-col items-center gap-1">
-              <span className="h-3 w-full" style={{ background: c }} aria-hidden />
-              <span className="nx-data text-[11.5px] text-n-ink-3">{i}</span>
-            </span>
-          ))}
-        </div>
-        <p className="text-[12.5px] leading-snug text-n-ink-3">Each colour is an observation date, not a value. Older than 7 days is left out.</p>
-      </figure>
+    return frame(
+      "legend-age",
+      "Legend: days since each pixel was observed",
+      "Days since each pixel was last seen clear",
+      <div className="flex">
+        {AGE_COLOURS.map((c, i) => (
+          <span key={c} className="flex flex-1 flex-col items-center gap-0.5">
+            <span className="h-2 w-full" style={{ background: c }} aria-hidden />
+            <span className="nx-data text-[11px] text-n-ink-3">{i}</span>
+          </span>
+        ))}
+      </div>,
+      short("Each colour is an observation date, not a value. Older than 7 days is left out."),
+      null,
+      "pixel ages",
     );
   if (choice.kind === "satellite" && choice.view === "sensor")
-    return (
-      <figure className="flex flex-col gap-2" data-testid="legend-sensor" aria-label="Legend: which sensor each pixel comes from">
-        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Which sensor each pixel comes from</figcaption>
-        <div className="flex gap-4 text-[13px]">
-          <span className="flex items-center gap-2"><span className="h-3 w-5" style={{ background: SENSOR_COLOURS[0] }} aria-hidden />Sentinel-3 OLCI 300 m</span>
-          <span className="flex items-center gap-2"><span className="h-3 w-5" style={{ background: SENSOR_COLOURS[1] }} aria-hidden />VIIRS 750 m</span>
-        </div>
-      </figure>
+    return frame(
+      "legend-sensor",
+      "Legend: which sensor each pixel comes from",
+      "Which sensor each pixel comes from",
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px]">
+        <span className="flex items-center gap-2"><span className="h-3 w-5" style={{ background: SENSOR_COLOURS[0] }} aria-hidden />Sentinel-3 OLCI 300 m</span>
+        <span className="flex items-center gap-2"><span className="h-3 w-5" style={{ background: SENSOR_COLOURS[1] }} aria-hidden />VIIRS 750 m</span>
+      </div>,
+      null,
+      null,
+      "sensors",
     );
-  if (choice.kind === "satellite" && resolved.satLayer?.palette)
-    return (
-      <figure className="flex flex-col gap-2" data-testid="legend-satellite" aria-label="Legend: chlorophyll-a, milligrams per cubic metre, log scale">
-        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Chlorophyll-a, mg/m³ (log scale)</figcaption>
-        <Ramp palette={resolved.satLayer.palette} labels={["0.05", "1.6", "50"]} />
-        <p className="text-[12.5px] leading-snug text-n-ink-3">Algae of every kind, not toxin. Cloud and coastal glare leave gaps; a gap is not clear water.</p>
-        <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="legend-turbid">
-          {BAY_TURBID}: San Francisco, San Pablo, Suisun, Tomales, Humboldt, Morro and San Diego Bays and Elkhorn Slough.
-        </p>
+  if (choice.kind === "satellite" && resolved.satLayer?.palette) {
+    const est = resolved.estimate ? resolved.estimateLayer : null;
+    return frame(
+      "legend-satellite",
+      "Legend: chlorophyll-a, milligrams per cubic metre, log scale",
+      "Chlorophyll-a, mg/m³ (log scale)",
+      <Ramp palette={resolved.satLayer.palette} labels={["0.05", "1.6", "50"]} />,
+      <>
+        {short("Algae of every kind, not toxin. Cloud leaves gaps; a gap is not clear water.")}
+        {resolved.estimate && (
+          // the swatch words stay in view; the pipeline's class words are in the page, behind the ⓘ
+          <span className="flex flex-wrap gap-x-3 gap-y-1 text-[12.5px] leading-snug text-n-ink-2">
+            <span className="flex items-center gap-1.5" data-testid="legend-estimate">
+              <Swatch color="#8cc3a4" texture="stipple" />
+              <span className="font-semibold text-n-ink">Estimated, not observed.</span>
+              <span hidden>{est?.class_grid ? `${classWords(est, 1)}. In bays: ${classWords(est, 3)}.` : "Gaps estimated from recent and nearby views; near shore it may be extrapolated."} Lightened and stippled; observed pixels are drawn over it, unchanged.</span>
+            </span>
+            {est?.class_grid && (
+              <span className="flex items-center gap-1.5" data-testid="legend-strip">
+                <Swatch color="#b4d4c2" texture="strip" />
+                <span className="font-semibold text-n-ink">Extrapolated toward shore, never observed.</span>
+                <span hidden>{classWords(est, 2)}. Paler, densely stippled.</span>
+              </span>
+            )}
+          </span>
+        )}
+      </>,
+      <>
+        <p data-testid="legend-turbid">{BAY_TURBID}: San Francisco, San Pablo, Suisun, Tomales, Humboldt, Morro and San Diego Bays and Elkhorn Slough.</p>
         {resolved.estimate &&
-          (resolved.estimateLayer?.class_grid ? (
+          (est?.class_grid ? (
             <>
-              <span className="flex items-start gap-2 text-[13px] leading-snug text-n-ink-2" data-testid="legend-estimate">
+              <span className="flex items-start gap-2">
                 <span className="mt-[3px] flex">
                   <Swatch color="#8cc3a4" texture="stipple" />
                 </span>
                 <span>
-                  <span className="font-semibold text-n-ink">Estimated, not observed.</span> {classWords(resolved.estimateLayer, 1)}. In bays: {classWords(resolved.estimateLayer, 3)}. Lightened and stippled; observed pixels are drawn over it, unchanged.
+                  <span className="font-semibold text-n-ink">Estimated, not observed.</span> {classWords(est, 1)}. In bays: {classWords(est, 3)}. Lightened and stippled; observed pixels are drawn over it, unchanged.
                 </span>
               </span>
-              <span className="flex items-start gap-2 text-[13px] leading-snug text-n-ink-2" data-testid="legend-strip">
+              <span className="flex items-start gap-2">
                 <span className="mt-[3px] flex">
                   <Swatch color="#b4d4c2" texture="strip" />
                 </span>
                 <span>
-                  <span className="font-semibold text-n-ink">Extrapolated toward shore, never observed.</span> {classWords(resolved.estimateLayer, 2)}. Paler, densely stippled.
+                  <span className="font-semibold text-n-ink">Extrapolated toward shore, never observed.</span> {classWords(est, 2)}. Paler, densely stippled.
                 </span>
               </span>
             </>
           ) : (
-            <span className="flex items-start gap-2 text-[13px] leading-snug text-n-ink-2" data-testid="legend-estimate">
+            <span className="flex items-start gap-2">
               <span className="mt-[3px] flex">
                 <Swatch color="#8cc3a4" texture="stipple" />
               </span>
@@ -428,55 +528,103 @@ export function Legend({ choice, resolved, check = null }: { choice: LayerChoice
             </span>
           ))}
         <NoData />
-      </figure>
+      </>,
+      "chlorophyll",
     );
+  }
   if (choice.kind === "currents" && choice.chl && resolved.satLayer?.palette)
     return (
-      <div className="flex flex-col gap-4" data-testid="legend-compare">
-        <Legend choice={{ kind: "satellite", product: "olci300", day: null }} resolved={resolved} />
-        <Legend choice={{ ...choice, chl: false }} resolved={resolved} />
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2" data-testid="legend-compare">
+        <Legend choice={{ kind: "satellite", product: "olci300", day: null }} resolved={resolved} inline={inline} noRamp={noRamp} />
+        <Legend choice={{ ...choice, chl: false }} resolved={resolved} inline={inline} noRamp={noRamp} />
       </div>
     );
   if (choice.kind === "currents")
-    return (
-      <figure className="flex flex-col gap-2" data-testid="legend-currents" aria-label="Legend: current speed classes, metres per second">
-        <figcaption className="text-[13.5px] leading-snug text-n-ink-2">Surface current speed, m/s (arrow length)</figcaption>
-        <div className="flex items-end gap-3">
-          {SPEED_CLASSES.map((v, i) => (
-            <span key={v} className="flex flex-col items-center gap-1">
-              <svg width="30" height="14" aria-hidden>
-                <line x1={15 - ARROW_LENGTHS[i] / 2} y1={7} x2={15 + ARROW_LENGTHS[i] / 2} y2={7} stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" className="text-n-ink" />
-              </svg>
-              <span className="nx-data text-[11.5px] text-n-ink-3">{i === SPEED_CLASSES.length - 1 ? `≥${v}` : v}</span>
-            </span>
-          ))}
-        </div>
-        <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="currents-note">
-          One arrow per observed 2 km radar cell. No arrow means no observation, not calm water. Observed currents, not a forecast. 1 m/s ≈ {KNOTS_PER_MS.toFixed(1)} knots.{" "}
-          {choice.mean ? "The 24-hour mean smooths out most daily and tidal back-and-forth." : "Each hour is a separate snapshot; nothing is shown between hours."}
-        </p>
-      </figure>
+    return frame(
+      "legend-currents",
+      "Legend: current speed classes, metres per second",
+      "Surface current speed, m/s",
+      <CurrentArrows />,
+      short("Observed, not a forecast. No arrow means no observation, not calm."),
+      <p data-testid="currents-note">
+        One arrow per observed 2 km radar cell. No arrow means no observation, not calm water. Observed currents, not a forecast. 1 m/s ≈ {KNOTS_PER_MS.toFixed(1)} knots.{" "}
+        {choice.mean ? "The 24-hour mean smooths out most daily and tidal back-and-forth." : "Each hour is a separate snapshot; nothing is shown between hours."}
+      </p>,
+      "currents",
     );
   if (choice.kind === "none")
-    return <p className="text-[13.5px] leading-snug text-n-ink-2">NOAA ETOPO 2022 and Coastal Relief Model seafloor. Harbours, shore stations and official limits stay on every layer.</p>;
+    return (
+      <figure className="flex min-w-0 flex-col gap-1" data-testid="legend-none" aria-label="Legend: seafloor and coast">
+        <figcaption className="text-[13px] font-semibold leading-snug text-n-ink">Seafloor and coast</figcaption>
+        <p className="text-[12.5px] leading-snug text-n-ink-2">NOAA ETOPO 2022 and Coastal Relief Model seafloor. Harbours, shore stations and official limits stay on every layer.</p>
+      </figure>
+    );
+  return null;
+}
+
+function CurrentArrows() {
+  return (
+    <div className="flex items-end gap-3">
+      {SPEED_CLASSES.map((v, i) => (
+        <span key={v} className="flex flex-col items-center gap-0.5">
+          <svg width="30" height="12" aria-hidden>
+            <line x1={15 - ARROW_LENGTHS[i] / 2} y1={6} x2={15 + ARROW_LENGTHS[i] / 2} y2={6} stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" className="text-n-ink" />
+          </svg>
+          <span className="nx-data text-[11px] text-n-ink-3">{i === SPEED_CLASSES.length - 1 ? `≥${v}` : v}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The ramp alone, in one line (the phone sheet's peek: the colours and their range under the layer
+ * button). Decorative: the legend itself, with its words, follows in the sheet.
+ */
+export function LegendLine({ choice, resolved }: { choice: LayerChoice; resolved: Resolved }) {
+  const pal = choice.kind === "forecast" ? resolved.forecastLayer?.palette : choice.kind === "satellite" && (choice.view ?? "chl") === "chl" ? resolved.satLayer?.palette : choice.kind === "outlook" ? (resolved.outlook?.palette ?? CHL_PALETTE) : choice.kind === "sst" ? SST_PALETTE : choice.kind === "currents" && choice.chl ? resolved.satLayer?.palette : null;
+  const labels: [string, string, string] | null =
+    choice.kind === "forecast" ? ["0%", "50%", "100%"] : choice.kind === "sst" ? [`≤${Math.round(cToF(SST_PALETTE.domain[0]))}°F`, "", `≥${Math.round(cToF(SST_PALETTE.domain[1]))}°F`] : pal ? ["0.05", "1.6", "50 mg/m³"] : null;
+  if (pal && labels) return <div aria-hidden><Ramp palette={pal} labels={labels} inline /></div>;
+  if (choice.kind === "currents")
+    return (
+      <div aria-hidden className="flex items-center gap-2 text-[11.5px] text-n-ink-3">
+        <CurrentArrows />
+        <span>m/s</span>
+      </div>
+    );
   return null;
 }
 
 /** Where the field comes from and when it is valid: one line per source, its own date; how old it is
  *  against the source's published freshness policy (stale, or historical: not current conditions);
- *  a failed update; a day with nothing observed; regions the radar did not see. */
-export function Provenance({ manifest, choice, resolved, now, regions = [] }: { manifest: Manifest; choice: LayerChoice; resolved: Resolved; now: Date | null; regions?: { id: string; label: string }[] }) {
-  if (choice.kind === "outlook") return resolved.outlookLayer ? <OutlookCard layer={resolved.outlookLayer} now={now} /> : null;
-  if (choice.kind === "sst") return resolved.sstLayer ? <SstCard layer={resolved.sstLayer} now={now} /> : null;
+ *  a failed update; a day with nothing observed; regions the radar did not see.
+ *  `part` (v7): "dock" is what stays in view under the legend (the layer's own date line and every
+ *  problem: stale, out of date, failed, clouded, unseen regions); "about" is the rest (further stamps,
+ *  coverage, the inferred issue date, the outlook's and estimate's method and skill), in About this layer. */
+export function Provenance({ manifest, choice, resolved, now, regions = [], part = "all" }: { manifest: Manifest; choice: LayerChoice; resolved: Resolved; now: Date | null; regions?: { id: string; label: string }[]; part?: "all" | "dock" | "about" }) {
+  if (choice.kind === "outlook") {
+    const o = resolved.outlookLayer;
+    if (!o) return null;
+    if (part === "dock") return <p className="text-[12.5px] leading-snug text-n-ink-3">Issued {dayLabel(o.issued)}{now ? ` (${relTime(o.issued, now)})` : ""} · one mean over {windowLabel(o.valid_from, o.valid_to)}</p>;
+    return <OutlookCard layer={o} now={now} />;
+  }
+  if (choice.kind === "sst") {
+    const t = resolved.sstLayer;
+    if (!t) return null;
+    const last = t.observed_dates[t.observed_dates.length - 1];
+    if (part === "dock") return last ? <p className="text-[12.5px] leading-snug text-n-ink-3">{sstIsAnalysis(t) ? "Analysis of" : "Observed"} {dayLabel(last)}{now ? ` (${relTime(last, now)})` : ""} · {t.source}</p> : null;
+    return <SstCard layer={t} now={now} />;
+  }
   return (
     <>
-      <ObservedProvenance manifest={manifest} choice={choice} resolved={resolved} now={now} regions={regions} />
-      {resolved.estimate && resolved.estimateLayer && <EstimateCard layer={resolved.estimateLayer} />}
+      <ObservedProvenance manifest={manifest} choice={choice} resolved={resolved} now={now} regions={regions} part={part} />
+      {part !== "dock" && resolved.estimate && resolved.estimateLayer && <EstimateCard layer={resolved.estimateLayer} />}
     </>
   );
 }
 
-function ObservedProvenance({ manifest, choice, resolved, now, regions = [] }: { manifest: Manifest; choice: LayerChoice; resolved: Resolved; now: Date | null; regions?: { id: string; label: string }[] }) {
+function ObservedProvenance({ manifest, choice, resolved, now, regions = [], part = "all" }: { manifest: Manifest; choice: LayerChoice; resolved: Resolved; now: Date | null; regions?: { id: string; label: string }[]; part?: "all" | "dock" | "about" }) {
   if (choice.kind === "outlook" || choice.kind === "sst") return null;
   const stamps = stampLines({
     group: choice.kind === "none" ? null : choice.kind,
@@ -502,33 +650,41 @@ function ObservedProvenance({ manifest, choice, resolved, now, regions = [] }: {
   const sat = choice.kind === "satellite" ? resolved.satLayer : null;
   // a daily overpass with nothing clear: said, never drawn as an empty sea
   const clouded = !!sat && !sat.grid && !sat.tiles && !!sat.time.observed_date;
-  if (!stamps.length && !clouded) return null;
+  // the dock keeps the layer's own line (both sources' lines when two are compared) and every gap;
+  // About this layer keeps any further line
+  // (the forecast's own line repeats the timebar's run and day, so it is in About this layer)
+  const docked = (x: (typeof stamps)[number], i: number) => x.kind === "gap" || (i === 0 && choice.kind !== "forecast") || (choice.kind === "currents" && !!choice.chl);
+  const shown = stamps.filter((x, i) => part === "all" || (part === "dock" ? docked(x, i) : !docked(x, i)));
+  const dock = part !== "about";
+  const about = part !== "dock";
   const status = choice.kind === "forecast" ? sourceStatus(manifest, "charm") : choice.kind === "satellite" ? sourceStatus(manifest, "satellite_chl") : choice.kind === "currents" ? sourceStatus(manifest, "hf_radar") : null;
   const layer = choice.kind === "forecast" ? resolved.forecastLayer : choice.kind === "satellite" ? resolved.satLayer : choice.kind === "currents" ? resolved.curLayer : null;
   // forecast freshness follows the run's issue date; observations follow the newest observation shown
   const fresh = status && now ? (choice.kind === "forecast" ? classifySource(status, now) : layer ? classifyTime(layer.freshness, layer.composite ? { ...layer.time, observed_date: layer.composite.newest_observed_date } : layer.time, now) : null) : null;
+  const problem = dock && (clouded || fresh?.state === "stale" || fresh?.state === "historical" || (!!status && status.outcome !== "updated"));
+  if (!shown.length && !problem && !about) return null;
   return (
     <div className="flex flex-col gap-1" data-testid="provenance">
-      {stamps.map((s, i) => (
+      {shown.map((s, i) => (
         <p key={`${s.testid}-${i}`} data-testid={s.testid} className={`flex items-start gap-2 text-[13px] leading-snug ${s.kind === "gap" ? "text-n-stale" : "text-n-ink-2"}`}>
           <span className={`mt-[5px] h-2 w-2 shrink-0 rounded-full ${s.kind === "model" ? "bg-n-model" : s.kind === "gap" ? "bg-n-stale" : "bg-n-measured"}`} aria-hidden />
           {s.text}
         </p>
       ))}
-      {sat && sat.coverage && !clouded && <CoverageLine layer={sat} regions={regions} />}
-      {choice.kind === "currents" && choice.chl && resolved.satLayer?.coverage && <CoverageLine layer={resolved.satLayer} regions={regions} />}
-      {clouded && (
+      {about && sat && sat.coverage && !clouded && <CoverageLine layer={sat} regions={regions} />}
+      {about && choice.kind === "currents" && choice.chl && resolved.satLayer?.coverage && <CoverageLine layer={resolved.satLayer} regions={regions} />}
+      {dock && clouded && (
         <p className="flex items-start gap-2 text-[13px] font-semibold leading-snug text-n-stale" data-testid="sat-clouded">
           <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0" />
           No clear observation on {dayLabel(sat!.time.observed_date!)}: clouds, fog or no overpass. Nothing is shown for that day; it is not clear water.
         </p>
       )}
-      {choice.kind === "forecast" && charmRun(manifest)?.issued_date_derived && (
+      {about && choice.kind === "forecast" && charmRun(manifest)?.issued_date_derived && (
         <p className="text-[12.5px] leading-snug text-n-ink-3" data-testid="issued-inferred">
           Issue date inferred: NOAA does not publish it; Neritic infers it from the forecast&rsquo;s own valid dates.
         </p>
       )}
-      {fresh?.state === "stale" && (
+      {dock && fresh?.state === "stale" && (
         <p className="flex items-start gap-2 text-[13px] leading-snug text-n-stale" data-testid="stale-note">
           <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0" />
           {choice.kind === "forecast"
@@ -539,14 +695,14 @@ function ObservedProvenance({ manifest, choice, resolved, now, regions = [] }: {
             : `Older than usual: newest observation ${fresh.ageDays} days ago.`}
         </p>
       )}
-      {fresh?.state === "historical" && (
+      {dock && fresh?.state === "historical" && (
         <p className="flex items-start gap-2 text-[13px] font-semibold leading-snug text-n-down" data-testid="historical-note">
           <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0" />
           {choice.kind === "forecast" ? "This forecast is out of date" : "These observations are out of date"} ({fresh.ageDays} days). Shown for reference only; it does not describe current conditions.
         </p>
       )}
       {/* a failed forecast update is already said in the stale line above, with its time */}
-      {status && status.outcome !== "updated" && !(choice.kind === "forecast" && status.outcome === "failed" && fresh?.state === "stale") && (
+      {dock && status && status.outcome !== "updated" && !(choice.kind === "forecast" && status.outcome === "failed" && fresh?.state === "stale") && (
         <p className="flex items-start gap-2 text-[13px] text-n-stale" data-testid="provenance-status">
           <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0" />
           The last update {status.outcome === "failed" ? "failed" : "did not complete"}
@@ -750,4 +906,19 @@ function CoverageLine({ layer, regions }: { layer: LayerArtifact; regions: { id:
       </details>
     </div>
   );
+}
+
+/** The active layer in words, for the dock's layer button: its name, what it shows, and its kind (a safety distinction: model, observation, outlook, analysis). */
+export function layerWords(c: LayerChoice): { title: string; detail: string | null; kind: string; tone: string; icon: string } {
+  const f = FAMILY[familyOf(c)];
+  const title = c.kind === "forecast" ? "NOAA bloom forecast" : c.kind === "outlook" ? "Chlorophyll outlook" : f.name;
+  const detail =
+    c.kind === "forecast"
+      ? VARIABLE_WORDS[c.variable].name
+      : c.kind === "satellite"
+        ? `${SAT_WORDS[c.product]?.name ?? ""}${c.day ? ` · ${dayLabel(c.day)}` : ""}`
+        : c.kind === "currents"
+          ? [c.mean ? "24 h mean" : null, c.chl ? "with chlorophyll" : null].filter(Boolean).join(", ") || null
+          : null;
+  return { title, detail: c.kind === "forecast" ? VARIABLE_WORDS[c.variable].short : detail, kind: f.kind, tone: f.tone, icon: f.icon };
 }

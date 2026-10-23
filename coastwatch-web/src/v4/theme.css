@@ -269,12 +269,13 @@
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1, "zero" 1;
 }
+/* v7: labels are sentence case; small tracked capitals no longer carry the hierarchy */
 .nx-eyebrow {
-  font-size: 12px;
-  line-height: 1.2;
+  font-size: 13px;
+  line-height: 1.25;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--nx-ink-3);
 }
 /* ---- interaction: one feel for every control ----
@@ -467,12 +468,13 @@
 }
 
 /* ---- launch screen (src/v4/shell/Splash.tsx): a device's first visit only, on the instrument ground ----
-   Timeline (ms from navigation start): the symbol's isobaths draw outward from the canyon head
-   (80-1080) over a faint field of the bay drawing itself behind them (120-1850); the tile fills in
-   (420-1060); the symbol shrinks into the lockup (1080-1680) while the field drifts more slowly
-   (parallax); the wordmark wipes in (1320-1780). SplashGate holds it to at least 1800 and lets it
-   go when the map is ready; the exit (450) dives toward the map: the lockup and field scale up as
-   the screen fades. Base styles are the final frame, so reduced motion simply drops the animations. */
+   v7 timeline (ms from navigation start), compressed so it never holds ready content: the symbol's
+   isobaths draw outward from the canyon head (40-620) over a faint field of the bay (60-900); the
+   tile fills in (240-620); the symbol settles into the lockup (600-980) and the wordmark wipes in
+   (760-1060). SplashGate lets it go once the mark has resolved (1050) and the map is ready, and the
+   CSS cap removes it by 2.2 s even if no script runs (a ready map never waits past ~1 s). It sits under the header (z 44 < 45), so the
+   workspaces, search and notices are usable throughout; the exit (380) dives toward the map.
+   Base styles are the final frame, so reduced motion simply drops the animations. */
 .nx-splash { display: none; }
 html.nx-splash-on .nx-splash {
   /* m: the final symbol's size; z: how much larger it starts (the field is drawn at that scale and
@@ -482,18 +484,18 @@ html.nx-splash-on .nx-splash {
   --nx-dx: calc(var(--nx-m) * (0.25 + var(--nx-wr, 2)) / -2);
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 44;
   display: block;
   overflow: hidden;
   background: #061016;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  /* the hard cap even if no script runs: gone by 3 s */
-  animation: nx-splash-gone var(--nx-t-splash-exit) var(--nx-ease-in) 2550ms both;
+  /* the hard cap even if no script runs: gone by 2.2 s (only a slow map is ever covered that long) */
+  animation: nx-splash-gone var(--nx-t-splash-exit) var(--nx-ease-in) 1820ms both;
 }
 @media (min-width: 1500px) { html.nx-splash-on .nx-splash { --nx-z: 3.6; } }
 @media (min-width: 2200px) { html.nx-splash-on .nx-splash { --nx-z: 5; } }
-:root { --nx-t-splash-exit: 450ms; }
+:root { --nx-t-splash-exit: 380ms; }
 @keyframes nx-splash-gone {
   to { opacity: 0; visibility: hidden; }
 }
@@ -520,7 +522,7 @@ html.nx-splash-out .nx-splash {
   height: calc(var(--nx-m) * var(--nx-z) * 6.25);
   margin: calc(var(--nx-m) * var(--nx-z) * -3.125) 0 0 calc(var(--nx-m) * var(--nx-z) * -3.125);
   transform: translate(-1.2%, -0.8%) scale(1.06);
-  animation: nx-splash-drift 3200ms linear both;
+  animation: nx-splash-drift 1800ms linear both;
   transition: scale var(--nx-t-splash-exit) var(--nx-ease-in);
   /* the field fades out toward the screen's edges (and hides where the survey grid ends) */
   mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
@@ -534,7 +536,7 @@ html.nx-splash-out .nx-splash {
   stroke-width: 0.3;
   stroke-opacity: 0.3;
   stroke-dasharray: 1 1;
-  animation: nx-splash-draw 1000ms var(--nx-ease-out) calc(120ms + var(--i, 0) * 45ms) both;
+  animation: nx-splash-draw 620ms var(--nx-ease-out) calc(60ms + var(--i, 0) * 28ms) both;
 }
 .nx-splash-iso-index { stroke: #5fd0e6; stroke-width: 0.5; stroke-opacity: 0.6; }
 .nx-splash-iso-coast { stroke: #bfe4ec; stroke-opacity: 0.45; }
@@ -555,7 +557,7 @@ html.nx-splash-out .nx-splash {
   height: calc(var(--nx-m) * var(--nx-z));
   margin: calc(var(--nx-m) * var(--nx-z) / -2) 0 0 calc(var(--nx-m) * var(--nx-z) / -2);
   transform: translateX(var(--nx-dx)) scale(calc(1 / var(--nx-z)));
-  animation: nx-splash-settle 600ms var(--nx-ease-move) 1080ms both;
+  animation: nx-splash-settle 380ms var(--nx-ease-move) 600ms both;
   will-change: transform;
 }
 .nx-splash-hero svg { display: block; overflow: visible; }
@@ -564,12 +566,12 @@ html.nx-splash-out .nx-splash {
 }
 .nx-splash-line {
   stroke-dasharray: 1 1;
-  animation: nx-splash-draw 820ms var(--nx-ease-out) calc(80ms + var(--i, 0) * 90ms) both;
+  animation: nx-splash-draw 500ms var(--nx-ease-out) calc(40ms + var(--i, 0) * 30ms) both;
 }
 .nx-splash-tile {
   transform-box: fill-box;
   transform-origin: center;
-  animation: nx-splash-tile 640ms var(--nx-ease-out) 420ms both;
+  animation: nx-splash-tile 380ms var(--nx-ease-out) 240ms both;
 }
 @keyframes nx-splash-tile {
   from { opacity: 0; transform: scale(0.94); }
@@ -581,7 +583,7 @@ html.nx-splash-out .nx-splash {
   height: var(--nx-m);
   width: calc(var(--nx-m) * (var(--nx-wr, 2) + 2 / 48));
   overflow: visible;
-  animation: nx-splash-word 460ms var(--nx-ease-out) 1320ms both;
+  animation: nx-splash-word 300ms var(--nx-ease-out) 760ms both;
 }
 @keyframes nx-splash-word {
   from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateX(calc(var(--nx-m) * -0.18)); }
@@ -596,7 +598,7 @@ html.nx-splash-out .nx-splash {
   font: 500 13px/1.2 var(--nx-font-ui);
   letter-spacing: 0.02em;
   color: rgba(214, 228, 236, 0.62);
-  animation: nx-fade 500ms var(--nx-ease-out) 700ms both;
+  animation: nx-fade 300ms var(--nx-ease-out) 400ms both;
 }
 .nx-splash-skip-mouse { display: none; }
 @media (hover: hover) and (pointer: fine) {
@@ -693,6 +695,101 @@ html[data-daylight] .env-instrument .nx-select {
    The bar keeps its 44 px controls but loses its padding; the preview disclosure folds into the
    notices pill ("Preview ·", the panel holds the agencies' links and the unverified state). */
 .nx-short-only { display: none; }
+
+/* ---------------------------------------------------------------- v7 composition (docs/coastwatch/v7/design.md) */
+
+/* the header's two quiet surfaces */
+.nx-bar {
+  background: var(--nx-surface);
+  border: 1px solid var(--nx-line);
+  box-shadow: 0 1px 2px rgba(11, 24, 32, 0.05);
+}
+.env-instrument .nx-bar {
+  background: color-mix(in srgb, var(--nx-surface) 94%, transparent);
+  box-shadow: var(--nx-shadow);
+}
+/* numbers in reading text: the interface face with tabular figures (an instrument readout, not code) */
+.nx-num {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+/* a sounding: label, a large value, one quiet source line */
+.nx-sounding-v {
+  font-size: 26px;
+  line-height: 30px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--nx-ink);
+}
+@media (max-width: 639px) {
+  .nx-sounding-v { font-size: 22px; line-height: 26px; }
+}
+.nx-title {
+  font-family: var(--nx-font-display);
+  font-size: 21px;
+  line-height: 28px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.nx-display {
+  font-family: var(--nx-font-display);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  font-size: 40px;
+  line-height: 44px;
+}
+@media (max-width: 639px) {
+  .nx-display { font-size: 31px; line-height: 35px; }
+}
+.nx-note-t { font-size: 12.5px; line-height: 17px; color: var(--nx-ink-3); }
+/* a statement's family tick */
+.nx-tick { width: 3px; border-radius: 2px; align-self: stretch; flex: none; background: var(--nx-gap); }
+.nx-tick[data-family="official"] { background: var(--nx-official); }
+.nx-tick[data-family="model"] { background: var(--nx-model); }
+.nx-tick[data-family="measured"] { background: var(--nx-measured); }
+.nx-tick[data-family="conditions"] { background: var(--nx-conditions); }
+.nx-tick[data-family="unknown"] { background: var(--nx-line-strong); }
+/* a folded note: one row, opens by height and fade */
+.nx-note > summary { list-style: none; }
+.nx-note > summary::-webkit-details-marker { display: none; }
+.nx-note[open] > summary .nx-note-chev { transform: rotate(180deg); }
+.nx-note-chev { transition: transform var(--nx-t-pop) var(--nx-ease-out); }
+.nx-note[open] > .nx-note-body { animation: nx-rise var(--nx-t-pop) var(--nx-ease-out) both; }
+/* the stepper: big targets, the value in the middle */
+.nx-step {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  border: 1px solid var(--nx-line-strong);
+  border-radius: 12px;
+  background: var(--nx-surface);
+  min-height: 48px;
+}
+.nx-step:focus-within { border-color: var(--nx-accent); box-shadow: 0 0 0 3px var(--nx-accent-bg); }
+.nx-step > button { height: 46px; display: grid; place-items: center; color: var(--nx-ink-2); border-radius: 10px; }
+.nx-step > button:hover { color: var(--nx-ink); background: var(--nx-surface-2); }
+.nx-step input {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--nx-ink);
+  outline: none;
+}
+.nx-step input::placeholder { color: var(--nx-ink-3); font-weight: 400; }
+/* the one contour hairline per page: a section edge drawn as an isobath */
+.nx-contour-rule { display: block; width: 100%; height: 10px; color: var(--nx-line-strong); }
+/* words laid on the map (its bottom margin): legible over any raster without a card */
+.nx-on-map {
+  color: #c9d6e2;
+  text-shadow: 0 0 6px rgba(4, 12, 18, 0.95), 0 0 2px rgba(4, 12, 18, 0.95);
+}
+.nx-on-map .text-n-ink, .nx-on-map a { color: #eef4f8; }
+
 @media (max-height: 500px) {
   .nx-topbar {
     padding-top: max(4px, env(safe-area-inset-top, 0px)) !important;

@@ -1,6 +1,7 @@
 import { FISHERY_PRESETS, SOURCES, presetById, presetForSpecies, type FisheryPreset, type FisheryPresetId, type Sourced } from "@/content/fisheryPresets";
 import { DIESEL_REF, dieselSnapshot, priceRef, priceSnapshot, type RefSnapshot } from "@/content/referenceValues";
 import { emptyDraft, type Draft } from "@/lib/tripEconomicsStore";
+import { speciesById } from "@/content/species";
 import type { CostLine } from "@/lib/tripEconomics";
 
 /** Cost lines every worksheet starts with: labels only, amounts blank (the user's own). */
@@ -20,11 +21,16 @@ function presetFields(p: FisheryPreset): [string, Sourced | null][] {
   ];
 }
 
-/** A fresh worksheet for a fishery: its sourced defaults (marked as such), blank catch lines, no price. */
-export function draftForPreset(p: FisheryPreset | null): Draft {
+/**
+ * A fresh worksheet for a fishery: its sourced defaults (marked as such), blank catch lines, no price.
+ * Without a preset, a species with its own CDFW price reference (rock crab) still gets that reference
+ * beside its catch line: shown, never filled in.
+ */
+export function draftForPreset(p: FisheryPreset | null, species: string | null = null): Draft {
   const d = emptyDraft(p?.id ?? null);
   d.inputs.costs = STARTER_COSTS.map((c) => ({ ...c }));
-  d.inputs.catch = (p?.catch ?? [{ key: "", label: "Main catch" }]).map((c) => ({ species: c.label, ref: c.key || null, lb: null, usdPerLb: null }));
+  const own = !p && species && priceRef(species) ? { key: species, label: speciesById(species).label } : null;
+  d.inputs.catch = (p?.catch ?? [own ?? { key: "", label: "Main catch" }]).map((c) => ({ species: c.label, ref: c.key || null, lb: null, usdPerLb: null }));
   d.inputs.crew = { kind: p?.crewKind ?? "afterExpenses", pct: null };
   if (p) applyPreset(d, p);
   return d;
@@ -51,7 +57,7 @@ export function applyPreset(d: Draft, p: FisheryPreset): Draft {
 }
 
 export function initialDraft(species: string, preset: FisheryPresetId | null = null): Draft {
-  return draftForPreset(presetById(preset) ?? presetForSpecies(species));
+  return draftForPreset(presetById(preset) ?? presetForSpecies(species), species);
 }
 
 export function getField(d: Draft, key: string): number | null {
