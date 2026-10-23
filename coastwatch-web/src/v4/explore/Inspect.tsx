@@ -15,7 +15,7 @@ import { DAY, unitLabel } from "@/lib/observations";
 import { OFFICIAL_STATUS } from "@/content/copy";
 import { disputeOf, officialAt } from "@/lib/official";
 import { currentsAt, forecastAt, pnSibling, satelliteAt, type Readout } from "@/lib/readout";
-import { KNOTS_PER_MS, type CurrentField } from "@/lib/currents";
+import { KNOTS_PER_MS, currentsMean, defaultHour, loadFieldCached, type CurrentField } from "@/lib/currents";
 import { Icon } from "@/v4/ui/Icon";
 import { clockLabel, dayLabel, kmLabel, lastHabWords, relTime } from "@/v4/ui/time";
 import { lastHabSample } from "@/lib/provenance";
@@ -72,7 +72,7 @@ const KIND: Record<string, { word: string; tone: string; dot: string; hollow: st
   gap: { word: "Not known", tone: "text-n-ink-3", dot: "bg-n-gap", hollow: "border-2 border-n-gap" },
 };
 
-export function Header({ icon, kind, title, sub, onClose, onBack, canBack, action }: { icon: string; kind: string; title: string; sub?: string; onClose: () => void; onBack?: () => void; canBack?: boolean; action?: React.ReactNode }) {
+export function Header({ kind, title, sub, onClose, onBack, canBack, action }: { icon: string; kind: string; title: string; sub?: string; onClose: () => void; onBack?: () => void; canBack?: boolean; action?: React.ReactNode }) {
   return (
     <header className="flex items-start gap-2">
       {canBack && onBack && (
@@ -81,15 +81,12 @@ export function Header({ icon, kind, title, sub, onClose, onBack, canBack, actio
         </button>
       )}
       <div className="min-w-0 flex-1 pt-1">
-        <h2 className="nx-title text-balance text-n-ink" data-testid="inspect-title">
+        <h2 className="nx-display text-balance text-[22px] leading-[26px] text-n-ink" data-testid="inspect-title">
           {title}
         </h2>
-        <p className="mt-0.5 flex items-center gap-1.5 text-[13.5px] leading-snug text-n-ink-2">
-          <Icon name={icon} className="h-3.5 w-3.5 shrink-0 text-n-ink-3" />
-          <span className="min-w-0">
-            {kind}
-            {sub ? ` · ${sub}` : ""}
-          </span>
+        <p className="mt-1 flex items-center gap-1.5 text-[12.5px] leading-snug text-n-ink-2">
+          <span className="nx-caps shrink-0">{kind}</span>
+          {sub && <span className="min-w-0 truncate">· {sub}</span>}
         </p>
       </div>
       {action}
@@ -711,13 +708,14 @@ export function CellBody({ read, ctx, variable, precise, at, concise = false }: 
     <div className="flex flex-col gap-4" data-testid="inspect-cell">
       {concise && at && <CrossLinks ctx={ctx} place={pointKey(at.lat, at.lon)} lat={at.lat} lon={at.lon} name="this water" variant="actions" primary="brief" briefLabel="Open the briefing" />}
       <div>
-        <p className="text-[14px] text-n-ink-2">{VARIABLE_WORDS[variable].what}</p>
-        <p className="mt-1">
-          <span className="nx-data text-[34px] font-semibold leading-none text-n-ink" data-testid="cell-value">
+        <p className="nx-caps text-n-model">Model{own != null ? (ctx.lead === 0 ? " · nowcast" : ` · forecast day ${ctx.lead}`) : ""}</p>
+        <p className="mt-0.5 text-[13.5px] text-n-ink-2">{VARIABLE_WORDS[variable].what}</p>
+        <p className="mt-1.5">
+          <span className={`nx-value ${own == null ? "text-[24px] text-n-ink-2" : "text-n-model"}`} data-testid="cell-value">
             {own == null ? "No value" : pct(own)}
           </span>
           {own != null && (
-            <span className="ml-2 text-[14px] text-n-ink-2" data-testid="cell-day">
+            <span className="ml-3 text-[13px] text-n-ink-2" data-testid="cell-day">
               for {read.leads[ctx.lead]?.date ? dayLabel(read.leads[ctx.lead].date!, true) : "this day"} · {ctx.lead === 0 ? "nowcast" : `forecast, day ${ctx.lead}`}
             </span>
           )}
@@ -984,53 +982,78 @@ function PointReads({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
     if (outlook) jobs.push({ id: "outlook", label: "Chlorophyll outlook", run: () => outlookRead(ctx.baseUrl, outlook, lat, lon) });
     if (sst) jobs.push({ id: "sst", label: "Sea temperature", run: () => sstRead(ctx.baseUrl, sst, lat, lon) });
     if (reads.currents) jobs.push({ id: "currents", label: "Surface current", run: async () => currentsAt(reads.currents!.field, reads.currents!.layer, lat, lon) });
+    else {
+      // v10: the radar is read here on every layer: the 24-hour mean (else the newest usable hour), its own cell
+      const cl = currentsMean(ctx.manifest) ?? defaultHour(ctx.manifest);
+      if (cl) jobs.push({ id: "currents", label: "Surface current", run: async () => currentsAt(await loadFieldCached(ctx.baseUrl, cl), cl, lat, lon) });
+    }
     Promise.all(jobs.map((j) => j.run().then((r) => ({ id: j.id, label: j.label, r }), () => ({ id: j.id, label: j.label, r: null, err: true })))).then((x) => live && setRows(x));
     return () => {
       live = false;
     };
   }, [reads.forecast, reads.satellite, reads.currents, ctx.baseUrl, ctx.manifest, lat, lon, est, outlook, sst]);
+  // v10: each reading as an instrument row (direction A's probe): the value large in light mono with its
+  // unit, then the family in small capitals in its colour, what it is, and its provenance (product, native
+  // footprint, time). The model's value carries the model colour; nothing is compared across rows.
+  const FAM: Record<string, { word: (r: Readout & { label?: string }) => string; tone: string }> = {
+    forecast: { word: (r) => r.label ?? "Model", tone: "text-n-model" },
+    satellite: { word: (r) => (r.label ?? "Observed"), tone: "text-n-measured" },
+    outlook: { word: () => "Outlook, not observed", tone: "text-n-model" },
+    sst: { word: (r) => r.label ?? "Analysis", tone: "text-n-conditions" },
+    currents: { word: () => "Observed", tone: "text-n-conditions" },
+  };
   return (
-    <Section title="What is published here">
+    <section className="flex flex-col border-t border-n-line" aria-label="What is published here" data-testid="point-readings">
       {!rows ? (
-        <p className="text-[14px] text-n-ink-2" role="status">
+        <p className="nx-data py-3 text-[12px] text-n-ink-3" role="status">
           Reading the published cells…
         </p>
       ) : (
         <ul className="flex flex-col divide-y divide-n-line" data-testid="point-reads">
-          {rows.map(({ id, label, r, err }) => (
-            <li key={id} className="py-2.5" data-testid={`point-${id}`}>
-              <p className={`text-[13px] font-semibold ${r?.kind === "model" ? "text-n-model" : "text-n-measured"}`}>
-                {label} · {r?.label ?? (r?.kind === "model" ? "model" : "observation")}
-              </p>
-              {r?.value != null ? (
-                <>
-                  <p className="mt-0.5 flex items-baseline gap-1.5">
-                    <span className="nx-data text-[20px] font-semibold" data-testid="point-value">
-                      {r.value}
-                    </span>
-                    {r.unit && <span className="text-[13.5px] text-n-ink-2">{r.unit}</span>}
-                    {/* at sea, speeds are read in knots */}
-                    {id === "currents" && <span className="text-[13.5px] text-n-ink-2" data-testid="point-knots">≈ {(Number(r.value) * KNOTS_PER_MS).toFixed(1)} kn</span>}
+          {rows.map(({ id, label, r, err }) => {
+            const fam = FAM[id] ?? { word: () => (r?.kind === "model" ? "Model" : "Observed"), tone: r?.kind === "model" ? "text-n-model" : "text-n-measured" };
+            return (
+              <li key={id} className="grid grid-cols-[104px_minmax(0,1fr)] gap-x-4 py-3" data-testid={`point-${id}`}>
+                <div className="min-w-0">
+                  {r?.value != null ? (
+                    <p className={`nx-value text-[28px] ${r.kind === "model" ? "text-n-model" : ""}`}>
+                      <span data-testid="point-value">{r.value}</span>
+                      {r.unit && <small>{r.unit}</small>}
+                    </p>
+                  ) : (
+                    <p aria-hidden className="nx-value text-[28px] text-n-ink-3">—</p>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className={`nx-caps ${fam.tone}`}>{r ? fam.word(r) : "Not read"}</p>
+                  <p className="mt-0.5 text-[13px] leading-snug text-n-ink">
+                    {label}
+                    {r?.value != null && r.what ? <span className="text-n-ink-2">, {r.what}</span> : null}
                   </p>
-                  <p className="text-[13.5px] text-n-ink-2">{r.what}</p>
-                  {r.flag && <p className="text-[13px] text-n-stale">{r.flag}</p>}
-                </>
-              ) : (
-                <p className="mt-0.5 text-[14px] text-n-ink" data-testid="point-none">
-                  {err ? "Could not be read; the rest of this panel is unaffected." : r?.none}
-                </p>
-              )}
-              {r && (
-                <p className="mt-0.5 text-[13px] text-n-ink-3" data-testid="point-when">
-                  {r.when}
-                </p>
-              )}
-            </li>
-          ))}
-          {!reads.currents && <li className="py-2.5 text-[13.5px] text-n-ink-2">Surface currents: choose the currents layer to read the radar here.</li>}
+                  {/* at sea, speeds are read in knots */}
+                  {id === "currents" && r?.value != null && (
+                    <p className="nx-data text-[12px] text-n-ink-2" data-testid="point-knots">
+                      ≈ {(Number(r.value) * KNOTS_PER_MS).toFixed(1)} kn
+                    </p>
+                  )}
+                  {r?.value == null && (
+                    <p className="text-[12.5px] leading-snug text-n-ink-2" data-testid="point-none">
+                      {err ? "Could not be read; the rest of this panel is unaffected." : r?.none}
+                    </p>
+                  )}
+                  {r?.flag && <p className="text-[12px] leading-snug text-n-stale">{r.flag}</p>}
+                  {r && (
+                    <p className="mt-0.5 text-[11.5px] leading-snug text-n-ink-3" data-testid="point-when">
+                      {r.when}
+                    </p>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
-    </Section>
+    </section>
   );
 }
 
@@ -1099,8 +1122,9 @@ export function CrossLinks({ ctx, place, lat, lon, name, station = null, obsVari
   const day = useMemo(() => runDays(ctx.manifest, ctx.now).find((d) => d.lead === ctx.lead)?.date ?? null, [ctx.manifest, ctx.now, ctx.lead]);
   const h = crossHrefs({ place, lat, lon, station, stations: ctx.stations, variable: obsVariable ?? researchVariable(ctx.layer, ctx.variable), day, from: ctx.from, here: ctx.here, home });
   if (variant === "actions") {
-    const fill = "nx-press nx-focus flex min-h-12 min-w-0 flex-1 items-center justify-between gap-2 rounded-xl bg-n-ink px-4 text-[15px] font-semibold text-n-bg";
-    const quiet = "nx-focus inline-flex min-h-12 shrink-0 items-center gap-1 rounded-xl px-2 text-[14px] font-semibold text-n-ink-2 hover:text-n-ink";
+    // v10: the one primary action as a hairline button (direction A's "Open the briefing →"), the other a quiet link
+    const fill = "nx-press nx-focus flex min-h-11 min-w-[11rem] flex-1 items-center justify-between gap-2 rounded-[3px] border border-n-line-strong px-3.5 text-[14px] text-n-ink hover:border-n-ink-2";
+    const quiet = "nx-focus inline-flex min-h-11 shrink-0 items-center gap-1 rounded-[3px] px-2 text-[13.5px] text-n-ink-2 underline decoration-n-line-strong underline-offset-4 hover:text-n-ink";
     const brief = (
       <Link key="b" href={h.brief} className={primary === "brief" ? fill : quiet} data-testid={briefTestId ?? "brief-this"}>
         {primary === "brief" ? (
@@ -1121,12 +1145,12 @@ export function CrossLinks({ ctx, place, lat, lon, name, station = null, obsVari
             <Icon name="chevronRight" className="h-[18px] w-[18px] shrink-0" />
           </>
         ) : (
-          "Research this"
+          "History in Research"
         )}
       </Link>
     );
     return (
-      <nav aria-label={`Next steps for ${name}`} className="flex items-center gap-1" data-testid="inspect-crosslinks">
+      <nav aria-label={`Next steps for ${name}`} className="flex flex-wrap items-center gap-x-1 gap-y-1.5" data-testid="inspect-crosslinks">
         {primary === "brief" ? [brief, research] : [research, brief]}
       </nav>
     );
