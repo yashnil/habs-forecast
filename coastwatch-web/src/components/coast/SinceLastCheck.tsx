@@ -8,7 +8,9 @@ import type { Snapshot } from "@/lib/briefingSnapshot";
 import { diffSnapshots, type Change, type ChangeGroup } from "@/lib/changes";
 import { coastHref, parseAudience } from "@/lib/coast";
 import { defaultAudience, usePurpose } from "@/lib/purpose";
-import { activityLabel, keptFilename, keptHtml, makeKept, saveKept, type Kept } from "@/lib/keptBriefing";
+import { activityLabel, keptFilename, keptHtml, keptTitle, makeKept, saveKept, type Kept } from "@/lib/keptBriefing";
+import { cacheKeptPage } from "@/v4/offline/kept";
+import { readHome } from "@/v4/coast/home";
 import { forgetAll, keepSessionBaseline, recordVisit, rememberedFor, sessionBaseline, storageAvailable, watersKey, type SavedWaters } from "@/lib/savedWaters";
 import { formatDate, formatDateTimePT } from "@/lib/time";
 
@@ -47,6 +49,9 @@ function SinceLastCheckInner() {
   const [state, setState] = useState<State>({ phase: "idle" });
   const [all, setAll] = useState(false);
   const [kept, setKept] = useState<Kept | null>(null);
+  // the kept copy opens offline too once its page is stored (null: not yet / could not be stored)
+  const [offline, setOffline] = useState<boolean | null>(null);
+  const [auto, setAuto] = useState(false);
   const [forgotten, setForgotten] = useState(false);
 
   useEffect(() => {
@@ -54,6 +59,8 @@ function SinceLastCheckInner() {
     let live = true;
     setState({ phase: "idle" });
     setKept(null);
+    setOffline(null);
+    setAuto(false);
     fetch(`/api/briefing?${new URLSearchParams({ place, for: audience, species })}`)
       .then((r) => (r.ok ? (r.json() as Promise<Snapshot>) : Promise.reject(new Error(String(r.status)))))
       .then((snap) => {
@@ -68,6 +75,17 @@ function SinceLastCheckInner() {
         }
         const changes = base ? diffSnapshots(base.baseline, snap, base.since, fmt) : [];
         setState({ phase: "ready", snap, previous, since: base?.since ?? null, changes, resume });
+        // the home port's own trip is kept automatically, one copy replaced on each visit (bounded: the
+        // kept list holds five), so it can be read offline without remembering to keep it
+        const home = readHome();
+        if (home && home.place === snap.place.key && home.for === snap.audience && home.species === snap.species.id) {
+          const k = { ...makeKept(snap, new Date()), id: `home-${snap.place.key}` };
+          if (saveKept(k)) {
+            setKept(k);
+            setAuto(true);
+            void cacheKeptPage({ id: k.id, keptAt: k.keptAt, title: keptTitle(k) }).then((ok) => live && setOffline(ok));
+          }
+        }
       })
       .catch(() => live && setState({ phase: "error" }));
     return () => {
@@ -90,7 +108,11 @@ function SinceLastCheckInner() {
   const hidden = changes.length - shown.length;
   const keep = () => {
     const k = makeKept(snap, new Date());
-    if (saveKept(k)) setKept(k);
+    if (!saveKept(k)) return;
+    setKept(k);
+    setAuto(false);
+    setOffline(null);
+    void cacheKeptPage({ id: k.id, keptAt: k.keptAt, title: keptTitle(k) }).then(setOffline);
   };
   const download = (k: Kept) => {
     const url = URL.createObjectURL(new Blob([keptHtml(k)], { type: "text/html" }));
@@ -115,12 +137,15 @@ function SinceLastCheckInner() {
     <>
       {kept ? (
         <span data-testid="kept-done">
-          <span className="mr-3 text-n-ink-2">Kept {formatDateTimePT(kept.keptAt)}.</span>
+          <span className="mr-3 text-n-ink-2">
+            {auto ? "Your home port, kept automatically" : "Kept"} {formatDateTimePT(kept.keptAt)}
+            {offline ? <span data-testid="kept-offline">, opens offline</span> : offline === false ? ", on this device (opens offline only from a saved file)" : ""}.
+          </span>
           <button type="button" onClick={() => download(kept)} className="nx-press nx-focus -my-3 mr-3 inline-flex min-h-[44px] items-center font-semibold text-n-accent" data-testid="kept-download">
             Save file
           </button>
           <Link href={`/coast/kept?id=${encodeURIComponent(kept.id)}`} className="-my-3 mr-3 inline-flex min-h-[44px] items-center font-semibold text-n-accent" data-testid="kept-open">
-            Print
+            Open
           </Link>
         </span>
       ) : (
