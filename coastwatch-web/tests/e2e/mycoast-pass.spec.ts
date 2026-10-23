@@ -32,6 +32,8 @@ test("v10 pass 2: no stack of accordions; each detail sits folded beside its sub
   const record = page.locator('[data-testid="brief-context"] [data-node^="record:"]');
   const said = await page.locator('[data-testid="matters"]').innerText();
   if (/Compared with earlier years/.test(said)) await expect(record).toHaveCount(0);
+  // the panels just opened fade in; contrast is read on the settled colours, not mid-fade
+  await page.evaluate(() => Promise.allSettled(document.getAnimations().filter((a) => a.effect?.getTiming().iterations !== Infinity).map((a) => a.finished)));
   const axe = await new AxeBuilder({ page }).include('[data-testid="my-coast"] main').analyze();
   expect(axe.violations.map((v) => v.id)).toEqual([]);
 });
