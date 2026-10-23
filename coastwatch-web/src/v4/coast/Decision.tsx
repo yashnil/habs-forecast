@@ -75,7 +75,7 @@ export function DecisionRow({
       <h2 id="glance-h" className="sr-only">
         The trip at a glance{asSaved ? `, ${asSaved}` : ""}
       </h2>
-      <dl className="grid grid-cols-2 border-y border-n-line-strong sm:grid-cols-4 xl:grid-cols-[1.2fr_0.8fr_0.95fr_0.8fr_1.45fr]">
+      <dl className="grid grid-cols-2 border-y border-n-line-strong max-[359px]:grid-cols-1 sm:grid-cols-4 xl:grid-cols-[1.2fr_0.8fr_0.95fr_0.8fr_1.45fr]" data-testid="glance-grid">
         <Cell pos={0} family="conditions" caps={`Wind · ${fc}`} testId="glance-wind" value={wind} unit="kt" note={windNote ? <span className="max-sm:hidden">then {windNote.replace(/^then /, "")}</span> : period ? periodName(period, !!asSaved) : undefined} />
         <Cell pos={1} family="conditions" caps={`Seas · ${fc}`} testId="glance-seas" value={seas} unit="ft" note={period && max?.seasFt != null ? `up to ${max.seasFt} ft` : undefined} />
         <Cell
@@ -91,9 +91,9 @@ export function DecisionRow({
           <dt>
             <Caps family="official">Notices</Caps>
           </dt>
-          <dd className="flex min-h-[74px] min-w-0 flex-col gap-1 sm:min-h-[84px]">
+          <dd className={DD}>
             <a href="#official-h" className="nx-focus self-start rounded-[2px] hover:underline hover:decoration-n-official-line hover:underline-offset-4" data-testid="glance-notices">
-              <Reading value={String(notices.here)} unit="tied here" className="text-[20px] min-[360px]:text-[26px] xl:text-[28px]" />
+              <Reading value={String(notices.here)} unit="tied here" className="text-[22px] min-[360px]:text-[26px] xl:text-[28px]" />
             </a>
             <span className="text-[12.5px] leading-snug text-n-ink-2">
               <span className="text-n-official">not verified</span> · {notices.here ? noticeNote : "none listed"}
@@ -145,13 +145,17 @@ export function DecisionRow({
   );
 }
 
+// under 360 px the four readings are one column of compact rows (label · value · note), not a 2×2 grid
+// of half-empty tiles
+const ROW = "max-[359px]:grid max-[359px]:grid-cols-[96px_minmax(0,1fr)] max-[359px]:items-baseline max-[359px]:gap-x-3 max-[359px]:border-l-0 max-[359px]:py-2 max-[359px]:pl-0";
 const CELL = [
-  "flex min-w-0 flex-col gap-1 border-n-line py-3 pr-3",
-  "flex min-w-0 flex-col gap-1 border-l border-n-line py-3 pl-3 pr-3 sm:pl-4",
-  "flex min-w-0 flex-col gap-1 border-t border-n-line py-3 pr-3 sm:border-l sm:border-t-0 sm:pl-4",
-  "flex min-w-0 flex-col gap-1 border-l border-t border-n-line py-3 pl-3 pr-3 sm:border-t-0 sm:pl-4",
-  "col-span-2 flex min-w-0 flex-col gap-1 border-t border-n-line py-3 sm:col-span-4 xl:col-span-1 xl:border-l xl:border-t-0 xl:pl-4",
+  `flex min-w-0 flex-col gap-1 border-n-line py-3 pr-3 ${ROW}`,
+  `flex min-w-0 flex-col gap-1 border-l border-n-line py-3 pl-3 pr-3 sm:pl-4 ${ROW} max-[359px]:border-t`,
+  `flex min-w-0 flex-col gap-1 border-t border-n-line py-3 pr-3 sm:border-l sm:border-t-0 sm:pl-4 ${ROW}`,
+  `flex min-w-0 flex-col gap-1 border-l border-t border-n-line py-3 pl-3 pr-3 sm:border-t-0 sm:pl-4 ${ROW}`,
+  "col-span-2 flex min-w-0 flex-col gap-1 border-t border-n-line py-3 max-[359px]:col-span-1 sm:col-span-4 xl:col-span-1 xl:border-l xl:border-t-0 xl:pl-4",
 ];
+const DD = "flex min-h-[74px] min-w-0 flex-col gap-1 max-[359px]:min-h-0 max-[359px]:gap-0.5 sm:min-h-[84px]";
 
 function Cell({ pos, family, caps, value, unit, note, testId }: { pos: number; family: Family; caps: string; value: string | null; unit?: string; note?: ReactNode; testId: string }) {
   return (
@@ -159,8 +163,8 @@ function Cell({ pos, family, caps, value, unit, note, testId }: { pos: number; f
       <dt>
         <Caps family={family}>{caps}</Caps>
       </dt>
-      <dd className="flex min-h-[74px] min-w-0 flex-col gap-1 sm:min-h-[84px]">
-        <Reading value={value ?? "—"} unit={value ? unit : undefined} muted={!value} className="text-[20px] min-[360px]:text-[26px] xl:text-[28px]" />
+      <dd className={DD}>
+        <Reading value={value ?? "—"} unit={value ? unit : undefined} muted={!value} className="text-[22px] min-[360px]:text-[26px] xl:text-[28px]" />
         {note && <span className="line-clamp-2 text-[12.5px] leading-snug text-n-ink-2 xl:line-clamp-3">{note}</span>}
       </dd>
     </div>

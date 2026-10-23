@@ -247,3 +247,24 @@ test.describe("v10: the selection's true footprint", () => {
     expect(Math.max(...lons) - Math.min(...lons)).toBeCloseTo(0.03, 3);
   });
 });
+
+test.describe("v10 fix 2: the rail holds still when an hour turns old", () => {
+  test.use({ serviceWorkers: "block" });
+  test("the status row reserves the stale line: the scrubber is at the same height with two lines or three", async ({ page }) => {
+    const ys: number[] = [];
+    // a day after the radar hours they are current (two lines); two days after, older than usual (a third line)
+    for (const at of ["2026-10-09T20:00:00Z", "2026-10-10T20:00:00Z"]) {
+      await page.clock.setFixedTime(new Date(at));
+      await page.goto(`${OK}/?layer=currents&region=monterey_bay`);
+      await page.waitForFunction(() => !!(window as unknown as W).__cwMap?.loaded());
+      await flowReady(page);
+      await expect(page.getByTestId("stale-note")).toHaveCount(at.startsWith("2026-10-10") ? 1 : 0);
+      if (at.startsWith("2026-10-10")) {
+        await page.getByTestId("time-play").first().click();
+        await page.waitForTimeout(1500);
+      }
+      ys.push((await page.getByTestId("time-play").first().boundingBox())!.y);
+    }
+    expect(Math.abs(ys[0] - ys[1])).toBeLessThan(1);
+  });
+});

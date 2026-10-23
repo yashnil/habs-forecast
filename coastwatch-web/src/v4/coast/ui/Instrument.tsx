@@ -96,7 +96,7 @@ export function NumIn({
           {needed && blank && !labelHidden && <span className="nx-caps ml-2 text-[10px] text-n-ink-2">needed</span>}
         </label>
         {/* the focus ring is the field's own: drawn around the ruled line and its unit, not offset from the bare input */}
-        <div className={`flex items-baseline gap-1.5 rounded-[2px] border-b outline-offset-2 has-[input:focus-visible]:outline has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-[var(--nx-accent)] ${wide ? "w-full" : "w-[8.5rem]"} ${error ? "border-n-down" : needed && blank ? "border-dashed border-n-ink-2" : "border-n-line-strong"} focus-within:border-solid focus-within:border-n-accent`}>
+        <div data-testid="numin-field" className={`flex items-baseline gap-1.5 rounded-[2px] border-b outline-offset-2 has-[input:focus-visible]:outline has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-[var(--nx-accent)] ${wide ? "w-full" : "w-[8.5rem]"} ${error ? "border-n-down" : needed && blank ? "border-dashed border-n-ink-2" : "border-n-line-strong"} focus-within:border-solid focus-within:border-n-accent`}>
           <input
             id={id}
             type="text"
@@ -107,6 +107,8 @@ export function NumIn({
             aria-invalid={error ? true : undefined}
             aria-describedby={[error || clamp ? msgId : null, note ? noteId : null].filter(Boolean).join(" ") || undefined}
             data-testid={testId}
+            // the global :focus-visible ring would draw a second, offset box around the bare input
+            data-ring="container"
             onFocus={() => setText(shown)}
             onBlur={() => setText(null)}
             onChange={(e) => {

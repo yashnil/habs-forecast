@@ -232,3 +232,36 @@ test.describe("a selection on a phone", () => {
     expect(t.x).toBeGreaterThanOrEqual(aside.x - 1);
   });
 });
+
+test.describe("v10 fix 2: the phone's map tools are docked, off the coast", () => {
+  for (const size of [{ width: 320, height: 640 }, { width: 390, height: 844 }]) {
+    test(`${size.width} px: locate and More sit at the right edge just above the sheet; share and the field pack fold behind More`, async ({ browser }) => {
+      const ctx = await browser.newContext({ viewport: size, isMobile: true, hasTouch: true });
+      const page = await ctx.newPage();
+      await open(page, "/?layer=olci300&region=monterey_bay", CURRENT, size);
+      const tools = page.getByTestId("map-controls");
+      await expect(tools).toHaveAttribute("data-docked", "true");
+      const t = (await tools.boundingBox())!;
+      const sheet = (await page.getByTestId("mobile-sheet").boundingBox())!;
+      // docked: its bottom just above the sheet's top, its right at the screen's edge, not up in the frame
+      expect(t.y + t.height).toBeLessThanOrEqual(sheet.y + 1);
+      expect(sheet.y - (t.y + t.height)).toBeLessThan(24);
+      expect(size.width - (t.x + t.width)).toBeLessThan(16);
+      // Santa Cruz's harbour mark is not under them
+      const sc = await page.evaluate(() => (window as unknown as W).__cwMap!.project([-122.0, 36.96]));
+      expect(sc.x >= t.x && sc.x <= t.x + t.width && sc.y >= t.y && sc.y <= t.y + t.height).toBe(false);
+      // 56 px targets; share and the pack one tap behind More
+      for (const b of await tools.locator("button").all()) expect((await b.boundingBox())!.height).toBeGreaterThanOrEqual(55.5);
+      await expect(page.getByTestId("share-view")).toHaveCount(0);
+      const more = page.getByTestId("map-tools-toggle");
+      await expect(more).toHaveAttribute("aria-expanded", "false");
+      await more.click();
+      await expect(more).toHaveAttribute("aria-expanded", "true");
+      await expect(page.getByTestId("share-view")).toBeVisible();
+      await expect(page.getByTestId("pack-open")).toBeVisible();
+      await page.getByTestId("pack-open").click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await ctx.close();
+    });
+  }
+});

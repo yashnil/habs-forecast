@@ -27,6 +27,7 @@ import { pacificDate } from "@/lib/time";
 import { LinkedSeries, readingAt, realSamples } from "@/v4/charts/LinkedSeries";
 import { BrushStrip } from "@/v4/charts/BrushStrip";
 import { useReportSource } from "@/v4/readiness/store";
+import { currentsEntry, modelEntry, satelliteEntry } from "@/v4/readiness/shown";
 import { AreaModel, CellBody } from "@/v4/explore/Inspect";
 import { useCellRead } from "@/v4/explore/reads";
 import { VARIABLE_WORDS } from "@/v4/explore/layers";
@@ -292,6 +293,11 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
     if (tool === "area" && area) return [area[0] - 0.02, area[1] - 0.02, area[2] + 0.02, area[3] + 0.02];
     return null;
   }, [tool, cellAtPt, line, area]);
+  // the published sources this page shows, with their freshness (the same rule as Explore): the model's
+  // record and grid always, the satellite or radar when chosen
+  useReportSource(modelEntry(manifest, now, "In the model chart and grid"));
+  useReportSource(source === "satellite" && obsLayer ? satelliteEntry(manifest, now, "In the observation tools", obsLayer) : null);
+  useReportSource(source === "radar" && obsLayer ? currentsEntry(manifest, now, "In the observation tools", obsLayer) : null);
   const obsRead = useObsSampler(manifest, baseUrl, obsLayer, obsBox);
   const obsS = obsRead.sampler;
   const obsPx = useMemo(() => (obsS && tool === "cell" && cellAtPt ? obsPoint(obsS, cellAtPt.lat, cellAtPt.lon) : null), [obsS, tool, cellAtPt]);

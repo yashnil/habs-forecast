@@ -115,6 +115,11 @@ type Props = {
   overlay?: GeoJSON.FeatureCollection | null;
   /** v4: "none" leaves the map's own controls to the workspace (zoom, scale) */
   chrome?: "v2" | "none";
+  /**
+   * v10: keep each latitude limit's name inside the frame: a name that would run out to sea past this many
+   * pixels from the map's left edge (a faded edge, a reading column beside it) runs inland instead.
+   */
+  limitLabelGuard?: number;
   /** v4: a shore station was chosen on the map (the station itself is selected, not the water beside it) */
   onStationPick?: (stationId: string) => void;
   /** v4: stations as counted clusters below harbour zoom, so the regional view stays calm */
@@ -238,6 +243,35 @@ function registerPmtiles(url: string): PMTiles {
 
 export default function MapCanvas(p: Props) {
   const [wide] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
+  const [map, setMap] = useState<MlMap | null>(null);
+  // the limit names that would leave the frame's left edge (limitLabelGuard): run inland instead
+  const [inland, setInland] = useState<string[]>([]);
+  const guard = p.limitLabelGuard;
+  const officialFc = p.officialGeometry;
+  useEffect(() => {
+    if (!map || guard == null || !officialFc) return;
+    const check = () => {
+      const out: string[] = [];
+      for (const f of officialFc.features) {
+        const pr = (f.properties ?? {}) as { kind?: string; label?: string };
+        if (pr.kind !== "lat_limit" || !pr.label) continue;
+        const g = f.geometry;
+        const lines = g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates : [];
+        let east: GeoJSON.Position | null = null;
+        for (const l of lines) for (const c of l) if (!east || c[0] > east[0]) east = c;
+        if (!east) continue;
+        // the name runs west from its anchor, up to text-max-width (14 em at 11 px) plus its offset
+        const x = map.project([east[0], east[1]]).x;
+        if (x - 14 * 11 - 8 < guard) out.push(pr.label);
+      }
+      setInland((was) => (was.length === out.length && was.every((l, i) => l === out[i]) ? was : out));
+    };
+    check();
+    map.on("moveend", check);
+    return () => {
+      map.off("moveend", check);
+    };
+  }, [map, guard, officialFc]);
   // one label point per latitude limit, at the line's eastern (coast) end
   const limitLabels = useMemo<GeoJSON.FeatureCollection | null>(() => {
     const fc = p.officialGeometry;
@@ -250,12 +284,11 @@ export default function MapCanvas(p: Props) {
       const lines = g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates : [];
       let east: GeoJSON.Position | null = null;
       for (const l of lines) for (const c of l) if (!east || c[0] > east[0]) east = c;
-      if (east) features.push({ type: "Feature", geometry: { type: "Point", coordinates: east }, properties: { label: pr.label } });
+      if (east) features.push({ type: "Feature", geometry: { type: "Point", coordinates: east }, properties: { label: pr.label, side: inland.includes(pr.label) ? "east" : "west" } });
     }
     return { type: "FeatureCollection", features };
-  }, [p.officialGeometry]);
+  }, [p.officialGeometry, inland]);
   const { onPort, onPoint, onStation } = p;
-  const [map, setMap] = useState<MlMap | null>(null);
   const hasRaster = !!(p.forecast || p.satellite || p.satelliteAge || p.outlook || p.estimate || p.sst);
   // read once for the map's life (reduced motion: data rasters cut instead of fading)
   const [fadeMs] = useState(() => (window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : RASTER_FADE_MS));
@@ -818,7 +851,7 @@ export default function MapCanvas(p: Props) {
             id="official-limit-label"
             type="symbol"
             minzoom={7.4}
-            layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-anchor": "bottom-right", "text-justify": "right", "text-offset": [-0.6, -0.35], "text-max-width": 14, "text-allow-overlap": false }}
+            layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-anchor": ["match", ["get", "side"], "east", "bottom-left", "bottom-right"], "text-justify": ["match", ["get", "side"], "east", "left", "right"], "text-offset": ["match", ["get", "side"], "east", ["literal", [0.6, -0.35]], ["literal", [-0.6, -0.35]]], "text-max-width": 14, "text-allow-overlap": false }}
             paint={{ "text-color": OFFICIAL, "text-halo-color": "#06111e", "text-halo-width": 1.2, "text-halo-blur": 0.4 }}
           />
         </Source>

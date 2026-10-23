@@ -105,7 +105,7 @@ test("Santa Cruz salmon, the owner's state: gross with its sum, exactly two miss
 });
 
 test("closed species: the hypothetical framing and the season sit above every number, on the worksheet and the glance", async ({ page }) => {
-  const s = await openWorksheet(page, SANTA_CRUZ);
+  await openWorksheet(page, SANTA_CRUZ);
   // v10 pass 2: the season and the hypothetical framing are one line, said once
   await expect(page.getByTestId("econ-official")).toContainText("closed on CDFW’s sport list");
   await expect(page.getByTestId("econ-official")).toContainText("Neritic holds no commercial season");
@@ -286,4 +286,25 @@ test("rock crab: CDFW's 2024 statewide value sits beside the price as history, c
   await s.getByTestId("econ-catch-0-use").click();
   await expect(s.getByTestId("econ-catch-0-price")).toHaveValue("2.35");
   await expect(ref).toContainText("basis: CDFW history");
+});
+
+test("v10 fix 2: one focus ring, drawn around the field and its unit (none around the bare input)", async ({ page }) => {
+  const s = await openWorksheet(page, SANTA_CRUZ);
+  const input = s.getByTestId("econ-catch-0-price");
+  await input.focus();
+  await page.keyboard.type("9");
+  const field = input.locator("xpath=..");
+  const r = await input.evaluate((el) => {
+    const f = el.parentElement!;
+    return { input: getComputedStyle(el).outlineStyle, field: getComputedStyle(f).outlineStyle, unit: f.querySelector("span")?.textContent ?? "", id: f.getAttribute("data-testid") };
+  });
+  expect(r.id).toBe("numin-field");
+  expect(r.input).toBe("none");
+  expect(r.field).toBe("solid");
+  expect(r.unit).toMatch(/\$\/lb/);
+  // the ring's box holds the input and the unit
+  const fb = (await field.boundingBox())!;
+  const ib = (await input.boundingBox())!;
+  expect(ib.x).toBeGreaterThanOrEqual(fb.x - 0.5);
+  expect(ib.x + ib.width).toBeLessThanOrEqual(fb.x + fb.width + 0.5);
 });

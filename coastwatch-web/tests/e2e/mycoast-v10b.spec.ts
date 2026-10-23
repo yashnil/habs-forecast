@@ -119,3 +119,49 @@ test("worksheet: gross leads once catch and price exist; the missing list is sai
   await page.getByTestId("econ-back").click();
   await expect(page.getByTestId("econ-glance-result")).toHaveAttribute("data-label", "net to boat");
 });
+
+test("v10 fix 2: the 60-hour lanes: a gap said once per span, nothing under the now line, tide turns inside the lane", async ({ page }) => {
+  await open(page);
+  const lanes = page.getByTestId("lanes");
+  await lanes.scrollIntoViewIfNeeded();
+  const model = page.getByTestId("lane-model");
+  await expect(model.getByTestId("model-gap").first()).toBeVisible();
+  // the fixture's run ends before this window: one span, its words once
+  await expect(model.getByTestId("model-gap")).toHaveCount(1);
+  expect(((await model.innerText()).match(/no run/g) ?? []).length).toBe(1);
+  // the buoy's words start after the now line
+  const now = await lanes.evaluate((el) => {
+    const line = [...el.querySelectorAll("span")].find((s) => s.className.includes("w-px") && s.className.includes("bg-n-ink"));
+    return line ? line.getBoundingClientRect().x : null;
+  });
+  expect(now).not.toBeNull();
+  const measured = page.getByTestId("measured-text");
+  if (await measured.count()) expect((await measured.boundingBox())!.x).toBeGreaterThan(now!);
+  const gapText = model.getByTestId("model-gap").first().locator("span span");
+  expect((await gapText.boundingBox())!.x).toBeGreaterThan(now!);
+  // every tide turn's label lies inside the lane
+  const tide = (await page.getByTestId("lane-tide").boundingBox())!;
+  for (const l of await page.getByTestId("tide-turn-label").all()) {
+    const b = (await l.boundingBox())!;
+    expect(b.x).toBeGreaterThanOrEqual(tide.x - 1);
+    expect(b.x + b.width).toBeLessThanOrEqual(tide.x + tide.width + 1);
+  }
+});
+
+test("v10 fix 2 (1440): the map legend clears the header chip; 320: the readings are one column of compact rows", async ({ page, browser }) => {
+  await open(page);
+  const chip = (await page.getByTestId("status-center").boundingBox())!;
+  const legend = (await page.getByTestId("locator-legend").boundingBox())!;
+  expect(legend.y).toBeGreaterThanOrEqual(chip.y + chip.height + 24);
+  const ctx = await browser.newContext({ viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true });
+  const p = await ctx.newPage();
+  await open(p);
+  const row = p.getByTestId("decision-row");
+  const boxes = await Promise.all(["glance-wind", "glance-seas", "glance-tide", "glance-notices-cell"].map((id) => row.getByTestId(id).boundingBox()));
+  for (let i = 1; i < boxes.length; i++) expect(boxes[i]!.y).toBeGreaterThan(boxes[i - 1]!.y + 10);
+  for (const b of boxes) {
+    expect(b!.width).toBeGreaterThan(280);
+    expect(b!.height).toBeLessThan(90);
+  }
+  await ctx.close();
+});

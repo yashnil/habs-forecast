@@ -52,7 +52,9 @@ test("L3 + L5: a harbour's marker reserves its place among labels; a latitude li
     return { collider: !!m.getLayer("ports-collider"), placement: m.getLayoutProperty("official-limit-label", "text-anchor") };
   });
   expect(got.collider).toBe(true);
-  expect(got.placement).toBe("bottom-right"); // at the coast end, running out to sea
+  // at the coast end, running out to sea (a map with a faded edge may turn a name inland: v10 fix 2)
+  const placement = got.placement as unknown;
+  expect(Array.isArray(placement) ? placement.at(-1) : placement).toBe("bottom-right");
 });
 
 test("L4: a layer's subtitle (what it is and how new) is never cut off", async ({ page }) => {

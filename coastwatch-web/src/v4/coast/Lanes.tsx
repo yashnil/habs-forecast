@@ -124,7 +124,7 @@ export function TimeView(props: TimeViewProps) {
     <div ref={ref} className="flex flex-col gap-4">
       {/* the lanes (or the phone's list) have a fixed height: data that arrives late fills it, never moves it */}
       <div className={wide ? "min-h-[372px]" : "min-h-[300px]"} data-testid="time-lanes" data-layout={w ? (wide ? "lanes" : "list") : "pending"}>
-        {w === 0 ? null : wide ? <Lanes {...props} data={data} when={when} /> : <PeriodList {...props} data={data} when={when} />}
+        {w === 0 ? null : wide ? <Lanes {...props} data={data} when={when} laneW={w - 124} /> : <PeriodList {...props} data={data} when={when} />}
       </div>
       <LimitsLine {...props} data={data} period={period} />
     </div>
@@ -135,7 +135,7 @@ export function TimeView(props: TimeViewProps) {
 
 type Data = { nowMin: number; start: number; end: number; segs: Seg[] } | null;
 
-function Lanes({ cond, today, asSaved, limits, outlook, runIssued, data, when }: TimeViewProps & { data: Data; when: (iso: string) => string }) {
+function Lanes({ cond, today, asSaved, limits, outlook, runIssued, data, when, laneW }: TimeViewProps & { data: Data; when: (iso: string) => string; laneW: number }) {
   const c = cond.data;
   if (!data || !today)
     return (
@@ -209,10 +209,10 @@ function Lanes({ cond, today, asSaved, limits, outlook, runIssued, data, when }:
           {c?.tides.status === "ok" ? <TideLane tides={c.tides.data} today={today} start={start} end={end} nowMin={nowIn ? nowMin : null} /> : <Empty>{cond.loading ? "Reading…" : "No tide predictions read for these waters"}</Empty>}
         </Lane>
         <Lane label="Measured" sub="latest readings" family="conditions" testId="lane-measured" h="h-12">
-          <MeasuredLane c={c} today={today} x={x} when={when} loading={cond.loading} />
+          <MeasuredLane c={c} today={today} x={x} when={when} loading={cond.loading} textFrom={nowIn ? x(nowMin) : null} />
         </Lane>
         <Lane label="Model" sub="C-HARM, context" family="model" testId="lane-model" h="h-10">
-          <ModelLane outlook={outlook} today={today} start={start} end={end} x={x} wd={wd} />
+          <ModelLane outlook={outlook} today={today} start={start} end={end} x={x} wd={wd} nowMin={nowIn ? nowMin : null} laneW={laneW} />
         </Lane>
         {/* now, and the shaded hours before it */}
         {nowIn && (
@@ -295,7 +295,7 @@ function TideLane({ tides, today, start, end, nowMin }: { tides: Tide[]; today: 
         <path d={d} fill="none" stroke="var(--nx-conditions)" strokeWidth="1.6" vectorEffect="non-scaling-stroke" />
       </svg>
       {shown.map((t) => (
-        <span key={t.m} className="absolute -translate-x-1/2 whitespace-nowrap font-data text-[10.5px] leading-none text-n-ink-2" style={{ left: `${(X(t.m) / W) * 100}%`, top: t.type === "H" ? `${((Y(t.ft) - 13) / H) * 100}%` : `${((Y(t.ft) + 5) / H) * 100}%` }} data-testid="tide-turn-label">
+        <span key={t.m} className={`absolute whitespace-nowrap font-data text-[10.5px] leading-none text-n-ink-2 ${X(t.m) > W * 0.93 ? "-translate-x-full" : X(t.m) < W * 0.05 ? "" : "-translate-x-1/2"}`} style={{ left: `${(X(t.m) / W) * 100}%`, top: t.type === "H" ? `${((Y(t.ft) - 13) / H) * 100}%` : `${((Y(t.ft) + 5) / H) * 100}%` }} data-testid="tide-turn-label">
           <span className="text-n-ink">{t.ft.toFixed(1)}</span> {clockShort(t.m)}
         </span>
       ))}
@@ -304,7 +304,7 @@ function TideLane({ tides, today, start, end, nowMin }: { tides: Tide[]; today: 
   );
 }
 
-function MeasuredLane({ c, today, x, when, loading }: { c: Conditions | null; today: string; x: (m: number) => string; when: (iso: string) => string; loading: boolean }) {
+function MeasuredLane({ c, today, x, when, loading, textFrom = null }: { c: Conditions | null; today: string; x: (m: number) => string; when: (iso: string) => string; loading: boolean; textFrom?: string | null }) {
   const b = c?.buoy.status === "ok" ? c.buoy : null;
   const water = waterReading(c);
   const items: { at: string; text: string }[] = [];
@@ -318,7 +318,8 @@ function MeasuredLane({ c, today, x, when, loading }: { c: Conditions | null; to
         const m = instantMin(it.at, today);
         return m === null ? null : <span key={it.text} aria-hidden className="absolute top-1 h-2.5 w-2.5 -translate-x-1/2 rotate-45 border border-n-conditions bg-n-bg" style={{ left: x(m) }} />;
       })}
-      <span className="absolute inset-x-0 bottom-1 truncate pl-2 text-[12px] text-n-ink-2">
+      {/* the words start after the now line, never under it */}
+      <span className="absolute bottom-1 right-0 truncate pl-2 text-[12px] text-n-ink-2" style={{ left: textFrom ? `calc(${textFrom} + 6px)` : 0 }} data-testid="measured-text">
         {b?.station ? `Buoy ${b.station.id}, ${kmLabel(b.station.km)}: ` : ""}
         {items.map((it) => `${it.text} (${when(it.at)})`).join(" · ")}
       </span>
@@ -326,30 +327,72 @@ function MeasuredLane({ c, today, x, when, loading }: { c: Conditions | null; to
   );
 }
 
-function ModelLane({ outlook, today, start, end, x, wd }: { outlook: OutlookDayLite[] | null | "error"; today: string; start: number; end: number; x: (m: number) => string; wd: (a: number, b: number) => string }) {
+/** "78%–86%" → "78–86%": the narrow cell's range, the percent said once. */
+const compactRange = (lo: string, hi: string) => `${/^\d+%$/.test(lo) && /%$/.test(hi) ? lo.slice(0, -1) : lo}–${hi}`;
+
+/**
+ * NOAA's model as context, a cell per valid day. Days without a run are one hatched span per contiguous gap,
+ * said once ("no run: a gap, not a low value"). A cell's words start after the now line and fit its width:
+ * the full sentence, then shorter forms; a cell too narrow for its value (today, late in the day) carries it
+ * as a small plate over the gap that follows, whose words then sit at its right end.
+ */
+function ModelLane({ outlook, today, start, end, x, wd, nowMin, laneW }: { outlook: OutlookDayLite[] | null | "error"; today: string; start: number; end: number; x: (m: number) => string; wd: (a: number, b: number) => string; nowMin: number | null; laneW: number }) {
   if (outlook === null) return <Empty>Reading NOAA&rsquo;s model…</Empty>;
   if (outlook === "error") return <Empty>C-HARM could not be read</Empty>;
-  const days: number[] = [];
-  for (let k = Math.floor(start / 1440); k * 1440 < end; k++) days.push(k);
+  const px = (a: number, b: number) => ((Math.min(b, end) - Math.max(a, start)) / (end - start)) * laneW;
+  type Cell = { a: number; b: number; date: string; o: OutlookDayLite | null };
+  const cells: Cell[] = [];
+  for (let k = Math.floor(start / 1440); k * 1440 < end; k++) {
+    const date = new Date(Date.parse(`${today}T00:00:00Z`) + k * 86_400_000).toISOString().slice(0, 10);
+    const o = outlook.find((d) => d.valid === date) ?? null;
+    cells.push({ a: k * 1440, b: k * 1440 + 1440, date, o: o?.pda ? o : null });
+  }
+  // contiguous days without a run: one span
+  const spans: Cell[] = [];
+  for (const c of cells) {
+    const last = spans.at(-1);
+    if (!c.o && last && !last.o) last.b = c.b;
+    else spans.push({ ...c });
+  }
+  const from = (a: number) => (nowMin !== null ? Math.max(a, nowMin) : a);
+  let plateBefore = false;
   return (
     <>
-      {days.map((k) => {
-        const date = new Date(Date.parse(`${today}T00:00:00Z`) + k * 86_400_000).toISOString().slice(0, 10);
-        const o = outlook.find((d) => d.valid === date);
-        const a = k * 1440;
-        const b = a + 1440;
-        if (!o || !o.pda)
+      {spans.map((c, i) => {
+        if (!c.o) {
+          const right = plateBefore;
+          plateBefore = false;
+          const room = px(from(c.a), c.b);
           return (
-            <span key={k} className="absolute inset-y-1 flex items-center overflow-hidden border-l border-n-line bg-[repeating-linear-gradient(135deg,transparent_0_5px,rgba(142,162,175,0.18)_5px_6px)] px-2" style={{ left: x(a), width: wd(a, b) }}>
-              <span className="truncate text-[11.5px] text-n-ink-2">no run: a gap, not a low value</span>
+            <span key={c.a} className="absolute inset-y-1 overflow-hidden border-l border-n-line bg-[repeating-linear-gradient(135deg,transparent_0_5px,rgba(142,162,175,0.18)_5px_6px)]" style={{ left: x(c.a), width: wd(c.a, c.b) }} data-testid="model-gap">
+              <span className={`absolute inset-y-0 flex items-center px-2 ${right ? "right-0 justify-end" : ""}`} style={right ? undefined : { left: `calc(${((from(c.a) - Math.max(c.a, start)) / (end - start)) * laneW}px)`, right: 0 }}>
+                <span className="truncate text-[11.5px] text-n-ink-2">{room >= 190 ? "no run: a gap, not a low value" : "no run: a gap"}</span>
+              </span>
             </span>
           );
-        const nb = o.pda;
-        const text = nb.here != null ? `${fmtPct(nb.here)} here` : nb.min != null && nb.max != null ? `${fmtPct(nb.min)}–${fmtPct(nb.max)} offshore` : "no value for these waters";
+        }
+        const nb = c.o.pda!;
+        const range = nb.min != null && nb.max != null;
+        const value = nb.here != null ? fmtPct(nb.here) : range ? compactRange(fmtPct(nb.min), fmtPct(nb.max)) : null;
+        const words = nb.here != null ? `${fmtPct(nb.here)} here` : range ? `${fmtPct(nb.min)}–${fmtPct(nb.max)} offshore` : "no value for these waters";
+        const room = px(from(c.a), c.b) - 16;
+        const next = spans[i + 1];
+        const plate = room < 56 && value !== null && (!next || !next.o);
+        plateBefore = plate;
+        const title = `C-HARM, valid ${c.date}: ${words}, chance particulate domoic acid exceeds 500 ng/L`;
         return (
-          <span key={k} className="absolute inset-y-1 flex items-center overflow-hidden border-l border-n-model-line bg-n-model-bg px-2" style={{ left: x(a), width: wd(a, b) }} title={`C-HARM, valid ${date}: chance particulate domoic acid exceeds 500 ng/L`}>
-            <span className="truncate text-[12px] text-n-ink">
-              <span className="font-data text-n-model">{text}</span> <span className="text-n-ink-2">· pDA &gt; 500 ng/L</span>
+          <span key={c.a} className="absolute inset-y-1 border-l border-n-model-line bg-n-model-bg" style={{ left: x(c.a), width: wd(c.a, c.b) }} title={title} data-testid="model-cell">
+            <span className={`absolute inset-y-0 flex items-center ${plate ? "z-10 whitespace-nowrap rounded-r-[2px] border border-l-0 border-n-model-line bg-n-model-bg px-1.5" : "right-0 overflow-hidden px-2"}`} style={{ left: `${((from(c.a) - Math.max(c.a, start)) / (end - start)) * laneW + (plate ? 3 : 0)}px` }}>
+              <span className={`${plate ? "" : "truncate"} text-[12px] text-n-ink`} data-testid="model-cell-text">
+                {room >= 230 ? (
+                  <>
+                    <span className="font-data text-n-model">{words}</span> <span className="text-n-ink-2">· pDA &gt; 500 ng/L</span>
+                  </>
+                ) : (
+                  <span className="font-data text-n-model">{room >= 130 ? words : (value ?? words)}</span>
+                )}
+                <span className="sr-only">{` ${title}`}</span>
+              </span>
             </span>
           </span>
         );

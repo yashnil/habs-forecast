@@ -17,6 +17,7 @@ import type { EvidenceNode } from "@/lib/harborEvidence";
 import type { FieldKey } from "@/lib/tripEvaluation";
 import { encodeSelection, type Selection } from "@/v4/state/selection";
 import { useReportSource } from "@/v4/readiness/store";
+import { modelEntry, satelliteEntry } from "@/v4/readiness/shown";
 import { TopBar, NavTabs } from "@/v4/shell/TopBar";
 import { NoticesButton, type LocalNotices } from "@/v4/shell/Notices";
 import { RegistryDisclosure } from "@/v4/shell/Disclosure";
@@ -45,7 +46,7 @@ import { DecisionRow } from "./Decision";
 import { AGENCY_LINKS } from "@/content/coast";
 import { econAudience } from "./economics/model";
 import { TimeView } from "./Lanes";
-import { HarbourMap } from "./HarbourMap";
+import { HarbourMap, chlorophyll } from "./HarbourMap";
 import { seasonStatus } from "./season";
 import { Caps } from "./ui/Instrument";
 import { SeaBody, SeasonsBody, WorthBody, useSeaLimits, worthLine } from "@/components/coast/FishingBrief";
@@ -165,6 +166,11 @@ export function Briefing(props: Props) {
   const placeSel: Selection | null = !place ? null : place.kind === "port" ? { kind: "harbor", port: Number(place.key.slice(5)) } : { kind: "point", lat: place.lat, lon: place.lon };
 
   useReportSource({ id: "data", label: "Neritic dataset", state: "ready", detail: `Published ${props.manifest.generated_at.slice(0, 16).replace("T", " ")} UTC`, asOf: props.manifest.generated_at });
+  // the published sources this briefing shows, with their freshness (the same rule as Explore), so the
+  // top bar never says "Ready" over a days-old model run or satellite view
+  const mapLayer = useMemo(() => chlorophyll(props.manifest, props.baseUrl)?.layer ?? null, [props.manifest, props.baseUrl]);
+  useReportSource(place ? modelEntry(props.manifest, now, "In this briefing's model lane and evidence") : null);
+  useReportSource(place && mapLayer ? satelliteEntry(props.manifest, now, "On this briefing's map", mapLayer) : null);
   useReportSource(place ? { id: "conditions", label: "Harbour conditions", state: b.cond.loading ? "loading" : b.cond.error ? "unavailable" : b.cond.data ? "ready" : "waiting", detail: b.cond.error ?? "NOAA CO-OPS, NDBC and NWS, read live" } : null);
 
   // the reader's own ticks on "Before you go", per place, trip and day, on this device only

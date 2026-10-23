@@ -4,7 +4,7 @@ import { toast } from "@/v4/ui/toast";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MlMap } from "maplibre-gl";
-import type { Manifest, PortsCollection, SourceStatus } from "@/generated/schema";
+import type { Manifest, PortsCollection } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 import type { PortIntelCollection } from "@/generated/port_intel";
 import type { StationLite } from "@/lib/data";
@@ -20,14 +20,15 @@ import { clipLimitsToWater, labelledGeometry } from "@/lib/officialGeometry";
 import { loadWaterFallback, type WaterGeometry } from "@/lib/waterFallback";
 import { COAST_BOUNDS, coastCamera, journeyTo, seaward, waterSampler, type Insets } from "@/lib/camera";
 import { forecastFreshness, openingLayer, type Opening } from "@/lib/opening";
-import { ageInDays, classifyTime, type Freshness } from "@/lib/freshness";
+import { ageInDays } from "@/lib/freshness";
 import { defaultLead } from "@/lib/charmDays";
 import { pacificToday } from "@/lib/time";
 import { useNow } from "@/lib/useNow";
 import type { CurrentsOverlay, FootprintOverlay, MapPoint } from "@/components/map/MapCanvas";
 import { MobileSheet, type SnapId } from "@/components/MobileSheet";
 import { HoverReadout, type HoverSource } from "@/components/map/HoverReadout";
-import { useReportSource, type SourceState } from "@/v4/readiness/store";
+import { useReportSource } from "@/v4/readiness/store";
+import { currentsEntry, fieldState, layerFreshness, modelEntry, newestSatellite, satelliteEntry } from "@/v4/readiness/shown";
 import { SourceList } from "@/v4/readiness/StatusCenter";
 import { TopBar, NavTabs } from "@/v4/shell/TopBar";
 import { NoticesButton, type LocalNotices } from "@/v4/shell/Notices";
@@ -573,14 +574,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     detail: official ? "Neritic's copy; not verified by a person. The agencies' pages are the authority." : "Neritic's copy could not be loaded; check CDFW and CDPH directly",
     asOf: officialStatus?.last_success_at ?? null,
   });
-  // a field that loaded is "ready" only while it is current: stale and historical data, and a failed
-  // update, are said in the status centre too (the same policy as the layer panel)
-  const fieldState = (fresh: Freshness | null, status: SourceStatus | null): { state: SourceState; note: string | null } => {
-    if (fresh?.state === "historical") return { state: "stale", note: `Out of date (${fresh.ageDays} days): does not describe current conditions` };
-    if (fresh?.state === "stale") return { state: "stale", note: `Older than usual (${fresh.ageDays} days)` };
-    if (status && status.outcome !== "updated") return { state: "partial", note: "The last update did not complete; the newest published data is shown" };
-    return { state: "ready", note: null };
-  };
+  // a field that loaded is "ready" only while it is current: the same rule on every route (v4/readiness/shown)
   const modelStatus = sourceStatus(manifest, "charm");
   const modelFresh = now ? forecastFreshness(manifest, now) : null;
   const modelField = fieldState(modelFresh, modelStatus);
@@ -595,26 +589,18 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           actions: mapStatus?.field === "failed" ? [{ label: "Try again", run: retryField }] : undefined,
         }
       : // not on the map: still reported with its freshness, so an out-of-date run never leaves the status "Ready"
-        run
-        ? { id: "model", label: "NOAA C-HARM forecast", state: modelField.state, detail: [`Run issued ${run.issued_date}`, modelField.note, "Not on the map"].filter(Boolean).join(". "), asOf: run.issued_date }
-        : null,
+        modelEntry(manifest, now, "Not on the map"),
   );
-  const obsFresh = (id: string, l: typeof resolved.satLayer) => {
-    const st = sourceStatus(manifest, id);
-    // each layer carries its own freshness policy; a latest-clear view is as fresh as its newest pixel
-    return { st, fresh: now && l ? classifyTime(l.freshness, l.composite ? { ...l.time, observed_date: l.composite.newest_observed_date } : l.time, now) : null };
-  };
+  const obsFresh = (id: string, l: typeof resolved.satLayer) => ({ st: sourceStatus(manifest, id), fresh: layerFreshness(l ?? null, now) });
   const satOn = active.kind === "satellite" || (active.kind === "currents" && !!active.chl);
   // the satellite's newest view, reported even when another layer is on the map
-  const satNewest = satOn ? resolved.satLayer : (satelliteLatest(manifest, "olci300") ?? satelliteLatest(manifest, "viirs750") ?? satelliteLatest(manifest, "multi") ?? null);
+  const satNewest = satOn ? resolved.satLayer : newestSatellite(manifest);
   const satF = obsFresh("satellite_chl", satNewest);
   const satField = fieldState(satF.fresh, satF.st);
   useReportSource(
     satOn
       ? { id: "satellite", label: "Satellite chlorophyll", state: mapStatus?.field === "failed" ? "unavailable" : mapStatus?.field === "ready" ? satField.state : "loading", detail: [resolved.satLayer ? `${resolved.satLayer.layer_id.split("_")[0].toUpperCase()} tiles` : "No layer", mapStatus?.field === "failed" ? "Some tiles could not be loaded" : satField.note].filter(Boolean).join(". "), asOf: resolved.satLayer?.time.observed_date ?? null, actions: mapStatus?.field === "failed" ? [{ label: "Try again", run: retryField }] : undefined }
-      : satNewest
-        ? { id: "satellite", label: "Satellite chlorophyll", state: satField.state, detail: [`Newest view ${satNewest.composite?.newest_observed_date ?? satNewest.time.observed_date ?? ""}`, satField.note, "Not on the map"].filter(Boolean).join(". "), asOf: satNewest.composite?.newest_observed_date ?? satNewest.time.observed_date ?? null }
-        : null,
+      : satelliteEntry(manifest, now, "Not on the map"),
   );
   // the radar's newest hour, reported even when the currents are not on the map
   const curNewest = active.kind === "currents" ? curLayer : (currentsHourly(manifest).at(-1) ?? null);
@@ -623,9 +609,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   useReportSource(
     active.kind === "currents"
       ? { id: "currents", label: "Surface currents (HF radar)", state: curState === "failed" ? "unavailable" : curState === "ready" ? curReady.state : "loading", detail: ["Hourly, 2 km cells", curState === "failed" ? "This hour could not be loaded" : curReady.note].filter(Boolean).join(". "), asOf: curLayer?.time.valid_time ?? null, actions: curState === "failed" ? [{ label: "Try again", run: retryCurrents }] : undefined }
-      : curNewest
-        ? { id: "currents", label: "Surface currents (HF radar)", state: curReady.state, detail: ["Hourly, 2 km cells", curReady.note, "Not on the map"].filter(Boolean).join(". "), asOf: curNewest.time.valid_time ?? null }
-        : null,
+      : currentsEntry(manifest, now, "Not on the map"),
   );
   const placeName = harborF?.properties.display_name ?? station?.name ?? null;
   useReportSource(stationsError && !stations ? { id: "conditions", label: "Shore stations", state: "unavailable", detail: stationsError } : null);
@@ -1207,9 +1191,11 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const layerCredit = sentinel ? `Contains modified Copernicus Sentinel data ${sentinel}` : null;
   // the time rail: the layer's own time, the other layers' frames as context, and its date line under it
   // the status row keeps the tallest height it has had for this layer: playing the currents adds and removes
-  // lines (the hour note, a region the radar missed), and the rail must not jump with them
+  // lines (the hour note, a region the radar missed), and the rail must not jump with them. For the currents
+  // three lines are reserved from the start (the stamp, a region the radar missed, an older-than-usual hour):
+  // an hour that turns stale during playback folds into the reserved row (v10 fix 2)
   const railCaption = (
-    <StableCaption key={active.kind} min={active.kind === "currents" ? 34 : 0}>
+    <StableCaption key={active.kind} min={active.kind === "currents" ? 56 : 0}>
       {nothingCurrent}
       <div className="flex min-w-0 flex-wrap items-start gap-x-5 gap-y-0.5 empty:hidden [&_[data-testid=provenance]]:gap-0.5 [&_[data-testid=provenance]_p]:text-[11.5px] [&_[data-testid=provenance]_p]:leading-[16px] [&_[data-testid=currents-hour-note]]:text-[11.5px] [&_[data-testid=currents-hour-note]]:leading-[16px]">
         <Provenance manifest={manifest} choice={active} resolved={shownResolved} now={now} regions={ports?.regions ?? []} part="dock" />
@@ -1368,25 +1354,20 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                 <Icon name="layers" className="h-4 w-4 shrink-0 text-n-ink-2" />
               </button>
             )}
-            {/* the tools: one row at the right, under the lines above, over the land (the coast runs from the upper
-                left to the lower right of a phone's frame; a column of three covered it on a short phone) */}
-            {snap === "peek" && (
-              <div className="pointer-events-auto self-end" data-testid="map-controls" data-row="true">
-                <div className={`${stackCls} flex-row divide-x divide-y-0`}>
-                  {recenter}
-                  <ShareButton className={toolCls} />
-                  {packButton}
-                </div>
-              </div>
-            )}
           </div>
           {/* the sheet ends above the dock; the map stays live above it (non-modal) */}
           <div className="pointer-events-none absolute inset-x-0 top-0 z-30 overflow-clip" style={{ bottom: `calc(${DOCK}px + env(safe-area-inset-bottom, 0px))` }}>
             {/* the map's credits (ODbL) on the map's edge, one line just above the sheet at every height
                 the map shows; at full height (the map all but covered) they ride on the sheet's edge */}
             {snap !== "full" && (
-              <div ref={creditsRef} className="pointer-events-none absolute left-2 right-2 transition-[bottom] duration-200 [&>*]:pointer-events-auto" style={{ bottom: (snap === "peek" ? peekH + 8 : sheetHalf + 4) }}>
-                <CreditsChip extra={layerCredit} />
+              <div ref={creditsRef} className="pointer-events-none absolute left-2 right-2 flex items-end justify-between gap-2 transition-[bottom] duration-200" style={{ bottom: (snap === "peek" ? peekH + 8 : sheetHalf + 4) }}>
+                <div className="pointer-events-none min-w-0 flex-1 [&>*]:pointer-events-auto">
+                  <CreditsChip extra={layerCredit} />
+                </div>
+                {/* the tools docked at the right edge just above the sheet, beside the credits (v10 fix 2): off the
+                    coast the frame is about, which runs from the upper left to the lower right of a phone. Locate
+                    stays one tap away; sharing and the field pack fold behind "More" */}
+                {snap === "peek" && <PhoneTools recenter={recenter} packButton={packButton} stackCls={stackCls} toolCls={toolCls} />}
               </div>
             )}
             <div className="pointer-events-auto">
@@ -1502,6 +1483,40 @@ function Attribution() {
       <a className="underline" href="https://doi.org/10.25921/fd45-gt74" target="_blank" rel="noreferrer">NOAA NCEI ETOPO 2022</a> and{" "}
       <a className="underline" href="https://www.ncei.noaa.gov/products/coastal-relief-model" target="_blank" rel="noreferrer">Coastal Relief Model</a>. Counties: CA Dept. of Technology / CDTFA. Not for navigation.
     </p>
+  );
+}
+
+/** The phone's map tools: locate, and "More" holding share and the field pack (56 px targets). */
+function PhoneTools({ recenter, packButton, stackCls, toolCls }: { recenter: React.ReactNode; packButton: React.ReactNode; stackCls: string; toolCls: string }) {
+  const [open, setOpen] = useState(false);
+  const moreRef = useRef<HTMLButtonElement | null>(null);
+  return (
+    <div
+      className="pointer-events-auto shrink-0"
+      data-testid="map-controls"
+      data-row="true"
+      data-docked="true"
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && open) {
+          e.stopPropagation();
+          setOpen(false);
+          moreRef.current?.focus();
+        }
+      }}
+    >
+      <div className={`${stackCls} flex-row divide-x divide-y-0`}>
+        {open && (
+          <div id="map-tools-more" className="flex flex-row divide-x divide-n-line" data-testid="map-tools-more">
+            <ShareButton className={toolCls} />
+            {packButton}
+          </div>
+        )}
+        <button ref={moreRef} type="button" aria-label={open ? "Fewer map tools" : "More map tools: share, field pack"} aria-expanded={open} aria-controls="map-tools-more" onClick={() => setOpen((o) => !o)} className={toolCls} data-testid="map-tools-toggle">
+          <Icon name={open ? "close" : "more"} />
+        </button>
+        {recenter}
+      </div>
+    </div>
   );
 }
 

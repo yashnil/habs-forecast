@@ -20,7 +20,7 @@ import { Caps } from "./ui/Instrument";
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
 
 /** The newest dated chlorophyll view the dataset holds (each pixel its own latest clear day): observed, never a forecast. */
-function chlorophyll(m: Manifest | null, baseUrl: string) {
+export function chlorophyll(m: Manifest | null, baseUrl: string) {
   if (!m) return null;
   for (const product of ["multi", "olci300", "viirs750"] as SatProduct[]) {
     const r = resolve(m, { kind: "satellite", product, day: null, view: "chl", estimate: false }, baseUrl);
@@ -143,6 +143,7 @@ export function HarbourMap({
             selectedPort={isPort ? Number(place.key.slice(5)) : null}
             inspect={null}
             chrome="none"
+            limitLabelGuard={56}
             basemapPmtiles={basemapPmtiles}
             highlight={marks}
             stations={stationMarks}
@@ -157,7 +158,7 @@ export function HarbourMap({
         <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 hidden w-12 bg-gradient-to-r from-[var(--nx-bg)] to-transparent lg:block" />
         <p className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[rgba(5,9,13,0.9)] to-transparent px-2.5 pb-1.5 pt-5 text-right text-[10.5px] text-n-ink-2 lg:hidden">{credit}</p>
       </div>
-      <p className="text-[12px] leading-snug text-n-ink-2 lg:pointer-events-none lg:absolute lg:right-4 lg:top-[72px] lg:max-w-[300px] lg:rounded-[4px] lg:bg-[rgba(5,9,13,0.84)] lg:px-3 lg:py-2 lg:text-right" data-testid="locator-legend">
+      <p className="text-[12px] leading-snug text-n-ink-2 lg:pointer-events-none lg:absolute lg:right-4 lg:top-[92px] lg:max-w-[300px] lg:rounded-[4px] lg:bg-[rgba(5,9,13,0.84)] lg:px-3 lg:py-2 lg:text-right" data-testid="locator-legend">
         {field ? (
           <>
             <span className="nx-caps text-n-measured">Chlorophyll-a · satellite, observed</span>
