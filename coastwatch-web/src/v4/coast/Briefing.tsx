@@ -26,7 +26,12 @@ import { distanceKm } from "@/lib/grid";
 import type { Step } from "@/lib/nextSteps";
 import { Icon } from "@/v4/ui/Icon";
 import { clockLabel, dayLabel, dayYearLabel, kmLabel, relTime } from "@/v4/ui/time";
-import { ClaimRow, nodeSelection } from "@/v4/explore/Inspect";
+import { marineHeadline } from "@/lib/conditions";
+import { marineMaxima, overLimits } from "@/lib/trip";
+import { speciesPhrase } from "@/content/species";
+import { nodeSelection } from "@/v4/explore/Inspect";
+import { Matters } from "./Matters";
+import { TripEconomics, useTripSummary } from "@/v4/coast/economics";
 import { SinceLastCheck } from "@/components/coast/SinceLastCheck";
 import { useBriefing } from "./useBriefing";
 import { PACKS, packForPort } from "@/v4/offline/packs";
@@ -37,7 +42,7 @@ import { OfflineBanner } from "@/v4/offline/OfflineBanner";
 import { PackDialog } from "@/v4/offline/PackDialog";
 import { savedSearch, savedSnapshot } from "@/v4/offline/snapshot";
 import { homeHref, readHome, writeHome, type HomePort } from "./home";
-import { AtAGlance, SeaCard, SeasonsCard, WorthBody, useSeaLimits } from "@/components/coast/FishingBrief";
+import { AtAGlance, SeaCard, SeasonsCard, WorthBody, noticeLine, useSeaLimits } from "@/components/coast/FishingBrief";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
 
@@ -56,20 +61,6 @@ const EXAMPLES = ["port-550", "port-201", "port-220", "port-593", "port-880", "p
 function exploreHref(s: Selection, back: string): string {
   const q = new URLSearchParams({ sel: encodeSelection(s)!, from: back });
   return `/?${q.toString()}`;
-}
-
-function Section({ id, title, kicker, children }: { id: string; title: string; kicker?: string; children: React.ReactNode }) {
-  return (
-    <section aria-labelledby={`${id}-h`} className="flex flex-col gap-4 border-t border-n-line pt-7" data-testid={`brief-${id}`}>
-      <div>
-        <h2 id={`${id}-h`} className="font-serif text-[24px] font-semibold leading-tight text-n-ink">
-          {title}
-        </h2>
-        {kicker && <p className="mt-1 text-[15px] text-n-ink-2">{kicker}</p>}
-      </div>
-      {children}
-    </section>
-  );
 }
 
 /**
@@ -183,19 +174,6 @@ function NodeRow({ n, now, back }: { n: EvidenceNode; now: Date | null; back: st
   );
 }
 
-function TripSummary({ audience: a, species: sp2, day, open, onToggle }: { audience: Audience; species: string; day: string; open: boolean; onToggle: () => void }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-n-line bg-n-surface px-4 py-2 sm:hidden" data-testid="trip-summary">
-      <p className="min-w-0 text-[15.5px] font-semibold leading-snug">
-        {a === "all" ? "Any activity" : AUDIENCES.find((x) => x.id === a)?.label} · {sp2} · {day}
-      </p>
-      <button type="button" aria-expanded={open} onClick={onToggle} className="nx-press nx-focus min-h-12 shrink-0 rounded-xl px-3 text-[15px] font-semibold text-n-accent" data-testid="trip-change">
-        {open ? "Done" : "Change"}
-      </button>
-    </div>
-  );
-}
-
 // `disabled` until hydrated: a choice made before the page is live would be dropped silently on a slow phone
 function Select({ id, label, value, onChange, options, disabled = false }: { id: string; label: string; value: string; onChange: (v: string) => void; options: { id: string; label: string }[]; disabled?: boolean }) {
   return (
@@ -245,6 +223,18 @@ export function Briefing(props: Props) {
     [router, placeKey, audience, species.id, sp],
   );
   const [tripOpen, setTripOpen] = useState(false);
+  // phone (< 1024 px): the map is a strip under the glance, opened on tap; wider, a sticky right rail.
+  // null on the server and the first render, so neither map is drawn into the server's HTML
+  const [wide, setWide] = useState<boolean | null>(null);
+  const [mapOpen, setMapOpen] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const on = () => setWide(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  const tripSummary = useTripSummary(placeKey, species.id);
   const [limits, setLimits] = useSeaLimits();
   // species first (v5): on the landing, the reader can say what they fish before choosing where
   const [pick, setPick] = useState<SpeciesId>(species.id);
@@ -259,6 +249,7 @@ export function Briefing(props: Props) {
   // served from the saved pack (offline, or the page itself came from it): headings say when it was saved,
   // never "now"; null on the server and the first render, so no device time meets server HTML
   const snap = covering ? savedSnapshot(off.record, off.online) : null;
+  const basemap = off.record === undefined ? undefined : typeof navigator !== "undefined" && !navigator.onLine && off.record?.complete ? `/offline/${pack.id}/basemap.pmtiles` : null;
   const back = `/coast?${sp.toString()}`;
   const placeSel: Selection | null = !place ? null : place.kind === "port" ? { kind: "harbor", port: Number(place.key.slice(5)) } : { kind: "point", lat: place.lat, lon: place.lon };
 
@@ -292,8 +283,9 @@ export function Briefing(props: Props) {
   );
   // the notices control leads with this place's own notices (official geography; unsettled apart)
   const localNotices = useMemo<LocalNotices | null>(
-    () => (place ? { name: place.name, covering: b.assocs.filter((a) => a.tier === "geographic" && !a.dispute).map((a) => a.record.id), unsettled: b.assocs.filter((a) => a.tier === "unresolved" && !a.dispute).map((a) => a.record.id) } : null),
-    [place, b.assocs],
+    // the same count as the glance and the notices section (useBriefing's one source)
+    () => (place ? { name: place.name, covering: b.notices.hereAssocs.map((a) => a.record.id), unsettled: b.notices.unsettled } : null),
+    [place, b.notices],
   );
   // another place keeps the trip (activity, species) and is a new entry in the history
   // a new place is a new briefing: it opens at its top (on a phone the map is far below it)
@@ -387,6 +379,16 @@ export function Briefing(props: Props) {
   const activityOptions = AUDIENCES.map((a) => ({ id: a.id, label: a.id === "all" ? "Any activity" : a.label }));
   const speciesOptions = SPECIES.filter((s) => s.id === "any" || audience === "all" || s.activities.includes(audience as never)).map((s) => ({ id: s.id, label: s.label }));
   const dayOptions = b.days.map((d) => ({ id: d.date, label: `${d.label}, ${d.day}` }));
+  const asSaved = snap ? `as saved ${clockLabel(snap.savedAt)}` : null;
+  const counts = { here: b.notices.here, namingSpecies: b.notices.namingSpecies };
+  const condLine = b.tripPeriod ? `NWS ${b.tripPeriod.name}: ${marineHeadline(b.tripPeriod)}` : null;
+  const max = b.tripPeriod ? marineMaxima(b.tripPeriod.text) : null;
+  const hasLimits = limits.windKt != null || limits.seasFt != null;
+  const overNow = max && hasLimits ? (() => { const o = overLimits(max, limits); return o.wind || o.seas; })() : null;
+  const portCode = place.kind === "port" ? Number(place.key.slice(5)) : null;
+  // the notices tied to these waters that the graph does not list for this trip (another species or activity)
+  const otherHere = b.notices.hereAssocs.filter((a) => !b.notices.namingIds.has(a.record.id));
+  const next = nextLink(near, b.matters, g, stations, back, placeSel);
 
   return (
     <div className="env-chart relative min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="trip">
@@ -401,25 +403,25 @@ export function Briefing(props: Props) {
         </div>
       )}
       {packOpen && <PackDialog pack={pack} manifest={props.manifest} baseUrl={props.baseUrl} official={official} onClose={() => setPackOpen(false)} />}
-      <div className="mx-auto grid w-full max-w-[1240px] gap-8 px-4 pb-32 pt-4 sm:px-6 lg:grid-cols-[minmax(0,720px)_minmax(0,1fr)] lg:pt-6">
-        <main id="main" className="cw-page-in flex min-w-0 flex-col gap-7">
-          <header className="flex flex-col gap-4" data-testid="coast-header">
+      <div className="mx-auto grid w-full max-w-[1240px] gap-8 px-4 pb-32 pt-3 sm:px-6 lg:grid-cols-[minmax(0,700px)_minmax(0,1fr)] lg:pt-5">
+        <main id="main" className="cw-page-in flex min-w-0 flex-col gap-6">
+          {/* the compact header (v6): the place, then the trip as one tap target; the link in a small menu */}
+          <header className="flex flex-col gap-2" data-testid="coast-header">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="nx-eyebrow">Your trip briefing</p>
-                <h1 className="mt-1 text-balance font-serif text-[38px] font-semibold leading-[1.05] sm:text-[48px]" data-testid="coast-title">
+                <h1 className="text-balance font-serif text-[30px] font-semibold leading-[1.1] sm:text-[38px]" data-testid="coast-title">
                   {/* the title is the place control: other harbours, waters on the map, the home port */}
-                  <button type="button" aria-expanded={placeOpen} aria-controls={placeOpen ? "coast-place-menu" : undefined} aria-describedby="coast-place-hint" onClick={() => setPlaceOpen((o) => !o)} className="nx-tint nx-focus group inline-flex max-w-full items-center gap-2 rounded-lg text-left hover:text-n-accent" data-testid="coast-place-button">
+                  <button type="button" aria-expanded={placeOpen} aria-controls={placeOpen ? "coast-place-menu" : undefined} aria-describedby="coast-place-hint" onClick={() => setPlaceOpen((o) => !o)} className="nx-tint nx-focus group inline-flex max-w-full items-center gap-2 rounded-lg text-left hover:text-n-accent min-h-11" data-testid="coast-place-button">
                     <span className="min-w-0">{place.name}</span>
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-n-line-strong bg-n-surface text-n-ink-2 group-hover:text-n-accent sm:h-10 sm:w-10">
-                      <Icon name="chevronDown" className={`h-5 w-5 transition-transform ${placeOpen ? "rotate-180" : ""}`} />
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-n-line-strong bg-n-surface text-n-ink-2 group-hover:text-n-accent">
+                      <Icon name="chevronDown" className={`h-[18px] w-[18px] transition-transform ${placeOpen ? "rotate-180" : ""}`} />
                     </span>
                   </button>
                 </h1>
                 <span id="coast-place-hint" hidden>
                   Change the place, choose waters on the map, or keep it as your home port
                 </span>
-                <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[15.5px] text-n-ink-2" data-testid="coast-subtitle">
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[14px] text-n-ink-2" data-testid="coast-subtitle">
                   <span>
                     {place.note}
                     {place.county ? ` · ${place.county} County` : ""}
@@ -433,24 +435,56 @@ export function Briefing(props: Props) {
                   ) : null}
                 </p>
               </div>
-              <CopyLink />
+              <MoreMenu />
             </div>
-            {placeOpen && <PlaceMenu place={place} ports={ports} home={home} audience={audience} species={species.id} onHome={setHome} onPlace={(k) => { setPlaceOpen(false); goPlace(k); }} onClose={() => setPlaceOpen(false)} />}
-            <TripSummary audience={audience} species={species.label} day={b.tripDay ? `${b.tripDay.label}, ${b.tripDay.day}` : "Today"} open={tripOpen} onToggle={() => setTripOpen((o) => !o)} />
-            <div className={`flex-col gap-2 sm:flex sm:flex-row ${tripOpen ? "flex" : "hidden"}`} data-testid="trip-controls">
+            {placeOpen && (
+              <PlaceMenu
+                place={place}
+                ports={ports}
+                home={home}
+                audience={audience}
+                species={species.id}
+                onHome={setHome}
+                onPlace={(k) => {
+                  setPlaceOpen(false);
+                  goPlace(k);
+                }}
+                onMap={() => {
+                  setPlaceOpen(false);
+                  setMapOpen(true);
+                }}
+                onClose={() => setPlaceOpen(false)}
+              />
+            )}
+            <button type="button" aria-expanded={tripOpen} aria-controls="trip-controls" onClick={() => setTripOpen((o) => !o)} className="nx-press nx-focus flex min-h-12 items-center justify-between gap-3 rounded-xl border border-n-line bg-n-surface px-3.5 text-left sm:hidden" data-testid="trip-summary">
+              <span className="min-w-0 text-[15px] font-semibold leading-snug">
+                {audience === "all" ? "Any activity" : AUDIENCES.find((x) => x.id === audience)?.label} · {species.label} · {b.tripDay ? `${b.tripDay.label}, ${b.tripDay.day}` : "Today"}
+              </span>
+              <span className="shrink-0 text-[14.5px] font-semibold text-n-accent" data-testid="trip-change">
+                {tripOpen ? "Done" : "Change"}
+              </span>
+            </button>
+            <div id="trip-controls" className={`flex-col gap-2 sm:flex sm:flex-row ${tripOpen ? "flex" : "hidden"}`} data-testid="trip-controls">
               <Select id="trip-activity" disabled={!mounted} label="Activity" value={audience} onChange={(v) => go({ for: v as Audience, species: v === "all" || species.activities.includes(v as never) ? species.id : "any" })} options={activityOptions} />
               <Select id="trip-species" disabled={!mounted} label="Species" value={species.id} onChange={(v) => go({ species: v as SpeciesId })} options={speciesOptions} />
               <Select id="trip-day" disabled={!mounted} label="Day" value={b.tripDate ?? dayOptions[0]?.id ?? ""} onChange={(v) => go({ date: v === b.days[0]?.date ? null : v })} options={dayOptions.length ? dayOptions : [{ id: "", label: "Today" }]} />
             </div>
           </header>
 
-          <AtAGlance place={place} ports={ports} species={species} audience={audience} cond={b.cond} tripDate={b.tripDate} today={b.today} notices={notices.length} limits={limits} />
+          <AtAGlance place={place} ports={ports} species={species} audience={audience} cond={b.cond} tripDate={b.tripDate} today={b.today} notices={counts} limits={limits} onLimits={setLimits} asSaved={asSaved} trip={tripSummary} unknowns={b.unknowns.length} next={next} />
 
-          <section aria-labelledby="now-h" className="flex flex-col gap-4" data-testid="brief-now">
-            <h2 id="now-h" className="font-serif text-[26px] font-semibold leading-tight" data-testid="matters-heading">
+          {/* phone: the map is a strip under the glance, opened on tap (at 1440 it is the right rail) */}
+          {wide === false && (
+            <div id="coast-map" className="scroll-mt-4" data-testid="locator">
+              <Locator place={place} g={g} ports={ports} official={official} stations={stations} back={back} onPlace={goPlace} basemapPmtiles={basemap} strip open={mapOpen} onOpen={setMapOpen} />
+            </div>
+          )}
+
+          <section aria-labelledby="now-h" className="flex flex-col gap-1" data-testid="brief-now">
+            <h2 id="now-h" className="font-serif text-[22px] font-semibold leading-tight" data-testid="matters-heading">
               {snap ? (
                 <>
-                  What mattered when saved <span className="font-ui text-[17px] font-semibold text-n-ink-2">· {clockLabel(snap.savedAt)}</span>
+                  What mattered when saved <span className="font-ui text-[15px] font-semibold text-n-ink-2">· {clockLabel(snap.savedAt)}</span>
                 </>
               ) : (
                 "What matters now"
@@ -461,14 +495,11 @@ export function Briefing(props: Props) {
                 Reading the notices, shore samples, NOAA&rsquo;s model and the satellite for {place.name}…
               </p>
             ) : (
-              <ul className="flex flex-col gap-5" data-testid="matters">
-                {b.matters.map((c) => (
-                  <ClaimRow key={c.id} c={c} graph={g as EvidenceGraph} stations={stations} onSelect={(s) => router.push(exploreHref(s, back))} fallback={placeSel} />
-                ))}
-              </ul>
+              <Matters claims={b.matters} graph={g} stations={stations} onSelect={(s) => router.push(exploreHref(s, back))} fallback={placeSel} />
             )}
-            <p className="text-[13.5px] leading-snug text-n-ink-3" data-testid="matters-provenance">
-              Official items quote Neritic&rsquo;s copy of the CDFW and CDPH pages. No person has reviewed that copy yet, so the agency pages are the authority.
+            {/* the one page-level disclosure: every official line, notice and season below is this unreviewed copy */}
+            <p className="mt-1 text-[13px] leading-snug text-n-ink-3" data-testid="matters-provenance">
+              Official items quote Neritic&rsquo;s copy of the CDFW and CDPH pages and notices. No person has reviewed that copy yet, so the agency pages are the authority. Your limits, ticks, trip numbers and home port stay on this device.
             </p>
           </section>
 
@@ -476,107 +507,126 @@ export function Briefing(props: Props) {
             <SinceLastCheck />
           </div>
 
-          {/* what to do comes right after what matters and what changed (v2 order); the at-a-glance answers above link here */}
+          {/* the sections, in the order a trip is planned (v6): money, sea, seasons, checks, then the evidence */}
+          <div data-testid="brief-econ">
+            <TripEconomics place={{ key: place.key, name: place.name, portCode }} species={species.id} audience={audience} tripDate={b.tripDate} conditions={condLine || asSaved ? { line: condLine ?? "No NWS period for this day", over: overNow, asSaved } : null} notices={counts} />
+          </div>
+          <SeaCard cond={b.cond} tripDate={b.tripDate} today={b.today} limits={limits} onLimits={setLimits} now={now} asSaved={asSaved} />
+          <SeasonsCard place={place} species={species} audience={audience} tripDate={b.tripDate} today={b.today} />
 
-          <Section id="checks" title="Before you go" kicker={`For ${species.id === "any" ? (audience === "all" ? "any activity" : AUDIENCES.find((a) => a.id === audience)?.label.toLowerCase()) : species.label.toLowerCase()} at ${place.name}${b.tripDay ? `, ${b.tripDay.label.toLowerCase() === "today" ? "today" : `${b.tripDay.label} ${b.tripDay.day}`}` : ""}.`}>
+          <section aria-labelledby="checks-h" className="flex flex-col gap-2 border-t border-n-line pt-6" data-testid="brief-checks">
+            <h2 id="checks-h" className="font-serif text-[22px] font-semibold leading-tight text-n-ink">
+              Before you go
+            </h2>
             <p className="text-[13.5px] text-n-ink-2" data-testid="checks-progress">
               <span className="font-semibold text-n-ink">
-                {b.checks.shown.filter((x) => ticked.includes(x.id)).length} of {b.checks.shown.length} ticked by you
+                {b.checks.shown.filter((x) => ticked.includes(x.id)).length} of {b.checks.shown.length} ticked by you.
               </span>{" "}
-              · your own notes, kept on this device. A tick is not a check by Neritic or by any agency.
+              A tick is not a check by Neritic or by any agency.
             </p>
-            <ol className="flex flex-col gap-3" data-testid="checks">
-              {b.checks.shown.map((s, i) => (
-                <CheckItem key={s.id} s={s} n={i + 1} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
+            <ol className="divide-y divide-n-line border-y border-n-line" data-testid="checks">
+              {b.checks.shown.map((s) => (
+                <CheckItem key={s.id} s={s} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
               ))}
             </ol>
             {/* at most five checks up front; the rest stay one tap away, never dropped */}
             {b.checks.more.length > 0 && (
-              <details className="mt-3" data-testid="checks-more">
+              <details data-testid="checks-more">
                 <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center font-semibold text-n-accent">
                   {b.checks.more.length} more {b.checks.more.length === 1 ? "check" : "checks"}
                 </summary>
-                <ol className="mt-2 flex flex-col gap-3">
-                  {b.checks.more.map((s, i) => (
-                    <CheckItem key={s.id} s={s} n={b.checks.shown.length + i + 1} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
+                <ol className="divide-y divide-n-line border-y border-n-line">
+                  {b.checks.more.map((s) => (
+                    <CheckItem key={s.id} s={s} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
                   ))}
                 </ol>
               </details>
             )}
-          </Section>
-
-          {/* the fishing questions in full (v5 fishermen audit): the sea, then CDFW's seasons for these waters */}
-          <SeaCard cond={b.cond} tripDate={b.tripDate} today={b.today} limits={limits} onLimits={setLimits} now={now} />
-          <SeasonsCard place={place} species={species} audience={audience} tripDate={b.tripDate} today={b.today} />
+          </section>
 
           {/* the evidence behind the answer, folded: each says how much it holds and what, one tap away */}
-          <div className="flex flex-col">
-          <Fold id="worth" title="What the catch was worth" count={2} summary="CDFW's dock values for 2023 and 2024: history, not today's price" kicker="What fishermen were paid at the dock, as CDFW reports it.">
-            <WorthBody place={place} ports={ports} species={species} />
-          </Fold>
-          <Fold
-            id="measured"
-            title="The evidence near you"
-            count={near.length}
-            summary={!g ? "Reading…" : near.length ? `${whatList(near)}${snap ? `, as saved ${clockLabel(snap.savedAt)}` : ""}` : "Nothing measured recently in these waters themselves"}
-            kicker="Measurements and observations that describe these waters, with where and when each was taken."
-          >
-            {!g ? (
-              <p className="text-[15px] text-n-ink-2">Reading…</p>
-            ) : near.length ? (
-              <ul className="divide-y divide-n-line">{near.map((n) => <NodeRow key={n.id ?? n.variable} n={n} now={now} back={back} />)}</ul>
-            ) : (
-              <p className="text-[15px] text-n-ink-2">Nothing measured recently in these waters themselves. What exists is farther away or older, below.</p>
-            )}
-          </Fold>
-
-          {far.length > 0 && (
-            <Fold id="context" title="Farther away or older" count={far.length} summary={`Context only: ${whatList(far).toLowerCase()}`} kicker="Context only: useful to know, but not a reading of these waters on this day.">
-              <ul className="divide-y divide-n-line">{far.map((n) => <NodeRow key={n.id ?? n.variable} n={n} now={now} back={back} />)}</ul>
+          <div className="flex flex-col" data-testid="brief-evidence">
+            <p className="nx-eyebrow pt-2">Evidence</p>
+            <Fold id="worth" title="Dock value, history" count={2} summary="CDFW's statewide dock values for 2023 and 2024: not today's price">
+              <WorthBody place={place} ports={ports} species={species} />
             </Fold>
-          )}
+            <Fold id="measured" title="The evidence near you" count={near.length} summary={!g ? "Reading…" : near.length ? `${whatList(near)}${asSaved ? `, ${asSaved}` : ""}` : "Nothing measured recently in these waters themselves"}>
+              {!g ? (
+                <p className="text-[15px] text-n-ink-2">Reading…</p>
+              ) : near.length ? (
+                <ul className="divide-y divide-n-line">{near.map((n) => <NodeRow key={n.id ?? n.variable} n={n} now={now} back={back} />)}</ul>
+              ) : (
+                <p className="text-[15px] text-n-ink-2">Nothing measured recently in these waters themselves. What exists is farther away or older, below.</p>
+              )}
+            </Fold>
+            {far.length > 0 && (
+              <Fold id="context" title="Farther away or older" count={far.length} summary={`Context only: ${whatList(far).toLowerCase()}`}>
+                <ul className="divide-y divide-n-line">{far.map((n) => <NodeRow key={n.id ?? n.variable} n={n} now={now} back={back} />)}</ul>
+              </Fold>
+            )}
 
-          <Fold
-            id="official"
-            title="Official restrictions"
-            count={notices.length}
-            summary={notices.length ? `Neritic's copy of the CDFW and CDPH notices tied to these waters: not verified by a person` : "None in Neritic's list is tied to these waters; the list may be incomplete"}
-            kicker="Neritic's transcription of the agencies' notices: not verified by a person. Check the agency before you rely on any of them."
-          >
-            {notices.length ? (
-              <ul className="divide-y divide-n-line">
-                {notices.map((n) => (
-                  <li key={n.id} className="py-3" data-testid={`notice-${n.id}`}>
-                    <p className="text-[15.5px] font-semibold leading-snug">{n.text}</p>
-                    <p className="mt-0.5 text-[14px] text-n-ink-2">
-                      {n.source.name}
-                      {n.where?.name ? ` · ${n.where.name}` : ""}
-                      {(n.time as { issued?: string | null }).issued ? ` · since ${dayLabel((n.time as { issued: string }).issued)}` : ""}
-                    </p>
-                    {n.freshness?.note && <p className="mt-1 text-[14px] font-semibold text-n-official">{n.freshness.note}</p>}
-                    <p className="mt-1 flex flex-wrap gap-x-3 text-[13px]">
-                      <span className="font-semibold text-n-official">Not verified</span>
-                      {n.source.url && (
-                        <a href={n.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
-                          {n.source.name} notice <Icon name="external" className="h-3.5 w-3.5" />
-                        </a>
-                      )}
-                    </p>
-                  </li>
+            <Fold id="official" title="Official restrictions" count={counts.here} summary={noticeLine(counts, species, audience)}>
+              {notices.length + otherHere.length ? (
+                <ul className="divide-y divide-n-line">
+                  {notices.map((n) => (
+                    <li key={n.id} className="py-3" data-testid={`notice-${n.id}`}>
+                      <p className="text-[15.5px] font-semibold leading-snug">{n.text}</p>
+                      <p className="mt-0.5 text-[14px] text-n-ink-2">
+                        {n.source.name}
+                        {n.where?.name ? ` · ${n.where.name}` : ""}
+                        {(n.time as { issued?: string | null }).issued ? ` · since ${dayLabel((n.time as { issued: string }).issued)}` : ""}
+                      </p>
+                      {n.freshness?.note && <p className="mt-1 text-[14px] font-semibold text-n-official">{n.freshness.note}</p>}
+                      <p className="flex flex-wrap gap-x-3 text-[13px]">
+                        <span className="inline-flex min-h-11 items-center font-semibold text-n-official">Not verified</span>
+                        {n.source.url && (
+                          <a href={n.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
+                            {n.source.name} notice <Icon name="external" className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </p>
+                    </li>
+                  ))}
+                  {otherHere.length > 0 && (
+                    <li className="pt-3" data-testid="notices-other">
+                      <p className="nx-eyebrow">{species.id === "any" ? "Also tied to these waters" : `Tied to these waters, not naming ${speciesPhrase(species)}`}</p>
+                      <ul className="divide-y divide-n-line">
+                        {otherHere.map((a) => {
+                          const url = a.record.sources.find((x) => x.url.startsWith("https://"))?.url ?? null;
+                          return (
+                            <li key={a.record.id} className="py-2" data-testid={`notice-official:${a.record.id}`}>
+                              <p className="text-[15px] font-semibold leading-snug">{a.record.title}</p>
+                              <p className="flex flex-wrap items-center gap-x-3 text-[13px] text-n-ink-2">
+                                <span>
+                                  {a.record.agency}
+                                  {a.record.effective_date ? ` · since ${dayLabel(a.record.effective_date)}` : ""}
+                                </span>
+                                <span className="font-semibold text-n-official">Not verified</span>
+                                {url && (
+                                  <a href={url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
+                                    {a.record.agency} notice <Icon name="external" className="h-3.5 w-3.5" />
+                                  </a>
+                                )}
+                              </p>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </li>
+                  )}
+                </ul>
+              ) : (
+                <p className="text-[15px] text-n-ink-2">No notice in Neritic&rsquo;s list is tied to these waters. The list may be incomplete: check CDFW and CDPH.</p>
+              )}
+            </Fold>
+
+            <Fold id="unknown" title="What is not known" count={b.unknowns.length} summary="Missing evidence is said, never filled in">
+              <ul className="flex list-disc flex-col gap-2 pl-5 text-[15.5px] leading-relaxed text-n-ink-2" data-testid="unknowns">
+                {b.unknowns.map((u) => (
+                  <li key={u}>{u}</li>
                 ))}
               </ul>
-            ) : (
-              <p className="text-[15px] text-n-ink-2">No notice in Neritic&rsquo;s list is tied to these waters. The list may be incomplete: check CDFW and CDPH.</p>
-            )}
-          </Fold>
-
-          <Fold id="unknown" title="What is not known" count={b.unknowns.length} summary="Missing evidence is said, never filled in" kicker="Each gap in what Neritic can say about these waters.">
-            <ul className="flex list-disc flex-col gap-2 pl-5 text-[15.5px] leading-relaxed text-n-ink-2" data-testid="unknowns">
-              {b.unknowns.map((u) => (
-                <li key={u}>{u}</li>
-              ))}
-            </ul>
-          </Fold>
+            </Fold>
           </div>
 
           <footer className="flex flex-col gap-3 border-t border-n-line pt-6 text-[14px] text-n-ink-3">
@@ -584,7 +634,7 @@ export function Briefing(props: Props) {
               <Link href={exploreHref(placeSel!, back)} className="nx-press nx-focus flex min-h-12 items-center gap-2 rounded-xl border border-n-line-strong px-4 font-semibold text-n-ink">
                 <Icon name="map" /> Open in Explore
               </Link>
-              <Link href={`/research?place=${encodeURIComponent(place.key)}`} className="nx-press nx-focus flex min-h-12 items-center gap-2 rounded-xl border border-n-line-strong px-4 font-semibold text-n-ink">
+              <Link href={`/research?${new URLSearchParams({ place: place.key, from: back }).toString()}`} className="nx-press nx-focus flex min-h-12 items-center gap-2 rounded-xl border border-n-line-strong px-4 font-semibold text-n-ink">
                 <Icon name="research" /> Open in Research
               </Link>
               {hasPack && (
@@ -593,25 +643,57 @@ export function Briefing(props: Props) {
                 </button>
               )}
             </div>
-            <p>Sources: CDFW and CDPH (Neritic&rsquo;s copy), CalHABMAP via SCCOOS, NOAA C-HARM, NOAA CoastWatch, NDBC and CO-OPS. This link reproduces this trip.</p>
+            <p>Sources: CDFW and CDPH (Neritic&rsquo;s copy), CalHABMAP via SCCOOS, NOAA C-HARM, NOAA CoastWatch, NWS, NDBC and CO-OPS, CDFW By The Numbers. This link reproduces this trip.</p>
             <p>Neritic is an independent research project and is not affiliated with or endorsed by NOAA, CDFW, or CDPH.</p>
           </footer>
         </main>
 
-        <aside id="coast-map" aria-label={`Map of ${place.name}`} className="scroll-mt-4 lg:sticky lg:top-4 lg:self-start" data-testid="locator">
-          <Locator place={place} g={g} ports={ports} official={official} stations={stations} back={back} onPlace={goPlace} basemapPmtiles={off.record === undefined ? undefined : !navigator.onLine && off.record?.complete ? `/offline/${pack.id}/basemap.pmtiles` : null} />
-        </aside>
+        {/* 1440: a sticky rail with the map and the trip's numbers */}
+        {wide && (
+          <aside id="coast-map" aria-label={`Map of ${place.name}`} className="flex flex-col gap-3 self-start lg:sticky lg:top-4" data-testid="locator">
+            <Locator place={place} g={g} ports={ports} official={official} stations={stations} back={back} onPlace={goPlace} basemapPmtiles={basemap} />
+            <a href="#trip-economics" className="nx-press nx-focus nx-lift flex flex-col gap-0.5 rounded-2xl border border-n-line bg-n-surface p-3.5 hover:border-n-line-strong" data-testid="rail-econ">
+              <span className="nx-eyebrow">Trip economics</span>
+              {tripSummary ? (
+                <span className="nx-data text-[15px] font-semibold">
+                  Cost {tripSummary.costUsd != null ? `$${Math.round(tripSummary.costUsd).toLocaleString("en-US")}` : "—"}
+                  {tripSummary.breakEvenLb != null ? ` · break-even ${Math.round(tripSummary.breakEvenLb).toLocaleString("en-US")} lb` : ""}
+                  {tripSummary.netUsd != null ? ` · net ${tripSummary.netUsd < 0 ? "−" : ""}$${Math.abs(Math.round(tripSummary.netUsd)).toLocaleString("en-US")}` : ""}
+                </span>
+              ) : (
+                <span className="text-[15px] font-semibold">Work out cost and break-even from your own numbers</span>
+              )}
+              <span className="text-[13px] text-n-ink-2">{tripSummary ? `Your scenario “${tripSummary.name}”, not a forecast.` : "A scenario from your inputs, not a forecast."}</span>
+            </a>
+          </aside>
+        )}
       </div>
       <MobileDock />
     </div>
   );
 }
 
+/**
+ * "Inspect next": one deep link. The newest measurement near these waters, in Research with this
+ * briefing as the way back; else the first statement's place in Explore; else the harbour in Explore.
+ */
+function nextLink(near: EvidenceNode[], matters: { supports: string[] }[], g: EvidenceGraph | null, stations: StationLite[] | null, back: string, placeSel: Selection | null): { label: string; href: string } | null {
+  const st = near.find((n) => n.class === "measurement" && n.id && stations?.some((s) => s.station_id === n.id!.split(":")[1]));
+  if (st) {
+    const id = st.id!.split(":")[1];
+    return { label: `${cap(st.variable)} at ${st.where?.name ?? "the nearest station"}, in Research`, href: `/research?${new URLSearchParams({ station: id, from: back }).toString()}` };
+  }
+  const nodes = new Map((g?.nodes ?? []).map((n) => [n.id, n]));
+  const t = matters.flatMap((c) => c.supports).map((id) => nodeSelection(nodes.get(id), stations)).find(Boolean) ?? placeSel;
+  return t ? { label: "These waters' evidence on the map, in Explore", href: exploreHref(t, back) } : null;
+}
+
 /** A small map that says where the evidence is; the full spatial view is Explore. */
 /** `basemapPmtiles`: offline with a saved field pack, the locator draws the pack's own map, not the tile server's.
  *  Undefined until the pack has been read: the map waits for that decision (its basemap is fixed for its life,
- *  so a map made before it would ask the tile server offline). */
-function Locator({ place, g, ports, official, stations, back, onPlace, basemapPmtiles }: { place: CoastPlace; g: EvidenceGraph | null; ports: PortsCollection | null; official: OfficialDataset | null; stations: StationLite[] | null; back: string; onPlace: (key: string) => void; basemapPmtiles?: string | null }) {
+ *  so a map made before it would ask the tile server offline).
+ *  `strip` (phones): a one-line bar under the glance; the map loads only once it is opened. */
+function Locator({ place, g, ports, official, stations, back, onPlace, basemapPmtiles, strip = false, open = true, onOpen }: { place: CoastPlace; g: EvidenceGraph | null; ports: PortsCollection | null; official: OfficialDataset | null; stations: StationLite[] | null; back: string; onPlace: (key: string) => void; basemapPmtiles?: string | null; strip?: boolean; open?: boolean; onOpen?: (o: boolean) => void }) {
   const feats = useMemo<GeoJSON.FeatureCollection>(() => {
     const out: GeoJSON.Feature[] = [{ type: "Feature", geometry: { type: "Point", coordinates: [place.lon, place.lat] }, properties: { kind: place.kind === "port" ? "harbor" : "point", label: place.name } }];
     for (const n of g?.nodes ?? []) {
@@ -634,22 +716,38 @@ function Locator({ place, g, ports, official, stations, back, onPlace, basemapPm
   const bounds: [[number, number], [number, number]] = [[w, s], [e, n]];
   // the evidence arrives after the map: frame the place and every station the briefing names
   const [map, setMap] = useState<import("maplibre-gl").Map | null>(null);
-  // the map loads only when it comes near the screen (on a phone it is below the answer)
+  // the map loads only when it comes near the screen (and, as a phone strip, once it is opened)
   const box = useRef<HTMLDivElement | null>(null);
   const [near, setNear] = useState(false);
   useEffect(() => {
+    if (!open) return;
     const el = box.current;
     if (!el || typeof IntersectionObserver === "undefined") return setNear(true);
     const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && setNear(true), { rootMargin: "300px" });
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [open]);
   useEffect(() => {
     map?.fitBounds([[w, s], [e, n]], { padding: 28, duration: 0, maxZoom: 11 });
   }, [map, w, s, e, n]);
+  const exploreLink = (
+    <Link href={`/?${new URLSearchParams({ sel: place.kind === "port" ? `harbor:${place.key.slice(5)}` : `point:${place.lat.toFixed(4)},${place.lon.toFixed(4)}`, from: back }).toString()}`} className="nx-focus flex min-h-11 shrink-0 items-center gap-1 rounded-lg px-2 text-[14px] font-semibold text-n-accent" data-testid="locator-explore">
+      Explore <Icon name="chevronRight" className="h-4 w-4" />
+    </Link>
+  );
+  if (strip && !open)
+    return (
+      <div className="env-instrument flex items-center justify-between gap-2 rounded-2xl border border-n-line bg-n-surface pl-1 pr-1">
+        <button type="button" aria-expanded={false} onClick={() => onOpen?.(true)} className="nx-tint nx-focus flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-xl px-2.5 text-left text-[14.5px] font-semibold text-n-ink" data-testid="locator-toggle">
+          <Icon name="map" className="h-[18px] w-[18px] shrink-0 text-n-accent" />
+          <span className="min-w-0 truncate">Map: {place.name}, its stations and notice limits</span>
+        </button>
+        {exploreLink}
+      </div>
+    );
   return (
     <div ref={box} className="env-instrument overflow-hidden rounded-2xl border border-n-line">
-      <div className="relative h-[220px] lg:h-[420px]">
+      <div className={`relative ${strip ? "h-[240px]" : "h-[360px]"}`}>
         {/* until the map has drawn: the same quiet bathymetric lines as Explore's start, never a blank box */}
         {!map && (
           <div className="absolute inset-0 grid place-items-center" data-testid="locator-loading" role="status">
@@ -661,66 +759,97 @@ function Locator({ place, g, ports, official, stations, back, onPlace, basemapPm
             <p className="nx-late relative text-[13.5px] text-n-ink-2">{near ? `Drawing ${place.name} and its stations…` : `Map of ${place.name}`}</p>
           </div>
         )}
-        {near && basemapPmtiles !== undefined && <MapCanvas
-          forecast={null}
-          satellite={null}
-          satelliteAge={null}
-          imagery={null}
-          ports={ports}
-          showPorts
-          officialGeometry={geom}
-          showOfficial
-          selectedPort={place.kind === "port" ? Number(place.key.slice(5)) : null}
-          inspect={null}
-          chrome="none"
-          basemapPmtiles={basemapPmtiles}
-          highlight={feats}
-          initialBounds={bounds}
-          initialPadding={24}
-          // choose other waters on the map: a harbour, or any point in the water (briefed as that point)
-          onPort={(code) => onPlace(`port-${code}`)}
-          onPoint={(pt) => onPlace(pointKey(pt.lat, pt.lon))}
-          onReady={setMap}
-        />}
+        {near && basemapPmtiles !== undefined && (
+          <MapCanvas
+            forecast={null}
+            satellite={null}
+            satelliteAge={null}
+            imagery={null}
+            ports={ports}
+            showPorts
+            officialGeometry={geom}
+            showOfficial
+            selectedPort={place.kind === "port" ? Number(place.key.slice(5)) : null}
+            inspect={null}
+            chrome="none"
+            basemapPmtiles={basemapPmtiles}
+            highlight={feats}
+            initialBounds={bounds}
+            initialPadding={24}
+            // choose other waters on the map: a harbour, or any point in the water (briefed as that point)
+            onPort={(code) => onPlace(`port-${code}`)}
+            onPoint={(pt) => onPlace(pointKey(pt.lat, pt.lon))}
+            onReady={setMap}
+          />
+        )}
       </div>
-      <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2 px-3 py-2">
         <p className="text-[13px] text-n-ink-2" data-testid="locator-caption">
           {place.name}, the stations behind this briefing and the notices&rsquo; limits. <span className="font-semibold text-n-ink">Tap a harbour or the water to brief those waters.</span>
         </p>
-        <Link href={`/?${new URLSearchParams({ sel: place.kind === "port" ? `harbor:${place.key.slice(5)}` : `point:${place.lat.toFixed(4)},${place.lon.toFixed(4)}`, from: back }).toString()}`} className="nx-focus flex min-h-11 shrink-0 items-center gap-1 rounded-lg px-2 text-[14px] font-semibold text-n-accent" data-testid="locator-explore">
-          Explore <Icon name="chevronRight" className="h-4 w-4" />
-        </Link>
+        <div className="flex shrink-0 items-center">
+          {strip && (
+            <button type="button" aria-expanded onClick={() => onOpen?.(false)} className="nx-focus min-h-11 rounded-lg px-2 text-[14px] font-semibold text-n-ink-2" data-testid="locator-hide">
+              Hide
+            </button>
+          )}
+          {exploreLink}
+        </div>
       </div>
       <p className="px-3 pb-2 text-[11px] text-n-ink-3">© OpenStreetMap contributors · OpenMapTiles · NOAA relief. Not for navigation.</p>
     </div>
   );
 }
 
-function CopyLink() {
+/** The page's small menu: copy this briefing's link (the trip is in it). */
+function MoreMenu() {
+  const [open, setOpen] = useState(false);
   const [done, setDone] = useState(false);
+  const box = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onDown = (e: PointerEvent) => box.current && !box.current.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onDown);
+    };
+  }, [open]);
   return (
-    <button
-      type="button"
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(window.location.href);
-          setDone(true);
-          toast("Link copied");
-          setTimeout(() => setDone(false), 1800);
-        } catch {
-          setDone(false);
-        }
-      }}
-      aria-label={done ? "Link copied" : "Copy a link to this briefing"}
-      className="nx-press nx-focus flex h-12 shrink-0 items-center gap-2 rounded-full border border-n-line-strong bg-n-surface px-4 text-[14.5px] font-semibold"
-      data-testid="coast-copy-link"
-    >
-      <Icon name={done ? "check" : "link"} className="h-[18px] w-[18px]" />
-      <span className="max-sm:sr-only">{done ? "Copied" : "Copy link"}</span>
-      <span className="sr-only" aria-live="polite">
-        {done ? "Link copied" : ""}
-      </span>
-    </button>
+    <div ref={box} className="relative shrink-0">
+      <button type="button" aria-expanded={open} aria-controls={open ? "coast-more-menu" : undefined} aria-label="More: copy a link to this briefing" onClick={() => setOpen((o) => !o)} className="nx-press nx-focus grid h-12 w-12 place-items-center rounded-full border border-n-line-strong bg-n-surface text-n-ink" data-testid="coast-more">
+        <Icon name="more" className="h-5 w-5" />
+      </button>
+      {open && (
+        <div id="coast-more-menu" className="nx-pop absolute right-0 top-14 z-30 flex w-60 flex-col rounded-2xl border border-n-line bg-n-surface p-1.5 shadow-[var(--nx-shadow)]">
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(window.location.href);
+                setDone(true);
+                toast("Link copied");
+                setTimeout(() => {
+                  setDone(false);
+                  setOpen(false);
+                }, 1200);
+              } catch {
+                setDone(false);
+              }
+            }}
+            className="nx-tint nx-focus flex min-h-12 items-center gap-2 rounded-xl px-3 text-left text-[15px] font-semibold"
+            data-testid="coast-copy-link"
+          >
+            <Icon name={done ? "check" : "link"} className="h-[18px] w-[18px]" /> {done ? "Link copied" : "Copy link to this trip"}
+          </button>
+          <span className="sr-only" aria-live="polite">
+            {done ? "Link copied" : ""}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -732,18 +861,24 @@ function MobileDock() {
   );
 }
 
-/** One check before going out: what to do, why, and where (an agency page, or a phone line that dials). */
-function CheckItem({ s, n, done, onToggle }: { s: Step; n: number; done: boolean; onToggle: () => void }) {
+/** One check before going out, one line: the reader's own tick and what to do; why, and where (an agency page, or a phone line that dials), one tap away. */
+function CheckItem({ s, done, onToggle }: { s: Step; done: boolean; onToggle: () => void }) {
   return (
-    <li className={`grid grid-cols-[28px_minmax(0,1fr)_auto] gap-3 rounded-2xl border bg-n-surface p-4 ${done ? "border-n-line opacity-80" : "border-n-line"}`} data-testid={`check-${s.id}`} data-done={done}>
-      <span className="nx-data grid h-7 w-7 place-items-center rounded-full bg-n-surface-2 text-[13px] font-semibold">{n}</span>
-      <div className="min-w-0">
-        <p className={`text-[16px] font-semibold leading-snug ${done ? "text-n-ink-2" : ""}`}>{s.title}</p>
+    <li className={`grid grid-cols-[44px_minmax(0,1fr)] items-start gap-x-1 py-1 ${done ? "opacity-80" : ""}`} data-testid={`check-${s.id}`} data-done={done}>
+      {/* the reader's own acknowledgement: never a verification of the step */}
+      <label className="nx-focus grid h-11 w-11 cursor-pointer place-items-center rounded-xl hover:bg-n-surface-2" title="Tick when you have done this (your own note)">
+        <input type="checkbox" checked={done} onChange={onToggle} className="h-5 w-5 accent-[var(--nx-accent)]" aria-label={`I have done this: ${s.title}`} data-testid={`check-${s.id}-box`} />
+      </label>
+      <details className="group min-w-0">
+        <summary className={`nx-focus flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg text-[15.5px] font-semibold leading-snug ${done ? "text-n-ink-2" : ""}`}>
+          <span className="min-w-0 flex-1 py-1">{s.title}</span>
+          <Icon name="chevronDown" className="h-4 w-4 shrink-0 text-n-ink-3 transition-transform group-open:rotate-180" />
+        </summary>
         {/* a service's technical reason (an HTTP status) stays available on hover, not in the sentence */}
-        <p className="mt-0.5 text-[14.5px] leading-snug text-n-ink-2" title={/\(HTTP \d+\)/.test(s.reason) ? s.reason : undefined}>
+        <p className="text-[14.5px] leading-snug text-n-ink-2" title={/\(HTTP \d+\)/.test(s.reason) ? s.reason : undefined}>
           {s.reason.replace(/\s*\(HTTP \d+\)/, "")}
         </p>
-        <p className="mt-1.5 flex flex-wrap gap-x-3 text-[13.5px]">
+        <p className="flex flex-wrap gap-x-3 text-[13.5px]">
           {"url" in s.source ? (
             <a href={s.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
               {s.source.label} <Icon name="external" className="h-3.5 w-3.5" />
@@ -756,11 +891,7 @@ function CheckItem({ s, n, done, onToggle }: { s: Step; n: number; done: boolean
           )}
           {s.when && <span className="inline-flex min-h-11 items-center text-n-ink-3">{s.when}</span>}
         </p>
-      </div>
-      {/* the reader's own acknowledgement: never a verification of the step */}
-      <label className="nx-focus -m-2 grid h-14 w-14 cursor-pointer place-items-center rounded-xl hover:bg-n-surface-2" title="Tick when you have done this (your own note)">
-        <input type="checkbox" checked={done} onChange={onToggle} className="h-6 w-6 accent-[var(--nx-accent)]" aria-label={`I have done this: ${s.title}`} data-testid={`check-${s.id}-box`} />
-      </label>
+      </details>
     </li>
   );
 }
@@ -781,7 +912,7 @@ function HomeLink({ home, ports }: { home: HomePort; ports: PortsCollection | nu
  * CDPH harvest sites), choose waters on the map, keep this harbour as home on this device (with this
  * trip). A point chosen on the map is a place too, but not a home port.
  */
-function PlaceMenu({ place, ports, home, audience, species, onHome, onPlace, onClose }: { place: CoastPlace; ports: PortsCollection | null; home: HomePort | null; audience: Audience; species: string; onHome: (h: HomePort | null) => void; onPlace: (k: string) => void; onClose: () => void }) {
+function PlaceMenu({ place, ports, home, audience, species, onHome, onPlace, onMap, onClose }: { place: CoastPlace; ports: PortsCollection | null; home: HomePort | null; audience: Audience; species: string; onHome: (h: HomePort | null) => void; onPlace: (k: string) => void; onMap: () => void; onClose: () => void }) {
   const homePlace = home ? resolvePlace(home.place, ports) : null;
   const regions = ports?.regions ?? [];
   const byRegion = regions.map((r) => ({ r, items: (ports?.features ?? []).filter((f) => f.properties.region === r.id).map((f) => ({ key: `port-${f.properties.port_code}`, name: f.properties.display_name })) }));
@@ -832,7 +963,7 @@ function PlaceMenu({ place, ports, home, audience, species, onHome, onPlace, onC
           </optgroup>
         </select>
       </label>
-      <a href="#coast-map" onClick={onClose} className="nx-press nx-focus inline-flex min-h-12 items-center gap-2 rounded-xl border border-n-line px-3.5 text-[15px] font-semibold text-n-accent lg:hidden" data-testid="coast-map-jump">
+      <a href="#coast-map" onClick={onMap} className="nx-press nx-focus inline-flex min-h-12 items-center gap-2 rounded-xl border border-n-line px-3.5 text-[15px] font-semibold text-n-accent lg:hidden" data-testid="coast-map-jump">
         <Icon name="map" /> Choose waters on the map
       </a>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-n-line pt-3 text-[14.5px]">
@@ -852,7 +983,6 @@ function PlaceMenu({ place, ports, home, audience, species, onHome, onPlace, onC
         ) : (
           <span className="text-n-ink-3">A point on the map cannot be a home port.</span>
         )}
-        <span className="w-full text-[12.5px] text-n-ink-3">The home port and its trip are kept on this device only.</span>
       </div>
     </div>
   );

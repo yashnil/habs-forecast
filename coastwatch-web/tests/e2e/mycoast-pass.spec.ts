@@ -66,3 +66,40 @@ test("the phone sheet over the map is cool chart paper, not cream", async ({ bro
   expect(await sheet.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(255, 255, 255)");
   await ctx.close();
 });
+
+test("v6 P0 4: offline three days later, the saved copy is dated 'as saved' and makes no 'Tonight' or 'Today' claim", async ({ browser }) => {
+  test.setTimeout(180_000);
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/coast?place=port-550&for=commercial&species=dungeness`);
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
+  await page.getByTestId("pack-open").click();
+  await expect(page.getByTestId("pack-download")).toBeEnabled({ timeout: 60_000 });
+  await page.getByTestId("pack-download").click();
+  await expect(page.getByTestId("pack-status")).toHaveAttribute("data-complete", "true", { timeout: 90_000 });
+  await page.reload();
+  // online, on the day it was issued, the glance reads Monday night's NWS period
+  await expect(page.getByTestId("glance-sea-link")).toContainText("NWS Tonight");
+
+  await ctx.route("**/*", (r) => r.abort("internetdisconnected"));
+  await ctx.setOffline(true);
+  await page.clock.setFixedTime(new Date(Date.parse(NOW) + 3 * 86_400_000 + 3_600_000));
+  await page.goto(`${OK}/coast?place=port-550&for=commercial&species=dungeness`);
+  await expect(page.getByTestId("coast-title")).toHaveText("Monterey", { timeout: 20_000 });
+  await expect(page.getByTestId("matters-heading")).toContainText("What mattered when saved");
+  const glance = page.getByTestId("brief-glance");
+  await expect(glance.locator("#glance-h")).toContainText(/as saved \w{3} \d{1,2}, \d{1,2}:\d{2} [AP]M/);
+  // no saved NWS period starts on this day: said, never the first saved period
+  await expect(page.getByTestId("glance-sea-link")).toHaveText("No NWS period saved for this day");
+  await expect(page.getByTestId("sea-no-period")).toHaveText("No NWS period saved for this day.");
+  // the water temperature carries its own measured date and where
+  await expect(page.getByTestId("glance-water")).toContainText(/measured Oct 1\d, .*\((CO-OPS|NDBC)/);
+  // the saved periods are dated by their own day, never "Tonight"
+  await page.getByTestId("sea-periods-more").locator("summary").first().click();
+  await expect(page.getByTestId("sea-period").first()).toContainText(/Mon, Oct 12, night/);
+  for (const id of ["brief-glance", "brief-sea", "brief-now"]) expect(await page.getByTestId(id).innerText(), id).not.toMatch(/\b(tonight|today)\b(?!'s price)/i); // "Not today's price" is the dock-value caveat, not a claim
+  await ctx.unrouteAll({ behavior: "ignoreErrors" });
+  await ctx.setOffline(false);
+  await ctx.close();
+});

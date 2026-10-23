@@ -31,7 +31,9 @@ describe("C-HARM nearshore context (lib/gridTilesContext)", () => {
   });
 
   it("gives the nearest NOAA value as text only, with the true distance", () => {
-    expect(contextWords({ value: 0.234, km: 3.42 })).toBe("NOAA's model does not reach this water. The nearest NOAA cell, 3.4 km away, reads 23%: text only, not a forecast for this water.");
+    expect(contextWords({ value: 0.234, km: 3.42 })).toBe("NOAA publishes no toxin probability for this water. The nearest NOAA cell with one, 3.4 km away, reads 23%: text only, not a forecast for this water.");
+    // variable-specific: the bloom layer can have a value where the toxin layer has none
+    expect(contextWords({ value: 0.5, km: 2 }, "pseudo_nitzschia")).toMatch(/^NOAA publishes no Pseudo-nitzschia probability for this water/);
   });
 });
 
@@ -59,18 +61,21 @@ describe("derived index (lib/derived)", () => {
     expect(parseDerived(badGrid)!.layers.map((l) => l.kind)).toEqual(["chl_outlook", "sst"]);
   });
 
-  it("reads sea temperature as an observation, or as an analysis when the source is MUR", async () => {
+  it("reads sea temperature as an analysis when the index says so or the source is MUR, else as an observation", async () => {
     const { sstIsAnalysis } = await import("@/lib/derived");
     const t = parseDerived(fixture)!.layers[2];
     if (t.kind !== "sst") throw new Error("sst third");
-    expect(sstIsAnalysis(t)).toBe(false);
-    expect(sstIsAnalysis({ ...t, source: "NASA JPL MUR SST v4.1" })).toBe(true);
+    expect(sstIsAnalysis(t)).toBe(true);
+    const viirs = { ...t, source: "NOAA CoastWatch VIIRS SST", product_class: undefined } as typeof t;
+    expect(sstIsAnalysis(viirs)).toBe(false);
+    expect(sstIsAnalysis({ ...viirs, source: "NASA JPL MUR SST v4.1" })).toBe(true);
   });
 
   it("lists the outlook's skill with every baseline the index reports", () => {
     const o = parseDerived(fixture)!.layers[0];
     if (o.kind !== "chl_outlook") throw new Error("outlook first");
-    expect(skillRows(o.skill).map((r) => r.label)).toEqual(["This outlook", "Climatology + AR(1)", "Climatology", "Persistence (last view)"]);
+    // v6: the outlook *is* the climatology + AR(1) baseline, and its row says so
+    expect(skillRows(o.skill).map((r) => r.label)).toEqual(["This outlook (climatology + AR(1))", "Climatology", "Persistence (last view)"]);
   });
 });
 

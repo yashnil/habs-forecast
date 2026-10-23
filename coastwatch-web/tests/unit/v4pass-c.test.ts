@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { TICK_LABEL_PX, monthTicks, tickLabel } from "@/v4/charts/SeriesChart";
 import { Icon, iconClass } from "@/v4/ui/Icon";
 import { ageWords, savedSnapshot } from "@/v4/offline/snapshot";
+import { relTime } from "@/v4/ui/time";
 import type { PackRecord } from "@/v4/offline/packs";
 import { homeHref, parseHome } from "@/v4/coast/home";
 
@@ -65,7 +66,13 @@ describe("a saved copy is dated, never 'now'", () => {
   });
   it("the age is said once the copy is outdated", () => {
     expect(ageWords({ ageHours: 5, outdated: false })).toBeNull();
-    expect(ageWords({ ageHours: 30, outdated: true })).toBe("1 day old");
+    // rounded as the status centre's list rounds the same time: hours up to a day and a half, then calendar days
+    expect(ageWords({ ageHours: 30, outdated: true })).toBe("30 h old");
+    expect(ageWords({ ageHours: 40, outdated: true })).toBe("1 day old");
+    // 40 h before 10:00 PDT Oct 20 is 18:00 PDT Oct 18: two calendar days, as the list says "2 days ago"
+    expect(ageWords({ ageHours: 40, outdated: true, savedAt: "2026-10-19T01:00:00Z" }, new Date("2026-10-20T17:00:00Z"))).toBe("2 days old");
+    expect(relTime("2026-10-19T01:00:00Z", new Date("2026-10-20T17:00:00Z"))).toBe("2 days ago");
+    expect(relTime("2026-10-19T11:00:00Z", new Date("2026-10-20T17:00:00Z"))).toBe("30 h ago");
     expect(ageWords({ ageHours: 72.5, outdated: true })).toBe("3 days old");
   });
 });

@@ -159,7 +159,7 @@ export function resolve(m: Manifest, c: LayerChoice, baseUrl: string, derived: D
     const est = derivedEstimate(derived);
     if (est && estimateFits(est, c, l)) {
       out.estimateLayer = est;
-      if (c.estimate !== false) out.estimate = { id: `${est.id}@${est.issued}`, grid: est.grid, baseUrl, palette };
+      if (c.estimate !== false) out.estimate = { id: `${est.id}@${est.issued}`, grid: est.grid, baseUrl, palette, classGrid: est.class_grid ?? null };
     }
   }
   if (c.kind === "currents") {

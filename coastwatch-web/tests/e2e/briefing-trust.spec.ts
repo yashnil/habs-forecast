@@ -57,6 +57,8 @@ test("the species leads the official headline, links to the agency, and says who
   await settled(page);
   const claim = page.getByTestId("claim-notices");
   await expect(claim).toContainText("anchovy or sardine");
+  // v6: a statement is one line; its source opens on tap
+  await claim.getByTestId("claim-open-notices").click();
   await expect(claim.getByRole("link").first()).toHaveAttribute("href", /^https:\/\/(wildlife\.ca\.gov|www\.cdph\.ca\.gov)\//);
   await expect(page.getByTestId("matters-provenance")).toContainText("No person has reviewed that copy yet, so the agency pages are the authority");
   // every id on the page is unique
@@ -82,6 +84,7 @@ test("Dungeness, commercial, Crescent City: the season status leads, quoted with
   await page.goto(`${OK}/coast?place=port-201&for=commercial&species=dungeness`);
   await settled(page);
   await expect(page.getByTestId("matters").locator(":scope > li").first()).toHaveAttribute("data-testid", "claim-season");
+  await page.getByTestId("claim-open-season").click();
   await expect(page.getByTestId("claim-season").getByRole("link").first()).toHaveAttribute("href", /^https:\/\/wildlife\.ca\.gov\//);
   // the agency's own words, quoted in full, beside the headline (never only "season status")
   await expect(page.getByTestId("claim-season").getByTestId("claim-quote")).toContainText("Season is");

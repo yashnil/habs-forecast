@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import type { LayerArtifact, Manifest } from "@/generated/schema";
 import type { CurrentField } from "@/lib/currents";
 import { currentsAt, forecastAt, NO_FORECAST, pnSibling, satelliteAt, type Readout } from "@/lib/readout";
-import { contextWords, forecastContext, OUTSIDE_WORDS } from "@/lib/gridTilesContext";
-import { checkSentence, cToF, derivedAt, fmtMg, sstIsAnalysis, type DerivedValidationEntry, type EstimateLayer, type OutlookLayer, type SstLayer } from "@/lib/derived";
+import { contextWords, forecastContext, outsideLabel, outsideWords } from "@/lib/gridTilesContext";
+import { checkSentence, cToF, derivedAt, estimateClassAt, fmtMg, sstIsAnalysis, type DerivedValidationEntry, type EstimateLayer, type OutlookLayer, type SstLayer } from "@/lib/derived";
+import { BAY_TURBID, bayAt, NO_OUTLOOK_IN_BAYS } from "@/lib/bays";
 import { dayLabel } from "@/v4/ui/time";
 
 export type HoverSource =
@@ -20,41 +21,81 @@ export type HoverSource =
   | null;
 
 /** A readout, with what kind of thing its value is when it is not a published value at that water. */
-type Read = Readout & { label?: string; tone?: "context" | "outside" | "estimate" | "outlook" };
+export type Read = Readout & { label?: string; tone?: "context" | "outside" | "estimate" | "strip" | "outlook" | "bay" };
 
 const rangeWords = (r: [number, number] | null) => (r ? ` · typically ${fmtMg(r[0])}–${fmtMg(r[1])} mg/m³` : "");
 
-/** The outlook at a point: never an observation, always with its window and its typical range. */
+/** The outlook at a point: never an observation, always with its window and its typical range; never in a bay. */
 export async function outlookRead(baseUrl: string, l: OutlookLayer, lat: number, lon: number): Promise<Read> {
-  const r = await derivedAt(baseUrl, l, lat, lon);
   const when = `Neritic outlook, issued ${dayLabel(l.issued)} · mean ${dayLabel(l.valid_from)}–${dayLabel(l.valid_to)}`;
+  // v6: the map never draws the outlook over bay water, so it is never read there either
+  if (bayAt(lat, lon)) return { kind: "model", value: null, unit: "", what: "chlorophyll outlook", when, none: NO_OUTLOOK_IN_BAYS, tone: "bay" };
+  const r = await derivedAt(baseUrl, l, lat, lon);
   if (r.value == null) return { kind: "model", value: null, unit: "", what: "chlorophyll outlook", when, none: "No outlook for this water: outside the area the outlook covers. Not low chlorophyll." };
   return { kind: "model", value: fmtMg(r.value), unit: "mg/m³", what: `chlorophyll expected on average over the 8 days${rangeWords(r.range)}`, when, label: "Outlook, not observed", tone: "outlook" };
 }
 
-/** Sea-surface temperature at a point: °C as published, with °F beside it. */
+/**
+ * Sea-surface temperature at a point: °C as published, with °F beside it. MUR is an analysis: a
+ * gap-free blend, so a missing value is land or water outside its coastal scope, never cloud.
+ */
 export async function sstRead(baseUrl: string, l: SstLayer, lat: number, lon: number): Promise<Read> {
   const r = await derivedAt(baseUrl, l, lat, lon);
   const last = l.observed_dates[l.observed_dates.length - 1];
-  const when = `${l.source} · ${sstIsAnalysis(l) ? "analysis for" : "observed"} ${l.observed_dates.length > 1 ? `${dayLabel(l.observed_dates[0])}–${dayLabel(last)}` : dayLabel(last)}`;
-  if (r.value == null) return { kind: "observation", value: null, unit: "", what: "sea-surface temperature", when, none: "No temperature here: cloud, land or no observation. Not cold water." };
-  return { kind: "observation", value: r.value.toFixed(1), unit: "°C", what: `≈ ${cToF(r.value).toFixed(1)} °F · sea-surface temperature`, when, label: sstIsAnalysis(l) ? "Analysis" : "Observation" };
+  const analysis = sstIsAnalysis(l);
+  const when = `${l.source} · ${analysis ? "analysis for" : "observed"} ${l.observed_dates.length > 1 ? `${dayLabel(l.observed_dates[0])}–${dayLabel(last)}` : dayLabel(last)}`;
+  if (r.value == null)
+    return { kind: "observation", value: null, unit: "", what: "sea-surface temperature", when, none: analysis ? "No temperature here: land, or water outside the analysis's coastal scope. Not cold water." : "No temperature here: cloud, land or no observation. Not cold water." };
+  return { kind: "observation", value: r.value.toFixed(1), unit: "°C", what: `≈ ${cToF(r.value).toFixed(1)} °F · ${analysis ? "foundation temperature (below the skin), an analysis" : "sea-surface temperature"}`, when, label: analysis ? "Analysis" : "Observation" };
+}
+
+/**
+ * The estimate's words for each class when the index publishes no legend for it (v6). The pipeline's
+ * own `class_legend` is quoted verbatim when present; no multiplier or error is ever hard-coded.
+ */
+export const ESTIMATE_WORDS = {
+  1: "Filled from nearby clear water",
+  2: "Extrapolated toward shore from water farther out; never seen by the satellite here; not checkable",
+  3: "Bay estimate from a borrowed background; turbid water",
+  unknown: "Estimated; near shore it may be extrapolated",
+} as const;
+
+/** A class's words: the published legend verbatim; for the shoreline strip, said to be uncheckable when the legend does not say so. */
+export function classWords(l: Pick<EstimateLayer, "class_legend">, k: 1 | 2 | 3 | null): string {
+  if (!k) return ESTIMATE_WORDS.unknown;
+  const pub = l.class_legend?.[k];
+  if (!pub) return ESTIMATE_WORDS[k];
+  if (k === 2) {
+    const add = [!/never (seen|observed)/i.test(pub) ? "never seen by the satellite here" : null, !/check/i.test(pub) ? "not checkable" : null].filter(Boolean);
+    return add.length ? `${pub.replace(/[.\s]+$/, "")}; ${add.join("; ")}` : pub;
+  }
+  if (k === 3 && !/turbid/i.test(pub)) return `${pub.replace(/[.\s]+$/, "")}; turbid water`;
+  return pub;
 }
 
 /** The estimate at a point, read only where the observation has no value. */
 export async function estimateRead(baseUrl: string, l: EstimateLayer, lat: number, lon: number): Promise<Read | null> {
-  const r = await derivedAt(baseUrl, l, lat, lon);
+  const [r, cls] = await Promise.all([derivedAt(baseUrl, l, lat, lon), estimateClassAt(baseUrl, l, lat, lon).catch(() => null)]);
   if (r.value == null) return null;
   const days = [...l.based_on_days].sort();
   const span = days.length ? (days[0] === days[days.length - 1] ? dayLabel(days[0]) : `${dayLabel(days[0])}–${dayLabel(days[days.length - 1])}`) : dayLabel(l.issued);
-  return { kind: "model", value: fmtMg(r.value), unit: "mg/m³", what: `chlorophyll-a, filled from nearby clear pixels${rangeWords(r.range)}`, when: `Neritic estimate from views of ${span}`, label: "Estimated, not observed", tone: "estimate" };
+  // without a class (no class grid, or none for this pixel) no estimate is said to be a fill; a bay is still said to be turbid (lib/bays)
+  const k = cls;
+  const bay = k !== 3 && bayAt(lat, lon) ? BAY_TURBID : undefined;
+  return { kind: "model", value: fmtMg(r.value), unit: "mg/m³", what: `${classWords(l, k)}${rangeWords(r.range)}`, when: `Neritic estimate from views of ${span}`, label: k === 2 ? "Extrapolated, not observed" : "Estimated, not observed", tone: k === 2 ? "strip" : "estimate", flag: bay };
+}
+
+/** Observed satellite chlorophyll in a bay is approximate (turbid water): said beside the value. */
+export function withBayCaveat(r: Readout, lat: number, lon: number): Readout {
+  if (r.value == null || !bayAt(lat, lon)) return r;
+  return { ...r, flag: r.flag ? `${r.flag} · ${BAY_TURBID}` : BAY_TURBID };
 }
 
 /**
  * What the map shows at a point for the C-HARM layer (v5): the published value; or, where the cell
- * has none and the map tints the water "outside NOAA's model near shore", what NOAA's model does not
- * reach, the nearest NOAA cell within 6 km as text only, and the pipeline's pier-sample check of
- * that nearest value. `water` says whether the point is water (null: unknown, read as water); over
+ * has none and the map tints the water ("NOAA publishes no toxin probability here", by variable),
+ * the nearest NOAA cell within 6 km as text only, and the pipeline's pier-sample check of that
+ * nearest value. `water` says whether the point is water (null: unknown, read as water); over
  * land the plain published message stays.
  */
 export async function forecastRead(manifest: Manifest, baseUrl: string, l: LayerArtifact, lat: number, lon: number, context: boolean, water: boolean | null, check: DerivedValidationEntry | null = null): Promise<Read> {
@@ -65,7 +106,7 @@ export async function forecastRead(manifest: Manifest, baseUrl: string, l: Layer
   // the toxin mask keeps its reason (the same run has a Pseudo-nitzschia value in this cell)
   const why = r.none === NO_FORECAST.toxinMask ? ` ${NO_FORECAST.toxinMask}` : "";
   const checked = c.kind === "context" && check ? ` ${checkSentence(check)}` : "";
-  return { ...r, none: (c.kind === "context" ? contextWords(c) : OUTSIDE_WORDS) + why + checked, tone: c.kind === "context" ? "context" : "outside", label: "Outside NOAA's model near shore" };
+  return { ...r, none: (c.kind === "context" ? contextWords(c, l.variable) : outsideWords(l.variable)) + why + checked, tone: c.kind === "context" ? "context" : "outside", label: outsideLabel(l.variable) };
 }
 
 /**
@@ -88,7 +129,7 @@ export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds,
       if (source.kind === "outlook") return outlookRead(baseUrl, source.layer, point.lat, point.lon);
       if (source.kind === "sst") return sstRead(baseUrl, source.layer, point.lat, point.lon);
       if (source.kind === "satellite") {
-        const obs = await satelliteAt(manifest, baseUrl, source.layer, point.lat, point.lon);
+        const obs = withBayCaveat(await satelliteAt(manifest, baseUrl, source.layer, point.lat, point.lon), point.lat, point.lon);
         // an observed pixel is always what is read; the estimate only where nothing was observed
         if (obs.value != null || !source.estimate || (screen && waterAt?.(screen) === false)) return obs;
         return (await estimateRead(baseUrl, source.estimate, point.lat, point.lon)) ?? obs;
@@ -135,7 +176,7 @@ export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds,
           )}
         </>
       ) : (
-        <p className="text-[13px] text-white" data-testid={r.tone === "context" ? "hover-context" : r.tone === "outside" ? "hover-outside" : "hover-none"}>
+        <p className="text-[13px] text-white" data-testid={r.tone === "context" ? "hover-context" : r.tone === "outside" ? "hover-outside" : r.tone === "bay" ? "hover-bay" : "hover-none"}>
           {r.none}
           {r.tone === "context" || r.tone === "outside" ? " Click for pier samples nearby and the filled chlorophyll." : ""}
         </p>

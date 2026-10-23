@@ -260,6 +260,8 @@ test("offline, the saved briefing is dated, never 'now'; its age is said once ou
   await expect(page.getByTestId("matters-heading")).toContainText(/What mattered when saved · \w{3} \d{1,2}, \d{1,2}:\d{2} [AP]M/);
   await expect(page.getByTestId("matters-heading")).not.toContainText("now");
   await expect(page.getByTestId("offline-banner")).toContainText(/Offline · Monterey Bay saved .* · 3 days old/);
+  // the pack saved the briefing for all species: another trip is told so, never that it was saved for it
+  await expect(page.getByTestId("offline-banner")).toContainText("saved for all species");
   // the address bar's own trip, after hydrating the saved HTML
   await expect(page.getByTestId("trip-summary")).toContainText("Commercial fishing");
 
@@ -313,5 +315,102 @@ test("the pack dialog: focus moves in and stays, Escape closes it and returns fo
   await expect(page.getByTestId("pack-progress")).toBeVisible();
   await expect(page.getByTestId("pack-status")).toHaveAttribute("data-complete", "true", { timeout: 120_000 });
   await ctx.unrouteAll({ behavior: "ignoreErrors" });
+  await ctx.close();
+});
+
+test("the pack holds every lazily loaded chunk of the briefing: a section that loads its code on demand (trip economics) opens offline", async ({ browser }) => {
+  test.setTimeout(180_000);
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  const t0 = Date.now();
+  await save(page);
+  // planning reads the pages off-screen until they go quiet (no fixed 6 s waits)
+  expect(Date.now() - t0).toBeLessThan(90_000);
+  const rec = await record(page);
+  const saved = new Set(rec!.items.map((i) => i.url));
+  // every chunk the briefing's code names (the loaders of its lazy sections, followed to the end)
+  const named = await page.evaluate(async () => {
+    const seen = new Set<string>();
+    let next = performance
+      .getEntriesByType("resource")
+      .map((e) => new URL(e.name))
+      .filter((u) => u.origin === location.origin && /^\/_next\/static\/chunks\/.+\.js$/.test(u.pathname))
+      .map((u) => u.pathname);
+    while (next.length) {
+      const found: string[] = [];
+      for (const js of next) {
+        if (seen.has(js)) continue;
+        seen.add(js);
+        const txt = await (await fetch(js)).text();
+        for (const m of txt.matchAll(/["'](?:\/_next\/)?(static\/chunks\/[^"'\\\s]+\.js)["']/g)) found.push(`/_next/${m[1]}`);
+      }
+      next = found.filter((x) => !seen.has(x));
+    }
+    return [...seen];
+  });
+  expect(named.length).toBeGreaterThan(3);
+  expect(named.filter((u) => !saved.has(u))).toEqual([]);
+
+  await goOffline(ctx);
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  refused.length = 0;
+  await page.goto(`${OK}/coast?place=port-550&for=commercial&species=dungeness`);
+  await expect(page.getByTestId("coast-title")).toHaveText("Monterey", { timeout: 20_000 });
+  // trip economics (My Coast) loads its worksheet on demand: opened offline, its code comes from the pack
+  const econ = page.locator("#trip-economics");
+  if (await econ.count()) {
+    await econ.scrollIntoViewIfNeeded();
+    const opener = econ.locator("summary, button[aria-expanded='false']").first();
+    if (await opener.count()) await opener.click();
+    await page.waitForTimeout(1500);
+  }
+  // and every lazily named chunk answers offline (from the pack), whichever section asks for it
+  const failed = await page.evaluate(async (urls) => {
+    const out: string[] = [];
+    for (const u of urls) {
+      try {
+        if (!(await fetch(u)).ok) out.push(u);
+      } catch {
+        out.push(u);
+      }
+    }
+    return out;
+  }, named);
+  expect(failed).toEqual([]);
+  expect(refused.filter((u) => u.includes("/_next/static/"))).toEqual([]);
+  expect(errors).toEqual([]);
+  await goOnline(ctx);
+  await ctx.close();
+});
+
+test("a slow network gives way to the pack after 5 s; a page the pack never held gets the short offline page, never the saved Explore", async ({ browser }) => {
+  test.setTimeout(180_000);
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  await save(page);
+  // a hung network (lie-fi): every request waits 30 s
+  await ctx.route("**/*", async (r) => {
+    await new Promise((d) => setTimeout(d, 30_000));
+    await r.continue().catch(() => undefined);
+  });
+  let t = Date.now();
+  await page.goto(`${OK}/coast?place=port-550`, { waitUntil: "domcontentloaded", timeout: 20_000 });
+  await expect(page.getByTestId("coast-title")).toHaveText("Monterey", { timeout: 15_000 });
+  expect(Date.now() - t).toBeLessThan(15_000);
+  t = Date.now();
+  await page.goto(`${OK}/research`, { waitUntil: "domcontentloaded", timeout: 20_000 });
+  await expect(page.locator("h1")).toHaveText("You are offline");
+  expect(Date.now() - t).toBeLessThan(12_000);
+  await ctx.unrouteAll({ behavior: "ignoreErrors" });
+  // offline: a path the pack never saved (Fisheries) is the offline page at once, not the saved Explore
+  await goOffline(ctx);
+  t = Date.now();
+  await page.goto(`${OK}/fisheries`, { waitUntil: "domcontentloaded" });
+  await expect(page.locator("h1")).toHaveText("You are offline");
+  await expect(page.getByTestId("explore")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open the saved briefing" })).toBeVisible();
+  expect(Date.now() - t).toBeLessThan(5_000);
+  await goOnline(ctx);
   await ctx.close();
 });

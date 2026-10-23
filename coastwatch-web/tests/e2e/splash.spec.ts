@@ -2,14 +2,15 @@ import { expect, test } from "@playwright/test";
 import { OK } from "./ports";
 
 /**
- * The launch screen (src/v4/shell/Splash.tsx): once per browser session, never for automated browsers
- * unless asked (every other suite runs without it). Forced on here: it appears over the page, the canyon
- * and the mark draw, it holds at least 1.8 s and steps aside by the 3 s cap, a tap, click or key skips
- * it at once, and the page underneath is usable at once.
+ * The launch screen (src/v4/shell/Splash.tsx): a device's first visit ever only (v6), never on a saved
+ * copy reopened from a field pack, never for a returning reader, never for automated browsers unless
+ * asked (every other suite runs without it). Forced on here (each test opens a fresh context, so a first
+ * visit): it appears over the page, the canyon and the mark draw, it holds at least 1.8 s and steps aside
+ * by the 3 s cap, a tap, click or key skips it at once, and the page underneath is usable at once.
  */
 const force = () => localStorage.setItem("nx-splash-force-v1", "1");
 
-test("the launch screen shows on a session's first load, steps aside, and the page is usable", async ({ browser }) => {
+test("the launch screen shows on a device's first visit, steps aside, and the page is usable", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await ctx.addInitScript(force);
   const page = await ctx.newPage();
@@ -27,11 +28,42 @@ test("the launch screen shows on a session's first load, steps aside, and the pa
   // usable: the first click lands on the page
   await page.getByTestId("more-menu").click();
   await expect(page.getByRole("navigation", { name: "More pages" })).toBeVisible();
-  // not again in the same session (a reload, a navigation)
+  // never again on this device: a reload, and a new session (a new tab: its own sessionStorage)
   await page.reload();
   await expect(page.locator("html")).not.toHaveClass(/nx-splash-on/);
   await expect(splash).toBeHidden();
+  const again = await ctx.newPage();
+  await again.goto(`${OK}/?layer=forecast`, { waitUntil: "commit" });
+  await again.waitForLoadState("domcontentloaded");
+  expect(await again.evaluate(() => document.documentElement.classList.contains("nx-splash-on"))).toBe(false);
+  expect(await again.evaluate(() => localStorage.getItem("nx-splash-seen-v2"))).toBe("1");
   await ctx.close();
+});
+
+test("never on a saved copy reopened from a field pack, and never after the first visit, whatever page it opened", async ({ browser }) => {
+  // a saved copy: the service worker's mark is in the page before the launch screen's script runs
+  const saved = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await saved.addInitScript(force);
+  await saved.addInitScript(() => {
+    (self as unknown as { __NERITIC_SAVED__: unknown }).__NERITIC_SAVED__ = { at: "2026-10-13T05:00:00.000Z", url: "/?layer=forecast" };
+  });
+  const p1 = await saved.newPage();
+  await p1.goto(`${OK}/?layer=forecast`, { waitUntil: "commit" });
+  await p1.waitForLoadState("domcontentloaded");
+  expect(await p1.evaluate(() => document.documentElement.classList.contains("nx-splash-on"))).toBe(false);
+  await expect(p1.getByTestId("splash")).toBeHidden();
+  await saved.close();
+  // a device whose first visit was a reading page: Explore later opens at once, with no launch screen and no hold
+  const back = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await back.addInitScript(force);
+  const p2 = await back.newPage();
+  await p2.goto(`${OK}/about`);
+  expect(await p2.evaluate(() => localStorage.getItem("nx-splash-seen-v2"))).toBe("1");
+  await p2.goto(`${OK}/?layer=forecast`, { waitUntil: "commit" });
+  await p2.waitForLoadState("domcontentloaded");
+  expect(await p2.evaluate(() => document.documentElement.classList.contains("nx-splash-on"))).toBe(false);
+  await expect(p2.getByTestId("explore")).toBeVisible();
+  await back.close();
 });
 
 test("a reading page opens without the launch screen: its content is in the first HTML and is never hidden", async ({ browser }) => {

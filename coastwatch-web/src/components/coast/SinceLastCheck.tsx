@@ -108,11 +108,36 @@ function SinceLastCheckInner() {
     setForgotten(true);
   };
 
+  // something changed: the list. Otherwise (a first visit, or nothing changed) one quiet grey line with
+  // the two actions in it, never a card that pushes the briefing down (v6)
+  const quiet = !changes.length;
+  const actions = (
+    <>
+      {kept ? (
+        <span className="inline-flex flex-wrap items-center gap-x-3" data-testid="kept-done">
+          <span className="text-ink-2">Kept {formatDateTimePT(kept.keptAt)}.</span>
+          <button type="button" onClick={() => download(kept)} className="cw-press inline-flex min-h-[44px] items-center font-medium text-accent" data-testid="kept-download">
+            Save file
+          </button>
+          <Link href={`/coast/kept?id=${encodeURIComponent(kept.id)}`} className="inline-flex min-h-[44px] items-center font-medium text-accent" data-testid="kept-open">
+            Print
+          </Link>
+        </span>
+      ) : (
+        <button type="button" onClick={keep} className="cw-press inline-flex min-h-[44px] items-center font-medium text-accent" data-testid="kept-make">
+          Keep a dated copy
+        </button>
+      )}
+      <button type="button" onClick={forget} className="cw-press inline-flex min-h-[44px] items-center text-ink-3 underline decoration-ink-3/40 underline-offset-2" data-testid="since-forget">
+        Forget on this device
+      </button>
+    </>
+  );
+
   return (
     <section
       aria-labelledby="since-h"
-      // a first visit has nothing to report: one quiet line, not a card that pushes the briefing down
-      className={since || resume ? "mt-4 max-w-[62ch] rounded-[14px] border border-hairline bg-surface px-4 py-3" : "mt-3 max-w-[62ch]"}
+      className={!quiet || resume ? "max-w-[62ch] rounded-[14px] border border-hairline bg-surface px-4 py-3" : "max-w-[62ch]"}
       data-testid="since-last-check" data-state={since ? (changes.length ? "changes" : "none") : "first"}>
       {resume ? (
         <p className="mb-2">
@@ -121,70 +146,54 @@ function SinceLastCheckInner() {
           </Link>
         </p>
       ) : null}
-      {since ? (
+      {!quiet ? (
         <>
           <h2 id="since-h" className="text-[15px] font-semibold text-ink">
-            Since you last checked <span className="font-normal text-ink-2">· {formatDateTimePT(since)}</span>
+            Since you last checked <span className="font-normal text-ink-2">· {formatDateTimePT(since!)}</span>
           </h2>
-          {changes.length ? (
-            <ul className="mt-1 divide-y divide-hairline" data-testid="since-list">
-              {shown.map((c, i) => (
-                <li key={`${c.kind}-${i}`} className="grid grid-cols-[16px_1fr] gap-x-2 py-2" data-testid={`since-item-${c.kind}`} data-for-you={c.forYou}>
-                  <Mark kind={MARK[c.group]} aged={c.group === "coastwatch"} className="translate-y-[3px]" />
-                  <div className="min-w-0">
-                    <p className="text-[15px] font-medium leading-snug text-ink">{c.forYou ? "" : "Other species here: "}{c.title}</p>
-                    <p className="text-[14px] leading-snug text-ink-2">{c.detail}</p>
-                    {c.source ? (
-                      <a href={c.source.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent underline-offset-2 hover:underline">
-                        {c.source.label} ↗
-                      </a>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-1 text-[15px] text-ink-2" data-testid="since-none">
-              No change in Neritic&rsquo;s information for these waters since then. That does not mean nothing changed at the agencies.
-            </p>
-          )}
+          <ul className="mt-1 divide-y divide-hairline" data-testid="since-list">
+            {shown.map((c, i) => (
+              <li key={`${c.kind}-${i}`} className="grid grid-cols-[16px_1fr] gap-x-2 py-2" data-testid={`since-item-${c.kind}`} data-for-you={c.forYou}>
+                <Mark kind={MARK[c.group]} aged={c.group === "coastwatch"} className="translate-y-[3px]" />
+                <div className="min-w-0">
+                  <p className="text-[15px] font-medium leading-snug text-ink">{c.forYou ? "" : "Other species here: "}{c.title}</p>
+                  <p className="text-[14px] leading-snug text-ink-2">{c.detail}</p>
+                  {c.source ? (
+                    <a href={c.source.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent underline-offset-2 hover:underline">
+                      {c.source.label} ↗
+                    </a>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
           {hidden > 0 ? (
             <button type="button" onClick={() => setAll(true)} className="cw-press min-h-[44px] text-[14px] font-medium text-accent" data-testid="since-more">
               {hidden} more (other species, data and model)
             </button>
           ) : null}
+          <p className="mt-2 text-[13px] text-ink-3" data-testid="since-checked">
+            {checkedLine}
+          </p>
+          <div className="flex flex-wrap items-center gap-x-4 text-[14px]">{actions}</div>
         </>
+      ) : since ? (
+        <p className="flex flex-wrap items-center gap-x-3 text-[13px] leading-snug text-ink-3" data-testid="since-none">
+          <span>
+            <span id="since-h" className="font-medium text-ink-2">No change in Neritic&rsquo;s information</span> since your last check, {formatDateTimePT(since)}; that does not mean nothing changed at the agencies.{" "}
+            <span data-testid="since-checked">{checkedLine}</span>
+          </span>
+          {actions}
+        </p>
       ) : (
-        <p className="text-[13px] leading-snug text-ink-2" data-testid="since-first">
-          <span id="since-h" className="font-medium text-ink">Remembered on this device</span>, to list what changed next time.{" "}
-          <span data-testid="since-checked">{checkedLine}</span>
+        <p className="flex flex-wrap items-center gap-x-3 text-[13px] leading-snug text-ink-3" data-testid="since-first">
+          <span>
+            <span id="since-h" className="font-medium text-ink-2">Remembered on this device</span>, to list what changed next time.{" "}
+            <span data-testid="since-checked">{checkedLine}</span>
+          </span>
+          {actions}
         </p>
       )}
-      {since ? (
-        <p className="mt-2 text-[13px] text-ink-3" data-testid="since-checked">
-          {checkedLine}
-        </p>
-      ) : null}
-      <div className={`${since ? "mt-1" : ""} flex flex-wrap items-center gap-x-4`}>
-        {kept ? (
-          <span className="flex flex-wrap items-center gap-x-4 text-[14px]" data-testid="kept-done">
-            <span className="text-ink-2">Kept {formatDateTimePT(kept.keptAt)}.</span>
-            <button type="button" onClick={() => download(kept)} className="cw-press min-h-[44px] font-medium text-accent" data-testid="kept-download">
-              Save file
-            </button>
-            <Link href={`/coast/kept?id=${encodeURIComponent(kept.id)}`} className="inline-flex min-h-[44px] items-center font-medium text-accent" data-testid="kept-open">
-              Print
-            </Link>
-          </span>
-        ) : (
-          <button type="button" onClick={keep} className="cw-press min-h-[44px] text-[14px] font-medium text-accent" data-testid="kept-make">
-            Keep a dated copy
-          </button>
-        )}
-        <button type="button" onClick={forget} className="cw-press min-h-[44px] text-[14px] text-ink-3 underline decoration-ink-3/40 underline-offset-2" data-testid="since-forget">
-          Forget on this device
-        </button>
-      </div>
       <p className="sr-only">Activity: {activityLabel(snap.audience)}. Species: {snap.species.label}. Last checked dates are shown in Pacific time.</p>
     </section>
   );

@@ -5,8 +5,15 @@ import type { PortsCollection } from "@/generated/schema";
 import type { StationLite } from "@/lib/data";
 import { Icon } from "@/v4/ui/Icon";
 import { readHomePort } from "@/v4/state/homePort";
+import { SPECIES } from "@/content/species";
+import { sitePlaces } from "@/lib/coast";
 
-export type SearchHit = { kind: "harbor" | "station" | "region"; id: string; label: string; sub: string };
+/**
+ * A search result. v6: species (choosing one opens My Coast for that species) and My Coast's
+ * shellfish harvest sites (CDPH monitoring sites, e.g. Clam Beach) are found too; `aliases` are other
+ * words a result is found by (a species' own match words: "rockfish" finds groundfish).
+ */
+export type SearchHit = { kind: "harbor" | "station" | "region" | "species" | "site"; id: string; label: string; sub: string; aliases?: string[]; lat?: number; lon?: number };
 
 /** Offered when the box is empty: the harbours and piers most of Neritic's questions are about
  *  (harbours by CDFW port code, so a renamed display name never drops one; stations by name). */
@@ -31,7 +38,15 @@ const ALIASES: Record<string, string[]> = {
 };
 
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-const KIND_ORDER: Record<SearchHit["kind"], number> = { harbor: 0, station: 1, region: 2 };
+const KIND_ORDER: Record<SearchHit["kind"], number> = { harbor: 0, species: 1, site: 2, station: 3, region: 4 };
+
+/** The species and harvest sites search offers (pure, so it is tested with the ranking). */
+export function speciesHits(): SearchHit[] {
+  return SPECIES.filter((s) => s.id !== "any").map((s) => ({ kind: "species" as const, id: s.id, label: s.label, sub: "Species · opens My Coast for it", aliases: s.match.filter((m) => m.length > 3) }));
+}
+export function siteHits(): SearchHit[] {
+  return sitePlaces().map((p) => ({ kind: "site" as const, id: p.key, label: p.name, sub: `Harvest site · ${p.note}`, lat: p.lat, lon: p.lon }));
+}
 
 /**
  * How well a place matches what was typed (lower is better; null: no match): the exact name, then a
@@ -42,7 +57,7 @@ export function matchRank(h: SearchHit, q: string): number | null {
   const n = norm(q.trim());
   if (!n) return null;
   const label = norm(h.label);
-  const aliases = h.kind === "harbor" ? (ALIASES[h.id] ?? []).map(norm) : [];
+  const aliases = (h.kind === "harbor" ? (ALIASES[h.id] ?? []) : (h.aliases ?? [])).map(norm);
   if (label === n || aliases.includes(n)) return 0;
   if (label.startsWith(n) || aliases.some((a) => a.startsWith(n))) return 1;
   const words = (t: string) => t.split(/[\s/·,()-]+/).filter(Boolean);
@@ -65,11 +80,11 @@ export function rankHits(all: SearchHit[], q: string, limit = 12): SearchHit[] {
 /** The other name a hit was found by, when its own name does not show the query. */
 export function aliasMatched(h: SearchHit, q: string): string | null {
   const n = norm(q.trim());
-  if (!n || h.kind !== "harbor" || norm(h.label).includes(n)) return null;
-  return (ALIASES[h.id] ?? []).find((a) => norm(a).includes(n)) ?? null;
+  if (!n || norm(h.label).includes(n)) return null;
+  return (h.kind === "harbor" ? (ALIASES[h.id] ?? []) : (h.aliases ?? [])).find((a) => norm(a).includes(n)) ?? null;
 }
 
-/** Places to go: harbours, shore stations and regions. "/" focuses it from anywhere in the workspace. */
+/** Places to go: harbours, shore stations, harvest sites and regions, and species. "/" focuses it from anywhere in the workspace. */
 export function PlaceSearch({ ports, stations, regions, onPick, current }: { ports: PortsCollection | null; stations: StationLite[] | null; regions: { id: string; label: string }[]; onPick: (h: SearchHit) => void; current: string }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -81,6 +96,8 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
       ...(ports?.features ?? []).map((f) => ({ kind: "harbor" as const, id: String(f.properties.port_code), label: f.properties.display_name ?? f.properties.name, sub: `Harbour · ${f.properties.county ?? ""}`.trim() })),
       ...(stations ?? []).map((s) => ({ kind: "station" as const, id: s.station_id, label: s.name, sub: "Shore station · CalHABMAP" })),
       ...regions.map((r) => ({ kind: "region" as const, id: r.id, label: r.label, sub: "Region" })),
+      ...siteHits(),
+      ...speciesHits(),
     ],
     [ports, stations, regions],
   );
@@ -128,8 +145,8 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
           aria-expanded={open}
           aria-controls={`${id}-list`}
           aria-activedescendant={open && hits[i] ? `${id}-o${i}` : undefined}
-          aria-label="Search harbours, stations and regions"
-          placeholder={current || "Search harbours, stations…"}
+          aria-label="Search harbours, stations, harvest sites, regions and species"
+          placeholder={current || "Search harbours, stations, species…"}
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
@@ -168,7 +185,7 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
               onMouseEnter={() => setI(k)}
               className={`nx-row flex min-h-12 cursor-pointer items-center gap-3 rounded-lg px-3 ${k === i ? "bg-n-surface-2" : ""}`}
             >
-              <Icon name={h.kind === "harbor" ? "harbor" : h.kind === "station" ? "station" : "map"} className="h-[18px] w-[18px] shrink-0 text-n-ink-3" />
+              <Icon name={h.kind === "harbor" ? "harbor" : h.kind === "station" ? "station" : h.kind === "species" ? "book" : h.kind === "site" ? "locate" : "map"} className="h-[18px] w-[18px] shrink-0 text-n-ink-3" />
               <span className="min-w-0">
                 <span className="block truncate text-[15px] font-semibold text-n-ink">{h.label}</span>
                 <span className="block truncate text-[12.5px] text-n-ink-3">
@@ -184,7 +201,7 @@ export function PlaceSearch({ ports, stations, regions, onPick, current }: { por
         // nothing matched: say so, and offer the next step instead of an empty box
         <div role="status" className="nx-pop nx-origin-left absolute left-0 right-0 top-[52px] z-50 rounded-[18px] border border-n-line bg-n-surface p-3 text-n-ink shadow-[var(--nx-shadow)]" data-testid="place-search-empty">
           <p className="text-[14.5px] font-semibold">No harbour, station or region matches “{q.trim()}”</p>
-          <p className="mt-0.5 text-[13.5px] leading-snug text-n-ink-2">Try a harbour or town name, or a county. Or tap the water on the map to read any point.</p>
+          <p className="mt-0.5 text-[13.5px] leading-snug text-n-ink-2">Try a harbour or town name, a county, a harvest site or a species. Or tap the water on the map to read any point.</p>
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}

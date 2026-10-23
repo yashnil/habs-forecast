@@ -1,8 +1,9 @@
 import type { LayerArtifact } from "@/generated/schema";
 import type { Audience } from "@/lib/coast";
 import type { Step } from "@/lib/nextSteps";
+import type { MarinePeriod } from "@/lib/conditions";
 import { topicWords } from "@/lib/harborEvidence";
-import { dtf } from "@/lib/time";
+import { dtf, pacificToday } from "@/lib/time";
 
 /**
  * The trip (My Coast, Coastal mode): the days a trip can be planned for and the checklist of what to
@@ -144,4 +145,23 @@ export function parseLimits(raw: string | null | undefined): SeaLimits {
 /** A period's stated maxima against the reader's limits: which limits the forecaster's own numbers go past. */
 export function overLimits(m: { windKt: number | null; seasFt: number | null }, l: SeaLimits): { wind: boolean; seas: boolean } {
   return { wind: l.windKt != null && m.windKt != null && m.windKt > l.windKt, seas: l.seasFt != null && m.seasFt != null && m.seasFt > l.seasFt };
+}
+
+// ---------------------------------------------------------------- the NWS period for the trip day
+
+export { datePeriods, type DatedPeriod } from "@/lib/nwsPeriods";
+import { datePeriods, type DatedPeriod } from "@/lib/nwsPeriods";
+
+/**
+ * The NWS period for a trip day, matched by each period's own start date (never by position): the
+ * day's daytime period, else its night period. Null when no period the forecast holds starts on that
+ * day, which a saved copy read on a later day must say ("no NWS period saved for this day").
+ */
+export function periodFor(c: { marine: { status: string; fetchedAt?: string | null; data?: { periods: MarinePeriod[]; updated: string | null } } } | null, day: string | null, today: string | null): DatedPeriod | null {
+  if (c?.marine.status !== "ok" || !c.marine.data) return null;
+  const want = day ?? today;
+  if (!want) return null;
+  // NWS's own issue time, else when Neritic fetched it (the same day: a saved copy keeps its fetch time)
+  const ps = datePeriods(c.marine.data.periods, c.marine.data.updated ?? c.marine.fetchedAt ?? null);
+  return ps.find((p) => p.date === want && !p.night) ?? ps.find((p) => p.date === want) ?? null;
 }

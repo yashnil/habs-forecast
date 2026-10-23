@@ -2,6 +2,8 @@
 
 import type { PackRecord } from "./packs";
 import { packAge, useOfflinePack } from "./useOfflinePack";
+import { pacificToday } from "@/lib/time";
+import { pacificDay } from "@/v4/ui/time";
 
 /** What the service worker writes into a page it answers from a field pack (public/sw.js). */
 type SavedMark = { at: string | null; url: string | null };
@@ -48,9 +50,20 @@ export function useSavedSnapshot(packId: string | null): { savedAt: string; ageH
   return savedSnapshot(record, online);
 }
 
-/** "3 days old", once a saved copy is outdated (more than a day); null before. */
-export function ageWords(s: { ageHours: number; outdated: boolean } | null): string | null {
+/**
+ * "30 h old", "3 days old", once a saved copy is outdated (more than a day); null before. Rounded as
+ * the status centre's list rounds the same time (v4/ui/time relTime): whole hours up to a day and a
+ * half, then Pacific calendar days from the time it was saved, so the banner and the list never
+ * disagree by a day. Without `savedAt` the days are whole 24 h periods.
+ */
+export function ageWords(s: { ageHours: number; outdated: boolean; savedAt?: string } | null, now: Date = new Date()): string | null {
   if (!s?.outdated) return null;
-  const d = Math.floor(s.ageHours / 24);
+  if (s.ageHours < 36) return `${Math.floor(s.ageHours)} h old`;
+  const d = s.savedAt ? calendarDays(s.savedAt, now) : Math.floor(s.ageHours / 24);
   return d <= 1 ? "1 day old" : `${d} days old`;
+}
+
+/** Whole Pacific calendar days from an instant to now (as relTime counts them). */
+function calendarDays(iso: string, now: Date): number {
+  return Math.round((Date.parse(`${pacificToday(now)}T00:00:00Z`) - Date.parse(`${pacificDay(iso)}T00:00:00Z`)) / 86400000);
 }

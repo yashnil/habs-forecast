@@ -5,7 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@/v4/ui/Icon";
 import { exitProps, usePresence } from "@/v4/motion";
 import { OVERALL_WORDS, STATE_WORDS, overall, sortedSources, useReadinessSnapshot, type Overall, type SourceState } from "./store";
-import { relTime } from "@/v4/ui/time";
+import { clockLabel, relTime } from "@/v4/ui/time";
 
 const OVERALL_ICON: Record<Overall, string> = {
   initializing: "clock",
@@ -129,6 +129,10 @@ export function StatusCenter({ now, align = "right", compact = false }: { now: D
     };
   }, [open]);
   const busy = state === "initializing" || state === "partial" || state === "downloading";
+  // offline, the phone's chip says so in a word (Explore folds its offline banner into it); the saved
+  // pack's time is its first line once opened
+  const offlineChip = compact && !snap.online;
+  const pack = snap.sources.pack;
   return (
     <div ref={box} className="relative">
       <button
@@ -139,12 +143,17 @@ export function StatusCenter({ now, align = "right", compact = false }: { now: D
         data-testid={compact ? "status-center-compact" : "status-center"}
         data-state={state}
         aria-label={compact ? `Status: ${OVERALL_WORDS[state]}` : undefined}
-        className={`nx-press nx-focus flex h-11 items-center gap-2 rounded-full border border-n-line-strong bg-n-surface text-[14px] font-semibold text-n-ink ${compact ? "w-11 justify-center" : "px-3.5"}`}
+        className={`nx-press nx-focus flex h-11 items-center gap-2 rounded-full border border-n-line-strong bg-n-surface text-[14px] font-semibold text-n-ink ${offlineChip ? "px-3" : compact ? "w-11 justify-center" : "px-3.5"}`}
       >
         <span className={`relative grid place-items-center ${OVERALL_TONE[state]}`}>
           <Icon name={OVERALL_ICON[state]} className="h-[18px] w-[18px]" />
         </span>
         {!compact && <span className="whitespace-nowrap">{OVERALL_WORDS[state]}</span>}
+        {offlineChip && (
+          <span className="whitespace-nowrap" aria-hidden data-testid="status-offline-word">
+            Offline
+          </span>
+        )}
         {busy && <span className="sr-only">, details available</span>}
       </button>
       {/* polite and only on settled changes of the overall state */}
@@ -169,6 +178,11 @@ export function StatusCenter({ now, align = "right", compact = false }: { now: D
             </span>
           </div>
           <p className="mt-1 text-[13.5px] text-n-ink-2">Each source keeps its own time. Nothing older is shown as current.</p>
+          {!snap.online && (
+            <p className="mt-1 text-[13.5px] font-semibold text-n-ink" data-testid="status-offline-note">
+              {pack && (pack.state === "cached" || pack.state === "ready") && pack.asOf ? `Showing the field pack saved ${clockLabel(pack.asOf)}; nothing here is live.` : "Only pages already open keep working; nothing here is live."} Confirm official notices with CDFW and CDPH when you are back online.
+            </p>
+          )}
           <div className="mt-2">
             <SourceList now={now} compact />
           </div>

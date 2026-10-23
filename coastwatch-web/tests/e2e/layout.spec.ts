@@ -128,3 +128,43 @@ test("the briefing and Research arrive in the first HTML, not in a streamed boun
     expect(html.replace(/<script[\s\S]*?<\/script>/g, ""), `${path}: content in the first HTML`).toContain(text);
   }
 });
+
+test("a short screen (a phone held sideways): one compact top bar line; the preview disclosure folds into the notices pill", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date(NOW));
+  for (const p of ["/coast?place=port-550", "/?layer=forecast"]) {
+    await page.goto(`${OK}${p}`);
+    const bar = page.locator("header").first();
+    await expect(bar).toBeVisible();
+    // one line of 44 px controls with a few pixels around them
+    expect((await bar.boundingBox())!.height, p).toBeLessThanOrEqual(56);
+    await expect(page.getByTestId("registry-disclosure").first(), p).toBeHidden();
+    await expect(page.getByTestId("notices-preview").first(), p).toBeVisible();
+    // the agencies stay one tap away: in the notices panel
+    await page.getByTestId("notices-button").first().click();
+    await expect(page.getByRole("dialog", { name: "Official notices" }).getByRole("link", { name: /CDFW/ })).toBeVisible();
+    await page.keyboard.press("Escape");
+  }
+  // a tall screen keeps the disclosure and a plain pill
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${OK}/coast?place=port-550`);
+  await expect(page.getByTestId("registry-disclosure").first()).toBeVisible();
+  await expect(page.getByTestId("notices-preview").first()).toBeHidden();
+  await ctx.close();
+});
+
+test("touch targets: the agencies' links in the preview disclosure are at least 44 px at 320", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date(NOW));
+  for (const p of ["/coast?place=port-550", "/?layer=forecast"]) {
+    await page.goto(`${OK}${p}`);
+    for (const name of ["CDFW", "CDPH"]) {
+      const b = await page.getByTestId("registry-disclosure").first().getByRole("link", { name, exact: true }).boundingBox();
+      expect(b!.width, `${p} ${name}`).toBeGreaterThanOrEqual(44);
+      expect(b!.height, `${p} ${name}`).toBeGreaterThanOrEqual(44);
+    }
+  }
+  await ctx.close();
+});

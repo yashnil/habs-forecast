@@ -57,6 +57,9 @@ test("My Coast shows the species line and, where the sample is the station's new
   await expect(species).toContainText("Agency page · Neritic's copy");
   await expect(page.getByTestId("claim-species-provenance")).toHaveText("Neritic's copy of the agencies' pages, read October 16, 2026; not reviewed by a person. The agency pages are the authority.");
   // the agencies' words are one tap away, each its own quote with its own page (#66 review 3.3)
+  // v6: a statement is one line; it opens on tap (it may be behind "more statements")
+  if (await page.getByTestId("matters-more").isVisible()) await page.getByTestId("matters-more").click();
+  await page.getByTestId("claim-open-species").click();
   const agency = page.getByTestId("claim-species-agency");
   await expect(agency).not.toHaveAttribute("open", "");
   await expect(agency.locator("blockquote").first()).toBeHidden();
@@ -81,6 +84,8 @@ test("the mussel line quotes CDFW's sentence under CDFW, and leaves the quaranti
   const species = page.getByTestId("claim-species");
   await expect(species).toContainText("paralytic shellfish toxins (saxitoxins) and domoic acid");
   await expect(species).not.toContainText("October 31");
+  if (await page.getByTestId("matters-more").isVisible()) await page.getByTestId("matters-more").click();
+  await page.getByTestId("claim-open-species").click();
   const agency = page.getByTestId("claim-species-agency");
   await agency.locator("summary").click();
   const word = agency.getByTestId("claim-species-word");

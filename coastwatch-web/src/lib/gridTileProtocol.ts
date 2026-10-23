@@ -2,6 +2,7 @@ import { addProtocol } from "maplibre-gl";
 import type { LayerArtifact, Palette, ValueGrid } from "@/generated/schema";
 import { chunkedBlock, loadGrid } from "@/lib/grid";
 import { codeColours, DOT, GRID_TILE_SIZE, mixLut, OUTSIDE_TINT, rampColours, renderGridTile, tileBlock, VEIL, type TileMarks } from "@/lib/gridTiles";
+import { clearBays } from "@/lib/bays";
 import { clipToWater, waterMask } from "@/lib/waterMask";
 
 /**
@@ -9,16 +10,17 @@ import { clipToWater, waterMask } from "@/lib/waterMask";
  * only the lazily loaded map canvas imports MapLibre.
  *
  * Two kinds of grid are drawn:
- * - a full C-HARM grid (step palette), optionally with its no-value water tinted as "outside NOAA's
- *   model near shore" (lib/gridTilesContext);
+ * - a full C-HARM grid (step palette), optionally with its no-value water tinted as "NOAA publishes
+ *   no toxin probability here" (lib/gridTilesContext);
  * - a chunked chlorophyll grid of a derived product (lib/derived: the estimate and the outlook),
  *   on the satellite ramp, marked as estimated (stipple) or as an outlook (hatch). Only the chunks a
- *   tile touches are fetched.
+ *   tile touches are fetched. v6: the estimate's shoreline strip (class 2 of its class grid, when
+ *   published) is marked apart; the outlook is never drawn over bay water (lib/bays).
  */
 const PROTOCOL = "cwgrid";
 type Entry =
   | { kind: "full"; grid: ValueGrid; url: string; lut: Promise<Uint32Array>; context: boolean }
-  | { kind: "chunked"; grid: ValueGrid; baseUrl: string; lut: Promise<Uint32Array>; marks: Promise<TileMarks> };
+  | { kind: "chunked"; grid: ValueGrid; baseUrl: string; lut: Promise<Uint32Array>; marks: Promise<TileMarks>; classGrid?: ValueGrid | null; noBays?: boolean };
 const entries = new Map<string, Entry>();
 
 let registered = false;
@@ -49,16 +51,39 @@ async function chunkedTile(e: Extract<Entry, { kind: "chunked" }>, z: number, x:
   const g = e.grid;
   const b = tileBlock(g, z, x, y);
   if (!b) return new Uint8ClampedArray(GRID_TILE_SIZE * GRID_TILE_SIZE * 4);
-  const [get, lut, marks, water] = await Promise.all([chunkedBlock(e.baseUrl, g, b.r0, b.r1, b.c0, b.c1), e.lut, e.marks, waterMask(z, x, y, GRID_TILE_SIZE)]);
+  const cg = e.classGrid ?? null;
+  const [get, lut, marks0, water, getCls] = await Promise.all([
+    chunkedBlock(e.baseUrl, g, b.r0, b.r1, b.c0, b.c1),
+    e.lut,
+    e.marks,
+    waterMask(z, x, y, GRID_TILE_SIZE),
+    // the class grid has the value grid's shape: the same block, read only where marks need it
+    cg ? chunkedBlock(e.baseUrl, cg, b.r0, b.r1, b.c0, b.c1).catch(() => null) : Promise.resolve(null),
+  ]);
   // the block as a small grid of its own, so the one renderer draws it (exact cell edges, nearest)
   const width = b.c1 - b.c0 + 1;
   const height = b.r1 - b.r0 + 1;
   const codes = new Uint16Array(width * height);
   for (let r = 0; r < height; r++) for (let c = 0; c < width; c++) codes[r * width + c] = get(b.r0 + r, b.c0 + c);
+  let marks = marks0;
+  if (getCls && marks0.strip && cg) {
+    const cls = new Uint16Array(width * height);
+    const scale = cg.scale_factor || 1;
+    const off = cg.add_offset || 0;
+    const nod = cg.nodata ?? 65535;
+    for (let r = 0; r < height; r++)
+      for (let c = 0; c < width; c++) {
+        const k = getCls(b.r0 + r, b.c0 + c);
+        cls[r * width + c] = k === nod ? 0 : Math.round(k * scale + off);
+      }
+    marks = { ...marks0, strip: { ...marks0.strip, cls } };
+  } else if (marks0.strip) marks = { ...marks0, strip: undefined };
   const lonFirst = g.lon_first > 180 ? g.lon_first - 360 : g.lon_first;
   const sub: ValueGrid = { ...g, chunks: undefined, width, height, lat_first: g.lat_first + b.r0 * g.lat_step, lon_first: lonFirst + b.c0 * g.lon_step };
   const px = renderGridTile(sub, codes, lut, z, x, y, GRID_TILE_SIZE, marks);
   if (water) clipToWater(px, water);
+  // the outlook in a bay: never drawn (turbid water; MODIS chlorophyll unreliable there)
+  if (e.noBays) clearBays(px, z, x, y, GRID_TILE_SIZE);
   return px;
 }
 
@@ -73,15 +98,22 @@ export function gridTiles(layer: LayerArtifact, gridUrl: string, opts: { context
 
 /**
  * Tiles of a chunked chlorophyll grid of a derived product, on `palette` (the satellite ramp):
- * "estimate" pixels are lightened and stippled, "outlook" pixels carry a fine hatch.
+ * "estimate" pixels are lightened and stippled (the shoreline strip of `classGrid`, class 2, paler
+ * and more densely stippled), "outlook" pixels carry a fine hatch and are never drawn in a bay.
  */
-export function derivedTiles(id: string, g: ValueGrid, baseUrl: string, palette: Palette, style: "estimate" | "outlook" | "observed"): { template: string; bounds: [number, number, number, number] } {
+export function derivedTiles(id: string, g: ValueGrid, baseUrl: string, palette: Palette, style: "estimate" | "outlook" | "observed", classGrid: ValueGrid | null = null): { template: string; bounds: [number, number, number, number] } {
   register();
-  const key = `derived:${id}@${baseUrl}/${g.url}#${style}`;
+  const key = `derived:${id}@${baseUrl}/${g.url}#${style}${classGrid ? `+${classGrid.url}` : ""}`;
   if (!entries.has(key)) {
     const lut = Promise.resolve().then(() => rampColours(g, palette));
-    const marks = lut.then((l): TileMarks => (style === "estimate" ? { stipple: { lut: mixLut(l, VEIL, 0.35), dot: mixLut(l, DOT, 0.65) } } : style === "outlook" ? { hatch: { line: mixLut(l, DOT, 0.55) } } : {}));
-    entries.set(key, { kind: "chunked", grid: g, baseUrl, lut, marks });
+    const marks = lut.then((l): TileMarks =>
+      style === "estimate"
+        ? { stipple: { lut: mixLut(l, VEIL, 0.35), dot: mixLut(l, DOT, 0.65) }, ...(classGrid ? { strip: { lut: mixLut(l, VEIL, 0.55), dot: mixLut(l, DOT, 0.55), cls: new Uint16Array(0) } } : {}) }
+        : style === "outlook"
+          ? { hatch: { line: mixLut(l, DOT, 0.55) } }
+          : {},
+    );
+    entries.set(key, { kind: "chunked", grid: g, baseUrl, lut, marks, classGrid, noBays: style === "outlook" });
   }
   return { template: `${PROTOCOL}://${encodeURIComponent(key)}/{z}/{x}/{y}`, bounds: boundsOf(g) };
 }

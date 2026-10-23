@@ -47,7 +47,7 @@ export function FisheriesByMode({ official, children }: { official: OfficialData
             type="button"
             aria-pressed={x.id === sp}
             onClick={() => setSp(x.id)}
-            className={`min-h-[40px] shrink-0 rounded-full border px-3.5 text-[14px] ${x.id === sp ? "border-navy-900 bg-navy-900 text-white" : "border-hairline-strong bg-surface text-ink-2 hover:border-ink-3"}`}
+            className={`min-h-11 shrink-0 rounded-full border px-3.5 text-[14px] ${x.id === sp ? "border-navy-900 bg-navy-900 text-white" : "border-hairline-strong bg-surface text-ink-2 hover:border-ink-3"}`}
             data-testid={`fish-species-${x.id}`}
           >
             {x.label}

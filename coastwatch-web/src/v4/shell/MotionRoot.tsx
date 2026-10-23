@@ -20,7 +20,8 @@ export function MotionRoot({ children }: { children: React.ReactNode }) {
   );
 }
 
-const MIN_HOLD = 1800; // the lockup has resolved: long enough to land
+// the first visit's lockup has resolved: long enough to land (a returning reader never sees the screen)
+const MIN_HOLD = 1800;
 const PAGE_READY = 1800; // a page that never reports ready (not Explore)
 const CAP = 3000; // never longer than this (the CSS animation in theme.css enforces it too)
 

@@ -7,6 +7,7 @@ import { Icon } from "@/v4/ui/Icon";
 import { StatusCenter } from "@/v4/readiness/StatusCenter";
 import { readHomePlace } from "@/v4/state/homePort";
 import { exitProps, usePresence } from "@/v4/motion";
+import { readDaylight, setDaylight } from "./daylight";
 
 export type Workspace = "explore" | "coast" | "research" | "page";
 
@@ -26,6 +27,9 @@ const MORE = [
 
 function MoreMenu() {
   const [open, setOpen] = useState(false);
+  // daylight mode: read after hydration (the server never knows it)
+  const [day, setDay] = useState(false);
+  useEffect(() => setDay(readDaylight()), []);
   const pop = usePresence(open);
   const box = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -55,6 +59,26 @@ function MoreMenu() {
               {m.label}
             </Link>
           ))}
+          <div className="mx-1.5 my-1 border-t border-n-line" />
+          <button
+            type="button"
+            role="switch"
+            aria-checked={day}
+            onClick={() => {
+              setDaylight(!day);
+              setDay(!day);
+            }}
+            className="nx-focus nx-row flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 text-left text-[15px] text-n-ink hover:bg-n-surface-2"
+            data-testid="daylight-toggle"
+          >
+            <span>
+              Daylight mode
+              <span className="block text-[12.5px] leading-snug text-n-ink-3">Higher contrast for bright sun</span>
+            </span>
+            <span aria-hidden className={`relative h-6 w-10 shrink-0 rounded-full border ${day ? "border-n-accent bg-n-accent" : "border-n-line-strong bg-n-surface-3"}`}>
+              <span className={`absolute top-0.5 h-[18px] w-[18px] rounded-full bg-white shadow transition-[left] duration-150 ${day ? "left-[18px]" : "left-0.5"}`} />
+            </span>
+          </button>
           <p className="px-3 pb-1.5 pt-2 text-[12px] leading-snug text-n-ink-3">Independent research preview. Not affiliated with NOAA, CDFW or CDPH.</p>
         </nav>
       )}
@@ -122,14 +146,16 @@ function useGlidePill(nav: React.RefObject<HTMLElement | null>, on: boolean) {
 
 /**
  * The top bar: floating over the map in Explore, a band over reading pages. Brand (C2),
- * workspaces, a slot (search in Explore), the status centre, official notices, more.
+ * workspaces, a slot (search in Explore), the status centre, official notices, more. On a short
+ * screen (a phone held sideways, max-height 500px) it is one compact line and the preview disclosure
+ * folds into the notices pill (theme.css, .nx-topbar).
  */
 // z-[45]: the header is a stacking context, so its menus and the notices panel can rise no higher
 // than it; it sits above the phone sheet (z-30) and dock (z-40), below modal dialogs (z-50).
 export function TopBar({ active, now, slot, notices, floating = false }: { active: Workspace; now: Date | null; slot?: ReactNode; notices?: ReactNode; floating?: boolean }) {
   return (
     <header
-      className={`pointer-events-none z-[45] flex items-start gap-2 px-3 pt-3 md:gap-3 md:px-4 ${floating ? "absolute inset-x-0 top-0" : "relative pb-3"}`}
+      className={`nx-topbar pointer-events-none z-[45] flex items-start gap-2 px-3 pt-3 md:gap-3 md:px-4 ${floating ? "absolute inset-x-0 top-0" : "relative pb-3"}`}
       style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}
     >
       <Link href="/" aria-label="Neritic home" className="nx-press nx-focus pointer-events-auto flex h-11 shrink-0 items-center rounded-full border border-n-line bg-n-surface pl-1.5 pr-3.5 text-n-ink max-md:pr-1.5" data-testid="brand-home">

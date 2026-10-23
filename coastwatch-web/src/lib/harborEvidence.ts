@@ -1,3 +1,4 @@
+import { datePeriods, type DatedPeriod } from "@/lib/nwsPeriods";
 import type { Association } from "@/lib/applicability";
 import { AUDIENCE } from "@/lib/applicability";
 import type { Audience } from "@/lib/coast";
@@ -223,12 +224,18 @@ export function tidesOn(tides: Tide[], date: string | null): Tide[] {
   return date ? tides.filter((t) => t.at.startsWith(date)) : [];
 }
 
-/** The NWS forecast period for the trip day: "Tonight"/"Today" for today, else the day's name ("Thu"), never a night period first. */
-export function periodFor(periods: MarinePeriod[], date: string | null, today: string | null): MarinePeriod | null {
+/**
+ * The NWS forecast period for the trip day, matched by each period's own start date (lib/nwsPeriods),
+ * never by position: a saved copy read on a later day finds no period rather than "Tonight".
+ */
+export function periodFor(periods: MarinePeriod[], date: string | null, today: string | null, issued: string | null = null): DatedPeriod | null {
   if (!periods.length) return null;
-  if (!date || !today || date === today) return periods[0];
-  const day = dtf("en-US", { weekday: "long", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`)).toLowerCase();
-  return periods.find((p) => p.name.toLowerCase() === day || p.name.toLowerCase() === day.slice(0, 3)) ?? null;
+  // without NWS's issue time, the caller's "today" anchors the period names ("Tonight", "Thu")
+  const anchor = issued ?? (today ? `${today}T12:00:00-07:00` : null);
+  const ps = datePeriods(periods, anchor);
+  const want = date ?? today ?? ps.find((p) => p.date)?.date ?? null;
+  if (!want) return null;
+  return ps.find((p) => p.date === want && !p.night) ?? ps.find((p) => p.date === want) ?? null;
 }
 
 /** "11:02 AM" from a CO-OPS local time "2026-10-15 11:02". */
@@ -400,7 +407,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       : nb && nb.n > 0
         ? `NOAA's C-HARM has no valid estimate for these nearshore waters; its offshore cells within ${NEIGHBOURHOOD_KM} km read ${fmtPct(nb.min)}–${fmtPct(nb.max)} (context only, not the harbour)`
         : m
-          ? "these waters are outside NOAA's toxin model"
+          ? "NOAA publishes no toxin probability for these waters"
           : null;
   const modelLine = modelWords && freshNote && !x.modelBeyond ? `${modelWords} (${freshNote})` : modelWords;
 
@@ -531,11 +538,11 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
       gaps.push({ id: "model-here", variable: "C-HARM", reason: `NOAA's C-HARM model has no valid estimate in these nearshore waters; its nearest cell with a value is ${km(nb.nearest!.km)} km out.`, nearest: { name: "nearest C-HARM cell", km: nb.nearest!.km } });
       claims.push({ id: "model", kind: "gap", tone: "gap", headline: "No valid NOAA model estimate for these nearshore waters", detail: `Nearest cell ${km(nb.nearest!.km)} km out; the ${nb.n} offshore cells within ${NEIGHBOURHOOD_KM} km read ${fmtPct(nb.min)}–${fmtPct(nb.max)} for ${shortDate(day.valid!)}, context for the open water, not the harbour.`, focus: "model", text: `NOAA's C-HARM model has no valid estimate in these nearshore waters. Its nearest cell is ${km(nb.nearest!.km)} km out; the ${nb.n} offshore cells within ${NEIGHBOURHOOD_KM} km read ${fmtPct(nb.min)}–${fmtPct(nb.max)} for ${longDate(day.valid!)}, context for the open water, not the harbor.`, supports: [n.id] });
     } else if (nb?.nearest) {
-      gaps.push({ id: "model-here", variable: "C-HARM", reason: `These waters are outside NOAA's model: no cell within ${NEIGHBOURHOOD_KM} km. Its nearest cell, ${km(nb.nearest.km)} km away, reads ${fmtPct(nb.nearest.value)}; that describes that cell, not these waters.`, nearest: { name: "nearest C-HARM cell", km: nb.nearest.km } });
-      claims.push({ id: "model", kind: "gap", tone: "gap", headline: `Outside NOAA's toxin model: no cell within ${NEIGHBOURHOOD_KM} km`, detail: `Nearest cell ${km(nb.nearest.km)} km away reads ${fmtPct(nb.nearest.value)}; it describes that cell, not these waters.`, focus: null, text: `NOAA's C-HARM model has no estimate within ${NEIGHBOURHOOD_KM} km of ${P.name}; its nearest cell is ${km(nb.nearest.km)} km away.`, supports: [] });
+      gaps.push({ id: "model-here", variable: "C-HARM", reason: `NOAA publishes no C-HARM value for these waters: no cell within ${NEIGHBOURHOOD_KM} km. Its nearest cell, ${km(nb.nearest.km)} km away, reads ${fmtPct(nb.nearest.value)}; that describes that cell, not these waters.`, nearest: { name: "nearest C-HARM cell", km: nb.nearest.km } });
+      claims.push({ id: "model", kind: "gap", tone: "gap", headline: `NOAA publishes no toxin probability here: no cell within ${NEIGHBOURHOOD_KM} km`, detail: `Nearest cell ${km(nb.nearest.km)} km away reads ${fmtPct(nb.nearest.value)}; it describes that cell, not these waters.`, focus: null, text: `NOAA's C-HARM model has no estimate within ${NEIGHBOURHOOD_KM} km of ${P.name}; its nearest cell is ${km(nb.nearest.km)} km away.`, supports: [] });
     } else if (nb) {
-      gaps.push({ id: "model-here", variable: "C-HARM", reason: "These waters are outside NOAA's model: no cell within 80 km." });
-      claims.push({ id: "model", kind: "gap", tone: "gap", headline: "Outside NOAA's toxin model", detail: "No model cell within 80 km.", focus: null, text: `${P.name} is outside NOAA's C-HARM model: no cell within 80 km.`, supports: [] });
+      gaps.push({ id: "model-here", variable: "C-HARM", reason: "NOAA publishes no C-HARM value for these waters: no cell within 80 km." });
+      claims.push({ id: "model", kind: "gap", tone: "gap", headline: "NOAA publishes no toxin probability here", detail: "No model cell within 80 km.", focus: null, text: `NOAA publishes no C-HARM value for ${P.name}: no cell within 80 km.`, supports: [] });
     }
     // the HAB line already carried the model (its own cell, or the context sentence): the model's own line is a
     // detail for the API and the evidence list, not a second line on the page
@@ -593,7 +600,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
     let source: Claim["source"];
     let nws: string | null = null;
     if (c.marine.status === "ok") {
-      const p = periodFor(c.marine.data.periods, x.tripDate, x.today ?? x.tripDate);
+      const p = periodFor(c.marine.data.periods, x.tripDate, x.today ?? x.tripDate, c.marine.data.updated ?? c.marine.fetchedAt ?? null);
       if (p) {
         const n: EvidenceNode = {
           id: `nws:${c.marine.data.zone}:${p.name.replace(/\s+/g, "-")}`,
@@ -603,8 +610,8 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
           value: null,
           text: p.text,
           source: { id: "nws", name: "NOAA National Weather Service", url: c.marine.url, product: c.marine.data.zone },
-          // valid: the day the period belongs to (the briefing's trip day), named in the line
-          time: { issued: c.marine.data.updated, valid: x.tripDate ?? today, ageDays: null },
+          // valid: the day the period itself starts on (dated from NWS's issue time), named in the line
+          time: { issued: c.marine.data.updated, valid: p.date ?? x.tripDate ?? today, ageDays: null },
           support: { kind: "zone" },
           where: { lat: null, lon: null, name: c.marine.data.zoneName, km: 0, bearing: null, representative: "near" },
           freshness: { state: "current" },
@@ -615,7 +622,7 @@ export function harborEvidence(x: EvidenceInputs): EvidenceGraph {
         nodes.push(n);
         supports.push(n.id);
         // NWS's own period name, anchored to its date: a saved "tonight" must still say which night
-        const pDay = x.tripDate ?? today;
+        const pDay = p.date ?? x.tripDate ?? today;
         const rel = /tonight|today|this afternoon|overnight/i.test(p.name) && pDay;
         nws = `NWS for ${rel ? `“${p.name}”, ${shortDate(pDay)}` : p.name}: ${marineHeadline(p)}`;
         source = { label: `NWS forecast, ${c.marine.data.zoneName}`, url: c.marine.url };

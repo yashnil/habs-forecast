@@ -25,8 +25,12 @@ test("the briefing answers first, in order, and every statement says its kind", 
   // nothing is called safe; chlorophyll is never toxin
   const text = await page.locator("main").innerText();
   expect(text).not.toMatch(/\b(safe to eat|safe to harvest|all clear)\b/i);
+  // v6: at most three one-line statements up front, the rest one tap away; each opens in place
+  expect(await page.locator('[data-testid="matters"] > li:visible').count()).toBeLessThanOrEqual(3);
   // an official statement has no place of its own: "Show on map" opens the harbour's waters
-  await page.locator('[data-testid="matters"] > li[data-kind="official"]').first().getByRole("button", { name: "Show on map" }).click();
+  const official = page.locator('[data-testid="matters"] > li[data-kind="official"]').first();
+  await official.locator('[data-testid^="claim-open-"]').click();
+  await official.getByRole("button", { name: "Show on map" }).click();
   await expect(page).toHaveURL(/sel=harbor(%3A|:)550/);
   await expect(page.getByTestId("inspect-title")).toHaveText("Monterey");
 });
@@ -82,4 +86,23 @@ test("no serious accessibility violations on the briefing (desktop and phone)", 
     expect(bad.map((v) => `${v.id}: ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
     await ctx.close();
   }
+});
+
+test("one count of notices: the top bar, the glance and the notices section agree, and say what names the species", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/coast?place=port-550&for=commercial&species=dungeness`);
+  await expect(page.getByTestId("matters")).toBeVisible();
+  const here = Number(await page.getByTestId("notices-count").innerText());
+  expect(here).toBeGreaterThan(0);
+  const line = new RegExp(`${here} notices? tied to these waters · (none|\\d+) names? Dungeness crab`);
+  await expect(page.getByTestId("glance-notices")).toHaveText(new RegExp(`^${line.source}`));
+  await expect(page.getByTestId("glance-notices")).toContainText("not verified");
+  const toggle = page.getByTestId("brief-official-toggle");
+  await expect(toggle).toContainText(String(here));
+  await expect(toggle).toContainText(line);
+  // never "none here" when notices are tied to these waters
+  expect(await page.locator("main").innerText()).not.toMatch(/None (in Neritic's list is )?tied to these waters/);
+  await toggle.click();
+  const listed = await page.getByTestId("brief-official").locator('li[data-testid^="notice-official:"]').count();
+  expect(listed).toBe(here);
 });

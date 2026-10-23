@@ -62,14 +62,25 @@ test("L4: a layer's subtitle (what it is and how new) is never cut off", async (
   expect(cut).toEqual([]);
 });
 
-test("L6: offline at 320 px, the banner never covers the 'Notices not verified' disclosure", async ({ browser }) => {
+test("L6: offline at 320 px, Explore says so in the status chip (the banner folds into it) and never covers the 'Notices not verified' disclosure", async ({ browser }) => {
   const ctx = await browser.newContext(phone(320));
   const page = await ctx.newPage();
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=forecast`);
   await mapReady(page);
   await ctx.setOffline(true);
-  await expect(page.getByTestId("offline-banner")).toBeVisible();
+  // v6: at phone width the offline banner folds into the status chip, which says "Offline" and opens
+  // on the same words; the map keeps its height
+  const chip = page.getByTestId("status-center-compact");
+  await expect(chip).toHaveAttribute("data-state", "offline");
+  await expect(chip).toContainText("Offline");
+  await expect(page.getByTestId("offline-banner")).toBeHidden();
+  const bar = await page.locator("header").first().boundingBox();
+  expect(bar!.x + bar!.width).toBeLessThanOrEqual(320);
+  expect((await chip.boundingBox())!.x + (await chip.boundingBox())!.width).toBeLessThanOrEqual(320);
+  await chip.click();
+  await expect(page.getByTestId("status-offline-note")).toContainText("nothing here is live");
+  await page.keyboard.press("Escape");
   const warn = page.getByTestId("registry-disclosure").getByText("Notices not verified").filter({ visible: true });
   await expect(warn).toBeInViewport();
   // every line box of the warning is the top-most thing where it is drawn (it can wrap onto two lines,
@@ -81,8 +92,6 @@ test("L6: offline at 320 px, the banner never covers the 'Notices not verified' 
     }).length,
   );
   expect(covered).toBe(0);
-  // and the banner sits below it
-  expect((await page.getByTestId("offline-banner").boundingBox())!.y).toBeGreaterThan((await warn.boundingBox())!.y);
   await ctx.setOffline(false);
   await ctx.close();
 });
