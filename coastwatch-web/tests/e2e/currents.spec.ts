@@ -11,6 +11,8 @@ import { openDisplay } from "./helpers";
 const NOW = "2026-10-08T20:00:00Z";
 type Flow = {
   running(): boolean;
+  slow(): boolean;
+  measured(): boolean;
   fps(): number;
   count(): number;
   stats: { frames: number; segments: number; footprintCells: number };
@@ -52,10 +54,20 @@ test.describe("v10 currents: an honest flow field", () => {
     expect(info.flow).toBe(info.coastline - 1);
     for (const i of info.labels) expect(i).toBeGreaterThan(info.flow);
     expect(await page.locator("canvas").count()).toBe(1);
-    expect(await page.evaluate(() => (window as unknown as W).__cwFlow!.running())).toBe(true);
-    const f0 = await frames(page);
-    await page.waitForTimeout(500);
-    expect((await frames(page)) - f0).toBeGreaterThan(5);
+    // animating; or, on a device that draws it too slowly (a software-WebGL runner: about 2 fps), stopped on the
+    // still frame after its first frames, which says so beside a Play choice
+    await expect.poll(() => page.evaluate(() => (window as unknown as W).__cwFlow!.measured()), { timeout: 30_000 }).toBe(true);
+    if (await page.evaluate(() => (window as unknown as W).__cwFlow!.slow())) {
+      expect(await page.evaluate(() => (window as unknown as W).__cwFlow!.running())).toBe(false);
+      await expect(page.getByTestId("flow-slow").first()).toContainText("draws the moving streaks too slowly");
+      await expect(page.getByTestId("flow-pause").first()).toContainText("Play motion");
+      test.info().annotations.push({ type: "slow-webgl", description: "motion checked as the slow-device still frame" });
+    } else {
+      expect(await page.evaluate(() => (window as unknown as W).__cwFlow!.running())).toBe(true);
+      const f0 = await frames(page);
+      await page.waitForTimeout(500);
+      expect((await frames(page)) - f0).toBeGreaterThan(5);
+    }
     // the legend says the motion is a scaled symbol; the static arrows stay one tap away
     await expect(page.getByTestId("flow-scale-note").first()).toContainText("Screen speed is a scaled symbol");
     await openDisplay(page);
@@ -107,6 +119,9 @@ test.describe("v10 currents: an honest flow field", () => {
   });
 
   test("the pause control is reachable by keyboard, stops the loop and is kept on this device", async ({ page }) => {
+    // the person's own pause, not the slow-device one: a fixed rate is never measured (a software-WebGL runner
+    // would otherwise be paused for slowness first)
+    await page.addInitScript(() => ((window as unknown as { __cwFlowFps?: number }).__cwFlowFps = 60));
     await open(page, "/?layer=currents&region=monterey_bay");
     await flowReady(page);
     const pause = page.getByTestId("flow-pause").first();
@@ -201,8 +216,10 @@ test.describe("v10 currents: an honest flow field", () => {
 
 test.describe("v10: the selection's true footprint", () => {
   test("a radar point outlines its 2 km cell after the camera settles; the URL carries it through reload and a trip to My Coast", async ({ page }) => {
+    // three map loads with the currents (a software-WebGL runner takes ~12 s for each)
+    test.setTimeout(120_000);
     await open(page, "/?layer=currents&sel=point:36.80,-122.10");
-    await expect.poll(() => page.evaluate(() => (window as unknown as W).__cwMap!.getContainer().dataset.footprint)).toBe("drawn");
+    await expect.poll(() => page.evaluate(() => (window as unknown as W).__cwMap!.getContainer().dataset.footprint), { timeout: 20_000 }).toBe("drawn");
     await expect(page).toHaveURL(/fp=hfr2km(%3A|:)\d+(%3A|:)\d+/);
     const ring = await page.evaluate(() => (window as unknown as W).__cwMap!.getSource("v4-footprint")!.serialize().data.geometry as GeoJSON.LineString);
     const lons = ring.coordinates.map((c) => c[0]);
@@ -219,14 +236,14 @@ test.describe("v10: the selection's true footprint", () => {
     await page.reload();
     await page.waitForFunction(() => !!(window as unknown as W).__cwMap?.loaded());
     await expect.poll(() => new URL(page.url()).searchParams.get("fp")).toBe(fp);
-    await expect.poll(() => page.evaluate(() => (window as unknown as W).__cwMap!.getContainer().dataset.footprint)).toBe("drawn");
+    await expect.poll(() => page.evaluate(() => (window as unknown as W).__cwMap!.getContainer().dataset.footprint), { timeout: 20_000 }).toBe("drawn");
     // to My Coast and back: the selection and its footprint are still the page's address
     await page.goto(`${OK}/coast`);
     await page.goBack();
     await page.waitForFunction(() => !!(window as unknown as W).__cwMap?.loaded());
     await expect.poll(() => new URL(page.url()).searchParams.get("fp")).toBe(fp);
     await expect(page.getByTestId("inspect-panel")).toBeVisible();
-    await expect.poll(() => page.evaluate(() => (window as unknown as W).__cwMap!.getContainer().dataset.footprint)).toBe("drawn");
+    await expect.poll(() => page.evaluate(() => (window as unknown as W).__cwMap!.getContainer().dataset.footprint), { timeout: 20_000 }).toBe("drawn");
   });
 
   test("a click on the forecast outlines the 3 km model cell it reads, drawn in once", async ({ page }) => {
@@ -240,7 +257,7 @@ test.describe("v10: the selection's true footprint", () => {
     await page.mouse.click(at.x, at.y);
     await expect(page.getByTestId("inspect-panel")).toHaveAttribute("data-kind", "cell");
     // drawing, then drawn (300 ms)
-    await expect.poll(() => page.evaluate(() => (window as unknown as W).__cwMap!.getContainer().dataset.footprint)).toBe("drawn");
+    await expect.poll(() => page.evaluate(() => (window as unknown as W).__cwMap!.getContainer().dataset.footprint), { timeout: 20_000 }).toBe("drawn");
     await expect(page).toHaveURL(/fp=charm(%3A|:)\d+(%3A|:)\d+/);
     const ring = await page.evaluate(() => (window as unknown as W).__cwMap!.getSource("v4-footprint")!.serialize().data.geometry as GeoJSON.LineString);
     const lons = ring.coordinates.map((c) => c[0]);
@@ -251,6 +268,8 @@ test.describe("v10: the selection's true footprint", () => {
 test.describe("v10 fix 2: the rail holds still when an hour turns old", () => {
   test.use({ serviceWorkers: "block" });
   test("the status row reserves the stale line: the scrubber is at the same height with two lines or three", async ({ page }) => {
+    // two map loads with the currents (a software-WebGL runner takes ~12 s for each)
+    test.setTimeout(120_000);
     const ys: number[] = [];
     // a day after the radar hours they are current (two lines); two days after, older than usual (a third line)
     for (const at of ["2026-10-09T20:00:00Z", "2026-10-10T20:00:00Z"]) {

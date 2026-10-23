@@ -1,16 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { FLOW_SLOW_EVENT, flowTooSlow } from "@/components/map/flowSlow";
 import { Icon } from "@/v4/ui/Icon";
 
 /**
  * How the currents layer is drawn, kept per device: moving particles ("flow", the default) or static
  * arrows; the motion paused (WCAG 2.2.2: anything that moves for more than five seconds can be paused);
  * particles coloured by speed class. Under reduced motion the particles are one still frame and there is
- * nothing to pause.
+ * nothing to pause. A device too slow to draw the motion is paused for this page (`slow`, never stored) and
+ * says why; Play overrides it.
  */
 export type CurrentsView = "flow" | "arrows";
-export type FlowPrefs = { view: CurrentsView; paused: boolean; colour: boolean };
+export type FlowPrefs = { view: CurrentsView; paused: boolean; colour: boolean; slow?: boolean };
 const KEY = "nx-currents-view-v1";
 const DEFAULT: FlowPrefs = { view: "flow", paused: false, colour: false };
 
@@ -31,12 +33,18 @@ export function useFlowPrefs(): [FlowPrefs, (p: Partial<FlowPrefs>) => void, boo
   useEffect(() => {
     setPrefs(read());
     setReady(true);
+    const slow = () => setPrefs((p) => (p.paused ? p : { ...p, paused: true, slow: true }));
+    if (flowTooSlow()) slow();
+    window.addEventListener(FLOW_SLOW_EVENT, slow);
+    return () => window.removeEventListener(FLOW_SLOW_EVENT, slow);
   }, []);
   const set = useCallback((p: Partial<FlowPrefs>) => {
     setPrefs((was) => {
       const next = { ...was, ...p };
+      if (p.paused === false) next.slow = false;
       try {
-        window.localStorage.setItem(KEY, JSON.stringify(next));
+        // the slow-device pause is this page's, never the device's stored choice
+        window.localStorage.setItem(KEY, JSON.stringify({ view: next.view, paused: next.slow ? false : next.paused, colour: next.colour }));
       } catch {
         // storage unavailable (private window): the choice holds for this page only
       }
@@ -95,6 +103,12 @@ export function FlowControls({ prefs, onPrefs, reduced, part = "all" }: { prefs:
             Still frame: reduced motion is on
           </span>
         ) : (
+          <>
+            {prefs.paused && prefs.slow && (
+              <span className="nx-margin text-[12.5px]" data-testid="flow-slow">
+                Paused: this device draws the moving streaks too slowly
+              </span>
+            )}
           <button
             type="button"
             aria-pressed={prefs.paused}
@@ -106,6 +120,7 @@ export function FlowControls({ prefs, onPrefs, reduced, part = "all" }: { prefs:
             <Icon name={prefs.paused ? "play" : "pause"} className="h-4 w-4" />
             {prefs.paused ? "Play motion" : "Pause motion"}
           </button>
+          </>
         ))}
       {view && flow && (
         <label className="nx-focus inline-flex min-h-11 items-center gap-2 text-[13px] text-n-ink">

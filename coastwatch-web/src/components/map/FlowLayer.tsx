@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { CustomLayerInterface, Map as MLMap } from "maplibre-gl";
 import type { CurrentField } from "@/lib/currents";
 import { FlowSim, HIST, HIST_MS, SEG, mercX, mercY } from "@/lib/flowSim";
+import { FLOW_SLOW_EVENT, flowTooSlow, markFlowTooSlow } from "./flowSlow";
 
 /**
  * Observed HF-radar currents as moving particles, drawn by a MapLibre custom layer in the map's own
@@ -78,6 +79,13 @@ function program(gl: WebGL2RenderingContext, vs: string, fs: string) {
 // a device found to be low-power keeps 30 fps for the session (measured once, never flapping)
 let measuredLowPower = false;
 
+/**
+ * A device that cannot draw the moving streaks at a usable rate (software WebGL without a GPU: under ~8 fps
+ * over the first frames of motion) gets the still frame and the choice to play, not a slide show that also
+ * slows the map. Measured once per session; the page is told by FLOW_SLOW_EVENT.
+ */
+const SLOW_FRAME_MS = 125;
+
 /** 30 fps on a low-power device: few cores or little memory, or map frames measured over budget. */
 const forcedFps = () => (window as unknown as { __cwFlowFps?: number }).__cwFlowFps;
 export function flowFps(): number {
@@ -101,6 +109,10 @@ export type FlowController = CustomLayerInterface & {
   setField: (f: CurrentField) => void;
   setOptions: (o: FlowOptions) => void;
   running: () => boolean;
+  /** stopped because the device draws it too slowly (until the person plays it) */
+  slow: () => boolean;
+  /** the slow-device check has decided (or a fixed rate skips it) */
+  measured: () => boolean;
   fps: () => number;
   sim: FlowSim;
   stats: FlowStats;
@@ -127,10 +139,16 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
   let costN = 0;
   let costSum = 0;
   let requested = false;
+  // the slow-device check: wall time between frames while the camera is still
+  let slowChecked = flowTooSlow();
+  let autoPaused = flowTooSlow();
+  const slowGaps: number[] = [];
+  let prevTick = 0;
 
   const worldPx = () => 512 * Math.pow(2, map!.getZoom());
   const visibleNow = () => sim.visible.length > 0;
-  const shouldRun = () => !!map && !opts.still && !opts.paused && !document.hidden && visibleNow();
+  const stopped = () => opts.still || opts.paused || autoPaused;
+  const shouldRun = () => !!map && !stopped() && !document.hidden && visibleNow();
 
   const uploadFootprint = () => {
     if (!gl || !sim.field) return;
@@ -167,6 +185,20 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
   const tick = (t: number) => {
     raf = 0;
     if (!map || !shouldRun()) return;
+    if (!slowChecked && !forcedFps()) {
+      if (prevTick && !map.isMoving()) slowGaps.push(t - prevTick);
+      prevTick = t;
+      // the median of eight: one long frame (a tile decoded, a tab switch) never pauses a capable device
+      if (slowGaps.length >= 8) {
+        slowChecked = true;
+        if (slowGaps.sort((a, b) => a - b)[4] > SLOW_FRAME_MS) {
+          autoPaused = true;
+          still();
+          markFlowTooSlow();
+          return;
+        }
+      }
+    }
     // what the frame's earlier callbacks cost (the map's own render, requested last frame): measured, so
     // a device too slow for 60 fps drops to 30 once (never while the camera moves: a pan costs more anyway)
     if (requested && fps === 60 && !forcedFps() && !map.isMoving()) {
@@ -206,18 +238,19 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
     if (shouldRun()) {
       if (!raf) {
         last = lastHist = performance.now();
+        prevTick = 0;
         raf = requestAnimationFrame(tick);
       }
     } else {
       if (raf) cancelAnimationFrame(raf);
       raf = 0;
-      if (map && !opts.still && !opts.paused) map.triggerRepaint();
+      if (map && !stopped()) map.triggerRepaint();
     }
   };
 
   const onMoveEnd = () => {
     recomputeView();
-    if (opts.still || opts.paused) still();
+    if (stopped()) still();
     sync();
   };
   const onVisibility = () => sync();
@@ -229,6 +262,8 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
     sim,
     stats,
     running: () => raf !== 0,
+    slow: () => autoPaused,
+    measured: () => slowChecked,
     fps: () => fps,
     setField(f) {
       sim.setField(f);
@@ -236,7 +271,7 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
       if (!map) return;
       recomputeView();
       // a cut: every particle is reborn in the new hour; a paused or still layer settles once in it
-      if (opts.still || opts.paused) still();
+      if (stopped()) still();
       else {
         sim.respawnAll();
         map.triggerRepaint();
@@ -246,6 +281,8 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
     setOptions(o) {
       const was = opts;
       opts = o;
+      // the person's own Play wins over the slow-device pause
+      if (was.paused && !o.paused) autoPaused = false;
       if (!map) return;
       if (was.coarser !== o.coarser) recomputeView();
       if ((o.still || o.paused) && !(was.still || was.paused)) map.triggerRepaint();
@@ -296,6 +333,7 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
       m.on("moveend", onMoveEnd);
       document.addEventListener("visibilitychange", onVisibility);
       layer.setField(sim.field ?? initial);
+      if (autoPaused) window.dispatchEvent(new Event(FLOW_SLOW_EVENT));
     },
     onRemove(m) {
       if (raf) cancelAnimationFrame(raf);
@@ -350,6 +388,8 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
 /** The e2e and measuring hook: the layer's own state, read from the page. */
 export type FlowDebug = {
   running: () => boolean;
+  slow: () => boolean;
+  measured: () => boolean;
   fps: () => number;
   stats: FlowStats;
   count: () => number;
@@ -387,6 +427,8 @@ export default function FlowLayer({ map, id, field, options, beforeId }: { map: 
     map.on("styledata", placed);
     const dbg: FlowDebug = {
       running: layer.running,
+      slow: layer.slow,
+      measured: () => layer.measured() || !!(window as unknown as { __cwFlowFps?: number }).__cwFlowFps,
       fps: layer.fps,
       stats: layer.stats,
       count: () => layer.sim.count,

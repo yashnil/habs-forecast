@@ -264,12 +264,16 @@ test("offline, the saved briefing is dated, never 'now'; its age is said once ou
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   // three days later, another trip of the same harbour: the pack's saved page answers it
-  await page.clock.setFixedTime(new Date(Date.now() + 3 * 86_400_000 + 3_600_000));
+  const later = new Date(Date.now() + 3 * 86_400_000 + 3_600_000);
+  await page.clock.setFixedTime(later);
+  // the age is counted in Pacific calendar days (as everywhere else), so a save late in the evening is a day older
+  const pacificDay = (d: Date) => Date.parse(`${d.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" })}T00:00:00Z`);
+  const days = Math.round((pacificDay(later) - pacificDay(new Date())) / 86_400_000);
   await page.goto(`${OK}/coast?place=port-550&for=commercial`);
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey", { timeout: 20_000 });
   await expect(page.getByTestId("matters-heading")).toContainText(/What mattered when saved · \w{3} \d{1,2}, \d{1,2}:\d{2} [AP]M/);
   await expect(page.getByTestId("matters-heading")).not.toContainText("now");
-  await expect(page.getByTestId("offline-banner")).toContainText(/Offline · Monterey Bay saved .* · 3 days old/);
+  await expect(page.getByTestId("offline-banner")).toContainText(new RegExp(`Offline · Monterey Bay saved .* · ${days} days old`));
   // the pack saved the briefing for all species: another trip is told so, never that it was saved for it
   await expect(page.getByTestId("offline-banner")).toContainText("saved for all species");
   // the address bar's own trip, after hydrating the saved HTML

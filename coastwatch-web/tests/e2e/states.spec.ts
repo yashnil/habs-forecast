@@ -16,9 +16,11 @@ const status = async (page: Page, id: string) => {
 };
 
 test("a slow conditions service: the briefing says it is reading, the rest is there, then the statements arrive", async ({ page }) => {
+  test.setTimeout(90_000);
   await page.clock.setFixedTime(new Date("2026-10-13T06:00:00Z"));
   await page.route("**/api/conditions**", async (r) => {
-    await delay(4000);
+    // long enough to outlast the checks below on a slow runner
+    await delay(12_000);
     await r.continue();
   });
   await page.goto(`${OK}/coast?place=port-550`);
@@ -28,7 +30,7 @@ test("a slow conditions service: the briefing says it is reading, the rest is th
   await expect(page.getByTestId("brief-official")).toBeVisible();
   expect(await status(page, "evidence")).toBe("loading");
   expect(await status(page, "conditions")).toBe("loading");
-  await expect(page.getByTestId("matters").locator(":scope > li").first()).toBeVisible({ timeout: 15000 });
+  await expect(page.getByTestId("matters").locator(":scope > li").first()).toBeVisible({ timeout: 30_000 });
   expect(await status(page, "evidence")).not.toBe("loading");
 });
 

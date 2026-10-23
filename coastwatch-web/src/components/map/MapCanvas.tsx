@@ -34,6 +34,7 @@ import { loadWaterFallback, waterGeoJSON } from "@/lib/waterFallback";
 import { basemapArchive, onBasemapSlow, setBasemapArchive } from "@/lib/waterMask";
 import FlowLayer, { type FlowOptions } from "./FlowLayer";
 import { CountyLayers } from "./Counties";
+import { onceSettled } from "./settled";
 
 /** Marks with a name: a pointer over one shows the name (and a pointer cursor). */
 const MARK_LAYERS = ["ports-hit", "ports-circle", "map-station", "map-station-point", "map-station-cluster", "coast-station"];
@@ -544,6 +545,7 @@ export default function MapCanvas(p: Props) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let raf = 0;
     let live = true;
+    let stopWaiting = () => {};
     const set = (k: number) => {
       if (map.getLayer("v4-fp-halo")) map.setPaintProperty("v4-fp-halo", "line-gradient", threadGradient(k, FOOTPRINT_HALO));
       if (map.getLayer("v4-fp-line")) map.setPaintProperty("v4-fp-line", "line-gradient", threadGradient(k, FOOTPRINT_LINE[fpTone]));
@@ -554,7 +556,7 @@ export default function MapCanvas(p: Props) {
     if (reduce) return;
     const start = () => {
       if (!live) return;
-      if (!map.loaded()) return void map.once("idle", start);
+      if (!map.loaded()) return void (stopWaiting = onceSettled(map, start));
       if (map.isMoving()) return void map.once("moveend", start);
       const t0 = performance.now();
       const step = (now: number) => {
@@ -570,7 +572,7 @@ export default function MapCanvas(p: Props) {
     return () => {
       live = false;
       cancelAnimationFrame(raf);
-      map.off("idle", start);
+      stopWaiting();
       map.off("moveend", start);
     };
   }, [map, fpKey, fpTone]);

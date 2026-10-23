@@ -59,6 +59,7 @@ import { readHomePort } from "@/v4/state/homePort";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import { EASE_IN, EASE_OUT, T, markAppReady, useSwapFade } from "@/v4/motion";
 import { ContourLoader } from "@/v4/ui/ContourLoader";
+import { onceSettled } from "@/components/map/settled";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
 
@@ -1159,7 +1160,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           if (initialBounds === STATEWIDE.bounds) m.jumpTo(coastView());
           else m.fitBounds(initialBounds, { padding: padding(), duration: 0 });
           const s = decodeSelection(q0);
-          if (s) m.once("idle", () => focusOn(s));
+          if (s) onceSettled(m, () => focusOn(s));
         }
         // through the ref: a handler captured here would write the selection of the first render
         m.on("moveend", () => writeUrlRef.current());

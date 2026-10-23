@@ -128,7 +128,7 @@ test.describe("currents: speed encoded, rail stable", () => {
   test.use({ serviceWorkers: "block" });
   test("a faster cell draws a longer streak (the layer's own streaks), and the legend gives the m/s scale", async ({ page }) => {
     await open(page, "/?layer=currents&region=monterey_bay", CURRENT);
-    await page.waitForFunction(() => ((window as unknown as W).__cwFlow?.streaks().length ?? 0) > 40, null, { timeout: 15000 });
+    await page.waitForFunction(() => ((window as unknown as W).__cwFlow?.streaks().length ?? 0) > 40, null, { timeout: 45_000 });
     const s = await page.evaluate(() => (window as unknown as W).__cwFlow!.streaks());
     const sorted = [...s].sort((a, b) => a.speed - b.speed);
     const q = Math.max(5, Math.floor(sorted.length / 4));
@@ -142,6 +142,8 @@ test.describe("currents: speed encoded, rail stable", () => {
   });
 
   test("playing the hours never moves the time rail (no layout shift)", async ({ page }) => {
+    // each hour redraws the map (a software-WebGL runner: about a second each)
+    test.setTimeout(120_000);
     await open(page, "/?layer=currents&region=monterey_bay", CURRENT);
     const rail = page.getByTestId("timebar");
     await expect(rail).toBeVisible();
