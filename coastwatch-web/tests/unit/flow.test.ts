@@ -205,3 +205,38 @@ describe("v10: particles move only inside observed cells", () => {
     for (let i = 1; i < lum.length; i++) expect(lum[i]).toBeGreaterThan(lum[i - 1]);
   });
 });
+
+// ---------------------------------------------------------------- v10 rework: speed is encoded, honestly
+import { FLOW_SKY, skyColour, speedShare, SPEED_FULL } from "@/lib/flowSim";
+describe("v10 rework: streak length, brightness and colour follow the cell's observed speed", () => {
+  it("a fast cell's streak is longer than a slow cell's at the same zoom (screen speed proportional to speed)", () => {
+    const g2 = { url: "", lat_first: 36, lat_step: 0.018, lon_first: -123, lon_step: 0.0208, width: 40, height: 40, scale_factor: 1, add_offset: 0 } as unknown as ValueGrid;
+    const u = new Float32Array(1600), v = new Float32Array(1600);
+    // west half slow (0.05 m/s), east half fast (0.5 m/s), all northward, so no particle leaves its half
+    for (let r = 0; r < 40; r++) for (let c = 0; c < 40; c++) [u[r * 40 + c], v[r * 40 + c]] = [0, c < 20 ? 0.05 : 0.5];
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const sim = new FlowSim(300, rnd);
+    sim.setField({ g: g2, u, v });
+    sim.setCount(300);
+    sim.settle(512 * 2 ** 10);
+    const s = sim.streaks(512 * 2 ** 10);
+    const slow = s.filter((x) => x.speed < 0.1), fast = s.filter((x) => x.speed > 0.4);
+    expect(slow.length).toBeGreaterThan(20);
+    expect(fast.length).toBeGreaterThan(20);
+    const mean = (xs: { px: number }[]) => xs.reduce((a, x) => a + x.px, 0) / xs.length;
+    expect(mean(fast) / mean(slow)).toBeGreaterThan(5);
+  });
+  it("the default colour is the conditions (sky) family, getting lighter with speed, and saturates at SPEED_FULL", () => {
+    const lum = ([r, g, b]: [number, number, number]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    const ls = [0, 0.1, 0.2, 0.3, 0.45, SPEED_FULL].map((x) => lum(skyColour(x)));
+    for (let i = 1; i < ls.length; i++) expect(ls[i]).toBeGreaterThan(ls[i - 1]);
+    expect(skyColour(2)).toEqual(skyColour(SPEED_FULL));
+    expect(speedShare(-1)).toBe(0);
+    expect(FLOW_SKY.some(([, c]) => c === "#74c7ff")).toBe(true); // --nx-conditions
+    for (const [, c] of FLOW_SKY) {
+      const [r, , b] = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+      expect(b).toBeGreaterThan(r); // blue family, never a rainbow
+    }
+  });
+});

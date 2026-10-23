@@ -109,3 +109,99 @@ export function journeyTo(m: MlMap, to: { bounds: LngLatBoundsLike; padding?: nu
   watchFrames(m);
   m.flyTo({ ...opts, duration: flightMs(d), curve: 1.42, essential: false });
 }
+
+// ------------------------------------------------------------------------------------- the coastal frame
+
+/**
+ * The California coast from Crescent City to San Diego: the shore's own extent, not the state's. The
+ * opening camera frames this strip (v10 review: the statewide fit was about 60 % Nevada).
+ */
+export const COAST_BOUNDS: [[number, number], [number, number]] = [
+  [-124.45, 32.62],
+  [-117.12, 41.79],
+];
+export type Insets = { top: number; bottom: number; left: number; right: number };
+
+const mx = (lon: number) => (lon + 180) / 360;
+const my = (lat: number) => {
+  const s = Math.sin((lat * Math.PI) / 180);
+  return 0.5 - (0.25 * Math.log((1 + s) / (1 - s))) / Math.PI;
+};
+const lonX = (x: number) => x * 360 - 180;
+const latY = (y: number) => (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI;
+
+/**
+ * The camera that frames the coast with the ocean dominant: the coast's box fills the height left between
+ * the insets (the header above, the time rail below), and its east edge (San Diego) sits at the right
+ * inset, so the land is a narrow margin on the right and the open ocean fills the rest of the view, under
+ * and beside the layer index. A window too narrow for the box fits its width instead.
+ */
+/** Where a screen too short for the whole coast is centred: the head of Monterey Canyon (the opening's own place). */
+export const COAST_ANCHOR: [number, number] = [-121.95, 36.75];
+export function coastCamera(w: number, h: number, ins: Insets, bounds: [[number, number], [number, number]] = COAST_BOUNDS, minZoom = 4.5): { center: [number, number]; zoom: number } {
+  const [[west, south], [east, north]] = bounds;
+  const X0 = mx(west), X1 = mx(east), Y0 = my(north), Y1 = my(south);
+  const availH = Math.max(80, h - ins.top - ins.bottom);
+  const availW = Math.max(80, w - ins.left - ins.right);
+  const z = Math.min(Math.log2(availH / ((Y1 - Y0) * 512)), Math.log2(availW / ((X1 - X0) * 512)), 9);
+  if (z < minZoom) {
+    // a small phone: the whole coast would be a thread. The central coast instead, at a legible scale, with
+    // the canyon left of centre so the ocean takes most of the strip and the land stays a margin
+    const wq = 512 * 2 ** minZoom;
+    const cx = mx(COAST_ANCHOR[0]) - (ins.left + availW * 0.66 - w / 2) / wq;
+    const cy = my(COAST_ANCHOR[1]) - ((ins.top + (h - ins.bottom)) / 2 - h / 2) / wq;
+    return { center: [lonX(cx), latY(cy)], zoom: minZoom };
+  }
+  const wp = 512 * 2 ** z;
+  const cx = X1 - (w / 2 - ins.right) / wp;
+  const cy = (Y0 + Y1) / 2 - ((ins.top + (h - ins.bottom)) / 2 - h / 2) / wp;
+  return { center: [lonX(cx), latY(cy)], zoom: z };
+}
+
+/**
+ * Which way the water lies from a coastal point, as a unit vector in screen terms (x east, y south), from
+ * the bundled water geometry: the centroid of the water within about 10 km. A selected harbour is framed
+ * with its water, not centred on the land behind it. Null when the geometry gives no direction.
+ */
+export function seaward(water: { sample: (lon: number, lat: number) => boolean } | null, lat: number, lon: number): [number, number] | null {
+  if (!water) return null;
+  let sx = 0, sy = 0, n = 0, all = 0;
+  const R = 10; // km
+  const dLat = R / 111, dLon = R / (111 * Math.cos((lat * Math.PI) / 180));
+  for (let i = -6; i <= 6; i++)
+    for (let j = -6; j <= 6; j++) {
+      if (i * i + j * j > 36) continue;
+      all++;
+      if (water.sample(lon + (j / 6) * dLon, lat - (i / 6) * dLat)) {
+        sx += j;
+        sy += i;
+        n++;
+      }
+    }
+  // all water or all land: no side to lean to
+  if (!n || n === all) return null;
+  const len = Math.hypot(sx, sy);
+  return len < 1e-6 ? null : [sx / len, sy / len];
+}
+
+/** A point-in-water test on the bundled water rings (even-odd, normalised Mercator), for `seaward`. */
+export function waterSampler(g: { rings: Float64Array[]; bbox: Float64Array } | null): { sample: (lon: number, lat: number) => boolean } | null {
+  if (!g) return null;
+  return {
+    sample(lon, lat) {
+      const x = mx(lon), y = my(lat);
+      let inside = false;
+      for (let r = 0; r < g.rings.length; r++) {
+        const b = r * 4;
+        if (y < g.bbox[b + 1] || y > g.bbox[b + 3] || x > g.bbox[b + 2]) continue;
+        const ring = g.rings[r];
+        const n = ring.length;
+        for (let i = 0, j = n - 2; i < n; j = i, i += 2) {
+          const yi = ring[i + 1], yj = ring[j + 1];
+          if (yi > y !== yj > y && x < ((ring[j] - ring[i]) * (y - yi)) / (yj - yi) + ring[i]) inside = !inside;
+        }
+      }
+      return inside;
+    },
+  };
+}

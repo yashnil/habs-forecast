@@ -57,7 +57,7 @@ test.describe("v10 currents: an honest flow field", () => {
     await page.waitForTimeout(500);
     expect((await frames(page)) - f0).toBeGreaterThan(5);
     // the legend says the motion is a scaled symbol; the static arrows stay one tap away
-    await expect(page.getByTestId("flow-scale-note").first()).toContainText("scaled symbol of relative speed");
+    await expect(page.getByTestId("flow-scale-note").first()).toContainText("Screen speed is a scaled symbol");
     await openDisplay(page);
     await page.getByTestId("flow-view-arrows").first().click();
     await expect.poll(() => page.evaluate(() => !!(window as unknown as W).__cwMap!.getLayer("currents-arrows-1"))).toBe(true);

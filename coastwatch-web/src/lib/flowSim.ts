@@ -10,20 +10,41 @@ import { SPEED_CLASSES } from "@/lib/basemap";
  *   coverage) and is reborn only in an observed cell in view: particles never cross or fill a gap, and
  *   a drawn particle is always inside an observed cell.
  * - Screen speed is proportional to current speed and the same at every zoom (PX_PER_MS px/s per m/s):
- *   a scaled symbol of direction and RELATIVE speed, never the water's real speed or a path. Lives are
- *   short (1.2-2.4 s) and trails about 0.5 s, so no streak spans more than a few cells.
+ *   a scaled symbol of direction and RELATIVE speed, never the water's real speed or a path.
+ * - Speed is encoded three ways at once, all from the cell's own observed speed: a faster current's streak
+ *   is longer (its trail covers more ground in the same time), brighter, and lighter in the conditions
+ *   (sky) family. v10 rework: fewer particles that live longer (2.4-4.4 s) with trails of about 1.1 s, so
+ *   the field reads as flow structure rather than static; at harbour zoom a streak still spans only a few
+ *   2 km cells.
  * Positions are Web Mercator, 0..1 (georeferenced: they move with the map while it pans).
  */
-export const PX_PER_MS = 30;
-export const HIST = 10; // trail samples per particle
-export const HIST_MS = 55; // ms between trail samples (a trail spans about 0.5 s)
+export const PX_PER_MS = 42;
+export const HIST = 16; // trail samples per particle
+export const HIST_MS = 70; // ms between trail samples (a trail spans about 1.1 s)
+/** Particle lives, seconds: the shortest and the spread above it. */
+export const LIFE_MIN = 2.4;
+export const LIFE_SPREAD = 2;
+/** The speed (m/s) at which a streak reaches full brightness and the lightest colour; faster keeps it. */
+export const SPEED_FULL = 0.6;
 /** Floats per drawn segment: ax ay bx by alpha r g b. */
 export const SEG = 8;
 
 /** Sequential, lightness-monotone speed ramp for the optional colour buckets (one colour per SPEED_CLASSES bucket; never a rainbow). */
 export const SPEED_RAMP = ["#4f7a8c", "#5fa3b5", "#8cc9c4", "#c6e6b4", "#fbf3c4"] as const;
-/** The particles' colour when they are not coloured by speed. */
+/** The particles' colour when they are not coloured by speed classes: the old single ink (kept for reference). */
 export const FLOW_INK = "#edf5fa";
+/**
+ * The default streak colour: the conditions (sky) family, continuous and lightness-monotone by speed, from a
+ * deep sky at rest to the family's own sky and a pale sky at SPEED_FULL. Stops are [share of SPEED_FULL, hex].
+ */
+export const FLOW_SKY: readonly [number, string][] = [
+  [0, "#2f6488"],
+  [0.4, "#4f9fd6"],
+  [0.7, "#74c7ff"],
+  [1, "#e3f4ff"],
+];
+/** A speed (m/s) as a share of SPEED_FULL, 0..1. */
+export const speedShare = (speed: number) => Math.max(0, Math.min(1, speed / SPEED_FULL));
 
 export const mercX = (lon: number) => (lon + 180) / 360;
 export const mercY = (lat: number) => {
@@ -42,7 +63,21 @@ export function speedBucket(speed: number): number {
 
 const rgb = (hex: string): [number, number, number] => [parseInt(hex.slice(1, 3), 16) / 255, parseInt(hex.slice(3, 5), 16) / 255, parseInt(hex.slice(5, 7), 16) / 255];
 const RAMP_RGB = SPEED_RAMP.map(rgb);
-const INK_RGB = rgb(FLOW_INK);
+const SKY_RGB = FLOW_SKY.map(([t, c]) => [t, ...rgb(c)] as [number, number, number, number]);
+/** The sky colour of a speed (m/s), interpolated between the FLOW_SKY stops (a colour scale, not a value blend). */
+export function skyColour(speed: number): [number, number, number] {
+  const t = speedShare(speed);
+  for (let i = 1; i < SKY_RGB.length; i++) {
+    const [t1, r1, g1, b1] = SKY_RGB[i];
+    if (t <= t1) {
+      const [t0, r0, g0, b0] = SKY_RGB[i - 1];
+      const k = (t - t0) / (t1 - t0 || 1);
+      return [r0 + (r1 - r0) * k, g0 + (g1 - g0) * k, b0 + (b1 - b0) * k];
+    }
+  }
+  const l = SKY_RGB[SKY_RGB.length - 1];
+  return [l[1], l[2], l[3]];
+}
 
 export type View = { west: number; south: number; east: number; north: number };
 
@@ -143,7 +178,7 @@ export class FlowSim {
     // anywhere inside the cell's own footprint (never on its edge, so it rounds back to this cell)
     this.px[i] = mercX(g.lon_first + (c + this.rand() * 0.98 - 0.49) * g.lon_step);
     this.py[i] = mercY(g.lat_first + (r + this.rand() * 0.98 - 0.49) * g.lat_step);
-    this.life[i] = 1.2 + this.rand() * 1.2;
+    this.life[i] = LIFE_MIN + this.rand() * LIFE_SPREAD;
     this.age[i] = randomAge ? this.rand() * this.life[i] : 0;
     this.hn[i] = 0;
     this.spd[i] = this.speed[k];
@@ -226,9 +261,10 @@ export class FlowSim {
     for (let i = 0; i < this.count; i++) {
       const m = this.hn[i];
       if (this.life[i] === 0 || m === 0) continue;
-      const a0 = Math.min(1, this.age[i] / 0.25, (this.life[i] - this.age[i]) / 0.35);
-      const base = Math.max(0, a0) * Math.min(0.95, 0.4 + this.spd[i] * 1.4) * o.alpha;
-      const [cr, cg, cb] = o.colour ? RAMP_RGB[speedBucket(this.spd[i])] : INK_RGB;
+      const a0 = Math.min(1, this.age[i] / 0.35, (this.life[i] - this.age[i]) / 0.5);
+      // brightness by speed: a slow current a faint streak, a fast one near full
+      const base = Math.max(0, a0) * (0.22 + 0.73 * Math.sqrt(speedShare(this.spd[i]))) * o.alpha;
+      const [cr, cg, cb] = o.colour ? RAMP_RGB[speedBucket(this.spd[i])] : skyColour(this.spd[i]);
       const h = i * HIST * 2;
       for (let j = 0; j < m; j++) {
         if ((n + 1) * SEG > out.length) return n;
@@ -245,6 +281,27 @@ export class FlowSim {
       }
     }
     return n;
+  }
+
+  /**
+   * Each live particle with a full trail: its cell's speed (m/s) and its streak's length on screen (px) at a
+   * zoom where the world is `worldPx` wide. The e2e hook reads it to check that length follows speed.
+   */
+  streaks(worldPx: number): { speed: number; px: number }[] {
+    const out: { speed: number; px: number }[] = [];
+    for (let i = 0; i < this.count; i++) {
+      const m = this.hn[i];
+      if (this.life[i] === 0 || m < HIST) continue;
+      const h = i * HIST * 2;
+      let len = 0;
+      for (let j = 0; j < m; j++) {
+        const bx = j + 1 < m ? this.hist[h + (j + 1) * 2] : this.px[i];
+        const by = j + 1 < m ? this.hist[h + (j + 1) * 2 + 1] : this.py[i];
+        len += Math.hypot(bx - this.hist[h + j * 2], by - this.hist[h + j * 2 + 1]);
+      }
+      out.push({ speed: this.spd[i], px: len * worldPx });
+    }
+    return out;
   }
 
   /** Live particle heads as [lon, lat] (the e2e debug hook and tests). */

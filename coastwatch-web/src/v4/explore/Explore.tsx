@@ -18,9 +18,9 @@ import { cellEdges, cellLabels, distanceKm, gapAt, loadGrid } from "@/lib/grid";
 import { gapFeatures, lastHabSample, stationFeatures } from "@/lib/provenance";
 import { clipLimitsToWater, labelledGeometry } from "@/lib/officialGeometry";
 import { loadWaterFallback, type WaterGeometry } from "@/lib/waterFallback";
-import { journeyTo } from "@/lib/camera";
+import { COAST_BOUNDS, coastCamera, journeyTo, seaward, waterSampler, type Insets } from "@/lib/camera";
 import { forecastFreshness, openingLayer, type Opening } from "@/lib/opening";
-import { classifyTime, type Freshness } from "@/lib/freshness";
+import { ageInDays, classifyTime, type Freshness } from "@/lib/freshness";
 import { defaultLead } from "@/lib/charmDays";
 import { pacificToday } from "@/lib/time";
 import { useNow } from "@/lib/useNow";
@@ -82,8 +82,10 @@ const VIEW: Record<string, [[number, number], [number, number]]> = {
   southern_california: [[-120.55, 32.55], [-117.05, 34.55]],
 };
 const DOCK = 64; // phone navigation dock height
-const CREDITS = 24; // phone: the one-line map credits above the sheet
 const PEEK = 196; // phone sheet at its peek: the dock (layer button, ramp, the time rail)
+// at rest with nothing current: the layer button, the one status line and its two dated choices (taller on a narrow phone, where they wrap)
+const peekRest = (w: number) => (w < 360 ? 296 : 262);
+
 
 /** The height of an element as laid out (the dock and the map's bottom margin): the camera's insets follow it. */
 function useHeight(ref: React.RefObject<HTMLElement | null>, fallback: number, key: unknown): number {
@@ -173,6 +175,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     if (choice?.kind === "forecast" && choice.lead < 0 && now) setChoiceRaw({ ...choice, lead: firstLead });
   }, [choice, firstLead, now]);
   const active: LayerChoice = useMemo(() => choice ?? { kind: "none" }, [choice]);
+  // the instrument at rest: nothing current, no layer drawn (the status and its dated choices are in the dock)
+  const atRest = active.kind === "none" && opening?.reason === "nothing-current";
   // derived chlorophyll products (lib/derived): offered only when the dataset publishes their index
   const derivedRaw = useDerivedIndex(baseUrl);
   const derived = derivedRaw ?? null;
@@ -420,6 +424,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       live = false;
     };
   }, []);
+  const sampler = useMemo(() => waterSampler(water), [water]);
   const officialGeometry = useMemo(() => {
     const fc = labelledGeometry(official);
     return fc && water ? clipLimitsToWater(fc, water) : fc;
@@ -474,22 +479,30 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // step that selects it, before panelOpen has caught up)
   const padding = useCallback(
     (open: boolean = panelOpen) => {
-      if (bp === "desktop" || bp === "tablet") return { top: 84, bottom: marginH + dockH + 28, left: 24, right: (open ? panelW + 28 : 16) + 44 + 24 };
+      if (bp === "desktop" || bp === "tablet") return { top: 84, bottom: marginH + dockH + 28, left: 24, right: open ? panelW + 28 + 24 : 16 + 44 + 24 };
       // phone: a selection opens the sheet to half height, so the camera centres it in the map strip
       // that stays visible above the sheet (not behind it)
-      const sheet = open ? Math.round((window.innerHeight - DOCK) * 0.5) : PEEK;
+      const sheet = open ? Math.round((window.innerHeight - DOCK) * 0.5) : atRest ? peekRest(window.innerWidth) : PEEK;
       return { top: 112, bottom: sheet + DOCK + 24, left: 20, right: 20 };
     },
-    [bp, panelOpen, panelW, marginH, dockH],
+    [bp, panelOpen, panelW, marginH, dockH, atRest],
   );
-  // the whole state: on a wide window the map cannot zoom out past its pannable area, so the fit
-  // keeps the north coast clear of the top bar and lets the far south run under the timebar
+  // v10 rework: the opening frames the coastal ocean, not the state. The coast (Crescent City to San Diego)
+  // fills the height between the header and the time rail; its east edge sits just left of the map tools,
+  // so the land is a narrow margin and the ocean fills the rest (under and beside the layer index)
+  const coastInsets = useCallback((): Insets => {
+    if (bp === "phone") return { top: 108, bottom: (atRest ? peekRest(window.innerWidth) : PEEK) + DOCK + 48, left: 12, right: 14 };
+    return { top: 64, bottom: marginH + dockH + 12, left: (bp === "desktop" ? 264 : 236) + 40, right: 16 + 44 + 56 };
+  }, [bp, marginH, dockH, atRest]);
+  const coastView = useCallback(() => {
+    const c = mapRef.current?.getContainer();
+    return coastCamera(c?.clientWidth ?? window.innerWidth, c?.clientHeight ?? window.innerHeight, coastInsets());
+  }, [coastInsets]);
   const fitState = useCallback(() => {
     const m = mapRef.current;
     if (!m) return;
-    const p = padding();
-    m.fitBounds(STATEWIDE.bounds, { padding: bp === "phone" ? p : { ...p, top: 112, bottom: bp === "tablet" ? p.bottom : 24 }, duration: 500 });
-  }, [padding, bp]);
+    journeyTo(m, coastView());
+  }, [coastView]);
   const focusOn = useCallback(
     (s: Selection) => {
       const m = mapRef.current;
@@ -498,9 +511,27 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       const pf = s.kind === "harbor" ? ports?.features.find((f) => f.properties.port_code === s.port) : null;
       const at: [number, number] | null = pt ? [pt.lon, pt.lat] : pf ? (pf.geometry.coordinates as [number, number]) : s.kind === "cell" || s.kind === "point" ? [s.lon, s.lat] : null;
       if (s.kind === "area") return m.fitBounds([[s.bbox[0], s.bbox[1]], [s.bbox[2], s.bbox[3]]], { padding: padding(true), duration: 500 });
-      if (at) journeyTo(m, { center: at, zoom: Math.max(m.getZoom(), s.kind === "harbor" ? 10.6 : 10.2), padding: padding(true) });
+      if (!at) return;
+      const zoom = Math.max(m.getZoom(), s.kind === "harbor" ? 10.6 : 10.2);
+      const pad = padding(true);
+      // a harbour or station sits on the shore: the camera leans toward its water, so the place and the sea
+      // in front of it fill the open map (on a phone, the strip above the sheet), not the land behind it
+      const lean = s.kind === "harbor" || s.kind === "station" ? seaward(sampler, at[1], at[0]) : null;
+      let center = at;
+      if (lean) {
+        const c = m.getContainer();
+        const stripW = c.clientWidth - pad.left - pad.right;
+        const stripH = c.clientHeight - pad.top - pad.bottom;
+        const px = 0.3 * Math.min(stripW, stripH * 1.6);
+        const wp = 512 * 2 ** zoom;
+        const x = (at[0] + 180) / 360 + (lean[0] * px) / wp;
+        const s0 = Math.sin((at[1] * Math.PI) / 180);
+        const y = 0.5 - (0.25 * Math.log((1 + s0) / (1 - s0))) / Math.PI + (lean[1] * Math.min(px, stripH * 0.3)) / wp;
+        center = [x * 360 - 180, (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI];
+      }
+      journeyTo(m, { center, zoom, padding: pad });
     },
-    [stations, ports, padding],
+    [stations, ports, padding, sampler],
   );
   const selectAndGo = useCallback(
     (s: Selection) => {
@@ -563,26 +594,38 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           asOf: run?.issued_date ?? null,
           actions: mapStatus?.field === "failed" ? [{ label: "Try again", run: retryField }] : undefined,
         }
-      : null,
+      : // not on the map: still reported with its freshness, so an out-of-date run never leaves the status "Ready"
+        run
+        ? { id: "model", label: "NOAA C-HARM forecast", state: modelField.state, detail: [`Run issued ${run.issued_date}`, modelField.note, "Not on the map"].filter(Boolean).join(". "), asOf: run.issued_date }
+        : null,
   );
   const obsFresh = (id: string, l: typeof resolved.satLayer) => {
     const st = sourceStatus(manifest, id);
     // each layer carries its own freshness policy; a latest-clear view is as fresh as its newest pixel
     return { st, fresh: now && l ? classifyTime(l.freshness, l.composite ? { ...l.time, observed_date: l.composite.newest_observed_date } : l.time, now) : null };
   };
-  const satF = obsFresh("satellite_chl", resolved.satLayer);
+  const satOn = active.kind === "satellite" || (active.kind === "currents" && !!active.chl);
+  // the satellite's newest view, reported even when another layer is on the map
+  const satNewest = satOn ? resolved.satLayer : (satelliteLatest(manifest, "olci300") ?? satelliteLatest(manifest, "viirs750") ?? satelliteLatest(manifest, "multi") ?? null);
+  const satF = obsFresh("satellite_chl", satNewest);
   const satField = fieldState(satF.fresh, satF.st);
   useReportSource(
-    active.kind === "satellite" || (active.kind === "currents" && active.chl)
+    satOn
       ? { id: "satellite", label: "Satellite chlorophyll", state: mapStatus?.field === "failed" ? "unavailable" : mapStatus?.field === "ready" ? satField.state : "loading", detail: [resolved.satLayer ? `${resolved.satLayer.layer_id.split("_")[0].toUpperCase()} tiles` : "No layer", mapStatus?.field === "failed" ? "Some tiles could not be loaded" : satField.note].filter(Boolean).join(". "), asOf: resolved.satLayer?.time.observed_date ?? null, actions: mapStatus?.field === "failed" ? [{ label: "Try again", run: retryField }] : undefined }
-      : null,
+      : satNewest
+        ? { id: "satellite", label: "Satellite chlorophyll", state: satField.state, detail: [`Newest view ${satNewest.composite?.newest_observed_date ?? satNewest.time.observed_date ?? ""}`, satField.note, "Not on the map"].filter(Boolean).join(". "), asOf: satNewest.composite?.newest_observed_date ?? satNewest.time.observed_date ?? null }
+        : null,
   );
-  const curF = obsFresh("hf_radar", curLayer);
+  // the radar's newest hour, reported even when the currents are not on the map
+  const curNewest = active.kind === "currents" ? curLayer : (currentsHourly(manifest).at(-1) ?? null);
+  const curF = obsFresh("hf_radar", curNewest);
   const curReady = fieldState(curF.fresh, curF.st);
   useReportSource(
     active.kind === "currents"
       ? { id: "currents", label: "Surface currents (HF radar)", state: curState === "failed" ? "unavailable" : curState === "ready" ? curReady.state : "loading", detail: ["Hourly, 2 km cells", curState === "failed" ? "This hour could not be loaded" : curReady.note].filter(Boolean).join(". "), asOf: curLayer?.time.valid_time ?? null, actions: curState === "failed" ? [{ label: "Try again", run: retryCurrents }] : undefined }
-      : null,
+      : curNewest
+        ? { id: "currents", label: "Surface currents (HF radar)", state: curReady.state, detail: ["Hourly, 2 km cells", curReady.note, "Not on the map"].filter(Boolean).join(". "), asOf: curNewest.time.valid_time ?? null }
+        : null,
   );
   const placeName = harborF?.properties.display_name ?? station?.name ?? null;
   useReportSource(stationsError && !stations ? { id: "conditions", label: "Shore stations", state: "unavailable", detail: stationsError } : null);
@@ -805,7 +848,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       {selection.kind === "harbor" && (
         <>
           <Header icon="harbor" kind="Harbour" title={placeName ?? "Harbour"} sub={harborF?.properties.county ? `${harborF.properties.county} County` : undefined} onClose={() => select(null)} onBack={back} canBack={stack.length > 0} />
-          <HarborView code={selection.port} ctx={ctx} concise />
+          <HarborView code={selection.port} ctx={ctx} concise evidenceFirst={bp === "phone"} />
         </>
       )}
       {selection.kind === "station" && (
@@ -839,25 +882,43 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const hasTime = active.kind !== "none" && !!steps?.steps.length;
   // nothing current: say so, then offer what there is, each dated and marked old, never shown as current
   const satDate = opening?.reason === "nothing-current" && opening.satellite ? (opening.satellite.layer.composite?.newest_observed_date ?? opening.satellite.layer.time.observed_date ?? null) : null;
+  // v10 rework: one line in the time rail's status row, and the two dated alternatives beside it as choices.
+  // Neither is ever shown as current: each says its own date and age, and opens marked old.
+  const satAge = satDate && now ? ageInDays(satDate.slice(0, 10), now) : null;
+  const runAge = run && now ? ageInDays(run.issued_date, now) : null;
+  const restCls = "nx-press nx-focus inline-flex min-h-10 items-center gap-2 rounded-[3px] border px-3 py-1 text-left text-[13px] leading-tight text-n-ink";
   const nothingCurrent =
     active.kind === "none" && opening?.reason === "nothing-current" ? (
-      <div className="flex flex-col gap-2 border-l-2 border-n-stale pl-3 text-[13.5px] leading-snug text-n-ink-2" data-testid="nothing-current">
-        <p className="font-semibold text-n-ink">No current forecast or recent satellite view</p>
-        <p>
-          {run ? `The newest C-HARM forecast was issued ${dayLabel(run.issued_date)}. ` : "No C-HARM forecast could be loaded. "}
-          {satDate ? `The newest satellite view is from ${dayLabel(satDate)}. ` : "No recent satellite view was published. "}
-          The map shows the coast and seafloor only. This does not mean conditions are normal.
+      <div className="flex min-w-0 flex-col gap-2" data-testid="nothing-current">
+        <p className="flex min-w-0 items-start gap-2 text-[12.5px] leading-snug text-n-ink-2" data-testid="nothing-current-line">
+          <Icon name="clock" className="mt-px h-4 w-4 shrink-0 text-n-stale" />
+          <span>
+            <span className="font-semibold text-n-ink">No current forecast or recent satellite view</span>
+            {" · newest: "}
+            {run ? `C-HARM ${dayLabel(run.issued_date)}` : "no C-HARM run"}
+            {" · "}
+            {satDate ? `satellite ${dayLabel(satDate)}` : "no satellite view"}
+            <span className="text-n-ink-3"> · this does not mean conditions are normal</span>
+          </span>
         </p>
         {(run || (opening.satellite && satDate)) && (
-          <div className="flex flex-wrap items-center gap-2">
-            {run && (
-              <button type="button" onClick={() => setChoiceRaw({ kind: "forecast", variable: "particulate_domoic", lead: firstLead < 0 ? 0 : firstLead })} className="nx-press nx-focus inline-flex min-h-11 w-fit items-center rounded-lg border border-n-line-strong px-3 font-semibold text-n-ink" data-testid="show-latest-forecast">
-                Show the {dayLabel(run.issued_date)} forecast, marked out of date
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="The newest views, each dated">
+            {opening.satellite && satDate && (
+              <button type="button" onClick={() => setChoiceRaw({ kind: "satellite", product: opening.satellite!.product, day: null })} className={`${restCls} border-[color-mix(in_srgb,var(--nx-measured)_55%,transparent)] hover:bg-n-surface-2`} data-testid="show-latest-satellite">
+                <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-[1px] bg-n-measured" />
+                <span>
+                  Show satellite chlorophyll · {dayLabel(satDate)}
+                  {satAge != null ? <span className="text-n-stale"> · {satAge === 1 ? "1 day" : `${satAge} days`} old</span> : null}
+                </span>
               </button>
             )}
-            {opening.satellite && satDate && (
-              <button type="button" onClick={() => setChoiceRaw({ kind: "satellite", product: opening.satellite!.product, day: null })} className="nx-press nx-focus inline-flex min-h-11 w-fit items-center rounded-lg px-3 font-semibold text-n-accent" data-testid="show-latest-satellite">
-                Satellite view, newest {dayLabel(satDate)}
+            {run && (
+              <button type="button" onClick={() => setChoiceRaw({ kind: "forecast", variable: "particulate_domoic", lead: firstLead < 0 ? 0 : firstLead })} className={`${restCls} border-[color-mix(in_srgb,var(--nx-model)_55%,transparent)] hover:bg-n-surface-2`} data-testid="show-latest-forecast">
+                <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-[1px] bg-n-model" />
+                <span>
+                  Show the {dayLabel(run.issued_date)} forecast
+                  <span className="text-n-stale"> · out of date{runAge != null ? `, ${runAge === 1 ? "1 day" : `${runAge} days`} old` : ""}</span>
+                </span>
               </button>
             )}
           </div>
@@ -888,15 +949,22 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const [snap, setSnap] = useState<SnapId>("peek");
   const [vh, setVh] = useState(800);
   const sheetHalf = Math.round((vh - DOCK) * 0.5);
+  const [vw, setVw] = useState(390);
+  useEffect(() => {
+    const f = () => setVw(window.innerWidth);
+    f();
+    window.addEventListener("resize", f);
+    return () => window.removeEventListener("resize", f);
+  }, []);
+  const peekH = atRest && !selection ? peekRest(vw) : PEEK;
   useEffect(() => {
     const f = () => setVh(window.innerHeight);
     f();
     window.addEventListener("resize", f);
     return () => window.removeEventListener("resize", f);
   }, []);
-  // phone: the credits line above the sheet (two lines at 320 px): the tools sit above it
+  // phone: the credits chip on the map edge, just above the sheet
   const creditsRef = useRef<HTMLDivElement | null>(null);
-  const creditsH = useHeight(creditsRef, CREDITS, `${bp}-${snap === "full"}`);
   useEffect(() => setSnap(selection ? "half" : "peek"), [selection]);
   const wide = bp === "desktop" || bp === "tablet";
   // a short wide window (a landscape phone, a small laptop window): the index folds behind the layer
@@ -1030,7 +1098,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const stackCls = "pointer-events-auto flex flex-col divide-y divide-n-line rounded-[4px] border border-n-line bg-[rgba(5,9,13,0.88)]";
   const toolCls = "nx-press nx-focus grid h-11 w-11 place-items-center text-n-ink-2 hover:text-n-ink max-md:h-14 max-md:w-14";
   const recenter = (
-    <button type="button" aria-label={selection ? "Centre on the selection" : "Show all California"} onClick={() => (selection ? focusOn(selection) : fitState())} className={toolCls} data-testid="recenter">
+    <button type="button" aria-label={selection ? "Centre on the selection" : "Show the whole coast"} onClick={() => (selection ? focusOn(selection) : fitState())} className={toolCls} data-testid="recenter">
       <Icon name="locate" />
     </button>
   );
@@ -1039,9 +1107,13 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       <Icon name={off.record?.complete ? "check" : "download"} />
     </button>
   );
+  // with the inspector open on a wide screen the tools lie in one row under it, off the coast beside it
+  // (they sat over the shore and its labels, between the field and the panel)
+  const toolRow = panelOpen && (bp === "desktop" || bp === "tablet");
+  const rowCls = toolRow ? "flex-row divide-x divide-y-0" : "";
   const mapControls = (
-    <div className="pointer-events-auto flex flex-col gap-2" data-testid="map-controls">
-      <div className={`${stackCls} [@media(max-height:560px)]:hidden`}>
+    <div className={`pointer-events-auto flex gap-2 ${toolRow ? "flex-row" : "flex-col"}`} data-testid="map-controls" data-row={toolRow ? "true" : undefined}>
+      <div className={`${stackCls} ${rowCls} [@media(max-height:560px)]:hidden`}>
         <button type="button" aria-label="Zoom in" onClick={() => mapRef.current?.zoomIn({ duration: 200 })} className={toolCls}>
           <Icon name="plus" />
         </button>
@@ -1049,7 +1121,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           <Icon name="minus" />
         </button>
       </div>
-      <div className={stackCls}>
+      <div className={`${stackCls} ${rowCls}`}>
         {recenter}
         <button type="button" aria-label="Select an area" aria-pressed={areaMode} onClick={() => setAreaMode((v) => !v)} className={`${toolCls} ${areaMode ? "bg-n-accent text-n-on-accent" : ""}`} data-testid="area-tool">
           <Icon name="area" />
@@ -1085,7 +1157,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       onStatus={onStatus}
       retry={fieldRetry}
       fieldOpacity={opacity}
-      initialBounds={initialBounds}
+      initialBounds={initialBounds === STATEWIDE.bounds ? COAST_BOUNDS : initialBounds}
       initialPadding={{ top: 84, bottom: 150, left: 24, right: 24 }}
       cellEdges={active.kind === "forecast" && edges && edges.id === resolved.forecastLayer?.layer_id ? edges.fc : null}
       cellLabels={harbourOn ? harbour!.labels : null}
@@ -1100,8 +1172,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         setMapReady(true);
         if (initialAt && initialAt.length === 3 && initialAt.every(Number.isFinite)) m.jumpTo({ center: [initialAt[1], initialAt[0]], zoom: initialAt[2] });
         else {
-          const p = padding();
-          m.fitBounds(initialBounds, { padding: initialBounds === STATEWIDE.bounds && bp !== "phone" ? { ...p, top: 112, bottom: bp === "tablet" ? p.bottom : 24 } : p, duration: 0 });
+          if (initialBounds === STATEWIDE.bounds) m.jumpTo(coastView());
+          else m.fitBounds(initialBounds, { padding: padding(), duration: 0 });
           const s = decodeSelection(q0);
           if (s) m.once("idle", () => focusOn(s));
         }
@@ -1129,16 +1201,21 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const offlineBanner = !off.online ? <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline /> : null;
   const fixture = isFixture(manifest);
   // the tools' right edge: clear of the panel when one is open
-  const toolsRight = panelOpen ? panelW + 28 : 16;
+  const toolsRight = 16;
   // the layer's credit beside the map's (Copernicus asks that modified Sentinel data be said wherever it is shown)
   const sentinel = (active.kind === "satellite" && active.product !== "viirs750") || (active.kind === "currents" && !!active.chl) ? (resolved.satLayer?.time.observed_date ?? manifest.generated_at).slice(0, 4) : null;
   const layerCredit = sentinel ? `Contains modified Copernicus Sentinel data ${sentinel}` : null;
   // the time rail: the layer's own time, the other layers' frames as context, and its date line under it
+  // the status row keeps the tallest height it has had for this layer: playing the currents adds and removes
+  // lines (the hour note, a region the radar missed), and the rail must not jump with them
   const railCaption = (
-    <div className="flex min-w-0 flex-wrap items-start gap-x-5 gap-y-0.5 empty:hidden [&_[data-testid=provenance]]:gap-0.5 [&_p]:text-[11.5px] [&_p]:leading-[16px]">
-      <Provenance manifest={manifest} choice={active} resolved={shownResolved} now={now} regions={ports?.regions ?? []} part="dock" />
-      {hourNote}
-    </div>
+    <StableCaption key={active.kind} min={active.kind === "currents" ? 34 : 0}>
+      {nothingCurrent}
+      <div className="flex min-w-0 flex-wrap items-start gap-x-5 gap-y-0.5 empty:hidden [&_[data-testid=provenance]]:gap-0.5 [&_[data-testid=provenance]_p]:text-[11.5px] [&_[data-testid=provenance]_p]:leading-[16px] [&_[data-testid=currents-hour-note]]:text-[11.5px] [&_[data-testid=currents-hour-note]]:leading-[16px]">
+        <Provenance manifest={manifest} choice={active} resolved={shownResolved} now={now} regions={ports?.regions ?? []} part="dock" />
+        {hourNote}
+      </div>
+    </StableCaption>
   );
   const rail = (compact: boolean) => (
     <TimeRail
@@ -1159,7 +1236,6 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   );
   const legendBody = (
     <div ref={legendRef} className="flex min-w-0 flex-col gap-2.5" data-testid="map-legend">
-      {nothingCurrent}
       <Legend choice={active} resolved={shownResolved} check={check} flow={flowLegend} />
       {flowPause}
       {fieldLoading}
@@ -1242,7 +1318,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           {/* the selection: right, top-aligned under the header, never down over the time rail */}
           <AnimatePresence>
             {inspection && (
-              <InspectAside key="inspect" className="nx-iplate absolute right-4 top-[68px] z-20 overflow-y-auto overscroll-contain p-5 text-n-ink [scrollbar-width:thin]" style={{ width: panelW, maxHeight: `calc(100% - ${68 + marginH + dockH + 18}px)` }}>
+              <InspectAside key="inspect" className="nx-iplate absolute right-4 top-[68px] z-20 overflow-y-auto overscroll-contain p-5 text-n-ink [scrollbar-width:thin]" style={{ width: panelW, maxHeight: `calc(100% - ${68 + marginH + dockH + 18 + 56}px)` }}>
                 {inspection}
               </InspectAside>
             )}
@@ -1272,33 +1348,52 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           {/* one line under the header: the disclosure; then the offline state, a failed layer, the way back */}
           <div className="pointer-events-none absolute inset-x-0 top-[72px] z-20 flex flex-col items-start gap-1.5 px-4">
             <RegistryDisclosure tone="map" fixture={fixture} className="pointer-events-auto max-w-full" />
-            {offlineBanner && <div className="pointer-events-auto w-full pr-[64px]">{offlineBanner}</div>}
+            {offlineBanner && <div className="pointer-events-auto w-full">{offlineBanner}</div>}
             {fieldProblem && <div className="pointer-events-auto w-full">{fieldProblem}</div>}
             {backTo && <BackToBriefing {...backTo} className="pointer-events-auto w-fit max-w-full" />}
-          </div>
-          {/* the sheet ends above the dock; the map stays live above it (non-modal) */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-30 overflow-clip" style={{ bottom: `calc(${DOCK}px + env(safe-area-inset-bottom, 0px))` }}>
+            {/* a place open: the sheet leads with it, and the layer is a small chip on the map, still one tap away */}
+            {selection && (
+              <button
+                ref={capsuleRef}
+                type="button"
+                aria-expanded={deckOpen}
+                aria-controls="layer-deck"
+                aria-label={`Map layer: ${[lw.title, lw.detail].filter(Boolean).join(", ")} (${lw.kind}). ${deckOpen ? "Close the layer list" : "Change the layer"}`}
+                onClick={toggleDeck}
+                className="nx-press nx-focus nx-iplate pointer-events-auto inline-flex min-h-11 max-w-full items-center gap-2 px-3 text-[13px] text-n-ink"
+                data-testid="layer-capsule"
+              >
+                <span aria-hidden className={`h-2.5 w-2.5 shrink-0 rounded-[1px] ${lw.hatch ? "nx-index-sw nx-index-sw-hatch" : "nx-index-sw"}`} style={{ ["--tone" as string]: lw.sw }} />
+                <span className="truncate">{lw.title}</span>
+                <Icon name="layers" className="h-4 w-4 shrink-0 text-n-ink-2" />
+              </button>
+            )}
+            {/* the tools: one row at the right, under the lines above, over the land (the coast runs from the upper
+                left to the lower right of a phone's frame; a column of three covered it on a short phone) */}
             {snap === "peek" && (
-              <div className="pointer-events-auto absolute right-3" style={{ bottom: PEEK + creditsH + 12 }} data-testid="map-controls">
-                <div className={stackCls}>
+              <div className="pointer-events-auto self-end" data-testid="map-controls" data-row="true">
+                <div className={`${stackCls} flex-row divide-x divide-y-0`}>
                   {recenter}
                   <ShareButton className={toolCls} />
                   {packButton}
                 </div>
               </div>
             )}
+          </div>
+          {/* the sheet ends above the dock; the map stays live above it (non-modal) */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-30 overflow-clip" style={{ bottom: `calc(${DOCK}px + env(safe-area-inset-bottom, 0px))` }}>
             {/* the map's credits (ODbL) on the map's edge, one line just above the sheet at every height
                 the map shows; at full height (the map all but covered) they ride on the sheet's edge */}
             {snap !== "full" && (
-              <div ref={creditsRef} className="pointer-events-auto absolute left-2 right-2 transition-[bottom] duration-200" style={{ bottom: (snap === "peek" ? PEEK : sheetHalf) + 4 }}>
-                <MapCredits short extra={layerCredit} />
+              <div ref={creditsRef} className="pointer-events-none absolute left-2 right-2 transition-[bottom] duration-200 [&>*]:pointer-events-auto" style={{ bottom: (snap === "peek" ? peekH + 8 : sheetHalf + 4) }}>
+                <CreditsChip extra={layerCredit} />
               </div>
             )}
             <div className="pointer-events-auto">
               <MobileSheet
                 tone="instrument"
                 snaps={[
-                  { id: "peek", height: PEEK },
+                  { id: "peek", height: peekH },
                   { id: "half", height: sheetHalf },
                   { id: "full", height: Math.round((vh - DOCK) * 0.9) },
                 ]}
@@ -1311,20 +1406,25 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
               >
                 <div className="pb-6 text-n-ink">
                   {/* the peek is the dock: the layer button, the ramp, the time rail */}
-                  <div className="-mx-1.5 pr-[52px]">{layerButton}</div>
+                  {/* a selection open: the place leads, the layer row steps aside (one header, not two stacked) */}
+                  {!selection && <div className="-mx-1.5 pr-[52px]">{layerButton}</div>}
                   <section ref={deckRef} id="layer-deck" aria-label="Map layers" hidden={!deckOpen} className="mt-2 border-t border-n-line pt-3" data-testid="layer-deck">
                     {indexBody}
                   </section>
                   {inspection ? (
-                    <div className="mt-3 border-t border-n-line pt-3">{inspection}</div>
+                    // the sheet's own resize handle sits at its top right: the place's close button keeps clear of it
+                    <div className="pt-1 [&_header]:pr-12">{inspection}</div>
                   ) : (
                     <div ref={legendPhoneRef} className="mt-1 flex flex-col gap-2" data-testid="active-layer">
-                      <div className="px-1">
-                        <LegendLine choice={active} resolved={shownResolved} flow={flowLegend} />
-                      </div>
+                      {nothingCurrent ? (
+                        <div className="px-1">{nothingCurrent}</div>
+                      ) : (
+                        <div className="px-1">
+                          <LegendLine choice={active} resolved={shownResolved} flow={flowLegend} />
+                        </div>
+                      )}
                       {rail(true)}
                       <div className="mt-2 flex flex-col gap-3 border-t border-n-line pt-3">
-                        {nothingCurrent}
                         {readHint}
                         {flowPause}
                         {fieldLoading}
@@ -1362,6 +1462,32 @@ function MapCredits({ short = false, className = "", extra = null }: { short?: b
     >
       <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">© OpenMapTiles</a> · NOAA relief{extra ? ` · ${extra}` : ""} · not for navigation
     </p>
+  );
+}
+
+/**
+ * Phones (v10 rework): the map's credits fold to a chip on the map's edge that still names OpenStreetMap;
+ * a tap opens the whole line (every credit, its links and "not for navigation"), a second tap folds it.
+ */
+function CreditsChip({ extra = null }: { extra?: string | null }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex w-fit max-w-full flex-col items-start gap-1" data-testid="credits-chip-wrap">
+      {open && <MapCredits short extra={extra} />}
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-label={open ? "Hide the map credits" : "Map credits: © OpenStreetMap contributors, © OpenMapTiles, NOAA relief"}
+        onClick={() => setOpen((o) => !o)}
+        className="nx-focus inline-flex min-h-10 shrink-0 items-center"
+        data-testid="credits-chip"
+      >
+        <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(5,9,13,0.78)] px-1.5 text-[10.5px] leading-[18px] text-[#c9d6e2]">
+          <Icon name={open ? "close" : "info"} className="h-3 w-3" />
+          {open ? "" : "© OpenStreetMap"}
+        </span>
+      </button>
+    </div>
   );
 }
 
@@ -1541,6 +1667,31 @@ function HoverLayer({ sink, manifest, baseUrl, source, inset, waterAt }: { sink:
     // the readout takes the dark tokens but must never paint over the map: transparent wrapper
     <div className="theme-dark pointer-events-none absolute inset-0 z-[12] !bg-transparent">
       <HoverReadout manifest={manifest} baseUrl={baseUrl} source={source} point={hover.p} screen={hover.s} waterAt={waterAt} bounds={{ w: window.innerWidth - inset, h: window.innerHeight }} />
+    </div>
+  );
+}
+
+/**
+ * The time rail's status row at a stable height: it keeps the tallest height its content has had since the
+ * layer (the key) changed, so lines that come and go during playback never move the rail above it.
+ */
+function StableCaption({ children, min = 0 }: { children: React.ReactNode; min?: number }) {
+  const inner = useRef<HTMLDivElement | null>(null);
+  const [h, setH] = useState(min);
+  useEffect(() => {
+    const el = inner.current;
+    if (!el) return;
+    const f = () => setH((was) => Math.max(was, Math.ceil(el.getBoundingClientRect().height)));
+    f();
+    const ro = new ResizeObserver(f);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div className="min-w-0" style={{ minHeight: h || undefined }} data-testid="rail-status">
+      <div ref={inner} className="flex min-w-0 flex-col gap-1.5">
+        {children}
+      </div>
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { CHARM_VARIABLES, charmRun, coveragePct, satelliteLatest, sourceStatus, 
 import { KNOTS_PER_MS, currentsHourly, defaultHour } from "@/lib/currents";
 import { AGE_COLOURS, SENSOR_COLOURS, displayPalette, gradientCss } from "@/lib/palette";
 import { SPEED_CLASSES, ARROW_LENGTHS } from "@/lib/basemap";
-import { SPEED_RAMP } from "@/lib/flowSim";
+import { FLOW_SKY, SPEED_FULL, SPEED_RAMP, skyColour, speedShare } from "@/lib/flowSim";
 import { stampLines } from "@/lib/stamp";
 import { COUNTIES } from "@/content/copy";
 import { OUTSIDE_TINT_RGB } from "@/lib/gridTiles";
@@ -562,7 +562,7 @@ export function Legend({ choice, resolved, check = null, inline = false, noRamp 
       <>
         {short("Observed, not a forecast. No streaks means no observation, not calm water.")}
         <p className="text-[12.5px] leading-snug text-n-ink-2" data-testid="flow-scale-note">
-          Streak speed is a scaled symbol of relative speed: not the water&rsquo;s real speed, not a path.
+          Longer, brighter streaks are faster currents (the cell&rsquo;s observed speed, m/s). Screen speed is a scaled symbol: not the water&rsquo;s real speed, not a path.
         </p>
       </>,
       <p data-testid="currents-note">
@@ -586,25 +586,63 @@ export function Legend({ choice, resolved, check = null, inline = false, noRamp 
     );
   if (choice.kind === "none")
     return (
-      <figure className="flex min-w-0 flex-col gap-1" data-testid="legend-none" aria-label="Legend: seafloor and coast">
-        <figcaption className="text-[13px] font-semibold leading-snug text-n-ink">Seafloor and coast</figcaption>
-        <p className="text-[12.5px] leading-snug text-n-ink-2">NOAA ETOPO 2022 and Coastal Relief Model seafloor. Harbours, shore stations and official limits stay on every layer.</p>
+      <figure className="flex min-w-0 flex-col gap-1.5" data-testid="legend-none" aria-label="Legend: seafloor depth, metres">
+        <figcaption className="flex items-baseline justify-between gap-2">
+          <span className="nx-caps">Seafloor depth · m</span>
+          <span className="text-[11px] text-n-ink-3">reference, not data</span>
+        </figcaption>
+        <DepthRamp />
+        <p className="text-[12px] leading-snug text-n-ink-2">NOAA ETOPO 2022 and Coastal Relief Model relief, with isobaths. The shelf break (200 m) is the brighter line. Harbours, shore stations and official limits stay on every layer.</p>
       </figure>
     );
   return null;
 }
 
-/** The flow's speed encoding, without colour: a longer, brighter streak is a faster current. */
-function FlowScale() {
+/** The seafloor's depth tint (pipeline/scripts/build_relief.py TINT), shore to abyss, with the isobaths' depths. */
+const DEPTH_STOPS: [number, string][] = [[0, "#3e8fb0"], [60, "#2f7a9e"], [200, "#225e84"], [600, "#1a486c"], [1500, "#133555"], [3200, "#0e2540"]];
+function DepthRamp() {
+  const ticks = [0, 200, 500, 1000, 2000, 3000];
+  // a square-root depth axis: the shelf, where the fishing is, gets room
+  const at = (d: number) => (Math.sqrt(d) / Math.sqrt(3200)) * 100;
   return (
-    <div className="flex items-center gap-2 text-[11.5px] text-n-ink-3" data-testid="legend-flow-scale">
-      <span>slower</span>
-      <svg width="64" height="10" aria-hidden className="text-n-ink">
-        <line x1="2" y1="5" x2="10" y2="5" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" opacity={0.45} />
-        <line x1="18" y1="5" x2="32" y2="5" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" opacity={0.7} />
-        <line x1="40" y1="5" x2="62" y2="5" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" opacity={0.95} />
+    <div aria-hidden className="w-full max-w-[240px]">
+      <div className="h-2 w-full rounded-[1px]" style={{ background: `linear-gradient(90deg, ${DEPTH_STOPS.map(([d, c]) => `${c} ${at(d).toFixed(1)}%`).join(", ")})` }} />
+      <div className="relative mt-0.5 h-3.5">
+        {ticks.map((d) => (
+          <span key={d} className="nx-data absolute top-0 -translate-x-1/2 text-[10.5px] leading-[14px] text-n-ink-3 first:translate-x-0" style={{ left: `${at(d)}%` }}>
+            {d.toLocaleString("en-US")}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The flow's speed scale (v10 rework): the sky ramp the streaks are drawn in, with real speeds in m/s, and
+ * three sample streaks (a faster current is longer, brighter and lighter). The screen speed is a symbol.
+ */
+function FlowScale() {
+  const ticks = [0, 0.2, 0.4, SPEED_FULL];
+  const at = (v: number) => (v / SPEED_FULL) * 100;
+  return (
+    <div className="flex w-full max-w-[240px] flex-col gap-1" data-testid="legend-flow-scale">
+      <svg width="100%" height="12" viewBox="0 0 240 12" preserveAspectRatio="none" aria-hidden>
+        {[0.08, 0.3, 0.6].map((v, i) => {
+          const [r, g, b] = skyColour(v);
+          const x = 10 + (v / SPEED_FULL) * 200;
+          const len = 8 + (v / SPEED_FULL) * 34;
+          return <line key={i} x1={x - len / 2} y1={6} x2={x + len / 2} y2={6} stroke={`rgb(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)})`} strokeWidth={2} strokeLinecap="round" opacity={0.22 + 0.73 * Math.sqrt(speedShare(v))} />;
+        })}
       </svg>
-      <span>faster</span>
+      <div className="h-1.5 w-full rounded-[1px]" style={{ background: `linear-gradient(90deg, ${FLOW_SKY.map(([t, c]) => `${c} ${t * 100}%`).join(", ")})` }} />
+      <div className="relative h-3.5">
+        {ticks.map((v, i) => (
+          <span key={v} className={`nx-data absolute top-0 whitespace-nowrap text-[10.5px] leading-[14px] text-n-ink-3 ${i === 0 ? "" : i === ticks.length - 1 ? "-translate-x-full" : "-translate-x-1/2"}`} style={{ left: `${at(v)}%` }} data-testid="flow-scale-tick">
+            {i === ticks.length - 1 ? `≥${v} m/s` : v}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

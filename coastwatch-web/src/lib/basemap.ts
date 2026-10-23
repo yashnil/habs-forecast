@@ -19,6 +19,11 @@ import type { StyleSpecification } from "maplibre-gl";
  * coastline (the `*-fallback` layers, hidden otherwise).
  */
 export const SEA = "#0b1d33";
+/**
+ * The vector water's fill (v10 rework): the colour the relief image itself reaches in deep water, so the
+ * open Pacific west of the relief (126.6°W) meets it without a seam now that the coastal frame shows it.
+ */
+export const OPEN_SEA = "#0e1928";
 // the land tone matches the relief image as drawn (graphite), so its edges never show as a seam
 export const LAND = "#212529";
 export const BEFORE_OVERLAY_ID = "coastline";
@@ -68,6 +73,21 @@ export const MONTEREY_INSET_CORNERS: [[number, number], [number, number], [numbe
 const RELIEF_LAYER_IDS = new Set(["relief-land", "relief-sea", "relief-sea-monterey", "relief-sea-tint", "relief-sea-monterey-tint", "isobaths", "isobath-labels"]);
 /** Depth-tinted seafloor, shown only while no data raster is (pipeline/scripts/build_relief.py). */
 export const TINT_LAYER_IDS = ["relief-sea-tint", "relief-sea-monterey-tint"];
+/** The depth labels' zoom floor: from regional zoom under a data field; at rest (no field) from the coastal view. */
+export const ISOBATH_LABEL_MINZOOM = { field: 8, rest: 4.8 } as const;
+
+/**
+ * A 2° graticule over the open ocean (v10 rework): the chart's own reference frame, so the wide Pacific west
+ * of the coast reads as an instrument's face, not an empty sea. Faint lines with their latitude and
+ * longitude, drawn under every data field and the coastline; it carries no value.
+ */
+export function graticule(): GeoJSON.FeatureCollection {
+  const f: GeoJSON.Feature[] = [];
+  // only west of 126.6°W, where the relief image ends: open ocean at every latitude here, never over land
+  for (let lat = 28; lat <= 44; lat += 2) f.push({ type: "Feature", properties: { label: `${lat}°N` }, geometry: { type: "LineString", coordinates: [...Array.from({ length: 12 }, (_, i) => [-150 + i * 2, lat]), [-126.6, lat]] } });
+  for (let lon = -150; lon <= -128; lon += 2) f.push({ type: "Feature", properties: { label: `${-lon}°W` }, geometry: { type: "LineString", coordinates: Array.from({ length: 9 }, (_, i) => [lon, 27 + i * 2.25]) } });
+  return { type: "FeatureCollection", features: f };
+}
 
 /** The marine basemap with or without the relief (land and seafloor shading, isobaths). */
 export function basemapStyle({ relief }: { relief: boolean }): StyleSpecification {
@@ -99,23 +119,28 @@ export const BASEMAP_STYLE: StyleSpecification = {
     "relief-sea-tint": { type: "image", url: "/basemap/relief-sea-tint.webp", coordinates: RELIEF_CORNERS },
     "relief-sea-monterey-tint": { type: "image", url: "/basemap/relief-sea-monterey-tint.webp", coordinates: MONTEREY_INSET_CORNERS },
     isobaths: { type: "geojson", data: "/basemap/isobaths.geojson", attribution: RELIEF_ATTRIBUTION },
+    graticule: { type: "geojson", data: graticule() },
+    // the open Pacific west of 126.8°W (all ocean at these latitudes): sea even while the basemap's tiles and
+    // the bundled water are unavailable, so the coastal frame's wide ocean never shows the land tone
+    "open-ocean": { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[[-151, 26], [-126.8, 26], [-126.8, 45.5], [-151, 45.5], [-151, 26]]] } } },
     [WATER_FALLBACK_SOURCE]: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
   },
   layers: [
     { id: "land", type: "background", paint: { "background-color": LAND } },
+    { id: "open-ocean", type: "fill", source: "open-ocean", paint: { "fill-color": OPEN_SEA, "fill-antialias": false } },
     // land recedes (v8, the Felt rule: basemap back, data forward): darker, nearly grey, the relief a
     // texture rather than a picture, so the sea and its data carry the colour
     { id: "relief-land", type: "raster", source: "relief-land", paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-saturation": -0.7, "raster-brightness-max": 0.62, "raster-contrast": -0.12, "raster-opacity": ["interpolate", ["linear"], ["zoom"], 4, 0.7, 9, 0.85] } },
     // under the basemap's water, which covers it wherever the basemap's tiles did arrive
     // (its polygons are cut along a tile grid: no anti-aliased outline, so the cuts never show)
-    { id: "water-fallback", type: "fill", source: WATER_FALLBACK_SOURCE, filter: ["==", ["geometry-type"], "Polygon"], layout: { visibility: "none" }, paint: { "fill-color": SEA, "fill-antialias": false } },
+    { id: "water-fallback", type: "fill", source: WATER_FALLBACK_SOURCE, filter: ["==", ["geometry-type"], "Polygon"], layout: { visibility: "none" }, paint: { "fill-color": OPEN_SEA, "fill-antialias": false } },
     {
       id: "water",
       type: "fill",
       source: "omt",
       "source-layer": "water",
       // inland lakes and reservoirs stay quiet: the sea is the subject
-      paint: { "fill-color": ["match", ["get", "class"], ["lake", "river"], "#1b2938", SEA] },
+      paint: { "fill-color": ["match", ["get", "class"], ["lake", "river"], "#1b2938", OPEN_SEA] },
     },
     { id: "relief-sea", type: "raster", source: "relief-sea", paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
     { id: "relief-sea-monterey", type: "raster", source: "relief-sea-monterey", minzoom: 7, paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
@@ -123,6 +148,15 @@ export const BASEMAP_STYLE: StyleSpecification = {
     // MapCanvas cross-fades it (420 ms) to the neutral relief when a field appears, never a toggle
     { id: "relief-sea-tint", type: "raster", source: "relief-sea-tint", paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-saturation": -0.32, "raster-brightness-max": 0.86, "raster-opacity": 1, "raster-opacity-transition": { duration: 420, delay: 0 } } },
     { id: "relief-sea-monterey-tint", type: "raster", source: "relief-sea-monterey-tint", minzoom: 7, paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-saturation": -0.32, "raster-brightness-max": 0.86, "raster-opacity": 1, "raster-opacity-transition": { duration: 420, delay: 0 } } },
+    { id: "graticule", type: "line", source: "graticule", maxzoom: 9, paint: { "line-color": "rgba(170,198,226,0.075)", "line-width": 0.7 } },
+    {
+      id: "graticule-labels",
+      type: "symbol",
+      source: "graticule",
+      maxzoom: 9,
+      layout: { "symbol-placement": "line", "symbol-spacing": 520, "text-field": ["get", "label"], "text-font": FONT, "text-size": 9.5, "text-letter-spacing": 0.08, "text-max-angle": 10 },
+      paint: { "text-color": "rgba(170,198,226,0.4)", "text-halo-color": SEA, "text-halo-width": 1 },
+    },
     {
       // depth labels stay under any data field (a label over the field would hide its values);
       // the contour lines themselves are drawn above it
@@ -132,7 +166,7 @@ export const BASEMAP_STYLE: StyleSpecification = {
       minzoom: 8,
       layout: {
         "symbol-placement": "line",
-        "symbol-spacing": 420,
+        "symbol-spacing": ["interpolate", ["linear"], ["zoom"], 5, 260, 9, 420],
         "text-field": ["get", "label"],
         "text-font": FONT_ITALIC,
         "text-size": 10,
@@ -184,8 +218,12 @@ export const BASEMAP_STYLE: StyleSpecification = {
       paint: {
         // above every data field, so depth stays readable over the forecast (signature §basemap);
         // the shelf break (200 m) slightly stronger than deeper contours
-        "line-color": ["case", ["==", ["get", "depth_m"], 200], "rgba(170,198,226,0.36)", "rgba(170,198,226,0.17)"],
-        "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.5, 10, 1],
+        // (v10 rework) at rest, with no data field, the contours are the instrument's own face: MapCanvas
+        // lifts their opacity to 1 there and keeps it at 0.7 under a field (the same strength as before)
+        "line-color": ["case", ["==", ["get", "depth_m"], 200], "rgba(170,198,226,0.52)", "rgba(170,198,226,0.25)"],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 5, ["case", ["==", ["get", "depth_m"], 200], 0.8, 0.5], 10, ["case", ["==", ["get", "depth_m"], 200], 1.4, 1]],
+        "line-opacity": 0.7,
+        "line-opacity-transition": { duration: 420, delay: 0 },
       },
     },
     {
@@ -300,6 +338,15 @@ export const BASEMAP_STYLE: StyleSpecification = {
 export const CA_COAST_BOUNDS: [[number, number], [number, number]] = [
   [-125.0, 32.3],
   [-116.9, 42.1],
+];
+/**
+ * Explore's pannable area (v10 rework): the coastal frame puts San Diego near the right edge, so the open
+ * Pacific runs far west of the state's own box on a wide screen. Out there is only ocean: the bundled water
+ * treats anything outside its domain as water, which it is.
+ */
+export const EXPLORE_PAN_BOUNDS: [[number, number], [number, number]] = [
+  [-150, 27],
+  [-112.5, 44.8],
 ];
 export const CA_BOUNDS: [[number, number], [number, number]] = [
   [-131.5, 29.5],

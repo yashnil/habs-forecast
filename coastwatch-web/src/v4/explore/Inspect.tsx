@@ -32,6 +32,37 @@ import { estimateRead, sstRead, outlookRead, withBayCaveat } from "@/components/
 import { readHome } from "@/v4/coast/home";
 import { satelliteLatest } from "@/lib/layers";
 import { ContourLoader } from "@/v4/ui/ContourLoader";
+import { forecastFreshness } from "@/lib/opening";
+import { ageInDays, classifyTime } from "@/lib/freshness";
+import { pacificToday as pacificDay } from "@/lib/time";
+
+const daysOld = (n: number) => (n === 1 ? "1 day old" : `${n} days old`);
+/**
+ * Guardrails A2/A11, in place: a value from an out-of-date run or an old observation says so beside the
+ * value itself ("run Oct 20, 2 days old"), not only on the layer's dock. Null while the source is current.
+ */
+export function staleInPlace(ctx: { manifest: Manifest; now: Date | null }, id: "forecast" | "satellite" | "currents", layer: LayerArtifact | null, when: string | null = null): string | null {
+  if (!ctx.now) return null;
+  if (id === "forecast") {
+    const f = forecastFreshness(ctx.manifest, ctx.now);
+    const run = charmRun(ctx.manifest);
+    if (!run || f.state === "current" || f.state === "unavailable" || f.ageDays == null) return null;
+    return `run ${dayLabel(run.issued_date)}, ${daysOld(f.ageDays)}`;
+  }
+  if (!layer) return null;
+  const f = classifyTime(layer.freshness, layer.composite ? { ...layer.time, observed_date: layer.composite.newest_observed_date } : layer.time, ctx.now);
+  if (f.state === "current" || f.state === "unavailable" || f.ageDays == null) return null;
+  // a latest-clear view's pixel has its own date (its readout says "observed Oct 14"): that pixel's age, not the view's newest
+  const own = id === "satellite" && when ? /observed ([A-Z][a-z]{2}) (\d{1,2})\b/.exec(when) : null;
+  if (own) {
+    const y = Number(pacificDay(ctx.now).slice(0, 4));
+    let iso = new Date(`${own[1]} ${own[2]}, ${y} 12:00:00 UTC`).toISOString().slice(0, 10);
+    if (iso > pacificDay(ctx.now)) iso = new Date(`${own[1]} ${own[2]}, ${y - 1} 12:00:00 UTC`).toISOString().slice(0, 10);
+    return `observed ${dayLabel(iso)}, ${daysOld(ageInDays(iso, ctx.now))}`;
+  }
+  const when2 = id === "currents" && layer.time.valid_time ? clockLabel(layer.time.valid_time) : f.basisDate ? dayLabel(f.basisDate) : null;
+  return `${id === "currents" ? "hour" : "observed"} ${when2 ?? ""}, ${daysOld(f.ageDays)}`.replace("  ", " ");
+}
 
 type Ctx = {
   manifest: Manifest;
@@ -254,7 +285,7 @@ function Failed({ what, message, retry }: { what: string; message: string; retry
 
 export type InspectCtx = Ctx;
 
-export function HarborView({ code, ctx, concise = false }: { code: number; ctx: Ctx; concise?: boolean }) {
+export function HarborView({ code, ctx, concise = false, evidenceFirst = false }: { code: number; ctx: Ctx; concise?: boolean; evidenceFirst?: boolean }) {
   const intel = ctx.portIntel?.ports.find((p) => p.port_code === code) ?? null;
   const f = ctx.ports?.features.find((x) => x.properties.port_code === code);
   const [lon, lat] = (f?.geometry.coordinates as number[] | undefined) ?? [intel?.lon ?? 0, intel?.lat ?? 0];
@@ -358,8 +389,9 @@ export function HarborView({ code, ctx, concise = false }: { code: number; ctx: 
   if (concise)
     return (
       <div className="flex flex-col gap-4" data-testid="inspect-harbor">
-        {actions}
-        {claimsSection}
+        {/* a phone's sheet opens at half height: the first line of evidence is in it, then the actions */}
+        {evidenceFirst ? claimsSection : actions}
+        {evidenceFirst ? actions : claimsSection}
         <EvidenceFold summary="Harbour water, shore stations nearby, each product near the harbour">
           {water}
           {intel && <HarbourSummary intel={intel} lead={ctx.lead} />}
@@ -720,6 +752,12 @@ export function CellBody({ read, ctx, variable, precise, at, concise = false }: 
             </span>
           )}
         </p>
+        {own != null && staleInPlace(ctx, "forecast", null) && (
+          <p className="nx-data mt-1 flex items-center gap-1.5 text-[12.5px] text-n-stale" data-testid="cell-stale">
+            <Icon name="clock" className="h-3.5 w-3.5 shrink-0" />
+            {pct(own)} · {staleInPlace(ctx, "forecast", null)} · out-of-date run
+          </p>
+        )}
         {precise && own != null && (
           <p className="nx-data mt-1.5 text-[14px] text-n-ink" data-testid="cell-precise">
             probability {preciseProbability(own, precise.quantErr)}
@@ -961,17 +999,18 @@ export function PointView({ lat, lon, ctx, site = null, concise = false }: { lat
  *  nearest one and never interpolated, with its own product, resolution and time. */
 function PointReads({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
   const reads = ctx.reads!;
-  const [rows, setRows] = useState<{ id: string; label: string; r: (Readout & { label?: string }) | null; err?: boolean }[] | null>(null);
+  const [rows, setRows] = useState<{ id: string; label: string; r: (Readout & { label?: string }) | null; err?: boolean; layer?: LayerArtifact | null }[] | null>(null);
   const est = ctx.derived?.estimate ?? null;
   const outlook = ctx.derived?.outlook ?? null;
   const sst = ctx.derived?.sst ?? null;
   useEffect(() => {
     let live = true;
-    const jobs: { id: string; label: string; run: () => Promise<Readout> }[] = [];
-    if (reads.forecast) jobs.push({ id: "forecast", label: "NOAA C-HARM model", run: () => forecastAt(ctx.baseUrl, reads.forecast!, lat, lon, pnSibling(ctx.manifest, reads.forecast!)) });
+    const jobs: { id: string; label: string; run: () => Promise<Readout>; layer?: LayerArtifact | null }[] = [];
+    if (reads.forecast) jobs.push({ id: "forecast", label: "NOAA C-HARM model", layer: reads.forecast, run: () => forecastAt(ctx.baseUrl, reads.forecast!, lat, lon, pnSibling(ctx.manifest, reads.forecast!)) });
     if (reads.satellite)
       jobs.push({
         id: "satellite",
+        layer: reads.satellite,
         label: "Satellite chlorophyll",
         // the observation when there is one; the estimate (labelled) only where nothing was observed
         run: async () => {
@@ -981,13 +1020,13 @@ function PointReads({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
       });
     if (outlook) jobs.push({ id: "outlook", label: "Chlorophyll outlook", run: () => outlookRead(ctx.baseUrl, outlook, lat, lon) });
     if (sst) jobs.push({ id: "sst", label: "Sea temperature", run: () => sstRead(ctx.baseUrl, sst, lat, lon) });
-    if (reads.currents) jobs.push({ id: "currents", label: "Surface current", run: async () => currentsAt(reads.currents!.field, reads.currents!.layer, lat, lon) });
+    if (reads.currents) jobs.push({ id: "currents", label: "Surface current", layer: reads.currents.layer, run: async () => currentsAt(reads.currents!.field, reads.currents!.layer, lat, lon) });
     else {
       // v10: the radar is read here on every layer: the 24-hour mean (else the newest usable hour), its own cell
       const cl = currentsMean(ctx.manifest) ?? defaultHour(ctx.manifest);
-      if (cl) jobs.push({ id: "currents", label: "Surface current", run: async () => currentsAt(await loadFieldCached(ctx.baseUrl, cl), cl, lat, lon) });
+      if (cl) jobs.push({ id: "currents", label: "Surface current", layer: cl, run: async () => currentsAt(await loadFieldCached(ctx.baseUrl, cl), cl, lat, lon) });
     }
-    Promise.all(jobs.map((j) => j.run().then((r) => ({ id: j.id, label: j.label, r }), () => ({ id: j.id, label: j.label, r: null, err: true })))).then((x) => live && setRows(x));
+    Promise.all(jobs.map((j) => j.run().then((r) => ({ id: j.id, label: j.label, r, layer: j.layer }), () => ({ id: j.id, label: j.label, r: null, err: true, layer: j.layer })))).then((x) => live && setRows(x));
     return () => {
       live = false;
     };
@@ -1010,8 +1049,9 @@ function PointReads({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
         </p>
       ) : (
         <ul className="flex flex-col divide-y divide-n-line" data-testid="point-reads">
-          {rows.map(({ id, label, r, err }) => {
+          {rows.map(({ id, label, r, err, layer }) => {
             const fam = FAM[id] ?? { word: () => (r?.kind === "model" ? "Model" : "Observed"), tone: r?.kind === "model" ? "text-n-model" : "text-n-measured" };
+            const stale = r?.value != null && (id === "forecast" || id === "satellite" || id === "currents") ? staleInPlace(ctx, id, layer ?? null, r?.when ?? null) : null;
             return (
               <li key={id} className="grid grid-cols-[104px_minmax(0,1fr)] gap-x-4 py-3" data-testid={`point-${id}`}>
                 <div className="min-w-0">
@@ -1025,7 +1065,17 @@ function PointReads({ lat, lon, ctx }: { lat: number; lon: number; ctx: Ctx }) {
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className={`nx-caps ${fam.tone}`}>{r ? fam.word(r) : "Not read"}</p>
+                  <p className={`nx-caps ${fam.tone}`}>
+                    {r ? fam.word(r) : "Not read"}
+                    {stale && <span className="text-n-stale"> · {id === "forecast" ? "out-of-date run" : "old"}</span>}
+                  </p>
+                  {stale && (
+                    <p className="nx-data mt-0.5 flex items-center gap-1.5 text-[12px] leading-snug text-n-stale" data-testid="point-stale">
+                      <Icon name="clock" className="h-3.5 w-3.5 shrink-0" />
+                      {r?.value}
+                      {r?.unit ? ` ${r.unit}` : ""} · {stale}
+                    </p>
+                  )}
                   <p className="mt-0.5 text-[13px] leading-snug text-n-ink">
                     {label}
                     {r?.value != null && r.what ? <span className="text-n-ink-2">, {r.what}</span> : null}

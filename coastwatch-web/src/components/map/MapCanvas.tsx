@@ -15,12 +15,13 @@ import {
   arrowImage,
   BASEMAP_STYLE,
   BEFORE_OVERLAY_ID,
-  CA_BOUNDS,
+  EXPLORE_PAN_BOUNDS,
   NODATA_FALLBACK_LAYER_ID,
   NODATA_LAYER_ID,
   noDataImage,
   SPEED_CLASSES,
   TINT_LAYER_IDS,
+  ISOBATH_LABEL_MINZOOM,
   WATER_FALLBACK_LAYER_IDS,
   WATER_FALLBACK_SOURCE,
   transformRequest,
@@ -385,6 +386,7 @@ export default function MapCanvas(p: Props) {
     };
   }, [map, hasRaster, rasterKey, p.forecast, p.satellite, p.satelliteAge, p.outlook, p.estimate, p.sst]);
 
+  const currentsOn = !!p.currents;
   const tintOnly = !!(p.contextFill && forecastTiles && !p.satellite && !p.satelliteAge && !p.outlook && !p.estimate && !p.sst);
   // The no-data hatch shows only under a data field that has arrived: with currents alone (or
   // nothing) there is no "value" for a gap to be confused with. The bundled-water layers show
@@ -419,13 +421,23 @@ export default function MapCanvas(p: Props) {
         const o = tintOff ? 0 : 1;
         if (map.getPaintProperty(id, "raster-opacity") !== o) map.setPaintProperty(id, "raster-opacity", o);
       }
+      // at rest (no field) the isobaths and their depths are the map's subject: labelled from the coastal view
+      // (the currents are a field too: under them the depths stay quiet, and the labels cost nothing per frame)
+      const rest = !hasRaster && !currentsOn;
+      if (map.getLayer("isobaths")) {
+        const o = rest ? 1 : 0.7;
+        if (map.getPaintProperty("isobaths", "line-opacity") !== o) map.setPaintProperty("isobaths", "line-opacity", o);
+      }
+      const lab = map.getLayer("isobath-labels");
+      const minz = rest ? ISOBATH_LABEL_MINZOOM.rest : ISOBATH_LABEL_MINZOOM.field;
+      if (lab && lab.minzoom !== minz) map.setLayerZoomRange("isobath-labels", minz, 24);
     };
     apply();
     map.on("styledata", apply);
     return () => {
       map.off("styledata", apply);
     };
-  }, [map, hasRaster, fieldReady, showFallback, tintOnly, tintOff]);
+  }, [map, hasRaster, fieldReady, showFallback, tintOnly, tintOff, currentsOn]);
   const { onHover } = p;
   // a harbour or station under the pointer: its name in a small tip at its mark, a pointer cursor,
   // and no value readout over it (fine pointers only; set only when the mark changes, not per move)
@@ -632,7 +644,7 @@ export default function MapCanvas(p: Props) {
       mapStyle={style}
       transformRequest={transformRequest}
       initialViewState={{ bounds: p.initialBounds, fitBoundsOptions: { padding: p.initialPadding } }}
-      maxBounds={[CA_BOUNDS[0][0], CA_BOUNDS[0][1], CA_BOUNDS[1][0], CA_BOUNDS[1][1]]}
+      maxBounds={[EXPLORE_PAN_BOUNDS[0][0], EXPLORE_PAN_BOUNDS[0][1], EXPLORE_PAN_BOUNDS[1][0], EXPLORE_PAN_BOUNDS[1][1]]}
       minZoom={4.2}
       maxZoom={p.maxZoom ?? 12.5}
       renderWorldCopies={false}

@@ -90,9 +90,12 @@ export function flowFps(): number {
   return 60;
 }
 
-/** Particle budget: up to 1,400 on a capable device, 600 on a low-power one; scaled to the observed cells in view. */
-const maxParticles = (fps: number) => (fps < 60 ? 600 : 1400);
-const countFor = (visible: number, max: number, coarser: boolean) => Math.min(max, Math.max(60, Math.round(visible * 1.5))) * (coarser ? 0.6 : 1);
+/**
+ * Particle budget (v10 rework: fewer, longer-lived streaks, so the flow's structure shows rather than static):
+ * up to 900 on a capable device, 360 on a low-power one; about one per observed cell in view.
+ */
+const maxParticles = (fps: number) => (fps < 60 ? 360 : 900);
+const countFor = (visible: number, max: number, coarser: boolean) => Math.min(max, Math.max(50, Math.round(visible * 0.8))) * (coarser ? 0.6 : 1);
 
 export type FlowController = CustomLayerInterface & {
   setField: (f: CurrentField) => void;
@@ -329,7 +332,7 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
         g.useProgram(pLine);
         g.uniformMatrix4fv(uLine.m, false, mat);
         g.uniform2f(uLine.vp, g.drawingBufferWidth, g.drawingBufferHeight);
-        g.uniform1f(uLine.w, 1.6 * Math.min(2, window.devicePixelRatio || 1));
+        g.uniform1f(uLine.w, 1.8 * Math.min(2, window.devicePixelRatio || 1));
         g.bindVertexArray(vaoLine);
         g.bindBuffer(g.ARRAY_BUFFER, instBuf);
         g.bufferSubData(g.ARRAY_BUFFER, 0, inst, 0, n * SEG);
@@ -352,6 +355,8 @@ export type FlowDebug = {
   count: () => number;
   /** live particle heads and trail points, [lon, lat] */
   points: () => [number, number][];
+  /** each live particle with a full trail: its cell's observed speed (m/s) and its streak's length on screen (px) */
+  streaks: () => { speed: number; px: number }[];
   /** the field's lattice and its observed-cell mask (1 = observed), to check positions against */
   mask: () => { lat_first: number; lat_step: number; lon_first: number; lon_step: number; width: number; height: number; observed: number[] } | null;
   fieldId: () => string;
@@ -386,6 +391,7 @@ export default function FlowLayer({ map, id, field, options, beforeId }: { map: 
       stats: layer.stats,
       count: () => layer.sim.count,
       points: () => layer.sim.points(),
+      streaks: () => layer.sim.streaks(512 * Math.pow(2, map.getZoom())),
       mask: () => {
         const f = layer.sim.field;
         if (!f) return null;
