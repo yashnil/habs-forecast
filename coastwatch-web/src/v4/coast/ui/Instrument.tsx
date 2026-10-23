@@ -31,7 +31,8 @@ export function Caps({ family = "ink", children, className = "", as: As = "span"
 
 /** A reading: light mono figures, the unit small beside them. Never animated. */
 export function Reading({ value, unit, size = "md", muted = false, testId, className = "" }: { value: ReactNode; unit?: ReactNode; size?: "sm" | "md" | "lg"; muted?: boolean; testId?: string; className?: string }) {
-  const s = size === "lg" ? "text-[40px] sm:text-[44px]" : size === "sm" ? "text-[22px]" : "text-[30px]";
+  // a size in className replaces the preset (two font sizes in one class list resolve by stylesheet order, not by intent)
+  const s = /(^|\s)text-\[\d/.test(className) ? "" : size === "lg" ? "text-[40px] sm:text-[44px]" : size === "sm" ? "text-[22px]" : "text-[30px]";
   return (
     <span className={`nx-value whitespace-nowrap ${s} ${muted ? "text-n-ink-3" : ""} ${className}`} data-testid={testId}>
       {value}
@@ -94,7 +95,8 @@ export function NumIn({
           {label}
           {needed && blank && !labelHidden && <span className="nx-caps ml-2 text-[10px] text-n-ink-2">needed</span>}
         </label>
-        <div className={`flex items-baseline gap-1.5 border-b ${wide ? "w-full" : "w-[8.5rem]"} ${error ? "border-n-down" : needed && blank ? "border-dashed border-n-ink-2" : "border-n-line-strong"} focus-within:border-solid focus-within:border-n-accent`}>
+        {/* the focus ring is the field's own: drawn around the ruled line and its unit, not offset from the bare input */}
+        <div className={`flex items-baseline gap-1.5 rounded-[2px] border-b outline-offset-2 has-[input:focus-visible]:outline has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-[var(--nx-accent)] ${wide ? "w-full" : "w-[8.5rem]"} ${error ? "border-n-down" : needed && blank ? "border-dashed border-n-ink-2" : "border-n-line-strong"} focus-within:border-solid focus-within:border-n-accent`}>
           <input
             id={id}
             type="text"
@@ -120,7 +122,7 @@ export function NumIn({
                 if (p.clamped) setClamp(`Limited to ${p.value.toLocaleString("en-US")}`);
               }
             }}
-            className="nx-focus min-h-11 w-full min-w-0 bg-transparent py-1 text-right font-data text-[20px] font-light tabular-nums text-n-ink outline-none placeholder:text-n-ink-3"
+            className="min-h-11 w-full min-w-0 bg-transparent py-1 pr-0.5 text-right font-data text-[20px] font-light tabular-nums text-n-ink outline-none placeholder:text-n-ink-3"
             placeholder="—"
           />
           {unit && <span className="shrink-0 text-[12.5px] text-n-ink-2">{unit}</span>}
@@ -149,7 +151,7 @@ export function TextIn({ id, label, value, onChange, testId, labelHidden = false
       <label htmlFor={iid} className={labelHidden ? "sr-only" : "text-[14px] leading-snug text-n-ink-2"}>
         {label}
       </label>
-      <input id={iid} type="text" value={value} maxLength={60} onChange={(e) => onChange(e.target.value)} data-testid={testId} className="nx-focus min-h-11 w-full border-b border-n-line-strong bg-transparent py-1 text-[16px] text-n-ink outline-none focus:border-n-accent" />
+      <input id={iid} type="text" value={value} maxLength={60} onChange={(e) => onChange(e.target.value)} data-testid={testId} className="min-h-11 w-full rounded-[2px] border-b border-n-line-strong bg-transparent py-1 text-[16px] text-n-ink outline-none outline-offset-2 focus:border-n-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--nx-accent)]" />
     </div>
   );
 }

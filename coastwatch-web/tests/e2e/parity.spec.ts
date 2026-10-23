@@ -235,7 +235,7 @@ test("walkthrough H4 (v7): on a phone the place menu offers the map note at the 
   const jump = page.getByTestId("coast-map-jump");
   await expect(jump).toBeInViewport();
   await jump.click();
-  await expect(page.getByTestId("locator-caption")).toBeInViewport();
+  await expect(page.getByTestId("locator")).toBeInViewport();
   await map(page);
   await page.waitForTimeout(500);
   const box = (await page.locator(".maplibregl-canvas").first().boundingBox())!;

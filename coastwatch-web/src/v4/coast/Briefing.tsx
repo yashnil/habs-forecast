@@ -40,12 +40,15 @@ import { savedSearch, savedSnapshot } from "@/v4/offline/snapshot";
 import { homeHref, readHome, writeHome, type HomePort } from "./home";
 import { Fold } from "./Fold";
 import { Landing } from "./Landing";
-import { OfficialContext } from "./Official";
+import { OfficialContext, SeasonLinks } from "./Official";
+import { DecisionRow } from "./Decision";
+import { AGENCY_LINKS } from "@/content/coast";
+import { econAudience } from "./economics/model";
 import { TimeView } from "./Lanes";
 import { HarbourMap } from "./HarbourMap";
 import { seasonStatus } from "./season";
 import { Caps } from "./ui/Instrument";
-import { SeaBody, SeasonsBody, WorthBody, noticeLine, useSeaLimits, worthLine } from "@/components/coast/FishingBrief";
+import { SeaBody, SeasonsBody, WorthBody, useSeaLimits, worthLine } from "@/components/coast/FishingBrief";
 
 type Props = {
   manifest: Manifest;
@@ -203,7 +206,9 @@ export function Briefing(props: Props) {
   const settled = settledNow || waited;
   useReportSource(place ? { id: "evidence", label: "Briefing evidence", state: b.graph && settled ? (b.outlook === "error" ? "partial" : "ready") : "loading", detail: b.graph ? `${b.matters.length} statements, each with its source` : "Reading notices, shore samples, NOAA's model and the satellite" } : null);
   const g = b.graph;
-  const measured = useMemo(() => (g ? g.nodes.filter((n) => n.variable !== "official notice") : []), [g]);
+  // the sea itself (NWS text, tides, the buoy's wind, waves and water) is read in the decision row and the
+  // lanes; the evidence section holds what bears on a bloom, so nothing is said twice
+  const measured = useMemo(() => (g ? g.nodes.filter((n) => n.variable !== "official notice" && !SEA_VARIABLES.test(n.variable)) : []), [g]);
   const near = measured.filter((n) => (n.where?.representative === "at" || n.where?.representative === "near") && (!n.freshness || n.freshness.state === "current"));
   const said = new Set(b.matters.filter((c) => c.history).flatMap((c) => c.supports));
   const far = measured.filter((n) => !near.includes(n) && !(n.id?.startsWith("record:") && said.has(n.id)));
@@ -240,7 +245,6 @@ export function Briefing(props: Props) {
   const otherHere = b.notices.hereAssocs.filter((a) => !b.notices.namingIds.has(a.record.id));
   const activityLabel = audience === "all" ? "Any activity" : AUDIENCES.find((x) => x.id === audience)?.label;
   const dayWords = b.tripDay ? (b.tripDay.label === "Today" ? "Today" : `${b.tripDay.label}, ${b.tripDay.day}`) : "Today";
-  const otherDay = b.tripDate && b.today && b.tripDate !== b.today ? dayLabel(b.tripDate, true) : null;
   const checksN = b.checks.shown.length + b.checks.more.length;
   const tickedN = [...b.checks.shown, ...b.checks.more].filter((x) => ticked.includes(x.id)).length;
   const season = seasonStatus(place, species, audience, b.tripDate ?? b.today);
@@ -252,11 +256,11 @@ export function Briefing(props: Props) {
   const econProps = { place: { key: place.key, name: place.name, portCode }, species: species.id, audience, tripDate: b.tripDate, season };
 
   const header = (
-    <header className="flex flex-col gap-3 pb-5 lg:pb-7" data-testid="coast-header">
+    <header className="flex flex-col gap-2 pb-5 lg:pb-6" data-testid="coast-header">
       <Caps className="text-n-ink-2" as="p">
         <span data-testid="coast-stamp">{sheet ? `${place.name} · ${activityLabel} · ${species.id === "any" ? "any species" : species.label} · ${dayWords}` : stamp}</span>
       </Caps>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-4 gap-y-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-4 gap-y-2">
         <div className="min-w-0">
           {sheet ? (
             <h1 className="font-serif font-medium tracking-[-0.015em] text-[34px] leading-[1.04] text-n-ink sm:text-[56px]" data-testid="econ-title">
@@ -264,7 +268,7 @@ export function Briefing(props: Props) {
             </h1>
           ) : (
             <>
-              <h1 className="font-serif font-medium tracking-[-0.015em] text-[38px] leading-[1.04] text-n-ink sm:text-[64px] lg:text-[72px]" data-testid="coast-title">
+              <h1 className="font-serif font-medium tracking-[-0.015em] text-[38px] leading-[1.04] text-n-ink sm:text-[56px] xl:text-[64px]" data-testid="coast-title">
                 <button type="button" aria-expanded={placeOpen} aria-controls={placeOpen ? "coast-place-menu" : undefined} aria-describedby="coast-place-hint" onClick={() => setPlaceOpen((o) => !o)} className="nx-focus group max-w-full rounded-[3px] text-left hover:text-n-ink-2" data-testid="coast-place-button">
                   {place.name}
                   <Icon name="chevronDown" className={`ml-2 inline-block h-6 w-6 align-middle text-n-ink-3 transition-transform group-hover:text-n-ink ${placeOpen ? "rotate-180" : ""}`} />
@@ -275,29 +279,8 @@ export function Briefing(props: Props) {
               </span>
             </>
           )}
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-3 text-[14px] text-n-ink-2" data-testid="coast-subtitle">
-            {sheet ? (
-              <span data-testid="econ-kicker-head" className="max-sm:sr-only">
-                <b className="font-medium text-n-ink">Scenario from your inputs, not a forecast.</b> Kept on this device only.
-              </span>
-            ) : (
-              <>
-                <span>
-                  {place.note}
-                  {place.county ? ` · ${place.county} County` : ""}
-                </span>
-                {home?.place === place.key ? (
-                  <span className="inline-flex items-center gap-1 text-n-ink" data-testid="coast-home">
-                    <Icon name="harbor" className="h-4 w-4" /> Your home port
-                  </span>
-                ) : home ? (
-                  <HomeLink home={home} ports={ports} />
-                ) : null}
-              </>
-            )}
-          </p>
         </div>
-        <div className="col-start-2 row-start-1 self-start lg:col-start-3 lg:self-end">
+        <div className="col-start-2 row-start-1 self-start">
           {sheet ? (
             <button type="button" onClick={closeSheet} className="nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-[3px] border border-n-line-strong px-3 text-[14px] text-n-ink" data-testid="econ-back">
               <Icon name="back" className="h-4 w-4" /> Briefing
@@ -306,8 +289,12 @@ export function Briefing(props: Props) {
             <MoreMenu />
           )}
         </div>
-        {!sheet && (
-          <div className="col-span-2 flex flex-col gap-2 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:self-end">
+        {sheet ? (
+          <p className="col-span-2 max-w-[100ch] text-[14.5px] leading-snug text-n-ink" data-testid="econ-kicker-head">
+            <SheetLine place={place} species={species} season={season} rec={econAudienceOf(audience)} />
+          </p>
+        ) : (
+          <div className="col-span-2 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-x-6">
             <button type="button" aria-expanded={tripOpen} aria-controls="trip-controls" onClick={() => setTripOpen((o) => !o)} className="nx-focus -mx-1 flex min-h-12 items-center justify-between gap-3 rounded-[3px] px-1 text-left sm:hidden" data-testid="trip-summary">
               <span className="min-w-0 text-[15.5px] font-medium leading-snug text-n-ink">
                 {activityLabel} · {species.id === "any" ? "Any species" : species.label} · {dayWords}
@@ -316,15 +303,28 @@ export function Briefing(props: Props) {
                 {tripOpen ? "Done" : "Change"}
               </span>
             </button>
-            <div id="trip-controls" className={`flex-col gap-3 sm:flex sm:flex-row sm:flex-wrap sm:items-end sm:gap-6 ${tripOpen ? "flex" : "hidden"}`} data-testid="trip-controls">
+            <div id="trip-controls" className={`flex-col gap-3 sm:flex sm:flex-row sm:flex-wrap sm:items-end sm:gap-5 ${tripOpen ? "flex" : "hidden"}`} data-testid="trip-controls">
               <Select id="trip-activity" disabled={!mounted} label="For" value={audience} onChange={(v) => go({ for: v as Audience, species: v === "all" || species.activities.includes(v as never) ? species.id : "any" })} options={activityOptions} />
               <Select id="trip-species" disabled={!mounted} label="Species" value={species.id} onChange={(v) => go({ species: v as SpeciesId })} options={speciesOptions} />
               <Select id="trip-day" disabled={!mounted} label="Day" value={b.tripDate ?? dayOptions[0]?.id ?? ""} onChange={(v) => go({ date: v === b.days[0]?.date ? null : v })} options={dayOptions.length ? dayOptions : [{ id: "", label: "Today" }]} />
             </div>
+            <p className="flex flex-wrap items-center gap-x-3 text-[13.5px] text-n-ink-2 max-sm:hidden" data-testid="coast-subtitle">
+              <span>
+                {place.note}
+                {place.county ? ` · ${place.county} County` : ""}
+              </span>
+              {home?.place === place.key ? (
+                <span className="inline-flex items-center gap-1 text-n-ink" data-testid="coast-home">
+                  <Icon name="harbor" className="h-4 w-4" /> Your home port
+                </span>
+              ) : home ? (
+                <HomeLink home={home} ports={ports} />
+              ) : null}
+            </p>
           </div>
         )}
         {placeOpen && !sheet && (
-          <div className="col-span-2 lg:col-span-3">
+          <div className="col-span-2">
             <PlaceMenu
               place={place}
               ports={ports}
@@ -345,268 +345,289 @@ export function Briefing(props: Props) {
     </header>
   );
 
+  // ---------------------------------------------------------------- the worksheet view
+  if (sheet)
+    return (
+      <div className="env-chart relative min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="worksheet">
+        <SkipLink />
+        <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} local={localNotices} />} />
+        <RegistryDisclosure className="mx-auto w-full max-w-[1320px] px-4 sm:px-8" fixture={isFixture(props.manifest)} />
+        {!off.online && (
+          <div className="mx-auto w-full max-w-[1320px] px-4 pt-3 sm:px-8">
+            <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline outside={covering ? null : { place: place.name, href: coastHref({ place: pack.place }) }} />
+          </div>
+        )}
+        <main id="main" className="cw-fade-in mx-auto w-full max-w-[1320px] overflow-x-clip px-4 pb-32 pt-5 sm:px-8 lg:pt-8">
+          {header}
+          <TripWorksheet {...econProps} focus={focusParam} />
+        </main>
+        <MobileDock />
+      </div>
+    );
+
+  // ---------------------------------------------------------------- the briefing: a reading column on the trip's waters
+  const official1 = (
+    <OfficialContext
+      place={place}
+      species={species}
+      audience={audience}
+      season={season}
+      details={
+        <Fold inline className="data-[open=true]:basis-full" id="seasons" title="Season details" summary={species.id === "any" ? "CDFW's list for these waters" : `CDFW's list, ${speciesPhrase(species)} first`}>
+          <SeasonLinks place={place} season={season} />
+          <SeasonsBody place={place} species={species} audience={audience} tripDate={b.tripDate} today={b.today} />
+        </Fold>
+      }
+    />
+  );
+  const noticeRows = notices.length + otherHere.length;
   return (
-    <div className="env-chart relative min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view={sheet ? "worksheet" : "trip"}>
+    <div className="env-chart relative min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="trip">
       <SkipLink />
-      <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} local={localNotices} />} />
-      <RegistryDisclosure className="mx-auto w-full max-w-[1320px] px-4 sm:px-8" fixture={isFixture(props.manifest)} />
-      {!off.online && (
-        <div className="mx-auto w-full max-w-[1320px] px-4 pt-3 sm:px-8">
-          <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline outside={covering ? null : { place: place.name, href: coastHref({ place: pack.place }) }} />
-        </div>
-      )}
+      <TopBar floating active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} local={localNotices} />} />
       {packOpen && <PackDialog pack={pack} manifest={props.manifest} baseUrl={props.baseUrl} official={official} onClose={() => setPackOpen(false)} />}
-      <main id="main" className="cw-fade-in mx-auto w-full max-w-[1320px] overflow-x-clip px-4 pb-32 pt-5 sm:px-8 lg:pt-8">
-        {header}
-
-        {sheet ? (
-          <div className="flex flex-col gap-6">
-            <SheetOfficial place={place} species={species} season={season} />
-            <TripWorksheet {...econProps} focus={focusParam} />
-          </div>
-        ) : (
-          <>
-          <div className="flex flex-col">
-            {/* what changed leads only when something did; the quiet "remembered" line goes to the end */}
-            <div data-testid="brief-changes" className="mb-6 empty:hidden has-[[data-state=first]]:order-last has-[[data-state=first]]:mb-0 has-[[data-state=first]]:mt-8 has-[[data-state=none]]:order-last has-[[data-state=none]]:mb-0 has-[[data-state=none]]:mt-8">
-              <SinceLastCheck />
+      <main id="main" className="cw-fade-in grid grid-cols-1 overflow-x-clip pb-28 lg:grid-cols-[minmax(0,1fr)_minmax(420px,42vw)] lg:grid-rows-[auto_1fr] lg:pb-0">
+        {/* the decision: place, trip, season, the readings that decide a trip */}
+        <div className="flex min-w-0 flex-col px-4 pt-[64px] sm:px-8 lg:col-start-1 lg:row-start-1 lg:pl-10 lg:pr-10 xl:pl-12">
+          <RegistryDisclosure className="pb-3 pt-1" fixture={isFixture(props.manifest)} />
+          {!off.online && (
+            <div className="pb-3">
+              <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline outside={covering ? null : { place: place.name, href: coastHref({ place: pack.place }) }} />
             </div>
-            {/* the decision: what the agencies say, the sea against your limits, what the trip would cost and
-                bring, and where; desktop puts the economics and the waters beside the time view */}
-            <div className="grid grid-cols-1 gap-y-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-x-12 xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-x-16">
-              <div className="flex min-w-0 flex-col gap-8 lg:col-start-1 lg:row-start-1">
-                <section aria-labelledby="glance-h" className="flex flex-col gap-7" data-testid="brief-glance">
-                  <OfficialContext place={place} species={species} audience={audience} season={season} notices={counts} unclear={unclear} />
-                  <div className="flex flex-col gap-3">
-                    <h2 id="glance-h" className="flex flex-wrap items-baseline gap-x-3">
-                      <span className="font-serif font-medium tracking-[-0.015em] leading-[1.1] text-[26px] text-n-ink">The sea and your limits</span>
-                      <span className="text-[13px] text-n-ink-2">
-                        {otherDay ? `for ${otherDay}` : asSaved ? "" : "today"}
-                        {asSaved ? ` · ${asSaved}` : ""}
-                      </span>
-                    </h2>
-                    <TimeView cond={b.cond} now={now} today={b.today} tripDate={b.tripDate} limits={limits} onLimits={setLimits} asSaved={asSaved} outlook={b.outlook} runIssued={runIssued} />
-                  </div>
-                </section>
-              </div>
-
-              <div className="flex min-w-0 flex-col gap-10 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-                <div className="lg:border-t lg:border-n-line-strong lg:pt-4" data-testid="brief-econ">
-                  <TripGlance {...econProps} onOpen={openSheet} />
-                </div>
-                <div ref={mapBox} className="scroll-mt-4">
-                  <HarbourMap place={place} g={g} ports={ports} official={official} stations={stations} exploreHref={exploreLink} researchHref={researchLink} onPlace={goPlace} basemapPmtiles={basemap} />
-                </div>
-              </div>
-
-              <section aria-labelledby="now-h" className="flex min-w-0 flex-col gap-2 lg:col-start-1 lg:row-start-2" data-testid="brief-now">
-                <h2 id="now-h" className="flex flex-wrap items-baseline justify-between gap-x-4 border-t border-n-line-strong pt-4" data-testid="matters-heading">
-                  <span className="font-serif font-medium tracking-[-0.015em] leading-[1.1] text-[26px] text-n-ink">{snap ? "What mattered when saved" : "What the evidence says"}</span>
-                  {/* the separator is in the text, so the heading reads "… saved · Oct 22, 9:06 PM" aloud, not "savedOct" */}
-                  <span className="text-[13px] text-n-ink-2">
-                    <span className="sr-only"> · </span>
-                    {snap ? clockLabel(snap.savedAt) : "notices, shore samples, NOAA’s model, the satellite"}
-                  </span>
-                </h2>
-                <div className="min-h-[156px]">
-                  {!g || !settled ? (
-                    <p className="py-2 text-[15px] text-n-ink-2" role="status" data-testid="matters-reading">
-                      Reading the notices, shore samples, NOAA&rsquo;s model and the satellite for {place.name}…
-                    </p>
-                  ) : (
-                    <Matters claims={b.matters} graph={g} stations={stations} onSelect={(s) => router.push(exploreHref(s, back))} fallback={placeSel} />
-                  )}
-                </div>
-                <a href="#unknown-h" className="nx-focus inline-flex min-h-11 items-center gap-1 self-start rounded-[2px] text-[14px] text-n-ink-2 hover:text-n-ink" data-testid="glance-unknown">
-                  {b.unknowns.length} {b.unknowns.length === 1 ? "thing" : "things"} Neritic cannot say here <Icon name="chevronRight" className="h-4 w-4 shrink-0" />
-                </a>
-              </section>
-            </div>
-
-            {/* everything else, one level down: each row says what it holds, and every word stays in the page */}
-            <section aria-labelledby="more-h" className="mt-14 flex flex-col">
-              <h2 id="more-h" className="mb-1">
-                <Caps>More for this trip</Caps>
-              </h2>
-              <div className="grid grid-cols-1 border-b border-n-line lg:grid-cols-2 lg:gap-x-12 [&>section]:min-w-0">
-                <Fold id="sea" title="Sea forecast and tides" summary={asSaved ? `Every NWS period, the buoy and the tides, ${asSaved}` : "Every NWS period in the forecaster's words, the buoy and the tides"}>
-                  <SeaBody cond={b.cond} tripDate={b.tripDate} today={b.today} limits={limits} now={now} asSaved={asSaved} />
-                </Fold>
-                <Fold id="seasons" title="Seasons" summary={species.id === "any" ? "CDFW's sport-fishing list for these waters, dated" : `CDFW's sport-fishing list for these waters, ${speciesPhrase(species)} first`}>
-                  <SeasonsBody place={place} species={species} audience={audience} tripDate={b.tripDate} today={b.today} />
-                </Fold>
-                <Fold id="checks" title="Before you go" count={checksN} summary={`${tickedN} of ${checksN} ticked by you. A tick is your own note.`}>
-                  <p className="text-[13.5px] text-n-ink-2" data-testid="checks-progress">
-                    <span className="text-n-ink">
-                      {b.checks.shown.filter((x) => ticked.includes(x.id)).length} of {b.checks.shown.length} ticked by you.
-                    </span>{" "}
-                    A tick is not a check by Neritic or by any agency.
-                  </p>
-                  <ol className="divide-y divide-n-line border-y border-n-line" data-testid="checks">
-                    {b.checks.shown.map((s) => (
-                      <CheckItem key={s.id} s={s} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
-                    ))}
-                  </ol>
-                  {/* at most five up front; the rest follow in the same note, never dropped and never folded again */}
-                  {b.checks.more.length > 0 && (
-                    <div data-testid="checks-more">
-                      <Caps as="h3">Also worth checking</Caps>
-                      <ol className="divide-y divide-n-line border-b border-n-line">
-                        {b.checks.more.map((s) => (
-                          <CheckItem key={s.id} s={s} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
-                        ))}
-                      </ol>
-                    </div>
-                  )}
-                </Fold>
-                <Fold id="evidence" title="Evidence" count={near.length + far.length} summary={!g ? "Reading…" : `${near.length ? `Near these waters: ${whatList(near).toLowerCase()}` : "Nothing measured recently in these waters themselves"}${far.length ? `; ${far.length} farther or older` : ""}; dock value history`}>
-                  <div className="flex flex-col gap-1" data-testid="brief-measured">
-                    <Caps as="h3">Near these waters{asSaved ? `, ${asSaved}` : ""}</Caps>
-                    {!g ? (
-                      <p className="text-[15px] text-n-ink-2">Reading…</p>
-                    ) : near.length ? (
-                      <ul className="divide-y divide-n-line">{near.map((n) => <NodeRow key={n.id ?? n.variable} n={n} now={now} back={back} />)}</ul>
-                    ) : (
-                      <p className="text-[15px] text-n-ink-2">Nothing measured recently in these waters themselves. What exists is farther away or older, below.</p>
-                    )}
-                  </div>
-                  {far.length > 0 && (
-                    <div className="flex flex-col gap-1" data-testid="brief-context">
-                      <Caps as="h3">Farther away or older: context only</Caps>
-                      <ul className="divide-y divide-n-line">{far.map((n) => <NodeRow key={n.id ?? n.variable} n={n} now={now} back={back} />)}</ul>
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-2" data-testid="brief-worth">
-                    <Caps as="h3" id="worth-h" className="scroll-mt-4">
-                      Dock value, history
-                    </Caps>
-                    <p className="text-[15px] text-n-ink" data-testid="glance-worth">
-                      {worthLine(place, ports, species)}
-                    </p>
-                    <WorthBody place={place} ports={ports} species={species} />
-                  </div>
-                </Fold>
-                <Fold id="official" title="Official notices" count={counts.here} summary={`${noticeLine(counts, species, audience)}${unclear ? ` · +${unclear} status unclear` : ""}`}>
-                  <p className="text-[13.5px] text-n-ink-2">
-                    <span className="text-n-official">Not verified</span> · may be incomplete · no notice listed does not mean open or safe. The agency page is the authority.
-                  </p>
-                  {notices.length + otherHere.length ? (
-                    <ul className="divide-y divide-n-line border-y border-n-line">
-                      {notices.map((n) => (
-                        <li key={n.id} className="py-3" data-testid={`notice-${n.id}`}>
-                          <p className="text-[15.5px] font-medium leading-snug">{n.text}</p>
-                          <p className="mt-0.5 text-[13.5px] text-n-ink-2">
-                            <span className="nx-caps text-n-official">{n.source.name}</span>
-                            {n.where?.name ? ` · ${n.where.name}` : ""}
-                            {(n.time as { issued?: string | null }).issued ? ` · since ${dayLabel((n.time as { issued: string }).issued)}` : ""}
-                          </p>
-                          {n.freshness?.note && <p className="mt-1 text-[13.5px] text-n-official">{n.freshness.note}</p>}
-                          <p className="flex flex-wrap gap-x-3 text-[13px]">
-                            <span className="inline-flex min-h-11 items-center text-n-official">Not verified</span>
-                            {n.source.url && (
-                              <a href={n.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 text-n-ink underline decoration-n-line-strong underline-offset-4">
-                                {n.source.name} notice <Icon name="external" className="h-3.5 w-3.5" />
-                              </a>
-                            )}
-                          </p>
-                        </li>
-                      ))}
-                      {otherHere.length > 0 && (
-                        <li className="pt-3" data-testid="notices-other">
-                          <Caps as="p">{species.id === "any" ? "Also tied to these waters" : `Tied to these waters, not naming ${speciesPhrase(species)}`}</Caps>
-                          <ul className="divide-y divide-n-line">
-                            {otherHere.map((a) => {
-                              const url = a.record.sources.find((x) => x.url.startsWith("https://"))?.url ?? null;
-                              return (
-                                <li key={a.record.id} className="py-2" data-testid={`notice-official:${a.record.id}`}>
-                                  <p className="text-[15px] leading-snug">{a.record.title}</p>
-                                  <p className="flex flex-wrap items-center gap-x-3 text-[13px] text-n-ink-2">
-                                    <span>
-                                      {a.record.agency}
-                                      {a.record.effective_date ? ` · since ${dayLabel(a.record.effective_date)}` : ""}
-                                    </span>
-                                    <span className="text-n-official">Not verified</span>
-                                    {url && (
-                                      <a href={url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 text-n-ink underline decoration-n-line-strong underline-offset-4">
-                                        {a.record.agency} notice <Icon name="external" className="h-3.5 w-3.5" />
-                                      </a>
-                                    )}
-                                  </p>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </li>
-                      )}
-                    </ul>
-                  ) : (
-                    <p className="text-[15px] text-n-ink-2">No notice in Neritic&rsquo;s list is tied to these waters. The list may be incomplete: check CDFW and CDPH.</p>
-                  )}
-                </Fold>
-                <Fold id="unknown" title="What is not known" count={b.unknowns.length} summary="Missing evidence is said, never filled in">
-                  <ul className="flex list-disc flex-col gap-2 pl-5 text-[15px] leading-relaxed text-n-ink-2" data-testid="unknowns">
-                    {b.unknowns.map((u) => (
-                      <li key={u}>{u}</li>
-                    ))}
-                  </ul>
-                </Fold>
-              </div>
-            </section>
+          )}
+          {header}
+          {/* what changed leads only when something did; the quiet "remembered" line goes under the readings */}
+          <div data-testid="brief-changes" className="mb-5 empty:hidden has-[[data-state=first]]:order-last has-[[data-state=first]]:mb-0 has-[[data-state=first]]:mt-3 has-[[data-state=none]]:order-last has-[[data-state=none]]:mb-0 has-[[data-state=none]]:mt-3">
+            <SinceLastCheck />
           </div>
+          <div className="flex flex-col gap-5" data-testid="brief-glance">
+            {official1}
+            <DecisionRow cond={b.cond} now={now} today={b.today} tripDate={b.tripDate} asSaved={asSaved} notices={{ ...counts, unclear }} species={species} audience={audience} econ={<TripGlance {...econProps} onOpen={openSheet} />} />
+          </div>
+          <Fold inline className="mt-1" id="checks" title="Before you go" count={checksN} summary={`${tickedN} of ${checksN} ticked by you`}>
+            <p className="text-[13.5px] text-n-ink-2" data-testid="checks-progress">
+              <span className="text-n-ink">
+                {b.checks.shown.filter((x) => ticked.includes(x.id)).length} of {b.checks.shown.length} ticked by you.
+              </span>{" "}
+              A tick is not a check by Neritic or by any agency.
+            </p>
+            <ol className="grid grid-cols-1 divide-y divide-n-line border-y border-n-line" data-testid="checks">
+              {b.checks.shown.map((s) => (
+                <CheckItem key={s.id} s={s} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
+              ))}
+            </ol>
+            {b.checks.more.length > 0 && (
+              <div data-testid="checks-more">
+                <Caps as="h4">Also worth checking</Caps>
+                <ol className="divide-y divide-n-line border-b border-n-line">
+                  {b.checks.more.map((s) => (
+                    <CheckItem key={s.id} s={s} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
+                  ))}
+                </ol>
+              </div>
+            )}
+          </Fold>
+        </div>
 
-            <footer className="flex max-w-[80ch] flex-col gap-3 pt-8 text-[13px] leading-snug text-n-ink-2">
-              <div className="flex flex-wrap gap-x-5 gap-y-1 text-[14px]">
-                <Link href={exploreLink} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink-2 hover:text-n-ink">
-                  <Icon name="map" className="h-4 w-4" /> Open in Explore
-                </Link>
-                <Link href={researchLink} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink-2 hover:text-n-ink">
-                  <Icon name="research" className="h-4 w-4" /> Open in Research
-                </Link>
-                {hasPack && (
-                  <button type="button" onClick={() => setPackOpen(true)} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink-2 hover:text-n-ink" data-testid="pack-open">
-                    <Icon name={off.record?.complete ? "check" : "download"} className="h-4 w-4" /> {off.record?.complete ? "Saved for offline use" : "Save for offline use"}
-                  </button>
+        {/* the trip's waters: the page's ground on a wide screen (sticky while the column scrolls), a band on a phone */}
+        <div ref={mapBox} className="scroll-mt-16 px-4 pt-5 sm:px-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:p-0">
+          <div className="lg:sticky lg:top-0 lg:h-dvh">
+            <HarbourMap place={place} g={g} ports={ports} official={official} stations={stations} exploreHref={exploreLink} researchHref={researchLink} onPlace={goPlace} basemapPmtiles={basemap} manifest={props.manifest} baseUrl={props.baseUrl} now={now} />
+          </div>
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-8 px-4 pt-8 sm:gap-12 sm:px-8 sm:pt-10 lg:col-start-1 lg:row-start-2 lg:pb-16 lg:pl-10 lg:pr-10 xl:pl-12">
+          {/* the next 60 hours, then every NWS period in the forecaster's words */}
+          <section aria-label="The sea, the next 60 hours" className="flex flex-col gap-1" data-testid="brief-lanes">
+            <TimeView cond={b.cond} now={now} today={b.today} tripDate={b.tripDate} limits={limits} onLimits={setLimits} asSaved={asSaved} outlook={b.outlook} runIssued={runIssued} />
+            <Fold inline id="sea" title="Sea forecast detail" summary={asSaved ? `every NWS period, the buoy and the tides, ${asSaved}` : "every NWS period in the forecaster's words, the buoy and the tides"}>
+              <SeaBody cond={b.cond} tripDate={b.tripDate} today={b.today} limits={limits} now={now} asSaved={asSaved} />
+            </Fold>
+          </section>
+
+          {/* the one evidence section: the statements, then what each rests on (measured, official), then what is not known */}
+          <section aria-labelledby="now-h" className="flex min-w-0 flex-col gap-3" data-testid="brief-now">
+            <h2 id="now-h" className="flex flex-wrap items-baseline justify-between gap-x-4 border-t border-n-line-strong pt-4" data-testid="matters-heading">
+              <span className="font-serif font-medium tracking-[-0.015em] leading-[1.1] text-[24px] text-n-ink">{snap ? "What mattered when saved" : "What the evidence says"}</span>
+              {/* the separator is in the text, so the heading reads "… saved · Oct 22, 9:06 PM" aloud, not "savedOct" */}
+              <span className="text-[13px] text-n-ink-2">
+                <span className="sr-only"> · </span>
+                {snap ? clockLabel(snap.savedAt) : "notices, shore samples, NOAA’s model, the satellite"}
+              </span>
+            </h2>
+            <div className="min-h-[156px]">
+              {!g || !settled ? (
+                <p className="py-2 text-[15px] text-n-ink-2" role="status" data-testid="matters-reading">
+                  Reading the notices, shore samples, NOAA&rsquo;s model and the satellite for {place.name}…
+                </p>
+              ) : (
+                <Matters claims={b.matters} graph={g} stations={stations} onSelect={(s) => router.push(exploreHref(s, back))} fallback={placeSel} />
+              )}
+            </div>
+            <Fold inline openFrom="md" className="border-t border-n-line pt-1 md:pt-4" id="evidence" title="What it rests on" summary={`${near.length + far.length} measured · ${noticeRows} official, not verified`}>
+            <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
+              <div className="flex min-w-0 flex-col gap-4" data-testid="brief-evidence-measured">
+                <div className="flex flex-col gap-1" data-testid="brief-measured">
+                  <Caps as="h3" family="measured">
+                    Measured near these waters{asSaved ? `, ${asSaved}` : ""}
+                  </Caps>
+                  {!g ? (
+                    <p className="text-[14px] text-n-ink-2">Reading…</p>
+                  ) : near.length ? (
+                    <ul className="divide-y divide-n-line">{near.map((n) => <NodeRow key={n.id ?? n.variable} n={n} now={now} back={back} />)}</ul>
+                  ) : (
+                    <p className="text-[14px] text-n-ink-2">Nothing measured recently in these waters themselves{far.length ? "; what exists is farther away or older, below." : "."}</p>
+                  )}
+                </div>
+                {far.length > 0 && (
+                  <Fold inline id="context" title="Farther away or older" count={far.length} summary="context only">
+                    <ul className="divide-y divide-n-line">{far.map((n) => <NodeRow key={n.id ?? n.variable} n={n} now={now} back={back} />)}</ul>
+                  </Fold>
                 )}
               </div>
-              <p className="nx-margin" data-testid="matters-provenance">
-                Official items quote Neritic&rsquo;s copy of the CDFW and CDPH pages and notices. No person has reviewed that copy yet, so the agency pages are the authority. Your limits, ticks, trip numbers and home port stay on this device.
-              </p>
-              <p>Sources: CDFW and CDPH (Neritic&rsquo;s copy), CalHABMAP via SCCOOS, NOAA C-HARM, NOAA CoastWatch, NWS, NDBC and CO-OPS, CDFW By The Numbers, EIA. This link reproduces this trip. Neritic is an independent research project, not affiliated with or endorsed by NOAA, CDFW or CDPH.</p>
-            </footer>
-          </>
-        )}
+              <div className="flex min-w-0 flex-col gap-2" data-testid="brief-official">
+                <h3 id="official-h" className="scroll-mt-16">
+                  <Caps family="official">Official notices · not verified</Caps>
+                </h3>
+                {noticeRows ? (
+                  <ul className="divide-y divide-n-line border-b border-n-line">
+                    {notices.map((n) => (
+                      <li key={n.id} className="py-2.5" data-testid={`notice-${n.id}`}>
+                        <p className="text-[15px] font-medium leading-snug">{n.text}</p>
+                        <p className="mt-0.5 text-[13px] text-n-ink-2">
+                          <span className="nx-caps text-n-official">{n.source.name}</span>
+                          {n.where?.name ? ` · ${n.where.name}` : ""}
+                          {(n.time as { issued?: string | null }).issued ? ` · since ${dayLabel((n.time as { issued: string }).issued)}` : ""}
+                          <span className="text-n-official"> · Not verified</span>
+                        </p>
+                        {n.freshness?.note && <p className="mt-1 text-[13px] text-n-official">{n.freshness.note}</p>}
+                        {n.source.url && (
+                          <a href={n.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 text-[13px] text-n-ink underline decoration-n-line-strong underline-offset-4 sm:min-h-8">
+                            {n.source.name} notice <Icon name="external" className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </li>
+                    ))}
+                    {otherHere.length > 0 && (
+                      <li className="pt-2.5" data-testid="notices-other">
+                        <Caps as="p">{species.id === "any" ? "Also tied to these waters" : `Tied to these waters, not naming ${speciesPhrase(species)}`}</Caps>
+                        <ul className="divide-y divide-n-line">
+                          {otherHere.map((a) => {
+                            const url = a.record.sources.find((x) => x.url.startsWith("https://"))?.url ?? null;
+                            return (
+                              <li key={a.record.id} className="py-2" data-testid={`notice-official:${a.record.id}`}>
+                                <p className="text-[14.5px] leading-snug">{a.record.title}</p>
+                                <p className="flex flex-wrap items-center gap-x-3 text-[13px] text-n-ink-2">
+                                  <span>
+                                    {a.record.agency}
+                                    {a.record.effective_date ? ` · since ${dayLabel(a.record.effective_date)}` : ""}
+                                  </span>
+                                  <span className="text-n-official">Not verified</span>
+                                  {url && (
+                                    <a href={url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 text-n-ink underline decoration-n-line-strong underline-offset-4 sm:min-h-8">
+                                      {a.record.agency} notice <Icon name="external" className="h-3.5 w-3.5" />
+                                    </a>
+                                  )}
+                                </p>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </li>
+                    )}
+                  </ul>
+                ) : (
+                  <p className="text-[14px] text-n-ink-2">No notice in Neritic&rsquo;s list is tied to these waters.</p>
+                )}
+                <p className="text-[13px] leading-snug text-n-ink-2" data-testid="official-caveat">
+                  <span className="text-n-official">Not verified</span> · may be incomplete · no notice listed does not mean open or safe. The agency page is the authority:{" "}
+                  <a href={`tel:${AGENCY_LINKS.cdfwClosureLine.tel}`} className="nx-focus whitespace-nowrap text-n-ink underline decoration-n-line-strong underline-offset-4">
+                    CDFW {AGENCY_LINKS.cdfwClosureLine.phone}
+                  </a>
+                  {" · "}
+                  <a href={`tel:${AGENCY_LINKS.cdphLine.tel}`} className="nx-focus whitespace-nowrap text-n-ink underline decoration-n-line-strong underline-offset-4">
+                    CDPH {AGENCY_LINKS.cdphLine.phone}
+                  </a>
+                </p>
+              </div>
+            </div>
+            </Fold>
+            <div className="flex flex-col gap-0 border-t border-n-line pt-2">
+              <Fold inline id="unknown" title="Not known here" count={b.unknowns.length} summary="missing evidence is said, never filled in">
+                <ul className="flex list-disc flex-col gap-1 pl-5 text-[13.5px] leading-snug text-n-ink-2" data-testid="unknowns">
+                  {b.unknowns.map((u) => (
+                    <li key={u}>{u}</li>
+                  ))}
+                </ul>
+              </Fold>
+              <a href="#unknown-h" className="sr-only" data-testid="glance-unknown">
+                {b.unknowns.length} {b.unknowns.length === 1 ? "thing" : "things"} Neritic cannot say here
+              </a>
+              <Fold inline id="worth" title="Dock value, history" summary="CDFW landings by year, not today's price">
+                <p className="text-[14px] text-n-ink" data-testid="glance-worth">
+                  {worthLine(place, ports, species)}
+                </p>
+                <WorthBody place={place} ports={ports} species={species} />
+              </Fold>
+            </div>
+          </section>
+
+          <footer className="flex max-w-[80ch] flex-col gap-3 text-[13px] leading-snug text-n-ink-2">
+            <div className="flex flex-wrap gap-x-5 gap-y-1 text-[14px]">
+              <Link href={exploreLink} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink-2 hover:text-n-ink">
+                <Icon name="map" className="h-4 w-4" /> Open in Explore
+              </Link>
+              <Link href={researchLink} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink-2 hover:text-n-ink">
+                <Icon name="research" className="h-4 w-4" /> Open in Research
+              </Link>
+              {hasPack && (
+                <button type="button" onClick={() => setPackOpen(true)} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink-2 hover:text-n-ink" data-testid="pack-open">
+                  <Icon name={off.record?.complete ? "check" : "download"} className="h-4 w-4" /> {off.record?.complete ? "Saved for offline use" : "Save for offline use"}
+                </button>
+              )}
+            </div>
+            <p className="nx-margin" data-testid="matters-provenance">
+              Official items quote Neritic&rsquo;s copy of the CDFW and CDPH pages and notices. No person has reviewed that copy yet, so the agency pages are the authority. Your limits, ticks, trip numbers and home port stay on this device.
+            </p>
+            <p>Sources: CDFW and CDPH (Neritic&rsquo;s copy), CalHABMAP via SCCOOS, NOAA C-HARM, NOAA CoastWatch, NWS, NDBC and CO-OPS, CDFW By The Numbers, EIA. This link reproduces this trip. Neritic is an independent research project, not affiliated with or endorsed by NOAA, CDFW or CDPH.</p>
+          </footer>
+        </div>
       </main>
       <MobileDock />
     </div>
   );
 }
 
-/** The worksheet's official line, above every number (integrity C.19): the list it quotes and what it says. */
-function SheetOfficial({ place, species, season }: { place: CoastPlace; species: ReturnType<typeof speciesById>; season: ReturnType<typeof seasonStatus> }) {
+/**
+ * The worksheet's one framing line, above every number (integrity C.19): hypothetical, the list it quotes
+ * and what it says, and that Neritic holds no commercial season. One line, said once.
+ */
+function SheetLine({ place, species, season, rec }: { place: CoastPlace; species: ReturnType<typeof speciesById>; season: ReturnType<typeof seasonStatus>; rec: boolean }) {
   const s = season.item;
   return (
-    <p className="max-w-[90ch] border-l-2 border-n-official py-0.5 pl-4 text-[14.5px] leading-snug text-n-ink" data-testid="econ-official">
-      <span className="nx-caps text-n-official">Season · Neritic&rsquo;s copy, not verified</span>
-      <br />
-      {s ? (
-        <>
-          <b className="font-medium">{s.name}</b>: {s.mark === "closed" ? "closed list" : s.mark === "alert" ? "open list, with an alert" : "open list"} on CDFW&rsquo;s {season.commercial ? "sport-fishing " : ""}page for {place.name}&rsquo;s region.
-        </>
-      ) : (
-        <>{species.id === "any" ? "No species chosen." : `${species.label}: no entry of its own on CDFW's sport list here.`}</>
-      )}{" "}
-      {(season.commercial || season.commercialOnly) && "Neritic holds no commercial season. "}This worksheet does not say a trip is allowed.
-    </p>
+    <span className="flex flex-col gap-0.5 border-l-2 border-n-official pl-3 sm:block" data-testid="econ-hypothetical">
+      <b className="font-medium">Hypothetical: your numbers, not a forecast or permission to fish.</b>{" "}
+      <span className="text-n-ink-2" data-testid="econ-official">
+        {s ? (
+          <span data-testid="econ-closed">
+            {s.name} is {s.mark === "closed" ? "closed" : s.mark === "alert" ? "open, with an alert," : "open"} on CDFW&rsquo;s {season.commercial ? "sport " : ""}list for {place.name}&rsquo;s region (Neritic&rsquo;s copy, not verified)
+            {season.commercial || season.commercialOnly ? "; " : ". "}
+          </span>
+        ) : (
+          <>{species.id === "any" ? "No species chosen. " : `${species.label}: no entry of its own on CDFW's sport list here${season.commercial || season.commercialOnly ? "; " : ". "}`}</>
+        )}
+        {(season.commercial || season.commercialOnly) && "Neritic holds no commercial season. "}
+        {rec ? <span data-testid="econ-rec-note">A recreational trip is worked out as its cost only: no price, gross, crew pay or net. </span> : ""}
+        <span className="whitespace-nowrap">Kept on this device only.</span>
+      </span>
+    </span>
   );
 }
 
-const cap = (v: string) => v.charAt(0).toUpperCase() + v.slice(1);
+const SEA_VARIABLES = /^(marine forecast|tide predictions|wind|significant wave height|water temperature)$/i;
 
-function whatList(ns: EvidenceNode[]): string {
-  const names = [...new Set(ns.map((n) => cap(n.variable)))];
-  if (names.length <= 3) return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "");
-  return `${names.slice(0, 2).join(", ")} and ${names.length - 2} more`;
-}
+const econAudienceOf = (a: Audience) => econAudience(a) === "recreational";
+
 
 const CLASS_WORD: Record<string, { word: string; family: "measured" | "model" }> = {
   measurement: { word: "Measured", family: "measured" },
@@ -626,37 +647,50 @@ function NodeRow({ n, now, back }: { n: EvidenceNode; now: Date | null; back: st
   const target: Selection | null = stationId ? { kind: "station", id: stationId } : sel;
   const when = whenOf(n);
   const stale = n.freshness?.state && n.freshness.state !== "current";
+  // a reading is a short value set as an instrument figure; a sentence (a comparison, a forecast's text) is read as text
+  const long = (n.text?.length ?? 0) > 18;
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 py-3" data-testid={`node-${n.id ?? n.variable}`} data-node={n.id}>
+    <li className={`grid gap-x-4 py-2.5 ${long ? "grid-cols-1" : "grid-cols-[minmax(0,1fr)_auto]"}`} data-testid={`node-${n.id ?? n.variable}`} data-node={n.id}>
       <div className="min-w-0">
-        <Caps family={k.family}>{k.word}</Caps>
-        <p className="text-[15px] text-n-ink">{n.variable.charAt(0).toUpperCase() + n.variable.slice(1)}</p>
-        <p className="mt-0.5 text-[13px] leading-snug text-n-ink-2">
-          {n.where?.name ?? n.source.name}
-          {n.where && n.where.km > 0 ? ` · ${kmLabel(n.where.km)}${n.where.bearing ? ` ${n.where.bearing}` : ""}` : ""}
-          {when ? ` · ${dayYearLabel(when, now)}${now ? ` (${relTime(when, now)})` : ""}` : ""}
+        <p className="text-[14.5px] leading-snug text-n-ink">
+          <Caps family={k.family} className="mr-2">
+            {k.word}
+          </Caps>
+          {n.variable.charAt(0).toUpperCase() + n.variable.slice(1)}
         </p>
-        <p className="flex flex-wrap items-center gap-x-4 text-[13px]">
+        {long && (
+          <p className="mt-0.5 line-clamp-3 text-[13.5px] leading-snug text-n-ink" data-value>
+            {n.text}
+          </p>
+        )}
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[12.5px] leading-snug text-n-ink-2">
+          <span>
+            {n.where?.name ?? n.source.name}
+            {n.where && n.where.km > 0 ? ` · ${kmLabel(n.where.km)}${n.where.bearing ? ` ${n.where.bearing}` : ""}` : ""}
+            {when ? ` · ${dayYearLabel(when, now)}${now ? ` (${relTime(when, now)})` : ""}` : ""}
+          </span>
           {stale && (
             <span className="inline-flex items-center gap-1 text-n-stale">
               <Icon name="clock" className="h-3.5 w-3.5" /> {n.freshness?.note ?? "older than usual"}
             </span>
           )}
           {n.source.url && (
-            <a href={n.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 text-n-ink underline decoration-n-line-strong underline-offset-4">
-              {n.source.name} <Icon name="external" className="h-3.5 w-3.5" />
+            <a href={n.source.url} target="_blank" rel="noreferrer" aria-label={`${n.source.name} (source)`} className="nx-focus inline-flex min-h-11 items-center gap-1 text-n-ink underline decoration-n-line-strong underline-offset-4 sm:min-h-7">
+              source <Icon name="external" className="h-3.5 w-3.5" />
             </a>
           )}
           {target && (
-            <Link href={exploreHref(target, back)} className="nx-focus inline-flex min-h-11 items-center gap-1 text-n-ink-2 hover:text-n-ink" data-testid="node-show">
-              <Icon name="locate" className="h-3.5 w-3.5" /> Show on map
+            <Link href={exploreHref(target, back)} aria-label="Show on map" className="nx-focus inline-flex min-h-11 items-center gap-1 text-n-ink-2 hover:text-n-ink sm:min-h-7" data-testid="node-show">
+              <Icon name="locate" className="h-3.5 w-3.5" /> map
             </Link>
           )}
         </p>
       </div>
-      <span className="nx-value self-start pt-4 text-[20px]" data-value>
-        {n.text ?? "—"}
-      </span>
+      {long ? null : (
+        <span className="nx-value self-start pt-0.5 text-[19px]" data-value>
+          {n.text ?? "—"}
+        </span>
+      )}
     </li>
   );
 }

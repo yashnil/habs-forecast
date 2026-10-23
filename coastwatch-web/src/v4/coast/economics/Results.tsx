@@ -37,7 +37,7 @@ export function Needs({ fields, draft, onFocus, lead = "Needs", testId }: { fiel
 }
 
 /** One headline figure: its value, or "Needs …" in its place (never a number it was not given). */
-function Figure({ label, o, fmt, draft, onFocus, testId, strong = false, note }: { label: string; o: Output; fmt: (v: number) => string; draft: Draft; onFocus: Focus; testId: string; strong?: boolean; note?: ReactNode }) {
+function Figure({ label, o, fmt, testId, strong = false, note }: { label: string; o: Output; fmt: (v: number) => string; draft: Draft; onFocus: Focus; testId: string; strong?: boolean; note?: ReactNode }) {
   // a phone reads it as a row (label and what it waits for on the left, the figure on the right); wider, a column
   const size = strong ? "text-[30px] sm:text-[34px]" : "text-[26px] sm:text-[28px]";
   return (
@@ -60,7 +60,8 @@ function Figure({ label, o, fmt, draft, onFocus, testId, strong = false, note }:
           </span>
         )}
       </dd>
-      <dd className="min-w-0 sm:order-3">{o.status === "missing" ? <Needs fields={o.missing} draft={draft} onFocus={onFocus} /> : o.status === "unreachable" ? <span className="text-[13px] leading-snug text-n-ink-2">{o.reason}</span> : note}</dd>
+      {/* what a missing figure waits for is said once, under the headline (econ-needs), not per figure */}
+      <dd className="min-w-0 sm:order-3">{o.status === "missing" ? <span className="text-[13px] leading-snug text-n-ink-3">not worked out yet</span> : o.status === "unreachable" ? <span className="text-[13px] leading-snug text-n-ink-2">{o.reason}</span> : note}</dd>
     </div>
   );
 }
@@ -76,11 +77,20 @@ export function Headline({ ev, draft, onFocus, wu }: { ev: TripEvaluation; draft
           <Figure label="Fuel used" o={ev.fuelGallons} fmt={(v) => `${num(v, 1)} gal`} draft={draft} onFocus={onFocus} testId="econ-sum-gal" />
         </>
       ) : (
-        <>
-          <Figure label="Net to boat" o={ev.netToBoat} fmt={(v) => money(v, true)} draft={draft} onFocus={onFocus} testId="econ-sum-net" strong note={<span className="text-[13px] text-n-ink-2">after fuel, costs, fees and crew</span>} />
-          <Figure label="Trip cost" o={ev.tripCost} fmt={(v) => money(v)} draft={draft} onFocus={onFocus} testId="econ-sum-cost" note={<span className="text-[13px] text-n-ink-2">fuel and other costs</span>} />
-          <Figure label="Break-even catch" o={ev.breakEvenCatch} fmt={(v) => `${num(v * wu.w, wu.unit === "ton" ? 2 : 0)} ${wu.unit}`} draft={draft} onFocus={onFocus} testId="econ-sum-breakeven" note={<span className="text-[13px] text-n-ink-2">where net reaches $0</span>} />
-        </>
+        ev.netToBoat.status !== "value" && ev.gross.status === "value" ? (
+          // catch and price exist, net does not yet: the gross is the answer so far, and leads
+          <>
+            <Figure label="Gross" o={ev.gross} fmt={(v) => money(v)} draft={draft} onFocus={onFocus} testId="econ-sum-gross" strong note={<span className="text-[13px] text-n-ink-2">what the catch would bring</span>} />
+            <Figure label="Net to boat" o={ev.netToBoat} fmt={(v) => money(v, true)} draft={draft} onFocus={onFocus} testId="econ-sum-net" />
+            <Figure label="Trip cost" o={ev.tripCost} fmt={(v) => money(v)} draft={draft} onFocus={onFocus} testId="econ-sum-cost" note={<span className="text-[13px] text-n-ink-2">fuel and other costs</span>} />
+          </>
+        ) : (
+          <>
+            <Figure label="Net to boat" o={ev.netToBoat} fmt={(v) => money(v, true)} draft={draft} onFocus={onFocus} testId="econ-sum-net" strong note={<span className="text-[13px] text-n-ink-2">after fuel, costs, fees and crew</span>} />
+            <Figure label="Trip cost" o={ev.tripCost} fmt={(v) => money(v)} draft={draft} onFocus={onFocus} testId="econ-sum-cost" note={<span className="text-[13px] text-n-ink-2">fuel and other costs</span>} />
+            <Figure label="Break-even catch" o={ev.breakEvenCatch} fmt={(v) => `${num(v * wu.w, wu.unit === "ton" ? 2 : 0)} ${wu.unit}`} draft={draft} onFocus={onFocus} testId="econ-sum-breakeven" note={<span className="text-[13px] text-n-ink-2">where net reaches $0</span>} />
+          </>
+        )
       )}
     </dl>
   );
@@ -127,7 +137,7 @@ export function Waterfall({ ev, draft }: { ev: TripEvaluation; draft: Draft; onF
           if (r.o.status !== "value") {
             bar = (
               <span className="absolute inset-y-1 left-0 right-0 flex items-center rounded-[2px] border border-dashed border-n-ink-3 px-2">
-                <span className="truncate text-[12px] text-n-ink-2">{r.o.status === "missing" ? `waits for ${r.o.missing.map((k) => needLabel(k, draft)).join(", ")}` : r.o.status === "unreachable" ? r.o.reason : ""}</span>
+                <span className="truncate text-[12px] text-n-ink-2">{r.o.status === "missing" ? (r.sign === 0 ? "waits for the rows above" : `waits for ${r.o.missing.map((k) => needLabel(k, draft)).join(", ")}`) : r.o.status === "unreachable" ? r.o.reason : ""}</span>
               </span>
             );
             if (r.sign === -1) x = null;
@@ -173,8 +183,7 @@ export function BreakEven({ ev, draft, onFocus, wu }: { ev: TripEvaluation; draf
       <div className="flex flex-col gap-1.5" data-testid="econ-breakeven">
         <Caps>Break-even against your catch</Caps>
         <p className="text-[13.5px] text-n-ink-2">
-          The catch that brings net to $0 does not need your catch, only the price, the costs and how crew is paid.{" "}
-          <Needs fields={be.missing} draft={draft} onFocus={onFocus} lead="Waits for" />
+          The catch that brings net to $0 needs the price, the costs and how crew is paid, not your catch. Waits for what is still needed above.
         </p>
       </div>
     );
@@ -257,7 +266,7 @@ export function Sensitivity({ ev, draft, onFocus, wu }: { ev: TripEvaluation; dr
       <div className="flex flex-col gap-1.5" data-testid="econ-sensitivity">
         <Caps>If price or catch differ</Caps>
         <p className="text-[13.5px] text-n-ink-2">
-          A 3 × 3 grid of net to boat at price ±20 % and catch ±30 %, and fuel ±20 %, once net is worked out. <Needs fields={gapsOf(s)} draft={draft} onFocus={onFocus} lead="Waits for" />
+          A 3 × 3 grid of net to boat at price ±20 % and catch ±30 %, and fuel ±20 %, once net is worked out. Waits for what is still needed above.
         </p>
       </div>
     );

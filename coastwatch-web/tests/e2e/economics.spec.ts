@@ -19,7 +19,7 @@ async function openWorksheet(page: Page, url = PRINCETON) {
   await page.goto(`${url}&sheet=trip`);
   const s = page.getByTestId("trip-economics-section");
   await expect(s.getByTestId("econ-worksheet")).toBeVisible();
-  await expect(page.getByTestId("econ-kicker-head")).toContainText("Scenario from your inputs, not a forecast.");
+  await expect(page.getByTestId("econ-kicker-head")).toContainText("Hypothetical: your numbers, not a forecast or permission to fish.");
   return s;
 }
 
@@ -95,8 +95,9 @@ test("Santa Cruz salmon, the owner's state: gross with its sum, exactly two miss
   // the briefing's glance says the same, and its links open the worksheet at that field
   await page.getByTestId("econ-back").click();
   const g = page.getByTestId("brief-econ");
-  await expect(g.getByTestId("econ-glance-gross")).toContainText("$3,600");
-  await expect(g.getByTestId("econ-glance-trip-cost")).toContainText("needs fuel used");
+  // v10 pass 2: one reading, the gross, then the one line of what net still needs
+  await expect(g.getByTestId("econ-glance-result")).toContainText("$3,600");
+  await expect(g.getByTestId("econ-glance-result")).toHaveAttribute("data-label", "gross");
   await expect(g.getByTestId("econ-glance-need")).toHaveText(["fuel used", "how crew is paid"]);
   await g.getByTestId("econ-glance-need").filter({ hasText: "how crew is paid" }).click();
   await expect(page).toHaveURL(/sheet=trip.*focus=crew\.kind/);
@@ -105,16 +106,17 @@ test("Santa Cruz salmon, the owner's state: gross with its sum, exactly two miss
 
 test("closed species: the hypothetical framing and the season sit above every number, on the worksheet and the glance", async ({ page }) => {
   const s = await openWorksheet(page, SANTA_CRUZ);
-  await expect(page.getByTestId("econ-official")).toContainText("closed list");
+  // v10 pass 2: the season and the hypothetical framing are one line, said once
+  await expect(page.getByTestId("econ-official")).toContainText("closed on CDFW’s sport list");
   await expect(page.getByTestId("econ-official")).toContainText("Neritic holds no commercial season");
-  await expect(page.getByTestId("econ-official")).toContainText("does not say a trip is allowed");
-  const h = s.getByTestId("econ-hypothetical");
-  await expect(h).toContainText("not a forecast of catch, price or profit, and not permission to fish");
-  await expect(h.getByTestId("econ-closed")).toContainText("closed here");
+  const h = page.getByTestId("econ-hypothetical");
+  await expect(h).toContainText("not a forecast or permission to fish");
+  await expect(h.getByTestId("econ-closed")).toContainText("Ocean Salmon is closed");
+  await expect(page.locator("main").getByText(/permission to fish/)).toHaveCount(1);
   const box = (id: string) => page.getByTestId(id).boundingBox();
   expect((await box("econ-hypothetical"))!.y).toBeLessThan((await box("econ-results"))!.y);
   await page.getByTestId("econ-back").click();
-  await expect(page.getByTestId("econ-glance-closed")).toContainText("not permission to fish");
+  await expect(page.getByTestId("glance-official")).toContainText("Nothing here says a trip is allowed");
 });
 
 test("crew model unset: partial results stand, net and the sensitivity wait for it; 'no hired crew' completes it", async ({ page }) => {
@@ -162,7 +164,7 @@ test("a complete hypothetical scenario: net, break-even against the catch, the 3
 
 test("recreational: cost only, no price, crew or net; the gallons route and an optional split", async ({ page }) => {
   const s = await openWorksheet(page, `${OK}/coast?place=port-593&for=recreational&species=salmon`);
-  await expect(s.getByTestId("econ-rec-note")).toContainText("cost only");
+  await expect(page.getByTestId("econ-rec-note")).toContainText("cost only");
   for (const id of ["econ-catch-0-lb", "econ-catch-0-price", "econ-sum-net", "econ-g-crew", "econ-waterfall"]) await expect(s.getByTestId(id), id).toHaveCount(0);
   await s.getByTestId("econ-fuel-mode-gallons").click();
   await s.getByTestId("econ-fuel-gal").fill("30");
@@ -271,7 +273,7 @@ test("the briefing's glance: fixed height before the device's numbers are read, 
   await page.getByTestId("econ-catch-0-price").fill("3.5");
   await page.goBack();
   await expect(page.getByTestId("coast-title")).toContainText("Princeton");
-  await expect(g.getByTestId("econ-glance-gross")).toContainText("$3,500");
+  await expect(g.getByTestId("econ-glance-result")).toContainText("$3,500");
 });
 
 test("rock crab: CDFW's 2024 statewide value sits beside the price as history, copied in only on a tap", async ({ page }) => {

@@ -6,7 +6,6 @@ import type { Audience } from "@/lib/coast";
 import type { SpeciesId } from "@/content/species";
 import type { FieldKey } from "@/lib/tripEvaluation";
 import { decodeShare, SHARE_PARAM, type Draft } from "@/lib/tripEconomicsStore";
-import { num } from "@/lib/tripEconomics";
 import type { SeasonStatus } from "@/v4/coast/season";
 import { Caps } from "@/v4/coast/ui/Instrument";
 import { Icon } from "@/v4/ui/Icon";
@@ -37,96 +36,98 @@ function sharedFromHash(): Draft | null {
 export const hasSharedScenario = () => typeof window !== "undefined" && new RegExp(`[#&]${SHARE_PARAM}=`).test(window.location.hash);
 
 /**
- * The briefing's glance at the trip economics (v10): what the user's own numbers already work out to,
- * and exactly which inputs the rest waits for, each a link straight to its field in the worksheet. The
- * box has a fixed height before hydration (device storage is read only after mount), so nothing shifts.
+ * The briefing's reading of the trip economics (v10 pass 2), one cell of the decision row: the result the
+ * user's own numbers already reach (net once it is worked out, else gross as soon as catch and price
+ * exist, else the trip cost), and one line of what the rest still needs, each a link straight to its
+ * field in the worksheet. The cell has a fixed height before hydration (storage is read after mount).
  */
-export function TripGlance({ place, species, audience, season, onOpen }: TripEconomicsProps & { onOpen: (focus?: FieldKey | null) => void }) {
+export function TripGlance({ place, species, audience, onOpen }: TripEconomicsProps & { onOpen: (focus?: FieldKey | null) => void }) {
   const mounted = useMounted();
   const w = useWorkingDraft(place.key, species);
   const ev = useMemo(() => (w ? evaluateDraft(w.draft, audience) : null), [w, audience]);
   const rec = ev?.audience === "recreational";
   const entered = w ? hasInput(w.draft) : false;
-  const rows = !ev
-    ? []
+  // the headline: the furthest result the inputs reach
+  const head: { label: string; value: number; signed: boolean } | null = !ev
+    ? null
     : rec
-      ? ([
-          ["Fuel used", ev.fuelGallons, (v: number) => `${num(v, 1)} gal`],
-          ["Cost of the trip", ev.tripCost, (v: number) => money(v)],
-        ] as const)
-      : ([
-          ["Gross", ev.gross, (v: number) => money(v)],
-          ["Trip cost", ev.tripCost, (v: number) => money(v)],
-          ["Net to boat", ev.netToBoat, (v: number) => money(v, true)],
-        ] as const);
+      ? ev.tripCost.status === "value"
+        ? { label: "trip cost", value: ev.tripCost.value, signed: false }
+        : null
+      : ev.netToBoat.status === "value"
+        ? { label: "net to boat", value: ev.netToBoat.value, signed: true }
+        : ev.gross.status === "value"
+          ? { label: "gross", value: ev.gross.value, signed: false }
+          : ev.tripCost.status === "value"
+            ? { label: "trip cost", value: ev.tripCost.value, signed: false }
+            : null;
+  const cost = ev && !rec && head?.label !== "trip cost" && ev.tripCost.status === "value" ? ev.tripCost.value : null;
   return (
-    <section id="trip-economics" aria-labelledby="trip-economics-h" className="scroll-mt-4 flex flex-col gap-3" data-testid="trip-economics-section">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 id="trip-economics-h">
-          <Caps>{rec ? "Cost of the trip" : "Trip economics"} · hypothetical</Caps>
-        </h2>
-        <span className="text-[12.5px] text-n-ink-2" data-testid="econ-kicker">
+    <>
+      <dt className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <Caps>
+          <span id="trip-economics-h">{rec ? "Trip cost" : "Trip worksheet"}</span> · hypothetical
+        </Caps>
+        <span className="sr-only" data-testid="econ-kicker">
           Scenario from your inputs, not a forecast.
         </span>
-      </div>
-      <div className="min-h-[188px]" data-testid="econ-glance">
-        {!mounted || !ev || !w ? (
-          <div aria-hidden className="h-[188px]" />
+      </dt>
+      <dd id="trip-economics" className="flex min-h-[64px] min-w-0 scroll-mt-4 flex-col gap-1" data-testid="econ-glance">
+        {!mounted || !ev || !w ? null : head ? (
+          <>
+            <button type="button" onClick={() => onOpen(null)} className="nx-focus self-start rounded-[2px] text-left hover:underline hover:decoration-n-line-strong hover:underline-offset-4" data-testid="econ-open">
+              <span className={`nx-value whitespace-nowrap text-[20px] min-[360px]:text-[26px] xl:text-[28px] ${head.value < 0 ? "text-n-down" : ""}`} data-testid="econ-glance-result" data-label={head.label}>
+                {money(head.value, head.signed)}
+                <small>{head.label}</small>
+              </span>
+            </button>
+            <span className="text-[12.5px] leading-snug text-n-ink-2">
+              {cost !== null && <span data-testid="econ-glance-cost">cost {money(cost)} · </span>}
+              {ev.missingFields.length > 0 ? (
+                <span data-testid="econ-glance-needs">
+                  still needs{" "}
+                  {ev.missingFields.map((k, i) => (
+                    <span key={k}>
+                      {i > 0 && <span aria-hidden> · </span>}
+                      <button type="button" onClick={() => onOpen(k)} className="nx-focus rounded-[2px] font-medium text-n-ink underline decoration-dashed decoration-n-ink-3 underline-offset-[3px] hover:decoration-n-ink" data-testid="econ-glance-need" data-field={k}>
+                        {needLabel(k, w.draft)}
+                      </button>
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <>your numbers, not a forecast{w.from === "saved" && w.name ? ` · “${w.name}”` : ""}</>
+              )}
+            </span>
+          </>
         ) : (
           <>
-            {season.closed && season.item && (
-              <p className="mb-2 text-[13.5px] leading-snug text-n-ink" data-testid="econ-glance-closed">
-                {season.item.name} is on CDFW&rsquo;s closed sport list here: your numbers, not permission to fish.
-              </p>
-            )}
-            {!entered ? (
-              <p className="py-2 text-[14.5px] leading-snug text-n-ink-2" data-testid="econ-glance-empty">
-                Nothing entered yet. {rec ? "The worksheet works out fuel and the cost of the trip from your own numbers." : "The worksheet works out gross, fuel, costs, crew pay and net from your own numbers, step by step, and says what each result still needs."}
-              </p>
-            ) : (
-              <dl className="flex flex-col">
-                {rows.map(([label, o, fmt]) => (
-                  <div key={label} className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-baseline gap-3 border-t border-n-line py-2" data-testid={`econ-glance-${label.toLowerCase().replace(/\s+/g, "-")}`}>
-                    <dt className="text-[13.5px] text-n-ink-2">{label}</dt>
-                    <dd className="min-w-0">
-                      {o.status === "value" ? (
-                        <span className={`nx-value text-[24px] ${o.value < 0 ? "text-n-down" : ""}`}>{fmt(o.value)}</span>
-                      ) : o.status === "missing" ? (
-                        <span className="text-[13.5px] leading-snug text-n-ink-2">
-                          <span className="nx-value mr-2 text-[24px] text-n-ink-3" aria-hidden>
-                            —
-                          </span>
-                          needs {o.missing.map((k) => needLabel(k, w.draft)).join(" · ")}
-                        </span>
-                      ) : (
-                        <span className="text-[13.5px] text-n-ink-2">{o.status === "unreachable" ? o.reason : "—"}</span>
-                      )}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-            {entered && ev.missingFields.length > 0 && (
-              <p className="mt-1 text-[13.5px] leading-snug text-n-ink-2" data-testid="econ-glance-needs">
-                Still needed:{" "}
-                {ev.missingFields.map((k, i) => (
-                  <span key={k}>
-                    {i > 0 && <span aria-hidden> · </span>}
-                    <button type="button" onClick={() => onOpen(k)} className="nx-focus inline-flex min-h-11 items-center rounded-[2px] font-medium text-n-ink underline decoration-dashed decoration-n-ink-3 underline-offset-[3px] hover:decoration-n-ink" data-testid="econ-glance-need" data-field={k}>
-                      {needLabel(k, w.draft)}
-                    </button>
-                  </span>
-                ))}
-              </p>
-            )}
-            {w.from === "saved" && w.name && <p className="mt-1 text-[12.5px] text-n-ink-2">From your saved scenario &ldquo;{w.name}&rdquo;.</p>}
+            <button type="button" onClick={() => onOpen(entered ? (ev.missingFields[0] ?? null) : null)} className="nx-press nx-focus inline-flex min-h-11 items-center gap-2 self-start rounded-[3px] border border-n-line-strong px-3.5 text-[14.5px] font-medium text-n-ink" data-testid="econ-open">
+              {entered ? "Open the worksheet" : "Start the worksheet"} <Icon name="chevronRight" className="h-4 w-4" />
+            </button>
+            <span className="text-[12.5px] leading-snug text-n-ink-2" data-testid={entered ? "econ-glance-needs" : "econ-glance-empty"}>
+              {entered ? (
+                <>
+                  still needs{" "}
+                  {ev.missingFields.map((k, i) => (
+                    <span key={k}>
+                      {i > 0 && <span aria-hidden> · </span>}
+                      <button type="button" onClick={() => onOpen(k)} className="nx-focus rounded-[2px] font-medium text-n-ink underline decoration-dashed decoration-n-ink-3 underline-offset-[3px] hover:decoration-n-ink" data-testid="econ-glance-need" data-field={k}>
+                        {needLabel(k, w.draft)}
+                      </button>
+                    </span>
+                  ))}
+                </>
+              ) : rec ? (
+                "Nothing entered yet: fuel and cost from your own numbers."
+              ) : (
+                "Nothing entered yet: gross, costs, crew pay and net from your own numbers."
+              )}
+            </span>
           </>
         )}
-      </div>
-      <button type="button" aria-expanded={false} aria-controls="trip-worksheet" onClick={() => onOpen(null)} className="nx-press nx-focus inline-flex min-h-11 items-center justify-between gap-3 self-stretch rounded-[3px] border border-n-line-strong px-4 text-[14.5px] font-medium text-n-ink sm:self-start" data-testid="econ-open">
-        {entered ? "Open the worksheet" : "Start the worksheet"} <Icon name="chevronRight" className="h-4 w-4" />
-      </button>
-    </section>
+      </dd>
+    </>
   );
 }
 

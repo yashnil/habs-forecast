@@ -56,7 +56,7 @@ const CREW_EFFECT: Record<CrewChoice, string> = {
  * them that appear the moment their own inputs exist. References sit beside fields, tinted, with their
  * source, and are copied in only on a tap. Recreational trips are cost-only. Device-only storage.
  */
-export default function Worksheet({ place, species, audience, tripDate, shared, initial, focus, season }: WorksheetProps) {
+export default function Worksheet({ place, species, audience, tripDate, shared, initial, focus }: WorksheetProps) {
   const data = useTripData();
   const key = draftKey(place.key, species);
   const [draft, setDraft] = useState<Draft>(() => clone(shared ?? initial));
@@ -70,6 +70,14 @@ export default function Worksheet({ place, species, audience, tripDate, shared, 
   const rec = econAudience(audience) === "recreational";
   const ev = useMemo(() => evaluateDraft(draft, audience), [draft, audience]);
   const needed = useMemo(() => new Set<string>(ev.missingFields), [ev]);
+  // complete (net, or a recreational trip's cost, is worked out): the inputs fold to one line and the results
+  // fill the page. Only a worksheet opened complete starts folded; one completed while typing stays open.
+  const complete = rec ? ev.tripCost.status === "value" : ev.netToBoat.status === "value";
+  const [editing, setEditing] = useState(() => {
+    const e = evaluateDraft(shared ?? initial, audience);
+    return focus !== null || (econAudience(audience) === "recreational" ? e.tripCost.status !== "value" : e.netToBoat.status !== "value");
+  });
+  const folded = complete && !editing;
 
   const update = (fn: (d: Draft) => void) => {
     const d = clone(draft);
@@ -145,31 +153,46 @@ export default function Worksheet({ place, species, audience, tripDate, shared, 
       )}
       <StoreStatus />
 
-      {/* the framing, above every number: hypothetical, and never a statement that the trip may be made */}
-      <p className="flex flex-col gap-1 rounded-[4px] border border-dashed border-n-line-strong px-4 py-3 text-[14.5px] leading-snug text-n-ink sm:flex-row sm:items-baseline sm:gap-4" data-testid="econ-hypothetical">
-        <span className="nx-caps shrink-0 text-n-ink-2">Hypothetical scenario</span>
-        <span>
-          Your numbers, worked through: not a forecast of catch, price or profit, and not permission to fish
-          {season.closed && season.item ? (
-            <span data-testid="econ-closed">, least of all {season.item.name.toLowerCase()}, which CDFW&rsquo;s sport list shows closed here.</span>
-          ) : (
-            "."
-          )}
-          {rec && (
-            <span className="block text-n-ink-2" data-testid="econ-rec-note">
-              A recreational trip is worked out as its cost only: Neritic works out no price, gross, crew pay or net for it.
-            </span>
-          )}
-        </span>
-      </p>
-
+      {folded ? (
+        <div className="flex flex-col gap-8" data-testid="econ-results" data-folded="true">
+          <div className="flex flex-col gap-3 border-y border-n-line-strong py-4">
+            <h3 id="econ-results-h" className="flex items-baseline justify-between gap-3">
+              <Caps>Result · hypothetical</Caps>
+              <span className="text-[12.5px] text-n-ink-2">from the inputs below</span>
+            </h3>
+            <Headline ev={ev} draft={draft} onFocus={focusField} wu={wu} />
+          </div>
+          <InputsSummary draft={draft} rec={rec} wu={wu} onEdit={() => setEditing(true)} />
+          <div className="grid grid-cols-1 gap-x-14 gap-y-8 lg:grid-cols-2">
+            <div className="flex min-w-0 flex-col gap-7">
+              {!rec && <Waterfall ev={ev} draft={draft} onFocus={focusField} />}
+              {!rec && <BreakEven ev={ev} draft={draft} onFocus={focusField} wu={wu} />}
+            </div>
+            <div className="flex min-w-0 flex-col gap-7">
+              <Sensitivity ev={ev} draft={draft} onFocus={focusField} wu={wu} />
+              {ev.warnings.map((w) => (
+                <p key={w} className="flex gap-2 text-[14px] text-n-ink" data-testid="econ-warning">
+                  <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0 text-n-down" />
+                  {w}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(400px,460px)] lg:items-start lg:gap-x-14">
         {/* results: first on a phone (then the inputs, then the charts); a sticky column on a wide screen */}
         <aside aria-labelledby="econ-results-h" className="max-lg:contents lg:sticky lg:top-4 lg:col-start-2 lg:row-start-1 lg:flex lg:flex-col lg:gap-7" data-testid="econ-results">
           <div ref={headRef} className="order-1 flex flex-col gap-3 border-y border-n-line-strong py-4">
             <h3 id="econ-results-h" className="flex items-baseline justify-between gap-3">
               <Caps>Result · hypothetical</Caps>
-              <span className="text-[12.5px] text-n-ink-2">updates as you type</span>
+              {complete ? (
+                <button type="button" onClick={() => setEditing(false)} className="nx-focus inline-flex min-h-11 items-center gap-1 rounded-[2px] text-[13px] text-n-ink underline decoration-n-line-strong underline-offset-4 sm:min-h-8" data-testid="econ-fold">
+                  Fold the inputs
+                </button>
+              ) : (
+                <span className="text-[12.5px] text-n-ink-2">updates as you type</span>
+              )}
             </h3>
             <Headline ev={ev} draft={draft} onFocus={focusField} wu={wu} />
             {ev.missingFields.length > 0 && (
@@ -364,6 +387,7 @@ export default function Worksheet({ place, species, audience, tripDate, shared, 
           )}
         </div>
       </div>
+      )}
 
       <div className="grid grid-cols-1 gap-8 border-t border-n-line-strong pt-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:gap-x-14">
         <Scenarios place={place} species={species} audience={audience} draft={draft} scenarioId={scenarioId} setScenarioId={setScenarioId} readOnly={readOnly} onOpen={(d) => update((x) => Object.assign(x, clone(d)))} />
@@ -743,3 +767,51 @@ function Vessels({ draft, readOnly, update }: { draft: Draft; readOnly: boolean;
   );
 }
 
+
+/**
+ * The inputs, folded to one line once the result is worked out (v10 pass 2): each number as typed (or the
+ * reference it came from, named), then "Edit inputs". Nothing here is a new number: it reads the draft.
+ */
+function InputsSummary({ draft, rec, wu, onEdit }: { draft: Draft; rec: boolean; wu: WU; onEdit: () => void }) {
+  const i = draft.inputs;
+  const n = (v: number | null | undefined, d = 1) => (v == null ? null : num(v, d));
+  const basis = (k: string) => (draft.basis[k] === "eia" ? "EIA" : draft.basis[k] === "cdfw" ? "CDFW" : draft.basis[k] === "preset" ? "reference" : null);
+  const parts: { text: string; note?: string | null }[] = [];
+  if (!rec)
+    for (const c of i.catch ?? [])
+      if (c.lb != null || c.usdPerLb != null) parts.push({ text: `${c.species ? `${c.species} ` : ""}${n(c.lb != null ? c.lb * wu.w : null, wu.unit === "ton" ? 2 : 0) ?? "—"} ${wu.unit} at $${c.usdPerLb != null ? (c.usdPerLb * wu.p).toFixed(wu.unit === "ton" ? 0 : 2) : "—"}/${wu.unit}` });
+  if (i.fuelGal != null) parts.push({ text: `${n(i.fuelGal)} gal` });
+  else if (i.roundTripNm != null) parts.push({ text: `${n(i.roundTripNm)} nm at ${n(i.cruiseKt) ?? "—"} kt, ${n(i.steamGph) ?? "—"} gal/h · ${n(i.fishingHours) ?? "—"} h at ${n(i.fishingGph) ?? "—"} gal/h` });
+  if (i.fuelUsdPerGal != null) parts.push({ text: `fuel $${i.fuelUsdPerGal.toFixed(3)}/gal`, note: basis("fuelUsdPerGal") });
+  for (const c of i.costs ?? []) if (c.usd != null) parts.push({ text: `${(c.label || "cost").toLowerCase()} $${num(c.usd, 0)}`, note: rec ? null : c.shared ? "shared" : "boat-paid" });
+  if (i.feesPctOfGross) parts.push({ text: `fees ${n(i.feesPctOfGross)} %` });
+  if (i.feesUsdPerLb) parts.push({ text: `fees $${i.feesUsdPerLb.toFixed(2)}/lb` });
+  const crew = i.crew;
+  if (!rec && crew?.kind)
+    parts.push({
+      text:
+        crew.kind === "none"
+          ? "no hired crew"
+          : crew.kind === "dayRate"
+            ? `crew $${n(crew.usdPerDay, 0) ?? "—"}/day × ${n(crew.crew, 0) ?? "—"} × ${n(crew.days, 0) ?? "—"} d`
+            : `crew ${n(crew.pct) ?? "—"} % ${crew.kind === "ofGross" ? "of gross" : "after expenses"}${crew.crew ? `, ${n(crew.crew, 0)} sharing` : ""}`,
+    });
+  if (rec && i.anglers) parts.push({ text: `${n(i.anglers, 0)} sharing` });
+  return (
+    <div className="flex flex-col gap-2 border-b border-n-line pb-4 sm:flex-row sm:items-baseline sm:gap-6" data-testid="econ-inputs-summary">
+      <Caps className="shrink-0">Your inputs</Caps>
+      <p className="min-w-0 flex-1 font-data text-[13.5px] leading-relaxed text-n-ink">
+        {parts.map((p, k) => (
+          <span key={k}>
+            {k > 0 && <span className="text-n-ink-3"> · </span>}
+            {p.text}
+            {p.note && <span className="font-ui text-[12px] text-n-ink-2"> {p.note}</span>}
+          </span>
+        ))}
+      </p>
+      <Action onClick={onEdit} testId="econ-edit-inputs">
+        Edit inputs <Icon name="chevronDown" className="h-4 w-4" />
+      </Action>
+    </div>
+  );
+}

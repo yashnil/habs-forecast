@@ -66,7 +66,11 @@ test("storage runs out during a download: said as full, nothing claimed saved, t
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await openPanel(page);
-  // a quota a little above what the site already uses: the basemap (about 7 MB) cannot fit
+  // a quota a little above what the site already uses: the basemap (about 7 MB) cannot fit. The briefing's
+  // map (v10 pass 2: the page's ground, with its chlorophyll field) loads its code lazily into the code
+  // cache, so the usage is read once the page has settled, or the quota would be tighter than intended
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(1000);
   const cdp = await ctx.newCDPSession(page);
   const used = await page.evaluate(async () => (await navigator.storage.estimate()).usage ?? 0);
   await cdp.send("Storage.overrideQuotaForOrigin", { origin: OK, quotaSize: used + 2_500_000 });

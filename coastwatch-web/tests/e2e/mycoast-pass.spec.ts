@@ -9,27 +9,25 @@ import { OK } from "./ports";
  */
 const NOW = "2026-10-13T06:00:00Z";
 
-test("v7: below what matters, every section is a folded note with a count and a line; opening one shows all of it", async ({ page }) => {
+test("v10 pass 2: no stack of accordions; each detail sits folded beside its subject and opens in place with all its words", async ({ page }) => {
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-550`);
   await expect(page.getByTestId("matters")).toBeVisible();
-  // v10: the map of the waters is part of the decision view itself, not a fold
+  // the map of the waters is the decision view's ground, not a fold
   await expect(page.getByTestId("locator")).toBeVisible();
-  for (const id of ["sea", "seasons", "checks", "evidence", "official", "unknown"]) await expect(page.getByTestId(`brief-${id}-toggle`)).toHaveAttribute("aria-expanded", "false");
+  for (const id of ["sea", "seasons", "checks", "unknown", "worth"]) await expect(page.getByTestId(`brief-${id}-toggle`)).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByTestId("checks")).toBeHidden();
   await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId("checks")).toBeVisible();
-  for (const id of ["evidence", "official", "unknown"]) {
-    const t = page.getByTestId(`brief-${id}-toggle`);
-    await expect(t).toHaveAttribute("aria-expanded", "false");
-    await expect(t).toContainText(/\d/);
-  }
+  // on a wide screen what the statements rest on is open: measured beside official
+  await expect(page.getByTestId("brief-measured")).toBeVisible();
+  await expect(page.getByTestId("brief-official")).toBeVisible();
+  await expect(page.getByTestId("brief-official")).toContainText("Not verified");
+  await expect(page.getByTestId("brief-unknown-toggle")).toContainText(/\d/);
   await expect(page.getByTestId("unknowns")).toBeHidden();
   await page.getByTestId("brief-unknown-toggle").click();
   await expect(page.getByTestId("unknowns")).toBeVisible();
   await expect(page.getByTestId("unknowns")).toContainText("Toxin in seafood is not measured by Neritic");
-  await page.getByTestId("brief-official-toggle").click();
-  await expect(page.getByTestId("brief-official")).toContainText("Not verified");
   // nothing removed: a station's sample against its own record is said once, in the statement it supports
   const record = page.locator('[data-testid="brief-context"] [data-node^="record:"]');
   const said = await page.locator('[data-testid="matters"]').innerText();

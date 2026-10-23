@@ -2,7 +2,7 @@
 
 import { useMemo, type ReactNode } from "react";
 import { compass, stationName, type Conditions, type Tide } from "@/lib/conditions";
-import { datePeriods, marineMaxima, overLimits, periodFor, windChangeNote, windSteps, type DatedPeriod, type SeaLimits } from "@/lib/trip";
+import { datePeriods, marineMaxima, overLimits, periodFor, type DatedPeriod, type SeaLimits } from "@/lib/trip";
 import { fmtPct } from "@/lib/hab";
 import { dtf } from "@/lib/time";
 import { FORECAST_COPY } from "@/content/copy";
@@ -10,9 +10,8 @@ import type { OutlookDayLite } from "@/lib/harborEvidence";
 import { seasValue, windValue } from "@/components/coast/FishingBrief";
 import { TideStrip } from "./TideStrip";
 import { clockLabel, kmLabel } from "@/v4/ui/time";
-import { Icon } from "@/v4/ui/Icon";
 import { useWidth } from "@/v4/charts/useWidth";
-import { Caps, Reading } from "./ui/Instrument";
+import { Caps } from "./ui/Instrument";
 
 /**
  * The decision view's time (v10, from direction C's shared time lanes in direction A's dark style):
@@ -24,24 +23,22 @@ import { Caps, Reading } from "./ui/Instrument";
  * page (the briefing's CLS budget).
  */
 
-type Cond = { data: Conditions | null; loading: boolean; error: string | null };
-
 const PT_PARTS = dtf("en-CA", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 const dayIndex = (date: string, today: string) => Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000);
 /** Minutes after the Pacific midnight that starts `today`, for an instant. */
-function instantMin(iso: string, today: string): number | null {
+export function instantMin(iso: string, today: string): number | null {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   const p = Object.fromEntries(PT_PARTS.formatToParts(d).map((x) => [x.type, x.value]));
   return dayIndex(`${p.year}-${p.month}-${p.day}`, today) * 1440 + Number(p.hour) * 60 + Number(p.minute);
 }
 /** The same for a Pacific wall-clock time ("2026-10-22T18:00" or CO-OPS's "2026-10-22 18:00"). */
-function localMin(s: string, today: string): number {
+export function localMin(s: string, today: string): number {
   const [date, hm] = s.replace(" ", "T").split("T");
   const [h, m] = (hm ?? "00:00").split(":").map(Number);
   return dayIndex(date, today) * 1440 + h * 60 + (m || 0);
 }
-const clock = (min: number) => {
+export const clock = (min: number) => {
   const t = ((min % 1440) + 1440) % 1440;
   const h = Math.floor(t / 60);
   const m = Math.round(t % 60);
@@ -57,7 +54,7 @@ const dayName = (today: string, k: number) => {
 const C_TO_F = (c: number) => (c * 9) / 5 + 32;
 
 /** A dated label for a period: its NWS name live; once saved, its own date ("Mon, Oct 12, night"). */
-function periodName(p: DatedPeriod, saved: boolean): string {
+export function periodName(p: DatedPeriod, saved: boolean): string {
   if (!saved) return p.name;
   if (!p.date) return "Undated period";
   const d = new Date(`${p.date}T12:00:00Z`);
@@ -67,11 +64,13 @@ function periodName(p: DatedPeriod, saved: boolean): string {
 type Seg = { p: DatedPeriod; from: number; to: number; wind: string | null; seas: string | null; windKt: number | null; seasFt: number | null; over: { wind: boolean; seas: boolean }; name: string };
 
 /** Water temperature with where and when it was measured: the harbour's own gauge first, else the buoy. */
-function waterReading(c: Conditions | null): { f: number; at: string; where: string } | null {
+export function waterReading(c: Conditions | null): { f: number; at: string; where: string } | null {
   if (c?.harbor?.status === "ok") return { f: Math.round(C_TO_F(c.harbor.data.waterC.value)), at: c.harbor.data.waterC.at, where: c.harbor.station ? `${stationName(c.harbor.station.name)} (CO-OPS), ${kmLabel(c.harbor.station.km)} away` : "the harbour (CO-OPS)" };
   if (c?.buoy.status === "ok" && c.buoy.data.waterC) return { f: Math.round(C_TO_F(c.buoy.data.waterC.value)), at: c.buoy.data.waterC.at, where: c.buoy.station ? `buoy ${c.buoy.station.id} (NDBC), ${kmLabel(c.buoy.station.km)} away` : "the buoy (NDBC)" };
   return null;
 }
+
+export type Cond = { data: Conditions | null; loading: boolean; error: string | null };
 
 export type TimeViewProps = {
   cond: Cond;
@@ -122,79 +121,12 @@ export function TimeView(props: TimeViewProps) {
   }, [c, today, now, tripDate, props.limits, asSaved]);
 
   return (
-    <div ref={ref} className="flex flex-col gap-5">
-      <Soundings {...props} period={period} when={when} wide={wide} />
-      <LimitsLine {...props} data={data} period={period} />
+    <div ref={ref} className="flex flex-col gap-4">
       {/* the lanes (or the phone's list) have a fixed height: data that arrives late fills it, never moves it */}
       <div className={wide ? "min-h-[372px]" : "min-h-[300px]"} data-testid="time-lanes" data-layout={w ? (wide ? "lanes" : "list") : "pending"}>
         {w === 0 ? null : wide ? <Lanes {...props} data={data} when={when} /> : <PeriodList {...props} data={data} when={when} />}
       </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------- the trip period's readings
-
-function Soundings({ cond, tripDate, today, asSaved, period, when, wide }: TimeViewProps & { period: DatedPeriod | null; when: (iso: string) => string; wide: boolean }) {
-  const c = cond.data;
-  const max = period ? marineMaxima(period.text) : null;
-  const wind = period ? windValue(period.text, max?.windKt ?? null) : null;
-  const seas = period ? seasValue(period.text, max?.seasFt ?? null) : null;
-  const gust = period?.text.match(/\bgusts?\s+(?:up\s+)?to\s+(\d+)\s*kt/i)?.[1];
-  const windNote = period ? (windChangeNote(windSteps(period.text)) ?? (gust ? `gusts to ${gust} kt` : undefined)) : undefined;
-  const buoy = c?.buoy.status === "ok" ? c.buoy : null;
-  const wave = buoy?.data.waveFt ?? null;
-  const water = waterReading(c);
-  const fc = period ? "NWS forecast" : cond.loading ? "reading NWS…" : "no NWS period";
-  const tideOk = c?.tides.status === "ok";
-  return (
-    <div className="flex flex-col gap-3">
-      <dl className="grid grid-cols-2 gap-x-5 gap-y-5 border-t border-n-line-strong pt-4 md:grid-cols-4 md:gap-x-0 md:[&>div+div]:border-l md:[&>div+div]:border-n-line md:[&>div+div]:pl-5 md:[&>div]:pr-4">
-        <Sounding caps={`Wind · ${fc}`} testId="glance-wind" value={wind} unit="kt" note={windNote && wide ? <>then {windNote.replace(/^then /, "")}</> : undefined} />
-        <Sounding caps={`Seas · ${fc}`} testId="glance-seas" value={seas} unit="ft" note={period && max?.seasFt != null ? `up to ${max.seasFt} ft in the NWS text` : undefined} />
-        <Sounding
-          caps={wave ? "Waves · measured" : cond.loading ? "Waves · reading…" : "Waves · none nearby"}
-          testId="glance-waves"
-          value={wave ? wave.value.toFixed(1) : null}
-          unit={wave ? `ft${buoy?.data.periodS ? ` · ${Math.round(buoy.data.periodS.value)} s` : ""}` : undefined}
-          note={wave && buoy ? `${when(wave.at)} · buoy ${buoy.station ? `${buoy.station.id}, ${kmLabel(buoy.station.km)} out` : ""} · not the harbour` : c && c.buoy.status !== "ok" ? c.buoy.reason : undefined}
-        />
-        <Sounding caps={water ? "Water · measured" : cond.loading ? "Water · reading…" : "Water · none nearby"} testId="glance-water-t" value={water ? String(water.f) : null} unit="°F" note={water ? <span data-testid="glance-water">measured {when(water.at)} at {water.where}</span> : c?.harbor && c.harbor.status !== "ok" ? c.harbor.reason : c && c.buoy.status !== "ok" ? c.buoy.reason : undefined} />
-      </dl>
-      {windNote && !wide && (
-        <p className="-mt-1 text-[13px] leading-snug text-n-ink-2" data-testid="glance-wind-changes">
-          Wind {windNote}
-        </p>
-      )}
-      {/* the alert, then the source of the forecast; every NWS period and the forecaster's text are in the Sea note */}
-      <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[13px] leading-snug text-n-ink-2">
-        {c?.alerts.status === "ok" && c.alerts.data.length > 0 && (
-          <span className="inline-flex items-baseline gap-1.5 text-n-conditions" data-testid="glance-alert">
-            <Icon name="alert" className="h-3.5 w-3.5 self-center" /> NWS {c.alerts.data[0].event}
-            {c.alerts.data[0].ends ? <span className="text-n-ink-2"> until {clockLabel(c.alerts.data[0].ends)}</span> : null}
-          </span>
-        )}
-        <a href="#sea-h" className="nx-focus rounded-[2px] text-n-ink underline decoration-n-line-strong underline-offset-4 hover:decoration-n-ink" data-testid="glance-sea-link">
-          {period ? `Marine forecast (NWS), ${periodName(period, !!asSaved)}` : cond.loading ? "Reading the NWS forecast…" : c?.marine.status === "ok" ? (asSaved ? "No NWS period saved for this day" : "No NWS period for this day yet") : "NWS zone forecast not available here"}
-        </a>
-        {c?.marine.status === "ok" && <span>{c.marine.data.zone}{c.marine.data.updated ? `, issued ${when(c.marine.data.updated)}` : ""}</span>}
-        {!tideOk && !cond.loading && <span>No tide predictions read for these waters.</span>}
-        {tripDate && today && tripDate !== today && <span>Readings are the latest measured, not the trip day&rsquo;s.</span>}
-      </p>
-    </div>
-  );
-}
-
-function Sounding({ caps, value, unit, note, testId }: { caps: string; value: string | null; unit?: string; note?: ReactNode; testId: string }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5" data-testid={testId}>
-      <dt>
-        <Caps family="conditions">{caps}</Caps>
-      </dt>
-      <dd className="flex min-w-0 flex-col gap-1">
-        <Reading value={value ?? "—"} unit={value ? unit : undefined} muted={!value} className="text-[32px] md:text-[36px]" />
-        {note && <span className="text-[12.5px] leading-snug text-n-ink-2">{note}</span>}
-      </dd>
+      <LimitsLine {...props} data={data} period={period} />
     </div>
   );
 }
@@ -227,9 +159,10 @@ function Lanes({ cond, today, asSaved, limits, outlook, runIssued, data, when }:
   return (
     <section aria-labelledby="lanes-h" className="flex flex-col gap-2 overflow-x-clip" data-testid="lanes">
       <div className="flex items-baseline justify-between gap-4">
-        <h3 id="lanes-h" className="font-serif font-medium tracking-[-0.015em] leading-[1.1] text-[19px] text-n-ink">
+        <h2 id="lanes-h" className="font-serif font-medium tracking-[-0.015em] leading-[1.1] text-[24px] text-n-ink">
           {title}
-        </h3>
+          {asSaved ? <span className="ml-2 font-ui text-[13px] font-normal tracking-normal text-n-ink-2">{asSaved}</span> : null}
+        </h2>
         <span className="text-[12.5px] text-n-ink-2">every lane keeps its own source and time · shaded: before now</span>
       </div>
       <div className="relative mt-4 grid grid-cols-[124px_minmax(0,1fr)]">
@@ -432,14 +365,15 @@ function PeriodList({ cond, tripDate, today, now, asSaved, outlook, limits, data
   const day = tripDate ?? today;
   return (
     <section aria-labelledby="lanes-h" className="flex flex-col gap-4" data-testid="lanes">
-      <h3 id="lanes-h" className="font-serif font-medium tracking-[-0.015em] leading-[1.1] text-[19px] text-n-ink">
+      <h2 id="lanes-h" className="font-serif font-medium tracking-[-0.015em] leading-[1.1] text-[22px] text-n-ink">
         {tripDate && today && tripDate !== today ? "From the trip day" : "The next 60 hours"}
-      </h3>
+        {asSaved ? <span className="ml-2 font-ui text-[13px] font-normal tracking-normal text-n-ink-2">{asSaved}</span> : null}
+      </h2>
       <ol className="flex flex-col border-t border-n-line" data-testid="lane-periods">
         {!data || !data.segs.length ? (
           <li className="py-3 text-[14px] text-n-ink-2">{cond.loading ? "Reading the NWS forecast…" : c?.marine.status === "ok" ? "No NWS period in this window." : "No NWS zone forecast read here."}</li>
         ) : (
-          data.segs.slice(0, 5).map((s) => (
+          data.segs.slice(0, 4).map((s) => (
             <li key={`${s.p.name}${s.p.date}`} className={`grid h-[52px] grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-4 border-b border-n-line ${s.over.wind || s.over.seas ? "shadow-[inset_2px_0_0_var(--nx-down)] pl-2" : ""}`} data-testid="lane-period">
               <span className="min-w-0">
                 <span className="block truncate text-[14px] text-n-ink">{s.name}</span>
@@ -457,7 +391,8 @@ function PeriodList({ cond, tripDate, today, now, asSaved, outlook, limits, data
           ))
         )}
       </ol>
-      {c?.tides.status === "ok" && day && <TideStrip tides={c.tides.data} day={day} today={today} now={asSaved ? null : now} station={c.tides.station ? stationName(c.tides.station.name) : null} />}
+      {/* a phone reads the next tide turn in the decision row; the day's curve is from 640 px */}
+      {c?.tides.status === "ok" && day && <div className="max-sm:hidden"><TideStrip tides={c.tides.data} day={day} today={today} now={asSaved ? null : now} station={c.tides.station ? stationName(c.tides.station.name) : null} /></div>}
       <p className="text-[13px] leading-snug text-n-ink-2">
         <Caps family="model">Model · context only</Caps>{" "}
         {outlook === null
@@ -504,7 +439,7 @@ function LimitsLine({ limits, onLimits, data, period }: TimeViewProps & { data: 
       </fieldset>
       <p className="max-w-[56ch] text-[13.5px] leading-snug text-n-ink-2 md:text-right" aria-live="polite">
         {!has ? (
-          "Set your own limits to compare them with the highest numbers in each NWS period."
+          <span className="max-sm:hidden">Set your own limits to compare them with the highest numbers in each NWS period.</span>
         ) : overW.length || overS.length ? (
           <span className="text-n-ink" data-testid="glance-over">
             NWS states more than your own {[overW.length && `${limits.windKt} kt`, overS.length && `${limits.seasFt} ft`].filter(Boolean).join(" and ")} limit
@@ -513,7 +448,7 @@ function LimitsLine({ limits, onLimits, data, period }: TimeViewProps & { data: 
         ) : (
           <span>{period || ahead.length ? "Within your limits in every NWS period shown." : "No NWS period to compare yet."}</span>
         )}{" "}
-        Never a go or no-go from Neritic.
+        <span className={has ? "" : "max-sm:hidden"}>Never a go or no-go from Neritic.</span>
       </p>
     </div>
   );

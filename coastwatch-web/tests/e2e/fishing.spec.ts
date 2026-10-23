@@ -109,7 +109,7 @@ test("sea conditions: the forecaster's words, and the reader's own limits compar
 test("what it was worth: CDFW's dock values with year and source, history not price", async ({ page }) => {
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-452&species=dungeness`);
-  await page.getByTestId("brief-evidence-toggle").click();
+  await page.getByTestId("brief-worth-toggle").click();
   const w = page.getByTestId("worth");
   await expect(w.getByTestId("worth-species")).toContainText("2024");
   await expect(w.getByTestId("worth-species")).toContainText("2023");
@@ -118,7 +118,7 @@ test("what it was worth: CDFW's dock values with year and source, history not pr
   await expect(w.getByRole("link", { name: "CDFW Marine Region, 2024 By The Numbers" })).toHaveAttribute("href", /nrm\.dfg\.ca\.gov/);
   // a species without a CDFW figure says so, never a number
   await page.goto(`${OK}/coast?place=port-452&species=salmon`);
-  await page.getByTestId("brief-evidence-toggle").click();
+  await page.getByTestId("brief-worth-toggle").click();
   await expect(page.getByTestId("worth-species-none")).toContainText("No species-level reference");
 });
 

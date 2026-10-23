@@ -108,10 +108,13 @@ test("the briefing keeps every change of wind direction the NWS forecasts", asyn
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(wind).not.toContainText("then NW", { useInnerText: true });
   await expect(page.getByTestId("glance-wind-changes")).toHaveText("Wind then NW 5–10 kt late this evening, then N after midnight");
+  await expect(page.getByTestId("glance-tide")).toContainText(/\d\.\d\s*ft (high|low)/);
 });
 
-test("on a phone the tide's turn labels stay inside the strip and clear of each other and the now line", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+// v10 pass 2: a phone reads the next tide turn in the decision row; the day's strip is drawn from 640 px
+// (below the lanes' 720 px), where its labels must still fit
+test("on a narrow screen the tide's turn labels stay inside the strip and clear of each other and the now line", async ({ page }) => {
+  await page.setViewportSize({ width: 680, height: 844 });
   await page.clock.setFixedTime(new Date("2026-10-13T06:00:00Z"));
   await page.goto(`${OK}/coast?place=port-550`);
   const tide = page.getByTestId("tide-strip");
