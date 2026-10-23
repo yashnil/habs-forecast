@@ -121,8 +121,8 @@ export const BASEMAP_STYLE: StyleSpecification = {
     { id: "relief-sea-monterey", type: "raster", source: "relief-sea-monterey", minzoom: 7, paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
     // the tinted seafloor sits over the neutral one and shows only with no data field on the map;
     // MapCanvas cross-fades it (420 ms) to the neutral relief when a field appears, never a toggle
-    { id: "relief-sea-tint", type: "raster", source: "relief-sea-tint", paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-opacity": 1, "raster-opacity-transition": { duration: 420, delay: 0 } } },
-    { id: "relief-sea-monterey-tint", type: "raster", source: "relief-sea-monterey-tint", minzoom: 7, paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-opacity": 1, "raster-opacity-transition": { duration: 420, delay: 0 } } },
+    { id: "relief-sea-tint", type: "raster", source: "relief-sea-tint", paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-saturation": -0.32, "raster-brightness-max": 0.86, "raster-opacity": 1, "raster-opacity-transition": { duration: 420, delay: 0 } } },
+    { id: "relief-sea-monterey-tint", type: "raster", source: "relief-sea-monterey-tint", minzoom: 7, paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-saturation": -0.32, "raster-brightness-max": 0.86, "raster-opacity": 1, "raster-opacity-transition": { duration: 420, delay: 0 } } },
     {
       // depth labels stay under any data field (a label over the field would hide its values);
       // the contour lines themselves are drawn above it
@@ -160,8 +160,8 @@ export const BASEMAP_STYLE: StyleSpecification = {
       "source-layer": "water",
       paint: {
         "line-color": "#d3dfeb",
-        "line-opacity": ["interpolate", ["linear"], ["zoom"], 4, 0.7, 8, 0.9],
-        "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.5, 8, 0.9, 10, 1.3, 12, 1.8],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 4, 0.78, 8, 0.95],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 8, 1, 10, 1.3, 12, 1.8],
       },
     },
     {
@@ -204,7 +204,7 @@ export const BASEMAP_STYLE: StyleSpecification = {
       "source-layer": "transportation",
       minzoom: 6.5,
       filter: ["in", ["get", "class"], ["literal", ["motorway", "trunk"]]],
-      paint: { "line-color": "#2a3645", "line-width": ["interpolate", ["linear"], ["zoom"], 6.5, 0.4, 12, 1.4] },
+      paint: { "line-color": "#262f3b", "line-width": ["interpolate", ["linear"], ["zoom"], 6.5, 0.4, 12, 1.3] },
     },
     {
       id: "roads-primary",
@@ -241,7 +241,7 @@ export const BASEMAP_STYLE: StyleSpecification = {
       },
       // light text on a soft, translucent halo: readable over the dark sea and over the
       // forecast and chlorophyll colours without a hard outline
-      paint: { "text-color": "rgba(222,234,246,0.9)", "text-halo-color": "rgba(6,17,30,0.5)", "text-halo-width": 1.2, "text-halo-blur": 0.8 },
+      paint: { "text-color": "rgba(214,228,240,0.78)", "text-halo-color": "rgba(5,9,13,0.55)", "text-halo-width": 1.2, "text-halo-blur": 0.8 },
     },
     {
       id: "place-city",
@@ -253,12 +253,12 @@ export const BASEMAP_STYLE: StyleSpecification = {
       layout: {
         "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]],
         "text-font": FONT,
-        "text-size": ["interpolate", ["linear"], ["zoom"], 5.5, 10.5, 10, 13.5],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 5.5, 10, 10, 12.5],
         "text-anchor": "left",
         "text-offset": [0.4, 0],
         "symbol-sort-key": ["get", "rank"],
       },
-      paint: { "text-color": "#93a3b4", "text-halo-color": LAND, "text-halo-width": 1.2 },
+      paint: { "text-color": "#8090a0", "text-halo-color": LAND, "text-halo-width": 1.2 },
     },
     {
       id: "place-town",
@@ -275,7 +275,7 @@ export const BASEMAP_STYLE: StyleSpecification = {
         "text-offset": [0.4, 0],
         "symbol-sort-key": ["get", "rank"],
       },
-      paint: { "text-color": "#8494a6", "text-halo-color": LAND, "text-halo-width": 1.2 },
+      paint: { "text-color": "#738395", "text-halo-color": LAND, "text-halo-width": 1.2 },
     },
     {
       id: "place-village",
