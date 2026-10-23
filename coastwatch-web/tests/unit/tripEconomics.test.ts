@@ -280,8 +280,10 @@ describe("rock crab price reference (v7)", () => {
     expect(d.preset).toBeNull();
     expect(d.inputs.catch).toEqual([{ species: "Rock crab", ref: "rock-crab", lb: null, usdPerLb: null }]);
     expect(d.basis).toEqual({});
-    // a species without its own reference still starts blank
+    // a species without its own reference still starts blank (v10: its line is named for the trip's species)
+    const { speciesById } = await import("@/content/species");
     expect(presetForSpecies("razor-clam")).toBeNull();
-    expect(initialDraft("razor-clam").inputs.catch).toEqual([{ species: "Main catch", ref: null, lb: null, usdPerLb: null }]);
+    expect(initialDraft("razor-clam").inputs.catch).toEqual([{ species: speciesById("razor-clam").label, ref: null, lb: null, usdPerLb: null }]);
+    expect(initialDraft("any").inputs.catch![0].species).toBe("Main catch");
   });
 });

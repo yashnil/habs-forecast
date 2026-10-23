@@ -31,20 +31,22 @@ export function Landing({ ports, home, audience, unknownKey }: { ports: PortsCol
   const [hot, setHot] = useState<string | null>(null);
   return (
     <div className="relative isolate">
-      <section className="env-instrument nx-landing-hero relative isolate overflow-hidden rounded-[28px] px-5 pb-7 pt-8 sm:px-10 sm:pb-10 sm:pt-12" aria-labelledby="coast-title-h">
+      {/* the front door (v10): one question and one control over the coast, no card stack */}
+      <section className="relative isolate overflow-hidden border-b border-n-line-strong pb-10 pt-6 sm:pb-12 sm:pt-10" aria-labelledby="coast-title-h">
         <ContourField />
         <div className="grid items-center gap-8 md:grid-cols-[minmax(0,1fr)_260px] lg:grid-cols-[minmax(0,1fr)_300px]">
           <div className="min-w-0">
-            <h1 id="coast-title-h" className="nx-display text-balance text-n-ink" data-testid="coast-title">
+            <p className="nx-caps">My Coast · one place, one trip</p>
+            <h1 id="coast-title-h" className="mt-3 text-balance font-serif text-[40px] font-medium leading-[1.04] tracking-[-0.015em] text-n-ink sm:text-[60px]" data-testid="coast-title">
               Where are you fishing?
             </h1>
-            <p className="mt-3 max-w-[46ch] text-pretty text-[16px] leading-6 text-n-ink-2">The sea forecast, CDFW&rsquo;s seasons, the agencies&rsquo; notices, the latest bloom samples and your own trip numbers for one place, each with its source.</p>
+            <p className="mt-4 max-w-[52ch] text-pretty text-[16px] leading-6 text-n-ink-2">What the agencies say, the sea against your own limits, what the trip would cost and bring, and the waters on the map, for one place, each with its source.</p>
             {unknownKey && (
-              <p className="mt-4 border-l-[3px] border-n-official pl-3 text-[15px] text-n-ink" role="status" data-testid="coast-unknown-place">
+              <p className="mt-4 border-l-2 border-n-official pl-3 text-[15px] text-n-ink" role="status" data-testid="coast-unknown-place">
                 The place in this link (&ldquo;{unknownKey}&rdquo;) is not one Neritic knows. Search for a harbour or harvest site.
               </p>
             )}
-            <div className="env-chart mt-6 rounded-2xl bg-transparent sm:mt-8">
+            <div className="mt-7 sm:mt-9">
               <PlaceSearch places={all} hrefFor={hrefFor} />
             </div>
           </div>
@@ -53,12 +55,12 @@ export function Landing({ ports, home, audience, unknownKey }: { ports: PortsCol
       </section>
       <nav aria-labelledby="coast-start-h" className="mt-8 sm:mt-10">
         <div className="mb-3 flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-          <h2 id="coast-start-h" className="text-[17px] font-semibold text-n-ink">
+          <h2 id="coast-start-h" className="font-serif text-[24px] font-medium tracking-[-0.015em] text-n-ink">
             Start with
           </h2>
-          <p className="text-[13px] text-n-ink-3">Latest measurements, from the harbour tide gauge and the nearest buoy, each dated</p>
+          <p className="text-[13px] text-n-ink-2">Latest measurements, from the harbour tide gauge and the nearest buoy, each with its own time</p>
         </div>
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="coast-landing">
+        <ul className="grid grid-cols-1 gap-px overflow-hidden rounded-[4px] border border-n-line bg-n-line sm:grid-cols-2 lg:grid-cols-3" data-testid="coast-landing">
           {starters.map((p) => (
             <PlaceCard key={p.key} place={p} href={hrefFor(p)} home={home?.place === p.key} hot={hot === p.key} onHot={setHot} />
           ))}
@@ -92,17 +94,17 @@ function PlaceCard({ place, href, home, hot, onHot }: { place: CoastPlace; href:
         href={href}
         onFocus={() => onHot(place.key)}
         onBlur={() => onHot(null)}
-        className={`nx-focus nx-lift group flex h-full flex-col gap-4 rounded-2xl border bg-n-surface p-4 sm:p-5 ${hot ? "border-n-accent/60" : "border-n-line"}`}
+        className={`nx-focus nx-tint group flex h-full flex-col gap-4 p-4 sm:p-5 ${hot ? "bg-n-surface-2" : "bg-n-surface"}`}
         data-testid={`coast-start-${place.key}`}
       >
         <span className="flex items-start justify-between gap-3">
           <span className="min-w-0">
-            <span className="flex items-center gap-1.5 text-[18px] font-semibold leading-6 text-n-ink">
+            <span className="flex items-center gap-1.5 font-serif text-[22px] font-medium leading-7 tracking-[-0.01em] text-n-ink">
               {home && <Icon name="harbor" className="h-4 w-4 text-n-accent" />}
               <span className="truncate">{place.name}</span>
               {home && <span className="sr-only"> (your home port)</span>}
             </span>
-            <span className="block truncate text-[13px] text-n-ink-3">
+            <span className="block truncate text-[13px] text-n-ink-2">
               {home ? "Your home port" : place.kind === "port" ? "Harbour" : "Harvest site"}
               {place.county ? ` · ${place.county} County` : ""}
             </span>
@@ -141,15 +143,15 @@ function Reading<T>({
   const shown = r?.ok ? value(r as unknown as T) : null;
   return (
     <span className="min-w-0" data-testid={testId}>
-      <span className="block text-[12.5px] leading-4 text-n-ink-3">{label}</span>
+      <span className="nx-caps block text-n-conditions">{label}</span>
       {loading || !r ? (
-        <span aria-hidden className="nx-skeleton mt-1.5 block h-6 w-12 rounded-md" />
+        <span aria-hidden className="nx-skeleton mt-1.5 block h-6 w-12 rounded-[2px]" />
       ) : r.ok && shown ? (
         <>
           <span className="mt-0.5 flex items-baseline gap-1 whitespace-nowrap">
             {/* the arrow points where the wind blows toward (from its direction, plus 180 degrees) */}
             {shown.dir != null && <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 self-center text-n-ink-2" style={{ transform: `rotate(${shown.dir + 180}deg)` }}><path d="M6 1.5v9M2.8 4.7 6 1.5l3.2 3.2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-            <span className="text-[24px] font-semibold leading-7 tabular-nums tracking-[-0.01em] text-n-ink">{shown.v}</span>
+            <span className="nx-value text-[26px] leading-7">{shown.v}</span>
             <span className="truncate text-[12.5px] text-n-ink-2">{shown.unit}</span>
           </span>
           {/* this reading's own observation time and instrument, never the card's newest */}
@@ -279,7 +281,7 @@ function PlaceSearch({ places, hrefFor }: { places: CoastPlace[]; hrefFor: (p: C
       <label htmlFor={`${id}-input`} className="sr-only">
         Search harbours and harvest sites
       </label>
-      <div className="flex min-h-[60px] items-center gap-3 rounded-2xl border border-n-line-strong bg-n-surface px-4 shadow-[0_1px_2px_rgba(11,24,32,0.06)] focus-within:border-n-accent focus-within:shadow-[0_0_0_3px_var(--nx-accent-bg)]">
+      <div className="flex min-h-[60px] items-center gap-3 rounded-[4px] border border-n-line-strong bg-n-surface px-4 focus-within:border-n-accent">
         <Icon name="search" className="h-5 w-5 shrink-0 text-n-ink-3" />
         <input
           id={`${id}-input`}
@@ -321,7 +323,7 @@ function PlaceSearch({ places, hrefFor }: { places: CoastPlace[]; hrefFor: (p: C
           data-testid="coast-place-search-input"
         />
       </div>
-      <div id={listId} role="listbox" aria-label="Places" hidden={!shown} className="nx-pop absolute inset-x-0 top-[calc(100%+6px)] z-30 overflow-hidden rounded-2xl border border-n-line bg-n-surface py-1.5 shadow-[var(--nx-shadow)]" data-testid="coast-place-results">
+      <div id={listId} role="listbox" aria-label="Places" hidden={!shown} className="nx-pop absolute inset-x-0 top-[calc(100%+6px)] z-30 overflow-hidden rounded-[4px] border border-n-line bg-n-surface py-1.5 shadow-[var(--nx-shadow)]" data-testid="coast-place-results">
         {results.length ? (
           results.map((p, i) => (
             <Link
@@ -336,7 +338,7 @@ function PlaceSearch({ places, hrefFor }: { places: CoastPlace[]; hrefFor: (p: C
             >
               <span className="min-w-0">
                 <span className="block truncate text-[16px] font-semibold text-n-ink">{p.name}</span>
-                <span className="block truncate text-[13px] text-n-ink-3">
+                <span className="block truncate text-[13px] text-n-ink-2">
                   {p.kind === "port" ? "Harbour" : "Harvest monitoring site"}
                   {p.county ? ` · ${p.county} County` : ""}
                 </span>

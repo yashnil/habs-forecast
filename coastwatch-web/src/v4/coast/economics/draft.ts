@@ -1,4 +1,4 @@
-import { FISHERY_PRESETS, SOURCES, presetById, presetForSpecies, type FisheryPreset, type FisheryPresetId, type Sourced } from "@/content/fisheryPresets";
+import { FISHERY_PRESETS, SOURCES, presetById, presetForSpecies, presetReferences, type FisheryPreset, type FisheryPresetId, type PresetReference } from "@/content/fisheryPresets";
 import { DIESEL_REF, dieselSnapshot, priceRef, priceSnapshot, type RefSnapshot } from "@/content/referenceValues";
 import { emptyDraft, type Draft } from "@/lib/tripEconomicsStore";
 import { speciesById } from "@/content/species";
@@ -11,45 +11,39 @@ export const STARTER_COSTS: CostLine[] = [
   { label: "Gear and repairs (this trip)", usd: null, shared: false },
 ];
 
-/** Field keys whose value came from a preset, and the preset value that sits there. */
-function presetFields(p: FisheryPreset): [string, Sourced | null][] {
-  return [
-    ["fishingGph", p.fishingGph],
-    ["steamGph", p.steamGph],
-    ["crew.pct", p.crewPct],
-    ["feesPctOfGross", p.feesPct],
-  ];
-}
-
 /**
- * A fresh worksheet for a fishery: its sourced defaults (marked as such), blank catch lines, no price.
- * Without a preset, a species with its own CDFW price reference (rock crab) still gets that reference
- * beside its catch line: shown, never filled in.
+ * A fresh worksheet (v10): the fishery's catch lines and labels only. Nothing numeric is filled in: the
+ * fishery's sourced values (burn rates, crew shares, fees) are offered beside their fields as references
+ * the user taps to use (decision D1), and how crew is paid starts unchosen (D2). A species with its own
+ * CDFW price reference (rock crab) still gets that reference beside its catch line: shown, never filled.
  */
 export function draftForPreset(p: FisheryPreset | null, species: string | null = null): Draft {
   const d = emptyDraft(p?.id ?? null);
   d.inputs.costs = STARTER_COSTS.map((c) => ({ ...c }));
   const own = !p && species && priceRef(species) ? { key: species, label: speciesById(species).label } : null;
-  d.inputs.catch = (p?.catch ?? [own ?? { key: "", label: "Main catch" }]).map((c) => ({ species: c.label, ref: c.key || null, lb: null, usdPerLb: null }));
-  d.inputs.crew = { kind: p?.crewKind ?? "afterExpenses", pct: null };
-  if (p) applyPreset(d, p);
+  d.inputs.catch = (p?.catch ?? [own ?? { key: "", label: species && species !== "any" ? speciesById(species).label : "Main catch" }]).map((c) => ({ species: c.label, ref: c.key || null, lb: null, usdPerLb: null }));
+  d.inputs.crew = { kind: null };
   return d;
 }
 
-/** Fill a fishery's sourced defaults into the fields that are empty or still hold an earlier preset's value. */
-export function applyPreset(d: Draft, p: FisheryPreset): Draft {
-  d.preset = p.id;
-  for (const [key, v] of presetFields(p)) {
-    const cur = getField(d, key);
-    if (cur !== null && d.basis[key] !== "preset") continue;
-    setField(d, key, v ? v.value : null);
-    if (v) d.basis[key] = "preset";
-    else delete d.basis[key];
+/**
+ * Another fishery chosen for a worksheet already in use: its catch lines replace blank ones, and any
+ * value that still holds the previous fishery's reference is cleared (it described another fishery).
+ * Nothing new is filled in.
+ */
+export function switchFishery(d: Draft, p: FisheryPreset | null): Draft {
+  const prev = presetById(d.preset);
+  for (const [key, b] of Object.entries(d.basis)) {
+    if (b !== "preset") continue;
+    if (prev && presetReferences(prev).some((r) => r.field === key)) {
+      setField(d, key, null);
+      delete d.basis[key];
+    }
   }
-  // catch lines that are still blank take the fishery's lines
+  d.preset = p?.id ?? null;
   const blank = (d.inputs.catch ?? []).every((c) => c.lb === null && c.usdPerLb === null);
-  if (blank) d.inputs.catch = p.catch.map((c) => ({ species: c.label, ref: c.key, lb: null, usdPerLb: null }));
-  if (!p.potTiers) {
+  if (blank && p) d.inputs.catch = p.catch.map((c) => ({ species: c.label, ref: c.key, lb: null, usdPerLb: null }));
+  if (!p?.potTiers) {
     d.pots = null;
     d.baitUsdPerPot = null;
   }
@@ -62,29 +56,28 @@ export function initialDraft(species: string, preset: FisheryPresetId | null = n
 
 export function getField(d: Draft, key: string): number | null {
   const i = d.inputs;
-  if (key.startsWith("crew.")) return (i.crew as Record<string, unknown>)?.[key.slice(5)] as number | null ?? null;
+  if (key.startsWith("crew.")) return ((i.crew as Record<string, unknown> | null | undefined)?.[key.slice(5)] as number | null) ?? null;
   if (key === "pots") return d.pots;
   if (key === "baitUsdPerPot") return d.baitUsdPerPot;
   return ((i as Record<string, unknown>)[key] as number | null | undefined) ?? null;
 }
 
 export function setField(d: Draft, key: string, v: number | null) {
-  if (key.startsWith("crew.")) d.inputs.crew = { kind: d.inputs.crew?.kind ?? "afterExpenses", ...d.inputs.crew, [key.slice(5)]: v };
+  if (key.startsWith("crew.")) d.inputs.crew = { kind: d.inputs.crew?.kind ?? null, ...d.inputs.crew, [key.slice(5)]: v };
   else if (key === "pots") d.pots = v;
   else if (key === "baitUsdPerPot") d.baitUsdPerPot = v;
   else (d.inputs as Record<string, unknown>)[key] = v;
 }
 
-/** The source line for a field that still holds a preset value. */
-export function presetSource(d: Draft, key: string): { text: string; url: string; note?: string } | null {
-  if (d.basis[key] !== "preset") return null;
+/** The fishery reference a field offers (and that the field holds when its basis is "preset"). */
+export function fieldReferences(d: Draft, key: string): PresetReference[] {
   const p = presetById(d.preset);
-  if (!p) return null;
-  const v = presetFields(p).find(([k]) => k === key)?.[1];
-  if (!v) return null;
-  const s = SOURCES[v.source];
-  return { text: `${s.short}: ${v.label}`, url: s.url, note: s.note };
+  const kind = d.inputs.crew?.kind ?? null;
+  return presetReferences(p, key === "crew.pct" ? { crewKind: kind } : {}).filter((r) => r.field === key);
 }
+
+/** "NOAA NWFSC-121, Table 31 (2008 survey)": the short name of a reference's source. */
+export const sourceShort = (r: PresetReference) => SOURCES[r.source].short;
 
 /** What a saved scenario keeps about the references it used. */
 export function refsUsed(d: Draft): RefSnapshot[] {

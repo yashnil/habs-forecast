@@ -13,7 +13,9 @@ test("v7: below what matters, every section is a folded note with a count and a 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-550`);
   await expect(page.getByTestId("matters")).toBeVisible();
-  for (const id of ["sea", "seasons", "checks", "evidence", "official", "unknown", "map"]) await expect(page.getByTestId(`brief-${id}-toggle`)).toHaveAttribute("aria-expanded", "false");
+  // v10: the map of the waters is part of the decision view itself, not a fold
+  await expect(page.getByTestId("locator")).toBeVisible();
+  for (const id of ["sea", "seasons", "checks", "evidence", "official", "unknown"]) await expect(page.getByTestId(`brief-${id}-toggle`)).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByTestId("checks")).toBeHidden();
   await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId("checks")).toBeVisible();
@@ -101,8 +103,8 @@ test("v6 P0 4: offline three days later, the saved copy is dated 'as saved' and 
   await expect(page.getByTestId("glance-water")).toContainText(/measured Oct 1\d, .*\((CO-OPS|NDBC)/);
   // the saved periods are dated by their own day, never "Tonight"
   await page.getByTestId("brief-sea-toggle").click();
-  await page.getByTestId("sea-periods-more").locator("summary").first().click();
-  await expect(page.getByTestId("sea-period").first()).toContainText(/Mon, Oct 12, night/);
+  // every saved period is listed in the note (no second fold), each by its own date
+  await expect(page.getByTestId("sea-period").first()).toContainText(/Mon, Oct 12, night/i);
   for (const id of ["brief-glance", "brief-sea", "brief-now"]) expect(await page.getByTestId(id).innerText(), id).not.toMatch(/\b(tonight|today)\b(?!'s price)/i); // "Not today's price" is the dock-value caveat, not a claim
   await ctx.unrouteAll({ behavior: "ignoreErrors" });
   await ctx.setOffline(false);

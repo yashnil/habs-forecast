@@ -151,7 +151,7 @@ test.describe("selection: map, inspection surface, charts and URL in step", () =
     await open(page, "/?layer=forecast&sel=harbor:550");
     await expect(page.getByTestId("open-briefing")).toHaveAttribute("href", /\/coast\?place=port-550/);
     await page.goto(`${OK}/coast?place=port-550`);
-    await page.getByTestId("brief-map-toggle").click();
+    // v10: the waters' map is part of the briefing's decision view (no fold to open)
     const show = page.getByTestId("locator-explore");
     await show.click();
     await expect(page.getByTestId("back-to-briefing")).toContainText("Back to the Monterey briefing");

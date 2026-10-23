@@ -1,4 +1,5 @@
-import { sanitizeInputs, clampNum, type CostLine, type TripInputs } from "@/lib/tripEconomics";
+import { sanitizeInputs, clampNum, type CostLine } from "@/lib/tripEconomics";
+import type { CrewChoice, TripScenario } from "@/lib/tripEvaluation";
 import type { RefSnapshot } from "@/content/referenceValues";
 import { presetById, type FisheryPresetId } from "@/content/fisheryPresets";
 
@@ -18,7 +19,12 @@ import { presetById, type FisheryPresetId } from "@/content/fisheryPresets";
  */
 
 export const NS = "nx-trip-v1:";
-export const SCHEMA = 1;
+/**
+ * 2 (v10): the crew model may be unchosen (`crew.kind: null`, nothing assumed) or "none" (no hired
+ * crew). Records from schema 0/1 are migrated on read: a share-after-expenses model with no share was
+ * the old code default, never the user's choice, so it becomes unchosen; every other model is kept.
+ */
+export const SCHEMA = 2;
 export const MAX_VESSELS = 5;
 export const MAX_SCENARIOS = 20;
 export const MAX_DRAFTS = 20;
@@ -28,7 +34,8 @@ export type Unit = "lb" | "kg";
 /** What the worksheet holds: the calculator's inputs plus the things that only shape them. */
 export type Draft = {
   preset: FisheryPresetId | null;
-  inputs: TripInputs;
+  /** the calculator's inputs; `crew.kind` is null until the user chooses how crew is paid */
+  inputs: TripScenario;
   /** pots fished and bait per pot: become a shared cost line "Bait" */
   pots: number | null;
   baitUsdPerPot: number | null;
@@ -60,11 +67,11 @@ type Key = (typeof KEYS)[number];
 export const draftKey = (placeKey: string, species: string) => `${placeKey}|${species}`;
 
 export function emptyDraft(preset: FisheryPresetId | null = null): Draft {
-  return { preset, inputs: sanitizeInputs({ catch: [], costs: [], crew: { kind: "afterExpenses" } }), pots: null, baitUsdPerPot: null, basis: {} };
+  return { preset, inputs: { ...sanitizeInputs({ catch: [], costs: [] }), crew: { kind: null } }, pots: null, baitUsdPerPot: null, basis: {} };
 }
 
 /** The draft's calculator inputs: pots × bait per pot becomes a shared "Bait" cost. */
-export function draftInputs(d: Draft): TripInputs {
+export function draftInputs(d: Draft): TripScenario {
   const bait: CostLine[] = d.pots != null && d.baitUsdPerPot != null ? [{ label: `Bait (${d.pots} pots)`, usd: d.pots * d.baitUsdPerPot, shared: true }] : [];
   return { ...d.inputs, costs: [...(d.inputs.costs ?? []), ...bait] };
 }
@@ -75,12 +82,37 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object
 const str = (v: unknown, max = 80) => (typeof v === "string" ? v.slice(0, max) : "");
 const iso = (v: unknown, fallback: string) => (typeof v === "string" && !Number.isNaN(Date.parse(v)) ? v : fallback);
 
-export function sanitizeDraft(v: unknown): Draft {
+/**
+ * The crew model a stored draft holds. From schema 2 a missing or unknown kind is unchosen. Before it,
+ * the code filled "afterExpenses" whenever nothing was chosen, so that kind with no share is read as
+ * unchosen too; a share entered, or any other model, was the user's and is kept.
+ */
+export function storedCrewKind(raw: unknown, schema: number): CrewChoice | null {
+  const c = isObj(raw) ? raw : null;
+  const k = c?.kind;
+  if (k === "none" || k === "ofGross" || k === "dayRate") return k;
+  const pct = clampNum(c?.pct, "pct");
+  if (k === "afterExpenses") return schema < 2 && pct === null ? null : "afterExpenses";
+  // schema 0/1 without a kind meant share after expenses (the old default): kept only when a share is there
+  return schema < 2 && pct !== null ? "afterExpenses" : null;
+}
+
+export function sanitizeDraft(v: unknown, schema: number = SCHEMA): Draft {
   const d = isObj(v) ? v : {};
   const preset = presetById(typeof d.preset === "string" ? d.preset : null)?.id ?? null;
   const basis: Draft["basis"] = {};
   if (isObj(d.basis)) for (const [k, b] of Object.entries(d.basis)) if (b === "preset" || b === "cdfw" || b === "eia") basis[k.slice(0, 40)] = b;
-  return { preset, inputs: sanitizeInputs(isObj(d.inputs) ? (d.inputs as TripInputs) : {}), pots: clampNum(d.pots, "pots"), baitUsdPerPot: clampNum(d.baitUsdPerPot, "usdPerDay"), basis };
+  const raw = isObj(d.inputs) ? d.inputs : {};
+  const inputs = sanitizeInputs(raw as Parameters<typeof sanitizeInputs>[0]);
+  const kind = storedCrewKind(raw.crew, schema);
+  const anglers = clampNum(raw.anglers, "people");
+  return {
+    preset,
+    inputs: { ...inputs, crew: { ...inputs.crew, kind, ...(kind === "none" ? { pct: null } : {}) }, ...(anglers !== null ? { anglers } : {}) },
+    pots: clampNum(d.pots, "pots"),
+    baitUsdPerPot: clampNum(d.baitUsdPerPot, "usdPerDay"),
+    basis,
+  };
 }
 
 function sanitizeRefs(v: unknown): RefSnapshot[] {
@@ -111,7 +143,7 @@ export function migrateRecord(v: unknown, kind: "scenario" | "vessel", now: stri
   // schema 0 kept the inputs at the top level as `inputs`, without a draft wrapper
   const draftSrc = isObj(v.draft) ? v.draft : schema === 0 && isObj(v.inputs) ? { inputs: v.inputs, preset: v.preset } : null;
   if (!draftSrc) return null;
-  return { ...base, name: str(v.name, 60) || "Scenario", placeKey: str(v.placeKey, 60), species: str(v.species, 30), draft: sanitizeDraft(draftSrc), refs: sanitizeRefs(v.refs) };
+  return { ...base, name: str(v.name, 60) || "Scenario", placeKey: str(v.placeKey, 60), species: str(v.species, 30), draft: sanitizeDraft(draftSrc, schema), refs: sanitizeRefs(v.refs) };
 }
 
 // ---------------------------------------------------------------- the store
@@ -183,7 +215,7 @@ export function createTripStore(kv: KV | null, clock: () => Date = () => new Dat
         const drafts: Meta["drafts"] = {};
         if (isObj(rm.parsed.drafts)) {
           for (const [k, v] of Object.entries(rm.parsed.drafts).slice(0, MAX_DRAFTS)) {
-            if (isObj(v)) drafts[k.slice(0, 100)] = { draft: sanitizeDraft(v.draft), updatedAt: iso(v.updatedAt, now) };
+            if (isObj(v)) drafts[k.slice(0, 100)] = { draft: sanitizeDraft(v.draft, schema), updatedAt: iso(v.updatedAt, now) };
           }
         }
         out.meta = { schema: SCHEMA, unit: rm.parsed.unit === "kg" ? "kg" : "lb", drafts };
@@ -405,7 +437,9 @@ export function encodeShare(d: Draft): string {
     fs: i.fuelShared === false ? 0 : 1,
     c: (i.costs ?? []).map((c) => [n(c.usd), c.shared ? 1 : 0]),
     k: (i.catch ?? []).map((c) => [c.ref ?? "", n(c.lb), n(c.usdPerLb)]),
-    m: [i.crew?.kind ?? "afterExpenses", n(i.crew?.pct), n(i.crew?.crew), n(i.crew?.usdPerDay), n(i.crew?.days)],
+    // "" = how crew is paid is not chosen yet
+    m: [i.crew?.kind ?? "", n(i.crew?.pct), n(i.crew?.crew), n(i.crew?.usdPerDay), n(i.crew?.days)],
+    ...(i.anglers != null ? { a: n(i.anglers) } : {}),
   };
   const bytes = new TextEncoder().encode(JSON.stringify(payload));
   let bin = "";
@@ -441,8 +475,9 @@ export function decodeShare(s: string): Draft | null {
         costs: (Array.isArray(p.c) ? p.c : []).map((c: unknown, j: number) => (Array.isArray(c) ? { label: `Cost ${j + 1}`, usd: c[0], shared: c[1] !== 0 } : null)).filter(Boolean),
         catch: (Array.isArray(p.k) ? p.k : []).map((c: unknown, j: number) => (Array.isArray(c) ? { species: label(typeof c[0] === "string" ? c[0] : "", j), ref: typeof c[0] === "string" && c[0] ? c[0] : null, lb: c[1], usdPerLb: c[2] } : null)).filter(Boolean),
         crew: { kind: m[0], pct: m[1], crew: m[2], usdPerDay: m[3], days: m[4] },
+        anglers: p.a,
       },
-    });
+    }, SCHEMA);
   } catch {
     return null;
   }

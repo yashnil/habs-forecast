@@ -140,8 +140,9 @@ test("the briefing draws the day's tide from NOAA's predicted highs and lows", a
   // the servers replay NOAA responses recorded for 2026-10-13 06:00 UTC (Oct 12 in California): the page's clock too
   await page.clock.setFixedTime(new Date("2026-10-13T06:00:00Z"));
   await page.goto(`${OK}/coast?place=port-550`);
+  // v10: on a wide screen the tide is a lane across the next 60 hours, on the same clock as the NWS periods
   const tide = page.getByTestId("tide-strip");
   await expect(tide).toBeVisible({ timeout: 15_000 });
-  await expect(tide).toContainText("NOAA predictions");
-  await expect(tide.getByRole("img")).toHaveAttribute("aria-label", /Predicted tide for the day.*, in feet above MLLW: .*(high|low) \d+\.\d ft at \d{1,2}:\d{2} (AM|PM)/);
+  await expect(page.getByTestId("time-lanes")).toContainText("NOAA predictions");
+  await expect(tide.getByRole("img")).toHaveAttribute("aria-label", /Predicted tide for the (day|next 60 hours).*in feet above MLLW: .*(high|low) \d+\.\d ft at \d{1,2}:\d{2} (AM|PM)/);
 });
