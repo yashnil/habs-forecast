@@ -2,7 +2,7 @@ import type { Snapshot } from "@/lib/briefingSnapshot";
 import { AGENCY_LINKS } from "@/content/coast";
 import { speciesById } from "@/content/species";
 import { AUDIENCES } from "@/lib/coast";
-import { formatDate } from "@/lib/time";
+import { dtf, formatDate } from "@/lib/time";
 
 /**
  * A kept briefing: a dated copy of a snapshot that someone can print, or save as one self-contained
@@ -53,7 +53,7 @@ export function deleteKept(id: string): void {
 export function stamp(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles", timeZoneName: "short" });
+  return dtf("en-US", { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles", timeZoneName: "short" }).format(d);
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -92,8 +92,9 @@ export function keptSections(k: Kept): KeptSection[] {
       note: [n.published ? `${n.agency} dated ${day(n.published)}` : null, n.effective ? `effective ${day(n.effective)}` : null, n.tier === "check" ? "its geography does not settle whether it covers these waters" : null].filter(Boolean).join(" · ") || "no date given",
       url: n.url ?? undefined,
     });
+  // led by "status unclear", never by "lifted": the release is linked, the notice named in the agency's words
   for (const d of o.disputes.filter((x) => o.notices.some((n) => n.id === x.recordId)))
-    status.lines.push({ text: `${d.agency} ${d.release} appears to lift a notice above; not reviewed by a person`, url: d.url });
+    status.lines.push({ text: `Status unclear: ${d.agency} ${d.release} appears to lift “${o.notices.find((n) => n.id === d.recordId)!.title}”; not reviewed by a person`, url: d.url });
   if (o.ok && !mine.length && !o.statements.length)
     status.lines.push({ text: `No notice in Neritic's list covered these waters for ${species.id === "any" ? "any species" : s.species.label} when this was saved. That is not the same as open or safe.` });
   if (o.ok)

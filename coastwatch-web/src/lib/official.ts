@@ -87,7 +87,7 @@ export function disputeOf(ds: OfficialDataset | null, id: string): Dispute | nul
 
 /** Plain-language line for a disputed record. */
 export function disputeText(d: Dispute): string {
-  return `${d.agency} release ${d.release} (“${d.title}”) appears to lift this notice. Neritic has not reviewed it yet, so it is not shown as in effect. Read the release.`;
+  return `Status unclear: ${d.agency} release ${d.release} (“${d.title}”) appears to lift this notice. No person has reviewed that release yet, so Neritic shows the notice as neither in effect nor lifted. Read the release.`;
 }
 
 /** Active records that no published discrepancy disputes: the notices shown as current. */

@@ -112,7 +112,8 @@ type Common = {
 export type ChlNear = Common &
   (
     | { kind: "at"; value: number; date: string | null; pixel: ChlPixel; aside: ChlAside | null }
-    | { kind: "median"; value: number; date: string | null; n: number; min: number; max: number; nearest: ChlPixel; aside: ChlAside | null }
+    /** `date` is the newest pixel's day; `oldest` and `most` (the day most of the pixels were seen) give the median's real span */
+    | { kind: "median"; value: number; date: string | null; oldest: string | null; most: string | null; n: number; min: number; max: number; nearest: ChlPixel; aside: ChlAside | null }
     /** pixels exist within the radius, but none on open water that passes the rules */
     | { kind: "flagged"; n: number }
     | { kind: "none" }
@@ -220,10 +221,20 @@ async function readChlNearUncached(baseUrl: string, layer: LayerArtifact, lat: n
     const nearest = ok.reduce((a, b) => (b.km < a.km ? b : a));
     const dates = ok.map((p) => p.date).filter((d): d is string => !!d);
     const date = dates.length ? dates.reduce((a, b) => (b > a ? b : a)) : null;
-    return { ...common, kind: "median", value, date, n: ok.length, min: Math.min(...vs), max: Math.max(...vs), nearest: pixel(nearest), aside: asideFor(value) };
+    const oldest = dates.length ? dates.reduce((a, b) => (b < a ? b : a)) : null;
+    // the day most pixels were seen (ties go to the newer day)
+    const counts = new Map<string, number>();
+    for (const d of dates) counts.set(d, (counts.get(d) ?? 0) + 1);
+    const most = [...counts].sort((a, b) => b[1] - a[1] || b[0].localeCompare(a[0]))[0]?.[0] ?? null;
+    return { ...common, kind: "median", value, date, oldest, most, n: ok.length, min: Math.min(...vs), max: Math.max(...vs), nearest: pixel(nearest), aside: asideFor(value) };
   }
   if (inRadius.length) return { ...common, kind: "flagged", n: inRadius.length };
   return { ...common, kind: "none" };
+}
+
+/** The median's basis as the evidence graph carries it (lib/harborEvidence SatLite): count, range, radius and its days. */
+export function satBasis(r: ChlNear): { n: number; min: number; max: number; radiusKm: number; oldest: string | null; most: string | null } | null {
+  return r.kind === "median" ? { n: r.n, min: r.min, max: r.max, radiusKm: r.radiusKm, oldest: r.oldest, most: r.most } : null;
 }
 
 /** Chlorophyll as the readouts print it. */

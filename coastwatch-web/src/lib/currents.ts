@@ -18,6 +18,41 @@ export function currentsHourly(m: Manifest): LayerArtifact[] {
     .sort((a, b) => (a.time.valid_time ?? "").localeCompare(b.time.valid_time ?? ""));
 }
 
+/**
+ * An hour whose radar coverage collapsed (a feed still filling in, or a site down) is published like any
+ * other; it stays selectable but is not the default view. "Usable": the hour's published coverage is at
+ * least half the median of the published hours (no manifest field is added: the pipeline's own per-layer
+ * coverage). An hour without a coverage figure counts as usable.
+ */
+export const USABLE_COVERAGE_SHARE = 0.5;
+
+/** The observed radar cells of an hour, from its published coverage (null when not published). */
+export function observedCells(l: LayerArtifact): number | null {
+  const c = l.coverage;
+  if (!c || c.domain_reference_cells == null) return null;
+  return Math.round(c.domain_observed_fraction * c.domain_reference_cells);
+}
+
+/** Whether each hourly layer has usable coverage (lib/currents rule above), by layer id. */
+export function usableHours(m: Manifest): Map<string, boolean> {
+  const hours = currentsHourly(m);
+  const fr = hours.map((l) => l.coverage?.domain_observed_fraction).filter((f): f is number => f != null).sort((a, b) => a - b);
+  const median = fr.length ? (fr.length % 2 ? fr[(fr.length - 1) / 2] : (fr[fr.length / 2 - 1] + fr[fr.length / 2]) / 2) : null;
+  const out = new Map<string, boolean>();
+  for (const l of hours) {
+    const f = l.coverage?.domain_observed_fraction;
+    out.set(l.layer_id, f == null || median == null || median === 0 || f >= median * USABLE_COVERAGE_SHARE);
+  }
+  return out;
+}
+
+/** The hour the map opens on: the newest hour with usable coverage, else the newest hour. */
+export function defaultHour(m: Manifest): LayerArtifact | null {
+  const hours = currentsHourly(m);
+  const ok = usableHours(m);
+  return [...hours].reverse().find((l) => ok.get(l.layer_id)) ?? hours[hours.length - 1] ?? null;
+}
+
 export function currentsMean(m: Manifest): LayerArtifact | null {
   return m.layers.find((l) => l.layer_id === "hfr2km_currents_mean24h" && l.vectors) ?? null;
 }

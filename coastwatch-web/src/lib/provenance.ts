@@ -1,4 +1,5 @@
 import { distanceKm, type Gap } from "@/lib/grid";
+import { dtf } from "@/lib/time";
 /**
  * Provenance threads (signature interaction, PR #43 04-interactions §1): when a reader selects a
  * water point, thin lines run from it to where each statement about it comes from:
@@ -152,7 +153,7 @@ export function lastHabSample(st: Pick<StationPoint, "latest">): string | null {
 /**
  * The HAB shore stations as map points for harbour zoom (carto T3): each with its name, the date
  * of its newest HAB sample and whether that was within the last 30 days (`recent`: drawn filled,
- * otherwise a ring), and a label "<name> · last sample <Mon D>" (with the year when it is not
+ * otherwise a ring), and a label "<name> · last HAB sample <Mon D>" (with the year when it is not
  * this year). Stations whose last update failed are left out, as the inspector leaves them out.
  * `now` null: no station is called recent.
  */
@@ -168,7 +169,7 @@ export function stationFeatures(stations: StationPoint[] | null | undefined, now
       const when = last ? sampleDateWords(last, year) : null;
       return {
         type: "Feature",
-        properties: { kind: "station", id: s.station_id, name: s.name, last, recent, label: `${s.name} · ${when ? `last sample ${when}` : "no HAB sample published"}` },
+        properties: { kind: "station", id: s.station_id, name: s.name, last, recent, label: `${s.name} · ${when ? `last HAB sample ${when}` : "no HAB sample published"}` },
         geometry: { type: "Point", coordinates: [s.lon, s.lat] },
       };
     });
@@ -179,5 +180,5 @@ export function stationFeatures(stations: StationPoint[] | null | undefined, now
 function sampleDateWords(date: string, year: string | null): string {
   const d = new Date(`${date}T12:00:00Z`);
   const sameYear = year == null || date.slice(0, 4) === year;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }), timeZone: "UTC" });
+  return dtf("en-US", { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }), timeZone: "UTC" }).format(d);
 }

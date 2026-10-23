@@ -109,9 +109,9 @@ test.describe("since you last checked", () => {
     expect((await page.request.get(`${NODATA}/api/briefing?place=port-201`)).status()).toBe(503);
   });
 
-  test("Research mode does not show the block", async ({ page }) => {
+  test("a v2 Research-mode link opens the Research workspace, which has no such block", async ({ page }) => {
     await page.goto(`${OK}${CRAB}&mode=research`);
-    await expect(page.getByTestId("coast-title")).toHaveText("Crescent City");
+    await expect(page.getByTestId("research-title")).toBeVisible();
     await page.waitForTimeout(1500);
     await expect(page.getByTestId("since-last-check")).toHaveCount(0);
   });

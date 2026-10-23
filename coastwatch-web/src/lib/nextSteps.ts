@@ -117,7 +117,10 @@ export function nextSteps(x: StepInput): Step[] {
   if (all.length) {
     const first = all[0];
     const s = src(first);
-    const limit = all.flatMap((a) => a.caveats).find((c) => /limit/.test(c));
+    // with several notices listed, "Its south limit" names whose limit it is
+    const lim = all.find((a) => a.caveats.some((c) => /limit/.test(c)));
+    const limitText = lim?.caveats.find((c) => /limit/.test(c));
+    const limit = limitText && all.length > 1 ? limitText.replace(/^Its /, `“${lim!.record.title}”: its `) : limitText;
     out.push({
       id: "read-notices",
       kind: "official",

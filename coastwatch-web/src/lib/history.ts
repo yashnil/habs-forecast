@@ -28,12 +28,17 @@
  * delicatissima) on the visits where either was counted, the same sum the briefing reports.
  */
 
+import { pacificDate } from "@/lib/time";
+
 export type RecordVariable = "pDA" | "pn";
 
 export type RecordContext = {
   variable: RecordVariable;
-  /** the newest sample: date (YYYY-MM-DD, UTC) and value */
+  /** the newest sample: its Pacific date (YYYY-MM-DD), its original UTC timestamp, and value */
   date: string;
+  at: string;
+  /** the newest value is flagged for review (above the plausibility ceiling): said, never ranked */
+  flagged: boolean;
   value: number;
   /** the first sample of this variable in Neritic's copy (not necessarily the station's first) */
   since: string;
@@ -52,6 +57,8 @@ export type RecordContext = {
     years: number;
     firstYear: number | null;
     lastYear: number | null;
+    /** same-season samples left out because they are flagged for review (above the plausibility ceiling) */
+    flagged: number;
     /** of them, reported 0 (censored: at or below a limit, not absent) */
     zeros: number;
     /** of them, quantified (positive) */
@@ -73,11 +80,17 @@ export type RecordContext = {
   /** the most recent earlier sample at least as high (null: the highest in the record) */
   lastAsHigh: { date: string; value: number } | null;
   /** the visit before the newest one that measured this variable */
-  previous: { date: string; value: number } | null;
+  previous: { date: string; value: number; flagged: boolean } | null;
 };
 
 export const MIN_SEASON_SAMPLES = 12;
 export const MIN_SEASON_YEARS = 3;
+/** below this many samples a rank is said to rest on a small sample, with what one sample is worth (1/30 ≈ 3 points) */
+export const SMALL_SAMPLE = 30;
+
+/** " (a small sample)", or "" from SMALL_SAMPLE up; a small sample's rank is said as counts ("13 of the 16"), not a percent */
+export const smallWords = (n: number) => (n > 0 && n < SMALL_SAMPLE ? " (a small sample)" : "");
+const isSmall = (n: number) => n > 0 && n < SMALL_SAMPLE;
 
 type SeriesIn = { variable: string; values: (number | null)[]; qualifiers?: Record<string, string> | null };
 type StationIn = { sample_times: string[]; series: SeriesIn[] };
@@ -85,18 +98,31 @@ type StationIn = { sample_times: string[]; series: SeriesIn[] };
 const VARS: Record<RecordVariable, string[]> = { pDA: ["pDA"], pn: ["pn_seriata", "pn_delicatissima"] };
 
 /** The station's measured samples of a record variable, oldest first. */
-export function recordSamples(st: StationIn, variable: RecordVariable): { date: string; value: number }[] {
+export type RecordSample = {
+  /** the Pacific calendar date of the sample (what the page shows) */
+  date: string;
+  /** the original UTC timestamp, as SCCOOS publishes it */
+  at: string;
+  value: number;
+  /** above the pipeline's plausibility ceiling, kept and flagged for review (`flag_high`): never ranked */
+  flagged: boolean;
+};
+
+export function recordSamples(st: StationIn, variable: RecordVariable): RecordSample[] {
   const series = VARS[variable].map((v) => st.series.find((s) => s.variable === v)).filter((s): s is SeriesIn => !!s);
   if (!series.length) return [];
-  const out: { date: string; value: number }[] = [];
+  const out: RecordSample[] = [];
   st.sample_times.forEach((t, i) => {
     let sum: number | null = null;
+    let flagged = false;
     for (const s of series) {
       const v = s.values[i];
-      if (v == null || s.qualifiers?.[String(i)] === "rejected_negative") continue;
+      const q = s.qualifiers?.[String(i)];
+      if (v == null || q === "rejected_negative") continue;
+      if (q === "flag_high") flagged = true;
       sum = (sum ?? 0) + v;
     }
-    if (sum != null) out.push({ date: t.slice(0, 10), value: sum });
+    if (sum != null) out.push({ date: pacificDate(t), at: t, value: sum, flagged });
   });
   return out;
 }
@@ -118,24 +144,31 @@ export function recordContext(st: StationIn, variable: RecordVariable, windowSta
   const last = all.at(-1);
   if (!last) return null;
   const earlier = all.slice(0, -1);
+  // a value flagged for review is never a comparison point: not ranked against, never "as high"
+  const usable = earlier.filter((s) => !s.flagged);
   const months = seasonOf(month(last.date));
   const y = year(last.date);
-  const same = earlier.filter((s) => year(s.date) < y && months.includes(month(s.date)));
+  const inSeason = earlier.filter((s) => year(s.date) < y && months.includes(month(s.date)));
+  const same = inSeason.filter((s) => !s.flagged);
   const years = new Set(same.map((s) => year(s.date)));
   const enough = same.length >= MIN_SEASON_SAMPLES && years.size >= MIN_SEASON_YEARS;
-  const asHigh = [...earlier].reverse().find((s) => s.value >= last.value) ?? null;
+  const asHigh = [...usable].reverse().find((s) => s.value >= last.value) ?? null;
   const q = same.filter((s) => s.value > 0);
   const qYears = new Set(q.map((s) => year(s.date)));
   const qEnough = q.length >= MIN_SEASON_SAMPLES && qYears.size >= MIN_SEASON_YEARS;
   const qBelow = q.filter((s) => s.value < last.value).length;
+  // the newest sample itself flagged for review: it is said, never ranked
+  const rankable = !last.flagged;
   return {
     variable,
     date: last.date,
+    at: last.at,
+    flagged: last.flagged,
     value: last.value,
     since: all[0].date,
     windowStart,
     n: all.length,
-    quantifiedEarlier: earlier.filter((s) => s.value > 0).length,
+    quantifiedEarlier: usable.filter((s) => s.value > 0).length,
     season: {
       months,
       n: same.length,
@@ -143,16 +176,17 @@ export function recordContext(st: StationIn, variable: RecordVariable, windowSta
       firstYear: same.length ? Math.min(...years) : null,
       lastYear: same.length ? Math.max(...years) : null,
       zeros: same.length - q.length,
+      flagged: inSeason.length - same.length,
       quantified: q.length,
       quantifiedYears: qYears.size,
       quantifiedBelow: qBelow,
       // a zero is never "lower" than a positive value: rank a positive value among quantified samples only
-      below: last.value > 0 ? (qEnough ? qBelow / q.length : null) : enough ? same.filter((s) => s.value < last.value).length / same.length : null,
-      equal: enough ? same.filter((s) => s.value === last.value).length / same.length : null,
+      below: !rankable ? null : last.value > 0 ? (qEnough ? qBelow / q.length : null) : enough ? same.filter((s) => s.value < last.value).length / same.length : null,
+      equal: rankable && enough ? same.filter((s) => s.value === last.value).length / same.length : null,
       median: enough ? median(same.map((s) => s.value)) : null,
     },
-    lastAsHigh: asHigh,
-    previous: earlier.at(-1) ?? null,
+    lastAsHigh: asHigh ? { date: asHigh.date, value: asHigh.value } : null,
+    previous: earlier.length ? { date: earlier.at(-1)!.date, value: earlier.at(-1)!.value, flagged: earlier.at(-1)!.flagged } : null,
   };
 }
 
@@ -173,11 +207,15 @@ export const zeroWords = (v: RecordVariable, n: number) =>
  */
 export function rankWords(r: RecordContext): string | null {
   const s = r.season;
+  // a value flagged for review is never ranked (historySentence says why)
+  if (r.flagged) return null;
   const months = seasonWords(s.months);
   const span = `${months} samples there in ${s.firstYear}–${s.lastYear}`;
+  // values above the plausibility ceiling, kept for review, are left out of every comparison and said so
+  const left = s.flagged ? `; ${s.flagged} flagged for review (above the plausibility ceiling) ${s.flagged === 1 ? "is" : "are"} left out` : "";
   if (r.value === 0) {
     if (s.equal == null) return null;
-    return `${r.variable === "pn" ? "no cells counted" : "not quantified (reported 0)"}, as in ${Math.round(s.equal * 100)}% of the ${s.n} ${span}`;
+    return `${r.variable === "pn" ? "no cells counted" : "not quantified (reported 0)"}, as in ${isSmall(s.n) ? `${Math.round(s.equal * s.n)} of the ${s.n}` : `${Math.round(s.equal * 100)}% of the ${s.n}`} ${span}${smallWords(s.n)}${left}`;
   }
   const enoughSeason = s.n >= MIN_SEASON_SAMPLES && s.years >= MIN_SEASON_YEARS;
   if (s.below == null) {
@@ -188,12 +226,15 @@ export function rankWords(r: RecordContext): string | null {
       s.quantified === 0 ? "none was quantified"
       : qb === s.quantified ? (s.quantified === 1 ? "the 1 quantified was lower" : `all ${s.quantified} quantified were lower`)
       : `${qb} of the ${s.quantified} quantified ${qb === 1 ? "was" : "were"} lower`;
-    return `of the ${s.n} ${span}, ${zeroWords(r.variable, s.zeros)}, and ${qPart}`;
+    return `of the ${s.n} ${span}, ${zeroWords(r.variable, s.zeros)}, and ${qPart}${left}`;
   }
-  const qSpan = `${s.quantified}${s.zeros ? " quantified" : ""} ${span}`;
-  const rest = s.zeros ? `; another ${zeroWords(r.variable, s.zeros)} and ${s.zeros === 1 ? "is" : "are"} not ranked` : "";
+  // the sample size is always said; a small one is said as small, with what one sample is worth
+  const qSpan = `${s.quantified}${s.zeros ? " quantified" : ""} ${span}${smallWords(s.quantified)}`;
+  const rest = `${s.zeros ? `; another ${zeroWords(r.variable, s.zeros)} and ${s.zeros === 1 ? "is" : "are"} not ranked` : ""}${left}`;
   if (s.below === 1) return `higher than all ${qSpan}${rest}`;
   if (s.below === 0) return `none of the ${qSpan} was lower${rest}`;
+  // a small sample: plain counts ("higher than 13 of the 16 quantified …")
+  if (isSmall(s.quantified)) return `higher than ${s.quantifiedBelow} of the ${qSpan}${rest}`;
   // never round to "0%" or "100%" when the record says otherwise
   const pct = Math.min(99, Math.max(1, Math.round(s.below * 100)));
   return `higher than ${pct}% of the ${qSpan}${rest}`;

@@ -16,7 +16,9 @@ const LABEL: Record<SnapId, string> = { peek: "collapsed", half: "half height", 
  *
  * Transform-only (signature §9): the sheet keeps the height of its largest snap and slides with
  * translateY, so a drag or a settle never re-lays-out its content (smooth without a fast GPU).
- * The settle uses the spring token; reduced motion turns it into a cut (globals.css). The body's
+ * A drag's release settles on the spring token (it carries the finger's speed); a tap or a key glides
+ * on the drawer curve (460 ms). Past the ends the sheet gives like a rubber band (a shrinking
+ * response), and the handle widens while held. Reduced motion turns the slide into a cut (globals.css). The body's
  * bottom padding follows the snap, so the content scrolls to its end at every size.
  */
 export function MobileSheet({
@@ -27,6 +29,8 @@ export function MobileSheet({
   children,
   label,
   testid = "mobile-sheet",
+  field = false,
+  edge = null,
 }: {
   snaps: SnapPoint[];
   snap: SnapId;
@@ -36,10 +40,16 @@ export function MobileSheet({
   children?: ReactNode;
   label: string;
   testid?: string;
+  /** v4 field ergonomics: a 44 px handle */
+  field?: boolean;
+  /** a fixed line under the handle, outside the scrolling body (v4: the map's credits, which then cover no map label) */
+  edge?: ReactNode;
 }) {
   const i = Math.max(0, snaps.findIndex((s) => s.id === snap));
   const target = snaps[i]?.height ?? 0;
   const [dragH, setDragH] = useState<number | null>(null);
+  // how the last change was asked for: a released drag settles on the spring, a tap or key glides
+  const [via, setVia] = useState<"drag" | "tap">("tap");
   const drag = useRef<{ y: number; h: number; t: number; moved: boolean; samples: { y: number; t: number }[] } | null>(null);
   const full = snaps[snaps.length - 1]?.height ?? target;
   const body = useRef<HTMLDivElement>(null);
@@ -49,7 +59,10 @@ export function MobileSheet({
     if (snap === snaps[0]?.id) body.current?.scrollTo({ top: 0 });
   }, [snap, snaps]);
 
-  const go = (k: number) => onSnap(snaps[Math.max(0, Math.min(snaps.length - 1, k))].id);
+  const go = (k: number, how: "drag" | "tap" = "tap") => {
+    setVia(how);
+    onSnap(snaps[Math.max(0, Math.min(snaps.length - 1, k))].id);
+  };
   const settle = (h: number, velocity: number) => {
     // where the sheet would come to rest 180 ms ahead at this speed; the nearest snap to that
     // wins, so a quick flick carries on to the next snap and a slow drag settles where it is
@@ -58,7 +71,7 @@ export function MobileSheet({
     snaps.forEach((s, k) => {
       if (Math.abs(s.height - projected) < Math.abs(snaps[best].height - projected)) best = k;
     });
-    go(best);
+    go(best, "drag");
   };
 
   return (
@@ -70,7 +83,7 @@ export function MobileSheet({
       style={{
         height: full,
         transform: `translateY(${full - (dragH ?? target)}px)`,
-        transition: dragH == null ? "transform var(--cw-d-medium) var(--cw-ease-settle)" : "none",
+        transition: dragH != null ? "none" : via === "drag" ? "transform var(--cw-d-medium) var(--cw-ease-settle)" : "transform var(--nx-t-sheet) var(--nx-ease-drawer)",
       }}
     >
       <button
@@ -78,7 +91,7 @@ export function MobileSheet({
         aria-label={`${label}: ${LABEL[snap]}. Activate to resize, or use the arrow keys.`}
         aria-expanded={snap !== snaps[0]?.id}
         data-testid="sheet-handle"
-        className="flex h-6 w-full shrink-0 touch-none items-center justify-center rounded-t-2xl"
+        className={`flex w-full shrink-0 touch-none items-center justify-center rounded-t-2xl ${field ? "h-14" : "h-6"}`}
         onClick={() => {
           if (drag.current?.moved) return;
           go(i === snaps.length - 1 ? 0 : i + 1);
@@ -102,10 +115,10 @@ export function MobileSheet({
           d.samples = [...d.samples.slice(-4), { y: e.clientY, t: performance.now() }];
           const lo = snaps[0].height;
           const hi = snaps[snaps.length - 1].height;
-          // a rubber band below the smallest size (a third of the overshoot); the largest is a stop,
-          // since the sheet is no taller than it
+          // a rubber band below the smallest size (the overshoot to the power 0.6, so it gives less the
+          // further it goes); the largest is a stop, since the sheet is no taller than it
           const h = d.h - dy;
-          setDragH(h > hi ? hi : h < lo ? lo - (lo - h) / 3 : h);
+          setDragH(h > hi ? hi : h < lo ? lo - Math.pow(lo - h, 0.6) : h);
         }}
         onPointerUp={(e) => {
           const d = drag.current;
@@ -126,8 +139,10 @@ export function MobileSheet({
           setDragH(null);
         }}
       >
-        <span className="h-1 w-10 rounded-full bg-hairline-strong" aria-hidden />
+        <span className={`h-1 w-10 rounded-full bg-hairline-strong transition-transform duration-150 ${dragH != null ? "scale-x-[1.15]" : ""}`} aria-hidden />
       </button>
+      {/* below the handle's whole hit area: a tap on a credit link never resizes the sheet */}
+      {edge && <div className="shrink-0 px-4 pb-1">{edge}</div>}
       <div ref={body} className="cw-fade-in min-h-0 flex-1 overflow-y-auto overscroll-contain px-4" style={{ paddingBottom: 20 + full - target }}>
         {header}
         {children}

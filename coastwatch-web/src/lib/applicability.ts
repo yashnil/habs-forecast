@@ -200,3 +200,14 @@ export const AUDIENCE: Record<OfficialRecord["fishery"], { label: string; groups
   sport_harvest: { label: "Recreational (sport) harvest", groups: ["recreational", "shellfish"] },
   consumption: { label: "Anyone eating it", groups: ["commercial", "recreational", "shellfish"] },
 };
+
+/**
+ * The notices control's "local" view for any place on the map (a harbour, a chosen point or a model
+ * cell): the notices whose official geography covers it and those whose reach there is not settled.
+ * Pure; the same tiers as the briefing, so a point and a harbour are never counted differently.
+ */
+export function localNotices(ds: OfficialDataset | null, location: string, name: string, lat: number, lon: number, kind: LocationKind = "shore"): { name: string; covering: string[]; unsettled: string[] } | null {
+  if (!ds) return null;
+  const a = associationsAt(ds, location, lat, lon, APPLICABILITY, kind);
+  return { name, covering: a.filter((x) => x.tier === "geographic").map((x) => x.record.id), unsettled: a.filter((x) => x.tier === "unresolved").map((x) => x.record.id) };
+}

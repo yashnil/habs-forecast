@@ -7,6 +7,7 @@ import type { OfficialDataset } from "@/generated/official";
 import type { PortIntelCollection } from "@/generated/port_intel";
 import type { ObservationDataset } from "@/generated/observations";
 import type { FisheriesDataset } from "@/generated/fisheries";
+import { pacificDate } from "@/lib/time";
 import { recordContext, type RecordContext, type RecordVariable } from "@/lib/history";
 import fisheriesSchema from "@/generated/schemas/fisheries.schema.json";
 import observationsSchema from "@/generated/schemas/observations.schema.json";
@@ -48,7 +49,8 @@ export type StationLite = {
   source_url: string;
   /** the station's original-data request on SCCOOS ERDDAP (lib/observations sourceCsvUrl) */
   request_url?: string | null;
-  latest: { variable: string; label: string; units: string; kind: string; value: number | null; date: string; qualifier: string | null; n_last_365d: number }[];
+  /** `date` is the sample's Pacific calendar date; `at` its original UTC timestamp (SCCOOS), when the series has it */
+  latest: { variable: string; label: string; units: string; kind: string; value: number | null; date: string; at?: string | null; qualifier: string | null; n_last_365d: number }[];
   /** the last 370 days of samples of the HAB measurements (My Coast's evidence timelines): [date, value] */
   recent?: Record<string, [string, number | null][]>;
   /** the newest toxin and Pseudo-nitzschia samples placed in the station's own record (lib/history) */
@@ -75,7 +77,9 @@ export function slimStations(obs: ObservationDataset): StationLite[] {
       .filter((sm) => MAP_VARIABLES.includes(sm.variable) && sm.last_date)
       .map((sm) => {
         const v = meta.get(sm.variable);
-        return { variable: sm.variable, label: v?.label ?? sm.variable, units: v?.units ?? "", kind: v?.kind ?? "", value: sm.last_value ?? null, date: sm.last_date!, qualifier: sm.last_qualifier ?? null, n_last_365d: sm.n_last_365d };
+        // the pipeline's last_date is the UTC date; the sample's own timestamp gives its Pacific date
+        const at = lastSampleAt(st, sm.variable, sm.last_date!);
+        return { variable: sm.variable, label: v?.label ?? sm.variable, units: v?.units ?? "", kind: v?.kind ?? "", value: sm.last_value ?? null, date: at ? pacificDate(at) : sm.last_date!, at, qualifier: sm.last_qualifier ?? null, n_last_365d: sm.n_last_365d };
       }),
     recent: recentSeries(st, newest),
     record: stationRecord(st, obs.window_start ?? null),
@@ -91,6 +95,18 @@ function stationRecord(st: ObservationDataset["stations"][number], windowStart: 
   return out;
 }
 
+/** The UTC timestamp of a variable's newest measured sample, when it falls on the published last_date (UTC). */
+function lastSampleAt(st: ObservationDataset["stations"][number], variable: string, lastDate: string): string | null {
+  const se = (st.series as { variable: string; values: (number | null)[] }[]).find((x) => x.variable === variable);
+  if (!se) return null;
+  for (let i = se.values.length - 1; i >= 0; i--) {
+    if (se.values[i] == null) continue;
+    const t = st.sample_times[i];
+    return t && t.slice(0, 10) === lastDate ? t : null;
+  }
+  return null;
+}
+
 /** Samples in the RECENT_DAYS days before the dataset's newest sample, per HAB variable (measured values only, 3 significant digits). */
 function recentSeries(st: ObservationDataset["stations"][number], newest: number): Record<string, [string, number | null][]> {
   const times = st.sample_times;
@@ -102,7 +118,7 @@ function recentSeries(st: ObservationDataset["stations"][number], newest: number
     se.values.forEach((v, i) => {
       if (v == null) return; // not measured that visit: no point (a gap is not a zero)
       const t = Date.parse(times[i]);
-      if (t >= from) pts.push([times[i].slice(0, 10), Number(v.toPrecision(3))]);
+      if (t >= from) pts.push([pacificDate(times[i]), Number(v.toPrecision(3))]);
     });
     if (pts.length) out[se.variable] = pts;
   }

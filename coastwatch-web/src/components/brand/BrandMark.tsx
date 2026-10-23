@@ -1,30 +1,21 @@
-import { useId } from "react";
+import { C2, C2_TONES } from "@/v4/brand/c2";
 
 /**
- * Neritic's mark: the neritic zone in cross-section. The sea surface, the continental shelf with its
- * break into deep water, the sunlit band of shallow water between them (bright under the surface,
- * fading toward the shelf), and one amber point in it: an observation. Same tile, cyan and amber as before; the favicon, app icons and sharing image are
- * drawn from it (scripts/build_brand_assets.mjs keeps the same paths).
+ * Neritic's mark on the v2 pages (Bloom stations, Fisheries, Sources): C2 "Chart label", the same
+ * drawing as the v4 header (src/v4/brand/c2.ts), in its dark master for the navy masthead. The
+ * favicon, app icons and sharing image are drawn from the same geometry (scripts/build_brand_assets.mjs).
  */
 export function BrandMark({ size = 26, className }: { size?: number; className?: string }) {
-  const lit = `nm-lit-${useId().replace(/:/g, "")}`;
+  const t = C2_TONES.dark;
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden className={className}>
-      <rect width="32" height="32" rx="8" fill="#10263e" />
-      <defs>
-        <linearGradient id={lit} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#6cc6dc" stopOpacity=".42" />
-          <stop offset="1" stopColor="#6cc6dc" stopOpacity=".04" />
-        </linearGradient>
-      </defs>
-      {/* the neritic zone: the sunlit water over the shelf */}
-      <path d="M6 10H19.5V21H6Z" fill={`url(#${lit})`} />
-      {/* sea surface */}
-      <path d="M6 10H26" stroke="#6cc6dc" strokeWidth="2" strokeLinecap="round" />
-      {/* the shelf, then the break into deep water */}
-      <path d="M6 21H19.5L24.5 26.5" fill="none" stroke="#e8eef5" strokeOpacity=".78" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      {/* an observation in the shallow water */}
-      <circle cx="12.75" cy="15.5" r="2.2" fill="#f6bb5c" />
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden className={className} data-brand="c2">
+      <path d={C2.tile} fill={t.tile} />
+      <g stroke={t.stub} strokeWidth={C2.stubWidth}>
+        {C2.stubs.map((d) => (
+          <path key={d} d={d} />
+        ))}
+      </g>
+      <path transform={C2.nAt} d={C2.n} fill={t.n} />
     </svg>
   );
 }

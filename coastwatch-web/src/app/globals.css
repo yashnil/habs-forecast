@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* v4 tokens and their utilities (bg-n-surface, text-n-ink, …): compiled with Tailwind so @theme applies */
+@import "../v4/theme.css";
 
 /*
  * CoastWatch design tokens (design reset, docs/coastwatch/design-reset/design-spec.md §2).
@@ -95,12 +97,13 @@
 
   /* motion (signature §motion). Data never animates between values: swaps dip through the
      basemap; nothing is interpolated between two days or two observations. */
-  --cw-d-micro: 110ms;
-  --cw-d-short: 180ms;
-  --cw-d-medium: 280ms;
-  --cw-d-long: 460ms;
-  --cw-ease-standard: cubic-bezier(0.2, 0, 0, 1);
-  --cw-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  /* one motion vocabulary: these alias the v4 tokens (src/v4/theme.css) */
+  --cw-d-micro: var(--nx-t-press);
+  --cw-d-short: var(--nx-t-pop);
+  --cw-d-medium: var(--nx-t-panel);
+  --cw-d-long: var(--nx-t-sheet);
+  --cw-ease-standard: var(--nx-ease-out);
+  --cw-ease-exit: var(--nx-ease-in);
   /* a lightly damped spring (about 3 % overshoot): sheets and the selection ring only, never data */
   --cw-ease-settle: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 18.1%, 1.017 23.8%, 1.031 28.6%, 1.022 35.7%, 1.004 47.6%, 0.998 59.5%, 1);
 
@@ -197,7 +200,8 @@
 
 html,
 body {
-  background: var(--cw-page);
+  /* v4: the reading environment's ground (not v2's cream), so no first frame or overscroll shows another page */
+  background: var(--nx-bg, var(--cw-page));
   color: var(--cw-ink);
   font-family: var(--font-plex-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
   /* tabular lining figures everywhere, so numbers align in tables and readouts */
@@ -253,27 +257,27 @@ body {
 
 /* Panels and sheets arrive with a short ease-out; reduced motion turns this off (below). */
 @keyframes cw-sheet-in {
-  from { opacity: 0; transform: translateX(16px); }
+  from { opacity: 0; transform: translateX(calc(16px * var(--nx-shift))); }
   to { opacity: 1; transform: none; }
 }
 @keyframes cw-sheet-up {
-  from { opacity: 0; transform: translateY(24px); }
+  from { opacity: 0; transform: translateY(calc(24px * var(--nx-shift))); }
   to { opacity: 1; transform: none; }
 }
-.cw-sheet-in { animation: cw-sheet-in 180ms ease-out both; }
-.cw-sheet-up { animation: cw-sheet-up 200ms ease-out both; }
+.cw-sheet-in { animation: cw-sheet-in var(--nx-t-pop) var(--nx-ease-out) both; }
+.cw-sheet-up { animation: cw-sheet-up 200ms var(--nx-ease-out) both; }
 @keyframes cw-pop-in {
-  from { opacity: 0; transform: translateY(-6px); }
+  from { opacity: 0; transform: translateY(calc(-6px * var(--nx-shift))); }
   to { opacity: 1; transform: none; }
 }
-.cw-pop-in { animation: cw-pop-in 140ms ease-out both; }
+.cw-pop-in { animation: cw-pop-in 140ms var(--nx-ease-out) both; }
 
 /* Press feedback: buttons give a little under the finger (signature §11) */
 .cw-press {
   transition: transform var(--cw-d-micro) var(--cw-ease-standard);
 }
 .cw-press:active {
-  transform: scale(0.97);
+  transform: scale(calc(1 - 0.03 * var(--nx-shift)));
 }
 
 /* Kind labels: sentence case led by the matching mark, never tracked capitals (signature P5) */
@@ -288,15 +292,15 @@ body {
 
 /* Page arrival (components/motion/PageIn) */
 @keyframes cw-page-in {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(calc(8px * var(--nx-shift))); }
   to { opacity: 1; transform: none; }
 }
 @keyframes cw-fade {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.cw-page-in { animation: cw-page-in 420ms var(--cw-ease-standard) both; }
-.cw-fade-in { animation: cw-fade 300ms linear both; }
+.cw-page-in { animation: cw-page-in var(--nx-t-page) var(--nx-ease-out) both; }
+.cw-fade-in { animation: cw-fade var(--nx-t-page) var(--nx-ease-out) both; }
 
 /* A chosen point on the map: one ring that expands and fades, once (never a loop) */
 @keyframes cw-ping {
@@ -316,12 +320,24 @@ body {
   to { opacity: 1; }
 }
 .cw-late {
-  animation: cw-late 160ms linear 400ms both;
+  animation: cw-late 200ms var(--nx-ease-out) 400ms both;
 }
 
+/* Reduced motion: fades and colour changes stay, movement goes. Keyframes travel by --nx-shift (0
+   here); transitions keep only their non-moving properties (a transform or a slide becomes a cut);
+   loops and the selection ring stop; motion components follow MotionConfig reducedMotion="user". */
 @media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
+  *,
+  *::before,
+  *::after {
+    transition-property: opacity, color, background-color, border-color, outline-color, fill, stroke !important;
+    scroll-behavior: auto !important;
+  }
+  .cw-ping,
+  .cw-settle,
+  .animate-spin,
+  .animate-ping,
+  .animate-pulse {
     animation: none !important;
   }
 }

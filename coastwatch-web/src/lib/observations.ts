@@ -1,6 +1,7 @@
 import type { ObsStation, ObsVariable, ObsVariableSummary } from "@/generated/observations";
 import type { FreshnessPolicy } from "@/generated/schema";
 import { classifyDate, type Freshness } from "@/lib/freshness";
+import { dtf } from "@/lib/time";
 
 export type ObsVariableId = ObsVariable["id"];
 export type Qualifier = NonNullable<ObsVariableSummary["last_qualifier"]>;
@@ -75,7 +76,7 @@ export function cadenceLabel(days: number | null | undefined): string {
 }
 
 export function monthYear(date: string): string {
-  return new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+  return dtf("en-US", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
 }
 
 /** Map bounds per region, identical to data/curated/ports.json (checked by a unit test). */

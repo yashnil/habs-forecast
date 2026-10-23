@@ -1,0 +1,490 @@
+/*
+ * Neritic v4 design tokens.
+ *
+ * Two environments share one vocabulary:
+ * - Instrument: the dark ocean workspace (Explore, map surfaces). Solid decks over the map, no
+ *   heavy blur over WebGL; one cyan accent for selection and focus.
+ * - Chart: the light reading environment (My Coast briefing, Research, reference pages). Cool and
+ *   crisp, like chart paper, never cream.
+ *
+ * Data families keep their meaning everywhere: official = amber, model = violet,
+ * measured = teal, conditions = sky. State never relies on colour alone (each state ships an icon
+ * and a word). Names are --nx-* so v2 components (--cw-*) keep working while routes migrate.
+ */
+
+:root,
+.env-chart {
+  /* C2 mark, light master (src/v4/brand/c2.ts) */
+  --nx-mark-tile: #12395a;
+  --nx-mark-stub: #bfe4ec;
+  --nx-mark-n: #e8eef2;
+  --nx-mark-word: #12395a;
+  --nx-bg: #f2f5f6;
+  --nx-surface: #ffffff;
+  --nx-surface-2: #eef2f4;
+  --nx-surface-3: #e3e9ec;
+  --nx-line: #dbe2e6;
+  --nx-line-strong: #c3ced4;
+  --nx-ink: #0b1820;
+  --nx-ink-2: #3a4e5b;
+  --nx-ink-3: #526773;
+  --nx-accent: #086a85;
+  --nx-accent-bg: #e3f2f6;
+  --nx-on-accent: #ffffff;
+
+  --nx-official: #a14b00;
+  --nx-official-bg: #fdf1df;
+  --nx-official-line: #efbb72;
+  --nx-model: #6b3fb3;
+  --nx-model-bg: #f2edfb;
+  --nx-model-line: #cbbbee;
+  --nx-measured: #0b7468;
+  --nx-measured-bg: #e2f3ef;
+  --nx-measured-line: #a3d5cc;
+  --nx-conditions: #1f6496;
+  --nx-conditions-bg: #e6f0f8;
+
+  --nx-ok: #17784c;
+  --nx-partial: #086a85;
+  --nx-stale: #8a5a00;
+  --nx-offline: #4b5d6a;
+  --nx-down: #b3361f;
+
+  --nx-gap: #5d707b;
+  --nx-shadow: 0 1px 2px rgba(11, 24, 32, 0.08), 0 8px 24px rgba(11, 24, 32, 0.08);
+}
+
+.env-instrument {
+  /* C2 mark, dark master: the same drawing re-tinted for the map's surfaces */
+  --nx-mark-tile: #2e86ab;
+  --nx-mark-stub: #0b1a24;
+  --nx-mark-n: #f6f4ef;
+  --nx-mark-word: #e8eef2;
+  color-scheme: dark;
+  --nx-bg: #061016;
+  --nx-surface: #0c1921;
+  --nx-surface-2: #12232e;
+  --nx-surface-3: #1a2f3c;
+  --nx-line: rgba(186, 214, 230, 0.12);
+  --nx-line-strong: rgba(186, 214, 230, 0.24);
+  --nx-ink: #ebf2f6;
+  --nx-ink-2: #aabdc9;
+  --nx-ink-3: #7c95a4;
+  --nx-accent: #5fd0e6;
+  --nx-accent-bg: rgba(95, 208, 230, 0.13);
+  --nx-on-accent: #04141b;
+
+  --nx-official: #f4b552;
+  --nx-official-bg: rgba(244, 181, 82, 0.1);
+  --nx-official-line: rgba(244, 181, 82, 0.42);
+  --nx-model: #c2a8f5;
+  --nx-model-bg: rgba(194, 168, 245, 0.11);
+  --nx-model-line: rgba(194, 168, 245, 0.4);
+  --nx-measured: #4fd3b0;
+  --nx-measured-bg: rgba(79, 211, 176, 0.1);
+  --nx-measured-line: rgba(79, 211, 176, 0.4);
+  --nx-conditions: #7cc4f0;
+  --nx-conditions-bg: rgba(124, 196, 240, 0.1);
+
+  --nx-ok: #4fd3b0;
+  --nx-partial: #5fd0e6;
+  --nx-stale: #e5b25a;
+  --nx-offline: #9fb2be;
+  --nx-down: #f08a74;
+
+  --nx-gap: #8ea2af;
+  --nx-shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.35);
+  background: var(--nx-bg);
+  color: var(--nx-ink);
+}
+
+:root {
+  /* type: one sans for the interface and reading (Atkinson Hyperlegible Next: built for
+     legibility, which also serves bright sun), a serif for editorial headlines, a mono for values */
+  --nx-font-ui: var(--font-atkinson), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --nx-font-display: var(--font-source-serif), "Iowan Old Style", Georgia, serif;
+  --nx-font-data: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* motion: short, ease-out, interruptible; frequent map operations are instant. Exits are about a
+     third faster than entrances and ease in. Data values never animate (src/v4/motion.ts). */
+  --nx-t-press: 110ms;
+  --nx-t-hover: 150ms;
+  --nx-t-pop: 180ms;
+  --nx-t-pop-exit: 120ms;
+  --nx-t-panel: 240ms;
+  --nx-t-panel-exit: 160ms;
+  --nx-t-page: 260ms;
+  --nx-t-sheet: 460ms;
+  --nx-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --nx-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --nx-ease-move: cubic-bezier(0.77, 0, 0.175, 1);
+  --nx-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  /* older names, kept for the components that use them */
+  --nx-ease-in-out: var(--nx-ease-move);
+  --nx-t-quick: var(--nx-t-press);
+  --nx-t-base: var(--nx-t-pop);
+  /* movement multiplier: 1, or 0 under reduced motion (fades stay, nothing travels) */
+  --nx-shift: 1;
+
+  /* field ergonomics: primary controls on phones are 56 px, secondary ones at least 44 px */
+  --nx-hit-field: 56px;
+  --nx-hit: 44px;
+  --nx-radius: 12px;
+  --nx-radius-lg: 18px;
+}
+
+@theme inline {
+  --color-n-bg: var(--nx-bg);
+  --color-n-surface: var(--nx-surface);
+  --color-n-surface-2: var(--nx-surface-2);
+  --color-n-surface-3: var(--nx-surface-3);
+  --color-n-line: var(--nx-line);
+  --color-n-line-strong: var(--nx-line-strong);
+  --color-n-ink: var(--nx-ink);
+  --color-n-ink-2: var(--nx-ink-2);
+  --color-n-ink-3: var(--nx-ink-3);
+  --color-n-accent: var(--nx-accent);
+  --color-n-accent-bg: var(--nx-accent-bg);
+  --color-n-on-accent: var(--nx-on-accent);
+  --color-n-official: var(--nx-official);
+  --color-n-official-bg: var(--nx-official-bg);
+  --color-n-official-line: var(--nx-official-line);
+  --color-n-model: var(--nx-model);
+  --color-n-model-bg: var(--nx-model-bg);
+  --color-n-model-line: var(--nx-model-line);
+  --color-n-measured: var(--nx-measured);
+  --color-n-measured-bg: var(--nx-measured-bg);
+  --color-n-measured-line: var(--nx-measured-line);
+  --color-n-conditions: var(--nx-conditions);
+  --color-n-conditions-bg: var(--nx-conditions-bg);
+  --color-n-ok: var(--nx-ok);
+  --color-n-partial: var(--nx-partial);
+  --color-n-stale: var(--nx-stale);
+  --color-n-offline: var(--nx-offline);
+  --color-n-down: var(--nx-down);
+  --color-n-gap: var(--nx-gap);
+  --font-ui: var(--nx-font-ui);
+  --font-serif: var(--nx-font-display);
+  --font-data: var(--nx-font-data);
+}
+
+/* v2 content inside the v4 reading environment takes the v4 palette and faces */
+.env-chart {
+  --cw-page: var(--nx-bg);
+  --cw-surface: var(--nx-surface);
+  --cw-surface-2: var(--nx-surface-2);
+  --cw-surface-3: var(--nx-surface-3);
+  --cw-hairline: var(--nx-line);
+  --cw-hairline-strong: var(--nx-line-strong);
+  --cw-ink: var(--nx-ink);
+  --cw-ink-2: var(--nx-ink-2);
+  --cw-ink-3: var(--nx-ink-3);
+  --cw-accent: var(--nx-accent);
+  --font-plex-sans: var(--font-atkinson);
+  --font-newsreader: var(--font-source-serif);
+}
+
+/* a v2 paper panel inside a v4 surface (the phone sheet is MobileSheet, a ".theme-paper"): that class
+   resets the v2 palette to warm paper on itself, so the remap is repeated on it here; the sheet reads cool
+   chart paper like everything around it, never cream */
+.env-chart .theme-paper {
+  color-scheme: light;
+  --cw-page: var(--nx-bg);
+  --cw-surface: var(--nx-surface);
+  --cw-surface-2: var(--nx-surface-2);
+  --cw-surface-3: var(--nx-surface-3);
+  --cw-hairline: var(--nx-line);
+  --cw-hairline-strong: var(--nx-line-strong);
+  --cw-ink: var(--nx-ink);
+  --cw-ink-2: var(--nx-ink-2);
+  --cw-ink-3: var(--nx-ink-3);
+  --cw-accent: var(--nx-accent);
+  --cw-official: var(--nx-official);
+  --cw-official-bg: var(--nx-official-bg);
+  --cw-official-line: var(--nx-official-line);
+  --cw-model-ink: var(--nx-model);
+  --cw-model-bg: var(--nx-model-bg);
+  --cw-model-line: var(--nx-model-line);
+  --cw-chl: var(--nx-measured);
+  --cw-measured-bg: var(--nx-measured-bg);
+  --cw-measured-line: var(--nx-measured-line);
+}
+
+/* one select for v4's reading surfaces: the native control (its list, its keyboard, its phone picker),
+   drawn with the v4 chevron so every select looks the same; text never runs under the chevron */
+.nx-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23526773' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.1rem;
+  text-overflow: ellipsis;
+}
+.env-instrument .nx-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c95a4' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+.env-instrument .env-chart .nx-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23526773' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* v4 surfaces read in the v4 faces (v2 pages keep theirs until they move) */
+.env-chart,
+.env-instrument {
+  font-family: var(--nx-font-ui);
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* v4 surfaces: a deck is the one floating surface over the map (solid, a hairline, one shadow) */
+.nx-deck {
+  background: var(--nx-surface);
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-radius-lg);
+  box-shadow: var(--nx-shadow);
+}
+.nx-data {
+  font-family: var(--nx-font-data);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+.nx-eyebrow {
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--nx-ink-3);
+}
+.nx-press {
+  transition: transform var(--nx-t-press) var(--nx-ease-out), background-color var(--nx-t-hover) var(--nx-ease-out), color var(--nx-t-hover) var(--nx-ease-out), border-color var(--nx-t-hover) var(--nx-ease-out);
+}
+.nx-press:active {
+  transform: scale(calc(1 - 0.03 * var(--nx-shift)));
+}
+/* the focus ring settles in (4 px out to 2 px) instead of snapping */
+.nx-focus {
+  outline: 2px solid transparent;
+  outline-offset: 4px;
+  transition-property: outline-color, outline-offset, transform, background-color, color, border-color;
+  transition-duration: 120ms, 120ms, var(--nx-t-press), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover);
+  transition-timing-function: var(--nx-ease-out);
+}
+.nx-focus:focus-visible {
+  outline: 2px solid var(--nx-accent);
+  outline-offset: 2px;
+}
+@media (forced-colors: active) {
+  .nx-focus { outline-style: none; }
+  .nx-focus:focus-visible { outline-style: solid; }
+}
+/* rows and options: the hover tint eases in */
+.nx-row {
+  transition: background-color var(--nx-t-hover) var(--nx-ease-out), color var(--nx-t-hover) var(--nx-ease-out);
+}
+/* cards that lead somewhere lift a pixel under a mouse (never on touch) */
+@media (hover: hover) {
+  .nx-lift {
+    transition-property: transform, border-color, background-color, outline-color, outline-offset;
+    transition-duration: var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), 120ms, 120ms;
+    transition-timing-function: var(--nx-ease-out);
+  }
+  .nx-lift:hover {
+    transform: translateY(calc(-1px * var(--nx-shift)));
+  }
+  .nx-lift.nx-press:hover:active {
+    transform: translateY(calc(-1px * var(--nx-shift))) scale(calc(1 - 0.03 * var(--nx-shift)));
+  }
+}
+
+@keyframes nx-rise {
+  from { opacity: 0; transform: translateY(calc(6px * var(--nx-shift))); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nx-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes nx-panel {
+  from { opacity: 0; transform: translateX(calc(16px * var(--nx-shift))); }
+  to { opacity: 1; transform: none; }
+}
+.nx-rise { animation: nx-rise var(--nx-t-pop) var(--nx-ease-out) both; }
+.nx-fade { animation: nx-fade var(--nx-t-pop) var(--nx-ease-out) both; }
+.nx-panel { animation: nx-panel var(--nx-t-panel) var(--nx-ease-out) both; }
+
+/* popovers grow from their trigger (scale 0.96 and a fade) and leave faster than they came; while
+   leaving (data-state=closed, src/v4/motion.ts usePresence) they are inert and take no clicks */
+@keyframes nx-pop-in {
+  from { opacity: 0; transform: scale(calc(1 - 0.04 * var(--nx-shift))); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nx-pop-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: scale(calc(1 - 0.03 * var(--nx-shift))); }
+}
+.nx-pop {
+  transform-origin: var(--nx-origin, top right);
+  animation: nx-pop-in var(--nx-t-pop) var(--nx-ease-out) both;
+}
+.nx-pop[data-state="closed"] {
+  animation: nx-pop-out var(--nx-t-pop-exit) var(--nx-ease-in) both;
+  pointer-events: none;
+}
+.nx-origin-left { --nx-origin: top left; }
+/* a modal's veil fades; a modal rises from just below */
+.nx-veil { animation: nx-fade var(--nx-t-pop) var(--nx-ease-out) both; }
+
+/* the toast: up 8 px and in; out faster */
+@keyframes nx-toast-in {
+  from { opacity: 0; transform: translateY(calc(8px * var(--nx-shift))); }
+  to { opacity: 1; transform: none; }
+}
+.nx-toast { animation: nx-toast-in 200ms var(--nx-ease-out) both; }
+.nx-toast[data-state="closed"] { animation: nx-pop-out 150ms var(--nx-ease-in) both; }
+
+/* loading words and placeholders appear only after 400 ms of real waiting (a fast answer never flickers) */
+.nx-late { animation: nx-fade 200ms var(--nx-ease-out) 400ms both; }
+
+/* the loading contour: one slow sweep along a bathymetric line, only while something loads */
+@keyframes nx-sweep {
+  from { stroke-dashoffset: 240; }
+  to { stroke-dashoffset: 0; }
+}
+.nx-sweep { stroke-dasharray: 60 180; animation: nx-sweep 1.6s linear infinite; }
+/* contour lines draw themselves in once (pathLength=1), staggered by --i */
+@keyframes nx-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.nx-draw {
+  stroke-dasharray: 1;
+  animation: nx-draw 600ms var(--nx-ease-out) calc(var(--i, 0) * 60ms) both;
+}
+/* a chart's line draws once, the first time it is seen; its points follow */
+.nx-chart-wait .nx-chart-line { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.nx-chart-wait .nx-chart-marks { opacity: 0; }
+.nx-chart-draw .nx-chart-line { stroke-dasharray: 1; animation: nx-draw 500ms var(--nx-ease-out) both; }
+.nx-chart-draw .nx-chart-marks { animation: nx-fade 300ms var(--nx-ease-out) 300ms both; }
+
+/* a disclosure opens by height (grid rows 0fr to 1fr) and its body fades in just after */
+.nx-fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--nx-t-panel) var(--nx-ease-move);
+}
+.nx-fold[data-open="true"] { grid-template-rows: 1fr; }
+.nx-fold > * { min-height: 0; overflow: clip; overflow-clip-margin: 4px; }
+.nx-fold > * { opacity: 0; transition: opacity var(--nx-t-pop) var(--nx-ease-out); }
+.nx-fold[data-open="true"] > * { opacity: 1; transition-delay: 60ms; }
+/* native disclosures in v4 do the same where the browser can (::details-content, interpolate-size) */
+@supports selector(::details-content) {
+  .env-chart details,
+  .env-instrument details {
+    interpolate-size: allow-keywords;
+  }
+  .env-chart details::details-content,
+  .env-instrument details::details-content {
+    block-size: 0;
+    overflow: clip;
+    overflow-clip-margin: 4px;
+    opacity: 0;
+    transition: block-size var(--nx-t-panel) var(--nx-ease-move), opacity var(--nx-t-pop) var(--nx-ease-out), content-visibility var(--nx-t-panel) allow-discrete;
+  }
+  .env-chart details[open]::details-content,
+  .env-instrument details[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
+}
+
+/* skeleton text: a flat tone, no shimmer (a shimmer reads as activity that is not happening) */
+.nx-skeleton {
+  background: var(--nx-surface-3);
+  border-radius: 6px;
+  color: transparent;
+}
+
+/* ---- launch screen (src/v4/shell/Splash.tsx): once per session, on the instrument ground ---- */
+.nx-splash { display: none; }
+html.nx-splash-on .nx-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #061016;
+  /* the hard cap even if no script runs: gone by 2.8 s */
+  animation: nx-splash-gone 300ms var(--nx-ease-in) 2.5s both;
+}
+html.nx-splash-out .nx-splash {
+  opacity: 0;
+  pointer-events: none;
+  animation: none;
+  transition: opacity 300ms var(--nx-ease-in);
+}
+@keyframes nx-splash-gone {
+  to { opacity: 0; visibility: hidden; }
+}
+.nx-splash-sea { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.32; }
+.nx-splash-contour { stroke-dasharray: 1; animation: nx-draw 1400ms var(--nx-ease-out) both; }
+.nx-splash-mark {
+  position: relative;
+  display: flex;
+  align-items: center;
+  transition: transform 300ms var(--nx-ease-in);
+}
+/* a launch moment, not a header: larger on tablet and desktop (the `scale` property, so the exit's
+   transform still composes with it) */
+@media (min-width: 768px) {
+  .nx-splash-mark { scale: 1.45; }
+}
+html.nx-splash-out .nx-splash-mark { transform: scale(0.98); }
+.nx-splash-tile {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: nx-splash-tile 360ms var(--nx-ease-out) both;
+}
+@keyframes nx-splash-tile {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: none; }
+}
+.nx-splash-stub { stroke-dasharray: 1; animation: nx-draw 320ms var(--nx-ease-out) 120ms both; }
+.nx-splash-n { animation: nx-rise-n 360ms var(--nx-ease-out) 220ms both; }
+@keyframes nx-rise-n {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+.nx-splash-word { animation: nx-wipe 440ms var(--nx-ease-out) 320ms both; }
+@keyframes nx-wipe {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+/* Reduced motion: fades stay, movement goes (--nx-shift: 0 above); loops and draws stop; the launch
+   screen is a still mark that fades away in 150 ms */
+@media (prefers-reduced-motion: reduce) {
+  :root { --nx-shift: 0; }
+  .nx-sweep { animation: none; stroke-dasharray: none; }
+  .nx-draw, .nx-chart-draw .nx-chart-line, .nx-chart-draw .nx-chart-marks { animation: none; }
+  .nx-chart-wait .nx-chart-line { stroke-dashoffset: 0; }
+  .nx-chart-wait .nx-chart-marks { opacity: 1; }
+  .nx-splash *, .nx-splash-contour { animation: none !important; }
+  html.nx-splash-out .nx-splash { transition-duration: 150ms; }
+  html.nx-splash-out .nx-splash-mark { transform: none; }
+  .nx-fold { transition: none; }
+}
+@media (prefers-contrast: more) {
+  .env-instrument {
+    --nx-line: rgba(220, 235, 245, 0.35);
+    --nx-ink-2: #d6e3ea;
+    --nx-ink-3: #b6c8d3;
+  }
+  :root,
+  .env-chart {
+    --nx-line: #9fb0b9;
+    --nx-ink-2: #22343f;
+    --nx-ink-3: #3a4e5b;
+  }
+}

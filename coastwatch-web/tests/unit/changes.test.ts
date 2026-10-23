@@ -115,6 +115,15 @@ describe("since you last checked", () => {
     expect(c[0].source?.label).toBe("CDPH SN26-021");
   });
 
+  it("a kept copy leads a disputed notice with 'Status unclear', names it, and never says lifted (S1)", () => {
+    const s = snap("port-550", "all", "any");
+    const n = s.official.notices.find((x) => x.forYou && x.status === "active")!;
+    s.official.disputes.push({ recordId: n.id, agency: "CDPH", release: "SN26-021", title: "CDPH Lifts Warning", url: "https://www.cdph.ca.gov/SN26-021" });
+    const line = keptSections(makeKept(s, NOW))[0].lines.find((l) => l.url === "https://www.cdph.ca.gov/SN26-021")!;
+    expect(line.text).toBe(`Status unclear: CDPH SN26-021 appears to lift “${n.title}”; not reviewed by a person`);
+    expect(line.text).not.toMatch(/\blifted\b/i);
+  });
+
   it("quotes a changed agency status statement first, with both wordings and no invented date", () => {
     const prev = snap();
     const next = clone(prev);
