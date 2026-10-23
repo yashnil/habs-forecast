@@ -8,7 +8,10 @@ import type { ObservationDataset, ObsStation } from "@/generated/observations";
 import { areaCells, areaStats } from "@/lib/area";
 import { cellAt } from "@/lib/grid";
 import type { Sample } from "@/lib/observations";
-import { SeriesChart, monthTicks, sampleOnDay } from "@/v4/charts/SeriesChart";
+import { SeriesChart, measuredSegments, monthTicks, sampleOnDay } from "@/v4/charts/SeriesChart";
+import { AXES } from "@/lib/bloom";
+import { LinkedSeries, qcWords, readingAt, realSamples } from "@/v4/charts/LinkedSeries";
+import { parseDay, researchWindow } from "@/v4/research/Research";
 import { transect } from "@/v4/research/transect";
 import { areaCsv, cellLeadsCsv, modelHistoryCsv, stationCsv, transectCsv } from "@/v4/research/exports";
 import { layerLineage } from "@/v4/research/layerLineage";
@@ -217,8 +220,88 @@ describe("station chart: per-sample QC and units", () => {
 
 describe("no model-vs-observation arithmetic in Research", () => {
   it("the Research source carries no skill, correlation or accuracy wording", () => {
-    const src = ["Research.tsx", "parts.tsx", "CoastLadder.tsx", "Lineage.tsx", "exports.ts", "layerLineage.ts"].map((f) => readFileSync(path.join(__dirname, "../../src/v4/research", f), "utf8")).join("\n");
+    const src = [
+      ...["Research.tsx", "parts.tsx", "CoastLadder.tsx", "Stations.tsx", "Lineage.tsx", "exports.ts", "layerLineage.ts"].map((f) => path.join(__dirname, "../../src/v4/research", f)),
+      ...["LinkedSeries.tsx", "BrushStrip.tsx"].map((f) => path.join(__dirname, "../../src/v4/charts", f)),
+    ]
+      .map((f) => readFileSync(f, "utf8"))
+      .join("\n");
     expect(src).not.toMatch(/correlat|skill score|hit rate|accuracy|R²|r-squared/i);
     expect(src).not.toMatch(/\b(ROC|AUC|RMSE)\b/);
+  });
+});
+
+describe("the linked instrument (v10): gaps, QC, model beside the samples", () => {
+  const T = (d: string) => Date.parse(`${d}T19:00:00Z`);
+  const S = (d: string, value: number | null, q: Sample["q"], index: number): Sample => ({ t: T(d), time: `${d}T19:00:00Z`, value, q, index });
+  // weekly samples, then nine weeks with none, then weekly again; a bare visit; a reported zero; a rejected sample
+  const ss = [S("2026-01-05", 0.1, null, 0), S("2026-01-12", 0.2, null, 1), S("2026-01-19", 0.3, null, 2), S("2026-03-23", 0.4, null, 3), S("2026-03-30", 0.5, null, 4), S("2026-04-06", null, null, 5), S("2026-04-13", 0, "reported_zero", 6), S("2026-04-20", null, "rejected_negative", 7)];
+  const html = (extra: Record<string, unknown> = {}) =>
+    renderToStaticMarkup(
+      createElement(LinkedSeries, { samples: ss, variable: "pDA", units: "ng/mL", label: "pDA", axisTitle: "pDA, ng/mL · log scale", from: T("2026-01-01"), to: T("2026-04-30"), model: null, cursorT: null, pinnedT: null, onHover: () => undefined, onPin: () => undefined, source: "CalHABMAP", ...extra }),
+    );
+
+  it("never draws a line across missing samples: two runs, and the long gap is drawn as not measured", () => {
+    const h = html();
+    const lines = [...h.matchAll(/<polyline points="([^"]+)"[^>]*data-testid="series-line"/g)].map((m) => m[1].split(" ").length);
+    expect(lines).toEqual([3, 2]);
+    expect(h).toContain('data-testid="series-gap"');
+    expect(h).toContain("not measured");
+  });
+
+  it("never joins across a reported 0: Apr 8 0.003, Apr 15 reported 0, Apr 22 0.26 are two marks and a floor mark, not one line", () => {
+    const zz = [S("2026-04-01", 0.01, null, 0), S("2026-04-08", 0.003, null, 1), S("2026-04-15", 0, "reported_zero", 2), S("2026-04-22", 0.26, null, 3), S("2026-04-29", 0.3, null, 4)];
+    const runs = measuredSegments(zz, AXES.pDA, T("2026-03-25"), T("2026-05-05")).map((r) => r.map((p) => p.time.slice(0, 10)));
+    expect(runs).toEqual([
+      ["2026-04-01", "2026-04-08"],
+      ["2026-04-22", "2026-04-29"],
+    ]);
+    // the same for a rejected sample; a bare visit (nothing measured) does not break a short run
+    const rr = [S("2026-04-08", 0.003, null, 0), S("2026-04-15", null, "rejected_negative", 1), S("2026-04-22", 0.26, null, 2)];
+    expect(measuredSegments(rr, AXES.pDA, T("2026-03-25"), T("2026-05-05"))).toHaveLength(2);
+    const bv = [S("2026-04-08", 0.003, null, 0), S("2026-04-15", null, null, 1), S("2026-04-22", 0.26, null, 2)];
+    expect(measuredSegments(bv, AXES.pDA, T("2026-03-25"), T("2026-05-05"))).toHaveLength(1);
+    // drawn: no polyline passes over Apr 15, and the zero is its own mark on the floor
+    const h = renderToStaticMarkup(createElement(LinkedSeries, { samples: zz, variable: "pDA", units: "ng/mL", label: "pDA", axisTitle: "pDA", from: T("2026-03-25"), to: T("2026-05-05"), model: null, cursorT: null, pinnedT: null, onHover: () => undefined, onPin: () => undefined, source: "CalHABMAP" }));
+    expect([...h.matchAll(/<polyline points="([^"]+)"[^>]*data-testid="series-line"/g)].map((m) => m[1].split(" ").length)).toEqual([2, 2]);
+    expect(h.match(/data-testid="series-zero"/g)).toHaveLength(1);
+  });
+
+  it("a reported zero sits on the floor, a rejected sample is a cross, a bare visit is only a rug tick", () => {
+    const h = html();
+    expect(h.match(/data-testid="series-zero"/g)).toHaveLength(1);
+    expect(h.match(/data-testid="series-rejected"/g)).toHaveLength(1);
+    // every visit is in the rug (8), only real samples are stops for the crosshair (7)
+    expect(realSamples(ss)).toHaveLength(7);
+    expect(qcWords(ss[6])).toBe("reported 0: not quantified, not absent");
+    expect(qcWords(ss[7])).toBe("rejected by QC, not a measurement");
+    expect(qcWords(ss[0])).toBe("no QC flag");
+  });
+
+  it("the model has its own panel and axis; a day's reading never mixes the two", () => {
+    const model = { points: [{ t: Date.parse("2026-03-30T12:00:00Z"), date: "2026-03-30", v: 0.7, n: 20, partial: false }], historyStart: Date.parse("2026-03-01T12:00:00Z"), what: "Domoic acid (pDA)", radiusKm: 15 };
+    const h = html({ model });
+    expect(h).toContain('data-testid="model-panel-svg"');
+    expect(h).toContain("no model history kept before Mar 1, 2026");
+    const r = readingAt(T("2026-03-30"), ss, model);
+    expect(r.sample?.value).toBe(0.5);
+    expect(r.model?.v).toBe(0.7);
+    expect(readingAt(T("2026-01-12"), ss, model).modelWhy).toBe("before the model history Neritic keeps");
+    expect(readingAt(T("2026-04-06"), ss, model).sample).toBeNull();
+  });
+
+  it("the window: a brushed link is clamped to the record; presets and the default stay", () => {
+    const first = Date.parse("2014-01-08T12:00:00Z");
+    const last = Date.parse("2026-09-30T12:00:00Z");
+    const base = { first, last, range: null, recent: true, askedDay: null };
+    const w = researchWindow({ ...base, start: parseDay("2025-03-01"), end: parseDay("2025-09-01") });
+    expect(w.range).toBeNull();
+    expect(new Date(w.from).toISOString().slice(0, 10)).toBe("2025-03-01");
+    expect(researchWindow({ ...base, start: parseDay("2010-01-01"), end: parseDay("2015-01-01") }).from).toBe(first - 4 * 86_400_000);
+    expect(researchWindow({ ...base, start: parseDay("2025-03-01"), end: parseDay("2025-03-03") }).range).toBe("1y");
+    expect(researchWindow({ ...base, start: null, end: null, range: "3y" }).range).toBe("3y");
+    expect(researchWindow({ ...base, start: null, end: null, recent: false }).range).toBe("all");
+    expect(parseDay("2025-13-45")).toBeNull();
+    expect(parseDay("nonsense")).toBeNull();
   });
 });

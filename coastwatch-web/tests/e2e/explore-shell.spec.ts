@@ -28,39 +28,51 @@ test("phone: the status centre opens inside the screen, under the top bar", asyn
   }
 });
 
-test("desktop: the dock's layer button opens the layer list upward and Escape closes it (not the place); the credits stay in the map's margin", async ({ page }) => {
+test("desktop: the layer index is always in view (no popover hunt), the time rail runs along the bottom, and nothing overlaps; Escape closes the place", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=forecast&lead=1`);
-  // the default state: no permanent deck, the dock's button names the layer and its kind
-  const capsule = page.getByTestId("layer-capsule");
-  await expect(capsule).toBeVisible();
-  await expect(capsule).toContainText("NOAA bloom forecast");
-  await expect(capsule).toContainText("Model");
-  await expect(page.getByTestId("layer-deck")).toBeHidden();
-  await capsule.click();
-  await expect(page.getByTestId("layer-deck")).toBeVisible();
-  // the popover rises from the dock: its bottom is above the dock's top
-  const deck = (await page.getByTestId("layer-deck").boundingBox())!;
-  const dock = (await page.getByTestId("timebar-deck").boundingBox())!;
-  expect(deck.y + deck.height).toBeLessThanOrEqual(dock.y);
-  await page.keyboard.press("Escape");
-  await expect(page.getByTestId("layer-deck")).toBeHidden();
-  // with a place open, Escape closes the list first and leaves the place
+  // v10: every family by its honest name and kind, the lit one checked; the layer button is the folded form only
+  const deck = page.getByTestId("layer-deck");
+  await expect(deck).toBeVisible();
+  await expect(page.getByTestId("layer-capsule")).toHaveCount(0);
+  await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByTestId("layer-forecast")).toContainText("Model");
+  for (const f of ["satellite", "currents", "none"]) await expect(page.getByTestId(`layer-${f}`)).toHaveAttribute("aria-checked", "false");
+  // the index sits top left, the rail spans the bottom under it
+  const idx = (await deck.boundingBox())!;
+  const rail = (await page.getByTestId("timebar-deck").boundingBox())!;
+  expect(idx.x).toBeLessThan(40);
+  expect(idx.y + idx.height).toBeLessThan(rail.y);
+  expect(rail.width).toBeGreaterThan(1440 * 0.9);
+  // with a place open, Escape closes the place
   await page.goto(`${OK}/?layer=forecast&lead=1&sel=harbor:550`);
   await expect(page.getByTestId("inspect-panel")).toBeVisible();
   await expect(page.getByTestId("attribution-line")).toContainText("© OpenStreetMap contributors");
-  await capsule.click();
-  await expect(page.getByTestId("layer-deck")).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.getByTestId("layer-deck")).toBeHidden();
-  await expect(page.getByTestId("inspect-panel")).toBeVisible();
-  // the dock, the tools and the panel never overlap, and the disclosure line is never under any of them
+  // the rail, the tools, the panel and the index never overlap, and the disclosure line is never under any of them
   const panel = (await page.getByTestId("inspect-panel").locator("xpath=ancestor::aside").boundingBox())!;
   const dock2 = (await page.getByTestId("timebar-deck").boundingBox())!;
   const tools = (await page.getByTestId("map-controls").boundingBox())!;
   const line = (await page.getByTestId("registry-disclosure").boundingBox())!;
-  for (const [a, b, what] of [[dock2, tools, "dock/tools"], [dock2, panel, "dock/panel"], [tools, panel, "tools/panel"], [line, dock2, "line/dock"], [line, panel, "line/panel"]] as const) expect(overlap(a, b), what).toBe(false);
+  const idx2 = (await page.getByTestId("layer-deck").boundingBox())!;
+  for (const [a, b, what] of [[dock2, tools, "dock/tools"], [dock2, panel, "dock/panel"], [tools, panel, "tools/panel"], [line, dock2, "line/dock"], [line, panel, "line/panel"], [idx2, panel, "index/panel"], [idx2, dock2, "index/dock"]] as const) expect(overlap(a, b), what).toBe(false);
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("inspect-panel")).toHaveCount(0);
+});
+
+test("a short wide window folds the index behind the layer button, which opens it over the map and closes on Escape", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 620 });
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/?layer=forecast&lead=1&sel=harbor:550`);
+  const capsule = page.getByTestId("layer-capsule");
+  await expect(capsule).toContainText("Bloom & toxin probability");
+  await expect(page.getByTestId("layer-deck")).toBeHidden();
+  await capsule.click();
+  await expect(page.getByTestId("layer-deck")).toBeVisible();
+  // Escape closes the list first and leaves the place
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("layer-deck")).toBeHidden();
+  await expect(page.getByTestId("inspect-panel")).toBeVisible();
 });
 
 test("tablet and short screens: the map's tools never cover the dock, with or without a place open", async ({ browser }) => {

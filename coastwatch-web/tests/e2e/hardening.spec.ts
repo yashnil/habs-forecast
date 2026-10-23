@@ -52,7 +52,9 @@ test("L3 + L5: a harbour's marker reserves its place among labels; a latitude li
     return { collider: !!m.getLayer("ports-collider"), placement: m.getLayoutProperty("official-limit-label", "text-anchor") };
   });
   expect(got.collider).toBe(true);
-  expect(got.placement).toBe("bottom-right"); // at the coast end, running out to sea
+  // at the coast end, running out to sea (a map with a faded edge may turn a name inland: v10 fix 2)
+  const placement = got.placement as unknown;
+  expect(Array.isArray(placement) ? placement.at(-1) : placement).toBe("bottom-right");
 });
 
 test("L4: a layer's subtitle (what it is and how new) is never cut off", async ({ page }) => {
@@ -117,30 +119,33 @@ test("L8: on a phone, choosing another layer from the sheet leaves it open at ha
   await ctx.close();
 });
 
-test("320 px: the map's credits stay visible in full on the map's edge, just above the sheet", async ({ browser }) => {
+test("320 px: the map's credits fold to a chip on the map's edge, just above the sheet, and open in full on a tap", async ({ browser }) => {
   const ctx = await browser.newContext(phone(320));
   const page = await ctx.newPage();
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=forecast&sel=harbor:215`);
   await mapReady(page);
+  await page.waitForTimeout(700); // the sheet has settled at half height
+  // v10 rework: a chip that still names OpenStreetMap, on the map's edge (not a line of the sheet), just above it
+  const chip = page.getByTestId("credits-chip");
+  await expect(chip).toBeVisible();
+  await expect(chip).toContainText("© OpenStreetMap");
+  expect(await chip.evaluate((el) => !!el.closest('[data-testid="mobile-sheet"]'))).toBe(false);
+  const sheetTop = await page.getByTestId("mobile-sheet").evaluate((el) => el.getBoundingClientRect().top);
+  const c = (await chip.boundingBox())!;
+  expect(c.y + c.height).toBeLessThanOrEqual(sheetTop + 1);
+  expect(sheetTop - (c.y + c.height)).toBeLessThan(16);
+  // a tap opens the whole credit: every link, the disclaimer, nothing clipped
+  await chip.click();
   const credit = page.getByTestId("attribution-short");
   await expect(credit).toBeVisible();
   await expect(credit).toContainText("© OpenStreetMap contributors");
   await expect(credit).toContainText("© OpenMapTiles");
   await expect(credit.getByRole("link", { name: "© OpenStreetMap contributors" })).toHaveAttribute("href", "https://www.openstreetmap.org/copyright");
-  // the disclaimer is never cut: the whole credit, wrapped to at most two lines, nothing clipped
   await expect(credit).toContainText("not for navigation");
   expect(await credit.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
-  // a strip on the map's edge, not a line of the sheet, just above the sheet's top
-  await page.waitForTimeout(700); // the sheet has settled at half height
-  const inSheet = await credit.evaluate((el) => !!el.closest('[data-testid="mobile-sheet"]'));
-  expect(inSheet).toBe(false);
-  const c = (await credit.boundingBox())!;
-  expect(c.height).toBeLessThanOrEqual(36);
-  const sheetTop = await page.getByTestId("mobile-sheet").evaluate((el) => el.getBoundingClientRect().top);
-  expect(c.y + c.height).toBeLessThanOrEqual(sheetTop + 1);
-  expect(sheetTop - (c.y + c.height)).toBeLessThan(12);
-  const top = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('[data-testid="attribution-short"]') !== null, [c.x + 4, c.y + c.height / 2]);
+  const r = (await credit.boundingBox())!;
+  const top = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('[data-testid="attribution-short"]') !== null, [r.x + 4, r.y + r.height / 2]);
   expect(top).toBe(true);
   await ctx.close();
 });

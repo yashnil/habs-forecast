@@ -108,12 +108,12 @@ export function NavTabs({ active, size = "bar" }: { active: Workspace; size?: "b
             data-testid={`nav-${n.id}`}
             className={
               size === "bar"
-                ? `nx-press nx-focus relative isolate flex h-9 items-center rounded-full px-3 text-[14px] font-semibold ${on ? "text-n-bg" : "text-n-ink-2 hover:text-n-ink"}`
+                ? `nx-focus relative isolate flex h-9 items-center px-3 text-[14px] font-medium tracking-[0.01em] transition-colors ${on ? "text-n-ink" : "text-n-ink-3 hover:text-n-ink"}`
                 : `nx-focus flex min-h-[60px] flex-col items-center justify-center gap-0.5 text-[12.5px] font-semibold ${on ? "text-n-accent" : "text-n-ink-2"}`
             }
           >
-            {/* the active pill is in the server HTML (no flash); it glides from the last workspace's tab */}
-            {size === "bar" && on && <span aria-hidden data-nav-pill className="absolute inset-0 -z-10 rounded-full bg-n-ink" />}
+            {/* v10: the active workspace is a rule under its name (in the server HTML: no flash); it glides from the last workspace's tab */}
+            {size === "bar" && on && <span aria-hidden data-nav-pill className="absolute inset-x-3 bottom-0.5 h-[1.5px] bg-n-ink" />}
             {size === "dock" && <Icon name={n.icon} className="h-6 w-6" />}
             {n.label}
           </Link>
@@ -163,7 +163,7 @@ export function TopBar({ active, now, slot, notices, floating = false }: { activ
       style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}
     >
       {/* v7: two quiet surfaces, never a row of pills: the brand with the workspaces, then the status cluster */}
-      <div className="nx-bar pointer-events-auto flex h-11 shrink-0 items-center gap-1 rounded-full pl-1 pr-1">
+      <div className="nx-bar pointer-events-auto flex h-11 shrink-0 items-center gap-1 rounded-[10px] pl-1 pr-1">
         <Link href="/" aria-label="Neritic home" className="nx-press nx-focus flex h-10 shrink-0 items-center rounded-full pl-1 pr-2.5 text-n-ink max-md:pr-1" data-testid="brand-home">
           <span className="max-md:hidden">
             <Lockup size={28} />
@@ -177,7 +177,7 @@ export function TopBar({ active, now, slot, notices, floating = false }: { activ
         </div>
       </div>
       <div className="pointer-events-auto min-w-0 flex-1">{slot}</div>
-      <div className="nx-bar pointer-events-auto flex h-11 shrink-0 items-center rounded-full px-0.5" data-testid="topbar-cluster">
+      <div className="nx-bar pointer-events-auto flex h-11 shrink-0 items-center rounded-[10px] px-0.5" data-testid="topbar-cluster">
         {notices}
         <span aria-hidden className="h-5 w-px bg-n-line" />
         <span className="max-sm:hidden">

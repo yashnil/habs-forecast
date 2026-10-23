@@ -36,7 +36,7 @@ export function Lineage({ layer, manifest }: { layer: LayerArtifact; manifest: M
     <section className="grid gap-8 lg:grid-cols-2" data-testid="research-lineage" aria-labelledby="lineage-h">
       <div className="flex min-w-0 flex-col gap-4">
         <div>
-          <h2 id="lineage-h" className="nx-eyebrow">
+          <h2 id="lineage-h" className="nx-caps">
             Lineage and quality · this layer
           </h2>
           <p className="nx-title mt-1">{L.title}</p>
@@ -45,7 +45,7 @@ export function Lineage({ layer, manifest }: { layer: LayerArtifact; manifest: M
         <Rows rows={[...L.source, ...L.time]} />
         {(L.upstreamNote || L.inputs) && (
           <div className="border-l-2 border-n-line-strong pl-3 text-[13.5px] leading-snug" data-testid="lineage-upstream">
-            <p className="nx-eyebrow mb-1">Upstream, as stated by the producer</p>
+            <p className="nx-caps mb-1">Upstream, as stated by the producer</p>
             {L.inputs && <p className="text-n-ink-2">Inputs: {L.inputs}</p>}
             {L.upstreamNote && <p className="mt-1">&ldquo;{L.upstreamNote}&rdquo;</p>}
             <p className="mt-1 text-[12.5px] text-n-ink-3">Any gap filling is the producer&rsquo;s, before the model runs. Neritic fills no gaps and interpolates nothing.</p>
@@ -77,7 +77,7 @@ export function Lineage({ layer, manifest }: { layer: LayerArtifact; manifest: M
       </div>
       <div className="flex min-w-0 flex-col gap-4">
         <div>
-          <h3 className="nx-eyebrow">Quality checks the pipeline ran</h3>
+          <h3 className="nx-caps">Quality checks the pipeline ran</h3>
           <p className="mt-1 text-[13.5px] text-n-ink-2" data-testid="lineage-qc-summary">
             {L.checks.length ? (L.failed ? `${L.failed} of ${L.checks.length} checks failed (listed first).` : `All ${L.checks.length} checks passed.`) : "No checks are published for this layer."}
             {L.coverage ? ` ${L.coverage}.` : ""}
@@ -98,7 +98,7 @@ export function Lineage({ layer, manifest }: { layer: LayerArtifact; manifest: M
           </ul>
         </div>
         <div>
-          <h3 className="nx-eyebrow">Uncertainty and caveats</h3>
+          <h3 className="nx-caps">Uncertainty and caveats</h3>
           {L.quantErr != null && (
             <p className="mt-1 text-[13.5px] leading-snug" data-testid="lineage-quant">
               {L.quantLog ? (

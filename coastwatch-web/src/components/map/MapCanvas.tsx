@@ -15,12 +15,13 @@ import {
   arrowImage,
   BASEMAP_STYLE,
   BEFORE_OVERLAY_ID,
-  CA_BOUNDS,
+  EXPLORE_PAN_BOUNDS,
   NODATA_FALLBACK_LAYER_ID,
   NODATA_LAYER_ID,
   noDataImage,
   SPEED_CLASSES,
   TINT_LAYER_IDS,
+  ISOBATH_LABEL_MINZOOM,
   WATER_FALLBACK_LAYER_IDS,
   WATER_FALLBACK_SOURCE,
   transformRequest,
@@ -31,8 +32,9 @@ import { derivedTiles, gridTiles } from "@/lib/gridTileProtocol";
 import { indexedTiles } from "@/lib/tileIndex";
 import { loadWaterFallback, waterGeoJSON } from "@/lib/waterFallback";
 import { basemapArchive, onBasemapSlow, setBasemapArchive } from "@/lib/waterMask";
-import FlowParticles from "./FlowParticles";
+import FlowLayer, { type FlowOptions } from "./FlowLayer";
 import { CountyLayers } from "./Counties";
+import { onceSettled } from "./settled";
 
 /** Marks with a name: a pointer over one shows the name (and a pointer cursor). */
 const MARK_LAYERS = ["ports-hit", "ports-circle", "map-station", "map-station-point", "map-station-cluster", "coast-station"];
@@ -54,8 +56,13 @@ export type DerivedRaster = { id: string; grid: DerivedGrid; baseUrl: string; pa
 export type TileRaster = { id: string; template: string; minzoom: number; maxzoom: number; bounds?: number[] | null; indexUrl?: string | null };
 
 export type MapPoint = { lat: number; lon: number };
-/** Observed currents for one hour (or the 24 h mean): arrows from the published grids, or particles. */
-export type CurrentsOverlay = { id: string; features: GeoJSON.FeatureCollection; field: CurrentField; mode: "arrows" | "particles"; coarser?: boolean };
+/**
+ * Observed currents for one hour (or the 24 h mean): moving particles in the map's own WebGL context
+ * (components/map/FlowLayer, the default), or static arrows (one per observed cell; `features`).
+ */
+export type CurrentsOverlay = { id: string; field: CurrentField; coarser?: boolean } & ({ mode: "arrows"; features: GeoJSON.FeatureCollection } | { mode: "flow"; flow: FlowOptions });
+/** The selection's true footprint (lib/footprint): an outline that draws in once after the camera settles. */
+export type FootprintOverlay = { key: string; polygon: GeoJSON.Polygon; tone: "model" | "observation" };
 
 type Props = {
   forecast: ImageRaster | null;
@@ -109,6 +116,11 @@ type Props = {
   overlay?: GeoJSON.FeatureCollection | null;
   /** v4: "none" leaves the map's own controls to the workspace (zoom, scale) */
   chrome?: "v2" | "none";
+  /**
+   * v10: keep each latitude limit's name inside the frame: a name that would run out to sea past this many
+   * pixels from the map's left edge (a faded edge, a reading column beside it) runs inland instead.
+   */
+  limitLabelGuard?: number;
   /** v4: a shore station was chosen on the map (the station itself is selected, not the water beside it) */
   onStationPick?: (stationId: string) => void;
   /** v4: stations as counted clusters below harbour zoom, so the regional view stays calm */
@@ -119,6 +131,8 @@ type Props = {
    * observation pixel, outlined) or "footprint" (the outline of observed pixels), optional label
    */
   highlight?: GeoJSON.FeatureCollection | null;
+  /** v10: the selected cell or pixel at its native size, outlined (drawn in over 300 ms once the camera settles) */
+  footprint?: FootprintOverlay | null;
   /** v4: readiness of the basemap and of the data field, for the status centre */
   onStatus?: (s: { basemap: "ok" | "slow" | "down"; field: "none" | "loading" | "ready" | "failed" }) => void;
   maxZoom?: number;
@@ -126,6 +140,8 @@ type Props = {
   basemapPmtiles?: string | null;
   /** v4 "Try again": a new value asks for the data rasters afresh (a failed field is forgotten) */
   retry?: number;
+  /** v10: the data field's opacity, 0.3–1 (the layer index's display control); 1 when absent */
+  fieldOpacity?: number;
 };
 
 const OFFICIAL = "#f6bb5c";
@@ -143,6 +159,10 @@ const THREADS = [
   { to: "limit", color: "rgba(246,187,92,0.95)" },
 ] as const;
 const THREAD_MS = 520;
+/** v10: the selection's footprint outline draws in once, after the camera settles. */
+export const FOOTPRINT_DRAW_MS = 300;
+const FOOTPRINT_LINE = { model: "#e6dbff", observation: "#ffffff" } as const;
+const FOOTPRINT_HALO = "rgba(4,18,26,0.7)";
 const THREAD_STAGGER = 90;
 /** A line drawn from its start up to `p` (0..1) of its length. */
 function threadGradient(p: number, color: string): ExpressionSpecification {
@@ -224,6 +244,35 @@ function registerPmtiles(url: string): PMTiles {
 
 export default function MapCanvas(p: Props) {
   const [wide] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
+  const [map, setMap] = useState<MlMap | null>(null);
+  // the limit names that would leave the frame's left edge (limitLabelGuard): run inland instead
+  const [inland, setInland] = useState<string[]>([]);
+  const guard = p.limitLabelGuard;
+  const officialFc = p.officialGeometry;
+  useEffect(() => {
+    if (!map || guard == null || !officialFc) return;
+    const check = () => {
+      const out: string[] = [];
+      for (const f of officialFc.features) {
+        const pr = (f.properties ?? {}) as { kind?: string; label?: string };
+        if (pr.kind !== "lat_limit" || !pr.label) continue;
+        const g = f.geometry;
+        const lines = g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates : [];
+        let east: GeoJSON.Position | null = null;
+        for (const l of lines) for (const c of l) if (!east || c[0] > east[0]) east = c;
+        if (!east) continue;
+        // the name runs west from its anchor, up to text-max-width (14 em at 11 px) plus its offset
+        const x = map.project([east[0], east[1]]).x;
+        if (x - 14 * 11 - 8 < guard) out.push(pr.label);
+      }
+      setInland((was) => (was.length === out.length && was.every((l, i) => l === out[i]) ? was : out));
+    };
+    check();
+    map.on("moveend", check);
+    return () => {
+      map.off("moveend", check);
+    };
+  }, [map, guard, officialFc]);
   // one label point per latitude limit, at the line's eastern (coast) end
   const limitLabels = useMemo<GeoJSON.FeatureCollection | null>(() => {
     const fc = p.officialGeometry;
@@ -236,12 +285,11 @@ export default function MapCanvas(p: Props) {
       const lines = g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates : [];
       let east: GeoJSON.Position | null = null;
       for (const l of lines) for (const c of l) if (!east || c[0] > east[0]) east = c;
-      if (east) features.push({ type: "Feature", geometry: { type: "Point", coordinates: east }, properties: { label: pr.label } });
+      if (east) features.push({ type: "Feature", geometry: { type: "Point", coordinates: east }, properties: { label: pr.label, side: inland.includes(pr.label) ? "east" : "west" } });
     }
     return { type: "FeatureCollection", features };
-  }, [p.officialGeometry]);
+  }, [p.officialGeometry, inland]);
   const { onPort, onPoint, onStation } = p;
-  const [map, setMap] = useState<MlMap | null>(null);
   const hasRaster = !!(p.forecast || p.satellite || p.satelliteAge || p.outlook || p.estimate || p.sst);
   // read once for the map's life (reduced motion: data rasters cut instead of fading)
   const [fadeMs] = useState(() => (window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : RASTER_FADE_MS));
@@ -264,7 +312,12 @@ export default function MapCanvas(p: Props) {
     const paint = ms === RASTER_FADE_MS ? base : { ...base, "raster-fade-duration": ms };
     // v4: the forecast recedes as the reader zooms to a harbour, so the coast and the harbour read
     // through 3 km cells (outlined and labelled with their values from z 10.5); values unchanged
-    return forecast && p.chrome === "none" ? { ...paint, "raster-opacity": V4_FORECAST_OPACITY } : paint;
+    const out = forecast && p.chrome === "none" ? { ...paint, "raster-opacity": V4_FORECAST_OPACITY } : paint;
+    // v10: the reader's field opacity (display only; the legend's colours are the full-opacity ones)
+    const k = p.fieldOpacity ?? 1;
+    if (k >= 1) return out;
+    const o = out["raster-opacity"] as unknown;
+    return { ...out, "raster-opacity": (typeof o === "number" ? o * k : ["interpolate", ["linear"], ["zoom"], 9, FORECAST_RASTER_OPACITY * k, 12, 0.6 * k]) as unknown as number };
   };
   // fixed for the map's life: an offline map keeps its saved basemap until the page reloads online
   // (the water that clips the data rasters is read from the same archive, set before the map asks
@@ -367,6 +420,7 @@ export default function MapCanvas(p: Props) {
     };
   }, [map, hasRaster, rasterKey, p.forecast, p.satellite, p.satelliteAge, p.outlook, p.estimate, p.sst]);
 
+  const currentsOn = !!p.currents;
   const tintOnly = !!(p.contextFill && forecastTiles && !p.satellite && !p.satelliteAge && !p.outlook && !p.estimate && !p.sst);
   // The no-data hatch shows only under a data field that has arrived: with currents alone (or
   // nothing) there is no "value" for a gap to be confused with. The bundled-water layers show
@@ -401,13 +455,23 @@ export default function MapCanvas(p: Props) {
         const o = tintOff ? 0 : 1;
         if (map.getPaintProperty(id, "raster-opacity") !== o) map.setPaintProperty(id, "raster-opacity", o);
       }
+      // at rest (no field) the isobaths and their depths are the map's subject: labelled from the coastal view
+      // (the currents are a field too: under them the depths stay quiet, and the labels cost nothing per frame)
+      const rest = !hasRaster && !currentsOn;
+      if (map.getLayer("isobaths")) {
+        const o = rest ? 1 : 0.7;
+        if (map.getPaintProperty("isobaths", "line-opacity") !== o) map.setPaintProperty("isobaths", "line-opacity", o);
+      }
+      const lab = map.getLayer("isobath-labels");
+      const minz = rest ? ISOBATH_LABEL_MINZOOM.rest : ISOBATH_LABEL_MINZOOM.field;
+      if (lab && lab.minzoom !== minz) map.setLayerZoomRange("isobath-labels", minz, 24);
     };
     apply();
     map.on("styledata", apply);
     return () => {
       map.off("styledata", apply);
     };
-  }, [map, hasRaster, fieldReady, showFallback, tintOnly, tintOff]);
+  }, [map, hasRaster, fieldReady, showFallback, tintOnly, tintOff, currentsOn]);
   const { onHover } = p;
   // a harbour or station under the pointer: its name in a small tip at its mark, a pointer cursor,
   // and no value readout over it (fine pointers only; set only when the mark changes, not per move)
@@ -471,6 +535,48 @@ export default function MapCanvas(p: Props) {
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [map, overlay]);
+
+  // v10: the footprint outline draws in once per selection, after the camera has settled (a journey to the
+  // selection, or the first load); reduced motion: drawn at once
+  const fpKey = p.footprint?.key ?? null;
+  const fpTone = p.footprint?.tone ?? "observation";
+  useEffect(() => {
+    if (!map || !fpKey) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+    let live = true;
+    let stopWaiting = () => {};
+    const set = (k: number) => {
+      if (map.getLayer("v4-fp-halo")) map.setPaintProperty("v4-fp-halo", "line-gradient", threadGradient(k, FOOTPRINT_HALO));
+      if (map.getLayer("v4-fp-line")) map.setPaintProperty("v4-fp-line", "line-gradient", threadGradient(k, FOOTPRINT_LINE[fpTone]));
+      const el = map.getContainer();
+      el.dataset.footprint = k >= 1 ? "drawn" : "drawing";
+    };
+    set(reduce ? 1 : 0);
+    if (reduce) return;
+    const start = () => {
+      if (!live) return;
+      if (!map.loaded()) return void (stopWaiting = onceSettled(map, start));
+      if (map.isMoving()) return void map.once("moveend", start);
+      const t0 = performance.now();
+      const step = (now: number) => {
+        if (!live) return;
+        const k = Math.min(1, (now - t0) / FOOTPRINT_DRAW_MS);
+        set(1 - (1 - k) ** 3);
+        if (k < 1) raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    };
+    // a frame later: a camera journey begun in the same step as the selection is moving by then
+    raf = requestAnimationFrame(start);
+    return () => {
+      live = false;
+      cancelAnimationFrame(raf);
+      stopWaiting();
+      map.off("moveend", start);
+    };
+  }, [map, fpKey, fpTone]);
+  const fpData = useMemo<GeoJSON.Feature | null>(() => (p.footprint ? { type: "Feature", geometry: { type: "LineString", coordinates: p.footprint.polygon.coordinates[0] }, properties: {} } : null), [p.footprint]);
 
   // v8: at state and regional scale a 3 km cell is a few screen pixels, and nearest sampling draws a
   // field of stair-steps; there the data rasters are smoothed. From harbour scale (SHARP_ZOOM) every
@@ -573,7 +679,7 @@ export default function MapCanvas(p: Props) {
       mapStyle={style}
       transformRequest={transformRequest}
       initialViewState={{ bounds: p.initialBounds, fitBoundsOptions: { padding: p.initialPadding } }}
-      maxBounds={[CA_BOUNDS[0][0], CA_BOUNDS[0][1], CA_BOUNDS[1][0], CA_BOUNDS[1][1]]}
+      maxBounds={[EXPLORE_PAN_BOUNDS[0][0], EXPLORE_PAN_BOUNDS[0][1], EXPLORE_PAN_BOUNDS[1][0], EXPLORE_PAN_BOUNDS[1][1]]}
       minZoom={4.2}
       maxZoom={p.maxZoom ?? 12.5}
       renderWorldCopies={false}
@@ -728,7 +834,8 @@ export default function MapCanvas(p: Props) {
           ))}
         </Source>
       )}
-      {p.currents && p.currents.mode === "particles" && <FlowParticles key={p.currents.id} field={p.currents.field} count={wide ? 1400 : 600} />}
+      {/* not keyed by the hour: a new hour swaps the layer's buffers, it is never remounted */}
+      {map && p.currents && p.currents.mode === "flow" && <FlowLayer map={map} id={p.currents.id} field={p.currents.field} options={p.currents.flow} beforeId={BEFORE_OVERLAY_ID} />}
 
       {p.showOfficial && p.officialGeometry && (
         <Source id="official" type="geojson" data={p.officialGeometry}>
@@ -746,7 +853,7 @@ export default function MapCanvas(p: Props) {
             id="official-limit-label"
             type="symbol"
             minzoom={7.4}
-            layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-anchor": "bottom-right", "text-justify": "right", "text-offset": [-0.6, -0.35], "text-max-width": 14, "text-allow-overlap": false }}
+            layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-anchor": ["match", ["get", "side"], "east", "bottom-left", "bottom-right"], "text-justify": ["match", ["get", "side"], "east", "left", "right"], "text-offset": ["match", ["get", "side"], "east", ["literal", [0.6, -0.35]], ["literal", [-0.6, -0.35]]], "text-max-width": 14, "text-allow-overlap": false }}
             paint={{ "text-color": OFFICIAL, "text-halo-color": "#06111e", "text-halo-width": 1.2, "text-halo-blur": 0.4 }}
           />
         </Source>
@@ -968,8 +1075,9 @@ export default function MapCanvas(p: Props) {
         // and the other labels move out of its way
         <Source id="v4-highlight" type="geojson" data={p.highlight}>
           <Layer id="v4-hl-fill" type="fill" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "fill-color": ["match", ["get", "kind"], "cell", MODEL_MARK, "#5fd0e6"], "fill-opacity": ["match", ["get", "kind"], "cell", 0.16, 0.07], "fill-opacity-transition": { duration: 200, delay: 0 } }} />
-          <Layer id="v4-hl-halo" type="line" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "line-color": "#04121a", "line-width": 5, "line-opacity": 0.55, "line-opacity-transition": { duration: 200, delay: 0 } }} />
-          <Layer id="v4-hl-line" type="line" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "line-color": ["match", ["get", "kind"], "cell", "#e6dbff", "#5fd0e6"], "line-width": 2, "line-dasharray": ["match", ["get", "kind"], "area", ["literal", [3, 2]], ["literal", [1, 0]]] }} />
+          {/* a model cell's outline is the footprint's (below), drawn in once; an area keeps its dashed frame */}
+          <Layer id="v4-hl-halo" type="line" filter={["==", ["get", "kind"], "area"]} paint={{ "line-color": "#04121a", "line-width": 5, "line-opacity": 0.55, "line-opacity-transition": { duration: 200, delay: 0 } }} />
+          <Layer id="v4-hl-line" type="line" filter={["==", ["get", "kind"], "area"]} paint={{ "line-color": ["match", ["get", "kind"], "cell", "#e6dbff", "#5fd0e6"], "line-width": 2, "line-dasharray": ["match", ["get", "kind"], "area", ["literal", [3, 2]], ["literal", [1, 0]]] }} />
           {/* observation pixels and footprints (Research): neutral white, never the model's colour */}
           <Layer id="v4-hl-pixel-halo" type="line" filter={["in", ["get", "kind"], ["literal", ["pixel", "footprint"]]]} paint={{ "line-color": "#04121a", "line-width": ["match", ["get", "kind"], "pixel", 4.5, 2.6], "line-opacity": 0.6 }} />
           <Layer id="v4-hl-pixel" type="line" filter={["in", ["get", "kind"], ["literal", ["pixel", "footprint"]]]} paint={{ "line-color": "#ffffff", "line-width": ["match", ["get", "kind"], "pixel", 2, 1], "line-opacity": 0.95 }} />
@@ -985,6 +1093,14 @@ export default function MapCanvas(p: Props) {
             layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 12.5, "text-variable-anchor": ["top", "bottom", "left", "right"], "text-radial-offset": 1.5, "text-justify": "auto", "text-max-width": 16, "text-allow-overlap": true }}
             paint={{ "text-color": "#ffffff", "text-halo-color": "#04121a", "text-halo-width": 1.8 }}
           />
+        </Source>
+      )}
+
+      {fpData && (
+        // v10: the selected cell or pixel at its native size, a crisp outline over everything (it is the selection)
+        <Source id="v4-footprint" type="geojson" data={fpData} lineMetrics>
+          <Layer id="v4-fp-halo" type="line" layout={{ "line-join": "miter", "line-cap": "butt" }} paint={{ "line-width": 4.5, "line-gradient": threadGradient(0, FOOTPRINT_HALO) }} />
+          <Layer id="v4-fp-line" type="line" layout={{ "line-join": "miter", "line-cap": "butt" }} paint={{ "line-width": 2, "line-gradient": threadGradient(0, FOOTPRINT_LINE[p.footprint?.tone ?? "observation"]) }} />
         </Source>
       )}
 

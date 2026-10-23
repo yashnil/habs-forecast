@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
-import { computeTrip } from "@/lib/tripEconomics";
-import { NS, createTripStore, draftInputs, draftKey, type TripData, type TripStore } from "@/lib/tripEconomicsStore";
+import { NS, createTripStore, draftKey, type Draft, type TripData, type TripStore } from "@/lib/tripEconomicsStore";
+import { initialDraft } from "./draft";
 
 /**
  * One trip store per tab over localStorage. Views re-read it when this tab writes (notify) or another
@@ -67,28 +67,18 @@ export function useMounted(): boolean {
   );
 }
 
-export type TripSummary = { name: string; costUsd: number | null; breakEvenLb: number | null; breakEvenUsdPerLb: number | null; netUsd: number | null };
-
 /**
- * For My Coast's glance rows: the working numbers for this place and species (or, without them, the
- * latest saved scenario for both), worked through. Null when nothing has been entered.
+ * The worksheet a place and species opens with: the working draft kept on this device, else the latest
+ * saved scenario for both, else a fresh one (nothing numeric filled in). Null before hydration.
  */
-export function useTripSummary(placeKey: string | null | undefined, species: string | null | undefined): TripSummary | null {
+export function useWorkingDraft(placeKey: string, species: string): { draft: Draft; from: "working" | "saved" | "fresh"; name: string | null } | null {
   const data = useTripData();
   return useMemo(() => {
-    if (!data || !placeKey || !species) return null;
+    if (!data) return null;
     const working = data.meta.drafts[draftKey(placeKey, species)];
+    if (working) return { draft: working.draft, from: "working" as const, name: null };
     const saved = data.scenarios.find((s) => s.placeKey === placeKey && s.species === species);
-    const src = working ? { name: "Your working numbers", draft: working.draft } : saved ? { name: saved.name, draft: saved.draft } : null;
-    if (!src) return null;
-    const r = computeTrip(draftInputs(src.draft));
-    const out: TripSummary = {
-      name: src.name,
-      costUsd: r.tripCostUsd,
-      breakEvenLb: r.breakEvenLb.value,
-      breakEvenUsdPerLb: r.breakEvenUsdPerLb.value,
-      netUsd: r.netUsd,
-    };
-    return out.costUsd === null && out.breakEvenLb === null && out.breakEvenUsdPerLb === null && out.netUsd === null ? null : out;
+    if (saved) return { draft: saved.draft, from: "saved" as const, name: saved.name };
+    return { draft: initialDraft(species), from: "fresh" as const, name: null };
   }, [data, placeKey, species]);
 }

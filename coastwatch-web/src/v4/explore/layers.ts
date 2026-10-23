@@ -125,7 +125,8 @@ export function estimateFits(est: EstimateLayer | null, c: LayerChoice, sat: Lay
   return !own || own === sat.layer_id;
 }
 
-export function resolve(m: Manifest, c: LayerChoice, baseUrl: string, derived: DerivedIndex | null = null): Resolved {
+/** `region`: the region in view or selected, for the currents hour the map opens on (lib/currents chooseHour). */
+export function resolve(m: Manifest, c: LayerChoice, baseUrl: string, derived: DerivedIndex | null = null, opts: { region?: string | null } = {}): Resolved {
   const out: Resolved = { forecastLayer: null, forecast: null, satLayer: null, satellite: null, satelliteAge: null, curLayer: null, outlookLayer: null, outlook: null, estimateLayer: null, estimate: null, sstLayer: null, sst: null };
   if (c.kind === "sst") {
     const t = derivedSst(derived);
@@ -164,8 +165,10 @@ export function resolve(m: Manifest, c: LayerChoice, baseUrl: string, derived: D
   }
   if (c.kind === "currents") {
     const hourly = currentsHourly(m);
-    // no hour chosen: the newest hour with usable coverage (an hour still filling in stays one tap away)
-    out.curLayer = c.mean ? currentsMean(m) : c.hour ? (hourly.find((l) => l.layer_id.endsWith(c.hour!)) ?? defaultHour(m)) : defaultHour(m);
+    // no hour chosen: the newest hour with usable coverage of the region in view (an hour still filling in,
+    // or one that saw nothing here, stays one tap away)
+    const dflt = () => defaultHour(m, opts.region ?? null);
+    out.curLayer = c.mean ? currentsMean(m) : c.hour ? (hourly.find((l) => l.layer_id.endsWith(c.hour!)) ?? dflt()) : dflt();
     // compare: the newest clear chlorophyll view underneath (each pixel keeps its own date)
     if (c.chl) {
       const l = satelliteLatest(m, "olci300") ?? satelliteLatest(m, "viirs750");

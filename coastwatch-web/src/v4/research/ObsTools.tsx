@@ -422,7 +422,7 @@ export function ObsPointPanel({ manifest, baseUrl, read, px, point, sat, now }: 
   const fp = px ? footprintOf(s, px) : null;
   return (
     <div className="flex flex-col gap-3" data-testid="obs-point">
-      <p className="nx-eyebrow">{radar ? "HF-radar cell" : "Satellite pixel"} · observation, not a forecast</p>
+      <p className="nx-caps">{radar ? "HF-radar cell" : "Satellite pixel"} · observation, not a forecast</p>
       {!px ? (
         <p className="text-[14px] text-n-ink-2" data-testid="obs-point-none">
           Outside the {radar ? "radar grid" : "satellite grid"}: nothing was observed here by this product.
@@ -489,7 +489,7 @@ export function ObsPointPanel({ manifest, baseUrl, read, px, point, sat, now }: 
       )}
       {mem && (
         <section className="flex flex-col gap-1 rounded-lg bg-n-surface-2 p-3 text-[13.5px]" data-testid="obs-point-members">
-          <h3 className="nx-eyebrow">Each sensor at this point</h3>
+          <h3 className="nx-caps">Each sensor at this point</h3>
           {mem.map((m) => (
             <p key={m.layer.layer_id}>
               <b className="font-semibold">{obsSensor(m.layer)}:</b> {m.px?.value != null ? `${fmtChl(m.px.value)} mg/m³, observed ${dayLabel(m.px.date ?? "", true)}` : "no observation in its latest clear view"}
@@ -549,7 +549,7 @@ function DayStrip({
 }) {
   return (
     <section className="flex flex-col gap-1" data-testid="obs-day-strip">
-      <h3 className="nx-eyebrow">This pixel on each published day</h3>
+      <h3 className="nx-caps">This pixel on each published day</h3>
       <ul className="grid grid-cols-[repeat(auto-fill,minmax(88px,1fr))] gap-1">
         {rows.map((r) => (
           <li key={r.label} className={`rounded-md px-2 py-1.5 text-center leading-tight ${r.label === sel.layer_id ? "ring-1 ring-n-accent" : ""} ${r.px?.value != null ? "bg-n-surface-2" : "border border-dashed border-n-line-strong"}`} data-testid="obs-day">
@@ -587,7 +587,7 @@ function RadarStrip({
   const n = hours.filter((h) => h.px?.value != null).length;
   return (
     <figure ref={box} className="flex flex-col gap-1" data-testid="obs-radar-strip">
-      <figcaption className="nx-eyebrow">This cell, each published hour</figcaption>
+      <figcaption className="nx-caps">This cell, each published hour</figcaption>
       <svg width={W} height={H} className="block" role="img" aria-label={`Current speed at this cell: ${n} of ${hours.length} hours observed`}>
         <defs>
           <pattern id="nx-hatch-r" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -756,7 +756,7 @@ export function ObsArea({ manifest, baseUrl, read, cells, bbox, now }: { manifes
   const what = radar ? "radar cells" : s.layer.multisensor ? "display pixels (300 m)" : "pixels";
   return (
     <section className="flex flex-col gap-2 border-t border-n-line pt-4" data-testid="obs-area">
-      <h3 className="nx-eyebrow">
+      <h3 className="nx-caps">
         {radar ? "Radar cells" : "Satellite pixels"} in the box · {obsWhen(s.layer)}
       </h3>
       <p className="text-[14.5px] leading-snug" data-testid="obs-area-counts">
@@ -844,7 +844,7 @@ function Consistency({ manifest, baseUrl, layer, bbox }: { manifest: Manifest; b
   const cov = ms.coverage_comparison.find((x) => x.region_id === "domain");
   return (
     <section className="mt-2 flex flex-col gap-2 rounded-lg border border-n-line p-3" data-testid="obs-consistency">
-      <h3 className="nx-eyebrow">Inter-sensor consistency check · Sentinel-3 and VIIRS</h3>
+      <h3 className="nx-caps">Inter-sensor consistency check · Sentinel-3 and VIIRS</h3>
       <p className="text-[12.5px] leading-snug text-n-ink-3">
         How the two sensors compare where both saw the same water on the same day. A consistency check between two sensors, not a validation: it does not say which sensor is right, and neither is compared with water samples.
       </p>

@@ -72,3 +72,24 @@ test("offline is said persistently, with what is shown and when; never as a toas
   await expect(page.getByTestId("offline-banner")).toHaveCount(0);
   await ctx.close();
 });
+
+// v10 fix 2: the chip is honest on every route. My Coast and Research report the sources they show (the
+// model run, the briefing map's satellite view) by the same rule as Explore, so a days-old run is never "Ready".
+for (const [what, url] of [
+  ["the briefing", "/coast?place=port-593&for=commercial&species=salmon"],
+  ["Research", "/research"],
+] as const) {
+  test(`${what}: a days-old model run makes the status chip say so, as on Explore`, async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-10-13T06:00:00Z")); // the fixture's run is of Oct 8
+    await page.goto(`${OK}${url}`);
+    const status = page.getByTestId("status-center");
+    await expect(status).toHaveAttribute("data-state", "stale", { timeout: 20000 });
+    await expect(status).toContainText("Some data is old");
+    await status.click();
+    const model = page.getByTestId("status-panel").getByTestId("source-model");
+    await expect(model).toHaveAttribute("data-state", "stale");
+    await expect(model).toContainText("Run issued 2026-10-08");
+    if (what === "the briefing") await expect(page.getByTestId("status-panel").getByTestId("source-satellite")).toContainText("On this briefing's map");
+  });
+}
+

@@ -33,18 +33,21 @@ test("at a glance: rows for the fishery, the sea, the trip and the gaps, each on
   expect(await page.locator("main").innerText()).not.toMatch(VERDICTS);
 });
 
-test("v6 P0 2: a commercial crabber never sees the sport reopen date as the season", async ({ page }) => {
+test("v6 P0 2 / v10 D3: a commercial crabber sees the sport list's closed mark as the sport list's, never its reopen date, and that Neritic holds no commercial season", async ({ page }) => {
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-550&for=commercial&species=dungeness`);
   const o = page.getByTestId("glance-official");
-  await expect(o).toContainText("sport list only.");
-  await expect(o).toContainText("Commercial opener: see CDFW commercial / in-season page");
+  await expect(o.getByTestId("glance-season-list")).toHaveText(/on CDFW.s closed list for sport fishing/);
+  await expect(o.getByTestId("glance-commercial")).toContainText("Neritic holds no commercial season for Dungeness crab");
+  await expect(o).toContainText("Nothing here says a trip is allowed");
   await expect(o).not.toContainText("November 7");
-  await expect(o.getByTestId("glance-season-list")).toHaveCount(0);
   await expect(o.getByRole("link", { name: "CDFW commercial" })).toHaveAttribute("href", "https://wildlife.ca.gov/Fishing/Commercial");
-  await expect(o.getByRole("link", { name: "in-season page" })).toHaveAttribute("href", /wildlife\.ca\.gov\/Fishing\/Ocean\/Regulations\/inseason/);
-  // the sport row in Seasons stays closed for a commercial reader, marked "(sport)"
-  await expect(page.getByTestId("seasons-mine").locator('li[data-testid^="season-dungeness"] details').first()).not.toHaveAttribute("open", "");
+  await expect(o.getByRole("link", { name: "In-season page" })).toHaveAttribute("href", /wildlife\.ca\.gov\/Fishing\/Ocean\/Regulations\/inseason/);
+  // the sport row in Seasons is marked "(sport list)" and never quotes the sport list's dates to a commercial reader
+  const mine = page.getByTestId("seasons-mine").locator('li[data-testid^="season-dungeness"]').first();
+  await expect(mine).toContainText("(sport list)");
+  await expect(mine.getByTestId("season-quote")).toHaveCount(0);
+  expect(await page.getByTestId("brief-seasons").textContent()).not.toContain("November 7");
 });
 
 test("v6 P0 3: a species with no fishery of its own shows no neighbour's value and no port total", async ({ page }) => {
@@ -72,8 +75,7 @@ test("seasons quote CDFW's region page with its date, the reader's species first
   // CDFW's groundfish table for the trip day, quoted
   await expect(mine.getByTestId("season-groundfish-row").first()).toContainText("Open all depths");
   await expect(s.getByRole("link", { name: /CDFW Central region page/ })).toHaveAttribute("href", "https://wildlife.ca.gov/Fishing/Ocean/Regulations/Fishing-Map/central");
-  // every entry CDFW lists stays one tap away
-  await s.getByTestId("seasons-all").locator("summary").first().click();
+  // every entry CDFW lists is in the same note (one level of disclosure, never a fold inside a fold)
   expect(await s.getByTestId("seasons-all").locator("li").count()).toBeGreaterThan(20);
   // a commercial-only species says the sport list is not its rules
   await page.goto(`${OK}/coast?place=port-550&for=commercial&species=squid`);
@@ -90,19 +92,16 @@ test("sea conditions: the forecaster's words, and the reader's own limits compar
   // the trip day's period is matched by its own date: Monday night's "Tonight" for a Monday trip
   await expect(sea.getByTestId("sea-period").first()).toHaveAttribute("data-chosen", "true");
   await expect(sea.getByTestId("sea-over")).toHaveCount(0);
-  await sea.getByTestId("sea-limits-edit").click();
-  await sea.getByTestId("sea-limit-wind").fill("1");
+  // v10: the limits are set in place beside the readings, and every period is compared with them
+  await page.getByTestId("glance-limit-wind").fill("1");
   await expect(sea.getByTestId("sea-over").first()).toContainText("above your own limit");
   await expect(page.getByTestId("glance-over")).toContainText("1 kt");
   // kept on this device only
   await page.reload();
   await expect(page.getByTestId("brief-sea").getByTestId("sea-limits")).toContainText("wind 1 kt");
-  await page.getByTestId("brief-sea-toggle").click();
-  await page.getByTestId("sea-limits-edit").click();
-  await page.getByTestId("sea-limit-wind").fill("");
+  await expect(page.getByTestId("glance-limit-wind")).toHaveValue("1");
+  await page.getByTestId("glance-limit-wind").fill("");
   await expect(page.getByTestId("sea-over")).toHaveCount(0);
-  // the same limits are set in place from the glance
-  await page.getByTestId("glance-limits-set").click();
   await page.getByTestId("glance-limit-seas").fill("2");
   await expect(page.getByTestId("glance-over")).toContainText("2 ft");
 });
@@ -110,7 +109,7 @@ test("sea conditions: the forecaster's words, and the reader's own limits compar
 test("what it was worth: CDFW's dock values with year and source, history not price", async ({ page }) => {
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-452&species=dungeness`);
-  await page.getByTestId("brief-evidence-toggle").click();
+  await page.getByTestId("brief-worth-toggle").click();
   const w = page.getByTestId("worth");
   await expect(w.getByTestId("worth-species")).toContainText("2024");
   await expect(w.getByTestId("worth-species")).toContainText("2023");
@@ -119,7 +118,7 @@ test("what it was worth: CDFW's dock values with year and source, history not pr
   await expect(w.getByRole("link", { name: "CDFW Marine Region, 2024 By The Numbers" })).toHaveAttribute("href", /nrm\.dfg\.ca\.gov/);
   // a species without a CDFW figure says so, never a number
   await page.goto(`${OK}/coast?place=port-452&species=salmon`);
-  await page.getByTestId("brief-evidence-toggle").click();
+  await page.getByTestId("brief-worth-toggle").click();
   await expect(page.getByTestId("worth-species-none")).toContainText("No species-level reference");
 });
 

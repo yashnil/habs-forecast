@@ -97,7 +97,7 @@ test.describe("official notices: every record, every warning, never verified by 
 test.describe("freshness: old or failed data never reads as current", () => {
   test("four days after the run: stale, its dates unchanged, said on the panel and in the status centre", async ({ page }) => {
     await open(page, "/?layer=forecast", "2026-10-12T20:00:00Z");
-    await expect(page.getByTestId("layer-forecast")).toContainText("Run of Oct 8 · 4 days ago");
+    await expect(page.getByTestId("layer-forecast")).toContainText("run Oct 8 · 4 days ago");
     await expect(page.getByTestId("stale-note").first()).toContainText("No newer C-HARM run has been published since Oct 8 (4 days)");
     await expect(page.getByTestId("stamp-forecast").first()).toContainText("issued Oct 8");
     expect(await statusOf(page, "model")).toBe("stale");
@@ -139,8 +139,9 @@ test.describe("freshness: old or failed data never reads as current", () => {
     await open(page, "/", "2026-10-14T20:00:00Z");
     await expect(page.getByTestId("layer-none")).toHaveAttribute("aria-checked", "true");
     await expect(page.getByTestId("nothing-current").first()).toContainText("does not mean conditions are normal");
-    // each alternative says its own date (v8 fix pass): never an old forecast offered as if current
-    await expect(page.getByTestId("show-latest-forecast").first()).toHaveText(/^Show the (\w+, )?\w+ \d{1,2}(, \d{4})? forecast, marked out of date$/);
+    await expect(page.getByTestId("nothing-current-line").first()).toContainText(/No current forecast or recent satellite view · newest: C-HARM \w+ \d{1,2} · satellite \w+ \d{1,2}/);
+    // each alternative says its own date and age (v8 fix pass, v10 rework): never an old forecast offered as if current
+    await expect(page.getByTestId("show-latest-forecast").first()).toHaveText(/^Show the (\w+, )?\w+ \d{1,2}(, \d{4})? forecast · out of date, \d+ days? old$/);
     await page.getByTestId("show-latest-forecast").first().click();
     await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
     await expect(page.getByTestId("historical-note").or(page.getByTestId("stale-note")).first()).toBeVisible();
@@ -149,7 +150,7 @@ test.describe("freshness: old or failed data never reads as current", () => {
   test("with nothing current, the newest satellite view is offered with its date, and opens marked as old", async ({ page }) => {
     await open(page, "/", "2026-10-14T20:00:00Z");
     const sat = page.getByTestId("show-latest-satellite").first();
-    await expect(sat).toHaveText(/^Satellite view, newest (\w+, )?\w+ \d{1,2}(, \d{4})?$/);
+    await expect(sat).toHaveText(/^Show satellite chlorophyll · (\w+, )?\w+ \d{1,2}(, \d{4})? · \d+ days? old$/);
     await sat.click();
     await expect(page.getByTestId("layer-satellite")).toHaveAttribute("aria-checked", "true");
     // marked old on the dock: "older than usual" or, past its policy, "out of date … does not describe current conditions"

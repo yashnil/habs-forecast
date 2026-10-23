@@ -9,25 +9,25 @@ import { OK } from "./ports";
  */
 const NOW = "2026-10-13T06:00:00Z";
 
-test("v7: below what matters, every section is a folded note with a count and a line; opening one shows all of it", async ({ page }) => {
+test("v10 pass 2: no stack of accordions; each detail sits folded beside its subject and opens in place with all its words", async ({ page }) => {
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-550`);
   await expect(page.getByTestId("matters")).toBeVisible();
-  for (const id of ["sea", "seasons", "checks", "evidence", "official", "unknown", "map"]) await expect(page.getByTestId(`brief-${id}-toggle`)).toHaveAttribute("aria-expanded", "false");
+  // the map of the waters is the decision view's ground, not a fold
+  await expect(page.getByTestId("locator")).toBeVisible();
+  for (const id of ["sea", "seasons", "checks", "unknown", "worth"]) await expect(page.getByTestId(`brief-${id}-toggle`)).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByTestId("checks")).toBeHidden();
   await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId("checks")).toBeVisible();
-  for (const id of ["evidence", "official", "unknown"]) {
-    const t = page.getByTestId(`brief-${id}-toggle`);
-    await expect(t).toHaveAttribute("aria-expanded", "false");
-    await expect(t).toContainText(/\d/);
-  }
+  // on a wide screen what the statements rest on is open: measured beside official
+  await expect(page.getByTestId("brief-measured")).toBeVisible();
+  await expect(page.getByTestId("brief-official")).toBeVisible();
+  await expect(page.getByTestId("brief-official")).toContainText("Not verified");
+  await expect(page.getByTestId("brief-unknown-toggle")).toContainText(/\d/);
   await expect(page.getByTestId("unknowns")).toBeHidden();
   await page.getByTestId("brief-unknown-toggle").click();
   await expect(page.getByTestId("unknowns")).toBeVisible();
   await expect(page.getByTestId("unknowns")).toContainText("Toxin in seafood is not measured by Neritic");
-  await page.getByTestId("brief-official-toggle").click();
-  await expect(page.getByTestId("brief-official")).toContainText("Not verified");
   // nothing removed: a station's sample against its own record is said once, in the statement it supports
   const record = page.locator('[data-testid="brief-context"] [data-node^="record:"]');
   const said = await page.locator('[data-testid="matters"]').innerText();
@@ -67,7 +67,7 @@ test("the phone sheet over the map is the instrument's own dark surface (v7), ne
   const sheet = page.getByTestId("mobile-sheet");
   await expect(sheet).toBeVisible({ timeout: 20_000 });
   // the env-instrument surface token (#0c1921)
-  expect(await sheet.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(12, 25, 33)");
+  expect(await sheet.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(10, 18, 25)"); // v10: the Instrument surface, --nx-surface #0a1219
   await ctx.close();
 });
 
@@ -101,8 +101,8 @@ test("v6 P0 4: offline three days later, the saved copy is dated 'as saved' and 
   await expect(page.getByTestId("glance-water")).toContainText(/measured Oct 1\d, .*\((CO-OPS|NDBC)/);
   // the saved periods are dated by their own day, never "Tonight"
   await page.getByTestId("brief-sea-toggle").click();
-  await page.getByTestId("sea-periods-more").locator("summary").first().click();
-  await expect(page.getByTestId("sea-period").first()).toContainText(/Mon, Oct 12, night/);
+  // every saved period is listed in the note (no second fold), each by its own date
+  await expect(page.getByTestId("sea-period").first()).toContainText(/Mon, Oct 12, night/i);
   for (const id of ["brief-glance", "brief-sea", "brief-now"]) expect(await page.getByTestId(id).innerText(), id).not.toMatch(/\b(tonight|today)\b(?!'s price)/i); // "Not today's price" is the dock-value caveat, not a claim
   await ctx.unrouteAll({ behavior: "ignoreErrors" });
   await ctx.setOffline(false);

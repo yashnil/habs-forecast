@@ -3,6 +3,7 @@ import {
   MAX_SCENARIOS,
   MAX_VESSELS,
   NS,
+  SCHEMA,
   createTripStore,
   decodeShare,
   draftInputs,
@@ -48,7 +49,7 @@ describe("trip store", () => {
     let d = s.load();
     expect(d.scenarios).toHaveLength(1);
     const rec = d.scenarios[0];
-    expect(rec).toMatchObject({ schema: 1, name: "Opening day", placeKey: "port-452" });
+    expect(rec).toMatchObject({ schema: SCHEMA, name: "Opening day", placeKey: "port-452" });
     expect(rec.id).toBeTruthy();
     expect(Date.parse(rec.createdAt)).toBeGreaterThan(0);
     expect(rec.refs[0]).toMatchObject({ key: "eia:diesel-ca", value: 8.242, period: "week of 2026-10-19" });
@@ -58,7 +59,7 @@ describe("trip store", () => {
     expect(d.scenarios.map((x) => x.name).sort()).toEqual(["Opener, 300 pots", "Opener, 300 pots (copy)"]);
     s.deleteScenario(dup.id!);
     expect(s.load().scenarios).toHaveLength(1);
-    expect(JSON.parse(kv.map.get(`${NS}scenarios`)!)[0].schema).toBe(1);
+    expect(JSON.parse(kv.map.get(`${NS}scenarios`)!)[0].schema).toBe(SCHEMA);
   });
 
   it("caps vessels at 5 and scenarios at 20 (refusing, never evicting)", () => {
@@ -80,21 +81,21 @@ describe("trip store", () => {
   it("upgrades a pre-schema record (migration)", () => {
     const now = "2026-10-20T00:00:00.000Z";
     const m = migrateRecord({ id: "old1", name: "Before v1", inputs: { fuelGal: 30, fuelUsdPerGal: -2, crew: { kind: "ofGross", pct: 30 } } }, "scenario", now);
-    expect(m).toMatchObject({ schema: 1, id: "old1", createdAt: now, updatedAt: now, name: "Before v1" });
+    expect(m).toMatchObject({ schema: SCHEMA, id: "old1", createdAt: now, updatedAt: now, name: "Before v1" });
     const rec = m as Exclude<typeof m, "newer" | null> & { draft: Draft };
     expect(rec.draft.inputs.fuelGal).toBe(30);
     expect(rec.draft.inputs.fuelUsdPerGal).toBeNull();
     expect(rec.draft.inputs.crew!.kind).toBe("ofGross");
-    // read through the store, it is shown and written back at schema 1
+    // read through the store, it is shown and written back at the current schema
     const kv = memory({ [`${NS}scenarios`]: JSON.stringify([{ id: "old1", name: "Before v1", inputs: { fuelGal: 30 } }]) });
     const s = createTripStore(kv, clock);
-    expect(s.load().scenarios[0].schema).toBe(1);
+    expect(s.load().scenarios[0].schema).toBe(SCHEMA);
     s.renameScenario("old1", "Renamed");
-    expect(JSON.parse(kv.map.get(`${NS}scenarios`)!)[0]).toMatchObject({ schema: 1, name: "Renamed" });
+    expect(JSON.parse(kv.map.get(`${NS}scenarios`)!)[0]).toMatchObject({ schema: SCHEMA, name: "Renamed" });
   });
 
   it("is read-only when a newer schema wrote here", () => {
-    const newer = JSON.stringify([{ schema: 2, id: "n1", createdAt: "2027-01-01T00:00:00Z", updatedAt: "2027-01-01T00:00:00Z", whatever: true }]);
+    const newer = JSON.stringify([{ schema: SCHEMA + 1, id: "n1", createdAt: "2027-01-01T00:00:00Z", updatedAt: "2027-01-01T00:00:00Z", whatever: true }]);
     const kv = memory({ [`${NS}scenarios`]: newer });
     const s = createTripStore(kv, clock);
     expect(s.load().status.readOnly).toBe(true);
@@ -174,6 +175,55 @@ describe("scenario links", () => {
     expect(d.inputs.roundTripNm).toBeNull();
     expect(d.inputs.cruiseKt).toBe(60);
     expect(d.inputs.catch![0].lb).toBeNull();
-    expect(d.inputs.crew).toMatchObject({ kind: "afterExpenses", pct: 100 });
+    // an unknown crew model is read as not chosen (nothing assumed), never as a default model
+    expect(d.inputs.crew).toMatchObject({ kind: null, pct: 100 });
+  });
+  it("carries an unchosen crew model and 'no hired crew' through a link", () => {
+    const d = draft();
+    d.inputs.crew = { kind: null, pct: null };
+    expect(decodeShare(encodeShare(d))!.inputs.crew!.kind).toBeNull();
+    d.inputs.crew = { kind: "none" };
+    expect(decodeShare(encodeShare(d))!.inputs.crew!.kind).toBe("none");
+    d.inputs.anglers = 3;
+    expect(decodeShare(encodeShare(d))!.inputs.anglers).toBe(3);
+  });
+});
+
+describe("schema 2: the crew model may be unchosen (v10, decision D2)", () => {
+  const rec = (schema: number, crew: Record<string, unknown> | undefined) => ({ schema, id: `r${schema}${JSON.stringify(crew)}`, name: "x", placeKey: "port-593", species: "salmon", createdAt: "2026-10-01T00:00:00Z", updatedAt: "2026-10-01T00:00:00Z", draft: { preset: "salmon-troll", inputs: { fuelGal: 40, crew } } });
+  const kindOf = (schema: number, crew: Record<string, unknown> | undefined) => {
+    const m = migrateRecord(rec(schema, crew), "scenario", "2026-10-22T00:00:00Z") as { draft: Draft };
+    return m.draft.inputs.crew!.kind;
+  };
+  it("migrates the old code default (share after expenses with no share) to unchosen, and keeps every real choice", () => {
+    expect(kindOf(1, { kind: "afterExpenses", pct: null })).toBeNull();
+    expect(kindOf(1, { kind: "afterExpenses", pct: 30 })).toBe("afterExpenses");
+    expect(kindOf(1, { kind: "ofGross", pct: null })).toBe("ofGross");
+    expect(kindOf(1, { kind: "dayRate", crew: 2 })).toBe("dayRate");
+    expect(kindOf(1, { pct: 25 })).toBe("afterExpenses");
+    expect(kindOf(0, undefined)).toBeNull();
+  });
+  it("from schema 2, what was stored is what is read: unchosen, no hired crew, or a model just chosen without its share", () => {
+    expect(kindOf(2, { kind: null })).toBeNull();
+    expect(kindOf(2, { kind: "none" })).toBe("none");
+    expect(kindOf(2, { kind: "afterExpenses", pct: null })).toBe("afterExpenses");
+    expect(kindOf(2, { kind: "garbage" })).toBeNull();
+  });
+  it("keeps saved scenarios through the migration (results unchanged where a model was chosen) and migrates working drafts", () => {
+    const full = { ...rec(1, { kind: "afterExpenses", pct: 28.1 }), id: "keep" };
+    const kv = memory({
+      [`${NS}scenarios`]: JSON.stringify([full]),
+      [`${NS}meta`]: JSON.stringify({ schema: 1, unit: "lb", drafts: { "port-593|salmon": { draft: { inputs: { crew: { kind: "afterExpenses", pct: null } } }, updatedAt: "2026-10-01T00:00:00Z" } } }),
+    });
+    const s = createTripStore(kv, clock);
+    const d = s.load();
+    expect(d.status.readOnly).toBe(false);
+    expect(d.scenarios).toHaveLength(1);
+    expect(d.scenarios[0].draft.inputs.crew).toMatchObject({ kind: "afterExpenses", pct: 28.1 });
+    expect(d.meta.drafts["port-593|salmon"].draft.inputs.crew!.kind).toBeNull();
+    // written back at schema 2, still read the same
+    s.saveDraft("port-593|salmon", d.meta.drafts["port-593|salmon"].draft);
+    expect(JSON.parse(kv.map.get(`${NS}meta`)!).schema).toBe(SCHEMA);
+    expect(createTripStore(kv, clock).load().meta.drafts["port-593|salmon"].draft.inputs.crew!.kind).toBeNull();
   });
 });

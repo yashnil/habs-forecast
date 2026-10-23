@@ -1,5 +1,6 @@
 import type { SpeciesId } from "./species";
 import type { CrewKind } from "@/lib/tripEconomics";
+import type { TripScenario } from "@/lib/tripEvaluation";
 
 /**
  * Starting values for the trip worksheet, by fishery. Every default is editable and carries its
@@ -224,4 +225,57 @@ export function presetForSpecies(species: SpeciesId | string | null | undefined)
 
 export function presetById(id: string | null | undefined): FisheryPreset | null {
   return FISHERY_PRESETS.find((p) => p.id === id) ?? null;
+}
+
+// ---------------------------------------------------------------- references (v10, decision D1)
+
+/** The worksheet fields a preset can offer a sourced reference for. */
+export type ReferenceField = "steamGph" | "fishingGph" | "crew.pct" | "feesPctOfGross";
+
+/**
+ * A sourced value offered beside a field. Never copied into a scenario automatically: only
+ * `applyReference`, called when the user taps "Use …", puts it there.
+ */
+export type PresetReference = {
+  field: ReferenceField;
+  value: number;
+  /** what the value describes ("salmon trolling, all fixed gear") */
+  label: string;
+  source: SourceId;
+  sourceShort: string;
+  sourceUrl: string;
+  /** the source's caveat ("Fleet average then, not a norm") */
+  note?: string;
+  /** a crew share reference only fits this crew model (NWFSC-121 reports shares after deductions) */
+  crewKind?: CrewKind;
+};
+
+const asRef = (field: ReferenceField, v: Sourced, crewKind?: CrewKind): PresetReference => {
+  const s = SOURCES[v.source];
+  const r: PresetReference = { field, value: v.value, label: v.label, source: v.source, sourceShort: s.short, sourceUrl: s.url };
+  if (s.note) r.note = s.note;
+  if (crewKind) r.crewKind = crewKind;
+  return r;
+};
+
+/**
+ * The references a fishery offers, for the fields Neritic has a source for. With `crewKind`, crew
+ * share references are offered only when they fit the chosen model (none while the model is unchosen).
+ */
+export function presetReferences(p: FisheryPreset | null, opts: { crewKind?: CrewKind | "none" | null } = {}): PresetReference[] {
+  if (!p) return [];
+  const out: PresetReference[] = [];
+  if (p.steamGph) out.push(asRef("steamGph", p.steamGph));
+  if (p.fishingGph) out.push(asRef("fishingGph", p.fishingGph));
+  const crewFits = !("crewKind" in opts) || opts.crewKind === p.crewKind;
+  if (crewFits && p.crewPct) out.push(asRef("crew.pct", p.crewPct, p.crewKind));
+  if (crewFits && p.crewPctAlt) out.push(asRef("crew.pct", p.crewPctAlt, p.crewKind));
+  if (p.feesPct) out.push(asRef("feesPctOfGross", p.feesPct));
+  return out;
+}
+
+/** The user tapped "Use …": a copy of the scenario with that one value in place. Nothing else changes. */
+export function applyReference<S extends TripScenario>(scenario: S, ref: PresetReference): S {
+  if (ref.field === "crew.pct") return { ...scenario, crew: { ...(scenario.crew ?? { kind: null }), pct: ref.value } };
+  return { ...scenario, [ref.field]: ref.value };
 }

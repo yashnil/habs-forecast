@@ -12,88 +12,57 @@
  * and a word). Names are --nx-* so v2 components (--cw-*) keep working while routes migrate.
  */
 
+/* v10 "Ocean Instrument" (docs/coastwatch/design-research/concepts.md, direction A): one dark system for
+   every page. The ocean is the interface; reading surfaces are plates over the same abyss, not a second
+   light environment. Daylight mode (html[data-daylight], below) is the high-contrast choice for bright sun.
+   The old light "chart" values are retired; .env-chart now resolves to the same instrument tokens so every
+   component keeps working while pages are recomposed. */
 :root,
-.env-chart {
-  /* the contour mark, light master (src/v4/brand/mark.ts) */
-  --nx-mark-tile: #0e3352;
-  --nx-mark-line: #a9d3df;
-  --nx-mark-index: #5fd0e6;
-  --nx-mark-word: #0e3352;
-  --nx-bg: #f2f5f6;
-  --nx-surface: #ffffff;
-  --nx-surface-2: #eef2f4;
-  --nx-surface-3: #e3e9ec;
-  --nx-line: #dbe2e6;
-  --nx-line-strong: #c3ced4;
-  --nx-ink: #0b1820;
-  --nx-ink-2: #3a4e5b;
-  --nx-ink-3: #526773;
-  --nx-accent: #086a85;
-  --nx-accent-bg: #e3f2f6;
-  --nx-on-accent: #ffffff;
-
-  --nx-official: #a14b00;
-  --nx-official-bg: #fdf1df;
-  --nx-official-line: #efbb72;
-  --nx-model: #6b3fb3;
-  --nx-model-bg: #f2edfb;
-  --nx-model-line: #cbbbee;
-  --nx-measured: #0b7468;
-  --nx-measured-bg: #e2f3ef;
-  --nx-measured-line: #a3d5cc;
-  --nx-conditions: #1f6496;
-  --nx-conditions-bg: #e6f0f8;
-
-  --nx-ok: #17784c;
-  --nx-partial: #086a85;
-  --nx-stale: #8a5a00;
-  --nx-offline: #4b5d6a;
-  --nx-down: #b3361f;
-
-  --nx-gap: #5d707b;
-  --nx-shadow: 0 1px 2px rgba(11, 24, 32, 0.08), 0 8px 24px rgba(11, 24, 32, 0.08);
-}
-
+.env-chart,
 .env-instrument {
-  /* the contour mark, dark master: the tile lifted so it holds on the instrument ground */
+  /* the contour mark, dark master */
   --nx-mark-tile: #134a6e;
   --nx-mark-line: #bfe4ec;
   --nx-mark-index: #7fe3f5;
-  --nx-mark-word: #e8eef2;
+  --nx-mark-word: #e6eef2;
   color-scheme: dark;
-  --nx-bg: #061016;
-  --nx-surface: #0c1921;
-  --nx-surface-2: #12232e;
-  --nx-surface-3: #1a2f3c;
-  --nx-line: rgba(186, 214, 230, 0.12);
-  --nx-line-strong: rgba(186, 214, 230, 0.24);
-  --nx-ink: #ebf2f6;
-  --nx-ink-2: #aabdc9;
-  --nx-ink-3: #7c95a4;
-  --nx-accent: #5fd0e6;
-  --nx-accent-bg: rgba(95, 208, 230, 0.13);
-  --nx-on-accent: #04141b;
+  /* depth ramp of the ground: abyss (page), deep (plates), shelf (raised), slope (controls) */
+  --nx-bg: #05090d;
+  --nx-surface: #0a1219;
+  --nx-surface-2: #0f1a23;
+  --nx-surface-3: #16242f;
+  --nx-line: rgba(190, 215, 230, 0.14);
+  --nx-line-strong: rgba(190, 215, 230, 0.28);
+  --nx-ink: #e6eef2;
+  --nx-ink-2: #a9bac5;
+  --nx-ink-3: #8193a0;
+  --nx-accent: #74c7ff;
+  --nx-accent-bg: rgba(116, 199, 255, 0.12);
+  --nx-on-accent: #04121c;
 
-  --nx-official: #f4b552;
-  --nx-official-bg: rgba(244, 181, 82, 0.1);
-  --nx-official-line: rgba(244, 181, 82, 0.42);
-  --nx-model: #c2a8f5;
-  --nx-model-bg: rgba(194, 168, 245, 0.11);
-  --nx-model-line: rgba(194, 168, 245, 0.4);
-  --nx-measured: #4fd3b0;
-  --nx-measured-bg: rgba(79, 211, 176, 0.1);
-  --nx-measured-line: rgba(79, 211, 176, 0.4);
-  --nx-conditions: #7cc4f0;
-  --nx-conditions-bg: rgba(124, 196, 240, 0.1);
+  --nx-official: #f0a94a;
+  --nx-official-bg: rgba(240, 169, 74, 0.1);
+  --nx-official-line: rgba(240, 169, 74, 0.45);
+  --nx-model: #b39cff;
+  --nx-model-bg: rgba(179, 156, 255, 0.11);
+  --nx-model-line: rgba(179, 156, 255, 0.42);
+  --nx-measured: #3fd6bd;
+  --nx-measured-bg: rgba(63, 214, 189, 0.1);
+  --nx-measured-line: rgba(63, 214, 189, 0.42);
+  --nx-conditions: #74c7ff;
+  --nx-conditions-bg: rgba(116, 199, 255, 0.1);
 
-  --nx-ok: #4fd3b0;
-  --nx-partial: #5fd0e6;
+  --nx-ok: #3fd6bd;
+  --nx-partial: #74c7ff;
   --nx-stale: #e5b25a;
   --nx-offline: #9fb2be;
   --nx-down: #f08a74;
 
   --nx-gap: #8ea2af;
-  --nx-shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.35);
+  --nx-shadow: 0 1px 1px rgba(0, 0, 0, 0.35), 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+.env-chart,
+.env-instrument {
   background: var(--nx-bg);
   color: var(--nx-ink);
 }
@@ -101,8 +70,10 @@
 :root {
   /* type: one sans for the interface and reading (Atkinson Hyperlegible Next: built for
      legibility, which also serves bright sun), a serif for editorial headlines, a mono for values */
-  --nx-font-ui: var(--font-atkinson), system-ui, -apple-system, "Segoe UI", sans-serif;
-  --nx-font-display: var(--font-source-serif), "Iowan Old Style", Georgia, serif;
+  --nx-font-ui: var(--font-plex-sans-v10), system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* v10: the editorial voice (places, headlines, margin notes) and the instrument's small capitals */
+  --nx-font-display: var(--font-newsreader-v10), "Iowan Old Style", Georgia, serif;
+  --nx-font-caps: var(--font-plex-cond), var(--font-plex-sans-v10), system-ui, sans-serif;
   --nx-font-data: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
   /* motion: short, ease-out, interruptible; frequent map operations are instant. Exits are about a
@@ -190,6 +161,51 @@
   --font-data: var(--nx-font-data);
 }
 
+/* v10: the older (v2) pages take the one dark system too. globals.css defines the v2 paper palette at
+   :root after this file is imported, so this remap is one step more specific (html:root, html .theme-paper)
+   and wins wherever a v2 page or panel appears. Family hues keep their meanings. */
+html:root,
+html .theme-paper {
+  color-scheme: dark;
+  --cw-page: var(--nx-bg);
+  --cw-surface: var(--nx-surface);
+  --cw-surface-2: var(--nx-surface-2);
+  --cw-surface-3: var(--nx-surface-3);
+  --cw-hairline: var(--nx-line);
+  --cw-hairline-strong: var(--nx-line-strong);
+  --cw-ink: var(--nx-ink);
+  --cw-ink-2: var(--nx-ink-2);
+  --cw-ink-3: var(--nx-ink-3);
+  --cw-accent: var(--nx-accent);
+  --cw-official: var(--nx-official);
+  --cw-official-ink: var(--nx-official);
+  --cw-official-bg: var(--nx-official-bg);
+  --cw-official-line: var(--nx-official-line);
+  --cw-forecast: var(--nx-model);
+  --cw-model-ink: var(--nx-model);
+  --cw-model-bg: var(--nx-model-bg);
+  --cw-model-line: var(--nx-model-line);
+  --cw-chl: var(--nx-measured);
+  --cw-measured-bg: var(--nx-measured-bg);
+  --cw-measured-line: var(--nx-measured-line);
+  --cw-history: var(--nx-ink-2);
+  --cw-history-bg: var(--nx-surface-2);
+  --cw-history-line: var(--nx-line-strong);
+  --cw-good: var(--nx-ok);
+  --cw-warning: var(--nx-stale);
+  --cw-serious: var(--nx-down);
+  --cw-critical: var(--nx-down);
+  --cw-neutral: var(--nx-ink-3);
+  --cw-series-toxin: var(--nx-measured);
+  --cw-series-cells: var(--nx-conditions);
+  --cw-series-temp: var(--nx-ink-2);
+}
+/* daylight mode keeps its light high-contrast set for the v2 pages as well */
+html[data-daylight]:root,
+html[data-daylight] .theme-paper {
+  color-scheme: light;
+}
+
 /* v2 content inside the v4 reading environment takes the v4 palette and faces */
 .env-chart {
   --cw-page: var(--nx-bg);
@@ -202,15 +218,15 @@
   --cw-ink-2: var(--nx-ink-2);
   --cw-ink-3: var(--nx-ink-3);
   --cw-accent: var(--nx-accent);
-  --font-plex-sans: var(--font-atkinson);
-  --font-newsreader: var(--font-source-serif);
+  --font-plex-sans: var(--font-plex-sans-v10);
+  --font-newsreader: var(--font-newsreader-v10);
 }
 
 /* a v2 paper panel inside a v4 surface (the phone sheet is MobileSheet, a ".theme-paper"): that class
    resets the v2 palette to warm paper on itself, so the remap is repeated on it here; the sheet reads cool
    chart paper like everything around it, never cream */
 .env-chart .theme-paper {
-  color-scheme: light;
+  color-scheme: dark;
   --cw-page: var(--nx-bg);
   --cw-surface: var(--nx-surface);
   --cw-surface-2: var(--nx-surface-2);
@@ -490,21 +506,20 @@
   color: transparent;
 }
 
-/* ---- launch screen "Sounding" (src/v4/shell/Splash.tsx; docs/coastwatch/v9/motion.md §3) ----
-   A device's first visit to Explore only, on the map's own ground (#061016). One clock: ms from the
-   screen's first style, times --nx-o (the tempo; 1 is the designed play of about 3.5 s).
-   1. soundings (100-730): points appear along the real isobaths, from the 200 m index outward;
-   2. contours (420-1470): the points stretch into dashes, then lines (a survey becoming a chart);
-   3. mark (1150-1600): the canyon head's own contours, in the chart's colour, grow into the symbol (their
-      cut ends fade into the chart until the tile is behind them); the chart steps back;
-   4. lockup (1650-2550): the symbol settles to its size as its tile surfaces and its lines take their
-      own colours, then the wordmark wipes in; a still hold to 2800;
-   5. handoff (SplashGate, once the map is ready, 700): the chart recedes and fades before the map
-      shows (contours are never drawn over land), the ground clears to the live map, and the lockup
-      settles into the header's brand, above the header, cross-fading into it with no empty frame.
-   Without a script, the cap fades it out by 4.2 s. A tap, click or key skips it in 200 ms. It sits under
-   the header (z 44 < 45); only the lockup's own transparent layer sits above it (46). Base styles are the final frame of beat 4, so reduced motion
-   drops the animations and keeps a still lockup. One thing moves at a time; no glow, ping or gradient. */
+/* ---- launch screen "Sounding" (src/v4/shell/Splash.tsx; docs/coastwatch/v10/opening.md) ----
+   A device's first visit to Explore only, on the map's own ground. One clock: ms from the screen's first
+   style, times --nx-o (the tempo; 1 is the designed play of about 4.4 s).
+   1. soundings (100-900): points appear along the real Monterey Canyon isobaths, the 200 m index first;
+      the camera eases in on the chart the whole time (scale .94 -> 1, never stopping until the reveal);
+   2. contours (520-1860): the points stretch into dashes, then lines: a survey becoming a chart;
+   3. mark (1500-2000): the canyon head's own contours, in the chart's colour, grow into the symbol, their
+      cut ends fading into the chart; the chart steps back;
+   4. lockup (2000-2950): the symbol settles to its size as its tile surfaces, then the wordmark; a hold;
+   5. reveal (SplashGate, once the map is ready, never before 3.3 s, 1.1 s): an aperture opens on the live
+      map from the canyon's true place on it (the chart, outside the aperture, is gone with the ground, so
+      no depth line ever lies on land), and the lockup lands on the header's brand.
+   Without a script, the cap fades it out by 4.7 s. A tap, click or key skips it in 200 ms. Reduced
+   motion: the still lockup (base styles), gone within a second. */
 .nx-splash { display: none; }
 html.nx-splash-on .nx-splash {
   /* m: the final symbol's size; z: how much larger the symbol and the chart are drawn (the chart must
@@ -522,7 +537,7 @@ html.nx-splash-on .nx-splash {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   /* the cap, even if no script runs: a plain fade, gone by 4.2 s */
-  animation: nx-splash-gone 300ms var(--nx-ease-in) calc(3900ms * var(--nx-o)) both;
+  animation: nx-splash-gone 300ms var(--nx-ease-in) calc(4400ms * var(--nx-o)) both;
 }
 @media (min-width: 1500px) { html.nx-splash-on .nx-splash { --nx-z: 3.6; } }
 @media (min-width: 2200px) { html.nx-splash-on .nx-splash { --nx-z: 5; } }
@@ -540,7 +555,7 @@ html.nx-splash-on:not(.nx-splash-out):not(.nx-splash-landed) [data-testid="brand
   opacity: 0;
   /* never longer than the cap, even if no script ever ends the screen (an animation, on the brand's own
      first style: hidden until 4.2 s, then shown) */
-  animation: nx-brand-wait 4200ms step-end both;
+  animation: nx-brand-wait 4700ms step-end both;
 }
 @keyframes nx-brand-wait {
   0% { opacity: 0; }
@@ -552,12 +567,25 @@ html.nx-splash-out [data-testid="brand-home"] svg { transition: opacity 150ms va
    reach the map; the lockup, on its layer above the header, lands on the header's brand, not under it */
 /* the lockup's own layer: above the header, transparent, never in the way of a click */
 html.nx-splash-on .nx-splash-top { z-index: 46; background-color: transparent; pointer-events: none; cursor: default; }
-html.nx-splash-land .nx-splash {
+/* the reveal: an aperture on the live map, opening from the canyon's place on it (--nx-ax/--nx-ay set by the
+   gate; the screen's centre without a script) */
+@property --nx-ar { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@keyframes nx-splash-aperture {
+  from { --nx-ar: 0px; }
+  to { --nx-ar: var(--nx-arm, 150vmax); }
+}
+html.nx-splash-land .nx-splash:not(.nx-splash-top) {
+  -webkit-mask-image: radial-gradient(circle at var(--nx-ax, 50%) var(--nx-ay, 50%), transparent var(--nx-ar), #000 calc(var(--nx-ar) + 1px));
+  mask-image: radial-gradient(circle at var(--nx-ax, 50%) var(--nx-ay, 50%), transparent var(--nx-ar), #000 calc(var(--nx-ar) + 1px));
+  animation: nx-splash-aperture calc(1200ms * var(--nx-o)) cubic-bezier(0.55, 0, 0.3, 1) both;
+}
+html.nx-splash-land .nx-splash.nx-splash-top {
   animation: none;
   pointer-events: none;
-  background-color: transparent;
-  transition: background-color calc(300ms * var(--nx-o)) var(--nx-ease-move) calc(100ms * var(--nx-o));
 }
+html.nx-splash-land .nx-splash { pointer-events: none; }
+/* a skip during the reveal still fades (doubled class: this must win over the aperture rule above) */
+html.nx-splash-out .nx-splash.nx-splash { animation: nx-splash-gone var(--nx-t-skip, 200ms) var(--nx-ease-in) both; }
 
 .nx-splash-chart {
   position: absolute;
@@ -568,12 +596,18 @@ html.nx-splash-land .nx-splash {
   margin: calc(var(--nx-m) * var(--nx-z) * -3.125) 0 0 calc(var(--nx-m) * var(--nx-z) * -3.125);
   /* 3: the chart steps back behind the mark */
   opacity: 0.55;
-  animation: nx-splash-dim 500ms var(--nx-ease-out) calc(1300ms * var(--nx-o)) both;
+  /* the camera eases in on the chart through the whole play */
+  animation:
+    nx-splash-dim 600ms var(--nx-ease-out) calc(1600ms * var(--nx-o)) both,
+    nx-splash-push calc(3300ms * var(--nx-o)) cubic-bezier(0.25, 0.1, 0.25, 1) both;
   /* the survey's edge: the chart fades out toward the screen's edges */
   mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
 }
 @keyframes nx-splash-dim {
   from { opacity: 1; }
+}
+@keyframes nx-splash-push {
+  from { scale: 0.94; }
 }
 .nx-splash-field { width: 100%; height: 100%; display: block; overflow: visible; }
 /* 1-2: a sounding every 2.4 units along each isobath (0.48 km), then the line; the dots are drawn a
@@ -583,8 +617,8 @@ html.nx-splash-land .nx-splash {
   stroke-width: 0.3;
   stroke-opacity: var(--o, 0.3);
   animation:
-    nx-splash-sound 180ms var(--nx-ease-out) calc((100ms + var(--i, 0) * 28ms) * var(--nx-o)) both,
-    nx-splash-join 600ms var(--nx-ease-move) calc((420ms + var(--i, 0) * 28ms) * var(--nx-o)) both;
+    nx-splash-sound 200ms var(--nx-ease-out) calc((100ms + var(--i, 0) * 40ms) * var(--nx-o)) both,
+    nx-splash-join 700ms var(--nx-ease-move) calc((520ms + var(--i, 0) * 40ms) * var(--nx-o)) both;
 }
 .nx-splash-iso-index { stroke: #7fe3f5; stroke-width: 0.5; }
 .nx-splash-iso-coast { stroke: #bfe4ec; }
@@ -609,8 +643,8 @@ html.nx-splash-land .nx-splash {
   --nx-cut: 130%;
   mask-image: linear-gradient(to bottom, #000 calc(var(--nx-cut) - 24%), transparent var(--nx-cut));
   animation:
-    nx-splash-settle 550ms var(--nx-ease-move) calc(1650ms * var(--nx-o)) both,
-    nx-splash-uncut 300ms var(--nx-ease-out) calc(2000ms * var(--nx-o)) both;
+    nx-splash-settle 600ms var(--nx-ease-move) calc(2000ms * var(--nx-o)) both,
+    nx-splash-uncut 300ms var(--nx-ease-out) calc(2350ms * var(--nx-o)) both;
 }
 @property --nx-cut { syntax: "<percentage>"; inherits: false; initial-value: 130%; }
 @keyframes nx-splash-uncut {
@@ -621,14 +655,14 @@ html.nx-splash-land .nx-splash {
   from { transform: none; }
 }
 /* 3: the symbol's lines appear at the chart's own weight, over the chart's lines, then thicken */
-.nx-splash-lines { animation: nx-fade 120ms var(--nx-ease-out) calc(1150ms * var(--nx-o)) both; }
+.nx-splash-lines { animation: nx-fade 120ms var(--nx-ease-out) calc(1500ms * var(--nx-o)) both; }
 .nx-splash-line {
   stroke-width: var(--w);
   animation:
-    nx-splash-weight 450ms var(--nx-ease-move) calc(1150ms * var(--nx-o)) both,
-    nx-splash-tone 300ms var(--nx-ease-out) calc(2000ms * var(--nx-o)) both;
+    nx-splash-weight 500ms var(--nx-ease-move) calc(1500ms * var(--nx-o)) both,
+    nx-splash-tone 300ms var(--nx-ease-out) calc(2350ms * var(--nx-o)) both;
 }
-.nx-splash-line-index { animation: nx-splash-weight-index 450ms var(--nx-ease-move) calc(1150ms * var(--nx-o)) both; }
+.nx-splash-line-index { animation: nx-splash-weight-index 500ms var(--nx-ease-move) calc(1500ms * var(--nx-o)) both; }
 /* the minor lines keep the chart's colour until the tile is behind them */
 @keyframes nx-splash-tone {
   from { stroke: #7fb2c4; }
@@ -640,7 +674,7 @@ html.nx-splash-land .nx-splash {
   from { stroke-width: 0.5; stroke-opacity: 0.7; }
 }
 /* the tile surfaces as the symbol settles: never a large icon on the chart */
-.nx-splash-tile { animation: nx-fade 280ms var(--nx-ease-out) calc(2000ms * var(--nx-o)) both; }
+.nx-splash-tile { animation: nx-fade 300ms var(--nx-ease-out) calc(2350ms * var(--nx-o)) both; }
 .nx-splash-word {
   position: absolute;
   left: calc(50% + var(--nx-dx) + var(--nx-m) * 0.75 - var(--nx-m) / 48);
@@ -648,7 +682,7 @@ html.nx-splash-land .nx-splash {
   height: var(--nx-m);
   width: calc(var(--nx-m) * (var(--nx-wr, 2) + 2 / 48));
   overflow: visible;
-  animation: nx-splash-word 350ms var(--nx-ease-out) calc(2200ms * var(--nx-o)) both;
+  animation: nx-splash-word 400ms var(--nx-ease-out) calc(2600ms * var(--nx-o)) both;
 }
 @keyframes nx-splash-word {
   from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateX(-4px); }
@@ -744,10 +778,12 @@ html[data-daylight] .env-instrument .nx-select {
 /* ---------------------------------------------------------------- v7 composition (docs/coastwatch/v7/design.md) */
 
 /* the header's two quiet surfaces */
+/* v10: the header's two surfaces are instrument plates, not pills: square-shouldered, a hairline, solid
+   over the map (no blur over WebGL) */
 .nx-bar {
   background: var(--nx-surface);
   border: 1px solid var(--nx-line);
-  box-shadow: 0 1px 2px rgba(11, 24, 32, 0.05);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
 }
 .env-instrument .nx-bar {
   /* solid over the map: at 94% the place names under it showed through its numbers */
@@ -777,16 +813,6 @@ html[data-daylight] .env-instrument .nx-select {
   line-height: 28px;
   font-weight: 600;
   letter-spacing: -0.005em;
-}
-.nx-display {
-  font-family: var(--nx-font-display);
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  font-size: 40px;
-  line-height: 44px;
-}
-@media (max-width: 639px) {
-  .nx-display { font-size: 31px; line-height: 35px; }
 }
 .nx-note-t { font-size: 12.5px; line-height: 17px; color: var(--nx-ink-3); }
 /* a statement's family tick */
@@ -874,3 +900,52 @@ html[data-daylight] .env-instrument .nx-select {
 }
 :where(input, textarea) { caret-color: var(--nx-accent); }
 .env-instrument { scrollbar-color: var(--nx-line-strong) transparent; }
+
+/* ---- v10 Ocean Instrument vocabulary (docs/coastwatch/v10/system.md) ----
+   Shared by every page; pages compose with these instead of inventing their own.
+   They sit in the components layer, so a utility class (a family colour, a size) overrides them. */
+@layer components {
+  /* a small-capital label: what a value is and which family it belongs to (colour it with a family) */
+  .nx-caps {
+    font: 500 10.5px/1.2 var(--nx-font-caps);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--nx-ink-3);
+  }
+  /* a reading value: light mono figures, large, tabular; units small beside them */
+  .nx-value {
+    font: 300 30px/1 var(--nx-font-data);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--nx-ink);
+  }
+  .nx-value small { font-size: 0.4em; letter-spacing: 0; margin-left: 0.2em; color: var(--nx-ink-2); }
+  /* the editorial voice: places and headlines */
+  /* (the v7 title size is its default; a size utility overrides it) */
+  .nx-display {
+    font-family: var(--nx-font-display);
+    font-weight: 500;
+    font-size: 40px;
+    line-height: 44px;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  @media (max-width: 639px) {
+    .nx-display { font-size: 31px; line-height: 35px; }
+  }
+  /* a margin note: caveats and context set as an italic aside, never grey fine print */
+  .nx-margin {
+    font: italic 400 13px/1.5 var(--nx-font-display);
+    color: var(--nx-ink-2);
+  }
+  .nx-margin b, .nx-margin strong { font-style: normal; font-weight: 600; color: var(--nx-ink); }
+  /* a plate: a reading surface over the abyss (one hairline, square shoulders, no card stack) */
+  .nx-plate {
+    background: var(--nx-surface);
+    border: 1px solid var(--nx-line);
+    border-radius: 4px;
+  }
+  /* a hairline rule between rows */
+  .nx-rule { border-top: 1px solid var(--nx-line); }
+
+}

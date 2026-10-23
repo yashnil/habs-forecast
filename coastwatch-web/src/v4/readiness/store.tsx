@@ -107,14 +107,19 @@ export function useReadinessSnapshot(): Snapshot {
   return useSyncExternalStore(s.subscribe, s.get, () => SERVER);
 }
 
-/** Report one source; cleared when the component that reports it leaves. */
+/** Report one source; cleared when the component that reports it leaves, or when it reports null (a
+ *  page that stops showing a source, such as a briefing closed back to its landing, no longer speaks for it). */
 export function useReportSource(entry: SourceEntry | null) {
   const s = useStore();
   const id = useRef<SourceId | null>(null);
   useEffect(() => {
     if (entry) {
+      if (id.current && id.current !== entry.id) s.clear(id.current);
       id.current = entry.id;
       s.set(entry);
+    } else if (id.current) {
+      s.clear(id.current);
+      id.current = null;
     }
   });
   useEffect(() => () => {

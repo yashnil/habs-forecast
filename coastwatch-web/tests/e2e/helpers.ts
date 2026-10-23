@@ -31,12 +31,22 @@ export function tileSource(tiles0: string | null | undefined): { template: strin
   return { template, index: index ? decodeURIComponent(index) : null };
 }
 
-/** v7 Explore: the layer list is a popover from the dock's layer button (in the sheet on a phone). */
+/** v10 Explore: the layer index is always in view on a wide screen; on a phone (and a short window) it
+ *  opens from the layer button. */
 export async function openLayers(page: Page) {
   const deck = page.getByTestId("layer-deck");
   if (!(await deck.isVisible())) await page.getByTestId("layer-capsule").click();
   await expect(deck).toBeVisible();
   return deck;
+}
+
+/** v10 Explore: how the field is drawn (sensor, view, estimate, opacity, flow or arrows), one level in. */
+export async function openDisplay(page: Page) {
+  await openLayers(page);
+  const d = page.getByTestId("layer-adjust");
+  if ((await d.getAttribute("open")) == null) await d.locator("summary").first().click();
+  await expect(d).toHaveAttribute("open", "");
+  return d;
 }
 
 /** v7 Explore: "About this layer" (provenance, coverage, method and skill, credits), folded in the layer list. */

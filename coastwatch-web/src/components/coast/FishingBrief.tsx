@@ -5,10 +5,9 @@ import { useEffect, useState } from "react";
 import type { PortsCollection } from "@/generated/schema";
 import type { Audience, CoastPlace } from "@/lib/coast";
 import { compass, marineHeadline, stationName, NWS_MARINE_PAGE, type Conditions as SeaConditions } from "@/lib/conditions";
-import { TideStrip } from "@/v4/coast/TideStrip";
 import { distanceKm } from "@/lib/grid";
-import { LIMITS_KEY, datePeriods, marineMaxima, overLimits, parseLimits, periodFor, windChangeNote, windSteps, type DatedPeriod, type SeaLimits } from "@/lib/trip";
-import { MARK_SHORT, MARK_WORDS, dollars, groundfishOn, monthDay, perPound, portAreaValues, pounds, regionFor, regionSeasons, seasonsAgeDays, speciesValues } from "@/lib/speciesSeasons";
+import { LIMITS_KEY, datePeriods, marineMaxima, overLimits, parseLimits, periodFor, type DatedPeriod, type SeaLimits } from "@/lib/trip";
+import { MARK_WORDS, dollars, groundfishOn, monthDay, perPound, portAreaValues, pounds, regionFor, regionSeasons, seasonsAgeDays, speciesValues } from "@/lib/speciesSeasons";
 import { CDFW_COMMERCIAL, CDFW_GROUNDFISH, CDFW_INSEASON, GROUNDFISH_UPDATED, SALMON_LINES, SEASONS_READ, SEASONS_STALE_DAYS, type SeasonItem } from "@/content/seasons";
 import { CDFW_MFDE, LANDINGS } from "@/content/landings";
 import { speciesPhrase, type Species } from "@/content/species";
@@ -96,35 +95,10 @@ export function useSeaLimits(): [SeaLimits, (l: SeaLimits) => void] {
 
 const limitWords = (l: SeaLimits) => [l.windKt && `wind ${l.windKt} kt`, l.seasFt && `seas ${l.seasFt} ft`].filter(Boolean).join(", ");
 
-/** The two numbers, edited in place (the glance row and the Sea section share it). */
-function LimitsEditor({ limits, onLimits, idPrefix }: { limits: SeaLimits; onLimits: (l: SeaLimits) => void; idPrefix: string }) {
-  const num = (v: string) => (v.trim() === "" ? null : Number(v) > 0 ? Number(v) : null);
-  const box = "nx-focus min-h-12 w-24 rounded-xl border border-n-line-strong bg-n-surface px-3 text-[16px] text-n-ink";
-  return (
-    <div className="flex flex-wrap gap-3">
-      <label className="flex flex-col gap-1 text-[13.5px] font-semibold text-n-ink-2">
-        Wind above (kt)
-        <input type="number" inputMode="numeric" min={1} max={80} defaultValue={limits.windKt ?? ""} onChange={(e) => onLimits({ ...limits, windKt: num(e.target.value) })} className={box} data-testid={`${idPrefix}-limit-wind`} />
-      </label>
-      <label className="flex flex-col gap-1 text-[13.5px] font-semibold text-n-ink-2">
-        Seas above (ft)
-        <input type="number" inputMode="decimal" min={1} max={40} step="0.5" defaultValue={limits.seasFt ?? ""} onChange={(e) => onLimits({ ...limits, seasFt: num(e.target.value) })} className={box} data-testid={`${idPrefix}-limit-seas`} />
-      </label>
-    </div>
-  );
-}
-
 /** A dated label for a period: its NWS name live; once saved, its own date ("Mon, Oct 12, night"), never "Tonight". */
 function periodLabel(p: DatedPeriod, saved: boolean): string {
   if (!saved) return p.name;
   return p.date ? `${dayLabel(p.date, true)}${p.night ? ", night" : ""}` : "Undated period";
-}
-
-/** The water temperature a briefing reads, with where and when it was measured. */
-function waterReading(c: SeaConditions | null): { f: number; at: string; where: string } | null {
-  if (c?.harbor?.status === "ok") return { f: Math.round(C_TO_F(c.harbor.data.waterC.value)), at: c.harbor.data.waterC.at, where: c.harbor.station ? `${stationName(c.harbor.station.name)} (CO-OPS), ${kmLabel(c.harbor.station.km)} away` : "the harbour" };
-  if (c?.buoy.status === "ok" && c.buoy.data.waterC) return { f: Math.round(C_TO_F(c.buoy.data.waterC.value)), at: c.buoy.data.waterC.at, where: c.buoy.station ? `NDBC ${c.buoy.station.id}, ${kmLabel(c.buoy.station.km)} away` : "the buoy" };
-  return null;
 }
 
 // ---------------------------------------------------------------- the trip at a glance (v7)
@@ -152,216 +126,6 @@ export function seasValue(text: string, max: number | null): string | null {
   return max != null ? `≤ ${max}` : null;
 }
 
-/** The highest number of a value like "5–10", to say when the text goes higher (gusts, building seas). */
-const top = (v: string | null) => (v ? Number(v.match(/(\d+(?:\.\d+)?)(?!.*\d)/)?.[1] ?? NaN) : NaN);
-
-function Sounding({ label, kind, value, unit, note, testId }: { label: string; kind: string; value: string | null; unit?: string; note?: React.ReactNode; testId?: string }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-0.5" data-testid={testId}>
-      {/* what kind of value it is (forecast, measured) always sits with its label */}
-      <span className="text-[13px] font-semibold leading-4 text-n-ink-2">
-        {label}
-        <span className="font-normal text-n-ink-3"> · {kind}</span>
-      </span>
-      <span className={`nx-sounding-v whitespace-nowrap ${value ? "" : "!text-n-ink-3"}`}>
-        {value ?? "—"}
-        {value && unit && <span className="ml-1 text-[15px] font-semibold text-n-ink-2">{unit}</span>}
-      </span>
-      {note && <span className="nx-note-t">{note}</span>}
-    </div>
-  );
-}
-
-/**
- * Conditions (v7): four soundings, wind and seas from the NWS period for the trip day (a forecast, said
- * so), waves and water as measured, then one quiet source line and the reader's own limits compared with
- * the NWS numbers. Never a go or no-go.
- */
-export function TripConditions({
-  cond,
-  tripDate,
-  today,
-  limits,
-  onLimits,
-  asSaved,
-  now = null,
-}: {
-  cond: { data: SeaConditions | null; loading: boolean; error: string | null };
-  tripDate: string | null;
-  today: string | null;
-  limits: SeaLimits;
-  onLimits: (l: SeaLimits) => void;
-  /** "as saved Oct 19, 3:07 PM PDT" when the page is a saved field-pack copy, else null */
-  asSaved: string | null;
-  now?: Date | null;
-}) {
-  const c = cond.data;
-  // a reading from today says its time; an older one (a saved copy) says its date too
-  const when = (iso: string) => {
-    const full = clockLabel(iso);
-    if (!now) return full;
-    const [d, ...rest] = full.split(", ");
-    return d === clockLabel(now.toISOString()).split(", ")[0] && rest.length ? rest.join(", ") : full;
-  };
-  const period = periodFor(c, tripDate, today);
-  const alerts = c?.alerts.status === "ok" ? c.alerts.data : [];
-  const max = period ? marineMaxima(period.text) : null;
-  const over = max ? overLimits(max, limits) : { wind: false, seas: false };
-  const wind = period ? windValue(period.text, max?.windKt ?? null) : null;
-  const seas = period ? seasValue(period.text, max?.seasFt ?? null) : null;
-  const buoy = c?.buoy.status === "ok" ? c.buoy : null;
-  const wave = buoy?.data.waveFt ?? null;
-  const water = waterReading(c);
-  const hasLimits = limits.windKt != null || limits.seasFt != null;
-  const [editing, setEditing] = useState(false);
-  const fcNote = period ? "Forecast" : cond.loading ? "Reading…" : "No forecast";
-  const higher = (v: string | null, m: number | null | undefined, unit: string) => (m != null && Number.isFinite(top(v)) && m > top(v) ? `, to ${m} ${unit}` : "");
-  // the wind keeps the forecaster's sequence: a later stretch's speed never takes the first one's direction
-  const gust = period?.text.match(/\bgusts?\s+(?:up\s+)?to\s+(\d+)\s*kt/i)?.[1];
-  const windNote = period ? (windChangeNote(windSteps(period.text)) ?? (gust ? `gusts to ${gust} kt` : higher(wind, max?.windKt, "kt").replace(/^, /, "") || undefined)) : undefined;
-  return (
-    <div className="flex flex-col gap-3" data-testid="glance-sea">
-      {alerts.length > 0 && (
-        <p className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-n-official" data-testid="glance-alert">
-          <Icon name="alert" className="h-4 w-4" /> {alerts[0].event}
-        </p>
-      )}
-      {/* v8: the soundings and the day's tide are one instrument, a single card */}
-      <div className="overflow-hidden rounded-2xl border border-n-line bg-n-surface shadow-[0_1px_2px_rgba(11,24,32,0.04)]">
-      <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 px-4 py-2.5 sm:grid-cols-4 sm:gap-y-4 sm:px-5 sm:py-4">
-        <Sounding label="Wind" kind={fcNote.toLowerCase()} value={wind} unit="kt" note={windNote ? <span className="max-sm:hidden">{windNote}</span> : undefined} testId="glance-wind" />
-        <Sounding label="Seas" kind={fcNote.toLowerCase()} value={seas} unit="ft" note={higher(seas, max?.seasFt, "ft").replace(/^, /, "") || undefined} testId="glance-seas" />
-        {/* a phone's half-width column would stack the wind's changes four lines deep: they get the row under wind and seas */}
-        {windNote && (
-          <p className="nx-note-t col-span-2 -mt-2 sm:hidden" data-testid="glance-wind-changes">
-            Wind {windNote}
-          </p>
-        )}
-        <Sounding label="Waves" kind={wave ? "measured" : cond.loading ? "reading…" : "not measured nearby"} value={wave ? wave.value.toFixed(1) : null} unit={wave ? `ft${buoy?.data.periodS ? ` · ${Math.round(buoy.data.periodS.value)} s` : ""}` : undefined} testId="glance-waves" />
-        <Sounding label="Water" kind={water ? "measured" : cond.loading ? "reading…" : "not measured nearby"} value={water ? String(water.f) : null} unit="°F" testId="glance-water-t" />
-      </div>
-      {c?.tides.status === "ok" && (tripDate ?? today) && (
-        <div className="border-t border-n-line px-4 pb-2 pt-2 sm:px-5 sm:pb-3 sm:pt-3">
-          <TideStrip tides={c.tides.data} day={(tripDate ?? today)!} today={today} now={asSaved ? null : now} station={c.tides.station ? stationName(c.tides.station.name) : null} />
-        </div>
-      )}
-      </div>
-      <p className="nx-note-t !text-[12.5px] leading-[18px] text-n-ink-3">
-        <a href="#sea-h" className="nx-focus rounded font-semibold text-n-ink-2 underline decoration-n-line-strong underline-offset-2 hover:text-n-ink" data-testid="glance-sea-link">
-          {period ? `Marine forecast (NWS), ${periodLabel(period, !!asSaved)}` : cond.loading ? "Reading the NWS forecast…" : c?.marine.status === "ok" ? (asSaved ? "No NWS period saved for this day" : "No NWS period for this day yet") : "NWS zone forecast not available here"}
-        </a>
-        {period && max && max.windKt == null && max.seasFt == null && <span data-testid="glance-sea-unread"> · {NO_NUMBER}</span>}
-        {/* a phone keeps the one source link; where and when each value was measured is in the Sea note */}
-        {wave && buoy && (
-          <span className="max-sm:sr-only">
-            {" "}
-            · Waves measured {when(wave.at)} at buoy {buoy.station ? `${buoy.station.id}, ${kmLabel(buoy.station.km)}` : ""}
-          </span>
-        )}
-        {water && (
-          <span className="max-sm:sr-only" data-testid="glance-water">
-            {" "}
-            · Water measured {when(water.at)} at {water.where}
-          </span>
-        )}
-      </p>
-      <div className="flex flex-wrap items-center gap-x-2 text-[14px] text-n-ink-2">
-        <span>
-          <span className="font-semibold text-n-ink">Your limits</span>: {hasLimits ? limitWords(limits) : "not set"}
-          {(over.wind || over.seas) && (
-            <span className="font-semibold text-n-official" data-testid="glance-over">
-              {" "}
-              · NWS states more than your own {[over.wind && `${limits.windKt} kt`, over.seas && `${limits.seasFt} ft`].filter(Boolean).join(" and ")} limit
-            </span>
-          )}
-        </span>
-        <button type="button" aria-expanded={editing} onClick={() => setEditing((e) => !e)} className="nx-press nx-focus inline-flex min-h-11 items-center rounded-lg px-1.5 font-semibold text-n-accent" data-testid="glance-limits-set">
-          {editing ? "Done" : hasLimits ? "Change" : "Set"}
-        </button>
-      </div>
-      {editing && <LimitsEditor limits={limits} onLimits={onLimits} idPrefix="glance" />}
-    </div>
-  );
-}
-
-/** The unsettled count beside the one notice count: "+1 status unclear" (never folded into "here"). */
-export function OfficialPosition({
-  place,
-  species,
-  audience,
-  tripDate,
-  today,
-  notices,
-  unclear,
-}: {
-  place: CoastPlace;
-  species: Species;
-  audience: Audience;
-  tripDate: string | null;
-  today: string | null;
-  notices: NoticeCounts;
-  unclear: number;
-}) {
-  const region = regionFor(place.lat);
-  const rs = region ? regionSeasons(region, species.id) : null;
-  const mine = rs?.mine[0] ?? null;
-  const day = tripDate ?? today;
-  const gf = species.id === "groundfish" && region && day ? groundfishOn(region.id, day) : null;
-  const commercialOnly = COMMERCIAL_ONLY.has(species.id);
-  const commercial = audience === "commercial";
-  // CDFW's own sentence, when its sport section gives a reopening date. Never for a commercial reader:
-  // the sport list's date is not the commercial opener (v6 P0 2).
-  const reopen = !commercial ? (mine?.quote.match(/scheduled to reopen on ([A-Z][a-z]+ \d{1,2}, \d{4})/)?.[1] ?? null) : null;
-  const link = "nx-focus font-semibold text-n-accent underline decoration-n-accent/40 underline-offset-2";
-  return (
-    <div className="mt-3 flex gap-3" data-testid="glance-official">
-      {/* the official colour only when a notice here names this trip's species; otherwise a neutral rule */}
-      <span aria-hidden className="nx-tick" data-family={notices.namingSpecies > 0 ? "official" : "unknown"} />
-      <div className="min-w-0 flex-1">
-        <p className="text-[16.5px] leading-[25px] text-n-ink">
-          <a href="#seasons-h" className="nx-focus rounded font-semibold hover:text-n-accent" data-testid="glance-season">
-            {mine ? (
-              <>
-                {mine.name}
-                {commercial ? (
-                  <span className="font-normal">: CDFW&rsquo;s sport list only.</span>
-                ) : (
-                  <span className="font-normal" data-testid="glance-season-list">
-                    {" "}
-                    is on CDFW&rsquo;s {MARK_SHORT[mine.mark].toLowerCase()}.
-                  </span>
-                )}
-              </>
-            ) : rs ? (
-              commercialOnly ? `${species.label}: commercial only, not on CDFW's sport list.` : species.id === "any" ? `CDFW ${region!.label}: ${rs.counts.open + rs.counts.alert} on the open list, ${rs.counts.closed} closed.` : `${species.label}: no entry of its own on CDFW's ${region!.label} list.`
-            ) : (
-              "Outside CDFW's five sport-fishing regions."
-            )}
-          </a>
-          {mine && !commercial && (reopen || gf) && <span className="text-n-ink-2"> {reopen ? `CDFW: “scheduled to reopen on ${reopen}”` : gf ? `Groundfish ${monthDay(gf.from)}–${monthDay(gf.to)}: ${gf.nearshore}` : null}</span>}
-          {(commercial || commercialOnly) && rs && (
-            <span className="text-n-ink-2" data-testid="glance-commercial">
-              {" "}
-              Commercial opener: see{" "}
-              <a href={CDFW_COMMERCIAL.url} {...ext} className={link}>
-                CDFW commercial
-              </a>{" "}
-              /{" "}
-              <a href={CDFW_INSEASON.url} {...ext} className={link}>
-                in-season page
-              </a>
-            </span>
-          )}
-        </p>
-        <a href="#official-h" className="nx-focus mt-1 inline-flex min-h-8 items-center rounded text-[14px] text-n-ink-2 hover:text-n-ink" data-testid="glance-notices">
-          {noticeLine(notices, species, audience)}
-          {unclear > 0 && ` · +${unclear} status unclear`}
-          <Icon name="chevronRight" className="ml-0.5 h-3.5 w-3.5 shrink-0" />
-        </a>
-      </div>
-    </div>
-  );
-}
 
 /** The dock value in one line: the species' own CDFW fishery, else the port area, history and labelled so. */
 export function worthLine(place: CoastPlace, ports: PortsCollection | null, species: Species): string {
@@ -380,7 +144,6 @@ export function SeaBody({
   tripDate,
   today,
   limits,
-  onLimits,
   now,
   asSaved,
 }: {
@@ -388,7 +151,6 @@ export function SeaBody({
   tripDate: string | null;
   today: string | null;
   limits: SeaLimits;
-  onLimits: (l: SeaLimits) => void;
   now: Date | null;
   asSaved: string | null;
 }) {
@@ -405,93 +167,73 @@ export function SeaBody({
     const [h, m] = t.split(" ")[1].split(":").map(Number);
     return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
   };
-  const [editing, setEditing] = useState(false);
   const hasLimits = limits.windKt != null || limits.seasFt != null;
   const isChosen = (p: DatedPeriod) => chosen?.name === p.name && chosen?.date === p.date;
-  const chosenP = periods.find(isChosen) ?? null;
-  const others = periods.filter((p) => !isChosen(p));
-  const renderPeriod = (p: DatedPeriod) => {
-    const m = marineMaxima(p.text);
-    const o = overLimits(m, limits);
-    const mine = isChosen(p);
-    return (
-      <li key={`${p.name}-${p.date}`} className={`py-2.5 ${mine ? "border-l-2 border-n-accent pl-2.5" : ""}`} data-testid="sea-period" data-chosen={mine}>
-        <p className="flex flex-wrap items-baseline justify-between gap-x-2">
-          <span className="text-[13px] font-semibold text-n-ink-2">{periodLabel(p, !!asSaved)}</span>
-          <span className="nx-data text-[13px] text-n-ink-2">
-            {m.windKt != null ? `≤ ${m.windKt} kt` : ""}
-            {m.windKt != null && m.seasFt != null ? " · " : ""}
-            {m.seasFt != null ? `≤ ${m.seasFt} ft` : ""}
-          </span>
-        </p>
-        <p className="mt-0.5 text-[15.5px] font-semibold leading-snug">{marineHeadline(p)}</p>
-        {m.windKt == null && m.seasFt == null && <p className="mt-0.5 text-[13.5px] text-n-ink-2">{NO_NUMBER}.</p>}
-        {(o.wind || o.seas) && (
-          <p className="mt-0.5 text-[13.5px] font-semibold text-n-official" data-testid="sea-over">
-            The forecast&rsquo;s {[o.wind && `${m.windKt} kt`, o.seas && `${m.seasFt} ft`].filter(Boolean).join(" and ")} {o.wind && o.seas ? "are" : "is"} above your own limit
-          </p>
-        )}
-        <details>
-          <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center text-[13.5px] font-semibold text-n-accent">Full NWS text</summary>
-          <p className="text-[14px] leading-relaxed text-n-ink-2">{p.text}</p>
-        </details>
-      </li>
-    );
-  };
+  // the trip day's period first, then the rest in the forecaster's order; every word shown (this note is the disclosure)
+  const ordered = [...periods.filter(isChosen), ...periods.filter((p) => !isChosen(p))];
   return (
     <div className="flex flex-col gap-3">
-      <div>
-        {/* the reader's own limits lead the section: the one comparison Neritic makes */}
-        <div className="flex flex-wrap items-center gap-x-2 text-[14.5px]" data-testid="sea-limits">
-          <span>
-            <span className="font-semibold">Your own limits</span>
-            <span className="text-n-ink-2">: {hasLimits ? limitWords(limits) : "not set"}</span>
-          </span>
-          <button type="button" onClick={() => setEditing((e) => !e)} aria-expanded={editing} className="nx-press nx-focus min-h-11 rounded-xl px-2 text-[14.5px] font-semibold text-n-accent" data-testid="sea-limits-edit">
-            {editing ? "Done" : hasLimits ? "Change" : "Set"}
-          </button>
-        </div>
-        {editing && <LimitsEditor limits={limits} onLimits={onLimits} idPrefix="sea" />}
-        <p className="mt-1 text-[13px] leading-snug text-n-ink-3">Wind, waves and tides in the forecaster&rsquo;s words: never a go or no-go from Neritic. It only compares your limits with the highest numbers the NWS text states.</p>
-      </div>
+      <p className="text-[13.5px] leading-snug text-n-ink-2" data-testid="sea-limits">
+        {hasLimits ? <>Each period against your own limits ({limitWords(limits)}), set above. </> : "Set your own limits above to compare them with each period. "}
+        Wind, waves and tides in the forecaster&rsquo;s words: never a go or no-go from Neritic.
+      </p>
       {cond.loading && <p className="text-[15px] text-n-ink-2" role="status">Reading NWS, NDBC and CO-OPS…</p>}
       {cond.error && (
         <p className="text-[15px] text-n-ink-2">
           Conditions are unavailable right now.{" "}
-          <a href={NWS_MARINE_PAGE} {...ext} className="nx-focus font-semibold text-n-accent underline">
+          <a href={NWS_MARINE_PAGE} {...ext} className="nx-focus underline underline-offset-4">
             NWS marine forecasts
           </a>
         </p>
       )}
       {alerts.map((a) => (
-        <p key={a.url} className="flex items-start gap-2 rounded-xl border border-n-official-line bg-n-official-bg px-3 py-2.5 text-[15px]" data-testid="sea-alert">
-          <Icon name="alert" className="mt-0.5 h-5 w-5 shrink-0 text-n-official" />
+        <p key={a.url} className="flex items-start gap-2 border-l-2 border-n-conditions pl-3 text-[15px]" data-testid="sea-alert">
+          <Icon name="alert" className="mt-0.5 h-5 w-5 shrink-0 text-n-conditions" />
           <span>
-            <span className="font-semibold">{a.event}</span>
+            <span className="font-medium">NWS {a.event}</span>
             {a.ends ? <span className="text-n-ink-2"> · until {clockLabel(a.ends)}</span> : null}
             <span className="block text-[13.5px] text-n-ink-2">{a.headline}</span>
           </span>
         </p>
       ))}
       {c?.marine.status === "ok" && !chosen && (
-        <p className="text-[14.5px] font-semibold text-n-ink-2" data-testid="sea-no-period">
+        <p className="text-[14.5px] text-n-ink-2" data-testid="sea-no-period">
           {asSaved ? "No NWS period saved for this day." : "No NWS period for this day yet."}
         </p>
       )}
-      {/* the trip day's period first; the forecast's other periods one tap away */}
-      {chosenP && <ol className="border-y border-n-line" data-testid="sea-periods">{renderPeriod(chosenP)}</ol>}
-      {others.length > 0 && (
-        <details data-testid="sea-periods-more">
-          <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center text-[14.5px] font-semibold text-n-accent">
-            {chosenP ? `${others.length} more NWS ${others.length === 1 ? "period" : "periods"}` : `The ${others.length} NWS ${others.length === 1 ? "period" : "periods"} ${asSaved ? "saved" : "issued"}`}
-          </summary>
-          <ol className="divide-y divide-n-line border-y border-n-line">{others.map(renderPeriod)}</ol>
-        </details>
+      {ordered.length > 0 && (
+        <ol className="divide-y divide-n-line border-y border-n-line" data-testid="sea-periods">
+          {ordered.map((p) => {
+            const m = marineMaxima(p.text);
+            const o = overLimits(m, limits);
+            const mine = isChosen(p);
+            return (
+              <li key={`${p.name}-${p.date}`} className={`py-2.5 ${mine ? "border-l-2 border-n-ink pl-2.5" : ""}`} data-testid="sea-period" data-chosen={mine}>
+                <p className="flex flex-wrap items-baseline justify-between gap-x-2">
+                  <span className="nx-caps text-n-conditions">{periodLabel(p, !!asSaved)}{mine ? " · your trip" : ""}</span>
+                  <span className="font-data text-[13px] text-n-ink-2">
+                    {m.windKt != null ? `≤ ${m.windKt} kt` : ""}
+                    {m.windKt != null && m.seasFt != null ? " · " : ""}
+                    {m.seasFt != null ? `≤ ${m.seasFt} ft` : ""}
+                  </span>
+                </p>
+                <p className="mt-0.5 text-[15px] font-medium leading-snug">{marineHeadline(p)}</p>
+                {m.windKt == null && m.seasFt == null && <p className="mt-0.5 text-[13.5px] text-n-ink-2">{NO_NUMBER}.</p>}
+                {(o.wind || o.seas) && (
+                  <p className="mt-0.5 text-[13.5px] font-medium text-n-ink" data-testid="sea-over">
+                    The forecast&rsquo;s {[o.wind && `${m.windKt} kt`, o.seas && `${m.seasFt} ft`].filter(Boolean).join(" and ")} {o.wind && o.seas ? "are" : "is"} above your own limit
+                  </p>
+                )}
+                <p className="mt-1 text-[13.5px] leading-relaxed text-n-ink-2">{p.text}</p>
+              </li>
+            );
+          })}
+        </ol>
       )}
       {c?.marine.status === "ok" && (
-        <p className="text-[13px] text-n-ink-3">
+        <p className="text-[13px] text-n-ink-2">
           NWS {c.marine.data.zoneName} ({c.marine.data.zone}){c.marine.data.updated ? `, issued ${clockLabel(c.marine.data.updated)}` : ""}.{" "}
-          <a href={c.marine.url} {...ext} className="nx-focus font-semibold text-n-accent">
+          <a href={c.marine.url} {...ext} className="nx-focus underline underline-offset-4">
             NWS forecast <Icon name="external" className="inline h-3 w-3" />
           </a>
         </p>
@@ -499,7 +241,7 @@ export function SeaBody({
       {c && c.marine.status !== "ok" && !cond.loading && (
         <p className="text-[14px] text-n-ink-2">
           No NWS zone forecast is read for these waters.{" "}
-          <a href={c.marine.url ?? NWS_MARINE_PAGE} {...ext} className="nx-focus font-semibold text-n-accent underline">
+          <a href={c.marine.url ?? NWS_MARINE_PAGE} {...ext} className="nx-focus underline underline-offset-4">
             NWS marine forecasts
           </a>
         </p>
@@ -510,8 +252,8 @@ export function SeaBody({
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
             {b?.windKt && (
               <div>
-                <dt className="text-[12.5px] font-semibold text-n-ink-3">Wind, measured</dt>
-                <dd className="nx-data text-[16px] font-semibold">
+                <dt className="nx-caps text-n-conditions">Wind, measured</dt>
+                <dd className="font-data text-[16px]">
                   {b.windDirDeg ? `${compass(b.windDirDeg.value)} ` : ""}
                   {Math.round(b.windKt.value)} kt{b.gustKt ? `, gusts ${Math.round(b.gustKt.value)}` : ""}
                 </dd>
@@ -519,26 +261,26 @@ export function SeaBody({
             )}
             {b?.waveFt && (
               <div>
-                <dt className="text-[12.5px] font-semibold text-n-ink-3">Waves, measured</dt>
-                <dd className="nx-data text-[16px] font-semibold">
+                <dt className="nx-caps text-n-conditions">Waves, measured</dt>
+                <dd className="font-data text-[16px]">
                   {b.waveFt.value.toFixed(1)} ft{b.periodS ? ` at ${Math.round(b.periodS.value)} s` : ""}
                 </dd>
               </div>
             )}
             {(harbor?.data.waterC ?? b?.waterC) && (
               <div>
-                <dt className="text-[12.5px] font-semibold text-n-ink-3">{harbor ? "Water, harbour" : "Water, at the buoy"}</dt>
-                <dd className="nx-data text-[16px] font-semibold">{Math.round(C_TO_F((harbor?.data.waterC ?? b!.waterC!).value))}°F</dd>
+                <dt className="nx-caps text-n-conditions">{harbor ? "Water, harbour" : "Water, at the buoy"}</dt>
+                <dd className="font-data text-[16px]">{Math.round(C_TO_F((harbor?.data.waterC ?? b!.waterC!).value))}°F</dd>
               </div>
             )}
             {tides.length > 0 && (
               <div className="col-span-2 sm:col-span-1">
-                <dt className="text-[12.5px] font-semibold text-n-ink-3">Tides{day ? `, ${dayLabel(day)}` : ""} (predicted)</dt>
-                <dd className="nx-data text-[14px] font-semibold leading-snug">{tides.map((t) => `${t.type === "H" ? "H" : "L"} ${t.ft.toFixed(1)} ft ${hm(t.at)}`).join(" · ")}</dd>
+                <dt className="nx-caps text-n-conditions">Tides{day ? `, ${dayLabel(day)}` : ""} (predicted)</dt>
+                <dd className="font-data text-[14px] leading-snug">{tides.map((t) => `${t.type === "H" ? "H" : "L"} ${t.ft.toFixed(1)} ft ${hm(t.at)}`).join(" · ")}</dd>
               </div>
             )}
           </dl>
-          <p className="mt-2 text-[12.5px] leading-snug text-n-ink-3">
+          <p className="mt-2 text-[12.5px] leading-snug text-n-ink-2">
             {buoy?.station ? `${stationName(buoy.station.name)} (NDBC ${buoy.station.id}), ${kmLabel(buoy.station.km)} away` : ""}
             {b?.waveFt && now ? `, ${clockLabel(b.waveFt.at)}` : ""}
             {harbor?.station ? ` · harbour water at ${stationName(harbor.station.name)} (CO-OPS)${harbor.data.waterC ? `, ${clockLabel(harbor.data.waterC.at)}` : ""}` : ""}
@@ -552,36 +294,27 @@ export function SeaBody({
 
 // ---------------------------------------------------------------- seasons
 
-function SeasonRow({ i, open = false, extra, commercial = false }: { i: SeasonItem; open?: boolean; extra?: React.ReactNode; commercial?: boolean }) {
+/** One CDFW entry: its mark (a shape too, never colour alone), its words, and CDFW's sentence when asked for. */
+function SeasonRow({ i, quote = true, extra, commercial = false }: { i: SeasonItem; quote?: boolean; extra?: React.ReactNode; commercial?: boolean }) {
   return (
-    <li className="py-1.5" data-testid={`season-${i.id}`} data-mark={i.mark}>
-      <details open={open} className="group">
-        <summary className="nx-focus flex min-h-11 cursor-pointer list-none items-start gap-2.5 rounded-lg">
-          <MarkDot mark={i.mark} />
-          <span className="min-w-0 flex-1">
-            <span className="text-[15.5px] font-semibold">{i.name}</span>
-            <span className="block text-[13.5px] text-n-ink-2">
-              {MARK_WORDS[i.mark]}
-              {commercial ? " (sport)" : ""}
-            </span>
-          </span>
-          <Icon name="chevronDown" className="mt-1 h-4 w-4 text-n-ink-3 transition-transform group-open:rotate-180" />
-        </summary>
-        <div className="ml-[22px] mt-1 flex flex-col gap-2">
-          {i.quote && <blockquote className="border-l-2 border-n-official-line pl-3 text-[14.5px] leading-relaxed text-n-ink">&ldquo;{i.quote}&rdquo;</blockquote>}
-          {extra}
-        </div>
-      </details>
+    <li className="flex items-start gap-2.5 py-2" data-testid={`season-${i.id}`} data-mark={i.mark}>
+      <MarkDot mark={i.mark} />
+      <span className="min-w-0 flex-1">
+        <span className="text-[15px] font-medium">{i.name}</span>
+        <span className="block text-[13px] text-n-ink-2">
+          {MARK_WORDS[i.mark]}
+          {commercial ? " (sport list)" : ""}
+        </span>
+        {quote && i.quote && <span className="mt-1 block border-l-2 border-n-official-line pl-3 text-[14px] leading-relaxed text-n-ink" data-testid="season-quote">&ldquo;{i.quote}&rdquo;</span>}
+        {extra}
+      </span>
     </li>
   );
 }
 
 export function SeasonsBody({ place, species, audience, tripDate, today }: { place: CoastPlace; species: Species; audience: Audience; tripDate: string | null; today: string | null }) {
   const region = regionFor(place.lat);
-  if (!region)
-    return (
-      <p className="text-[15px] text-n-ink-2">These waters are outside CDFW&rsquo;s five sport-fishing regions.</p>
-    );
+  if (!region) return <p className="text-[15px] text-n-ink-2">These waters are outside CDFW&rsquo;s five sport-fishing regions.</p>;
   const rs = regionSeasons(region, species.id);
   const day = tripDate ?? today;
   const gf = day ? groundfishOn(region.id, day) : null;
@@ -591,34 +324,31 @@ export function SeasonsBody({ place, species, audience, tripDate, today }: { pla
   const commercial = audience === "commercial";
   const isGroundfish = (i: SeasonItem) => ["rockfish", "lingcod", "cabezon", "greenlings"].includes(i.id);
   const gfExtra = gf ? (
-    <p className="rounded-xl bg-n-surface-2 px-3 py-2 text-[14px]" data-testid="season-groundfish-row">
+    <span className="mt-1 block bg-n-surface-2 px-3 py-2 text-[13.5px]" data-testid="season-groundfish-row">
       CDFW&rsquo;s {region.label} groundfish table, {monthDay(gf.from)}–{monthDay(gf.to)} {gf.year}: nearshore &ldquo;{gf.nearshore}&rdquo;; shelf, slope and lingcod &ldquo;{gf.shelf}&rdquo;.{" "}
-      <a href={CDFW_GROUNDFISH.url} {...ext} className="nx-focus font-semibold text-n-accent">
+      <a href={CDFW_GROUNDFISH.url} {...ext} className="nx-focus underline underline-offset-4">
         Table, updated {GROUNDFISH_UPDATED} <Icon name="external" className="inline h-3 w-3" />
       </a>
-    </p>
+    </span>
   ) : null;
   return (
     <div className="flex flex-col gap-3">
-      <div>
-        {/* one source mark for the section; the page-level disclosure says the copy is unreviewed */}
-        <p className="text-[13.5px] text-n-ink-3" data-testid="seasons-source">
-          CDFW sport summary, <span className="font-semibold text-n-ink-2">{region.label}</span> region ({region.bounds}), dated {region.updated}; Neritic&rsquo;s copy of {dayLabel(SEASONS_READ)}.
-        </p>
-      </div>
+      <p className="text-[13.5px] text-n-ink-2" data-testid="seasons-source">
+        CDFW sport summary, <span className="text-n-ink">{region.label}</span> region ({region.bounds}), dated {region.updated}; Neritic&rsquo;s copy of {dayLabel(SEASONS_READ)}.
+      </p>
       {stale && (
-        <p className="rounded-xl border border-n-official-line bg-n-official-bg px-3 py-2 text-[14.5px] font-semibold" data-testid="seasons-stale">
+        <p className="border-l-2 border-n-official pl-3 text-[14.5px]" data-testid="seasons-stale">
           Neritic&rsquo;s copy is {age} days old. Seasons open and close in that time: read CDFW&rsquo;s page first.
         </p>
       )}
       {(commercial || commercialOnly) && (
         <p className="text-[14.5px] text-n-ink-2" data-testid="seasons-commercial">
-          This is CDFW&rsquo;s list for sport fishing. Commercial seasons, openers, permits, quotas, and in-season gear, depth and toxin actions are set separately:{" "}
-          <a href={CDFW_COMMERCIAL.url} {...ext} className="nx-focus font-semibold text-n-accent underline">
+          This is CDFW&rsquo;s list for sport fishing. Commercial seasons, openers, permits, quotas, and in-season gear, depth and toxin actions are set separately, and Neritic holds none of them:{" "}
+          <a href={CDFW_COMMERCIAL.url} {...ext} className="nx-focus underline underline-offset-4">
             {CDFW_COMMERCIAL.label}
           </a>{" "}
           and{" "}
-          <a href={CDFW_INSEASON.url} {...ext} className="nx-focus font-semibold text-n-accent underline">
+          <a href={CDFW_INSEASON.url} {...ext} className="nx-focus underline underline-offset-4">
             in-season changes
           </a>
           .
@@ -626,11 +356,11 @@ export function SeasonsBody({ place, species, audience, tripDate, today }: { pla
       )}
       {rs.mine.length > 0 && (
         <div data-testid="seasons-mine">
-          <p className="nx-eyebrow">For {speciesPhrase(species)}</p>
+          <p className="nx-caps">For {speciesPhrase(species)}</p>
+          {/* a commercial reader's own row never quotes the sport list's dates as a season (v6 P0 2) */}
           <ul className="divide-y divide-n-line">
             {rs.mine.map((i) => (
-              // a commercial reader's own row stays closed: its quote is the sport list's dates
-              <SeasonRow key={i.id} i={i} open={!commercial} commercial={commercial} extra={isGroundfish(i) ? gfExtra : null} />
+              <SeasonRow key={i.id} i={i} quote={!commercial} commercial={commercial} extra={isGroundfish(i) ? gfExtra : null} />
             ))}
           </ul>
         </div>
@@ -639,33 +369,27 @@ export function SeasonsBody({ place, species, audience, tripDate, today }: { pla
       {species.id === "salmon" && (
         <p className="flex flex-wrap gap-x-4 text-[14px]" data-testid="seasons-salmon-lines">
           {SALMON_LINES.map((l) => (
-            <a key={l.tel} href={`tel:${l.tel}`} className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
-              {l.label}: <span className="nx-data">{l.phone}</span>
+            <a key={l.tel} href={`tel:${l.tel}`} className="nx-focus inline-flex min-h-11 items-center gap-1 text-n-ink">
+              {l.label}: <span className="font-data">{l.phone}</span>
             </a>
           ))}
         </p>
       )}
-      <details data-testid="seasons-all">
-        <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center text-[15px] font-semibold text-n-accent">
-          {rs.mine.length ? "Also often fished here, and" : "Often fished here, and"} all {rs.all.length} entries ({rs.counts.open} open, {rs.counts.alert} alert, {rs.counts.closed} closed)
-        </summary>
-        <ul className="divide-y divide-n-line" data-testid="seasons-headline">
-          {rs.headline.map((i) => (
-            <SeasonRow key={i.id} i={i} extra={isGroundfish(i) ? gfExtra : null} />
-          ))}
-        </ul>
-        <p className="nx-eyebrow mt-3">Every entry on CDFW&rsquo;s {region.label} page</p>
-        <ul className="divide-y divide-n-line">
+      <div data-testid="seasons-all">
+        <p className="nx-caps">
+          Every entry on CDFW&rsquo;s {region.label} page · {rs.counts.open} open, {rs.counts.alert} alert, {rs.counts.closed} closed
+        </p>
+        <ul className="grid grid-cols-1 gap-x-6 sm:grid-cols-2" data-testid="seasons-headline">
           {rs.all.map((i) => (
-            <SeasonRow key={i.id} i={i} />
+            <SeasonRow key={i.id} i={i} quote={false} extra={isGroundfish(i) && rs.mine.every((m) => m.id !== i.id) ? gfExtra : null} />
           ))}
         </ul>
-      </details>
+      </div>
       <p className="flex flex-wrap gap-x-4 text-[14px]">
-        <a href={region.url} {...ext} className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
+        <a href={region.url} {...ext} className="nx-focus inline-flex min-h-11 items-center gap-1 underline underline-offset-4">
           CDFW {region.label} region page <Icon name="external" className="h-3.5 w-3.5" />
         </a>
-        <a href={CDFW_INSEASON.url} {...ext} className="nx-focus inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent">
+        <a href={CDFW_INSEASON.url} {...ext} className="nx-focus inline-flex min-h-11 items-center gap-1 underline underline-offset-4">
           {CDFW_INSEASON.label} <Icon name="external" className="h-3.5 w-3.5" />
         </a>
       </p>

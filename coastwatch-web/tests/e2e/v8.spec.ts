@@ -108,10 +108,13 @@ test("the briefing keeps every change of wind direction the NWS forecasts", asyn
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(wind).not.toContainText("then NW", { useInnerText: true });
   await expect(page.getByTestId("glance-wind-changes")).toHaveText("Wind then NW 5–10 kt late this evening, then N after midnight");
+  await expect(page.getByTestId("glance-tide")).toContainText(/\d\.\d\s*ft (high|low)/);
 });
 
-test("on a phone the tide's turn labels stay inside the strip and clear of each other and the now line", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+// v10 pass 2: a phone reads the next tide turn in the decision row; the day's strip is drawn from 640 px
+// (below the lanes' 720 px), where its labels must still fit
+test("on a narrow screen the tide's turn labels stay inside the strip and clear of each other and the now line", async ({ page }) => {
+  await page.setViewportSize({ width: 680, height: 844 });
   await page.clock.setFixedTime(new Date("2026-10-13T06:00:00Z"));
   await page.goto(`${OK}/coast?place=port-550`);
   const tide = page.getByTestId("tide-strip");
@@ -140,8 +143,9 @@ test("the briefing draws the day's tide from NOAA's predicted highs and lows", a
   // the servers replay NOAA responses recorded for 2026-10-13 06:00 UTC (Oct 12 in California): the page's clock too
   await page.clock.setFixedTime(new Date("2026-10-13T06:00:00Z"));
   await page.goto(`${OK}/coast?place=port-550`);
+  // v10: on a wide screen the tide is a lane across the next 60 hours, on the same clock as the NWS periods
   const tide = page.getByTestId("tide-strip");
   await expect(tide).toBeVisible({ timeout: 15_000 });
-  await expect(tide).toContainText("NOAA predictions");
-  await expect(tide.getByRole("img")).toHaveAttribute("aria-label", /Predicted tide for the day.*, in feet above MLLW: .*(high|low) \d+\.\d ft at \d{1,2}:\d{2} (AM|PM)/);
+  await expect(page.getByTestId("time-lanes")).toContainText("NOAA predictions");
+  await expect(tide.getByRole("img")).toHaveAttribute("aria-label", /Predicted tide for the (day|next 60 hours).*in feet above MLLW: .*(high|low) \d+\.\d ft at \d{1,2}:\d{2} (AM|PM)/);
 });

@@ -48,7 +48,7 @@ describe("time-axis ticks fit their pixels", () => {
 
   it("months for a short window, calendar-aligned; years alone beyond about three years", () => {
     expect(monthTicks(D("2026-04-10"), D("2026-10-10"), 700).map((t) => new Date(t).toISOString().slice(0, 7))).toEqual(["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"]);
-    expect(tickLabel(D("2026-05-01"), D("2026-04-10"), D("2026-10-10"))).toBe("May 26");
+    expect(tickLabel(D("2026-05-01"), D("2026-04-10"), D("2026-10-10"))).toBe("May \u201926");
     const long = monthTicks(D("2014-01-01"), D("2026-10-10"), 1100);
     expect(long.every((t) => new Date(t).getUTCMonth() === 0)).toBe(true);
     expect(tickLabel(long[0], D("2014-01-01"), D("2026-10-10"))).toMatch(/^\d{4}$/);

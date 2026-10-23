@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { FAILED, OK } from "./ports";
-import { openAbout, openLayers } from "./helpers";
+import { openAbout, openDisplay, openLayers } from "./helpers";
 
 /**
  * v5 map: the coast filled honestly. The C-HARM layer extends the nearest NOAA cell to the shore
@@ -73,9 +73,10 @@ test("San Francisco Bay: NOAA publishes no toxin probability there; the inspecto
   await expect(page.getByTestId("cell-value")).toHaveText("No value");
   await expect(page.getByTestId("cell-piers")).toContainText("CalHABMAP pier samples");
   await page.getByTestId("switch-estimate").click();
-  // the selection stays open; the folded layer deck names the new layer
+  // the selection stays open; the layer index lights the new layer
   await expect(page).toHaveURL(/layer=olci300/);
-  await expect(page.getByTestId("layer-capsule")).toContainText("Satellite chlorophyll");
+  await expect(page.getByTestId("layer-satellite")).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByTestId("inspect-panel")).toBeVisible();
 });
 
 test("the 8-day outlook: its own layer, horizon, skill against baselines, caveats and readout label", async ({ page }) => {
@@ -125,7 +126,7 @@ test("the estimate lies under the observed pixels, stippled and labelled, and ca
   // class 3 of the fixture's class grid: a bay, on a borrowed background
   await expect(page.getByTestId("hover-readout")).toContainText("Fixture: bay or estuary, borrowed background; turbid water");
   await expect(page.getByTestId("hover-readout")).not.toContainText("clear pixels");
-  await openLayers(page);
+  await openDisplay(page);
   await page.getByTestId("sat-estimate-toggle").uncheck();
   await expect(page).toHaveURL(/est=0/);
   await expect.poll(() => page.evaluate(() => !!(window as unknown as Win).__cwMap.getSource("estimate"))).toBe(false);
@@ -163,7 +164,7 @@ test("on a phone the outlook is two taps away (the layer button, then the outloo
 test("sea temperature: an analysis (MUR foundation temperature), a °F legend, °C and °F in the readout, a perceptually even ramp", async ({ page }) => {
   await open(page, "layer=sst");
   await expect(page.getByTestId("layer-sst")).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByTestId("layer-sst")).toContainText("Analysis of Oct 12");
+  await expect(page.getByTestId("layer-sst")).toContainText("Analysis · JPL MUR, Oct 12");
   await expect(page.getByTestId("legend-sst")).toContainText("°F");
   await expect(page.getByTestId("sst-caveat")).toContainText("foundation temperature");
   await expect(page.getByTestId("sst-caveat")).toContainText("may mark a front where satellites saw clear sky");
@@ -181,7 +182,7 @@ test("sea temperature: an analysis (MUR foundation temperature), a °F legend, �
 test("My Coast's sea-temperature link opens the layer with the harbour selected", async ({ page }) => {
   await open(page, "layer=sst&sel=harbor:593");
   await expect(page.getByTestId("inspect-panel")).toHaveAttribute("data-kind", "harbor");
-  await expect(page.getByTestId("layer-capsule")).toContainText("Sea temperature");
+  await expect(page.getByTestId("layer-sst")).toHaveAttribute("aria-checked", "true");
   await expect(page).toHaveURL(/layer=sst/);
 });
 

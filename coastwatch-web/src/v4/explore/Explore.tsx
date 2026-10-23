@@ -4,32 +4,37 @@ import { toast } from "@/v4/ui/toast";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MlMap } from "maplibre-gl";
-import type { Manifest, PortsCollection, SourceStatus } from "@/generated/schema";
+import type { Manifest, PortsCollection } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 import type { PortIntelCollection } from "@/generated/port_intel";
 import type { StationLite } from "@/lib/data";
-import { CHARM_VARIABLES, artifactUrl, charmRun, satelliteLatest, isFixture, sourceStatus, type CharmVariable } from "@/lib/layers";
-import { loadField, fieldFeatures, type CurrentField } from "@/lib/currents";
-import { cellEdges, cellLabels, gapAt, loadGrid } from "@/lib/grid";
+import { CHARM_VARIABLES, artifactUrl, charmLayer, charmRun, satelliteLatest, isFixture, sourceStatus, type CharmVariable } from "@/lib/layers";
+import { chooseHour, currentsHourly, fieldFeatures, loadFieldCached, type CurrentField } from "@/lib/currents";
+import { decodeFootprint, encodeFootprint, footprintCell, footprintPolygon, productOf, type FootprintRef, type Lattice } from "@/lib/footprint";
+import { satelliteSource } from "@/lib/readout";
+import { clockLabel } from "@/v4/ui/time";
+import type { LayerArtifact } from "@/generated/schema";
+import { cellEdges, cellLabels, distanceKm, gapAt, loadGrid } from "@/lib/grid";
 import { gapFeatures, lastHabSample, stationFeatures } from "@/lib/provenance";
 import { clipLimitsToWater, labelledGeometry } from "@/lib/officialGeometry";
 import { loadWaterFallback, type WaterGeometry } from "@/lib/waterFallback";
-import { journeyTo } from "@/lib/camera";
+import { COAST_BOUNDS, coastCamera, journeyTo, seaward, waterSampler, type Insets } from "@/lib/camera";
 import { forecastFreshness, openingLayer, type Opening } from "@/lib/opening";
-import { classifyTime, type Freshness } from "@/lib/freshness";
+import { ageInDays } from "@/lib/freshness";
 import { defaultLead } from "@/lib/charmDays";
 import { pacificToday } from "@/lib/time";
 import { useNow } from "@/lib/useNow";
-import type { CurrentsOverlay, MapPoint } from "@/components/map/MapCanvas";
+import type { CurrentsOverlay, FootprintOverlay, MapPoint } from "@/components/map/MapCanvas";
 import { MobileSheet, type SnapId } from "@/components/MobileSheet";
 import { HoverReadout, type HoverSource } from "@/components/map/HoverReadout";
-import { useReportSource, type SourceState } from "@/v4/readiness/store";
+import { useReportSource } from "@/v4/readiness/store";
+import { currentsEntry, fieldState, layerFreshness, modelEntry, newestSatellite, satelliteEntry } from "@/v4/readiness/shown";
 import { SourceList } from "@/v4/readiness/StatusCenter";
 import { TopBar, NavTabs } from "@/v4/shell/TopBar";
 import { NoticesButton, type LocalNotices } from "@/v4/shell/Notices";
 import { RegistryDisclosure } from "@/v4/shell/Disclosure";
 import { associationsAt, localNotices } from "@/lib/applicability";
-import { coastHref, pointKey, sitePlaces } from "@/lib/coast";
+import { bearingName, coastHref, pointKey, sitePlaces } from "@/lib/coast";
 import { readHome } from "@/v4/coast/home";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { Icon } from "@/v4/ui/Icon";
@@ -38,7 +43,9 @@ import { decodeSelection, encodeSelection, sameSelection, type Camera, type Hist
 import { choiceParams, parseChoice, resolve, runDays, useDerivedIndex, VARIABLE_WORDS, type LayerChoice } from "./layers";
 import { derivedEstimate, derivedOutlook, derivedSst, nearshoreCheck } from "@/lib/derived";
 import { LayerList, LayerOptions, Legend, LegendLine, Provenance, ReferenceLines, layerWords } from "./LayerPanel";
-import { Timebar, timeSteps } from "./Timebar";
+import { TimeRail, timeSteps } from "./Timebar";
+import "./explore.css";
+import { FlowControls, useFlowPrefs, useReducedMotion } from "./FlowControls";
 import { PlaceSearch, type SearchHit } from "./Search";
 import { AreaModel, CellBody, CrossLinks, EvidenceFold, HarborView, Header, PointView, StationView, tripOf, type InspectCtx } from "./Inspect";
 import { boxFeature, useAreaDrag } from "./AreaDrag";
@@ -51,8 +58,8 @@ import { OfflineBanner } from "@/v4/offline/OfflineBanner";
 import { readHomePort } from "@/v4/state/homePort";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import { EASE_IN, EASE_OUT, T, markAppReady, useSwapFade } from "@/v4/motion";
-import { ContourRule } from "@/v4/ui/Kit";
 import { ContourLoader } from "@/v4/ui/ContourLoader";
+import { onceSettled } from "@/components/map/settled";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
 
@@ -77,8 +84,10 @@ const VIEW: Record<string, [[number, number], [number, number]]> = {
   southern_california: [[-120.55, 32.55], [-117.05, 34.55]],
 };
 const DOCK = 64; // phone navigation dock height
-const CREDITS = 24; // phone: the one-line map credits above the sheet
-const PEEK = 152; // phone sheet at its peek: the dock (layer button, ramp, days)
+const PEEK = 196; // phone sheet at its peek: the dock (layer button, ramp, the time rail)
+// at rest with nothing current: the layer button, the one status line and its two dated choices (taller on a narrow phone, where they wrap)
+const peekRest = (w: number) => (w < 360 ? 296 : 262);
+
 
 /** The height of an element as laid out (the dock and the map's bottom margin): the camera's insets follow it. */
 function useHeight(ref: React.RefObject<HTMLElement | null>, fallback: number, key: unknown): number {
@@ -104,6 +113,25 @@ function useBreakpoint(): "phone" | "tablet" | "desktop" | null {
     return () => window.removeEventListener("resize", f);
   }, []);
   return bp;
+}
+
+/** The published region (ports.regions bounds) containing a point, or null. */
+function regionAt(ports: PortsCollection | null, lat: number, lon: number): string | null {
+  for (const r of ports?.regions ?? []) {
+    const [[w, s], [e, n]] = r.bounds;
+    if (lat >= s && lat <= n && lon >= w && lon <= e) return r.id;
+  }
+  return null;
+}
+/** Below this zoom the view is statewide: the currents hour follows the whole domain, not one region. */
+const REGION_ZOOM = 7.5;
+/** The time step key of a currents layer ("20261008T12Z", or "mean"). */
+const hourKey = (l: LayerArtifact) => (l.layer_id.endsWith("mean24h") ? "mean" : (l.layer_id.split("_").pop() ?? ""));
+/** The lattice a footprint product is published on (for a footprint carried in the URL). */
+function latticeOf(m: Manifest, p: FootprintRef["product"]): Lattice | null {
+  if (p === "olci300" || p === "viirs750") return satelliteLatest(m, p)?.grid ?? null;
+  if (p === "hfr2km") return currentsHourly(m)[0]?.vectors?.u_grid ?? null;
+  return charmLayer(m, "particulate_domoic", 0)?.grid ?? charmLayer(m, "pseudo_nitzschia", 0)?.grid ?? null;
 }
 
 /** The newest sample date (YYYY-MM-DD) among a station's latest values, of any variable. */
@@ -149,6 +177,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     if (choice?.kind === "forecast" && choice.lead < 0 && now) setChoiceRaw({ ...choice, lead: firstLead });
   }, [choice, firstLead, now]);
   const active: LayerChoice = useMemo(() => choice ?? { kind: "none" }, [choice]);
+  // the instrument at rest: nothing current, no layer drawn (the status and its dated choices are in the dock)
+  const atRest = active.kind === "none" && opening?.reason === "nothing-current";
   // derived chlorophyll products (lib/derived): offered only when the dataset publishes their index
   const derivedRaw = useDerivedIndex(baseUrl);
   const derived = derivedRaw ?? null;
@@ -157,7 +187,21 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     // a link to a derived layer (outlook, sea temperature) the dataset does not have: the default layer instead
     if ((choice?.kind === "outlook" && !derivedOutlook(derivedRaw)) || (choice?.kind === "sst" && !derivedSst(derivedRaw))) if (derivedRaw !== undefined) setChoiceRaw(null);
   }, [choice, derivedRaw]);
-  const resolved = useMemo(() => resolve(manifest, active, baseUrl, derived), [manifest, active, baseUrl, derived]);
+  // the region in view or selected: the currents open on the newest hour that observed it (lib/currents chooseHour)
+  const [selection, setSelectionRaw] = useState<Selection | null>(() => decodeSelection(q0));
+  const [viewRegion, setViewRegion] = useState<string | null>(() => {
+    const r = q0.get("region");
+    return r && r !== "california" ? r : null;
+  });
+  const selRegion = useMemo(() => {
+    if (!selection || !ports) return null;
+    if (selection.kind === "harbor") return ports.features.find((f) => f.properties.port_code === selection.port)?.properties.region ?? null;
+    const st = selection.kind === "station" ? stations?.find((x) => x.station_id === selection.id) : null;
+    const at = st ? { lat: st.lat, lon: st.lon } : selection.kind === "area" ? { lat: (selection.bbox[1] + selection.bbox[3]) / 2, lon: (selection.bbox[0] + selection.bbox[2]) / 2 } : selection.kind === "cell" || selection.kind === "point" ? selection : null;
+    return at ? regionAt(ports, at.lat, at.lon) : null;
+  }, [selection, ports, stations]);
+  const hourRegion = selRegion ?? viewRegion;
+  const resolved = useMemo(() => resolve(manifest, active, baseUrl, derived, { region: hourRegion }), [manifest, active, baseUrl, derived, hourRegion]);
   // the legend swaps with a short fade when the layer changes (a new day keeps the same legend)
   const legendKey = JSON.stringify({ ...active, day: undefined, lead: undefined });
   const legendRef = useSwapFade<HTMLDivElement>(legendKey);
@@ -166,7 +210,6 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const lead = active.kind === "forecast" ? active.lead : firstLead;
 
   // ------------------------------------------------------------------ selection + history
-  const [selection, setSelectionRaw] = useState<Selection | null>(() => decodeSelection(q0));
   const [stack, setStack] = useState<HistoryEntry[]>([]);
   const mapRef = useRef<MlMap | null>(null);
   const camera = (): Camera | null => {
@@ -253,6 +296,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     // once, on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // the selection's footprint (computed further down, once the layers are resolved): fp=product:row:col
+  const fpEncRef = useRef<string | null>(null);
   const writeUrl = useCallback(() => {
     if (!synced) return;
     const q = new URLSearchParams();
@@ -260,6 +305,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     if (q0.get("from")?.startsWith("/coast")) q.set("from", q0.get("from")!);
     const sel = encodeSelection(selection);
     if (sel) q.set("sel", sel);
+    if (sel && fpEncRef.current) q.set("fp", fpEncRef.current);
     const m = mapRef.current;
     if (m) {
       const c = m.getCenter();
@@ -308,19 +354,22 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   }, [edges, resolved.forecastLayer, mapReady]);
   const harbourOn = active.kind === "forecast" && harbour != null && harbour.id === resolved.forecastLayer?.layer_id;
 
-  const [curField, setCurField] = useState<{ id: string; field: CurrentField } | null>(null);
+  const [curField, setCurField] = useState<{ id: string; layer: LayerArtifact; field: CurrentField } | null>(null);
+  const curFieldRef = useRef(curField);
+  curFieldRef.current = curField;
   const [curState, setCurState] = useState<"idle" | "loading" | "ready" | "failed">("idle");
   // "Try again" for the currents grids (a failed grid is never kept in lib/grid's cache)
   const [curRetry, setCurRetry] = useState(0);
   const curLayer = resolved.curLayer;
   useEffect(() => {
     if (!curLayer) return setCurState("idle");
+    if (curFieldRef.current?.id === curLayer.layer_id) return setCurState("ready");
     let live = true;
     setCurState("loading");
-    loadField(baseUrl, curLayer)
+    loadFieldCached(baseUrl, curLayer)
       .then((f) => {
         if (!live) return;
-        setCurField({ id: curLayer.layer_id, field: f });
+        setCurField({ id: curLayer.layer_id, layer: curLayer, field: f });
         setCurState("ready");
       })
       .catch(() => live && setCurState("failed"));
@@ -328,10 +377,45 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       live = false;
     };
   }, [curLayer, baseUrl, curRetry]);
-  const currents: CurrentsOverlay | null = useMemo(
-    () => (curLayer && curField?.id === curLayer.layer_id ? { id: curField.id, field: curField.field, features: fieldFeatures(curField.field), mode: "arrows" } : null),
-    [curLayer, curField],
+  // v10 playback honesty: the map, its time label and every readout stay on the hour whose data has arrived
+  // until the next one's has (a cut, never a blend); the time bar marks the hour asked for as loading
+  const shownCur = active.kind === "currents" && curLayer ? curField : null;
+  const curPending = !!curLayer && !!shownCur && shownCur.id !== curLayer.layer_id && curState === "loading";
+  const shownResolved = useMemo(() => (shownCur ? { ...resolved, curLayer: shownCur.layer } : resolved), [resolved, shownCur]);
+  // the next real hour, asked for during playback so each step cuts to data already loaded
+  const prefetch = useCallback(
+    (c: LayerChoice) => {
+      if (c.kind !== "currents") return;
+      const l = resolve(manifest, c, baseUrl, derived, { region: hourRegion }).curLayer;
+      if (l) loadFieldCached(baseUrl, l).catch(() => undefined);
+    },
+    [manifest, baseUrl, derived, hourRegion],
   );
+  // v10: moving particles by default (the map's own WebGL context), static arrows on request; paused and
+  // coloured by speed on request; all kept per device. Reduced motion: one still frame.
+  const [flowPrefs, setFlowPrefs, prefsReady] = useFlowPrefs();
+  const reduced = useReducedMotion();
+  const compareChl = active.kind === "currents" && !!active.chl;
+  const flowOpts = useMemo(() => ({ paused: flowPrefs.paused, still: reduced, colour: flowPrefs.colour, coarser: compareChl }), [flowPrefs.paused, flowPrefs.colour, reduced, compareChl]);
+  const arrows = prefsReady && flowPrefs.view === "arrows";
+  const arrowFeatures = useMemo(() => (shownCur && arrows ? fieldFeatures(shownCur.field) : null), [shownCur, arrows]);
+  const currents: CurrentsOverlay | null = useMemo(() => {
+    if (!shownCur || !prefsReady) return null;
+    if (arrows) return arrowFeatures ? { id: shownCur.id, field: shownCur.field, mode: "arrows", features: arrowFeatures } : null;
+    return { id: shownCur.id, field: shownCur.field, mode: "flow", flow: flowOpts };
+  }, [shownCur, prefsReady, arrows, arrowFeatures, flowOpts]);
+  const flowLegend = active.kind === "currents" && !arrows ? { colour: flowPrefs.colour } : null;
+  // no hour chosen and the newest hour did not observe the region in view: said, with the hour shown
+  const hourPick = active.kind === "currents" && !active.hour && !active.mean ? chooseHour(manifest, hourRegion) : null;
+  const hourNote =
+    hourPick?.newestMissed && hourPick.newest?.time.valid_time && hourPick.layer?.time.valid_time ? (
+      <p className="flex items-start gap-2 text-[12.5px] leading-snug text-n-stale" data-testid="currents-hour-note">
+        <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>
+          The newest radar hour ({clockLabel(hourPick.newest.time.valid_time)}) {hourPick.newestFraction ? "saw little of" : "has no coverage in"} {hourPick.regionLabel ?? "this area"}. Showing {clockLabel(hourPick.layer.time.valid_time)}, the newest hour with coverage here.
+        </span>
+      </p>
+    ) : null;
 
   const stationPoints = useMemo(() => (stations?.length ? stationFeatures(stations, now, now ? pacificToday(now) : null) : null), [stations, now]);
   const [water, setWater] = useState<WaterGeometry | null>(null);
@@ -342,6 +426,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       live = false;
     };
   }, []);
+  const sampler = useMemo(() => waterSampler(water), [water]);
   const officialGeometry = useMemo(() => {
     const fc = labelledGeometry(official);
     return fc && water ? clipLimitsToWater(fc, water) : fc;
@@ -396,22 +481,30 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // step that selects it, before panelOpen has caught up)
   const padding = useCallback(
     (open: boolean = panelOpen) => {
-      if (bp === "desktop" || bp === "tablet") return { top: 84, bottom: marginH + dockH + 28, left: 24, right: (open ? panelW + 28 : 16) + 44 + 24 };
+      if (bp === "desktop" || bp === "tablet") return { top: 84, bottom: marginH + dockH + 28, left: 24, right: open ? panelW + 28 + 24 : 16 + 44 + 24 };
       // phone: a selection opens the sheet to half height, so the camera centres it in the map strip
       // that stays visible above the sheet (not behind it)
-      const sheet = open ? Math.round((window.innerHeight - DOCK) * 0.5) : PEEK;
+      const sheet = open ? Math.round((window.innerHeight - DOCK) * 0.5) : atRest ? peekRest(window.innerWidth) : PEEK;
       return { top: 112, bottom: sheet + DOCK + 24, left: 20, right: 20 };
     },
-    [bp, panelOpen, panelW, marginH, dockH],
+    [bp, panelOpen, panelW, marginH, dockH, atRest],
   );
-  // the whole state: on a wide window the map cannot zoom out past its pannable area, so the fit
-  // keeps the north coast clear of the top bar and lets the far south run under the timebar
+  // v10 rework: the opening frames the coastal ocean, not the state. The coast (Crescent City to San Diego)
+  // fills the height between the header and the time rail; its east edge sits just left of the map tools,
+  // so the land is a narrow margin and the ocean fills the rest (under and beside the layer index)
+  const coastInsets = useCallback((): Insets => {
+    if (bp === "phone") return { top: 108, bottom: (atRest ? peekRest(window.innerWidth) : PEEK) + DOCK + 48, left: 12, right: 14 };
+    return { top: 64, bottom: marginH + dockH + 12, left: (bp === "desktop" ? 264 : 236) + 40, right: 16 + 44 + 56 };
+  }, [bp, marginH, dockH, atRest]);
+  const coastView = useCallback(() => {
+    const c = mapRef.current?.getContainer();
+    return coastCamera(c?.clientWidth ?? window.innerWidth, c?.clientHeight ?? window.innerHeight, coastInsets());
+  }, [coastInsets]);
   const fitState = useCallback(() => {
     const m = mapRef.current;
     if (!m) return;
-    const p = padding();
-    m.fitBounds(STATEWIDE.bounds, { padding: bp === "phone" ? p : { ...p, top: 112, bottom: bp === "tablet" ? p.bottom : 24 }, duration: 500 });
-  }, [padding, bp]);
+    journeyTo(m, coastView());
+  }, [coastView]);
   const focusOn = useCallback(
     (s: Selection) => {
       const m = mapRef.current;
@@ -420,9 +513,27 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       const pf = s.kind === "harbor" ? ports?.features.find((f) => f.properties.port_code === s.port) : null;
       const at: [number, number] | null = pt ? [pt.lon, pt.lat] : pf ? (pf.geometry.coordinates as [number, number]) : s.kind === "cell" || s.kind === "point" ? [s.lon, s.lat] : null;
       if (s.kind === "area") return m.fitBounds([[s.bbox[0], s.bbox[1]], [s.bbox[2], s.bbox[3]]], { padding: padding(true), duration: 500 });
-      if (at) journeyTo(m, { center: at, zoom: Math.max(m.getZoom(), s.kind === "harbor" ? 10.6 : 10.2), padding: padding(true) });
+      if (!at) return;
+      const zoom = Math.max(m.getZoom(), s.kind === "harbor" ? 10.6 : 10.2);
+      const pad = padding(true);
+      // a harbour or station sits on the shore: the camera leans toward its water, so the place and the sea
+      // in front of it fill the open map (on a phone, the strip above the sheet), not the land behind it
+      const lean = s.kind === "harbor" || s.kind === "station" ? seaward(sampler, at[1], at[0]) : null;
+      let center = at;
+      if (lean) {
+        const c = m.getContainer();
+        const stripW = c.clientWidth - pad.left - pad.right;
+        const stripH = c.clientHeight - pad.top - pad.bottom;
+        const px = 0.3 * Math.min(stripW, stripH * 1.6);
+        const wp = 512 * 2 ** zoom;
+        const x = (at[0] + 180) / 360 + (lean[0] * px) / wp;
+        const s0 = Math.sin((at[1] * Math.PI) / 180);
+        const y = 0.5 - (0.25 * Math.log((1 + s0) / (1 - s0))) / Math.PI + (lean[1] * Math.min(px, stripH * 0.3)) / wp;
+        center = [x * 360 - 180, (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI];
+      }
+      journeyTo(m, { center, zoom, padding: pad });
     },
-    [stations, ports, padding],
+    [stations, ports, padding, sampler],
   );
   const selectAndGo = useCallback(
     (s: Selection) => {
@@ -464,14 +575,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     detail: official ? "Neritic's copy; not verified by a person. The agencies' pages are the authority." : "Neritic's copy could not be loaded; check CDFW and CDPH directly",
     asOf: officialStatus?.last_success_at ?? null,
   });
-  // a field that loaded is "ready" only while it is current: stale and historical data, and a failed
-  // update, are said in the status centre too (the same policy as the layer panel)
-  const fieldState = (fresh: Freshness | null, status: SourceStatus | null): { state: SourceState; note: string | null } => {
-    if (fresh?.state === "historical") return { state: "stale", note: `Out of date (${fresh.ageDays} days): does not describe current conditions` };
-    if (fresh?.state === "stale") return { state: "stale", note: `Older than usual (${fresh.ageDays} days)` };
-    if (status && status.outcome !== "updated") return { state: "partial", note: "The last update did not complete; the newest published data is shown" };
-    return { state: "ready", note: null };
-  };
+  // a field that loaded is "ready" only while it is current: the same rule on every route (v4/readiness/shown)
   const modelStatus = sourceStatus(manifest, "charm");
   const modelFresh = now ? forecastFreshness(manifest, now) : null;
   const modelField = fieldState(modelFresh, modelStatus);
@@ -485,26 +589,28 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           asOf: run?.issued_date ?? null,
           actions: mapStatus?.field === "failed" ? [{ label: "Try again", run: retryField }] : undefined,
         }
-      : null,
+      : // not on the map: still reported with its freshness, so an out-of-date run never leaves the status "Ready"
+        modelEntry(manifest, now, "Not on the map"),
   );
-  const obsFresh = (id: string, l: typeof resolved.satLayer) => {
-    const st = sourceStatus(manifest, id);
-    // each layer carries its own freshness policy; a latest-clear view is as fresh as its newest pixel
-    return { st, fresh: now && l ? classifyTime(l.freshness, l.composite ? { ...l.time, observed_date: l.composite.newest_observed_date } : l.time, now) : null };
-  };
-  const satF = obsFresh("satellite_chl", resolved.satLayer);
+  const obsFresh = (id: string, l: typeof resolved.satLayer) => ({ st: sourceStatus(manifest, id), fresh: layerFreshness(l ?? null, now) });
+  const satOn = active.kind === "satellite" || (active.kind === "currents" && !!active.chl);
+  // the satellite's newest view, reported even when another layer is on the map
+  const satNewest = satOn ? resolved.satLayer : newestSatellite(manifest);
+  const satF = obsFresh("satellite_chl", satNewest);
   const satField = fieldState(satF.fresh, satF.st);
   useReportSource(
-    active.kind === "satellite" || (active.kind === "currents" && active.chl)
+    satOn
       ? { id: "satellite", label: "Satellite chlorophyll", state: mapStatus?.field === "failed" ? "unavailable" : mapStatus?.field === "ready" ? satField.state : "loading", detail: [resolved.satLayer ? `${resolved.satLayer.layer_id.split("_")[0].toUpperCase()} tiles` : "No layer", mapStatus?.field === "failed" ? "Some tiles could not be loaded" : satField.note].filter(Boolean).join(". "), asOf: resolved.satLayer?.time.observed_date ?? null, actions: mapStatus?.field === "failed" ? [{ label: "Try again", run: retryField }] : undefined }
-      : null,
+      : satelliteEntry(manifest, now, "Not on the map"),
   );
-  const curF = obsFresh("hf_radar", curLayer);
+  // the radar's newest hour, reported even when the currents are not on the map
+  const curNewest = active.kind === "currents" ? curLayer : (currentsHourly(manifest).at(-1) ?? null);
+  const curF = obsFresh("hf_radar", curNewest);
   const curReady = fieldState(curF.fresh, curF.st);
   useReportSource(
     active.kind === "currents"
       ? { id: "currents", label: "Surface currents (HF radar)", state: curState === "failed" ? "unavailable" : curState === "ready" ? curReady.state : "loading", detail: ["Hourly, 2 km cells", curState === "failed" ? "This hour could not be loaded" : curReady.note].filter(Boolean).join(". "), asOf: curLayer?.time.valid_time ?? null, actions: curState === "failed" ? [{ label: "Try again", run: retryCurrents }] : undefined }
-      : null,
+      : currentsEntry(manifest, now, "Not on the map"),
   );
   const placeName = harborF?.properties.display_name ?? station?.name ?? null;
   useReportSource(stationsError && !stations ? { id: "conditions", label: "Shore stations", state: "unavailable", detail: stationsError } : null);
@@ -530,9 +636,9 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     if (active.kind === "satellite" && resolved.satLayer) return { kind: "satellite", layer: resolved.satLayer, estimate: resolved.estimate ? resolved.estimateLayer : null };
     if (active.kind === "outlook" && resolved.outlookLayer) return { kind: "outlook", layer: resolved.outlookLayer };
     if (active.kind === "sst" && resolved.sstLayer) return { kind: "sst", layer: resolved.sstLayer };
-    if (active.kind === "currents" && curField && curLayer && curField.id === curLayer.layer_id) return { kind: "currents", layer: curLayer, field: curField.field };
+    if (active.kind === "currents" && shownCur) return { kind: "currents", layer: shownCur.layer, field: shownCur.field };
     return null;
-  }, [active.kind, resolved, curField, curLayer, check]);
+  }, [active.kind, resolved, shownCur, check]);
 
   // ------------------------------------------------------------------ keyboard
   useEffect(() => {
@@ -604,17 +710,69 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     return waterAt({ x: p.x, y: p.y });
   }, [waterAt]);
   const derivedCtx = { outlook: derivedOutlook(derived), estimate: derivedEstimate(derived), sst: derivedSst(derived), check };
+
+  // ------------------------------------------------------------------ the selection's true footprint
+  // the cell or pixel a selected point is read from, at its native size: the 3 km C-HARM cell, the 2 km radar
+  // cell, the satellite pixel (for the multi-sensor view, the pixel of the sensor whose observation is shown)
+  const selPoint = selection?.kind === "point" || selection?.kind === "cell" ? selection : null;
+  const satForFp = active.kind === "satellite" && (active.view ?? "chl") === "chl" ? resolved.satLayer : null;
+  const multiKey = selPoint && satForFp?.multisensor ? `${satForFp.layer_id}@${selPoint.lat},${selPoint.lon}` : null;
+  const [multiSrc, setMultiSrc] = useState<{ key: string; layer: LayerArtifact | null } | null>(null);
+  useEffect(() => {
+    if (!multiKey || !selPoint || !satForFp) return;
+    let live = true;
+    satelliteSource(manifest, baseUrl, satForFp, selPoint.lat, selPoint.lon)
+      .then((l) => live && setMultiSrc({ key: multiKey, layer: l }))
+      .catch(() => live && setMultiSrc({ key: multiKey, layer: null }));
+    return () => {
+      live = false;
+    };
+    // the key names the layer and the point
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [multiKey, manifest, baseUrl]);
+  const fpFromUrl = useMemo(() => decodeFootprint(q0.get("fp")), [q0]);
+  const fp = useMemo<{ ref: FootprintRef; g: Lattice } | null>(() => {
+    if (!selPoint) return null;
+    const at = (product: FootprintRef["product"], g: Lattice | null | undefined) => {
+      const c = g ? footprintCell(g, selPoint.lat, selPoint.lon) : null;
+      return c && g ? { ref: { product, ...c }, g } : null;
+    };
+    if (selection?.kind === "cell") return at("charm", pointReads.forecast?.grid);
+    if (active.kind === "currents") return at("hfr2km", (shownCur?.layer ?? curLayer)?.vectors?.u_grid);
+    if (satForFp) {
+      const src = satForFp.multisensor ? (multiSrc?.key === multiKey ? multiSrc.layer : undefined) : satForFp;
+      const p = src ? productOf(src.layer_id) : null;
+      if (src && p) return at(p, src.grid);
+      // the multi-sensor pick is still being read: the footprint the link carried, if it holds this point
+      if (src === undefined && fpFromUrl && (fpFromUrl.product === "olci300" || fpFromUrl.product === "viirs750")) {
+        const u = at(fpFromUrl.product, latticeOf(manifest, fpFromUrl.product));
+        if (u && u.ref.row === fpFromUrl.row && u.ref.col === fpFromUrl.col) return u;
+      }
+    }
+    return null;
+  }, [selPoint, selection?.kind, pointReads.forecast, active.kind, shownCur, curLayer, satForFp, multiSrc, multiKey, fpFromUrl, manifest]);
+  const fpEnc = encodeFootprint(fp?.ref ?? null);
+  const footprint = useMemo<FootprintOverlay | null>(
+    () => (fp ? { key: `${encodeFootprint(fp.ref)}@${encodeSelection(selection)}`, polygon: footprintPolygon(fp.g, fp.ref.row, fp.ref.col), tone: fp.ref.product === "charm" ? "model" : "observation" } : null),
+    [fp, selection],
+  );
+  useEffect(() => {
+    fpEncRef.current = fpEnc;
+    writeUrlRef.current();
+  }, [fpEnc]);
+
   // this view's own address (layer and selection, no camera): where Research's back link returns
   const here = useMemo(() => {
     const q = new URLSearchParams();
     if (choice) for (const [k, v] of Object.entries(choiceParams(choice))) q.set(k, v);
     const sel = encodeSelection(selection);
     if (sel) q.set("sel", sel);
+    if (sel && fpEnc) q.set("fp", fpEnc);
     const f = q0.get("from");
     if (f?.startsWith("/coast")) q.set("from", f);
     const s = q.toString().replace(/%3A/g, ":").replace(/%2C/g, ",");
     return s ? `/?${s}` : "/";
-  }, [choice, selection, q0]);
+  }, [choice, selection, q0, fpEnc]);
   const ctx: InspectCtx = { manifest, baseUrl, ports, portIntel, stations, now, variable, lead, layer: active.kind, onSelect: selectAndGo, official, reads: pointReads, onLayer: setChoiceRaw, derived: derivedCtx, waterAt: waterAtPoint, from: q0.get("from"), here };
   // opened from a briefing ("Show on map"): a way back to it, only to a My Coast address
   const backTo = useMemo(() => {
@@ -652,6 +810,21 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   ) : null;
   // a harvest site chosen in search: its point, named
   const siteHere = selection?.kind === "point" ? (sitePlaces().find((p) => Math.abs(p.lat - selection.lat) < 1e-4 && Math.abs(p.lon - selection.lon) < 1e-4) ?? null) : null;
+  // v10: where a point is, in words (direction A's probe header): its region, its coordinates and the nearest harbour
+  const pointWhere = useMemo(() => {
+    if (selection?.kind !== "point" || !ports) return null;
+    const { lat, lon } = selection;
+    const rid = regionAt(ports, lat, lon);
+    const region = rid ? ports.regions?.find((r) => r.id === rid)?.label : null;
+    let best: { name: string; km: number; lat: number; lon: number } | null = null;
+    for (const f of ports.features) {
+      const [plon, plat] = f.geometry.coordinates as number[];
+      const km = distanceKm(lat, lon, plat, plon);
+      if (!best || km < best.km) best = { name: f.properties.display_name ?? f.properties.name, km, lat: plat, lon: plon };
+    }
+    const at = `${lat.toFixed(3)}°N ${Math.abs(lon).toFixed(3)}°W`;
+    return { title: region ? `A point in ${region}` : "A point in the water", sub: best && best.km < 80 ? `${at} · ${kmLabel(best.km)} ${bearingName(best.lat, best.lon, lat, lon)} of ${best.name}` : at };
+  }, [selection, ports]);
   // v7: the panel is concise (title, one primary action, at most three facts); the rest of each view is
   // in its "Evidence and sources" fold, mounted
   const inspection = selection ? (
@@ -660,7 +833,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       {selection.kind === "harbor" && (
         <>
           <Header icon="harbor" kind="Harbour" title={placeName ?? "Harbour"} sub={harborF?.properties.county ? `${harborF.properties.county} County` : undefined} onClose={() => select(null)} onBack={back} canBack={stack.length > 0} />
-          <HarborView code={selection.port} ctx={ctx} concise />
+          <HarborView code={selection.port} ctx={ctx} concise evidenceFirst={bp === "phone"} />
         </>
       )}
       {selection.kind === "station" && (
@@ -677,7 +850,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       )}
       {selection.kind === "point" && (
         <>
-          <Header icon="locate" kind={siteHere ? "Harvest site" : "A point in the water"} title={siteHere?.name ?? "This point"} sub={siteHere?.note ?? undefined} onClose={() => select(null)} onBack={back} canBack={stack.length > 0} />
+          <Header icon="locate" kind={siteHere ? "Harvest site" : "A point in the water"} title={siteHere?.name ?? pointWhere?.title ?? "This point"} sub={siteHere?.note ?? pointWhere?.sub} onClose={() => select(null)} onBack={back} canBack={stack.length > 0} />
           <PointView lat={selection.lat} lon={selection.lon} ctx={ctx} site={siteHere} concise />
         </>
       )}
@@ -690,29 +863,47 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     </div>
   ) : null;
 
-  const steps = timeSteps(manifest, active, now, derived);
+  const steps = timeSteps(manifest, active, now, derived, hourRegion);
   const hasTime = active.kind !== "none" && !!steps?.steps.length;
   // nothing current: say so, then offer what there is, each dated and marked old, never shown as current
   const satDate = opening?.reason === "nothing-current" && opening.satellite ? (opening.satellite.layer.composite?.newest_observed_date ?? opening.satellite.layer.time.observed_date ?? null) : null;
+  // v10 rework: one line in the time rail's status row, and the two dated alternatives beside it as choices.
+  // Neither is ever shown as current: each says its own date and age, and opens marked old.
+  const satAge = satDate && now ? ageInDays(satDate.slice(0, 10), now) : null;
+  const runAge = run && now ? ageInDays(run.issued_date, now) : null;
+  const restCls = "nx-press nx-focus inline-flex min-h-10 items-center gap-2 rounded-[3px] border px-3 py-1 text-left text-[13px] leading-tight text-n-ink";
   const nothingCurrent =
     active.kind === "none" && opening?.reason === "nothing-current" ? (
-      <div className="flex flex-col gap-2 border-l-2 border-n-stale pl-3 text-[13.5px] leading-snug text-n-ink-2" data-testid="nothing-current">
-        <p className="font-semibold text-n-ink">No current forecast or recent satellite view</p>
-        <p>
-          {run ? `The newest C-HARM forecast was issued ${dayLabel(run.issued_date)}. ` : "No C-HARM forecast could be loaded. "}
-          {satDate ? `The newest satellite view is from ${dayLabel(satDate)}. ` : "No recent satellite view was published. "}
-          The map shows the coast and seafloor only. This does not mean conditions are normal.
+      <div className="flex min-w-0 flex-col gap-2" data-testid="nothing-current">
+        <p className="flex min-w-0 items-start gap-2 text-[12.5px] leading-snug text-n-ink-2" data-testid="nothing-current-line">
+          <Icon name="clock" className="mt-px h-4 w-4 shrink-0 text-n-stale" />
+          <span>
+            <span className="font-semibold text-n-ink">No current forecast or recent satellite view</span>
+            {" · newest: "}
+            {run ? `C-HARM ${dayLabel(run.issued_date)}` : "no C-HARM run"}
+            {" · "}
+            {satDate ? `satellite ${dayLabel(satDate)}` : "no satellite view"}
+            <span className="text-n-ink-3"> · this does not mean conditions are normal</span>
+          </span>
         </p>
         {(run || (opening.satellite && satDate)) && (
-          <div className="flex flex-wrap items-center gap-2">
-            {run && (
-              <button type="button" onClick={() => setChoiceRaw({ kind: "forecast", variable: "particulate_domoic", lead: firstLead < 0 ? 0 : firstLead })} className="nx-press nx-focus inline-flex min-h-11 w-fit items-center rounded-lg border border-n-line-strong px-3 font-semibold text-n-ink" data-testid="show-latest-forecast">
-                Show the {dayLabel(run.issued_date)} forecast, marked out of date
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="The newest views, each dated">
+            {opening.satellite && satDate && (
+              <button type="button" onClick={() => setChoiceRaw({ kind: "satellite", product: opening.satellite!.product, day: null })} className={`${restCls} border-[color-mix(in_srgb,var(--nx-measured)_55%,transparent)] hover:bg-n-surface-2`} data-testid="show-latest-satellite">
+                <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-[1px] bg-n-measured" />
+                <span>
+                  Show satellite chlorophyll · {dayLabel(satDate)}
+                  {satAge != null ? <span className="text-n-stale"> · {satAge === 1 ? "1 day" : `${satAge} days`} old</span> : null}
+                </span>
               </button>
             )}
-            {opening.satellite && satDate && (
-              <button type="button" onClick={() => setChoiceRaw({ kind: "satellite", product: opening.satellite!.product, day: null })} className="nx-press nx-focus inline-flex min-h-11 w-fit items-center rounded-lg px-3 font-semibold text-n-accent" data-testid="show-latest-satellite">
-                Satellite view, newest {dayLabel(satDate)}
+            {run && (
+              <button type="button" onClick={() => setChoiceRaw({ kind: "forecast", variable: "particulate_domoic", lead: firstLead < 0 ? 0 : firstLead })} className={`${restCls} border-[color-mix(in_srgb,var(--nx-model)_55%,transparent)] hover:bg-n-surface-2`} data-testid="show-latest-forecast">
+                <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-[1px] bg-n-model" />
+                <span>
+                  Show the {dayLabel(run.issued_date)} forecast
+                  <span className="text-n-stale"> · out of date{runAge != null ? `, ${runAge === 1 ? "1 day" : `${runAge} days`} old` : ""}</span>
+                </span>
               </button>
             )}
           </div>
@@ -738,12 +929,33 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       </p>
     ) : null;
 
-  // ------------------------------------------------------------------ the layer button and its popover
+  // ------------------------------------------------------------------ the layer index (v10)
+  // phone sheet
   const [snap, setSnap] = useState<SnapId>("peek");
-  // phone: the credits line above the sheet (two lines at 320 px): the tools sit above it
+  const [vh, setVh] = useState(800);
+  const sheetHalf = Math.round((vh - DOCK) * 0.5);
+  const [vw, setVw] = useState(390);
+  useEffect(() => {
+    const f = () => setVw(window.innerWidth);
+    f();
+    window.addEventListener("resize", f);
+    return () => window.removeEventListener("resize", f);
+  }, []);
+  const peekH = atRest && !selection ? peekRest(vw) : PEEK;
+  useEffect(() => {
+    const f = () => setVh(window.innerHeight);
+    f();
+    window.addEventListener("resize", f);
+    return () => window.removeEventListener("resize", f);
+  }, []);
+  // phone: the credits chip on the map edge, just above the sheet
   const creditsRef = useRef<HTMLDivElement | null>(null);
-  const creditsH = useHeight(creditsRef, CREDITS, `${bp}-${snap === "full"}`);
   useEffect(() => setSnap(selection ? "half" : "peek"), [selection]);
+  const wide = bp === "desktop" || bp === "tablet";
+  // a short wide window (a landscape phone, a small laptop window): the index folds behind the layer
+  // button, which opens it over the map; everywhere else on a wide screen it is always in view
+  const shortWide = wide && vh < 700;
+  const folded = bp === "phone" || shortWide;
   const deckRef = useRef<HTMLElement | null>(null);
   const capsuleRef = useRef<HTMLButtonElement | null>(null);
   const toggleDeck = () => {
@@ -753,9 +965,9 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       return !o;
     });
   };
-  // a tap outside the popover, or Escape, closes it (Escape is taken here, before it would close the place)
+  // folded: a tap outside the list, or Escape, closes it (Escape is taken here, before it would close the place)
   useEffect(() => {
-    if (!deckOpen) return;
+    if (!deckOpen || !folded) return;
     const k = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || e.defaultPrevented) return;
       e.preventDefault();
@@ -773,7 +985,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       window.removeEventListener("keydown", k, true);
       window.removeEventListener("pointerdown", c);
     };
-  }, [deckOpen]);
+  }, [deckOpen, folded]);
   // choosing another kind of layer: on a phone the list closes and the sheet shows the layer's time and legend
   const pickLayer = (c: LayerChoice) => {
     setChoiceRaw(c);
@@ -782,6 +994,9 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       setSnap("half");
     }
   };
+  // how the field is drawn, one level in: kept open once opened (per page view)
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [opacity, setOpacity] = useState(1);
   const lw = layerWords(active);
   const layerButton = (
     <button
@@ -791,33 +1006,47 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       aria-controls="layer-deck"
       aria-label={`Map layer: ${[lw.title, lw.detail].filter(Boolean).join(", ")} (${lw.kind}). ${deckOpen ? "Close the layer list" : "Change the layer"}`}
       onClick={toggleDeck}
-      className={`nx-press nx-focus flex min-h-12 w-full min-w-0 items-center gap-3 rounded-xl px-2.5 py-1 text-left hover:bg-n-surface-2 ${deckOpen ? "bg-n-surface-2" : ""}`}
+      className={`nx-press nx-focus flex min-h-12 w-full min-w-0 items-center gap-3 rounded-[4px] px-2.5 py-1 text-left hover:bg-n-surface-2 ${deckOpen ? "bg-n-surface-2" : ""}`}
       data-testid="layer-capsule"
     >
-      <Icon name={lw.icon} className={`h-5 w-5 shrink-0 ${lw.tone}`} />
+      <span aria-hidden className={`h-2.5 w-2.5 shrink-0 rounded-[1px] ${lw.hatch ? "nx-index-sw nx-index-sw-hatch" : "nx-index-sw"}`} style={{ ["--tone" as string]: lw.sw }} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15px] font-semibold leading-tight text-n-ink">{lw.title}</span>
-        <span className="block truncate text-[12.5px] leading-snug text-n-ink-2">
+        <span className="block truncate text-[15px] leading-tight text-n-ink">{lw.title}</span>
+        <span className="block truncate text-[12px] leading-snug text-n-ink-2">
           <span className={lw.tone}>{lw.kind}</span>
           {lw.detail ? ` · ${lw.detail}` : ""}
         </span>
       </span>
-      {/* the popover opens upward from the dock; on a phone the sheet's corner handle already says "more" */}
-      {bp !== "phone" && <Icon name="chevronDown" className={`h-4 w-4 shrink-0 text-n-ink-3 transition-transform ${deckOpen ? "" : "rotate-180"}`} />}
+      {bp !== "phone" && <Icon name="chevronDown" className={`h-4 w-4 shrink-0 text-n-ink-3 transition-transform ${deckOpen ? "rotate-180" : ""}`} />}
     </button>
   );
-  const deckBody = (
-    <div className="flex flex-col gap-4">
+  const flowPause = active.kind === "currents" ? <FlowControls part="pause" prefs={flowPrefs} onPrefs={setFlowPrefs} reduced={reduced} /> : null;
+  const flowView = active.kind === "currents" ? <FlowControls part="view" prefs={flowPrefs} onPrefs={setFlowPrefs} reduced={reduced} /> : null;
+  const adjustable = active.kind !== "none";
+  const indexBody = (
+    <div className="flex flex-col gap-3">
       <LayerList manifest={manifest} choice={active} onChoice={pickLayer} now={now} defaults={{ lead: firstLead }} derived={derived} />
-      <LayerOptions manifest={manifest} choice={active} onChoice={setChoiceRaw} estimate={resolved.estimateLayer} />
+      <LayerOptions manifest={manifest} choice={active} onChoice={setChoiceRaw} estimate={resolved.estimateLayer} part="primary" />
+      {adjustable && (
+        <details className="nx-note group border-t border-n-line" data-testid="layer-adjust" open={adjustOpen} onToggle={(e) => setAdjustOpen(e.currentTarget.open)}>
+          <summary className="nx-focus flex min-h-11 cursor-pointer items-center gap-2">
+            <span className="min-w-0 flex-1 text-[13.5px] text-n-ink">Display</span>
+            <span className="nx-data text-[11px] text-n-ink-3">{active.kind === "currents" && !active.chl ? (arrows ? "arrows" : "streaks") : `${Math.round(opacity * 100)}%`}</span>
+            <Icon name="chevronDown" className="nx-note-chev h-4 w-4 shrink-0 text-n-ink-3" />
+          </summary>
+          <div className="nx-note-body pb-2 pt-1">
+            <LayerOptions manifest={manifest} choice={active} onChoice={setChoiceRaw} estimate={resolved.estimateLayer} part="adjust" opacity={opacity} onOpacity={setOpacity} flow={flowView} />
+          </div>
+        </details>
+      )}
       {/* the science and the full credits, on demand: provenance, coverage, method and skill, reference lines */}
       <details className="nx-note group border-t border-n-line" data-testid="layer-about">
-        <summary className="nx-focus flex min-h-12 cursor-pointer items-center gap-3 py-2">
-          <span className="min-w-0 flex-1 text-[15px] font-semibold text-n-ink">About this layer</span>
-          <Icon name="chevronDown" className="nx-note-chev h-[18px] w-[18px] shrink-0 text-n-ink-3" />
+        <summary className="nx-focus flex min-h-11 cursor-pointer items-center gap-2">
+          <span className="min-w-0 flex-1 text-[13.5px] text-n-ink">About this layer</span>
+          <Icon name="chevronDown" className="nx-note-chev h-4 w-4 shrink-0 text-n-ink-3" />
         </summary>
         <div className="nx-note-body flex flex-col gap-3 pb-2">
-          <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} part="about" />
+          <Provenance manifest={manifest} choice={active} resolved={shownResolved} now={now} regions={ports?.regions ?? []} part="about" />
           <div className="border-t border-n-line pt-3">
             <ReferenceLines />
           </div>
@@ -833,22 +1062,28 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const satFailed = mapStatus?.field === "failed" && (active.kind === "satellite" || (active.kind === "currents" && !!active.chl));
   const fieldProblem =
     mapStatus?.field === "failed" || (active.kind === "currents" && curState === "failed") ? (
-      <div role="status" className="flex w-full max-w-[420px] items-center gap-2.5 rounded-2xl border border-n-line-strong bg-n-surface py-1 pl-3.5 pr-1.5 text-n-ink shadow-[var(--nx-shadow)]" data-testid="field-failed">
+      <div role="status" className="nx-iplate flex w-full max-w-[420px] items-center gap-2.5 py-1 pl-3.5 pr-1.5 text-n-ink" data-testid="field-failed">
         <Icon name="alert" className="h-5 w-5 shrink-0 text-n-down" />
         <span className="min-w-0 flex-1 text-[14px] leading-snug">
           {active.kind === "currents" && curState === "failed" ? "These currents could not be loaded." : satFailed ? "Part of the satellite view could not be loaded." : "Part of the C-HARM forecast could not be loaded."} Nothing is drawn in its place.
         </span>
-        <button type="button" onClick={active.kind === "currents" && curState === "failed" ? retryCurrents : retryField} className="nx-press nx-focus inline-flex min-h-11 shrink-0 items-center rounded-xl px-3 text-[14px] font-semibold text-n-accent hover:bg-n-surface-2" data-testid="field-retry">
+        <button type="button" onClick={active.kind === "currents" && curState === "failed" ? retryCurrents : retryField} className="nx-press nx-focus inline-flex min-h-11 shrink-0 items-center rounded-[3px] px-3 text-[14px] font-semibold text-n-accent hover:bg-n-surface-2" data-testid="field-retry">
           Try again
         </button>
       </div>
     ) : null;
+  // the field's tiles still arriving (after the map itself is up): said in place, beside its legend
+  const fieldLoading = mapReady && mapStatus?.field === "loading" ? (
+    <p role="status" className="cw-late nx-data text-[11px] text-n-ink-3" data-testid="field-loading">
+      Reading the published tiles…
+    </p>
+  ) : null;
 
   // the map's tools, one column: the zoom pair, then recentre, area, share and the field pack
-  const stackCls = "pointer-events-auto flex flex-col divide-y divide-n-line rounded-xl border border-n-line bg-n-surface shadow-[var(--nx-shadow)]";
-  const toolCls = "nx-press nx-focus grid h-11 w-11 place-items-center text-n-ink-2 hover:text-n-ink first:rounded-t-xl last:rounded-b-xl max-md:h-14 max-md:w-14";
+  const stackCls = "pointer-events-auto flex flex-col divide-y divide-n-line rounded-[4px] border border-n-line bg-[rgba(5,9,13,0.88)]";
+  const toolCls = "nx-press nx-focus grid h-11 w-11 place-items-center text-n-ink-2 hover:text-n-ink max-md:h-14 max-md:w-14";
   const recenter = (
-    <button type="button" aria-label={selection ? "Centre on the selection" : "Show all California"} onClick={() => (selection ? focusOn(selection) : fitState())} className={toolCls} data-testid="recenter">
+    <button type="button" aria-label={selection ? "Centre on the selection" : "Show the whole coast"} onClick={() => (selection ? focusOn(selection) : fitState())} className={toolCls} data-testid="recenter">
       <Icon name="locate" />
     </button>
   );
@@ -857,9 +1092,13 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       <Icon name={off.record?.complete ? "check" : "download"} />
     </button>
   );
+  // with the inspector open on a wide screen the tools lie in one row under it, off the coast beside it
+  // (they sat over the shore and its labels, between the field and the panel)
+  const toolRow = panelOpen && (bp === "desktop" || bp === "tablet");
+  const rowCls = toolRow ? "flex-row divide-x divide-y-0" : "";
   const mapControls = (
-    <div className="pointer-events-auto flex flex-col gap-2" data-testid="map-controls">
-      <div className={`${stackCls} [@media(max-height:560px)]:hidden`}>
+    <div className={`pointer-events-auto flex gap-2 ${toolRow ? "flex-row" : "flex-col"}`} data-testid="map-controls" data-row={toolRow ? "true" : undefined}>
+      <div className={`${stackCls} ${rowCls} [@media(max-height:560px)]:hidden`}>
         <button type="button" aria-label="Zoom in" onClick={() => mapRef.current?.zoomIn({ duration: 200 })} className={toolCls}>
           <Icon name="plus" />
         </button>
@@ -867,7 +1106,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           <Icon name="minus" />
         </button>
       </div>
-      <div className={stackCls}>
+      <div className={`${stackCls} ${rowCls}`}>
         {recenter}
         <button type="button" aria-label="Select an area" aria-pressed={areaMode} onClick={() => setAreaMode((v) => !v)} className={`${toolCls} ${areaMode ? "bg-n-accent text-n-on-accent" : ""}`} data-testid="area-tool">
           <Icon name="area" />
@@ -899,9 +1138,11 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       basemapPmtiles={basemapPm ?? null}
       clusterStations
       highlight={shownHighlight}
+      footprint={dragBox ? null : footprint}
       onStatus={onStatus}
       retry={fieldRetry}
-      initialBounds={initialBounds}
+      fieldOpacity={opacity}
+      initialBounds={initialBounds === STATEWIDE.bounds ? COAST_BOUNDS : initialBounds}
       initialPadding={{ top: 84, bottom: 150, left: 24, right: 24 }}
       cellEdges={active.kind === "forecast" && edges && edges.id === resolved.forecastLayer?.layer_id ? edges.fc : null}
       cellLabels={harbourOn ? harbour!.labels : null}
@@ -916,13 +1157,21 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         setMapReady(true);
         if (initialAt && initialAt.length === 3 && initialAt.every(Number.isFinite)) m.jumpTo({ center: [initialAt[1], initialAt[0]], zoom: initialAt[2] });
         else {
-          const p = padding();
-          m.fitBounds(initialBounds, { padding: initialBounds === STATEWIDE.bounds && bp !== "phone" ? { ...p, top: 112, bottom: bp === "tablet" ? p.bottom : 24 } : p, duration: 0 });
+          if (initialBounds === STATEWIDE.bounds) m.jumpTo(coastView());
+          else m.fitBounds(initialBounds, { padding: padding(), duration: 0 });
           const s = decodeSelection(q0);
-          if (s) m.once("idle", () => focusOn(s));
+          if (s) onceSettled(m, () => focusOn(s));
         }
         // through the ref: a handler captured here would write the selection of the first render
         m.on("moveend", () => writeUrlRef.current());
+        // the region in view (regional zoom): the currents open on the newest hour that observed it
+        const inView = () => {
+          const c = m.getCenter();
+          const r = m.getZoom() >= REGION_ZOOM ? regionAt(ports, c.lat, c.lng) : null;
+          setViewRegion((was) => (was === r ? was : r));
+        };
+        m.on("moveend", inView);
+        inView();
         m.on("zoomend", () => setZoom(m.getZoom()));
         setZoom(m.getZoom());
       }}
@@ -931,25 +1180,56 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const writeUrlRef = useRef(writeUrl);
   writeUrlRef.current = writeUrl;
 
-  // phone sheet
-  const [vh, setVh] = useState(800);
-  const sheetHalf = Math.round((vh - DOCK) * 0.5);
-  useEffect(() => {
-    const f = () => setVh(window.innerHeight);
-    f();
-    window.addEventListener("resize", f);
-    return () => window.removeEventListener("resize", f);
-  }, []);
-
   const starting = !mapReady;
   // under the search box (desktop and tablet in the top bar; phones under the disclosure line): the way
   // back to a briefing, the offline state and a layer that failed, one under another and never over each other
   const offlineBanner = !off.online ? <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline /> : null;
-  const wide = bp === "desktop" || bp === "tablet";
   const fixture = isFixture(manifest);
-  // the dock's right edge: clear of the tool column, and of the panel when one is open
-  const toolsRight = panelOpen ? panelW + 28 : 16;
-  const dockRight = toolsRight + 44 + 12;
+  // the tools' right edge: clear of the panel when one is open
+  const toolsRight = 16;
+  // the layer's credit beside the map's (Copernicus asks that modified Sentinel data be said wherever it is shown)
+  const sentinel = (active.kind === "satellite" && active.product !== "viirs750") || (active.kind === "currents" && !!active.chl) ? (resolved.satLayer?.time.observed_date ?? manifest.generated_at).slice(0, 4) : null;
+  const layerCredit = sentinel ? `Contains modified Copernicus Sentinel data ${sentinel}` : null;
+  // the time rail: the layer's own time, the other layers' frames as context, and its date line under it
+  // the status row keeps the tallest height it has had for this layer: playing the currents adds and removes
+  // lines (the hour note, a region the radar missed), and the rail must not jump with them. For the currents
+  // three lines are reserved from the start (the stamp, a region the radar missed, an older-than-usual hour):
+  // an hour that turns stale during playback folds into the reserved row (v10 fix 2)
+  const railCaption = (
+    <StableCaption key={active.kind} min={active.kind === "currents" ? 56 : 0}>
+      {nothingCurrent}
+      <div className="flex min-w-0 flex-wrap items-start gap-x-5 gap-y-0.5 empty:hidden [&_[data-testid=provenance]]:gap-0.5 [&_[data-testid=provenance]_p]:text-[11.5px] [&_[data-testid=provenance]_p]:leading-[16px] [&_[data-testid=currents-hour-note]]:text-[11.5px] [&_[data-testid=currents-hour-note]]:leading-[16px]">
+        <Provenance manifest={manifest} choice={active} resolved={shownResolved} now={now} regions={ports?.regions ?? []} part="dock" />
+        {hourNote}
+      </div>
+    </StableCaption>
+  );
+  const rail = (compact: boolean) => (
+    <TimeRail
+      manifest={manifest}
+      choice={active}
+      onChoice={setChoiceRaw}
+      now={now}
+      derived={derived}
+      region={hourRegion}
+      shown={shownCur ? hourKey(shownCur.layer) : null}
+      pending={curPending && curLayer ? hourKey(curLayer) : null}
+      onPrefetch={prefetch}
+      compact={compact}
+      caption={compact ? null : railCaption}
+      variable={variable}
+      lead={firstLead}
+    />
+  );
+  const legendBody = (
+    <div ref={legendRef} className="flex min-w-0 flex-col gap-2.5" data-testid="map-legend">
+      <Legend choice={active} resolved={shownResolved} check={check} flow={flowLegend} />
+      {flowPause}
+      {fieldLoading}
+      {readHint}
+    </div>
+  );
+  const colW = bp === "desktop" ? 264 : 236;
   // clip, not hidden: a hidden overflow can still be scrolled by focus or scrollIntoView, which slid
   // the whole workspace (and the dock) up the screen on phones
   return (
@@ -959,13 +1239,15 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       <div className="absolute inset-0" data-testid="map">
         {basemapPm !== undefined && synced ? map : null}
       </div>
+      {/* the field darkens toward the instrument's edges (its words keep their contrast over any raster) */}
+      {wide && <div aria-hidden className="nx-field-shade pointer-events-none absolute inset-0 z-[4]" />}
       {hoverSource && bp !== "phone" && <HoverLayer sink={hoverSink} manifest={manifest} baseUrl={baseUrl} source={hoverSource} inset={panelOpen ? panelW + 32 : 0} waterAt={waterAt} />}
       {packOpen && <PackDialog pack={pack} manifest={manifest} baseUrl={baseUrl} official={official} onClose={() => setPackOpen(false)} />}
-      {/* the start card: what is loading, what can be done meanwhile (never a bare spinner) */}
-      <AnimatePresence>{starting && <StartCard key="start" now={now} />}</AnimatePresence>
+      {/* the start state: the seafloor first, and what is being read (never a bare spinner) */}
+      <AnimatePresence>{starting && <StartCard key="start" now={now} manifest={manifest} phone={bp === "phone"} />}</AnimatePresence>
       {areaMode && (
         <div {...areaHandlers} className="absolute inset-0 z-[5] cursor-crosshair touch-none" data-testid="area-overlay">
-          <p className="pointer-events-none absolute left-1/2 top-24 -translate-x-1/2 rounded-full bg-n-surface px-4 py-2 text-[14px] font-semibold text-n-ink shadow-[var(--nx-shadow)]">Drag across the water to select an area · Esc to cancel</p>
+          <p className="nx-iplate pointer-events-none absolute left-1/2 top-24 -translate-x-1/2 px-4 py-2 text-[14px] text-n-ink">Drag across the water to select an area · Esc to cancel</p>
         </div>
       )}
 
@@ -989,72 +1271,61 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
 
       {wide && (
         <>
-          {/* the selection: right, top-aligned under the header, never down over the map's bottom margin */}
+          {/* the instrument's left margin: the layer index (always in view) and, under it, the legend */}
+          <div className="pointer-events-none absolute left-4 z-20 flex flex-col gap-3" style={{ top: 72, bottom: marginH + dockH + 14, width: colW }}>
+            {shortWide ? (
+              <div className="nx-iplate pointer-events-auto relative shrink-0 p-1">
+                {layerButton}
+                <section
+                  ref={deckRef}
+                  id="layer-deck"
+                  aria-label="Map layers"
+                  hidden={!deckOpen}
+                  className="nx-iplate absolute left-0 top-[calc(100%+8px)] z-30 w-[min(320px,calc(100vw-32px))] overflow-y-auto overscroll-contain p-3 [scrollbar-width:thin]"
+                  style={{ maxHeight: `calc(100dvh - ${72 + 60 + marginH + dockH + 24}px)` }}
+                  data-testid="layer-deck"
+                >
+                  {indexBody}
+                  <div className="mt-3 border-t border-n-line pt-3">{legendBody}</div>
+                </section>
+              </div>
+            ) : (
+              <section ref={deckRef} id="layer-deck" aria-label="Map layers" className="nx-iplate pointer-events-auto min-h-0 shrink overflow-y-auto overscroll-contain px-3.5 pb-1.5 pt-3 [scrollbar-width:thin]" data-testid="layer-deck">
+                <p className="nx-caps pb-1.5">Field</p>
+                {indexBody}
+              </section>
+            )}
+            {!shortWide && (
+              <section aria-label="Legend" className="nx-iplate pointer-events-auto mt-auto shrink-0 px-3.5 py-3">
+                {legendBody}
+              </section>
+            )}
+          </div>
+
+          {/* the selection: right, top-aligned under the header, never down over the time rail */}
           <AnimatePresence>
             {inspection && (
-              <InspectAside key="inspect" className="nx-deck absolute right-4 top-[68px] z-20 overflow-y-auto overscroll-contain p-5 text-n-ink [scrollbar-width:thin]" style={{ width: panelW, maxHeight: `calc(100% - ${68 + marginH + 10}px)` }}>
+              <InspectAside key="inspect" className="nx-iplate absolute right-4 top-[68px] z-20 overflow-y-auto overscroll-contain p-5 text-n-ink [scrollbar-width:thin]" style={{ width: panelW, maxHeight: `calc(100% - ${68 + marginH + dockH + 18 + 56}px)` }}>
                 {inspection}
               </InspectAside>
             )}
           </AnimatePresence>
 
-          {/* the instrument dock: the layer, its one legend, its time */}
-          <div ref={dockRef} className="pointer-events-none absolute left-4 z-20" style={{ bottom: marginH + 6, right: dockRight }}>
-            <section aria-label="Map layer, legend and time" className="nx-deck @container pointer-events-auto relative max-w-[1000px] px-2 py-2" data-testid={hasTime ? "timebar-deck" : "instrument-dock"}>
-              <div aria-hidden className="pointer-events-none absolute -top-[5px] left-6 right-6">
-                <ContourRule className="!text-n-accent opacity-50" />
-              </div>
-              {nothingCurrent && <div className="mb-1.5 flex flex-col gap-2 border-b border-n-line px-2.5 pb-2 pt-0.5">{nothingCurrent}</div>}
-              {/* v8: how to read the map floats just above the dock, a light pill, so the dock itself is only
-                  the layer, its legend and its time */}
-              {readHint && !nothingCurrent && !deckOpen && <div className="pointer-events-auto absolute bottom-[calc(100%+10px)] left-0 max-w-full rounded-full border border-n-line bg-n-surface/95 py-0.5 pl-4 pr-2 shadow-[var(--nx-shadow)]">{readHint}</div>}
-              {readHint && nothingCurrent && <div className="mb-1.5 px-2.5">{readHint}</div>}
-              <div className="grid grid-cols-1 gap-x-4 gap-y-2 [grid-template-areas:'layer'_'legend'_'time'] @[560px]:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] @[560px]:[grid-template-areas:'layer_time'_'legend_legend'] @[900px]:grid-cols-[minmax(0,16rem)_minmax(0,1fr)_auto] @[900px]:[grid-template-areas:'layer_legend_time']">
-                {/* the layer and, under it, its own date line and anything wrong with it (old, failed, clouded, unseen) */}
-                <div className="flex min-w-0 flex-col gap-1 self-start [grid-area:layer] @[900px]:self-center">
-                  {layerButton}
-                  <div className="px-2.5 pb-0.5 empty:hidden [&_[data-testid=provenance]]:gap-0.5 [&_p]:text-[12.5px] [&_p]:leading-[17px]">
-                    <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} part="dock" />
-                  </div>
-                </div>
-                <div ref={legendRef} className="flex min-w-0 flex-col gap-1.5 border-n-line px-2.5 py-1 [grid-area:legend] @[560px]:border-t @[560px]:pt-2 @[900px]:border-l @[900px]:border-t-0 @[900px]:pl-4 @[900px]:pt-1">
-                  <Legend choice={active} resolved={resolved} check={check} />
-                </div>
-                {hasTime && (
-                  <div className="min-w-0 border-n-line px-2.5 py-1 [grid-area:time] @[900px]:w-max @[900px]:min-w-[17rem] @[900px]:max-w-[24rem] @[900px]:border-l @[900px]:pl-4">
-                    <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} dense derived={derived} />
-                  </div>
-                )}
-              </div>
-              {/* the layer list opens upward from the layer button; mounted, so its words stay in the page */}
-              <section
-                ref={deckRef}
-                id="layer-deck"
-                aria-label="Map layers"
-                hidden={!deckOpen}
-                className="nx-deck absolute bottom-[calc(100%+12px)] left-0 z-30 w-[min(400px,calc(100vw-32px))] overflow-y-auto overscroll-contain p-3 [scrollbar-width:thin]"
-                style={{ maxHeight: `calc(100dvh - ${68 + marginH + dockH + 24}px)` }}
-                data-testid="layer-deck"
-              >
-                <div className="flex items-center justify-between pb-1 pl-1">
-                  <p className="text-[15px] font-semibold text-n-ink">What the map shows</p>
-                  <button type="button" aria-label="Close the layer list" onClick={() => setDeckOpen(false)} className="nx-press nx-focus nx-tint grid h-11 w-11 place-items-center rounded-full text-n-ink-2" data-testid="layer-deck-close">
-                    <Icon name="close" className="h-[18px] w-[18px]" />
-                  </button>
-                </div>
-                {deckBody}
-              </section>
-            </section>
+          <div className="absolute z-20" style={{ right: toolsRight, bottom: marginH + dockH + 14 }}>
+            {mapControls}
           </div>
 
-          <div className="absolute z-20" style={{ right: toolsRight, bottom: marginH + 6 }}>
-            {mapControls}
+          {/* the time rail: full width along the bottom, a first-class instrument */}
+          <div ref={dockRef} className="pointer-events-none absolute inset-x-4 z-20" style={{ bottom: marginH + 2 }}>
+            <section aria-label="Map time" className="pointer-events-auto relative pt-1" data-testid={hasTime ? "timebar-deck" : "instrument-dock"}>
+              {rail(false)}
+            </section>
           </div>
 
           {/* the map's bottom margin: the one disclosure line and the credits, on the map, never covered */}
           <div ref={marginRef} className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-wrap items-center justify-between gap-x-6 px-5 pb-1.5 pt-1" data-testid="map-margin">
             <RegistryDisclosure tone="map" fixture={fixture} className="pointer-events-auto" />
-            <MapCredits className="pointer-events-auto" />
+            <MapCredits className="pointer-events-auto" extra={layerCredit} />
           </div>
         </>
       )}
@@ -1064,33 +1335,47 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           {/* one line under the header: the disclosure; then the offline state, a failed layer, the way back */}
           <div className="pointer-events-none absolute inset-x-0 top-[72px] z-20 flex flex-col items-start gap-1.5 px-4">
             <RegistryDisclosure tone="map" fixture={fixture} className="pointer-events-auto max-w-full" />
-            {offlineBanner && <div className="pointer-events-auto w-full pr-[64px]">{offlineBanner}</div>}
+            {offlineBanner && <div className="pointer-events-auto w-full">{offlineBanner}</div>}
             {fieldProblem && <div className="pointer-events-auto w-full">{fieldProblem}</div>}
             {backTo && <BackToBriefing {...backTo} className="pointer-events-auto w-fit max-w-full" />}
+            {/* a place open: the sheet leads with it, and the layer is a small chip on the map, still one tap away */}
+            {selection && (
+              <button
+                ref={capsuleRef}
+                type="button"
+                aria-expanded={deckOpen}
+                aria-controls="layer-deck"
+                aria-label={`Map layer: ${[lw.title, lw.detail].filter(Boolean).join(", ")} (${lw.kind}). ${deckOpen ? "Close the layer list" : "Change the layer"}`}
+                onClick={toggleDeck}
+                className="nx-press nx-focus nx-iplate pointer-events-auto inline-flex min-h-11 max-w-full items-center gap-2 px-3 text-[13px] text-n-ink"
+                data-testid="layer-capsule"
+              >
+                <span aria-hidden className={`h-2.5 w-2.5 shrink-0 rounded-[1px] ${lw.hatch ? "nx-index-sw nx-index-sw-hatch" : "nx-index-sw"}`} style={{ ["--tone" as string]: lw.sw }} />
+                <span className="truncate">{lw.title}</span>
+                <Icon name="layers" className="h-4 w-4 shrink-0 text-n-ink-2" />
+              </button>
+            )}
           </div>
           {/* the sheet ends above the dock; the map stays live above it (non-modal) */}
           <div className="pointer-events-none absolute inset-x-0 top-0 z-30 overflow-clip" style={{ bottom: `calc(${DOCK}px + env(safe-area-inset-bottom, 0px))` }}>
-            {snap === "peek" && (
-              <div className="pointer-events-auto absolute right-3" style={{ bottom: PEEK + creditsH + 12 }} data-testid="map-controls">
-                <div className={stackCls}>
-                  {recenter}
-                  <ShareButton className={toolCls} />
-                  {packButton}
-                </div>
-              </div>
-            )}
             {/* the map's credits (ODbL) on the map's edge, one line just above the sheet at every height
                 the map shows; at full height (the map all but covered) they ride on the sheet's edge */}
             {snap !== "full" && (
-              <div ref={creditsRef} className="pointer-events-auto absolute left-2 right-2 transition-[bottom] duration-200" style={{ bottom: (snap === "peek" ? PEEK : sheetHalf) + 4 }}>
-                <MapCredits short />
+              <div ref={creditsRef} className="pointer-events-none absolute left-2 right-2 flex items-end justify-between gap-2 transition-[bottom] duration-200" style={{ bottom: (snap === "peek" ? peekH + 8 : sheetHalf + 4) }}>
+                <div className="pointer-events-none min-w-0 flex-1 [&>*]:pointer-events-auto">
+                  <CreditsChip extra={layerCredit} />
+                </div>
+                {/* the tools docked at the right edge just above the sheet, beside the credits (v10 fix 2): off the
+                    coast the frame is about, which runs from the upper left to the lower right of a phone. Locate
+                    stays one tap away; sharing and the field pack fold behind "More" */}
+                {snap === "peek" && <PhoneTools recenter={recenter} packButton={packButton} stackCls={stackCls} toolCls={toolCls} />}
               </div>
             )}
             <div className="pointer-events-auto">
               <MobileSheet
                 tone="instrument"
                 snaps={[
-                  { id: "peek", height: PEEK },
+                  { id: "peek", height: peekH },
                   { id: "half", height: sheetHalf },
                   { id: "full", height: Math.round((vh - DOCK) * 0.9) },
                 ]}
@@ -1099,27 +1384,35 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                 label={selection ? "Selected" : "Layer, legend and time"}
                 header={null}
                 field
-                edge={snap === "full" ? <MapCredits short /> : null}
+                edge={snap === "full" ? <MapCredits short extra={layerCredit} /> : null}
               >
                 <div className="pb-6 text-n-ink">
-                  {/* the peek is the dock: the layer button, the ramp, the days */}
-                  <div className="-mx-1.5 pr-[52px]">{layerButton}</div>
+                  {/* the peek is the dock: the layer button, the ramp, the time rail */}
+                  {/* a selection open: the place leads, the layer row steps aside (one header, not two stacked) */}
+                  {!selection && <div className="-mx-1.5 pr-[52px]">{layerButton}</div>}
                   <section ref={deckRef} id="layer-deck" aria-label="Map layers" hidden={!deckOpen} className="mt-2 border-t border-n-line pt-3" data-testid="layer-deck">
-                    {deckBody}
+                    {indexBody}
                   </section>
                   {inspection ? (
-                    <div className="mt-3 border-t border-n-line pt-3">{inspection}</div>
+                    // the sheet's own resize handle sits at its top right: the place's close button keeps clear of it
+                    <div className="pt-1 [&_header]:pr-12">{inspection}</div>
                   ) : (
                     <div ref={legendPhoneRef} className="mt-1 flex flex-col gap-2" data-testid="active-layer">
-                      <div className="px-1">
-                        <LegendLine choice={active} resolved={resolved} />
-                      </div>
-                      {hasTime && <Timebar manifest={manifest} choice={active} onChoice={setChoiceRaw} now={now} dense caption={false} derived={derived} />}
+                      {nothingCurrent ? (
+                        <div className="px-1">{nothingCurrent}</div>
+                      ) : (
+                        <div className="px-1">
+                          <LegendLine choice={active} resolved={shownResolved} flow={flowLegend} />
+                        </div>
+                      )}
+                      {rail(true)}
                       <div className="mt-2 flex flex-col gap-3 border-t border-n-line pt-3">
-                        {nothingCurrent}
                         {readHint}
-                        <Legend choice={active} resolved={resolved} check={check} inline noRamp />
-                        <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} part="dock" />
+                        {flowPause}
+                        {fieldLoading}
+                        <Legend choice={active} resolved={shownResolved} check={check} inline noRamp flow={flowLegend} />
+                        <Provenance manifest={manifest} choice={active} resolved={shownResolved} now={now} regions={ports?.regions ?? []} part="dock" />
+                        {hourNote}
                       </div>
                     </div>
                   )}
@@ -1138,18 +1431,45 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
 
 /**
  * The map's credits in one line (ODbL asks that OpenStreetMap be credited wherever its map is seen):
- * on the map's bottom margin (desktop, tablet), on the map's edge above the sheet (phones). The full
- * list is in the layer list's "About this layer".
+ * on the map's bottom margin (desktop, tablet), on the map's edge above the sheet (phones), with the
+ * layer's own credit when its licence asks for one (Copernicus Sentinel). The full list is in the
+ * layer index's "About this layer".
  */
-function MapCredits({ short = false, className = "" }: { short?: boolean; className?: string }) {
+function MapCredits({ short = false, className = "", extra = null }: { short?: boolean; className?: string; extra?: string | null }) {
   return (
     <p
       // the short line keeps a backing (its contrast must hold over any raster); smaller, so it stays on one line
-      className={`max-w-full [&_a]:underline [&_a]:decoration-white/40 [&_a]:underline-offset-2 ${short ? "w-fit rounded bg-[rgba(6,17,30,0.72)] px-1.5 text-[10.5px] leading-[15px] text-[#c9d6e2]" : "nx-on-map text-[11.5px] leading-[16px]"} ${className}`}
+      className={`max-w-full [&_a]:underline [&_a]:decoration-white/40 [&_a]:underline-offset-2 ${short ? "w-fit rounded-[3px] bg-[rgba(5,9,13,0.78)] px-1.5 text-[10.5px] leading-[15px] text-[#c9d6e2]" : "nx-on-map text-[11px] leading-[16px]"} ${className}`}
       data-testid={short ? "attribution-short" : "attribution-line"}
     >
-      <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">© OpenMapTiles</a> · NOAA relief · not for navigation
+      <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">© OpenMapTiles</a> · NOAA relief{extra ? ` · ${extra}` : ""} · not for navigation
     </p>
+  );
+}
+
+/**
+ * Phones (v10 rework): the map's credits fold to a chip on the map's edge that still names OpenStreetMap;
+ * a tap opens the whole line (every credit, its links and "not for navigation"), a second tap folds it.
+ */
+function CreditsChip({ extra = null }: { extra?: string | null }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex w-fit max-w-full flex-col items-start gap-1" data-testid="credits-chip-wrap">
+      {open && <MapCredits short extra={extra} />}
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-label={open ? "Hide the map credits" : "Map credits: © OpenStreetMap contributors, © OpenMapTiles, NOAA relief"}
+        onClick={() => setOpen((o) => !o)}
+        className="nx-focus inline-flex min-h-10 shrink-0 items-center"
+        data-testid="credits-chip"
+      >
+        <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(5,9,13,0.78)] px-1.5 text-[10.5px] leading-[18px] text-[#c9d6e2]">
+          <Icon name={open ? "close" : "info"} className="h-3 w-3" />
+          {open ? "" : "© OpenStreetMap"}
+        </span>
+      </button>
+    </div>
   );
 }
 
@@ -1164,6 +1484,40 @@ function Attribution() {
       <a className="underline" href="https://doi.org/10.25921/fd45-gt74" target="_blank" rel="noreferrer">NOAA NCEI ETOPO 2022</a> and{" "}
       <a className="underline" href="https://www.ncei.noaa.gov/products/coastal-relief-model" target="_blank" rel="noreferrer">Coastal Relief Model</a>. Counties: CA Dept. of Technology / CDTFA. Not for navigation.
     </p>
+  );
+}
+
+/** The phone's map tools: locate, and "More" holding share and the field pack (56 px targets). */
+function PhoneTools({ recenter, packButton, stackCls, toolCls }: { recenter: React.ReactNode; packButton: React.ReactNode; stackCls: string; toolCls: string }) {
+  const [open, setOpen] = useState(false);
+  const moreRef = useRef<HTMLButtonElement | null>(null);
+  return (
+    <div
+      className="pointer-events-auto shrink-0"
+      data-testid="map-controls"
+      data-row="true"
+      data-docked="true"
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && open) {
+          e.stopPropagation();
+          setOpen(false);
+          moreRef.current?.focus();
+        }
+      }}
+    >
+      <div className={`${stackCls} flex-row divide-x divide-y-0`}>
+        {open && (
+          <div id="map-tools-more" className="flex flex-row divide-x divide-n-line" data-testid="map-tools-more">
+            <ShareButton className={toolCls} />
+            {packButton}
+          </div>
+        )}
+        <button ref={moreRef} type="button" aria-label={open ? "Fewer map tools" : "More map tools: share, field pack"} aria-expanded={open} aria-controls="map-tools-more" onClick={() => setOpen((o) => !o)} className={toolCls} data-testid="map-tools-toggle">
+          <Icon name={open ? "close" : "more"} />
+        </button>
+        {recenter}
+      </div>
+    </div>
   );
 }
 
@@ -1194,27 +1548,34 @@ function ShareButton({ className }: { className: string }) {
   );
 }
 
-function StartCard({ now }: { now: Date | null }) {
-  // it appears only after 400 ms of real waiting, and steps back (fade, 0.98) as the map arrives;
-  // while leaving it is inert and has no test id. Behind it, the canyon's 200 m line sounds (loading).
+function StartCard({ now, manifest, phone }: { now: Date | null; manifest: Manifest; phone: boolean }) {
+  // v10 (direction A's loading screen): the seafloor and coast first, then "Reading the published layers",
+  // each source in place with its own state and date. It appears only after 400 ms of real waiting and
+  // steps back (a fade) as the map arrives; while leaving it is inert and has no test id. Behind it the
+  // canyon's isobaths sound (loading), never a coloured sea: an empty sea here means "not loaded yet".
   const present = useIsPresent();
+  const gen = manifest.generated_at;
   return (
     <motion.div
-      className="pointer-events-none absolute inset-0 z-[15] grid place-items-center p-4"
+      className="pointer-events-none absolute inset-0 z-[15]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1, transition: { delay: 0.4, duration: 0.2, ease: EASE_OUT } }}
-      exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.22, ease: EASE_IN } }}
+      exit={{ opacity: 0, transition: { duration: 0.22, ease: EASE_IN } }}
       data-testid={present ? "start-card" : undefined}
       inert={!present}
       aria-hidden={!present || undefined}
     >
       <ContourLoader className="absolute inset-0 h-full w-full text-n-accent opacity-35" />
-      <div className="nx-deck pointer-events-auto relative w-[min(440px,100%)] p-5">
-        <p className="text-[18px] font-semibold">Preparing the coast</p>
-        <p className="mt-1 text-[14px] text-n-ink-2">The map is loading. Search a harbour, read the notices or open a briefing meanwhile.</p>
-        <div className="mt-3">
+      <div className={`nx-iplate pointer-events-auto absolute overflow-y-auto overscroll-contain [scrollbar-width:thin] ${phone ? "inset-x-3 top-[112px] max-h-[calc(100dvh-112px-260px)] px-4 py-3.5" : "right-[84px] top-24 max-h-[calc(100dvh-96px-200px)] w-[400px] px-5 py-[18px]"}`}>
+        <p className={`${phone ? "text-[21px]" : "text-[24px]"} font-light leading-tight text-n-ink`}>Reading the published layers</p>
+        <p className="nx-data mt-1 text-[11px] text-n-ink-3">
+          Data run {manifest.pipeline_run_id.slice(0, 8)} · generated {dayLabel(gen.slice(0, 10))}, {gen.slice(11, 16)} UTC
+        </p>
+        <p className="nx-margin mt-2">The seafloor and the coast come first. Nothing is coloured until its values are read: an empty sea here means &ldquo;not loaded yet&rdquo;, never &ldquo;low&rdquo;.</p>
+        <div className="mt-2 border-t border-n-line">
           <SourceList now={now} compact />
         </div>
+        <p className="mt-2 text-[12.5px] text-n-ink-2">Search a harbour, read the notices or open a briefing meanwhile.</p>
       </div>
     </motion.div>
   );
@@ -1322,6 +1683,31 @@ function HoverLayer({ sink, manifest, baseUrl, source, inset, waterAt }: { sink:
     // the readout takes the dark tokens but must never paint over the map: transparent wrapper
     <div className="theme-dark pointer-events-none absolute inset-0 z-[12] !bg-transparent">
       <HoverReadout manifest={manifest} baseUrl={baseUrl} source={source} point={hover.p} screen={hover.s} waterAt={waterAt} bounds={{ w: window.innerWidth - inset, h: window.innerHeight }} />
+    </div>
+  );
+}
+
+/**
+ * The time rail's status row at a stable height: it keeps the tallest height its content has had since the
+ * layer (the key) changed, so lines that come and go during playback never move the rail above it.
+ */
+function StableCaption({ children, min = 0 }: { children: React.ReactNode; min?: number }) {
+  const inner = useRef<HTMLDivElement | null>(null);
+  const [h, setH] = useState(min);
+  useEffect(() => {
+    const el = inner.current;
+    if (!el) return;
+    const f = () => setH((was) => Math.max(was, Math.ceil(el.getBoundingClientRect().height)));
+    f();
+    const ro = new ResizeObserver(f);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div className="min-w-0" style={{ minHeight: h || undefined }} data-testid="rail-status">
+      <div ref={inner} className="flex min-w-0 flex-col gap-1.5">
+        {children}
+      </div>
     </div>
   );
 }

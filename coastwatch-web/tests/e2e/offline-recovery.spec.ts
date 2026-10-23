@@ -66,21 +66,32 @@ test("storage runs out during a download: said as full, nothing claimed saved, t
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await openPanel(page);
-  // a quota a little above what the site already uses: the basemap (about 7 MB) cannot fit
+  // a quota 5 MB above what the site already uses: the app's own files fit (so a part is saved and its
+  // record written), the basemap (about 7 MB) cannot. The briefing's
+  // map (v10 pass 2: the page's ground, with its chlorophyll field) loads its code lazily into the code
+  // cache, so the usage is read once the page has settled, or the quota would be tighter than intended
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(1000);
   const cdp = await ctx.newCDPSession(page);
   const used = await page.evaluate(async () => (await navigator.storage.estimate()).usage ?? 0);
-  await cdp.send("Storage.overrideQuotaForOrigin", { origin: OK, quotaSize: used + 2_500_000 });
+  await cdp.send("Storage.overrideQuotaForOrigin", { origin: OK, quotaSize: used + 5_000_000 });
   await page.getByTestId("pack-download").click();
 
   const panel = page.getByTestId("offline-panel");
   await expect(page.getByTestId("pack-quota")).toContainText("storage for this site is full", { timeout: 90_000 });
   await expect(page.getByTestId("pack-quota")).toContainText("not complete");
   // nothing claims to be saved or verified
-  const status = page.getByTestId("pack-status");
-  // the status re-reads the stored record after the quota error: a slow runner can take a few seconds
-  await expect(status).toHaveAttribute("data-complete", "false", { timeout: 20_000 });
-  await expect(status).toContainText("Incomplete");
-  await expect(status).not.toContainText("verified");
+  // the panel re-reads the stored record after the quota error (a slow runner can take a few seconds) and
+  // says it is unfinished either as the record's status or as the unfinished-download notice; never as saved
+  const status = page.getByTestId("pack-status").or(page.getByTestId("pack-problem"));
+  await expect(status).toBeVisible({ timeout: 20_000 });
+  if ((await status.getAttribute("data-testid")) === "pack-status") {
+    await expect(status).toHaveAttribute("data-complete", "false");
+    await expect(status).toContainText("Incomplete");
+  } else {
+    await expect(status).toContainText("not complete and nothing in it is verified");
+  }
+  await expect(status).not.toContainText("Saved and verified");
   await expect(panel).not.toContainText("Saved and verified");
   await expect(page.getByTestId("pack-download")).toContainText("Finish the download");
   // the part that fitted is kept, and its record says it is unfinished
@@ -248,18 +259,22 @@ test("offline, the saved briefing is dated, never 'now'; its age is said once ou
   await save(page);
   // online, the briefing is live
   await page.reload();
-  await expect(page.getByTestId("matters-heading")).toHaveText("What matters now");
+  await expect(page.getByTestId("matters-heading")).toContainText("What the evidence says"); // v10 My Coast heading (with its subtitle)
 
   await goOffline(ctx);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   // three days later, another trip of the same harbour: the pack's saved page answers it
-  await page.clock.setFixedTime(new Date(Date.now() + 3 * 86_400_000 + 3_600_000));
+  const later = new Date(Date.now() + 3 * 86_400_000 + 3_600_000);
+  await page.clock.setFixedTime(later);
+  // the age is counted in Pacific calendar days (as everywhere else), so a save late in the evening is a day older
+  const pacificDay = (d: Date) => Date.parse(`${d.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" })}T00:00:00Z`);
+  const days = Math.round((pacificDay(later) - pacificDay(new Date())) / 86_400_000);
   await page.goto(`${OK}/coast?place=port-550&for=commercial`);
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey", { timeout: 20_000 });
   await expect(page.getByTestId("matters-heading")).toContainText(/What mattered when saved · \w{3} \d{1,2}, \d{1,2}:\d{2} [AP]M/);
   await expect(page.getByTestId("matters-heading")).not.toContainText("now");
-  await expect(page.getByTestId("offline-banner")).toContainText(/Offline · Monterey Bay saved .* · 3 days old/);
+  await expect(page.getByTestId("offline-banner")).toContainText(new RegExp(`Offline · Monterey Bay saved .* · ${days} days old`));
   // the pack saved the briefing for all species: another trip is told so, never that it was saved for it
   await expect(page.getByTestId("offline-banner")).toContainText("saved for all species");
   // the address bar's own trip, after hydrating the saved HTML
@@ -270,7 +285,7 @@ test("offline, the saved briefing is dated, never 'now'; its age is said once ou
   await expect(page.getByTestId("coast-title")).toHaveText("Crescent City", { timeout: 20_000 });
   await expect(page.getByTestId("offline-banner")).toContainText("Crescent City is not saved for offline use");
   await expect(page.getByTestId("offline-banner")).not.toContainText("Monterey Bay saved");
-  await expect(page.getByTestId("matters-heading")).toHaveText("What matters now");
+  await expect(page.getByTestId("matters-heading")).toContainText("What the evidence says"); // v10 My Coast heading (with its subtitle)
   await page.getByTestId("offline-outside").getByRole("link", { name: /Open Monterey Bay/ }).click();
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
   expect(errors.filter((e) => /#418|[Hh]ydrat/.test(e))).toEqual([]);

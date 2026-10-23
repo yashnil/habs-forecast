@@ -62,8 +62,7 @@ test("an older home port (a plain place key) still opens as home", async ({ page
 test("My Coast's map: tapping the water briefs that point, with the trip kept", async ({ page }) => {
   await page.clock.setFixedTime(new Date(BRIEF));
   await page.goto(`${OK}/coast?place=port-550&for=recreational`);
-  // v7: the map is one folded note, opened on demand
-  await page.getByTestId("brief-map-toggle").click();
+  // v10: the map of the waters sits in the decision view, beside the economics (no fold)
   const loc = page.getByTestId("locator-caption");
   await loc.scrollIntoViewIfNeeded();
   await expect(loc).toContainText("Tap a harbour or the water");
@@ -236,7 +235,7 @@ test("walkthrough H4 (v7): on a phone the place menu offers the map note at the 
   const jump = page.getByTestId("coast-map-jump");
   await expect(jump).toBeInViewport();
   await jump.click();
-  await expect(page.getByTestId("locator-caption")).toBeInViewport();
+  await expect(page.getByTestId("locator")).toBeInViewport();
   await map(page);
   await page.waitForTimeout(500);
   const box = (await page.locator(".maplibregl-canvas").first().boundingBox())!;
@@ -254,7 +253,6 @@ for (const width of [1440, 320]) {
     const page = await ctx.newPage();
     await page.clock.setFixedTime(new Date(NOW));
     await page.goto(`${OK}/coast?place=port-550`);
-    await page.getByTestId("brief-map-toggle").click();
     await page.getByTestId("locator-explore").click();
     const back = page.getByTestId("back-to-briefing");
     await expect(back).toBeInViewport();

@@ -22,7 +22,7 @@ const BASE = Number(process.env.CW_E2E_PORT_BASE ?? 3200); // tests/e2e/ports.ts
 // (tests/e2e/coastal.spec.ts); m8, welcome and tour open fresh contexts.
 const dismissedIntro = {
   cookies: [],
-  origins: [0, 1, 2, 3].map((i) => ({
+  origins: [0, 1, 2, 3, 4].map((i) => ({
     origin: `http://localhost:${BASE + i}`,
     localStorage: [
       { name: "cw-intro-dismissed-v1", value: "1" },
@@ -53,5 +53,7 @@ export default defineConfig({
     start(BASE + 1, "/data/fixture-failed/v1"),
     start(BASE + 2, "/data/does-not-exist/v1"),
     start(BASE + 3, "/data/compat-m2/v1"),
+    // v10: the newest radar hour blank over Monterey Bay (scripts/copy-fixture-data.mjs)
+    start(BASE + 4, "/data/fixture-hfrgap/v1"),
   ],
 });
