@@ -91,6 +91,19 @@ export async function satelliteAt(m: Manifest, baseUrl: string, l: LayerArtifact
   return { kind: "observation", value: fmtChl(s.value), unit: "mg/m³", what, when, flag: await flagOf(baseUrl, l, lat, lon) };
 }
 
+/**
+ * The layer whose pixel a satellite readout at this point comes from: the layer itself, or for the
+ * multi-sensor display the member whose observation it shows (the primary when neither observed it).
+ * Its grid gives the pixel's native footprint (lib/footprint).
+ */
+export async function satelliteSource(m: Manifest, baseUrl: string, l: LayerArtifact, lat: number, lon: number): Promise<LayerArtifact | null> {
+  if (!l.multisensor) return l;
+  const [p, s] = multiSensorMembers(m, l);
+  const [a, b] = await Promise.all([member(baseUrl, p, lat, lon), member(baseUrl, s, lat, lon)]);
+  const pick = multiSensorPick(a, b, l.multisensor.prefer_primary_within_days);
+  return pick === 2 ? s : (p ?? s);
+}
+
 /** The place rules (lib/chlNear) applied to this one pixel: why a place would not use it. */
 async function flagOf(baseUrl: string, l: LayerArtifact, lat: number, lon: number): Promise<string | undefined> {
   try {

@@ -57,7 +57,9 @@ test.describe("layers, legend, time", () => {
     await expect(page.getByTestId("legend-age")).toContainText("Days since each pixel was last seen clear");
     await expect(page).toHaveURL(/age=1/);
     await page.getByTestId("layer-currents").click();
-    await expect(page.getByTestId("legend-currents")).toContainText("No arrow means no observation, not calm water");
+    // v10: moving particles by default; their legend says what an empty sea means, and that the motion is a symbol
+    await expect(page.getByTestId("legend-currents")).toContainText("No streaks means no observation, not calm water");
+    await expect(page.getByTestId("flow-scale-note")).toContainText("scaled symbol");
     await expect(page.getByTestId("timebar")).toBeVisible();
   });
 

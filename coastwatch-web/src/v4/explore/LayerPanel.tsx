@@ -7,6 +7,7 @@ import { CHARM_VARIABLES, charmRun, coveragePct, satelliteLatest, sourceStatus, 
 import { KNOTS_PER_MS, currentsHourly, defaultHour } from "@/lib/currents";
 import { AGE_COLOURS, SENSOR_COLOURS, displayPalette, gradientCss } from "@/lib/palette";
 import { SPEED_CLASSES, ARROW_LENGTHS } from "@/lib/basemap";
+import { SPEED_RAMP } from "@/lib/flowSim";
 import { stampLines } from "@/lib/stamp";
 import { COUNTIES } from "@/content/copy";
 import { OUTSIDE_TINT_RGB } from "@/lib/gridTiles";
@@ -346,7 +347,8 @@ function MoreAbout({ label, children, inline }: { label: string; children: React
  * `inline`: on a phone the explanation opens in place in the sheet; `noRamp`: the sheet's peek already
  * draws the ramp.
  */
-export function Legend({ choice, resolved, check = null, inline = false, noRamp = false }: { choice: LayerChoice; resolved: Resolved; check?: DerivedValidationEntry | null; inline?: boolean; noRamp?: boolean }) {
+/** `flow`: the currents drawn as moving particles (null: static arrows), and whether they are coloured by speed. */
+export function Legend({ choice, resolved, check = null, inline = false, noRamp = false, flow = null }: { choice: LayerChoice; resolved: Resolved; check?: DerivedValidationEntry | null; inline?: boolean; noRamp?: boolean; flow?: { colour: boolean } | null }) {
   const frame = (testid: string, aria: string, caption: React.ReactNode, ramp: React.ReactNode, visible: React.ReactNode, detail: React.ReactNode, label: string) => (
     <figure className="flex min-w-0 flex-col gap-1.5" data-testid={testid} aria-label={aria}>
       <div className="flex items-start justify-between gap-2">
@@ -536,8 +538,26 @@ export function Legend({ choice, resolved, check = null, inline = false, noRamp 
     return (
       <div className="grid min-w-0 gap-3 sm:grid-cols-2" data-testid="legend-compare">
         <Legend choice={{ kind: "satellite", product: "olci300", day: null }} resolved={resolved} inline={inline} noRamp={noRamp} />
-        <Legend choice={{ ...choice, chl: false }} resolved={resolved} inline={inline} noRamp={noRamp} />
+        <Legend choice={{ ...choice, chl: false }} resolved={resolved} inline={inline} noRamp={noRamp} flow={flow} />
       </div>
+    );
+  if (choice.kind === "currents" && flow)
+    return frame(
+      "legend-currents",
+      "Legend: moving streaks show the direction and relative speed of observed surface currents",
+      "Surface currents, observed",
+      flow.colour ? <SpeedBuckets /> : <FlowScale />,
+      <>
+        {short("Observed, not a forecast. No streaks means no observation, not calm water.")}
+        <p className="text-[12.5px] leading-snug text-n-ink-2" data-testid="flow-scale-note">
+          Streak speed is a scaled symbol of relative speed: not the water&rsquo;s real speed, not a path.
+        </p>
+      </>,
+      <p data-testid="currents-note">
+        Streaks move through one observed {choice.mean ? "24-hour mean" : "hour"}, each in its own 2 km radar cell&rsquo;s vector (nothing is interpolated between cells); they stop at the edge of coverage, and the faint squares are the cells the radar observed. On screen they move at a speed proportional to the current, the same at every zoom: a symbol, not a drift you could follow. 1 m/s ≈ {KNOTS_PER_MS.toFixed(1)} knots.{" "}
+        {choice.mean ? "The 24-hour mean smooths out most daily and tidal back-and-forth." : "Each hour is a separate snapshot; nothing is shown between hours, and a new hour is a cut."}
+      </p>,
+      "currents",
     );
   if (choice.kind === "currents")
     return frame(
@@ -562,6 +582,36 @@ export function Legend({ choice, resolved, check = null, inline = false, noRamp 
   return null;
 }
 
+/** The flow's speed encoding, without colour: a longer, brighter streak is a faster current. */
+function FlowScale() {
+  return (
+    <div className="flex items-center gap-2 text-[11.5px] text-n-ink-3" data-testid="legend-flow-scale">
+      <span>slower</span>
+      <svg width="64" height="10" aria-hidden className="text-n-ink">
+        <line x1="2" y1="5" x2="10" y2="5" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" opacity={0.45} />
+        <line x1="18" y1="5" x2="32" y2="5" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" opacity={0.7} />
+        <line x1="40" y1="5" x2="62" y2="5" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" opacity={0.95} />
+      </svg>
+      <span>faster</span>
+    </div>
+  );
+}
+
+/** The optional speed colours: one sequential colour per speed class (the same classes as the arrows), m/s. */
+function SpeedBuckets() {
+  return (
+    <div className="flex items-end gap-1.5" data-testid="legend-speed-buckets">
+      {SPEED_CLASSES.map((v, i) => (
+        <span key={v} className="flex flex-col items-center gap-0.5">
+          <span aria-hidden className="h-2 w-7 rounded-sm" style={{ background: SPEED_RAMP[i] }} />
+          <span className="nx-data text-[11px] text-n-ink-3">{i === SPEED_CLASSES.length - 1 ? `≥${v}` : v}</span>
+        </span>
+      ))}
+      <span className="pb-px text-[11px] text-n-ink-3">m/s</span>
+    </div>
+  );
+}
+
 function CurrentArrows() {
   return (
     <div className="flex items-end gap-3">
@@ -581,11 +631,12 @@ function CurrentArrows() {
  * The ramp alone, in one line (the phone sheet's peek: the colours and their range under the layer
  * button). Decorative: the legend itself, with its words, follows in the sheet.
  */
-export function LegendLine({ choice, resolved }: { choice: LayerChoice; resolved: Resolved }) {
+export function LegendLine({ choice, resolved, flow = null }: { choice: LayerChoice; resolved: Resolved; flow?: { colour: boolean } | null }) {
   const pal = choice.kind === "forecast" ? resolved.forecastLayer?.palette : choice.kind === "satellite" && (choice.view ?? "chl") === "chl" ? resolved.satLayer?.palette : choice.kind === "outlook" ? (resolved.outlook?.palette ?? CHL_PALETTE) : choice.kind === "sst" ? SST_PALETTE : choice.kind === "currents" && choice.chl ? resolved.satLayer?.palette : null;
   const labels: [string, string, string] | null =
     choice.kind === "forecast" ? ["0%", "50%", "100%"] : choice.kind === "sst" ? [`≤${Math.round(cToF(SST_PALETTE.domain[0]))}°F`, "", `≥${Math.round(cToF(SST_PALETTE.domain[1]))}°F`] : pal ? ["0.05", "1.6", "50 mg/m³"] : null;
   if (pal && labels) return <div aria-hidden><Ramp palette={pal} labels={labels} inline /></div>;
+  if (choice.kind === "currents" && flow) return <div aria-hidden>{flow.colour ? <SpeedBuckets /> : <FlowScale />}</div>;
   if (choice.kind === "currents")
     return (
       <div aria-hidden className="flex items-center gap-2 text-[11.5px] text-n-ink-3">

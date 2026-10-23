@@ -28,7 +28,7 @@ const weekdayOf = (d: string) => {
  */
 type Step = { key: string; label: string; top?: string; sub: string; forecast?: boolean; today?: boolean; incomplete?: boolean; choice: LayerChoice; disabled?: boolean };
 
-export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null, derived: DerivedIndex | null = null): { title: string; short?: string; steps: Step[]; current: string; latest?: LayerChoice } | null {
+export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null, derived: DerivedIndex | null = null, region: string | null = null): { title: string; short?: string; steps: Step[]; current: string; latest?: LayerChoice } | null {
   if (c.kind === "outlook") {
     // one frame: the outlook is a single mean over its window, never a day-by-day series
     const o = derivedOutlook(derived);
@@ -81,7 +81,7 @@ export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null, derived
     return {
       title: "HF radar: hourly observations",
       short: "Hourly radar observations",
-      current: c.mean ? "mean" : (c.hour ?? defaultHour(m)?.layer_id.split("_").pop() ?? ""),
+      current: c.mean ? "mean" : (c.hour ?? defaultHour(m, region)?.layer_id.split("_").pop() ?? ""),
       latest: { ...c, hour: null, mean: false },
       steps: [
         ...hours.map((h) => {
@@ -136,11 +136,43 @@ export function OutlookHorizon({ layer, now, compact = false }: { layer: Outlook
 }
 
 /**
+ * v10 playback honesty: `shown` is the frame whose data is on the map, `pending` the frame asked for whose
+ * data has not arrived. The checked step (and every label) stays on the shown frame until the new one's data
+ * is in; the pending step says it is loading after 400 ms; playback waits for it, and asks for the next real
+ * frame ahead (`onPrefetch`) so each step cuts to data already loaded. Nothing is blended or invented.
+ *
  * `dense` (v7 dock): one short caption ("Run Oct 20 (inferred) · nowcast, then forecasts") and day steps of
  * two lines (weekday and date, then nowcast / forecast), 44 px on a desktop and 56 px on a phone.
  */
-export function Timebar({ manifest, choice, onChoice, now, compact = false, dense = false, caption = true, derived = null }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; now: Date | null; compact?: boolean; dense?: boolean; caption?: boolean; derived?: DerivedIndex | null }) {
-  const t = timeSteps(manifest, choice, now, derived);
+export function Timebar({
+  manifest,
+  choice,
+  onChoice,
+  now,
+  compact = false,
+  dense = false,
+  caption = true,
+  derived = null,
+  region = null,
+  shown = null,
+  pending = null,
+  onPrefetch,
+}: {
+  manifest: Manifest;
+  choice: LayerChoice;
+  onChoice: (c: LayerChoice) => void;
+  now: Date | null;
+  compact?: boolean;
+  dense?: boolean;
+  caption?: boolean;
+  derived?: DerivedIndex | null;
+  region?: string | null;
+  shown?: string | null;
+  pending?: string | null;
+  onPrefetch?: (c: LayerChoice) => void;
+}) {
+  const t0 = timeSteps(manifest, choice, now, derived, region);
+  const t = t0 && shown && pending && t0.steps.some((s) => s.key === shown) ? { ...t0, current: shown } : t0;
   const row = useRef<HTMLDivElement | null>(null);
   // one selected pill that slides between frames (the map itself still cuts from frame to frame);
   // a held arrow key jumps it, so fast stepping never queues motion
@@ -150,18 +182,29 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false, dens
   // v8 playback (Windy, RainViewer, Worldview): the published frames in turn, one every PLAY_MS, looping;
   // it never starts by itself, stops at any other input, and stops when the page is hidden
   const [playing, setPlaying] = useState(false);
-  const live = useRef({ t, onChoice });
-  live.current = { t, onChoice };
+  const live = useRef({ t, onChoice, pending, onPrefetch });
+  live.current = { t, onChoice, pending, onPrefetch };
   useEffect(() => {
     if (!playing) return;
+    const ahead = (k: number) => {
+      const { t: tt, onPrefetch: pre } = live.current;
+      const usable = tt?.steps.filter((s) => !s.disabled) ?? [];
+      const at = usable.findIndex((s) => s.key === tt?.current);
+      if (pre && usable.length > 1) pre(usable[(at + k) % usable.length].choice);
+    };
+    // the next real frame is asked for as playback starts
+    ahead(1);
     const tick = window.setInterval(() => {
-      const { t: tt, onChoice: pick } = live.current;
+      const { t: tt, onChoice: pick, pending: wait } = live.current;
       if (!tt || document.hidden) return setPlaying(false);
+      // the frame asked for has not arrived: hold the one shown (and its label), never skip ahead of the data
+      if (wait) return;
       const usable = tt.steps.filter((s) => !s.disabled);
       if (usable.length < 2) return setPlaying(false);
       const at = usable.findIndex((s) => s.key === tt.current);
       setInstant(false);
       pick(usable[(at + 1) % usable.length].choice);
+      ahead(2);
     }, PLAY_MS);
     return () => window.clearInterval(tick);
   }, [playing]);
@@ -233,6 +276,7 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false, dens
         <motion.div layoutScroll ref={row} className="relative flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none]" role="radiogroup" aria-label={t.title}>
           {t.steps.map((s, k) => {
             const on = s.key === t.current;
+            const loading = !!pending && s.key === pending && s.key !== t.current;
             return (
               <Fragment key={s.key}>
               {k > 0 && k === firstForecast && <span aria-hidden className="mx-0.5 w-px shrink-0 self-stretch bg-n-line-strong" data-testid="time-forecast-break" />}
@@ -240,6 +284,8 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false, dens
                 type="button"
                 role="radio"
                 aria-checked={on}
+                aria-busy={loading || undefined}
+                data-loading={loading ? "true" : undefined}
                 tabIndex={on ? 0 : -1}
                 disabled={s.disabled}
                 onClick={() => {
@@ -273,6 +319,13 @@ export function Timebar({ manifest, choice, onChoice, now, compact = false, dens
                     {s.top && <span className={`text-[11.5px] leading-tight ${on ? "opacity-80" : "text-n-ink-3"}`}>{s.top}</span>}
                     <span className="whitespace-nowrap text-[14px] font-semibold leading-tight">{s.label}</span>
                   </>
+                )}
+                {/* the frame asked for, still loading: said after 400 ms (a fast frame never flashes it) */}
+                {loading && (
+                  <span className="cw-late absolute inset-x-2 bottom-0.5 h-0.5 overflow-hidden rounded-full bg-n-surface-3" data-testid="time-loading">
+                    <span className="sr-only">loading</span>
+                    <span aria-hidden className="block h-full w-1/2 animate-pulse rounded-full bg-n-accent" />
+                  </span>
                 )}
                 <span className={`whitespace-nowrap text-[11.5px] leading-tight ${on ? "opacity-80" : "text-n-ink-3"}`}>
                   {/* dense: today is the dot before the date (and said to a screen reader) */}

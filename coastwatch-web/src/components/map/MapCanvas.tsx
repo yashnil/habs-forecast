@@ -31,7 +31,7 @@ import { derivedTiles, gridTiles } from "@/lib/gridTileProtocol";
 import { indexedTiles } from "@/lib/tileIndex";
 import { loadWaterFallback, waterGeoJSON } from "@/lib/waterFallback";
 import { basemapArchive, onBasemapSlow, setBasemapArchive } from "@/lib/waterMask";
-import FlowParticles from "./FlowParticles";
+import FlowLayer, { type FlowOptions } from "./FlowLayer";
 import { CountyLayers } from "./Counties";
 
 /** Marks with a name: a pointer over one shows the name (and a pointer cursor). */
@@ -54,8 +54,13 @@ export type DerivedRaster = { id: string; grid: DerivedGrid; baseUrl: string; pa
 export type TileRaster = { id: string; template: string; minzoom: number; maxzoom: number; bounds?: number[] | null; indexUrl?: string | null };
 
 export type MapPoint = { lat: number; lon: number };
-/** Observed currents for one hour (or the 24 h mean): arrows from the published grids, or particles. */
-export type CurrentsOverlay = { id: string; features: GeoJSON.FeatureCollection; field: CurrentField; mode: "arrows" | "particles"; coarser?: boolean };
+/**
+ * Observed currents for one hour (or the 24 h mean): moving particles in the map's own WebGL context
+ * (components/map/FlowLayer, the default), or static arrows (one per observed cell; `features`).
+ */
+export type CurrentsOverlay = { id: string; field: CurrentField; coarser?: boolean } & ({ mode: "arrows"; features: GeoJSON.FeatureCollection } | { mode: "flow"; flow: FlowOptions });
+/** The selection's true footprint (lib/footprint): an outline that draws in once after the camera settles. */
+export type FootprintOverlay = { key: string; polygon: GeoJSON.Polygon; tone: "model" | "observation" };
 
 type Props = {
   forecast: ImageRaster | null;
@@ -119,6 +124,8 @@ type Props = {
    * observation pixel, outlined) or "footprint" (the outline of observed pixels), optional label
    */
   highlight?: GeoJSON.FeatureCollection | null;
+  /** v10: the selected cell or pixel at its native size, outlined (drawn in over 300 ms once the camera settles) */
+  footprint?: FootprintOverlay | null;
   /** v4: readiness of the basemap and of the data field, for the status centre */
   onStatus?: (s: { basemap: "ok" | "slow" | "down"; field: "none" | "loading" | "ready" | "failed" }) => void;
   maxZoom?: number;
@@ -143,6 +150,10 @@ const THREADS = [
   { to: "limit", color: "rgba(246,187,92,0.95)" },
 ] as const;
 const THREAD_MS = 520;
+/** v10: the selection's footprint outline draws in once, after the camera settles. */
+export const FOOTPRINT_DRAW_MS = 300;
+const FOOTPRINT_LINE = { model: "#e6dbff", observation: "#ffffff" } as const;
+const FOOTPRINT_HALO = "rgba(4,18,26,0.7)";
 const THREAD_STAGGER = 90;
 /** A line drawn from its start up to `p` (0..1) of its length. */
 function threadGradient(p: number, color: string): ExpressionSpecification {
@@ -472,6 +483,47 @@ export default function MapCanvas(p: Props) {
     return () => cancelAnimationFrame(raf);
   }, [map, overlay]);
 
+  // v10: the footprint outline draws in once per selection, after the camera has settled (a journey to the
+  // selection, or the first load); reduced motion: drawn at once
+  const fpKey = p.footprint?.key ?? null;
+  const fpTone = p.footprint?.tone ?? "observation";
+  useEffect(() => {
+    if (!map || !fpKey) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+    let live = true;
+    const set = (k: number) => {
+      if (map.getLayer("v4-fp-halo")) map.setPaintProperty("v4-fp-halo", "line-gradient", threadGradient(k, FOOTPRINT_HALO));
+      if (map.getLayer("v4-fp-line")) map.setPaintProperty("v4-fp-line", "line-gradient", threadGradient(k, FOOTPRINT_LINE[fpTone]));
+      const el = map.getContainer();
+      el.dataset.footprint = k >= 1 ? "drawn" : "drawing";
+    };
+    set(reduce ? 1 : 0);
+    if (reduce) return;
+    const start = () => {
+      if (!live) return;
+      if (!map.loaded()) return void map.once("idle", start);
+      if (map.isMoving()) return void map.once("moveend", start);
+      const t0 = performance.now();
+      const step = (now: number) => {
+        if (!live) return;
+        const k = Math.min(1, (now - t0) / FOOTPRINT_DRAW_MS);
+        set(1 - (1 - k) ** 3);
+        if (k < 1) raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    };
+    // a frame later: a camera journey begun in the same step as the selection is moving by then
+    raf = requestAnimationFrame(start);
+    return () => {
+      live = false;
+      cancelAnimationFrame(raf);
+      map.off("idle", start);
+      map.off("moveend", start);
+    };
+  }, [map, fpKey, fpTone]);
+  const fpData = useMemo<GeoJSON.Feature | null>(() => (p.footprint ? { type: "Feature", geometry: { type: "LineString", coordinates: p.footprint.polygon.coordinates[0] }, properties: {} } : null), [p.footprint]);
+
   // v8: at state and regional scale a 3 km cell is a few screen pixels, and nearest sampling draws a
   // field of stair-steps; there the data rasters are smoothed. From harbour scale (SHARP_ZOOM) every
   // pixel is a real source cell again, outlined and readable, and the legend colours are exact.
@@ -728,7 +780,8 @@ export default function MapCanvas(p: Props) {
           ))}
         </Source>
       )}
-      {p.currents && p.currents.mode === "particles" && <FlowParticles key={p.currents.id} field={p.currents.field} count={wide ? 1400 : 600} />}
+      {/* not keyed by the hour: a new hour swaps the layer's buffers, it is never remounted */}
+      {map && p.currents && p.currents.mode === "flow" && <FlowLayer map={map} id={p.currents.id} field={p.currents.field} options={p.currents.flow} beforeId={BEFORE_OVERLAY_ID} />}
 
       {p.showOfficial && p.officialGeometry && (
         <Source id="official" type="geojson" data={p.officialGeometry}>
@@ -968,8 +1021,9 @@ export default function MapCanvas(p: Props) {
         // and the other labels move out of its way
         <Source id="v4-highlight" type="geojson" data={p.highlight}>
           <Layer id="v4-hl-fill" type="fill" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "fill-color": ["match", ["get", "kind"], "cell", MODEL_MARK, "#5fd0e6"], "fill-opacity": ["match", ["get", "kind"], "cell", 0.16, 0.07], "fill-opacity-transition": { duration: 200, delay: 0 } }} />
-          <Layer id="v4-hl-halo" type="line" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "line-color": "#04121a", "line-width": 5, "line-opacity": 0.55, "line-opacity-transition": { duration: 200, delay: 0 } }} />
-          <Layer id="v4-hl-line" type="line" filter={["in", ["get", "kind"], ["literal", ["cell", "area"]]]} paint={{ "line-color": ["match", ["get", "kind"], "cell", "#e6dbff", "#5fd0e6"], "line-width": 2, "line-dasharray": ["match", ["get", "kind"], "area", ["literal", [3, 2]], ["literal", [1, 0]]] }} />
+          {/* a model cell's outline is the footprint's (below), drawn in once; an area keeps its dashed frame */}
+          <Layer id="v4-hl-halo" type="line" filter={["==", ["get", "kind"], "area"]} paint={{ "line-color": "#04121a", "line-width": 5, "line-opacity": 0.55, "line-opacity-transition": { duration: 200, delay: 0 } }} />
+          <Layer id="v4-hl-line" type="line" filter={["==", ["get", "kind"], "area"]} paint={{ "line-color": ["match", ["get", "kind"], "cell", "#e6dbff", "#5fd0e6"], "line-width": 2, "line-dasharray": ["match", ["get", "kind"], "area", ["literal", [3, 2]], ["literal", [1, 0]]] }} />
           {/* observation pixels and footprints (Research): neutral white, never the model's colour */}
           <Layer id="v4-hl-pixel-halo" type="line" filter={["in", ["get", "kind"], ["literal", ["pixel", "footprint"]]]} paint={{ "line-color": "#04121a", "line-width": ["match", ["get", "kind"], "pixel", 4.5, 2.6], "line-opacity": 0.6 }} />
           <Layer id="v4-hl-pixel" type="line" filter={["in", ["get", "kind"], ["literal", ["pixel", "footprint"]]]} paint={{ "line-color": "#ffffff", "line-width": ["match", ["get", "kind"], "pixel", 2, 1], "line-opacity": 0.95 }} />
@@ -985,6 +1039,14 @@ export default function MapCanvas(p: Props) {
             layout={{ "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 12.5, "text-variable-anchor": ["top", "bottom", "left", "right"], "text-radial-offset": 1.5, "text-justify": "auto", "text-max-width": 16, "text-allow-overlap": true }}
             paint={{ "text-color": "#ffffff", "text-halo-color": "#04121a", "text-halo-width": 1.8 }}
           />
+        </Source>
+      )}
+
+      {fpData && (
+        // v10: the selected cell or pixel at its native size, a crisp outline over everything (it is the selection)
+        <Source id="v4-footprint" type="geojson" data={fpData} lineMetrics>
+          <Layer id="v4-fp-halo" type="line" layout={{ "line-join": "miter", "line-cap": "butt" }} paint={{ "line-width": 4.5, "line-gradient": threadGradient(0, FOOTPRINT_HALO) }} />
+          <Layer id="v4-fp-line" type="line" layout={{ "line-join": "miter", "line-cap": "butt" }} paint={{ "line-width": 2, "line-gradient": threadGradient(0, FOOTPRINT_LINE[p.footprint?.tone ?? "observation"]) }} />
         </Source>
       )}
 
