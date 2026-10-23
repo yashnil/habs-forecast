@@ -402,7 +402,11 @@ export function Briefing(props: Props) {
               <section aria-labelledby="now-h" className="flex min-w-0 flex-col gap-2 lg:col-start-1 lg:row-start-2" data-testid="brief-now">
                 <h2 id="now-h" className="flex flex-wrap items-baseline justify-between gap-x-4 border-t border-n-line-strong pt-4" data-testid="matters-heading">
                   <span className="font-serif font-medium tracking-[-0.015em] leading-[1.1] text-[26px] text-n-ink">{snap ? "What mattered when saved" : "What the evidence says"}</span>
-                  <span className="text-[13px] text-n-ink-2">{snap ? clockLabel(snap.savedAt) : "notices, shore samples, NOAA’s model, the satellite"}</span>
+                  {/* the separator is in the text, so the heading reads "… saved · Oct 22, 9:06 PM" aloud, not "savedOct" */}
+                  <span className="text-[13px] text-n-ink-2">
+                    <span className="sr-only"> · </span>
+                    {snap ? clockLabel(snap.savedAt) : "notices, shore samples, NOAA’s model, the satellite"}
+                  </span>
                 </h2>
                 <div className="min-h-[156px]">
                   {!g || !settled ? (

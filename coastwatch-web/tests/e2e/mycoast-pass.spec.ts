@@ -69,7 +69,7 @@ test("the phone sheet over the map is the instrument's own dark surface (v7), ne
   const sheet = page.getByTestId("mobile-sheet");
   await expect(sheet).toBeVisible({ timeout: 20_000 });
   // the env-instrument surface token (#0c1921)
-  expect(await sheet.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(12, 25, 33)");
+  expect(await sheet.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(10, 18, 25)"); // v10: the Instrument surface, --nx-surface #0a1219
   await ctx.close();
 });
 

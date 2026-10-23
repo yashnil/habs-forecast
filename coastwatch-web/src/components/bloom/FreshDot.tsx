@@ -3,7 +3,8 @@ import type { Freshness } from "@/lib/freshness";
 /** Freshness as a glyph and a word (spec §2.2): filled = current, half = stale, ring = historical.
  *  Colour is never the only signal. */
 const WORD = { current: "Current", stale: "Stale", historical: "Not current", unavailable: "Unavailable" } as const;
-const COLOR = { current: "#17704a", stale: "#86590a", historical: "#5c6470", unavailable: "#5c6470" } as const;
+// v10: the state tokens (theme.css), so the word holds its contrast in the dark system and in daylight mode
+const COLOR = { current: "var(--nx-ok)", stale: "var(--nx-stale)", historical: "var(--nx-ink-3)", unavailable: "var(--nx-ink-3)" } as const;
 
 export function FreshGlyph({ state, size = 9 }: { state: Freshness["state"]; size?: number }) {
   const c = COLOR[state];

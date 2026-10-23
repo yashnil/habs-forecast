@@ -161,6 +161,51 @@
   --font-data: var(--nx-font-data);
 }
 
+/* v10: the older (v2) pages take the one dark system too. globals.css defines the v2 paper palette at
+   :root after this file is imported, so this remap is one step more specific (html:root, html .theme-paper)
+   and wins wherever a v2 page or panel appears. Family hues keep their meanings. */
+html:root,
+html .theme-paper {
+  color-scheme: dark;
+  --cw-page: var(--nx-bg);
+  --cw-surface: var(--nx-surface);
+  --cw-surface-2: var(--nx-surface-2);
+  --cw-surface-3: var(--nx-surface-3);
+  --cw-hairline: var(--nx-line);
+  --cw-hairline-strong: var(--nx-line-strong);
+  --cw-ink: var(--nx-ink);
+  --cw-ink-2: var(--nx-ink-2);
+  --cw-ink-3: var(--nx-ink-3);
+  --cw-accent: var(--nx-accent);
+  --cw-official: var(--nx-official);
+  --cw-official-ink: var(--nx-official);
+  --cw-official-bg: var(--nx-official-bg);
+  --cw-official-line: var(--nx-official-line);
+  --cw-forecast: var(--nx-model);
+  --cw-model-ink: var(--nx-model);
+  --cw-model-bg: var(--nx-model-bg);
+  --cw-model-line: var(--nx-model-line);
+  --cw-chl: var(--nx-measured);
+  --cw-measured-bg: var(--nx-measured-bg);
+  --cw-measured-line: var(--nx-measured-line);
+  --cw-history: var(--nx-ink-2);
+  --cw-history-bg: var(--nx-surface-2);
+  --cw-history-line: var(--nx-line-strong);
+  --cw-good: var(--nx-ok);
+  --cw-warning: var(--nx-stale);
+  --cw-serious: var(--nx-down);
+  --cw-critical: var(--nx-down);
+  --cw-neutral: var(--nx-ink-3);
+  --cw-series-toxin: var(--nx-measured);
+  --cw-series-cells: var(--nx-conditions);
+  --cw-series-temp: var(--nx-ink-2);
+}
+/* daylight mode keeps its light high-contrast set for the v2 pages as well */
+html[data-daylight]:root,
+html[data-daylight] .theme-paper {
+  color-scheme: light;
+}
+
 /* v2 content inside the v4 reading environment takes the v4 palette and faces */
 .env-chart {
   --cw-page: var(--nx-bg);

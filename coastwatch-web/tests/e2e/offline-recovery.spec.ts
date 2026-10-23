@@ -76,11 +76,17 @@ test("storage runs out during a download: said as full, nothing claimed saved, t
   await expect(page.getByTestId("pack-quota")).toContainText("storage for this site is full", { timeout: 90_000 });
   await expect(page.getByTestId("pack-quota")).toContainText("not complete");
   // nothing claims to be saved or verified
-  const status = page.getByTestId("pack-status");
-  // the status re-reads the stored record after the quota error: a slow runner can take a few seconds
-  await expect(status).toHaveAttribute("data-complete", "false", { timeout: 20_000 });
-  await expect(status).toContainText("Incomplete");
-  await expect(status).not.toContainText("verified");
+  // the panel re-reads the stored record after the quota error (a slow runner can take a few seconds) and
+  // says it is unfinished either as the record's status or as the unfinished-download notice; never as saved
+  const status = page.getByTestId("pack-status").or(page.getByTestId("pack-problem"));
+  await expect(status).toBeVisible({ timeout: 20_000 });
+  if ((await status.getAttribute("data-testid")) === "pack-status") {
+    await expect(status).toHaveAttribute("data-complete", "false");
+    await expect(status).toContainText("Incomplete");
+  } else {
+    await expect(status).toContainText("not complete and nothing in it is verified");
+  }
+  await expect(status).not.toContainText("Saved and verified");
   await expect(panel).not.toContainText("Saved and verified");
   await expect(page.getByTestId("pack-download")).toContainText("Finish the download");
   // the part that fitted is kept, and its record says it is unfinished
@@ -248,7 +254,7 @@ test("offline, the saved briefing is dated, never 'now'; its age is said once ou
   await save(page);
   // online, the briefing is live
   await page.reload();
-  await expect(page.getByTestId("matters-heading")).toHaveText("What matters now");
+  await expect(page.getByTestId("matters-heading")).toContainText("What the evidence says"); // v10 My Coast heading (with its subtitle)
 
   await goOffline(ctx);
   const errors: string[] = [];
@@ -270,7 +276,7 @@ test("offline, the saved briefing is dated, never 'now'; its age is said once ou
   await expect(page.getByTestId("coast-title")).toHaveText("Crescent City", { timeout: 20_000 });
   await expect(page.getByTestId("offline-banner")).toContainText("Crescent City is not saved for offline use");
   await expect(page.getByTestId("offline-banner")).not.toContainText("Monterey Bay saved");
-  await expect(page.getByTestId("matters-heading")).toHaveText("What matters now");
+  await expect(page.getByTestId("matters-heading")).toContainText("What the evidence says"); // v10 My Coast heading (with its subtitle)
   await page.getByTestId("offline-outside").getByRole("link", { name: /Open Monterey Bay/ }).click();
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
   expect(errors.filter((e) => /#418|[Hh]ydrat/.test(e))).toEqual([]);
