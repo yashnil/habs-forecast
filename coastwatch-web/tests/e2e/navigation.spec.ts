@@ -54,10 +54,11 @@ test("v2 links open the same view: a port, a region, a research-mode briefing", 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?region=monterey_bay&port=550&layer=forecast`);
   await expect(page.getByTestId("inspect-title")).toHaveText("Monterey");
-  // the dock's layer button names the layer, and opens the layer list
-  await expect(page.getByTestId("layer-capsule")).toContainText("NOAA bloom forecast");
-  await page.getByTestId("layer-capsule").click();
+  // v10: the layer index (always in view on a wide screen) lights the layer and names it honestly
+  await expect(page.getByTestId("layer-deck")).toBeVisible();
   await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByTestId("layer-forecast")).toContainText("Bloom & toxin probability");
+  await expect(page.getByTestId("layer-forecast")).toContainText("Model · NOAA C-HARM");
   await page.goto(`${OK}/coast?place=port-550&mode=research`);
   await expect(page).toHaveURL(/\/research\?place=port-550/);
 });

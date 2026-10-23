@@ -22,14 +22,19 @@ import { classifySource, classifyTime } from "@/lib/freshness";
 
 type Family = "none" | "forecast" | "satellite" | "outlook" | "sst" | "currents";
 
-const FAMILY: Record<Family, { name: string; kind: string; icon: string; tone: string }> = {
-  none: { name: "Seafloor and coast", kind: "Reference", icon: "map", tone: "text-n-ink-2" },
-  forecast: { name: "NOAA bloom forecast (C-HARM)", kind: "Model", icon: "cell", tone: "text-n-model" },
-  satellite: { name: "Satellite chlorophyll", kind: "Observation", icon: "layers", tone: "text-n-measured" },
-  outlook: { name: "Outlook (8 days)", kind: "Outlook, not observed", icon: "clock", tone: "text-n-model" },
+/**
+ * v10 layer index (direction A): each family by an honest name, what kind of thing it is (model,
+ * observed, outlook, analysis, reference) in its family colour, and its source. Listed in the
+ * concept's order: the model, the observations, the derived products, the reference.
+ */
+const FAMILY: Record<Family, { name: string; kind: string; source: string; icon: string; tone: string; sw: string; hatch?: boolean }> = {
+  forecast: { name: "Bloom & toxin probability", kind: "Model", source: "NOAA C-HARM", icon: "cell", tone: "text-n-model", sw: "var(--nx-model)" },
+  satellite: { name: "Chlorophyll", kind: "Observed", source: "satellite", icon: "layers", tone: "text-n-measured", sw: "var(--nx-measured)" },
+  outlook: { name: "Chlorophyll outlook", kind: "Outlook, not observed", source: "8-day mean", icon: "clock", tone: "text-n-model", sw: "var(--nx-model)", hatch: true },
   // MUR: a gap-free analysis blended from several sensors, not one observation
-  sst: { name: "Sea temperature", kind: "Analysis", icon: "chart", tone: "text-n-conditions" },
-  currents: { name: "Surface currents", kind: "Observation", icon: "compass", tone: "text-n-conditions" },
+  sst: { name: "Sea temperature", kind: "Analysis", source: "JPL MUR", icon: "chart", tone: "text-n-conditions", sw: "var(--nx-conditions)" },
+  currents: { name: "Surface currents", kind: "Observed", source: "HF radar", icon: "compass", tone: "text-n-conditions", sw: "var(--nx-conditions)" },
+  none: { name: "Seafloor only", kind: "Reference", source: "NOAA relief", icon: "map", tone: "text-n-ink-2", sw: "#55636c" },
 };
 
 /** "Oct 21–28" (or across months, "Oct 30–Nov 6"): an outlook's window. */
@@ -39,29 +44,30 @@ export function windowLabel(from: string, to: string): string {
   return a.split(" ")[0] === b.split(" ")[0] && !a.includes(",") ? `${a}–${b.split(" ")[1]}` : `${a}–${b}`;
 }
 
-function freshnessLine(m: Manifest, f: Family, now: Date | null, derived: DerivedIndex | null = null): string | null {
-  if (f === "sst") {
-    const t = derivedSst(derived);
-    const d = t?.observed_dates[t.observed_dates.length - 1];
-    return t && d ? `${sstIsAnalysis(t) ? "Analysis of" : "Observed"} ${dayLabel(d)}${now ? ` · ${relTime(d, now)}` : ""}` : null;
-  }
-  if (f === "outlook") {
-    const o = derivedOutlook(derived);
-    return o ? `Issued ${dayLabel(o.issued)} · mean ${windowLabel(o.valid_from, o.valid_to)}` : null;
-  }
+/** The index's short date line for a family: the run, the newest pixels, the window, the hour. */
+function indexLine(m: Manifest, f: Family, derived: DerivedIndex | null, now: Date | null): string | null {
+  const age = (d: string) => (now ? ` · ${relTime(d, now)}` : "");
   if (f === "forecast") {
     const run = charmRun(m);
-    return run ? `Run of ${dayLabel(run.issued_date)}${now ? ` · ${relTime(run.issued_date, now)}` : ""}` : "No run published";
+    return run ? `run ${dayLabel(run.issued_date)}${age(run.issued_date)}` : "no run published";
   }
   if (f === "satellite") {
     const l = satelliteLatest(m, "olci300") ?? satelliteLatest(m, "viirs750");
     const d = l?.composite?.newest_observed_date ?? l?.time.observed_date;
-    return d ? `Newest pixels ${now ? relTime(d, now) : d}` : "No recent clear view";
+    return d ? `newest ${dayLabel(d)}${age(d)}` : "no recent clear view";
+  }
+  if (f === "outlook") {
+    const o = derivedOutlook(derived);
+    return o ? windowLabel(o.valid_from, o.valid_to) : null;
+  }
+  if (f === "sst") {
+    const t = derivedSst(derived);
+    const d = t?.observed_dates[t.observed_dates.length - 1];
+    return d ? `${dayLabel(d)}${age(d)}` : null;
   }
   if (f === "currents") {
-    // the hour the map opens on: the newest with usable coverage (the same rule as the timebar)
     const t = defaultHour(m)?.time.valid_time;
-    return t ? `Newest hour ${now ? relTime(t, now) : t}` : "No radar hour published";
+    return t ? `newest ${clockLabel(t)}` : "no radar hour published";
   }
   return null;
 }
@@ -101,7 +107,7 @@ export function LayerList({ manifest, choice, onChoice, now, defaults, derived =
     <div
       role="radiogroup"
       aria-label="What the map shows"
-      className="flex flex-col gap-1"
+      className="flex flex-col"
       data-testid="layer-list"
       // a radio group moves with the arrow keys (one tab stop, the checked layer)
       onKeyDown={(e) => {
@@ -118,7 +124,7 @@ export function LayerList({ manifest, choice, onChoice, now, defaults, derived =
       {listed.map((f) => {
         const on = f === active;
         const meta = FAMILY[f];
-        const line = freshnessLine(manifest, f, now, derived);
+        const line = indexLine(manifest, f, derived, now);
         return (
           <button
             key={f}
@@ -129,19 +135,17 @@ export function LayerList({ manifest, choice, onChoice, now, defaults, derived =
             disabled={!available[f]}
             onClick={() => pick(f)}
             data-testid={`layer-${f}`}
-            className={`nx-press nx-focus flex min-h-[52px] w-full items-center gap-3 rounded-xl px-2.5 py-1.5 text-left disabled:opacity-45 ${on ? "bg-n-accent-bg" : "hover:bg-n-surface-2"}`}
+            className={`nx-index-row nx-focus grid w-full grid-cols-[14px_minmax(0,1fr)] gap-x-2.5 border-t border-n-line py-2 text-left first:border-t-0 disabled:opacity-45 ${on ? "text-n-ink" : "text-n-ink-2 hover:text-n-ink"}`}
+            style={{ ["--tone" as string]: meta.sw }}
           >
-            <Icon name={meta.icon} className={`h-5 w-5 shrink-0 ${meta.tone}`} />
-            <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-semibold leading-tight text-n-ink">{meta.name}</span>
-              <span className={`block text-[13px] leading-snug ${on ? "text-n-ink-2" : "text-n-ink-3"}`}>
-                <span className={meta.tone}>{meta.kind}</span>
-                {line ? ` · ${line}` : ""}
+            <span aria-hidden className={`nx-index-sw mt-[6px] h-2 w-2 rounded-[1px] ${meta.hatch ? "nx-index-sw-hatch" : ""}`} />
+            <span className="min-w-0">
+              <span className="block text-[14px] leading-snug">{meta.name}</span>
+              <span className="block text-[11.5px] leading-snug text-n-ink-3">
+                <span className={on ? meta.tone : ""}>{meta.kind}</span> · {meta.source}
+                {line ? `, ${line}` : ""}
                 {!available[f] ? " · not available" : ""}
               </span>
-            </span>
-            <span aria-hidden className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${on ? "border-n-accent" : "border-n-line-strong"}`}>
-              {on && <span className="h-2.5 w-2.5 rounded-full bg-n-accent" />}
             </span>
           </button>
         );
@@ -150,19 +154,28 @@ export function LayerList({ manifest, choice, onChoice, now, defaults, derived =
   );
 }
 
-/** Options of the active layer: the C-HARM variable, the satellite sensor. Time lives in the timebar. */
-export function LayerOptions({ manifest, choice, onChoice, estimate = null }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; estimate?: EstimateLayer | null }) {
-  if (choice.kind === "forecast")
-    return (
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="nx-variable" className="nx-eyebrow">
+/**
+ * Options of the active layer. `primary`: what the layer shows, beside it in the index (the C-HARM
+ * variable, the chlorophyll compared under the currents). `adjust`: how it is drawn, one level in
+ * (the satellite sensor and view, the estimate under the gaps, the field's opacity, and for the
+ * currents the flow or arrows and the speed colours, passed in as `flow`). Time lives in the rail.
+ */
+export function LayerOptions({ manifest, choice, onChoice, estimate = null, part = "all", opacity, onOpacity, flow = null }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; estimate?: EstimateLayer | null; part?: "all" | "primary" | "adjust"; opacity?: number; onOpacity?: (v: number) => void; flow?: React.ReactNode }) {
+  const primary = part !== "adjust";
+  const adjust = part !== "primary";
+  const seg = (on: boolean) => `nx-press nx-focus min-h-11 rounded-[3px] px-2.5 text-[13px] ${on ? "bg-n-ink text-n-bg" : "border border-n-line-strong text-n-ink-2 hover:text-n-ink"}`;
+  const out: React.ReactNode[] = [];
+  if (primary && choice.kind === "forecast")
+    out.push(
+      <div key="var" className="flex flex-col gap-1">
+        <label htmlFor="nx-variable" className="nx-caps">
           Variable
         </label>
         <select
           id="nx-variable"
           value={choice.variable}
           onChange={(e) => onChoice({ ...choice, variable: e.target.value as CharmVariable })}
-          className="nx-select nx-focus min-h-11 rounded-lg border border-n-line-strong bg-n-surface px-3 text-[15px] text-n-ink"
+          className="nx-select nx-focus min-h-11 rounded-[3px] border border-n-line-strong bg-n-surface px-2.5 text-[14px] text-n-ink"
           data-testid="variable-select"
         >
           {CHARM_VARIABLES.map((v) => (
@@ -171,90 +184,89 @@ export function LayerOptions({ manifest, choice, onChoice, estimate = null }: { 
             </option>
           ))}
         </select>
-      </div>
+      </div>,
     );
-  if (choice.kind === "satellite") {
+  if (primary && choice.kind === "currents" && (satelliteLatest(manifest, "olci300") || satelliteLatest(manifest, "viirs750")))
+    out.push(
+      <label key="chl" className="nx-focus flex min-h-11 items-start gap-2.5 text-[13.5px] text-n-ink" data-testid="currents-chl">
+        <input type="checkbox" className="mt-[3px] h-[18px] w-[18px] accent-[var(--nx-accent)]" checked={!!choice.chl} onChange={(e) => onChoice({ ...choice, chl: e.target.checked })} data-testid="currents-chl-toggle" />
+        <span>
+          <span>Compare with chlorophyll</span>
+          <span className="nx-margin block text-[12.5px] leading-snug">The newest clear satellite view underneath: two observations from different times, shown together, not combined into one value.</span>
+        </span>
+      </label>,
+    );
+  if (adjust && choice.kind === "satellite") {
     const prods = (["olci300", "viirs750", "multi"] as const).filter((p) => satelliteLatest(manifest, p));
-    return (
-      <div className="flex flex-col gap-1.5">
-        <span className="nx-eyebrow">Sensor</span>
-        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Sensor">
+    out.push(
+      <div key="sensor" className="flex flex-col gap-1">
+        <span className="nx-caps">Sensor</span>
+        <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Sensor">
           {prods.map((p) => (
-            <button
-              key={p}
-              type="button"
-              role="radio"
-              aria-checked={choice.product === p}
-              onClick={() => onChoice({ kind: "satellite", product: p, day: null })}
-              className={`nx-press nx-focus min-h-11 rounded-lg px-3 text-[14px] font-semibold ${choice.product === p ? "bg-n-ink text-n-bg" : "border border-n-line-strong text-n-ink-2 hover:text-n-ink"}`}
-              data-testid={`sensor-${p}`}
-            >
-              {SAT_WORDS[p].name} <span className="font-normal opacity-75">{SAT_WORDS[p].native}</span>
+            <button key={p} type="button" role="radio" aria-checked={choice.product === p} onClick={() => onChoice({ kind: "satellite", product: p, day: null })} className={seg(choice.product === p)} data-testid={`sensor-${p}`}>
+              {SAT_WORDS[p].name} <span className="nx-data opacity-75">{SAT_WORDS[p].native}</span>
             </button>
           ))}
         </div>
-        {!choice.day && (
-          <>
-            <span className="nx-eyebrow mt-2">Show</span>
-            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="What the colours show">
-              {(["chl", "age", ...(choice.product === "multi" ? (["sensor"] as const) : [])] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  role="radio"
-                  aria-checked={(choice.view ?? "chl") === v}
-                  onClick={() => onChoice({ ...choice, view: v })}
-                  className={`nx-press nx-focus min-h-11 rounded-lg px-3 text-[14px] font-semibold ${(choice.view ?? "chl") === v ? "bg-n-ink text-n-bg" : "border border-n-line-strong text-n-ink-2 hover:text-n-ink"}`}
-                  data-testid={`satview-${v}`}
-                >
-                  {v === "chl" ? "Chlorophyll" : v === "age" ? "Age of each pixel" : "Which sensor"}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-        {/* the gap-filling estimate: under the observed pixels, never over them; on unless turned off */}
-        {estimate && !choice.day && (choice.view ?? "chl") === "chl" && (
-          <label className="nx-focus mt-2 flex min-h-11 items-start gap-2.5 text-[14px] text-n-ink" data-testid="sat-estimate">
-            <input type="checkbox" className="mt-[3px] h-[18px] w-[18px] accent-[var(--nx-accent)]" checked={choice.estimate !== false} onChange={(e) => onChoice({ ...choice, estimate: e.target.checked })} data-testid="sat-estimate-toggle" />
-            <span>
-              <span className="font-semibold">Fill the gaps with estimates</span>
-              <span className="block text-[12.5px] leading-snug text-n-ink-3">Where clouds or the coast hid the water, a stippled estimate; next to the shore it may be extrapolated, not filled. Estimated, not observed; observed pixels are never changed.</span>
-            </span>
-          </label>
-        )}
-      </div>
+      </div>,
     );
+    if (!choice.day)
+      out.push(
+        <div key="view" className="flex flex-col gap-1">
+          <span className="nx-caps">Colours show</span>
+          <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="What the colours show">
+            {(["chl", "age", ...(choice.product === "multi" ? (["sensor"] as const) : [])] as const).map((v) => (
+              <button key={v} type="button" role="radio" aria-checked={(choice.view ?? "chl") === v} onClick={() => onChoice({ ...choice, view: v })} className={seg((choice.view ?? "chl") === v)} data-testid={`satview-${v}`}>
+                {v === "chl" ? "Chlorophyll" : v === "age" ? "Age of each pixel" : "Which sensor"}
+              </button>
+            ))}
+          </div>
+        </div>,
+      );
+    // the gap-filling estimate: under the observed pixels, never over them; on unless turned off
+    if (estimate && !choice.day && (choice.view ?? "chl") === "chl")
+      out.push(
+        <label key="est" className="nx-focus flex min-h-11 items-start gap-2.5 text-[13.5px] text-n-ink" data-testid="sat-estimate">
+          <input type="checkbox" className="mt-[3px] h-[18px] w-[18px] accent-[var(--nx-accent)]" checked={choice.estimate !== false} onChange={(e) => onChoice({ ...choice, estimate: e.target.checked })} data-testid="sat-estimate-toggle" />
+          <span>
+            <span>Fill the gaps with estimates</span>
+            <span className="nx-margin block text-[12.5px] leading-snug">Stippled where clouds or the coast hid the water; near shore it may be extrapolated, not filled. Estimated, not observed; observed pixels are never changed.</span>
+          </span>
+        </label>,
+      );
   }
-  if (choice.kind === "currents" && (satelliteLatest(manifest, "olci300") || satelliteLatest(manifest, "viirs750")))
-    return (
-      <label className="nx-focus flex min-h-11 items-start gap-2.5 text-[14px] text-n-ink" data-testid="currents-chl">
-        <input type="checkbox" className="mt-[3px] h-[18px] w-[18px] accent-[var(--nx-accent)]" checked={!!choice.chl} onChange={(e) => onChoice({ ...choice, chl: e.target.checked })} data-testid="currents-chl-toggle" />
-        <span>
-          <span className="font-semibold">Compare with chlorophyll</span>
-          <span className="block text-[12.5px] leading-snug text-n-ink-3">The newest clear satellite view underneath. Two observations from different times, shown together, not combined into one value.</span>
+  if (adjust && flow) out.push(<div key="flow">{flow}</div>);
+  // the field's opacity (display only: the colours keep their legend values; nothing is blended between families)
+  if (adjust && onOpacity && opacity != null && choice.kind !== "none" && !(choice.kind === "currents" && !choice.chl))
+    out.push(
+      <label key="opacity" className="flex flex-col gap-0.5" data-testid="layer-opacity">
+        <span className="flex items-baseline justify-between">
+          <span className="nx-caps">Field opacity</span>
+          <span className="nx-data text-[11.5px] text-n-ink-2">{Math.round(opacity * 100)}%</span>
         </span>
-      </label>
+        <input type="range" min={30} max={100} step={5} value={Math.round(opacity * 100)} onChange={(e) => onOpacity(Number(e.target.value) / 100)} className="nx-range nx-focus w-full" aria-label="Field opacity" data-testid="layer-opacity-range" />
+      </label>,
     );
-  return null;
+  if (!out.length) return null;
+  return <div className="flex flex-col gap-3">{out}</div>;
 }
 
-function Ramp({ palette, labels, inline = false }: { palette: Palette; labels: [string, string, string]; inline?: boolean }) {
+function Ramp({ palette, labels, inline = false }: { palette: Palette; labels: string[]; inline?: boolean }) {
   if (inline)
     return (
       <div className="flex items-center gap-2">
-        <span className="nx-data shrink-0 text-[11.5px] text-n-ink-3">{labels[0]}</span>
-        <div className="h-2 min-w-0 flex-1 rounded-full" style={{ background: gradientCss(displayPalette(palette)) }} aria-hidden />
-        <span className="nx-data shrink-0 text-[11.5px] text-n-ink-3">{labels[2]}</span>
+        <span className="nx-data shrink-0 text-[10.5px] text-n-ink-2">{labels[0]}</span>
+        <div className="h-1.5 min-w-0 flex-1 rounded-[1px]" style={{ background: gradientCss(displayPalette(palette)) }} aria-hidden />
+        <span className="nx-data shrink-0 text-[10.5px] text-n-ink-2">{labels[labels.length - 1]}</span>
       </div>
     );
   return (
     <div>
-      <div className="h-2 w-full rounded-full" style={{ background: gradientCss(displayPalette(palette)) }} aria-hidden />
-      <div className="nx-data mt-0.5 flex justify-between text-[11.5px] text-n-ink-3">
-        <span>{labels[0]}</span>
-        <span>{labels[1]}</span>
-        <span>{labels[2]}</span>
+      <div className="h-1.5 w-full rounded-[1px]" style={{ background: gradientCss(displayPalette(palette)) }} aria-hidden />
+      <div className="nx-data mt-1 flex justify-between text-[10.5px] text-n-ink-2">
+        {labels.map((l, i) => (
+          <span key={i}>{l}</span>
+        ))}
       </div>
     </div>
   );
@@ -262,9 +274,9 @@ function Ramp({ palette, labels, inline = false }: { palette: Palette; labels: [
 
 function NoData({ children = "No value (not modelled, cloud or no observation): never zero", testid }: { children?: React.ReactNode; testid?: string }) {
   return (
-    <span className="flex items-center gap-2 text-[13px] text-n-ink-2" data-testid={testid}>
-      <span aria-hidden className="h-3 w-5 shrink-0 rounded-sm" style={{ background: "repeating-linear-gradient(135deg, rgba(160,180,195,0.55) 0 1.5px, transparent 1.5px 4px)", outline: "1px solid rgba(160,180,195,0.4)" }} />
-      {children}
+    <span className="flex items-start gap-2 text-[12px] leading-snug text-n-ink-2" data-testid={testid}>
+      <span aria-hidden className="nx-sw-gap mt-[3px] h-[9px] w-[18px] shrink-0" />
+      <span>{children}</span>
     </span>
   );
 }
@@ -350,9 +362,9 @@ function MoreAbout({ label, children, inline }: { label: string; children: React
 /** `flow`: the currents drawn as moving particles (null: static arrows), and whether they are coloured by speed. */
 export function Legend({ choice, resolved, check = null, inline = false, noRamp = false, flow = null }: { choice: LayerChoice; resolved: Resolved; check?: DerivedValidationEntry | null; inline?: boolean; noRamp?: boolean; flow?: { colour: boolean } | null }) {
   const frame = (testid: string, aria: string, caption: React.ReactNode, ramp: React.ReactNode, visible: React.ReactNode, detail: React.ReactNode, label: string) => (
-    <figure className="flex min-w-0 flex-col gap-1.5" data-testid={testid} aria-label={aria}>
+    <figure className="flex min-w-0 flex-col gap-2" data-testid={testid} aria-label={aria}>
       <div className="flex items-start justify-between gap-2">
-        <figcaption className="min-w-0 text-[13px] font-semibold leading-snug text-n-ink">{caption}</figcaption>
+        <figcaption className="nx-caps min-w-0 pt-0.5">{caption}</figcaption>
         {detail && (
           <MoreAbout label={label} inline={inline}>
             {detail}
@@ -363,14 +375,14 @@ export function Legend({ choice, resolved, check = null, inline = false, noRamp 
       {visible}
     </figure>
   );
-  const short = (t: React.ReactNode) => <p className="text-[12.5px] leading-snug text-n-ink-2">{t}</p>;
+  const short = (t: React.ReactNode) => <p className="text-[12px] leading-snug text-n-ink-2">{t}</p>;
 
   if (choice.kind === "forecast" && resolved.forecastLayer?.palette)
     return frame(
       "legend-forecast",
       `Legend: ${VARIABLE_WORDS[choice.variable].what}`,
       CAPTION[choice.variable],
-      <Ramp palette={resolved.forecastLayer.palette} labels={["0%", "50%", "100%"]} />,
+      <Ramp palette={resolved.forecastLayer.palette} labels={["0%", "25%", "50%", "75%", "100%"]} />,
       <>
         {short("A model probability: not toxin, not a closure; low is not safe.")}
         <span className="flex items-start gap-2 text-[12.5px] leading-snug text-n-ink-2">
@@ -424,7 +436,7 @@ export function Legend({ choice, resolved, check = null, inline = false, noRamp 
       "legend-outlook",
       "Legend: chlorophyll outlook, milligrams per cubic metre, log scale",
       <>Chlorophyll-a, mean {windowLabel(resolved.outlookLayer.valid_from, resolved.outlookLayer.valid_to)}, mg/m³</>,
-      <Ramp palette={resolved.outlook?.palette ?? CHL_PALETTE} labels={["0.05", "1.6", "50"]} />,
+      <Ramp palette={resolved.outlook?.palette ?? CHL_PALETTE} labels={["0.05", "0.3", "1.6", "9", "50"]} />,
       <span className="flex items-start gap-2 text-[12.5px] leading-snug text-n-ink-2">
         <span className="mt-[2px] flex">
           <Swatch color="#5bb267" texture="hatch" />
@@ -476,19 +488,19 @@ export function Legend({ choice, resolved, check = null, inline = false, noRamp 
       "legend-satellite",
       "Legend: chlorophyll-a, milligrams per cubic metre, log scale",
       "Chlorophyll-a, mg/m³ (log scale)",
-      <Ramp palette={resolved.satLayer.palette} labels={["0.05", "1.6", "50"]} />,
+      <Ramp palette={resolved.satLayer.palette} labels={["0.05", "0.3", "1.6", "9", "50"]} />,
       <>
-        {short("Algae of every kind, not toxin. Cloud leaves gaps; a gap is not clear water.")}
+        <NoData testid="legend-gap">No observation (cloud, fog or no pass): a gap is not clear water, and not low chlorophyll.</NoData>
         {resolved.estimate && (
           // the swatch words stay in view; the pipeline's class words are in the page, behind the ⓘ
-          <span className="flex flex-wrap gap-x-3 gap-y-1 text-[12.5px] leading-snug text-n-ink-2">
-            <span className="flex items-center gap-1.5" data-testid="legend-estimate">
+          <span className="flex flex-col gap-1 text-[12px] leading-snug text-n-ink-2">
+            <span className="flex items-center gap-2" data-testid="legend-estimate">
               <Swatch color="#8cc3a4" texture="stipple" />
               <span className="font-semibold text-n-ink">Estimated, not observed.</span>
               <span hidden>{est?.class_grid ? `${classWords(est, 1)}. In bays: ${classWords(est, 3)}.` : "Gaps estimated from recent and nearby views; near shore it may be extrapolated."} Lightened and stippled; observed pixels are drawn over it, unchanged.</span>
             </span>
             {est?.class_grid && (
-              <span className="flex items-center gap-1.5" data-testid="legend-strip">
+              <span className="flex items-center gap-2" data-testid="legend-strip">
                 <Swatch color="#b4d4c2" texture="strip" />
                 <span className="font-semibold text-n-ink">Extrapolated toward shore, never observed.</span>
                 <span hidden>{classWords(est, 2)}. Paler, densely stippled.</span>
@@ -496,6 +508,7 @@ export function Legend({ choice, resolved, check = null, inline = false, noRamp 
             )}
           </span>
         )}
+        <p className="text-[12px] leading-snug text-n-ink">Algae of every kind, not toxin.</p>
       </>,
       <>
         <p data-testid="legend-turbid">{BAY_TURBID}: San Francisco, San Pablo, Suisun, Tomales, Humboldt, Morro and San Diego Bays and Elkhorn Slough.</p>
@@ -529,7 +542,6 @@ export function Legend({ choice, resolved, check = null, inline = false, noRamp 
               </span>
             </span>
           ))}
-        <NoData />
       </>,
       "chlorophyll",
     );
@@ -959,17 +971,16 @@ function CoverageLine({ layer, regions }: { layer: LayerArtifact; regions: { id:
   );
 }
 
-/** The active layer in words, for the dock's layer button: its name, what it shows, and its kind (a safety distinction: model, observation, outlook, analysis). */
-export function layerWords(c: LayerChoice): { title: string; detail: string | null; kind: string; tone: string; icon: string } {
+/** The active layer in words, for the layer button: its name, what it shows, and its kind (a safety distinction: model, observed, outlook, analysis). */
+export function layerWords(c: LayerChoice): { title: string; detail: string | null; kind: string; tone: string; icon: string; sw: string; hatch: boolean } {
   const f = FAMILY[familyOf(c)];
-  const title = c.kind === "forecast" ? "NOAA bloom forecast" : c.kind === "outlook" ? "Chlorophyll outlook" : f.name;
   const detail =
     c.kind === "forecast"
-      ? VARIABLE_WORDS[c.variable].name
+      ? VARIABLE_WORDS[c.variable].short
       : c.kind === "satellite"
         ? `${SAT_WORDS[c.product]?.name ?? ""}${c.day ? ` · ${dayLabel(c.day)}` : ""}`
         : c.kind === "currents"
-          ? [c.mean ? "24 h mean" : null, c.chl ? "with chlorophyll" : null].filter(Boolean).join(", ") || null
-          : null;
-  return { title, detail: c.kind === "forecast" ? VARIABLE_WORDS[c.variable].short : detail, kind: f.kind, tone: f.tone, icon: f.icon };
+          ? ["HF radar", c.mean ? "24 h mean" : null, c.chl ? "with chlorophyll" : null].filter(Boolean).join(", ")
+          : f.source;
+  return { title: f.name, detail, kind: f.kind, tone: f.tone, icon: f.icon, sw: f.sw, hatch: !!f.hatch };
 }

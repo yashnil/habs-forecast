@@ -1,16 +1,14 @@
 "use client";
 
-import { Fragment, useEffect, useId, useRef, useState } from "react";
-import { motion } from "motion/react";
-import { SPRING } from "@/v4/motion";
+import { useEffect, useRef, useState } from "react";
 import type { Manifest } from "@/generated/schema";
-import { charmRun, satelliteDays, satelliteLatest, type SatProduct } from "@/lib/layers";
+import { charmRun, satelliteDays, satelliteLatest, type CharmVariable, type SatProduct } from "@/lib/layers";
 import { currentsHourly, currentsMean, defaultHour, observedCells, usableHours } from "@/lib/currents";
 import { dtf, pacificToday } from "@/lib/time";
 import { Icon } from "@/v4/ui/Icon";
 import { clockLabel, dayLabel } from "@/v4/ui/time";
 import { runDays, type LayerChoice } from "./layers";
-import { derivedOutlook, type DerivedIndex, type OutlookLayer } from "@/lib/derived";
+import { derivedOutlook, derivedSst, type DerivedIndex } from "@/lib/derived";
 
 /** One frame every PLAY_MS while playing: long enough for the map to draw and the eye to compare. */
 const PLAY_MS = 1200;
@@ -98,89 +96,247 @@ export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null, derived
   return null;
 }
 
-/** Day as a number of whole days after `from` (calendar dates). */
-const daysAfter = (from: string, d: string) => Math.round((Date.parse(`${d.slice(0, 10)}T12:00:00Z`) - Date.parse(`${from.slice(0, 10)}T12:00:00Z`)) / 86_400_000);
+
+// ------------------------------------------------------------------------------------- the time rail
+
+const DAY_MS = 86_400_000;
+const HOUR_MS = 3_600_000;
+/** A calendar date as a whole day number (days since 1970-01-01). */
+const dayNum = (d: string) => Math.floor(Date.parse(`${d.slice(0, 10)}T12:00:00Z`) / DAY_MS);
+const dateOf = (n: number) => new Date(n * DAY_MS + DAY_MS / 2).toISOString().slice(0, 10);
+const PT_CLOCK = dtf("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "numeric", hourCycle: "h23" });
+const PT_HOUR = dtf("en-US", { timeZone: "America/Los_Angeles", hour: "numeric" });
+const PT_HOUR24 = dtf("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", hourCycle: "h23" });
+const PT_NOW = dtf("en-US", { timeZone: "America/Los_Angeles", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+/** Now on the Pacific calendar, in days: the whole part is today's date, the fraction the time of day. */
+function nowDays(now: Date): number {
+  const p = PT_CLOCK.formatToParts(now);
+  const h = Number(p.find((x) => x.type === "hour")?.value ?? 0) % 24;
+  const mi = Number(p.find((x) => x.type === "minute")?.value ?? 0);
+  return dayNum(pacificToday(now)) + (h + mi / 60) / 24;
+}
+
+/** The four families a frame can belong to on the rail, each in its data family's colour (system.md rule 3). */
+type Family = "observed" | "model" | "outlook" | "analysis" | "radar";
+const FAMILY_TONE: Record<Family, string> = {
+  observed: "var(--nx-measured)",
+  model: "var(--nx-model)",
+  outlook: "var(--nx-model)",
+  analysis: "var(--nx-conditions)",
+  radar: "var(--nx-conditions)",
+};
+type Mark = {
+  key: string;
+  family: Family;
+  /** 0: the cell row; 1: the span row under it (the latest clear view, the outlook's one window) */
+  row: 0 | 1;
+  t0: number;
+  t1: number;
+  /** a frame of the layer on the map: one of the rail's radios */
+  step?: Step;
+  /** a frame of another layer: a pointer shortcut that switches the map to it */
+  ctx?: LayerChoice;
+  /** the layer on the map without frames of its own (sea temperature): lit, not a radio */
+  on?: boolean;
+  nowcast?: boolean;
+  incomplete?: boolean;
+  /** two families on one day share the cell row: this one's slot (of `of`) */
+  slot?: { i: number; of: number };
+  title: string;
+};
+type Group = { key: string; family: Family; t0: number; t1?: number; label: React.ReactNode; text: string; active: boolean };
+type RailModel = { unit: "day" | "hour"; lo: number; hi: number; marks: Mark[]; groups: Group[]; nowAt: number | null; nowAfter: number | null; mean: Step | null };
+
+const span = (a: string, b: string) => {
+  const x = dayLabel(a);
+  const y = dayLabel(b);
+  if (a === b) return x;
+  return x.split(" ")[0] === y.split(" ")[0] ? `${x}–${y.split(" ")[1]}` : `${x}–${y}`;
+};
 
 /**
- * The outlook's horizon, drawn to scale: the day it was issued (and today), then the window its one
- * mean covers. Nothing is selectable inside the window: there is one value per pixel for all of it.
+ * Everything the rail draws, on one time axis: the satellite's overpasses and its latest clear view
+ * (observed), the C-HARM run's days (model), the outlook's one window (outlook, never day by day) and
+ * the sea-temperature analysis date, or, for the currents, the radar's real hours. The layer on the map
+ * contributes its frames as radios; the other layers are drawn muted, as context and shortcuts.
  */
-export function OutlookHorizon({ layer, now, compact = false }: { layer: OutlookLayer; now: Date | null; compact?: boolean }) {
-  const span = Math.max(1, daysAfter(layer.issued, layer.valid_to) + 1);
-  const at = (d: string) => `${(Math.min(span, Math.max(0, daysAfter(layer.issued, d))) / span) * 100}%`;
-  const today = now ? pacificToday(now) : null;
-  const w0 = daysAfter(layer.issued, layer.valid_from);
-  const w1 = daysAfter(layer.issued, layer.valid_to) + 1;
-  return (
-    <div role="group" aria-label={`Outlook horizon: issued ${dayLabel(layer.issued)}, a mean over ${dayLabel(layer.valid_from)} to ${dayLabel(layer.valid_to)}`} data-testid="timebar" className="flex min-w-0 flex-col gap-2">
-      {!compact && <p className="truncate text-[13px] text-n-ink-2">Outlook: one 8-day mean, not a day-by-day forecast</p>}
-      <div className="relative h-[52px]" data-testid="outlook-horizon">
-        <div className="absolute inset-x-0 top-[22px] h-[3px] rounded-full bg-n-surface-3" aria-hidden />
-        <div
-          className="absolute top-[14px] h-[19px] rounded-md border border-n-model/60"
-          style={{ left: `${(w0 / span) * 100}%`, width: `${((w1 - w0) / span) * 100}%`, backgroundImage: "repeating-linear-gradient(135deg, transparent 0 6px, rgba(194,168,245,0.28) 6px 8px)" }}
-          aria-hidden
-        />
-        <span className="absolute top-[12px] h-[23px] w-[2px] -translate-x-1/2 rounded-full bg-n-ink" style={{ left: at(layer.issued) }} aria-hidden />
-        {today && today >= layer.issued && today <= layer.valid_to && <span className="absolute top-[16px] h-[15px] w-[2px] -translate-x-1/2 bg-n-accent" style={{ left: `${((daysAfter(layer.issued, today) + 0.5) / span) * 100}%` }} aria-hidden data-testid="outlook-today" />}
-        <span className="absolute left-0 top-[36px] whitespace-nowrap text-[12px] text-n-ink-2" data-testid="outlook-issued">
-          Issued {dayLabel(layer.issued)}
-        </span>
-        <span className="absolute top-0 whitespace-nowrap text-[12px] font-semibold text-n-ink" style={{ left: at(layer.valid_from) }} data-testid="outlook-window">
-          Mean {dayLabel(layer.valid_from)} → {dayLabel(layer.valid_to)}
-        </span>
-        <span className="absolute right-0 top-[36px] whitespace-nowrap text-[12px] text-n-ink-2">valid to {dayLabel(layer.valid_to)}</span>
-      </div>
-    </div>
-  );
+function railModel(m: Manifest, choice: LayerChoice, t: ReturnType<typeof timeSteps>, now: Date | null, derived: DerivedIndex | null, variable: CharmVariable, lead: number, only = false): RailModel | null {
+  if (choice.kind === "currents") {
+    if (!t) return null;
+    const hours = currentsHourly(m);
+    const marks: Mark[] = [];
+    for (const s of t.steps) {
+      if (s.key === "mean") continue;
+      const l = hours.find((h) => h.layer_id.endsWith(s.key));
+      const vt = l?.time.valid_time;
+      if (!vt) continue;
+      const h0 = Math.floor(Date.parse(vt) / HOUR_MS);
+      marks.push({ key: `hr-${s.key}`, family: "radar", row: 0, t0: h0, t1: h0 + 1, step: s, incomplete: s.incomplete, title: `${clockLabel(vt)}${s.incomplete ? `, ${s.sub}` : ""}` });
+    }
+    if (!marks.length) return null;
+    const lo = Math.min(...marks.map((x) => x.t0));
+    const last = Math.max(...marks.map((x) => x.t1));
+    const nowH = now ? now.getTime() / HOUR_MS : null;
+    // now is drawn where it falls when it is within a day of the newest hour; further on, the rail ends at
+    // the newest hour and says how far behind it is (the radar's real lag, never closed by invented hours)
+    const near = nowH != null && nowH <= last + 24;
+    const hi = near ? Math.max(last, nowH + 0.5) : last;
+    const label = <>HF radar · observed hourly, 2 km cells</>;
+    return {
+      unit: "hour",
+      lo,
+      hi,
+      marks,
+      groups: [{ key: "radar", family: "radar", t0: lo, label, text: "HF radar · observed hourly, 2 km cells", active: true }],
+      nowAt: near ? nowH : null,
+      nowAfter: nowH != null && !near ? nowH - last : null,
+      mean: t.steps.find((s) => s.key === "mean") ?? null,
+    };
+  }
+
+  const marks: Mark[] = [];
+  const groups: Group[] = [];
+  // the satellite: each overpass, and the latest clear view as a span over the days its pixels come from
+  const prod: SatProduct = choice.kind === "satellite" && choice.product !== "multi" ? choice.product : satelliteLatest(m, "olci300") ? "olci300" : "viirs750";
+  const satRadio = choice.kind === "satellite" && !!t;
+  const satSteps = satRadio ? t!.steps : (timeSteps(m, { kind: "satellite", product: prod, day: null }, now)?.steps ?? []);
+  const latest = satelliteLatest(m, choice.kind === "satellite" && choice.product === "multi" ? "multi" : prod);
+  const la = latest?.composite?.oldest_observed_date ?? latest?.time.observed_date ?? null;
+  const lb = latest?.composite?.newest_observed_date ?? latest?.time.observed_date ?? null;
+  for (const s of satSteps) {
+    const own = satRadio ? { step: s } : { ctx: s.choice };
+    if (s.key === "latest") {
+      if (la && lb) marks.push({ key: "sat-latest", family: "observed", row: 1, t0: dayNum(la), t1: dayNum(lb) + 1, ...own, title: `Satellite chlorophyll, latest clear view of each pixel, ${span(la, lb)}` });
+    } else if (/^\d{4}-\d{2}-\d{2}/.test(s.key)) marks.push({ key: `sat-${s.key}`, family: "observed", row: 0, t0: dayNum(s.key), t1: dayNum(s.key) + 1, ...own, title: `Satellite overpass of ${dayLabel(s.key)}` });
+  }
+  if (choice.kind === "satellite" && choice.product === "multi" && la && lb) marks.push({ key: "sat-multi", family: "observed", row: 1, t0: dayNum(la), t1: dayNum(lb) + 1, on: true, title: `Multi-sensor view, pixels observed ${span(la, lb)}` });
+  const satMarks = marks.filter((x) => x.family === "observed");
+  if (satMarks.length) {
+    const text = `Satellite · observed${la && lb ? `, latest clear view ${span(la, lb)}` : ""}`;
+    groups.push({ key: "observed", family: "observed", t0: Math.min(...satMarks.map((x) => x.t0)), label: text, text, active: choice.kind === "satellite" });
+  }
+
+  // the C-HARM run: the nowcast and its forecast days, each valid for its own date
+  const run = charmRun(m);
+  const days = runDays(m, now);
+  const fcRadio = choice.kind === "forecast" && !!t;
+  const fcSteps = fcRadio ? t!.steps : run ? (timeSteps(m, { kind: "forecast", variable, lead: Math.max(0, lead) }, now)?.steps ?? []) : [];
+  for (const s of fcSteps) {
+    if (s.disabled) continue;
+    const L = s.choice.kind === "forecast" ? s.choice.lead : -1;
+    const d = days.find((x) => x.lead === L)?.date;
+    if (!d) continue;
+    marks.push({ key: `fc-${L}`, family: "model", row: 0, t0: dayNum(d), t1: dayNum(d) + 1, nowcast: L === 0, ...(fcRadio ? { step: s } : { ctx: s.choice }), title: `C-HARM ${L === 0 ? "nowcast" : `forecast day ${L}`}, valid ${dayLabel(d)}` });
+  }
+  const fcMarks = marks.filter((x) => x.family === "model");
+  if (run && fcMarks.length) {
+    const ds = days.filter((x) => x.issued && x.date).map((x) => x.date!);
+    const text = `C-HARM model · valid ${span(ds[0], ds[ds.length - 1])}, run ${dayLabel(run.issued_date)}${run.issued_date_derived ? " (inferred)" : ""}`;
+    groups.push({ key: "model", family: "model", t0: Math.min(...fcMarks.map((x) => x.t0)), label: text, text, active: choice.kind === "forecast" });
+  }
+
+  // the outlook: one mean over its window, a single span (never cells: there is no day-by-day value)
+  const o = derivedOutlook(derived);
+  if (o) {
+    const s = choice.kind === "outlook" ? t?.steps[0] : undefined;
+    marks.push({ key: "outlook", family: "outlook", row: 1, t0: dayNum(o.valid_from), t1: dayNum(o.valid_to) + 1, ...(s ? { step: s } : { ctx: { kind: "outlook" } as LayerChoice }), title: `Outlook, one mean over ${span(o.valid_from, o.valid_to)}, issued ${dayLabel(o.issued)}` });
+    const n = dayNum(o.valid_to) - dayNum(o.valid_from) + 1;
+    const active = choice.kind === "outlook";
+    const label = active ? (
+      <>
+        Outlook, not observed · <span data-testid="outlook-issued">Issued {dayLabel(o.issued)}</span> · <span data-testid="outlook-window">Mean {dayLabel(o.valid_from)} → {dayLabel(o.valid_to)}</span>
+      </>
+    ) : (
+      `Outlook: one ${n}-day mean, ${span(o.valid_from, o.valid_to)}`
+    );
+    groups.push({ key: "outlook", family: "outlook", t0: dayNum(o.valid_from), label, text: `Outlook: one ${n}-day mean, ${span(o.valid_from, o.valid_to)}`, active });
+  }
+
+  // sea temperature: an analysis for its date (one frame, nothing to step through)
+  const sst = derivedSst(derived);
+  const sd = sst?.observed_dates[sst.observed_dates.length - 1];
+  if (sst && sd) {
+    const active = choice.kind === "sst";
+    marks.push({ key: "sst", family: "analysis", row: 0, t0: dayNum(sd), t1: dayNum(sd) + 1, ...(active ? { on: true } : { ctx: { kind: "sst" } as LayerChoice }), title: `Sea temperature, analysis for ${dayLabel(sd)}` });
+    if (active) groups.push({ key: "analysis", family: "analysis", t0: dayNum(sd), label: `Sea temperature · analysis for ${dayLabel(sd)}`, text: `Sea temperature · analysis for ${dayLabel(sd)}`, active });
+  }
+
+  const today = now ? nowDays(now) : null;
+  // a phone draws the layer on the map alone (its frames, each a full-size target), with now
+  if (only) {
+    const own = marks.filter((x) => x.step || x.on);
+    if (!own.length) return null;
+    marks.splice(0, marks.length, ...own);
+    groups.splice(0, groups.length, ...groups.filter((g) => g.active));
+  }
+  if (!marks.length && today == null) return null;
+  let lo = marks.length ? Math.min(...marks.map((x) => x.t0)) : Math.floor(today!) - 6;
+  let hi = marks.length ? Math.max(...marks.map((x) => x.t1)) : Math.floor(today!) + 2;
+  if (today != null) {
+    lo = Math.max(Math.min(lo, Math.floor(today)), Math.floor(today) - 14);
+    hi = Math.max(hi, Math.floor(today) + 1);
+  }
+  const kept = marks.filter((x) => x.t1 > lo).map((x) => ({ ...x, t0: Math.max(x.t0, lo) }));
+  // two families on the same day share its cell: each takes a slot, so neither is drawn over the other
+  const byDay = new Map<number, Mark[]>();
+  for (const x of kept) if (x.row === 0) byDay.set(x.t0, [...(byDay.get(x.t0) ?? []), x]);
+  for (const list of byDay.values()) if (list.length > 1) list.forEach((x, i) => (x.slot = { i, of: list.length }));
+  const fam = (g: Group) => kept.filter((x) => x.family === g.family);
+  const placed = groups.map((g) => ({ ...g, t0: Math.max(g.t0, lo), t1: Math.max(...fam(g).map((x) => x.t1), g.t0 + 1) })).sort((a, b) => a.t0 - b.t0);
+  // a label never starts inside the frames of the family named before it (the outlook's window begins
+  // inside the C-HARM run's days): it waits for that family's last frame
+  for (let k = 1; k < placed.length; k++) if (placed[k].t0 < placed[k - 1].t1! && placed[k - 1].t1! < hi) placed[k].t0 = placed[k - 1].t1!;
+  return { unit: "day", lo, hi, marks: kept, groups: placed, nowAt: today, nowAfter: null, mean: null };
 }
 
 /**
- * v10 playback honesty: `shown` is the frame whose data is on the map, `pending` the frame asked for whose
- * data has not arrived. The checked step (and every label) stays on the shown frame until the new one's data
- * is in; the pending step says it is loading after 400 ms; playback waits for it, and asks for the next real
- * frame ahead (`onPrefetch`) so each step cuts to data already loaded. Nothing is blended or invented.
+ * v10 time rail (direction A): the time instrument across the bottom of Explore. One axis of real time
+ * with a hard "now" line (the future faintly hatched); the satellite's observed days in teal, the C-HARM
+ * run's days in violet, the outlook as one dashed span; the currents on an axis of real hours.
  *
- * `dense` (v7 dock): one short caption ("Run Oct 20 (inferred) · nowcast, then forecasts") and day steps of
- * two lines (weekday and date, then nowcast / forecast), 44 px on a desktop and 56 px on a phone.
+ * Only frames that were published are drawn and selectable (radios): ← → step, Home/End jump, space plays.
+ * A finger or pointer can scrub along the rail: it snaps to the nearest real frame (a cut, never a blend).
+ * The other layers' frames are drawn muted as context; a tap on one switches the map to that layer.
+ *
+ * v10 playback honesty: `shown` is the frame whose data is on the map, `pending` the frame asked for whose
+ * data has not arrived. The checked frame (and every label) stays on the shown frame until the new one's
+ * data is in; the pending frame says it is loading after 400 ms; playback waits for it and asks for the
+ * next real frame ahead (`onPrefetch`), so each step cuts to data already loaded.
  */
-export function Timebar({
+export function TimeRail({
   manifest,
   choice,
   onChoice,
   now,
-  compact = false,
-  dense = false,
-  caption = true,
   derived = null,
   region = null,
   shown = null,
   pending = null,
   onPrefetch,
+  compact = false,
+  caption = null,
+  variable = "particulate_domoic",
+  lead = 1,
 }: {
   manifest: Manifest;
   choice: LayerChoice;
   onChoice: (c: LayerChoice) => void;
   now: Date | null;
-  compact?: boolean;
-  dense?: boolean;
-  caption?: boolean;
   derived?: DerivedIndex | null;
   region?: string | null;
   shown?: string | null;
   pending?: string | null;
   onPrefetch?: (c: LayerChoice) => void;
+  /** phone: no lane labels over the cells (the active one is said above), sparse day labels, taller targets */
+  compact?: boolean;
+  /** the layer's own date line and anything wrong with it (Provenance), under the rail */
+  caption?: React.ReactNode;
+  variable?: CharmVariable;
+  lead?: number;
 }) {
   const t0 = timeSteps(manifest, choice, now, derived, region);
-  const t = t0 && shown && pending && t0.steps.some((s) => s.key === shown) ? { ...t0, current: shown } : t0;
-  const row = useRef<HTMLDivElement | null>(null);
-  // one selected pill that slides between frames (the map itself still cuts from frame to frame);
-  // a held arrow key jumps it, so fast stepping never queues motion
-  const pill = `time-pill-${useId()}`;
-  const [instant, setInstant] = useState(false);
-  const current = t?.current;
-  // v8 playback (Windy, RainViewer, Worldview): the published frames in turn, one every PLAY_MS, looping;
-  // it never starts by itself, stops at any other input, and stops when the page is hidden
+  const t = t0 && t0.steps.length ? (shown && pending && t0.steps.some((s) => s.key === shown) ? { ...t0, current: shown } : t0) : null;
+  const rail = railModel(manifest, choice, t, now, derived, variable, lead, compact);
   const [playing, setPlaying] = useState(false);
   const live = useRef({ t, onChoice, pending, onPrefetch });
   live.current = { t, onChoice, pending, onPrefetch };
@@ -192,7 +348,6 @@ export function Timebar({
       const at = usable.findIndex((s) => s.key === tt?.current);
       if (pre && usable.length > 1) pre(usable[(at + k) % usable.length].choice);
     };
-    // the next real frame is asked for as playback starts
     ahead(1);
     const tick = window.setInterval(() => {
       const { t: tt, onChoice: pick, pending: wait } = live.current;
@@ -202,7 +357,6 @@ export function Timebar({
       const usable = tt.steps.filter((s) => !s.disabled);
       if (usable.length < 2) return setPlaying(false);
       const at = usable.findIndex((s) => s.key === tt.current);
-      setInstant(false);
       pick(usable[(at + 1) % usable.length].choice);
       ahead(2);
     }, PLAY_MS);
@@ -211,51 +365,120 @@ export function Timebar({
   // a new layer kind stops playback (its frames are another series)
   const kind = choice.kind;
   useEffect(() => setPlaying(false), [kind]);
-  // the selected frame is always in view (a narrow timebar scrolls)
+  const track = useRef<HTMLDivElement | null>(null);
+  const [w, setW] = useState(0);
+  const hasRail = !!rail;
   useEffect(() => {
-    const el = row.current?.querySelector<HTMLElement>('[aria-checked="true"]');
-    if (el && row.current) row.current.scrollLeft = Math.max(0, el.offsetLeft - row.current.clientWidth / 2 + el.clientWidth / 2);
-  }, [current]);
-  if (!t || !t.steps.length) return null;
-  const outlook = choice.kind === "outlook" ? derivedOutlook(derived) : null;
-  if (outlook) return <OutlookHorizon layer={outlook} now={now} compact={compact || dense} />;
-  const i = Math.max(0, t.steps.findIndex((s) => s.key === t.current));
-  // dense: a short run (the forecast's four days) shows every step, so no Earlier / Later buttons (← → still step)
-  const arrows = !dense || t.steps.length > 5;
+    const el = track.current;
+    if (!el) return;
+    const f = () => setW(el.clientWidth);
+    f();
+    const ro = new ResizeObserver(f);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [hasRail]);
+  const scroller = useRef<HTMLDivElement | null>(null);
+  // the checked frame is always in view (a phone's rail scrolls)
+  const checkedKey = t?.current;
+  useEffect(() => {
+    const sc = scroller.current;
+    const el = sc?.querySelector<HTMLElement>('[aria-checked="true"]');
+    if (sc && el && sc.scrollWidth > sc.clientWidth) sc.scrollLeft = Math.max(0, el.offsetLeft - sc.clientWidth / 2 + el.clientWidth / 2);
+  }, [checkedKey, w]);
+  const scrubbing = useRef(false);
+  if (!rail) return null;
+
+  const { lo, hi, marks, groups, unit } = rail;
+  const X = (u: number) => ((u - lo) / (hi - lo)) * 100;
+  const steps = t?.steps ?? [];
+  const i = Math.max(0, steps.findIndex((s) => s.key === t?.current));
   const go = (j: number) => {
     setPlaying(false);
-    const s = t.steps[Math.max(0, Math.min(t.steps.length - 1, j))];
+    const s = steps[Math.max(0, Math.min(steps.length - 1, j))];
     if (s && !s.disabled) onChoice(s.choice);
   };
-  const playable = t.steps.filter((s) => !s.disabled).length > 1;
-  // where the observed or nowcast frames end and the forecast frames begin: a visible break
-  const firstForecast = t.steps.findIndex((s) => s.forecast);
+  const playable = steps.filter((s) => !s.disabled).length > 1;
+  // a pointer on the rail: the nearest real frame of the layer on the map, in the row under the pointer
+  const radios = marks.filter((x) => x.step && !x.step.disabled);
+  const scrubTo = (clientX: number, clientY: number) => {
+    const el = track.current;
+    if (!el || !radios.length) return;
+    const r = el.getBoundingClientRect();
+    const u = lo + ((clientX - r.left) / r.width) * (hi - lo);
+    const row = clientY - r.top > cellH ? 1 : 0;
+    const pool = radios.some((x) => x.row === row) ? radios.filter((x) => x.row === row) : radios;
+    let best = pool[0];
+    for (const x of pool) if (Math.abs((x.t0 + x.t1) / 2 - u) < Math.abs((best.t0 + best.t1) / 2 - u)) best = x;
+    if (best.step && best.step.key !== t?.current) {
+      setPlaying(false);
+      onChoice(best.step.choice);
+    }
+  };
+  const cellH = compact ? 56 : 28;
+  const spanH = compact ? 12 : 18;
+  const pxPer = w / Math.max(1, hi - lo);
+  const visH = compact ? 22 : 16;
+  // a phone: the spans (the latest clear view, the outlook's window) are chips beside the rail, each a full
+  // target; the rail scrolls sideways when its frames would be narrower than a finger
+  const chips = compact ? marks.filter((x) => x.step && x.row === 1) : [];
+  const minPx = compact ? Math.ceil((hi - lo) * 46) : 0;
+  const nowIso = now ? PT_NOW.format(now) : null;
+
+  // the axis: days (weekday and date, then sparser as the rail narrows) or hours (with the date at midnight)
+  const ticks: { u: number; text: string; now?: boolean }[] = [];
+  if (unit === "day") {
+    const today = now ? Math.floor(nowDays(now)) : null;
+    const every = pxPer >= 22 ? 1 : 2;
+    for (let d = Math.ceil(lo); d < hi; d++) {
+      const date = dateOf(d);
+      const isToday = d === today;
+      if (!isToday && (d - Math.ceil(lo)) % every) continue;
+      ticks.push({ u: d + 0.5, now: isToday, text: pxPer >= 50 || (isToday && pxPer >= 34) ? `${weekdayOf(date)} ${date.slice(8).replace(/^0/, "")}` : date.slice(8).replace(/^0/, "") });
+    }
+  } else {
+    const every = pxPer >= 46 ? 1 : pxPer >= 24 ? 2 : pxPer >= 14 ? 3 : 6;
+    for (let h = Math.ceil(lo); h < hi; h++) {
+      const at = new Date(h * HOUR_MS);
+      const h24 = Number(PT_HOUR24.format(at)) % 24;
+      if (h24 % every) continue;
+      ticks.push({ u: h + 0.5, text: h24 === 0 ? dayLabel(pacificToday(at)) : PT_HOUR.format(at).replace(" ", "").toLowerCase() });
+    }
+  }
+  const activeGroup = groups.find((g) => g.active) ?? null;
+  const MEAN_W = 76;
+
   return (
     <div
       role="group"
       aria-label="Time"
-      data-testid="timebar"
+      data-testid={t ? "timebar" : "time-rail"}
+      data-unit={unit}
       onKeyDown={(e) => {
-        setInstant(e.repeat);
+        if (!t) return;
         if (e.key === "ArrowRight") go(i + 1);
         else if (e.key === "ArrowLeft") go(i - 1);
         else if (e.key === "Home") go(0);
-        else if (e.key === "End") go(t.steps.length - 1);
+        else if (e.key === "End") go(steps.length - 1);
         else if (e.key === " " && playable && !(e.target instanceof HTMLButtonElement && e.target.getAttribute("role") !== "radio")) setPlaying((v) => !v);
         else return;
         e.preventDefault();
       }}
-      className={`flex min-w-0 flex-col ${dense ? "gap-1.5" : "gap-2"}`}
+      className="nx-rail flex min-w-0 flex-col gap-1"
     >
-      {dense ? (
-        <p className={caption ? "truncate text-[12.5px] leading-4 text-n-ink-3" : "sr-only"} title={t.title}>
-          {t.short ?? t.title}
+      {compact && activeGroup && (
+        <p className="flex min-w-0 items-baseline justify-between gap-3 text-[12px] leading-4">
+          <span className="truncate" style={{ color: FAMILY_TONE[activeGroup.family] }} title={activeGroup.text}>
+            {activeGroup.label}
+          </span>
+          {rail.nowAfter != null && (
+            <span className="nx-data shrink-0 text-[11px] text-n-ink-2" data-testid="rail-now-after">
+              now +{Math.round(rail.nowAfter)} h →
+            </span>
+          )}
         </p>
-      ) : (
-        !compact && <p className="truncate text-[13px] text-n-ink-2">{t.title}</p>
       )}
-      <div className="flex min-w-0 items-stretch gap-1.5">
-        {playable && (
+      <div className="flex min-w-0 items-center gap-3">
+        {playable ? (
           <button
             type="button"
             aria-label={playing ? "Pause" : "Play the frames in turn"}
@@ -263,86 +486,213 @@ export function Timebar({
             title={playing ? "Pause (space)" : "Play (space)"}
             onClick={() => setPlaying((v) => !v)}
             data-testid="time-play"
-            className={`nx-press nx-focus grid w-11 shrink-0 place-items-center rounded-lg max-md:min-h-[56px] md:min-h-11 ${playing ? "bg-n-accent text-n-on-accent" : "bg-n-surface-2 text-n-ink hover:bg-n-surface-3"}`}
+            className={`nx-press nx-focus grid shrink-0 place-items-center rounded-full border ${compact ? "h-14 w-14" : "h-11 w-11"} ${playing ? "border-n-ink bg-n-ink text-n-bg" : "border-n-line-strong text-n-ink hover:border-n-ink-2"}`}
           >
-            <Icon name={playing ? "pause" : "play"} className="h-[18px] w-[18px]" />
+            <Icon name={playing ? "pause" : "play"} className="h-4 w-4" />
           </button>
+        ) : (
+          <span aria-hidden className={`grid shrink-0 place-items-center rounded-full border border-n-line text-n-ink-3 opacity-60 ${compact ? "h-14 w-14" : "h-11 w-11"}`}>
+            <Icon name="clock" className="h-4 w-4" />
+          </span>
         )}
-        {arrows && (
-        <button type="button" aria-label="Earlier" onClick={() => go(i - 1)} disabled={i === 0} className={`nx-press nx-focus grid shrink-0 place-items-center rounded-lg text-n-ink-2 hover:text-n-ink disabled:opacity-35 max-md:min-h-[56px] md:min-h-11 ${dense ? "w-11 max-md:w-11" : "w-11 border border-n-line-strong"}`}>
-          <Icon name="back" className="h-5 w-5" />
-        </button>
-        )}
-        <motion.div layoutScroll ref={row} className="relative flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none]" role="radiogroup" aria-label={t.title}>
-          {t.steps.map((s, k) => {
-            const on = s.key === t.current;
-            const loading = !!pending && s.key === pending && s.key !== t.current;
-            return (
-              <Fragment key={s.key}>
-              {k > 0 && k === firstForecast && <span aria-hidden className="mx-0.5 w-px shrink-0 self-stretch bg-n-line-strong" data-testid="time-forecast-break" />}
-              <button
-                type="button"
-                role="radio"
-                aria-checked={on}
-                aria-busy={loading || undefined}
-                data-loading={loading ? "true" : undefined}
-                tabIndex={on ? 0 : -1}
-                disabled={s.disabled}
-                onClick={() => {
-                  setInstant(false);
-                  setPlaying(false);
-                  onChoice(s.choice);
-                }}
-                data-testid={`time-${s.key}`}
-                data-incomplete={s.incomplete ? "true" : undefined}
-                className={`nx-focus relative isolate flex min-w-fit flex-1 shrink-0 flex-col items-center justify-center rounded-lg px-2 text-center disabled:opacity-35 max-md:min-h-[56px] ${dense ? "basis-[64px] py-0.5 md:min-h-11" : "basis-[84px] py-1 md:min-h-12"} ${
-                  on ? "text-n-bg" : `nx-row text-n-ink hover:bg-n-surface-3 ${s.forecast ? "bg-[repeating-linear-gradient(135deg,var(--nx-surface-2)_0_5px,color-mix(in_srgb,var(--nx-surface-3)_70%,transparent)_5px_7px)]" : "bg-n-surface-2"}`
-                }`}
-              >
-                {on && <motion.span aria-hidden layoutId={pill} transition={instant ? { duration: 0 } : SPRING} className="absolute inset-0 -z-10 rounded-lg bg-n-ink" />}
-                {dense ? (
-                  <span className="whitespace-nowrap text-[13.5px] font-semibold leading-tight">
-                    {s.today && <span aria-hidden className={`mr-1 inline-block h-1.5 w-1.5 -translate-y-0.5 rounded-full ${on ? "bg-n-bg" : "bg-n-accent"}`} />}
-                    {s.top ? (
-                      <>
-                        <span className={`mr-1 font-normal ${on ? "opacity-80" : "text-n-ink-2"}`}>{s.top}</span>
-                        {/* the weekday and the day of the month; the full date is the step's name */}
-                        <span aria-hidden>{s.label.split(" ").pop()}</span>
-                        <span className="sr-only">{s.label}</span>
-                      </>
-                    ) : (
-                      s.label
-                    )}
-                  </span>
-                ) : (
-                  <>
-                    {s.top && <span className={`text-[11.5px] leading-tight ${on ? "opacity-80" : "text-n-ink-3"}`}>{s.top}</span>}
-                    <span className="whitespace-nowrap text-[14px] font-semibold leading-tight">{s.label}</span>
-                  </>
-                )}
-                {/* the frame asked for, still loading: said after 400 ms (a fast frame never flashes it) */}
-                {loading && (
-                  <span className="cw-late absolute inset-x-2 bottom-0.5 h-0.5 overflow-hidden rounded-full bg-n-surface-3" data-testid="time-loading">
-                    <span className="sr-only">loading</span>
-                    <span aria-hidden className="block h-full w-1/2 animate-pulse rounded-full bg-n-accent" />
+        <div className="relative min-w-0 flex-1">
+          {/* the families on the rail, each named at the start of its frames */}
+          {!compact && (
+            <div className="flex gap-2" aria-hidden={t ? undefined : true}>
+              <div className="relative h-[18px] min-w-0 flex-1">
+                {groups.map((g, k) => {
+                  const next = groups[k + 1];
+                  const left = Math.min(X(g.t0), 100);
+                  const room = (next ? X(next.t0) : 100) - left;
+                  const end = !next && left > 62;
+                  return (
+                    <span
+                      key={g.key}
+                      className={`absolute top-0 truncate text-[11.5px] leading-[16px] ${g.active ? "" : "opacity-70"}`}
+                      style={{ color: FAMILY_TONE[g.family], ...(end ? { right: 0, maxWidth: `${100 - left + 30}%` } : { left: `${left}%`, maxWidth: `calc(${room}% - 10px)` }) }}
+                      title={g.text}
+                      data-testid={`rail-label-${g.key}`}
+                    >
+                      {g.label}
+                    </span>
+                  );
+                })}
+                {rail.nowAfter != null && (
+                  <span className="nx-data absolute right-0 top-0 whitespace-nowrap text-[11px] leading-[16px] text-n-ink-2" data-testid="rail-now-after" title="Now is this long after the newest radar hour: the radar's real lag, never filled">
+                    now is {Math.round(rail.nowAfter)} h later →
                   </span>
                 )}
-                <span className={`whitespace-nowrap text-[11.5px] leading-tight ${on ? "opacity-80" : "text-n-ink-3"}`}>
-                  {/* dense: today is the dot before the date (and said to a screen reader) */}
-                  {s.today ? (dense ? <span className="sr-only">today · </span> : "today · ") : ""}
-                  {s.sub}
+              </div>
+              {chips.length + (rail.mean ? 1 : 0) > 0 && <span className="shrink-0" style={{ width: (chips.length + (rail.mean ? 1 : 0)) * (MEAN_W + 8) - 8 }} />}
+            </div>
+          )}
+          <div role={t ? "radiogroup" : undefined} aria-label={t?.title} className="flex min-w-0 items-start gap-2" data-testid={choice.kind === "outlook" ? "outlook-horizon" : undefined}>
+            <div ref={scroller} className={`min-w-0 flex-1 ${compact ? "overflow-x-auto overscroll-x-contain [scrollbar-width:none]" : ""}`}>
+            <div className="relative" style={{ width: compact ? `max(100%, ${minPx}px)` : "100%" }}>
+            <div
+              ref={track}
+              className={`nx-rail-track relative ${compact ? "touch-pan-x" : "touch-pan-y"}`}
+              style={{ height: cellH + spanH }}
+              onPointerDown={(e) => {
+                // a finger on a phone scrolls the rail and taps a frame; a pointer (or a finger on a wide screen) scrubs
+                if (compact && e.pointerType !== "mouse") return;
+                if (e.button !== 0 || (e.target as HTMLElement).closest("[data-ctx]")) return;
+                scrubbing.current = true;
+                scrubTo(e.clientX, e.clientY);
+              }}
+              onPointerMove={(e) => scrubbing.current && e.buttons && scrubTo(e.clientX, e.clientY)}
+              onPointerUp={() => (scrubbing.current = false)}
+              onPointerCancel={() => (scrubbing.current = false)}
+              onPointerLeave={() => (scrubbing.current = false)}
+            >
+              {/* the axis' day (or hour) boundaries */}
+              <span aria-hidden className="absolute inset-x-0 border-t border-n-line" style={{ top: cellH / 2 }} />
+              {unit === "day" &&
+                Array.from({ length: Math.max(0, Math.ceil(hi) - Math.ceil(lo) + 1) }, (_, k) => Math.ceil(lo) + k).map((d) => (
+                  <span key={d} aria-hidden className="absolute w-px bg-n-line-strong" style={{ left: `${X(d)}%`, top: cellH / 2 - 4, height: 8 }} />
+                ))}
+              {/* the future, faintly hatched: nothing past now is observed */}
+              {rail.nowAt != null && <span aria-hidden className="nx-rail-future absolute inset-y-0 right-0" style={{ left: `${X(rail.nowAt)}%` }} />}
+              {marks.map((mk) => {
+                const left = X(mk.t0);
+                const width = X(mk.t1) - left;
+                const tone = FAMILY_TONE[mk.family];
+                const top = mk.row === 0 ? 0 : cellH;
+                const h = mk.row === 0 ? cellH : spanH;
+                const on = !!(mk.step && mk.step.key === t?.current) || !!mk.on;
+                const loading = !!mk.step && !!pending && mk.step.key === pending && mk.step.key !== t?.current;
+                const slot = mk.slot;
+                const vis =
+                  mk.row === 0 ? (
+                    <span
+                      aria-hidden
+                      className={`nx-rail-cell absolute ${mk.nowcast === false || (!mk.nowcast && mk.family === "model") ? "nx-rail-fc" : ""} ${mk.incomplete ? "nx-rail-incomplete" : ""}`}
+                      style={{
+                        left: 1,
+                        right: 1,
+                        top: (cellH - visH) / 2 + (slot ? (visH / slot.of) * slot.i : 0),
+                        height: slot ? visH / slot.of - 1 : visH,
+                        ["--tone" as string]: tone,
+                        opacity: mk.step || mk.on ? (on ? 1 : 0.62) : 0.32,
+                        boxShadow: on ? "0 0 0 2px var(--nx-bg), 0 0 0 3.5px var(--nx-ink)" : undefined,
+                      }}
+                    />
+                  ) : (
+                    <span
+                      aria-hidden
+                      className={`nx-rail-span absolute ${mk.family === "outlook" ? "nx-rail-dashed" : ""}`}
+                      style={{ left: 1, right: 1, top: spanH / 2 - 3, height: 6, ["--tone" as string]: tone, opacity: mk.step || mk.on ? (on ? 1 : 0.7) : 0.4, boxShadow: on ? "0 0 0 1.5px var(--nx-bg), 0 0 0 3px var(--nx-ink)" : undefined }}
+                    />
+                  );
+                const box: React.CSSProperties = { left: `${left}%`, width: `${width}%`, top, height: h };
+                if (mk.step && chips.includes(mk)) return <span key={mk.key} className="absolute" style={box} title={mk.title}>{vis}</span>;
+                if (mk.step) {
+                  const s = mk.step;
+                  return (
+                    <button
+                      key={mk.key}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      aria-busy={loading || undefined}
+                      data-loading={loading ? "true" : undefined}
+                      data-incomplete={s.incomplete ? "true" : undefined}
+                      tabIndex={on ? 0 : -1}
+                      disabled={s.disabled}
+                      title={mk.title}
+                      onClick={() => {
+                        setPlaying(false);
+                        if (s.key !== t?.current) onChoice(s.choice);
+                      }}
+                      data-testid={`time-${s.key}`}
+                      className={`nx-focus absolute ${mk.family === "outlook" && on ? "" : ""}`}
+                      style={box}
+                      {...(mk.family === "outlook" ? { "data-outlook": "true" } : {})}
+                    >
+                      {vis}
+                      <span className="absolute inset-0 overflow-hidden">
+                        <span className="sr-only">
+                          {s.top ? `${s.top} ` : ""}
+                          {s.label}
+                          {s.today ? " · today" : ""} · {s.sub}
+                        </span>
+                      </span>
+                      {/* the frame asked for, still loading: said after 400 ms (a fast frame never flashes it) */}
+                      {loading && (
+                        <span className="cw-late absolute inset-x-1 bottom-0 h-0.5 overflow-hidden rounded-full bg-n-surface-3" data-testid="time-loading">
+                          <span className="sr-only">loading</span>
+                          <span aria-hidden className="block h-full w-1/2 animate-pulse rounded-full bg-n-accent" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                }
+                if (mk.ctx) {
+                  const c = mk.ctx;
+                  return (
+                    <button key={mk.key} type="button" tabIndex={-1} aria-hidden data-ctx title={`${mk.title}: show this layer`} onClick={() => onChoice(c.kind === "forecast" ? { ...c, variable } : c)} className="absolute cursor-pointer" style={box} data-testid={`rail-ctx-${mk.key}`}>
+                      {vis}
+                    </button>
+                  );
+                }
+                return (
+                  <span key={mk.key} className="absolute" style={box} title={mk.title} data-testid={`rail-on-${mk.key}`}>
+                    {vis}
+                  </span>
+                );
+              })}
+              {/* the nowcast and the forecast days are set apart */}
+              {choice.kind === "forecast" &&
+                (() => {
+                  const f1 = marks.find((x) => x.step && x.family === "model" && !x.nowcast);
+                  const n0 = marks.find((x) => x.step && x.family === "model" && x.nowcast);
+                  return f1 && n0 ? <span aria-hidden data-testid="time-forecast-break" className="absolute w-[2px] bg-n-bg" style={{ left: `calc(${X(f1.t0)}% - 1px)`, top: 2, height: cellH - 4 }} /> : null;
+                })()}
+              {rail.nowAt != null && (
+                <span aria-hidden data-testid="rail-now" className="nx-rail-now pointer-events-none absolute w-[1.5px]" style={{ left: `${X(rail.nowAt)}%`, top: compact ? 0 : -20, bottom: -18 }} />
+              )}
+            </div>
+            <div className="relative h-[16px]" aria-hidden>
+              {ticks.map((k) => (
+                <span key={k.u} className={`nx-data absolute top-0.5 -translate-x-1/2 whitespace-nowrap text-[10.5px] leading-[14px] ${k.now ? "text-n-ink" : "text-n-ink-3"}`} style={{ left: `${X(k.u)}%` }}>
+                  {k.text}
                 </span>
-              </button>
-              </Fragment>
-            );
-          })}
-        </motion.div>
-        {arrows && (
-        <button type="button" aria-label="Later" onClick={() => go(i + 1)} disabled={i === t.steps.length - 1} className={`nx-press nx-focus grid shrink-0 place-items-center rounded-lg text-n-ink-2 hover:text-n-ink disabled:opacity-35 max-md:min-h-[56px] md:min-h-11 ${dense ? "w-11" : "w-11 border border-n-line-strong"}`}>
-          <Icon name="chevronRight" className="h-5 w-5" />
-        </button>
-        )}
+              ))}
+            </div>
+            </div>
+            </div>
+            {[...chips.map((x) => ({ s: x.step!, text: x.family === "outlook" ? "8-day mean" : "Latest clear" })), ...(rail.mean ? [{ s: rail.mean, text: "24 h mean" }] : [])].map(({ s, text }) => {
+              const on = s.key === t?.current;
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  tabIndex={on ? 0 : -1}
+                  onClick={() => {
+                    setPlaying(false);
+                    if (!on) onChoice(s.choice);
+                  }}
+                  data-testid={`time-${s.key}`}
+                  className={`nx-focus relative shrink-0 rounded-[3px] border px-2 text-[12px] leading-tight ${on ? "border-n-ink text-n-ink" : "border-n-line-strong text-n-ink-2 hover:text-n-ink"}`}
+                  style={{ width: MEAN_W, minHeight: compact ? 56 : undefined }}
+                >
+                  {text}
+                  <span className="absolute inset-0 overflow-hidden">
+                    <span className="sr-only">
+                      {" "}
+                      · {s.label} · {s.sub}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {nowIso && <span className="sr-only">Now: {nowIso}</span>}
+        </div>
       </div>
+      {caption && <div className={`min-w-0 ${compact ? "" : "pl-14"}`}>{caption}</div>}
     </div>
   );
 }

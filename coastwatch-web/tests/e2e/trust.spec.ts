@@ -97,7 +97,7 @@ test.describe("official notices: every record, every warning, never verified by 
 test.describe("freshness: old or failed data never reads as current", () => {
   test("four days after the run: stale, its dates unchanged, said on the panel and in the status centre", async ({ page }) => {
     await open(page, "/?layer=forecast", "2026-10-12T20:00:00Z");
-    await expect(page.getByTestId("layer-forecast")).toContainText("Run of Oct 8 · 4 days ago");
+    await expect(page.getByTestId("layer-forecast")).toContainText("run Oct 8 · 4 days ago");
     await expect(page.getByTestId("stale-note").first()).toContainText("No newer C-HARM run has been published since Oct 8 (4 days)");
     await expect(page.getByTestId("stamp-forecast").first()).toContainText("issued Oct 8");
     expect(await statusOf(page, "model")).toBe("stale");

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { openEvidence, openLayers } from "./helpers";
+import { openDisplay, openEvidence, openLayers } from "./helpers";
 import { OK } from "./ports";
 
 /**
@@ -53,6 +53,7 @@ test.describe("layers, legend, time", () => {
     await page.getByTestId("layer-satellite").click();
     await expect(page.getByTestId("legend-satellite")).toContainText("not toxin");
     await expect(page.getByTestId("legend-satellite")).toContainText("a gap is not clear water");
+    await openDisplay(page);
     await page.getByTestId("satview-age").click();
     await expect(page.getByTestId("legend-age")).toContainText("Days since each pixel was last seen clear");
     await expect(page).toHaveURL(/age=1/);
@@ -65,9 +66,8 @@ test.describe("layers, legend, time", () => {
 
   test("v2 links still open their view (region, var, lead, port, inspect)", async ({ page }) => {
     await open(page, "/?region=monterey_bay&layer=forecast&var=pseudo_nitzschia&lead=2&port=550");
-    // the dock's layer button names the variable, and opens the layer list
-    await expect(page.getByTestId("layer-capsule")).toContainText("Pseudo-nitzschia");
-    await page.getByTestId("layer-capsule").click();
+    // v10: the layer index lights the model and shows its variable beside it
+    await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
     await expect(page.getByTestId("variable-select")).toHaveValue("pseudo_nitzschia");
     await expect(page.getByTestId("timebar").locator('[aria-checked="true"]')).toContainText("Oct 9");
     await expect(page.getByTestId("inspect-panel")).toHaveAttribute("data-kind", "harbor");

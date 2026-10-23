@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { HFRGAP, OK } from "./ports";
+import { openDisplay } from "./helpers";
 
 /**
  * v10 currents (docs/coastwatch/design-research/geophysical-visualization.md): observed HF-radar currents
@@ -57,6 +58,7 @@ test.describe("v10 currents: an honest flow field", () => {
     expect((await frames(page)) - f0).toBeGreaterThan(5);
     // the legend says the motion is a scaled symbol; the static arrows stay one tap away
     await expect(page.getByTestId("flow-scale-note").first()).toContainText("scaled symbol of relative speed");
+    await openDisplay(page);
     await page.getByTestId("flow-view-arrows").first().click();
     await expect.poll(() => page.evaluate(() => !!(window as unknown as W).__cwMap!.getLayer("currents-arrows-1"))).toBe(true);
     expect(await page.evaluate(() => !!(window as unknown as W).__cwMap!.getLayer("nx-flow"))).toBe(false);
@@ -108,8 +110,8 @@ test.describe("v10 currents: an honest flow field", () => {
     await open(page, "/?layer=currents&region=monterey_bay");
     await flowReady(page);
     const pause = page.getByTestId("flow-pause").first();
-    // from the view switch, one Tab reaches it; Enter presses it
-    await page.getByTestId("flow-view-arrows").first().focus();
+    // v10: it sits in view beside the currents legend: from the legend's own control, one Tab reaches it; Enter presses it
+    await page.getByTestId("legend-currents").first().getByTestId("legend-more").focus();
     await page.keyboard.press("Tab");
     await expect(pause).toBeFocused();
     await page.keyboard.press("Enter");

@@ -1,0 +1,129 @@
+/*
+ * v10 Explore, "a living geophysical instrument" (docs/coastwatch/v10/system.md, direction A).
+ * Module styles for the Explore composition only: the time rail, the instrument plates over the field,
+ * the layer index and the legend's marks. Tokens come from src/v4/theme.css; nothing here redefines one.
+ */
+
+/* ---- the field's shading: the map darkens toward its top and bottom edges, where the instrument's
+   text sits (the concept's gradient), so the words keep their contrast over any raster ---- */
+.nx-field-shade {
+  background:
+    linear-gradient(180deg, rgba(5, 9, 13, 0.72) 0, rgba(5, 9, 13, 0) 112px),
+    linear-gradient(0deg, rgba(5, 9, 13, 0.95) 0, rgba(5, 9, 13, 0.9) 150px, rgba(5, 9, 13, 0.55) 196px, rgba(5, 9, 13, 0) 250px);
+}
+
+/* ---- an instrument plate over the field: one hairline, square shoulders, a solid dark ground (no blur
+   over WebGL) ---- */
+.nx-iplate {
+  background: rgba(5, 9, 13, 0.88);
+  border: 1px solid var(--nx-line);
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 14px 36px -10px rgba(0, 0, 0, 0.55);
+}
+html[data-daylight] .nx-iplate {
+  background: var(--nx-surface);
+}
+
+/* ---- the time rail ---- */
+.nx-rail-cell {
+  border-radius: 1px;
+  background: var(--tone);
+}
+/* forecast days: the model colour, lightly hatched (a forecast, not the nowcast) */
+.nx-rail-cell.nx-rail-fc {
+  background:
+    repeating-linear-gradient(135deg, transparent 0 4px, rgba(5, 9, 13, 0.42) 4px 6px),
+    var(--tone);
+}
+/* an hour whose coverage collapsed: hatched, never a solid frame */
+.nx-rail-cell.nx-rail-incomplete {
+  background: repeating-linear-gradient(135deg, var(--tone) 0 2px, transparent 2px 5px);
+  outline: 1px solid color-mix(in srgb, var(--tone) 60%, transparent);
+  outline-offset: -1px;
+}
+.nx-rail-span {
+  border-radius: 1px;
+  background: var(--tone);
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% 2px no-repeat, linear-gradient(#000 0 0) left / 1.5px 100% no-repeat, linear-gradient(#000 0 0) right / 1.5px 100% no-repeat;
+  mask: linear-gradient(#000 0 0) top / 100% 2px no-repeat, linear-gradient(#000 0 0) left / 1.5px 100% no-repeat, linear-gradient(#000 0 0) right / 1.5px 100% no-repeat;
+}
+/* the outlook: one dashed span (one mean over its window, never day by day) */
+.nx-rail-span.nx-rail-dashed {
+  background: repeating-linear-gradient(90deg, var(--tone) 0 6px, transparent 6px 10px);
+  -webkit-mask: none;
+  mask: none;
+  height: 2px !important;
+  top: calc(50% - 1px) !important;
+}
+.nx-rail-future {
+  background: repeating-linear-gradient(90deg, transparent 0 5px, rgba(230, 238, 242, 0.055) 5px 6px);
+  pointer-events: none;
+}
+.nx-rail-now {
+  background: var(--nx-ink);
+  box-shadow: 0 0 0 1px rgba(5, 9, 13, 0.6);
+  z-index: 2;
+}
+.nx-rail [role="radio"]:focus-visible {
+  outline: 2px solid var(--nx-accent);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+/* ---- the layer index: rows on hairlines, the lit one with its family swatch haloed ---- */
+.nx-index-row[aria-checked="true"] .nx-index-sw {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 28%, transparent);
+}
+.nx-index-sw {
+  background: var(--tone);
+}
+.nx-index-sw.nx-index-sw-hatch {
+  background: repeating-linear-gradient(135deg, var(--tone) 0 2px, transparent 2px 4px);
+  outline: 1px solid var(--tone);
+  outline-offset: -1px;
+}
+
+/* the opacity control: a thin instrument slider */
+.nx-range {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 24px;
+  background: transparent;
+}
+.nx-range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--nx-line-strong);
+}
+.nx-range::-moz-range-track {
+  height: 2px;
+  background: var(--nx-line-strong);
+}
+.nx-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--nx-ink);
+  border: 2px solid var(--nx-bg);
+}
+.nx-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--nx-ink);
+  border: 2px solid var(--nx-bg);
+}
+
+/* the "no observation" mark in a legend: the map's own hatch */
+.nx-sw-gap {
+  background: repeating-linear-gradient(45deg, rgba(170, 196, 224, 0.55) 0 1px, transparent 1px 4px);
+  outline: 1px solid var(--nx-line-strong);
+  outline-offset: -1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-rail * {
+    transition: none !important;
+  }
+}

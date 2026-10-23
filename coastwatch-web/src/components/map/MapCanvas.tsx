@@ -133,6 +133,8 @@ type Props = {
   basemapPmtiles?: string | null;
   /** v4 "Try again": a new value asks for the data rasters afresh (a failed field is forgotten) */
   retry?: number;
+  /** v10: the data field's opacity, 0.3–1 (the layer index's display control); 1 when absent */
+  fieldOpacity?: number;
 };
 
 const OFFICIAL = "#f6bb5c";
@@ -275,7 +277,12 @@ export default function MapCanvas(p: Props) {
     const paint = ms === RASTER_FADE_MS ? base : { ...base, "raster-fade-duration": ms };
     // v4: the forecast recedes as the reader zooms to a harbour, so the coast and the harbour read
     // through 3 km cells (outlined and labelled with their values from z 10.5); values unchanged
-    return forecast && p.chrome === "none" ? { ...paint, "raster-opacity": V4_FORECAST_OPACITY } : paint;
+    const out = forecast && p.chrome === "none" ? { ...paint, "raster-opacity": V4_FORECAST_OPACITY } : paint;
+    // v10: the reader's field opacity (display only; the legend's colours are the full-opacity ones)
+    const k = p.fieldOpacity ?? 1;
+    if (k >= 1) return out;
+    const o = out["raster-opacity"] as unknown;
+    return { ...out, "raster-opacity": (typeof o === "number" ? o * k : ["interpolate", ["linear"], ["zoom"], 9, FORECAST_RASTER_OPACITY * k, 12, 0.6 * k]) as unknown as number };
   };
   // fixed for the map's life: an offline map keeps its saved basemap until the page reloads online
   // (the water that clips the data rasters is read from the same archive, set before the map asks
