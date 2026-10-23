@@ -106,32 +106,32 @@
   --nx-font-data: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
   /* motion: short, ease-out, interruptible; frequent map operations are instant. Exits are about a
-     third faster than entrances and ease in. Data values never animate (src/v4/motion.ts). */
-  --nx-t-press: 110ms;
+     third faster than entrances and ease in. Data values never animate (src/v4/motion.ts). Nothing
+     overshoots except under a finger (the sheet's drag release and the time pill). */
+  --nx-t-press: 90ms;
   --nx-t-hover: 150ms;
+  --nx-t-ring: 200ms;
+  --nx-t-release: 220ms;
   --nx-t-pop: 180ms;
   --nx-t-pop-exit: 120ms;
   --nx-t-panel: 240ms;
   --nx-t-panel-exit: 160ms;
-  --nx-t-page: 260ms;
+  /* a data raster's cross-fade (a legend's swap is 120 ms) */
+  --nx-t-layer: 220ms;
+  /* a reading page's content fades in (opacity only, never the map canvas) */
+  --nx-t-page: 200ms;
   --nx-t-sheet: 460ms;
   --nx-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --nx-ease-in: cubic-bezier(0.4, 0, 1, 1);
   --nx-ease-move: cubic-bezier(0.77, 0, 0.175, 1);
   --nx-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-  /* a soft spring (one small overshoot, settled by 85 %) for releases and settles; a cubic fallback
-     where linear() easing is not supported */
-  --nx-ease-spring: cubic-bezier(0.34, 1.32, 0.64, 1);
-  --nx-t-release: 320ms;
-  --nx-t-ring: 200ms;
+  /* the one spring (src/v4/motion.ts SPRING: bounce 0.08, so it settles without a visible overshoot),
+     for the sheet's drag release only; an ease-out where linear() easing is not supported */
+  --nx-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
   /* hover and press tints laid over whatever surface a control has (a gradient layer, so the
      control's own background colour is untouched): this much of the environment's ink */
   --nx-tint-hover: 6%;
   --nx-tint-press: 10%;
-  /* older names, kept for the components that use them */
-  --nx-ease-in-out: var(--nx-ease-move);
-  --nx-t-quick: var(--nx-t-press);
-  --nx-t-base: var(--nx-t-pop);
   /* movement multiplier: 1, or 0 under reduced motion (fades stay, nothing travels) */
   --nx-shift: 1;
 
@@ -144,7 +144,8 @@
 
 @supports (transition-timing-function: linear(0, 1)) {
   :root {
-    --nx-ease-spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017 19.4%, 1.067, 1.099 24.3%, 1.108 26%, 1.105, 1.094 30.2%, 1.035 37.4%, 1.006 41.8%, 0.991 46.7%, 0.996 61.1%, 1);
+    /* sampled from SPRING (visualDuration 0.32 s, bounce 0.08) over its 385 ms settle: peak 1.0006 */
+    --nx-ease-spring: linear(0, 0.061, 0.193, 0.345, 0.489, 0.615, 0.718, 0.799, 0.86, 0.904, 0.937, 0.959, 0.974, 0.985, 0.991, 0.995, 1);
   }
 }
 /* the hover tint is a registered colour, so it eases instead of snapping */
@@ -287,23 +288,24 @@
 /* ---- interaction: one feel for every control ----
    Every control in a v4 surface eases its colours, borders and focus ring (zero specificity, so any
    component's own transition wins). The shared classes add the physical part: .nx-press gives under
-   the finger quickly and springs back; .nx-tint lays a hover/press tint over any surface; .nx-lift
-   rises a pixel under a mouse; .nx-focus's ring glides in from 4 px out. No blur, no heavy shadow. */
+   the finger quickly and eases back, with no overshoot; .nx-tint lays a hover/press tint over any
+   surface; .nx-lift rises a pixel under a mouse; .nx-focus's ring eases in from 4 px out. No blur,
+   no heavy shadow. */
 :where(.env-chart, .env-instrument) :where(button, a[href], [role="button"], [role="tab"], [role="option"], [role="menuitem"], [role="switch"], summary, select, input, textarea) {
   transition-property: color, background-color, border-color, outline-color, outline-offset, box-shadow, opacity, --nx-tint;
   transition-duration: var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-ring), var(--nx-t-ring), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover);
-  transition-timing-function: var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-spring), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out);
+  transition-timing-function: var(--nx-ease-out);
 }
 .nx-press {
   transition-property: transform, background-color, color, border-color, box-shadow, --nx-tint, outline-color, outline-offset;
   transition-duration: var(--nx-t-release), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-ring), var(--nx-t-ring);
-  transition-timing-function: var(--nx-ease-spring), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-spring);
+  transition-timing-function: var(--nx-ease-out);
   -webkit-tap-highlight-color: transparent;
 }
-/* pressing is quick and direct; letting go springs back (the duration above) */
+/* pressing is quick and direct (scale .965 in 90 ms); letting go eases back (the duration above) */
 .nx-press:active:not(:disabled):not([aria-disabled="true"]) {
   transform: scale(calc(1 - 0.035 * var(--nx-shift)));
-  transition-duration: 90ms, 60ms, 60ms, 60ms, 60ms, 60ms, var(--nx-t-ring), var(--nx-t-ring);
+  transition-duration: var(--nx-t-press), 60ms, 60ms, 60ms, 60ms, 60ms, var(--nx-t-ring), var(--nx-t-ring);
   transition-timing-function: var(--nx-ease-out);
 }
 /* a tint over any surface: hover (mouse only) and press */
@@ -321,7 +323,7 @@
 .nx-press:active:not(:disabled):not([aria-disabled="true"]) {
   --nx-tint: color-mix(in srgb, var(--nx-ink) var(--nx-tint-press), transparent);
 }
-/* the focus ring glides in (4 px out to 2 px, with a little spring) instead of snapping */
+/* the focus ring eases in (4 px out to 2 px) instead of snapping */
 .nx-focus {
   outline: 2px solid transparent;
   outline-offset: 4px;
@@ -329,7 +331,7 @@
 .nx-focus:not(.nx-press) {
   transition-property: outline-color, outline-offset, transform, background-color, color, border-color, --nx-tint;
   transition-duration: var(--nx-t-ring), var(--nx-t-ring), var(--nx-t-release), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover);
-  transition-timing-function: var(--nx-ease-out), var(--nx-ease-spring), var(--nx-ease-spring), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out);
+  transition-timing-function: var(--nx-ease-out);
 }
 .nx-focus:focus-visible {
   outline: 2px solid var(--nx-accent);
@@ -349,7 +351,7 @@
   .nx-lift {
     transition-property: transform, border-color, background-color, box-shadow, outline-color, outline-offset, --nx-tint;
     transition-duration: var(--nx-t-release), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-hover), var(--nx-t-ring), var(--nx-t-ring), var(--nx-t-hover);
-    transition-timing-function: var(--nx-ease-spring), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-out), var(--nx-ease-spring), var(--nx-ease-out);
+    transition-timing-function: var(--nx-ease-out);
   }
   .nx-lift:hover {
     transform: translateY(calc(-2px * var(--nx-shift)));
@@ -374,7 +376,7 @@
   to { opacity: 1; }
 }
 @keyframes nx-panel {
-  from { opacity: 0; transform: translateX(calc(16px * var(--nx-shift))); }
+  from { opacity: 0; transform: translateX(calc(12px * var(--nx-shift))); }
   to { opacity: 1; transform: none; }
 }
 .nx-rise { animation: nx-rise var(--nx-t-pop) var(--nx-ease-out) both; }
@@ -414,26 +416,41 @@
 /* loading words and placeholders appear only after 400 ms of real waiting (a fast answer never flickers) */
 .nx-late { animation: nx-fade 200ms var(--nx-ease-out) 400ms both; }
 
-/* the loading contour: one slow sweep along a bathymetric line, only while something loads */
-@keyframes nx-sweep {
-  from { stroke-dashoffset: 240; }
-  to { stroke-dashoffset: 0; }
+/* the loading contour (src/v4/ui/ContourLoader.tsx): one real isobath whose soundings join into a
+   line and part again, 1.6 s a cycle, only while something loads. Dots and their spacing are in the
+   line's own units (--nx-sound, 2.4 by default). Reduced motion: the line, still. */
+@keyframes nx-sound {
+  0%, 100% { stroke-dasharray: 0 var(--nx-sound, 2.4); }
+  50% { stroke-dasharray: var(--nx-sound, 2.4) 0; }
 }
-.nx-sweep { stroke-dasharray: 60 180; animation: nx-sweep 1.6s linear infinite; }
-/* contour lines draw themselves in once (pathLength=1), staggered by --i */
+.nx-sound { animation: nx-sound 1.6s var(--nx-ease-move) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .nx-sound { animation: none; }
+}
+/* a line draws itself in once (pathLength=1, stroke-dasharray 1): a chart, My Coast's coast, a check */
 @keyframes nx-draw {
   from { stroke-dashoffset: 1; }
   to { stroke-dashoffset: 0; }
-}
-.nx-draw {
-  stroke-dasharray: 1;
-  animation: nx-draw 600ms var(--nx-ease-out) calc(var(--i, 0) * 60ms) both;
 }
 /* a chart's line draws once, the first time it is seen; its points follow */
 .nx-chart-wait .nx-chart-line { stroke-dasharray: 1; stroke-dashoffset: 1; }
 .nx-chart-wait .nx-chart-marks { opacity: 0; }
 .nx-chart-draw .nx-chart-line { stroke-dasharray: 1; animation: nx-draw 500ms var(--nx-ease-out) both; }
 .nx-chart-draw .nx-chart-marks { animation: nx-fade 300ms var(--nx-ease-out) 300ms both; }
+
+/* a field pack saved (OfflinePanel): the full progress bar gathers into a 20 px circle (240 ms), the
+   check strokes in (200 ms), then the words fade in (180 ms); only right after a download in view,
+   otherwise the saved state is simply drawn. Reduced motion: circle and check at once, words fade. */
+@keyframes nx-gather {
+  from { inline-size: 100%; block-size: 8px; }
+}
+.nx-saved-play .nx-saved-mark { animation: nx-gather 240ms var(--nx-ease-move) both; }
+.nx-saved-play .nx-saved-tick { stroke-dasharray: 1; animation: nx-draw 200ms var(--nx-ease-out) 240ms both; }
+.nx-saved-play .nx-saved-words { animation: nx-fade 180ms var(--nx-ease-out) 440ms both; }
+@media (prefers-reduced-motion: reduce) {
+  .nx-saved-play .nx-saved-mark, .nx-saved-play .nx-saved-tick { animation: none; }
+  .nx-saved-play .nx-saved-words { animation-delay: 0ms; }
+}
 
 /* a disclosure opens by height (grid rows 0fr to 1fr) and its body fades in just after */
 .nx-fold {
@@ -473,132 +490,112 @@
   color: transparent;
 }
 
-/* ---- launch screen (src/v4/shell/Splash.tsx): a device's first visit only, on the instrument ground ----
-   v8 timeline (ms from navigation start), a full play of about five seconds:
-   - the lit shelf fades up (0-900);
-   - the bay's isobaths draw outward from the canyon head, one depth after another (200-3000);
-   - the symbol's own isobaths draw over them at full size (500-2900) and the tile fills in (1500-2300);
-   - a sounding ping leaves the canyon head and the index isobath glows (2300-3400);
-   - the symbol settles into the lockup (3000-3750), the wordmark wipes in (3400-4050) and the line
-     under it follows (3850-4400);
-   - the field drifts slowly the whole time; at ~4.7 s (MIN_HOLD in MotionRoot) the screen dives
-     toward the map (700).
-   SplashGate holds it until the play has finished and the map is ready; the CSS cap removes it by 6 s
-   even if no script runs. A tap, click or key skips it at once. It sits under the header (z 44 < 45),
-   so the workspaces, search and notices are usable throughout. Base styles are the final frame, so
-   reduced motion simply drops the animations. */
+/* ---- launch screen "Sounding" (src/v4/shell/Splash.tsx; docs/coastwatch/v9/motion.md §3) ----
+   A device's first visit to Explore only, on the map's own ground (#061016). One clock: ms from the
+   screen's first style, times --nx-o (the tempo; 1 is the designed play of about 3.5 s).
+   1. soundings (100-730): points appear along the real isobaths, from the 200 m index outward;
+   2. contours (420-1470): the points stretch into dashes, then lines (a survey becoming a chart);
+   3. mark (1150-1600): the canyon head's own contours, in the chart's colour, grow into the symbol (their
+      cut ends fade into the chart until the tile is behind them); the chart steps back;
+   4. lockup (1650-2550): the symbol settles to its size as its tile surfaces and its lines take their
+      own colours, then the wordmark wipes in; a still hold to 2800;
+   5. handoff (SplashGate, once the map is ready, 700): the chart recedes and fades before the map
+      shows (contours are never drawn over land), the ground clears to the live map, and the lockup
+      settles into the header's brand, above the header, cross-fading into it with no empty frame.
+   Without a script, the cap fades it out by 4.2 s. A tap, click or key skips it in 200 ms. It sits under
+   the header (z 44 < 45); only the lockup's own transparent layer sits above it (46). Base styles are the final frame of beat 4, so reduced motion
+   drops the animations and keeps a still lockup. One thing moves at a time; no glow, ping or gradient. */
 .nx-splash { display: none; }
 html.nx-splash-on .nx-splash {
-  /* m: the final symbol's size; z: how much larger it starts (the field is drawn at that scale and
-     must cover the screen: 6.25 * m * z >= the longer side) */
+  /* m: the final symbol's size; z: how much larger the symbol and the chart are drawn (the chart must
+     cover the screen: 6.25 * m * z >= the longer side) */
   --nx-m: clamp(44px, 6.15vmax, 92px);
   --nx-z: 2.6;
+  --nx-o: 1;
   --nx-dx: calc(var(--nx-m) * (0.25 + var(--nx-wr, 2)) / -2);
   position: fixed;
   inset: 0;
   z-index: 44;
   display: block;
   overflow: hidden;
-  background: #061016;
+  background-color: #061016;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  /* the hard cap even if no script runs: gone by 6 s */
-  animation: nx-splash-gone var(--nx-t-splash-exit) var(--nx-ease-in) 5300ms both;
+  /* the cap, even if no script runs: a plain fade, gone by 4.2 s */
+  animation: nx-splash-gone 300ms var(--nx-ease-in) calc(3900ms * var(--nx-o)) both;
 }
 @media (min-width: 1500px) { html.nx-splash-on .nx-splash { --nx-z: 3.6; } }
 @media (min-width: 2200px) { html.nx-splash-on .nx-splash { --nx-z: 5; } }
-:root { --nx-t-splash-exit: 700ms; }
 @keyframes nx-splash-gone {
   to { opacity: 0; visibility: hidden; }
 }
-/* leaving: an animation, not a transition (a transition would not start from the cap animation's
-   held value); no clicks land on it while it fades */
-html.nx-splash-out .nx-splash {
+/* skipped: out of the way in 200 ms, no landing (an animation: it starts from wherever the play is) */
+/* (also during the handoff: this must win over html.nx-splash-land .nx-splash below) */
+html.nx-splash-out .nx-splash, html.nx-splash-out.nx-splash-land .nx-splash {
   pointer-events: none;
-  animation: nx-splash-gone var(--nx-t-splash-exit) cubic-bezier(0.55, 0, 0.75, 0.3) both;
+  animation: nx-splash-gone var(--nx-t-skip, 200ms) var(--nx-ease-in) both;
 }
-/* depth: a lit shelf over the canyon, falling off to the deep; it breathes once as the ping passes */
-.nx-splash-depth {
-  position: absolute;
-  inset: -10%;
-  background:
-    radial-gradient(ellipse 55% 48% at 50% 46%, rgba(30, 92, 128, 0.42), rgba(14, 45, 66, 0.18) 55%, transparent 80%),
-    radial-gradient(circle at 50% 50%, #0a1d2a 0%, #071520 50%, #050d13 100%);
-  animation:
-    nx-fade 900ms var(--nx-ease-out) both,
-    nx-splash-breathe 1400ms ease-in-out 2300ms both;
+/* the header's brand waits for the mark to land in it, then takes over from it (a skip: just after the fade) */
+html.nx-splash-on:not(.nx-splash-out):not(.nx-splash-landed) [data-testid="brand-home"] svg {
+  opacity: 0;
+  /* never longer than the cap, even if no script ever ends the screen (an animation, on the brand's own
+     first style: hidden until 4.2 s, then shown) */
+  animation: nx-brand-wait 4200ms step-end both;
 }
-@keyframes nx-splash-breathe {
-  0%, 100% { filter: brightness(1); }
-  40% { filter: brightness(1.35); }
+@keyframes nx-brand-wait {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
-.nx-splash-drift {
+html.nx-splash-landed [data-testid="brand-home"] svg { transition: opacity 120ms var(--nx-ease-out); }
+html.nx-splash-out [data-testid="brand-home"] svg { transition: opacity 150ms var(--nx-ease-out) 120ms; }
+/* the handoff (SplashGate): the cap is cancelled, the ground clears to the map underneath and clicks
+   reach the map; the lockup, on its layer above the header, lands on the header's brand, not under it */
+/* the lockup's own layer: above the header, transparent, never in the way of a click */
+html.nx-splash-on .nx-splash-top { z-index: 46; background-color: transparent; pointer-events: none; cursor: default; }
+html.nx-splash-land .nx-splash {
+  animation: none;
+  pointer-events: none;
+  background-color: transparent;
+  transition: background-color calc(300ms * var(--nx-o)) var(--nx-ease-move) calc(100ms * var(--nx-o));
+}
+
+.nx-splash-chart {
   position: absolute;
   left: 50%;
   top: 50%;
   width: calc(var(--nx-m) * var(--nx-z) * 6.25);
   height: calc(var(--nx-m) * var(--nx-z) * 6.25);
   margin: calc(var(--nx-m) * var(--nx-z) * -3.125) 0 0 calc(var(--nx-m) * var(--nx-z) * -3.125);
-  transform: translate(-2.4%, -1.4%) rotate(-1.5deg) scale(1.1);
-  animation: nx-splash-drift 5600ms cubic-bezier(0.33, 0, 0.4, 1) both;
-  transition: scale var(--nx-t-splash-exit) var(--nx-ease-in), opacity var(--nx-t-splash-exit) var(--nx-ease-in);
-  /* the field fades out toward the screen's edges (and hides where the survey grid ends) */
+  /* 3: the chart steps back behind the mark */
+  opacity: 0.55;
+  animation: nx-splash-dim 500ms var(--nx-ease-out) calc(1300ms * var(--nx-o)) both;
+  /* the survey's edge: the chart fades out toward the screen's edges */
   mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
 }
-@keyframes nx-splash-drift {
-  from { transform: scale(0.96); }
+@keyframes nx-splash-dim {
+  from { opacity: 1; }
 }
 .nx-splash-field { width: 100%; height: 100%; display: block; overflow: visible; }
+/* 1-2: a sounding every 2.4 units along each isobath (0.48 km), then the line; the dots are drawn a
+   little heavier so they read on a phone */
 .nx-splash-iso {
   stroke: #7fb2c4;
   stroke-width: 0.3;
-  stroke-opacity: 0.3;
-  stroke-dasharray: 1 1;
-  animation: nx-splash-draw 1500ms cubic-bezier(0.45, 0.05, 0.25, 1) calc(200ms + var(--i, 0) * 95ms) both;
-}
-.nx-splash-iso-index {
-  stroke: #5fd0e6;
-  stroke-width: 0.5;
-  stroke-opacity: 0.6;
+  stroke-opacity: var(--o, 0.3);
   animation:
-    nx-splash-draw 1500ms cubic-bezier(0.45, 0.05, 0.25, 1) calc(200ms + var(--i, 0) * 95ms) both,
-    nx-splash-glow 1100ms ease-in-out 2400ms both;
+    nx-splash-sound 180ms var(--nx-ease-out) calc((100ms + var(--i, 0) * 28ms) * var(--nx-o)) both,
+    nx-splash-join 600ms var(--nx-ease-move) calc((420ms + var(--i, 0) * 28ms) * var(--nx-o)) both;
 }
-@keyframes nx-splash-glow {
-  0%, 100% { stroke-opacity: 0.6; stroke-width: 0.5; }
-  45% { stroke-opacity: 1; stroke-width: 0.9; }
+.nx-splash-iso-index { stroke: #7fe3f5; stroke-width: 0.5; }
+.nx-splash-iso-coast { stroke: #bfe4ec; }
+@keyframes nx-splash-sound {
+  from { stroke-opacity: 0; }
 }
-.nx-splash-iso-coast { stroke: #bfe4ec; stroke-opacity: 0.45; }
-@keyframes nx-splash-draw {
-  from { stroke-dashoffset: 1; }
-  to { stroke-dashoffset: 0; }
+@keyframes nx-splash-join {
+  from { stroke-dasharray: 0 2.4; stroke-width: 0.6; }
+  to { stroke-dasharray: 2.4 0; }
 }
-/* the sounding: two rings leave the canyon head, as a sounder's ping, and fade as they widen */
-.nx-splash-ping {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: calc(var(--nx-m) * var(--nx-z) * 1.1);
-  height: calc(var(--nx-m) * var(--nx-z) * 1.1);
-  margin: calc(var(--nx-m) * var(--nx-z) * -0.55) 0 0 calc(var(--nx-m) * var(--nx-z) * -0.55);
-  border-radius: 50%;
-  border: 1.5px solid rgba(127, 227, 245, 0.7);
-  box-shadow: 0 0 24px rgba(95, 208, 230, 0.25), inset 0 0 24px rgba(95, 208, 230, 0.12);
-  opacity: 0;
-  animation: nx-splash-ping 1500ms cubic-bezier(0.2, 0.6, 0.35, 1) 2300ms both;
-  pointer-events: none;
-}
-.nx-splash-ping + .nx-splash-ping { animation-delay: 2650ms; border-width: 1px; }
-@keyframes nx-splash-ping {
-  0% { opacity: 0; transform: scale(0.35); }
-  12% { opacity: 1; }
-  100% { opacity: 0; transform: scale(3.4); }
-}
-.nx-splash-stage {
-  position: absolute;
-  inset: 0;
-  transition: scale var(--nx-t-splash-exit) var(--nx-ease-in), opacity var(--nx-t-splash-exit) var(--nx-ease-in);
-}
+.nx-splash-stage { position: absolute; inset: 0; }
 .nx-splash-hero {
   position: absolute;
   left: 50%;
@@ -606,26 +603,44 @@ html.nx-splash-out .nx-splash {
   width: calc(var(--nx-m) * var(--nx-z));
   height: calc(var(--nx-m) * var(--nx-z));
   margin: calc(var(--nx-m) * var(--nx-z) / -2) 0 0 calc(var(--nx-m) * var(--nx-z) / -2);
+  /* 4: from the chart's scale to the lockup's */
   transform: translateX(var(--nx-dx)) scale(calc(1 / var(--nx-z)));
-  animation: nx-splash-settle 750ms var(--nx-ease-move) 3000ms both;
-  will-change: transform;
+  /* 3: the lines' cut ends (the tile's edge) fade into the chart until the tile is there to hold them */
+  --nx-cut: 130%;
+  mask-image: linear-gradient(to bottom, #000 calc(var(--nx-cut) - 24%), transparent var(--nx-cut));
+  animation:
+    nx-splash-settle 550ms var(--nx-ease-move) calc(1650ms * var(--nx-o)) both,
+    nx-splash-uncut 300ms var(--nx-ease-out) calc(2000ms * var(--nx-o)) both;
+}
+@property --nx-cut { syntax: "<percentage>"; inherits: false; initial-value: 130%; }
+@keyframes nx-splash-uncut {
+  from { --nx-cut: 100%; }
 }
 .nx-splash-hero svg { display: block; overflow: visible; }
 @keyframes nx-splash-settle {
   from { transform: none; }
 }
+/* 3: the symbol's lines appear at the chart's own weight, over the chart's lines, then thicken */
+.nx-splash-lines { animation: nx-fade 120ms var(--nx-ease-out) calc(1150ms * var(--nx-o)) both; }
 .nx-splash-line {
-  stroke-dasharray: 1 1;
-  animation: nx-splash-draw 1300ms cubic-bezier(0.45, 0.05, 0.25, 1) calc(500ms + var(--i, 0) * 220ms) both;
+  stroke-width: var(--w);
+  animation:
+    nx-splash-weight 450ms var(--nx-ease-move) calc(1150ms * var(--nx-o)) both,
+    nx-splash-tone 300ms var(--nx-ease-out) calc(2000ms * var(--nx-o)) both;
 }
-.nx-splash-tile {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: nx-splash-tile 800ms var(--nx-ease-out) 1500ms both;
+.nx-splash-line-index { animation: nx-splash-weight-index 450ms var(--nx-ease-move) calc(1150ms * var(--nx-o)) both; }
+/* the minor lines keep the chart's colour until the tile is behind them */
+@keyframes nx-splash-tone {
+  from { stroke: #7fb2c4; }
 }
-@keyframes nx-splash-tile {
-  from { opacity: 0; transform: scale(0.9); }
+@keyframes nx-splash-weight {
+  from { stroke-width: 0.3; stroke-opacity: 0.32; }
 }
+@keyframes nx-splash-weight-index {
+  from { stroke-width: 0.5; stroke-opacity: 0.7; }
+}
+/* the tile surfaces as the symbol settles: never a large icon on the chart */
+.nx-splash-tile { animation: nx-fade 280ms var(--nx-ease-out) calc(2000ms * var(--nx-o)) both; }
 .nx-splash-word {
   position: absolute;
   left: calc(50% + var(--nx-dx) + var(--nx-m) * 0.75 - var(--nx-m) / 48);
@@ -633,53 +648,17 @@ html.nx-splash-out .nx-splash {
   height: var(--nx-m);
   width: calc(var(--nx-m) * (var(--nx-wr, 2) + 2 / 48));
   overflow: visible;
-  animation: nx-splash-word 650ms var(--nx-ease-out) 3400ms both;
+  animation: nx-splash-word 350ms var(--nx-ease-out) calc(2200ms * var(--nx-o)) both;
 }
 @keyframes nx-splash-word {
-  from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateX(calc(var(--nx-m) * -0.18)); }
+  from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateX(-4px); }
   to { opacity: 1; clip-path: inset(0 -2% 0 0); transform: none; }
 }
-/* the line under the lockup: what Neritic reads */
-.nx-splash-tag {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% + var(--nx-m) * 0.85);
-  margin: 0;
-  text-align: center;
-  font: 500 clamp(13px, 1.15vmax, 16px)/1.3 var(--nx-font-ui);
-  letter-spacing: 0.04em;
-  color: rgba(214, 232, 240, 0.78);
-  animation: nx-splash-tag 550ms var(--nx-ease-out) 3850ms both;
-}
-@keyframes nx-splash-tag {
-  from { opacity: 0; transform: translateY(6px); }
-}
-.nx-splash-skip {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
-  text-align: center;
-  font: 500 13px/1.2 var(--nx-font-ui);
-  letter-spacing: 0.02em;
-  color: rgba(214, 228, 236, 0.62);
-  animation: nx-fade 400ms var(--nx-ease-out) 1200ms both;
-}
-.nx-splash-skip-mouse { display: none; }
-@media (hover: hover) and (pointer: fine) {
-  .nx-splash-skip-touch { display: none; }
-  .nx-splash-skip-mouse { display: inline; }
-}
-/* the exit dives into the map: the lockup rushes toward the viewer and the field opens past it */
-html.nx-splash-out .nx-splash-stage { scale: 1.9; opacity: 0; }
-html.nx-splash-out .nx-splash-drift { scale: 1.35; }
 
 /* Reduced motion: fades stay, movement goes (--nx-shift: 0 above); loops and draws stop; the launch
    screen is a still mark that fades away in 150 ms */
 @media (prefers-reduced-motion: reduce) {
   :root { --nx-shift: 0; }
-  .nx-sweep { animation: none; stroke-dasharray: none; }
   .nx-draw, .nx-chart-draw .nx-chart-line, .nx-chart-draw .nx-chart-marks { animation: none; }
   .nx-chart-wait .nx-chart-line { stroke-dashoffset: 0; }
   .nx-chart-wait .nx-chart-marks { opacity: 1; }
@@ -689,11 +668,10 @@ html.nx-splash-out .nx-splash-drift { scale: 1.35; }
     transition-duration: var(--nx-t-hover) !important;
     transition-timing-function: var(--nx-ease-out) !important;
   }
-  /* the launch screen: its final frame, still (base styles), and a 200 ms fade */
+  /* the launch screen: its final lockup, still (base styles) from the first frame; SplashGate fades it
+     after at most 800 ms, and the cap does by 1 s without a script */
   .nx-splash * { animation: none !important; }
-  :root { --nx-t-splash-exit: 200ms; }
-  html.nx-splash-out .nx-splash-stage, html.nx-splash-out .nx-splash-drift { scale: none; }
-  .nx-splash-ping { display: none; }
+  html.nx-splash-on .nx-splash { animation-delay: 800ms; animation-duration: 200ms; }
   .nx-fold { transition: none; }
 }
 @media (prefers-contrast: more) {
@@ -876,10 +854,10 @@ html[data-daylight] .env-instrument .nx-select {
     #061016;
   box-shadow: inset 0 1px 0 rgba(214, 240, 248, 0.06), 0 20px 40px -24px rgba(6, 16, 22, 0.55);
 }
-/* the coast draws once, as the opening screen's isobaths do */
+/* the coast draws once, briefly (a reading page, not a splash) */
 .nx-landing-coast {
   stroke-dasharray: 1 1;
-  animation: nx-splash-draw 1400ms cubic-bezier(0.45, 0.05, 0.25, 1) 120ms both;
+  animation: nx-draw 900ms var(--nx-ease-out) both;
 }
 @media (prefers-reduced-motion: reduce) {
   .nx-landing-coast { animation: none; }

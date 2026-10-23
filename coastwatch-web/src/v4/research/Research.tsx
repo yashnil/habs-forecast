@@ -434,7 +434,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
           <p className="nx-note-t mt-2 pr-2">CalHABMAP shore stations, placed at their true latitude. Choose one to read its record.</p>
         </nav>
 
-        <main id="main" className="cw-page-in flex min-w-0 flex-col">
+        <main id="main" className="cw-fade-in flex min-w-0 flex-col">
           {/* the instrument: quantity and range, the day's two readings, the record, the model on the same time axis */}
           <section id="r-record" className="flex scroll-mt-4 flex-col gap-3 sm:gap-4 sm:rounded-[var(--nx-radius-lg)] sm:border sm:border-n-line sm:bg-n-surface sm:p-5 sm:shadow-[var(--nx-shadow)]" data-testid="research-chart">
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">

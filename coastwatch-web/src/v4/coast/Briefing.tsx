@@ -41,6 +41,7 @@ import { savedSearch, savedSnapshot } from "@/v4/offline/snapshot";
 import { homeHref, readHome, writeHome, type HomePort } from "./home";
 import { Fold } from "./Fold";
 import { Landing } from "./Landing";
+import { ContourLoader } from "@/v4/ui/ContourLoader";
 import { OfficialPosition, SeaBody, SeasonsBody, TripConditions, WorthBody, noticeLine, useSeaLimits, worthLine } from "@/components/coast/FishingBrief";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
@@ -208,7 +209,7 @@ export function Briefing(props: Props) {
         <SkipLink />
         <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} />} />
         <RegistryDisclosure className="mx-auto w-full max-w-[1120px] px-4 sm:px-6" fixture={isFixture(props.manifest)} />
-        <main id="main" className="cw-page-in mx-auto w-full max-w-[1120px] overflow-x-clip px-4 pb-32 pt-4 sm:px-6">
+        <main id="main" className="cw-fade-in mx-auto w-full max-w-[1120px] overflow-x-clip px-4 pb-32 pt-4 sm:px-6">
           <Landing ports={ports} home={home} audience={audience} unknownKey={placeKey} />
         </main>
         <MobileDock />
@@ -246,7 +247,7 @@ export function Briefing(props: Props) {
         </div>
       )}
       {packOpen && <PackDialog pack={pack} manifest={props.manifest} baseUrl={props.baseUrl} official={official} onClose={() => setPackOpen(false)} />}
-      <main id="main" className="cw-page-in mx-auto w-full max-w-[1240px] px-4 pb-32 pt-3 sm:px-6 lg:pt-5">
+      <main id="main" className="cw-fade-in mx-auto w-full max-w-[1240px] px-4 pb-32 pt-3 sm:px-6 lg:pt-5">
         {/* the trip bar (v7): the place, then activity, species and day; the home port; the page menu */}
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-3 border-b border-n-line pb-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end lg:gap-x-4" data-testid="coast-header">
             <div className="min-w-0">
@@ -632,14 +633,13 @@ function Locator({ place, g, ports, official, stations, back, onPlace, basemapPm
   return (
     <div ref={box} className="env-instrument overflow-hidden rounded-2xl border border-n-line">
       <div className="relative h-[300px] sm:h-[360px]">
-        {/* until the map has drawn: the same quiet bathymetric lines as Explore's start, never a blank box */}
+        {/* until the map has drawn: the same isobath as Explore's start, never a blank box; it sounds
+            only while the map is actually loading (before it is near the screen, nothing is) */}
         {!map && (
           <div className="absolute inset-0 grid place-items-center" data-testid="locator-loading" role="status">
-            <svg className="absolute inset-0 h-full w-full text-n-accent opacity-25" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden>
-              {[0, 1, 2, 3, 4].map((i) => (
-                <path key={i} className={i === 2 ? (near ? "nx-sweep" : undefined) : "nx-draw"} pathLength={i === 2 ? undefined : 1} style={{ "--i": i } as React.CSSProperties} d={`M-20 ${70 + i * 38} C 80 ${40 + i * 40}, 160 ${120 + i * 30}, 240 ${80 + i * 38} S 380 ${110 + i * 34}, 430 ${90 + i * 38}`} fill="none" stroke="currentColor" strokeWidth={i === 2 ? 1.6 : 0.8} />
-              ))}
-            </svg>
+            <div className="nx-late absolute inset-0">
+              <ContourLoader loading={near} className="h-full w-full text-n-accent opacity-35" />
+            </div>
             <p className="nx-late relative text-[13.5px] text-n-ink-2">{near ? `Drawing ${place.name} and its stations…` : `Map of ${place.name}`}</p>
           </div>
         )}

@@ -50,8 +50,9 @@ import { PackDialog } from "@/v4/offline/PackDialog";
 import { OfflineBanner } from "@/v4/offline/OfflineBanner";
 import { readHomePort } from "@/v4/state/homePort";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
-import { EASE_IN, EASE_OUT, T, markAppReady } from "@/v4/motion";
+import { EASE_IN, EASE_OUT, T, markAppReady, useSwapFade } from "@/v4/motion";
 import { ContourRule } from "@/v4/ui/Kit";
+import { ContourLoader } from "@/v4/ui/ContourLoader";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
 
@@ -157,6 +158,10 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     if ((choice?.kind === "outlook" && !derivedOutlook(derivedRaw)) || (choice?.kind === "sst" && !derivedSst(derivedRaw))) if (derivedRaw !== undefined) setChoiceRaw(null);
   }, [choice, derivedRaw]);
   const resolved = useMemo(() => resolve(manifest, active, baseUrl, derived), [manifest, active, baseUrl, derived]);
+  // the legend swaps with a short fade when the layer changes (a new day keeps the same legend)
+  const legendKey = JSON.stringify({ ...active, day: undefined, lead: undefined });
+  const legendRef = useSwapFade<HTMLDivElement>(legendKey);
+  const legendPhoneRef = useSwapFade<HTMLDivElement>(legendKey);
   const variable: CharmVariable = active.kind === "forecast" ? active.variable : (CHARM_VARIABLES as readonly string[]).includes(q0.get("var") ?? "") ? (q0.get("var") as CharmVariable) : "particulate_domoic";
   const lead = active.kind === "forecast" ? active.lead : firstLead;
 
@@ -221,7 +226,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   useEffect(() => {
     const was = lastKey.current;
     lastKey.current = selKey;
-    if (was && selKey && was !== selKey) panelRef.current?.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: "cubic-bezier(0.23, 1, 0.32, 1)" });
+    // from dimmed, never from empty: the panel never reads as a blank box between two places
+    if (was && selKey && was !== selKey) panelRef.current?.animate?.([{ opacity: 0.45 }, { opacity: 1 }], { duration: 160, easing: "cubic-bezier(0.23, 1, 0.32, 1)" });
   }, [selKey]);
 
   // URL: layer and selection; the camera is written when the view settles (replaceState, not history)
@@ -901,7 +907,6 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       cellLabels={harbourOn ? harbour!.labels : null}
       gap={harbourOn && !selection ? harbour!.gap : null}
       stations={stationPoints}
-      fade={false}
       onHover={bp !== "phone" && canHover && !areaMode ? onHover : undefined}
       onPort={(code) => select({ kind: "harbor", port: code })}
       onStationPick={(id) => select({ kind: "station", id })}
@@ -948,7 +953,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // clip, not hidden: a hidden overflow can still be scrolled by focus or scrollIntoView, which slid
   // the whole workspace (and the dock) up the screen on phones
   return (
-    <div className="env-instrument cw-fade-in relative h-dvh w-full overflow-clip" data-testid="explore">
+    <div className="env-instrument relative h-dvh w-full overflow-clip" data-testid="explore">
       <SkipLink to="place-search" label="Skip to search places" />
       <h1 className="sr-only">Explore: harmful algal bloom evidence on the California coast{placeName ? `, ${placeName}` : ""}</h1>
       <div className="absolute inset-0" data-testid="map">
@@ -1012,7 +1017,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                     <Provenance manifest={manifest} choice={active} resolved={resolved} now={now} regions={ports?.regions ?? []} part="dock" />
                   </div>
                 </div>
-                <div className="flex min-w-0 flex-col gap-1.5 border-n-line px-2.5 py-1 [grid-area:legend] @[560px]:border-t @[560px]:pt-2 @[900px]:border-l @[900px]:border-t-0 @[900px]:pl-4 @[900px]:pt-1">
+                <div ref={legendRef} className="flex min-w-0 flex-col gap-1.5 border-n-line px-2.5 py-1 [grid-area:legend] @[560px]:border-t @[560px]:pt-2 @[900px]:border-l @[900px]:border-t-0 @[900px]:pl-4 @[900px]:pt-1">
                   <Legend choice={active} resolved={resolved} check={check} />
                 </div>
                 {hasTime && (
@@ -1105,7 +1110,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                   {inspection ? (
                     <div className="mt-3 border-t border-n-line pt-3">{inspection}</div>
                   ) : (
-                    <div className="mt-1 flex flex-col gap-2" data-testid="active-layer">
+                    <div ref={legendPhoneRef} className="mt-1 flex flex-col gap-2" data-testid="active-layer">
                       <div className="px-1">
                         <LegendLine choice={active} resolved={resolved} />
                       </div>
@@ -1191,7 +1196,7 @@ function ShareButton({ className }: { className: string }) {
 
 function StartCard({ now }: { now: Date | null }) {
   // it appears only after 400 ms of real waiting, and steps back (fade, 0.98) as the map arrives;
-  // while leaving it is inert and has no test id
+  // while leaving it is inert and has no test id. Behind it, the canyon's 200 m line sounds (loading).
   const present = useIsPresent();
   return (
     <motion.div
@@ -1203,11 +1208,7 @@ function StartCard({ now }: { now: Date | null }) {
       inert={!present}
       aria-hidden={!present || undefined}
     >
-      <svg className="absolute inset-0 h-full w-full text-n-accent opacity-25" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden>
-        {[0, 1, 2, 3, 4].map((i) => (
-          <path key={i} className={i === 2 ? "nx-sweep" : "nx-draw"} pathLength={i === 2 ? undefined : 1} style={{ "--i": i } as React.CSSProperties} d={`M-20 ${70 + i * 38} C 80 ${40 + i * 40}, 160 ${120 + i * 30}, 240 ${80 + i * 38} S 380 ${110 + i * 34}, 430 ${90 + i * 38}`} fill="none" stroke="currentColor" strokeWidth={i === 2 ? 1.6 : 0.8} />
-        ))}
-      </svg>
+      <ContourLoader className="absolute inset-0 h-full w-full text-n-accent opacity-35" />
       <div className="nx-deck pointer-events-auto relative w-[min(440px,100%)] p-5">
         <p className="text-[18px] font-semibold">Preparing the coast</p>
         <p className="mt-1 text-[14px] text-n-ink-2">The map is loading. Search a harbour, read the notices or open a briefing meanwhile.</p>
@@ -1220,7 +1221,7 @@ function StartCard({ now }: { now: Date | null }) {
 }
 
 /**
- * The selection's panel: slides in 16 px and fades (240 ms); leaves 8 px and fades faster (160 ms),
+ * The selection's panel: slides in 12 px and fades (240 ms); leaves 8 px and fades faster (160 ms),
  * inert and hidden from assistive tech while it goes. A new selection keeps the panel and only
  * cross-fades its body (Explore). Reduced motion: fades only (MotionConfig).
  */
@@ -1231,7 +1232,7 @@ function InspectAside({ className, style, children }: { className: string; style
       aria-label="Selected"
       className={className}
       style={style}
-      initial={{ opacity: 0, x: 16 }}
+      initial={{ opacity: 0, x: 12 }}
       animate={{ opacity: 1, x: 0, transition: { duration: T.panel, ease: EASE_OUT } }}
       exit={{ opacity: 0, x: 8, transition: { duration: T.panelExit, ease: EASE_IN } }}
       inert={!present}

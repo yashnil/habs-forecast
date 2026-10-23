@@ -94,7 +94,7 @@ export function MobileSheet({
       style={{
         height: full,
         transform: `translateY(${full - (dragH ?? target)}px)`,
-        transition: dragH != null ? "none" : via === "drag" ? "transform var(--cw-d-medium) var(--cw-ease-settle)" : "transform var(--nx-t-sheet) var(--nx-ease-drawer)",
+        transition: dragH != null ? "none" : via === "drag" ? "transform var(--nx-t-sheet) var(--nx-ease-spring)" : "transform var(--nx-t-sheet) var(--nx-ease-drawer)",
       }}
     >
       <button

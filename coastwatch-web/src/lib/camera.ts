@@ -3,7 +3,8 @@ import type { LngLatBoundsLike, Map as MlMap, PaddingOptions } from "maplibre-gl
 /**
  * Coastal journeys (signature interaction §2), adapted to the device. Place changes keep their
  * geographic context with a distance-scaled flight, but only where it can be smooth:
- * - "full": a flight scaled by distance (900 ms + 4.2 ms/km, at most 2.6 s);
+ * - "full": a near pick (under 40 km) eases in 600 ms; further, a flight scaled by distance
+ *   (700 ms + 3 ms/km, at most 1.8 s, so the map arrives while the panel's content is being read);
  * - "short": a 300 ms ease (software WebGL, or a device that measured under 30 fps);
  * - "none": a jump (prefers-reduced-motion).
  * Any pointer, wheel, touch or key input stops a flight where it is (MapLibre's own behaviour); a
@@ -71,6 +72,13 @@ function watchFrames(m: MlMap) {
   });
 }
 
+/** The journey's timings (docs/coastwatch/v9/motion.md §2): exported for the map's own small moves. */
+export const NEAR_KM = 40;
+export const NEAR_MS = 600;
+export const SHORT_MS = 300;
+export const FLIGHT_MAX_MS = 1800;
+export const flightMs = (km: number) => Math.min(FLIGHT_MAX_MS, 700 + 3 * km);
+
 const km = (a: [number, number], b: [number, number]) => {
   const r = Math.PI / 180;
   const x = (b[0] - a[0]) * r * Math.cos(((a[1] + b[1]) / 2) * r);
@@ -94,10 +102,10 @@ export function journeyTo(m: MlMap, to: { bounds: LngLatBoundsLike; padding?: nu
   if (!Number.isFinite(opts.zoom) || !centre.every(Number.isFinite)) return;
   const tier = cameraTier();
   if (tier === "none") return m.jumpTo(opts);
-  if (tier === "short") return m.easeTo({ ...opts, duration: 300 });
+  if (tier === "short") return m.easeTo({ ...opts, duration: SHORT_MS });
   const here = m.getCenter();
   const d = km([here.lng, here.lat], centre);
-  if (d < 40) return m.easeTo({ ...opts, duration: 700 });
+  if (d < NEAR_KM) return m.easeTo({ ...opts, duration: NEAR_MS });
   watchFrames(m);
-  m.flyTo({ ...opts, duration: Math.min(2600, 900 + 4.2 * d), curve: 1.42, essential: false });
+  m.flyTo({ ...opts, duration: flightMs(d), curve: 1.42, essential: false });
 }
