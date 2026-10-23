@@ -207,8 +207,8 @@ export function Briefing(props: Props) {
       <div className="env-chart min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="landing">
         <SkipLink />
         <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} />} />
-        <RegistryDisclosure className="mx-auto w-full max-w-[880px] px-4 sm:px-6" fixture={isFixture(props.manifest)} />
-        <main id="main" className="cw-page-in mx-auto w-full max-w-[880px] overflow-x-clip px-4 pb-32 pt-4 sm:px-6">
+        <RegistryDisclosure className="mx-auto w-full max-w-[1120px] px-4 sm:px-6" fixture={isFixture(props.manifest)} />
+        <main id="main" className="cw-page-in mx-auto w-full max-w-[1120px] overflow-x-clip px-4 pb-32 pt-4 sm:px-6">
           <Landing ports={ports} home={home} audience={audience} unknownKey={placeKey} />
         </main>
         <MobileDock />
@@ -492,7 +492,7 @@ export function Briefing(props: Props) {
               </div>
             </div>
 
-            <footer className="flex flex-col gap-3 pt-6 text-[13px] leading-snug text-n-ink-3">
+            <footer className="flex max-w-[78ch] flex-col gap-3 pt-6 text-[13px] leading-snug text-n-ink-3">
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[14px]">
                 <Link href={exploreHref(placeSel!, back)} className="nx-focus inline-flex min-h-11 items-center gap-1.5 font-semibold text-n-ink-2 hover:text-n-ink">
                   <Icon name="map" className="h-4 w-4" /> Open in Explore

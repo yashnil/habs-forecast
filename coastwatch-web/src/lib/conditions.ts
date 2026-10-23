@@ -119,9 +119,13 @@ export function parseAlerts(json: unknown): MarineAlert[] {
   return f.map((x) => ({ event: x.properties.event, headline: x.properties.headline ?? x.properties.event, onset: x.properties.onset ?? null, ends: x.properties.ends ?? x.properties.expires ?? null, url: x.id }));
 }
 
-/** First sentence of a period ("W wind 10 to 15 kt, … Seas 3 to 5 ft.") shortened for a summary line; the full text is always shown nearby. */
+/**
+ * A period's wind and seas for a summary line ("W wind 10 to 15 kt · Seas 3 to 5 ft"). The wind is its
+ * whole sentence, so a change ("…, becoming NE 5 to 10 kt after midnight") is never cut off, leaving the
+ * first direction to stand for the period. Gusts are left to the full text, which is always shown nearby.
+ */
 export function marineHeadline(p: MarinePeriod): string {
-  const wind = p.text.match(/^[^.]*?\bwind\b[^.,]*/i)?.[0];
+  const wind = p.text.match(/^[^.]*?\bwind\b[^.]*/i)?.[0].replace(/,?\s*(?:with\s+)?gusts?\b[^,]*/i, "");
   const seas = p.text.match(/\bSeas?\b[^.]*/)?.[0];
   return [wind, seas].filter(Boolean).join(" · ") || p.text.split(". ")[0];
 }

@@ -224,7 +224,7 @@ export function ModelPanel({ st, variable, from, to, cursorT, onCursor }: { st: 
         {onDay && <circle cx={x(onDay.t)} cy={y(onDay.v)} r={4.5} fill="var(--nx-surface)" stroke="var(--nx-model)" strokeWidth={2} />}
         {curX != null && <line x1={curX} x2={curX} y1={pad.t} y2={H - pad.b} stroke="var(--nx-ink-3)" strokeDasharray="2 3" data-testid="model-cursor" />}
       </svg>
-      <figcaption className="nx-note-t">
+      <figcaption className="nx-note-t max-w-[88ch] text-pretty">
         Median of the valued cells within {st.charm!.radius_km} km of the station (nearest cell {st.charm!.nearest_cell_km != null ? kmLabel(st.charm!.nearest_cell_km) : "—"}). Shown beside the measurements on the same dates, never compared with them as numbers. Open circles: days when fewer than 60% of the usual cells had a value (not joined); days without a value are left out.
         {hatched ? ` Hatched: before ${dayLabel(new Date(historyStart).toISOString().slice(0, 10))} ${new Date(historyStart).getUTCFullYear()}, no model history is kept.` : ""}
       </figcaption>

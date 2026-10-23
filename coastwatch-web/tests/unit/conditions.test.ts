@@ -56,7 +56,8 @@ describe("NWS marine zone forecast and alerts", () => {
     expect(f.updated).toBe("2026-10-12T20:10:00-07:00");
     expect(f.periods[0].name).toBe("Tonight");
     expect(f.periods[0].text).toMatch(/^W wind 10 to 15 kt/);
-    expect(marineHeadline(f.periods[0])).toBe("W wind 10 to 15 kt · Seas 3 to 5 ft");
+    // every change of direction stays: "W 10 to 15" alone would stand for the whole night
+    expect(marineHeadline(f.periods[0])).toBe("W wind 10 to 15 kt, becoming NW 5 to 10 kt late this evening, veering to N after midnight · Seas 3 to 5 ft");
   });
 
   it("an empty forecast is not a forecast", () => {

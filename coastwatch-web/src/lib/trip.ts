@@ -128,6 +128,53 @@ export function marineMaxima(text: string): { windKt: number | null; seasFt: num
   return { windKt: wind.length ? Math.max(...wind) : null, seasFt: seas.length ? Math.max(...seas) : null };
 }
 
+const WIND_DIRS = "NNE|ENE|ESE|SSE|SSW|WSW|WNW|NNW|NE|SE|SW|NW|N|E|S|W|North|South|East|West|Northwest|Northeast|Southwest|Southeast|Variable";
+const WIND_DIR_SHORT: Record<string, string> = { north: "N", south: "S", east: "E", west: "W", northwest: "NW", northeast: "NE", southwest: "SW", southeast: "SE", variable: "Var." };
+const CHANGE = /^(?:then\s+)?(becoming|veering|backing|shifting|increasing|decreasing|rising|diminishing|easing)\b(?:\s+to\b)?/i;
+
+/** One stretch of an NWS period's wind: its direction and speed as stated, and when the change comes ("late"). */
+export type WindStep = { dir: string | null; kt: string | null; when: string | null };
+
+/**
+ * The wind of an NWS period as the forecaster's sequence of stretches, so a change of direction is never
+ * folded into one direction: "SE wind around 5 kt, veering to SW early this afternoon, then becoming W 10
+ * to 15 kt late" is SE 5, then SW (early this afternoon), then W 10–15 (late). Gusts are not a stretch.
+ * Only the first sentence that speaks of the wind is read; empty when no wind is stated.
+ */
+export function windSteps(text: string): WindStep[] {
+  const sentence = text.split(/(?<=\.)\s+/).find((s) => /\bwinds?\b/i.test(s) && /\bkt\b/i.test(s));
+  if (!sentence) return [];
+  const dirRe = new RegExp(`\\b(${WIND_DIRS})\\b`, "i");
+  const ktRe = /(\d+)(?:\s*to\s*(\d+))?\s*kt\b/i;
+  const steps: WindStep[] = [];
+  for (const raw of sentence.replace(/\.$/, "").split(/,\s*|\s+then\s+/i)) {
+    const chunk = raw.replace(/\s*\b(?:with\s+)?gusts?\b.*$/i, "").trim();
+    if (!chunk) continue;
+    const first = steps.length === 0;
+    const change = chunk.match(CHANGE);
+    if (!first && !change) continue;
+    const rest = change ? chunk.slice(change[0].length).trim() : chunk;
+    // the first stretch names its direction before "wind"; a change names it right after its verb
+    const d = (first ? chunk.match(new RegExp(`^(${WIND_DIRS})\\b`, "i")) : rest.match(new RegExp(`^(${WIND_DIRS})\\b`, "i")))?.[1] ?? null;
+    const k = rest.match(ktRe);
+    const kt = k ? (k[2] ? `${k[1]}–${k[2]}` : k[1]) : null;
+    let when = rest.replace(dirRe, "").replace(ktRe, "").replace(/\bwinds?\b|\baround\b|\bup to\b/gi, "").replace(/\s+/g, " ").trim();
+    if (first) when = "";
+    if (!d && !kt) continue;
+    steps.push({ dir: d ? (WIND_DIR_SHORT[d.toLowerCase()] ?? d.toUpperCase()) : null, kt, when: when || null });
+  }
+  return steps;
+}
+
+/** The changes after the first stretch, in the forecaster's order: "then SW early this afternoon, then W 10–15 kt late"; null when the wind holds. */
+export function windChangeNote(steps: WindStep[]): string | null {
+  if (steps.length < 2) return null;
+  return steps
+    .slice(1)
+    .map((s) => `then ${[s.dir, s.kt && `${s.kt} kt`, s.when].filter(Boolean).join(" ")}`)
+    .join(", ");
+}
+
 /** The reader's own limits for going out, on this device only. Never a recommendation by Neritic. */
 export type SeaLimits = { windKt: number | null; seasFt: number | null };
 export const LIMITS_KEY = "cw-sea-limits-v1";

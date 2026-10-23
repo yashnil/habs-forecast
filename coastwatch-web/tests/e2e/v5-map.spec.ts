@@ -212,6 +212,9 @@ test("the shoreline strip reads as extrapolated, in the pipeline's words, never 
 });
 
 test("every inspector leads with its briefing (keeping the trip) and Research this (station, variable, day, way back)", async ({ page }) => {
+  // six map loads and a Research page in one walk: on CI's software WebGL that alone can pass the default
+  // 45 s budget (it timed out on the base branch too), so this one walk gets the slow budget; no check changes
+  test.slow();
   const from = encodeURIComponent("/coast?place=port-592&for=commercial&species=dungeness&date=2026-10-14");
   await open(page, `layer=forecast&var=particulate_domoic&lead=1&sel=harbor:592&from=${from}`);
   // a harbour's one primary action is its briefing

@@ -64,6 +64,8 @@ test("desktop: the dock's layer button opens the layer list upward and Escape cl
 });
 
 test("tablet and short screens: the map's tools never cover the dock, with or without a place open", async ({ browser }) => {
+  // six map loads in three viewports: on CI's software WebGL that can pass the default 45 s budget; no check changes
+  test.slow();
   for (const viewport of [{ width: 834, height: 1112 }, { width: 1024, height: 768 }, { width: 844, height: 390 }]) {
     const ctx = await browser.newContext({ viewport, hasTouch: true });
     const page = await ctx.newPage();

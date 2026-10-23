@@ -177,7 +177,7 @@ export function SeriesChart({
         {refLine && axisPosition(refLine.value, axis) === "in" && (
           <g data-testid="series-ref">
             <line x1={pad.l} x2={W - pad.r} y1={y(refLine.value)} y2={y(refLine.value)} stroke="var(--nx-model)" strokeDasharray="5 4" strokeWidth={1.2} />
-            <text x={W - pad.r - 4} y={y(refLine.value) - 5} textAnchor="end" fontSize="11.5" fill="var(--nx-model)">
+            <text x={W - pad.r - 4} y={y(refLine.value) - 5} textAnchor="end" fontSize="11.5" fill="var(--nx-model)" stroke="var(--nx-surface)" strokeWidth={4} strokeLinejoin="round" paintOrder="stroke">
               {refLine.label}
             </text>
           </g>

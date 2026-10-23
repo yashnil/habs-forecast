@@ -686,19 +686,30 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
 
   const steps = timeSteps(manifest, active, now, derived);
   const hasTime = active.kind !== "none" && !!steps?.steps.length;
+  // nothing current: say so, then offer what there is, each dated and marked old, never shown as current
+  const satDate = opening?.reason === "nothing-current" && opening.satellite ? (opening.satellite.layer.composite?.newest_observed_date ?? opening.satellite.layer.time.observed_date ?? null) : null;
   const nothingCurrent =
     active.kind === "none" && opening?.reason === "nothing-current" ? (
       <div className="flex flex-col gap-2 border-l-2 border-n-stale pl-3 text-[13.5px] leading-snug text-n-ink-2" data-testid="nothing-current">
         <p className="font-semibold text-n-ink">No current forecast or recent satellite view</p>
         <p>
           {run ? `The newest C-HARM forecast was issued ${dayLabel(run.issued_date)}. ` : "No C-HARM forecast could be loaded. "}
-          {opening.satellite?.layer.time.observed_date ? `The newest satellite view is from ${dayLabel(opening.satellite.layer.composite?.newest_observed_date ?? opening.satellite.layer.time.observed_date)}. ` : "No recent satellite view was published. "}
+          {satDate ? `The newest satellite view is from ${dayLabel(satDate)}. ` : "No recent satellite view was published. "}
           The map shows the coast and seafloor only. This does not mean conditions are normal.
         </p>
-        {run && (
-          <button type="button" onClick={() => setChoiceRaw({ kind: "forecast", variable: "particulate_domoic", lead: firstLead < 0 ? 0 : firstLead })} className="nx-press nx-focus inline-flex min-h-11 w-fit items-center rounded-lg border border-n-line-strong px-3 font-semibold text-n-ink" data-testid="show-latest-forecast">
-            Show the latest forecast, marked out of date
-          </button>
+        {(run || (opening.satellite && satDate)) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {run && (
+              <button type="button" onClick={() => setChoiceRaw({ kind: "forecast", variable: "particulate_domoic", lead: firstLead < 0 ? 0 : firstLead })} className="nx-press nx-focus inline-flex min-h-11 w-fit items-center rounded-lg border border-n-line-strong px-3 font-semibold text-n-ink" data-testid="show-latest-forecast">
+                Show the {dayLabel(run.issued_date)} forecast, marked out of date
+              </button>
+            )}
+            {opening.satellite && satDate && (
+              <button type="button" onClick={() => setChoiceRaw({ kind: "satellite", product: opening.satellite!.product, day: null })} className="nx-press nx-focus inline-flex min-h-11 w-fit items-center rounded-lg px-3 font-semibold text-n-accent" data-testid="show-latest-satellite">
+                Satellite view, newest {dayLabel(satDate)}
+              </button>
+            )}
+          </div>
         )}
       </div>
     ) : null;
@@ -988,12 +999,11 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
               <div aria-hidden className="pointer-events-none absolute -top-[5px] left-6 right-6">
                 <ContourRule className="!text-n-accent opacity-50" />
               </div>
-              {(nothingCurrent || readHint) && (
-                <div className="mb-1.5 flex flex-col gap-2 border-b border-n-line px-2.5 pb-2 pt-0.5">
-                  {nothingCurrent}
-                  {readHint}
-                </div>
-              )}
+              {nothingCurrent && <div className="mb-1.5 flex flex-col gap-2 border-b border-n-line px-2.5 pb-2 pt-0.5">{nothingCurrent}</div>}
+              {/* v8: how to read the map floats just above the dock, a light pill, so the dock itself is only
+                  the layer, its legend and its time */}
+              {readHint && !nothingCurrent && !deckOpen && <div className="pointer-events-auto absolute bottom-[calc(100%+10px)] left-0 max-w-full rounded-full border border-n-line bg-n-surface/95 py-0.5 pl-4 pr-2 shadow-[var(--nx-shadow)]">{readHint}</div>}
+              {readHint && nothingCurrent && <div className="mb-1.5 px-2.5">{readHint}</div>}
               <div className="grid grid-cols-1 gap-x-4 gap-y-2 [grid-template-areas:'layer'_'legend'_'time'] @[560px]:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] @[560px]:[grid-template-areas:'layer_time'_'legend_legend'] @[900px]:grid-cols-[minmax(0,16rem)_minmax(0,1fr)_auto] @[900px]:[grid-template-areas:'layer_legend_time']">
                 {/* the layer and, under it, its own date line and anything wrong with it (old, failed, clouded, unseen) */}
                 <div className="flex min-w-0 flex-col gap-1 self-start [grid-area:layer] @[900px]:self-center">

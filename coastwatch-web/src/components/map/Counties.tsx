@@ -49,7 +49,8 @@ export function CountyLayers({ beforeId }: { beforeId?: string }) {
         layout={{ "line-join": "round" }}
         paint={{
           "line-color": "#dfe8f2",
-          "line-opacity": ["interpolate", ["linear"], ["zoom"], 4.5, 0.18, 6, 0.34, 8, 0.44, 11, 0.55],
+          // county lines whisper at state scale and come up as the reader zooms toward a harbour
+          "line-opacity": ["interpolate", ["linear"], ["zoom"], 4.5, 0.08, 6, 0.16, 8, 0.36, 11, 0.5],
           "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.45, 8, 0.75, 10, 1, 12, 1.3],
           // a dash and a dot: the county line of a printed chart, never confused with a data contour
           "line-dasharray": [5, 2, 1, 2],
