@@ -58,7 +58,8 @@ test("daylight mode: switched from the ⋯ menu, kept on this device, applied be
   await page.goto(`${OK}/coast?place=port-550`);
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
   const token = (name: string) => page.evaluate((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name);
-  expect(await token("--nx-accent")).toBe("#086a85");
+  // v10: one dark Instrument system on every page by default (docs/coastwatch/v10/system.md)
+  expect(await token("--nx-accent")).toBe("#74c7ff");
   await page.getByTestId("more-menu").click();
   const sw = page.getByTestId("daylight-toggle");
   await expect(sw).toHaveAttribute("role", "switch");

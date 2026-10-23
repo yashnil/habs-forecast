@@ -769,16 +769,6 @@ html[data-daylight] .env-instrument .nx-select {
   font-weight: 600;
   letter-spacing: -0.005em;
 }
-.nx-display {
-  font-family: var(--nx-font-display);
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  font-size: 40px;
-  line-height: 44px;
-}
-@media (max-width: 639px) {
-  .nx-display { font-size: 31px; line-height: 35px; }
-}
 .nx-note-t { font-size: 12.5px; line-height: 17px; color: var(--nx-ink-3); }
 /* a statement's family tick */
 .nx-tick { width: 3px; border-radius: 2px; align-self: stretch; flex: none; background: var(--nx-gap); }
@@ -867,40 +857,50 @@ html[data-daylight] .env-instrument .nx-select {
 .env-instrument { scrollbar-color: var(--nx-line-strong) transparent; }
 
 /* ---- v10 Ocean Instrument vocabulary (docs/coastwatch/v10/system.md) ----
-   Shared by every page; pages compose with these instead of inventing their own. */
-/* a small-capital label: what a value is and which family it belongs to (colour it with a family) */
-.nx-caps {
-  font: 500 10.5px/1.2 var(--nx-font-caps);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--nx-ink-3);
+   Shared by every page; pages compose with these instead of inventing their own.
+   They sit in the components layer, so a utility class (a family colour, a size) overrides them. */
+@layer components {
+  /* a small-capital label: what a value is and which family it belongs to (colour it with a family) */
+  .nx-caps {
+    font: 500 10.5px/1.2 var(--nx-font-caps);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--nx-ink-3);
+  }
+  /* a reading value: light mono figures, large, tabular; units small beside them */
+  .nx-value {
+    font: 300 30px/1 var(--nx-font-data);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--nx-ink);
+  }
+  .nx-value small { font-size: 0.4em; letter-spacing: 0; margin-left: 0.2em; color: var(--nx-ink-2); }
+  /* the editorial voice: places and headlines */
+  /* (the v7 title size is its default; a size utility overrides it) */
+  .nx-display {
+    font-family: var(--nx-font-display);
+    font-weight: 500;
+    font-size: 40px;
+    line-height: 44px;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  @media (max-width: 639px) {
+    .nx-display { font-size: 31px; line-height: 35px; }
+  }
+  /* a margin note: caveats and context set as an italic aside, never grey fine print */
+  .nx-margin {
+    font: italic 400 13px/1.5 var(--nx-font-display);
+    color: var(--nx-ink-2);
+  }
+  .nx-margin b, .nx-margin strong { font-style: normal; font-weight: 600; color: var(--nx-ink); }
+  /* a plate: a reading surface over the abyss (one hairline, square shoulders, no card stack) */
+  .nx-plate {
+    background: var(--nx-surface);
+    border: 1px solid var(--nx-line);
+    border-radius: 4px;
+  }
+  /* a hairline rule between rows */
+  .nx-rule { border-top: 1px solid var(--nx-line); }
+
 }
-/* a reading value: light mono figures, large, tabular; units small beside them */
-.nx-value {
-  font: 300 30px/1 var(--nx-font-data);
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-  color: var(--nx-ink);
-}
-.nx-value small { font-size: 0.4em; letter-spacing: 0; margin-left: 0.2em; color: var(--nx-ink-2); }
-/* the editorial voice: places and headlines */
-.nx-display {
-  font-family: var(--nx-font-display);
-  font-weight: 500;
-  letter-spacing: -0.015em;
-  text-wrap: balance;
-}
-/* a margin note: caveats and context set as an italic aside, never grey fine print */
-.nx-margin {
-  font: italic 400 13px/1.5 var(--nx-font-display);
-  color: var(--nx-ink-2);
-}
-.nx-margin b, .nx-margin strong { font-style: normal; font-weight: 600; color: var(--nx-ink); }
-/* a plate: a reading surface over the abyss (one hairline, square shoulders, no card stack) */
-.nx-plate {
-  background: var(--nx-surface);
-  border: 1px solid var(--nx-line);
-  border-radius: 4px;
-}
-/* a hairline rule between rows */
-.nx-rule { border-top: 1px solid var(--nx-line); }
