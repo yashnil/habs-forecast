@@ -47,3 +47,17 @@ v1/
 ## Scheduling and publishing
 
 `.github/workflows/coastwatch-data.yml` runs `cwp run` every 6 hours and pushes `v1/` to the `coastwatch-data` branch (free, versioned by git). The web app reads it via `NEXT_PUBLIC_CW_DATA_BASE_URL`. Scheduled workflows only run from the default branch, so nothing publishes until this is merged.
+
+### Official-notice watcher
+
+`cwp watch-official` reads the watched CDFW/CDPH pages and compares them with the fingerprints a
+person recorded at the last `cwp review-official`. It never edits the registry. In the workflow it
+runs with `--state ../publish/v1/official-watch.json`, a small file carried from run to run with the
+dataset (like `health.json`), so each run knows which *conditions* were already open: a page that
+differs from the review, a CDPH release not yet reviewed, a release that appears to lift a record, a
+page unreadable for two runs in a row, or a registry that has never been human-verified. The review
+issue ("Official notices: sources changed since last review") gets a comment only when a condition
+appears, changes again or resolves, never twice for the same set (`.github/scripts/official-review-issue.sh`
+also checks the marker on the issue's latest report). A single failed fetch is recorded as transient
+and does not notify; it never resolves a content condition. `--markdown` writes the per-source report
+that becomes the issue comment. Tests: `tests/test_watch_official.py`.

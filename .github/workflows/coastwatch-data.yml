@@ -39,7 +39,9 @@ jobs:
     permissions:
       contents: read
     outputs:
-      official_changed: ${{ steps.watch.outputs.changed }}
+      official_notify: ${{ steps.watch.outputs.notify }}
+      official_conditions: ${{ steps.watch.outputs.conditions }}
+      official_marker: ${{ steps.watch.outputs.marker }}
       alerts: ${{ steps.health.outputs.alerts }}
       new_alerts: ${{ steps.health.outputs.new_alerts }}
       cleared: ${{ steps.health.outputs.cleared }}
@@ -65,9 +67,20 @@ jobs:
         working-directory: pipeline
         run: uv sync && uv run cwp run --out ../publish/v1
       - name: Watch official pages for changes since the last human review (never edits records)
+        # v1/official-watch.json carries the watcher's conditions from run to run (like health.json),
+        # so notify=true only when something appeared, changed again or resolved since the last run.
         id: watch
         working-directory: pipeline
-        run: uv run cwp watch-official --github-output "$GITHUB_OUTPUT" | tee ../watch-report.json
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: uv run cwp watch-official --state ../publish/v1/official-watch.json --markdown ../watch-report.md --github-output "$GITHUB_OUTPUT" --run-url "$RUN_URL" | tee ../watch-report.json
+      - uses: actions/upload-artifact@v6
+        with:
+          name: watch-report
+          path: |
+            watch-report.md
+            watch-report.json
+          retention-days: 7
       - name: Verify new C-HARM data against ERDDAP (13 points x 12 layers)
         working-directory: pipeline
         run: uv run cwp verify-charm --only-if-updated --out ../publish/v1 --report ../publish/v1/verification/charm-points.json
@@ -102,22 +115,33 @@ jobs:
           retention-days: 7
 
   notify-review:
-    # Official pages changed (or could not be read): ask a person to review the registry.
+    # Production only. One issue for the official-notice registry: opened when something needs a
+    # person, commented only when the watcher's conditions change (a page changed, a new CDPH
+    # release, a release that appears to lift a record, a page unreadable for two runs, or any of
+    # those resolving), never twice for the same conditions, closed when nothing is left.
+    # Before this (October 2026) every run commented while the registry awaited review: issue #12.
     needs: build
-    if: needs.build.outputs.official_changed == 'true' && (inputs.channel || 'production') == 'production'
+    if: (inputs.channel || 'production') == 'production'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       issues: write
     steps:
-      - name: Open or update the review issue
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - uses: actions/download-artifact@v7
+        with:
+          name: watch-report
+      - name: Open, update or close the review issue
         env:
           GH_TOKEN: ${{ github.token }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          title="Official notices: sources changed since last review"
-          body="The official-notice watcher for Neritic (formerly CoastWatch) detected changes (or could not read) official CDFW/CDPH pages since the last human review. The app shows official notices as NOT verified until a person checks every record in data/curated/official_notices.json against the sources and runs: cwp review-official --reviewer NAME --confirm. Details: ${RUN_URL} (job build, step 'Watch official pages')."
-          n=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
-          if [ -n "$n" ]; then gh issue comment "$n" --repo "$GITHUB_REPOSITORY" --body "$body"; else gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"; fi
+          NOTIFY: ${{ needs.build.outputs.official_notify }}
+          CONDITIONS: ${{ needs.build.outputs.official_conditions }}
+          MARKER: ${{ needs.build.outputs.official_marker }}
+          REPORT: watch-report.md
+        run: bash .github/scripts/official-review-issue.sh
 
   notify-health:
     # Production only. One issue for pipeline health: opened when an alert appears, commented
