@@ -253,9 +253,12 @@ def fingerprint(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def watch(ctx: RunContext, reg: OfficialRegistry, discrepancies: list[str] | None = None) -> list[WatchResult]:
+def watch(
+    ctx: RunContext, reg: OfficialRegistry, discrepancies: list[str] | None = None, item_titles: dict[str, str] | None = None
+) -> list[WatchResult]:
     """Read each watched page. When `discrepancies` is given, releases that appear to lift an
-    active record are appended to it (see `reported_lifts`)."""
+    active record are appended to it (see `reported_lifts`). When `item_titles` is given, it is
+    filled with release id -> title for the releases listed on the CDPH page."""
     out = []
     for src in reg.watched_sources:
         try:
@@ -269,6 +272,8 @@ def watch(ctx: RunContext, reg: OfficialRegistry, discrepancies: list[str] | Non
                 ids = [i.split(" | ")[0] for i in items]
                 new = [i for i in ids if i not in set(reg.review.cdph_release_ids_reviewed)]
                 seen = ids[:30]
+                if item_titles is not None:
+                    item_titles.update(dict(i.split(" | ", 1) for i in items if " | " in i))
                 if discrepancies is not None:
                     discrepancies.extend(reported_lifts(items, new, reg))
             else:

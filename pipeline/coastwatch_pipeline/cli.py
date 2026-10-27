@@ -152,25 +152,23 @@ def cmd_guard(a: argparse.Namespace) -> int:
 
 
 def cmd_watch(a: argparse.Namespace) -> int:
-    """Report whether the official pages changed since the last human review. Read-only."""
-    from .sources import official
+    """Report the official pages against the last human review, with memory: `--state` carries
+    conditions from run to run so a notification is due only when something appears, changes
+    or resolves (watch_official.py). Read-only for the registry."""
+    from .watch_official import markdown, run_watch
 
-    reg = official.load_registry(Path(a.registry))
-    errors, conflicts = official.validate_registry(reg)
-    discrepancies: list[str] = []
-    results = official.watch(RunContext(out_dir=Path(".")), reg, discrepancies)
-    conflicts = conflicts + discrepancies
-    report = {
-        "registry_errors": errors,
-        "conflicts": conflicts,
-        "review": {"status": reg.review.status, "reviewed_at": reg.review.reviewed_at, "reviewed_by": reg.review.reviewed_by},
-        "sources": [w.model_dump(exclude={"items_seen"}) for w in results],
-    }
-    print(json.dumps(report, indent=2))
-    changed = errors or conflicts or any((not w.ok) or w.new_items or w.matches_review is False for w in results)
+    state = run_watch(RunContext(out_dir=Path(".")), Path(a.registry), Path(a.state) if a.state else None, a.run_url or "")
+    md = markdown(state, a.run_url or "")
+    if a.markdown:
+        Path(a.markdown).write_text(md + "\n")
+    print(json.dumps({k: v for k, v in state.items() if k != "history"}, indent=2, ensure_ascii=False))
     if a.github_output:
         with open(a.github_output, "a") as fh:
-            fh.write(f"changed={'true' if changed else 'false'}\n")
+            fh.write(f"notify={'true' if state['notify'] else 'false'}\n")
+            fh.write(f"conditions={len(state['conditions'])}\n")
+            fh.write(f"marker={state['marker']}\n")
+            # legacy flag: anything at all differs from the last review (not a reason to notify)
+            fh.write(f"changed={'true' if state['conditions'] else 'false'}\n")
     return 0
 
 
@@ -240,7 +238,10 @@ def main(argv: list[str] | None = None) -> int:
     reg_default = str(REPO / "data" / "curated" / "official_notices.json")
     w = sub.add_parser("watch-official", help="check official pages for changes since the last review (never edits records)")
     w.add_argument("--registry", default=reg_default)
-    w.add_argument("--github-output", help="append changed=true|false for GitHub Actions")
+    w.add_argument("--state", help="state file carried between runs (in the dataset: v1/official-watch.json); without it every condition counts as new")
+    w.add_argument("--markdown", help="write the per-source review report (issue body) here")
+    w.add_argument("--github-output", help="append notify/conditions/marker (and legacy changed) for GitHub Actions")
+    w.add_argument("--run-url")
     w.set_defaults(fn=cmd_watch)
     rv = sub.add_parser("review-official", help="record a human review of the official notices registry")
     rv.add_argument("--registry", default=reg_default)

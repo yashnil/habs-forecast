@@ -39,7 +39,7 @@ Branch `feat/coastwatch-m2-ocean-intelligence` (pushed; **not merged, website no
 | OEHHA memo PDF, CDFW declaration PDF | provenance links | linked, not scraped |
 
 **Review workflow for a person:**
-1. When the data workflow opens "Official notices: sources changed since last review", or at least every 3 days during active events: open each source linked from `data/curated/official_notices.json`.
+1. When the data workflow opens or comments on "Official notices: sources changed since last review", or at least every 3 days during active events: open each source linked from `data/curated/official_notices.json`. The issue comment is the watcher's per-source report (what changed, when each page was last checked, which releases and records need a person). The watcher remembers its conditions between runs in `v1/official-watch.json` and comments only when a condition appears, changes again or resolves, never twice for the same set (`pipeline/coastwatch_pipeline/watch_official.py`, `.github/scripts/official-review-issue.sh`).
 2. Edit records by pull request: add, update, or set `status: "lifted"` with `lifted_date` only when an agency notice says so. Quote the agency verbatim in `official_text`.
 3. Run `cd pipeline && uv run cwp review-official --reviewer "Your Name" --confirm`; commit the updated `review` block in the same PR. CI validates the registry (adversarial rules) on every PR.
 
@@ -94,7 +94,7 @@ Design changes made from screenshot review: replaced shaded latitude bands (spil
 cd pipeline && uv sync
 uv run cwp run                         # live data -> ../coastwatch-web/public/data/v1
 uv run cwp verify-charm                # C-HARM vs ERDDAP at 13 points
-uv run cwp watch-official              # official pages changed since last review? (read-only)
+uv run cwp watch-official              # official pages vs last review (read-only; --state/--markdown as in the workflow)
 uv run cwp review-official --reviewer "Name" --confirm   # after checking every record
 uv run pytest
 cd ../coastwatch-web && npm install
