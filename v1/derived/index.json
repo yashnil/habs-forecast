@@ -1,0 +1,486 @@
+{
+  "version": 1,
+  "generated_at": "2026-10-21T03:52:42Z",
+  "pipeline_run_id": "39540941796",
+  "pipeline_version": "0bb19831d0be",
+  "description": "Derived chlorophyll layers (estimates and outlooks). Not observations; each states its method, validation or skill and uncertainty.",
+  "layers": [
+    {
+      "id": "chl_estimate_latest",
+      "kind": "chl_estimate",
+      "label": "Chlorophyll, estimated where clouds or the coast hide it",
+      "issued": "2026-10-21",
+      "based_on_days": [
+        "2026-10-16",
+        "2026-10-15",
+        "2026-10-14",
+        "2026-10-13"
+      ],
+      "observed_layer": "olci300_chl_latest",
+      "units": "mg m-3",
+      "method": "Estimated, not observed. Filled only where the Sentinel-3 OLCI 300 m latest clear view has no value (clouds, fog, the nearshore strip, bays). Each pixel's recent typical value (its own valid views, weighted toward the last 20 days) plus today's departure from it, spread from the observed pixels nearby on a 3 km scale (optimal interpolation). Pixels the satellite rarely sees, such as the outermost ~300 m next to the shore, borrow the typical value of water within about 1 km, raised by a measured shoreward offset (x5.4 open coast, x3.4 bays). Pixels without enough recent nearby data stay empty.",
+      "basis": "Latest clear view 2026-10-13..2026-10-16 and every published OLCI day through 2026-10-16 (background memory, e-folding 20 days).",
+      "validation": {
+        "metric": "RMSE log10(mg m-3)",
+        "by_band": {
+          "0-0.6 km": 0.606,
+          "0.6-3 km": 0.512,
+          "over 3 km": 0.42,
+          "bays": 0.245
+        },
+        "baseline": "older view: the pixel's last valid observation 8-30 days old (the app itself shows nothing in these pixels)",
+        "baseline_by_band": {
+          "0-0.6 km": 0.609,
+          "0.6-3 km": 0.604,
+          "over 3 km": 0.503,
+          "bays": 0.319
+        },
+        "never_observed_strip": {
+          "0-0.3 km open coast": 0.518,
+          "0-0.3 km bays": 0.468,
+          "0-0.6 km open coast": 0.576,
+          "0-0.6 km bays": 0.507
+        },
+        "n": 1252982,
+        "test_period": "Sentinel-3 OLCI 300 m daily chlorophyll (NOAA CoastWatch ERDDAP), 2026-08-19..2026-10-16, regions: monterey, sfbay, tomales, humboldt, sandiego, sbchannel",
+        "wins": "Beats the older view in 24 of 27 region x band cases (cloud scenario, n >= 200).",
+        "note": "Held-out: real observations hidden in realistic cloud shapes for a whole 7-day window (or, for the strip, on every day) and estimated causally. An error of 0.3 log10 is a factor of 2; 0.5 a factor of 3.2; 0.6 a factor of 4. Details: data/reference/chl_estimate_validation.json."
+      },
+      "caveats": [
+        "Estimated, not observed: never read it as a satellite measurement. Observed pixels are in the observed layer and are not repeated here.",
+        "Chlorophyll is algae biomass, not toxin. It does not identify Pseudo-nitzschia or say whether shellfish or fish are safe.",
+        "Next to the shore and in bays the error is larger (typically a factor of 2.5-4). In the outermost ~300 m strip the satellite almost never sees, the error was measured on the nearest pixels it does see; the strip itself cannot be checked against satellite data.",
+        "Turbid bays and river plumes: the satellite chlorophyll algorithm reads sediment and dissolved matter as chlorophyll there, so estimates inherit that bias.",
+        "The background needs recent views: after a long cloudy spell (no view for several weeks) pixels stay empty rather than guessed. Coverage this run: 100.0% of the 0-0.6 km strip gaps and 100.0% of bay gaps were filled."
+      ],
+      "uncertainty_units": "RMSE log10(mg m-3) measured for the pixel's class (distance band, open coast or bay, own or borrowed background)",
+      "grid": {
+        "url": "derived/estimate-2026-10-21-93882ba899/values/{row}_{col}.u16.gz",
+        "encoding": "uint16le+gzip",
+        "width": 3400,
+        "height": 3880,
+        "lat_first": 42.09875,
+        "lat_step": -0.0025,
+        "lon_first": -125.49875,
+        "lon_step": 0.0025,
+        "scale_factor": 9.155552842799158e-05,
+        "add_offset": -3.0,
+        "nodata": 65535,
+        "max_quantization_error": 4.577776421399579e-05,
+        "transform": "log10",
+        "chunks": {
+          "rows": 512,
+          "cols": 512,
+          "url_template": "derived/estimate-2026-10-21-93882ba899/values/{row}_{col}.u16.gz",
+          "present": [
+            "0_0",
+            "0_1",
+            "1_0",
+            "1_1",
+            "2_1",
+            "3_1",
+            "3_2",
+            "4_2",
+            "4_3",
+            "5_1",
+            "5_2",
+            "5_3",
+            "5_4",
+            "6_0",
+            "6_1",
+            "6_2",
+            "6_3",
+            "6_4",
+            "6_5",
+            "6_6",
+            "7_0",
+            "7_1",
+            "7_2",
+            "7_5",
+            "7_6"
+          ]
+        }
+      },
+      "uncertainty_grid": {
+        "url": "derived/estimate-2026-10-21-93882ba899/uncertainty/{row}_{col}.u16.gz",
+        "encoding": "uint16le+gzip",
+        "width": 3400,
+        "height": 3880,
+        "lat_first": 42.09875,
+        "lat_step": -0.0025,
+        "lon_first": -125.49875,
+        "lon_step": 0.0025,
+        "scale_factor": 4.577776421399579e-05,
+        "add_offset": 0.0,
+        "nodata": 65535,
+        "max_quantization_error": 2.2888882106997894e-05,
+        "transform": "none",
+        "chunks": {
+          "rows": 512,
+          "cols": 512,
+          "url_template": "derived/estimate-2026-10-21-93882ba899/uncertainty/{row}_{col}.u16.gz",
+          "present": [
+            "0_0",
+            "0_1",
+            "1_0",
+            "1_1",
+            "2_1",
+            "3_1",
+            "3_2",
+            "4_2",
+            "4_3",
+            "5_1",
+            "5_2",
+            "5_3",
+            "5_4",
+            "6_0",
+            "6_1",
+            "6_2",
+            "6_3",
+            "6_4",
+            "6_5",
+            "6_6",
+            "7_0",
+            "7_1",
+            "7_2",
+            "7_5",
+            "7_6"
+          ]
+        }
+      },
+      "class_grid": {
+        "url": "derived/estimate-2026-10-21-93882ba899/class/{row}_{col}.u16.gz",
+        "encoding": "uint16le+gzip",
+        "width": 3400,
+        "height": 3880,
+        "lat_first": 42.09875,
+        "lat_step": -0.0025,
+        "lon_first": -125.49875,
+        "lon_step": 0.0025,
+        "scale_factor": 1.0,
+        "add_offset": 0.0,
+        "nodata": 65535,
+        "max_quantization_error": 0.5,
+        "transform": "none",
+        "chunks": {
+          "rows": 512,
+          "cols": 512,
+          "url_template": "derived/estimate-2026-10-21-93882ba899/class/{row}_{col}.u16.gz",
+          "present": [
+            "0_0",
+            "0_1",
+            "1_0",
+            "1_1",
+            "2_0",
+            "2_1",
+            "3_0",
+            "3_1",
+            "3_2",
+            "4_0",
+            "4_1",
+            "4_2",
+            "4_3",
+            "5_0",
+            "5_1",
+            "5_2",
+            "5_3",
+            "5_4",
+            "6_0",
+            "6_1",
+            "6_2",
+            "6_3",
+            "6_4",
+            "6_5",
+            "6_6",
+            "7_0",
+            "7_1",
+            "7_2",
+            "7_3",
+            "7_4",
+            "7_5",
+            "7_6"
+          ]
+        }
+      },
+      "class_legend": {
+        "1": "Filled from nearby clear water: the pixel's recent typical value (from its own recent views or water close by) plus today's change seen in the clear pixels around it.",
+        "2": "Extrapolated toward the shore, never observed: the strip within about 0.6 km of the open coast that the satellite rarely sees. The value is borrowed from water farther out and raised x5.4, because chlorophyll rises toward shore.",
+        "3": "Bay or estuary, borrowed background: too few recent views of its own, so the typical value is borrowed from nearby bay water (raised x3.4 within about 0.6 km of shore). Turbid bay water can read as chlorophyll."
+      },
+      "class_validation": {
+        "1": {
+          "scenario": "clouds: real observations hidden in realistic cloud shapes for 7 days, estimated causally (open coast)",
+          "rmse_log10": {
+            "0-0.6 km": 0.606,
+            "0.6-3 km": 0.512,
+            "over 3 km": 0.42
+          }
+        },
+        "2": {
+          "scenario": "never observed: every pixel within 0.3 km (or 0.6 km) of shore hidden on every day; shoreward offset fitted leave-one-region-out (open coast)",
+          "rmse_log10": {
+            "0-0.3 km": 0.518,
+            "0-0.6 km": 0.576
+          }
+        },
+        "3": {
+          "scenario": "clouds: real observations hidden in realistic cloud shapes for 7 days, estimated causally; never observed: every pixel within 0.3 km (or 0.6 km) of shore hidden on every day; shoreward offset fitted leave-one-region-out (bays)",
+          "rmse_log10": {
+            "clouds": 0.245,
+            "never observed 0-0.3 km": 0.468,
+            "never observed 0-0.6 km": 0.507
+          }
+        }
+      },
+      "class_note": "class_grid values: 0 observed (the value is in the observed layer; no estimate here); 1, 2, 3 as in class_legend; empty where there is neither an observation nor an estimate. Each estimated pixel's class is the method the estimate used for it."
+    },
+    {
+      "id": "chl_outlook_8d",
+      "kind": "chl_outlook",
+      "label": "Chlorophyll outlook, next 8 days",
+      "issued": "2026-10-21",
+      "valid_from": "2026-10-20",
+      "valid_to": "2026-10-27",
+      "units": "mg m-3",
+      "native_resolution_m": 4000,
+      "method": "Forecast of the MEAN chlorophyll over the 8 days, not a day-by-day map and not toxin. Each 4 km cell's typical chlorophyll for this 8-day period of the year (MODIS-Aqua climatology 2003-2021, smoothed over neighbouring periods), plus the cell's departure from its typical value in the newest MODIS-Aqua 8-day composite (2026-10-12..2026-10-19), damped by the cell's AR(1) coefficient (about 0.43 on average; fitted on 2003-2015). Cells the composite has no value for (cloud) get the climatology alone. Cells mostly over bays are left empty.",
+      "basis": "MODIS-Aqua 8-day composite 2026-10-12..2026-10-19 (NASA L3 4 km R2022 NRT, NOAA CoastWatch ERDDAP erdMH1chla8day_R2022NRT), values in 1563 of 1590 cells; climatology and AR(1) from data/reference/chl_outlook_reference.json (MODIS-Aqua 8-day 4 km, 2003-01..2021-06).",
+      "request_urls": [
+        "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMH1chla8day_R2022NRT.csv0?time%5B(2026-09-11T00:00:00Z):1:(last)%5D",
+        "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMH1chla8day_R2022NRT.nc?chlorophyll%5B(2026-10-12T00:00:00Z)%5D%5B(41.97917):(32.02053)%5D%5B(-124.97916):(-115.02144)%5D"
+      ],
+      "skill": {
+        "metric": "RMSE ln(mg m-3)",
+        "model": 0.7596,
+        "climatology": 0.857,
+        "persistence": 0.8921,
+        "test_period": "2019-01-09..2021-06-26 (target composites); fitted on 2003-2015, variant chosen on 2016-2018",
+        "n": 185364,
+        "note": "Held-out MODIS-Aqua 8-day composites (114); n = cells x composites. Climatology minus model RMSE: 95% CI [0.0757, 0.1212]; persistence minus model: [0.1136, 0.1568] (block bootstrap). An RMSE of 0.76 ln is a typical error of a factor of about 2. The test forecast the next composite exactly as this outlook does. At 16 days the same method scores 0.8257 (climatology 0.8576); beyond that it is barely better than the climatology, so no longer outlook is offered."
+      },
+      "caveats": [
+        "Outlook of the 8-day average, not a day-by-day forecast. Chlorophyll is algae biomass, not toxin.",
+        "Typical error: a factor of about 2 either way. Read it as higher or lower than usual for the season, not as a precise value.",
+        "Coverage: the 4 km cells of the research grid along the open coast (roughly the first 25-30 km offshore). Bays and harbours are not covered (1.0% of bay water lies under a covered cell): there is no outlook for San Francisco, San Pablo, Suisun, Tomales, Humboldt, Morro, Mission or San Diego Bay or Elkhorn Slough.",
+        "Bays are masked: the 36 cells of the research grid whose water is mostly enclosed bay or estuary (the same bay definition as the chlorophyll estimate) carry no outlook. There the satellite reads sediment and dissolved matter as chlorophyll, so the steady values and small error those cells showed in the test reflect turbid water, not skill at forecasting algae.",
+        "4 km cells: the nearshore strip inside a cell can differ a lot from the cell's average.",
+        "The climatology ends in mid-2021 and does not know about later changes. MODIS-Aqua is near the end of its mission; when its data stop, this outlook stops.",
+        "This outlook's period began 1 day(s) before it was issued (satellite processing delay)."
+      ],
+      "coverage": {
+        "cells": 1590,
+        "cells_with_live_anomaly": 1563,
+        "bay_cells_masked": 36,
+        "open_coast_water_under_cells_pct": 7.2,
+        "bay_water_under_cells_pct": 1.0
+      },
+      "uncertainty_units": "expected RMSE log10(mg m-3) per cell (held-out 2016-2021; the climatology's error where the composite has no value)",
+      "grid": {
+        "url": "derived/outlook-2026-10-21-5eeb39bd22/values/{row}_{col}.u16.gz",
+        "encoding": "uint16le+gzip",
+        "width": 240,
+        "height": 240,
+        "lat_first": 41.97916793823242,
+        "lat_step": -0.041667938232421875,
+        "lon_first": -124.97916412353516,
+        "lon_step": 0.04166412353515625,
+        "scale_factor": 9.155552842799158e-05,
+        "add_offset": -3.0,
+        "nodata": 65535,
+        "max_quantization_error": 4.577776421399579e-05,
+        "transform": "log10",
+        "chunks": {
+          "rows": 512,
+          "cols": 512,
+          "url_template": "derived/outlook-2026-10-21-5eeb39bd22/values/{row}_{col}.u16.gz",
+          "present": [
+            "0_0"
+          ]
+        }
+      },
+      "uncertainty_grid": {
+        "url": "derived/outlook-2026-10-21-5eeb39bd22/uncertainty/{row}_{col}.u16.gz",
+        "encoding": "uint16le+gzip",
+        "width": 240,
+        "height": 240,
+        "lat_first": 41.97916793823242,
+        "lat_step": -0.041667938232421875,
+        "lon_first": -124.97916412353516,
+        "lon_step": 0.04166412353515625,
+        "scale_factor": 4.577776421399579e-05,
+        "add_offset": 0.0,
+        "nodata": 65535,
+        "max_quantization_error": 2.2888882106997894e-05,
+        "transform": "none",
+        "chunks": {
+          "rows": 512,
+          "cols": 512,
+          "url_template": "derived/outlook-2026-10-21-5eeb39bd22/uncertainty/{row}_{col}.u16.gz",
+          "present": [
+            "0_0"
+          ]
+        }
+      }
+    },
+    {
+      "id": "sst_latest",
+      "kind": "sst",
+      "label": "Sea surface temperature",
+      "units": "degC",
+      "observed_dates": [
+        "2026-10-19"
+      ],
+      "product_class": "analysis",
+      "source": "JPL MUR SST v4.1 (Multi-scale Ultra-high Resolution analysis, GHRSST L4), via NOAA CoastWatch West Coast ERDDAP jplMURSST41",
+      "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41.html",
+      "request_urls": [
+        "https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41.csv0?time%5B(2026-10-11T00:00:00Z):1:(last)%5D",
+        "https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41.nc?analysed_sst%5B(2026-10-19T09:00:00Z)%5D%5B(32.40):(42.10)%5D%5B(-125.50):(-117.00)%5D"
+      ],
+      "resolution_km": 1.0,
+      "method": "Daily gap-free analysis blending several satellite sensors (infrared and microwave) with in-situ data; published as received (quantized to 0.001 degC), clipped to the coastal ocean and connected bays.",
+      "caveats": [
+        "An analysis, not a direct observation: where clouds or fog hide the sea, MUR interpolates from other sensors and nearby days.",
+        "The grid is 0.01 degrees (about 1 km), but under clouds the effective detail is coarser (microwave data are about 25 km); near shore and in bays values lean on interpolation.",
+        "Surface skin/foundation temperature of the open water, not the temperature at depth where fish may hold.",
+        "Analysis day 2026-10-19 (about one day behind real time)."
+      ],
+      "stats": {
+        "cells": 359645,
+        "min_c": 12.37,
+        "max_c": 23.5
+      },
+      "grid": {
+        "url": "derived/sst-2026-10-19-527c693627/values/{row}_{col}.u16.gz",
+        "encoding": "uint16le+gzip",
+        "width": 851,
+        "height": 971,
+        "lat_first": 42.1,
+        "lat_step": -0.01,
+        "lon_first": -125.5,
+        "lon_step": 0.01,
+        "scale_factor": 0.000640888698995941,
+        "add_offset": -2.0,
+        "nodata": 65535,
+        "max_quantization_error": 0.0003204443494979705,
+        "transform": "none",
+        "chunks": {
+          "rows": 512,
+          "cols": 512,
+          "url_template": "derived/sst-2026-10-19-527c693627/values/{row}_{col}.u16.gz",
+          "present": [
+            "0_0",
+            "1_0",
+            "1_1"
+          ]
+        }
+      }
+    },
+    {
+      "id": "charm_nearshore_extension",
+      "kind": "validation",
+      "label": "Nearest C-HARM cell shown at the shore: checked against pier samples",
+      "skill": {
+        "pda_gt_500ngL": {
+          "metric": "Particulate domoic acid above 500 ng/L (0.5 ng/mL) in the pier water sample",
+          "model_variable": "particulate_domoic",
+          "n": 1058,
+          "n_events": 46,
+          "n_stations": 9,
+          "dates": [
+            "2022-11-01",
+            "2026-09-30"
+          ],
+          "base_rate": 0.0435,
+          "auc": 0.3024,
+          "auc_95ci": [
+            0.226,
+            0.389
+          ],
+          "brier_model": 0.5215,
+          "brier_climatology": 0.0418,
+          "bss": -11.4885,
+          "bss_95ci": [
+            -17.363,
+            -8.083
+          ],
+          "mean_model_probability": 0.6834,
+          "auc_climatology": 0.6383,
+          "median_distance_km": 3.8533,
+          "verdict": "no demonstrated skill nearshore",
+          "verdict_sentence": "AUC 95% CI 0.23-0.39 lies below 0.5 (ranks worse than chance); BSS -11.49 <= 0 (worse than station-month climatology) (AUC 0.30, n=1058, 46 events, 2022-11-01 to 2026-09-30)."
+        },
+        "pda_detected": {
+          "metric": "Particulate domoic acid reported above 0 (no detection limit is published; 0 = not quantified)",
+          "model_variable": "particulate_domoic",
+          "n": 1058,
+          "n_events": 244,
+          "n_stations": 9,
+          "dates": [
+            "2022-11-01",
+            "2026-09-30"
+          ],
+          "base_rate": 0.2306,
+          "auc": 0.4185,
+          "auc_95ci": [
+            0.376,
+            0.465
+          ],
+          "brier_model": 0.4647,
+          "brier_climatology": 0.1559,
+          "bss": -1.9808,
+          "bss_95ci": [
+            -2.572,
+            -1.523
+          ],
+          "mean_model_probability": 0.6834,
+          "auc_climatology": 0.7544,
+          "median_distance_km": 3.8533,
+          "verdict": "no demonstrated skill nearshore",
+          "verdict_sentence": "AUC 0.42 (95% CI 0.38-0.47) lies below 0.5 (ranks worse than chance), n=1058, 244 events."
+        },
+        "pn_gt_10k": {
+          "metric": "Total Pseudo-nitzschia (seriata + delicatissima groups) above 10,000 cells/L",
+          "model_variable": "pseudo_nitzschia",
+          "n": 1535,
+          "n_events": 373,
+          "n_stations": 14,
+          "dates": [
+            "2022-11-01",
+            "2026-10-13"
+          ],
+          "base_rate": 0.243,
+          "auc": 0.5984,
+          "auc_95ci": [
+            0.56,
+            0.636
+          ],
+          "brier_model": 0.56,
+          "brier_climatology": 0.1432,
+          "bss": -2.9112,
+          "bss_95ci": [
+            -3.443,
+            -2.431
+          ],
+          "mean_model_probability": 0.8359,
+          "auc_climatology": 0.8011,
+          "median_distance_km": 2.428,
+          "verdict": "no demonstrated skill nearshore",
+          "verdict_sentence": "BSS -2.91 <= 0 (worse than station-month climatology) (AUC 0.60, n=1535, 373 events, 2022-11-01 to 2026-10-13)."
+        }
+      },
+      "has_demonstrated_skill": false,
+      "readout": "Context only: the nearest C-HARM cell offshore has no demonstrated skill at the shore (checked against CalHABMAP pier samples).",
+      "note": "Same-day C-HARM v3.1 nowcast of the nearest cell with a value vs CalHABMAP pier water samples, 2022-11-01..2026-10-18. For particulate domoic acid above 500 ng/L the nearest-cell probability ranked samples worse than chance and was far less accurate than each pier's own month-by-month history; for Pseudo-nitzschia above 10,000 cells/L it ranked them only slightly better than chance and its probabilities were far too high. A model probability for water offshore is not a measurement at the pier and says nothing about toxin in seafood. Details: data/reference/charm_nearshore_validation.json.",
+      "caveats": [
+        "C-HARM v3.1 is a model probability, not a measurement; CalHABMAP values describe one water sample at one pier on one day.",
+        "Neither the model nor the samples describe domoic acid in seafood; closures and advisories are CDFW/CDPH decisions.",
+        "Samples are weekly or less and autocorrelated; CIs use block bootstrap but remain approximate.",
+        "The test covers the C-HARM record on ERDDAP only (v3.1 nowcast, from 2022-11-01) and only the CalHABMAP piers."
+      ]
+    }
+  ],
+  "notes": [
+    "estimate: background through 2026-10-16 (0 new day(s): none)"
+  ]
+}
