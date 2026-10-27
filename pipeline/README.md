@@ -52,7 +52,7 @@ v1/
 
 `cwp watch-official` reads the watched CDFW/CDPH pages and compares them with the fingerprints a
 person recorded at the last `cwp review-official`. It never edits the registry. In the workflow it
-runs with `--state ../publish/v1/official-watch.json`, a small file carried from run to run with the
+runs with `--state ../publish/v1/watch-official.json`, a small file carried from run to run with the
 dataset (like `health.json`), so each run knows which *conditions* were already open: a page that
 differs from the review, a CDPH release not yet reviewed, a release that appears to lift a record, a
 page unreadable for two runs in a row, or a registry that has never been human-verified. The review
