@@ -238,7 +238,7 @@ def main(argv: list[str] | None = None) -> int:
     reg_default = str(REPO / "data" / "curated" / "official_notices.json")
     w = sub.add_parser("watch-official", help="check official pages for changes since the last review (never edits records)")
     w.add_argument("--registry", default=reg_default)
-    w.add_argument("--state", help="state file carried between runs (in the dataset: v1/official-watch.json); without it every condition counts as new")
+    w.add_argument("--state", help="state file carried between runs (in the dataset: v1/watch-official.json); without it every condition counts as new")
     w.add_argument("--markdown", help="write the per-source review report (issue body) here")
     w.add_argument("--github-output", help="append notify/conditions/marker (and legacy changed) for GitHub Actions")
     w.add_argument("--run-url")

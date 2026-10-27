@@ -6,7 +6,7 @@ person reviews again, every run finds the same differences. Reporting that as "c
 each time is what filled the review issue with identical comments several times a day
 (issue #12, October 2026).
 
-This module keeps a small state file in the published dataset (`official-watch.json`,
+This module keeps a small state file in the published dataset (`watch-official.json`,
 carried from run to run like `health.json`) and turns each run's raw results into named
 *conditions*. A notification is warranted only when the set of conditions changes:
 
@@ -45,7 +45,10 @@ from .context import RunContext
 from .models import OfficialRegistry, WatchResult
 from .sources import official
 
-STATE_FILE = "official-watch.json"
+# Not "official-*.json": pipeline.prune() deletes files matching that pattern that the manifest does
+# not reference (it owns the official-<hash>.json dataset files). The first name, official-watch.json,
+# was pruned by every run, so no run ever saw the previous state (staging run 40466460080).
+STATE_FILE = "watch-official.json"
 STATE_SCHEMA_VERSION = 1
 FAILURE_ESCALATION_RUNS = 2  # consecutive unreadable runs before a fetch failure is a condition
 HISTORY_LIMIT = 60

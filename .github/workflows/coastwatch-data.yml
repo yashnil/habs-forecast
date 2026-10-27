@@ -67,13 +67,13 @@ jobs:
         working-directory: pipeline
         run: uv sync && uv run cwp run --out ../publish/v1
       - name: Watch official pages for changes since the last human review (never edits records)
-        # v1/official-watch.json carries the watcher's conditions from run to run (like health.json),
+        # v1/watch-official.json carries the watcher's conditions from run to run (like health.json),
         # so notify=true only when something appeared, changed again or resolved since the last run.
         id: watch
         working-directory: pipeline
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: uv run cwp watch-official --state ../publish/v1/official-watch.json --markdown ../watch-report.md --github-output "$GITHUB_OUTPUT" --run-url "$RUN_URL" | tee ../watch-report.json
+        run: uv run cwp watch-official --state ../publish/v1/watch-official.json --markdown ../watch-report.md --github-output "$GITHUB_OUTPUT" --run-url "$RUN_URL" | tee ../watch-report.json
       - uses: actions/upload-artifact@v6
         with:
           name: watch-report
