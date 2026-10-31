@@ -1,0 +1,371 @@
+{
+ "schema": "coastwatch-health-1",
+ "evaluated_at": "2026-10-31T06:09:03Z",
+ "pipeline_run_id": "41173770678",
+ "thresholds": {
+  "min_consecutive_failures": 3,
+  "olci_max_age_days": 4,
+  "viirs_max_age_days": 5,
+  "platform_max_age_days": 5,
+  "coverage_drop": 0.3,
+  "charm_max_age_days": 2,
+  "hfr_max_age_hours": 18,
+  "hfr_coverage_drop": 0.5,
+  "publish_max_age_hours": 14,
+  "success_budget_hours": {
+   "charm": 30,
+   "satellite_chl": 30,
+   "gibs_chl": 36,
+   "hf_radar": 18,
+   "official": 30,
+   "calhabmap": 48,
+   "port_intel": 30
+  },
+  "outage_min_sources": 2,
+  "intermittent_window": 10,
+  "intermittent_min_runs": 3
+ },
+ "sources": {
+  "charm": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "error": null
+  },
+  "gibs_chl": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "error": null
+  },
+  "satellite_chl": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "error": null
+  },
+  "hf_radar": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "error": null
+  },
+  "cdfw_ports": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "error": null
+  },
+  "official": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "error": null
+  },
+  "port_intel": {
+   "outcome": "partial",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "error": null
+  },
+  "calhabmap": {
+   "outcome": "updated",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "error": null
+  },
+  "foss_landings": {
+   "outcome": "unchanged",
+   "consecutive_failures": 0,
+   "consecutive_degraded": 0,
+   "last_success_at": "2026-10-27T12:15:06Z",
+   "error": null
+  }
+ },
+ "freshness": {
+  "charm": {
+   "title": "C-HARM v3.1 harmful algal bloom forecast",
+   "outcome": "updated",
+   "last_attempt_at": "2026-10-31T05:44:43Z",
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "basis": "issued_date",
+   "newest_date": "2026-10-28",
+   "age_days": 3,
+   "state": "stale",
+   "coverage": {
+    "valid_fraction": 0.56231
+   }
+  },
+  "gibs_chl": {
+   "title": "NASA GIBS satellite chlorophyll",
+   "outcome": "updated",
+   "last_attempt_at": "2026-10-31T05:44:43Z",
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "basis": "observed_date",
+   "newest_date": "2026-10-30",
+   "age_days": 1,
+   "state": "current"
+  },
+  "satellite_chl": {
+   "title": "Satellite chlorophyll-a: Sentinel-3 OLCI 300 m (VIIRS 750 m fallback)",
+   "outcome": "updated",
+   "last_attempt_at": "2026-10-31T05:44:43Z",
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "basis": "observed_date",
+   "newest_date": "2026-10-29",
+   "age_days": 2,
+   "state": "current",
+   "coverage": {
+    "olci300_chl_latest": {
+     "observed_fraction": 0.9132,
+     "observed_date": "2026-10-29"
+    },
+    "viirs750_chl_latest": {
+     "observed_fraction": 0.867,
+     "observed_date": "2026-10-27"
+    }
+   }
+  },
+  "hf_radar": {
+   "title": "Observed surface currents: HF radar 2 km (HFRNet), hourly and 24-hour mean",
+   "outcome": "updated",
+   "last_attempt_at": "2026-10-31T05:44:43Z",
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "basis": "observed_date",
+   "newest_date": "2026-10-31",
+   "age_days": 0,
+   "state": "current",
+   "coverage": {
+    "newest_hour": "2026-10-31T04:00:00Z",
+    "n_valid": 10493
+   },
+   "age_hours": 2
+  },
+  "cdfw_ports": {
+   "title": "CDFW landing ports (ds3081)",
+   "outcome": "updated",
+   "last_attempt_at": "2026-10-31T05:44:43Z",
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "basis": "valid_date",
+   "newest_date": "2026-10-31",
+   "age_days": 0,
+   "state": "current"
+  },
+  "official": {
+   "title": "Official closures and advisories (CDFW, CDPH)",
+   "outcome": "updated",
+   "last_attempt_at": "2026-10-31T05:44:43Z",
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "basis": "reviewed_date",
+   "newest_date": "2026-10-08",
+   "age_days": 23,
+   "state": "historical"
+  },
+  "port_intel": {
+   "title": "Port summaries (C-HARM, satellite chlorophyll, official notices)",
+   "outcome": "partial",
+   "last_attempt_at": "2026-10-31T05:44:43Z",
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "basis": "valid_date",
+   "newest_date": "2026-10-31",
+   "age_days": 0,
+   "state": "current"
+  },
+  "calhabmap": {
+   "title": "CalHABMAP shore-station measurements (domoic acid, Pseudo-nitzschia)",
+   "outcome": "updated",
+   "last_attempt_at": "2026-10-31T05:44:43Z",
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "basis": "observed_date",
+   "newest_date": "2026-10-28",
+   "age_days": 3,
+   "state": "current"
+  },
+  "foss_landings": {
+   "title": "Historical fisheries exposure (NOAA FOSS landings, BLS CPI-U)",
+   "outcome": "unchanged",
+   "last_attempt_at": "2026-10-31T05:44:43Z",
+   "last_success_at": "2026-10-27T12:15:06Z",
+   "basis": "valid_date",
+   "newest_date": "2024-12-31",
+   "age_days": 669,
+   "state": "current"
+  },
+  "satellite_chl:olci300": {
+   "title": "Sentinel-3 OLCI 300 m (Sentinel-3A, Sentinel-3B)",
+   "outcome": "updated",
+   "last_attempt_at": "2026-10-31T05:44:43Z",
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "basis": "observed_date",
+   "newest_date": "2026-10-29",
+   "age_days": 2,
+   "state": "current",
+   "coverage": {
+    "observed_fraction": 0.9132,
+    "platforms_last_seen": {
+     "Sentinel-3A": "2026-10-29",
+     "Sentinel-3B": "2026-10-29"
+    }
+   }
+  },
+  "satellite_chl:viirs750": {
+   "title": "VIIRS 750 m (VIIRS, NOAA-21, NOAA-20)",
+   "outcome": "updated",
+   "last_attempt_at": "2026-10-31T05:44:43Z",
+   "last_success_at": "2026-10-31T05:44:43Z",
+   "basis": "observed_date",
+   "newest_date": "2026-10-27",
+   "age_days": 4,
+   "state": "stale",
+   "coverage": {
+    "observed_fraction": 0.867,
+    "platforms_last_seen": {
+     "VIIRS": "2026-10-28",
+     "NOAA-21": "2026-10-28",
+     "NOAA-20": "2026-10-28",
+     "S-NPP": "2026-10-14"
+    }
+   }
+  }
+ },
+ "failing_hosts": {},
+ "failing_hosts_history": [
+  {
+   "at": "2026-10-27T12:29:17Z",
+   "hosts": []
+  },
+  {
+   "at": "2026-10-27T22:26:16Z",
+   "hosts": [
+    "coastwatch.pfeg.noaa.gov"
+   ]
+  },
+  {
+   "at": "2026-10-28T06:01:08Z",
+   "hosts": [
+    "coastwatch.pfeg.noaa.gov"
+   ]
+  },
+  {
+   "at": "2026-10-28T13:16:41Z",
+   "hosts": [
+    "coastwatch.pfeg.noaa.gov"
+   ]
+  },
+  {
+   "at": "2026-10-28T22:56:39Z",
+   "hosts": [
+    "coastwatch.pfeg.noaa.gov"
+   ]
+  },
+  {
+   "at": "2026-10-29T06:09:06Z",
+   "hosts": []
+  },
+  {
+   "at": "2026-10-29T13:26:33Z",
+   "hosts": []
+  },
+  {
+   "at": "2026-10-29T23:07:12Z",
+   "hosts": []
+  },
+  {
+   "at": "2026-10-30T06:05:55Z",
+   "hosts": []
+  },
+  {
+   "at": "2026-10-31T06:09:03Z",
+   "hosts": []
+  }
+ ],
+ "charm_input": {
+  "satellite": "S-NPP",
+  "platform": "VIIRS",
+  "product_name": "C-HARM v3.1 model output with SNPP VIIRS and WCOFS data",
+  "product_version": "3.1"
+ },
+ "hfr_regions_last_covered": {
+  "mendocino_sonoma": "2026-10-31T06:09:03Z",
+  "sf_bay_farallones": "2026-10-31T06:09:03Z",
+  "monterey_bay": "2026-10-31T06:09:03Z",
+  "central_coast": "2026-10-31T06:09:03Z",
+  "southern_california": "2026-10-31T06:09:03Z"
+ },
+ "satellite_products": {
+  "olci300": {
+   "consecutive_failures": 0,
+   "platform_last_seen": {
+    "Sentinel-3A": "2026-10-29",
+    "Sentinel-3B": "2026-10-29"
+   },
+   "coverage_history": [
+    0.9645,
+    0.9646,
+    0.9568,
+    0.9568,
+    0.9573,
+    0.9032,
+    0.9032,
+    0.9169,
+    0.9128,
+    0.9132
+   ]
+  },
+  "viirs750": {
+   "consecutive_failures": 0,
+   "platform_last_seen": {
+    "VIIRS": "2026-10-28",
+    "NOAA-21": "2026-10-28",
+    "NOAA-20": "2026-10-28",
+    "S-NPP": "2026-10-14"
+   },
+   "coverage_history": [
+    0.7421,
+    0.7421,
+    0.7421,
+    0.9971,
+    0.9971,
+    0.9993,
+    0.9992,
+    0.9927,
+    0.9927,
+    0.867
+   ]
+  }
+ },
+ "alerts": [
+  {
+   "key": "upstream_intermittent:coastwatch.pfeg.noaa.gov",
+   "kind": "upstream_intermittent",
+   "message": "coastwatch.pfeg.noaa.gov: several sources failed against it in 4 of the last 10 runs (recovering in between). Each failed run keeps the last good data, which age meanwhile; a block on the runners' addresses or a rate limit would look like this.",
+   "since": "2026-10-29T06:09:06Z"
+  },
+  {
+   "key": "data_stale:charm",
+   "kind": "data_stale",
+   "message": "C-HARM forecast: newest issued date 2026-10-28 is 3 days old, stale by its own policy (current up to 1 d); the source has published nothing newer.",
+   "since": "2026-10-30T06:05:55Z"
+  },
+  {
+   "key": "publish_stale",
+   "kind": "publish_stale",
+   "message": "The previously published dataset was 24 h old when this run started (runs are every 6 h).",
+   "since": "2026-10-31T06:09:03Z"
+  }
+ ],
+ "new_alerts": [
+  "publish_stale"
+ ],
+ "cleared_alerts": [
+  "satellite_stale:viirs750_chl_latest"
+ ]
+}

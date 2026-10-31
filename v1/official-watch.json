@@ -1,0 +1,264 @@
+{
+ "schema_version": 1,
+ "updated_at": "2026-10-31T06:04:32Z",
+ "run_id": "41173770678",
+ "run_url": "https://github.com/yashnil/habs-forecast/actions/runs/41173770678",
+ "review": {
+  "status": "pending_human_review",
+  "reviewed_at": "2026-10-08T19:32:08Z",
+  "reviewed_by": "Claude (AI assistant): transcription from official pages; NOT reviewed by a person"
+ },
+ "sources": {
+  "cdph_release_list": {
+   "label": "CDPH shellfish and seafood advisories (news releases)",
+   "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx",
+   "last_checked": "2026-10-31T06:04:32Z",
+   "ok": true,
+   "http_status": 200,
+   "last_error": null,
+   "consecutive_failures": 0,
+   "last_ok_at": "2026-10-31T06:04:32Z",
+   "content_hash": "sha256:16db09c57422f943aebfda023873f1e531fdca98d76921f5401b98b90f7c7e50",
+   "content_changed_at": "2026-10-31T06:04:32Z",
+   "matches_review": false,
+   "unreviewed_items": [
+    "SN26-023",
+    "SN26-022",
+    "SN26-021",
+    "SN26-020"
+   ]
+  },
+  "cdfw_health_advisories": {
+   "label": "CDFW health advisories and closures",
+   "url": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+   "last_checked": "2026-10-31T06:04:32Z",
+   "ok": true,
+   "http_status": 200,
+   "last_error": null,
+   "consecutive_failures": 0,
+   "last_ok_at": "2026-10-31T06:04:32Z",
+   "content_hash": "sha256:e450c09ce6da69cb1c857dd47fe6854480f1af77827588d8990715be40e6465a",
+   "content_changed_at": "2026-10-31T06:04:32Z",
+   "matches_review": false,
+   "unreviewed_items": []
+  },
+  "cdfw_whale_safe": {
+   "label": "CDFW Whale Safe Fisheries (Dungeness status)",
+   "url": "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries",
+   "last_checked": "2026-10-31T06:04:32Z",
+   "ok": true,
+   "http_status": 200,
+   "last_error": null,
+   "consecutive_failures": 0,
+   "last_ok_at": "2026-10-31T06:04:32Z",
+   "content_hash": "sha256:8d9d587875f2e77f20592d9027dfcfdcee21a8ae37b6fa8c29f28a14175c15a8",
+   "content_changed_at": "2026-10-31T06:04:32Z",
+   "matches_review": false,
+   "unreviewed_items": []
+  }
+ },
+ "conditions": {
+  "changed:cdfw_health_advisories": {
+   "key": "changed:cdfw_health_advisories",
+   "kind": "page_changed",
+   "category": "content_change",
+   "message": "CDFW health advisories and closures: page content differs from the fingerprint recorded at the last review (2026-10-08T19:32:08Z); current fingerprint e450c09c.",
+   "source_id": "cdfw_health_advisories",
+   "detail": "sha256:e450c09ce6da69cb1c857dd47fe6854480f1af77827588d8990715be40e6465a",
+   "first_seen": "2026-10-31T06:04:32Z",
+   "last_seen": "2026-10-31T06:04:32Z",
+   "extra": {
+    "url": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories"
+   }
+  },
+  "changed:cdfw_whale_safe": {
+   "key": "changed:cdfw_whale_safe",
+   "kind": "page_changed",
+   "category": "content_change",
+   "message": "CDFW Whale Safe Fisheries (Dungeness status): page content differs from the fingerprint recorded at the last review (2026-10-08T19:32:08Z); current fingerprint 8d9d5878.",
+   "source_id": "cdfw_whale_safe",
+   "detail": "sha256:8d9d587875f2e77f20592d9027dfcfdcee21a8ae37b6fa8c29f28a14175c15a8",
+   "first_seen": "2026-10-31T06:04:32Z",
+   "last_seen": "2026-10-31T06:04:32Z",
+   "extra": {
+    "url": "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries"
+   }
+  },
+  "changed:cdph_release_list": {
+   "key": "changed:cdph_release_list",
+   "kind": "page_changed",
+   "category": "content_change",
+   "message": "CDPH shellfish and seafood advisories (news releases): page content differs from the fingerprint recorded at the last review (2026-10-08T19:32:08Z); current fingerprint 16db09c5.",
+   "source_id": "cdph_release_list",
+   "detail": "sha256:16db09c57422f943aebfda023873f1e531fdca98d76921f5401b98b90f7c7e50",
+   "first_seen": "2026-10-31T06:04:32Z",
+   "last_seen": "2026-10-31T06:04:32Z",
+   "extra": {
+    "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx"
+   }
+  },
+  "discrepancy:SN26-021:cdph-2026-sn26-018-monterey-bivalves": {
+   "key": "discrepancy:SN26-021:cdph-2026-sn26-018-monterey-bivalves",
+   "kind": "discrepancy",
+   "category": "awaiting_review",
+   "message": "Agency source discrepancy: CDPH release SN26-021 (\"CDPH Lifts Warnings about Sport-Harvested Bivalve Shellfish from Monterey County\", https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx) appears to lift active record cdph-2026-sn26-018-monterey-bivalves. Not yet reviewed by a person: the record is shown as disputed, not as confirmed active.",
+   "source_id": "cdph_release_list",
+   "detail": null,
+   "first_seen": "2026-10-31T06:04:32Z",
+   "last_seen": "2026-10-31T06:04:32Z",
+   "extra": {
+    "release_id": "SN26-021",
+    "record_id": "cdph-2026-sn26-018-monterey-bivalves"
+   }
+  },
+  "release:SN26-020": {
+   "key": "release:SN26-020",
+   "kind": "new_release",
+   "category": "awaiting_review",
+   "message": "CDPH shellfish and seafood advisories (news releases): release SN26-020 (\"CDPH Warns Against Consuming Razor Clams from Del Norte County\", https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-020.aspx) is not in the reviewed list.",
+   "source_id": "cdph_release_list",
+   "detail": "CDPH Warns Against Consuming Razor Clams from Del Norte County",
+   "first_seen": "2026-10-31T06:04:32Z",
+   "last_seen": "2026-10-31T06:04:32Z",
+   "extra": {
+    "release_id": "SN26-020",
+    "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-020.aspx"
+   }
+  },
+  "release:SN26-021": {
+   "key": "release:SN26-021",
+   "kind": "new_release",
+   "category": "awaiting_review",
+   "message": "CDPH shellfish and seafood advisories (news releases): release SN26-021 (\"CDPH Lifts Warnings about Sport-Harvested Bivalve Shellfish from Monterey County\", https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx) is not in the reviewed list.",
+   "source_id": "cdph_release_list",
+   "detail": "CDPH Lifts Warnings about Sport-Harvested Bivalve Shellfish from Monterey County",
+   "first_seen": "2026-10-31T06:04:32Z",
+   "last_seen": "2026-10-31T06:04:32Z",
+   "extra": {
+    "release_id": "SN26-021",
+    "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx"
+   }
+  },
+  "release:SN26-022": {
+   "key": "release:SN26-022",
+   "kind": "new_release",
+   "category": "awaiting_review",
+   "message": "CDPH shellfish and seafood advisories (news releases): release SN26-022 (\"CDPH to Lift Annual Sport-Harvested Mussel Quarantine Along the California Coast\", https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-022.aspx) is not in the reviewed list.",
+   "source_id": "cdph_release_list",
+   "detail": "CDPH to Lift Annual Sport-Harvested Mussel Quarantine Along the California Coast",
+   "first_seen": "2026-10-31T06:04:32Z",
+   "last_seen": "2026-10-31T06:04:32Z",
+   "extra": {
+    "release_id": "SN26-022",
+    "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-022.aspx"
+   }
+  },
+  "release:SN26-023": {
+   "key": "release:SN26-023",
+   "kind": "new_release",
+   "category": "awaiting_review",
+   "message": "CDPH shellfish and seafood advisories (news releases): release SN26-023 (\"CDPH Warns Consumers Not to Eat Sport-Harvested Crab from One Area of Northern California Coast\", https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-023.aspx) is not in the reviewed list.",
+   "source_id": "cdph_release_list",
+   "detail": "CDPH Warns Consumers Not to Eat Sport-Harvested Crab from One Area of Northern California Coast",
+   "first_seen": "2026-10-31T06:04:32Z",
+   "last_seen": "2026-10-31T06:04:32Z",
+   "extra": {
+    "release_id": "SN26-023",
+    "url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-023.aspx"
+   }
+  },
+  "review_pending": {
+   "key": "review_pending",
+   "kind": "review_pending",
+   "category": "awaiting_review",
+   "message": "The registry has not been verified by a person: review status is `pending_human_review` (recorded 2026-10-08T19:32:08Z by Claude (AI assistant): transcription from official pages; NOT reviewed by a person).",
+   "source_id": null,
+   "detail": "2026-10-08T19:32:08Z",
+   "first_seen": "2026-10-08T19:32:08Z",
+   "last_seen": "2026-10-31T06:04:32Z"
+  }
+ },
+ "transitions": {
+  "new": [
+   "changed:cdfw_health_advisories",
+   "changed:cdfw_whale_safe",
+   "changed:cdph_release_list",
+   "discrepancy:SN26-021:cdph-2026-sn26-018-monterey-bivalves",
+   "release:SN26-020",
+   "release:SN26-021",
+   "release:SN26-022",
+   "release:SN26-023",
+   "review_pending"
+  ],
+  "updated": [],
+  "resolved": [],
+  "resolved_info": {}
+ },
+ "notify": true,
+ "marker": "f72849d5264ec570",
+ "history": [
+  {
+   "at": "2026-10-31T06:04:32Z",
+   "run_id": "41173770678",
+   "event": "new",
+   "key": "review_pending",
+   "message": "The registry has not been verified by a person: review status is `pending_human_review` (recorded 2026-10-08T19:32:08Z by Claude (AI assistant): transcription from official pages; NOT reviewed by a person)."
+  },
+  {
+   "at": "2026-10-31T06:04:32Z",
+   "run_id": "41173770678",
+   "event": "new",
+   "key": "discrepancy:SN26-021:cdph-2026-sn26-018-monterey-bivalves",
+   "message": "Agency source discrepancy: CDPH release SN26-021 (\"CDPH Lifts Warnings about Sport-Harvested Bivalve Shellfish from Monterey County\", https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx) appears to lift active record cdph-2026-sn26-018-monterey-bivalves. Not yet reviewed by a person: the record is shown as disputed, not as confirmed active."
+  },
+  {
+   "at": "2026-10-31T06:04:32Z",
+   "run_id": "41173770678",
+   "event": "new",
+   "key": "changed:cdph_release_list",
+   "message": "CDPH shellfish and seafood advisories (news releases): page content differs from the fingerprint recorded at the last review (2026-10-08T19:32:08Z); current fingerprint 16db09c5."
+  },
+  {
+   "at": "2026-10-31T06:04:32Z",
+   "run_id": "41173770678",
+   "event": "new",
+   "key": "release:SN26-023",
+   "message": "CDPH shellfish and seafood advisories (news releases): release SN26-023 (\"CDPH Warns Consumers Not to Eat Sport-Harvested Crab from One Area of Northern California Coast\", https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-023.aspx) is not in the reviewed list."
+  },
+  {
+   "at": "2026-10-31T06:04:32Z",
+   "run_id": "41173770678",
+   "event": "new",
+   "key": "release:SN26-022",
+   "message": "CDPH shellfish and seafood advisories (news releases): release SN26-022 (\"CDPH to Lift Annual Sport-Harvested Mussel Quarantine Along the California Coast\", https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-022.aspx) is not in the reviewed list."
+  },
+  {
+   "at": "2026-10-31T06:04:32Z",
+   "run_id": "41173770678",
+   "event": "new",
+   "key": "release:SN26-021",
+   "message": "CDPH shellfish and seafood advisories (news releases): release SN26-021 (\"CDPH Lifts Warnings about Sport-Harvested Bivalve Shellfish from Monterey County\", https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx) is not in the reviewed list."
+  },
+  {
+   "at": "2026-10-31T06:04:32Z",
+   "run_id": "41173770678",
+   "event": "new",
+   "key": "release:SN26-020",
+   "message": "CDPH shellfish and seafood advisories (news releases): release SN26-020 (\"CDPH Warns Against Consuming Razor Clams from Del Norte County\", https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-020.aspx) is not in the reviewed list."
+  },
+  {
+   "at": "2026-10-31T06:04:32Z",
+   "run_id": "41173770678",
+   "event": "new",
+   "key": "changed:cdfw_health_advisories",
+   "message": "CDFW health advisories and closures: page content differs from the fingerprint recorded at the last review (2026-10-08T19:32:08Z); current fingerprint e450c09c."
+  },
+  {
+   "at": "2026-10-31T06:04:32Z",
+   "run_id": "41173770678",
+   "event": "new",
+   "key": "changed:cdfw_whale_safe",
+   "message": "CDFW Whale Safe Fisheries (Dungeness status): page content differs from the fingerprint recorded at the last review (2026-10-08T19:32:08Z); current fingerprint 8d9d5878."
+  }
+ ]
+}

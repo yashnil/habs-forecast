@@ -1,0 +1,2823 @@
+{
+  "manifest_generated_at": "2026-10-31T05:44:43Z",
+  "live_source_comparison": true,
+  "summary": {
+    "layers": 12,
+    "points": 13,
+    "comparisons": 156,
+    "outside_grid": 0,
+    "no_value_cells": 8,
+    "failures": 0,
+    "all_passed": true
+  },
+  "rows": [
+    {
+      "point": "Off Crescent City",
+      "lat": 41.7,
+      "lon": -124.35,
+      "layer_id": "charm_pseudo_nitzschia_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 41.71,
+      "cell_lon": -124.35,
+      "grid_value": 0.901502,
+      "image_matches_value": true,
+      "source_value": 0.9015,
+      "source_cell": [
+        41.71,
+        235.65
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Crescent City",
+      "lat": 41.7,
+      "lon": -124.35,
+      "layer_id": "charm_particulate_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 41.71,
+      "cell_lon": -124.35,
+      "grid_value": 0.730522,
+      "image_matches_value": true,
+      "source_value": 0.730529,
+      "source_cell": [
+        41.71,
+        235.65
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Crescent City",
+      "lat": 41.7,
+      "lon": -124.35,
+      "layer_id": "charm_cellular_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 41.71,
+      "cell_lon": -124.35,
+      "grid_value": 0.672613,
+      "image_matches_value": true,
+      "source_value": 0.672618,
+      "source_cell": [
+        41.71,
+        235.65
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Crescent City",
+      "lat": 41.7,
+      "lon": -124.35,
+      "layer_id": "charm_pseudo_nitzschia_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 41.71,
+      "cell_lon": -124.35,
+      "grid_value": 0.893643,
+      "image_matches_value": true,
+      "source_value": 0.893646,
+      "source_cell": [
+        41.71,
+        235.65
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Crescent City",
+      "lat": 41.7,
+      "lon": -124.35,
+      "layer_id": "charm_particulate_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 41.71,
+      "cell_lon": -124.35,
+      "grid_value": 0.754891,
+      "image_matches_value": true,
+      "source_value": 0.754889,
+      "source_cell": [
+        41.71,
+        235.65
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Crescent City",
+      "lat": 41.7,
+      "lon": -124.35,
+      "layer_id": "charm_cellular_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 41.71,
+      "cell_lon": -124.35,
+      "grid_value": 0.711631,
+      "image_matches_value": true,
+      "source_value": 0.711631,
+      "source_cell": [
+        41.71,
+        235.65
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Crescent City",
+      "lat": 41.7,
+      "lon": -124.35,
+      "layer_id": "charm_pseudo_nitzschia_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 41.71,
+      "cell_lon": -124.35,
+      "grid_value": 0.9008,
+      "image_matches_value": true,
+      "source_value": 0.900801,
+      "source_cell": [
+        41.71,
+        235.65
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Crescent City",
+      "lat": 41.7,
+      "lon": -124.35,
+      "layer_id": "charm_particulate_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 41.71,
+      "cell_lon": -124.35,
+      "grid_value": 0.742134,
+      "image_matches_value": true,
+      "source_value": 0.742137,
+      "source_cell": [
+        41.71,
+        235.65
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Crescent City",
+      "lat": 41.7,
+      "lon": -124.35,
+      "layer_id": "charm_cellular_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 41.71,
+      "cell_lon": -124.35,
+      "grid_value": 0.733589,
+      "image_matches_value": true,
+      "source_value": 0.733583,
+      "source_cell": [
+        41.71,
+        235.65
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Crescent City",
+      "lat": 41.7,
+      "lon": -124.35,
+      "layer_id": "charm_pseudo_nitzschia_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 41.71,
+      "cell_lon": -124.35,
+      "grid_value": 0.900647,
+      "image_matches_value": true,
+      "source_value": 0.900641,
+      "source_cell": [
+        41.71,
+        235.65
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Crescent City",
+      "lat": 41.7,
+      "lon": -124.35,
+      "layer_id": "charm_particulate_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 41.71,
+      "cell_lon": -124.35,
+      "grid_value": 0.732765,
+      "image_matches_value": true,
+      "source_value": 0.73277,
+      "source_cell": [
+        41.71,
+        235.65
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Crescent City",
+      "lat": 41.7,
+      "lon": -124.35,
+      "layer_id": "charm_cellular_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 41.71,
+      "cell_lon": -124.35,
+      "grid_value": 0.745018,
+      "image_matches_value": true,
+      "source_value": 0.745018,
+      "source_cell": [
+        41.71,
+        235.65
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Eureka",
+      "lat": 40.85,
+      "lon": -124.3,
+      "layer_id": "charm_pseudo_nitzschia_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 40.84,
+      "cell_lon": -124.29,
+      "grid_value": 0.902356,
+      "image_matches_value": true,
+      "source_value": 0.902364,
+      "source_cell": [
+        40.84,
+        235.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Eureka",
+      "lat": 40.85,
+      "lon": -124.3,
+      "layer_id": "charm_particulate_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 40.84,
+      "cell_lon": -124.29,
+      "grid_value": 0.852519,
+      "image_matches_value": true,
+      "source_value": 0.852526,
+      "source_cell": [
+        40.84,
+        235.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Eureka",
+      "lat": 40.85,
+      "lon": -124.3,
+      "layer_id": "charm_cellular_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 40.84,
+      "cell_lon": -124.29,
+      "grid_value": 0.455748,
+      "image_matches_value": true,
+      "source_value": 0.455753,
+      "source_cell": [
+        40.84,
+        235.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Eureka",
+      "lat": 40.85,
+      "lon": -124.3,
+      "layer_id": "charm_pseudo_nitzschia_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 40.84,
+      "cell_lon": -124.29,
+      "grid_value": 0.813791,
+      "image_matches_value": true,
+      "source_value": 0.813792,
+      "source_cell": [
+        40.84,
+        235.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Eureka",
+      "lat": 40.85,
+      "lon": -124.3,
+      "layer_id": "charm_particulate_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 40.84,
+      "cell_lon": -124.29,
+      "grid_value": 0.74398,
+      "image_matches_value": true,
+      "source_value": 0.743984,
+      "source_cell": [
+        40.84,
+        235.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Eureka",
+      "lat": 40.85,
+      "lon": -124.3,
+      "layer_id": "charm_cellular_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 40.84,
+      "cell_lon": -124.29,
+      "grid_value": 0.666509,
+      "image_matches_value": true,
+      "source_value": 0.666516,
+      "source_cell": [
+        40.84,
+        235.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Eureka",
+      "lat": 40.85,
+      "lon": -124.3,
+      "layer_id": "charm_pseudo_nitzschia_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 40.84,
+      "cell_lon": -124.29,
+      "grid_value": 0.849178,
+      "image_matches_value": true,
+      "source_value": 0.849171,
+      "source_cell": [
+        40.84,
+        235.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Eureka",
+      "lat": 40.85,
+      "lon": -124.3,
+      "layer_id": "charm_particulate_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 40.84,
+      "cell_lon": -124.29,
+      "grid_value": 0.755318,
+      "image_matches_value": true,
+      "source_value": 0.755323,
+      "source_cell": [
+        40.84,
+        235.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Eureka",
+      "lat": 40.85,
+      "lon": -124.3,
+      "layer_id": "charm_cellular_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 40.84,
+      "cell_lon": -124.29,
+      "grid_value": 0.652455,
+      "image_matches_value": true,
+      "source_value": 0.652461,
+      "source_cell": [
+        40.84,
+        235.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Eureka",
+      "lat": 40.85,
+      "lon": -124.3,
+      "layer_id": "charm_pseudo_nitzschia_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 40.84,
+      "cell_lon": -124.29,
+      "grid_value": 0.896207,
+      "image_matches_value": true,
+      "source_value": 0.896212,
+      "source_cell": [
+        40.84,
+        235.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Eureka",
+      "lat": 40.85,
+      "lon": -124.3,
+      "layer_id": "charm_particulate_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 40.84,
+      "cell_lon": -124.29,
+      "grid_value": 0.805383,
+      "image_matches_value": true,
+      "source_value": 0.805385,
+      "source_cell": [
+        40.84,
+        235.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Eureka",
+      "lat": 40.85,
+      "lon": -124.3,
+      "layer_id": "charm_cellular_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 40.84,
+      "cell_lon": -124.29,
+      "grid_value": 0.56151,
+      "image_matches_value": true,
+      "source_value": 0.561517,
+      "source_cell": [
+        40.84,
+        235.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Fort Bragg",
+      "lat": 39.45,
+      "lon": -123.9,
+      "layer_id": "charm_pseudo_nitzschia_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 39.46,
+      "cell_lon": -123.9,
+      "grid_value": 0.968764,
+      "image_matches_value": true,
+      "source_value": 0.968759,
+      "source_cell": [
+        39.46,
+        236.1
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Fort Bragg",
+      "lat": 39.45,
+      "lon": -123.9,
+      "layer_id": "charm_particulate_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 39.46,
+      "cell_lon": -123.9,
+      "grid_value": 0.534303,
+      "image_matches_value": true,
+      "source_value": 0.534308,
+      "source_cell": [
+        39.46,
+        236.1
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Fort Bragg",
+      "lat": 39.45,
+      "lon": -123.9,
+      "layer_id": "charm_cellular_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 39.46,
+      "cell_lon": -123.9,
+      "grid_value": 0.610065,
+      "image_matches_value": true,
+      "source_value": 0.610068,
+      "source_cell": [
+        39.46,
+        236.1
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Fort Bragg",
+      "lat": 39.45,
+      "lon": -123.9,
+      "layer_id": "charm_pseudo_nitzschia_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 39.46,
+      "cell_lon": -123.9,
+      "grid_value": 0.961684,
+      "image_matches_value": true,
+      "source_value": 0.96169,
+      "source_cell": [
+        39.46,
+        236.1
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Fort Bragg",
+      "lat": 39.45,
+      "lon": -123.9,
+      "layer_id": "charm_particulate_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 39.46,
+      "cell_lon": -123.9,
+      "grid_value": 0.570208,
+      "image_matches_value": true,
+      "source_value": 0.570203,
+      "source_cell": [
+        39.46,
+        236.1
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Fort Bragg",
+      "lat": 39.45,
+      "lon": -123.9,
+      "layer_id": "charm_cellular_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 39.46,
+      "cell_lon": -123.9,
+      "grid_value": 0.6339,
+      "image_matches_value": true,
+      "source_value": 0.633896,
+      "source_cell": [
+        39.46,
+        236.1
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Fort Bragg",
+      "lat": 39.45,
+      "lon": -123.9,
+      "layer_id": "charm_pseudo_nitzschia_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 39.46,
+      "cell_lon": -123.9,
+      "grid_value": 0.990844,
+      "image_matches_value": true,
+      "source_value": 0.990847,
+      "source_cell": [
+        39.46,
+        236.1
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Fort Bragg",
+      "lat": 39.45,
+      "lon": -123.9,
+      "layer_id": "charm_particulate_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 39.46,
+      "cell_lon": -123.9,
+      "grid_value": 0.522355,
+      "image_matches_value": true,
+      "source_value": 0.52236,
+      "source_cell": [
+        39.46,
+        236.1
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Fort Bragg",
+      "lat": 39.45,
+      "lon": -123.9,
+      "layer_id": "charm_cellular_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 39.46,
+      "cell_lon": -123.9,
+      "grid_value": 0.665624,
+      "image_matches_value": true,
+      "source_value": 0.665623,
+      "source_cell": [
+        39.46,
+        236.1
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Fort Bragg",
+      "lat": 39.45,
+      "lon": -123.9,
+      "layer_id": "charm_pseudo_nitzschia_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 39.46,
+      "cell_lon": -123.9,
+      "grid_value": 0.991577,
+      "image_matches_value": true,
+      "source_value": 0.991582,
+      "source_cell": [
+        39.46,
+        236.1
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Fort Bragg",
+      "lat": 39.45,
+      "lon": -123.9,
+      "layer_id": "charm_particulate_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 39.46,
+      "cell_lon": -123.9,
+      "grid_value": 0.541383,
+      "image_matches_value": true,
+      "source_value": 0.54139,
+      "source_cell": [
+        39.46,
+        236.1
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Fort Bragg",
+      "lat": 39.45,
+      "lon": -123.9,
+      "layer_id": "charm_cellular_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 39.46,
+      "cell_lon": -123.9,
+      "grid_value": 0.650975,
+      "image_matches_value": true,
+      "source_value": 0.650981,
+      "source_cell": [
+        39.46,
+        236.1
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Bodega Bay",
+      "lat": 38.25,
+      "lon": -123.15,
+      "layer_id": "charm_pseudo_nitzschia_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 38.26,
+      "cell_lon": -123.15,
+      "grid_value": 0.996414,
+      "image_matches_value": true,
+      "source_value": 0.996409,
+      "source_cell": [
+        38.26,
+        236.85
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Bodega Bay",
+      "lat": 38.25,
+      "lon": -123.15,
+      "layer_id": "charm_particulate_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 38.26,
+      "cell_lon": -123.15,
+      "grid_value": 0.658696,
+      "image_matches_value": true,
+      "source_value": 0.658696,
+      "source_cell": [
+        38.26,
+        236.85
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Bodega Bay",
+      "lat": 38.25,
+      "lon": -123.15,
+      "layer_id": "charm_cellular_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 38.26,
+      "cell_lon": -123.15,
+      "grid_value": 0.356273,
+      "image_matches_value": true,
+      "source_value": 0.35628,
+      "source_cell": [
+        38.26,
+        236.85
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Bodega Bay",
+      "lat": 38.25,
+      "lon": -123.15,
+      "layer_id": "charm_pseudo_nitzschia_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 38.26,
+      "cell_lon": -123.15,
+      "grid_value": 0.996246,
+      "image_matches_value": true,
+      "source_value": 0.996246,
+      "source_cell": [
+        38.26,
+        236.85
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Bodega Bay",
+      "lat": 38.25,
+      "lon": -123.15,
+      "layer_id": "charm_particulate_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 38.26,
+      "cell_lon": -123.15,
+      "grid_value": 0.643788,
+      "image_matches_value": true,
+      "source_value": 0.643791,
+      "source_cell": [
+        38.26,
+        236.85
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Bodega Bay",
+      "lat": 38.25,
+      "lon": -123.15,
+      "layer_id": "charm_cellular_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 38.26,
+      "cell_lon": -123.15,
+      "grid_value": 0.435911,
+      "image_matches_value": true,
+      "source_value": 0.435917,
+      "source_cell": [
+        38.26,
+        236.85
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Bodega Bay",
+      "lat": 38.25,
+      "lon": -123.15,
+      "layer_id": "charm_pseudo_nitzschia_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 38.26,
+      "cell_lon": -123.15,
+      "grid_value": 0.978011,
+      "image_matches_value": true,
+      "source_value": 0.978007,
+      "source_cell": [
+        38.26,
+        236.85
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Bodega Bay",
+      "lat": 38.25,
+      "lon": -123.15,
+      "layer_id": "charm_particulate_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 38.26,
+      "cell_lon": -123.15,
+      "grid_value": 0.716041,
+      "image_matches_value": true,
+      "source_value": 0.716036,
+      "source_cell": [
+        38.26,
+        236.85
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Bodega Bay",
+      "lat": 38.25,
+      "lon": -123.15,
+      "layer_id": "charm_cellular_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 38.26,
+      "cell_lon": -123.15,
+      "grid_value": 0.459593,
+      "image_matches_value": true,
+      "source_value": 0.459593,
+      "source_cell": [
+        38.26,
+        236.85
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Bodega Bay",
+      "lat": 38.25,
+      "lon": -123.15,
+      "layer_id": "charm_pseudo_nitzschia_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 38.26,
+      "cell_lon": -123.15,
+      "grid_value": 0.884625,
+      "image_matches_value": true,
+      "source_value": 0.884617,
+      "source_cell": [
+        38.26,
+        236.85
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Bodega Bay",
+      "lat": 38.25,
+      "lon": -123.15,
+      "layer_id": "charm_particulate_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 38.26,
+      "cell_lon": -123.15,
+      "grid_value": 0.746178,
+      "image_matches_value": true,
+      "source_value": 0.746178,
+      "source_cell": [
+        38.26,
+        236.85
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Bodega Bay",
+      "lat": 38.25,
+      "lon": -123.15,
+      "layer_id": "charm_cellular_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 38.26,
+      "cell_lon": -123.15,
+      "grid_value": 0.439268,
+      "image_matches_value": true,
+      "source_value": 0.439273,
+      "source_cell": [
+        38.26,
+        236.85
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Gulf of the Farallones",
+      "lat": 37.7,
+      "lon": -122.8,
+      "layer_id": "charm_pseudo_nitzschia_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 37.69,
+      "cell_lon": -122.79,
+      "grid_value": 0.783258,
+      "image_matches_value": true,
+      "source_value": 0.783264,
+      "source_cell": [
+        37.69,
+        237.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Gulf of the Farallones",
+      "lat": 37.7,
+      "lon": -122.8,
+      "layer_id": "charm_particulate_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 37.69,
+      "cell_lon": -122.79,
+      "grid_value": 0.74279,
+      "image_matches_value": true,
+      "source_value": 0.742783,
+      "source_cell": [
+        37.69,
+        237.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Gulf of the Farallones",
+      "lat": 37.7,
+      "lon": -122.8,
+      "layer_id": "charm_cellular_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 37.69,
+      "cell_lon": -122.79,
+      "grid_value": 0.404553,
+      "image_matches_value": true,
+      "source_value": 0.404557,
+      "source_cell": [
+        37.69,
+        237.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Gulf of the Farallones",
+      "lat": 37.7,
+      "lon": -122.8,
+      "layer_id": "charm_pseudo_nitzschia_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 37.69,
+      "cell_lon": -122.79,
+      "grid_value": 0.847728,
+      "image_matches_value": true,
+      "source_value": 0.847728,
+      "source_cell": [
+        37.69,
+        237.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Gulf of the Farallones",
+      "lat": 37.7,
+      "lon": -122.8,
+      "layer_id": "charm_particulate_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 37.69,
+      "cell_lon": -122.79,
+      "grid_value": 0.719794,
+      "image_matches_value": true,
+      "source_value": 0.719796,
+      "source_cell": [
+        37.69,
+        237.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Gulf of the Farallones",
+      "lat": 37.7,
+      "lon": -122.8,
+      "layer_id": "charm_cellular_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 37.69,
+      "cell_lon": -122.79,
+      "grid_value": 0.467177,
+      "image_matches_value": true,
+      "source_value": 0.467183,
+      "source_cell": [
+        37.69,
+        237.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Gulf of the Farallones",
+      "lat": 37.7,
+      "lon": -122.8,
+      "layer_id": "charm_pseudo_nitzschia_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 37.69,
+      "cell_lon": -122.79,
+      "grid_value": 0.843669,
+      "image_matches_value": true,
+      "source_value": 0.843669,
+      "source_cell": [
+        37.69,
+        237.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Gulf of the Farallones",
+      "lat": 37.7,
+      "lon": -122.8,
+      "layer_id": "charm_particulate_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 37.69,
+      "cell_lon": -122.79,
+      "grid_value": 0.761849,
+      "image_matches_value": true,
+      "source_value": 0.761855,
+      "source_cell": [
+        37.69,
+        237.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Gulf of the Farallones",
+      "lat": 37.7,
+      "lon": -122.8,
+      "layer_id": "charm_cellular_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 37.69,
+      "cell_lon": -122.79,
+      "grid_value": 0.391537,
+      "image_matches_value": true,
+      "source_value": 0.391537,
+      "source_cell": [
+        37.69,
+        237.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Gulf of the Farallones",
+      "lat": 37.7,
+      "lon": -122.8,
+      "layer_id": "charm_pseudo_nitzschia_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 37.69,
+      "cell_lon": -122.79,
+      "grid_value": 0.716727,
+      "image_matches_value": true,
+      "source_value": 0.71673,
+      "source_cell": [
+        37.69,
+        237.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Gulf of the Farallones",
+      "lat": 37.7,
+      "lon": -122.8,
+      "layer_id": "charm_particulate_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 37.69,
+      "cell_lon": -122.79,
+      "grid_value": 0.783898,
+      "image_matches_value": true,
+      "source_value": 0.783892,
+      "source_cell": [
+        37.69,
+        237.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Gulf of the Farallones",
+      "lat": 37.7,
+      "lon": -122.8,
+      "layer_id": "charm_cellular_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 37.69,
+      "cell_lon": -122.79,
+      "grid_value": 0.383709,
+      "image_matches_value": true,
+      "source_value": 0.383713,
+      "source_cell": [
+        37.69,
+        237.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Half Moon Bay",
+      "lat": 37.45,
+      "lon": -122.6,
+      "layer_id": "charm_pseudo_nitzschia_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 37.45,
+      "cell_lon": -122.61,
+      "grid_value": 0.848704,
+      "image_matches_value": true,
+      "source_value": 0.848712,
+      "source_cell": [
+        37.45,
+        237.39
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Half Moon Bay",
+      "lat": 37.45,
+      "lon": -122.6,
+      "layer_id": "charm_particulate_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 37.45,
+      "cell_lon": -122.61,
+      "grid_value": 0.709403,
+      "image_matches_value": true,
+      "source_value": 0.709403,
+      "source_cell": [
+        37.45,
+        237.39
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Half Moon Bay",
+      "lat": 37.45,
+      "lon": -122.6,
+      "layer_id": "charm_cellular_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 37.45,
+      "cell_lon": -122.61,
+      "grid_value": 0.416929,
+      "image_matches_value": true,
+      "source_value": 0.416932,
+      "source_cell": [
+        37.45,
+        237.39
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Half Moon Bay",
+      "lat": 37.45,
+      "lon": -122.6,
+      "layer_id": "charm_pseudo_nitzschia_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 37.45,
+      "cell_lon": -122.61,
+      "grid_value": 0.787423,
+      "image_matches_value": true,
+      "source_value": 0.787425,
+      "source_cell": [
+        37.45,
+        237.39
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Half Moon Bay",
+      "lat": 37.45,
+      "lon": -122.6,
+      "layer_id": "charm_particulate_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 37.45,
+      "cell_lon": -122.61,
+      "grid_value": 0.765755,
+      "image_matches_value": true,
+      "source_value": 0.765749,
+      "source_cell": [
+        37.45,
+        237.39
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Half Moon Bay",
+      "lat": 37.45,
+      "lon": -122.6,
+      "layer_id": "charm_cellular_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 37.45,
+      "cell_lon": -122.61,
+      "grid_value": 0.406049,
+      "image_matches_value": true,
+      "source_value": 0.406043,
+      "source_cell": [
+        37.45,
+        237.39
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Half Moon Bay",
+      "lat": 37.45,
+      "lon": -122.6,
+      "layer_id": "charm_pseudo_nitzschia_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 37.45,
+      "cell_lon": -122.61,
+      "grid_value": 0.566607,
+      "image_matches_value": true,
+      "source_value": 0.566612,
+      "source_cell": [
+        37.45,
+        237.39
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Half Moon Bay",
+      "lat": 37.45,
+      "lon": -122.6,
+      "layer_id": "charm_particulate_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 37.45,
+      "cell_lon": -122.61,
+      "grid_value": 0.744285,
+      "image_matches_value": true,
+      "source_value": 0.744281,
+      "source_cell": [
+        37.45,
+        237.39
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Half Moon Bay",
+      "lat": 37.45,
+      "lon": -122.6,
+      "layer_id": "charm_cellular_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 37.45,
+      "cell_lon": -122.61,
+      "grid_value": 0.397351,
+      "image_matches_value": true,
+      "source_value": 0.397353,
+      "source_cell": [
+        37.45,
+        237.39
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Half Moon Bay",
+      "lat": 37.45,
+      "lon": -122.6,
+      "layer_id": "charm_pseudo_nitzschia_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 37.45,
+      "cell_lon": -122.61,
+      "grid_value": 0.767235,
+      "image_matches_value": true,
+      "source_value": 0.767236,
+      "source_cell": [
+        37.45,
+        237.39
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Half Moon Bay",
+      "lat": 37.45,
+      "lon": -122.6,
+      "layer_id": "charm_particulate_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 37.45,
+      "cell_lon": -122.61,
+      "grid_value": 0.789056,
+      "image_matches_value": true,
+      "source_value": 0.789053,
+      "source_cell": [
+        37.45,
+        237.39
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Half Moon Bay",
+      "lat": 37.45,
+      "lon": -122.6,
+      "layer_id": "charm_cellular_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 37.45,
+      "cell_lon": -122.61,
+      "grid_value": 0.33282,
+      "image_matches_value": true,
+      "source_value": 0.332817,
+      "source_cell": [
+        37.45,
+        237.39
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Santa Cruz",
+      "lat": 36.9,
+      "lon": -122.1,
+      "layer_id": "charm_pseudo_nitzschia_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 36.91,
+      "cell_lon": -122.1,
+      "grid_value": 0.942961,
+      "image_matches_value": true,
+      "source_value": 0.942962,
+      "source_cell": [
+        36.91,
+        237.9
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Santa Cruz",
+      "lat": 36.9,
+      "lon": -122.1,
+      "layer_id": "charm_particulate_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 36.91,
+      "cell_lon": -122.1,
+      "grid_value": 0.793817,
+      "image_matches_value": true,
+      "source_value": 0.793813,
+      "source_cell": [
+        36.91,
+        237.9
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Santa Cruz",
+      "lat": 36.9,
+      "lon": -122.1,
+      "layer_id": "charm_cellular_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 36.91,
+      "cell_lon": -122.1,
+      "grid_value": 0.257714,
+      "image_matches_value": true,
+      "source_value": 0.257719,
+      "source_cell": [
+        36.91,
+        237.9
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Santa Cruz",
+      "lat": 36.9,
+      "lon": -122.1,
+      "layer_id": "charm_pseudo_nitzschia_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 36.91,
+      "cell_lon": -122.1,
+      "grid_value": 0.886975,
+      "image_matches_value": true,
+      "source_value": 0.886975,
+      "source_cell": [
+        36.91,
+        237.9
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Santa Cruz",
+      "lat": 36.9,
+      "lon": -122.1,
+      "layer_id": "charm_particulate_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 36.91,
+      "cell_lon": -122.1,
+      "grid_value": 0.770425,
+      "image_matches_value": true,
+      "source_value": 0.770421,
+      "source_cell": [
+        36.91,
+        237.9
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Santa Cruz",
+      "lat": 36.9,
+      "lon": -122.1,
+      "layer_id": "charm_cellular_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 36.91,
+      "cell_lon": -122.1,
+      "grid_value": 0.326456,
+      "image_matches_value": true,
+      "source_value": 0.326458,
+      "source_cell": [
+        36.91,
+        237.9
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Santa Cruz",
+      "lat": 36.9,
+      "lon": -122.1,
+      "layer_id": "charm_pseudo_nitzschia_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 36.91,
+      "cell_lon": -122.1,
+      "grid_value": 0.884152,
+      "image_matches_value": true,
+      "source_value": 0.884158,
+      "source_cell": [
+        36.91,
+        237.9
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Santa Cruz",
+      "lat": 36.9,
+      "lon": -122.1,
+      "layer_id": "charm_particulate_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 36.91,
+      "cell_lon": -122.1,
+      "grid_value": 0.79165,
+      "image_matches_value": true,
+      "source_value": 0.791653,
+      "source_cell": [
+        36.91,
+        237.9
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Santa Cruz",
+      "lat": 36.9,
+      "lon": -122.1,
+      "layer_id": "charm_cellular_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 36.91,
+      "cell_lon": -122.1,
+      "grid_value": 0.339915,
+      "image_matches_value": true,
+      "source_value": 0.339908,
+      "source_cell": [
+        36.91,
+        237.9
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Santa Cruz",
+      "lat": 36.9,
+      "lon": -122.1,
+      "layer_id": "charm_pseudo_nitzschia_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 36.91,
+      "cell_lon": -122.1,
+      "grid_value": 0.845286,
+      "image_matches_value": true,
+      "source_value": 0.845285,
+      "source_cell": [
+        36.91,
+        237.9
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Santa Cruz",
+      "lat": 36.9,
+      "lon": -122.1,
+      "layer_id": "charm_particulate_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 36.91,
+      "cell_lon": -122.1,
+      "grid_value": 0.794794,
+      "image_matches_value": true,
+      "source_value": 0.794786,
+      "source_cell": [
+        36.91,
+        237.9
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Santa Cruz",
+      "lat": 36.9,
+      "lon": -122.1,
+      "layer_id": "charm_cellular_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 36.91,
+      "cell_lon": -122.1,
+      "grid_value": 0.370205,
+      "image_matches_value": true,
+      "source_value": 0.370198,
+      "source_cell": [
+        36.91,
+        237.9
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Bay (mid-bay)",
+      "lat": 36.8,
+      "lon": -121.95,
+      "layer_id": "charm_pseudo_nitzschia_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 36.79,
+      "cell_lon": -121.95,
+      "grid_value": 0.89967,
+      "image_matches_value": true,
+      "source_value": 0.899675,
+      "source_cell": [
+        36.79,
+        238.05
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Bay (mid-bay)",
+      "lat": 36.8,
+      "lon": -121.95,
+      "layer_id": "charm_particulate_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 36.79,
+      "cell_lon": -121.95,
+      "grid_value": 0.729072,
+      "image_matches_value": true,
+      "source_value": 0.729067,
+      "source_cell": [
+        36.79,
+        238.05
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Bay (mid-bay)",
+      "lat": 36.8,
+      "lon": -121.95,
+      "layer_id": "charm_cellular_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 36.79,
+      "cell_lon": -121.95,
+      "grid_value": 0.298578,
+      "image_matches_value": true,
+      "source_value": 0.298572,
+      "source_cell": [
+        36.79,
+        238.05
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Bay (mid-bay)",
+      "lat": 36.8,
+      "lon": -121.95,
+      "layer_id": "charm_pseudo_nitzschia_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 36.79,
+      "cell_lon": -121.95,
+      "grid_value": 0.775231,
+      "image_matches_value": true,
+      "source_value": 0.775237,
+      "source_cell": [
+        36.79,
+        238.05
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Bay (mid-bay)",
+      "lat": 36.8,
+      "lon": -121.95,
+      "layer_id": "charm_particulate_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 36.79,
+      "cell_lon": -121.95,
+      "grid_value": 0.747841,
+      "image_matches_value": true,
+      "source_value": 0.747839,
+      "source_cell": [
+        36.79,
+        238.05
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Bay (mid-bay)",
+      "lat": 36.8,
+      "lon": -121.95,
+      "layer_id": "charm_cellular_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 36.79,
+      "cell_lon": -121.95,
+      "grid_value": 0.385998,
+      "image_matches_value": true,
+      "source_value": 0.386003,
+      "source_cell": [
+        36.79,
+        238.05
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Bay (mid-bay)",
+      "lat": 36.8,
+      "lon": -121.95,
+      "layer_id": "charm_pseudo_nitzschia_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 36.79,
+      "cell_lon": -121.95,
+      "grid_value": 0.855083,
+      "image_matches_value": true,
+      "source_value": 0.855081,
+      "source_cell": [
+        36.79,
+        238.05
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Bay (mid-bay)",
+      "lat": 36.8,
+      "lon": -121.95,
+      "layer_id": "charm_particulate_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 36.79,
+      "cell_lon": -121.95,
+      "grid_value": 0.74868,
+      "image_matches_value": true,
+      "source_value": 0.748686,
+      "source_cell": [
+        36.79,
+        238.05
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Bay (mid-bay)",
+      "lat": 36.8,
+      "lon": -121.95,
+      "layer_id": "charm_cellular_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 36.79,
+      "cell_lon": -121.95,
+      "grid_value": 0.37582,
+      "image_matches_value": true,
+      "source_value": 0.375827,
+      "source_cell": [
+        36.79,
+        238.05
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Bay (mid-bay)",
+      "lat": 36.8,
+      "lon": -121.95,
+      "layer_id": "charm_pseudo_nitzschia_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 36.79,
+      "cell_lon": -121.95,
+      "grid_value": 0.732612,
+      "image_matches_value": true,
+      "source_value": 0.732604,
+      "source_cell": [
+        36.79,
+        238.05
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Bay (mid-bay)",
+      "lat": 36.8,
+      "lon": -121.95,
+      "layer_id": "charm_particulate_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 36.79,
+      "cell_lon": -121.95,
+      "grid_value": 0.760521,
+      "image_matches_value": true,
+      "source_value": 0.760524,
+      "source_cell": [
+        36.79,
+        238.05
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Bay (mid-bay)",
+      "lat": 36.8,
+      "lon": -121.95,
+      "layer_id": "charm_cellular_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 36.79,
+      "cell_lon": -121.95,
+      "grid_value": 0.378414,
+      "image_matches_value": true,
+      "source_value": 0.378419,
+      "source_cell": [
+        36.79,
+        238.05
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Wharf (nearshore)",
+      "lat": 36.604,
+      "lon": -121.889,
+      "layer_id": "charm_pseudo_nitzschia_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 36.61,
+      "cell_lon": -121.89,
+      "grid_value": 0.971084,
+      "image_matches_value": true,
+      "source_value": 0.971083,
+      "source_cell": [
+        36.61,
+        238.11
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Wharf (nearshore)",
+      "lat": 36.604,
+      "lon": -121.889,
+      "layer_id": "charm_particulate_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 36.61,
+      "cell_lon": -121.89,
+      "grid_value": null,
+      "image_matches_value": true,
+      "source_value": null,
+      "source_cell": [
+        36.61,
+        238.11
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Wharf (nearshore)",
+      "lat": 36.604,
+      "lon": -121.889,
+      "layer_id": "charm_cellular_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 36.61,
+      "cell_lon": -121.89,
+      "grid_value": null,
+      "image_matches_value": true,
+      "source_value": null,
+      "source_cell": [
+        36.61,
+        238.11
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Wharf (nearshore)",
+      "lat": 36.604,
+      "lon": -121.889,
+      "layer_id": "charm_pseudo_nitzschia_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 36.61,
+      "cell_lon": -121.89,
+      "grid_value": 0.971084,
+      "image_matches_value": true,
+      "source_value": 0.971083,
+      "source_cell": [
+        36.61,
+        238.11
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Wharf (nearshore)",
+      "lat": 36.604,
+      "lon": -121.889,
+      "layer_id": "charm_particulate_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 36.61,
+      "cell_lon": -121.89,
+      "grid_value": null,
+      "image_matches_value": true,
+      "source_value": null,
+      "source_cell": [
+        36.61,
+        238.11
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Wharf (nearshore)",
+      "lat": 36.604,
+      "lon": -121.889,
+      "layer_id": "charm_cellular_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 36.61,
+      "cell_lon": -121.89,
+      "grid_value": null,
+      "image_matches_value": true,
+      "source_value": null,
+      "source_cell": [
+        36.61,
+        238.11
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Wharf (nearshore)",
+      "lat": 36.604,
+      "lon": -121.889,
+      "layer_id": "charm_pseudo_nitzschia_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 36.61,
+      "cell_lon": -121.89,
+      "grid_value": 0.971084,
+      "image_matches_value": true,
+      "source_value": 0.971083,
+      "source_cell": [
+        36.61,
+        238.11
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Wharf (nearshore)",
+      "lat": 36.604,
+      "lon": -121.889,
+      "layer_id": "charm_particulate_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 36.61,
+      "cell_lon": -121.89,
+      "grid_value": null,
+      "image_matches_value": true,
+      "source_value": null,
+      "source_cell": [
+        36.61,
+        238.11
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Wharf (nearshore)",
+      "lat": 36.604,
+      "lon": -121.889,
+      "layer_id": "charm_cellular_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 36.61,
+      "cell_lon": -121.89,
+      "grid_value": null,
+      "image_matches_value": true,
+      "source_value": null,
+      "source_cell": [
+        36.61,
+        238.11
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Wharf (nearshore)",
+      "lat": 36.604,
+      "lon": -121.889,
+      "layer_id": "charm_pseudo_nitzschia_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 36.61,
+      "cell_lon": -121.89,
+      "grid_value": 0.971084,
+      "image_matches_value": true,
+      "source_value": 0.971083,
+      "source_cell": [
+        36.61,
+        238.11
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Wharf (nearshore)",
+      "lat": 36.604,
+      "lon": -121.889,
+      "layer_id": "charm_particulate_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 36.61,
+      "cell_lon": -121.89,
+      "grid_value": null,
+      "image_matches_value": true,
+      "source_value": null,
+      "source_cell": [
+        36.61,
+        238.11
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Monterey Wharf (nearshore)",
+      "lat": 36.604,
+      "lon": -121.889,
+      "layer_id": "charm_cellular_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 36.61,
+      "cell_lon": -121.89,
+      "grid_value": null,
+      "image_matches_value": true,
+      "source_value": null,
+      "source_cell": [
+        36.61,
+        238.11
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Morro Bay",
+      "lat": 35.35,
+      "lon": -121.0,
+      "layer_id": "charm_pseudo_nitzschia_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 35.35,
+      "cell_lon": -120.99,
+      "grid_value": 0.751106,
+      "image_matches_value": true,
+      "source_value": 0.751112,
+      "source_cell": [
+        35.35,
+        239.01
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Morro Bay",
+      "lat": 35.35,
+      "lon": -121.0,
+      "layer_id": "charm_particulate_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 35.35,
+      "cell_lon": -120.99,
+      "grid_value": 0.751259,
+      "image_matches_value": true,
+      "source_value": 0.751266,
+      "source_cell": [
+        35.35,
+        239.01
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Morro Bay",
+      "lat": 35.35,
+      "lon": -121.0,
+      "layer_id": "charm_cellular_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 35.35,
+      "cell_lon": -120.99,
+      "grid_value": 0.221213,
+      "image_matches_value": true,
+      "source_value": 0.221207,
+      "source_cell": [
+        35.35,
+        239.01
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Morro Bay",
+      "lat": 35.35,
+      "lon": -121.0,
+      "layer_id": "charm_pseudo_nitzschia_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 35.35,
+      "cell_lon": -120.99,
+      "grid_value": 0.596011,
+      "image_matches_value": true,
+      "source_value": 0.596005,
+      "source_cell": [
+        35.35,
+        239.01
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Morro Bay",
+      "lat": 35.35,
+      "lon": -121.0,
+      "layer_id": "charm_particulate_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 35.35,
+      "cell_lon": -120.99,
+      "grid_value": 0.759056,
+      "image_matches_value": true,
+      "source_value": 0.759055,
+      "source_cell": [
+        35.35,
+        239.01
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Morro Bay",
+      "lat": 35.35,
+      "lon": -121.0,
+      "layer_id": "charm_cellular_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 35.35,
+      "cell_lon": -120.99,
+      "grid_value": 0.233055,
+      "image_matches_value": true,
+      "source_value": 0.23305,
+      "source_cell": [
+        35.35,
+        239.01
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Morro Bay",
+      "lat": 35.35,
+      "lon": -121.0,
+      "layer_id": "charm_pseudo_nitzschia_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 35.35,
+      "cell_lon": -120.99,
+      "grid_value": 0.745109,
+      "image_matches_value": true,
+      "source_value": 0.745108,
+      "source_cell": [
+        35.35,
+        239.01
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Morro Bay",
+      "lat": 35.35,
+      "lon": -121.0,
+      "layer_id": "charm_particulate_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 35.35,
+      "cell_lon": -120.99,
+      "grid_value": 0.758278,
+      "image_matches_value": true,
+      "source_value": 0.758279,
+      "source_cell": [
+        35.35,
+        239.01
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Morro Bay",
+      "lat": 35.35,
+      "lon": -121.0,
+      "layer_id": "charm_cellular_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 35.35,
+      "cell_lon": -120.99,
+      "grid_value": 0.235313,
+      "image_matches_value": true,
+      "source_value": 0.23532,
+      "source_cell": [
+        35.35,
+        239.01
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Morro Bay",
+      "lat": 35.35,
+      "lon": -121.0,
+      "layer_id": "charm_pseudo_nitzschia_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 35.35,
+      "cell_lon": -120.99,
+      "grid_value": 0.228584,
+      "image_matches_value": true,
+      "source_value": 0.228576,
+      "source_cell": [
+        35.35,
+        239.01
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Morro Bay",
+      "lat": 35.35,
+      "lon": -121.0,
+      "layer_id": "charm_particulate_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 35.35,
+      "cell_lon": -120.99,
+      "grid_value": 0.77398,
+      "image_matches_value": true,
+      "source_value": 0.773985,
+      "source_cell": [
+        35.35,
+        239.01
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off Morro Bay",
+      "lat": 35.35,
+      "lon": -121.0,
+      "layer_id": "charm_cellular_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 35.35,
+      "cell_lon": -120.99,
+      "grid_value": 0.232887,
+      "image_matches_value": true,
+      "source_value": 0.232893,
+      "source_cell": [
+        35.35,
+        239.01
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Santa Barbara Channel",
+      "lat": 34.3,
+      "lon": -119.8,
+      "layer_id": "charm_pseudo_nitzschia_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 34.3,
+      "cell_lon": -119.79,
+      "grid_value": 0.214057,
+      "image_matches_value": true,
+      "source_value": 0.214063,
+      "source_cell": [
+        34.3,
+        240.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Santa Barbara Channel",
+      "lat": 34.3,
+      "lon": -119.8,
+      "layer_id": "charm_particulate_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 34.3,
+      "cell_lon": -119.79,
+      "grid_value": 0.834071,
+      "image_matches_value": true,
+      "source_value": 0.834075,
+      "source_cell": [
+        34.3,
+        240.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Santa Barbara Channel",
+      "lat": 34.3,
+      "lon": -119.8,
+      "layer_id": "charm_cellular_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 34.3,
+      "cell_lon": -119.79,
+      "grid_value": 0.154637,
+      "image_matches_value": true,
+      "source_value": 0.154643,
+      "source_cell": [
+        34.3,
+        240.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Santa Barbara Channel",
+      "lat": 34.3,
+      "lon": -119.8,
+      "layer_id": "charm_pseudo_nitzschia_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 34.3,
+      "cell_lon": -119.79,
+      "grid_value": 0.252495,
+      "image_matches_value": true,
+      "source_value": 0.252489,
+      "source_cell": [
+        34.3,
+        240.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Santa Barbara Channel",
+      "lat": 34.3,
+      "lon": -119.8,
+      "layer_id": "charm_particulate_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 34.3,
+      "cell_lon": -119.79,
+      "grid_value": 0.794946,
+      "image_matches_value": true,
+      "source_value": 0.794948,
+      "source_cell": [
+        34.3,
+        240.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Santa Barbara Channel",
+      "lat": 34.3,
+      "lon": -119.8,
+      "layer_id": "charm_cellular_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 34.3,
+      "cell_lon": -119.79,
+      "grid_value": 0.136296,
+      "image_matches_value": true,
+      "source_value": 0.136291,
+      "source_cell": [
+        34.3,
+        240.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Santa Barbara Channel",
+      "lat": 34.3,
+      "lon": -119.8,
+      "layer_id": "charm_pseudo_nitzschia_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 34.3,
+      "cell_lon": -119.79,
+      "grid_value": 0.421171,
+      "image_matches_value": true,
+      "source_value": 0.421165,
+      "source_cell": [
+        34.3,
+        240.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Santa Barbara Channel",
+      "lat": 34.3,
+      "lon": -119.8,
+      "layer_id": "charm_particulate_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 34.3,
+      "cell_lon": -119.79,
+      "grid_value": 0.834269,
+      "image_matches_value": true,
+      "source_value": 0.834271,
+      "source_cell": [
+        34.3,
+        240.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Santa Barbara Channel",
+      "lat": 34.3,
+      "lon": -119.8,
+      "layer_id": "charm_cellular_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 34.3,
+      "cell_lon": -119.79,
+      "grid_value": 0.125141,
+      "image_matches_value": true,
+      "source_value": 0.12514,
+      "source_cell": [
+        34.3,
+        240.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Santa Barbara Channel",
+      "lat": 34.3,
+      "lon": -119.8,
+      "layer_id": "charm_pseudo_nitzschia_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 34.3,
+      "cell_lon": -119.79,
+      "grid_value": 0.818094,
+      "image_matches_value": true,
+      "source_value": 0.818092,
+      "source_cell": [
+        34.3,
+        240.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Santa Barbara Channel",
+      "lat": 34.3,
+      "lon": -119.8,
+      "layer_id": "charm_particulate_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 34.3,
+      "cell_lon": -119.79,
+      "grid_value": 0.943968,
+      "image_matches_value": true,
+      "source_value": 0.943963,
+      "source_cell": [
+        34.3,
+        240.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Santa Barbara Channel",
+      "lat": 34.3,
+      "lon": -119.8,
+      "layer_id": "charm_cellular_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 34.3,
+      "cell_lon": -119.79,
+      "grid_value": 0.076144,
+      "image_matches_value": true,
+      "source_value": 0.076145,
+      "source_cell": [
+        34.3,
+        240.21
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "San Pedro Channel",
+      "lat": 33.6,
+      "lon": -118.3,
+      "layer_id": "charm_pseudo_nitzschia_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 33.61,
+      "cell_lon": -118.29,
+      "grid_value": 0.184942,
+      "image_matches_value": true,
+      "source_value": 0.184939,
+      "source_cell": [
+        33.61,
+        241.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "San Pedro Channel",
+      "lat": 33.6,
+      "lon": -118.3,
+      "layer_id": "charm_particulate_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 33.61,
+      "cell_lon": -118.29,
+      "grid_value": 0.879589,
+      "image_matches_value": true,
+      "source_value": 0.879592,
+      "source_cell": [
+        33.61,
+        241.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "San Pedro Channel",
+      "lat": 33.6,
+      "lon": -118.3,
+      "layer_id": "charm_cellular_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 33.61,
+      "cell_lon": -118.29,
+      "grid_value": 0.168981,
+      "image_matches_value": true,
+      "source_value": 0.168977,
+      "source_cell": [
+        33.61,
+        241.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "San Pedro Channel",
+      "lat": 33.6,
+      "lon": -118.3,
+      "layer_id": "charm_pseudo_nitzschia_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 33.61,
+      "cell_lon": -118.29,
+      "grid_value": 0.093402,
+      "image_matches_value": true,
+      "source_value": 0.093409,
+      "source_cell": [
+        33.61,
+        241.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "San Pedro Channel",
+      "lat": 33.6,
+      "lon": -118.3,
+      "layer_id": "charm_particulate_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 33.61,
+      "cell_lon": -118.29,
+      "grid_value": 0.775155,
+      "image_matches_value": true,
+      "source_value": 0.775147,
+      "source_cell": [
+        33.61,
+        241.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "San Pedro Channel",
+      "lat": 33.6,
+      "lon": -118.3,
+      "layer_id": "charm_cellular_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 33.61,
+      "cell_lon": -118.29,
+      "grid_value": 0.118381,
+      "image_matches_value": true,
+      "source_value": 0.118385,
+      "source_cell": [
+        33.61,
+        241.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "San Pedro Channel",
+      "lat": 33.6,
+      "lon": -118.3,
+      "layer_id": "charm_pseudo_nitzschia_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 33.61,
+      "cell_lon": -118.29,
+      "grid_value": 0.094592,
+      "image_matches_value": true,
+      "source_value": 0.094593,
+      "source_cell": [
+        33.61,
+        241.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "San Pedro Channel",
+      "lat": 33.6,
+      "lon": -118.3,
+      "layer_id": "charm_particulate_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 33.61,
+      "cell_lon": -118.29,
+      "grid_value": 0.875866,
+      "image_matches_value": true,
+      "source_value": 0.875861,
+      "source_cell": [
+        33.61,
+        241.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "San Pedro Channel",
+      "lat": 33.6,
+      "lon": -118.3,
+      "layer_id": "charm_cellular_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 33.61,
+      "cell_lon": -118.29,
+      "grid_value": 0.136189,
+      "image_matches_value": true,
+      "source_value": 0.13619,
+      "source_cell": [
+        33.61,
+        241.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "San Pedro Channel",
+      "lat": 33.6,
+      "lon": -118.3,
+      "layer_id": "charm_pseudo_nitzschia_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 33.61,
+      "cell_lon": -118.29,
+      "grid_value": 0.10979,
+      "image_matches_value": true,
+      "source_value": 0.109793,
+      "source_cell": [
+        33.61,
+        241.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "San Pedro Channel",
+      "lat": 33.6,
+      "lon": -118.3,
+      "layer_id": "charm_particulate_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 33.61,
+      "cell_lon": -118.29,
+      "grid_value": 0.851802,
+      "image_matches_value": true,
+      "source_value": 0.851808,
+      "source_cell": [
+        33.61,
+        241.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "San Pedro Channel",
+      "lat": 33.6,
+      "lon": -118.3,
+      "layer_id": "charm_cellular_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 33.61,
+      "cell_lon": -118.29,
+      "grid_value": 0.120029,
+      "image_matches_value": true,
+      "source_value": 0.120026,
+      "source_cell": [
+        33.61,
+        241.71
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off San Diego",
+      "lat": 32.7,
+      "lon": -117.35,
+      "layer_id": "charm_pseudo_nitzschia_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 32.71,
+      "cell_lon": -117.36,
+      "grid_value": 0.738243,
+      "image_matches_value": true,
+      "source_value": 0.738246,
+      "source_cell": [
+        32.71,
+        242.64
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off San Diego",
+      "lat": 32.7,
+      "lon": -117.35,
+      "layer_id": "charm_particulate_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 32.71,
+      "cell_lon": -117.36,
+      "grid_value": 0.891705,
+      "image_matches_value": true,
+      "source_value": 0.891706,
+      "source_cell": [
+        32.71,
+        242.64
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off San Diego",
+      "lat": 32.7,
+      "lon": -117.35,
+      "layer_id": "charm_cellular_domoic_lead0",
+      "valid_date": "2026-10-27",
+      "cell_lat": 32.71,
+      "cell_lon": -117.36,
+      "grid_value": 0.145161,
+      "image_matches_value": true,
+      "source_value": 0.145166,
+      "source_cell": [
+        32.71,
+        242.64
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off San Diego",
+      "lat": 32.7,
+      "lon": -117.35,
+      "layer_id": "charm_pseudo_nitzschia_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 32.71,
+      "cell_lon": -117.36,
+      "grid_value": 0.170141,
+      "image_matches_value": true,
+      "source_value": 0.170142,
+      "source_cell": [
+        32.71,
+        242.64
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off San Diego",
+      "lat": 32.7,
+      "lon": -117.35,
+      "layer_id": "charm_particulate_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 32.71,
+      "cell_lon": -117.36,
+      "grid_value": 0.899487,
+      "image_matches_value": true,
+      "source_value": 0.899483,
+      "source_cell": [
+        32.71,
+        242.64
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off San Diego",
+      "lat": 32.7,
+      "lon": -117.35,
+      "layer_id": "charm_cellular_domoic_lead1",
+      "valid_date": "2026-10-28",
+      "cell_lat": 32.71,
+      "cell_lon": -117.36,
+      "grid_value": 0.104266,
+      "image_matches_value": true,
+      "source_value": 0.104264,
+      "source_cell": [
+        32.71,
+        242.64
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off San Diego",
+      "lat": 32.7,
+      "lon": -117.35,
+      "layer_id": "charm_pseudo_nitzschia_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 32.71,
+      "cell_lon": -117.36,
+      "grid_value": 0.17362,
+      "image_matches_value": true,
+      "source_value": 0.173614,
+      "source_cell": [
+        32.71,
+        242.64
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off San Diego",
+      "lat": 32.7,
+      "lon": -117.35,
+      "layer_id": "charm_particulate_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 32.71,
+      "cell_lon": -117.36,
+      "grid_value": 0.912503,
+      "image_matches_value": true,
+      "source_value": 0.9125,
+      "source_cell": [
+        32.71,
+        242.64
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off San Diego",
+      "lat": 32.7,
+      "lon": -117.35,
+      "layer_id": "charm_cellular_domoic_lead2",
+      "valid_date": "2026-10-29",
+      "cell_lat": 32.71,
+      "cell_lon": -117.36,
+      "grid_value": 0.110034,
+      "image_matches_value": true,
+      "source_value": 0.110038,
+      "source_cell": [
+        32.71,
+        242.64
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off San Diego",
+      "lat": 32.7,
+      "lon": -117.35,
+      "layer_id": "charm_pseudo_nitzschia_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 32.71,
+      "cell_lon": -117.36,
+      "grid_value": 0.646321,
+      "image_matches_value": true,
+      "source_value": 0.646318,
+      "source_cell": [
+        32.71,
+        242.64
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off San Diego",
+      "lat": 32.7,
+      "lon": -117.35,
+      "layer_id": "charm_particulate_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 32.71,
+      "cell_lon": -117.36,
+      "grid_value": 0.893033,
+      "image_matches_value": true,
+      "source_value": 0.893033,
+      "source_cell": [
+        32.71,
+        242.64
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    },
+    {
+      "point": "Off San Diego",
+      "lat": 32.7,
+      "lon": -117.35,
+      "layer_id": "charm_cellular_domoic_lead3",
+      "valid_date": "2026-10-30",
+      "cell_lat": 32.71,
+      "cell_lon": -117.36,
+      "grid_value": 0.136952,
+      "image_matches_value": true,
+      "source_value": 0.136956,
+      "source_cell": [
+        32.71,
+        242.64
+      ],
+      "source_matches_grid": true,
+      "status": "pass"
+    }
+  ]
+}
