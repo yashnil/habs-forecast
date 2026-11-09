@@ -153,6 +153,9 @@ describe("buildPortToday: words", () => {
     expect(m.today.facts.find((f) => f.id === "weather:nws")!.basis).toBe("forecast");
     expect(m.today.facts.find((f) => f.id === "tide:next")!.headline).toMatch(/^Next tide: (high|low) /);
     expect(m.sea.lanes.length).toBeGreaterThanOrEqual(5);
+    // issued last evening: at 6 AM "Tonight" (Oct 12) is over and not shown; at 11 PM it is
+    expect(m.sea.lanes[0].name).toBe("Tue");
+    expect(buildTodayModel(base({ conditions: cond, now: "2026-10-13T06:00:00Z" })).sea.lanes[0].name).toBe("Tonight");
     expect(m.lede.sea).toMatch(/kt/);
   });
 });

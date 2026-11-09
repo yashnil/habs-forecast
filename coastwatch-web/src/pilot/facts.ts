@@ -731,7 +731,13 @@ function seaView(c: Conditions | null | "error", now: string): SeaView {
   if (c === null || c === "error") return empty;
   const v: SeaView = { ...empty, state: "ok" };
   if (c.marine.status === "ok") {
-    v.lanes = lanePeriods(c.marine.data.periods, c.marine.data.updated);
+    // a period already over is not shown (a forecast issued last evening still opens with "Tonight"):
+    // yesterday's night lasts until 6 AM; anything dated earlier is gone
+    const today = pacificDay(now);
+    const hour = Number(localNow(now).slice(11, 13));
+    v.lanes = lanePeriods(c.marine.data.periods, c.marine.data.updated, 14)
+      .filter((p) => !p.date || p.date >= today || (p.night && hour < 6 && daysOld(p.date, now) === 1))
+      .slice(0, 10);
     v.zone = c.marine.data.zone;
     v.issued = c.marine.data.updated;
     v.marineUrl = c.marine.url;

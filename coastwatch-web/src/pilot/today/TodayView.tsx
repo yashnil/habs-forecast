@@ -106,7 +106,7 @@ export function TodayView({ inputs, linkFisheries, readiness }: TodayProps) {
   const [picking, setPicking] = useState(false);
   const [sheet, setSheet] = useState<StatusRow | null>(null);
   const [saved, setSaved] = useState<{ at: string | null } | null>(null);
-  const conditionsUrl = `/api/conditions?lat=${place.lat.toFixed(4)}&lon=${place.lon.toFixed(4)}&periods=10`;
+  const conditionsUrl = `/api/conditions?lat=${place.lat.toFixed(4)}&lon=${place.lon.toFixed(4)}&periods=12`;
   const conditions = useConditions(conditionsUrl);
 
   useEffect(() => {

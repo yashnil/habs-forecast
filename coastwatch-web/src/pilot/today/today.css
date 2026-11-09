@@ -29,6 +29,7 @@
   background: radial-gradient(120% 100% at 85% -10%, color-mix(in srgb, var(--nx-accent) 14%, var(--nx-bg)) 0%, var(--nx-bg) 62%);
 }
 html[data-daylight] .today-hero { background: linear-gradient(180deg, var(--nx-conditions-bg), var(--nx-bg)); }
+html[data-daylight] .today-hero-iso { opacity: 0.35; }
 .today-hero-iso { position: absolute; inset: auto 0 0 0; width: 100%; height: 38%; pointer-events: none; opacity: 0.7; }
 .today-hero-iso path { fill: none; stroke: var(--nx-line-strong); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .today-hero-iso path.index { stroke: color-mix(in srgb, var(--nx-conditions) 55%, transparent); stroke-width: 1.5; }
