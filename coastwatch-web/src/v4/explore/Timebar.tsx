@@ -492,6 +492,7 @@ export function TimeRail({
       aria-label="Time"
       data-testid={t ? "timebar" : "time-rail"}
       data-unit={unit}
+      data-playback-space
       onKeyDown={(e) => {
         if (!t) return;
         if (e.key === "ArrowRight") go(i + 1);
