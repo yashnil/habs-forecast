@@ -1,0 +1,78 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A plates</title>
+<link rel="stylesheet" href="base.css"><style>
+main { max-width: 1120px; margin: 0 auto; padding: 20px 16px 96px; }
+.head { display: flex; flex-direction: column; gap: 6px; padding: 8px 0 18px; }
+.head h1 { font: 500 44px/1.02 var(--serif); letter-spacing: -.02em; margin: 2px 0 4px; }
+.head .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; color: var(--nx-ink-2); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--nx-measured); margin-right: 6px; }
+.grid { display: grid; gap: 16px; }
+@media (min-width: 1024px) { .grid { grid-template-columns: 1.15fr 1fr; align-items: start; } .head h1 { font-size: 64px; } }
+.plate { background: var(--nx-surface); border: 1px solid var(--nx-line); border-radius: 4px; }
+.plate > header { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 16px 10px; }
+.row { display: grid; grid-template-columns: 4px 1fr auto; gap: 0 14px; padding: 14px 16px 14px 0; border-top: 1px solid var(--nx-line); min-height: 64px; }
+.tick { border-radius: 0 2px 2px 0; }
+.row h3 { margin: 0; font: 600 16px/1.3 var(--sans); display: flex; gap: 8px; align-items: center; }
+.row p { margin: 2px 0 0; font-size: 14.5px; color: var(--nx-ink-2); line-height: 1.4; }
+.row .src { margin-top: 4px; font-size: 12.5px; color: var(--nx-ink-3); }
+.chip { font: 600 11px/1 var(--caps); letter-spacing: .1em; text-transform: uppercase; padding: 5px 7px; border-radius: 3px; border: 1px solid currentColor; white-space: nowrap; align-self: start; }
+.red { color: var(--red); } .amber { color: var(--amber); } .none { color: var(--none); }
+.bg-red { background: var(--red); } .bg-amber { background: var(--amber); } .bg-none { background: color-mix(in srgb, var(--none) 45%, transparent); }
+.nv { font: 500 10.5px/1 var(--caps); letter-spacing: .1em; text-transform: uppercase; color: var(--nx-official); border: 1px dashed var(--nx-official); padding: 3px 5px; border-radius: 3px; }
+.now { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--nx-line); }
+.now > div { padding: 14px 16px; border-right: 1px solid var(--nx-line); }
+.now > div:last-child { border-right: 0; }
+.v { font: 300 32px/1 var(--mono); letter-spacing: -.02em; } .v small { font-size: 13px; color: var(--nx-ink-2); margin-left: 3px; }
+.sub { font-size: 12.5px; color: var(--nx-ink-3); margin-top: 6px; }
+.days { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--nx-line); }
+.day5 { padding: 12px 6px 14px; text-align: center; border-right: 1px solid var(--nx-line); }
+.day5:last-child { border-right: 0; }
+.day5 .d { font: 600 13px var(--sans); }
+.wbar { height: 64px; display: flex; align-items: flex-end; justify-content: center; gap: 5px; margin: 10px 0 6px; }
+.wbar i { width: 12px; border-radius: 2px 2px 0 0; background: var(--nx-conditions); display: block; }
+.wbar i.s { background: color-mix(in srgb, var(--nx-conditions) 45%, transparent); }
+.day5 .k { font: 400 13px var(--mono); }
+.arrow { display: inline-block; font-size: 14px; color: var(--nx-conditions); }
+.tide { border-top: 1px solid var(--nx-line); padding: 12px 16px 16px; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--nx-ink-3); padding: 0 16px 12px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+</style></head><body>
+<div class="bar"><svg width="30" height="30" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#134a6e"/><path d="M6 46C10 30 14 20 24 18C34 20 38 30 42 46" stroke="#7fe3f5" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M-2 40C4 20 12 6 24 5C36 6 44 20 50 40" stroke="#bfe4ec" stroke-width="3.4" fill="none"/></svg>
+<nav><b>Today</b><span>Explore</span><span>My Coast</span><span>Research</span></nav><span class="caps">Research preview</span></div>
+<main>
+<div class="head">
+  <span class="caps">Today at your port · Sun Nov 8 · 5:12 AM</span>
+  <h1>Moss Landing</h1>
+  <div class="meta"><span><span class="dot"></span>Data checked 2 h ago</span><span>Monterey Bay · zone PZZ535</span><span style="text-decoration:underline">Change port</span></div>
+</div>
+<div class="grid">
+<section class="plate">
+  <header><span class="caps">Your fisheries · official status first</span><span style="font-size:13px;color:var(--nx-ink-3)">Edit</span></header>
+  <div class="row"><span class="tick bg-red"></span><div><h3>Dungeness crab <span class="nv">Not verified</span></h3><p>Commercial season delayed to at least Jan 1 — humpback whale entanglements, not toxin.</p><p class="src">Next CDFW assessment Dec 15–18 · CDFW, checked Nov 7</p></div><span class="chip red">Delayed</span></div>
+  <div class="row"><span class="tick bg-amber"></span><div><h3>Anchovy &amp; sardine <span class="nv">Not verified</span></h3><p>Not for human consumption, Pigeon Pt to Pt Lobos — domoic acid, since Sep 11.</p><p class="src">CDPH, checked Nov 7</p></div><span class="chip amber">Restricted</span></div>
+  <div class="row"><span class="tick bg-amber"></span><div><h3>Salmon</h3><p>Commercial open with trip limits.</p><p class="src">CDFW, checked Nov 7</p></div><span class="chip amber">Restricted</span></div>
+  <div class="row"><span class="tick bg-none"></span><div><h3>Rock crab</h3><p>No restriction on record.</p><p class="src">CDFW, checked Nov 7</p></div><span class="chip none">None on record</span></div>
+  <div class="row"><span class="tick bg-none"></span><div><h3>Groundfish</h3><p>No restriction on record.</p><p class="src">CDFW, checked Nov 7</p></div><span class="chip none">None on record</span></div>
+</section>
+<section class="plate">
+  <header><span class="caps" style="color:var(--nx-conditions)">Sea &amp; weather</span><span style="font-size:13px;color:var(--nx-ink-3)">NWS · 3:15 AM</span></header>
+  <div class="now">
+    <div><div class="caps">Wind now</div><div class="v">12<small>kt NW</small></div><div class="sub">gust 16 · buoy 46042</div></div>
+    <div><div class="caps">Waves</div><div class="v">5.2<small>ft</small></div><div class="sub">12 s period</div></div>
+    <div><div class="caps">Water</div><div class="v">57<small>°F</small></div><div class="sub">14.1 °C · harbour</div></div>
+  </div>
+  <div class="days">
+    <div class="day5"><div class="d">Today</div><div class="wbar"><i style="height:38px"></i><i class="s" style="height:26px"></i></div><div class="k"><span class="arrow">↘</span> 10–15</div><div class="sub">seas 4 ft</div></div>
+    <div class="day5"><div class="d">Mon</div><div class="wbar"><i style="height:52px"></i><i class="s" style="height:34px"></i></div><div class="k"><span class="arrow">↘</span> 15–20</div><div class="sub">seas 6 ft</div></div>
+    <div class="day5"><div class="d">Tue</div><div class="wbar"><i style="height:30px"></i><i class="s" style="height:30px"></i></div><div class="k"><span class="arrow">↓</span> 5–10</div><div class="sub">seas 5 ft</div></div>
+    <div class="day5"><div class="d">Wed</div><div class="wbar"><i style="height:22px"></i><i class="s" style="height:22px"></i></div><div class="k"><span class="arrow">↙</span> 5–10</div><div class="sub">seas 3 ft</div></div>
+    <div class="day5"><div class="d">Thu</div><div class="wbar"><i style="height:30px"></i><i class="s" style="height:20px"></i></div><div class="k"><span class="arrow">↘</span> 10</div><div class="sub">seas 3 ft</div></div>
+  </div>
+  <div class="legend"><span><i style="background:var(--nx-conditions)"></i>wind (kt)</span><span><i style="background:color-mix(in srgb,var(--nx-conditions) 45%,transparent)"></i>seas (ft)</span></div>
+  <div class="tide"><div class="caps">Tide · Monterey 9413450</div>
+  <svg viewBox="0 0 360 70" width="100%" height="70"><path d="M0 46 C30 58 50 60 70 58 S120 18 150 14 S210 50 240 60 S300 20 330 10 L360 12" fill="none" stroke="var(--nx-conditions)" stroke-width="2"/><line x1="66" x2="66" y1="0" y2="70" stroke="var(--nx-ink-2)" stroke-dasharray="2 3"/></svg>
+  <div style="display:flex;justify-content:space-between;font:400 13px var(--mono);color:var(--nx-ink-2)"><span>L 5:48a 1.2</span><span>H 12:02p 4.9</span><span>L 5:31p 0.6</span><span>H 11:40p 5.4</span></div></div>
+</section>
+</div>
+</main>
+<div class="dock"><b>Today</b><span>Explore</span><span>My Coast</span><span>Research</span></div>
+</body></html>
