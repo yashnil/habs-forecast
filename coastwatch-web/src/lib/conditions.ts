@@ -108,10 +108,11 @@ export type MarinePeriod = { name: string; text: string };
 export type MarineForecast = { zone: string; zoneName: string; updated: string | null; periods: MarinePeriod[] };
 export type MarineAlert = { event: string; headline: string; onset: string | null; ends: string | null; url: string };
 
-export function parseZoneForecast(zone: string, zoneName: string, json: unknown): MarineForecast | null {
+/** `max`: how many periods to keep (My Coast reads 4; Today reads up to 10, about five days). */
+export function parseZoneForecast(zone: string, zoneName: string, json: unknown, max = 4): MarineForecast | null {
   const p = (json as { properties?: { updated?: string; periods?: { name: string; detailedForecast: string }[] } })?.properties;
   if (!p?.periods?.length) return null;
-  return { zone, zoneName, updated: p.updated ?? null, periods: p.periods.slice(0, 4).map((x) => ({ name: x.name, text: x.detailedForecast })) };
+  return { zone, zoneName, updated: p.updated ?? null, periods: p.periods.slice(0, max).map((x) => ({ name: x.name, text: x.detailedForecast })) };
 }
 
 export function parseAlerts(json: unknown): MarineAlert[] {

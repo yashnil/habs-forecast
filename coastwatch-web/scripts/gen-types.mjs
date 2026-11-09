@@ -17,6 +17,10 @@ export const MODULES = {
   port_intel: ["port_intel"],
   observations: ["observations"],
   fisheries: ["fisheries"],
+  // pilot sidecars (published outside the manifest): typed from their schemas; the loaders in
+  // src/pilot/data return the contract types of src/pilot/contracts.ts
+  biotoxin: ["biotoxin"],
+  fisheries_status: ["fisheries-status"],
 };
 
 export async function generate(names = MODULES.schema) {
