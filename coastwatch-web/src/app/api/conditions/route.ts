@@ -103,14 +103,14 @@ async function zonesFor(lat: number, lon: number): Promise<{ id: string; name: s
   return out;
 }
 
-async function marineParts(lat: number, lon: number): Promise<[Conditions["marine"], Conditions["alerts"]]> {
+async function marineParts(lat: number, lon: number, max = 4): Promise<[Conditions["marine"], Conditions["alerts"]]> {
   const source = "NOAA National Weather Service";
   if (process.env.CW_NWS_API !== "1") {
     const link: Part<never> = { status: "none", reason: "Read the marine forecast and any warnings for your waters on NWS's site.", source, url: NWS_MARINE_PAGE };
     const z = process.env.CW_NWS_TEXT === "0" ? null : zoneNear(lat, lon);
     if (!z) return [link, link];
     try {
-      const r = parseCoastalText(z.zone, (await get(zoneTextUrl(z.zone), "text")) as string);
+      const r = parseCoastalText(z.zone, (await get(zoneTextUrl(z.zone), "text")) as string, max);
       if (!r) return [{ ...link, status: "unavailable", reason: `NWS's text product did not contain zone ${z.zone}.` }, link];
       const fetchedAt = now().toISOString();
       return [
@@ -138,7 +138,7 @@ async function marineParts(lat: number, lon: number): Promise<[Conditions["marin
     const furl = `${NWS}/zones/coastal/${zone.id}/forecast`;
     const aurl = `${NWS}/alerts/active?zone=${zone.id}`;
     const [f, a] = await Promise.allSettled([get(furl, "json"), get(aurl, "json")]);
-    const forecast = f.status === "fulfilled" ? parseZoneForecast(zone.id, zone.name, f.value) : null;
+    const forecast = f.status === "fulfilled" ? parseZoneForecast(zone.id, zone.name, f.value, max) : null;
     if (!forecast) {
       lastError = f.status === "rejected" ? `The NWS forecast did not load (${msg(f.reason)}).` : "NWS returned no forecast periods.";
       continue;
@@ -270,7 +270,9 @@ export async function GET(req: Request) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < 32 || lat > 42.5 || lon < -127 || lon > -116) {
     return NextResponse.json({ error: "lat and lon must be California coastal coordinates" }, { status: 400 });
   }
-  const [[marine, alerts], buoy, tides, harbor, shore] = await Promise.all([marineParts(lat, lon), buoyPart(lat, lon), tidePart(lat, lon), harborPart(lat, lon), shorePart(lat, lon)]);
+  // `periods`: how many NWS forecast periods to return (4 by default; Today asks for 10, about five days)
+  const periods = Math.min(14, Math.max(1, Math.round(Number(q.get("periods") ?? 4)) || 4));
+  const [[marine, alerts], buoy, tides, harbor, shore] = await Promise.all([marineParts(lat, lon, periods), buoyPart(lat, lon), tidePart(lat, lon), harborPart(lat, lon), shorePart(lat, lon)]);
   const body: Conditions = { lat, lon, marine, alerts, buoy, tides, harbor, shore };
   return NextResponse.json(body, { headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300" } });
 }

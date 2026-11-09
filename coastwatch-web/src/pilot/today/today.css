@@ -1,0 +1,194 @@
+/*
+ * Today at your port (docs/coastwatch/pilot/design/README.md, direction C "Almanac").
+ * Built on the Ocean Instrument tokens (src/v4/theme.css). The status colours alias existing
+ * state tokens, which already carry 7:1 values in daylight mode:
+ *   red = official closure or delay, amber = restriction or something to watch,
+ *   blue-grey = "No restriction on record". There is no green: nothing here is ever "safe".
+ */
+.today {
+  --t-red: var(--nx-down);
+  --t-amber: var(--nx-stale);
+  --t-none: var(--nx-offline);
+  --t-info: var(--nx-ink-3);
+  --t-gutter: 16px;
+  --t-max: 1200px;
+}
+@media (min-width: 768px) {
+  .today { --t-gutter: 28px; }
+}
+.t-red { color: var(--t-red); }
+.t-amber { color: var(--t-amber); }
+.t-neutral { color: var(--t-none); }
+.t-info { color: var(--t-info); }
+
+/* ---- hero: the port, the answer, the freshness */
+.today-hero {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--nx-line);
+  background: radial-gradient(120% 100% at 85% -10%, color-mix(in srgb, var(--nx-accent) 14%, var(--nx-bg)) 0%, var(--nx-bg) 62%);
+}
+html[data-daylight] .today-hero { background: linear-gradient(180deg, var(--nx-conditions-bg), var(--nx-bg)); }
+.today-hero-iso { position: absolute; inset: auto 0 0 0; width: 100%; height: 38%; pointer-events: none; opacity: 0.7; }
+.today-hero-iso path { fill: none; stroke: var(--nx-line-strong); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.today-hero-iso path.index { stroke: color-mix(in srgb, var(--nx-conditions) 55%, transparent); stroke-width: 1.5; }
+.today-wrap { max-width: var(--t-max); margin: 0 auto; padding-left: var(--t-gutter); padding-right: var(--t-gutter); }
+.today-port {
+  font-family: var(--nx-font-display);
+  font-weight: 500;
+  font-size: clamp(44px, 12.5vw, 88px);
+  line-height: 0.98;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+}
+.today-lede {
+  font-family: var(--nx-font-display);
+  font-size: clamp(19px, 4.9vw, 25px);
+  line-height: 1.38;
+  max-width: 38ch;
+  text-wrap: pretty;
+}
+.today-lede b { font-weight: 600; }
+
+/* ---- sections: one idea each, a caps label, a plain sentence, then the instrument */
+.today-grid { display: grid; gap: 0 48px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1024px) {
+  .today-grid {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-areas: "status sea" "tests bloom" "whale changed" "actions actions";
+    align-items: start;
+  }
+  .today-grid > [data-area="status"] { grid-area: status; }
+  .today-grid > [data-area="sea"] { grid-area: sea; }
+  .today-grid > [data-area="tests"] { grid-area: tests; }
+  .today-grid > [data-area="bloom"] { grid-area: bloom; }
+  .today-grid > [data-area="whale"] { grid-area: whale; }
+  .today-grid > [data-area="changed"] { grid-area: changed; }
+  .today-grid > [data-area="actions"] { grid-area: actions; }
+}
+.today-sec { padding: 28px 0 8px; scroll-margin-top: 72px; }
+.today-sec > header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--nx-line); }
+.today-h2 { font: 500 11.5px/1.2 var(--nx-font-caps); letter-spacing: 0.14em; text-transform: uppercase; color: var(--nx-ink-2); }
+.today-say { font-size: 17px; line-height: 1.45; color: var(--nx-ink); margin-top: 12px; text-wrap: pretty; }
+
+/* ---- status strip */
+.today-row {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 4px 14px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--nx-line);
+}
+.today-row:hover .today-row-go { color: var(--nx-ink); }
+.today-word {
+  font: 600 11px/1 var(--nx-font-caps);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 5px 7px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  align-self: start;
+}
+.today-unverified {
+  font: 500 10.5px/1 var(--nx-font-caps);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--nx-official);
+  border: 1px dashed var(--nx-official-line);
+  padding: 3px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* ---- sea lanes (a table drawn as an instrument) */
+.today-lanes { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.today-lanes th, .today-lanes td { padding: 0; text-align: center; border-left: 1px solid var(--nx-line); }
+.today-lanes th:first-child, .today-lanes td:first-child { border-left: 0; text-align: left; width: 46px; }
+.today-lanes thead th { font: 600 12px/1.15 var(--nx-font-ui); color: var(--nx-ink-2); padding: 8px 0 6px; vertical-align: bottom; }
+.today-lanes thead th small { display: block; font-weight: 400; font-size: 10.5px; color: var(--nx-ink-3); }
+.today-lanes tbody tr { border-top: 1px solid var(--nx-line); }
+.today-lanes tbody th { font: 500 10px/1.2 var(--nx-font-caps); letter-spacing: 0.12em; text-transform: uppercase; color: var(--nx-ink-3); }
+.today-lane-wind td { height: 76px; vertical-align: bottom; position: relative; }
+.today-bar { position: absolute; left: 22%; right: 22%; bottom: 22px; border-radius: 2px 2px 0 0; background: color-mix(in srgb, var(--nx-conditions) 26%, transparent); }
+.today-bar > i { position: absolute; left: 0; right: 0; bottom: 0; background: var(--nx-conditions); border-radius: 2px 2px 0 0; opacity: 0.85; }
+.today-lane-num { position: absolute; left: 0; right: 0; bottom: 4px; font: 400 12.5px/1 var(--nx-font-data); font-variant-numeric: tabular-nums; color: var(--nx-ink); }
+.today-lane-seas td { height: 40px; font: 400 12.5px/1 var(--nx-font-data); font-variant-numeric: tabular-nums; color: var(--nx-ink); }
+.today-lanes .night { background: color-mix(in srgb, var(--nx-ink) 3.5%, transparent); }
+.today-dir { position: absolute; left: 0; right: 0; top: 6px; font: 500 10px/1 var(--nx-font-caps); letter-spacing: 0.04em; color: var(--nx-ink-3); }
+
+/* ---- readouts */
+.today-readouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; }
+.today-readouts > div { padding: 2px 10px 2px 0; min-width: 0; }
+.today-readouts > div + div { border-left: 1px solid var(--nx-line); padding-left: 12px; }
+.today-v { font: 300 32px/1 var(--nx-font-data); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--nx-ink); white-space: nowrap; }
+.today-v small { font-size: 12.5px; letter-spacing: 0; color: var(--nx-ink-2); margin-left: 3px; }
+.today-src { font-size: 12.5px; line-height: 1.4; color: var(--nx-ink-3); }
+.today-src a { color: var(--nx-ink-2); text-decoration: underline; text-decoration-color: var(--nx-line-strong); text-underline-offset: 3px; }
+
+/* ---- charts */
+.today-chart text { font-family: var(--nx-font-ui); font-size: 11px; fill: var(--nx-ink-3); }
+.today-chart .val { font-family: var(--nx-font-data); fill: var(--nx-ink); }
+.today-chart .grid { stroke: var(--nx-line); stroke-width: 1; }
+.today-chart .limit { stroke: var(--t-amber); stroke-width: 1.25; stroke-dasharray: 4 3; }
+.today-chart .limit-t { fill: var(--t-amber); font-weight: 600; }
+.today-chart .dot { fill: var(--nx-measured); }
+.today-chart .dot.over { fill: var(--t-amber); }
+.today-chart .dot.nd { fill: none; stroke: var(--nx-measured); stroke-width: 1.25; }
+.today-chart .avg { stroke: var(--nx-ink); stroke-width: 1.5; }
+.today-chart .now { stroke: var(--nx-ink-2); stroke-width: 1; stroke-dasharray: 2 3; }
+.today-chart .pda { fill: var(--nx-model); }
+.today-chart .pn { fill: color-mix(in srgb, var(--nx-model) 38%, transparent); }
+.today-chart .old { opacity: 0.45; }
+.today-chart .tide { fill: none; stroke: var(--nx-conditions); stroke-width: 2; }
+.today-chart .tide-fill { fill: color-mix(in srgb, var(--nx-conditions) 12%, transparent); }
+.today-chart .zone { fill: var(--nx-surface-2); stroke: var(--nx-line); }
+.today-chart .zone.here { fill: color-mix(in srgb, var(--t-red) 18%, var(--nx-surface)); stroke: var(--t-red); }
+.today-chart .zone.here.amber { fill: color-mix(in srgb, var(--t-amber) 18%, var(--nx-surface)); stroke: var(--t-amber); }
+.today-chart .zone.here.neutral { fill: var(--nx-surface-3); stroke: var(--t-none); }
+.today-hatch-line { stroke: var(--nx-model); stroke-width: 1.2; opacity: 0.55; }
+
+/* ---- the detail sheet: a bottom sheet on phones, a side panel on desktop */
+.today-sheet {
+  margin: auto 0 0 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 88dvh;
+  border: 1px solid var(--nx-line-strong);
+  border-bottom: 0;
+  border-radius: 14px 14px 0 0;
+  background: var(--nx-surface);
+  color: var(--nx-ink);
+  padding: 0;
+}
+.today-sheet::backdrop { background: rgba(2, 6, 9, 0.6); }
+html[data-daylight] .today-sheet::backdrop { background: rgba(11, 24, 32, 0.35); }
+@media (min-width: 768px) {
+  .today-sheet { margin: 0 0 0 auto; height: 100dvh; max-height: 100dvh; width: 460px; border-radius: 0; border: 0; border-left: 1px solid var(--nx-line-strong); }
+}
+.today-sheet[open] { animation: nx-rise var(--nx-t-panel) var(--nx-ease-out) both; }
+
+/* ---- buttons */
+.today-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--nx-line-strong);
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--nx-ink);
+}
+.today-btn.primary { min-height: 56px; background: var(--nx-ink); color: var(--nx-bg); border-color: var(--nx-ink); font-weight: 600; }
+.today-action { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 64px; padding: 10px 14px; border: 1px solid var(--nx-line-strong); border-radius: 4px; text-align: left; }
+.today-action small { font-size: 12.5px; color: var(--nx-ink-3); font-weight: 400; }
+
+.today-skel { background: linear-gradient(90deg, var(--nx-surface-2), var(--nx-surface-3), var(--nx-surface-2)); background-size: 200% 100%; animation: today-shimmer 1.4s linear infinite; border-radius: 3px; }
+@keyframes today-shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .today-skel { animation: none; } .today-sheet[open] { animation: nx-fade var(--nx-t-pop) both; } }

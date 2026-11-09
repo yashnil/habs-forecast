@@ -6,12 +6,15 @@ import { Lockup, Mark } from "@/v4/brand/Brand";
 import { Icon } from "@/v4/ui/Icon";
 import { StatusCenter } from "@/v4/readiness/StatusCenter";
 import { homeHref, readHome } from "@/v4/coast/home";
+import { readTodayHref } from "@/pilot/today/navPlace";
 import { exitProps, usePresence } from "@/v4/motion";
 import { readDaylight, setDaylight } from "./daylight";
 
-export type Workspace = "explore" | "coast" | "research" | "page";
+export type Workspace = "today" | "explore" | "coast" | "research" | "page";
 
 const NAV: { id: Exclude<Workspace, "page">; label: string; href: string; icon: string }[] = [
+  // the pilot's front door (src/app/today): the reader's port today
+  { id: "today", label: "Today", href: "/today", icon: "today" },
   { id: "explore", label: "Explore", href: "/", icon: "map" },
   { id: "coast", label: "My Coast", href: "/coast", icon: "harbor" },
   { id: "research", label: "Research", href: "/research", icon: "research" },
@@ -90,20 +93,23 @@ export function NavTabs({ active, size = "bar" }: { active: Workspace; size?: "b
   // with a home port kept on this device, My Coast opens on its briefing (read after hydration)
   // the whole trip (place, activity, species), so a returning reader lands on their own briefing
   const [home, setHome] = useState<string | null>(null);
+  // Today opens on the port the reader last opened there (src/pilot/today/navPlace.ts), read after hydration
+  const [todayHref, setTodayHref] = useState<string | null>(null);
   useEffect(() => {
     const h = readHome();
     setHome(h ? homeHref(h) : null);
+    setTodayHref(readTodayHref());
   }, []);
   const nav = useRef<HTMLElement | null>(null);
   useGlidePill(nav, size === "bar");
   return (
-    <nav ref={nav} aria-label="Workspaces" className={size === "bar" ? "flex items-center gap-0.5" : "grid grid-cols-3"} data-testid={`nav-${size}`}>
+    <nav ref={nav} aria-label="Workspaces" className={size === "bar" ? "flex items-center gap-0.5" : "grid grid-cols-4"} data-testid={`nav-${size}`}>
       {NAV.map((n) => {
         const on = n.id === active;
         return (
           <Link
             key={n.id}
-            href={n.id === "coast" && home ? home : n.href}
+            href={n.id === "coast" && home ? home : n.id === "today" && todayHref ? todayHref : n.href}
             aria-current={on ? "page" : undefined}
             data-testid={`nav-${n.id}`}
             className={
