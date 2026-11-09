@@ -347,3 +347,34 @@ def test_a_cell_no_server_answered_for_is_asked_again_before_it_fails(tmp_path, 
     assert sum(r.get("attempts", 1) > 1 for r in live) == 3
     assert all(r["status"] == "pass" for r in live) and rep["summary"]["all_passed"]
     assert rep["summary"]["unverifiable_upstream_unreachable"] == 0
+
+
+def test_a_server_that_keeps_failing_is_asked_last_and_the_comparison_has_a_time_budget(tmp_path, monkeypatch):
+    # scheduled runs 42485019815 and 42528644587 (2026-11-08) were cancelled at the 40-minute job
+    # limit after 23-26 minutes in this step: a silent server was asked first, with all its retries,
+    # for every cell. After HOST_LAST_AFTER unanswered cells in a row the other copy is asked first.
+    from coastwatch_pipeline import http
+    from coastwatch_pipeline import verify_currents as vc
+
+    out = tmp_path / "v1"
+    run_pipeline(fixture_context(out))  # layers read from ERDDAP
+    fx = FixtureFetcher()
+    asked = []
+
+    def erddap_silent(url, **kw):
+        assert http._remaining() is not None and http._remaining()[0] <= vc.VERIFY_BUDGET_S  # a budget is running
+        if "ucsdHfrW2" in url:
+            asked.append(url)
+            raise FetchError(f"Failed after 4 attempts: {url} (timed out)", hang=True)
+        if "hfradar_uswc_2km.dods" in url and "%5B" in url:
+            return fx(url.replace("%5B", "[").replace("%5D", "]"))
+        return fx(url)
+
+    monkeypatch.setattr(vc, "fetch", erddap_silent)
+    monkeypatch.setattr(vc.time, "sleep", lambda s: None)
+    rep = verify_currents(out, live=True)
+    live = [r for r in rep["rows"] if r["kind"] in ("value", "no_value")]
+    assert len(live) > vc.HOST_LAST_AFTER and len(asked) == vc.HOST_LAST_AFTER  # then never asked again
+    assert all(r["status"] == "pass" and r["verified_against"] == "hfradar_uswc_2km" for r in live)
+    assert rep["summary"]["all_passed"] and rep["summary"]["time_budget_s"] == vc.VERIFY_BUDGET_S
+    assert http._remaining() is None  # the budget ends with the comparison
