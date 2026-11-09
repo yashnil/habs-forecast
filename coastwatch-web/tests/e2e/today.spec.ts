@@ -58,11 +58,30 @@ for (const [label, viewport] of [["phone", { width: 390, height: 844 }], ["deskt
       // the tests: a plain sentence first, then the chart with a text alternative
       await expect(page.getByTestId("tests-lede")).toHaveText("Monterey Bay Dungeness tested well under the limit on Sep 28: avg 5.5 ppm, limit 30.");
       await expect(page.getByTestId("toxin-chart").first()).toHaveAttribute("role", "img");
-      // the bloom outlook: C-HARM as conditions, the outlook as an indicator with skill from the data file
+      // the bloom outlook, top-down: (a) NOAA's toxin-conditions model with its run date, then (b) Neritic's 8-day chlorophyll outlook
       await expect(page.getByTestId("bloom-lede")).toContainText("probability of elevated particulate domoic acid in the water");
-      await expect(page.getByTestId("outlook-words")).toContainText("a bloom indicator, not a toxin forecast");
-      await expect(page.getByTestId("outlook-words")).toContainText("0.754");
+      await expect(page.getByTestId("charm-run")).toHaveText("run Oct 8");
       await expect(page.getByTestId("bloom-timeline")).toBeVisible();
+      const outlook = page.getByTestId("outlook");
+      expect(await page.getByTestId("today-bloom").locator('[data-testid="bloom-charm"], [data-testid="outlook"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")))).toEqual(["bloom-charm", "outlook"]);
+      // (b) leads with a sentence a fisherman can read: higher than, about, or lower than usual for the season
+      await expect(page.getByTestId("outlook-say")).toHaveText("Next 8 days (Oct 13–20): chlorophyll near Moss Landing is expected to run higher than usual for this time of year, about 1.6× the typical level.");
+      await expect(page.getByTestId("outlook-say").locator("b")).toHaveText("higher than usual");
+      await expect(outlook).toHaveAttribute("data-level", "higher");
+      // the same thing as one scale, with a text alternative that says everything the drawing says
+      const scale = page.getByTestId("outlook-scale");
+      await expect(scale).toBeVisible();
+      await expect(scale).toHaveAttribute("role", "img");
+      await expect(scale.locator("desc")).toHaveText(/The outlook is 1\.6× the usual chlorophyll for this time of year: higher than usual\. Shaded band: its typical error, a factor of 2 either way, from 0\.\d× to 3\.\d× usual\./);
+      // always beside it: what it is, how sure, and a neutral use; never a status colour
+      await expect(page.getByTestId("outlook-words")).toHaveText("A bloom indicator, not a toxin forecast: chlorophyll is algae of every kind. It is one 8-day average, not a day-by-day forecast, and its typical error is about a factor of 2 either way. A higher-than-usual outlook is a reason to watch the next CDPH test results, not a sign of toxin.");
+      // the held-out skill, read from the data file, is one tap down ("How good is this outlook?"), not in the main paragraph
+      const skill = page.getByTestId("outlook-skill");
+      await expect(skill).not.toHaveAttribute("open", "");
+      await expect(page.getByTestId("outlook-words")).not.toContainText("RMSE");
+      await skill.locator("summary").click();
+      await expect(skill).toContainText("Held-out RMSE ln(mg m-3): 0.754 for this outlook, against 0.85 climatology and 0.892 persistence (n = 185,000; 2019 to 2021-06). Lower is better.");
+      await expect(page.getByTestId("outlook-numbers")).toContainText("about 3.2 mg/m³ against a usual 2.0 mg/m³");
       // whale rules
       await expect(page.getByTestId("whale-lede")).toContainText("Zone 4");
       await expect(page.getByTestId("whale-next")).toContainText("Dec 15");

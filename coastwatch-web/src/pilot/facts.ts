@@ -79,6 +79,14 @@ export type OutlookInput = {
   valid_to: string;
   /** mg m-3; the port's cell, or the median of water cells within 15 km (`basis`) */
   value: number | null;
+  /**
+   * mg m-3: the usual value for the outlook's own 8-day period in the same cell or cells (the layer's
+   * `typical_grid`). Absent or null when the index does not publish it (older data): the outlook is
+   * then worded without a comparison with usual.
+   */
+  typical?: number | null;
+  /** what the usual value is, in the data file's own words (the layer's `typical_basis`) */
+  typical_basis?: string | null;
   range: [number, number] | null;
   basis: "cell" | "nearby" | null;
   skill: { metric: string; model: number; [k: string]: unknown };
@@ -176,7 +184,7 @@ export function dayWords(date: string, now: string): string {
   return `${MON[m - 1]} ${dd}${String(y) !== pacificDay(now).slice(0, 4) ? `, ${y}` : ""}`;
 }
 /** "Dec 15–18", "Sep 28 – Oct 3" */
-function rangeWords(a: string, b: string, now: string): string {
+export function rangeWords(a: string, b: string, now: string): string {
   if (a === b) return dayWords(a, now);
   const [, ma] = a.split("-").map(Number);
   const [, mb, db] = b.split("-").map(Number);
@@ -192,6 +200,8 @@ export const ageWords = (days: number) => (days === 0 ? "today" : days === 1 ? "
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 const ppm = (v: number) => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1).replace(/\.0$/, "") : v.toFixed(1));
 const mg = (v: number) => (v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(2));
+/** A chlorophyll value as Today words it: "12", "3.2", "0.45" (mg/m³). */
+export const mgWords = mg;
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 /** The fact id of an NWS alert in force ("Small Craft Advisory" → "weather:alert:small-craft-advisory"). */
 export const alertFactId = (event: string) => `weather:alert:${slug(event)}`;
@@ -283,12 +293,31 @@ export type TestSiteView = {
 };
 
 export type BloomDay = { lead: number; date: string | null; pda: number | null; pn: number | null; basis: "cell" | "nearby" | null };
+/** The outlook against the usual value for its period: the three words Today uses, and the ratio behind them. */
+export type OutlookLevel = "higher" | "usual" | "lower";
+export type OutlookRead = {
+  /** outlook ÷ usual */
+  ratio: number;
+  level: OutlookLevel;
+  /** "higher than usual" | "about usual" | "lower than usual": the phrase inside the fact's headline */
+  phrase: string;
+  /** "about 1.6× the typical level" (higher), "about 60% of the typical level" (lower); null for "about usual" */
+  ratioWords: string | null;
+};
 export type BloomView = {
   charm: CharmInput | null;
   days: BloomDay[];
   charmFact: PortFact;
   outlook: OutlookInput | null;
   outlookFact: PortFact | null;
+  /** the outlook against usual; null when there is no value, or no usual value to compare it with */
+  outlookRead: OutlookRead | null;
+  /** the outlook's typical error as a factor either way, from the published skill (2.1 for an RMSE of 0.754 ln); null when the metric is not a log RMSE */
+  errorFactor: number | null;
+  /** what the outlook is and how sure, in one sentence (also the opening of the fact's detail) */
+  outlookHonest: string | null;
+  /** what a reader might do with it, in neutral words; null when there is nothing truthful to say */
+  outlookUse: string | null;
   /** the published held-out skill, quoted: "RMSE ln(mg m-3): 0.754 for this outlook, 0.85 climatology, 0.892 persistence (n = 185,000; 2019 to 2021-06)" */
   skillWords: string | null;
   outlookStale: boolean;
@@ -743,6 +772,58 @@ export function skillWords(skill: OutlookInput["skill"]): string {
   return `Held-out ${skill.metric}: ${skill.model} for this outlook${base.length ? `, against ${base.join(" and ")}` : ""}${tail ? ` (${tail})` : ""}. Lower is better.`;
 }
 
+/**
+ * When the outlook is called higher or lower than usual: at 1.5 times the usual value or more, or at
+ * two-thirds of it or less. Between the two it is "about usual".
+ *
+ * Why 1.5, against the published error. The outlook's held-out error is an RMSE of about 0.75 in
+ * ln(mg m-3), a typical miss of a factor of about 2 either way, so the ratio itself is never a precise
+ * number; what the words claim is only the DIRECTION. If the errors are roughly normal in ln with that
+ * spread, an outlook at 1.5x usual (ln 1.5 = 0.41, about half of one typical error) ends up above
+ * usual about 7 times in 10, and one at 2x usual about 8 in 10. A smaller departure is close to a coin
+ * toss (1.2x: about 6 in 10), so it is not called a signal. The model also damps what it predicts: in
+ * ln, its departure from usual is the newest composite's departure times the AR(1) coefficient (about
+ * 0.4, see the layer's `method`), so it reaches 1.5x only when the water was already about 2.5x usual
+ * in the newest satellite composite. A 2x threshold (the error factor itself) would need a composite
+ * at about 5x usual and would almost never speak.
+ * This is a display threshold, not a risk class; the pooled RMSE is used (per-cell errors vary).
+ */
+export const OUTLOOK_SIGNAL_RATIO = 1.5;
+
+/** higher / about usual / lower, from outlook ÷ usual (the ratio is compared unrounded). */
+export function outlookRead(value: number | null | undefined, typical: number | null | undefined): OutlookRead | null {
+  if (value == null || typical == null || !(value > 0) || !(typical > 0)) return null;
+  const ratio = value / typical;
+  if (!Number.isFinite(ratio)) return null;
+  if (ratio >= OUTLOOK_SIGNAL_RATIO) return { ratio, level: "higher", phrase: "higher than usual", ratioWords: `about ${ratio >= 9.95 ? ratio.toFixed(0) : ratio.toFixed(1)}× the typical level` };
+  if (ratio <= 1 / OUTLOOK_SIGNAL_RATIO) return { ratio, level: "lower", phrase: "lower than usual", ratioWords: `about ${Math.max(5, Math.round((ratio * 100) / 5) * 5)}% of the typical level` };
+  return { ratio, level: "usual", phrase: "about usual", ratioWords: null };
+}
+
+/**
+ * The outlook's typical error as a factor either way, from the skill the data file publishes (never
+ * a remembered number): an RMSE of 0.754 in ln is a factor of e^0.754 = 2.1. Null when the metric is
+ * not an RMSE in ln or log10 (nothing is then said or drawn about the size of the error).
+ */
+export function outlookErrorFactor(skill: OutlookInput["skill"]): number | null {
+  const m = typeof skill.model === "number" && Number.isFinite(skill.model) && skill.model > 0 ? skill.model : null;
+  if (m == null || !/rmse/i.test(skill.metric)) return null;
+  const f = /\bln\b|\bln\(|natural log/i.test(skill.metric) ? Math.exp(m) : /log10/i.test(skill.metric) ? 10 ** m : null;
+  return f != null && f > 1 && f < 100 ? f : null;
+}
+/** "2", "2.5": the factor to the nearest half (a typical error is not known to a decimal place). */
+export const factorWords = (f: number) => String(Math.round(f * 2) / 2);
+
+/** "Next 8 days (Oct 13–20)", "This 8-day period (Oct 4–11)" once it has begun, "The 8-day period Oct 4–11 (now past)". */
+function outlookWindow(o: OutlookInput, now: string): { lead: string; past: boolean; days: number } {
+  const today = pacificDay(now);
+  const days = Math.round((Date.parse(`${o.valid_to}T00:00:00Z`) - Date.parse(`${o.valid_from}T00:00:00Z`)) / 86_400_000) + 1;
+  const n = Number.isFinite(days) && days > 0 ? days : 8;
+  const win = rangeWords(o.valid_from, o.valid_to, now);
+  if (o.valid_to < today) return { lead: `The ${n}-day period ${win} (now past)`, past: true, days: n };
+  return { lead: o.valid_from > today ? `Next ${n} days (${win})` : `This ${n}-day period (${win})`, past: false, days: n };
+}
+
 function bloomView(charm: CharmInput | null, outlook: OutlookInput | null, place: TodayPlace, now: string, fact: (f: Omit<PortFact, "place_id">) => PortFact): BloomView {
   const days: BloomDay[] = (charm?.days ?? []).filter((d) => d.date).map((d) => {
     const a = portValue(d.pda);
@@ -784,20 +865,35 @@ function bloomView(charm: CharmInput | null, outlook: OutlookInput | null, place
   let outlookFact: PortFact | null = null;
   let sw: string | null = null;
   let outlookStale = false;
+  let read: OutlookRead | null = null;
+  let errorFactor: number | null = null;
+  let honest: string | null = null;
+  let use: string | null = null;
   if (outlook) {
     sw = skillWords(outlook.skill);
     outlookStale = outlook.valid_to < pacificDay(now);
     const win = rangeWords(outlook.valid_from, outlook.valid_to, now);
+    read = outlookRead(outlook.value, outlook.typical);
+    errorFactor = outlookErrorFactor(outlook.skill);
+    // what it is and how sure, always beside the reading: algae of every kind, one average, and the size of a typical miss
+    const w = outlookWindow(outlook, now);
+    honest = `A bloom indicator, not a toxin forecast: chlorophyll is algae of every kind. It is one ${w.days}-day average, not a day-by-day forecast${errorFactor != null ? `, and its typical error is about a factor of ${factorWords(errorFactor)} either way` : ""}.`;
+    // neutral and true in both directions: more algae is a reason to look at the tests, and less algae rules nothing out
+    use = !read ? null : read.level === "higher" ? "A higher-than-usual outlook is a reason to watch the next CDPH test results, not a sign of toxin." : read.level === "lower" ? "A lower-than-usual outlook does not rule out toxin: only CDPH's lab tests of seafood measure it." : "An outlook near usual says nothing about toxin either way: only CDPH's lab tests of seafood measure it.";
+    const headline = read
+      ? `${w.lead}: chlorophyll near ${place.label} ${w.past ? "was" : "is"} expected to run ${read.phrase} for this time of year${read.ratioWords ? `, ${read.ratioWords}` : ""}.`
+      : // no usual value published (older data), or no value here: the earlier wording, without a comparison
+        outlook.value != null
+        ? `Chlorophyll outlook, ${win}: about ${mg(outlook.value)} mg/m³ near ${place.label}. A bloom indicator, not a toxin forecast.`
+        : `Chlorophyll outlook, ${win}: no value near ${place.label}. A bloom indicator, not a toxin forecast.`;
+    const numbers = read ? `About ${mg(outlook.value!)} mg/m³ against a usual ${mg(outlook.typical!)} mg/m³${outlook.basis === "nearby" ? " (the median of the water within 15 km)" : ""}.` : null;
     outlookFact = fact({
       id: "outlook:chl8d",
       kind: "bloom_outlook",
       severity: "info",
-      headline:
-        outlook.value != null
-          ? `Chlorophyll outlook, ${win}: about ${mg(outlook.value)} mg/m³ near ${place.label}. A bloom indicator, not a toxin forecast.`
-          : `Chlorophyll outlook, ${win}: no value near ${place.label}. A bloom indicator, not a toxin forecast.`,
+      headline,
       value: outlook.value != null ? `${mg(outlook.value)} mg/m³` : null,
-      detail: `One 8-day mean of chlorophyll (algae of every kind), not a day-by-day forecast and not toxin. ${sw}${outlookStale ? " This outlook's window has passed." : ""}`,
+      detail: [read ? honest : "One 8-day mean of chlorophyll (algae of every kind), not a day-by-day forecast and not toxin.", use, numbers, sw, outlookStale ? "This outlook's window has passed." : null].filter(Boolean).join(" "),
       basis: "outlook",
       verified: null,
       source: { name: "Neritic chlorophyll outlook (climatology + AR(1))", url: "/research" },
@@ -805,7 +901,7 @@ function bloomView(charm: CharmInput | null, outlook: OutlookInput | null, place
       valid_for: { from: outlook.valid_from, to: outlook.valid_to },
     });
   }
-  return { charm, days, charmFact, outlook, outlookFact, skillWords: sw, outlookStale };
+  return { charm, days, charmFact, outlook, outlookFact, outlookRead: read, errorFactor, outlookHonest: honest, outlookUse: use, skillWords: sw, outlookStale };
 }
 
 // ---------------------------------------------------------------- sea and weather

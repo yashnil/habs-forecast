@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { BiotoxinIndex, FisheriesStatusIndex, PortFact } from "@/pilot/contracts";
 import type { Conditions } from "@/lib/conditions";
-import { buildPortToday, buildTodayModel, diffFacts, parseFisheries, rampZoneFor, skillWords, snapFacts, testSentence, type CharmInput, type NoticeInput, type OutlookInput, type PortTodayInputs } from "@/pilot/facts";
+import { OUTLOOK_SIGNAL_RATIO, buildPortToday, buildTodayModel, diffFacts, factorWords, outlookErrorFactor, outlookRead, parseFisheries, rampZoneFor, skillWords, snapFacts, testSentence, type CharmInput, type NoticeInput, type OutlookInput, type PortTodayInputs } from "@/pilot/facts";
 import { parseBiotoxin, parseFisheriesStatus } from "@/pilot/data";
 
 // the data track's fixtures (pilot/data: `cwp fixture`), as the page reads them
@@ -191,6 +191,88 @@ describe("buildPortToday: words", () => {
     expect(g.detail).toContain("0.7 for this outlook");
     expect(g.detail).not.toContain("0.754");
     expect(skillWords(OUTLOOK.skill)).toBe("Held-out RMSE ln(mg m-3): 0.754 for this outlook, against 0.85 climatology and 0.892 persistence (n = 185,000; 2019 to 2021-06). Lower is better.");
+  });
+
+  it("says the outlook in three words against the usual value, and only calls a clear departure a signal", () => {
+    // the thresholds: 1.5x usual or more, two-thirds of usual or less; anything between is "about usual"
+    expect(OUTLOOK_SIGNAL_RATIO).toBe(1.5);
+    expect(outlookRead(3.0, 2.0)).toMatchObject({ level: "higher", phrase: "higher than usual", ratioWords: "about 1.5× the typical level" });
+    expect(outlookRead(2.98, 2.0)).toMatchObject({ level: "usual", phrase: "about usual", ratioWords: null });
+    expect(outlookRead(2.4, 2.0)!.level).toBe("usual"); // 1.2x is inside the error: not a signal
+    expect(outlookRead(1.34, 2.0)!.level).toBe("usual"); // 0.67x: just inside
+    expect(outlookRead(1.3, 2.0)).toMatchObject({ level: "lower", phrase: "lower than usual", ratioWords: "about 65% of the typical level" });
+    expect(outlookRead(24, 2.0)!.ratioWords).toBe("about 12× the typical level");
+    // nothing to compare with, nothing said
+    for (const [v, t] of [[3.2, null], [3.2, undefined], [null, 2], [3.2, 0], [0, 2], [3.2, Number.NaN]] as const) expect(outlookRead(v, t)).toBeNull();
+  });
+
+  it("leads the outlook with a plain sentence, then what it is and how sure, and keeps its id for alerts and Ask", () => {
+    // the clock here is Oct 13, the first day of the outlook's period
+    const m = buildTodayModel(base({ outlook: { ...OUTLOOK, typical: 2.0 } }));
+    const f = m.bloom.outlookFact!;
+    expect(f.id).toBe("outlook:chl8d");
+    expect(f.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run higher than usual for this time of year, about 1.6× the typical level.");
+    expect(m.bloom.outlookRead).toMatchObject({ level: "higher", phrase: "higher than usual" });
+    expect(m.bloom.outlookRead!.ratio).toBeCloseTo(1.6, 5);
+    // what it is, how sure (the factor comes from the published RMSE: e^0.754 = 2.1), and a neutral use
+    expect(m.bloom.outlookHonest).toBe("A bloom indicator, not a toxin forecast: chlorophyll is algae of every kind. It is one 8-day average, not a day-by-day forecast, and its typical error is about a factor of 2 either way.");
+    expect(m.bloom.outlookUse).toBe("A higher-than-usual outlook is a reason to watch the next CDPH test results, not a sign of toxin.");
+    expect(m.bloom.errorFactor).toBeCloseTo(Math.exp(0.754), 6);
+    expect(f.detail).toContain(m.bloom.outlookHonest!);
+    expect(f.detail).toContain(m.bloom.outlookUse!);
+    expect(f.detail).toContain("About 3.2 mg/m³ against a usual 2.0 mg/m³ (the median of the water within 15 km).");
+    expect(f.detail).toContain("0.754 for this outlook"); // the skill is still quoted from the data
+    expect(f.value).toBe("3.2 mg/m³");
+    expect(f.basis).toBe("outlook");
+    expect(f.severity).toBe("info"); // never a status colour: chlorophyll is not toxin
+    expect(text(f)).not.toMatch(SAFETY);
+    expect(text(f).replace(/not a toxin forecast/g, "")).not.toMatch(/toxin forecast/i);
+
+    const usual = buildTodayModel(base({ outlook: { ...OUTLOOK, typical: 2.9 } })).bloom;
+    expect(usual.outlookFact!.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run about usual for this time of year.");
+    expect(usual.outlookFact!.headline).not.toMatch(/×|%/);
+    expect(usual.outlookUse).toMatch(/says nothing about toxin either way: only CDPH's lab tests of seafood measure it/);
+
+    const lower = buildTodayModel(base({ outlook: { ...OUTLOOK, value: 1.0, typical: 2.0 } })).bloom;
+    expect(lower.outlookFact!.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run lower than usual for this time of year, about 50% of the typical level.");
+    expect(lower.outlookUse).toMatch(/does not rule out toxin/);
+    expect(text(lower.outlookFact!)).not.toMatch(SAFETY);
+  });
+
+  it("words the outlook's window as it is: not yet begun, already begun, or past", () => {
+    const o = { ...OUTLOOK, typical: 2.0 };
+    const at = (now: string) => buildTodayModel(base({ now, outlook: o })).bloom.outlookFact!.headline;
+    expect(at("2026-10-13T06:00:00Z")).toMatch(/^Next 8 days \(Oct 13–20\): chlorophyll near Moss Landing is expected/); // Oct 12, 11 PM Pacific
+    expect(at("2026-10-15T18:00:00Z")).toMatch(/^This 8-day period \(Oct 13–20\): chlorophyll near Moss Landing is expected/);
+    expect(at("2026-10-22T18:00:00Z")).toMatch(/^The 8-day period Oct 13–20 \(now past\): chlorophyll near Moss Landing was expected/);
+    // the year's last period is shorter than 8 days and is not called 8
+    const last = buildTodayModel(base({ now: "2026-12-20T18:00:00Z", outlook: { ...o, valid_from: "2026-12-27", valid_to: "2026-12-31" } })).bloom;
+    expect(last.outlookFact!.headline).toMatch(/^Next 5 days \(Dec 27–31\)/);
+    expect(last.outlookHonest).toMatch(/one 5-day average/);
+  });
+
+  it("falls back to the plain value when the data carries no usual value (older data), with no comparison", () => {
+    for (const typical of [undefined, null] as const) {
+      const m = buildTodayModel(base({ outlook: { ...OUTLOOK, typical } }));
+      expect(m.bloom.outlookRead).toBeNull();
+      expect(m.bloom.outlookUse).toBeNull();
+      expect(m.bloom.outlookFact!.id).toBe("outlook:chl8d");
+      expect(m.bloom.outlookFact!.headline).toBe("Chlorophyll outlook, Oct 13–20: about 3.2 mg/m³ near Moss Landing. A bloom indicator, not a toxin forecast.");
+      expect(text(m.bloom.outlookFact!)).not.toMatch(/usual|typical level/);
+    }
+    // no value at the port: nothing is compared, even with a usual value
+    expect(buildTodayModel(base({ outlook: { ...OUTLOOK, value: null, typical: 2 } })).bloom.outlookFact!.headline).toMatch(/no value near Moss Landing/);
+  });
+
+  it("takes the size of the outlook's error from the published skill, and says nothing when it cannot", () => {
+    expect(factorWords(outlookErrorFactor({ metric: "RMSE ln(mg m-3)", model: 0.754 })!)).toBe("2");
+    expect(factorWords(outlookErrorFactor({ metric: "RMSE ln(mg m-3)", model: 0.95 })!)).toBe("2.5");
+    expect(outlookErrorFactor({ metric: "RMSE log10(mg m-3)", model: 0.33 })).toBeCloseTo(10 ** 0.33, 6);
+    expect(outlookErrorFactor({ metric: "correlation", model: 0.6 })).toBeNull();
+    expect(outlookErrorFactor({ metric: "RMSE mg m-3", model: 1.2 })).toBeNull();
+    const m = buildTodayModel(base({ outlook: { ...OUTLOOK, typical: 2.0, skill: { metric: "skill score", model: 0.2, climatology: 0 } } }));
+    expect(m.bloom.errorFactor).toBeNull();
+    expect(m.bloom.outlookHonest).toBe("A bloom indicator, not a toxin forecast: chlorophyll is algae of every kind. It is one 8-day average, not a day-by-day forecast.");
   });
 
   it("C-HARM is a probability of conditions in the water, not toxin in seafood, and says when it is not at the harbour", () => {

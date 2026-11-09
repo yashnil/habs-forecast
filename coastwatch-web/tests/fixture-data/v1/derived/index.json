@@ -241,7 +241,31 @@
             "0_0"
           ]
         }
-      }
+      },
+      "typical_grid": {
+        "url": "derived/outlook-2026-10-08-3934d93ebd/typical/{row}_{col}.u16.gz",
+        "encoding": "uint16le+gzip",
+        "width": 240,
+        "height": 240,
+        "lat_first": 41.97916793823242,
+        "lat_step": -0.041667938232421875,
+        "lon_first": -124.97916412353516,
+        "lon_step": 0.04166412353515625,
+        "scale_factor": 9.155552842799158e-05,
+        "add_offset": -3.0,
+        "nodata": 65535,
+        "max_quantization_error": 4.577776421399579e-05,
+        "transform": "log10",
+        "chunks": {
+          "rows": 512,
+          "cols": 512,
+          "url_template": "derived/outlook-2026-10-08-3934d93ebd/typical/{row}_{col}.u16.gz",
+          "present": [
+            "0_0"
+          ]
+        }
+      },
+      "typical_basis": "Each cell's usual chlorophyll for this 8-day period of the year: the MODIS-Aqua climatology (2003-2021, smoothed over neighbouring periods) the outlook is built from. The outlook divided by this value says how far above or below usual it is."
     },
     {
       "id": "sst_latest",
