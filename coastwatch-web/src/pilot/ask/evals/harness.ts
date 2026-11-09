@@ -1,12 +1,13 @@
 import type { PortFact, PortToday } from "../../contracts";
 import { snapshotOf } from "../compose";
-import { fixturePortToday, FIXTURE_NOW } from "../fixture";
+import { fixturePortToday, FIXTURE_NOW } from "./sampleFacts";
 import { check, type ViolationCode } from "../guard";
 import { gsmLength } from "../sms";
 import type { PortTodayLoader } from "../source";
 import type { AnswerLine, AskAnswer, AskRequest, SeenSnapshot } from "../types";
 import adversarial from "./adversarial.json";
 import golden from "./golden.json";
+import published from "./published.json";
 
 /**
  * The eval harness shared by the vitest run (deterministic mode, every CI run) and the live-mode
@@ -29,6 +30,8 @@ export type EngineCase = {
   require_referral?: string;
   require_stale?: boolean;
   first_cited_basis?: string;
+  /** the fact the answer leads with (published.json) */
+  first_cited?: string;
   since?: string;
   now?: string;
   fixture?: string;
@@ -36,6 +39,8 @@ export type EngineCase = {
 export type GuardCase = { id: string; lines: [string, string[]][]; expect?: ViolationCode[]; provided?: string[] };
 
 export const GOLDEN = golden.cases as EngineCase[];
+/** The same questions asked of the REAL fact shape (buildPortToday over the web fixture data). */
+export const PUBLISHED = published.cases as EngineCase[];
 export const ADVERSARIAL_ENGINE = adversarial.engine_cases as EngineCase[];
 export const GUARD_CASES = adversarial.guard_cases as GuardCase[];
 export const GUARD_CONTROLS = adversarial.guard_controls as GuardCase[];
@@ -59,6 +64,12 @@ function variant(t: PortToday, kind: string | undefined): PortToday | null {
   if (v.add) facts = [{ ...facts[0], ...v.add } as PortFact, ...facts];
   return { ...t, facts };
 }
+
+/** The eval records as a loader (unit tests inject it; the app's loader reads published data). */
+export const sampleLoader: PortTodayLoader = async (placeId) => {
+  const today = fixturePortToday(placeId);
+  return today ? { today, dataset: "fixture" } : null;
+};
 
 export function loaderFor(c: EngineCase): PortTodayLoader {
   return async (placeId) => {
@@ -102,6 +113,7 @@ export function grade(c: EngineCase, a: AskAnswer, facts: PortFact[], now: Date)
   for (const p of c.forbid_text ?? []) if (rx(p).test(text)) f.push(`forbidden text /${p}/`);
   if (c.require_referral && !a.referrals.some((r) => r.url.includes(c.require_referral!))) f.push(`missing referral ${c.require_referral}`);
   if (c.require_stale && !(a.data_age?.stale.length ?? 0)) f.push("expected a stale-data note");
+  if (c.first_cited && a.citations[0]?.fact_id !== c.first_cited) f.push(`first citation is ${a.citations[0]?.fact_id}, not ${c.first_cited}`);
   if (c.first_cited_basis && a.citations[0]?.basis !== c.first_cited_basis) f.push(`first citation is ${a.citations[0]?.basis}, not ${c.first_cited_basis}`);
   if ((a.outcome === "answered" || a.outcome === "safety") && a.lines.length && !a.citations.length) f.push("answer has no citations");
   // the shipped answer must itself pass the guard, and every citation must resolve

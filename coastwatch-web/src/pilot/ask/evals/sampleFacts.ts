@@ -1,13 +1,11 @@
-import { PILOT_PORTS, type PortFact, type PortToday } from "../contracts";
+import { PILOT_PORTS, type PortFact, type PortToday } from "../../contracts";
 
 /**
- * FIXTURE (typed stub) — sample PortToday records for the four pilot ports.
- *
- * The Today track (branch pilot/today) owns `src/pilot/facts.ts` and its `buildPortToday`. Until
- * that lands, Ask Neritic answers from these records and the UI labels them "Sample data". They are
- * transcribed from the research notes in docs/coastwatch/pilot/plan.md §1 (as of 2026-11-08) and
- * shaped exactly like contracts.ts, so swapping in `buildPortToday` is a one-line change in
- * `source.ts`. They are not published data and must never be presented as today's conditions.
+ * EVAL RECORDS ONLY — sample PortToday records for the four pilot ports, used by the golden and
+ * adversarial evals (harness.ts) and the unit tests. No page, route or answer reads this file: the
+ * app's facts come from src/pilot/today/portToday.ts (`loadPortTodayFacts`). These records are
+ * hand-written from the research notes in docs/coastwatch/pilot/plan.md §1 (as of 2026-11-08) so the
+ * evals can pin every number and date; the real fact shape is evaluated by published.json.
  *
  * The C-HARM record is deliberately stale (run of 2026-11-02, window ended 2026-11-05), as it was
  * in the real feed on 2026-11-08, so the stale-data path is exercised.

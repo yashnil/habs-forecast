@@ -4,6 +4,7 @@ import { dailyCap, RateLimiter, SpendMeter } from "./limits";
 import { askLive, createAnthropicClient, type MessagesClient } from "./live";
 import { entryFor, hashKey, loggerFromEnv, type AskLogger } from "./logger";
 import { loadPortToday, type PortTodayLoader } from "./source";
+import { datasetKind } from "../today/portToday";
 import type { AskAnswer, AskMeta, AskRequest } from "./types";
 
 /**
@@ -21,12 +22,19 @@ let meterCap = -1;
 let client: MessagesClient | null = null;
 
 export function now(env: Env = process.env): Date {
-  const fixed = env.NERITIC_ASK_NOW;
+  // tests fix the clock: Ask's own, else the one the data and conditions use (CW_FIXED_NOW)
+  const fixed = env.NERITIC_ASK_NOW ?? env.CW_FIXED_NOW;
   return fixed && Number.isFinite(Date.parse(fixed)) ? new Date(fixed) : new Date();
 }
 
-export function meta(env: Env = process.env, dataset: AskMeta["dataset"] = "fixture"): AskMeta {
+/** `dataset`: what the server is reading (routes pass `askDataset()`); "fixture" shows the "Sample data" label. */
+export function meta(env: Env = process.env, dataset: AskMeta["dataset"] = "published"): AskMeta {
   return { readiness: { ask: readiness("ask", env), sms: readiness("sms", env) }, logging: loggerFromEnv(env).enabled, dataset };
+}
+
+/** "fixture" only when the manifest is the test fixture (then the page says "Sample data"). */
+export async function askDataset(): Promise<AskMeta["dataset"]> {
+  return (await datasetKind()) === "fixture" ? "fixture" : "published";
 }
 
 export type ServeOptions = {

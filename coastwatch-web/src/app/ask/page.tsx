@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PILOT_PORTS } from "@/pilot/contracts";
 import { portById } from "@/pilot/ask/places";
-import { meta } from "@/pilot/ask/service";
+import { askDataset, meta } from "@/pilot/ask/service";
 import { suggestionsFor } from "@/pilot/ask/suggestions";
 import { AskChat } from "@/pilot/ask/ui/AskChat";
 
@@ -27,7 +27,7 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
             Explore
           </Link>
         </nav>
-        <AskChat initialPlace={place} meta={meta()} suggestions={suggestionsFor(place)} />
+        <AskChat initialPlace={place} meta={meta(process.env, await askDataset())} suggestions={suggestionsFor(place)} />
       </div>
     </main>
   );

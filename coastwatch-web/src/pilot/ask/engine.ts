@@ -119,7 +119,8 @@ export function finalize(d: Draft, r: Retrieved | null, ctx: AskContext, req: As
     notice: req.first ? DISCLAIMER : null,
     mode: ctx.mode,
     model,
-    dataset: r?.dataset ?? "fixture",
+    // nothing was retrieved (help, which port?, out of area): no records are shown, so none are "sample"
+    dataset: r?.dataset ?? "published",
     guard: { passed: g.passed, removed: g.removed, codes: g.codes },
     snapshot: r ? snapshotOf(r.today) : null,
   };

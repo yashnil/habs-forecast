@@ -38,6 +38,12 @@ export function InboxList({ items, compact = false, empty }: { items: InboxItem[
             <p className="mt-1 text-[12.5px] text-n-ink-2">
               {TRIGGER_LABELS[i.trigger]?.label ?? i.trigger} · {when(i.created_at)}
               {i.origin === "account" ? " · from your account" : " · on this device"}
+              {i.sample && (
+                <span className="text-n-stale" data-testid="inbox-sample">
+                  {" "}
+                  · Sample data (test fixture), not live
+                </span>
+              )}
               {i.source?.url && !compact && (
                 <>
                   {" · "}

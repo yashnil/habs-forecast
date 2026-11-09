@@ -12,7 +12,14 @@ export const INBOX_KEY = "nrt-pilot-inbox-v1";
 export const SNAP_KEY = "nrt-pilot-alert-snap-v1";
 export const MAX_INBOX = 50;
 
-export type InboxItem = AlertItem & { read_at: string | null; origin: "device" | "account"; /** the alerts row id, for items from the account */ account_id?: string };
+export type InboxItem = AlertItem & {
+  read_at: string | null;
+  origin: "device" | "account";
+  /** the alerts row id, for items from the account */
+  account_id?: string;
+  /** made from the test fixture, not published data: the inbox says so on the item */
+  sample?: boolean;
+};
 
 const isList = (v: unknown): v is InboxItem[] => Array.isArray(v);
 const isSnaps = (v: unknown): v is Record<string, PlaceSnapshot> => !!v && typeof v === "object" && !Array.isArray(v);
@@ -52,7 +59,7 @@ export type CheckResult = {
  * person's in-app triggers. Pure apart from storage; safe to call on every page view (idempotent:
  * the same change never produces a second item).
  */
-export function runLocalCheck(account: LocalAccount, todays: PortToday[], now: Date = new Date()): CheckResult {
+export function runLocalCheck(account: LocalAccount, todays: PortToday[], now: Date = new Date(), opts: { sample?: boolean } = {}): CheckResult {
   const iso = now.toISOString();
   const stored = readSnapshots();
   // only saved ports keep a baseline: a port saved again later starts afresh, and forgetting all leaves nothing
@@ -70,7 +77,7 @@ export function runLocalCheck(account: LocalAccount, todays: PortToday[], now: D
     const prev = snaps[place] ?? null;
     if (!prev) baselined.push(place);
     else if (pref && pref.channels.includes("in_app") && pref.triggers.length) {
-      for (const a of diffFacts(prev, today, pref.triggers, iso)) added.push({ ...a, read_at: null, origin: "device" });
+      for (const a of diffFacts(prev, today, pref.triggers, iso)) added.push({ ...a, read_at: null, origin: "device", ...(opts.sample ? { sample: true } : {}) });
     }
     snaps[place] = snapshotOf(today, iso);
   }

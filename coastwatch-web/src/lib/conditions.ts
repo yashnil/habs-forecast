@@ -1,6 +1,6 @@
 /**
  * Ocean conditions for a place, from three official NOAA services (fetched by
- * app/api/conditions/route.ts; everything here is pure and tested):
+ * lib/conditionsServer.ts, behind app/api/conditions; everything here is pure and tested):
  *
  * - NWS coastal marine zone forecast and active marine alerts (api.weather.gov): a forecast,
  *   issued by forecasters for a whole zone, shown in their words.

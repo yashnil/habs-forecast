@@ -1,13 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { OK } from "./ports";
-import { snapshotOf } from "../../src/pilot/alerts/diff";
-import { stubPortToday } from "../../src/pilot/alerts/factsStub";
 import { SMS_CONSENT_TEXT } from "../../src/pilot/account/consent";
 
 /**
  * Pilot accounts and alerts with NO cloud credentials (the e2e servers have no Supabase env): every
- * choice is kept on the device and labelled so, alerts come from the device's own comparison, and the
+ * choice is kept on the device and labelled so, alerts come from the device's own comparison of the
+ * port's real facts (the same ones Today shows; here from the test fixture, and labelled so), and the
  * legal pages are drafts. axe: no violations at 390 and 1440.
  */
 async function axe(page: Page) {
@@ -17,10 +16,6 @@ async function axe(page: Page) {
 
 /** a device that saved Moss Landing yesterday and saw an older Dungeness status then */
 async function seedReturningDevice(page: Page) {
-  const today = stubPortToday("port-592")!;
-  const snap = snapshotOf(today, "2026-11-07T15:00:00.000Z");
-  const id = "port-592:status:dungeness_commercial";
-  snap.facts[id] = { v: "00000000", sig: { ...snap.facts[id].sig, headline: "Commercial Dungeness: delayed to at least Dec 15 (whale entanglement)" } };
   const account = {
     v: 1,
     role: "commercial_fisher",
@@ -34,14 +29,26 @@ async function seedReturningDevice(page: Page) {
     created_at: "2026-11-07T15:00:00.000Z",
   };
   await page.addInitScript(
-    ([a, s]) => {
+    ([a]) => {
       if (sessionStorage.getItem("seeded")) return;
       sessionStorage.setItem("seeded", "1");
       localStorage.setItem("nrt-pilot-account-v1", a);
-      localStorage.setItem("nrt-pilot-alert-snap-v1", s);
     },
-    [JSON.stringify(account), JSON.stringify({ "port-592": snap })],
+    [JSON.stringify(account)],
   );
+  // the first visit keeps a baseline of the port's facts as the server has them (no alert yet)…
+  await page.goto(`${OK}/account`);
+  await page.waitForFunction(() => !!JSON.parse(localStorage.getItem("nrt-pilot-alert-snap-v1") ?? "{}")["port-592"]);
+  await expect(page.getByTestId("inbox-empty")).toBeVisible();
+  // …then that visit becomes yesterday's, when the commercial Dungeness delay ran to Dec 15
+  await page.evaluate(() => {
+    const k = "nrt-pilot-alert-snap-v1";
+    const s = JSON.parse(localStorage.getItem(k)!);
+    const id = "status:dungeness_commercial";
+    s["port-592"].seen_at = "2026-11-07T15:00:00.000Z";
+    s["port-592"].facts[id] = { v: "00000000", sig: { ...s["port-592"].facts[id].sig, headline: "Dungeness crab (commercial): Commercial season delayed to at least Dec 15 (humpback whale entanglements)." } };
+    localStorage.setItem(k, JSON.stringify(s));
+  });
 }
 
 test.describe("/account without accounts connected", () => {
@@ -78,7 +85,8 @@ test.describe("/account without accounts connected", () => {
     await expect(page.getByTestId("device-setup-done")).toContainText("Text alerts requested for +18315550100 (not sent yet)");
     await expect(page.getByTestId("port-port-592")).toHaveAttribute("data-saved", "1");
     await expect(page.getByTestId("acct-fisheries").getByLabel("Dungeness crab (commercial)")).toBeChecked();
-    await expect(page.getByTestId("stub-facts-note")).toBeVisible();
+    // the e2e servers read the test fixture, and the page says so
+    await expect(page.getByTestId("sample-facts-note")).toContainText("test fixture, not today’s published data");
   });
 
   test("in-app alerts: a change since the last visit lands in the inbox once, with its source; feedback is kept", async ({ page }) => {
@@ -86,11 +94,16 @@ test.describe("/account without accounts connected", () => {
     await page.goto(`${OK}/account`);
     const items = page.getByTestId("inbox-item");
     await expect(items.first()).toBeVisible();
-    const status = page.locator('[data-testid="inbox-item"][data-trigger="status_change"]').filter({ hasText: "Commercial Dungeness" });
+    const status = page.locator('[data-testid="inbox-item"][data-trigger="status_change"]').filter({ hasText: "Dungeness crab (commercial)" });
     await expect(status).toHaveCount(1);
-    await expect(status).toContainText("Was: “Commercial Dungeness: delayed to at least Dec 15");
+    await expect(status).toContainText("Moss Landing: Dungeness crab (commercial): Commercial season delayed to at least Jan 1, 2027");
+    await expect(status).toContainText("Was: “Dungeness crab (commercial): Commercial season delayed to at least Dec 15");
     await expect(status).toContainText("not yet verified by a person");
-    await expect(status).toContainText("Pilot sample (not live data)");
+    await expect(status).toContainText("Source: CDFW");
+    // made from the test fixture's facts: the item itself says it is not live
+    await expect(status.getByTestId("inbox-sample")).toContainText("Sample data (test fixture), not live");
+    // the one change is the one alert (the other facts are what the baseline saw)
+    await expect(items).toHaveCount(1);
     await expect(page.getByTestId("inbox-list")).not.toContainText(/\bsafe\b/i);
     const n = await items.count();
     await expect(page.getByTestId("inbox-unread")).toHaveText(`${n} unread`);

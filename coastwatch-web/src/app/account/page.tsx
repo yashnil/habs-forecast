@@ -15,7 +15,7 @@ export default async function AccountPage() {
   const [data, facts] = await Promise.all([loadData(), loadPortTodays()]);
   return (
     <AppShell active="about" manifest={data.ok ? data.manifest : null} official={data.ok ? data.official : null}>
-      <AccountApp config={pilotAccountConfig()} todays={facts.todays} stubFacts={facts.stub} />
+      <AccountApp config={pilotAccountConfig()} todays={facts.todays} sample={facts.sample} />
     </AppShell>
   );
 }

@@ -430,7 +430,7 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
         id: `status:${fishery}`,
         kind: "status",
         severity: row.severity,
-        headline: `${label}: ${lower1(row.headline)}`,
+        headline: `${label}: ${row.headline}`,
         value: row.word,
         detail,
         basis: "official",
@@ -473,8 +473,11 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
   const seaFacts = seaFactsOf(sea, place, now, fact);
   if (inp.conditions === "error") age("conditions", "info", "Sea and weather could not be loaded. Check NWS and NDBC.", null, null);
 
-  if (inp.dataGeneratedAt && (Date.parse(now) - Date.parse(inp.dataGeneratedAt)) / 3_600_000 > DATA_STALE_HOURS)
-    age("data", "info", `Neritic's data were last refreshed ${dayWords(inp.dataGeneratedAt, now)}.`, "Newer agency information may exist.", inp.dataGeneratedAt);
+  if (inp.dataGeneratedAt) {
+    const old = (Date.parse(now) - Date.parse(inp.dataGeneratedAt)) / 3_600_000 > DATA_STALE_HOURS;
+    const when = `${dayWords(inp.dataGeneratedAt, now)}${old ? "" : `, ${PT_CLOCK.format(new Date(inp.dataGeneratedAt)).replace(/\s/g, " ")} Pacific`}`;
+    age("data", "info", `Neritic's data were last refreshed ${when}.`, old ? "Newer agency information may exist." : null, inp.dataGeneratedAt);
+  }
 
   // ---- all facts, in the strict hierarchy
   const facts = [
@@ -579,7 +582,8 @@ const isClean = (s: BiotoxinSet, lvl: number | null) => {
 export function testSentence(site: BiotoxinSite, set: BiotoxinSet | null, lvl: number | null, now: string): string {
   // the collection site as CDPH writes it ("Monterey Bay", "Pillar Point"): more specific than the BMA
   const where = site.site_label || site.bma_label || site.port_label || "CDPH site";
-  const sp = site.species.replace(/ crab$/i, "").replace(/^Northern /, "northern ");
+  // "Dungeness", "rock crab", "northern anchovy": a proper noun keeps its capital, a common name does not
+  const sp = /dungeness/i.test(site.species) ? "Dungeness" : site.species.charAt(0).toLowerCase() + site.species.slice(1);
   const subject = `${where} ${sp}`;
   if (!set) return `${subject}: no test results published.`;
   const when = dayWords(set.date, now);
@@ -794,6 +798,10 @@ const tideClock = (at: string) => {
   return `${h % 12 || 12}:${m[2]} ${h < 12 ? "AM" : "PM"}`;
 };
 
+/** NWS periods after the current one that become facts (about two days). */
+const NWS_MORE_PERIODS = 4;
+const addDay = (ymd: string) => new Date(Date.parse(`${ymd}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+
 function seaFactsOf(sea: SeaView, place: TodayPlace, now: string, fact: (f: Omit<PortFact, "place_id">) => PortFact): PortFact[] {
   if (sea.state !== "ok") return [];
   const out: PortFact[] = [];
@@ -804,6 +812,12 @@ function seaFactsOf(sea: SeaView, place: TodayPlace, now: string, fact: (f: Omit
     const line = periodLine(first);
     out.push(fact({ id: "weather:nws", kind: "weather", severity: "info", headline: `NWS ${sea.zone ?? "marine"} forecast, ${first.name}: ${line ?? first.text}`, value: line, detail: first.text, basis: "forecast", verified: null, source: nws, as_of: sea.issued, valid_for: null }));
   }
+  // the periods that follow, each with the day it is for, so "tomorrow" can be answered from NWS's own words
+  for (const p of sea.lanes.slice(1, 1 + NWS_MORE_PERIODS)) {
+    if (!p.date) continue;
+    const line = periodLine(p);
+    out.push(fact({ id: `weather:nws:${p.date}:${p.night ? "night" : "day"}`, kind: "weather", severity: "info", headline: `NWS ${sea.zone ?? "marine"} forecast, ${p.name}: ${line ?? p.text}`, value: line, detail: p.text, basis: "forecast", verified: null, source: nws, as_of: sea.issued, valid_for: { from: p.date, to: p.date } }));
+  }
   if (sea.buoy) {
     const b = sea.buoy;
     const parts = [b.windKt != null ? `wind ${b.windDir ? `${b.windDir} ` : ""}${Math.round(b.windKt)} kt${b.gustKt != null ? ` (gust ${Math.round(b.gustKt)})` : ""}` : null, b.waveFt != null ? `waves ${b.waveFt.toFixed(1)} ft${b.periodS != null ? ` at ${Math.round(b.periodS)} s` : ""}` : null].filter(Boolean);
@@ -811,6 +825,14 @@ function seaFactsOf(sea: SeaView, place: TodayPlace, now: string, fact: (f: Omit
   }
   const nt = nextTide(sea.tides, now);
   if (nt) out.push(fact({ id: "tide:next", kind: "tide", severity: "info", headline: `Next tide: ${nt.type === "H" ? "high" : "low"} ${nt.ft.toFixed(1)} ft at ${tideClock(nt.at)}.`, value: `${nt.ft.toFixed(1)} ft`, detail: `NOAA CO-OPS astronomical prediction at station ${sea.tideStation?.id ?? ""}; weather can shift real water levels.`, basis: "forecast", verified: null, source: { name: "NOAA CO-OPS", url: sea.tideStation?.url ?? null }, as_of: nt.at.slice(0, 10), valid_for: null }));
+  // today's and tomorrow's highs and lows, each day one fact
+  const today = pacificDay(now);
+  for (const day of [today, addDay(today)]) {
+    const list = sea.tides.filter((t) => t.at.startsWith(day)).sort((a, b) => a.at.localeCompare(b.at));
+    if (!list.length) continue;
+    const words = list.map((t) => `${t.type === "H" ? "high" : "low"} ${t.ft.toFixed(1)} ft at ${tideClock(t.at)}`).join(", ");
+    out.push(fact({ id: `tide:day:${day}`, kind: "tide", severity: "info", headline: `Tides ${day === today ? "today" : "tomorrow"} (${dayWords(day, now)})${sea.tideStation?.name ? ` at ${sea.tideStation.name}` : ""}: ${words}.`, value: null, detail: "NOAA CO-OPS astronomical predictions, feet above MLLW; wind and swell shift real water levels.", basis: "forecast", verified: null, source: { name: "NOAA CO-OPS", url: sea.tideStation?.url ?? null }, as_of: day, valid_for: { from: day, to: day } }));
+  }
   if (sea.water) {
     const f = (sea.water.c * 9) / 5 + 32;
     out.push(fact({ id: "sea:water", kind: "observation", severity: "info", headline: `Water temperature ${Math.round(f)} °F (${sea.water.c.toFixed(1)} °C), measured ${sea.water.where}.`, value: `${Math.round(f)} °F`, detail: sea.water.stale ? "The latest reading is more than an hour old." : null, basis: "measured", verified: null, source: { name: "NOAA", url: sea.water.url }, as_of: sea.water.at }));

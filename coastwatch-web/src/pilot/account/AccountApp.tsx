@@ -22,10 +22,10 @@ import { TripLogForm } from "./TripLogForm";
  * kept on this device, labelled so. Saved ports, fisheries, alert preferences, the alert inbox,
  * notifications, an optional trip log, and the person's data (delete on device / delete account).
  */
-export function AccountApp({ config, todays, stubFacts }: { config: PilotAccountConfig; todays: PortToday[]; stubFacts: boolean }) {
+export function AccountApp({ config, todays, sample }: { config: PilotAccountConfig; todays: PortToday[]; /** the facts are the test fixture's, not published data */ sample: boolean }) {
   return (
     <PilotAccountProvider config={config}>
-      <Account todays={todays} stubFacts={stubFacts} />
+      <Account todays={todays} sample={sample} />
     </PilotAccountProvider>
   );
 }
@@ -50,7 +50,7 @@ function Section({ id, title, badge, children, lede }: { id: string; title: stri
   );
 }
 
-function Account({ todays, stubFacts }: { todays: PortToday[]; stubFacts: boolean }) {
+function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
   const { config, session } = usePilotAccount();
   const { account, hydrated, persistent } = useAccount();
   const inbox = useInbox(session);
@@ -62,7 +62,7 @@ function Account({ todays, stubFacts }: { todays: PortToday[]; stubFacts: boolea
   const saved = account.saved_places.join(",");
   const prefs = JSON.stringify(account.alerts);
   useEffect(() => {
-    if (hydrated) runLocalCheck(account, todays);
+    if (hydrated) runLocalCheck(account, todays, new Date(), { sample });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, saved, prefs]);
 
@@ -202,9 +202,9 @@ function Account({ todays, stubFacts }: { todays: PortToday[]; stubFacts: boolea
             : "In-app alerts are checked on this device each time you open Neritic. Without an account nothing is checked while Neritic is closed."
         }
       >
-        {stubFacts && (
-          <p className="mb-3 rounded-lg border border-n-model-line px-3 py-2 text-[13.5px] text-n-ink-2" data-testid="stub-facts-note">
-            Pilot build: alerts are compared against sample port facts until the Today data is connected. Sample alerts say so in their source.
+        {sample && (
+          <p className="mb-3 rounded-lg border border-n-model-line px-3 py-2 text-[13.5px] text-n-ink-2" data-testid="sample-facts-note">
+            Sample data: this build is reading Neritic&rsquo;s test fixture, not today&rsquo;s published data. Alerts made from it are marked &ldquo;Sample data&rdquo; and are never sent to a phone.
           </p>
         )}
         {!account.saved_places.length ? (

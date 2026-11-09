@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PortFact } from "@/pilot/contracts";
 import { askDeterministic } from "@/pilot/ask/engine";
-import { fixturePortToday, FIXTURE_NOW } from "@/pilot/ask/fixture";
+import { fixturePortToday, FIXTURE_NOW } from "@/pilot/ask/evals/sampleFacts";
 import { check } from "@/pilot/ask/guard";
 
 /**
