@@ -52,7 +52,7 @@ The screenshots are in [`shots/`](shots/), captured by `coastwatch-web/scripts/p
 | 10 | [`10-ask-sheet-on-today`](shots/10-ask-sheet-on-today-phone-dark.png), [`10-ask-cited-answer`](shots/10-ask-cited-answer-phone-dark.png), [`11-ask-safe-to-eat-refusal`](shots/11-ask-safe-to-eat-refusal-phone-dark.png) |
 | 11 | [`12-explore-map`](shots/12-explore-map-phone-dark.png), [`13-research`](shots/13-research-phone-dark.png) |
 
-**What these show.** The committed set was captured on 2026-11-09 from the test-fixture build (the data track's real CDFW/CDPH transcriptions and CDPH test results with recorded NOAA answers, clock 2026-10-12), because the two new sidecars were not yet on staging. They show every screen and label as built; Ask and alerts are labelled **Sample data** in them. In the fixture the outlook's usual value is synthetic (1.6× at Moss Landing), so the "higher than usual" reading in the pictures is a test value, not a forecast. **Recapture them from the pilot build the night before the demo**, once staging has the sidecars:
+**What these show.** The committed set was captured on 2026-11-09 from a production build of the pilot (`NERITIC_PILOT=1`) reading the **staging** data published that morning: the real CDFW/CDPH transcriptions (all still **Not verified**), CDPH's test results, live NWS, buoy and tide readings, NOAA's newest C-HARM run (Nov 3, labelled old) and the 8-day outlook for Nov 5–12, which read **about usual** at Moss Landing. Ask Neritic is in pilot-demo mode (no AI model) and nothing in them is sample data. They are a snapshot: **recapture them the night before the demo** so the dates and the sea match the day:
 
 ```sh
 cd coastwatch-web
