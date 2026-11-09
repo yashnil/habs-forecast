@@ -1,3 +1,5 @@
+@import "../stage/stage.css";
+
 /*
  * The Swell motion system's CSS (docs/coastwatch/v11/design.md §5). Scripts in this folder set the states;
  * this file says how each one looks. Only transform and opacity animate; --nx-shift (theme.css) is 0 under
