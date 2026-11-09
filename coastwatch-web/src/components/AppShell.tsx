@@ -12,6 +12,8 @@ import { isFixture, sourceStatus } from "@/lib/layers";
 import { ReadinessProvider, useReportSource } from "@/v4/readiness/store";
 import { Dock, TopBar } from "@/v4/shell/TopBar";
 import { useNow } from "@/lib/useNow";
+import { StagePoster } from "@/v4/stage/StagePoster";
+import "./appshell.css";
 
 /**
  * The frame of the reference pages (Blooms, Fisheries, Data status, About) in v4: the shared top bar
@@ -61,11 +63,15 @@ function Frame({ children, manifest, official }: { children: React.ReactNode; ma
           </p>
         </div>
       )}
-      <main id="main" tabIndex={-1} className="flex min-h-0 flex-1 flex-col outline-none">
+      <main id="main" tabIndex={-1} className="relative isolate flex min-h-0 flex-1 flex-col outline-none">
+        {/* the quiet head of a reference page: the real Monterey Canyon isobaths (brand geometry, never the reader's waters) */}
+        <div className="as-ground" aria-hidden>
+          <StagePoster />
+        </div>
         <PageIn kind="page">{children}</PageIn>
       </main>
-      <footer data-testid="site-footer">
-        <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6 text-[14px] text-n-ink-2 sm:px-8">
+      <footer data-testid="site-footer" className="as-footer">
+        <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-8 gap-y-2 px-4 py-10 text-[14px] text-n-ink-2 sm:px-8">
           <span className="font-semibold text-n-ink" data-testid="footer-brand">
             {BRAND.name} · research preview
           </span>
@@ -76,13 +82,13 @@ function Frame({ children, manifest, official }: { children: React.ReactNode; ma
             {BRAND.independence}
           </span>
           <nav aria-label={`About ${BRAND.name}`} className="flex flex-wrap gap-x-5 gap-y-2 sm:ml-auto">
-            <Link href="/about" className="inline-flex min-h-[44px] min-w-[44px] items-center font-semibold text-n-accent hover:underline">
+            <Link href="/about" className="inline-flex min-h-[44px] min-w-[44px] items-center font-medium underline underline-offset-2">
               About
             </Link>
-            <Link href="/sources" className="inline-flex min-h-[44px] items-center font-semibold text-n-accent hover:underline">
+            <Link href="/sources" className="inline-flex min-h-[44px] items-center font-medium underline underline-offset-2">
               Data &amp; sources
             </Link>
-            <a href={RESEARCH.doi} target="_blank" rel="noreferrer" className="inline-flex min-h-[44px] items-center font-semibold text-n-accent hover:underline">
+            <a href={RESEARCH.doi} target="_blank" rel="noreferrer" className="inline-flex min-h-[44px] items-center font-medium underline underline-offset-2">
               Research paper ↗
             </a>
           </nav>

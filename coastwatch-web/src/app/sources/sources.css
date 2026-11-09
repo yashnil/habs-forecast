@@ -1,0 +1,4 @@
+/* Sources as rows: a hairline between, no boxes (the status chip and the failure note keep their own shape). */
+.sources-page [data-testid="source-table"] { display: flex; flex-direction: column; }
+.sources-page [data-testid="source-table"] > li { border: 0; border-radius: 0; background: transparent; padding: 18px 0; border-top: 1px solid var(--nx-line); }
+.sources-page [data-testid="source-table"] > li:first-child { border-top: 0; }

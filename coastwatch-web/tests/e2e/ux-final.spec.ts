@@ -37,6 +37,7 @@ test("M2: choosing another station moves Research's map to it and clears the old
   await mapReady(page);
   const before = await page.evaluate(() => (window as unknown as { __cwMap: M }).__cwMap.getCenter());
   expect(before.lat).toBeGreaterThan(36.5);
+  await page.getByTestId("research-station-button").click();
   await page.getByTestId("research-stations").getByRole("button", { name: /Scripps Pier/ }).click();
   await expect(page.getByTestId("research-title")).toContainText("Scripps Pier");
   await expect.poll(async () => (await page.evaluate(() => (window as unknown as { __cwMap: M }).__cwMap.getCenter())).lat, { timeout: 5000 }).toBeLessThan(33.5);
@@ -46,6 +47,7 @@ test("M4: a station's latest HAB sample is the same date, with its year, in Rese
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
+  await page.getByTestId("research-station-button").click();
   const inResearch = (await page.getByTestId("research-stations").getByRole("button", { name: /Monterey Wharf/ }).textContent())!.match(/last HAB sample [A-Z][a-z]{2} \d+(, \d{4})?/)?.[0];
   // Monterey Wharf's newest toxin or cell sample is from 2025: the year is said, never read as this year's
   expect(inResearch).toMatch(/, 2025$/);
