@@ -59,7 +59,7 @@ test("daylight mode: switched from the ⋯ menu, kept on this device, applied be
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
   const token = (name: string) => page.evaluate((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name);
   // v10: one dark Instrument system on every page by default (docs/coastwatch/v10/system.md)
-  expect(await token("--nx-accent")).toBe("#74c7ff");
+  expect(await token("--nx-accent")).toBe("#eef3f5");
   await page.getByTestId("more-menu").click();
   const sw = page.getByTestId("daylight-toggle");
   await expect(sw).toHaveAttribute("role", "switch");
@@ -68,7 +68,7 @@ test("daylight mode: switched from the ⋯ menu, kept on this device, applied be
   await expect(sw).toHaveAttribute("aria-checked", "true");
   await expect(page.locator("html")).toHaveAttribute("data-daylight", "");
   expect(await page.evaluate(() => localStorage.getItem("nx-daylight-v1"))).toBe("1");
-  for (const [n, v] of [["--nx-accent", "#04566c"], ["--nx-official", "#7f3a00"], ["--nx-model", "#55309a"], ["--nx-measured", "#055a50"], ["--nx-conditions", "#164f78"], ["--nx-ok", "#0f5e3b"], ["--nx-stale", "#6b4500"], ["--nx-down", "#922a16"], ["--nx-gap", "#45565f"], ["--nx-line", "#8a9ba5"]]) expect(await token(n), n).toBe(v);
+  for (const [n, v] of [["--nx-accent", "#0b1820"], ["--nx-official", "#7f3a00"], ["--nx-model", "#55309a"], ["--nx-measured", "#055a50"], ["--nx-conditions", "#164f78"], ["--nx-ok", "#0f5e3b"], ["--nx-stale", "#6b4500"], ["--nx-down", "#922a16"], ["--nx-gap", "#45565f"], ["--nx-line", "#8a9ba5"]]) expect(await token(n), n).toBe(v);
   await page.keyboard.press("Escape");
   expect(await serious(page)).toEqual([]);
   // kept: a reload has it before any script of the app runs (no darker flash first)

@@ -1,31 +1,43 @@
 import { expect, test } from "@playwright/test";
 import { OK } from "./ports";
 
-/** While the notice registry is not human-verified, every page says so and links to the agencies;
- *  the Del Norte razor clam records (2026-10-09) are listed, unverified. */
-
-for (const path of ["/", "/coast?place=port-550", "/research", "/bloom", "/fisheries", "/sources", "/about"]) {
-  test(`${path}: the unverified-notices disclosure is on the page with agency links`, async ({ page }) => {
+/** While the notice registry is not human-verified, every page says so in words on the trust pill, at
+ *  every width, and the agencies are one tap away in its panel. The Del Norte razor clam records
+ *  (2026-10-09) are listed, unverified. */
+const WIDTHS: [number, number][] = [[1440, 900], [1024, 768], [768, 1024], [390, 844], [320, 640]];
+for (const path of ["/", "/today?place=port-592", "/today", "/coast", "/coast?place=port-550", "/research", "/bloom", "/fisheries", "/sources", "/about", "/ask", "/account", "/privacy", "/terms"]) {
+  test(`${path}: the trust pill says "not verified" in words at every width and opens the agencies`, async ({ page }) => {
+    for (const [width, height] of WIDTHS) {
+      await page.setViewportSize({ width, height });
+      await page.goto(`${OK}${path}`);
+      const d = page.getByTestId("registry-disclosure").first();
+      await expect(d, `${width}`).toBeVisible();
+      // what is visible on the pill, not only what is in the page: an icon alone is not enough
+      await expect(d, `${width}`).toContainText(/not verified/i, { useInnerText: true });
+      await expect(d, `${width}`).toContainText(/preview/i, { useInnerText: true });
+      await expect(d, `${width}`).toBeInViewport();
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`${OK}${path}`);
-    const d = page.getByTestId("registry-disclosure").first();
-    // what is visible, not only what is in the page (Explore floats the compact wording over the map)
-    await expect(d).toContainText(/(Official notices are|Notices) not verified/, { useInnerText: true });
-    await expect(d).toContainText("may be incomplete", { useInnerText: true });
-    // the workspaces say it in the line itself; the reference pages say it in their footer (navigation.spec)
-    if (["/", "/coast?place=port-550", "/research"].includes(path)) await expect(d).toContainText("Research preview", { useInnerText: true });
-    await expect(d.getByRole("link", { name: "CDFW" })).toHaveAttribute("href", "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories");
-    await expect(d.getByRole("link", { name: "CDPH" })).toHaveAttribute("href", "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx");
+    await expect(page.getByTestId("registry-disclosure").first()).toContainText("Research preview", { useInnerText: true });
+    // the full statement and the agencies are one tap away, in the pill's panel
+    await page.getByTestId("notices-button").click();
+    const panel = page.getByTestId("notices-panel");
+    await expect(panel).toContainText("may be incomplete");
+    await expect(panel.getByRole("link", { name: "CDFW" })).toHaveAttribute("href", "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories");
+    await expect(panel.getByRole("link", { name: "CDPH" })).toHaveAttribute("href", "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx");
   });
 }
 
-test("on a phone the disclosure is one short line that still links to the agencies", async ({ browser }) => {
+test("on a phone the pill is two short lines that still say not verified", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   await page.goto(OK);
   const d = page.getByTestId("registry-disclosure").first();
-  await expect(d).toContainText("Notices not verified");
-  expect((await d.boundingBox())!.height).toBeLessThan(60);
-  await expect(d.getByRole("link", { name: "CDFW" }).first()).toBeVisible();
+  await expect(d).toContainText("Not verified", { useInnerText: true });
+  expect((await d.boundingBox())!.height).toBeLessThan(44);
+  await page.getByTestId("notices-button").click();
+  await expect(page.getByTestId("notices-panel").getByRole("link", { name: "CDFW" })).toBeVisible();
   await ctx.close();
 });
 

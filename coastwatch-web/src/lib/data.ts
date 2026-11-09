@@ -2,7 +2,8 @@ import { displayManifest } from "@/lib/palette";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import Ajv2020 from "ajv/dist/2020";
-import type { Manifest, PortsCollection } from "@/generated/schema";
+import type { Manifest, PortsCollection, SourceStatus } from "@/generated/schema";
+import { isFixture, sourceStatus } from "@/lib/layers";
 import type { OfficialDataset } from "@/generated/official";
 import type { PortIntelCollection } from "@/generated/port_intel";
 import type { ObservationDataset } from "@/generated/observations";
@@ -231,6 +232,19 @@ export async function loadData(): Promise<DataLoad> {
   const [observations, stationsError] = await optional<ObservationDataset>(baseUrl, m.manifest.observations_url, checkObservations, "observations");
   const stations = observations ? slimStations(observations) : null;
   return { ok: true, manifest: m.manifest, ports, portsError, official, officialError, portIntel, portIntelError, stations, stationsError, baseUrl };
+}
+
+/** What the top bar's trust pill needs on any page: the notices, their review state and whether this is test data. */
+export async function loadTrust(): Promise<{ official: OfficialDataset | null; status: SourceStatus | null; fixture: boolean; generatedAt: string | null }> {
+  const baseUrl = dataBaseUrl();
+  try {
+    const m = checkManifest(await readArtifact(baseUrl, "manifest.json"));
+    if (!m.ok) return { official: null, status: null, fixture: false, generatedAt: null };
+    const [official] = await optional<OfficialDataset>(baseUrl, m.manifest.official_url, checkOfficial, "official");
+    return { official, status: sourceStatus(m.manifest, "official"), fixture: isFixture(m.manifest), generatedAt: m.manifest.generated_at };
+  } catch {
+    return { official: null, status: null, fixture: false, generatedAt: null };
+  }
 }
 
 /** Manifest plus selected artifacts, for pages that do not need everything. */

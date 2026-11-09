@@ -7,9 +7,10 @@ import { PILOT_PORTS, type FisheryId, type Readiness } from "@/pilot/contracts";
 import type { Conditions } from "@/lib/conditions";
 import { DEFAULT_FISHERIES, FISHERY_OPTIONS, buildTodayModel, dayWords, nextTide, statusTally, type PortTodayInputs, type StatusRow } from "@/pilot/facts";
 import { TopBar } from "@/v4/shell/TopBar";
+import { useReportTrust, type Trust } from "@/v4/shell/Notices";
+import { useReportSource } from "@/v4/readiness/store";
 import { PilotDock, PilotFooter } from "@/pilot/shell/PilotShell";
 import { SkipLink } from "@/v4/shell/SkipLink";
-import { readDaylight, setDaylight } from "@/v4/shell/daylight";
 import { Icon } from "@/v4/ui/Icon";
 import { readFisheries, writeFisheries, writeTodayPlace } from "./prefs";
 import { savedMark } from "./offline";
@@ -25,6 +26,8 @@ import { AskSheet } from "@/pilot/ask/ui/AskSheet";
 import { periodLine } from "./marine";
 
 export type TodayProps = {
+  /** what the top bar's trust pill says */
+  trust: Trust | null;
   inputs: Omit<PortTodayInputs, "conditions" | "selected">;
   /** from the link (?f=…); null: the reader's saved list, else the default */
   linkFisheries: FisheryId[] | null;
@@ -74,26 +77,6 @@ function useConditions(url: string): Conditions | null | "error" {
   return c;
 }
 
-function SunToggle() {
-  const [day, setDay] = useState(false);
-  useEffect(() => setDay(readDaylight()), []);
-  return (
-    <button
-      type="button"
-      aria-pressed={day}
-      onClick={() => {
-        setDaylight(!day);
-        setDay(!day);
-      }}
-      className="today-btn nx-focus nx-press nx-tint"
-      data-testid="today-sun"
-      title="High-contrast colours for bright sun"
-    >
-      <Icon name="sun" className="h-[18px] w-[18px]" /> {day ? "Night colours" : "Bright sun"}
-    </button>
-  );
-}
-
 /** Desktop only: the page at a glance, beside the answer (each line links to its section). */
 function Glance({ model, now }: { model: ReturnType<typeof buildTodayModel>; now: string }) {
   const first = model.sea.lanes[0];
@@ -126,7 +109,7 @@ function Glance({ model, now }: { model: ReturnType<typeof buildTodayModel>; now
   );
 }
 
-export function TodayView({ inputs, linkFisheries, readiness, fixture }: TodayProps) {
+export function TodayView({ inputs, linkFisheries, readiness, fixture, trust }: TodayProps) {
   const { place, now } = inputs;
   const [selected, setSelected] = useState<FisheryId[]>(linkFisheries ?? DEFAULT_FISHERIES);
   const [picking, setPicking] = useState(false);
@@ -203,12 +186,17 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture }: TodayPr
     [],
   );
 
+  // the trust pill: the dataset is in hand; a clock when any of this page's sources is old
+  useReportTrust(trust);
+  const oldHere = model.freshness.filter((f) => f.stale);
+  useReportSource(oldHere.length ? { id: "evidence", label: "Today's facts", state: "stale", detail: oldHere.map((f) => `${f.label} ${f.when}`).join(" · ") } : null);
+
   const lede = model.lede;
   const stamp = STAMP.format(new Date(now));
   return (
     <div className="env-instrument today min-h-dvh pb-[calc(76px+env(safe-area-inset-bottom,0px))] lg:pb-10" data-testid="today">
       <SkipLink />
-      <TopBar active="today" now={new Date(now)} />
+      <TopBar active="today" now={new Date(now)} trust={trust} />
       <main id="main">
         <header className="today-hero" data-testid="today-hero">
           <svg className="today-hero-iso" viewBox="0 0 400 200" preserveAspectRatio="none" aria-hidden="true">
@@ -273,7 +261,6 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture }: TodayPr
               <Link href="/today?pick=1" className="today-btn nx-focus nx-press nx-tint" data-testid="today-change-port">
                 <Icon name="harbor" className="h-[18px] w-[18px]" /> Change port
               </Link>
-              <SunToggle />
               <a
                 href={`/ask?place=${encodeURIComponent(place.place_id)}`}
                 onClick={(e) => {
@@ -287,9 +274,6 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture }: TodayPr
               >
                 <Icon name="ask" className="h-[18px] w-[18px]" /> Ask
               </a>
-              <Link href="/about" className="nx-focus ml-1 inline-flex min-h-11 items-center text-[13.5px] text-n-ink-3 underline decoration-n-line underline-offset-4">
-                Research preview · not an official source
-              </Link>
             </div>
             </div>
             <Glance model={model} now={now} />
