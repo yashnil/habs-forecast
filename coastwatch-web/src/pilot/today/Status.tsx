@@ -68,6 +68,12 @@ export function StatusStrip({
                 <span className="today-src mt-1 block">
                   {[r.causeWord ? `Cause: ${r.causeWord}` : null, r.next_review ? `Next review ${dayWords(r.next_review, now)}` : null, r.source ? `${r.source.name}${r.checked_at ? `, checked ${dayWords(r.checked_at, now)}` : ""}` : null].filter(Boolean).join(" · ")}
                   {r.stale && <span className="t-amber"> · check is old</span>}
+                  {r.conflict && (
+                    <span className="t-amber" data-testid="sources-differ">
+                      {" "}
+                      · sources differ
+                    </span>
+                  )}
                 </span>
               </span>
               <span className="flex flex-col items-end gap-2">
@@ -147,7 +153,42 @@ export function StatusSheet({ row, now, onClose }: { row: StatusRow | null; now:
           </div>
           <div className="overflow-y-auto px-4 pb-8 pt-3">
             <p className="text-[17px] leading-snug text-n-ink">{r.headline}</p>
-            {r.fact.detail && <p className="mt-2 text-[15px] leading-relaxed text-n-ink-2">{r.fact.detail}</p>}
+            {r.fact.detail && <p className="mt-2 text-[15px] leading-relaxed text-n-ink-2">{r.conflict ? r.fact.detail.replace(r.conflict.words, "").trim() : r.fact.detail}</p>}
+            {r.conflict && (
+              <div className="mt-4 border-l-2 border-[var(--t-amber)] pl-3" data-testid="conflict">
+                <h3 className="today-h2 t-amber">The sources differ</h3>
+                <p className="mt-1.5 text-[14.5px] leading-relaxed text-n-ink">Neritic has two records for this fishery here and they do not agree. It shows the more restrictive one and does not choose between them: a person has to check both.</p>
+                <dl className="mt-2 grid gap-2 text-[14.5px] leading-snug">
+                  {(
+                    [
+                      ["notice", "Official-notices registry", `${r.conflict.notice.word}: ${r.conflict.notice.title}`, [r.conflict.notice.agency, r.conflict.notice.effective ? `in effect since ${dayWords(r.conflict.notice.effective, now)}` : null, r.conflict.notice.checked ? `registry last read ${dayWords(r.conflict.notice.checked, now)}` : "read date not recorded", r.conflict.notice.verified ? "verified" : "not verified"], r.conflict.notice.url],
+                      ["record", "Neritic's curated status", `${r.conflict.record.word}: ${r.conflict.record.headline}`, [r.conflict.record.source, `checked ${dayWords(r.conflict.record.checked, now)}`, r.conflict.record.verified ? "verified" : "not verified"], r.conflict.record.url],
+                    ] as const
+                  ).map(([key, name, says, when, url]) => (
+                    <div key={key} data-testid={`conflict-${key}`}>
+                      <dt className="nx-caps">
+                        {name}
+                        {r.conflict!.shown === key ? " · shown" : ""}
+                      </dt>
+                      <dd className="mt-0.5 text-n-ink">
+                        {says}
+                        <span className="block text-[13px] text-n-ink-3">
+                          {when.filter(Boolean).join(" · ")}
+                          {url && (
+                            <>
+                              {" · "}
+                              <a href={url} target="_blank" rel="noreferrer" className="nx-focus underline underline-offset-4">
+                                source
+                              </a>
+                            </>
+                          )}
+                        </span>
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )}
             <Dl
               rows={[
                 ...(r.causeWord ? ([["Cause", r.causeWord]] as [string, ReactNode][]) : []),

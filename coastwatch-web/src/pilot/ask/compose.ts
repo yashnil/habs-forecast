@@ -167,9 +167,11 @@ function sea(t: PortToday, port: PilotPort, q: string, now: Date): Composed {
   const alerts = wantsTide ? [] : nwsAlerts(t);
   const wantsWater = /\bwater temp|\bsst\b|\btemperature/i.test(q);
   const observed = t.facts.filter((f) => f.kind === "observation" && /buoy|wind|seas?\b|water/i.test(f.headline));
-  const obs = want === "tomorrow" || wantsTide ? [] : [...observed].sort((a, b) => Number(/water temp/i.test(b.headline) === wantsWater) - Number(/water temp/i.test(a.headline) === wantsWater)).slice(0, 1);
+  const isWater = (f: PortFact) => /water temp/i.test(f.headline);
+  // the buoy's waves and, where a second buoy supplies it, the wind; the water only when asked for
+  const obs = want === "tomorrow" || wantsTide ? [] : wantsWater ? observed.filter(isWater).slice(0, 1) : observed.filter((f) => !isWater(f)).slice(0, 2);
   // "what is the water temperature?" is answered by the reading itself
-  if (wantsWater && obs.length && /water temp/i.test(obs[0].headline))
+  if (wantsWater && obs.length)
     return { outcome: "answered", lines: obs.map(observationLine), caveats: ["One reading at one place; the water a few miles away can differ."], referrals: [] };
   // "the buoy reading now": the measurement is what was asked for (a phone shows it first)
   const obsFirst = /\bbuoy|\breading|\bmeasur/i.test(q);
@@ -310,7 +312,7 @@ export function relatedForSafety(kind: SafetyKind, t: PortToday, q: string, now:
     return [...official.map(officialLine), ...unverifiedLine(official)];
   }
   const fc = forecastsFor(t, ["sea", "weather"], dayIn(q) === "today" ? "today" : "tomorrow", now).slice(0, 3);
-  const obs = t.facts.filter((f) => f.kind === "observation" && /buoy/i.test(f.headline)).slice(0, 1);
+  const obs = t.facts.filter((f) => f.kind === "observation" && /buoy/i.test(f.headline) && !/water temp/i.test(f.headline)).slice(0, 2);
   return [...nwsAlerts(t).map(plainLine), ...fc.map(plainLine), ...obs.map(observationLine)];
 }
 

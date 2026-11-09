@@ -29,6 +29,8 @@ export function SeaWeather({ sea, now, lede, place, factIds = [] }: { sea: SeaVi
   const maxWind = Math.max(25, ...sea.lanes.map((p) => p.windHi ?? 0));
   const nt = nextTide(sea.tides, now);
   const todays = sea.tides.filter((t) => t.at.startsWith(day));
+  // wind at the nearest buoy, else at the nearest buoy that measures it (named, with its distance)
+  const wind = sea.buoy?.windKt != null ? { windKt: sea.buoy.windKt, windDir: sea.buoy.windDir, gustKt: sea.buoy.gustKt } : sea.windBuoy;
   return (
     <Section id="sea" area="sea" title="Sea & weather" aside={sea.zone ? <span className="today-src">NWS {sea.zone}</span> : undefined} feedback={sea.state === "ok" && factIds.length ? { factId: factIds.includes("weather:nws") ? "weather:nws" : factIds[0], placeId: place } : null}>
       {sea.state === "loading" && (
@@ -139,15 +141,19 @@ export function SeaWeather({ sea, now, lede, place, factIds = [] }: { sea: SeaVi
           <div className="today-readouts" data-testid="sea-now">
             <div>
               <p className="nx-caps">Wind now</p>
-              {sea.buoy?.windKt != null ? (
-                <p className="today-v mt-1.5">
-                  {Math.round(sea.buoy.windKt)}
-                  <small>kt {sea.buoy.windDir ?? ""}</small>
+              {wind ? (
+                <p className="today-v mt-1.5" data-testid="wind-now">
+                  {Math.round(wind.windKt)}
+                  <small>kt {wind.windDir ?? ""}</small>
                 </p>
               ) : (
                 <p className="today-v mt-1.5 text-n-ink-3">—</p>
               )}
-              <p className="today-src mt-1.5">{sea.buoy?.windKt != null ? (sea.buoy.gustKt != null ? `gust ${Math.round(sea.buoy.gustKt)}` : "measured") : "not measured here"}</p>
+              <p className="today-src mt-1.5" data-testid="wind-where">
+                {!wind
+                  ? "no wind reading within 60 km"
+                  : [wind.gustKt != null ? `gust ${Math.round(wind.gustKt)}` : null, sea.windBuoy ? `at buoy ${sea.windBuoy.id}, ${Math.round(sea.windBuoy.km)} km` : wind.gustKt == null ? "measured" : null].filter(Boolean).join(" · ")}
+              </p>
             </div>
             <div>
               <p className="nx-caps">Waves now</p>
@@ -181,7 +187,17 @@ export function SeaWeather({ sea, now, lede, place, factIds = [] }: { sea: SeaVi
                 <a href={sea.buoy.url} target="_blank" rel="noreferrer" className="nx-focus">
                   NDBC buoy {sea.buoy.id}
                 </a>
-                , {Math.round(sea.buoy.km)} km away{sea.buoy.at ? `, ${ago(sea.buoy.at, now)}` : ""}. A reading at one point, not a forecast.
+                , {Math.round(sea.buoy.km)} km away{sea.buoy.at ? `, ${ago(sea.buoy.at, now)}` : ""}
+                {sea.windBuoy && (
+                  <>
+                    ; it has no wind sensor, so wind is from{" "}
+                    <a href={sea.windBuoy.url} target="_blank" rel="noreferrer" className="nx-focus">
+                      buoy {sea.windBuoy.id}
+                    </a>
+                    , {Math.round(sea.windBuoy.km)} km away, {ago(sea.windBuoy.at, now)}
+                  </>
+                )}
+                . {sea.windBuoy ? "Readings at single points" : "A reading at one point"}, not a forecast.
               </>
             ) : (
               (sea.buoyReason ?? "No buoy reading.")

@@ -90,6 +90,8 @@ export function portOptions(ports: PortsCollection | null): PortOption[] {
 function noticesAt(official: OfficialDataset | null, place: CoastPlace): NoticeInput[] | null {
   if (!official) return null;
   const verified = official.registry.review.status === "human_verified";
+  // when the registry's records were last read against the agencies' pages (its own review date)
+  const read = (official.registry.review as { reviewed_at?: string | null }).reviewed_at ?? null;
   return associationsAt(official, place.key, place.lat, place.lon)
     .filter((a) => a.tier === "geographic" && !a.dispute)
     .map((a) => ({
@@ -103,6 +105,7 @@ function noticesAt(official: OfficialDataset | null, place: CoastPlace): NoticeI
       effective: a.record.effective_date ?? null,
       url: a.record.sources[0]?.url ?? null,
       verified,
+      registry_checked: read,
     }));
 }
 

@@ -268,6 +268,27 @@ describe("CO-OPS water temperature in the harbour", () => {
       return body.harbor;
     };
 
+    it("Moss Landing: the nearest buoy has no wind sensor, so the nearest that measures wind is returned beside it", async () => {
+      vi.stubEnv("CW_NWS_API", "");
+      vi.stubEnv("CW_NWS_TEXT", "0");
+      vi.stubEnv("CW_FIXED_NOW", NOW.toISOString());
+      vi.stubEnv("CW_CONDITIONS_FIXTURE", FIXTURES);
+      const { GET } = await import("@/app/api/conditions/route");
+      const moss = await (await GET(new Request("http://x/api/conditions?lat=36.8044&lon=-121.7869"))).json();
+      expect(moss.buoy).toMatchObject({ status: "ok", station: { id: "46236" } });
+      expect(moss.buoy.data.windKt).toBeUndefined();
+      expect(moss.buoy.data.waveFt.value).toBeCloseTo(4.9, 1);
+      expect(moss.buoyWind).toMatchObject({ status: "ok", station: { id: "46092" }, url: "https://www.ndbc.noaa.gov/station_page.php?station=46092" });
+      expect(moss.buoyWind.station.km).toBeGreaterThan(moss.buoy.station.km);
+      expect(moss.buoyWind.data.windKt).toEqual({ value: expect.closeTo(5.83, 1), at: "2026-10-13T03:18:00.000Z" });
+      // a buoy that measures wind itself: no second station is asked for
+      const f = (JSON.parse(readFileSync(PORTS_FILE, "utf8")) as { features: { properties: { name: string }; geometry: { coordinates: number[] } }[] }).features.find((x) => x.properties.name === "SANTA CRUZ")!;
+      const sc = await (await GET(new Request(`http://x/api/conditions?lat=${f.geometry.coordinates[1]}&lon=${f.geometry.coordinates[0]}`))).json();
+      expect(sc.buoy).toMatchObject({ status: "ok", station: { id: "46092" } });
+      expect(sc.buoy.data.windKt).toBeDefined();
+      expect(sc.buoyWind).toBeUndefined();
+    });
+
     it("Monterey: in the harbour, with the sensor's placement", async () => {
       const h = await harbor("MONTEREY");
       expect(h).toMatchObject({ status: "ok", basis: "in-harbour", station: { id: "9413450", name: "Monterey" }, data: { flags: "0,0,0", stale: false }, url: "https://tidesandcurrents.noaa.gov/stationhome.html?id=9413450" });

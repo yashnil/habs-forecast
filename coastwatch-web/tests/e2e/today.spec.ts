@@ -181,6 +181,33 @@ test("the top bar carries the alerts bell and the pilot's pages; Today runs the 
   expect(await axe(page)).toEqual([]);
 });
 
+test("known gaps are said plainly: a wave buoy's missing wind comes from the next buoy, and sources that differ say so", async ({ page }) => {
+  await page.goto(MOSS);
+  await ready(page);
+  // the nearest buoy (46236) has no anemometer: the wind is from the nearest that has one, named with its distance
+  await expect(page.getByTestId("wind-now")).toContainText("6");
+  await expect(page.getByTestId("wind-where")).toHaveText("at buoy 46092, 22 km");
+  await expect(page.getByTestId("today-sea")).toContainText("it has no wind sensor, so wind is from buoy 46092, 22 km away");
+  await expect(page.getByTestId("sea-now")).toContainText("4.9");
+  // mussels: the notices registry lists the quarantine, the curated status says CDPH announced its end.
+  // The row keeps the more restrictive level and flags the disagreement; the sheet shows both, each with its date
+  const row = page.getByTestId("status-bivalve_shellfish");
+  await expect(row).toHaveAttribute("data-severity", "red");
+  await expect(row.getByTestId("sources-differ")).toBeVisible();
+  await row.click();
+  const sheet = page.getByTestId("status-sheet");
+  await expect(sheet.getByTestId("conflict")).toContainText("It shows the more restrictive one and does not choose between them");
+  await expect(sheet.getByTestId("conflict-notice")).toContainText("Closed: Annual quarantine of sport-harvested mussels");
+  await expect(sheet.getByTestId("conflict-notice")).toContainText("in effect since May 1 · registry last read Oct 8 · not verified");
+  await expect(sheet.getByTestId("conflict-notice")).toContainText("shown");
+  await expect(sheet.getByTestId("conflict-record")).toContainText("Watch: CDPH announced the 2026 mussel quarantine ended Oct 31");
+  await expect(sheet.getByTestId("conflict-record")).toContainText("checked Oct 12 · not verified");
+  expect(await axe(page)).toEqual([]);
+  await page.keyboard.press("Escape");
+  // a fishery whose sources agree carries no such flag
+  await expect(page.getByTestId("status-anchovy_sardine").getByTestId("sources-differ")).toHaveCount(0);
+});
+
 test("a status row opens its detail sheet; Escape closes it and returns focus", async ({ page }) => {
   await page.goto(MOSS);
   await ready(page);

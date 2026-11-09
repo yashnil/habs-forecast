@@ -276,6 +276,8 @@ export type Conditions = {
   marine: Part<MarineForecast>;
   alerts: Part<MarineAlert[]>;
   buoy: Part<BuoyObs>;
+  /** only when the nearest reporting station has no wind sensor (a wave buoy): the nearest NDBC station that measures wind, with its distance */
+  buoyWind?: Part<BuoyObs>;
   tides: Part<Tide[]>;
   /** water temperature measured in the harbour itself (CO-OPS tide-station thermistor), when one is near */
   harbor?: Part<HarborTemp>;

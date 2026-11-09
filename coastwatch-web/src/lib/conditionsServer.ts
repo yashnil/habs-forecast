@@ -154,23 +154,37 @@ async function marineParts(lat: number, lon: number, max = 4): Promise<[Conditio
   return [u, u];
 }
 
-async function buoyPart(lat: number, lon: number): Promise<Conditions["buoy"]> {
+/**
+ * The nearest NDBC station with a recent observation. Many nearshore stations are wave buoys with no
+ * anemometer (46236 off Moss Landing): then the nearest station that does measure wind is read as well
+ * and returned as `wind`, with its own distance, so the page never shows a blank where a measurement
+ * exists a few miles farther out. Nothing is merged: each reading keeps its station and its time.
+ */
+async function buoyParts(lat: number, lon: number): Promise<{ buoy: Conditions["buoy"]; wind?: Conditions["buoyWind"] }> {
   const source = "NOAA National Data Buoy Center";
   const cands = nearest(BUOYS, lat, lon, 8, 60);
-  if (!cands.length) return { status: "none", reason: "No NDBC station reports within 60 km.", source };
+  if (!cands.length) return { buoy: { status: "none", reason: "No NDBC station reports within 60 km.", source } };
   const errors: string[] = [];
+  const part = (s: (typeof cands)[number], obs: ReturnType<typeof parseNdbc>): Conditions["buoy"] => ({ status: "ok", data: obs, source, url: `https://www.ndbc.noaa.gov/station_page.php?station=${s.id}`, fetchedAt: now().toISOString(), station: { id: s.id, name: s.name, km: s.km, lat: s.lat, lon: s.lon } });
+  let buoy: Conditions["buoy"] | null = null;
   for (const s of cands) {
     const url = `https://www.ndbc.noaa.gov/data/realtime2/${s.id}.txt`;
     try {
       const obs = parseNdbc((await get(url, "text", 8192)) as string, now());
-      if (Object.keys(obs).length)
-        return { status: "ok", data: obs, source, url: `https://www.ndbc.noaa.gov/station_page.php?station=${s.id}`, fetchedAt: now().toISOString(), station: { id: s.id, name: s.name, km: s.km, lat: s.lat, lon: s.lon } };
-      errors.push(`${s.id}: nothing in the last 6 h`);
+      if (!Object.keys(obs).length) {
+        errors.push(`${s.id}: nothing in the last 6 h`);
+        continue;
+      }
+      if (!buoy) {
+        buoy = part(s, obs);
+        if (obs.windKt) return { buoy };
+      } else if (obs.windKt) return { buoy, wind: part(s, obs) };
     } catch (e) {
       errors.push(`${s.id}: ${msg(e)}`);
     }
   }
-  return { status: "unavailable", reason: `No recent observation from the nearest stations (${errors.join("; ")}).`, source };
+  if (buoy) return { buoy, wind: { status: "none", reason: "No NDBC station within 60 km is reporting wind.", source } };
+  return { buoy: { status: "unavailable", reason: `No recent observation from the nearest stations (${errors.join("; ")}).`, source } };
 }
 
 async function tidePart(lat: number, lon: number): Promise<Conditions["tides"]> {
@@ -271,6 +285,6 @@ export function validCoastPoint(lat: number, lon: number): boolean {
 
 /** Every part for one point. Each part fails on its own and says why; this never throws for an upstream outage. */
 export async function loadConditions(lat: number, lon: number, periods = 4): Promise<Conditions> {
-  const [[marine, alerts], buoy, tides, harbor, shore] = await Promise.all([marineParts(lat, lon, clampPeriods(periods)), buoyPart(lat, lon), tidePart(lat, lon), harborPart(lat, lon), shorePart(lat, lon)]);
-  return { lat, lon, marine, alerts, buoy, tides, harbor, shore };
+  const [[marine, alerts], buoys, tides, harbor, shore] = await Promise.all([marineParts(lat, lon, clampPeriods(periods)), buoyParts(lat, lon), tidePart(lat, lon), harborPart(lat, lon), shorePart(lat, lon)]);
+  return { lat, lon, marine, alerts, buoy: buoys.buoy, ...(buoys.wind ? { buoyWind: buoys.wind } : {}), tides, harbor, shore };
 }

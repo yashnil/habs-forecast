@@ -79,6 +79,34 @@ describe("buildPortToday: hierarchy", () => {
     expect(m.today.facts.some((f) => f.id === "notice:cdph-mussels" && f.basis === "official" && f.verified === false)).toBe(true);
   });
 
+  it("when the registry and the curated status disagree, the row keeps the more restrictive and says so, with both dates", () => {
+    // the registry still lists the annual mussel quarantine; the curated record (checked later) says CDPH announced its end
+    const n: NoticeInput = { id: "cdph-mussels", agency: "CDPH", title: "Annual quarantine of sport-harvested mussels", summary: "Sport-harvested mussels may not be harvested for human consumption.", action: "quarantine", species: ["mussels (all species)"], fishery: "sport_harvest", effective: "2026-05-01", url: "https://cdph.ca.gov", verified: false, registry_checked: "2026-10-08T19:32:08Z" };
+    const m = buildTodayModel(base({ notices: [n] }));
+    const row = m.status.find((r) => r.fishery === "bivalve_shellfish")!;
+    const curated = FISH.records.find((r) => r.fishery === "bivalve_shellfish")!;
+    expect(curated.level).toBe("watch");
+    // never silently one or the other: the stricter level, and both statements with who said what and when
+    expect(row.level).toBe("closed");
+    expect(row.conflict).toMatchObject({ shown: "notice", notice: { word: "Closed", agency: "CDPH", effective: "2026-05-01", checked: "2026-10-08T19:32:08Z", verified: false }, record: { word: "Watch", source: "CDPH", checked: curated.checked_at, verified: false } });
+    expect(row.checked_at).toBe("2026-10-08T19:32:08Z");
+    const d = row.fact.detail!;
+    expect(d).toContain("Sources differ: the official-notices registry lists “Annual quarantine of sport-harvested mussels” as in effect (CDPH, in effect since May 1, registry last read Oct 8, not verified)");
+    expect(d).toContain(`while Neritic's curated status says “${curated.headline.replace(/\.$/, "")}” (CDPH, checked Nov 8, not verified)`);
+    expect(d).toContain("; Neritic shows the more restrictive of the two until a person has checked both, so check CDPH before you act.");
+    // the disagreement is never worded as a lift, and nothing calls the fishery open
+    expect(d).not.toMatch(/\b(has been|was|is) lifted\b|\bis open\b/i);
+    expect(row.fact.as_of).toBe("2026-10-08T19:32:08Z");
+    // a closure beside a restriction is two instruments, not a disagreement (anchovy: both restrict)
+    const anchovy: NoticeInput = { ...n, id: "cdph-anchovy", title: "Do not eat northern anchovies", action: "consumption_advisory", species: ["northern anchovy"], fishery: "all" };
+    expect(buildTodayModel(base({ notices: [anchovy] })).status.find((r) => r.fishery === "anchovy_sardine")!.conflict).toBeNull();
+    // the curated record says "none on record" while a notice restricts: also said
+    const rock: NoticeInput = { ...n, id: "cdph-rock", title: "Do not eat rock crab viscera", action: "consumption_advisory", species: ["rock crab"], fishery: "all" };
+    const rc = buildTodayModel(base({ notices: [rock] })).status.find((r) => r.fishery === "rock_crab")!;
+    expect(rc.level).toBe("restricted");
+    expect(rc.conflict?.shown).toBe("notice");
+  });
+
   it("a clean test never softens an official delay of the same fishery", () => {
     const m = buildTodayModel(base());
     const t = m.tests.find((x) => x.site.id === "bma-g-monterey-bay-dungeness-crab")!;
@@ -157,6 +185,18 @@ describe("buildPortToday: words", () => {
     expect(buoy.basis).toBe("measured");
     expect(buoy.headline).toMatch(/^Measured at buoy \d+: waves/);
     expect(buoy.as_of).toMatch(/^2026-10-13T/);
+    // the nearest buoy off Moss Landing (46236) is a wave buoy: no wind, so nothing is claimed for it here
+    expect(m.sea.buoy).toMatchObject({ id: "46236", windKt: null });
+    expect(m.sea.windBuoy).toBeNull();
+    expect(m.today.facts.some((f) => f.id === "sea:wind")).toBe(false);
+    // with the nearest station that does measure wind: its own id, distance and time, never merged into 46236's
+    const withWind: Conditions = { ...cond, buoyWind: { status: "ok", source: "NOAA National Data Buoy Center", url: "https://www.ndbc.noaa.gov/station_page.php?station=46092", fetchedAt: "2026-10-13T06:00:00.000Z", station: { id: "46092", name: "MBM1", km: 21.6, lat: 36.75, lon: -122.03 }, data: { windKt: { value: 5.83, at: "2026-10-13T03:18:00.000Z" }, windDirDeg: { value: 320, at: "2026-10-13T03:18:00.000Z" } } } };
+    const w = buildTodayModel(base({ conditions: withWind }));
+    expect(w.sea.windBuoy).toMatchObject({ id: "46092", km: 21.6, windDir: "NW", at: "2026-10-13T03:18:00.000Z" });
+    const wind = w.today.facts.find((f) => f.id === "sea:wind")!;
+    expect(wind).toMatchObject({ kind: "observation", basis: "measured", headline: "Measured at buoy 46092, 22 km from Moss Landing: wind NW 6 kt.", as_of: "2026-10-13T03:18:00.000Z" });
+    expect(wind.detail).toContain("The nearest buoy (46236) has no wind sensor");
+    expect(w.today.facts.find((f) => f.id === "sea:buoy")!.headline).toMatch(/^Measured at buoy 46236: waves/);
     expect(m.today.facts.find((f) => f.id === "weather:nws")!.basis).toBe("forecast");
     expect(m.today.facts.find((f) => f.id === "tide:next")!.headline).toMatch(/^Next tide: (high|low) /);
     expect(m.sea.lanes.length).toBeGreaterThanOrEqual(5);
