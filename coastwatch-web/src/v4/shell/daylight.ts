@@ -6,6 +6,9 @@
 export const DAYLIGHT_KEY = "nx-daylight-v1";
 export const DAYLIGHT_SCRIPT = `(function(){try{if(localStorage.getItem("${DAYLIGHT_KEY}")==="1")document.documentElement.setAttribute("data-daylight","")}catch(e){}})()`;
 
+/** Fired on window when the mode changes, so every control that shows it follows. */
+export const DAYLIGHT_CHANGED = "nx-daylight-change";
+
 export function readDaylight(): boolean {
   try {
     return document.documentElement.hasAttribute("data-daylight") || window.localStorage.getItem(DAYLIGHT_KEY) === "1";
@@ -24,4 +27,5 @@ export function setDaylight(on: boolean) {
   } catch {
     // not kept: it applies to this page only
   }
+  window.dispatchEvent(new Event(DAYLIGHT_CHANGED));
 }

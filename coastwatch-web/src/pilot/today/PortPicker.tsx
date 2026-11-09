@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "@/v4/shell/TopBar";
+import { useReportTrust, type Trust } from "@/v4/shell/Notices";
 import { PilotDock, PilotFooter } from "@/pilot/shell/PilotShell";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { readHome } from "@/v4/coast/home";
@@ -16,8 +17,9 @@ import { readTodayPlace } from "./navPlace";
  * /today with no port: the reader's last Today port or home port opens at once. Otherwise this is a
  * calm picker, pilot ports first, then every California port with a filter.
  */
-export function PortPicker({ ports, requested, pick, now }: { ports: PortOption[]; requested: string | null; pick: boolean; now: string }) {
+export function PortPicker({ ports, requested, pick, now, trust }: { ports: PortOption[]; requested: string | null; pick: boolean; now: string; trust: Trust | null }) {
   const router = useRouter();
+  useReportTrust(trust);
   const [q, setQ] = useState("");
   useEffect(() => {
     if (pick || requested) return;
@@ -34,7 +36,7 @@ export function PortPicker({ ports, requested, pick, now }: { ports: PortOption[
   return (
     <div className="env-instrument today min-h-dvh pb-[calc(76px+env(safe-area-inset-bottom,0px))] lg:pb-10" data-testid="today-picker">
       <SkipLink />
-      <TopBar active="today" now={new Date(now)} />
+      <TopBar active="today" now={new Date(now)} trust={trust} />
       <main id="main">
         <header className="today-hero">
           <div className="today-wrap pb-8 pt-6 md:pt-10">

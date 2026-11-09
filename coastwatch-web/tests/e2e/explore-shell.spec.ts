@@ -19,7 +19,7 @@ test("phone: the status centre opens inside the screen, under the top bar", asyn
     const page = await ctx.newPage();
     await page.clock.setFixedTime(new Date(NOW));
     await page.goto(`${OK}/?layer=forecast`);
-    await page.getByTestId("status-center-compact").click();
+    await page.getByTestId("notices-button").click();
     const b = (await page.getByTestId("status-panel").boundingBox())!;
     expect(b.x).toBeGreaterThanOrEqual(0);
     expect(b.x + b.width).toBeLessThanOrEqual(w);

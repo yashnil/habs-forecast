@@ -16,9 +16,7 @@ import { cellEdges, distanceKm, loadGrid } from "@/lib/grid";
 import { useNow } from "@/lib/useNow";
 import { coastHref, pointKey, resolvePlace } from "@/lib/coast";
 import { labelledGeometry } from "@/lib/officialGeometry";
-import { TopBar, NavTabs } from "@/v4/shell/TopBar";
-import { NoticesButton } from "@/v4/shell/Notices";
-import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { TopBar, Dock } from "@/v4/shell/TopBar";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel, lastHabWords, relTime } from "@/v4/ui/time";
@@ -379,8 +377,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
   return (
     <div className="env-chart min-h-dvh bg-n-bg text-n-ink" data-testid="research">
       <SkipLink />
-      <TopBar active="research" now={now} notices={<NoticesButton official={official} status={sourceStatus(manifest, "official")} />} />
-      <RegistryDisclosure className="mx-auto w-full max-w-[1520px] px-4 pb-2 sm:px-6 lg:px-8" fixture={isFixture(manifest)} />
+      <TopBar active="research" now={now} trust={{ official, status: sourceStatus(manifest, "official"), fixture: isFixture(manifest) }} />
       <div className="mx-auto grid w-full max-w-[1520px] gap-x-10 px-4 pb-32 pt-2 sm:px-6 lg:grid-cols-[248px_minmax(0,1fr)] lg:px-8 lg:pb-16">
         {/* the stations: the linked map (the station and its model neighbourhood) and the coast ladder (north to south, true latitude) */}
         <nav aria-label="Shore stations" className="hidden lg:sticky lg:top-3 lg:flex lg:max-h-[calc(100dvh-24px)] lg:flex-col lg:gap-5 lg:self-start lg:overflow-y-auto lg:[scrollbar-width:none]" data-testid="research-stations">
@@ -923,9 +920,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
           </div>
         </main>
       </div>
-      <div className="env-instrument fixed inset-x-0 bottom-0 z-40 border-t border-n-line bg-n-surface lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <NavTabs active="research" size="dock" />
-      </div>
+      <Dock active="research" />
       <StationSheet open={sheet && !wide} onClose={closeSheet}>
         <div className="flex flex-col gap-4">
           <LocatorMap stations={ladder} selected={ladderSel} radiusKm={radiusKm} forecast={locatorRaster} onPick={pickStation} label={locatorLabel} height={180} />

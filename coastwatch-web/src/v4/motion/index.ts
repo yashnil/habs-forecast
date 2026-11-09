@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 /**
  * Neritic's motion vocabulary in script (the CSS side is the --nx-t-* and --nx-ease-* tokens in
@@ -17,28 +17,7 @@ export const T = { press: 0.09, hover: 0.15, pop: 0.18, popExit: 0.12, panel: 0.
 export const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 export const EASE_IN = [0.4, 0, 1, 1] as const;
 
-/**
- * Keeps a popover mounted for its exit. `mounted` stays true for `exitMs` after `open` turns false;
- * `state` is "closed" meanwhile, so the element can play its exit (CSS `[data-state=closed]`) and be
- * made inert and aria-hidden, and drop its test id: an exiting copy never answers for the open one.
- * Reopening during the exit simply turns it back (interruptible).
- */
-export function usePresence(open: boolean, exitMs = 120): { mounted: boolean; state: "open" | "closed" } {
-  const [mounted, setMounted] = useState(open);
-  // adjust state during render when `open` turns true (the React-recommended pattern, no effect needed)
-  if (open && !mounted) setMounted(true);
-  useEffect(() => {
-    if (open) return;
-    const t = window.setTimeout(() => setMounted(false), exitMs);
-    return () => window.clearTimeout(t);
-  }, [open, exitMs]);
-  return { mounted: mounted || open, state: open ? "open" : "closed" };
-}
-
-/** Props for an element that may be exiting: inert, hidden from assistive tech, no test id. */
-export function exitProps(state: "open" | "closed", testid?: string) {
-  return state === "open" ? { "data-state": "open", "data-testid": testid } : { "data-state": "closed", inert: true, "aria-hidden": true as const };
-}
+export { usePresence, exitProps } from "./presence";
 
 /**
  * A legend's swap: when `key` changes (a new layer, not a new day), the element's content fades in
@@ -79,3 +58,16 @@ export function onAppReady(f: () => void): () => void {
   waiting.add(f);
   return () => waiting.delete(f);
 }
+
+/* ---- v11 "Swell" primitives (each file states when to use it and when not to) ---- */
+export { prefersReducedMotion, useReducedMotion, canHover, useCanHover } from "./reduced";
+export { useInView } from "./inView";
+export { Reveal } from "./Reveal";
+export { useDrawOnce, DrawOn, type DrawPhase } from "./draw";
+export { Sheet } from "./Sheet";
+export { Fold } from "./Fold";
+export { Segmented, useGlide, type SegmentedOption } from "./Segmented";
+export { RouteTransitions, useTransitionRouter, withRouteTransition } from "./routes";
+export { usePlayback, PLAYBACK_MS } from "./playback";
+export { useFocusLink } from "./focusLink";
+export { Skeleton, useLate, Late } from "./Skeleton";

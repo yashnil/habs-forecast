@@ -4,14 +4,14 @@ import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Lockup, Mark } from "@/v4/brand/Brand";
 import { Icon } from "@/v4/ui/Icon";
-import { StatusCenter } from "@/v4/readiness/StatusCenter";
 import { homeHref, readHome } from "@/v4/coast/home";
 import { readTodayHref } from "@/pilot/today/navPlace";
 import { AlertsBell } from "@/pilot/alerts/AlertsBell";
 import { usePilotFrontDoor } from "@/pilot/FrontDoorContext";
 import { exploreHref } from "@/pilot/frontDoor";
 import { exitProps, usePresence } from "@/v4/motion";
-import { readDaylight, setDaylight } from "./daylight";
+import { TrustPill, type Trust } from "./Notices";
+import { useDaylight } from "./useDaylight";
 
 export type Workspace = "today" | "explore" | "coast" | "research" | "page";
 
@@ -39,9 +39,7 @@ const MORE = [
 
 function MoreMenu() {
   const [open, setOpen] = useState(false);
-  // daylight mode: read after hydration (the server never knows it)
-  const [day, setDay] = useState(false);
-  useEffect(() => setDay(readDaylight()), []);
+  const [day, setDay] = useDaylight();
   const pop = usePresence(open);
   const box = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -59,48 +57,56 @@ function MoreMenu() {
       window.removeEventListener("mousedown", c);
     };
   }, [open]);
+  const row = "nx-focus nx-row flex min-h-11 items-center rounded-lg px-3 text-[15px] text-n-ink hover:bg-n-surface-2";
   return (
     <div ref={box} className="relative">
-      <button type="button" aria-label="More pages" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="nx-press nx-focus nx-tint grid h-11 w-11 place-items-center rounded-full text-n-ink-2" data-testid="more-menu">
+      <button type="button" aria-label="More pages" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="nx-press nx-focus nx-tint grid h-11 w-11 place-items-center rounded-xl text-n-ink-2" data-testid="more-menu">
         <Icon name="more" />
       </button>
       {pop.mounted && (
-        <nav aria-label="More pages" className="nx-pop absolute right-0 top-[52px] z-50 w-56 rounded-[18px] border border-n-line bg-n-surface p-1.5 shadow-[var(--nx-shadow)]" {...exitProps(pop.state)}>
+        <nav aria-label="More pages" className="nx-pop absolute right-0 top-[52px] z-50 w-60 rounded-2xl bg-n-surface p-2 shadow-[var(--nx-shadow)]" {...exitProps(pop.state)}>
           {PILOT_MORE.map((m) => (
-            <Link key={m.href} href={m.href} onClick={() => setOpen(false)} className="nx-focus nx-row flex min-h-11 items-center rounded-lg px-3 text-[15px] font-medium text-n-ink hover:bg-n-surface-2" data-testid={m.testid}>
+            <Link key={m.href} href={m.href} onClick={() => setOpen(false)} className={`${row} font-medium`} data-testid={m.testid}>
               {m.label}
             </Link>
           ))}
-          <div className="mx-1.5 my-1 border-t border-n-line" />
+          <div className="mx-3 my-1 border-t border-n-line" />
           {MORE.map((m) => (
-            <Link key={m.label} href={m.href} className="nx-focus nx-row flex min-h-11 items-center rounded-lg px-3 text-[15px] text-n-ink hover:bg-n-surface-2">
+            <Link key={m.label} href={m.href} className={row}>
               {m.label}
             </Link>
           ))}
-          <div className="mx-1.5 my-1 border-t border-n-line" />
+          <div className="mx-3 my-1 border-t border-n-line" />
           <button
             type="button"
             role="switch"
             aria-checked={day}
-            onClick={() => {
-              setDaylight(!day);
-              setDay(!day);
-            }}
+            onClick={() => setDay(!day)}
             className="nx-focus nx-row flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 text-left text-[15px] text-n-ink hover:bg-n-surface-2"
             data-testid="daylight-toggle"
           >
             <span>
               Daylight mode
-              <span className="block text-[12.5px] leading-snug text-n-ink-3">Higher contrast for bright sun</span>
+              <span className="block text-[13px] leading-snug text-n-ink-3">Higher contrast for bright sun</span>
             </span>
-            <span aria-hidden className={`relative h-6 w-10 shrink-0 rounded-full border ${day ? "border-n-accent bg-n-accent" : "border-n-line-strong bg-n-surface-3"}`}>
-              <span className={`absolute top-0.5 h-[18px] w-[18px] rounded-full bg-white shadow transition-[left] duration-150 ${day ? "left-[18px]" : "left-0.5"}`} />
+            <span aria-hidden className={`relative h-6 w-10 shrink-0 rounded-full ${day ? "bg-n-accent" : "bg-n-surface-3"}`}>
+              <span className={`absolute top-[3px] h-[18px] w-[18px] rounded-full shadow transition-[left] duration-150 ${day ? "left-[19px] bg-n-on-accent" : "left-[3px] bg-n-ink-2"}`} />
             </span>
           </button>
-          <p className="px-3 pb-1.5 pt-2 text-[12px] leading-snug text-n-ink-3">Independent research preview. Not affiliated with NOAA, CDFW or CDPH.</p>
+          <p className="px-3 pb-1.5 pt-2 text-[13px] leading-snug text-n-ink-3">Independent research preview. Not affiliated with NOAA, CDFW or CDPH.</p>
         </nav>
       )}
     </div>
+  );
+}
+
+/** The phones' sun: one tap to the high-contrast colours (the same switch as in the more menu). */
+function SunButton() {
+  const [day, setDay] = useDaylight();
+  return (
+    <button type="button" aria-pressed={day} aria-label="Daylight mode" title="Higher contrast for bright sun" onClick={() => setDay(!day)} className="nx-press nx-focus nx-tint grid h-11 w-11 shrink-0 place-items-center rounded-xl text-n-ink-2 max-[379px]:hidden md:hidden" data-testid="daylight-sun">
+      <Icon name="sun" />
+    </button>
   );
 }
 
@@ -129,20 +135,25 @@ export function NavTabs({ active, size = "bar" }: { active: Workspace; size?: "b
             href={n.id === "coast" && home ? home : n.id === "today" && todayHref ? todayHref : n.id === "explore" ? exploreHref(pilot) : n.href}
             aria-current={on ? "page" : undefined}
             data-testid={`nav-${n.id}`}
-            className={
-              size === "bar"
-                ? `nx-focus relative isolate flex h-9 items-center px-3 text-[14px] font-medium tracking-[0.01em] transition-colors ${on ? "text-n-ink" : "text-n-ink-3 hover:text-n-ink"}`
-                : `nx-focus flex min-h-[60px] flex-col items-center justify-center gap-0.5 text-[12.5px] font-semibold ${on ? "text-n-accent" : "text-n-ink-2"}`
-            }
+            className={size === "bar" ? `nx-focus relative isolate flex h-10 items-center rounded-lg px-3 text-[14.5px] font-medium ${on ? "text-n-ink" : "text-n-ink-2 hover:text-n-ink"}` : "nx-dock-item nx-focus"}
           >
-            {/* v10: the active workspace is a rule under its name (in the server HTML: no flash); it glides from the last workspace's tab */}
-            {size === "bar" && on && <span aria-hidden data-nav-pill className="absolute inset-x-3 bottom-0.5 h-[1.5px] bg-n-ink" />}
+            {/* the current workspace's pill (in the server HTML: no flash); it glides from the last workspace's tab */}
+            {size === "bar" && on && <span aria-hidden data-nav-pill className="nx-nav-pill" />}
             {size === "dock" && <Icon name={n.icon} className="h-6 w-6" />}
             {n.label}
           </Link>
         );
       })}
     </nav>
+  );
+}
+
+/** The phone dock: the four workspaces on a soft surface, fixed to the bottom edge. */
+export function Dock({ active, absolute = false }: { active: Workspace; absolute?: boolean }) {
+  return (
+    <div className={`env-instrument nx-dock lg:hidden ${absolute ? "!absolute" : ""}`} data-testid="dock">
+      <NavTabs active={active} size="dock" />
+    </div>
   );
 }
 
@@ -171,44 +182,61 @@ function useGlidePill(nav: React.RefObject<HTMLElement | null>, on: boolean) {
   }, [nav, on]);
 }
 
+/** Has the page scrolled past `y`? Only listens when asked. */
+function useScrolled(on: boolean, y = 24) {
+  const [past, setPast] = useState(false);
+  useEffect(() => {
+    if (!on) {
+      setPast(false);
+      return;
+    }
+    const f = () => setPast(window.scrollY > y);
+    f();
+    window.addEventListener("scroll", f, { passive: true });
+    return () => window.removeEventListener("scroll", f);
+  }, [on, y]);
+  return past;
+}
+
 /**
- * The top bar: floating over the map in Explore, a band over reading pages. Brand (C2),
- * workspaces, a slot (search in Explore), the status centre, official notices, the alerts bell, more. On a short
- * screen (a phone held sideways, max-height 500px) it is one compact line and the preview disclosure
- * folds into the notices pill (theme.css, .nx-topbar).
+ * One frame for every page (design.md §7.1): brand, the four workspaces (wide screens; the dock on
+ * phones), a slot (search in Explore), the trust pill, the alerts bell and the more menu.
+ *
+ * `over`: the bar sits over a stage: transparent with a soft top scrim, and it takes the solid ground once
+ * the page has scrolled 24 px. It adds no height of its own (the stage starts at the top of the page).
+ * `floating`: the bar sits over a canvas that does not scroll (Explore's map): absolute, always the scrim.
+ * Neither: sticky, solid ground (the default).
+ * `trust`: what the pill says; `loadTrust()` (src/lib/data.ts) provides it on the server. The pill and its
+ * words are always there, even before the data arrives or when it fails.
  */
 // z-[45]: the header is a stacking context, so its menus and the notices panel can rise no higher
 // than it; it sits above the phone sheet (z-30) and dock (z-40), below modal dialogs (z-50).
-export function TopBar({ active, now, slot, notices, floating = false }: { active: Workspace; now: Date | null; slot?: ReactNode; notices?: ReactNode; floating?: boolean }) {
+export function TopBar({ active, now, slot, trust = null, over = false, floating = false }: { active: Workspace; now: Date | null; slot?: ReactNode; trust?: Trust | null; over?: boolean; floating?: boolean }) {
+  const scrolled = useScrolled(over && !floating);
+  const overStage = over || floating;
   return (
     <header
-      className={`nx-topbar pointer-events-none z-[45] flex items-start gap-2 px-3 pt-3 md:gap-3 md:px-4 ${floating ? "absolute inset-x-0 top-0" : "relative pb-3"}`}
-      style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}
+      className={`nx-topbar z-[45] ${floating ? "pointer-events-none absolute inset-x-0 top-0" : "sticky top-0"}`}
+      data-over={overStage ? "" : undefined}
+      data-solid={overStage && scrolled ? "" : undefined}
+      style={over && !floating ? { marginBottom: "calc(-1 * var(--nx-bar-h))" } : undefined}
     >
-      {/* v7: two quiet surfaces, never a row of pills: the brand with the workspaces, then the status cluster */}
-      <div className="nx-bar pointer-events-auto flex h-11 shrink-0 items-center gap-1 rounded-[10px] pl-1 pr-1">
-        <Link href="/" aria-label="Neritic home" className="nx-press nx-focus flex h-10 shrink-0 items-center rounded-full pl-1 pr-2.5 text-n-ink max-md:pr-1" data-testid="brand-home">
-          <span className="max-md:hidden">
-            <Lockup size={28} />
-          </span>
-          <span className="md:hidden">
-            <Mark size={30} />
-          </span>
-        </Link>
-        <div className="hidden border-l border-n-line pl-1 lg:block">
-          <NavTabs active={active} />
-        </div>
+      <Link href="/" aria-label="Neritic home" className="nx-press nx-focus pointer-events-auto flex h-11 shrink-0 items-center rounded-lg text-n-ink lg:pr-1" data-testid="brand-home">
+        <span className="max-md:hidden">
+          <Lockup size={26} />
+        </span>
+        <span className="md:hidden">
+          <Mark size={30} />
+        </span>
+      </Link>
+      <div className="pointer-events-auto hidden lg:block">
+        <NavTabs active={active} />
       </div>
-      <div className="pointer-events-auto min-w-0 flex-1">{slot}</div>
-      <div className="nx-bar pointer-events-auto flex h-11 shrink-0 items-center rounded-[10px] px-0.5" data-testid="topbar-cluster">
-        {notices}
-        <span aria-hidden className="h-5 w-px bg-n-line" />
-        <span className="max-sm:hidden">
-          <StatusCenter now={now} />
-        </span>
-        <span className="sm:hidden">
-          <StatusCenter now={now} compact />
-        </span>
+      {/* on a phone the slot is what it needs (Explore: the search icon); the pill takes the rest */}
+      <div className={`pointer-events-auto min-w-0 flex-1 ${slot ? "max-md:min-w-11 max-md:flex-none" : ""}`}>{slot}</div>
+      <div className="pointer-events-auto flex min-w-0 items-center gap-0.5 max-md:ml-auto" data-testid="topbar-cluster">
+        <TrustPill trust={trust} now={now} />
+        {!slot && <SunButton />}
         {/* pilot: alerts for the reader's saved ports (the device inbox; the account's too when signed in) */}
         <AlertsBell />
         <MoreMenu />

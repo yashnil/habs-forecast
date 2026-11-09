@@ -1,8 +1,8 @@
 /*
  * The pilot pages around Today (Ask Neritic, Your ports and alerts, the legal pages) in the same
  * "Almanac" voice as Today (src/pilot/today/today.css; docs/coastwatch/pilot/design/README.md):
- * a serif title over a hairline, caps section labels, plain sentences, square-shouldered controls of
- * 44 px or more, no pills and no card stacks. Everything resolves from the Ocean Instrument tokens
+ * a serif title, sentence-case section titles, plain sentences, filled controls of 44 px or more
+ * at radius 12, no outlined chips and no card stacks. Everything resolves from the Ocean Instrument tokens
  * (src/v4/theme.css), so the dark ground and the daylight mode come for free.
  */
 .pilot-title {
@@ -48,14 +48,13 @@
   min-height: 48px;
   width: 100%;
   padding: 0 12px;
-  border: 1px solid var(--nx-line-strong);
-  border-radius: 4px;
-  background: var(--nx-surface);
+  border-radius: var(--nx-r-12);
+  background: var(--nx-surface-2);
   color: var(--nx-ink);
   font-size: 16px;
 }
 select.pilot-field { padding-right: 28px; }
-.pilot-label { display: block; margin-bottom: 6px; font: 500 11px/1.2 var(--nx-font-caps); letter-spacing: 0.12em; text-transform: uppercase; color: var(--nx-ink-2); }
+.pilot-label { display: block; margin-bottom: 6px; font: 500 13px/1.3 var(--nx-font-ui); color: var(--nx-ink-2); }
 .pilot-check { margin-top: 2px; width: 20px; height: 20px; flex: none; accent-color: var(--nx-accent); }
 /* a choice among a few (trip outcome, yes/no): a square toggle, pressed = inked */
 .pilot-choice {
@@ -65,34 +64,32 @@ select.pilot-field { padding-right: 28px; }
   min-height: 44px;
   min-width: 44px;
   padding: 0 14px;
-  border: 1px solid var(--nx-line-strong);
-  border-radius: 4px;
+  border-radius: var(--nx-r-12);
+  background: var(--nx-surface-2);
   font-size: 14.5px;
   font-weight: 500;
   color: var(--nx-ink-2);
   cursor: pointer;
 }
-.pilot-choice[aria-pressed="true"], .pilot-choice.on { border-color: var(--nx-ink); background: var(--nx-ink); color: var(--nx-bg); }
+.pilot-choice[aria-pressed="true"], .pilot-choice.on { background: var(--nx-ink); color: var(--nx-on-accent); }
 .pilot-choice:has(:focus-visible) { outline: 2px solid var(--nx-accent); outline-offset: 2px; }
 
 /* a readiness word: the same caps label as a status word on Today, never a coloured pill */
 .pilot-badge {
   display: inline-flex;
   align-items: center;
-  min-height: 22px;
-  padding: 0 7px;
-  border: 1px solid currentColor;
-  border-radius: 3px;
-  font: 600 10.5px/1 var(--nx-font-caps);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: var(--nx-r-8);
+  background: var(--nx-surface-3);
+  font: 500 13px/18px var(--nx-font-ui);
   white-space: nowrap;
   color: var(--nx-ink-2);
 }
 .pilot-badge[data-readiness="demo"] { color: var(--nx-model); }
-.pilot-badge[data-readiness="not_configured"] { color: var(--nx-ink-2); border-style: dashed; }
+.pilot-badge[data-readiness="not_configured"] { color: var(--nx-ink-2); }
 .pilot-badge[data-readiness="live"] { color: var(--nx-measured); }
-.pilot-badge.sample { color: var(--t-amber); border-style: dashed; }
+.pilot-badge.sample { color: var(--t-amber); }
 
 /* sections on the account page: Today's caps header, then a sentence of what the section is for */
 .pilot-sec-lede { margin-top: 12px; max-width: 68ch; font-size: 15px; line-height: 1.5; color: var(--nx-ink-2); }
@@ -101,15 +98,13 @@ select.pilot-field { padding-right: 28px; }
 .pilot-prose { max-width: 70ch; font-size: 16.5px; line-height: 1.62; color: var(--nx-ink-2); }
 .pilot-prose > * + * { margin-top: 14px; }
 .pilot-prose h2 {
-  margin-top: 36px;
-  padding-top: 20px;
-  border-top: 1px solid var(--nx-line);
-  font: 500 25px/1.2 var(--nx-font-display);
+  margin-top: 48px;
+  font: 500 26px/30px var(--nx-font-display);
   letter-spacing: -0.01em;
   color: var(--nx-ink);
   scroll-margin-top: 72px;
 }
-.pilot-prose h3 { margin-top: 22px; font: 500 11.5px/1.2 var(--nx-font-caps); letter-spacing: 0.14em; text-transform: uppercase; color: var(--nx-ink-2); }
+.pilot-prose h3 { margin-top: 22px; font: 500 15.5px/1.3 var(--nx-font-ui); color: var(--nx-ink); }
 .pilot-prose strong { color: var(--nx-ink); font-weight: 600; }
 .pilot-prose ul { list-style: none; padding: 0; }
 .pilot-prose li { position: relative; padding-left: 18px; margin-top: 7px; }
@@ -130,25 +125,25 @@ select.pilot-field { padding-right: 28px; }
   max-width: 100%;
   min-height: 44px;
   padding: 4px 10px;
-  border: 1px solid var(--nx-line-strong);
-  border-radius: 4px;
+  border-radius: var(--nx-r-8);
+  background: var(--nx-surface-2);
   font-size: 13.5px;
   text-align: left;
   color: var(--nx-ink);
 }
-.ask-chip[aria-expanded="true"] { border-color: var(--nx-ink-2); background: var(--nx-surface-2); }
+.ask-chip[aria-expanded="true"] { background: var(--nx-surface-3); }
 .ask-chip i { font: 400 11px/1 var(--nx-font-data); font-style: normal; color: var(--nx-ink-3); }
 .ask-suggest {
   min-height: 44px;
   padding: 8px 12px;
-  border: 1px solid var(--nx-line);
-  border-radius: 4px;
+  border-radius: var(--nx-r-12);
+  background: var(--nx-surface-2);
   font-size: 14.5px;
   text-align: left;
   color: var(--nx-ink-2);
 }
-.ask-suggest:hover:not(:disabled) { border-color: var(--nx-line-strong); color: var(--nx-ink); }
-.ask-sms { border-radius: 14px 14px 14px 3px; background: var(--nx-surface-3); padding: 10px 12px; font-size: 14.5px; line-height: 1.4; color: var(--nx-ink); white-space: pre-wrap; }
+.ask-suggest:hover:not(:disabled) { color: var(--nx-ink); }
+.ask-sms { border-radius: 16px 16px 16px 4px; background: var(--nx-surface-3); padding: 10px 12px; font-size: 14.5px; line-height: 1.4; color: var(--nx-ink); white-space: pre-wrap; }
 
 /* a fact card reached from a citation: ringed and tinted for a few seconds, then quiet again */
 @keyframes fact-hit {

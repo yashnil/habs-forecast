@@ -1,0 +1,26 @@
+/* The chart kit's look (kit.tsx). Family colours mean the same on every chart. */
+.nx-k {
+  --nx-k-stroke: 1.6px;
+  --nx-k-official: var(--nx-official, #f0a94a);
+  --nx-k-model: var(--nx-model, #b39cff);
+  --nx-k-measured: var(--nx-measured, #3fd6bd);
+  --nx-k-conditions: var(--nx-conditions, #74c7ff);
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--nx-font-ui);
+  font-size: 12px;
+  overflow: visible;
+}
+.nx-k-axis text { fill: var(--nx-ink-3); font-family: var(--nx-font-data); font-size: 11px; }
+.nx-k-grid { stroke: var(--nx-line); stroke-width: 1; }
+.nx-k-now line { stroke: var(--nx-ink-2); stroke-width: 1; stroke-dasharray: 3 3; }
+.nx-k-now text { fill: var(--nx-ink-2); font-size: 11px; }
+.nx-k-span { fill-opacity: 0.14; }
+.nx-k-level { stroke-width: 1.2; stroke-dasharray: 4 3; }
+.nx-k-band text { font-size: 12px; font-weight: 500; }
+.nx-k-read line { stroke: var(--nx-ink-2); stroke-width: 1; }
+.nx-k-read rect { fill: var(--nx-surface-2); }
+.nx-k-read text { fill: var(--nx-ink); font-family: var(--nx-font-data); font-size: 12px; }
+.nx-k-line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.nx-k-direct { font-size: 12.5px; font-weight: 500; paint-order: stroke; stroke: var(--nx-bg); stroke-width: 3px; stroke-linejoin: round; }

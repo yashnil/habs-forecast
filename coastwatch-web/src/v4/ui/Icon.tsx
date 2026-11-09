@@ -20,6 +20,12 @@ const P: Record<string, React.ReactNode> = {
   alert: <><path d="M12 4 2.8 19.5h18.4L12 4Z" /><path d="M12 10v4.5" /><circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none" /></>,
   info: <><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5" /><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none" /></>,
   shield: <path d="M12 3 4.8 6v5.4c0 4.4 3.1 7.9 7.2 9.4 4.1-1.5 7.2-5 7.2-9.4V6L12 3Z" />,
+  // v11: the not-verified marker (a shield with a slash through it) and the status tag shapes
+  shieldOff: <><path d="M12 3 4.8 6v5.4c0 4.4 3.1 7.9 7.2 9.4 4.1-1.5 7.2-5 7.2-9.4V6L12 3Z" /><path d="M4 4l16 16" /></>,
+  noEntry: <><circle cx="12" cy="12" r="8.5" /><path d="M8 12h8" strokeWidth="2.4" /></>,
+  hourglass: <><path d="M7 3.5h10M7 20.5h10M8 3.5c0 4 4 5 4 8.5s-4 4.5-4 8.5M16 3.5c0 4-4 5-4 8.5s4 4.5 4 8.5" /></>,
+  eye: <><path d="M2.8 12S6 5.5 12 5.5 21.2 12 21.2 12 18 18.5 12 18.5 2.8 12 2.8 12Z" /><circle cx="12" cy="12" r="2.8" /></>,
+  ring: <circle cx="12" cy="12" r="7.5" />,
   station: <><circle cx="12" cy="9" r="3" /><path d="M12 12v9M8 21h8" /></>,
   cell: <><rect x="5" y="5" width="14" height="14" rx="1" /><path d="M5 12h14M12 5v14" opacity="0.5" /></>,
   harbor: <><circle cx="12" cy="5.5" r="2" /><path d="M12 7.5V20M7 11h10M4.5 14.5c1.2 3.4 4.2 5.5 7.5 5.5s6.3-2.1 7.5-5.5" /></>,

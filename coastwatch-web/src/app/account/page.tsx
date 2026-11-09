@@ -2,6 +2,7 @@ import { AccountApp } from "@/pilot/account/AccountApp";
 import { pilotAccountConfig } from "@/pilot/account/config";
 import { loadPortTodays } from "@/pilot/alerts/source";
 import { PilotShell } from "@/pilot/shell/PilotShell";
+import { loadTrust } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Your ports and alerts", robots: { index: false } };
@@ -16,7 +17,7 @@ export default async function AccountPage() {
   const facts = await loadPortTodays();
   const config = pilotAccountConfig();
   return (
-    <PilotShell testid="account-shell" account={config}>
+    <PilotShell testid="account-shell" account={config} trust={await loadTrust()}>
       <AccountApp config={config} todays={facts.todays} sample={facts.sample} />
     </PilotShell>
   );

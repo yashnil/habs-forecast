@@ -9,7 +9,7 @@ import { OK } from "./ports";
 const NOW = "2026-10-08T20:00:00Z";
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const status = async (page: Page, id: string) => {
-  await page.getByTestId("status-center").click();
+  await page.getByTestId("notices-button").click();
   const s = await page.getByTestId("status-panel").getByTestId(`source-${id}`).getAttribute("data-state");
   await page.keyboard.press("Escape");
   return s;

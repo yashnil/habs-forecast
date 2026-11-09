@@ -30,9 +30,8 @@ import { HoverReadout, type HoverSource } from "@/components/map/HoverReadout";
 import { useReportSource } from "@/v4/readiness/store";
 import { currentsEntry, fieldState, layerFreshness, modelEntry, newestSatellite, satelliteEntry } from "@/v4/readiness/shown";
 import { SourceList } from "@/v4/readiness/StatusCenter";
-import { TopBar, NavTabs } from "@/v4/shell/TopBar";
-import { NoticesButton, type LocalNotices } from "@/v4/shell/Notices";
-import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { TopBar, Dock } from "@/v4/shell/TopBar";
+import type { LocalNotices } from "@/v4/shell/Notices";
 import { associationsAt, localNotices } from "@/lib/applicability";
 import { bearingName, coastHref, pointKey, sitePlaces } from "@/lib/coast";
 import { readHome } from "@/v4/coast/home";
@@ -1082,7 +1081,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   ) : null;
 
   // the map's tools, one column: the zoom pair, then recentre, area, share and the field pack
-  const stackCls = "pointer-events-auto flex flex-col divide-y divide-n-line rounded-[4px] border border-n-line bg-[rgba(5,9,13,0.88)]";
+  const stackCls = "nx-deck pointer-events-auto flex flex-col divide-y divide-n-line overflow-hidden";
   const toolCls = "nx-press nx-focus grid h-11 w-11 place-items-center text-n-ink-2 hover:text-n-ink max-md:h-14 max-md:w-14";
   const recenter = (
     <button type="button" aria-label={selection ? "Centre on the selection" : "Show the whole coast"} onClick={() => (selection ? focusOn(selection) : fitState())} className={toolCls} data-testid="recenter">
@@ -1268,7 +1267,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
             </div>
           ) : null
         }
-        notices={<NoticesButton official={official} status={officialStatus} compact={bp === "phone"} local={harbourNotices ?? pointNotices} />}
+        trust={{ official, status: officialStatus, fixture, local: harbourNotices ?? pointNotices }}
       />
 
       {wide && (
@@ -1326,7 +1325,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
 
           {/* the map's bottom margin: the one disclosure line and the credits, on the map, never covered */}
           <div ref={marginRef} className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-wrap items-center justify-between gap-x-6 px-5 pb-1.5 pt-1" data-testid="map-margin">
-            <RegistryDisclosure tone="map" fixture={fixture} className="pointer-events-auto" />
+            <span />
             <MapCredits className="pointer-events-auto" extra={layerCredit} />
           </div>
         </>
@@ -1336,7 +1335,6 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         <>
           {/* one line under the header: the disclosure; then the offline state, a failed layer, the way back */}
           <div className="pointer-events-none absolute inset-x-0 top-[72px] z-20 flex flex-col items-start gap-1.5 px-4">
-            <RegistryDisclosure tone="map" fixture={fixture} className="pointer-events-auto max-w-full" />
             {offlineBanner && <div className="pointer-events-auto w-full">{offlineBanner}</div>}
             {fieldProblem && <div className="pointer-events-auto w-full">{fieldProblem}</div>}
             {backTo && <BackToBriefing {...backTo} className="pointer-events-auto w-fit max-w-full" />}
@@ -1422,9 +1420,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
               </MobileSheet>
             </div>
           </div>
-          <div className="absolute inset-x-0 bottom-0 z-40 border-t border-n-line bg-n-surface" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-            <NavTabs active="explore" size="dock" />
-          </div>
+          <Dock active="explore" absolute />
         </>
       )}
     </div>

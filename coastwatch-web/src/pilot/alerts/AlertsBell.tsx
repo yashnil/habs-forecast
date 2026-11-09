@@ -52,7 +52,7 @@ export function AlertsBell({ todays }: { todays?: PortToday[] }) {
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpen((o) => !o)}
-        className="nx-press nx-focus nx-tint relative grid h-11 w-11 place-items-center rounded-full text-n-ink-2"
+        className="nx-press nx-focus nx-tint relative grid h-11 w-11 place-items-center rounded-xl text-n-ink-2"
         data-testid="alerts-bell"
       >
         <svg aria-hidden viewBox="0 0 24 24" className="h-[22px] w-[22px]" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
@@ -66,7 +66,7 @@ export function AlertsBell({ todays }: { todays?: PortToday[] }) {
         )}
       </button>
       {open && (
-        <div id={panelId} role="dialog" aria-label="Alerts" className="nx-pop absolute right-0 top-[52px] z-50 w-[min(360px,calc(100vw-24px))] rounded-[18px] border border-n-line bg-n-surface p-3 shadow-[var(--nx-shadow)] max-sm:-right-11" data-testid="alerts-panel">
+        <div id={panelId} role="dialog" aria-label="Alerts" className="nx-pop absolute right-0 top-[52px] z-50 w-[min(360px,calc(100vw-24px))] rounded-2xl bg-n-surface p-3 shadow-[var(--nx-shadow)] max-sm:-right-11" data-testid="alerts-panel">
           <div className="flex items-center justify-between gap-2 px-1">
             <h2 className="text-[15px] font-semibold text-n-ink">Alerts</h2>
             {unread > 0 && (

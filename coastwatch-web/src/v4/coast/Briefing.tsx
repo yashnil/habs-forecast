@@ -18,9 +18,8 @@ import type { FieldKey } from "@/lib/tripEvaluation";
 import { encodeSelection, type Selection } from "@/v4/state/selection";
 import { useReportSource } from "@/v4/readiness/store";
 import { modelEntry, satelliteEntry } from "@/v4/readiness/shown";
-import { TopBar, NavTabs } from "@/v4/shell/TopBar";
-import { NoticesButton, type LocalNotices } from "@/v4/shell/Notices";
-import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { TopBar, Dock } from "@/v4/shell/TopBar";
+import type { LocalNotices } from "@/v4/shell/Notices";
 import { checklistKey } from "@/lib/trip";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import type { Step } from "@/lib/nextSteps";
@@ -230,8 +229,7 @@ export function Briefing(props: Props) {
     return (
       <div className="env-chart min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="landing">
         <SkipLink />
-        <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} />} />
-        <RegistryDisclosure className="mx-auto w-full max-w-[1320px] px-4 sm:px-8" fixture={isFixture(props.manifest)} />
+        <TopBar active="coast" now={now} trust={{ official, status: sourceStatus(props.manifest, "official"), fixture: isFixture(props.manifest) }} />
         <main id="main" className="cw-fade-in mx-auto w-full max-w-[1320px] overflow-x-clip px-4 pb-32 pt-4 sm:px-8">
           <Landing ports={ports} home={home} audience={audience} unknownKey={placeKey} />
         </main>
@@ -356,8 +354,7 @@ export function Briefing(props: Props) {
     return (
       <div className="env-chart relative min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="worksheet">
         <SkipLink />
-        <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} local={localNotices} />} />
-        <RegistryDisclosure className="mx-auto w-full max-w-[1320px] px-4 sm:px-8" fixture={isFixture(props.manifest)} />
+        <TopBar active="coast" now={now} trust={{ official, status: sourceStatus(props.manifest, "official"), fixture: isFixture(props.manifest), local: localNotices }} />
         {!off.online && (
           <div className="mx-auto w-full max-w-[1320px] px-4 pt-3 sm:px-8">
             <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline outside={covering ? null : { place: place.name, href: coastHref({ place: pack.place }) }} />
@@ -390,12 +387,11 @@ export function Briefing(props: Props) {
   return (
     <div className="env-chart relative min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="trip">
       <SkipLink />
-      <TopBar floating active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} local={localNotices} />} />
+      <TopBar floating active="coast" now={now} trust={{ official, status: sourceStatus(props.manifest, "official"), fixture: isFixture(props.manifest), local: localNotices }} />
       {packOpen && <PackDialog pack={pack} manifest={props.manifest} baseUrl={props.baseUrl} official={official} onClose={() => setPackOpen(false)} />}
       <main id="main" className="cw-fade-in grid grid-cols-1 overflow-x-clip pb-28 lg:grid-cols-[minmax(0,1fr)_minmax(420px,42vw)] lg:grid-rows-[auto_1fr] lg:pb-0">
         {/* the decision: place, trip, season, the readings that decide a trip */}
         <div className="flex min-w-0 flex-col px-4 pt-[64px] sm:px-8 lg:col-start-1 lg:row-start-1 lg:pl-10 lg:pr-10 xl:pl-12">
-          <RegistryDisclosure className="pb-3 pt-1" fixture={isFixture(props.manifest)} />
           {!off.online && (
             <div className="pb-3">
               <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline outside={covering ? null : { place: place.name, href: coastHref({ place: pack.place }) }} />
@@ -755,9 +751,7 @@ function MoreMenu() {
 
 function MobileDock() {
   return (
-    <div className="env-instrument fixed inset-x-0 bottom-0 z-40 border-t border-n-line bg-n-surface lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      <NavTabs active="coast" size="dock" />
-    </div>
+    <Dock active="coast" />
   );
 }
 

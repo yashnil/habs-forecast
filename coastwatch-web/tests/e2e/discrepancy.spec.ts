@@ -18,7 +18,7 @@ test.describe("agency source discrepancy", () => {
   test("the notices panel sets the reported-lifted notice apart and does not count it", async ({ page }) => {
     await open(page, `${FAILED}/coast?place=port-550`);
     const button = page.getByTestId("notices-button");
-    const count = Number(await button.locator(".nx-data").innerText());
+    const count = Number(await page.getByTestId("notices-count").innerText());
     await button.click();
     const panel = page.getByTestId("notices-panel");
     const disputed = panel.getByTestId("notices-disputed");

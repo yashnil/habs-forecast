@@ -29,7 +29,7 @@ test("the shell renders at once with a start card listing what loads, then the s
   await expect(page.getByTestId("start-card")).toHaveCount(0, { timeout: 20000 });
   const status = page.getByTestId("status-center");
   await expect(status).not.toHaveAttribute("data-state", "initializing");
-  await status.click();
+  await page.getByTestId("notices-button").click();
   const panel = page.getByTestId("status-panel");
   await expect(panel.getByTestId("source-map")).toHaveAttribute("data-state", /ready|partial/);
   await expect(panel.getByTestId("source-notices")).toContainText("not verified");

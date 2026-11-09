@@ -142,6 +142,14 @@ type Props = {
   retry?: number;
   /** v10: the data field's opacity, 0.3–1 (the layer index's display control); 1 when absent */
   fieldOpacity?: number;
+  /** v11 stage: the camera as a centre and zoom (with pitch and bearing) instead of `initialBounds` */
+  initialCamera?: { center: [number, number]; zoom: number; pitch?: number; bearing?: number; padding?: { top: number; bottom: number; left: number; right: number } };
+  /** v11 stage: false makes the map a picture (no gestures, the page scrolls through it). Default true. */
+  interactive?: boolean;
+  /** v11 stage: data rasters are smoothed at every zoom (a scene, not an instrument; no value or legend changes) */
+  smoothField?: boolean;
+  /** v11 stage: more map content (sources, layers, markers), drawn above everything but the map's own tips */
+  children?: React.ReactNode;
 };
 
 const OFFICIAL = "#f6bb5c";
@@ -581,11 +589,12 @@ export default function MapCanvas(p: Props) {
   // v8: at state and regional scale a 3 km cell is a few screen pixels, and nearest sampling draws a
   // field of stair-steps; there the data rasters are smoothed. From harbour scale (SHARP_ZOOM) every
   // pixel is a real source cell again, outlined and readable, and the legend colours are exact.
+  const smoothField = !!p.smoothField;
   useEffect(() => {
     if (!map) return;
     // only a layer whose mode differs is touched, so this never feeds the style events it listens to
     const apply = () => {
-      const want = map.getZoom() >= SHARP_ZOOM ? "nearest" : "linear";
+      const want = !smoothField && map.getZoom() >= SHARP_ZOOM ? "nearest" : "linear";
       for (const id of DATA_RASTERS) if (map.getLayer(id) && map.getPaintProperty(id, "raster-resampling") !== want) map.setPaintProperty(id, "raster-resampling", want);
     };
     apply();
@@ -596,7 +605,7 @@ export default function MapCanvas(p: Props) {
       map.off("zoomend", apply);
       map.off("styledata", apply);
     };
-  }, [map]);
+  }, [map, smoothField]);
 
   const { onStationPick } = p;
   const onClick = useCallback(
@@ -678,7 +687,12 @@ export default function MapCanvas(p: Props) {
     <Map
       mapStyle={style}
       transformRequest={transformRequest}
-      initialViewState={{ bounds: p.initialBounds, fitBoundsOptions: { padding: p.initialPadding } }}
+      initialViewState={
+        p.initialCamera
+          ? { longitude: p.initialCamera.center[0], latitude: p.initialCamera.center[1], zoom: p.initialCamera.zoom, pitch: p.initialCamera.pitch ?? 0, bearing: p.initialCamera.bearing ?? 0, padding: p.initialCamera.padding }
+          : { bounds: p.initialBounds, fitBoundsOptions: { padding: p.initialPadding } }
+      }
+      interactive={p.interactive ?? true}
       maxBounds={[EXPLORE_PAN_BOUNDS[0][0], EXPLORE_PAN_BOUNDS[0][1], EXPLORE_PAN_BOUNDS[1][0], EXPLORE_PAN_BOUNDS[1][1]]}
       minZoom={4.2}
       maxZoom={p.maxZoom ?? 12.5}
@@ -705,7 +719,7 @@ export default function MapCanvas(p: Props) {
       // tile server
       onStyleData={(e) => init(e.target)}
       onLoad={(e) => init(e.target)}
-      cursor={tip ? "pointer" : "crosshair"}
+      cursor={p.interactive === false ? "default" : tip ? "pointer" : "crosshair"}
       style={{ width: "100%", height: "100%" }}
     >
       {p.chrome !== "none" && <NavigationControl position="bottom-right" showCompass={false} />}
@@ -1103,6 +1117,8 @@ export default function MapCanvas(p: Props) {
           <Layer id="v4-fp-line" type="line" layout={{ "line-join": "miter", "line-cap": "butt" }} paint={{ "line-width": 2, "line-gradient": threadGradient(0, FOOTPRINT_LINE[p.footprint?.tone ?? "observation"]) }} />
         </Source>
       )}
+
+      {p.children}
 
       {hasRaster && !fieldReady && map && p.chrome !== "none" && (
         <div className="pointer-events-none absolute inset-x-0 top-[72px] z-[1] flex justify-center" role="status" aria-live="polite">
