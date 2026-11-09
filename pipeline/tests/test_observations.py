@@ -267,3 +267,22 @@ def test_region_from_official_region_bounds_first(out):
     # nearest landing port (Bodega Bay) is in Mendocino-Sonoma
     st = station(ds, "Inner Tomales Bay")
     assert st.region == "sf_bay_farallones" and st.nearest_port_name == "Bodega Bay"
+
+
+def test_a_used_up_time_budget_is_not_retried_after_a_sleep(monkeypatch):
+    # staging run 42565307093: after SCCOOS used up the calhabmap budget, every station still slept
+    # RETRY_SLEEP_S between attempts that could only fail (~11 minutes of a 40-minute job)
+    from coastwatch_pipeline.http import FetchError
+
+    calls, slept = [], []
+    monkeypatch.setattr(obs._time, "sleep", lambda s: slept.append(s))
+    monkeypatch.setattr(obs, "RETRY_SLEEP_S", 20)
+
+    class Ctx:
+        def fetcher(self, url):
+            calls.append(url)
+            raise FetchError(f"calhabmap time budget (300 s) used up; not requested: {url}", budget=True)
+
+    with pytest.raises(FetchError):
+        obs._fetch_retry(Ctx(), "https://erddap.sccoos.org/x.csv")
+    assert len(calls) == 1 and slept == []

@@ -348,6 +348,10 @@ def _fetch_retry(ctx: RunContext, url: str):
             return ctx.fetcher(url)
         except FetchError as e:
             last = e
+            # a used-up time budget cannot recover by waiting: staging run 42565307093 (2026-11-09)
+            # slept 20 s per retry for every station after SCCOOS hung, ~11 minutes of the job
+            if getattr(e, "budget", False):
+                break
             if attempt < RETRY_ATTEMPTS - 1 and RETRY_SLEEP_S:
                 _time.sleep(RETRY_SLEEP_S)
     assert last is not None
