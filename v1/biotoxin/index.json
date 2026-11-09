@@ -1,0 +1,559 @@
+{
+  "version": 1,
+  "generated_at": "2026-11-09T09:57:26Z",
+  "source": {
+    "name": "CDPH Summary of Domoic Acid Levels in Crab",
+    "url": "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/CrabDAResults.pdf",
+    "as_of": "2026-11-02",
+    "fetched_at": "2026-11-09T09:57:26Z",
+    "sha256": "03fe5249f2324b5dbd035b0067682e0393b74ca36c4ad3b5fe0077e9ddcfe2ee",
+    "period": "September 28, 2026 \u2013 November 2, 2026"
+  },
+  "action_levels": [
+    {
+      "species": "Dungeness crab and rock crab",
+      "tissue": "viscera",
+      "ppm": 30.0,
+      "quoted": "FDA Action Level >30 PPM"
+    },
+    {
+      "species": "Northern anchovy and Pacific sardine",
+      "tissue": "viscera or whole body",
+      "ppm": 20.0,
+      "quoted": "FDA Action Level: 20 ppm or greater"
+    }
+  ],
+  "sites": [
+    {
+      "id": "bma-f-pigeon-point-dungeness-crab",
+      "bma": "F",
+      "bma_label": "Half Moon Bay",
+      "port_label": "Half Moon Bay",
+      "site_label": "Pigeon Point",
+      "species": "Dungeness crab",
+      "lat": 37.18,
+      "lon": -122.39,
+      "informs_places": [
+        "port-452"
+      ],
+      "sets": [
+        {
+          "date": "2026-10-09",
+          "kind": "routine",
+          "tissue": "viscera",
+          "values_ppm": [
+            6.8,
+            null,
+            3.7,
+            3.4,
+            6.3,
+            3.4
+          ],
+          "nd_count": 1,
+          "avg_ppm": 3.9,
+          "max_ppm": 6.8,
+          "pct_over_action": 0.0,
+          "action_level_ppm": 30.0,
+          "values_raw": [
+            "6.8",
+            "<2.5",
+            "3.7",
+            "3.4",
+            "6.3",
+            "3.4"
+          ],
+          "meat_values_ppm": null,
+          "composite_of": null,
+          "note": null
+        }
+      ],
+      "source_url": "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/CrabDAResults.pdf"
+    },
+    {
+      "id": "bma-f-pillar-point-dungeness-crab",
+      "bma": "F",
+      "bma_label": "Half Moon Bay",
+      "port_label": "Half Moon Bay",
+      "site_label": "Pillar Point",
+      "species": "Dungeness crab",
+      "lat": 37.49,
+      "lon": -122.5,
+      "informs_places": [
+        "port-452"
+      ],
+      "sets": [
+        {
+          "date": "2026-10-09",
+          "kind": "routine",
+          "tissue": "viscera",
+          "values_ppm": [
+            2.5,
+            3.3,
+            5.3,
+            4.0,
+            2.6,
+            null
+          ],
+          "nd_count": 1,
+          "avg_ppm": 3.0,
+          "max_ppm": 5.3,
+          "pct_over_action": 0.0,
+          "action_level_ppm": 30.0,
+          "values_raw": [
+            "2.5",
+            "3.3",
+            "5.3",
+            "4.0",
+            "2.6",
+            "ND"
+          ],
+          "meat_values_ppm": null,
+          "composite_of": null,
+          "note": null
+        }
+      ],
+      "source_url": "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/CrabDAResults.pdf"
+    },
+    {
+      "id": "bma-g-monterey-bay-dungeness-crab",
+      "bma": "G",
+      "bma_label": "Monterey",
+      "port_label": "Monterey",
+      "site_label": "Monterey Bay",
+      "species": "Dungeness crab",
+      "lat": 36.8,
+      "lon": -121.9,
+      "informs_places": [
+        "port-592",
+        "port-550",
+        "port-593"
+      ],
+      "sets": [
+        {
+          "date": "2026-09-28",
+          "kind": "routine",
+          "tissue": "viscera",
+          "values_ppm": [
+            4.0,
+            3.0,
+            4.5,
+            5.0,
+            9.8,
+            6.8
+          ],
+          "nd_count": 0,
+          "avg_ppm": 5.5,
+          "max_ppm": 9.8,
+          "pct_over_action": 0.0,
+          "action_level_ppm": 30.0,
+          "values_raw": [
+            "4.0",
+            "3.0",
+            "4.5",
+            "5.0",
+            "9.8",
+            "6.8"
+          ],
+          "meat_values_ppm": null,
+          "composite_of": null,
+          "note": null
+        }
+      ],
+      "source_url": "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/CrabDAResults.pdf"
+    },
+    {
+      "id": "bma-g-monterey-bay-rock-crab",
+      "bma": "G",
+      "bma_label": "Monterey",
+      "port_label": "Monterey",
+      "site_label": "Monterey Bay",
+      "species": "Rock crab",
+      "lat": 36.8,
+      "lon": -121.9,
+      "informs_places": [
+        "port-592",
+        "port-550",
+        "port-593"
+      ],
+      "sets": [
+        {
+          "date": "2026-09-28",
+          "kind": "routine",
+          "tissue": "viscera",
+          "values_ppm": [
+            null,
+            null,
+            null,
+            20.0,
+            null,
+            2.6
+          ],
+          "nd_count": 4,
+          "avg_ppm": 3.8,
+          "max_ppm": 20.0,
+          "pct_over_action": 0.0,
+          "action_level_ppm": 30.0,
+          "values_raw": [
+            "<2.5",
+            "ND",
+            "ND",
+            "20",
+            "<2.5",
+            "2.6"
+          ],
+          "meat_values_ppm": null,
+          "composite_of": null,
+          "note": null
+        }
+      ],
+      "source_url": "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/CrabDAResults.pdf"
+    },
+    {
+      "id": "block-509-northern-anchovy",
+      "bma": null,
+      "bma_label": null,
+      "port_label": null,
+      "site_label": "CDFW block 509",
+      "species": "Northern anchovy",
+      "lat": null,
+      "lon": null,
+      "informs_places": [],
+      "sets": [
+        {
+          "date": "2026-08-28",
+          "kind": "unknown",
+          "tissue": "viscera",
+          "values_ppm": [
+            1200.0
+          ],
+          "nd_count": 0,
+          "avg_ppm": null,
+          "max_ppm": 1200.0,
+          "pct_over_action": null,
+          "action_level_ppm": 20.0,
+          "values_raw": [
+            "1200"
+          ],
+          "meat_values_ppm": null,
+          "composite_of": 12,
+          "note": null
+        },
+        {
+          "date": "2026-08-28",
+          "kind": "unknown",
+          "tissue": "whole",
+          "values_ppm": [
+            190.0
+          ],
+          "nd_count": 0,
+          "avg_ppm": null,
+          "max_ppm": 190.0,
+          "pct_over_action": null,
+          "action_level_ppm": 20.0,
+          "values_raw": [
+            "190"
+          ],
+          "meat_values_ppm": null,
+          "composite_of": 13,
+          "note": null
+        }
+      ],
+      "source_url": "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/SeafoodDAResults082826to102226.pdf"
+    },
+    {
+      "id": "block-516-northern-anchovy",
+      "bma": null,
+      "bma_label": null,
+      "port_label": null,
+      "site_label": "CDFW block 516",
+      "species": "Northern anchovy",
+      "lat": null,
+      "lon": null,
+      "informs_places": [],
+      "sets": [
+        {
+          "date": "2026-09-29",
+          "kind": "retest",
+          "tissue": "viscera",
+          "values_ppm": [
+            14.0
+          ],
+          "nd_count": 0,
+          "avg_ppm": null,
+          "max_ppm": 14.0,
+          "pct_over_action": null,
+          "action_level_ppm": 20.0,
+          "values_raw": [
+            "14"
+          ],
+          "meat_values_ppm": null,
+          "composite_of": 19,
+          "note": "RT 1-1st set"
+        },
+        {
+          "date": "2026-09-29",
+          "kind": "retest",
+          "tissue": "whole",
+          "values_ppm": [
+            3.2
+          ],
+          "nd_count": 0,
+          "avg_ppm": null,
+          "max_ppm": 3.2,
+          "pct_over_action": null,
+          "action_level_ppm": 20.0,
+          "values_raw": [
+            "3.2"
+          ],
+          "meat_values_ppm": null,
+          "composite_of": 18,
+          "note": "RT 1-2nd set"
+        }
+      ],
+      "source_url": "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/SeafoodDAResults082826to102226.pdf"
+    },
+    {
+      "id": "block-517-northern-anchovy",
+      "bma": null,
+      "bma_label": null,
+      "port_label": null,
+      "site_label": "CDFW block 517",
+      "species": "Northern anchovy",
+      "lat": null,
+      "lon": null,
+      "informs_places": [],
+      "sets": [
+        {
+          "date": "2026-10-06",
+          "kind": "retest",
+          "tissue": "viscera",
+          "values_ppm": [
+            47.0
+          ],
+          "nd_count": 0,
+          "avg_ppm": null,
+          "max_ppm": 47.0,
+          "pct_over_action": null,
+          "action_level_ppm": 20.0,
+          "values_raw": [
+            "47"
+          ],
+          "meat_values_ppm": null,
+          "composite_of": 27,
+          "note": "RT 1-2nd set"
+        },
+        {
+          "date": "2026-10-06",
+          "kind": "retest",
+          "tissue": "whole",
+          "values_ppm": [
+            12.0
+          ],
+          "nd_count": 0,
+          "avg_ppm": null,
+          "max_ppm": 12.0,
+          "pct_over_action": null,
+          "action_level_ppm": 20.0,
+          "values_raw": [
+            "12"
+          ],
+          "meat_values_ppm": null,
+          "composite_of": 26,
+          "note": "RT 1-2nd set"
+        }
+      ],
+      "source_url": "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/SeafoodDAResults082826to102226.pdf"
+    },
+    {
+      "id": "bma-a-george-reef-dungeness-crab",
+      "bma": "A",
+      "bma_label": "Crescent City",
+      "port_label": "Crescent City",
+      "site_label": "George Reef",
+      "species": "Dungeness crab",
+      "lat": 41.84,
+      "lon": -124.37,
+      "informs_places": [],
+      "sets": [
+        {
+          "date": "2026-10-08",
+          "kind": "routine",
+          "tissue": "viscera",
+          "values_ppm": [
+            19.0,
+            28.0,
+            18.0,
+            null,
+            8.9,
+            19.0
+          ],
+          "nd_count": 1,
+          "avg_ppm": 15.5,
+          "max_ppm": 28.0,
+          "pct_over_action": 0.0,
+          "action_level_ppm": 30.0,
+          "values_raw": [
+            "19",
+            "28",
+            "18",
+            "<2.5",
+            "8.9",
+            "19"
+          ],
+          "meat_values_ppm": null,
+          "composite_of": null,
+          "note": null
+        }
+      ],
+      "source_url": "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/CrabDAResults.pdf"
+    },
+    {
+      "id": "bma-a-klamath-river-dungeness-crab",
+      "bma": "A",
+      "bma_label": "Crescent City",
+      "port_label": "Crescent City",
+      "site_label": "Klamath River",
+      "species": "Dungeness crab",
+      "lat": 41.55,
+      "lon": -124.09,
+      "informs_places": [],
+      "sets": [
+        {
+          "date": "2026-10-07",
+          "kind": "routine",
+          "tissue": "viscera",
+          "values_ppm": [
+            6.6,
+            5.3,
+            10.0,
+            16.0,
+            8.9,
+            14.0
+          ],
+          "nd_count": 0,
+          "avg_ppm": 10.1,
+          "max_ppm": 16.0,
+          "pct_over_action": 0.0,
+          "action_level_ppm": 30.0,
+          "values_raw": [
+            "6.6",
+            "5.3",
+            "10",
+            "16",
+            "8.9",
+            "14"
+          ],
+          "meat_values_ppm": null,
+          "composite_of": null,
+          "note": null
+        }
+      ],
+      "source_url": "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/CrabDAResults.pdf"
+    },
+    {
+      "id": "bma-c-usal-dungeness-crab",
+      "bma": "C",
+      "bma_label": "Fort Bragg",
+      "port_label": "Fort Bragg",
+      "site_label": "Usal",
+      "species": "Dungeness crab",
+      "lat": 39.83,
+      "lon": -123.85,
+      "informs_places": [],
+      "sets": [
+        {
+          "date": "2026-10-20",
+          "kind": "routine",
+          "tissue": "viscera",
+          "values_ppm": [
+            11.0,
+            24.0,
+            8.8,
+            37.0,
+            99.0,
+            51.0
+          ],
+          "nd_count": 0,
+          "avg_ppm": 38.5,
+          "max_ppm": 99.0,
+          "pct_over_action": 50.0,
+          "action_level_ppm": 30.0,
+          "values_raw": [
+            "11",
+            "24",
+            "8.8",
+            "37 | 6.6",
+            "99 | 20",
+            "51 | 13"
+          ],
+          "meat_values_ppm": [
+            null,
+            null,
+            null,
+            6.6,
+            20.0,
+            13.0
+          ],
+          "composite_of": null,
+          "note": null
+        }
+      ],
+      "source_url": "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/CrabDAResults.pdf"
+    },
+    {
+      "id": "bma-f-duxbury-reef-dungeness-crab",
+      "bma": "F",
+      "bma_label": "Half Moon Bay",
+      "port_label": "Half Moon Bay",
+      "site_label": "Duxbury Reef",
+      "species": "Dungeness crab",
+      "lat": 37.89,
+      "lon": -122.7,
+      "informs_places": [],
+      "sets": [
+        {
+          "date": "2026-10-20",
+          "kind": "routine",
+          "tissue": "viscera",
+          "values_ppm": [
+            3.3,
+            3.3,
+            3.9,
+            3.2,
+            3.6,
+            3.1
+          ],
+          "nd_count": 0,
+          "avg_ppm": 3.4,
+          "max_ppm": 3.9,
+          "pct_over_action": 0.0,
+          "action_level_ppm": 30.0,
+          "values_raw": [
+            "3.3",
+            "3.3",
+            "3.9",
+            "3.2",
+            "3.6",
+            "3.1"
+          ],
+          "meat_values_ppm": null,
+          "composite_of": null,
+          "note": null
+        }
+      ],
+      "source_url": "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/CrabDAResults.pdf"
+    }
+  ],
+  "parse_warnings": [],
+  "additional_sources": [
+    {
+      "name": "CDPH Summary of Domoic Acid Levels in Seafood",
+      "url": "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/DomoicAcid/SeafoodDAResults082826to102226.pdf",
+      "as_of": "2026-10-21",
+      "fetched_at": "2026-11-09T09:57:26Z",
+      "sha256": "e5f0ab8e3f404a79581dc02883c313477402e952839ab5664dadf214cd87d1cc",
+      "period": "August 28, 2026 \u2013 October 6, 2026"
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,493 @@
+{
+  "manifest_generated_at": "2026-11-09T09:57:26Z",
+  "live_source_comparison": true,
+  "summary": {
+    "hourly_layers_new": 6,
+    "hourly_layers_checked": 2,
+    "checks": 32,
+    "settle_hours": 6,
+    "unsettled_hours_not_sampled": 4,
+    "cells_asked_again": 3,
+    "time_budget_s": 600,
+    "failures": 0,
+    "unverifiable_upstream_unreachable": 0,
+    "all_passed": true
+  },
+  "rows": [
+    {
+      "layer_id": "hfr2km_currents_20261109T04Z",
+      "time": "2026-11-09T04:00:00Z",
+      "kind": "value",
+      "row": 1,
+      "col": 392,
+      "lat": 32.42558,
+      "lon": -117.325557,
+      "u": -0.08003,
+      "v": 0.06996,
+      "verified_against": "hfradar_uswc_2km",
+      "source_cell": [
+        32.42558,
+        -117.325554
+      ],
+      "source_cell_matches": true,
+      "source_u": -0.08,
+      "source_v": 0.07,
+      "source_matches": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T04Z",
+      "time": "2026-11-09T04:00:00Z",
+      "kind": "value",
+      "row": 65,
+      "col": 304,
+      "lat": 33.5763,
+      "lon": -119.157875,
+      "u": -0.01999,
+      "v": -0.06996,
+      "verified_against": "hfradar_uswc_2km",
+      "source_cell": [
+        33.5763,
+        -119.157875
+      ],
+      "source_cell_matches": true,
+      "source_u": -0.02,
+      "source_v": -0.07,
+      "source_matches": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T04Z",
+      "time": "2026-11-09T04:00:00Z",
+      "kind": "value",
+      "row": 87,
+      "col": 322,
+      "lat": 33.97186,
+      "lon": -118.783082,
+      "u": 0.45999,
+      "v": 0.05997,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        33.97186,
+        -118.78308
+      ],
+      "source_cell_matches": true,
+      "source_u": 0.46,
+      "source_v": 0.06,
+      "source_matches": true,
+      "status": "pass",
+      "attempts": 2
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T04Z",
+      "time": "2026-11-09T04:00:00Z",
+      "kind": "value",
+      "row": 112,
+      "col": 227,
+      "lat": 34.42136,
+      "lon": -120.761153,
+      "u": -0.23003,
+      "v": -0.00999,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        34.42136,
+        -120.76115
+      ],
+      "source_cell_matches": true,
+      "source_u": -0.23,
+      "source_v": -0.01,
+      "source_matches": true,
+      "status": "pass",
+      "attempts": 2
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T04Z",
+      "time": "2026-11-09T04:00:00Z",
+      "kind": "value",
+      "row": 155,
+      "col": 217,
+      "lat": 35.1945,
+      "lon": -120.969371,
+      "u": -0.12001,
+      "v": 0.08003,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        35.1945,
+        -120.96937
+      ],
+      "source_cell_matches": true,
+      "source_u": -0.12,
+      "source_v": 0.08,
+      "source_matches": true,
+      "status": "pass",
+      "attempts": 2
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T04Z",
+      "time": "2026-11-09T04:00:00Z",
+      "kind": "value",
+      "row": 343,
+      "col": 98,
+      "lat": 38.57474,
+      "lon": -123.447164,
+      "u": -0.16999,
+      "v": -0.34997,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        38.57474,
+        -123.44716
+      ],
+      "source_cell_matches": true,
+      "source_u": -0.17,
+      "source_v": -0.35,
+      "source_matches": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T04Z",
+      "time": "2026-11-09T04:00:00Z",
+      "kind": "no_value",
+      "row": 0,
+      "col": 0,
+      "lat": 32.4076,
+      "lon": -125.4877,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        32.4076,
+        -125.4877
+      ],
+      "source_cell_matches": true,
+      "dropped_correctly": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T04Z",
+      "time": "2026-11-09T04:00:00Z",
+      "kind": "no_value",
+      "row": 539,
+      "col": 407,
+      "lat": 42.09882,
+      "lon": -117.01323,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        42.09882,
+        -117.01323
+      ],
+      "source_cell_matches": true,
+      "dropped_correctly": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T03Z",
+      "time": "2026-11-09T03:00:00Z",
+      "kind": "value",
+      "row": 1,
+      "col": 392,
+      "lat": 32.42558,
+      "lon": -117.325557,
+      "u": -0.10002,
+      "v": 0.0,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        32.42558,
+        -117.325554
+      ],
+      "source_cell_matches": true,
+      "source_u": -0.1,
+      "source_v": 0.0,
+      "source_matches": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T03Z",
+      "time": "2026-11-09T03:00:00Z",
+      "kind": "value",
+      "row": 66,
+      "col": 303,
+      "lat": 33.59428,
+      "lon": -119.178697,
+      "u": -0.01999,
+      "v": -0.04997,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        33.59428,
+        -119.178696
+      ],
+      "source_cell_matches": true,
+      "source_u": -0.02,
+      "source_v": -0.05,
+      "source_matches": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T03Z",
+      "time": "2026-11-09T03:00:00Z",
+      "kind": "value",
+      "row": 88,
+      "col": 311,
+      "lat": 33.98984,
+      "lon": -119.012122,
+      "u": 0.03998,
+      "v": 0.00999,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        33.98984,
+        -119.012115
+      ],
+      "source_cell_matches": true,
+      "source_u": 0.04,
+      "source_v": 0.01,
+      "source_matches": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T03Z",
+      "time": "2026-11-09T03:00:00Z",
+      "kind": "value",
+      "row": 113,
+      "col": 208,
+      "lat": 34.43934,
+      "lon": -121.156767,
+      "u": -0.17998,
+      "v": 0.16999,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        34.43934,
+        -121.15676
+      ],
+      "source_cell_matches": true,
+      "source_u": -0.18,
+      "source_v": 0.17,
+      "source_matches": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T03Z",
+      "time": "2026-11-09T03:00:00Z",
+      "kind": "value",
+      "row": 156,
+      "col": 202,
+      "lat": 35.21248,
+      "lon": -121.281698,
+      "u": -0.08003,
+      "v": -0.32998,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        35.21248,
+        -121.28169
+      ],
+      "source_cell_matches": true,
+      "source_u": -0.08,
+      "source_v": -0.33,
+      "source_matches": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T03Z",
+      "time": "2026-11-09T03:00:00Z",
+      "kind": "value",
+      "row": 343,
+      "col": 98,
+      "lat": 38.57474,
+      "lon": -123.447164,
+      "u": -0.06996,
+      "v": -0.50996,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        38.57474,
+        -123.44716
+      ],
+      "source_cell_matches": true,
+      "source_u": -0.07,
+      "source_v": -0.51,
+      "source_matches": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T03Z",
+      "time": "2026-11-09T03:00:00Z",
+      "kind": "no_value",
+      "row": 0,
+      "col": 0,
+      "lat": 32.4076,
+      "lon": -125.4877,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        32.4076,
+        -125.4877
+      ],
+      "source_cell_matches": true,
+      "dropped_correctly": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_20261109T03Z",
+      "time": "2026-11-09T03:00:00Z",
+      "kind": "no_value",
+      "row": 539,
+      "col": 407,
+      "lat": 42.09882,
+      "lon": -117.01323,
+      "verified_against": "ucsdHfrW2",
+      "source_cell": [
+        42.09882,
+        -117.01323
+      ],
+      "source_cell_matches": true,
+      "dropped_correctly": true,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean",
+      "row": 1,
+      "col": 392,
+      "hours": 19,
+      "u": -0.03739,
+      "expected_u": -0.03737,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean",
+      "row": 52,
+      "col": 321,
+      "hours": 24,
+      "u": -0.15122,
+      "expected_u": -0.15125,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean",
+      "row": 65,
+      "col": 280,
+      "hours": 19,
+      "u": -0.17945,
+      "expected_u": -0.17947,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean",
+      "row": 75,
+      "col": 293,
+      "hours": 24,
+      "u": -0.12253,
+      "expected_u": -0.12249,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean",
+      "row": 85,
+      "col": 243,
+      "hours": 22,
+      "u": -0.34997,
+      "expected_u": -0.35,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean",
+      "row": 96,
+      "col": 232,
+      "hours": 24,
+      "u": -0.2533,
+      "expected_u": -0.25333,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean",
+      "row": 106,
+      "col": 218,
+      "hours": 24,
+      "u": -0.26955,
+      "expected_u": -0.26958,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean",
+      "row": 121,
+      "col": 218,
+      "hours": 24,
+      "u": -0.06417,
+      "expected_u": -0.06417,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean",
+      "row": 139,
+      "col": 206,
+      "hours": 24,
+      "u": -0.14,
+      "expected_u": -0.13999,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean",
+      "row": 158,
+      "col": 210,
+      "hours": 24,
+      "u": -0.12627,
+      "expected_u": -0.12625,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean",
+      "row": 242,
+      "col": 162,
+      "hours": 24,
+      "u": -0.02709,
+      "expected_u": -0.02708,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean",
+      "row": 342,
+      "col": 100,
+      "hours": 18,
+      "u": -0.06386,
+      "expected_u": -0.06389,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean_withheld",
+      "row": 2,
+      "col": 390,
+      "hours": 2,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean_withheld",
+      "row": 78,
+      "col": 266,
+      "hours": 12,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean_withheld",
+      "row": 290,
+      "col": 118,
+      "hours": 16,
+      "status": "pass"
+    },
+    {
+      "layer_id": "hfr2km_currents_mean24h",
+      "kind": "mean_withheld",
+      "row": 344,
+      "col": 100,
+      "hours": 1,
+      "status": "pass"
+    }
+  ]
+}
