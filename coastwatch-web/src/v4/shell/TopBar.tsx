@@ -6,15 +6,27 @@ import { Lockup, Mark } from "@/v4/brand/Brand";
 import { Icon } from "@/v4/ui/Icon";
 import { StatusCenter } from "@/v4/readiness/StatusCenter";
 import { homeHref, readHome } from "@/v4/coast/home";
+import { readTodayHref } from "@/pilot/today/navPlace";
+import { AlertsBell } from "@/pilot/alerts/AlertsBell";
+import { usePilotFrontDoor } from "@/pilot/FrontDoorContext";
+import { exploreHref } from "@/pilot/frontDoor";
 import { exitProps, usePresence } from "@/v4/motion";
 import { readDaylight, setDaylight } from "./daylight";
 
-export type Workspace = "explore" | "coast" | "research" | "page";
+export type Workspace = "today" | "explore" | "coast" | "research" | "page";
 
 const NAV: { id: Exclude<Workspace, "page">; label: string; href: string; icon: string }[] = [
+  // the pilot's front door (src/app/today): the reader's port today
+  { id: "today", label: "Today", href: "/today", icon: "today" },
   { id: "explore", label: "Explore", href: "/", icon: "map" },
   { id: "coast", label: "My Coast", href: "/coast", icon: "harbor" },
   { id: "research", label: "Research", href: "/research", icon: "research" },
+];
+
+// the pilot's own pages (docs/coastwatch/pilot): the reader's ports and alerts, and Ask Neritic
+const PILOT_MORE = [
+  { label: "Your ports and alerts", href: "/account", testid: "more-account" },
+  { label: "Ask Neritic", href: "/ask", testid: "more-ask" },
 ];
 
 const MORE = [
@@ -54,8 +66,14 @@ function MoreMenu() {
       </button>
       {pop.mounted && (
         <nav aria-label="More pages" className="nx-pop absolute right-0 top-[52px] z-50 w-56 rounded-[18px] border border-n-line bg-n-surface p-1.5 shadow-[var(--nx-shadow)]" {...exitProps(pop.state)}>
+          {PILOT_MORE.map((m) => (
+            <Link key={m.href} href={m.href} onClick={() => setOpen(false)} className="nx-focus nx-row flex min-h-11 items-center rounded-lg px-3 text-[15px] font-medium text-n-ink hover:bg-n-surface-2" data-testid={m.testid}>
+              {m.label}
+            </Link>
+          ))}
+          <div className="mx-1.5 my-1 border-t border-n-line" />
           {MORE.map((m) => (
-            <Link key={m.href} href={m.href} className="nx-focus nx-row flex min-h-11 items-center rounded-lg px-3 text-[15px] text-n-ink hover:bg-n-surface-2">
+            <Link key={m.label} href={m.href} className="nx-focus nx-row flex min-h-11 items-center rounded-lg px-3 text-[15px] text-n-ink hover:bg-n-surface-2">
               {m.label}
             </Link>
           ))}
@@ -90,20 +108,25 @@ export function NavTabs({ active, size = "bar" }: { active: Workspace; size?: "b
   // with a home port kept on this device, My Coast opens on its briefing (read after hydration)
   // the whole trip (place, activity, species), so a returning reader lands on their own briefing
   const [home, setHome] = useState<string | null>(null);
+  // Today opens on the port the reader last opened there (src/pilot/today/navPlace.ts), read after hydration
+  const [todayHref, setTodayHref] = useState<string | null>(null);
   useEffect(() => {
     const h = readHome();
     setHome(h ? homeHref(h) : null);
+    setTodayHref(readTodayHref());
   }, []);
+  // pilot front door: `/` opens Today, so Explore is linked by its own address
+  const pilot = usePilotFrontDoor();
   const nav = useRef<HTMLElement | null>(null);
   useGlidePill(nav, size === "bar");
   return (
-    <nav ref={nav} aria-label="Workspaces" className={size === "bar" ? "flex items-center gap-0.5" : "grid grid-cols-3"} data-testid={`nav-${size}`}>
+    <nav ref={nav} aria-label="Workspaces" className={size === "bar" ? "flex items-center gap-0.5" : "grid grid-cols-4"} data-testid={`nav-${size}`}>
       {NAV.map((n) => {
         const on = n.id === active;
         return (
           <Link
             key={n.id}
-            href={n.id === "coast" && home ? home : n.href}
+            href={n.id === "coast" && home ? home : n.id === "today" && todayHref ? todayHref : n.id === "explore" ? exploreHref(pilot) : n.href}
             aria-current={on ? "page" : undefined}
             data-testid={`nav-${n.id}`}
             className={
@@ -150,7 +173,7 @@ function useGlidePill(nav: React.RefObject<HTMLElement | null>, on: boolean) {
 
 /**
  * The top bar: floating over the map in Explore, a band over reading pages. Brand (C2),
- * workspaces, a slot (search in Explore), the status centre, official notices, more. On a short
+ * workspaces, a slot (search in Explore), the status centre, official notices, the alerts bell, more. On a short
  * screen (a phone held sideways, max-height 500px) it is one compact line and the preview disclosure
  * folds into the notices pill (theme.css, .nx-topbar).
  */
@@ -186,6 +209,8 @@ export function TopBar({ active, now, slot, notices, floating = false }: { activ
         <span className="sm:hidden">
           <StatusCenter now={now} compact />
         </span>
+        {/* pilot: alerts for the reader's saved ports (the device inbox; the account's too when signed in) */}
+        <AlertsBell />
         <MoreMenu />
       </div>
     </header>

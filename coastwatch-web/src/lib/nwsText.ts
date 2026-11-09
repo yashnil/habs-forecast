@@ -76,7 +76,7 @@ export function parseIssued(s: string): string | null {
  * (".TONIGHT...", ".WED...") and any headlines ("...SMALL CRAFT ADVISORY IN EFFECT..."), quoted as
  * published. Returns null when the product does not contain the zone.
  */
-export function parseCoastalText(zone: string, text: string): { forecast: MarineForecast; headlines: string[] } | null {
+export function parseCoastalText(zone: string, text: string, max = 4): { forecast: MarineForecast; headlines: string[] } | null {
   const lines = text.replace(/\r/g, "").split("\n");
   const start = lines.findIndex((l) => l.startsWith(`${zone.toUpperCase()}-`));
   if (start < 0) return null;
@@ -94,7 +94,7 @@ export function parseCoastalText(zone: string, text: string): { forecast: Marine
     text: m[2].replace(/\s+/g, " ").trim(),
   }));
   if (!periods.length) return null;
-  return { forecast: { zone: zone.toUpperCase(), zoneName: name.join(" ").replace(/-$/, "").trim(), updated: parseIssued(issued), periods: periods.slice(0, 4) }, headlines };
+  return { forecast: { zone: zone.toUpperCase(), zoneName: name.join(" ").replace(/-$/, "").trim(), updated: parseIssued(issued), periods: periods.slice(0, max) }, headlines };
 }
 
 /** Headlines as alerts (the event is the headline's first clause, e.g. "SMALL CRAFT ADVISORY IN EFFECT ..."). */

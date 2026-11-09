@@ -145,7 +145,8 @@ def test_inland_water_is_left_out_and_counted(tmp_path):
     day = by_id(res, "olci300_chl_2026-10-01")
     note = next(c for c in day.qc.checks if c.name == "coastal_scope")
     assert int(note.detail.split()[0]) > 0
-    assert any("coastal ocean only" in c for c in latest.caveats)
+    assert any("inland lakes, reservoirs" in c for c in latest.caveats)
+    assert any("turbid" in c for c in latest.caveats)
 
 
 def _shifted_scene(blob: bytes, dlat: float) -> bytes:
@@ -351,39 +352,61 @@ def test_unknown_dataset_is_an_outage_not_an_empty_week(tmp_path):
     assert satellite.no_matching_results(FE("HTTP 404 for u"))
 
 
-def test_front_end_html_404_is_an_empty_window_when_the_dataset_answers(tmp_path):
+def test_stalled_feed_is_an_empty_window_and_a_masked_404_on_the_axis_is_an_outage(tmp_path):
     # production run 38774047981 (2026-10-15): coastwatch.noaa.gov's Apache front end replaced
     # ERDDAP's "no matching results" text with a site-wide HTML 404 for every Sentinel-3B window
-    # (S3B's feed had stalled on 2026-10-01); the run failed the whole source as an outage
+    # (S3B's feed had stalled on 2026-10-01). Issue #95 (2026-11): the same HTML 404 answers ANY
+    # ERDDAP error, so the pipeline reads the whole, unconstrained time axis and never sends a
+    # bound ERDDAP could reject; a stalled feed is then an empty window, and a 404 on the axis
+    # itself is the outage it looks like.
     from coastwatch_pipeline.http import FetchError as FE
 
     html = '<!DOCTYPE html><html><head><title>404 | NOAA CoastWatch</title></head><body>Page not found</body></html>'
-    masked = lambda url: (_ for _ in ()).throw(FE(f"HTTP 404 for {url} ({html[:40]})", detail=html[:240]))  # noqa: E731
     assert satellite.masked_404(FE("HTTP 404 for u", detail=html))
     assert not satellite.masked_404(FE("HTTP 404 for u", detail='Error { message="Your query produced no matching results." }'))
     assert not satellite.masked_404(FE("HTTP 404 for u", detail='Error { message="Not Found: Currently unknown datasetID=x"; }'))
     assert not satellite.no_matching_results(FE("HTTP 404 for u", detail=html))
 
     class Ctx:
-        def __init__(self, das_ok):
+        def __init__(self, axis):
             self.calls = []
-            self.das_ok = das_ok
+            self.axis = axis
+            self.options = {}
 
         def fetcher(self, url):
             self.calls.append(url)
-            if url.endswith(".das"):
-                if self.das_ok:
-                    return type("R", (), {"body": b"Attributes {}"})()
-                raise FE(f"HTTP 404 for {url}", detail=html[:240])
-            return masked(url)
+            if self.axis is None or not url.endswith(".csv0?time"):
+                raise FE(f"HTTP 404 for {url} ({html[:40]})", detail=html[:240])
+            return type("R", (), {"body": ("\n".join(self.axis) + "\n").encode()})()
 
     from datetime import date
 
-    ok = Ctx(True)
-    assert satellite.list_times(ok, "https://coastwatch.noaa.gov/erddap", "noaacwS3BOLCIchlaSectorCIDaily", date(2026, 10, 8)) == []
-    assert ok.calls[-1] == "https://coastwatch.noaa.gov/erddap/griddap/noaacwS3BOLCIchlaSectorCIDaily.das"
-    # the dataset itself unreachable: still the outage it looks like
     import pytest
 
+    srv, ds = "https://coastwatch.noaa.gov/erddap", "noaacwS3BOLCIchlaSectorCIDaily"
+    stalled = Ctx(["2026-09-29T18:40:00Z", "2026-09-30T19:02:00Z", "2026-10-01T18:37:00Z"])
+    assert satellite.list_times(stalled, srv, ds, date(2026, 10, 8)) == []
+    assert stalled.calls == [f"{srv}/griddap/{ds}.csv0?time"]  # one unconstrained request, no bound
+    # a gap on the axis (2026-10-31/11-01 had no granule): only listed times come back
+    gap = Ctx(["2026-10-30T18:31:10Z", "2026-11-02T18:50:37Z", "2026-11-03T19:16:27Z"])
+    assert satellite.list_times(gap, srv, ds, date(2026, 10, 31)) == ["2026-10-30T18:31:10Z", "2026-11-02T18:50:37Z", "2026-11-03T19:16:27Z"]
+    assert satellite.list_times(gap, srv, ds, date(2026, 11, 3)) == ["2026-11-02T18:50:37Z", "2026-11-03T19:16:27Z"]
+    assert len(gap.calls) == 1  # the axis is read once per run
+    # the axis itself unreachable: the outage it looks like
     with pytest.raises(FE):
-        satellite.list_times(Ctx(False), "https://coastwatch.noaa.gov/erddap", "noaacwS3BOLCIchlaSectorCIDaily", date(2026, 10, 8))
+        satellite.list_times(Ctx(None), srv, ds, date(2026, 10, 8))
+
+
+def test_granule_listed_but_not_served_is_skipped_not_an_error(tmp_path):
+    # a listed time that answers 404 by the time its scene is requested (rolled out of the
+    # rolling window) is "no granule", noted; the other days still publish
+    from coastwatch_pipeline.http import FetchError as FE
+
+    html = '<!DOCTYPE html><html><head><title>404 | NOAA CoastWatch</title></head></html>'
+    idx = __import__("json").loads((FIX / "index.json").read_text())
+    t0 = idx["monterey"]["noaacwS3AOLCIchlaSectorCIDaily"][0]["time"]
+    gone = lambda url: (_ for _ in ()).throw(FE(f"HTTP 404 for {url}", detail=html))  # noqa: E731
+    ctx, res = run_region(tmp_path, "monterey", overrides={rf"noaacwS3AOLCIchlaSectorCIDaily\.nc\?.*{t0[:10]}": gone})
+    assert not res.errors, res.errors
+    assert any("listed on the time axis but not served" in n for n in res.notes)
+    assert by_id(res, "olci300_chl_latest") is not None

@@ -112,6 +112,21 @@ describe("the NWS period for the trip day, by its own start", () => {
       ["2026-10-14", false],
     ]);
     expect(datePeriods(periods, null).every((p) => p.date === null)).toBe(true);
+    // NWS names a holiday's period by the holiday, not the weekday (issued Sunday evening, Nov 8, 2026):
+    // it follows the dated period before it, so Veterans Day is Wednesday the 11th, never a period without a day
+    const named = ["Tonight", "Mon", "Mon Night", "Tue", "Tue Night", "Veterans Day", "Wed Night", "Thu"].map((name) => ({ name, text: "NW wind 10 kt." }));
+    expect(datePeriods(named, "2026-11-09T04:08:00Z").map((p) => [p.date, p.night])).toEqual([
+      ["2026-11-08", true],
+      ["2026-11-09", false],
+      ["2026-11-09", true],
+      ["2026-11-10", false],
+      ["2026-11-10", true],
+      ["2026-11-11", false],
+      ["2026-11-11", true],
+      ["2026-11-12", false],
+    ]);
+    // a name that is neither a weekday nor a holiday still has no date
+    expect(datePeriods([{ name: "Tonight", text: "" }, { name: "Extended", text: "" }], "2026-11-09T04:08:00Z")[1].date).toBeNull();
   });
   it("matches the trip day by date, daytime first, and never falls back to the first period", () => {
     expect(periodFor(c, "2026-10-12", "2026-10-12")?.name).toBe("Tonight");

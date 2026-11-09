@@ -1,0 +1,63 @@
+{
+  "version": "estimate-state-1|tau=20.0|satellite-processing-4",
+  "description": "Background state of the chlorophyll estimate (derived/estimate.py): per-pixel exponentially weighted mean of valid log10 chlorophyll (e-folding 20 days) and its effective number of views. Pipeline input, not a product.",
+  "through": "2026-10-06",
+  "days_added_this_run": [
+    "2026-10-01",
+    "2026-10-02",
+    "2026-10-05",
+    "2026-10-06"
+  ],
+  "shape": [
+    321,
+    341
+  ],
+  "lat_first": 37.20125,
+  "lon_first": -122.60125,
+  "background": {
+    "url": "derived/state-2026-10-06-1165ee03bc/background/{row}_{col}.u16.gz",
+    "encoding": "uint16le+gzip",
+    "width": 341,
+    "height": 321,
+    "lat_first": 37.20125,
+    "lat_step": -0.0025,
+    "lon_first": -122.60125,
+    "lon_step": 0.0025,
+    "scale_factor": 9.155552842799158e-05,
+    "add_offset": -3.0,
+    "nodata": 65535,
+    "max_quantization_error": 4.577776421399579e-05,
+    "transform": "log10",
+    "chunks": {
+      "rows": 512,
+      "cols": 512,
+      "url_template": "derived/state-2026-10-06-1165ee03bc/background/{row}_{col}.u16.gz",
+      "present": [
+        "0_0"
+      ]
+    }
+  },
+  "weight": {
+    "url": "derived/state-2026-10-06-1165ee03bc/weight/{row}_{col}.u16.gz",
+    "encoding": "uint16le+gzip",
+    "width": 341,
+    "height": 321,
+    "lat_first": 37.20125,
+    "lat_step": -0.0025,
+    "lon_first": -122.60125,
+    "lon_step": 0.0025,
+    "scale_factor": 0.0004882961516159551,
+    "add_offset": 0.0,
+    "nodata": 65535,
+    "max_quantization_error": 0.00024414807580797754,
+    "transform": "none",
+    "chunks": {
+      "rows": 512,
+      "cols": 512,
+      "url_template": "derived/state-2026-10-06-1165ee03bc/weight/{row}_{col}.u16.gz",
+      "present": [
+        "0_0"
+      ]
+    }
+  }
+}

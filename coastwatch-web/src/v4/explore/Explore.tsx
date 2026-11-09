@@ -303,6 +303,8 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     const q = new URLSearchParams();
     if (choice) for (const [k, v] of Object.entries(choiceParams(choice))) q.set(k, v);
     if (q0.get("from")?.startsWith("/coast")) q.set("from", q0.get("from")!);
+    // pilot front door: Explore's own address (/?view=map) survives until the camera is written, so a reload stays on the map
+    if (q0.get("view") === "map") q.set("view", "map");
     const sel = encodeSelection(selection);
     if (sel) q.set("sel", sel);
     if (sel && fpEncRef.current) q.set("fp", fpEncRef.current);

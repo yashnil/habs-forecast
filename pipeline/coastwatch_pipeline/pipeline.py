@@ -33,6 +33,9 @@ from .publish.files import write_bytes, write_json
 from .sources import charm, currents, fisheries, gibs, observations, official, port_intel, ports, satellite
 
 ALL_SOURCES = ("charm", "gibs_chl", "satellite_chl", "hf_radar", "cdfw_ports", "official", "port_intel", "calhabmap", "foss_landings")
+# Pilot sidecars (v1/biotoxin/, v1/fisheries-status/): written after the manifest, never referenced
+# by it (the deployed apps reject unknown manifest fields) and never fatal to the run.
+PILOT_SIDECARS = ("cdph_biotoxin", "fisheries_status")
 
 OFFICIAL_FRESHNESS = FreshnessPolicy(
     basis="reviewed_date",
@@ -104,6 +107,7 @@ SOURCE_BUDGET_S = {
     "foss_landings": 300,
 }
 RUN_BUDGET_S = 25 * 60
+POST_MANIFEST_BUDGET_S = 4 * 60
 
 
 def _source(name: str) -> None:
@@ -123,7 +127,7 @@ def _progress(msg: str) -> None:
     print(f"[cwp +{now - _T0[0]:6.1f}s] {msg}", file=sys.stderr, flush=True)
 
 
-def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES) -> Manifest:
+def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES + PILOT_SIDECARS) -> Manifest:
     ctx.out_dir.mkdir(parents=True, exist_ok=True)
     http.start_budget("run", RUN_BUDGET_S, scope="run")
     try:
@@ -443,7 +447,55 @@ def _run(ctx: RunContext, only: tuple[str, ...]) -> Manifest:
     )
     write_json(ctx.out_dir / "manifest.json", manifest.model_dump(mode="json"))
     prune(ctx.out_dir, manifest, prev)
+    # Derived layers and the pilot sidecars make a few small requests after every source has run.
+    # They get their own short budget instead of what is left of the sources' run budget (staging
+    # run 42565307093: a slow SCCOOS used it up and the outlook, SST and CDPH requests were skipped).
+    http.clear_budgets()
+    http.start_budget("derived and sidecars", POST_MANIFEST_BUDGET_S, scope="run")
+    if "satellite_chl" in only:
+        # Derived layers (estimate, outlook) go to v1/derived/, never into the manifest; a failure
+        # here never affects the published observations.
+        _progress("derived: start")
+        try:
+            from .derived import run as derived
+
+            r = derived.run(ctx, manifest)
+            _progress(f"derived: {r['layers']} ({r['bytes_written']} bytes)")
+        except Exception as e:  # pragma: no cover - logged, never fatal
+            _progress(f"derived: failed: {e}")
+    run_sidecars(ctx, only)
     return manifest
+
+
+def run_sidecars(ctx: RunContext, only: tuple[str, ...]) -> dict[str, str]:
+    """The pilot sidecars. A failure keeps the previously published file (with its own dates) and is
+    logged; it never touches the manifest or the other sources. Returns {sidecar: outcome}."""
+    out: dict[str, str] = {}
+    if "cdph_biotoxin" in only:
+        _progress("cdph_biotoxin: start")
+        http.start_budget("cdph_biotoxin", 120)
+        try:
+            from .sources import biotoxin
+
+            idx = biotoxin.run(ctx)
+            if biotoxin.is_newer_or_equal(idx, ctx.out_dir / biotoxin.OUT_REL):
+                biotoxin.write(ctx, idx)
+                out["cdph_biotoxin"] = "updated" + (" (with errors)" if idx.errors else "")
+            else:
+                out["cdph_biotoxin"] = "kept: the published crab PDF is newer than the one read"
+        except Exception as e:
+            out["cdph_biotoxin"] = f"failed: {str(e)[:300]}"
+        _progress(f"cdph_biotoxin: {out['cdph_biotoxin']}")
+    if "fisheries_status" in only:
+        try:
+            from .sources import fisheries_status
+
+            fisheries_status.write(ctx.out_dir, fisheries_status.build(ctx.now_iso))
+            out["fisheries_status"] = "updated"
+        except Exception as e:
+            out["fisheries_status"] = f"failed: {str(e)[:300]}"
+        _progress(f"fisheries_status: {out['fisheries_status']}")
+    return out
 
 
 def _write_hashed(ctx: RunContext, stem: str, obj: dict, compact: bool = False) -> str:

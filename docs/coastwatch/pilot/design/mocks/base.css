@@ -1,0 +1,32 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400&display=block");
+:root {
+  color-scheme: dark;
+  --nx-bg: #05090d; --nx-surface: #0a1219; --nx-surface-2: #0f1a23; --nx-surface-3: #16242f;
+  --nx-line: rgba(190, 215, 230, 0.14); --nx-line-strong: rgba(190, 215, 230, 0.28);
+  --nx-ink: #e6eef2; --nx-ink-2: #a9bac5; --nx-ink-3: #8193a0; --nx-accent: #74c7ff;
+  --nx-official: #f0a94a; --nx-model: #b39cff; --nx-measured: #3fd6bd; --nx-conditions: #74c7ff;
+  --nx-down: #f08a74; --nx-stale: #e5b25a; --nx-offline: #9fb2be;
+  --red: var(--nx-down); --amber: var(--nx-stale); --none: var(--nx-offline);
+  --sans: "IBM Plex Sans", system-ui, sans-serif; --caps: "IBM Plex Sans Condensed", sans-serif;
+  --serif: "Newsreader", Georgia, serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+.day {
+  color-scheme: light;
+  --nx-bg: #f5f7f8; --nx-surface: #ffffff; --nx-surface-2: #f3f6f7; --nx-surface-3: #e6ecef;
+  --nx-line: #8a9ba5; --nx-line-strong: #6d7f89; --nx-ink: #0b1820; --nx-ink-2: #22343f; --nx-ink-3: #3a4e5b;
+  --nx-accent: #04566c; --nx-official: #7f3a00; --nx-model: #55309a; --nx-measured: #055a50; --nx-conditions: #164f78;
+  --nx-down: #922a16; --nx-stale: #6b4500; --nx-offline: #3a4e5b;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--nx-bg); color: var(--nx-ink); font: 16px/1.45 var(--sans); -webkit-font-smoothing: antialiased; }
+.caps { font: 500 11px/1.2 var(--caps); letter-spacing: .14em; text-transform: uppercase; color: var(--nx-ink-3); }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.serif { font-family: var(--serif); }
+a { color: inherit; }
+.bar { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 16px; border-bottom: 1px solid var(--nx-line); }
+.bar nav { display: flex; gap: 22px; font-size: 14px; color: var(--nx-ink-3); }
+.bar nav b { color: var(--nx-ink); font-weight: 500; border-bottom: 1.5px solid var(--nx-ink); padding-bottom: 6px; }
+.dock { position: fixed; left: 0; right: 0; bottom: 0; height: 64px; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--nx-line); background: var(--nx-surface); font: 600 12.5px var(--sans); color: var(--nx-ink-2); text-align: center; align-items: center; }
+.dock b { color: var(--nx-accent); }
+@media (min-width: 1024px) { .dock { display: none; } }
+@media (max-width: 1023px) { .bar nav { display: none; } }

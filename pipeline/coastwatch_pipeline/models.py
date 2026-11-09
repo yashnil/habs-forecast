@@ -757,6 +757,8 @@ class FisheriesDataset(_Model):
     provenance: list[Provenance]
 
 
+from .pilot_models import BiotoxinIndex, FisheriesStatusIndex  # noqa: E402  (pilot sidecars)
+
 SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "manifest": Manifest,
     "ports": PortsCollection,
@@ -764,4 +766,6 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "port_intel": PortIntelCollection,
     "observations": ObservationDataset,
     "fisheries": FisheriesDataset,
+    "biotoxin": BiotoxinIndex,
+    "fisheries-status": FisheriesStatusIndex,
 }
