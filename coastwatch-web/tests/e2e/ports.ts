@@ -7,3 +7,5 @@ export const NODATA = `http://localhost:${PORT_BASE + 2}`;
 export const M2 = `http://localhost:${PORT_BASE + 3}`;
 /** v10: the main fixture with its newest radar hour blank over Monterey Bay. */
 export const HFRGAP = `http://localhost:${PORT_BASE + 4}`;
+/** The private pilot: the main fixture with NERITIC_PILOT=1 (a bare "/" opens Today at your port). */
+export const PILOT = `http://localhost:${PORT_BASE + 5}`;

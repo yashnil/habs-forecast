@@ -3,8 +3,9 @@ import { expect, test, type Page } from "@playwright/test";
 import { OK } from "./ports";
 
 /**
- * Ask Neritic (/ask) on the pilot fixture records, readiness "demo" (no ANTHROPIC_API_KEY, no
- * TWILIO_*): deterministic grounded answers, citations as chips, data age, safety templates, the
+ * Ask Neritic (/ask) on the port facts Today shows (src/pilot/today/portToday.ts; here the test
+ * fixture, labelled "Sample data"), readiness "demo" (no ANTHROPIC_API_KEY, no TWILIO_*):
+ * deterministic grounded answers, citations as chips, data age, safety templates, the
  * SMS preview, and axe at phone and desktop widths. Keep the number of questions low: /api/ask is
  * rate limited per client (30 / 10 min) and every test here shares one server.
  */
@@ -33,7 +34,8 @@ test.describe("desktop", () => {
 
     await page.getByTestId("ask-suggestions").getByRole("button", { name: "What's the status of Dungeness crab?" }).click();
     const a = page.getByTestId("ask-answer").last();
-    await expect(a).toContainText("delayed until at least 2027-01-01");
+    await expect(a).toContainText("Commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements)");
+    await expect(a).toContainText("Next review Dec 15");
     await expect(a).toContainText("not yet verified by a person");
     await expect(a.getByTestId("ask-notice")).toContainText("not an official source");
     await expect(a.getByTestId("ask-data-age")).toContainText("Data age:");
@@ -48,7 +50,7 @@ test.describe("desktop", () => {
     await expect(detail.getByRole("link", { name: /Open CDFW/ })).toHaveAttribute("href", /^https:\/\/wildlife\.ca\.gov\//);
     await expect(detail.getByRole("link", { name: "See it on Today" })).toHaveAttribute("href", "/today?place=port-592#fact-status%3Adungeness_commercial");
 
-    await expect(page.getByTestId("ask-sms-text")).toContainText("[Src: CDFW 11/5, unverified]");
+    await expect(page.getByTestId("ask-sms-text")).toContainText("[Src: CDFW 10/12, unverified]");
     expect(await serious(page)).toEqual([]);
   });
 
@@ -92,7 +94,10 @@ test.describe("phone", () => {
     expect(await serious(page)).toEqual([]);
     const a = await ask(page, "What's the latest crab toxin test?");
     await expect(a).toContainText("5.5 ppm");
-    await expect(a.getByTestId("ask-stale").first()).toBeVisible();
+    await expect(a).toContainText("This is a past lab sample, not a forecast.");
+    // an out-of-date record is flagged in the answer (the fixture's C-HARM run ended two days before its clock)
+    const b = await ask(page, "What's the bloom outlook this week?");
+    await expect(b.getByTestId("ask-stale").filter({ hasText: "NOAA C-HARM" })).toContainText("out of date");
     expect(await serious(page)).toEqual([]);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);

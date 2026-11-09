@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { AppShell } from "@/components/AppShell";
-import { loadData } from "@/lib/data";
 import { LegalPage, OWNER_CONTACT } from "@/pilot/account/LegalPage";
 
 export const dynamic = "force-dynamic";
@@ -8,9 +6,7 @@ export const metadata = { title: "Terms of Use" };
 
 /** Terms of use for the Neritic pilot. Draft until the owner and counsel review them. */
 export default async function TermsPage() {
-  const data = await loadData();
   return (
-    <AppShell active="about" manifest={data.ok ? data.manifest : null} official={data.ok ? data.official : null}>
       <LegalPage title="Terms of Use" testId="terms-page">
         <p>
           These terms apply when you use the Neritic website and its pilot features. By using Neritic you agree to them. If you do not agree, please do not use Neritic. Contact: <strong>{OWNER_CONTACT}</strong>.
@@ -81,6 +77,5 @@ export default async function TermsPage() {
           The <Link href="/privacy">Privacy Policy</Link> explains how we handle your information, and the <Link href="/sms-terms">SMS Terms</Link> apply to text alerts.
         </p>
       </LegalPage>
-    </AppShell>
   );
 }

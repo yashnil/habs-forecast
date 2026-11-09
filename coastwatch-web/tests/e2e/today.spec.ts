@@ -43,6 +43,11 @@ for (const [label, viewport] of [["phone", { width: 390, height: 844 }], ["deskt
       await expect(page.getByTestId("status-groundfish").getByTestId("status-word")).toHaveText("None on record");
       await expect(page.getByTestId("status-groundfish")).toHaveAttribute("data-severity", "neutral");
       await expect(page.getByTestId("status-anchovy_sardine")).toHaveAttribute("data-severity", "amber");
+      // a season that has simply ended is closed, said calmly: a barred disc and "Season closed", not the alarm triangle
+      const salmon = page.getByTestId("status-salmon_commercial");
+      await expect(salmon.getByTestId("status-word")).toHaveText("Season closed");
+      await expect(salmon.locator('svg[data-mark="season"]')).toBeVisible();
+      await expect(salmon).toContainText("season has concluded");
       // the order on the page follows the hierarchy
       const order = await page.locator("[data-area]").evaluateAll((els) => els.map((e) => e.getAttribute("data-area")));
       expect(order).toEqual(["status", "sea", "tests", "bloom", "whale", "changed", "actions"]);
@@ -64,7 +69,9 @@ for (const [label, viewport] of [["phone", { width: 390, height: 844 }], ["deskt
       await expect(page.getByTestId("whale-next")).toContainText("December 15-18");
       // honesty: nothing is called safe, and the actions carry their readiness labels
       expect(await page.locator("main").innerText()).not.toMatch(SAFETY);
-      await expect(page.getByTestId("readiness-alerts")).toContainText(/Not yet connected|Pilot demo|Live/);
+      // no cloud credentials on the e2e servers: said plainly, with what does work
+      await expect(page.getByTestId("readiness-alerts")).toHaveText("Not yet connected: accounts, push and text. Alerts work in the app on this device.");
+      await expect(page.getByTestId("readiness-ask")).toContainText("Pilot demo: answers from the facts on this page");
       await expect(page.getByTestId("action-ask")).toHaveAttribute("href", "/ask?place=port-592");
       await expect(page.getByTestId("action-alert")).toHaveAttribute("href", "/account?place=port-592");
       expect(await axe(page)).toEqual([]);
@@ -84,6 +91,128 @@ for (const [label, viewport] of [["phone", { width: 390, height: 844 }], ["deskt
     });
   });
 }
+
+test("every fact has an address: a citation link lands on its card and marks it", async ({ page }) => {
+  // a fact in a card on the page (the Dungeness crab test)
+  await page.goto(`${MOSS}#fact-${encodeURIComponent("test:bma-g-monterey-bay-dungeness-crab")}`);
+  await ready(page);
+  const hit = page.locator('[data-fact-hit="test:bma-g-monterey-bay-dungeness-crab"]');
+  await expect(hit).toBeVisible();
+  await expect(hit).toHaveAttribute("data-testid", "test-bma-g-monterey-bay-dungeness-crab");
+  await expect(hit).toBeInViewport();
+  // a fishery the reader does not follow (recreational Dungeness is not in the default list): shown for this visit
+  await page.goto(`${MOSS}#fact-${encodeURIComponent("status:dungeness_recreational")}`);
+  await ready(page);
+  const row = page.locator('[data-fact-hit="status:dungeness_recreational"]');
+  await expect(row).toBeInViewport();
+  await expect(row.getByTestId("status-dungeness_recreational")).toContainText("crab traps prohibited");
+  expect(await page.evaluate(() => localStorage.getItem("nx-today-fisheries-v1"))).toBeNull();
+  // a forecast period inside the sea lanes marks the forecast, once the sea has loaded
+  await page.goto(`${MOSS}#fact-${encodeURIComponent("weather:nws:2026-10-13:day")}`);
+  await ready(page);
+  await expect(page.locator('[data-fact-hit="weather:nws:2026-10-13:day"]')).toContainText("W 10–15 kt");
+  // every fact id on the page is an address, each exactly once
+  const ids = await page.locator('[id^="fact-"]').evaluateAll((els) => els.map((e) => e.id));
+  expect(new Set(ids).size).toBe(ids.length);
+  for (const id of ["fact-status:dungeness_commercial", "fact-whale:ramp:zone-4", "fact-charm:pda", "fact-outlook:chl8d", "fact-weather:nws", "fact-tide:next", "fact-sea:buoy", "fact-age:data", "fact-notice:cdph-2026-annual-mussel-quarantine"]) expect(ids).toContain(id);
+});
+
+test("Ask Neritic opens in place; a citation closes the sheet and lands on the card", async ({ page }) => {
+  await page.goto(MOSS);
+  await ready(page);
+  await page.getByTestId("action-ask").click();
+  const sheet = page.getByTestId("ask-sheet");
+  await expect(sheet).toBeVisible();
+  await expect(page).toHaveURL(/\/today\?place=port-592$/);
+  await expect(sheet.getByRole("heading", { level: 2, name: "Ask Neritic" })).toBeVisible();
+  await expect(sheet.getByTestId("ask-readiness")).toContainText("Pilot demo");
+  await sheet.getByTestId("ask-suggestions").getByRole("button", { name: "What are the whale rules?" }).click();
+  const a = sheet.getByTestId("ask-answer");
+  await expect(a).toContainText("RAMP Zone 4");
+  expect(await axe(page)).toEqual([]);
+  await a.getByTestId("ask-chip").first().click();
+  await a.getByTestId("ask-see-today").first().click();
+  await expect(sheet).toBeHidden();
+  await expect(page).toHaveURL(/#fact-whale%3Aramp%3Azone-4$/);
+  await expect(page.locator('[data-fact-hit="whale:ramp:zone-4"]')).toBeInViewport();
+  await expect(page.locator('[data-fact-hit="whale:ramp:zone-4"]').getByTestId("whale-lede")).toBeVisible();
+});
+
+test("each section asks once whether it was useful; the answer is kept on this device", async ({ page }) => {
+  await page.goto(MOSS);
+  await ready(page);
+  const asks = page.getByTestId("feedback");
+  await expect(asks).toHaveCount(5);
+  expect(await asks.evaluateAll((els) => els.map((e) => e.getAttribute("data-fact")))).toEqual(["status:dungeness_commercial", "weather:nws", "test:bma-g-monterey-bay-dungeness-crab", "charm:pda", "whale:ramp:zone-4"]);
+  const tests = page.getByTestId("today-tests").getByTestId("feedback");
+  await tests.getByTestId("feedback-yes").click();
+  await expect(tests).toContainText("Thanks — saved on this device.");
+  await page.reload();
+  await ready(page);
+  await expect(page.getByTestId("today-tests").getByTestId("feedback-yes")).toHaveAttribute("aria-pressed", "true");
+});
+
+test("the top bar carries the alerts bell and the pilot's pages; Today runs the device's alert check", async ({ page }) => {
+  // a device that follows Moss Landing
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("seeded")) return;
+    sessionStorage.setItem("seeded", "1");
+    localStorage.setItem("nrt-pilot-account-v1", JSON.stringify({ v: 1, role: null, fisheries: [], home_place_id: "port-592", vessel_length_class: null, age_13_plus: null, saved_places: ["port-592"], alerts: [{ place_id: "port-592", triggers: ["status_change", "new_toxin_result", "ramp_action"], channels: ["in_app"] }], sms: null, created_at: "2026-10-12T15:00:00.000Z" }));
+  });
+  await page.goto(MOSS);
+  await ready(page);
+  await expect(page.getByTestId("alerts-bell")).toHaveAccessibleName("Alerts");
+  await page.getByTestId("more-menu").click();
+  await expect(page.getByTestId("more-account")).toHaveAttribute("href", "/account");
+  await expect(page.getByTestId("more-ask")).toHaveAttribute("href", "/ask");
+  await page.keyboard.press("Escape");
+  // the first visit kept a baseline; pretend it saw an older whale-rule action, then come back
+  await page.waitForFunction(() => !!JSON.parse(localStorage.getItem("nrt-pilot-alert-snap-v1") ?? "{}")["port-592"]);
+  await page.evaluate(() => {
+    const k = "nrt-pilot-alert-snap-v1";
+    const s = JSON.parse(localStorage.getItem(k)!);
+    const id = "whale:ramp:zone-4";
+    s["port-592"].facts[id] = { v: "00000000", sig: { ...s["port-592"].facts[id].sig, headline: "Whale rules, RAMP Zone 4: no action on record." } };
+    localStorage.setItem(k, JSON.stringify(s));
+  });
+  await page.reload();
+  await ready(page);
+  await expect(page.getByTestId("alerts-unread")).toHaveText("1");
+  await page.getByTestId("alerts-bell").click();
+  const panel = page.getByTestId("alerts-panel");
+  await expect(panel.getByTestId("inbox-item")).toContainText("Moss Landing: Whale rules, RAMP Zone 4");
+  // made from the test fixture: marked, never passed off as live
+  await expect(panel.getByTestId("inbox-sample")).toContainText("Sample data");
+  expect(await axe(page)).toEqual([]);
+});
+
+test("known gaps are said plainly: a wave buoy's missing wind comes from the next buoy, and sources that differ say so", async ({ page }) => {
+  await page.goto(MOSS);
+  await ready(page);
+  // the nearest buoy (46236) has no anemometer: the wind is from the nearest that has one, named with its distance
+  await expect(page.getByTestId("wind-now")).toContainText("6");
+  await expect(page.getByTestId("wind-where")).toContainText("buoy 46092");
+  await expect(page.getByTestId("wind-where")).toContainText("22 km away");
+  await expect(page.getByTestId("today-sea")).toContainText("it has no wind sensor, so wind is from buoy 46092, 22 km away");
+  await expect(page.getByTestId("sea-now")).toContainText("4.9");
+  // mussels: the notices registry lists the quarantine, the curated status says CDPH announced its end.
+  // The row keeps the more restrictive level and flags the disagreement; the sheet shows both, each with its date
+  const row = page.getByTestId("status-bivalve_shellfish");
+  await expect(row).toHaveAttribute("data-severity", "red");
+  await expect(row.getByTestId("sources-differ")).toBeVisible();
+  await row.click();
+  const sheet = page.getByTestId("status-sheet");
+  await expect(sheet.getByTestId("conflict")).toContainText("It shows the more restrictive one and does not choose between them");
+  await expect(sheet.getByTestId("conflict-notice")).toContainText("Closed: Annual quarantine of sport-harvested mussels");
+  await expect(sheet.getByTestId("conflict-notice")).toContainText("in effect since May 1 · registry last read Oct 8 · not verified");
+  await expect(sheet.getByTestId("conflict-notice")).toContainText("shown");
+  await expect(sheet.getByTestId("conflict-record")).toContainText("Watch: CDPH announced the 2026 mussel quarantine ended Oct 31");
+  await expect(sheet.getByTestId("conflict-record")).toContainText("checked Oct 12 · not verified");
+  expect(await axe(page)).toEqual([]);
+  await page.keyboard.press("Escape");
+  // a fishery whose sources agree carries no such flag
+  await expect(page.getByTestId("status-anchovy_sardine").getByTestId("sources-differ")).toHaveCount(0);
+});
 
 test("a status row opens its detail sheet; Escape closes it and returns focus", async ({ page }) => {
   await page.goto(MOSS);
@@ -168,9 +297,20 @@ test("missing sidecars: tests, whale rules, status and outlook say they are unav
   await expect(page.getByTestId("tests-unavailable")).toBeVisible();
   await expect(page.getByTestId("whale-unavailable")).toBeVisible();
   await expect(page.getByTestId("outlook-missing")).toBeVisible();
-  await expect(page.getByTestId("today-lede")).toContainText("Fishery status could not be loaded");
-  await expect(page.getByTestId("status-dungeness_commercial").getByTestId("status-word")).toHaveText("Status not available");
+  // an official notice still leads (this dataset has the notices registry), and the missing list is said right after it
+  await expect(page.getByTestId("today-lede")).toContainText("Annual quarantine of sport-harvested mussels");
+  await expect(page.getByTestId("lede-caution")).toHaveText("The rest of Neritic's season list did not load. Check CDFW and CDPH before you go.");
+  await expect(page.getByTestId("today-status")).toContainText("Neritic’s list of seasons and restrictions did not load. Unknown is not open");
+  // one statement for the fisheries Neritic cannot speak to, by name: never a row that reads like a status, never "open"
+  const unknown = page.getByTestId("status-unknown");
+  await expect(unknown.getByTestId("status-word")).toHaveText("Status not available");
+  await expect(unknown).toContainText("Dungeness crab (commercial) · Rock crab · Salmon (commercial) · Groundfish");
+  await expect(unknown).toContainText("Unknown is not open.");
+  await expect(page.getByTestId("status-dungeness_commercial")).toHaveCount(0);
   await expect(page.getByTestId("status-strip")).not.toContainText("None on record");
+  await expect(page.getByTestId("status-strip")).not.toContainText(/\b(is|are) open\b/i);
+  await expect(page.getByTestId("today-freshness")).toContainText("Status not available");
+  await expect(page.getByTestId("today-freshness")).not.toContainText("not available (old)");
   expect(await axe(page)).toEqual([]);
 });
 
@@ -189,6 +329,15 @@ test("save for offline: the page and its sea reopen with no connection, marked a
   await expect(page.getByTestId("today-saved-copy")).toContainText("Saved copy");
   await expect(page.getByTestId("status-dungeness_commercial")).toBeVisible();
   await expect(page.getByTestId("sea-lanes")).toBeVisible({ timeout: 15_000 });
+  // a page that was never saved: the offline page offers the saved Today by the port's name
+  await page.goto(`${OK}/research`);
+  await expect(page.getByTestId("offline-page")).toBeVisible();
+  const saved = page.getByTestId("offline-today");
+  await expect(saved).toContainText("Open Today at Moss Landing");
+  await expect(saved).toContainText("as it was then");
+  await saved.click();
+  await expect(page.getByTestId("today-port")).toHaveText("Moss Landing");
+  await expect(page.getByTestId("today-saved-copy")).toBeVisible();
   await ctx.setOffline(false);
   await ctx.close();
 });

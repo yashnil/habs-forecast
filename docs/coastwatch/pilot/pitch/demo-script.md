@@ -1,31 +1,61 @@
 # Demo script: "Monday 5 a.m. at Moss Landing" (4 minutes)
 
-Start on a phone-width browser, already loaded, wifi tested. Open with: **"This is a pilot demo, running on staging data. Some layers are labelled honestly as not verified."**
+Every label in **bold** below is the text on the screen in the integrated build (`feat/neritic-pilot`); the journey is the one `coastwatch-web/tests/e2e/pilot-journey.spec.ts` walks at 390 and 1440 px. Run the pilot build with `NERITIC_PILOT=1` so the site's bare address opens Today.
 
-| # | Time | Click | Say |
-|---|---|---|---|
-| 1 | 0:00 | `/today?place=port-592` (Moss Landing) | "It's 5 a.m. I fish crab out of Moss Landing. This is the first thing I open." |
-| 2 | 0:20 | Status strip | "Official status first. Commercial Dungeness: delayed to at least January 1 — whale entanglements, not toxin. Next CDFW assessment December 15–18. There is no green 'safe' — the best state is 'No restriction on record'." |
-| 3 | 0:50 | Toxin tests | "Measured, not modelled: Monterey Bay crab tested clean on September 28, average 5.5 ppm against a 30 ppm limit. These are CDPH lab results." |
-| 4 | 1:15 | Sea & weather | "This is why they come back daily: NWS zone forecast, buoy 46042, tides, water temperature." |
-| 5 | 1:40 | Bloom timeline | "Days 0–3 are NOAA's C-HARM toxin-risk probability. Days 4–8 are a chlorophyll outlook — conditions, not a toxin forecast." |
-| 6 | 2:05 | Whale rules | "The RAMP zone this port is in, the current action, the next assessment — transcribed from CDFW, marked Not verified until I check the sources." |
-| 7 | 2:25 | What changed | "Since my last visit — only the differences." |
-| 8 | 2:40 | Save offline | "No signal past the jetty, so the whole page saves to the phone." |
-| 9 | 2:55 | Set an alert | "Alerts on status changes and new test results. Web push works now; SMS in carrier review." |
-| 10 | 3:15 | Ask Neritic (demo mode) | Ask "Is the Monterey crab season open?" "Every answer cites the record and its age. Ask 'is it safe to eat' and it refuses and points to CDPH." |
-| 11 | 3:45 | Explore / Research | "And one tap away, the map and the research — which is where I'd like your critique." |
+Start on a phone-width browser, already loaded, wifi tested, Moss Landing already chosen once (the port is remembered). Open with: **"This is a pilot demo, running on staging data. Records copied from the agencies are labelled Not verified until a person has checked them."**
 
-Readiness labels, exact phrasing: **"Pilot demo"** (not "launched"); **"Not verified"** (notices not human-reviewed); **"SMS in carrier review"** (not live). If Ask Neritic is in canned demo mode, say **"demo mode"**.
+| # | Time | Do | What is on screen | Say |
+|---|---|---|---|---|
+| 1 | 0:00 | Open the site (`/` → `/today?place=port-592`) | **Today at your port** · the time, **Moss Landing**, then one sentence: the most serious official status for your fisheries and the current NWS period. Under it, how fresh each source is: **Status** checked …, **NWS**, **Buoy**, **Tests**, **C-HARM** run … | "It's 5 a.m. I fish crab out of Moss Landing. This is the first thing I open, and the first sentence is the answer." |
+| 2 | 0:20 | Scroll to **Your fisheries · official status**; tap the Dungeness crab (commercial) row | One row per fishery with a word: **Delayed**, **Closed**, **Restricted**, **Season closed**, **None on record**. Each transcribed record carries **Not verified**. The sheet shows the cause, area, next review, source and **Not verified: no person has checked this record against the source yet**. | "Official status first. Commercial Dungeness is delayed to at least January 1 for whale entanglements, not toxin; the next CDFW assessment is in mid-December. There is no green 'safe': the calmest state is 'None on record', and the page says that is not a promise." |
+| 3 | 0:50 | Close the sheet; **Crab & seafood toxin tests** | A plain sentence, then every sample as a dot against the dashed **limit 30 ppm** line, dated by collection. Under a crab test: **Dungeness crab (commercial) is still delayed (CDFW); a test result does not change that.** | "Measured, not modelled: CDPH's own lab results for Monterey Bay crab, every sample against the action level. A clean test never softens an official delay." |
+| 4 | 1:15 | **Sea & weather** | NWS zone forecast as lanes (**Wind kt**, **Seas ft**), then **Wind now**, **Waves now**, **Water**, and **Tide today**. The nearest buoy (46236) has no wind sensor, so wind is named as coming from **buoy 46092, 22 km away**. | "This is why they come back daily: the NWS zone forecast in the forecasters' numbers, the buoys, the tide. Every reading says which buoy and how far." |
+| 5 | 1:40 | **Bloom outlook** | **C-HARM · probability of conditions** for days 0–3, then **Chlorophyll outlook · not toxin** as one hatched 8-day mean, with its held-out skill read from the data file. If NOAA's run is old the page says so and folds the chart behind **Show the old run and outlook**. | "Days 0–3 are NOAA's C-HARM probability of bloom conditions in the water. The 8-day bar is a chlorophyll outlook: a bloom indicator, not a toxin forecast." |
+| 6 | 2:05 | **Whale rules (RAMP)** | The zone this port is in (**Zone 4**), the current action, **Depth limit**, **Gear reduction**, **Last assessment**, **Next assessment**, and **Not verified**. | "The RAMP zone, the action in force and the next assessment, transcribed from CDFW and marked Not verified until I check the source." |
+| 7 | 2:25 | **What changed since your last visit** | On a first visit: **First visit to this port on this device…**; after that, only what is new, changed or no longer listed, or **No change in Neritic's records since your last visit**. | "Since my last visit: only the differences." |
+| 8 | 2:40 | **Before you go** → **Save for offline** | **Saved** *time*. **This page opens without a connection, as it was then.** (Airplane mode, reload: a **Saved copy** note with the time it was saved.) | "No signal past the jetty, so the whole page saves to the phone, and says how old the copy is." |
+| 9 | 2:55 | **Set an alert** | **Your ports and alerts** opens with **Alerts for Moss Landing.** → **Save Moss Landing and set alerts** → the triggers: **Official status changes**, **New toxin test results**, **Whale-entanglement (RAMP) actions**, **Bloom risk jumps**, **Data goes stale**. Readiness is shown as configured: **Accounts**, **Notifications**, **Text alerts** each **Not yet connected** (or **Pilot demo** / **Live**); text messages say **not yet available: carrier registration pending**. | "Alerts on status changes, new test results and whale-rule actions. Today they arrive in the app on this device; push and text are labelled exactly as far as they are connected." |
+| 10 | 3:15 | Back; **Ask Neritic** (opens in place). Ask "Is the Monterey crab season open?" Tap a source chip → **See it on Today**. Then ask "Is it safe to eat the crab?" | **Pilot demo — answers are assembled from Neritic's data without an AI model** (or **Live — answers are written by Claude from Neritic's data and checked before you see them**). The answer leads with the official record, lists **Sources** as chips (**CDFW · date · not verified**) and its **Data age**. The chip's link lands on the card it names, marked. The safety question gets: **Neritic doesn't decide whether seafood can be eaten, and it never says that it can.** with CDPH's pages. | "Every answer is built from the facts on this page and cites the record and its age. Ask whether it's safe to eat and it refuses and points to CDPH." |
+| 11 | 3:45 | Top bar (phone: the dock): **Explore**, **Research** | The map and the research workspace, in the same shell. | "And one tap away, the map and the research, which is where I'd like your critique." |
+
+Also in the top bar on every page: the **Alerts** bell, and under **⋯**: **Your ports and alerts** and **Ask Neritic**. The SMS reply a phone would get is previewed on the full Ask page (`/ask`) under **SMS preview**, labelled **SMS in carrier review — preview only**.
+
+Readiness labels, exact phrasing: **Pilot demo** (not "launched"); **Not yet connected**; **Live** (only when configured); **Not verified** (records no person has checked); **SMS in carrier review — preview only**; **Draft — pending owner/legal review** (privacy, terms, SMS terms). If the build is reading the test fixture it says **Sample data** on Ask and on any alert made from it. If Ask Neritic has no API key, say **"pilot demo, no AI model"**.
+
+Before the demo, look at the page yourself: the words above are fixed, the data are not. If the season list or CDPH results have not been published to staging, Today says so plainly (**Status not available**, **CDPH's domoic acid results are not available in Neritic right now**) rather than showing anything in their place.
 
 ## Likely questions, honest answers
-- *How accurate is the 8-day outlook?* "Held-out RMSE 0.760 in ln chlorophyll vs 0.857 climatology, n = 185,364, 2019–2021. It's chlorophyll only, and doesn't cover the bays." (#74)
+- *How accurate is the 8-day outlook?* Read the sentence under the bloom chart: it quotes the held-out skill from the data file (about 0.76 RMSE in ln chlorophyll against about 0.86 for climatology, n ≈ 185,000, 2019–2021). "It's chlorophyll only, and doesn't cover the bays." (#74)
 - *Does it forecast domoic acid?* "No. Toxin-risk probability is NOAA's C-HARM, days 0–3 only."
 - *Who uses it?* "Nobody in production yet. Ten interviews are the next step."
 - *Your PINN?* "It matches, does not beat, the ConvLSTM. My own audit suggests a simple baseline matches both and the physics term may be inert — that needs independent reproduction."
 - *Why not green?* "Toxin is invisible and notices lag; a green light is the one claim that could hurt someone."
-- *What if the data is stale?* "Every card shows its age; the timeline falls back when C-HARM is stale (it was about 6 days stale recently)." (plan §1.6)
+- *What if the data is stale?* "Every card shows its age. An out-of-date C-HARM run is said to be out of date and folded away, not drawn as today's (it was about 6 days stale recently)." (plan §1.6)
+- *What if two of your sources disagree?* "It shows the more restrictive one and says so: the mussel row is flagged 'sources differ', with both statements and the date each was read. A person has to check both; the app never calls anything lifted."
 - *Liability?* "Terms say not an official source; it links to CDPH, CDFW, NWS, USCG."
 
 ## No-wifi fallback
-Integrator to capture phone-width PNGs (light + dark) of: (1) Today top with status strip; (2) toxin tests card; (3) sea & weather card; (4) bloom timeline; (5) whale rules card; (6) what changed; (7) save-offline confirmation; (8) alert setup; (9) an Ask Neritic cited answer and the "safe to eat" refusal; (10) Explore map; (11) Research page. Keep them in a local folder and a PDF; the app's offline field pack is the second fallback.
+The screenshots are in [`shots/`](shots/), captured by `coastwatch-web/scripts/pilot-shots.mjs` from a running build. Each step exists as `-phone-dark`, `-phone-day` (bright-sun colours) and `-desktop-dark`:
+
+| Step | File (prefix) |
+|---|---|
+| 1 | [`01-today-top`](shots/01-today-top-phone-dark.png) (and the whole page on desktop: [`01-today-full-desktop-dark`](shots/01-today-full-desktop-dark.png)) |
+| 2 | [`02-status-strip`](shots/02-status-strip-phone-dark.png), [`02-status-detail`](shots/02-status-detail-phone-dark.png) |
+| 3 | [`03-toxin-tests`](shots/03-toxin-tests-phone-dark.png) |
+| 4 | [`04-sea-weather`](shots/04-sea-weather-phone-dark.png) |
+| 5 | [`05-bloom-outlook`](shots/05-bloom-outlook-phone-dark.png) |
+| 6 | [`06-whale-rules`](shots/06-whale-rules-phone-dark.png) |
+| 7 | [`07-what-changed`](shots/07-what-changed-phone-dark.png) |
+| 8 | [`08-save-offline`](shots/08-save-offline-phone-dark.png) |
+| 9 | [`09-alert-arrive`](shots/09-alert-arrive-phone-dark.png), [`09-alert-setup`](shots/09-alert-setup-phone-dark.png) |
+| 10 | [`10-ask-sheet-on-today`](shots/10-ask-sheet-on-today-phone-dark.png), [`10-ask-cited-answer`](shots/10-ask-cited-answer-phone-dark.png), [`11-ask-safe-to-eat-refusal`](shots/11-ask-safe-to-eat-refusal-phone-dark.png) |
+| 11 | [`12-explore-map`](shots/12-explore-map-phone-dark.png), [`13-research`](shots/13-research-phone-dark.png) |
+
+**What these show.** The committed set was captured on 2026-11-08 from the test-fixture build (the data track's real CDFW/CDPH transcriptions and CDPH test results with recorded NOAA answers, clock 2026-10-12), because the two new sidecars were not yet on staging. They show every screen and label as built; Ask and alerts are labelled **Sample data** in them. **Recapture them from the pilot build the night before the demo**, once staging has the sidecars:
+
+```sh
+cd coastwatch-web
+node scripts/pilot-shots.mjs <pilot build URL> ../docs/coastwatch/pilot/pitch/shots port-592
+```
+
+Keep the folder on the phone and the laptop (and a PDF of it). The second fallback is the app itself: step 8's saved copy opens with no connection, and with no connection the site's bare address offers **Open Today at Moss Landing**.

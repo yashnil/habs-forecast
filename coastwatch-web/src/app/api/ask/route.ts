@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { allow, meta, serveAsk } from "@/pilot/ask/service";
+import { allow, askDataset, meta, serveAsk } from "@/pilot/ask/service";
 import { suggestionsFor } from "@/pilot/ask/suggestions";
 import type { AskRequest, SeenSnapshot } from "@/pilot/ask/types";
 
@@ -10,7 +10,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
 /** GET /api/ask?place=port-592 → readiness, logging and suggested questions (no answer). */
 export async function GET(req: Request) {
   const place = new URL(req.url).searchParams.get("place");
-  return NextResponse.json({ ...meta(), suggestions: suggestionsFor(place) }, { headers: NO_STORE });
+  return NextResponse.json({ ...meta(process.env, await askDataset()), suggestions: suggestionsFor(place) }, { headers: NO_STORE });
 }
 
 function clientKey(req: Request): string {

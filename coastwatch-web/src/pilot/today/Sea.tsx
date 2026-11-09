@@ -1,10 +1,10 @@
 "use client";
 
 import type { SeaView } from "@/pilot/facts";
-import { dayWords, nextTide, pacificDay } from "@/pilot/facts";
+import { alertFactId, dayWords, nextTide, pacificDay } from "@/pilot/facts";
 import { periodLine } from "./marine";
 import { TideCurve } from "./Charts";
-import { Section } from "./ui";
+import { FactAnchors, Section, factProps } from "./ui";
 
 const PT_CLOCK = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "2-digit" });
 const PT_HM = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Los_Angeles", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
@@ -21,15 +21,18 @@ const ago = (iso: string, now: string) => {
 };
 
 /** Sea and weather: the daily-habit layer. NWS's forecast as lanes, the nearest buoy now, the tide, the water. */
-export function SeaWeather({ sea, now, lede }: { sea: SeaView; now: string; lede: string | null }) {
+export function SeaWeather({ sea, now, lede, place, factIds = [] }: { sea: SeaView; now: string; lede: string | null; place: string; /** the ids of the sea, weather and tide facts drawn here (their addresses) */ factIds?: string[] }) {
+  const ids = (prefix: string) => factIds.filter((id) => id.startsWith(prefix));
   const day = pacificDay(now);
   const [hh, mm] = PT_HM.format(new Date(now)).split(":").map(Number);
   const nowMin = hh * 60 + mm;
   const maxWind = Math.max(25, ...sea.lanes.map((p) => p.windHi ?? 0));
   const nt = nextTide(sea.tides, now);
   const todays = sea.tides.filter((t) => t.at.startsWith(day));
+  // wind at the nearest buoy, else at the nearest buoy that measures it (named, with its distance)
+  const wind = sea.buoy?.windKt != null ? { windKt: sea.buoy.windKt, windDir: sea.buoy.windDir, gustKt: sea.buoy.gustKt } : sea.windBuoy;
   return (
-    <Section id="sea" area="sea" title="Sea & weather" aside={sea.zone ? <span className="today-src">NWS {sea.zone}</span> : undefined}>
+    <Section id="sea" area="sea" title="Sea & weather" aside={sea.zone ? <span className="today-src">NWS {sea.zone}</span> : undefined} feedback={sea.state === "ok" && factIds.length ? { factId: factIds.includes("weather:nws") ? "weather:nws" : factIds[0], placeId: place } : null}>
       {sea.state === "loading" && (
         <div aria-busy="true" aria-live="polite" data-testid="sea-loading">
           <p className="sr-only">Loading the marine forecast, buoy and tide…</p>
@@ -54,10 +57,12 @@ export function SeaWeather({ sea, now, lede }: { sea: SeaView; now: string; lede
       {sea.state === "ok" && (
         <>
           {sea.alerts.map((a) => (
-            <p key={a.event} className="mt-3 flex items-start gap-2 border-l-2 border-[var(--t-amber)] pl-3 text-[15px] font-medium text-n-ink" data-testid="sea-alert">
+            <p key={a.event} className="mt-3 flex items-start gap-2 border-l-2 border-[var(--t-amber)] pl-3 text-[15px] font-medium text-n-ink" data-testid="sea-alert" {...factProps(alertFactId(a.event))}>
               <span className="t-amber">NWS:</span> {a.headline}
             </p>
           ))}
+          <div {...factProps("weather:nws")}>
+          <FactAnchors ids={ids("weather:nws:")} />
           {lede ? <p className="today-say">{lede}</p> : sea.marineReason && <p className="today-say">{sea.marineReason}</p>}
           {sea.lanes.length > 0 && (
             <div className="mt-3 overflow-hidden">
@@ -117,7 +122,7 @@ export function SeaWeather({ sea, now, lede }: { sea: SeaView; now: string; lede
                 </tbody>
               </table>
               <p className="today-src mt-2">
-                The number is the highest wind NWS states for the period; a bar is solid to the low end of its range and lighter to the top. Forecasters&rsquo; words in full:{" "}
+                Each bar is the wind range NWS states, solid to its low end; the number is the top. Forecasters&rsquo; words:{" "}
                 {sea.marineUrl ? (
                   <a href={sea.marineUrl} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center">
                     NWS {sea.zone}, issued {sea.issued ? clock(sea.issued) : ""}
@@ -129,19 +134,38 @@ export function SeaWeather({ sea, now, lede }: { sea: SeaView; now: string; lede
               </p>
             </div>
           )}
+          </div>
 
+          <div data-fact-card="">
+          <FactAnchors ids={factIds.filter((id) => id.startsWith("sea:"))} />
           <div className="today-readouts" data-testid="sea-now">
             <div>
               <p className="nx-caps">Wind now</p>
-              {sea.buoy?.windKt != null ? (
-                <p className="today-v mt-1.5">
-                  {Math.round(sea.buoy.windKt)}
-                  <small>kt {sea.buoy.windDir ?? ""}</small>
+              {wind ? (
+                <p className="today-v mt-1.5" data-testid="wind-now">
+                  {Math.round(wind.windKt)}
+                  <small>kt {wind.windDir ?? ""}</small>
                 </p>
               ) : (
                 <p className="today-v mt-1.5 text-n-ink-3">—</p>
               )}
-              <p className="today-src mt-1.5">{sea.buoy?.windKt != null ? (sea.buoy.gustKt != null ? `gust ${Math.round(sea.buoy.gustKt)}` : "measured") : "not measured here"}</p>
+              <p className="today-src mt-1.5" data-testid="wind-where">
+                {!wind ? (
+                  "no wind reading within 60 km"
+                ) : (
+                  <>
+                    {wind.gustKt != null && <span className="block">gust {Math.round(wind.gustKt)}</span>}
+                    {sea.windBuoy ? (
+                      <>
+                        <span className="block">buoy {sea.windBuoy.id}</span>
+                        <span className="block">{Math.round(sea.windBuoy.km)} km away</span>
+                      </>
+                    ) : (
+                      wind.gustKt == null && "measured"
+                    )}
+                  </>
+                )}
+              </p>
             </div>
             <div>
               <p className="nx-caps">Waves now</p>
@@ -165,7 +189,16 @@ export function SeaWeather({ sea, now, lede }: { sea: SeaView; now: string; lede
               ) : (
                 <p className="today-v mt-1.5 text-n-ink-3">—</p>
               )}
-              <p className="today-src mt-1.5">{sea.water ? `${sea.water.c.toFixed(1)} °C ${sea.water.where}` : "no reading nearby"}</p>
+              <p className="today-src mt-1.5">
+                {sea.water ? (
+                  <>
+                    <span className="block">{sea.water.c.toFixed(1)} °C</span>
+                    <span className="block">{sea.water.where.replace(/^at /, "")}</span>
+                  </>
+                ) : (
+                  "no reading nearby"
+                )}
+              </p>
             </div>
           </div>
           <p className="today-src mt-2">
@@ -175,18 +208,30 @@ export function SeaWeather({ sea, now, lede }: { sea: SeaView; now: string; lede
                 <a href={sea.buoy.url} target="_blank" rel="noreferrer" className="nx-focus">
                   NDBC buoy {sea.buoy.id}
                 </a>
-                , {Math.round(sea.buoy.km)} km away{sea.buoy.at ? `, ${ago(sea.buoy.at, now)}` : ""}. A reading at one point, not a forecast.
+                , {Math.round(sea.buoy.km)} km away{sea.buoy.at ? `, ${ago(sea.buoy.at, now)}` : ""}
+                {sea.windBuoy && (
+                  <>
+                    ; it has no wind sensor, so wind is from{" "}
+                    <a href={sea.windBuoy.url} target="_blank" rel="noreferrer" className="nx-focus">
+                      buoy {sea.windBuoy.id}
+                    </a>
+                    , {Math.round(sea.windBuoy.km)} km away, {ago(sea.windBuoy.at, now)}
+                  </>
+                )}
+                . {sea.windBuoy ? "Readings at single points" : "A reading at one point"}, not a forecast.
               </>
             ) : (
               (sea.buoyReason ?? "No buoy reading.")
             )}
           </p>
+          </div>
 
-          <div className="mt-5" data-testid="sea-tide">
-            <div className="flex items-baseline justify-between gap-3">
+          <div className="mt-5" data-testid="sea-tide" data-fact-card="">
+            <FactAnchors ids={ids("tide:")} />
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               <p className="nx-caps">Tide today{sea.tideStation ? ` · ${sea.tideStation.name}` : ""}</p>
               {nt && (
-                <p className="text-[14px] text-n-ink">
+                <p className="whitespace-nowrap text-[14px] text-n-ink">
                   Next: <b className="font-semibold">{nt.type === "H" ? "high" : "low"}</b> {nt.ft.toFixed(1)} ft at {tclock(nt.at)}
                 </p>
               )}

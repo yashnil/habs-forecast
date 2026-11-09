@@ -1,14 +1,15 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it, vi } from "vitest";
-import { FIXTURE_NOW } from "@/pilot/ask/fixture";
+import { FIXTURE_NOW } from "@/pilot/ask/evals/sampleFacts";
 import { costUsd, dailyCap, DEFAULT_DAILY_CAP_USD, RateLimiter, SpendMeter } from "@/pilot/ask/limits";
 import { ANSWER_MODEL, askLive, ROUTER_MODEL, SYSTEM_PROMPT, validateLive, type MessagesClient } from "@/pilot/ask/live";
-import { fixturePortToday } from "@/pilot/ask/fixture";
+import { fixturePortToday } from "@/pilot/ask/evals/sampleFacts";
+import { sampleLoader } from "@/pilot/ask/evals/harness";
 
 /** The live (Claude) path, with a mocked client: no network, no key, no spend. */
 
 const now = new Date(FIXTURE_NOW);
-const ctx = { now, mode: "live" as const };
+const ctx = { now, mode: "live" as const, loader: sampleLoader };
 const facts = fixturePortToday("port-592")!.facts;
 
 function reply(obj: unknown, stop: Anthropic.StopReason = "end_turn"): Anthropic.Message {

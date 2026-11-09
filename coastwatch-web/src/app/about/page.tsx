@@ -6,6 +6,7 @@ import { PurposeSwitch } from "@/components/welcome/PurposeSwitch";
 import { ABOUT, RESEARCH } from "@/content/copy";
 import { loadData } from "@/lib/data";
 import { sourceStatus } from "@/lib/layers";
+import { exploreHref, pilotFrontDoor } from "@/pilot/frontDoor";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "About" };
@@ -31,7 +32,7 @@ export default async function AboutPage() {
           <h1 className="text-balance font-display text-[34px] font-medium leading-[1.08] text-ink sm:text-[46px]">{ABOUT.title}</h1>
           <p className="font-display text-[19px] leading-[1.5] text-ink-2 sm:text-[21px]">{ABOUT.lede}</p>
           <p className="text-[16px]">
-            <Link href="/" className="font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent" data-testid="about-tour">
+            <Link href={exploreHref(pilotFrontDoor())} className="font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent" data-testid="about-tour">
               Open Explore, the map →
             </Link>
           </p>

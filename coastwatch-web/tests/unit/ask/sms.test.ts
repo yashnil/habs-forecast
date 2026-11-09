@@ -1,13 +1,14 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { askDeterministic } from "@/pilot/ask/engine";
-import { FIXTURE_NOW } from "@/pilot/ask/fixture";
+import { FIXTURE_NOW } from "@/pilot/ask/evals/sampleFacts";
+import { sampleLoader } from "@/pilot/ask/evals/harness";
 import { fitSms, gsmLength, homeCommand, keywordOf, segments, SMS_TEXT, toGsm, twiml, twilioSignature, validTwilioRequest } from "@/pilot/ask/sms";
 import { handleInboundSms, MemorySmsStore, type SmsDeps } from "@/pilot/ask/smsHandler";
 import type { AskRequest } from "@/pilot/ask/types";
 
 const now = new Date(FIXTURE_NOW);
-const ask = (r: AskRequest) => askDeterministic(r, { now, mode: "demo" });
+const ask = (r: AskRequest) => askDeterministic(r, { now, mode: "demo", loader: sampleLoader });
 
 describe("Twilio signature (WebCrypto, no SDK)", () => {
   const token = "test-auth-token";

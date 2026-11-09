@@ -59,10 +59,14 @@ function assertsLifted(text: string): string | null {
   return null;
 }
 
-/** Every numeric token in a text, normalised ("1,200" → 1200). Dates and times are split into parts. */
+/**
+ * Every numeric token in a text, normalised ("1,200" → 1200). Dates and times are split into parts.
+ * A hyphen between digits is a range ("Zones 1-5", "December 15-18", "2026-27"), not a minus sign:
+ * both ends count as stated, exactly as the line check reads them.
+ */
 function numbersIn(text: string): number[] {
   const out: number[] = [];
-  for (const m of text.matchAll(/-?\d[\d,]*(?:\.\d+)?/g)) {
+  for (const m of text.matchAll(/(?<![\w.])-?\d[\d,]*(?:\.\d+)?|\d[\d,]*(?:\.\d+)?/g)) {
     const v = Number(m[0].replace(/,/g, ""));
     if (Number.isFinite(v)) out.push(v);
   }

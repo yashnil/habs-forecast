@@ -2,11 +2,12 @@
 
 import "./today.css";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { FisheryId, Readiness } from "@/pilot/contracts";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PILOT_PORTS, type FisheryId, type Readiness } from "@/pilot/contracts";
 import type { Conditions } from "@/lib/conditions";
 import { DEFAULT_FISHERIES, FISHERY_OPTIONS, buildTodayModel, dayWords, nextTide, type PortTodayInputs, type StatusRow } from "@/pilot/facts";
-import { TopBar, NavTabs } from "@/v4/shell/TopBar";
+import { TopBar } from "@/v4/shell/TopBar";
+import { PilotDock, PilotFooter } from "@/pilot/shell/PilotShell";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { readDaylight, setDaylight } from "@/v4/shell/daylight";
 import { Icon } from "@/v4/ui/Icon";
@@ -18,15 +19,41 @@ import { ToxinTests } from "./Tests";
 import { BloomOutlook, WhaleRules } from "./Bloom";
 import { WhatChanged } from "./Changed";
 import { Actions } from "./Actions";
-import { sevClass } from "./ui";
+import { FactAnchors, factAnchor, sevClass } from "./ui";
+import { AlertCheck } from "@/pilot/alerts/AlertCheck";
+import { AskSheet } from "@/pilot/ask/ui/AskSheet";
 import { periodLine } from "./marine";
 
 export type TodayProps = {
   inputs: Omit<PortTodayInputs, "conditions" | "selected">;
   /** from the link (?f=…); null: the reader's saved list, else the default */
   linkFisheries: FisheryId[] | null;
-  readiness: { alerts: Readiness; ask: Readiness };
+  readiness: { alerts: Readiness; ask: Readiness; sms: Readiness };
+  /** the server is reading the test fixture: alerts made here are marked as samples */
+  fixture: boolean;
 };
+
+const ALL_FISHERIES = FISHERY_OPTIONS.map((o) => o.id);
+
+/** The fact a link points at: `#fact-<PortFact.id>` (Ask Neritic's citations, alerts). */
+function useFactTarget(): string | null {
+  const [target, setTarget] = useState<string | null>(null);
+  useEffect(() => {
+    const read = () => {
+      let h = window.location.hash.slice(1);
+      try {
+        h = decodeURIComponent(h);
+      } catch {
+        // a hash that is not valid percent-encoding: used as written
+      }
+      setTarget(h.startsWith("fact-") ? h.slice(5) : null);
+    };
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
+  }, []);
+  return target;
+}
 
 const STAMP = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -69,17 +96,19 @@ function SunToggle() {
 
 /** Desktop only: the page at a glance, beside the answer (each line links to its section). */
 function Glance({ model, now }: { model: ReturnType<typeof buildTodayModel>; now: string }) {
-  const n = (sev: string) => model.status.filter((r) => r.severity === sev).length;
+  const n = (sev: string) => model.status.filter((r) => r.severity === sev && !r.seasonal && r.level !== "unknown").length;
+  const seasonal = model.status.filter((r) => r.seasonal).length;
+  const unknown = model.status.filter((r) => r.level === "unknown").length;
   const first = model.sea.lanes[0];
   const tide = nextTide(model.sea.tides, now);
   const t = model.tests[0];
   const rows: [string, string, string][] = [
-    ["Status", [n("red") && `${n("red")} closed or delayed`, n("amber") && `${n("amber")} restricted`, n("neutral") && `${n("neutral")} none on record`].filter(Boolean).join(" · ") || "not available", "#status"],
+    ["Status", [n("red") && `${n("red")} closed or delayed`, n("amber") && `${n("amber")} restricted`, seasonal && `${seasonal} season closed`, n("neutral") && `${n("neutral")} none on record`, unknown && `${unknown} not available`].filter(Boolean).join(" · ") || "not available", "#status"],
     ["Sea", first ? `${first.name}: ${periodLine(first) ?? "see NWS"}` : model.sea.state === "loading" ? "loading…" : "not available", "#sea"],
     ["Next tide", tide ? `${tide.type === "H" ? "High" : "Low"} ${tide.ft.toFixed(1)} ft at ${((h, m) => `${h % 12 || 12}:${m} ${h < 12 ? "AM" : "PM"}`)(Number(tide.at.slice(11, 13)), tide.at.slice(14, 16))}` : model.sea.state === "loading" ? "loading…" : "not available", "#sea"],
-    ["Latest test", t?.latest ? `${t.site.species}, ${dayWords(t.latest.date, now)}${t.latest.avg_ppm != null ? ` · avg ${t.latest.avg_ppm} ppm` : ""}` : "none published here", "#tests"],
+    ["Latest test", t?.latest ? `${t.site.species}, ${dayWords(t.latest.date, now)}${t.latest.avg_ppm != null ? ` · avg ${t.latest.avg_ppm} ppm` : ""}` : model.testsError ? "not available" : "none published here", "#tests"],
     ["C-HARM", model.bloom.charmFact.value ? `${model.bloom.charmFact.value} (run ${model.bloom.charm?.issued ? dayWords(model.bloom.charm.issued, now) : "?"})` : "no value here", "#bloom"],
-    ["Whale rules", model.whale ? `Zone ${model.whale.zone}: ${model.whale.action ?? "none on record"}` : "no record", "#whale"],
+    ["Whale rules", model.whale ? `Zone ${model.whale.zone}: ${(model.whale.action ?? "none on record").split(";")[0].replace(/\.$/, "")}` : "not available", "#whale"],
   ];
   return (
     <aside aria-label="At a glance" className="hidden self-end lg:block" data-testid="today-glance">
@@ -100,12 +129,17 @@ function Glance({ model, now }: { model: ReturnType<typeof buildTodayModel>; now
   );
 }
 
-export function TodayView({ inputs, linkFisheries, readiness }: TodayProps) {
+export function TodayView({ inputs, linkFisheries, readiness, fixture }: TodayProps) {
   const { place, now } = inputs;
   const [selected, setSelected] = useState<FisheryId[]>(linkFisheries ?? DEFAULT_FISHERIES);
   const [picking, setPicking] = useState(false);
+  const [asking, setAsking] = useState(false);
+  // Ask Neritic and alerts cover the pilot ports; elsewhere the actions link out and say so
+  const pilot = PILOT_PORTS.some((p) => p.place_id === place.place_id);
+  const target = useFactTarget();
   const [sheet, setSheet] = useState<StatusRow | null>(null);
   const [saved, setSaved] = useState<{ at: string | null } | null>(null);
+  // the same point and periods the server asks for (portToday.ts), so both read one answer
   const conditionsUrl = `/api/conditions?lat=${place.lat.toFixed(4)}&lon=${place.lon.toFixed(4)}&periods=12`;
   const conditions = useConditions(conditionsUrl);
 
@@ -120,9 +154,45 @@ export function TodayView({ inputs, linkFisheries, readiness }: TodayProps) {
     if (m) setSaved({ at: m.at });
   }, [place.place_id, linkFisheries]);
 
-  const model = useMemo(() => buildTodayModel({ ...inputs, selected, conditions }), [inputs, selected, conditions]);
-  // "what changed" compares every fishery, so changing the list is never reported as news
-  const allFacts = useMemo(() => buildTodayModel({ ...inputs, selected: FISHERY_OPTIONS.map((o) => o.id), conditions }).today.facts, [inputs, conditions]);
+  // every fishery: the facts alerts, Ask Neritic and "what changed" all read (src/pilot/today/portToday.ts builds the same on the server)
+  const all = useMemo(() => buildTodayModel({ ...inputs, selected: ALL_FISHERIES, conditions }), [inputs, conditions]);
+  const allFacts = all.today.facts;
+  // a link to a fact of a fishery the reader does not follow shows that fishery for this visit (nothing is saved)
+  const linked = useMemo(() => {
+    if (!target) return null;
+    const row = all.status.find((r) => r.fact.id === target || r.notices.some((n) => `notice:${n.id}` === target));
+    return row && !selected.includes(row.fishery) ? row.fishery : null;
+  }, [target, all, selected]);
+  const shown = useMemo(() => (linked ? [...selected, linked] : selected), [selected, linked]);
+  const model = useMemo(() => buildTodayModel({ ...inputs, selected: shown, conditions }), [inputs, shown, conditions]);
+
+  // arrive on the card a citation named: scroll it into view and mark it for a few seconds
+  const marked = useRef<string | null>(null);
+  const seaReady = conditions !== null;
+  useEffect(() => {
+    if (!target || marked.current === target) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(factAnchor(target));
+      if (!el) return; // a sea fact before the sea has loaded: tried again when it has
+      const card = el.closest<HTMLElement>("[data-fact-card]") ?? el;
+      marked.current = target;
+      document.querySelectorAll("[data-fact-hit]").forEach((x) => {
+        x.classList.remove("fact-hit");
+        x.removeAttribute("data-fact-hit");
+      });
+      card.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      void card.offsetWidth; // restart the mark when the same card is reached again
+      card.classList.add("fact-hit");
+      card.setAttribute("data-fact-hit", target);
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [target, seaReady, shown]);
+  useEffect(() => {
+    if (!target) marked.current = null;
+  }, [target]);
+
+  const seaFactIds = useMemo(() => allFacts.filter((f) => f.kind === "weather" || f.kind === "tide" || f.kind === "sea" || f.kind === "observation").map((f) => f.id), [allFacts]);
+  const noticeIds = useMemo(() => allFacts.filter((f) => f.kind === "notice").map((f) => f.id), [allFacts]);
 
   const onSave = useCallback(
     (ids: FisheryId[]) => {
@@ -171,7 +241,7 @@ export function TodayView({ inputs, linkFisheries, readiness }: TodayProps) {
             <p className="today-lede mt-3 text-n-ink" data-testid="today-lede">
               {lede.label ? (
                 <>
-                  <b className={sevClass(lede.severity)}>{lede.label}</b>: {lede.text}
+                  <b className={lede.seasonal ? undefined : sevClass(lede.severity)}>{lede.label}</b>: {lede.text}
                 </>
               ) : (
                 <span className={lede.severity === "amber" ? "t-amber" : undefined}>{lede.text}</span>
@@ -179,26 +249,47 @@ export function TodayView({ inputs, linkFisheries, readiness }: TodayProps) {
               {lede.more > 0 && (
                 <>
                   {" "}
-                  <a href="#status" className="nx-focus underline decoration-n-line-strong underline-offset-4">
-                    {lede.more} more {lede.more === 1 ? "restriction" : "restrictions"} below.
+                  <a href="#status" className="nx-focus whitespace-nowrap underline decoration-n-line-strong underline-offset-4">
+                    {lede.more} more below.
                   </a>
                 </>
               )}
+              {lede.caution && (
+                <span className="t-amber block pt-1" data-testid="lede-caution">
+                  {lede.caution}
+                </span>
+              )}
               {lede.sea && <span className="block pt-1 text-n-ink-2">{lede.sea}</span>}
             </p>
-            <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[13.5px] text-n-ink-2" aria-label="How fresh the data are" data-testid="today-freshness">
+            <div className="mt-4" data-fact-card="">
+            <FactAnchors ids={model.ages.map((f) => f.id)} />
+            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[13.5px] text-n-ink-2" aria-label="How fresh the data are" data-testid="today-freshness">
               {model.freshness.map((f) => (
                 <li key={f.label} className={f.stale ? "t-amber" : undefined}>
                   <span className="text-n-ink-3">{f.label}</span> {f.when}
-                  {f.stale ? " (old)" : ""}
+                  {f.stale && !f.missing ? " (old)" : ""}
                 </li>
               ))}
             </ul>
+            </div>
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <Link href="/today?pick=1" className="today-btn nx-focus nx-press nx-tint" data-testid="today-change-port">
                 <Icon name="harbor" className="h-[18px] w-[18px]" /> Change port
               </Link>
               <SunToggle />
+              <a
+                href={`/ask?place=${encodeURIComponent(place.place_id)}`}
+                onClick={(e) => {
+                  if (!pilot) return;
+                  e.preventDefault();
+                  setAsking(true);
+                }}
+                aria-haspopup={pilot ? "dialog" : undefined}
+                className="today-btn nx-focus nx-press nx-tint"
+                data-testid="hero-ask"
+              >
+                <Icon name="ask" className="h-[18px] w-[18px]" /> Ask
+              </a>
               <Link href="/about" className="nx-focus ml-1 inline-flex min-h-11 items-center text-[13.5px] text-n-ink-3 underline decoration-n-line underline-offset-4">
                 Research preview · not an official source
               </Link>
@@ -209,23 +300,22 @@ export function TodayView({ inputs, linkFisheries, readiness }: TodayProps) {
         </header>
 
         <div className="today-wrap">
-          <div className="today-grid">
-            <StatusStrip rows={model.status} now={now} statusError={model.statusError} onOpen={setSheet} onEdit={() => setPicking(true)} />
-            <SeaWeather sea={model.sea} now={now} lede={lede.sea} />
-            <ToxinTests tests={model.tests} error={model.testsError} now={now} sourceUrl={inputs.biotoxin?.source.url ?? null} />
-            <BloomOutlook bloom={model.bloom} now={now} label={place.label} />
-            <WhaleRules whale={model.whale} now={now} />
+          <div className="today-grid" data-layout={model.testsError || !model.tests.length ? (model.statusError ? "sparse" : "notests") : undefined}>
+            <StatusStrip rows={model.status} now={now} place={place.place_id} statusError={model.statusError} otherNotices={noticeIds} onOpen={setSheet} onEdit={() => setPicking(true)} />
+            <SeaWeather sea={model.sea} now={now} lede={lede.sea} place={place.place_id} factIds={seaFactIds} />
+            <ToxinTests tests={model.tests} error={model.testsError} now={now} sourceUrl={inputs.biotoxin?.source.url ?? null} place={place.place_id} reveal={target} />
+            <BloomOutlook bloom={model.bloom} now={now} label={place.label} place={place.place_id} />
+            <WhaleRules whale={model.whale} now={now} place={place.place_id} />
             <WhatChanged place={place.place_id} facts={allFacts} ready={conditions !== null} now={now} />
-            <Actions place={place.place_id} label={place.label} conditionsUrl={conditionsUrl} readiness={readiness} />
+            <Actions place={place.place_id} label={place.label} conditionsUrl={conditionsUrl} readiness={readiness} pilot={pilot} onAsk={() => setAsking(true)} />
           </div>
-          <footer className="mt-10 border-t border-n-line py-6 text-[13px] leading-relaxed text-n-ink-3">
-            Neritic is an independent research preview, not an official source and not a seafood-safety service. Closures, seasons and advisories come from CDFW and CDPH; their notices always take precedence. Chlorophyll does not measure toxin. Forecasts are probabilities, not guarantees.
-          </footer>
+          <PilotFooter />
         </div>
       </main>
-      <div className="env-instrument fixed inset-x-0 bottom-0 z-40 border-t border-n-line bg-n-surface lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <NavTabs active="today" size="dock" />
-      </div>
+      <PilotDock active="today" />
+      {/* the device's alert check, on the same facts /account and the fan-out compare */}
+      <AlertCheck todays={[all.today]} sample={fixture} />
+      {pilot && <AskSheet place={place.place_id} open={asking} onClose={() => setAsking(false)} />}
       <StatusSheet row={sheet} now={now} onClose={() => setSheet(null)} />
       <FisheryPicker open={picking} selected={selected} onClose={() => setPicking(false)} onSave={onSave} />
     </div>

@@ -1,6 +1,6 @@
 /**
  * Ocean conditions for a place, from three official NOAA services (fetched by
- * app/api/conditions/route.ts; everything here is pure and tested):
+ * lib/conditionsServer.ts, behind app/api/conditions; everything here is pure and tested):
  *
  * - NWS coastal marine zone forecast and active marine alerts (api.weather.gov): a forecast,
  *   issued by forecasters for a whole zone, shown in their words.
@@ -276,6 +276,8 @@ export type Conditions = {
   marine: Part<MarineForecast>;
   alerts: Part<MarineAlert[]>;
   buoy: Part<BuoyObs>;
+  /** only when the nearest reporting station has no wind sensor (a wave buoy): the nearest NDBC station that measures wind, with its distance */
+  buoyWind?: Part<BuoyObs>;
   tides: Part<Tide[]>;
   /** water temperature measured in the harbour itself (CO-OPS tide-station thermistor), when one is near */
   harbor?: Part<HarborTemp>;

@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { AppShell } from "@/components/AppShell";
-import { loadData } from "@/lib/data";
 import { PROGRAM_NAME, SMS_CONSENT_TEXT } from "@/pilot/account/consent";
 import { LegalPage, OWNER_CONTACT } from "@/pilot/account/LegalPage";
 
@@ -9,9 +7,7 @@ export const metadata = { title: "SMS Terms" };
 
 /** SMS program terms (for 10DLC registration and for people who opt in). Draft until reviewed. */
 export default async function SmsTermsPage() {
-  const data = await loadData();
   return (
-    <AppShell active="about" manifest={data.ok ? data.manifest : null} official={data.ok ? data.official : null}>
       <LegalPage title="SMS Terms" testId="sms-terms-page">
         <p role="note" className="rounded-lg border border-n-line-strong px-3 py-2 text-[14.5px]" data-testid="sms-status">
           Status: text alerts are not being sent yet. The program is awaiting carrier registration; until then, only the pilot team&rsquo;s verified test phones receive messages.
@@ -65,6 +61,5 @@ export default async function SmsTermsPage() {
           16 or dial 911. The <Link href="/terms">Terms of Use</Link> also apply.
         </p>
       </LegalPage>
-    </AppShell>
   );
 }

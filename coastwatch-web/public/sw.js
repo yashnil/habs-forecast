@@ -21,6 +21,11 @@
  *   from a pack carries a mark (self.__NERITIC_SAVED__: when it was saved, and the address it was saved
  *   for), so the page can say it is a saved copy and hydrate the HTML it was actually given.
  *
+ * - Today at your port ("Save for offline"): a pack named "neritic-pack-today" holding the port's page,
+ *   its code and its /api/conditions answer. It is answered like any pack, and the offline page links
+ *   to each saved port by name with the time it was saved.
+ * - Web push for the pilot's alerts comes from /sw-push.js (imported below; listeners only).
+ *
  * - A kept briefing (My Coast's "Keep a dated copy"): the page keeps /coast/kept and the files it loads
  *   in "neritic-kept-v1" (src/v4/offline/kept.ts). Offline, /coast/kept is answered from it (the copy
  *   itself is in the device's storage), its code from it, and the offline page links to it by name.
@@ -28,7 +33,7 @@
  * Packs are never deleted here: a new worker version keeps them (they are removed only from the
  * page, by the reader). Browsers may still evict storage; the page says so.
  */
-const VERSION = "neritic-sw-3";
+const VERSION = "neritic-sw-4";
 /** How long a page or an /api answer waits for the network before a field pack answers instead. */
 const DEADLINE_MS = 5000;
 // one code cache per build: hashed files of an old build are never needed by the new one
@@ -37,6 +42,12 @@ const STATIC = `neritic-static-${BUILD ? BUILD.replace(/[^\w.-]/g, "").slice(0, 
 const PACK_PREFIX = "neritic-pack-";
 const KEPT = "neritic-kept-v1";
 const KEPT_PAGE = "/coast/kept";
+/** Today at your port, saved from its "Save for offline" button (src/pilot/today/offline.ts). */
+const TODAY_PACK = "neritic-pack-today";
+
+// Pilot: web push ("push", "notificationclick" and a ping). It adds listeners only; it never touches
+// fetch handling or the caches above (public/sw-push.js; docs/coastwatch/pilot/accounts.md).
+importScripts("/sw-push.js");
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => {
@@ -146,6 +157,27 @@ async function savedPageFor(path) {
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const MARK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="30" height="30" aria-hidden="true"><clipPath id="nxmmicrolight0"><path d="M11 0H37A11 11 0 0 1 48 11V37A11 11 0 0 1 37 48H11A11 11 0 0 1 0 37V11A11 11 0 0 1 11 0Z"/></clipPath><g clip-path="url(#nxmmicrolight0)"><path d="M11 0H37A11 11 0 0 1 48 11V37A11 11 0 0 1 37 48H11A11 11 0 0 1 0 37V11A11 11 0 0 1 11 0Z" fill="#0e3352"/><g fill="none" stroke-linecap="round"><path d="M-1.95 41.92C-1.28 40.55 -0.82 40.14 0.05 37.8C0.92 35.46 2.31 30.6 3.25 27.89C4.19 25.18 4.81 23.63 5.69 21.53C6.57 19.44 7.65 17.07 8.52 15.34C9.4 13.62 10.09 12.42 10.94 11.2C11.79 9.97 12.64 8.92 13.63 8C14.61 7.09 15.71 6.28 16.84 5.69C17.96 5.1 19.19 4.68 20.37 4.46C21.55 4.25 22.96 4.32 23.9 4.4C24.83 4.48 25.32 4.69 25.99 4.94C26.66 5.19 27.29 5.5 27.92 5.9C28.55 6.3 29.21 6.82 29.78 7.36C30.35 7.9 30.76 8.31 31.36 9.14C31.96 9.97 32.3 10.35 33.4 12.33C34.49 14.32 36.25 18.11 37.91 21.04C39.57 23.98 42.11 27.79 43.33 29.93C44.56 32.07 44.71 32.53 45.28 33.88C45.86 35.22 46.15 35.46 46.77 38.01C47.4 40.56 48.27 45.46 49.02 49.19" stroke="#a9d3df" stroke-width="3.6"/><path d="M6.72 49.4C7.33 47.63 7.72 46.88 8.55 44.1C9.38 41.32 10.79 35.54 11.69 32.72C12.6 29.9 13.29 28.62 13.99 27.19C14.69 25.77 15.25 25.03 15.9 24.16C16.55 23.29 17.21 22.56 17.9 21.97C18.58 21.38 19.28 20.91 20 20.6C20.71 20.3 21.37 20.1 22.18 20.15C23 20.19 23.98 20.4 24.89 20.89C25.8 21.38 26.58 21.96 27.64 23.08C28.7 24.2 30.16 26.02 31.25 27.6C32.34 29.19 33.45 31.14 34.18 32.59C34.9 34.05 35.23 35.08 35.58 36.32C35.94 37.56 36.16 38.79 36.31 40.04C36.46 41.29 36.51 42.23 36.49 43.82C36.47 45.42 36.29 47.69 36.19 49.62" stroke="#5fd0e6" stroke-width="5.4"/></g></g></svg>';
 
+/** The Today pages saved on this device: their address, the port's name and when each was saved. */
+async function savedTodays() {
+  if (!(await caches.has(TODAY_PACK))) return [];
+  const c = await caches.open(TODAY_PACK);
+  const out = [];
+  for (const key of await c.keys()) {
+    const u = new URL(key.url);
+    if (u.pathname !== "/today") continue;
+    const r = await c.match(key);
+    if (!r) continue;
+    let label = "";
+    try {
+      label = decodeURIComponent(r.headers.get("x-neritic-saved-label") || "");
+    } catch {
+      label = "";
+    }
+    out.push({ href: u.pathname + u.search, label, at: r.headers.get("x-neritic-saved-at") });
+  }
+  return out.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+}
+
 /** The offline page, in the site's own dark system: what is not saved, the kept briefing and the saved
  *  briefing when there is one, a way to try again, and the agencies (pages and tap-to-call lines). */
 async function offlinePage(path) {
@@ -153,8 +185,12 @@ async function offlinePage(path) {
   if (saved) return saved;
   const kept = await keptMeta();
   const brief = await savedPageFor("/coast");
-  const when = kept && kept.keptAt ? new Date(kept.keptAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles", timeZoneName: "short" }) : null;
+  const stamp = (t) => new Date(t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles", timeZoneName: "short" });
+  const when = kept && kept.keptAt ? stamp(kept.keptAt) : null;
+  const todays = await savedTodays();
   const opts = [
+    // the pilot's front door first: the reader's own port, as it was when they saved it
+    ...todays.map((t) => `<a class="btn" href="${esc(t.href)}" data-testid="offline-today">Open Today${t.label ? ` at ${esc(t.label)}` : ""}<small>${t.at && !Number.isNaN(Date.parse(t.at)) ? `saved ${esc(stamp(t.at))}, as it was then` : "your saved copy"}</small></a>`),
     kept ? `<a class="btn" href="/coast/kept" data-testid="offline-kept">Open your kept briefing${kept.title ? `<small>${esc(kept.title)}${when ? `, kept ${esc(when)}` : ""}</small>` : ""}</a>` : "",
     brief ? `<a class="btn" href="/coast">Open the saved briefing<small>from your field pack</small></a>` : "",
   ].join("");
@@ -171,7 +207,7 @@ h1{font:500 36px/1.08 Newsreader,Georgia,"Times New Roman",serif;letter-spacing:
 .tel{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:300}
 </style></head><body><main data-testid="offline-page"><div class="brand">${MARK}<span>Neritic</span></div>
 <p class="caps">Offline</p><h1>You are offline</h1>
-<p>This page was not saved for offline use. A kept briefing (My Coast, &ldquo;Keep a dated copy&rdquo;) and a field pack open without a connection; download a pack while you have one.</p>
+<p>This page was not saved for offline use. Today at your port (&ldquo;Save for offline&rdquo;), a kept briefing (My Coast, &ldquo;Keep a dated copy&rdquo;) and a field pack open without a connection; save them while you have one.</p>
 ${opts}<a class="btn" href="" style="border-style:dashed">Try again</a>
 <section class="agency"><p class="caps">Official notices · CDFW and CDPH</p>
 <p>No notice listed does not mean open or safe. The agencies are the authority; call before you go.</p>

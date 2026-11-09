@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { askDeterministic } from "@/pilot/ask/engine";
 import { ADVERSARIAL_ENGINE, GOLDEN, grade, GUARD_CASES, GUARD_CONTROLS, guardLines, loaderFor, nowFor, requestFor, type EngineCase } from "@/pilot/ask/evals/harness";
-import { fixturePortToday, FIXTURE_NOW } from "@/pilot/ask/fixture";
+import { fixturePortToday, FIXTURE_NOW } from "@/pilot/ask/evals/sampleFacts";
 import { check } from "@/pilot/ask/guard";
 
 /**

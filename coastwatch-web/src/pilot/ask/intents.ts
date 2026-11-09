@@ -42,7 +42,7 @@ export function fisheryIn(q: string): Fishery | null {
 /** Words that identify a fishery inside a PortFact's id/headline. */
 export const FISHERY_WORDS: Record<Fishery, RegExp> = {
   dungeness: /dungeness/i,
-  rock_crab: /rock[\s_]*crab/i,
+  rock_crab: /rock[\s_-]*crab/i,
   salmon: /salmon/i,
   groundfish: /groundfish|rockfish|lingcod/i,
   anchovy_sardine: /anchov|sardine/i,

@@ -1,17 +1,16 @@
 import type { PortToday } from "../contracts";
-import { fixturePortToday } from "./fixture";
+import { loadPortTodayFacts } from "../today/portToday";
 import type { Dataset } from "./types";
 
 /**
- * Where Ask Neritic gets its PortFacts. The ONLY retrieval it does: one port's Today model.
- *
- * INTEGRATION POINT: when the Today track's `src/pilot/facts.ts` lands, replace the body of
- * `loadPortToday` with its `buildPortToday(...)` (published data) and return dataset "published".
- * Until then the typed fixture is used and every answer is labelled "Sample data".
+ * Where Ask Neritic gets its PortFacts. The ONLY retrieval it does: one port's Today facts, built by
+ * the same function Today and alerts use (src/pilot/today/portToday.ts), with every fishery and the
+ * sea. `dataset` is "fixture" only when the server is reading the test fixture; answers then say
+ * "Sample data". A port whose data cannot be loaded is null (Ask says the data is unavailable).
  */
 export type PortTodayLoader = (placeId: string, now: Date) => Promise<{ today: PortToday; dataset: Dataset } | null>;
 
 export const loadPortToday: PortTodayLoader = async (placeId) => {
-  const today = fixturePortToday(placeId);
-  return today ? { today, dataset: "fixture" } : null;
+  const loaded = await loadPortTodayFacts(placeId);
+  return loaded ? { today: loaded.today, dataset: loaded.fixture ? "fixture" : "published" } : null;
 };

@@ -6,6 +6,8 @@ import { ReadinessProvider } from "@/v4/readiness/store";
 import { DataUnavailable } from "@/v4/shell/DataUnavailable";
 import { TodayView } from "@/pilot/today/TodayView";
 import { PortPicker } from "@/pilot/today/PortPicker";
+import { pilotAccountConfig } from "@/pilot/account/config";
+import { PilotAccountProvider } from "@/pilot/account/context";
 
 export const dynamic = "force-dynamic";
 
@@ -29,12 +31,15 @@ export default async function TodayPage({ searchParams }: { searchParams: SP }) 
   const load = await loadToday(one(sp.place));
   if (!load.ok) return <DataUnavailable error={load.error} />;
   return (
-    <ReadinessProvider>
-      {load.place && load.inputs ? (
-        <TodayView key={load.place.key} inputs={load.inputs} linkFisheries={parseFisheries(one(sp.f))} readiness={{ alerts: readiness("alerts"), ask: readiness("ask") }} />
-      ) : (
-        <PortPicker ports={load.ports} requested={load.requested} pick={one(sp.pick) === "1"} now={fixedNow().toISOString()} />
-      )}
-    </ReadinessProvider>
+    // the same account context as the other pilot pages: the bell and "Was this useful?" follow the signed-in account
+    <PilotAccountProvider config={pilotAccountConfig()}>
+      <ReadinessProvider>
+        {load.place && load.inputs ? (
+          <TodayView key={load.place.key} inputs={load.inputs} linkFisheries={parseFisheries(one(sp.f))} readiness={{ alerts: readiness("alerts"), ask: readiness("ask"), sms: readiness("sms") }} fixture={load.fixture} />
+        ) : (
+          <PortPicker ports={load.ports} requested={load.requested} pick={one(sp.pick) === "1"} now={fixedNow().toISOString()} />
+        )}
+      </ReadinessProvider>
+    </PilotAccountProvider>
   );
 }

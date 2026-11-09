@@ -54,6 +54,8 @@ export type NoticeInput = {
   effective: string | null;
   url: string | null;
   verified: boolean;
+  /** when the registry's records were last read against the agencies' pages (its review date), if known */
+  registry_checked?: string | null;
 };
 
 /** C-HARM at the port for one day: the port's own 3 km cell when it has a value, else the cells within 15 km. */
@@ -147,6 +149,8 @@ const LEVEL_RANK: Record<StatusLevel, number> = { closed: 0, delayed: 0, restric
 const SEVERITY_RANK: Record<Severity, number> = { red: 0, amber: 1, neutral: 2, info: 3 };
 const BASIS_RANK: Record<PortFact["basis"], number> = { official: 0, measured: 1, analysis: 2, forecast: 2, outlook: 3, derived: 4 };
 
+/** A fishery closed by its own season dates (concluded, or not yet begun): not open, and not an emergency. */
+export const SEASON_CLOSED_WORD = "Season closed";
 /** Status older than this is flagged (curated records are re-read at least weekly). */
 export const STATUS_STALE_DAYS = 14;
 /** A toxin test older than this is flagged (CDPH samples sites every 1–4 weeks). */
@@ -189,6 +193,8 @@ const pct = (p: number) => `${Math.round(p * 100)}%`;
 const ppm = (v: number) => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1).replace(/\.0$/, "") : v.toFixed(1));
 const mg = (v: number) => (v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(2));
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+/** The fact id of an NWS alert in force ("Small Craft Advisory" → "weather:alert:small-craft-advisory"). */
+export const alertFactId = (event: string) => `weather:alert:${slug(event)}`;
 const sentence = (s: string) => (/[.!?]$/.test(s.trim()) ? s.trim() : `${s.trim()}.`);
 const lower1 = (s: string) => (/^[A-Z][a-z]/.test(s) ? s.charAt(0).toLowerCase() + s.slice(1) : s);
 
@@ -239,7 +245,25 @@ export type StatusRow = {
   /** official notices for this fishery's species tied to this place */
   notices: NoticeInput[];
   stale: boolean;
+  /** closed because the season's own dates ended or have not begun (routine), not by an emergency action: drawn calmly, still plainly not open */
+  seasonal: boolean;
+  /** the curated status and the official-notices registry disagree about this fishery here (one restricts, the other does not) */
+  conflict: SourceConflict | null;
   fact: PortFact;
+};
+
+/**
+ * Two of Neritic's own sources say different things about one fishery at one place. The row shows the
+ * more restrictive, and says so: both statements, each with its source and the date it was read.
+ * Neither is ever dropped silently, and neither is "lifted" by the other.
+ */
+export type SourceConflict = {
+  /** which one the row shows (the more restrictive) */
+  shown: "notice" | "record";
+  notice: { level: StatusLevel; word: string; title: string; agency: string; effective: string | null; checked: string | null; url: string | null; verified: boolean };
+  record: { level: StatusLevel; word: string; headline: string; source: string; checked: string; url: string; verified: boolean };
+  /** the plain sentence shown in the row's detail */
+  words: string;
 };
 
 export type TestSiteView = {
@@ -296,6 +320,8 @@ export type SeaView = {
   alerts: { event: string; headline: string; url: string }[];
   buoy: { name: string; id: string; km: number; url: string; windKt: number | null; windDir: string | null; gustKt: number | null; waveFt: number | null; periodS: number | null; waterC: number | null; at: string | null } | null;
   buoyReason: string | null;
+  /** the nearest station that measures wind, when the nearest buoy does not (a wave buoy): its own id, distance and time */
+  windBuoy: { name: string; id: string; km: number; url: string; windKt: number; windDir: string | null; gustKt: number | null; at: string } | null;
   tides: Tide[];
   tideStation: { id: string; name: string; url: string } | null;
   tideReason: string | null;
@@ -303,7 +329,18 @@ export type SeaView = {
 };
 
 /** The answer in one breath: `label` (the fishery, when one leads) and `text`; `status` joins them. */
-export type Lede = { label: string | null; text: string; status: string; severity: Severity; more: number; sea: string | null };
+export type Lede = {
+  label: string | null;
+  text: string;
+  status: string;
+  severity: Severity;
+  more: number;
+  sea: string | null;
+  /** the fishery that leads is closed by its season dates (said calmly) */
+  seasonal: boolean;
+  /** Neritic's season list did not load, though a notice still leads: said after the answer */
+  caution: string | null;
+};
 
 export type TodayModel = {
   today: PortToday;
@@ -317,7 +354,7 @@ export type TodayModel = {
   sea: SeaView;
   /** data-age facts, for the header's freshness line */
   ages: PortFact[];
-  freshness: { label: string; when: string | null; stale: boolean }[];
+  freshness: Freshness[];
 };
 
 // ---------------------------------------------------------------- the build
@@ -355,6 +392,9 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
     const topNotice = [...nts].sort((a, b) => LEVEL_RANK[noticeLevel(a)] - LEVEL_RANK[noticeLevel(b)])[0] ?? null;
     const top = recs[0] ?? null;
     const useNotice = topNotice && (!top || LEVEL_RANK[noticeLevel(topNotice)] < LEVEL_RANK[top.level]);
+    // the two sources disagree when one restricts this fishery here and the other does not (a closure
+    // beside a restriction is two instruments, not a disagreement)
+    const conflict = top && topNotice && restricts(noticeLevel(topNotice)) !== restricts(top.level) ? conflictOf(top, topNotice, noticeLevel(topNotice), now) : null;
     let row: Omit<StatusRow, "fact">;
     if (useNotice) {
       const level = noticeLevel(topNotice);
@@ -370,11 +410,14 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
         area: null,
         next_review: null,
         source: { name: topNotice.agency, url: topNotice.url },
-        checked_at: null,
+        checked_at: topNotice.registry_checked ?? null,
         verified: topNotice.verified,
         records: recs,
         notices: nts,
-        stale: false,
+        // the registry's own read date ages like any other check
+        stale: !!topNotice.registry_checked && daysOld(topNotice.registry_checked, now) > STATUS_STALE_DAYS,
+        seasonal: false,
+        conflict,
       };
     } else if (top) {
       const stale = daysOld(top.checked_at, now) > STATUS_STALE_DAYS;
@@ -383,7 +426,7 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
         label,
         level: top.level,
         severity: LEVEL_SEVERITY[top.level],
-        word: LEVEL_WORD[top.level],
+        word: top.level === "closed" && top.cause === "season" ? SEASON_CLOSED_WORD : LEVEL_WORD[top.level],
         headline: sentence(top.headline),
         cause: top.cause,
         causeWord: top.level === "no_restriction_on_record" ? null : CAUSE_WORD[top.cause],
@@ -395,9 +438,11 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
         records: recs,
         notices: nts,
         stale,
+        seasonal: top.level === "closed" && top.cause === "season",
+        conflict,
       };
     } else if (statusError) {
-      row = { fishery, label, level: "unknown", severity: "info", word: LEVEL_WORD.unknown, headline: "Status could not be loaded. Check CDFW.", cause: null, causeWord: null, area: null, next_review: null, source: null, checked_at: null, verified: null, records: [], notices: nts, stale: false };
+      row = { fishery, label, level: "unknown", severity: "info", word: LEVEL_WORD.unknown, headline: "Status could not be loaded. Check CDFW.", cause: null, causeWord: null, area: null, next_review: null, source: null, checked_at: null, verified: null, records: [], notices: nts, stale: false, seasonal: false, conflict: null };
     } else {
       // the calmest state: nothing on record (never "open" or "safe")
       row = {
@@ -417,20 +462,24 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
         records: [],
         notices: nts,
         stale: false,
+        seasonal: false,
+        conflict: null,
       };
     }
     const nextWords = row.next_review ? ` Next review ${dayWords(row.next_review, now)}.` : "";
-    const detail =
+    const body =
       row.level === "no_restriction_on_record"
         ? "Neritic's list has no CDFW or CDPH closure or restriction for this fishery here. That is not a guarantee: notices can lag. Check the agencies before you go."
         : `${row.records[0] && !useNotice ? sentence(row.records[0].detail) : topNotice ? sentence(topNotice.summary) : ""}${nextWords}`.trim() || null;
+    // a disagreement between the sources is said in the detail itself, so alerts and Ask Neritic carry it too
+    const detail = row.conflict ? [body, row.conflict.words].filter(Boolean).join(" ") : body;
     return {
       ...row,
       fact: fact({
         id: `status:${fishery}`,
         kind: "status",
         severity: row.severity,
-        headline: `${label}: ${lower1(row.headline)}`,
+        headline: `${label}: ${row.headline}`,
         value: row.word,
         detail,
         basis: "official",
@@ -442,7 +491,7 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
   });
   const staleRows = status.filter((r) => r.stale);
   if (staleRows.length) {
-    const oldest = staleRows.map((r) => r.checked_at!).sort()[0];
+    const oldest = staleRows.map((r) => pacificDay(r.checked_at!)).sort()[0];
     age("fisheries-status", "amber", `Fishery status last checked ${dayWords(oldest, now)} (${ageWords(daysOld(oldest, now))}).`, "A person transcribes these records from CDFW and CDPH; a later change may be missing. Check the agencies.", oldest);
   }
 
@@ -473,8 +522,11 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
   const seaFacts = seaFactsOf(sea, place, now, fact);
   if (inp.conditions === "error") age("conditions", "info", "Sea and weather could not be loaded. Check NWS and NDBC.", null, null);
 
-  if (inp.dataGeneratedAt && (Date.parse(now) - Date.parse(inp.dataGeneratedAt)) / 3_600_000 > DATA_STALE_HOURS)
-    age("data", "info", `Neritic's data were last refreshed ${dayWords(inp.dataGeneratedAt, now)}.`, "Newer agency information may exist.", inp.dataGeneratedAt);
+  if (inp.dataGeneratedAt) {
+    const old = (Date.parse(now) - Date.parse(inp.dataGeneratedAt)) / 3_600_000 > DATA_STALE_HOURS;
+    const when = `${dayWords(inp.dataGeneratedAt, now)}${old ? "" : `, ${PT_CLOCK.format(new Date(inp.dataGeneratedAt)).replace(/\s/g, " ")} Pacific`}`;
+    age("data", "info", `Neritic's data were last refreshed ${when}.`, old ? "Newer agency information may exist." : null, inp.dataGeneratedAt);
+  }
 
   // ---- all facts, in the strict hierarchy
   const facts = [
@@ -508,24 +560,46 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
   };
 }
 
+// ---------------------------------------------------------------- when the sources differ
+
+const restricts = (l: StatusLevel) => LEVEL_RANK[l] <= 1;
+const unquote = (s: string) => s.trim().replace(/[.]+$/, "");
+
+function conflictOf(rec: FisheryStatus, n: NoticeInput, nLevel: StatusLevel, now: string): SourceConflict {
+  const shown: SourceConflict["shown"] = LEVEL_RANK[nLevel] < LEVEL_RANK[rec.level] ? "notice" : "record";
+  const nv = n.verified ? "verified" : "not verified";
+  const rv = rec.review_state === "human_verified" ? "verified" : "not verified";
+  const nWhen = [n.effective ? `in effect since ${dayWords(n.effective, now)}` : null, n.registry_checked ? `registry last read ${dayWords(n.registry_checked, now)}` : null, nv].filter(Boolean).join(", ");
+  const nSays = `the official-notices registry lists “${unquote(n.title)}” as in effect (${n.agency}, ${nWhen})`;
+  const rSays = `Neritic's curated status says “${unquote(rec.headline)}” (${rec.source_name}, checked ${dayWords(rec.checked_at, now)}, ${rv})`;
+  const agency = shown === "notice" ? n.agency : rec.source_name;
+  return {
+    shown,
+    notice: { level: nLevel, word: LEVEL_WORD[nLevel], title: n.title, agency: n.agency, effective: n.effective, checked: n.registry_checked ?? null, url: n.url, verified: n.verified },
+    record: { level: rec.level, word: LEVEL_WORD[rec.level], headline: rec.headline, source: rec.source_name, checked: rec.checked_at, url: rec.source_url, verified: rec.review_state === "human_verified" },
+    words: `Sources differ: ${shown === "notice" ? nSays : rSays}, while ${shown === "notice" ? rSays : nSays}; Neritic shows the more restrictive of the two until a person has checked both, so check ${agency} before you act.`,
+  };
+}
+
 // ---------------------------------------------------------------- lede
 
+const STATUS_NOT_LOADED = "Fishery status could not be loaded. Check CDFW and CDPH before you go.";
+
 function ledeOf(rows: StatusRow[], statusError: boolean, sea: SeaView): Lede {
-  const flagged = rows.filter((r) => r.severity === "red" || r.severity === "amber").sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] || LEVEL_RANK[a.level as StatusLevel] - LEVEL_RANK[b.level as StatusLevel]);
+  // what leads: an emergency closure or delay, then a restriction or watch, then a fishery that is simply out of season
+  const rank = (r: StatusRow) => (r.seasonal ? 2 : SEVERITY_RANK[r.severity]);
+  const flagged = rows.filter((r) => r.severity === "red" || r.severity === "amber").sort((a, b) => rank(a) - rank(b) || LEVEL_RANK[a.level as StatusLevel] - LEVEL_RANK[b.level as StatusLevel]);
   const first = sea.lanes[0];
   const seaLine = first ? periodLine(first) : null;
   const seaWords = first && seaLine ? `${first.name}: ${seaLine}.` : null;
-  if (statusError) {
-    const text = "Fishery status could not be loaded. Check CDFW and CDPH before you go.";
-    return { label: null, text, status: text, severity: "amber", more: 0, sea: seaWords };
-  }
   if (!flagged.length) {
-    const text = "No closure or restriction on record for your fisheries here. Notices can lag; check CDFW and CDPH before you go.";
-    return { label: null, text, status: text, severity: "neutral", more: 0, sea: seaWords };
+    const text = statusError ? STATUS_NOT_LOADED : "No closure or restriction on record for your fisheries here. Notices can lag; check CDFW and CDPH before you go.";
+    return { label: null, text, status: text, severity: statusError ? "amber" : "neutral", more: 0, sea: seaWords, seasonal: false, caution: null };
   }
   const top = flagged[0];
   const text = top.headline;
-  return { label: top.label, text, status: `${top.label}: ${lower1(text)}`, severity: top.severity, more: flagged.length - 1, sea: seaWords };
+  // an official notice still leads when Neritic's own list is missing; the gap is said right after it
+  return { label: top.label, text, status: `${top.label}: ${lower1(text)}`, severity: top.severity, more: flagged.length - 1, sea: seaWords, seasonal: top.seasonal, caution: statusError ? "The rest of Neritic's season list did not load. Check CDFW and CDPH before you go." : null };
 }
 
 // ---------------------------------------------------------------- whale (RAMP)
@@ -579,7 +653,8 @@ const isClean = (s: BiotoxinSet, lvl: number | null) => {
 export function testSentence(site: BiotoxinSite, set: BiotoxinSet | null, lvl: number | null, now: string): string {
   // the collection site as CDPH writes it ("Monterey Bay", "Pillar Point"): more specific than the BMA
   const where = site.site_label || site.bma_label || site.port_label || "CDPH site";
-  const sp = site.species.replace(/ crab$/i, "").replace(/^Northern /, "northern ");
+  // "Dungeness", "rock crab", "northern anchovy": a proper noun keeps its capital, a common name does not
+  const sp = /dungeness/i.test(site.species) ? "Dungeness" : site.species.charAt(0).toLowerCase() + site.species.slice(1);
   const subject = `${where} ${sp}`;
   if (!set) return `${subject}: no test results published.`;
   const when = dayWords(set.date, now);
@@ -736,7 +811,7 @@ function bloomView(charm: CharmInput | null, outlook: OutlookInput | null, place
 // ---------------------------------------------------------------- sea and weather
 
 function seaView(c: Conditions | null | "error", now: string): SeaView {
-  const empty: SeaView = { state: c === null ? "loading" : "error", lanes: [], zone: null, issued: null, marineUrl: null, marineReason: null, alerts: [], buoy: null, buoyReason: null, tides: [], tideStation: null, tideReason: null, water: null };
+  const empty: SeaView = { state: c === null ? "loading" : "error", lanes: [], zone: null, issued: null, marineUrl: null, marineReason: null, alerts: [], buoy: null, buoyReason: null, windBuoy: null, tides: [], tideStation: null, tideReason: null, water: null };
   if (c === null || c === "error") return empty;
   const v: SeaView = { ...empty, state: "ok" };
   if (c.marine.status === "ok") {
@@ -754,7 +829,8 @@ function seaView(c: Conditions | null | "error", now: string): SeaView {
     v.marineReason = c.marine.reason;
     v.marineUrl = c.marine.url ?? null;
   }
-  if (c.alerts.status === "ok") v.alerts = c.alerts.data.map((a) => ({ event: a.event, headline: a.headline, url: a.url }));
+  // NWS headlines arrive in capitals and are sentence-cased upstream; a day's name keeps its capital
+  if (c.alerts.status === "ok") v.alerts = c.alerts.data.map((a) => ({ event: a.event, headline: a.headline.replace(/\b(mon|tues|wednes|thurs|fri|satur|sun)day\b/g, (d) => d.charAt(0).toUpperCase() + d.slice(1)), url: a.url }));
   if (c.buoy.status === "ok") {
     const b = c.buoy.data;
     const times = [b.windKt, b.waveFt, b.waterC].map((o) => o?.at).filter((x): x is string => !!x).sort();
@@ -772,6 +848,10 @@ function seaView(c: Conditions | null | "error", now: string): SeaView {
       at: times.at(-1) ?? null,
     };
   } else v.buoyReason = c.buoy.reason;
+  if (v.buoy && v.buoy.windKt == null && c.buoyWind?.status === "ok" && c.buoyWind.data.windKt) {
+    const w = c.buoyWind.data;
+    v.windBuoy = { name: c.buoyWind.station?.name ?? "NDBC station", id: c.buoyWind.station?.id ?? "", km: c.buoyWind.station?.km ?? 0, url: c.buoyWind.url, windKt: w.windKt!.value, windDir: w.windDirDeg ? compass(w.windDirDeg.value) : null, gustKt: w.gustKt?.value ?? null, at: w.windKt!.at };
+  }
   if (c.tides.status === "ok") {
     v.tides = c.tides.data;
     v.tideStation = { id: c.tides.station?.id ?? "", name: c.tides.station?.name ?? "", url: c.tides.url };
@@ -794,23 +874,46 @@ const tideClock = (at: string) => {
   return `${h % 12 || 12}:${m[2]} ${h < 12 ? "AM" : "PM"}`;
 };
 
+/** NWS periods after the current one that become facts (about two days). */
+const NWS_MORE_PERIODS = 4;
+const addDay = (ymd: string) => new Date(Date.parse(`${ymd}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+
 function seaFactsOf(sea: SeaView, place: TodayPlace, now: string, fact: (f: Omit<PortFact, "place_id">) => PortFact): PortFact[] {
   if (sea.state !== "ok") return [];
   const out: PortFact[] = [];
   const nws = { name: "NOAA National Weather Service", url: sea.marineUrl };
-  for (const a of sea.alerts) out.push(fact({ id: `weather:alert:${slug(a.event)}`, kind: "weather", severity: "amber", headline: sentence(`NWS: ${a.headline}`), detail: "In effect for these waters, as issued by NWS.", basis: "official", verified: null, source: { name: nws.name, url: a.url }, as_of: sea.issued }));
+  for (const a of sea.alerts) out.push(fact({ id: alertFactId(a.event), kind: "weather", severity: "amber", headline: sentence(`NWS: ${a.headline}`), detail: "In effect for these waters, as issued by NWS.", basis: "official", verified: null, source: { name: nws.name, url: a.url }, as_of: sea.issued }));
   const first = sea.lanes[0];
   if (first) {
     const line = periodLine(first);
     out.push(fact({ id: "weather:nws", kind: "weather", severity: "info", headline: `NWS ${sea.zone ?? "marine"} forecast, ${first.name}: ${line ?? first.text}`, value: line, detail: first.text, basis: "forecast", verified: null, source: nws, as_of: sea.issued, valid_for: null }));
+  }
+  // the periods that follow, each with the day it is for, so "tomorrow" can be answered from NWS's own words
+  for (const p of sea.lanes.slice(1, 1 + NWS_MORE_PERIODS)) {
+    if (!p.date) continue;
+    const line = periodLine(p);
+    out.push(fact({ id: `weather:nws:${p.date}:${p.night ? "night" : "day"}`, kind: "weather", severity: "info", headline: `NWS ${sea.zone ?? "marine"} forecast, ${p.name}: ${line ?? p.text}`, value: line, detail: p.text, basis: "forecast", verified: null, source: nws, as_of: sea.issued, valid_for: { from: p.date, to: p.date } }));
   }
   if (sea.buoy) {
     const b = sea.buoy;
     const parts = [b.windKt != null ? `wind ${b.windDir ? `${b.windDir} ` : ""}${Math.round(b.windKt)} kt${b.gustKt != null ? ` (gust ${Math.round(b.gustKt)})` : ""}` : null, b.waveFt != null ? `waves ${b.waveFt.toFixed(1)} ft${b.periodS != null ? ` at ${Math.round(b.periodS)} s` : ""}` : null].filter(Boolean);
     if (parts.length) out.push(fact({ id: "sea:buoy", kind: "observation", severity: "info", headline: `Measured at buoy ${b.id}: ${parts.join(", ")}.`, value: parts.join(", "), detail: `NDBC station ${b.id} (${b.name}), ${Math.round(b.km)} km from ${place.label}. A measurement at one point, not a forecast.`, basis: "measured", verified: null, source: { name: "NOAA NDBC", url: b.url }, as_of: b.at }));
   }
+  if (sea.windBuoy) {
+    const w = sea.windBuoy;
+    const words = `wind ${w.windDir ? `${w.windDir} ` : ""}${Math.round(w.windKt)} kt${w.gustKt != null ? ` (gust ${Math.round(w.gustKt)})` : ""}`;
+    out.push(fact({ id: "sea:wind", kind: "observation", severity: "info", headline: `Measured at buoy ${w.id}, ${Math.round(w.km)} km from ${place.label}: ${words}.`, value: words, detail: `The nearest buoy${sea.buoy ? ` (${sea.buoy.id})` : ""} has no wind sensor; NDBC station ${w.id} (${w.name}) is the nearest that measures wind. A measurement at one point, not a forecast.`, basis: "measured", verified: null, source: { name: "NOAA NDBC", url: w.url }, as_of: w.at }));
+  }
   const nt = nextTide(sea.tides, now);
   if (nt) out.push(fact({ id: "tide:next", kind: "tide", severity: "info", headline: `Next tide: ${nt.type === "H" ? "high" : "low"} ${nt.ft.toFixed(1)} ft at ${tideClock(nt.at)}.`, value: `${nt.ft.toFixed(1)} ft`, detail: `NOAA CO-OPS astronomical prediction at station ${sea.tideStation?.id ?? ""}; weather can shift real water levels.`, basis: "forecast", verified: null, source: { name: "NOAA CO-OPS", url: sea.tideStation?.url ?? null }, as_of: nt.at.slice(0, 10), valid_for: null }));
+  // today's and tomorrow's highs and lows, each day one fact
+  const today = pacificDay(now);
+  for (const day of [today, addDay(today)]) {
+    const list = sea.tides.filter((t) => t.at.startsWith(day)).sort((a, b) => a.at.localeCompare(b.at));
+    if (!list.length) continue;
+    const words = list.map((t) => `${t.type === "H" ? "high" : "low"} ${t.ft.toFixed(1)} ft at ${tideClock(t.at)}`).join(", ");
+    out.push(fact({ id: `tide:day:${day}`, kind: "tide", severity: "info", headline: `Tides ${day === today ? "today" : "tomorrow"} (${dayWords(day, now)})${sea.tideStation?.name ? ` at ${sea.tideStation.name}` : ""}: ${words}.`, value: null, detail: "NOAA CO-OPS astronomical predictions, feet above MLLW; wind and swell shift real water levels.", basis: "forecast", verified: null, source: { name: "NOAA CO-OPS", url: sea.tideStation?.url ?? null }, as_of: day, valid_for: { from: day, to: day } }));
+  }
   if (sea.water) {
     const f = (sea.water.c * 9) / 5 + 32;
     out.push(fact({ id: "sea:water", kind: "observation", severity: "info", headline: `Water temperature ${Math.round(f)} °F (${sea.water.c.toFixed(1)} °C), measured ${sea.water.where}.`, value: `${Math.round(f)} °F`, detail: sea.water.stale ? "The latest reading is more than an hour old." : null, basis: "measured", verified: null, source: { name: "NOAA", url: sea.water.url }, as_of: sea.water.at }));
@@ -820,10 +923,12 @@ function seaFactsOf(sea: SeaView, place: TodayPlace, now: string, fact: (f: Omit
 
 // ---------------------------------------------------------------- freshness, in plain words
 
-function freshnessOf(inp: PortTodayInputs, sea: SeaView, now: string): { label: string; when: string | null; stale: boolean }[] {
-  const out: { label: string; when: string | null; stale: boolean }[] = [];
+export type Freshness = { label: string; when: string | null; stale: boolean; /** not loaded at all (said as such, not as "old") */ missing?: boolean };
+
+function freshnessOf(inp: PortTodayInputs, sea: SeaView, now: string): Freshness[] {
+  const out: Freshness[] = [];
   const checked = (inp.fisheries?.records ?? []).map((r) => r.checked_at).sort().at(-1) ?? null;
-  out.push({ label: "Status", when: checked ? `checked ${dayWords(checked, now)}` : inp.fisheries ? "no records" : "not available", stale: !inp.fisheries || (!!checked && daysOld(checked, now) > STATUS_STALE_DAYS) });
+  out.push({ label: "Status", when: checked ? `checked ${dayWords(checked, now)}` : inp.fisheries ? "no records" : "not available", stale: !inp.fisheries || (!!checked && daysOld(checked, now) > STATUS_STALE_DAYS), missing: !inp.fisheries });
   if (sea.issued) out.push({ label: "NWS", when: PT_CLOCK.format(new Date(sea.issued)).replace(/\s/g, " ") + (pacificDay(sea.issued) === pacificDay(now) ? "" : ` ${dayWords(sea.issued, now)}`), stale: (Date.parse(now) - Date.parse(sea.issued)) / 3_600_000 > 12 });
   if (sea.buoy?.at) {
     const m = Math.max(0, Math.round((Date.parse(now) - Date.parse(sea.buoy.at)) / 60000));

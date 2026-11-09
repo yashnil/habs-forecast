@@ -103,8 +103,8 @@ select cron.schedule('ask-log-retention', '17 4 * * *', $$delete from public.ask
 
 ## Integration points
 
-- **Today data:** swap the body of `loadPortToday` in `src/pilot/ask/source.ts` for `buildPortToday(...)` and return `dataset: "published"`. Nothing else changes, as long as PortFact ids are stable and `as_of` is set.
-- **Today cards:** citation chips link to `/today?place=<id>#fact-<fact id>`. The Today track should render `id="fact-<fact.id>"` on each card.
+- **Today data (done):** `loadPortToday` in `src/pilot/ask/source.ts` reads `loadPortTodayFacts` (`src/pilot/today/portToday.ts`): the port's Today facts for every fishery with the sea, `dataset: "published"` unless the server is reading the test fixture ("Sample data"). The hand-written sample records are eval records only (`evals/sampleFacts.ts`); `evals/published.json` asks the golden questions of the real fact shape.
+- **Today cards (done):** citation chips link to `/today?place=<id>#fact-<fact id>`; every fact on Today has that address, and arriving on one scrolls to its card and marks it.
 - **Ask sheet:**
 
   ```tsx
@@ -112,7 +112,7 @@ select cron.schedule('ask-log-retention', '17 4 * * *', $$delete from public.ask
   ```
 
   It lives in `src/pilot/ask/ui/AskSheet.tsx` and opens Ask Neritic from the Today page's action.
-- **Shell:** `/ask` is a standalone page with its own small nav. The integrator may wrap it in the pilot shell or add it to the nav.
+- **Shell (done):** `/ask` renders in `PilotShell`, the same top bar, dock and Almanac styling as Today; ⋯ in the top bar links to it. Today opens the same chat in a sheet; "See it on Today" closes the sheet onto the card.
 - **SMS store:** `SmsStore` (opt-out and home port) is in memory. It needs a durable implementation before a public number goes live (see [sms.md](sms.md)).
 
 ## Owner decisions and inputs

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { TRIGGERS } from "@/pilot/alerts/diff";
-import { stubPortToday } from "@/pilot/alerts/factsStub";
+import { realPortToday } from "./fixtures/portToday";
 import { readInbox, runLocalCheck, SNAP_KEY, markRead, unreadCount } from "@/pilot/alerts/inbox";
 import { pilotAccountConfig } from "@/pilot/account/config";
 import { SMS_CONSENT_TEXT, toE164US } from "@/pilot/account/consent";
@@ -94,25 +94,32 @@ describe("device account", () => {
 });
 
 describe("device alert check (in-app inbox without an account)", () => {
-  let today = stubPortToday("port-592")!;
+  let today = realPortToday("port-592");
   beforeEach(() => {
     fakeWindow("ok");
-    today = stubPortToday("port-592")!;
+    today = realPortToday("port-592");
   });
 
   it("baseline first, then one inbox item per change, never twice", () => {
     writeAccount(savePlace(EMPTY_ACCOUNT, "port-592"));
     const first = runLocalCheck(readAccount(), [today], new Date("2026-11-08T15:00:00Z"));
     expect(first).toMatchObject({ added: [], baselined: ["port-592"], persisted: true });
-    const changed = { ...today, facts: today.facts.map((f) => (f.kind === "test" ? { ...f, as_of: "2026-11-06", value: "avg 9 ppm (limit 30)" } : f)) };
+    const DUNGENESS = "test:bma-g-monterey-bay-dungeness-crab";
+    const changed = { ...today, facts: today.facts.map((f) => (f.id === DUNGENESS ? { ...f, as_of: "2026-11-06", value: "9 ppm avg" } : f)) };
     const second = runLocalCheck(readAccount(), [changed], new Date("2026-11-09T15:00:00Z"));
     expect(second.added.map((a) => a.trigger)).toEqual(["new_toxin_result"]);
-    expect(second.added[0].source?.name).toContain("Pilot sample (not live data)");
+    expect(second.added[0].source?.name).toContain("CDPH");
+    expect(second.added.every((a) => !a.sample)).toBe(true);
+
     expect(runLocalCheck(readAccount(), [changed], new Date("2026-11-09T16:00:00Z")).added).toEqual([]);
     expect(readInbox()).toHaveLength(1);
     expect(unreadCount()).toBe(1);
     markRead("all");
     expect(unreadCount()).toBe(0);
+    // facts read from the test fixture are marked on the item itself
+    const again = { ...changed, facts: changed.facts.map((f) => (f.id === DUNGENESS ? { ...f, as_of: "2026-11-07" } : f)) };
+    const sample = runLocalCheck(readAccount(), [again], new Date("2026-11-10T15:00:00Z"), { sample: true });
+    expect(sample.added.map((a) => a.sample)).toEqual([true]);
   });
 
   it("in-app channel off, or the trigger not chosen: the baseline still moves, no inbox item", () => {
