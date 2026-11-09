@@ -9,6 +9,13 @@ import type { Referral, SafetyKind } from "./types";
 export const DISCLAIMER =
   "Neritic is not an official source. Closures, seasons and seafood advisories come from CDFW and CDPH and always take precedence. Chlorophyll is not toxin, and forecasts are probabilities, not guarantees. Never use Neritic to decide whether seafood is safe or whether it is safe to go out.";
 
+/**
+ * The standing notice under the first answer of a conversation: short, and after the answer (the full
+ * DISCLAIMER stands on the page itself). What it must always say: not an official source, the agencies
+ * take precedence, never for deciding whether seafood is safe or whether to go out.
+ */
+export const ANSWER_NOTICE = "Neritic is not an official source: CDFW and CDPH decide, and their notices take precedence. Never use Neritic to decide whether seafood is safe or whether it is safe to go out.";
+
 export const DEMO_LABEL = "Pilot demo — answers are assembled from Neritic's data without an AI model";
 export const LIVE_LABEL = "Live — answers are written by Claude from Neritic's data and checked before you see them";
 export const SAMPLE_DATA_LABEL = "Sample data — the pilot's fixture records, not today's published data";

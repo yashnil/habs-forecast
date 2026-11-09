@@ -32,8 +32,9 @@ for (const [label, viewport] of [["phone", { width: 390, height: 844 }], ["deskt
       await expect(page.locator("h1")).toHaveCount(1);
       await expect(page.locator("h1")).toHaveText("Moss Landing");
       // the lede leads with the official delay, in words, with its cause
-      await expect(page.getByTestId("today-lede")).toContainText("Dungeness crab (commercial)");
-      await expect(page.getByTestId("today-lede")).toContainText("humpback whale entanglements");
+      // (the sector is said once: "Dungeness crab: commercial season delayed …")
+      await expect(page.getByTestId("today-lede")).toContainText("Dungeness crab: commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements).");
+      await expect(page.getByTestId("today-lede")).not.toContainText("(commercial): Commercial");
       // the status strip: red delay first, the calmest state is "None on record", records not verified
       const dungeness = page.getByTestId("status-dungeness_commercial");
       await expect(dungeness).toHaveAttribute("data-severity", "red");
@@ -43,6 +44,15 @@ for (const [label, viewport] of [["phone", { width: 390, height: 844 }], ["deskt
       await expect(page.getByTestId("status-groundfish").getByTestId("status-word")).toHaveText("None on record");
       await expect(page.getByTestId("status-groundfish")).toHaveAttribute("data-severity", "neutral");
       await expect(page.getByTestId("status-anchovy_sardine")).toHaveAttribute("data-severity", "amber");
+      // a quarantine on SPORT harvest says so in its pill and its sentence: it is not a commercial closure
+      const mussels = page.getByTestId("status-bivalve_shellfish");
+      await expect(mussels.getByTestId("status-word")).toHaveText("Sport harvest closed");
+      await expect(mussels).toContainText("Annual quarantine of sport-harvested mussels (sport harvest only).");
+      if (label === "desktop") {
+        // at a glance, each row is counted under its own pill's word
+        await expect(page.getByTestId("today-glance")).toContainText("1 delayed · 1 sport harvest closed · 1 restricted · 1 season closed · 3 none on record");
+        await expect(page.getByTestId("today-glance")).not.toContainText("closed or delayed");
+      }
       // a season that has simply ended is closed, said calmly: a barred disc and "Season closed", not the alarm triangle
       const salmon = page.getByTestId("status-salmon_commercial");
       await expect(salmon.getByTestId("status-word")).toHaveText("Season closed");
@@ -58,11 +68,30 @@ for (const [label, viewport] of [["phone", { width: 390, height: 844 }], ["deskt
       // the tests: a plain sentence first, then the chart with a text alternative
       await expect(page.getByTestId("tests-lede")).toHaveText("Monterey Bay Dungeness tested well under the limit on Sep 28: avg 5.5 ppm, limit 30.");
       await expect(page.getByTestId("toxin-chart").first()).toHaveAttribute("role", "img");
-      // the bloom outlook: C-HARM as conditions, the outlook as an indicator with skill from the data file
+      // the bloom outlook, top-down: (a) NOAA's toxin-conditions model with its run date, then (b) Neritic's 8-day chlorophyll outlook
       await expect(page.getByTestId("bloom-lede")).toContainText("probability of elevated particulate domoic acid in the water");
-      await expect(page.getByTestId("outlook-words")).toContainText("a bloom indicator, not a toxin forecast");
-      await expect(page.getByTestId("outlook-words")).toContainText("0.754");
+      await expect(page.getByTestId("charm-run")).toHaveText("run Oct 8");
       await expect(page.getByTestId("bloom-timeline")).toBeVisible();
+      const outlook = page.getByTestId("outlook");
+      expect(await page.getByTestId("today-bloom").locator('[data-testid="bloom-charm"], [data-testid="outlook"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")))).toEqual(["bloom-charm", "outlook"]);
+      // (b) leads with a sentence a fisherman can read: higher than, about, or lower than usual for the season
+      await expect(page.getByTestId("outlook-say")).toHaveText("Next 8 days (Oct 13–20): chlorophyll near Moss Landing is expected to run higher than usual for this time of year, about 1.6× the typical level.");
+      await expect(page.getByTestId("outlook-say").locator("b")).toHaveText("higher than usual");
+      await expect(outlook).toHaveAttribute("data-level", "higher");
+      // the same thing as one scale, with a text alternative that says everything the drawing says
+      const scale = page.getByTestId("outlook-scale");
+      await expect(scale).toBeVisible();
+      await expect(scale).toHaveAttribute("role", "img");
+      await expect(scale.locator("desc")).toHaveText(/The outlook is 1\.6× the usual chlorophyll for this time of year: higher than usual\. Shaded band: its typical error, a factor of 2 either way, from 0\.\d× to 3\.\d× usual\./);
+      // always beside it: what it is, how sure, and a neutral use; never a status colour
+      await expect(page.getByTestId("outlook-words")).toHaveText("A bloom indicator, not a toxin forecast: chlorophyll is algae of every kind. It is one 8-day average, not a day-by-day forecast, and its typical error is about a factor of 2 either way. A higher-than-usual outlook is a reason to watch the next CDPH test results, not a sign of toxin.");
+      // the held-out skill, read from the data file, is one tap down ("How good is this outlook?"), not in the main paragraph
+      const skill = page.getByTestId("outlook-skill");
+      await expect(skill).not.toHaveAttribute("open", "");
+      await expect(page.getByTestId("outlook-words")).not.toContainText("RMSE");
+      await skill.locator("summary").click();
+      await expect(skill).toContainText("Held-out RMSE ln(mg m-3): 0.754 for this outlook, against 0.85 climatology and 0.892 persistence (n = 185,000; 2019 to 2021-06). Lower is better.");
+      await expect(page.getByTestId("outlook-numbers")).toContainText("about 3.2 mg/m³ against a usual 2.0 mg/m³");
       // whale rules
       await expect(page.getByTestId("whale-lede")).toContainText("Zone 4");
       await expect(page.getByTestId("whale-next")).toContainText("Dec 15");
@@ -202,6 +231,8 @@ test("known gaps are said plainly: a wave buoy's missing wind comes from the nex
   await expect(row.getByTestId("sources-differ")).toBeVisible();
   await row.click();
   const sheet = page.getByTestId("status-sheet");
+  await expect(sheet).toContainText("Sport harvest closed");
+  await expect(sheet).toContainText("This is a rule for sport harvest, not a closure of a commercial fishery.");
   await expect(sheet.getByTestId("conflict")).toContainText("It shows the more restrictive one and does not choose between them");
   await expect(sheet.getByTestId("conflict-notice")).toContainText("Closed: Annual quarantine of sport-harvested mussels");
   await expect(sheet.getByTestId("conflict-notice")).toContainText("in effect since May 1 · registry last read Oct 8 · not verified");
@@ -298,7 +329,7 @@ test("missing sidecars: tests, whale rules, status and outlook say they are unav
   await expect(page.getByTestId("whale-unavailable")).toBeVisible();
   await expect(page.getByTestId("outlook-missing")).toBeVisible();
   // an official notice still leads (this dataset has the notices registry), and the missing list is said right after it
-  await expect(page.getByTestId("today-lede")).toContainText("Annual quarantine of sport-harvested mussels");
+  await expect(page.getByTestId("today-lede")).toContainText("annual quarantine of sport-harvested mussels (sport harvest only).");
   await expect(page.getByTestId("lede-caution")).toHaveText("The rest of Neritic's season list did not load. Check CDFW and CDPH before you go.");
   await expect(page.getByTestId("today-status")).toContainText("Neritic’s list of seasons and restrictions did not load. Unknown is not open");
   // one statement for the fisheries Neritic cannot speak to, by name: never a row that reads like a status, never "open"

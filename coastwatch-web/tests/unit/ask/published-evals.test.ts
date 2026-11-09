@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PortFact } from "@/pilot/contracts";
 import { snapshotOf } from "@/pilot/ask/compose";
 import { askDeterministic } from "@/pilot/ask/engine";
-import { ADVERSARIAL_ENGINE, PUBLISHED, grade, type EngineCase } from "@/pilot/ask/evals/harness";
+import { ADVERSARIAL_ENGINE, PUBLISHED, allText, grade, type EngineCase } from "@/pilot/ask/evals/harness";
 import { loadPortToday } from "@/pilot/ask/source";
 import type { AskRequest, SeenSnapshot } from "@/pilot/ask/types";
 import { fixtureServerEnv } from "../fixtures/portToday";
@@ -68,6 +68,9 @@ describe("golden questions on the real fact shape", () => {
     it(c.id, async () => {
       const { a, failures } = await run(c);
       expect(failures, c.question).toEqual([]);
+      // dates are in the reader's terms, as Today words them ("checked Oct 12", "tested Sep 28"): never an ISO date, never hours for a day-dated record
+      expect(allText(a), c.question).not.toMatch(/\b\d{4}-\d{2}-\d{2}\b/);
+      for (const x of a.citations) expect(x.as_of_words ?? "", x.fact_id).not.toMatch(/\d{4}-\d{2}/);
       // every citation opens its own Today card
       for (const x of a.citations) expect(x.today_href).toBe(`/today?place=${a.place!.place_id}#fact-${encodeURIComponent(x.fact_id)}`);
       if (a.citations.length) expect(a.dataset).toBe("fixture");

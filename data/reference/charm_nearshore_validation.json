@@ -1,0 +1,939 @@
+{
+  "status": "validated",
+  "generated_at": "2026-10-20T16:21:42Z",
+  "description": "Test of showing, at a pier/nearshore point without a C-HARM value, the same-day C-HARM v3.1 nowcast probability of the nearest cell that has a value, against CalHABMAP pier water samples. Model probabilities are compared with measured events in seawater at the pier; neither is toxin in seafood.",
+  "script": "pipeline/scripts/validate_charm_nearshore.py",
+  "period": {
+    "charm_record": [
+      "2022-11-01",
+      "2026-10-18"
+    ],
+    "charm_days_with_run": 1160,
+    "charm_days_in_span": 1448,
+    "climatology_samples_from": "2014-01-01"
+  },
+  "data_sources": {
+    "charm": {
+      "dataset": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.html",
+      "variables": {
+        "particulate_domoic": "P(pDA > 500 ng/L)",
+        "pseudo_nitzschia": "P(Pseudo-nitzschia > 10,000 cells/L)"
+      },
+      "request_url_pattern": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia[(YYYY-MM-DDT12:00:00Z):(YYYY-MM-DDT12:00:00Z)][(lat0):(lat1)][(lon0_360):(lon1_360)],particulate_domoic[...]  (one request per station per calendar year, box +/-40 km)",
+      "example_request_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_0day.nc?pseudo_nitzschia%5B(2024-01-01T12:00:00Z):(2024-12-31T12:00:00Z)%5D%5B(32.508):(33.226)%5D%5B(242.315):(243.000)%5D,particulate_domoic%5B(2024-01-01T12:00:00Z):(2024-12-31T12:00:00Z)%5D%5B(32.508):(33.226)%5D%5B(242.315):(243.000)%5D",
+      "user_agent": "CoastWatch-pipeline/0.1 (+https://github.com/yashnil/habs-forecast)"
+    },
+    "calhabmap": {
+      "datasets": "https://erddap.sccoos.org/erddap/tabledap/HABs-<station>.html (17 stations)",
+      "request_url_pattern": "https://erddap.sccoos.org/erddap/tabledap/HABs-<station>.csv?time,latitude,longitude,pDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")",
+      "units": {
+        "pDA": "ng/mL (500 ng/L = 0.5 ng/mL)",
+        "Pseudo_nitzschia_*_group": "cells/L"
+      }
+    }
+  },
+  "method": {
+    "matching": "Sample day = local calendar date (UTC-8). Same-day nowcast only; days without a C-HARM run are skipped, never filled. Nearest cell with a finite value that day, per variable, from the sample's reported position.",
+    "collapse": "Several rows on one station-day: the maximum measured value of each variable.",
+    "climatology": "Leave-one-year-out event frequency at the same station in a +/-1 month window, from the station's samples since 2014 in other years, shrunk (weight 2 samples) toward the station's leave-one-year-out overall rate.",
+    "confidence_intervals": "Cluster bootstrap (2000 resamples) over station x calendar-month blocks.",
+    "verdict_rule": "'skill' only if the AUC 95% CI lies above 0.5 and BSS > 0 vs climatology (pda_detected: AUC only, since C-HARM does not forecast that event); otherwise 'no demonstrated skill nearshore'.",
+    "pda_detected_limit": "pDA > 0 ng/mL as reported; CalHABMAP publishes no detection limit.",
+    "pn_total": "seriata + delicatissima groups; both must be counted unless one alone exceeds 10,000 cells/L."
+  },
+  "events": {
+    "pda_gt_500ngL": {
+      "metric": "Particulate domoic acid above 500 ng/L (0.5 ng/mL) in the pier water sample",
+      "model_variable": "particulate_domoic",
+      "n": 1058,
+      "n_events": 46,
+      "base_rate": 0.0435,
+      "n_stations": 9,
+      "stations_with_events": [
+        "CalPolyPier",
+        "HumboldtSouthBay",
+        "NewportBeachPier",
+        "SantaCruzWharf",
+        "SantaMonicaPier",
+        "ScrippsPier",
+        "StearnsWharf",
+        "TrinidadPier"
+      ],
+      "dates": [
+        "2022-11-01",
+        "2026-09-30"
+      ],
+      "median_distance_km": 3.8533,
+      "auc": 0.3024,
+      "auc_95ci": [
+        0.226,
+        0.389
+      ],
+      "brier_model": 0.5215,
+      "brier_climatology": 0.0418,
+      "bss": -11.4885,
+      "bss_95ci": [
+        -17.363,
+        -8.083
+      ],
+      "mean_model_probability": 0.6834,
+      "mean_climatology_probability": 0.0288,
+      "auc_climatology": 0.6383,
+      "n_clusters": 341,
+      "verdict": "no demonstrated skill nearshore",
+      "verdict_sentence": "AUC 95% CI 0.23-0.39 lies below 0.5 (ranks worse than chance); BSS -11.49 <= 0 (worse than station-month climatology) (AUC 0.30, n=1058, 46 events, 2022-11-01 to 2026-09-30).",
+      "by_distance_to_nearest_valued_cell": {
+        "<5 km": {
+          "metric": "Particulate domoic acid above 500 ng/L (0.5 ng/mL) in the pier water sample",
+          "model_variable": "particulate_domoic",
+          "n": 833,
+          "n_events": 33,
+          "base_rate": 0.0396,
+          "n_stations": 6,
+          "stations_with_events": [
+            "CalPolyPier",
+            "NewportBeachPier",
+            "SantaMonicaPier",
+            "ScrippsPier",
+            "StearnsWharf",
+            "TrinidadPier"
+          ],
+          "dates": [
+            "2022-11-01",
+            "2026-08-10"
+          ],
+          "median_distance_km": 2.9071,
+          "auc": 0.3014,
+          "auc_95ci": [
+            0.217,
+            0.397
+          ],
+          "brier_model": 0.5285,
+          "brier_climatology": 0.0382,
+          "bss": -12.8509,
+          "bss_95ci": [
+            -21.959,
+            -8.498
+          ],
+          "mean_model_probability": 0.6938,
+          "mean_climatology_probability": 0.0188,
+          "auc_climatology": 0.5965,
+          "n_clusters": 252,
+          "verdict": "no demonstrated skill nearshore",
+          "verdict_sentence": "AUC 95% CI 0.22-0.40 lies below 0.5 (ranks worse than chance); BSS -12.85 <= 0 (worse than station-month climatology) (AUC 0.30, n=833, 33 events, 2022-11-01 to 2026-08-10)."
+        },
+        "5-15 km": {
+          "metric": "Particulate domoic acid above 500 ng/L (0.5 ng/mL) in the pier water sample",
+          "model_variable": "particulate_domoic",
+          "n": 225,
+          "n_events": 13,
+          "base_rate": 0.0578,
+          "n_stations": 6,
+          "stations_with_events": [
+            "HumboldtSouthBay",
+            "SantaCruzWharf",
+            "SantaMonicaPier"
+          ],
+          "dates": [
+            "2022-11-01",
+            "2026-09-30"
+          ],
+          "median_distance_km": 5.3796,
+          "auc": 0.3171,
+          "auc_95ci": [
+            0.162,
+            0.515
+          ],
+          "brier_model": 0.4957,
+          "brier_climatology": 0.0551,
+          "bss": -7.996,
+          "bss_95ci": [
+            -15.812,
+            -4.895
+          ],
+          "mean_model_probability": 0.6447,
+          "mean_climatology_probability": 0.0657,
+          "auc_climatology": 0.6829,
+          "n_clusters": 93,
+          "verdict": "no demonstrated skill nearshore",
+          "verdict_sentence": "AUC 95% CI 0.16-0.52 includes 0.5; BSS -8.00 <= 0 (worse than station-month climatology) (AUC 0.32, n=225, 13 events, 2022-11-01 to 2026-09-30)."
+        },
+        ">15 km": {
+          "metric": "Particulate domoic acid above 500 ng/L (0.5 ng/mL) in the pier water sample",
+          "model_variable": "particulate_domoic",
+          "n": 0,
+          "n_events": 0,
+          "base_rate": null,
+          "n_stations": 0,
+          "stations_with_events": [],
+          "dates": null,
+          "median_distance_km": null,
+          "auc": null,
+          "auc_95ci": null,
+          "brier_model": null,
+          "brier_climatology": null,
+          "bss": null,
+          "bss_95ci": null,
+          "note": "Too few samples or no events / no non-events: not computable.",
+          "verdict": "no demonstrated skill nearshore",
+          "verdict_sentence": "Not enough events to test (0 events in 0 samples)."
+        }
+      }
+    },
+    "pda_detected": {
+      "metric": "Particulate domoic acid reported above 0 (no detection limit is published; 0 = not quantified)",
+      "model_variable": "particulate_domoic",
+      "n": 1058,
+      "n_events": 244,
+      "base_rate": 0.2306,
+      "n_stations": 9,
+      "stations_with_events": [
+        "CalPolyPier",
+        "Humboldt",
+        "HumboldtSouthBay",
+        "NewportBeachPier",
+        "SantaCruzWharf",
+        "SantaMonicaPier",
+        "ScrippsPier",
+        "StearnsWharf",
+        "TrinidadPier"
+      ],
+      "dates": [
+        "2022-11-01",
+        "2026-09-30"
+      ],
+      "median_distance_km": 3.8533,
+      "auc": 0.4185,
+      "auc_95ci": [
+        0.376,
+        0.465
+      ],
+      "brier_model": 0.4647,
+      "brier_climatology": 0.1559,
+      "bss": -1.9808,
+      "bss_95ci": [
+        -2.572,
+        -1.523
+      ],
+      "mean_model_probability": 0.6834,
+      "mean_climatology_probability": 0.1663,
+      "auc_climatology": 0.7544,
+      "n_clusters": 341,
+      "verdict": "no demonstrated skill nearshore",
+      "verdict_sentence": "AUC 0.42 (95% CI 0.38-0.47) lies below 0.5 (ranks worse than chance), n=1058, 244 events.",
+      "by_distance_to_nearest_valued_cell": {
+        "<5 km": {
+          "metric": "Particulate domoic acid reported above 0 (no detection limit is published; 0 = not quantified)",
+          "model_variable": "particulate_domoic",
+          "n": 833,
+          "n_events": 139,
+          "base_rate": 0.1669,
+          "n_stations": 6,
+          "stations_with_events": [
+            "CalPolyPier",
+            "NewportBeachPier",
+            "SantaMonicaPier",
+            "ScrippsPier",
+            "StearnsWharf",
+            "TrinidadPier"
+          ],
+          "dates": [
+            "2022-11-01",
+            "2026-08-10"
+          ],
+          "median_distance_km": 2.9071,
+          "auc": 0.4205,
+          "auc_95ci": [
+            0.371,
+            0.477
+          ],
+          "brier_model": 0.4861,
+          "brier_climatology": 0.1326,
+          "bss": -2.667,
+          "bss_95ci": [
+            -3.678,
+            -1.963
+          ],
+          "mean_model_probability": 0.6938,
+          "mean_climatology_probability": 0.0991,
+          "auc_climatology": 0.7138,
+          "n_clusters": 252,
+          "verdict": "no demonstrated skill nearshore",
+          "verdict_sentence": "AUC 0.42 (95% CI 0.37-0.48) lies below 0.5 (ranks worse than chance), n=833, 139 events."
+        },
+        "5-15 km": {
+          "metric": "Particulate domoic acid reported above 0 (no detection limit is published; 0 = not quantified)",
+          "model_variable": "particulate_domoic",
+          "n": 225,
+          "n_events": 105,
+          "base_rate": 0.4667,
+          "n_stations": 6,
+          "stations_with_events": [
+            "Humboldt",
+            "HumboldtSouthBay",
+            "SantaCruzWharf",
+            "SantaMonicaPier"
+          ],
+          "dates": [
+            "2022-11-01",
+            "2026-09-30"
+          ],
+          "median_distance_km": 5.3796,
+          "auc": 0.4387,
+          "auc_95ci": [
+            0.356,
+            0.531
+          ],
+          "brier_model": 0.3855,
+          "brier_climatology": 0.2423,
+          "bss": -0.5909,
+          "bss_95ci": [
+            -0.901,
+            -0.324
+          ],
+          "mean_model_probability": 0.6447,
+          "mean_climatology_probability": 0.4152,
+          "auc_climatology": 0.6285,
+          "n_clusters": 93,
+          "verdict": "no demonstrated skill nearshore",
+          "verdict_sentence": "AUC 0.44 (95% CI 0.36-0.53) includes 0.5, n=225, 105 events."
+        },
+        ">15 km": {
+          "metric": "Particulate domoic acid reported above 0 (no detection limit is published; 0 = not quantified)",
+          "model_variable": "particulate_domoic",
+          "n": 0,
+          "n_events": 0,
+          "base_rate": null,
+          "n_stations": 0,
+          "stations_with_events": [],
+          "dates": null,
+          "median_distance_km": null,
+          "auc": null,
+          "auc_95ci": null,
+          "brier_model": null,
+          "brier_climatology": null,
+          "bss": null,
+          "bss_95ci": null,
+          "note": "Too few samples or no events / no non-events: not computable.",
+          "verdict": "no demonstrated skill nearshore",
+          "verdict_sentence": "Not enough events to test (0 events in 0 samples)."
+        }
+      }
+    },
+    "pn_gt_10k": {
+      "metric": "Total Pseudo-nitzschia (seriata + delicatissima groups) above 10,000 cells/L",
+      "model_variable": "pseudo_nitzschia",
+      "n": 1535,
+      "n_events": 373,
+      "base_rate": 0.243,
+      "n_stations": 14,
+      "stations_with_events": [
+        "BodegaMarineLab",
+        "CalPolyPier",
+        "MontereyWharf",
+        "MorroBayBackBay",
+        "MorroBayFrontBay",
+        "NewportBeachPier",
+        "SantaCruzWharf",
+        "SantaMonicaPier",
+        "ScrippsPier",
+        "StearnsWharf"
+      ],
+      "dates": [
+        "2022-11-01",
+        "2026-10-13"
+      ],
+      "median_distance_km": 2.428,
+      "auc": 0.5984,
+      "auc_95ci": [
+        0.56,
+        0.636
+      ],
+      "brier_model": 0.56,
+      "brier_climatology": 0.1432,
+      "bss": -2.9112,
+      "bss_95ci": [
+        -3.443,
+        -2.431
+      ],
+      "mean_model_probability": 0.8359,
+      "mean_climatology_probability": 0.2452,
+      "auc_climatology": 0.8011,
+      "n_clusters": 512,
+      "verdict": "no demonstrated skill nearshore",
+      "verdict_sentence": "BSS -2.91 <= 0 (worse than station-month climatology) (AUC 0.60, n=1535, 373 events, 2022-11-01 to 2026-10-13).",
+      "by_distance_to_nearest_valued_cell": {
+        "<5 km": {
+          "metric": "Total Pseudo-nitzschia (seriata + delicatissima groups) above 10,000 cells/L",
+          "model_variable": "pseudo_nitzschia",
+          "n": 1495,
+          "n_events": 366,
+          "base_rate": 0.2448,
+          "n_stations": 13,
+          "stations_with_events": [
+            "BodegaMarineLab",
+            "CalPolyPier",
+            "MontereyWharf",
+            "MorroBayBackBay",
+            "MorroBayFrontBay",
+            "NewportBeachPier",
+            "SantaCruzWharf",
+            "SantaMonicaPier",
+            "ScrippsPier",
+            "StearnsWharf"
+          ],
+          "dates": [
+            "2022-11-01",
+            "2026-10-13"
+          ],
+          "median_distance_km": 2.428,
+          "auc": 0.5907,
+          "auc_95ci": [
+            0.549,
+            0.628
+          ],
+          "brier_model": 0.5659,
+          "brier_climatology": 0.1452,
+          "bss": -2.8962,
+          "bss_95ci": [
+            -3.427,
+            -2.455
+          ],
+          "mean_model_probability": 0.8422,
+          "mean_climatology_probability": 0.2484,
+          "auc_climatology": 0.796,
+          "n_clusters": 484,
+          "verdict": "no demonstrated skill nearshore",
+          "verdict_sentence": "BSS -2.90 <= 0 (worse than station-month climatology) (AUC 0.59, n=1495, 366 events, 2022-11-01 to 2026-10-13)."
+        },
+        "5-15 km": {
+          "metric": "Total Pseudo-nitzschia (seriata + delicatissima groups) above 10,000 cells/L",
+          "model_variable": "pseudo_nitzschia",
+          "n": 40,
+          "n_events": 7,
+          "base_rate": 0.175,
+          "n_stations": 8,
+          "stations_with_events": [
+            "MorroBayFrontBay",
+            "NewportBeachPier",
+            "SantaCruzWharf",
+            "SantaMonicaPier",
+            "StearnsWharf"
+          ],
+          "dates": [
+            "2022-11-22",
+            "2026-05-25"
+          ],
+          "median_distance_km": 6.455,
+          "auc": 0.7424,
+          "auc_95ci": [
+            0.451,
+            0.944
+          ],
+          "brier_model": 0.3404,
+          "brier_climatology": 0.0662,
+          "bss": -4.1401,
+          "bss_95ci": [
+            -11.516,
+            -1.777
+          ],
+          "mean_model_probability": 0.5974,
+          "mean_climatology_probability": 0.1235,
+          "auc_climatology": 0.961,
+          "n_clusters": 40,
+          "verdict": "no demonstrated skill nearshore",
+          "verdict_sentence": "AUC 95% CI 0.45-0.94 includes 0.5; BSS -4.14 <= 0 (worse than station-month climatology) (AUC 0.74, n=40, 7 events, 2022-11-22 to 2026-05-25)."
+        },
+        ">15 km": {
+          "metric": "Total Pseudo-nitzschia (seriata + delicatissima groups) above 10,000 cells/L",
+          "model_variable": "pseudo_nitzschia",
+          "n": 0,
+          "n_events": 0,
+          "base_rate": null,
+          "n_stations": 0,
+          "stations_with_events": [],
+          "dates": null,
+          "median_distance_km": null,
+          "auc": null,
+          "auc_95ci": null,
+          "brier_model": null,
+          "brier_climatology": null,
+          "bss": null,
+          "bss_95ci": null,
+          "note": "Too few samples or no events / no non-events: not computable.",
+          "verdict": "no demonstrated skill nearshore",
+          "verdict_sentence": "Not enough events to test (0 events in 0 samples)."
+        }
+      }
+    }
+  },
+  "station_coverage": {
+    "TrinidadPier": {
+      "name": "Trinidad Pier",
+      "sample_days_in_period": 47,
+      "no_charm_run_that_day": 9,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 38,
+        "particulate_domoic": 38
+      },
+      "position": [
+        41.0549,
+        -124.147
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 0.8,
+        "min": 0.8,
+        "max": 2.01
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 2.01,
+        "min": 0.8,
+        "max": 2.01
+      }
+    },
+    "Humboldt": {
+      "name": "Humboldt Bay",
+      "sample_days_in_period": 34,
+      "no_charm_run_that_day": 6,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 28,
+        "particulate_domoic": 28
+      },
+      "position": [
+        40.7783,
+        -124.1967
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 0.33,
+        "min": 0.33,
+        "max": 0.33
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 5.34,
+        "min": 5.34,
+        "max": 5.34
+      }
+    },
+    "HumboldtSouthBay": {
+      "name": "Humboldt Bay, South Bay",
+      "sample_days_in_period": 39,
+      "no_charm_run_that_day": 8,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 31,
+        "particulate_domoic": 31
+      },
+      "position": [
+        40.7234,
+        -124.2234
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 0.67,
+        "min": 0.67,
+        "max": 0.67
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 6.35,
+        "min": 6.35,
+        "max": 6.35
+      }
+    },
+    "BodegaMarineLab": {
+      "name": "Bodega Marine Lab",
+      "sample_days_in_period": 194,
+      "no_charm_run_that_day": 34,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 160,
+        "particulate_domoic": 160
+      },
+      "position": [
+        38.3161,
+        -123.0705
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 1.01,
+        "min": 1.01,
+        "max": 1.76
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 1.76,
+        "min": 1.76,
+        "max": 4.14
+      }
+    },
+    "BodegaMarineLabBuoy": {
+      "name": "Bodega Marine Lab buoy",
+      "sample_days_in_period": 26,
+      "no_charm_run_that_day": 4,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 22,
+        "particulate_domoic": 22
+      },
+      "position": [
+        38.3126,
+        -123.0825
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 1.05,
+        "min": 1.05,
+        "max": 1.05
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 1.05,
+        "min": 1.05,
+        "max": 1.05
+      }
+    },
+    "TomalesBayMouth": {
+      "name": "Tomales Bay mouth",
+      "sample_days_in_period": 36,
+      "no_charm_run_that_day": 7,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 29,
+        "particulate_domoic": 29
+      },
+      "position": [
+        38.2308,
+        -122.9791
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 1.83,
+        "min": 1.83,
+        "max": 1.83
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 1.83,
+        "min": 1.83,
+        "max": 1.83
+      }
+    },
+    "TomalesBayMid-ChannelBuoy": {
+      "name": "Tomales Bay mid-channel buoy",
+      "sample_days_in_period": 36,
+      "no_charm_run_that_day": 7,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 29,
+        "particulate_domoic": 29
+      },
+      "position": [
+        38.1897,
+        -122.9286
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 4.23,
+        "min": 4.23,
+        "max": 4.23
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 4.23,
+        "min": 4.23,
+        "max": 4.23
+      }
+    },
+    "InnerTomalesBay": {
+      "name": "Inner Tomales Bay",
+      "sample_days_in_period": 35,
+      "no_charm_run_that_day": 7,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 28,
+        "particulate_domoic": 28
+      },
+      "position": [
+        38.118,
+        -122.867
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 6.45,
+        "min": 6.45,
+        "max": 6.45
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 10.72,
+        "min": 10.72,
+        "max": 10.72
+      }
+    },
+    "SantaCruzWharf": {
+      "name": "Santa Cruz Wharf",
+      "sample_days_in_period": 197,
+      "no_charm_run_that_day": 35,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 162,
+        "particulate_domoic": 162
+      },
+      "position": [
+        36.958,
+        -122.017
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 2.1,
+        "min": 2.1,
+        "max": 9.11
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 5.38,
+        "min": 5.38,
+        "max": 5.38
+      }
+    },
+    "MontereyWharf": {
+      "name": "Monterey Wharf",
+      "sample_days_in_period": 189,
+      "no_charm_run_that_day": 32,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 157,
+        "particulate_domoic": 157
+      },
+      "position": [
+        36.6037,
+        -121.8893
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 0.71,
+        "min": 0.71,
+        "max": 2.83
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 6.77,
+        "min": 6.77,
+        "max": 7.83
+      }
+    },
+    "MorroBayFrontBay": {
+      "name": "Morro Bay, front bay",
+      "sample_days_in_period": 198,
+      "no_charm_run_that_day": 34,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 164,
+        "particulate_domoic": 164
+      },
+      "position": [
+        35.3709,
+        -120.8587
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 2.54,
+        "min": 2.54,
+        "max": 6.87
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 3.88,
+        "min": 3.88,
+        "max": 3.88
+      }
+    },
+    "MorroBayBackBay": {
+      "name": "Morro Bay, back bay",
+      "sample_days_in_period": 198,
+      "no_charm_run_that_day": 34,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 164,
+        "particulate_domoic": 164
+      },
+      "position": [
+        35.33,
+        -120.8445
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 1.18,
+        "min": 1.18,
+        "max": 8.08
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 5.16,
+        "min": 5.16,
+        "max": 5.51
+      }
+    },
+    "CalPolyPier": {
+      "name": "Cal Poly Pier (Avila Beach)",
+      "sample_days_in_period": 205,
+      "no_charm_run_that_day": 32,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 173,
+        "particulate_domoic": 173
+      },
+      "position": [
+        35.1702,
+        -120.7407
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 3.85,
+        "min": 3.85,
+        "max": 5.71
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 3.85,
+        "min": 3.85,
+        "max": 4.91
+      }
+    },
+    "StearnsWharf": {
+      "name": "Stearns Wharf (Santa Barbara)",
+      "sample_days_in_period": 204,
+      "no_charm_run_that_day": 33,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 1
+      },
+      "matched": {
+        "pseudo_nitzschia": 171,
+        "particulate_domoic": 170
+      },
+      "position": [
+        34.408,
+        -119.6848
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 2.43,
+        "min": 2.43,
+        "max": 11.04
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 2.43,
+        "min": 2.43,
+        "max": 5.52
+      }
+    },
+    "SantaMonicaPier": {
+      "name": "Santa Monica Pier",
+      "sample_days_in_period": 205,
+      "no_charm_run_that_day": 36,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 169,
+        "particulate_domoic": 169
+      },
+      "position": [
+        34.008,
+        -118.499
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 4.23,
+        "min": 4.23,
+        "max": 13.77
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 4.23,
+        "min": 4.23,
+        "max": 7.57
+      }
+    },
+    "NewportBeachPier": {
+      "name": "Newport Beach Pier",
+      "sample_days_in_period": 172,
+      "no_charm_run_that_day": 25,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 147,
+        "particulate_domoic": 147
+      },
+      "position": [
+        33.6061,
+        -117.9311
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 2.72,
+        "min": 2.72,
+        "max": 6.25
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 2.91,
+        "min": 2.72,
+        "max": 3.95
+      }
+    },
+    "ScrippsPier": {
+      "name": "Scripps Pier (La Jolla)",
+      "sample_days_in_period": 205,
+      "no_charm_run_that_day": 34,
+      "no_valued_cell_within_box": {
+        "pseudo_nitzschia": 0,
+        "particulate_domoic": 0
+      },
+      "matched": {
+        "pseudo_nitzschia": 171,
+        "particulate_domoic": 171
+      },
+      "position": [
+        32.867,
+        -117.257
+      ],
+      "nearest_valued_km_pseudo_nitzschia": {
+        "median": 1.44,
+        "min": 1.44,
+        "max": 1.77
+      },
+      "nearest_valued_km_particulate_domoic": {
+        "median": 2.83,
+        "min": 1.44,
+        "max": 5.76
+      }
+    }
+  },
+  "data_problems": [],
+  "runtime_s": 310.1,
+  "caveats": [
+    "C-HARM v3.1 is a model probability, not a measurement; CalHABMAP values describe one water sample at one pier on one day.",
+    "Neither the model nor the samples describe domoic acid in seafood; closures and advisories are CDFW/CDPH decisions.",
+    "Samples are weekly or less and autocorrelated; CIs use block bootstrap but remain approximate.",
+    "The test covers the C-HARM record on ERDDAP only (v3.1 nowcast, from 2022-11-01) and only the CalHABMAP piers."
+  ]
+}

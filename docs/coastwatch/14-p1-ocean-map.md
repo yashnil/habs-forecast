@@ -19,7 +19,7 @@ new data was tested only through the staging channel (`coastwatch-data-staging`)
 - **Display:** XYZ palette-PNG tile pyramids, z5–10 for 300 m, nearest cell per pixel, rendered from the published grid so a tile colour always equals the readable value.
 - **Coverage per region:** the share of C-HARM ocean cells with at least one valid pixel, plus the observed area in km².
 - **Alignment:** requests use exact cell centres on the source lattice; a scene off the lattice is rejected, and edge cells beyond the domain are trimmed.
-- **Coastal scope:** pixels more than about 12 km (4 C-HARM cells) from the C-HARM ocean domain are left out, so inland lakes and reservoirs are never drawn as ocean. The count dropped is recorded as a QC check per day.
+- **Coastal scope:** the coastal ocean (the C-HARM ocean domain extended about 12 km, 4 C-HARM cells, landward) plus the marine bays and estuaries connected to it (OpenStreetMap ocean water, `data/reference/marine_water_mask.json`, built by `pipeline/scripts/build_marine_water_mask.py` from the bundled `water-fallback.json`). Inland lakes and reservoirs are never drawn as ocean. The count dropped is recorded as a QC check per day. Until 2026-10 (processing version 3) the scope was the dilated C-HARM ocean alone and left out 95% of San Francisco Bay, all of San Pablo and Suisun Bays. Bay values carry a turbid-water caveat. The C-HARM layers are not affected.
 - **Reuse and outages:**
   - unchanged days are reused, not re-downloaded, but only if they were made by the same processing version (`satellite-processing-2`); older days are rebuilt;
   - an OLCI outage (the "unknown dataset" seen on 2026-10-09) falls back to VIIRS;

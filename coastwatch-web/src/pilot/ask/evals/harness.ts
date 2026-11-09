@@ -32,6 +32,10 @@ export type EngineCase = {
   first_cited_basis?: string;
   /** the fact the answer leads with (published.json) */
   first_cited?: string;
+  /** a regex the answer's FIRST line must match: the question is answered first, in one sentence */
+  first_line?: string;
+  /** the most lines an answer may have, the closing "not yet verified" line included */
+  max_lines?: number;
   since?: string;
   now?: string;
   fixture?: string;
@@ -94,7 +98,8 @@ export function requestFor(c: EngineCase): AskRequest {
 export const nowFor = (c: EngineCase) => new Date(c.now ?? FIXTURE_NOW);
 
 export function allText(a: AskAnswer): string {
-  return [...a.preface, ...a.lines.map((l) => l.text), ...a.caveats, a.data_age?.label ?? "", ...(a.data_age?.stale ?? [])].join("\n");
+  // a line's source note ("CDFW, checked Oct 12") is on the line after it, so "^" still finds where each answer line starts
+  return [...a.preface, ...a.lines.flatMap((l) => (l.source ? [l.text, l.source] : [l.text])), ...a.caveats, a.data_age?.label ?? "", ...(a.data_age?.stale ?? [])].join("\n");
 }
 
 /** Every failure for one case (empty = pass). */
@@ -116,6 +121,19 @@ export function grade(c: EngineCase, a: AskAnswer, facts: PortFact[], now: Date)
   if (c.first_cited && a.citations[0]?.fact_id !== c.first_cited) f.push(`first citation is ${a.citations[0]?.fact_id}, not ${c.first_cited}`);
   if (c.first_cited_basis && a.citations[0]?.basis !== c.first_cited_basis) f.push(`first citation is ${a.citations[0]?.basis}, not ${c.first_cited_basis}`);
   if ((a.outcome === "answered" || a.outcome === "safety") && a.lines.length && !a.citations.length) f.push("answer has no citations");
+  if (c.first_line && !rx(c.first_line).test(a.lines[0]?.text ?? "")) f.push(`first line does not match /${c.first_line}/: ${a.lines[0]?.text ?? "(none)"}`);
+  if (c.max_lines != null && a.lines.length > c.max_lines) f.push(`${a.lines.length} lines > ${c.max_lines}`);
+  // every answer, always: nothing is said twice (a headline is never followed by the same sentence from its detail)
+  const said = new Set<string>();
+  for (const s of a.lines.flatMap((l) => l.text.split(/(?<=[.!?])\s+(?=[A-Z"“])/))) {
+    const k = s.replace(/^(?:No|Yes|Updated|New)\s*[—:]\s*/i, "").trim().toLowerCase();
+    // the system's own fixed labels stand on every measurement line (each line must read alone, on a phone too)
+    if (k.length < 30 || /^(this is a past lab sample, not a forecast|that is a measurement \(an observation, not a forecast\))\.$/.test(k)) continue;
+    if (said.has(k)) f.push(`sentence repeated: ${s}`);
+    said.add(k);
+  }
+  // a safety answer never opens a line with a yes or a no
+  if (a.outcome === "safety" && a.lines.some((l) => /^\s*(yes|no)\b/i.test(l.text))) f.push("a safety answer opens a line with yes/no");
   // the shipped answer must itself pass the guard, and every citation must resolve
   const ids = new Set(facts.map((x) => x.id));
   for (const id of cited) if (!ids.has(id)) f.push(`unresolved citation ${id}`);

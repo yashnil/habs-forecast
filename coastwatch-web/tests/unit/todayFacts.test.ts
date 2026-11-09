@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { BiotoxinIndex, FisheriesStatusIndex, PortFact } from "@/pilot/contracts";
 import type { Conditions } from "@/lib/conditions";
-import { buildPortToday, buildTodayModel, diffFacts, parseFisheries, rampZoneFor, skillWords, snapFacts, testSentence, type CharmInput, type NoticeInput, type OutlookInput, type PortTodayInputs } from "@/pilot/facts";
+import { FISHERY_OPTIONS, OUTLOOK_SIGNAL_RATIO, buildPortToday, buildTodayModel, diffFacts, factorWords, ledeParts, outlookErrorFactor, outlookRead, parseFisheries, statusTally, rampZoneFor, skillWords, snapFacts, testSentence, type CharmInput, type NoticeInput, type OutlookInput, type PortTodayInputs } from "@/pilot/facts";
 import { parseBiotoxin, parseFisheriesStatus } from "@/pilot/data";
 
 // the data track's fixtures (pilot/data: `cwp fixture`), as the page reads them
@@ -74,9 +74,59 @@ describe("buildPortToday: hierarchy", () => {
     const m = buildTodayModel(base({ notices: [n] }));
     const row = m.status.find((r) => r.fishery === "bivalve_shellfish")!;
     expect(row.severity).toBe("red");
-    expect(row.word).toBe("Closed");
+    expect(row.level).toBe("closed");
     expect(row.verified).toBe(false);
     expect(m.today.facts.some((f) => f.id === "notice:cdph-mussels" && f.basis === "official" && f.verified === false)).toBe(true);
+  });
+
+  it("a rule on sport harvest is said as one: in the pill, the headline and the count, never as a commercial closure", () => {
+    const n: NoticeInput = { id: "cdph-mussels", agency: "CDPH", title: "Annual quarantine of sport-harvested mussels", summary: "Sport-harvested mussels may not be harvested for human consumption (bait only).", action: "quarantine", species: ["mussels (all species)"], fishery: "sport_harvest", effective: "2026-05-01", url: "https://cdph.ca.gov", verified: false, registry_checked: "2026-10-08T19:32:08Z" };
+    const m = buildTodayModel(base({ notices: [n] }));
+    const row = m.status.find((r) => r.fishery === "bivalve_shellfish")!;
+    // the stricter source still leads and keeps its level and colour: only the scope is now said
+    expect(row).toMatchObject({ level: "closed", severity: "red", scope: "Sport harvest", word: "Sport harvest closed", verified: false });
+    expect(row.headline).toBe("Annual quarantine of sport-harvested mussels (sport harvest only).");
+    expect(row.conflict?.shown).toBe("notice");
+    expect(row.fact).toMatchObject({ id: "status:bivalve_shellfish", value: "Sport harvest closed", severity: "red", verified: false });
+    expect(row.fact.headline).toBe("Shellfish (mussels, clams, oysters): Annual quarantine of sport-harvested mussels (sport harvest only).");
+    expect(row.fact.detail).toContain("This is a rule for sport harvest, not a closure of a commercial fishery.");
+    expect(m.today.facts.find((f) => f.id === "notice:cdph-mussels")).toMatchObject({ value: "Sport harvest closed", severity: "red" });
+    // the count is in the pills' own words: the delay is the one commercial action, the quarantine is counted as what it is
+    expect(statusTally(m.status)).toBe("1 delayed · 1 sport harvest closed · 1 restricted · 1 season closed · 3 none on record");
+    expect(statusTally(m.status)).not.toMatch(/closed or delayed/);
+    // without the notice the curated record leads: a watch on sport harvest, counted as a watch (not a restriction)
+    const calm = buildTodayModel(base());
+    expect(calm.status.find((r) => r.fishery === "bivalve_shellfish")).toMatchObject({ level: "watch", severity: "amber", scope: "Sport harvest", word: "Sport harvest watch" });
+    expect(statusTally(calm.status)).toBe("1 delayed · 1 restricted · 1 sport harvest watch · 1 season closed · 3 none on record");
+    // a notice on the whole fishery is not scoped, and the recreational Dungeness row needs no second label
+    const all: NoticeInput = { ...n, id: "cdph-rock", title: "Do not eat rock crab viscera", action: "consumption_advisory", species: ["rock crab"], fishery: "all" };
+    expect(buildTodayModel(base({ notices: [all] })).status.find((r) => r.fishery === "rock_crab")).toMatchObject({ scope: null, word: "Restricted", headline: "Do not eat rock crab viscera." });
+    const rec = buildTodayModel(base({ selected: ["dungeness_recreational"] })).status[0];
+    expect(rec.scope).toBeNull();
+    // nothing could be loaded: said as that
+    expect(statusTally(buildTodayModel(base({ fisheries: null })).status)).toBe("7 not available");
+  });
+
+  it("the hero sentence says the sector once and reads as one sentence for every fishery", () => {
+    expect(ledeParts("Dungeness crab (commercial)", "Commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements).")).toEqual({ label: "Dungeness crab", text: "commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements)." });
+    expect(ledeParts("Dungeness crab (recreational)", "Recreational season open since Nov 7 with crab traps prohibited; hoop nets and snares allowed.")).toEqual({ label: "Dungeness crab", text: "recreational season open since Nov 7 with crab traps prohibited; hoop nets and snares allowed." });
+    expect(ledeParts("Salmon (commercial)", "The 2026 commercial ocean salmon season has concluded.")).toEqual({ label: "Salmon", text: "the 2026 commercial ocean salmon season has concluded." });
+    // the sector stays in the label when the headline does not say it; a name keeps its capital; a species list is not a sector
+    expect(ledeParts("Salmon (commercial)", "Closed south of Pigeon Point.")).toEqual({ label: "Salmon (commercial)", text: "closed south of Pigeon Point." });
+    // a headline that names its own subject in the fishery's words leads with it: one colon, not two
+    expect(ledeParts("Anchovy & sardine", "Monterey Bay anchovy: no take for human consumption since Sep 11 (domoic acid); bait only.")).toEqual({ label: "Monterey Bay anchovy", text: "no take for human consumption since Sep 11 (domoic acid); bait only." });
+    expect(ledeParts("Groundfish", "Zones 3-4: closed inside 20 fathoms.")).toEqual({ label: "Groundfish", text: "Zones 3-4: closed inside 20 fathoms." });
+    expect(ledeParts("Rock crab", "CDPH advises against eating the viscera.")).toEqual({ label: "Rock crab", text: "CDPH advises against eating the viscera." });
+    expect(ledeParts("Shellfish (mussels, clams, oysters)", "Annual quarantine of sport-harvested mussels (sport harvest only).")).toEqual({ label: "Shellfish (mussels, clams, oysters)", text: "annual quarantine of sport-harvested mussels (sport harvest only)." });
+    // every fishery's lead, from the fixture records: no sector said twice, no "X: X …"
+    for (const f of FISHERY_OPTIONS) {
+      const l = buildTodayModel(base({ selected: [f.id] })).lede;
+      if (!l.label) continue;
+      expect(l.status).toBe(`${l.label}: ${l.text}`);
+      expect(l.status.split(": ").length, l.status).toBeLessThanOrEqual(2);
+      expect(l.status.match(/\bcommercial\b/gi)?.length ?? 0).toBeLessThanOrEqual(1);
+      expect(l.status.match(/\brecreational\b/gi)?.length ?? 0).toBeLessThanOrEqual(1);
+    }
   });
 
   it("when the registry and the curated status disagree, the row keeps the more restrictive and says so, with both dates", () => {
@@ -111,8 +161,9 @@ describe("buildPortToday: hierarchy", () => {
     const m = buildTodayModel(base());
     const t = m.tests.find((x) => x.site.id === "bma-g-monterey-bay-dungeness-crab")!;
     expect(t.fact.detail).toMatch(/still delayed/);
-    expect(m.lede.label).toBe("Dungeness crab (commercial)");
-    expect(m.lede.text).toMatch(/^Commercial season delayed to at least Jan 1, 2027/);
+    expect(m.lede.label).toBe("Dungeness crab");
+    expect(m.lede.text).toMatch(/^commercial season delayed to at least Jan 1, 2027/);
+    expect(m.lede.status).toBe("Dungeness crab: commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements).");
     expect(m.lede.more).toBe(3); // salmon (season over), anchovy/sardine, mussels (watch) below
   });
 
@@ -125,9 +176,9 @@ describe("buildPortToday: hierarchy", () => {
     expect(m.status.find((r) => r.fishery === "dungeness_commercial")).toMatchObject({ level: "delayed", seasonal: false, word: "Delayed" });
     // alone, it leads; beside a restriction, the restriction leads
     const only = buildTodayModel(base({ selected: ["salmon_commercial", "groundfish"] }));
-    expect(only.lede).toMatchObject({ label: "Salmon (commercial)", seasonal: true, more: 0 });
+    expect(only.lede).toMatchObject({ label: "Salmon", text: "the 2026 commercial ocean salmon season has concluded.", seasonal: true, more: 0 });
     const both = buildTodayModel(base({ selected: ["salmon_commercial", "anchovy_sardine"] }));
-    expect(both.lede).toMatchObject({ label: "Anchovy & sardine", seasonal: false, more: 1 });
+    expect(both.lede).toMatchObject({ label: "Monterey Bay anchovy", text: "no take for human consumption since Sep 11 (domoic acid); bait only.", seasonal: false, more: 1 });
   });
 
   it("when Neritic's season list is missing, an official notice still leads and the gap is said after it", () => {
@@ -191,6 +242,88 @@ describe("buildPortToday: words", () => {
     expect(g.detail).toContain("0.7 for this outlook");
     expect(g.detail).not.toContain("0.754");
     expect(skillWords(OUTLOOK.skill)).toBe("Held-out RMSE ln(mg m-3): 0.754 for this outlook, against 0.85 climatology and 0.892 persistence (n = 185,000; 2019 to 2021-06). Lower is better.");
+  });
+
+  it("says the outlook in three words against the usual value, and only calls a clear departure a signal", () => {
+    // the thresholds: 1.5x usual or more, two-thirds of usual or less; anything between is "about usual"
+    expect(OUTLOOK_SIGNAL_RATIO).toBe(1.5);
+    expect(outlookRead(3.0, 2.0)).toMatchObject({ level: "higher", phrase: "higher than usual", ratioWords: "about 1.5× the typical level" });
+    expect(outlookRead(2.98, 2.0)).toMatchObject({ level: "usual", phrase: "about usual", ratioWords: null });
+    expect(outlookRead(2.4, 2.0)!.level).toBe("usual"); // 1.2x is inside the error: not a signal
+    expect(outlookRead(1.34, 2.0)!.level).toBe("usual"); // 0.67x: just inside
+    expect(outlookRead(1.3, 2.0)).toMatchObject({ level: "lower", phrase: "lower than usual", ratioWords: "about 65% of the typical level" });
+    expect(outlookRead(24, 2.0)!.ratioWords).toBe("about 12× the typical level");
+    // nothing to compare with, nothing said
+    for (const [v, t] of [[3.2, null], [3.2, undefined], [null, 2], [3.2, 0], [0, 2], [3.2, Number.NaN]] as const) expect(outlookRead(v, t)).toBeNull();
+  });
+
+  it("leads the outlook with a plain sentence, then what it is and how sure, and keeps its id for alerts and Ask", () => {
+    // the clock here is Oct 13, the first day of the outlook's period
+    const m = buildTodayModel(base({ outlook: { ...OUTLOOK, typical: 2.0 } }));
+    const f = m.bloom.outlookFact!;
+    expect(f.id).toBe("outlook:chl8d");
+    expect(f.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run higher than usual for this time of year, about 1.6× the typical level.");
+    expect(m.bloom.outlookRead).toMatchObject({ level: "higher", phrase: "higher than usual" });
+    expect(m.bloom.outlookRead!.ratio).toBeCloseTo(1.6, 5);
+    // what it is, how sure (the factor comes from the published RMSE: e^0.754 = 2.1), and a neutral use
+    expect(m.bloom.outlookHonest).toBe("A bloom indicator, not a toxin forecast: chlorophyll is algae of every kind. It is one 8-day average, not a day-by-day forecast, and its typical error is about a factor of 2 either way.");
+    expect(m.bloom.outlookUse).toBe("A higher-than-usual outlook is a reason to watch the next CDPH test results, not a sign of toxin.");
+    expect(m.bloom.errorFactor).toBeCloseTo(Math.exp(0.754), 6);
+    expect(f.detail).toContain(m.bloom.outlookHonest!);
+    expect(f.detail).toContain(m.bloom.outlookUse!);
+    expect(f.detail).toContain("About 3.2 mg/m³ against a usual 2.0 mg/m³ (the median of the water within 15 km).");
+    expect(f.detail).toContain("0.754 for this outlook"); // the skill is still quoted from the data
+    expect(f.value).toBe("3.2 mg/m³");
+    expect(f.basis).toBe("outlook");
+    expect(f.severity).toBe("info"); // never a status colour: chlorophyll is not toxin
+    expect(text(f)).not.toMatch(SAFETY);
+    expect(text(f).replace(/not a toxin forecast/g, "")).not.toMatch(/toxin forecast/i);
+
+    const usual = buildTodayModel(base({ outlook: { ...OUTLOOK, typical: 2.9 } })).bloom;
+    expect(usual.outlookFact!.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run about usual for this time of year.");
+    expect(usual.outlookFact!.headline).not.toMatch(/×|%/);
+    expect(usual.outlookUse).toMatch(/says nothing about toxin either way: only CDPH's lab tests of seafood measure it/);
+
+    const lower = buildTodayModel(base({ outlook: { ...OUTLOOK, value: 1.0, typical: 2.0 } })).bloom;
+    expect(lower.outlookFact!.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run lower than usual for this time of year, about 50% of the typical level.");
+    expect(lower.outlookUse).toMatch(/does not rule out toxin/);
+    expect(text(lower.outlookFact!)).not.toMatch(SAFETY);
+  });
+
+  it("words the outlook's window as it is: not yet begun, already begun, or past", () => {
+    const o = { ...OUTLOOK, typical: 2.0 };
+    const at = (now: string) => buildTodayModel(base({ now, outlook: o })).bloom.outlookFact!.headline;
+    expect(at("2026-10-13T06:00:00Z")).toMatch(/^Next 8 days \(Oct 13–20\): chlorophyll near Moss Landing is expected/); // Oct 12, 11 PM Pacific
+    expect(at("2026-10-15T18:00:00Z")).toMatch(/^This 8-day period \(Oct 13–20\): chlorophyll near Moss Landing is expected/);
+    expect(at("2026-10-22T18:00:00Z")).toMatch(/^The 8-day period Oct 13–20 \(now past\): chlorophyll near Moss Landing was expected/);
+    // the year's last period is shorter than 8 days and is not called 8
+    const last = buildTodayModel(base({ now: "2026-12-20T18:00:00Z", outlook: { ...o, valid_from: "2026-12-27", valid_to: "2026-12-31" } })).bloom;
+    expect(last.outlookFact!.headline).toMatch(/^Next 5 days \(Dec 27–31\)/);
+    expect(last.outlookHonest).toMatch(/one 5-day average/);
+  });
+
+  it("falls back to the plain value when the data carries no usual value (older data), with no comparison", () => {
+    for (const typical of [undefined, null] as const) {
+      const m = buildTodayModel(base({ outlook: { ...OUTLOOK, typical } }));
+      expect(m.bloom.outlookRead).toBeNull();
+      expect(m.bloom.outlookUse).toBeNull();
+      expect(m.bloom.outlookFact!.id).toBe("outlook:chl8d");
+      expect(m.bloom.outlookFact!.headline).toBe("Chlorophyll outlook, Oct 13–20: about 3.2 mg/m³ near Moss Landing. A bloom indicator, not a toxin forecast.");
+      expect(text(m.bloom.outlookFact!)).not.toMatch(/usual|typical level/);
+    }
+    // no value at the port: nothing is compared, even with a usual value
+    expect(buildTodayModel(base({ outlook: { ...OUTLOOK, value: null, typical: 2 } })).bloom.outlookFact!.headline).toMatch(/no value near Moss Landing/);
+  });
+
+  it("takes the size of the outlook's error from the published skill, and says nothing when it cannot", () => {
+    expect(factorWords(outlookErrorFactor({ metric: "RMSE ln(mg m-3)", model: 0.754 })!)).toBe("2");
+    expect(factorWords(outlookErrorFactor({ metric: "RMSE ln(mg m-3)", model: 0.95 })!)).toBe("2.5");
+    expect(outlookErrorFactor({ metric: "RMSE log10(mg m-3)", model: 0.33 })).toBeCloseTo(10 ** 0.33, 6);
+    expect(outlookErrorFactor({ metric: "correlation", model: 0.6 })).toBeNull();
+    expect(outlookErrorFactor({ metric: "RMSE mg m-3", model: 1.2 })).toBeNull();
+    const m = buildTodayModel(base({ outlook: { ...OUTLOOK, typical: 2.0, skill: { metric: "skill score", model: 0.2, climatology: 0 } } }));
+    expect(m.bloom.errorFactor).toBeNull();
+    expect(m.bloom.outlookHonest).toBe("A bloom indicator, not a toxin forecast: chlorophyll is algae of every kind. It is one 8-day average, not a day-by-day forecast.");
   });
 
   it("C-HARM is a probability of conditions in the water, not toxin in seafood, and says when it is not at the harbour", () => {

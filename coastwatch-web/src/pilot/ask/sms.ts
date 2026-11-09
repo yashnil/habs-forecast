@@ -1,4 +1,5 @@
 import { portInText } from "./places";
+import { UNVERIFIED_LINE } from "./unverified";
 import type { AskAnswer } from "./types";
 
 /**
@@ -50,7 +51,8 @@ export function fitSms(body: string, tag: string, max = SMS_MAX): string {
   const t = toGsm(tag);
   const room = max - gsmLength(t) - 1;
   if (gsmLength(b) <= room) return `${b} ${t}`.trim();
-  const sentences = b.match(/[^.!?]+[.!?]+/g) ?? [b];
+  // a sentence ends at its full stop, not at a decimal point ("about 1.6x the typical level" stays whole)
+  const sentences = b.match(/(?:[^.!?]|[.](?=\d))+[.!?]+/g) ?? [b];
   let acc = "";
   for (const s of sentences) {
     if (gsmLength(acc + s) > room) break;
@@ -65,11 +67,12 @@ export function fitSms(body: string, tag: string, max = SMS_MAX): string {
 
 const shortSource = (name: string) => name.replace(/^NOAA\s+/i, "").split(/\s+/).slice(0, 2).join(" ").slice(0, 18);
 const md = (asOf: string | null) => (asOf ? `${Number(asOf.slice(5, 7))}/${Number(asOf.slice(8, 10))}` : "");
-/** strip "(CDFW, checked 2026-11-05)" — the tag carries the source and date */
-const compact = (s: string) => s.replace(/\s*\([^)]*checked [^)]*\)/g, "").replace(/ This is a past lab sample, not a forecast\./g, " (past sample)");
+/** a phone's lines are the answer's own sentences (the tag carries the source and date), with the lab-sample caveat shortened */
+const compact = (s: string) => s.replace(/ This is a past lab sample, not a forecast\./g, " (past sample)");
 
 export function smsFromAnswer(a: Pick<AskAnswer, "outcome" | "preface" | "lines" | "citations">, safetySms?: string | null): string {
-  const kept = a.lines.filter((l) => !/^These official records were transcribed/.test(l.text));
+  // the closing "not yet verified" line is carried by the tag ("unverified") instead
+  const kept = a.lines.filter((l) => !UNVERIFIED_LINE.test(l.text));
   const ordered = [...kept.filter((l) => l.primary), ...kept.filter((l) => !l.primary)];
   // the tag names the source of the first line the phone will show
   const lead = ordered.find((l) => l.cites.length);

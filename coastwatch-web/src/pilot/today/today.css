@@ -174,7 +174,18 @@ html[data-daylight] .today-hero-iso { opacity: 0.35; }
 .today-chart .zone.here { fill: color-mix(in srgb, var(--t-red) 18%, var(--nx-surface)); stroke: var(--t-red); }
 .today-chart .zone.here.amber { fill: color-mix(in srgb, var(--t-amber) 18%, var(--nx-surface)); stroke: var(--t-amber); }
 .today-chart .zone.here.neutral { fill: var(--nx-surface-3); stroke: var(--t-none); }
-.today-hatch-line { stroke: var(--nx-model); stroke-width: 1.2; opacity: 0.55; }
+/* the 8-day outlook against usual: one scale, the model colour (never green: nothing here is "safe") */
+.today-outlook .axis { stroke: var(--nx-line-strong); stroke-width: 1; }
+.today-outlook .usual { stroke: var(--nx-ink); stroke-width: 1.5; }
+.today-outlook .bracket { fill: none; stroke: var(--nx-ink-3); stroke-width: 1; }
+.today-outlook .band { fill: color-mix(in srgb, var(--nx-model) 24%, transparent); }
+.today-outlook .mark { fill: var(--nx-model); stroke: var(--nx-bg); stroke-width: 1.5; }
+.today-outlook text.on { fill: var(--nx-ink); font-weight: 600; }
+.today-h3 { font: 500 11px/1.3 var(--nx-font-caps); letter-spacing: 0.12em; text-transform: uppercase; color: var(--nx-ink-3); }
+.today-more > summary { list-style: none; }
+.today-more > summary::-webkit-details-marker { display: none; }
+.today-more > summary::before { content: "+"; display: inline-block; width: 1em; color: var(--nx-ink-3); }
+.today-more[open] > summary::before { content: "–"; }
 
 /* ---- the detail sheet: a bottom sheet on phones, a side panel on desktop */
 .today-sheet {

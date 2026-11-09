@@ -61,6 +61,26 @@ describe("derived index (lib/derived)", () => {
     expect(parseDerived(badGrid)!.layers.map((l) => l.kind)).toEqual(["chl_outlook", "sst"]);
   });
 
+  it("reads the outlook's usual-value grid when it matches the outlook cell for cell, and does without it otherwise", () => {
+    const o = parseDerived(fixture)!.layers[0];
+    if (o.kind !== "chl_outlook") throw new Error("outlook first");
+    expect(o.typical_grid).toMatchObject({ width: o.grid.width, height: o.grid.height, transform: "log10" });
+    expect(o.typical_grid!.chunks.url_template).toContain("chl_outlook_8d/typical/");
+    // an index published before the field existed: still an outlook, with nothing to compare against
+    const older = structuredClone(fixture);
+    delete older.layers[0].typical_grid;
+    delete older.layers[0].typical_basis;
+    const a = parseDerived(older)!.layers[0];
+    expect(a.kind === "chl_outlook" && a.typical_grid).toBeNull();
+    // a grid of another shape, or malformed, is ignored (never misread); the outlook itself stays
+    for (const edit of [(g: Record<string, unknown>) => (g.width = (g.width as number) + 1), (g: Record<string, unknown>) => (g.lat_first = (g.lat_first as number) + 0.5), (g: Record<string, unknown>) => (g.encoding = "png"), (g: Record<string, unknown>) => (g.transform = "none")]) {
+      const bad = structuredClone(fixture);
+      edit(bad.layers[0].typical_grid);
+      const b = parseDerived(bad)!.layers[0];
+      expect(b.kind === "chl_outlook" && b.typical_grid).toBeNull();
+    }
+  });
+
   it("reads sea temperature as an analysis when the index says so or the source is MUR, else as an observation", async () => {
     const { sstIsAnalysis } = await import("@/lib/derived");
     const t = parseDerived(fixture)!.layers[2];

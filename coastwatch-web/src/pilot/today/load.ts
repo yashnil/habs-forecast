@@ -132,13 +132,19 @@ async function charmAt(base: string, m: Manifest, lat: number, lon: number, now:
   return { issued: lead0.time.issued_date ?? null, state: fresh.state, ageDays: fresh.ageDays ?? null, days, url: "https://coastalscience.noaa.gov/science-areas/habs/hab-forecasts/california/" };
 }
 
-/** The outlook in the port's own cell, else the median of its water cells within NEIGHBOURHOOD_KM (chunks read on the server). */
+/**
+ * The outlook in the port's own cell, else the median of its water cells within NEIGHBOURHOOD_KM (chunks read on the server).
+ * The usual value for the outlook's period (`typical_grid`, when the index publishes one) is read in the SAME cell or cells, so
+ * the two can be compared; an index without it (older data) gives `typical: null` and the page says no more than the value.
+ */
 async function outlookAt(base: string, lat: number, lon: number): Promise<OutlookInput | null> {
   const raw = await optionalJson(base, "derived/index.json");
   const o = derivedOutlook(parseDerived(raw));
   if (!o) return null;
   const g: DerivedGrid = o.grid;
+  const tg: DerivedGrid | null = o.typical_grid ?? null;
   let value: number | null = null;
+  let typical: number | null = null;
   let basis: OutlookInput["basis"] = null;
   try {
     const c = cellAt(g, lat, lon);
@@ -147,45 +153,57 @@ async function outlookAt(base: string, lat: number, lon: number): Promise<Outloo
     const r0 = Math.floor((lat - g.lat_first) / g.lat_step + 0.5);
     const c0 = Math.floor((lon - g.lon_first) / g.lon_step + 0.5);
     const chunks = new Map<string, Uint16Array | null>();
-    const codeAt = async (row: number, col: number): Promise<number | null> => {
-      if (row < 0 || row >= g.height || col < 0 || col >= g.width) return null;
-      const r = Math.floor(row / g.chunks.rows);
-      const cc = Math.floor(col / g.chunks.cols);
+    // the value of one grid (the outlook, or its usual value: same shape, so the same row and column) in a cell
+    const valueAt = async (grid: DerivedGrid, row: number, col: number): Promise<number | null> => {
+      if (row < 0 || row >= grid.height || col < 0 || col >= grid.width) return null;
+      const r = Math.floor(row / grid.chunks.rows);
+      const cc = Math.floor(col / grid.chunks.cols);
       const key = `${r}_${cc}`;
-      if (!g.chunks.present.includes(key)) return null;
-      if (!chunks.has(key)) chunks.set(key, await readGrid(base, g.chunks.url_template.replace("{row}", String(r)).replace("{col}", String(cc))).catch(() => null));
-      const codes = chunks.get(key);
-      const width = Math.min(g.chunks.cols, g.width - cc * g.chunks.cols);
-      return codes ? codes[(row - r * g.chunks.rows) * width + (col - cc * g.chunks.cols)] : null;
+      if (!grid.chunks.present.includes(key)) return null;
+      const rel = grid.chunks.url_template.replace("{row}", String(r)).replace("{col}", String(cc));
+      if (!chunks.has(rel)) chunks.set(rel, await readGrid(base, rel).catch(() => null));
+      const codes = chunks.get(rel);
+      const width = Math.min(grid.chunks.cols, grid.width - cc * grid.chunks.cols);
+      const code = codes ? codes[(row - r * grid.chunks.rows) * width + (col - cc * grid.chunks.cols)] : null;
+      return code == null ? null : decodeCode(grid, code);
+    };
+    const median = (xs: number[]) => {
+      const v = [...xs].sort((a, b) => a - b);
+      const mid = (v.length - 1) / 2;
+      return (v[Math.floor(mid)] + v[Math.ceil(mid)]) / 2;
     };
     if (c) {
-      const code = await codeAt(c.row, c.col);
-      const v = code == null ? null : decodeCode(g, code);
+      const v = await valueAt(g, c.row, c.col);
       if (v != null) {
         value = v;
+        typical = tg ? await valueAt(tg, c.row, c.col) : null;
         basis = "cell";
       }
     }
     if (value == null) {
       const vals: number[] = [];
+      const usual: number[] = [];
       for (let r = r0 - dR; r <= r0 + dR; r++)
         for (let cc = c0 - dC; cc <= c0 + dC; cc++) {
-          const code = await codeAt(r, cc);
-          const v = code == null ? null : decodeCode(g, code);
+          const v = await valueAt(g, r, cc);
           if (v == null) continue;
-          if (distanceKm(lat, lon, g.lat_first + r * g.lat_step, g.lon_first + cc * g.lon_step) <= NEIGHBOURHOOD_KM) vals.push(v);
+          if (distanceKm(lat, lon, g.lat_first + r * g.lat_step, g.lon_first + cc * g.lon_step) > NEIGHBOURHOOD_KM) continue;
+          vals.push(v);
+          const t = tg ? await valueAt(tg, r, cc) : null;
+          if (t != null) usual.push(t);
         }
-      vals.sort((a, b) => a - b);
       if (vals.length) {
-        const mid = (vals.length - 1) / 2;
-        value = (vals[Math.floor(mid)] + vals[Math.ceil(mid)]) / 2;
+        value = median(vals);
+        // compared only when every cell in the median has its usual value (the same water on both sides)
+        typical = usual.length === vals.length ? median(usual) : null;
         basis = "nearby";
       }
     }
   } catch {
     value = null;
+    typical = null;
   }
-  return { id: o.id, label: o.label, issued: o.issued, valid_from: o.valid_from, valid_to: o.valid_to, value, range: null, basis, skill: o.skill as OutlookInput["skill"], caveats: o.caveats, method: o.method };
+  return { id: o.id, label: o.label, issued: o.issued, valid_from: o.valid_from, valid_to: o.valid_to, value, typical: typical != null && typical > 0 ? typical : null, typical_basis: typeof (o as { typical_basis?: unknown }).typical_basis === "string" ? ((o as { typical_basis?: string }).typical_basis ?? null) : null, range: null, basis, skill: o.skill as OutlookInput["skill"], caveats: o.caveats, method: o.method };
 }
 
 export async function loadToday(placeKey: string | null): Promise<TodayLoad> {

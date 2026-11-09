@@ -45,8 +45,12 @@ export type Outcome =
   | "help"
   | "rate_limited";
 
-/** `primary`: the line that answers the question itself (SMS shows primary lines first). */
-export type AnswerLine = { text: string; cites: string[]; primary?: boolean };
+/**
+ * `primary`: the line that answers the question itself (SMS shows primary lines first).
+ * `source`: who says it and when it was read ("CDFW, checked Oct 12"), computed by the system from the
+ * cited fact and shown beside the line; it is not part of the guarded text.
+ */
+export type AnswerLine = { text: string; cites: string[]; primary?: boolean; source?: string };
 
 export type Citation = {
   fact_id: string;
@@ -56,6 +60,8 @@ export type Citation = {
   source_name: string;
   source_url: string | null;
   as_of: string | null;
+  /** `as_of` in the reader's terms, as Today words dates ("Oct 12", "Jan 1, 2027"); null when the fact has no date */
+  as_of_words?: string | null;
   verified: boolean | null;
   /** the Today card for this fact (Today track renders `id="fact-<id>"` on each card) */
   today_href: string;

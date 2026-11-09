@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PILOT_PORTS, type FisheryId, type Readiness } from "@/pilot/contracts";
 import type { Conditions } from "@/lib/conditions";
-import { DEFAULT_FISHERIES, FISHERY_OPTIONS, buildTodayModel, dayWords, nextTide, type PortTodayInputs, type StatusRow } from "@/pilot/facts";
+import { DEFAULT_FISHERIES, FISHERY_OPTIONS, buildTodayModel, dayWords, nextTide, statusTally, type PortTodayInputs, type StatusRow } from "@/pilot/facts";
 import { TopBar } from "@/v4/shell/TopBar";
 import { PilotDock, PilotFooter } from "@/pilot/shell/PilotShell";
 import { SkipLink } from "@/v4/shell/SkipLink";
@@ -96,14 +96,11 @@ function SunToggle() {
 
 /** Desktop only: the page at a glance, beside the answer (each line links to its section). */
 function Glance({ model, now }: { model: ReturnType<typeof buildTodayModel>; now: string }) {
-  const n = (sev: string) => model.status.filter((r) => r.severity === sev && !r.seasonal && r.level !== "unknown").length;
-  const seasonal = model.status.filter((r) => r.seasonal).length;
-  const unknown = model.status.filter((r) => r.level === "unknown").length;
   const first = model.sea.lanes[0];
   const tide = nextTide(model.sea.tides, now);
   const t = model.tests[0];
   const rows: [string, string, string][] = [
-    ["Status", [n("red") && `${n("red")} closed or delayed`, n("amber") && `${n("amber")} restricted`, seasonal && `${seasonal} season closed`, n("neutral") && `${n("neutral")} none on record`, unknown && `${unknown} not available`].filter(Boolean).join(" · ") || "not available", "#status"],
+    ["Status", statusTally(model.status) || "not available", "#status"],
     ["Sea", first ? `${first.name}: ${periodLine(first) ?? "see NWS"}` : model.sea.state === "loading" ? "loading…" : "not available", "#sea"],
     ["Next tide", tide ? `${tide.type === "H" ? "High" : "Low"} ${tide.ft.toFixed(1)} ft at ${((h, m) => `${h % 12 || 12}:${m} ${h < 12 ? "AM" : "PM"}`)(Number(tide.at.slice(11, 13)), tide.at.slice(14, 16))}` : model.sea.state === "loading" ? "loading…" : "not available", "#sea"],
     ["Latest test", t?.latest ? `${t.site.species}, ${dayWords(t.latest.date, now)}${t.latest.avg_ppm != null ? ` · avg ${t.latest.avg_ppm} ppm` : ""}` : model.testsError ? "not available" : "none published here", "#tests"],

@@ -8,6 +8,7 @@ import { PILOT_PORTS } from "../../contracts";
 import { readTodayPlace } from "../../today/navPlace";
 import { READINESS_WORDS } from "../../readiness";
 import { segments } from "../sms";
+import { UNVERIFIED_LINE } from "../unverified";
 import { suggestionsFor } from "../suggestions";
 import { DEMO_LABEL, DISCLAIMER, LIVE_LABEL, SAMPLE_DATA_LABEL } from "../templates";
 import type { AskAnswer, AskMeta, Citation, SeenSnapshot } from "../types";
@@ -62,7 +63,8 @@ function ReadinessBadge({ meta }: { meta: AskMeta }) {
 function CitationChip({ c, i }: { c: Citation; i: number }) {
   const [open, setOpen] = useState(false);
   const id = useId();
-  const date = c.as_of?.slice(0, 10) ?? "no date";
+  // the date as Today words it ("Oct 12"); an answer from an older server carries only the ISO day
+  const date = c.as_of_words ?? c.as_of?.slice(0, 10) ?? "no date";
   return (
     <li className="min-w-0">
       <button type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen((v) => !v)} className="ask-chip nx-focus nx-tint" data-testid="ask-chip">
@@ -76,7 +78,7 @@ function CitationChip({ c, i }: { c: Citation; i: number }) {
           <p className="text-n-ink">{c.headline}</p>
           <p className="mt-1">
             {BASIS[c.basis]}
-            {c.basis === "official" ? (c.verified ? " · verified by a person" : c.verified === false ? " · transcribed by Neritic, not yet verified" : "") : ""} · as of {c.as_of ?? "unknown"}
+            {c.basis === "official" ? (c.verified ? " · verified by a person" : c.verified === false ? " · transcribed by Neritic, not yet verified" : "") : ""} · as of {c.as_of ? date : "unknown"}
           </p>
           <p className="mt-1 flex flex-wrap gap-x-5">
             {c.source_url ? (
@@ -100,11 +102,6 @@ function AnswerCard({ a }: { a: AskAnswer }) {
   const safety = a.outcome === "safety";
   return (
     <div className={`ask-a space-y-3 ${safety ? "safety" : ""}`} data-testid="ask-answer" data-outcome={a.outcome} data-mode={a.mode}>
-      {a.notice ? (
-        <p className="nx-margin" data-testid="ask-notice">
-          {a.notice}
-        </p>
-      ) : null}
       {a.preface.length ? (
         <div className="space-y-1.5 text-[16px] leading-relaxed text-n-ink" data-testid="ask-preface">
           {a.preface.map((p, i) => (
@@ -125,13 +122,25 @@ function AnswerCard({ a }: { a: AskAnswer }) {
         </ul>
       ) : null}
       {a.lines.length ? (
-        <div className={`space-y-2.5 text-[16px] leading-relaxed ${safety ? "border-t border-n-line pt-3 text-n-ink-2" : "text-n-ink"}`} data-testid="ask-lines">
+        <div className={`space-y-2 text-[15.5px] leading-relaxed ${safety ? "border-t border-n-line pt-3 text-n-ink-2" : "text-n-ink-2"}`} data-testid="ask-lines">
           {safety ? <p className="nx-caps">For information only</p> : null}
           {a.lines.map((l, i) => {
             const nums = l.cites.map((id) => a.citations.findIndex((c) => c.fact_id === id) + 1).filter((n) => n > 0);
+            // When the first line is the answer itself it is set as the answer, and the lines under it support it. An answer that
+            // must open with the official status (a test or bloom question) keeps every line in the same weight: nothing measured
+            // or forecast is ever set above an official record. The closing "not yet verified" line is a quiet note.
+            const lead = i === 0 && !safety && !!l.primary;
+            const note = UNVERIFIED_LINE.test(l.text);
+            const plain = !safety && (l.primary || !a.lines.some((x) => x.primary) || !a.lines[0].primary);
             return (
-              <p key={i}>
+              <p key={i} className={lead ? "ask-lead" : note ? "today-src" : plain ? "text-n-ink" : undefined} data-testid={lead ? "ask-lead" : undefined}>
                 {l.text}
+                {l.source ? (
+                  <span className="ask-by" data-testid="ask-by">
+                    {" "}
+                    {l.source}
+                  </span>
+                ) : null}
                 {nums.length ? (
                   <span className="ml-1 font-data text-[11px] text-n-ink-3" aria-label={`sources ${nums.join(", ")}`}>
                     [{nums.join(",")}]
@@ -179,6 +188,12 @@ function AnswerCard({ a }: { a: AskAnswer }) {
               {r.label} ↗
             </a>
           ))}
+        </p>
+      ) : null}
+      {a.notice ? (
+        // the standing notice: after the answer, said once per conversation, quietly
+        <p className="today-src border-t border-n-line pt-2.5" data-testid="ask-notice">
+          {a.notice}
         </p>
       ) : null}
       <p className="today-src" data-testid="ask-made">

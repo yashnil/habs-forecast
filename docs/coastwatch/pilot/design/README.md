@@ -34,7 +34,7 @@ C keeps the Neritic editorial voice: the Newsreader display serif for places and
 - **Family colours keep their meaning:**
   - measured tests are teal;
   - C-HARM is violet;
-  - the chlorophyll outlook is violet, hatched and labelled "not a toxin forecast";
+  - the chlorophyll outlook is violet and labelled "not a toxin forecast": one scale centred on the usual level for the time of year, a dot for the outlook and a shaded band for its typical error (never a bare mg/m³, never a status colour);
   - sea and weather are sky blue.
 - **One idea per section.** Each section opens with a plain sentence and then shows its chart. Every chart has a text alternative and a source line with its date.
 - **Field use:**

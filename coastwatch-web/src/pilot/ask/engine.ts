@@ -1,12 +1,12 @@
 import type { PortFact, PortToday } from "../contracts";
-import { dataAge } from "./age";
+import { dataAge, dateWords } from "./age";
 import { composeIntent, relatedForSafety, snapshotOf } from "./compose";
 import { check } from "./guard";
 import { routeIntent, safetyKind } from "./intents";
 import { PILOT_PORT_NAMES, resolvePlace, type PilotPort } from "./places";
 import { smsFromAnswer } from "./sms";
 import { loadPortToday, type PortTodayLoader } from "./source";
-import { DISCLAIMER, HELP_LINES, safetyTemplate, STANDING_REFERRALS } from "./templates";
+import { ANSWER_NOTICE, HELP_LINES, safetyTemplate, STANDING_REFERRALS } from "./templates";
 import type { AnswerLine, AskAnswer, AskMode, AskRequest, Citation, Dataset, Intent, Outcome, Referral, SafetyKind } from "./types";
 
 /**
@@ -35,7 +35,7 @@ export type AskContext = {
 
 export type Retrieved = { port: PilotPort; today: PortToday; dataset: Dataset; withheld: number };
 
-export function citationsFor(lines: AnswerLine[], facts: PortFact[]): Citation[] {
+export function citationsFor(lines: AnswerLine[], facts: PortFact[], now: Date = new Date()): Citation[] {
   const byId = new Map(facts.map((f) => [f.id, f]));
   const ids = [...new Set(lines.flatMap((l) => l.cites))].filter((id) => byId.has(id));
   return ids.map((id) => {
@@ -48,6 +48,7 @@ export function citationsFor(lines: AnswerLine[], facts: PortFact[]): Citation[]
       source_name: f.source.name,
       source_url: f.source.url,
       as_of: f.as_of,
+      as_of_words: f.as_of ? dateWords(f.as_of, now) : null,
       verified: f.verified,
       today_href: `/today?place=${encodeURIComponent(f.place_id)}#fact-${encodeURIComponent(f.id)}`,
     };
@@ -71,7 +72,7 @@ export function enforce(lines: AnswerLine[], facts: PortFact[], now: Date): { li
   const again = check(kept, facts, now);
   if (again.codes.includes("unverified_omitted")) {
     const un = [...new Set(kept.flatMap((l) => l.cites))].filter((id) => facts.find((f) => f.id === id && f.basis === "official" && f.verified === false));
-    kept.push({ text: "These official records were transcribed by Neritic and are not yet verified by a person; the agency page is the authority.", cites: un });
+    kept.push({ text: "Transcribed by Neritic and not yet verified by a person; the agency page is the authority.", cites: un });
   }
   // a residual global failure (e.g. hierarchy with no official line left) drops the topical lines
   const last = check(kept, facts, now);
@@ -103,7 +104,7 @@ export function finalize(d: Draft, r: Retrieved | null, ctx: AskContext, req: As
   const caveats = [...d.caveats];
   if (g.removed) caveats.push(`${g.removed} line${g.removed === 1 ? " was" : "s were"} withheld because ${g.removed === 1 ? "it" : "they"} failed Neritic's safety check; see the sources.`);
   if (r?.withheld) caveats.push(`${r.withheld} record${r.withheld === 1 ? " was" : "s were"} withheld because its text looked like an instruction rather than data.`);
-  const citations = citationsFor(g.lines, facts);
+  const citations = citationsFor(g.lines, facts, ctx.now);
   const cited = facts.filter((f) => citations.some((c) => c.fact_id === f.id));
   const base = {
     outcome: d.outcome,
@@ -116,7 +117,7 @@ export function finalize(d: Draft, r: Retrieved | null, ctx: AskContext, req: As
     citations,
     data_age: dataAge(cited, ctx.now),
     referrals: d.referrals,
-    notice: req.first ? DISCLAIMER : null,
+    notice: req.first ? ANSWER_NOTICE : null,
     mode: ctx.mode,
     model,
     // nothing was retrieved (help, which port?, out of area): no records are shown, so none are "sample"
