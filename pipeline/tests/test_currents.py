@@ -290,3 +290,29 @@ def test_verification_uses_the_other_copy_when_the_layers_own_server_is_gone(tmp
     live = [r for r in rep["rows"] if r["kind"] in ("value", "no_value")]
     assert live and all(r["verified_against"] == "hfradar_uswc_2km" and r["status"] == "pass" for r in live), [r for r in live if r["status"] != "pass"][:2]
     assert rep["summary"]["all_passed"]
+
+
+def test_verification_samples_settled_hours_not_the_newest_still_revised_ones(tmp_path):
+    # issue #95: HFRNet revises the newest hours after the pipeline reads them (runs 42176911402,
+    # 42375268587, 42417909426, 42453211803 each failed on an hour 2.2-2.6 h old); hours older than
+    # SETTLE_HOURS are sampled instead, with the same pass criteria
+    from datetime import datetime, timedelta
+
+    from coastwatch_pipeline import verify_currents as vc
+
+    out = tmp_path / "v1"
+    m = run_pipeline(fixture_context(out))
+    hours = sorted(lyr.time.valid_time for lyr in m.layers if lyr.layer_id.startswith("hfr2km_currents_2"))
+    newest = datetime.fromisoformat(hours[-1].replace("Z", "+00:00"))
+
+    rep = verify_currents(out, live=False, now=newest + timedelta(hours=2))
+    checked = {r["time"] for r in rep["rows"] if r["kind"] in ("value", "no_value")}
+    cut = (newest + timedelta(hours=2 - vc.SETTLE_HOURS)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    assert checked and all(t <= cut for t in checked)
+    assert max(checked) == max(t for t in hours if t <= cut)  # the newest settled hour is always checked
+    assert rep["summary"]["unsettled_hours_not_sampled"] == sum(t > cut for t in hours) > 0
+    assert rep["summary"]["all_passed"]
+    # nothing settled yet: the newest hours are checked, as before
+    rep = verify_currents(out, live=False, now=datetime.fromisoformat(hours[0].replace("Z", "+00:00")))
+    assert hours[-1] in {r["time"] for r in rep["rows"] if r["kind"] == "value"}
+    assert rep["summary"]["unsettled_hours_not_sampled"] == 0

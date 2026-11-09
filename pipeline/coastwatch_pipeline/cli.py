@@ -5,19 +5,20 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .context import RunContext
 from .models import SCHEMA_MODELS
-from .pipeline import ALL_SOURCES, manifest_summary, run_pipeline
+from .pipeline import ALL_SOURCES, PILOT_SIDECARS, manifest_summary, run_pipeline
 
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_OUT = REPO / "coastwatch-web" / "public" / "data" / "v1"
 
 
 def cmd_run(a: argparse.Namespace) -> int:
-    only = tuple(a.only.split(",")) if a.only else ALL_SOURCES
-    unknown = set(only) - set(ALL_SOURCES)
+    only = tuple(a.only.split(",")) if a.only else ALL_SOURCES + PILOT_SIDECARS
+    unknown = set(only) - set(ALL_SOURCES) - set(PILOT_SIDECARS)
     if unknown:
         print(f"unknown sources: {sorted(unknown)}", file=sys.stderr)
         return 2
@@ -26,6 +27,47 @@ def cmd_run(a: argparse.Namespace) -> int:
     failed = [s.source_id for s in m.sources if s.outcome == "failed" and s.source_id in only]
     # Exit non-zero so CI makes the failure visible; artifacts for healthy sources were still written.
     return 1 if failed and a.strict else 0
+
+
+def cmd_biotoxin(a: argparse.Namespace) -> int:
+    """CDPH domoic-acid PDFs -> v1/biotoxin/index.json only (also run by `cwp run`)."""
+    from .sources import biotoxin
+
+    ctx = RunContext(out_dir=Path(a.out))
+    idx = biotoxin.run(ctx)
+    path = biotoxin.write(ctx, idx)
+    print(json.dumps({"path": str(path), "sites": len(idx.sites), "as_of": idx.source.as_of, "parse_warnings": idx.parse_warnings, "errors": idx.errors}, indent=2))
+    return 1 if idx.errors and a.strict else 0
+
+
+def cmd_fisheries_status(a: argparse.Namespace) -> int:
+    """data/curated/fisheries-status -> v1/fisheries-status/index.json only (also run by `cwp run`)."""
+    from .context import iso
+    from .sources import fisheries_status
+
+    idx = fisheries_status.build(iso(datetime.now(timezone.utc)), Path(a.curated))
+    path = fisheries_status.write(Path(a.out), idx)
+    pending = [r.id for r in idx.records if r.review_state != "human_verified"]
+    print(json.dumps({"path": str(path), "records": len(idx.records), "pending_human_review": pending, "ramp": idx.ramp.review_state if idx.ramp else None}, indent=2))
+    return 0
+
+
+def cmd_review_fisheries_status(a: argparse.Namespace) -> int:
+    """Run by a person AFTER checking each record against its source page
+    (docs/coastwatch/pilot/review-packet.md). Records the reviewer's name and a hash of each
+    reviewed record in review.json; nothing else marks a record verified."""
+    from .sources import fisheries_status
+
+    if not a.confirm:
+        print("Refusing: pass --confirm to state that you checked each record against its official source today.", file=sys.stderr)
+        return 2
+    if not a.reviewer or not a.reviewer.strip() or a.reviewer.strip().lower() in ("claude", "assistant", "bot", "ci"):
+        print("Refusing: --reviewer must be the name of the person who checked the sources.", file=sys.stderr)
+        return 2
+    ids = a.ids.split(",") if a.ids else None
+    review = fisheries_status.record_review(Path(a.curated), a.reviewer, ids, a.method)
+    print(json.dumps(review, indent=2))
+    return 0
 
 
 def cmd_schema(a: argparse.Namespace) -> int:
@@ -189,9 +231,25 @@ def main(argv: list[str] | None = None) -> int:
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run", help="fetch, validate, render and publish artifacts")
     r.add_argument("--out", default=str(DEFAULT_OUT))
-    r.add_argument("--only", help=f"comma list of {','.join(ALL_SOURCES)}")
+    r.add_argument("--only", help=f"comma list of {','.join(ALL_SOURCES + PILOT_SIDECARS)}")
     r.add_argument("--strict", action="store_true", help="exit 1 if any selected source failed")
     r.set_defaults(fn=cmd_run)
+    bt = sub.add_parser("biotoxin", help="CDPH domoic-acid results (crab and seafood PDFs) -> v1/biotoxin/index.json")
+    bt.add_argument("--out", default=str(DEFAULT_OUT))
+    bt.add_argument("--strict", action="store_true", help="exit 1 if a CDPH document could not be fetched or read")
+    bt.set_defaults(fn=cmd_biotoxin)
+    fs_default = str(REPO / "data" / "curated" / "fisheries-status")
+    fs = sub.add_parser("fisheries-status", help="curated fisheries/RAMP status YAML -> v1/fisheries-status/index.json")
+    fs.add_argument("--out", default=str(DEFAULT_OUT))
+    fs.add_argument("--curated", default=fs_default)
+    fs.set_defaults(fn=cmd_fisheries_status)
+    rf = sub.add_parser("review-fisheries-status", help="record a human review of the curated fisheries status (requires --reviewer and --confirm)")
+    rf.add_argument("--curated", default=fs_default)
+    rf.add_argument("--reviewer", required=True, help="your name: the person who checked each record against its source")
+    rf.add_argument("--ids", help="comma list of record ids to mark reviewed (default: every record and the RAMP state)")
+    rf.add_argument("--method", default="Each record compared with its linked CDFW/CDPH page on the review date (docs/coastwatch/pilot/review-packet.md).")
+    rf.add_argument("--confirm", action="store_true")
+    rf.set_defaults(fn=cmd_review_fisheries_status)
     s = sub.add_parser("schema", help="export JSON Schema")
     s.add_argument("--out", default=str(REPO / "schemas" / "v1"))
     s.set_defaults(fn=cmd_schema)

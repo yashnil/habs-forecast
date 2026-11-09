@@ -69,6 +69,8 @@ jobs:
           python-version: "3.12"
           enable-cache: true
           cache-dependency-glob: pipeline/uv.lock
+      - name: pdftotext for the CDPH domoic-acid PDFs (sources/biotoxin.py)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
       - run: uv sync
       - name: Offline tests (recorded fixtures; the single live test is run by the data workflow)
         # four processes: ~3 min instead of ~12; the tests write only to their own temp dirs

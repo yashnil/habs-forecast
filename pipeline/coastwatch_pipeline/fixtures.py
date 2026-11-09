@@ -90,7 +90,7 @@ class FixtureFetcher:
         import numpy as np
         from scipy.io import netcdf_file
 
-        m = re.search(r"/griddap/(noaacwN2[01]VIIRSchlaSectorUSDaily)\.nc\?chlor_a%5B\((\d{4}-\d\d-\d\d)T00:00:00Z\):\(last\)%5D(.*)$", url)
+        m = re.search(r"/griddap/(noaacwN2[01]VIIRSchlaSectorUSDaily)\.nc\?chlor_a%5B\((\d{4}-\d\d-\d\d)T\d\d:\d\d:\d\dZ\):\(last\)%5D(.*)$", url)
         idx = self.root / "recorded" / "index.json"
         if not m or not idx.exists():
             return None
@@ -120,6 +120,25 @@ class FixtureFetcher:
         src.close()
         return Response(url=url, status=200, content_type="application/x-netcdf", body=body)
 
+    def _jpss_recorded_times(self, ds: str) -> list[str]:
+        import io
+        import json
+        from datetime import datetime, timezone
+
+        from scipy.io import netcdf_file
+
+        idx = self.root / "recorded" / "index.json"
+        if not idx.exists():
+            return []
+        out: set[str] = set()
+        for u, e in json.loads(idx.read_text()).items():
+            if f"/griddap/{ds}.nc?chlor_a" not in u:
+                continue
+            src = netcdf_file(io.BytesIO((self.root / "recorded" / e["file"]).read_bytes()), mmap=False)
+            out |= {datetime.fromtimestamp(float(x), tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") for x in src.variables["time"].data}
+            src.close()
+        return sorted(out)
+
     def _satellite(self, url: str) -> Response | None:
         import json
         from urllib.parse import unquote
@@ -133,6 +152,11 @@ class FixtureFetcher:
         if kind == "csv0":
             start = re.search(r"time\[\((\d{4}-\d\d-\d\d)", q)
             times = [e["time"] for e in entries]
+            if not start and times and ds.startswith("noaacwN2"):
+                # the whole axis (issue #95: the pipeline lists it unconstrained): the recorded
+                # scenes plus the earlier overpasses held by the recorded port responses
+                # (2026-08-05..), so port requests start at a time the axis lists
+                times = sorted(set(times) | {t for t in self._jpss_recorded_times(ds) if t[:10] < min(times)[:10]})
             if start and times:
                 # like ERDDAP, the start bound snaps to the nearest available time, which can
                 # be before it (e.g. the previous evening's overpass)
@@ -267,6 +291,15 @@ class FixtureFetcher:
         return Response(url=url, status=200, content_type="application/octet-stream", body=body)
 
     def _serve(self, url: str) -> Response:
+        # CDPH domoic-acid PDFs and the page linking them, recorded 2026-11-08 (tests/fixtures/cdph)
+        cdph = {
+            "/DomoicAcid/CrabDAResults.pdf": ("cdph/CrabDAResults-2026-11-02.pdf", "application/pdf"),
+            "/DomoicAcid/SeafoodDAResults082826to102226.pdf": ("cdph/SeafoodDAResults082826to102226.pdf", "application/pdf"),
+            "/FoodSafetyProgram/DomoicAcid.aspx": ("cdph/DomoicAcid-links.html", "text/html"),
+        }
+        for tail, (rel, ctype) in cdph.items():
+            if url.startswith("https://www.cdph.ca.gov/") and url.endswith(tail):
+                return self._file(url, rel, ctype)
         rec = self._recorded(url) or self._jpss_port(url)
         if rec is not None:
             return rec

@@ -14,13 +14,17 @@
     "data:live": "cd ../pipeline && uv run cwp run --out ../coastwatch-web/public/data/v1",
     "data:fixture": "node scripts/copy-fixture-data.mjs",
     "test": "vitest run",
+    "eval:ask:live": "NERITIC_ASK_LIVE_EVALS=1 vitest run tests/unit/ask/live-evals.test.ts",
     "test:e2e": "npm run data:fixture && npm run build && playwright test",
     "test:published": "playwright test -c playwright.published.config.ts",
     "shots": "node scripts/shoot.mjs",
     "test:offline": "node scripts/offline-proof.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
     "@mapbox/vector-tile": "3.0.0",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.118.0",
     "ajv": "^8.20.0",
     "maplibre-gl": "^6.13.0",
     "motion": "^12.43.0",
@@ -29,7 +33,8 @@
     "pmtiles": "4.5.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "react-map-gl": "^8.1.3"
+    "react-map-gl": "^8.1.3",
+    "web-push": "3.6.7"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",
@@ -39,6 +44,7 @@
     "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
     "json-schema-to-typescript": "^16.0.0",

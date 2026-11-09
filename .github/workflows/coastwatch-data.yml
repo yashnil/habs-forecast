@@ -63,6 +63,8 @@ jobs:
           ls -la publish || true
           # how old the dataset this run starts from is (pipeline health: missed runs)
           echo "PREV_GENERATED_AT=$(jq -r '.generated_at // empty' publish/v1/manifest.json 2>/dev/null)" >> "$GITHUB_ENV"
+      - name: pdftotext for the CDPH domoic-acid PDFs (sources/biotoxin.py)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
       - name: Run pipeline
         working-directory: pipeline
         run: uv sync && uv run cwp run --out ../publish/v1

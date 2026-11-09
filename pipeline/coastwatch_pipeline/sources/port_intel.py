@@ -190,11 +190,18 @@ def _jpss_daily(ctx: RunContext, ds: str, lat: float, lon: float, start: date) -
     """Daily merges of one platform near a port: {UTC date: values}, latitudes, longitudes."""
     from .charm import parse_netcdf
 
+    from . import satellite as sat
+
+    # the time bound is a time the axis lists (issue #95): coastwatch.noaa.gov answers an HTML 404
+    # for a bound ERDDAP rejects, indistinguishable from an outage
+    listed = [t for t in sat.axis_times(ctx, CHL_JPSS_SERVER, ds) if t[:10] >= start.isoformat()]
+    if not listed:
+        raise ValueError(f"no granule on the time axis on or after {start.isoformat()}")
     dlat, dlon = RADIUS_KM / KM_PER_DEG + 0.01, RADIUS_KM / (KM_PER_DEG * math.cos(math.radians(lat))) + 0.01
     # latitude is descending; stride 2 (~1.5 km) as before. The two platforms share the
     # lattice, so the same bounds give the same cells (checked by the caller).
     sel = (
-        f"[({start.isoformat()}T00:00:00Z):(last)][(0.0)]"
+        f"[({listed[0]}):(last)][(0.0)]"
         f"[({lat + dlat:.4f}):2:({lat - dlat:.4f})][({lon - dlon:.4f}):2:({lon + dlon:.4f})]"
     )
     url = f"{CHL_JPSS_SERVER}/griddap/{ds}.nc?" + quote(f"chlor_a{sel}", safe=",():")

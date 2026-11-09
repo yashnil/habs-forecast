@@ -235,6 +235,8 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
                 ok, detail = False, f"invalid {kind}: {str(e)[:200]}"
         record(rel, kind, f, ok, detail)
 
+    check_pilot_sidecars(base, record)
+
     return {
         "base": base,
         "manifest_generated_at": manifest.generated_at,
@@ -246,6 +248,33 @@ def check_published(base: str, expect_run: str | None = None) -> dict:
         "problems": problems,
         "checked": checked,
     }
+
+
+PILOT_SIDECARS = ("biotoxin/index.json", "fisheries-status/index.json")
+
+
+def check_pilot_sidecars(base: str, record) -> None:
+    """The pilot sidecars (never referenced by the manifest) are optional; when present each must
+    validate against its model, and no curated status may claim a review without a reviewer name."""
+    from ..pilot_models import BiotoxinIndex, FisheriesStatusIndex
+
+    for rel, model in zip(PILOT_SIDECARS, (BiotoxinIndex, FisheriesStatusIndex)):
+        f = _get(base, rel)
+        if f.status == 404:
+            continue
+        ok, detail = f.status == 200, f"HTTP {f.status}"
+        if ok:
+            try:
+                idx = model.model_validate_json(f.body)
+                if isinstance(idx, FisheriesStatusIndex):
+                    bad = [r.id for r in idx.records if r.review_state == "human_verified" and not r.reviewed_by]
+                    assert not bad, f"verified without a reviewer: {bad}"
+                    detail = f"{len(idx.records)} records, {sum(r.review_state == 'pending_human_review' for r in idx.records)} pending human review"
+                else:
+                    detail = f"{len(idx.sites)} sites, crab PDF as of {idx.source.as_of}"
+            except Exception as e:
+                ok, detail = False, f"invalid {rel}: {str(e)[:200]}"
+        record(rel, rel.split("/")[0], f, ok, detail)
 
 
 def guard_publish_tree(root: Path, allowed_top: str = "v1") -> list[str]:

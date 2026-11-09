@@ -8,6 +8,7 @@ dependencies = [
   "scipy>=1.11",
   "pillow>=10.0",
   "pydantic>=2.6",
+  "pyyaml>=6.0",
 ]
 
 [project.scripts]

@@ -34,6 +34,11 @@ const P: Record<string, React.ReactNode> = {
   more: <><circle cx="5.5" cy="12" r="1.3" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" /><circle cx="18.5" cy="12" r="1.3" fill="currentColor" stroke="none" /></>,
   play: <path d="M8 5.5v13l10.5-6.5L8 5.5Z" fill="currentColor" />,
   pause: <><path d="M8.5 5.5v13M15.5 5.5v13" strokeWidth="2.6" /></>,
+  // Today (pilot): the day's page in the nav, and the daylight (bright sun) switch
+  today: <><path d="M3.5 17.5h17" /><path d="M7 17.5a5 5 0 0 1 10 0" /><path d="M12 6.5v2.5M5.4 10.4l1.7 1.4M18.6 10.4l-1.7 1.4" /><path d="M6 20.5h12" opacity="0.6" /></>,
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" /></>,
+  bell: <><path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 2h-14l1.5-2Z" /><path d="M10 20.5a2 2 0 0 0 4 0" /></>,
+  ask: <><path d="M4.5 5.5h15v10h-8l-4.5 3.5v-3.5h-2.5v-10Z" /><path d="M10 9a2 2 0 1 1 2.6 1.9c-.4.2-.6.5-.6.9v.4" /><circle cx="12" cy="13.6" r="0.8" fill="currentColor" stroke="none" /></>,
   keyboard: <><rect x="3" y="6.5" width="18" height="11" rx="2" /><path d="M7 10h.01M10 10h.01M13 10h.01M16 10h.01M8 14h8" /></>,
 };
 

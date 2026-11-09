@@ -1,0 +1,419 @@
+{
+  "$defs": {
+    "FisheryStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "applies_to_places": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Applies To Places",
+          "type": "array"
+        },
+        "area_label": {
+          "title": "Area Label",
+          "type": "string"
+        },
+        "cause": {
+          "enum": [
+            "whale_entanglement",
+            "domoic_acid",
+            "psp",
+            "regulation",
+            "season",
+            "quality",
+            "other"
+          ],
+          "title": "Cause",
+          "type": "string"
+        },
+        "checked_at": {
+          "title": "Checked At",
+          "type": "string"
+        },
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "effective": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Effective"
+        },
+        "fishery": {
+          "enum": [
+            "dungeness_commercial",
+            "dungeness_recreational",
+            "rock_crab",
+            "salmon_commercial",
+            "groundfish",
+            "anchovy_sardine",
+            "market_squid",
+            "bivalve_shellfish",
+            "spiny_lobster",
+            "other"
+          ],
+          "title": "Fishery",
+          "type": "string"
+        },
+        "headline": {
+          "maxLength": 110,
+          "title": "Headline",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "level": {
+          "enum": [
+            "closed",
+            "delayed",
+            "restricted",
+            "watch",
+            "no_restriction_on_record"
+          ],
+          "title": "Level",
+          "type": "string"
+        },
+        "next_review": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Review"
+        },
+        "other_sources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Other Sources",
+          "type": "array"
+        },
+        "review_state": {
+          "enum": [
+            "pending_human_review",
+            "human_verified"
+          ],
+          "title": "Review State",
+          "type": "string"
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reviewed At"
+        },
+        "reviewed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reviewed By"
+        },
+        "source_name": {
+          "title": "Source Name",
+          "type": "string"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "until": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Until"
+        }
+      },
+      "required": [
+        "id",
+        "fishery",
+        "label",
+        "level",
+        "cause",
+        "headline",
+        "detail",
+        "area_label",
+        "applies_to_places",
+        "effective",
+        "until",
+        "next_review",
+        "source_name",
+        "source_url",
+        "checked_at",
+        "review_state"
+      ],
+      "title": "FisheryStatus",
+      "type": "object"
+    },
+    "RampState": {
+      "additionalProperties": false,
+      "properties": {
+        "checked_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checked At"
+        },
+        "last_assessment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Assessment"
+        },
+        "next_assessment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Assessment"
+        },
+        "next_assessment_window": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "as published, e.g. 'December 15-18'",
+          "title": "Next Assessment Window"
+        },
+        "review_state": {
+          "enum": [
+            "pending_human_review",
+            "human_verified"
+          ],
+          "title": "Review State",
+          "type": "string"
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reviewed At"
+        },
+        "reviewed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reviewed By"
+        },
+        "season": {
+          "title": "Season",
+          "type": "string"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "zone_source_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Zone Source Url"
+        },
+        "zones": {
+          "items": {
+            "$ref": "#/$defs/RampZone"
+          },
+          "title": "Zones",
+          "type": "array"
+        }
+      },
+      "required": [
+        "season",
+        "zones",
+        "last_assessment",
+        "next_assessment",
+        "source_url",
+        "review_state"
+      ],
+      "title": "RampState",
+      "type": "object"
+    },
+    "RampZone": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "applies_to_places": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Applies To Places",
+          "type": "array"
+        },
+        "depth_limit_fathoms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Depth Limit Fathoms"
+        },
+        "gear_reduction_pct": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Gear Reduction Pct"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "lat_north": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat North"
+        },
+        "lat_south": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat South"
+        },
+        "zone": {
+          "title": "Zone",
+          "type": "string"
+        }
+      },
+      "required": [
+        "zone",
+        "label",
+        "action",
+        "depth_limit_fathoms",
+        "gear_reduction_pct"
+      ],
+      "title": "RampZone",
+      "type": "object"
+    }
+  },
+  "$id": "https://coastwatch/schemas/v1/fisheries-status.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "generated_at": {
+      "title": "Generated At",
+      "type": "string"
+    },
+    "ramp": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RampState"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "records": {
+      "items": {
+        "$ref": "#/$defs/FisheryStatus"
+      },
+      "title": "Records",
+      "type": "array"
+    },
+    "version": {
+      "const": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "generated_at",
+    "records",
+    "ramp"
+  ],
+  "title": "FisheriesStatusIndex",
+  "type": "object"
+}
