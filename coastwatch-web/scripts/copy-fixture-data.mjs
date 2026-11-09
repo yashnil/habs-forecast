@@ -22,6 +22,47 @@ for (const [src, name] of [
 cpSync(join(root, "tests", "fixture-derived", "v1"), join(root, "public", "data", "fixture", "v1"), { recursive: true });
 console.log("derived fixture -> public/data/fixture/v1/derived");
 
+// Pilot sidecars on the fixture clock. `cwp fixture` builds v1/fisheries-status from the repository's
+// LIVE curated file (data/curated/fisheries-status, read by a person in November) and v1/biotoxin from
+// a recorded CDPH PDF, while every e2e server runs with CW_FIXED_NOW = 2026-10-13T06:00Z
+// (playwright.config.ts): the records would say "checked Nov 8" on a page whose clock is Oct 12. A
+// record cannot have been read after the moment it is shown, so the dates that say WHEN NERITIC LOOKED
+// (checked_at, reviewed_at, fetched_at, the CDPH file's as_of) are held to the fixture clock's Pacific
+// day. What the agencies decided (effective and assessment dates, sample dates, every sentence) is not
+// touched. Derived here and never committed, so it follows tests/fixture-data when CI regenerates it.
+{
+  const FIXTURE_NOW = process.env.CW_FIXED_NOW ?? "2026-10-13T06:00:00Z";
+  const clockDay = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(FIXTURE_NOW));
+  const LOOKED = new Set(["checked_at", "reviewed_at", "fetched_at"]);
+  const hold = (v) => (typeof v !== "string" ? v : v.length <= 10 ? (v > clockDay ? clockDay : v) : Date.parse(v) > Date.parse(FIXTURE_NOW) ? FIXTURE_NOW : v);
+  const walk = (o) => {
+    if (Array.isArray(o)) return o.forEach(walk);
+    if (!o || typeof o !== "object") return;
+    for (const [k, v] of Object.entries(o)) {
+      if (LOOKED.has(k)) o[k] = hold(v);
+      else walk(v);
+    }
+  };
+  let held = 0;
+  for (const name of ["fixture", "fixture-failed"]) {
+    for (const rel of ["fisheries-status/index.json", "biotoxin/index.json"]) {
+      const f = join(root, "public", "data", name, "v1", rel);
+      let j;
+      try {
+        j = JSON.parse(readFileSync(f, "utf8"));
+      } catch {
+        continue; // a dataset without the sidecar stays without it
+      }
+      const before = JSON.stringify(j);
+      walk(j);
+      if (j.source && typeof j.source.as_of === "string") j.source.as_of = hold(j.source.as_of);
+      if (JSON.stringify(j) !== before) held++;
+      writeFileSync(f, JSON.stringify(j));
+    }
+  }
+  console.log(`pilot sidecars: read dates held to the fixture clock (${clockDay}) in ${held} file(s)`);
+}
+
 // v10: the main fixture with its newest radar hour blank over Monterey Bay (the staging data of Oct 21:
 // the domain-wide coverage still looked usable, the region's own figure was 0). Derived here, never
 // committed, so it follows tests/fixture-data when CI regenerates that folder.
