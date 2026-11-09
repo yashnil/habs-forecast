@@ -325,6 +325,9 @@ def outlook_layer(ctx: RunContext, latest: LayerArtifact | None, notes: list[str
     base = f"{DERIVED}/outlook-{issued.isoformat()}-{_h(start.isoformat(), issued.isoformat(), ctx.run_id)}"
     vg, n1 = write_grid(out, f"{base}/values", np.clip(O.to_grid(r["forecast_log10"], ref), *LOG_RANGE), geo, *LOG_RANGE, log=True)
     ug, n2 = write_grid(out, f"{base}/uncertainty", O.to_grid(r["uncertainty_log10"], ref), geo, *UNC_RANGE, log=False)
+    # each cell's usual chlorophyll for the outlook's own 8-day period (the climatology term of the forecast, same cells and
+    # same bay mask): what "higher or lower than usual" is measured against. Cell for cell with `grid`, same encoding.
+    tg, n3 = write_grid(out, f"{base}/typical", np.clip(O.to_grid(r["climatology_log10"], ref), *LOG_RANGE), geo, *LOG_RANGE, log=True)
     sk = ref["skill_8d"]
     by_lead = ref["skill_by_lead"]
     p0, p1 = r["predictor_window"]
@@ -394,8 +397,13 @@ def outlook_layer(ctx: RunContext, latest: LayerArtifact | None, notes: list[str
         "uncertainty_units": "expected RMSE log10(mg m-3) per cell (held-out 2016-2021; the climatology's error where the composite has no value)",
         "grid": vg,
         "uncertainty_grid": ug,
+        "typical_grid": tg,
+        "typical_basis": (
+            "Each cell's usual chlorophyll for this 8-day period of the year: the MODIS-Aqua climatology (2003-2021, smoothed over neighbouring "
+            "periods) the outlook is built from. The outlook divided by this value says how far above or below usual it is."
+        ),
     }
-    return layer, n1 + n2, {"bay_under_cells_pct": bay_cov, "cells_with_anomaly": r["cells_with_anomaly"], "predictor": p0.isoformat(), "mean_anomaly_ln": r["mean_anomaly_ln"]}
+    return layer, n1 + n2 + n3, {"bay_under_cells_pct": bay_cov, "cells_with_anomaly": r["cells_with_anomaly"], "predictor": p0.isoformat(), "mean_anomaly_ln": r["mean_anomaly_ln"]}
 
 
 def sst_layer(ctx: RunContext) -> tuple[dict, int, dict]:
@@ -470,7 +478,7 @@ SST_CARRY_MAX_AGE_DAYS = satellite.FRESHNESS.stale_max_age_days  # older analyse
 
 
 def _grids_present(out: Path, lyr: dict) -> bool:
-    for key in ("grid", "uncertainty_grid", "class_grid"):
+    for key in ("grid", "uncertainty_grid", "class_grid", "typical_grid"):
         g = lyr.get(key)
         if not g:
             continue

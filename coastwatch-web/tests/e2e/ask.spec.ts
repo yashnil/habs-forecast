@@ -34,15 +34,24 @@ test.describe("desktop", () => {
 
     await page.getByTestId("ask-suggestions").getByRole("button", { name: "What's the status of Dungeness crab?" }).click();
     const a = page.getByTestId("ask-answer").last();
-    await expect(a).toContainText("Commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements)");
-    await expect(a).toContainText("Next review Dec 15");
+    // the answer first, in one sentence, with who says it and when beside it; then what is next
+    await expect(a.getByTestId("ask-lead")).toContainText("Dungeness crab: commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements).");
+    await expect(a.getByTestId("ask-lead").getByTestId("ask-by")).toHaveText("CDFW, checked Oct 12");
+    await expect(a).toContainText("Next CDFW risk assessments (subject to change): December 15-18 and January 13-15.");
     await expect(a).toContainText("not yet verified by a person");
-    await expect(a.getByTestId("ask-notice")).toContainText("not an official source");
-    await expect(a.getByTestId("ask-data-age")).toContainText("Data age:");
+    // nothing is said twice, and dates are in the reader's terms
+    expect((await a.getByTestId("ask-lines").innerText()).match(/humpback/g)).toHaveLength(1);
+    await expect(a).not.toContainText(/\d{4}-\d{2}-\d{2}/);
+    await expect(a.getByTestId("ask-data-age")).toHaveText("Data age: CDFW, Oct 12 (today).");
+    // the standing notice is short and comes AFTER the answer and its sources
+    const notice = a.getByTestId("ask-notice");
+    await expect(notice).toHaveText("Neritic is not an official source: CDFW and CDPH decide, and their notices take precedence. Never use Neritic to decide whether seafood is safe or whether it is safe to go out.");
+    expect(await a.evaluate((el) => [...el.querySelectorAll("[data-testid]")].map((n) => n.getAttribute("data-testid")).filter((t) => ["ask-lines", "ask-citations", "ask-notice", "ask-made"].includes(t!)))).toEqual(["ask-lines", "ask-citations", "ask-notice", "ask-made"]);
     await expect(a.getByTestId("ask-made")).toContainText("without an AI model");
 
     const chip = a.getByTestId("ask-chip").first();
     await expect(chip).toContainText("CDFW");
+    await expect(chip).toContainText("Oct 12");
     await expect(chip).toContainText("not verified");
     await chip.click();
     await expect(chip).toHaveAttribute("aria-expanded", "true");
@@ -52,6 +61,13 @@ test.describe("desktop", () => {
 
     await expect(page.getByTestId("ask-sms-text")).toContainText("[Src: CDFW 10/12, unverified]");
     expect(await serious(page)).toEqual([]);
+
+    // a yes/no question about one fishery gets its answer as the first word (the notice is not repeated on a second answer)
+    const b = await ask(page, "Is the Monterey crab season open?");
+    await expect(b.getByTestId("ask-lead")).toContainText("No — Dungeness crab: commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements).");
+    await expect(b.getByTestId("ask-lines").locator("p")).toHaveCount(4);
+    await expect(b.getByTestId("ask-notice")).toHaveCount(0);
+    await expect(page.getByTestId("ask-sms-text")).toContainText("No - Dungeness crab: commercial season delayed to at least Jan 1, 2027");
   });
 
   test("safety questions get the fixed template and official referrals, never 'safe'", async ({ page }) => {
@@ -62,6 +78,10 @@ test.describe("desktop", () => {
     await expect(a.getByTestId("ask-referrals").getByRole("link").first()).toHaveAttribute("href", /cdph\.ca\.gov/);
     await expect(a.getByTestId("ask-lines")).toContainText("For information only");
     await expect(a).not.toContainText(/\b(is|are) safe to eat\b/);
+    // the refusal comes first and is never softened into an answer: no line is set as "the answer", none opens with yes or no
+    await expect(a.getByTestId("ask-lead")).toHaveCount(0);
+    for (const line of await a.getByTestId("ask-lines").locator("p").allInnerTexts()) expect(line).not.toMatch(/^\s*(yes|no)\b/i);
+    expect(await a.evaluate((el) => [...el.querySelectorAll("[data-testid]")].map((n) => n.getAttribute("data-testid")).filter((t) => ["ask-preface", "ask-referrals", "ask-lines", "ask-notice"].includes(t!)))).toEqual(["ask-preface", "ask-referrals", "ask-lines", "ask-notice"]);
   });
 
   test("switching port answers from that port's records; out-of-area is declined", async ({ page }) => {

@@ -257,6 +257,21 @@ def test_pipeline_writes_derived_index_and_leaves_manifest_alone(dataset: Path, 
     assert any(c.startswith("Bays are masked") for c in out["caveats"]) and out["coverage"]["bay_cells_masked"] > 30
     ov = R.read_grid(dataset, out["grid"])
     gg = out["grid"]
+    # the usual value for the outlook's period, cell for cell with the outlook (same shape, encoding and bay mask)
+    tg = out["typical_grid"]
+    assert {k: v for k, v in tg.items() if k not in ("url", "chunks")} == {k: v for k, v in gg.items() if k not in ("url", "chunks")}
+    assert tg["transform"] == "log10" and tg["url"] != gg["url"] and "climatology" in out["typical_basis"]
+    tv = R.read_grid(dataset, tg)
+    assert (np.isfinite(tv) == np.isfinite(ov)).all() and np.isfinite(tv).sum() == out["coverage"]["cells"]
+    ref = O.load_reference()
+    px = ref["_px"]
+    expect = ref["_clim"][:, O.period(date.fromisoformat(out["valid_from"]), ref["periods"])] / O.LN10
+    ok = np.isfinite(tv[px[:, 0], px[:, 1]])
+    assert np.allclose(tv[px[:, 0], px[:, 1]][ok], np.clip(expect[ok], *R.LOG_RANGE), atol=tg["max_quantization_error"] * 1.01)
+    # the outlook is that usual value plus a damped anomaly: within the AR(1) reach of it, never the same field
+    ratio = ov[np.isfinite(ov)] - tv[np.isfinite(ov)]
+    assert np.abs(ratio).max() < 1.5 and np.abs(ratio).max() > 0.01
+    assert "typical_grid" not in manifest  # a sidecar field: the manifest is untouched
     lats = gg["lat_first"] + gg["lat_step"] * np.arange(gg["height"])[:, None]
     lons = gg["lon_first"] + gg["lon_step"] * np.arange(gg["width"])[None, :]
     sf = (lats >= 37.52) & (lats <= 38.06) & (lons >= -122.40) & (lons <= -122.10)
@@ -406,13 +421,14 @@ def test_outlook_and_sst_are_carried_forward_when_noaa_refuses(dataset: Path, tm
     for lid in ("chl_outlook_8d", "sst_latest"):
         a, b = after[lid], before[lid]
         # unchanged: same dates, same grid files (still on disk after pruning)
-        for k in ("issued", "valid_from", "valid_to", "observed_dates", "grid", "uncertainty_grid", "method", "basis"):
+        for k in ("issued", "valid_from", "valid_to", "observed_dates", "grid", "uncertainty_grid", "typical_grid", "method", "basis"):
             assert a.get(k) == b.get(k), (lid, k)
         assert a["caveats"][0].startswith("Not updated this run: NOAA's server refused the request")
         assert sum(c.startswith("Not updated this run") for c in a["caveats"]) == 1 and a["caveats"][1:] == b["caveats"]
         assert a["carried_forward"]["built_by_run"] == "fixture" and a["carried_forward"]["built_at"]
         assert np.isfinite(R.read_grid(copy, a["grid"])).any()
     o = after["chl_outlook_8d"]
+    assert np.isfinite(R.read_grid(copy, o["typical_grid"])).any()  # the carried outlook keeps its usual-value grid on disk
     assert f"showing the outlook issued {o['issued']} for {o['valid_from']}..{o['valid_to']}" in o["caveats"][0]
     assert any("last known good" in n for n in idx["notes"])
     rep = check_published(str(copy))

@@ -1,4 +1,5 @@
 import type { PortFact } from "../contracts";
+import { dayWords, daysOld } from "../facts";
 import type { DataAge } from "./types";
 
 /** Data age and staleness — system text computed from `as_of`, never from an answerer. */
@@ -20,9 +21,23 @@ export function parseAsOf(asOf: string | null): number | null {
   return Number.isFinite(t) ? t : null;
 }
 
+/** A date in the reader's terms, as Today words it: "Oct 12", "Jan 1, 2027" (the year only when it is not the clock's). */
+export const dateWords = (asOf: string, now: Date) => dayWords(asOf, now.toISOString());
+/** "Oct 7–10", "Sep 28 – Oct 3" */
+export function spanWords(from: string, to: string, now: Date): string {
+  const a = dateWords(from, now);
+  const b = dateWords(to, now);
+  return from === to ? a : a.slice(0, 3) === b.slice(0, 3) && !a.includes(",") && !b.includes(",") ? `${a}–${b.replace(/^\w+ /, "")}` : `${a} – ${b}`;
+}
+
 export function ageText(asOf: string | null, now: Date): string {
   const t = parseAsOf(asOf);
   if (t === null) return "age unknown";
+  // a record dated by day only (a check, a sample, a model run) is aged in whole Pacific days, never in hours
+  if (asOf && asOf.length === 10) {
+    const d = daysOld(asOf, now.toISOString());
+    return d === 0 ? "today" : d === 1 ? "1 day old" : `${d} days old`;
+  }
   const h = (now.getTime() - t) / 3_600_000;
   if (h < 0) return asOf && asOf.length === 10 ? "today" : "just now";
   if (h < 1) return "under an hour old";
@@ -36,9 +51,9 @@ const HOURS = 3_600_000;
 /** A plain note when a fact is past its useful life, else null. Thresholds per kind (R21). */
 export function staleNote(f: PortFact, now: Date): string | null {
   const t = parseAsOf(f.as_of);
-  const date = f.as_of?.slice(0, 10) ?? "an unknown date";
+  const date = f.as_of ? dateWords(f.as_of, now) : "an unknown date";
   const today = pacificDate(now);
-  if (f.valid_for && f.valid_for.to < today) return `${f.source.name} of ${date} is out of date: it covered ${f.valid_for.from} to ${f.valid_for.to}.`;
+  if (f.valid_for && f.valid_for.to < today) return `${f.source.name} of ${date} is out of date: it covered ${spanWords(f.valid_for.from, f.valid_for.to, now)}.`;
   if (t === null) return f.kind === "data_age" ? null : `${f.source.name} has no date, so its age is unknown.`;
   const age = now.getTime() - t;
   switch (f.kind) {
@@ -83,8 +98,8 @@ export function dataAge(facts: PortFact[], now: Date): DataAge | null {
   const stale = notes.length > MAX_STALE_NOTES ? [...notes.slice(0, MAX_STALE_NOTES), `${notes.length - MAX_STALE_NOTES} more of these records are old; each Today card shows its own date.`] : notes;
   const label = oldest
     ? oldest === newest || (oldest.as_of!.slice(0, 10) === newest!.as_of!.slice(0, 10) && oldest.source.name === newest!.source.name)
-      ? `Data: ${oldest.source.name}, ${oldest.as_of!.slice(0, 10)} (${ageText(oldest.as_of, now)}).`
-      : `Oldest record here: ${oldest.source.name}, ${oldest.as_of!.slice(0, 10)} (${ageText(oldest.as_of, now)}). Newest: ${newest!.source.name} (${ageText(newest!.as_of, now)}).`
+      ? `${oldest.source.name}, ${dateWords(oldest.as_of!, now)} (${ageText(oldest.as_of, now)}).`
+      : `Oldest record here: ${oldest.source.name}, ${dateWords(oldest.as_of!, now)} (${ageText(oldest.as_of, now)}). Newest: ${newest!.source.name} (${ageText(newest!.as_of, now)}).`
     : "These records carry no dates; their age is unknown.";
   return { label, oldest_as_of: oldest?.as_of ?? null, newest_as_of: newest?.as_of ?? null, stale };
 }

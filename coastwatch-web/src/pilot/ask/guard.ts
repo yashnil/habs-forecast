@@ -1,4 +1,5 @@
 import type { PortFact } from "../contracts";
+import { dayWords, pacificDay } from "../facts";
 import type { AnswerLine } from "./types";
 
 /**
@@ -19,7 +20,8 @@ import type { AnswerLine } from "./types";
  *   hierarchy                a restrictive official record was provided and the answer leads with something else
  *   lifted_claim             an advisory/closure described as lifted/ended without an official record saying so
  *   unverified_omitted       unverified official records cited without saying so
- *   stale_undated            an old measurement cited without its date or age
+ *   stale_undated            an old measurement cited without its date or age (its date as ISO, or in words exactly as Today
+ *                            writes it for that day, year included when it is not this year's: "Sep 28", "Sep 28, 2025")
  */
 
 export type ViolationCode =
@@ -80,7 +82,8 @@ function decimals(tok: string): number {
 
 /** The text a fact grounds: everything the answerer was shown about it. */
 export function factText(f: PortFact): string {
-  return [f.headline, f.value ?? "", f.detail ?? "", f.as_of ?? "", f.valid_for ? `${f.valid_for.from} ${f.valid_for.to}` : "", f.source.name, f.source.url ?? ""].join(" ");
+  // a timestamp also grounds its own Pacific calendar day (a buoy reading of 2026-10-13T05:30Z was "measured Oct 12" on this coast)
+  return [f.headline, f.value ?? "", f.detail ?? "", f.as_of ?? "", f.as_of && f.as_of.length > 10 ? pacificDay(f.as_of) : "", f.valid_for ? `${f.valid_for.from} ${f.valid_for.to}` : "", f.source.name, f.source.url ?? ""].join(" ");
 }
 
 function numberGrounded(tok: string, facts: number[]): boolean {
@@ -138,7 +141,8 @@ export function check(lines: AnswerLine[], provided: PortFact[], now: Date): Gua
       // only when the line states this measurement's value (a list of source names does not)
       const own = numbersIn(`${f.headline} ${f.value ?? ""}`.replace(ISO_DATE, " "));
       const states = numbersIn(body.replace(ISO_DATE, " ")).some((n) => own.includes(n));
-      if (f.basis === "measured" && states && age !== null && age > STALE_MEASURED_DAYS && f.as_of && !body.includes(f.as_of.slice(0, 10)) && !/\b(days?|weeks?|months?) (old|ago)\b/i.test(body))
+      const saysDate = !!f.as_of && (body.includes(f.as_of.slice(0, 10)) || new RegExp(`\\b${dayWords(f.as_of, now.toISOString()).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?!\\d|\\s*,\\s*\\d{4})`).test(body));
+      if (f.basis === "measured" && states && age !== null && age > STALE_MEASURED_DAYS && f.as_of && !saysDate && !/\b(days?|weeks?|months?) (old|ago)\b/i.test(body))
         add("stale_undated", i, f.id);
     }
   });

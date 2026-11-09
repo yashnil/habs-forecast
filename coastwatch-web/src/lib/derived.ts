@@ -43,7 +43,20 @@ type Common = {
   observed_layer_id?: string;
   observed_layer?: string;
 };
-export type OutlookLayer = Common & { kind: "chl_outlook"; valid_from: string; valid_to: string; basis: string; skill: DerivedSkill };
+export type OutlookLayer = Common & {
+  kind: "chl_outlook";
+  valid_from: string;
+  valid_to: string;
+  basis: string;
+  skill: DerivedSkill;
+  /**
+   * Each cell's usual value for the outlook's own 8-day period (the climatology the outlook is built
+   * from), cell for cell with `grid`. Optional: indexes published before 2026-11 do not have it, and
+   * a grid of any other shape is ignored (never misread), so the outlook is then worded without a
+   * comparison with usual.
+   */
+  typical_grid?: DerivedGrid | null;
+};
 /**
  * v6: what each estimate pixel is, per pixel (DATA → X contract): 0 observed (the estimate is
  * empty there); 1 filled from nearby clear water; 2 extrapolated toward shore, never observed;
@@ -160,7 +173,8 @@ export function validLayer(l: unknown): DerivedLayer | null {
     if (!isDate(x.valid_from) || !isDate(x.valid_to) || !isStr(x.basis) || !s || !isStr(s.metric) || !isNum(s.model)) return null;
     // an outlook is offered only with its skill against at least one plain baseline
     if (!isNum(s.climatology) && !isNum(s.persistence)) return null;
-    return { ...base, kind: "chl_outlook", valid_from: x.valid_from, valid_to: x.valid_to, basis: x.basis, skill: s as DerivedSkill };
+    const tg = x.typical_grid != null && validGrid(x.typical_grid) && sameShape(x.typical_grid as DerivedGrid, x.grid as DerivedGrid) && (x.typical_grid as DerivedGrid).transform === (x.grid as DerivedGrid).transform ? (x.typical_grid as DerivedGrid) : null;
+    return { ...base, kind: "chl_outlook", valid_from: x.valid_from, valid_to: x.valid_to, basis: x.basis, skill: s as DerivedSkill, typical_grid: tg };
   }
   if (x.kind === "chl_estimate") {
     const v = x.validation as Record<string, unknown> | undefined;

@@ -1,6 +1,6 @@
 import { useId } from "react";
 import type { BiotoxinSet } from "@/pilot/contracts";
-import type { BloomDay, OutlookInput } from "@/pilot/facts";
+import type { BloomDay, OutlookRead } from "@/pilot/facts";
 import { dayWords } from "@/pilot/facts";
 import type { Tide } from "@/lib/conditions";
 import { tideDay } from "@/lib/tideCurve";
@@ -86,15 +86,12 @@ export function ToxinChart({ sets, action, label, now }: { sets: BiotoxinSet[]; 
 const addDays = (d: string, n: number) => new Date(Date.parse(`${d}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 const diffDays = (a: string, b: string) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
 
-/**
- * One timeline, two lanes that are never combined: C-HARM's daily probabilities (days 0–3 of its run)
- * and the 8-day chlorophyll outlook (one mean over its window, hatched: an indicator, not toxin).
- */
-export function BloomTimeline({ days, outlook, today, old, now }: { days: BloomDay[]; outlook: OutlookInput | null; today: string; old: boolean; now: string }) {
+/** C-HARM's daily probabilities (days 0–3 of its run) on their own dates, with today marked. */
+export function BloomTimeline({ days, today, old, now }: { days: BloomDay[]; today: string; old: boolean; now: string }) {
   const id = useId();
   const dated = days.filter((d) => d.date);
-  const start = [dated[0]?.date, outlook?.valid_from, today].filter((x): x is string => !!x).sort()[0];
-  const end = [dated.at(-1)?.date, outlook?.valid_to, addDays(start, 3)].filter((x): x is string => !!x).sort().at(-1)!;
+  const start = [dated[0]?.date, today].filter((x): x is string => !!x).sort()[0];
+  const end = [dated.at(-1)?.date, addDays(start, 3), today].filter((x): x is string => !!x).sort().at(-1)!;
   const n = diffDays(start, end) + 1;
   const W = 340;
   const L = 4;
@@ -103,75 +100,109 @@ export function BloomTimeline({ days, outlook, today, old, now }: { days: BloomD
   const xOf = (d: string) => L + diffDays(start, d) * col;
   const T1 = 38;
   const B1 = 104;
-  const T2 = 132;
-  const B2 = 160;
-  const H = 184;
+  const H = 128;
   const yP = (p: number) => B1 - (B1 - T1) * Math.max(0, Math.min(1, p));
   const labelEvery = n > 10 ? 2 : 1;
-  const descParts = [
-    ...dated.map((d) => `${dayWords(d.date!, now)}: ${d.pda != null ? `${Math.round(d.pda * 100)}% particulate domoic acid` : "no domoic acid value"}${d.pn != null ? `, ${Math.round(d.pn * 100)}% Pseudo-nitzschia bloom` : ""}`),
-    outlook ? `Chlorophyll outlook ${dayWords(outlook.valid_from, now)} to ${dayWords(outlook.valid_to, now)}: ${outlook.value != null ? `about ${fmt(outlook.value)} mg per cubic metre, one 8-day mean` : "no value here"}` : "No chlorophyll outlook",
-  ];
+  const desc = dated.map((d) => `${dayWords(d.date!, now)}: ${d.pda != null ? `${Math.round(d.pda * 100)}% particulate domoic acid` : "no domoic acid value"}${d.pn != null ? `, ${Math.round(d.pn * 100)}% Pseudo-nitzschia bloom` : ""}`).join("; ");
+  // a bar never wider than a day on a short axis would make it look like a block
+  const bw = Math.min(col, 44);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" className="today-chart block" role="img" aria-labelledby={`${id}t ${id}d`} data-testid="bloom-timeline">
-      <title id={`${id}t`}>Bloom outlook timeline: C-HARM probabilities by day, then the 8-day chlorophyll outlook</title>
-      <desc id={`${id}d`}>{descParts.join("; ")}</desc>
-      <defs>
-        <pattern id={`${id}h`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <line className="today-hatch-line" x1="0" y1="0" x2="0" y2="6" />
-        </pattern>
-      </defs>
+      <title id={`${id}t`}>C-HARM: probability of bloom and toxin conditions in the water, by day</title>
+      <desc id={`${id}d`}>{desc}</desc>
       <text x={L} y={12} style={{ letterSpacing: "0.08em" }}>
         C-HARM · PROBABILITY OF CONDITIONS
       </text>
       <line className="grid" x1={L} x2={W - R} y1={B1} y2={B1} />
       <line className="grid" x1={L} x2={W - R} y1={yP(0.5)} y2={yP(0.5)} strokeDasharray="2 3" />
-      <text x={W - R} y={T1 - 8} textAnchor="end">
-        dashed line: 50%
-      </text>
       {dated.map((d) => {
-        const x0 = xOf(d.date!);
+        const x0 = xOf(d.date!) + (col - bw) / 2;
         const g = old ? "old" : "";
         return (
           <g key={d.lead} className={g}>
-            {d.pn != null && <rect className="pn" x={x0 + col * 0.12} width={col * 0.76} y={yP(d.pn)} height={B1 - yP(d.pn)} rx={1.5} />}
-            {d.pda != null && <rect className="pda" x={x0 + col * 0.32} width={col * 0.36} y={yP(d.pda)} height={B1 - yP(d.pda)} rx={1.5} />}
+            {d.pn != null && <rect className="pn" x={x0 + bw * 0.12} width={bw * 0.76} y={yP(d.pn)} height={B1 - yP(d.pn)} rx={1.5} />}
+            {d.pda != null && <rect className="pda" x={x0 + bw * 0.32} width={bw * 0.36} y={yP(d.pda)} height={B1 - yP(d.pda)} rx={1.5} />}
             {d.pda != null && (
-              <text className="val" x={x0 + col / 2} y={yP(Math.max(d.pda, d.pn ?? 0)) - 4} textAnchor="middle">
+              <text className="val" x={x0 + bw / 2} y={yP(Math.max(d.pda, d.pn ?? 0)) - 4} textAnchor="middle">
                 {Math.round(d.pda * 100)}%
               </text>
             )}
             {d.pda == null && d.pn == null && (
-              <text x={x0 + col / 2} y={B1 - 6} textAnchor="middle">
+              <text x={x0 + bw / 2} y={B1 - 6} textAnchor="middle">
                 —
               </text>
             )}
           </g>
         );
       })}
-      <text x={L} y={T2 - 8} style={{ letterSpacing: "0.08em" }}>
-        CHLOROPHYLL OUTLOOK · NOT TOXIN
-      </text>
-      {outlook ? (
-        <g>
-          <rect x={xOf(outlook.valid_from)} width={(diffDays(outlook.valid_from, outlook.valid_to) + 1) * col} y={T2} height={B2 - T2} fill={`url(#${id}h)`} stroke="var(--nx-model-line)" rx={2} />
-          <text className="val" x={xOf(outlook.valid_from) + 6} y={T2 + 18}>
-            {outlook.value != null ? `≈ ${fmt(outlook.value)} mg/m³ · 8-day mean` : "no value here"}
-          </text>
-        </g>
-      ) : (
-        <text x={L} y={T2 + 18}>
-          not available
-        </text>
-      )}
-      {today >= start && today <= end && <line className="now" x1={xOf(today) + col / 2} x2={xOf(today) + col / 2} y1={T1 - 4} y2={B2 + 4} />}
+      {today >= start && today <= end && <line className="now" x1={xOf(today) + col / 2} x2={xOf(today) + col / 2} y1={T1 - 4} y2={B1 + 4} />}
       {Array.from({ length: n }, (_, i) => addDays(start, i)).map((d, i) =>
-        d === today || (i % labelEvery === 0 && Math.abs(diffDays(today, d)) > 1) ? (
+        d === today || (i % labelEvery === 0 && Math.abs(diffDays(today, d)) > (col < 34 ? 1 : 0)) ? (
           <text key={d} x={xOf(d) + col / 2} y={H - 6} textAnchor="middle" style={d === today ? { fill: "var(--nx-ink)", fontWeight: 600 } : undefined}>
             {d === today ? "today" : dayWords(d, now).replace(/^\w+ /, "")}
           </text>
         ) : null,
       )}
+    </svg>
+  );
+}
+
+/**
+ * The 8-day chlorophyll outlook against usual, on one scale. The centre tick is the usual value for
+ * this time of year; each step left or right is a halving or a doubling (a log scale, because the
+ * outlook's error is a factor, not an amount). The dot is the outlook, the shaded band its typical
+ * error either way, and the bracket the span Today calls "about usual". The scale ends at a quarter
+ * and at four times usual; an outlook beyond an end is drawn at the end with an arrow.
+ */
+export function OutlookScale({ read, errorFactor, signal }: { read: OutlookRead; errorFactor: number | null; signal: number }) {
+  const id = useId();
+  const W = 340;
+  const L = 12;
+  const R = 12;
+  const SPAN = 2; // doublings shown either side of usual
+  const Y = 48;
+  const x = (ratio: number) => L + ((Math.log2(ratio) + SPAN) / (2 * SPAN)) * (W - L - R);
+  const clampR = (r: number) => Math.max(2 ** -SPAN, Math.min(2 ** SPAN, r));
+  const mx = x(clampR(read.ratio));
+  const off = read.ratio > 2 ** SPAN ? 1 : read.ratio < 2 ** -SPAN ? -1 : 0;
+  const band = errorFactor ? ([x(clampR(read.ratio / errorFactor)), x(clampR(read.ratio * errorFactor))] as const) : null;
+  const times = `${read.ratio >= 9.95 ? read.ratio.toFixed(0) : read.ratio.toFixed(1)}×`;
+  const label = `outlook · ${times} usual`;
+  // the label sits over the dot, kept inside the drawing
+  const lx = Math.max(L + 44, Math.min(W - R - 44, mx));
+  const efWords = errorFactor ? String(Math.round(errorFactor * 2) / 2) : null;
+  const desc = `The outlook is ${times} the usual chlorophyll for this time of year: ${read.phrase}.${efWords ? ` Shaded band: its typical error, a factor of ${efWords} either way, from ${(read.ratio / errorFactor!).toFixed(1)}× to ${(read.ratio * errorFactor!).toFixed(1)}× usual.` : ""} Between ${(1 / signal).toFixed(2)}× and ${signal}× usual is called about usual.`;
+  return (
+    <svg viewBox={`0 0 ${W} 92`} width="100%" className="today-chart today-outlook block" role="img" aria-labelledby={`${id}t ${id}d`} data-testid="outlook-scale" data-level={read.level}>
+      <title id={`${id}t`}>8-day chlorophyll outlook against the usual level for this time of year (not toxin)</title>
+      <desc id={`${id}d`}>{desc}</desc>
+      <text x={L} y={11} className={read.level === "lower" ? "on" : undefined}>
+        ← lower than usual
+      </text>
+      <text x={W - R} y={11} textAnchor="end" className={read.level === "higher" ? "on" : undefined}>
+        higher than usual →
+      </text>
+      {band && <rect className="band" x={band[0]} width={Math.max(2, band[1] - band[0])} y={Y - 9} height={18} rx={2} />}
+      <line className="axis" x1={L} x2={W - R} y1={Y} y2={Y} />
+      {[0.25, 0.5, 2, 4].map((r) => (
+        <line key={r} className="axis" x1={x(r)} x2={x(r)} y1={Y - 4} y2={Y + 4} />
+      ))}
+      <line className="usual" x1={x(1)} x2={x(1)} y1={Y - 13} y2={Y + 13} />
+      {/* the span called "about usual" */}
+      <path className="bracket" d={`M${x(1 / signal)} ${Y + 14} v4 H${x(signal)} v-4`} />
+      <text x={lx} y={Y - 17} textAnchor="middle" className="val">
+        {label}
+      </text>
+      {off === 0 ? <circle className="mark" cx={mx} cy={Y} r={5.5} /> : <path className="mark" d={off > 0 ? `M${mx - 9} ${Y - 6} L${mx + 1} ${Y} L${mx - 9} ${Y + 6} Z` : `M${mx + 9} ${Y - 6} L${mx - 1} ${Y} L${mx + 9} ${Y + 6} Z`} />}
+      <text x={x(0.5)} y={84} textAnchor="middle">
+        half
+      </text>
+      <text x={x(1)} y={84} textAnchor="middle" className={read.level === "usual" ? "on" : undefined}>
+        about usual
+      </text>
+      <text x={x(2)} y={84} textAnchor="middle">
+        double
+      </text>
     </svg>
   );
 }
