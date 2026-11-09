@@ -1,0 +1,69 @@
+/* The ocean stage (src/v4/stage/OceanStage.tsx, design.md §6). The page sets its height. */
+.nx-stage {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--nx-bg, #04090e);
+  color: var(--nx-ink, #eef3f5);
+  font-family: var(--nx-font-ui);
+}
+.nx-stage-scene { position: absolute; inset: 0; transform-origin: 60% 45%; }
+.nx-stage-poster { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--nx-ink, #eef3f5); }
+.nx-stage-poster path { vector-effect: non-scaling-stroke; stroke-width: 1; }
+.nx-stage-poster path[data-index] { stroke-width: 1.5; }
+.nx-stage-map {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--nx-t-reveal, 480ms) var(--nx-ease-out, ease-out);
+}
+.nx-stage-map[data-on="true"] { opacity: 1; }
+.nx-stage-map[data-interactive="false"],
+.nx-stage-map[data-interactive="false"] * { pointer-events: none; }
+.nx-stage-scrim { position: absolute; inset: 0; pointer-events: none; }
+/* the top bar is transparent over the stage: a short scrim keeps its words on the ground */
+.nx-stage-scrim::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 120px;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--nx-bg, #04090e) 62%, transparent), transparent);
+}
+/* the page's words over the scene: at the bottom by default, in their own flow; only what they contain takes the pointer */
+.nx-stage-over { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; }
+.nx-stage-over > * { pointer-events: auto; }
+
+/* the legend-as-title: on its own small deck, the only box on the scene */
+.nx-stage-cap-at { position: absolute; z-index: 2; top: calc(72px + env(safe-area-inset-top, 0px)); right: 12px; max-width: min(320px, calc(100% - 24px)); animation: nx-m-fade 320ms var(--nx-ease-out, ease-out) both; }
+.nx-stage-cap { padding: 10px 12px; border-radius: 12px; background: rgba(7, 14, 20, 0.86); color: #eef3f5; font-size: 13px; line-height: 1.3; }
+.nx-stage-cap-t { font-weight: 500; }
+.nx-stage-cap-d { color: #b3c2cb; font-weight: 400; }
+.nx-stage-cap-c { color: #b3c2cb; }
+.nx-stage-ramp { margin: 7px 0 2px; }
+.nx-stage-cap > .nx-stage-ramp + .nx-stage-cap-c { margin-top: 5px; }
+.nx-stage-ramp > i { display: block; height: 6px; border-radius: 2px; }
+.nx-stage-ramp-l { display: flex; justify-content: space-between; margin-top: 3px; color: #b3c2cb; font-family: var(--nx-font-data); font-size: 11px; }
+.nx-stage-note { position: absolute; z-index: 2; top: calc(72px + env(safe-area-inset-top, 0px)); right: 12px; max-width: min(300px, calc(100% - 24px)); padding: 8px 12px; border-radius: 12px; background: rgba(7, 14, 20, 0.86); color: #b3c2cb; font-size: 12.5px; line-height: 1.35; text-align: right; }
+@media (max-width: 767px) {
+  .nx-stage-cap { padding: 8px 10px; font-size: 12px; }
+  .nx-stage-cap-at { max-width: 250px; }
+  .nx-stage-cap-at, .nx-stage-note { left: 12px; right: auto; }
+  .nx-stage-note { text-align: left; }
+}
+
+/* a mark's family colour, ink for the harbour; lit by the row linked to it */
+.nx-stage-mark { position: relative; display: block; width: 12px; height: 12px; }
+.nx-stage-mark i { position: absolute; inset: 2px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px #06111e; transition: transform var(--nx-t-hover, 150ms) var(--nx-ease-out, ease-out); }
+.nx-stage-mark[data-kind="site"] i { background: #4fd1ae; }
+.nx-stage-mark[data-kind="buoy"] i { background: #74cfe6; }
+.nx-stage-mark b { position: absolute; left: 16px; top: -3px; white-space: nowrap; color: #fff; font: 500 12.5px/18px var(--nx-font-ui); text-shadow: 0 0 3px #06111e, 0 0 3px #06111e; opacity: 0; transition: opacity var(--nx-t-hover, 150ms) var(--nx-ease-out, ease-out); }
+.nx-stage-mark[data-lit] i { transform: scale(1.7); }
+.nx-stage-mark[data-lit] b { opacity: 1; }
+
+/* the arrival's three beats: mark the title, lede and glance row data-beat="1|2|3" (CSS only, so no script holds them back) */
+.nx-stage[data-arrival="play"] [data-beat] { animation: nx-m-reveal var(--nx-t-reveal, 480ms) var(--nx-ease-emph, cubic-bezier(0.05, 0.7, 0.1, 1)) both; }
+.nx-stage[data-arrival="play"] [data-beat="2"] { animation-delay: 120ms; }
+.nx-stage[data-arrival="play"] [data-beat="3"] { animation-delay: 240ms; }
+@media (prefers-reduced-motion: reduce) {
+  .nx-stage[data-arrival="play"] [data-beat] { animation-name: nx-m-fade; animation-delay: 0ms !important; }
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useDrawOnce } from "@/v4/motion/draw";
 import { AXES, axisPosition, decadeTicks, onAxis, segments, type Axis } from "@/lib/bloom";
 import { unitLabel, type ObsVariableId, type Sample } from "@/lib/observations";
 import { dayLabel } from "@/v4/ui/time";
@@ -359,36 +360,4 @@ export function measuredSegments(ss: Sample[], axis: Axis, from: number, to: num
 /** StationLite.recent pairs → samples */
 export function recentSamples(pairs: [string, number | null][] | undefined): Sample[] {
   return (pairs ?? []).map(([d, v], i) => ({ t: Date.parse(`${d}T12:00:00Z`), time: d, value: v, q: v === 0 ? "reported_zero" : null, index: i }));
-}
-
-/**
- * A chart's line draws itself once, the first time it comes into view (a chart already on the screen
- * when the page opens is left as drawn). Never again: not on a new window, a hover or new data.
- */
-function useDrawOnce(ref: React.RefObject<SVGSVGElement | null>): "idle" | "wait" | "draw" | "done" {
-  const [phase, setPhase] = useState<"idle" | "wait" | "draw" | "done">("idle");
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const r = el.getBoundingClientRect();
-    if (r.width > 0 && r.top < window.innerHeight && r.bottom > 0) return;
-    let t = 0;
-    const io = new IntersectionObserver(
-      (es) => {
-        if (!es.some((e) => e.isIntersecting)) return setPhase("wait");
-        io.disconnect();
-        setPhase("draw");
-        t = window.setTimeout(() => setPhase("done"), 700);
-      },
-      { threshold: 0.25 },
-    );
-    io.observe(el);
-    return () => {
-      io.disconnect();
-      window.clearTimeout(t);
-    };
-    // once per chart
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return phase;
 }
