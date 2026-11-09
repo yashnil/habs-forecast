@@ -1,6 +1,7 @@
 @import "tailwindcss";
 /* v4 tokens and their utilities (bg-n-surface, text-n-ink, …): compiled with Tailwind so @theme applies */
 @import "../v4/theme.css";
+@import "../v4/motion/motion.css";
 
 /*
  * CoastWatch design tokens (design reset, docs/coastwatch/design-reset/design-spec.md §2).

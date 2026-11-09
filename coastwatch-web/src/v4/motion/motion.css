@@ -1,0 +1,195 @@
+/*
+ * The Swell motion system's CSS (docs/coastwatch/v11/design.md §5). Scripts in this folder set the states;
+ * this file says how each one looks. Only transform and opacity animate; --nx-shift (theme.css) is 0 under
+ * reduced motion, where fades stay and nothing travels.
+ * Token fallbacks are the design's own values, so this file also works before the theme defines them.
+ */
+
+/* ---- Reveal: a chapter-level block, the first time it enters view */
+[data-reveal="wait"]:not([data-reveal-group]),
+[data-reveal="wait"][data-reveal-group] > * {
+  opacity: 0;
+  transform: translateY(calc(12px * var(--nx-shift, 1)));
+}
+[data-reveal="in"]:not([data-reveal-group]),
+[data-reveal="in"][data-reveal-group] > * {
+  animation: nx-m-reveal var(--nx-t-reveal, 480ms) var(--nx-ease-emph, cubic-bezier(0.05, 0.7, 0.1, 1)) both;
+}
+[data-reveal="in"][data-reveal-group] > :nth-child(2) { animation-delay: 50ms; }
+[data-reveal="in"][data-reveal-group] > :nth-child(3) { animation-delay: 100ms; }
+[data-reveal="in"][data-reveal-group] > :nth-child(4) { animation-delay: 150ms; }
+[data-reveal="in"][data-reveal-group] > :nth-child(n + 5) { animation-delay: 200ms; }
+@keyframes nx-m-reveal {
+  from { opacity: 0; transform: translateY(calc(12px * var(--nx-shift, 1))); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nx-m-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media print {
+  [data-reveal="wait"]:not([data-reveal-group]),
+  [data-reveal="wait"][data-reveal-group] > *,
+  [data-draw="wait"] * { opacity: 1 !important; transform: none !important; stroke-dashoffset: 0 !important; clip-path: none !important; }
+}
+
+/* ---- DrawOn: a chart's first appearance. Line left to right; areas and bars from the baseline; marks after */
+.nx-draw-area,
+.nx-draw-bar { transform-box: fill-box; transform-origin: 50% 100%; }
+[data-draw="wait"] .nx-draw-line { stroke-dasharray: 1; stroke-dashoffset: 1; }
+[data-draw="wait"] .nx-draw-wipe { clip-path: inset(-20% 100% -20% 0); }
+[data-draw="wait"] .nx-draw-area,
+[data-draw="wait"] .nx-draw-bar { transform: scaleY(calc(1 - var(--nx-shift, 1))); }
+[data-draw="wait"] .nx-draw-marks { opacity: 0; }
+[data-draw="draw"] .nx-draw-line { stroke-dasharray: 1; animation: nx-m-line var(--nx-t-draw, 700ms) var(--nx-ease-out, ease-out) both; }
+[data-draw="draw"] .nx-draw-wipe { animation: nx-m-wipe var(--nx-t-draw, 700ms) var(--nx-ease-out, ease-out) both; }
+[data-draw="draw"] .nx-draw-area,
+[data-draw="draw"] .nx-draw-bar { animation: nx-m-grow var(--nx-t-draw, 700ms) var(--nx-ease-out, ease-out) both; }
+[data-draw="draw"] .nx-draw-marks { animation: nx-m-fade 300ms var(--nx-ease-out, ease-out) calc(var(--nx-t-draw, 700ms) * 0.6) both; }
+@keyframes nx-m-line {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes nx-m-wipe {
+  from { clip-path: inset(-20% 100% -20% 0); }
+  to { clip-path: inset(-20% -2% -20% 0); }
+}
+@keyframes nx-m-grow {
+  from { transform: scaleY(0); }
+  to { transform: none; }
+}
+
+/* ---- Hover and press helpers (the press scale itself is .nx-press in theme.css) */
+@media (hover: hover) and (pointer: fine) {
+  .nx-hover-tint { transition: background-color var(--nx-t-hover, 150ms) var(--nx-ease-out, ease-out); }
+  .nx-hover-tint:hover { background-color: color-mix(in srgb, var(--nx-ink) 6%, transparent); }
+  .nx-hover-lift { transition: transform var(--nx-t-hover, 150ms) var(--nx-ease-out, ease-out); }
+  .nx-hover-lift:hover { transform: translateY(calc(-1px * var(--nx-shift, 1))); }
+}
+
+/* ---- Fold's trigger (the body is theme.css .nx-fold) */
+.nx-m-fold-t { display: flex; width: 100%; min-height: 44px; align-items: center; gap: 10px; text-align: left; }
+.nx-m-fold-s { color: var(--nx-ink-2); font-weight: 400; }
+.nx-m-fold-c { width: 18px; height: 18px; flex: none; color: var(--nx-ink-3); transition: transform var(--nx-t-panel, 240ms) var(--nx-ease-move, ease); }
+.nx-m-fold-c[data-open="true"] { transform: rotate(180deg); }
+
+/* ---- Segmented: the thumb sits inside the active option; useGlide moves it */
+.nx-seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 12px; background: var(--nx-surface-2); }
+.nx-seg-o { position: relative; display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 0 14px; border-radius: 9px; color: var(--nx-ink-2); font-size: 14px; line-height: 1; transition: color var(--nx-t-hover, 150ms) var(--nx-ease-out, ease-out); }
+.nx-seg-o[data-on] { color: var(--nx-ink); }
+.nx-seg-o:disabled { opacity: 0.45; }
+.nx-seg-thumb { position: absolute; inset: 0; border-radius: inherit; background: var(--nx-surface-3); }
+
+/* ---- Skeleton: one flat tone, nothing moves */
+.nx-skel { display: block; height: 14px; border-radius: 6px; background: color-mix(in srgb, var(--nx-ink) 8%, transparent); }
+.nx-skel-lines { display: flex; flex-direction: column; gap: 8px; }
+
+/* ---- Sheet: right edge on desktop, bottom edge on phones */
+html.nx-sheet-lock { overflow: hidden; scrollbar-gutter: stable; }
+.nx-msheet {
+  --nx-m-off: translateY(calc(100% * var(--nx-shift, 1)));
+  position: fixed;
+  inset: auto 0 0 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 88dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 24px 24px 0 0;
+  background: var(--nx-surface);
+  color: var(--nx-ink);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+  will-change: transform;
+  z-index: 60;
+  transition: transform 320ms var(--nx-ease-emph, cubic-bezier(0.05, 0.7, 0.1, 1)), opacity 180ms var(--nx-ease-out, ease-out);
+}
+.nx-msheet[data-state="open"] { transform: none; opacity: 1; }
+.nx-msheet[data-state="closed"] { transform: var(--nx-m-off); opacity: 0; transition: transform 200ms var(--nx-ease-exit, ease-in), opacity 120ms var(--nx-ease-in, ease-in) 80ms; }
+@starting-style {
+  .nx-msheet[data-state="open"] { transform: var(--nx-m-off); opacity: 0; }
+}
+.nx-msheet::backdrop { background: rgba(2, 6, 9, 0.6); transition: opacity 220ms ease-out; }
+html[data-daylight] .nx-msheet::backdrop { background: rgba(11, 24, 32, 0.35); }
+.nx-msheet[data-state="closed"]::backdrop { opacity: 0; transition: opacity 160ms ease-in; }
+@starting-style {
+  .nx-msheet[data-state="open"]::backdrop { opacity: 0; }
+}
+.nx-msheet[data-modal="false"] { box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45); }
+.nx-msheet-inner { display: flex; max-height: inherit; flex-direction: column; }
+.nx-msheet-head { flex: none; padding: 8px 20px 12px; touch-action: none; cursor: grab; }
+.nx-msheet-grab { display: block; width: 36px; height: 4px; margin: 0 auto 10px; border-radius: 2px; background: var(--nx-line-strong); }
+.nx-msheet-title-row { display: flex; align-items: flex-start; gap: 12px; }
+.nx-msheet-title { font-family: var(--nx-font-display); font-size: 24px; line-height: 1.15; font-weight: 500; outline: none; }
+.nx-msheet-sub { margin-top: 6px; font-size: 13.5px; color: var(--nx-ink-2); }
+.nx-msheet-x { display: inline-grid; width: 44px; height: 44px; flex: none; place-items: center; margin: -6px -10px 0 0; border-radius: 12px; color: var(--nx-ink-2); }
+.nx-msheet-body { min-height: 0; flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 4px 20px calc(24px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 768px) {
+  .nx-msheet {
+    --nx-m-off: translateX(calc(24px * var(--nx-shift, 1)));
+    inset: 0 0 0 auto;
+    width: 420px;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 24px 0 0 24px;
+    box-shadow: -12px 0 40px rgba(0, 0, 0, 0.4);
+  }
+  .nx-msheet-inner { height: 100%; }
+  .nx-msheet-head { padding: 24px 32px 12px; cursor: auto; touch-action: auto; }
+  .nx-msheet-grab { display: none; }
+  .nx-msheet-body { padding: 4px 32px 32px; }
+}
+
+/* ---- Route transition: content cross-fades, the top bar holds still, the stage morphs */
+.nx-topbar { view-transition-name: nx-topbar; }
+.nx-vt-stage { view-transition-name: nx-stage; }
+::view-transition { pointer-events: none; }
+::view-transition-old(root) { animation: nx-m-out calc(var(--nx-t-route, 320ms) * 0.66) var(--nx-ease-exit, ease-in) both; mix-blend-mode: normal; }
+::view-transition-new(root) { animation: nx-m-fade var(--nx-t-route, 320ms) var(--nx-ease-out, ease-out) both; mix-blend-mode: normal; }
+@keyframes nx-m-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+::view-transition-group(nx-topbar) { animation: none; }
+::view-transition-old(nx-topbar) { display: none; }
+::view-transition-new(nx-topbar) { animation: none; }
+::view-transition-group(nx-stage) { animation-duration: var(--nx-t-reveal, 480ms); animation-timing-function: var(--nx-ease-emph, cubic-bezier(0.05, 0.7, 0.1, 1)); }
+::view-transition-old(nx-stage),
+::view-transition-new(nx-stage) { height: 100%; width: 100%; object-fit: cover; overflow: clip; animation-duration: var(--nx-t-reveal, 480ms); }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+
+/* ---- Scroll-linked hero: as the sheet rises the stage dims to 55% and scales 1.04; the title condenses. */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .nx-scroll-stage {
+      animation: nx-m-recede linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 0 var(--nx-scroll-range, 60svh);
+    }
+    .nx-scroll-title {
+      transform-origin: left bottom;
+      animation: nx-m-condense linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 0 var(--nx-scroll-range, 60svh);
+    }
+  }
+}
+@keyframes nx-m-recede {
+  to { opacity: 0.55; transform: scale(1.04); }
+}
+@keyframes nx-m-condense {
+  to { opacity: 0; transform: translateY(-14px) scale(0.72); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal="in"]:not([data-reveal-group]),
+  [data-reveal="in"][data-reveal-group] > * { animation-name: nx-m-fade; animation-duration: 200ms; animation-delay: 0ms !important; }
+  [data-draw="draw"] .nx-draw-line,
+  [data-draw="draw"] .nx-draw-wipe,
+  [data-draw="draw"] .nx-draw-area,
+  [data-draw="draw"] .nx-draw-bar { animation: none; stroke-dashoffset: 0; clip-path: none; transform: none; }
+  .nx-msheet { transition: opacity 120ms ease-out; }
+  .nx-msheet[data-state="closed"] { transition: opacity 120ms ease-out; transform: none; }
+}
