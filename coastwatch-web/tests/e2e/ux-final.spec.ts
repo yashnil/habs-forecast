@@ -74,6 +74,7 @@ test("M6: on a phone with a harbour open the layers are one tap away, and a stat
   // the sheet keeps the dock's layer button above the place: the list is one tap away
   await expect(page.getByTestId("layer-capsule")).toBeVisible();
   await openLayers(page);
+  await openLayers(page);
   await page.getByTestId("layer-currents").click();
   await expect(page).toHaveURL(/layer=currents/);
   await expect(page).toHaveURL(/sel=harbor(:|%3A)550/);

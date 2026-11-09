@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import { openPack } from "./helpers";
 import { expect, test } from "@playwright/test";
 import { OK } from "./ports";
 
@@ -80,7 +81,7 @@ test("v6 P0 4: offline three days later, the saved copy is dated 'as saved' and 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-550&for=commercial&species=dungeness`);
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   await expect(page.getByTestId("pack-download")).toBeEnabled({ timeout: 60_000 });
   await page.getByTestId("pack-download").click();
   await expect(page.getByTestId("pack-status")).toHaveAttribute("data-complete", "true", { timeout: 90_000 });

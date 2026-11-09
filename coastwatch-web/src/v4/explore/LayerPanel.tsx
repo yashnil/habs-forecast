@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useState } from "react";
 
 import type { LayerArtifact, Manifest, Palette } from "@/generated/schema";
 import { CHARM_VARIABLES, charmRun, coveragePct, satelliteLatest, sourceStatus, type CharmVariable } from "@/lib/layers";
@@ -19,6 +19,9 @@ import { CHL_PALETTE, SST_PALETTE, cToF, derivedSst, sstIsAnalysis, type SstLaye
 import { SAT_WORDS, VARIABLE_WORDS, coverageWhen, type LayerChoice, type Resolved } from "./layers";
 import { clockLabel, dayLabel, relTime } from "@/v4/ui/time";
 import { classifySource, classifyTime } from "@/lib/freshness";
+import { forecastFreshness } from "@/lib/opening";
+import { layerFreshness } from "@/v4/readiness/shown";
+import { pacificToday } from "@/lib/time";
 
 type Family = "none" | "forecast" | "satellite" | "outlook" | "sst" | "currents";
 
@@ -101,55 +104,120 @@ function useFamilies(manifest: Manifest, choice: LayerChoice, onChoice: (c: Laye
   return { active, pick, available, listed };
 }
 
+/** The layer list's groups: kinds in the order the reader weighs them (design.md §7.3). Sea temperature is an analysis, never filed as an observation. */
+const GROUPS: { label: string; families: Family[] }[] = [
+  { label: "Observed", families: ["satellite", "currents"] },
+  { label: "Analysis", families: ["sst"] },
+  { label: "Model", families: ["forecast"] },
+  { label: "Outlook", families: ["outlook"] },
+  { label: "Reference", families: ["none"] },
+];
+
+/** The caveat that belongs to each layer, available from the list without opening anything else. */
+const FAMILY_CAVEAT: Record<Family, string> = {
+  satellite: "Algae of every kind, not toxin. A gap is no view, not low chlorophyll.",
+  currents: "Observed, not a forecast. No streak means no observation, not calm water.",
+  sst: "A blended, gap-filled analysis of the surface; not the temperature at depth.",
+  forecast: "Probability of conditions, not toxin in seafood. Low is not safe.",
+  outlook: "Algae, not toxin. One 8-day mean, not a daily forecast.",
+  none: "Reference, not data.",
+};
+
+/** A layer's own age against its source's policy, for the list's date: an old date is marked in place. */
+function familyOld(m: Manifest, f: Family, derived: DerivedIndex | null, now: Date | null): string | null {
+  if (!now) return null;
+  const old = (s: { state: string } | null) => s?.state === "stale" || s?.state === "historical";
+  if (f === "forecast") return old(forecastFreshness(m, now)) ? "old" : null;
+  if (f === "satellite") return old(layerFreshness(satelliteLatest(m, "olci300") ?? satelliteLatest(m, "viirs750"), now)) ? "old" : null;
+  if (f === "currents") return old(layerFreshness(defaultHour(m), now)) ? "old" : null;
+  if (f === "outlook") {
+    const o = derivedOutlook(derived);
+    return o && o.valid_to < pacificToday(now) ? "past" : null;
+  }
+  return null;
+}
+
+/**
+ * The layer list (v11): one line per layer, grouped by kind. The row names the layer and its date; its kind,
+ * source and age are in the row's words for a screen reader and shown, with its caveat, in the line under the
+ * list for the row hovered, focused or chosen. One radio group: the arrow keys move in the order drawn.
+ */
 export function LayerList({ manifest, choice, onChoice, now, defaults, derived = null }: { manifest: Manifest; choice: LayerChoice; onChoice: (c: LayerChoice) => void; now: Date | null; defaults: { lead: number }; derived?: DerivedIndex | null }) {
   const { active, pick, available, listed } = useFamilies(manifest, choice, onChoice, defaults, derived);
+  const [peek, setPeek] = useState<Family | null>(null);
+  const groups = GROUPS.map((g) => ({ ...g, families: g.families.filter((f) => listed.includes(f)) })).filter((g) => g.families.length);
+  const order = groups.flatMap((g) => g.families).filter((f) => available[f]);
+  const shown = peek ?? active;
+  const noteLine = indexLine(manifest, shown, derived, now);
   return (
-    <div
-      role="radiogroup"
-      aria-label="What the map shows"
-      className="flex flex-col"
-      data-testid="layer-list"
-      // a radio group moves with the arrow keys (one tab stop, the checked layer)
-      onKeyDown={(e) => {
-        const order = listed.filter((f) => available[f]);
-        const i = order.indexOf(active);
-        const step = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
-        if (!step || i < 0) return;
-        e.preventDefault();
-        const next = order[(i + step + order.length) % order.length];
-        pick(next);
-        (e.currentTarget.querySelector(`[data-testid="layer-${next}"]`) as HTMLElement | null)?.focus();
-      }}
-    >
-      {listed.map((f) => {
-        const on = f === active;
-        const meta = FAMILY[f];
-        const line = indexLine(manifest, f, derived, now);
-        return (
-          <button
-            key={f}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            tabIndex={on ? 0 : -1}
-            disabled={!available[f]}
-            onClick={() => pick(f)}
-            data-testid={`layer-${f}`}
-            className={`nx-index-row nx-focus grid w-full grid-cols-[14px_minmax(0,1fr)] gap-x-2.5 border-t border-n-line py-2 text-left first:border-t-0 disabled:opacity-45 ${on ? "text-n-ink" : "text-n-ink-2 hover:text-n-ink"}`}
-            style={{ ["--tone" as string]: meta.sw }}
-          >
-            <span aria-hidden className={`nx-index-sw mt-[6px] h-2 w-2 rounded-[1px] ${meta.hatch ? "nx-index-sw-hatch" : ""}`} />
-            <span className="min-w-0">
-              <span className="block text-[14px] leading-snug">{meta.name}</span>
-              <span className="block text-[11.5px] leading-snug text-n-ink-3">
-                <span className={on ? meta.tone : ""}>{meta.kind}</span> · {meta.source}
-                {line ? `, ${line}` : ""}
-                {!available[f] ? " · not available" : ""}
-              </span>
-            </span>
-          </button>
-        );
-      })}
+    <div className="flex flex-col gap-2">
+      <div
+        role="radiogroup"
+        aria-label="What the map shows"
+        className="flex flex-col"
+        data-testid="layer-list"
+        // a radio group moves with the arrow keys (one tab stop, the checked layer)
+        onKeyDown={(e) => {
+          const i = order.indexOf(active);
+          const step = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
+          if (!step || i < 0) return;
+          e.preventDefault();
+          const next = order[(i + step + order.length) % order.length];
+          pick(next);
+          (e.currentTarget.querySelector(`[data-testid="layer-${next}"]`) as HTMLElement | null)?.focus();
+        }}
+        onPointerLeave={() => setPeek(null)}
+      >
+        {groups.map((g) => (
+          <div key={g.label} className="contents">
+            <div aria-hidden className="nx-layer-group">{g.label}</div>
+            {g.families.map((f) => {
+              const on = f === active;
+              const meta = FAMILY[f];
+              const line = indexLine(manifest, f, derived, now);
+              const short = line?.split(" · ")[0].replace(/^(newest|run) /, "") ?? null;
+              const old = familyOld(manifest, f, derived, now);
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  tabIndex={on ? 0 : -1}
+                  disabled={!available[f]}
+                  onClick={() => pick(f)}
+                  onPointerEnter={() => setPeek(f)}
+                  onFocus={() => setPeek(f)}
+                  onBlur={() => setPeek(null)}
+                  data-testid={`layer-${f}`}
+                  className={`nx-index-row nx-focus flex min-h-11 w-full items-center gap-2.5 rounded-[10px] px-2 text-left disabled:opacity-45 ${on ? "bg-n-surface-2 text-n-ink" : "text-n-ink-2 hover:text-n-ink"}`}
+                  style={{ ["--tone" as string]: meta.sw }}
+                >
+                  <span aria-hidden className={`nx-index-sw h-2.5 w-2.5 shrink-0 rounded-[2px] ${meta.hatch ? "nx-index-sw-hatch" : ""}`} />
+                  <span className="min-w-0 flex-1 truncate text-[15px] leading-snug">{meta.name}</span>
+                  {short && (
+                    <span className={`shrink-0 text-[13px] tabular-nums ${old ? "text-n-stale" : "text-n-ink-3"}`} data-old={old ?? undefined}>
+                      {short}
+                      {old ? ` (${old})` : ""}
+                    </span>
+                  )}
+                  {/* the kind, source and age: in the row's own words, shown on demand in the line below */}
+                  <span className="sr-only">
+                    {" "}
+                    {meta.kind} · {meta.source}
+                    {line ? `, ${line}` : ""}
+                    {!available[f] ? " · not available" : ""}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <p className="min-h-[52px] rounded-[10px] bg-n-surface-2 px-3 py-2 text-[13.5px] leading-[18px] text-n-ink-2" data-testid="layer-note">
+        <span className="font-medium text-n-ink">{FAMILY[shown].kind}</span> · {FAMILY[shown].source}
+        {noteLine ? `, ${noteLine}` : ""}. {FAMILY_CAVEAT[shown]}
+      </p>
     </div>
   );
 }
@@ -251,15 +319,7 @@ export function LayerOptions({ manifest, choice, onChoice, estimate = null, part
   return <div className="flex flex-col gap-3">{out}</div>;
 }
 
-function Ramp({ palette, labels, inline = false }: { palette: Palette; labels: string[]; inline?: boolean }) {
-  if (inline)
-    return (
-      <div className="flex items-center gap-2">
-        <span className="nx-data shrink-0 text-[10.5px] text-n-ink-2">{labels[0]}</span>
-        <div className="h-1.5 min-w-0 flex-1 rounded-[1px]" style={{ background: gradientCss(displayPalette(palette)) }} aria-hidden />
-        <span className="nx-data shrink-0 text-[10.5px] text-n-ink-2">{labels[labels.length - 1]}</span>
-      </div>
-    );
+function Ramp({ palette, labels }: { palette: Palette; labels: string[] }) {
   return (
     <div>
       <div className="h-1.5 w-full rounded-[1px]" style={{ background: gradientCss(displayPalette(palette)) }} aria-hidden />
@@ -300,79 +360,23 @@ const CAPTION: Record<CharmVariable, string> = {
 };
 
 /**
- * The ⓘ beside a legend: the longer explanation (every caveat, the no-data marks, the bay list) stays
- * in the page, mounted and hidden, and opens above the dock (or in place on a phone). One tap, Escape
- * or a tap elsewhere closes it.
- */
-function MoreAbout({ label, children, inline }: { label: string; children: React.ReactNode; inline: boolean }) {
-  const [open, setOpen] = useState(false);
-  const id = useId();
-  const box = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!open) return;
-    const k = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      e.preventDefault();
-      setOpen(false);
-    };
-    const c = (e: PointerEvent) => !inline && box.current && !box.current.contains(e.target as Node) && setOpen(false);
-    window.addEventListener("keydown", k, true);
-    window.addEventListener("pointerdown", c);
-    return () => {
-      window.removeEventListener("keydown", k, true);
-      window.removeEventListener("pointerdown", c);
-    };
-  }, [open, inline]);
-  return (
-    // static: the explanation opens above the whole dock, aligned with the legend (its static position)
-    <div ref={box} className="static">
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={() => setOpen((o) => !o)}
-        className={`nx-focus nx-tint -my-2 -mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-full hover:text-n-ink ${open ? "text-n-accent" : "text-n-ink-3"}`}
-        data-testid="legend-more"
-      >
-        <Icon name="info" className="h-[18px] w-[18px]" />
-        <span className="sr-only">{open ? "Hide" : "More about"} {label}</span>
-      </button>
-      <div
-        id={id}
-        hidden={!open}
-        className={
-          inline
-            ? "mt-2 flex flex-col gap-2 border-t border-n-line pt-2 text-[13px] leading-snug text-n-ink-2"
-            : "nx-deck absolute bottom-[calc(100%+12px)] z-30 flex max-h-[min(60vh,520px)] w-[min(420px,calc(100vw-32px))] flex-col gap-2.5 overflow-y-auto p-4 text-[13px] leading-snug text-n-ink-2 [scrollbar-width:thin]"
-        }
-        data-testid="legend-detail"
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-/**
  * The map's one legend (v7 dock): what the colours mean with units, the ramp, and one line of what it
  * is not; everything longer (the full caveats, the no-data marks, the bays) behind the ⓘ, in the page.
  * `inline`: on a phone the explanation opens in place in the sheet; `noRamp`: the sheet's peek already
  * draws the ramp.
  */
 /** `flow`: the currents drawn as moving particles (null: static arrows), and whether they are coloured by speed. */
-export function Legend({ choice, resolved, check = null, inline = false, noRamp = false, flow = null }: { choice: LayerChoice; resolved: Resolved; check?: DerivedValidationEntry | null; inline?: boolean; noRamp?: boolean; flow?: { colour: boolean } | null }) {
-  const frame = (testid: string, aria: string, caption: React.ReactNode, ramp: React.ReactNode, visible: React.ReactNode, detail: React.ReactNode, label: string) => (
+export function Legend({ choice, resolved, check = null, noRamp = false, flow = null }: { choice: LayerChoice; resolved: Resolved; check?: DerivedValidationEntry | null; noRamp?: boolean; flow?: { colour: boolean } | null }) {
+  const frame = (testid: string, aria: string, caption: React.ReactNode, ramp: React.ReactNode, visible: React.ReactNode, detail: React.ReactNode, _label: string) => (
     <figure className="flex min-w-0 flex-col gap-2" data-testid={testid} aria-label={aria}>
-      <div className="flex items-start justify-between gap-2">
-        <figcaption className="nx-caps min-w-0 pt-0.5">{caption}</figcaption>
-        {detail && (
-          <MoreAbout label={label} inline={inline}>
-            {detail}
-          </MoreAbout>
-        )}
-      </div>
+      <figcaption className="nx-caps min-w-0">{caption}</figcaption>
       {!noRamp && ramp}
       {visible}
+      {detail && (
+        <div className="flex flex-col gap-2 text-[13px] leading-snug text-n-ink-2" data-testid="legend-detail">
+          {detail}
+        </div>
+      )}
     </figure>
   );
   const short = (t: React.ReactNode) => <p className="text-[12px] leading-snug text-n-ink-2">{t}</p>;
@@ -549,8 +553,8 @@ export function Legend({ choice, resolved, check = null, inline = false, noRamp 
   if (choice.kind === "currents" && choice.chl && resolved.satLayer?.palette)
     return (
       <div className="grid min-w-0 gap-3 sm:grid-cols-2" data-testid="legend-compare">
-        <Legend choice={{ kind: "satellite", product: "olci300", day: null }} resolved={resolved} inline={inline} noRamp={noRamp} />
-        <Legend choice={{ ...choice, chl: false }} resolved={resolved} inline={inline} noRamp={noRamp} flow={flow} />
+        <Legend choice={{ kind: "satellite", product: "olci300", day: null }} resolved={resolved} noRamp={noRamp} />
+        <Legend choice={{ ...choice, chl: false }} resolved={resolved} noRamp={noRamp} flow={flow} />
       </div>
     );
   if (choice.kind === "currents" && flow)
@@ -677,26 +681,6 @@ function CurrentArrows() {
   );
 }
 
-/**
- * The ramp alone, in one line (the phone sheet's peek: the colours and their range under the layer
- * button). Decorative: the legend itself, with its words, follows in the sheet.
- */
-export function LegendLine({ choice, resolved, flow = null }: { choice: LayerChoice; resolved: Resolved; flow?: { colour: boolean } | null }) {
-  const pal = choice.kind === "forecast" ? resolved.forecastLayer?.palette : choice.kind === "satellite" && (choice.view ?? "chl") === "chl" ? resolved.satLayer?.palette : choice.kind === "outlook" ? (resolved.outlook?.palette ?? CHL_PALETTE) : choice.kind === "sst" ? SST_PALETTE : choice.kind === "currents" && choice.chl ? resolved.satLayer?.palette : null;
-  const labels: [string, string, string] | null =
-    choice.kind === "forecast" ? ["0%", "50%", "100%"] : choice.kind === "sst" ? [`≤${Math.round(cToF(SST_PALETTE.domain[0]))}°F`, "", `≥${Math.round(cToF(SST_PALETTE.domain[1]))}°F`] : pal ? ["0.05", "1.6", "50 mg/m³"] : null;
-  if (pal && labels) return <div aria-hidden><Ramp palette={pal} labels={labels} inline /></div>;
-  if (choice.kind === "currents" && flow) return <div aria-hidden>{flow.colour ? <SpeedBuckets /> : <FlowScale />}</div>;
-  if (choice.kind === "currents")
-    return (
-      <div aria-hidden className="flex items-center gap-2 text-[11.5px] text-n-ink-3">
-        <CurrentArrows />
-        <span>m/s</span>
-      </div>
-    );
-  return null;
-}
-
 /** Where the field comes from and when it is valid: one line per source, its own date; how old it is
  *  against the source's published freshness policy (stale, or historical: not current conditions);
  *  a failed update; a day with nothing observed; regions the radar did not see.
@@ -707,14 +691,14 @@ export function Provenance({ manifest, choice, resolved, now, regions = [], part
   if (choice.kind === "outlook") {
     const o = resolved.outlookLayer;
     if (!o) return null;
-    if (part === "dock") return <p className="text-[12.5px] leading-snug text-n-ink-3">Issued {dayLabel(o.issued)}{now ? ` (${relTime(o.issued, now)})` : ""} · one mean over {windowLabel(o.valid_from, o.valid_to)}</p>;
+    if (part === "dock") return null;
     return <OutlookCard layer={o} now={now} />;
   }
   if (choice.kind === "sst") {
     const t = resolved.sstLayer;
     if (!t) return null;
     const last = t.observed_dates[t.observed_dates.length - 1];
-    if (part === "dock") return last ? <p className="text-[12.5px] leading-snug text-n-ink-3">{sstIsAnalysis(t) ? "Analysis of" : "Observed"} {dayLabel(last)}{now ? ` (${relTime(last, now)})` : ""} · {t.source}</p> : null;
+    if (part === "dock") return null;
     return <SstCard layer={t} now={now} />;
   }
   return (
@@ -754,15 +738,16 @@ function ObservedProvenance({ manifest, choice, resolved, now, regions = [], par
   // the dock keeps the layer's own line (both sources' lines when two are compared) and every gap;
   // About this layer keeps any further line
   // (the forecast's own line repeats the timebar's run and day, so it is in About this layer)
-  const docked = (x: (typeof stamps)[number], i: number) => x.kind === "gap" || (i === 0 && choice.kind !== "forecast") || (choice.kind === "currents" && !!choice.chl);
-  const shown = stamps.filter((x, i) => part === "all" || (part === "dock" ? docked(x, i) : !docked(x, i)));
+  // (v11: the date and its age are on the dock's head; only a gap, a name of what the radar missed, stays in view)
+  const docked = (x: (typeof stamps)[number]) => x.kind === "gap";
+  const shown = stamps.filter((x) => part === "all" || (part === "dock" ? docked(x) : !docked(x)));
   const dock = part !== "about";
   const about = part !== "dock";
   const status = choice.kind === "forecast" ? sourceStatus(manifest, "charm") : choice.kind === "satellite" ? sourceStatus(manifest, "satellite_chl") : choice.kind === "currents" ? sourceStatus(manifest, "hf_radar") : null;
   const layer = choice.kind === "forecast" ? resolved.forecastLayer : choice.kind === "satellite" ? resolved.satLayer : choice.kind === "currents" ? resolved.curLayer : null;
   // forecast freshness follows the run's issue date; observations follow the newest observation shown
   const fresh = status && now ? (choice.kind === "forecast" ? classifySource(status, now) : layer ? classifyTime(layer.freshness, layer.composite ? { ...layer.time, observed_date: layer.composite.newest_observed_date } : layer.time, now) : null) : null;
-  const problem = dock && (clouded || fresh?.state === "stale" || fresh?.state === "historical" || (!!status && status.outcome !== "updated"));
+  const problem = dock && (clouded || fresh?.state === "historical" || (!!status && status.outcome !== "updated"));
   if (!shown.length && !problem && !about) return null;
   return (
     <div className="flex flex-col gap-1" data-testid="provenance">
@@ -785,7 +770,8 @@ function ObservedProvenance({ manifest, choice, resolved, now, regions = [], par
           Issue date inferred: NOAA does not publish it; Neritic infers it from the forecast&rsquo;s own valid dates.
         </p>
       )}
-      {dock && fresh?.state === "stale" && (
+      {/* the head marks a stale date in place; the sentence behind it is here, on demand */}
+      {about && fresh?.state === "stale" && (
         <p className="flex items-start gap-2 text-[13px] leading-snug text-n-stale" data-testid="stale-note">
           <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0" />
           {choice.kind === "forecast"
@@ -803,7 +789,7 @@ function ObservedProvenance({ manifest, choice, resolved, now, regions = [], par
         </p>
       )}
       {/* a failed forecast update is already said in the stale line above, with its time */}
-      {dock && status && status.outcome !== "updated" && !(choice.kind === "forecast" && status.outcome === "failed" && fresh?.state === "stale") && (
+      {dock && status && status.outcome !== "updated" && !(choice.kind === "forecast" && status.outcome === "failed" && fresh?.state === "stale" && part !== "dock") && (
         <p className="flex items-start gap-2 text-[13px] text-n-stale" data-testid="provenance-status">
           <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0" />
           The last update {status.outcome === "failed" ? "failed" : "did not complete"}

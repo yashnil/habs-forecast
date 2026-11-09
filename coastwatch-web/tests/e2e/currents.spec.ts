@@ -125,8 +125,8 @@ test.describe("v10 currents: an honest flow field", () => {
     await open(page, "/?layer=currents&region=monterey_bay");
     await flowReady(page);
     const pause = page.getByTestId("flow-pause").first();
-    // v10: it sits in view beside the currents legend: from the legend's own control, one Tab reaches it; Enter presses it
-    await page.getByTestId("legend-currents").first().getByTestId("legend-more").focus();
+    // v11: it sits at the end of the time rail, in view; one Tab from the rail's checked frame reaches it; Enter presses it
+    await page.getByTestId("timebar").locator('[role="radio"][tabindex="0"]').first().focus();
     await page.keyboard.press("Tab");
     await expect(pause).toBeFocused();
     await page.keyboard.press("Enter");

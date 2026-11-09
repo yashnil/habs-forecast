@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { OK } from "./ports";
-import { openEvidence } from "./helpers";
+import { openEvidence, openLayers } from "./helpers";
 
 /**
  * Fixes from the v2/v4 task walkthrough (scratchpad tasks-audit): the phone workspace never scrolls
@@ -34,6 +34,7 @@ test("phone: the layer list is one tap from the sheet's peek (the dock's layer b
   await expect(page.getByTestId("mobile-sheet")).toHaveAttribute("data-snap", "peek");
   await page.getByTestId("layer-capsule").click();
   await expect(page.getByTestId("layer-deck")).toBeVisible();
+  await openLayers(page);
   await page.getByTestId("layer-forecast").click();
   await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
   await expect(page).toHaveURL(/layer=forecast/);

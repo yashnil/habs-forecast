@@ -160,6 +160,7 @@ test.describe("freshness: old or failed data never reads as current", () => {
   test("satellite: the view says its sensor and real observation dates, and a stale view is marked", async ({ page }) => {
     await open(page, "/?layer=none");
     await openLayers(page);
+    await openLayers(page);
     await page.getByTestId("layer-satellite").click();
     await expect(page).toHaveURL(/layer=olci300/);
     await expect(page.getByTestId("stamp-satellite").first()).toContainText(/pixels observed \w{3} \d+–\w{3} \d+/);
