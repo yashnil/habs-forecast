@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lanePeriods, periodLine, periodNumbers } from "@/pilot/today/marine";
+import { lanePeriods, periodLine, periodNumbers, windWords } from "@/pilot/today/marine";
 import { parseCoastalText } from "@/lib/nwsText";
 import { parseZoneForecast } from "@/lib/conditions";
 
@@ -13,6 +13,16 @@ describe("NWS periods as lanes (Today)", () => {
     expect(periodLine(periodNumbers("Winds light. Seas 2 ft."))).toBe("light winds · seas 2 ft");
     // a number the text does not state stays null
     expect(periodNumbers("Patchy fog.")).toMatchObject({ dir: null, windHi: null, seasHi: null });
+  });
+
+  it("says a later wind change as a change, never joining the first direction to the top speed", () => {
+    const p = periodNumbers("N wind 5 to 10 kt, becoming NW 10 to 15 kt in the afternoon. Seas 6 to 9 ft.");
+    expect(periodLine(p)).toBe("N 5–10 kt, then NW 10–15 kt · seas 6–9 ft");
+    expect(periodLine(p)).not.toContain("N 5–15");
+    expect(windWords(periodNumbers("NW wind 5 to 10 kt, veering to NE after midnight."))).toBe("NW 5–10 kt, then NE");
+    // cut short for the hero, an ellipsis says NWS stated more
+    expect(windWords(periodNumbers("W wind 10 to 15 kt, becoming NW 5 to 10 kt late this evening, veering to N after midnight."), 2)).toBe("W 10–15 kt, then NW 5–10 kt …");
+    expect(windWords(periodNumbers("NE wind around 5 kt, backing to W 10 to 15 kt with gusts to 20 kt."))).toBe("NE 5 kt, then W 10–15 kt, gusts 20");
   });
 
   it("dates each period by its own name and labels the column by its day", () => {
