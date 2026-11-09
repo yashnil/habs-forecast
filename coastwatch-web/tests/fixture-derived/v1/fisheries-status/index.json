@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "generated_at": "2026-10-12T15:00:00Z",
+  "_note": "TEMPORARY Today-track fixture (pilot/today). Replace with the data track's fixture from pilot/data and delete this file.",
+  "records": [
+    {
+      "id": "dungeness-commercial-2026-27-delay", "fishery": "dungeness_commercial", "label": "Commercial Dungeness crab", "level": "delayed", "cause": "whale_entanglement",
+      "headline": "Commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements).",
+      "detail": "CDFW delayed the commercial season in Zones 1–5 because of humpback whale entanglement risk, not domoic acid. The delay lasts at least until Jan 1, 2027.",
+      "area_label": "Oregon border to Point Conception (Zones 1–5)", "applies_to_places": [], "effective": "2026-11-15", "until": null, "next_review": "2026-12-15",
+      "source_name": "CDFW", "source_url": "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries", "checked_at": "2026-10-11", "review_state": "pending_human_review"
+    },
+    {
+      "id": "anchovy-sardine-monterey-da", "fishery": "anchovy_sardine", "label": "Northern anchovy and Pacific sardine", "level": "restricted", "cause": "domoic_acid",
+      "headline": "No take for human consumption, Pigeon Point to Point Lobos (domoic acid).",
+      "detail": "Anchovy and sardine from Monterey Bay may not be taken for human consumption since Sep 11 because of domoic acid.",
+      "area_label": "Pigeon Point to Point Lobos", "applies_to_places": ["port-592", "port-550", "port-593"], "effective": "2026-09-11", "until": null, "next_review": null,
+      "source_name": "CDFW", "source_url": "https://wildlife.ca.gov/Conservation/Marine/HABs", "checked_at": "2026-10-11", "review_state": "pending_human_review"
+    },
+    {
+      "id": "salmon-commercial-2026", "fishery": "salmon_commercial", "label": "Commercial salmon", "level": "restricted", "cause": "regulation",
+      "headline": "Open with trip limits.",
+      "detail": "Commercial salmon is open with trip and landing limits under federal and state rules.",
+      "area_label": "California", "applies_to_places": [], "effective": "2026-09-01", "until": null, "next_review": null,
+      "source_name": "CDFW", "source_url": "https://wildlife.ca.gov/Conservation/Marine/Salmon", "checked_at": "2026-10-11", "review_state": "pending_human_review"
+    }
+  ],
+  "ramp": {
+    "season": "2026-27",
+    "zones": [
+      { "zone": "1", "label": "Oregon border to Cape Mendocino", "action": "Commercial season delayed to at least Jan 1, 2027", "depth_limit_fathoms": null, "gear_reduction_pct": null },
+      { "zone": "2", "label": "Cape Mendocino to Point Arena", "action": "Commercial season delayed to at least Jan 1, 2027", "depth_limit_fathoms": null, "gear_reduction_pct": null },
+      { "zone": "3", "label": "Point Arena to Pigeon Point", "action": "Commercial season delayed to at least Jan 1, 2027", "depth_limit_fathoms": null, "gear_reduction_pct": null },
+      { "zone": "4", "label": "Pigeon Point to Lopez Point", "action": "Commercial season delayed to at least Jan 1, 2027", "depth_limit_fathoms": null, "gear_reduction_pct": null },
+      { "zone": "5", "label": "Lopez Point to Point Conception", "action": "Commercial season delayed to at least Jan 1, 2027", "depth_limit_fathoms": null, "gear_reduction_pct": null }
+    ],
+    "last_assessment": "2026-10-09",
+    "next_assessment": "2026-12-15",
+    "source_url": "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries",
+    "review_state": "pending_human_review"
+  }
+}
