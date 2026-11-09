@@ -1,4 +1,4 @@
-"""Command line entry point: `cwp run | schema | verify-charm | verify-satellite | verify-currents | health | fixture | …`."""
+"""Command line entry point: `cwp run | derive | schema | verify-charm | verify-satellite | verify-currents | health | fixture | …`."""
 
 from __future__ import annotations
 
@@ -67,6 +67,14 @@ def cmd_review_fisheries_status(a: argparse.Namespace) -> int:
     ids = a.ids.split(",") if a.ids else None
     review = fisheries_status.record_review(Path(a.curated), a.reviewer, ids, a.method)
     print(json.dumps(review, indent=2))
+    return 0
+
+
+def cmd_derive(a: argparse.Namespace) -> int:
+    from .derived import run as derived
+
+    r = derived.run(RunContext(out_dir=Path(a.out)))
+    print(derived.summary_line(r))
     return 0
 
 
@@ -234,6 +242,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--only", help=f"comma list of {','.join(ALL_SOURCES + PILOT_SIDECARS)}")
     r.add_argument("--strict", action="store_true", help="exit 1 if any selected source failed")
     r.set_defaults(fn=cmd_run)
+    dv = sub.add_parser("derive", help="build derived chlorophyll layers (estimate, 8-day outlook) into v1/derived/ from the published OLCI layers")
+    dv.add_argument("--out", default=str(DEFAULT_OUT))
+    dv.set_defaults(fn=cmd_derive)
     bt = sub.add_parser("biotoxin", help="CDPH domoic-acid results (crab and seafood PDFs) -> v1/biotoxin/index.json")
     bt.add_argument("--out", default=str(DEFAULT_OUT))
     bt.add_argument("--strict", action="store_true", help="exit 1 if a CDPH document could not be fetched or read")
