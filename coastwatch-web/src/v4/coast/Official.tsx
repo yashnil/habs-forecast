@@ -55,7 +55,7 @@ export function TripStatus({ line, season, species, place, now, details }: { lin
   return (
     <section aria-labelledby="official-context-h" className="coast-status" data-testid="glance-official" id="status">
       <h2 id="official-context-h" className="sr-only">
-        Status for this trip, from the port's status record
+        Status for this trip, from the port’s status record
       </h2>
       {line.kind === "row" ? (
         <p className="coast-status-lead" data-testid="glance-status" data-level={line.level}>

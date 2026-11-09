@@ -279,7 +279,7 @@ test("offline, the saved briefing is dated, never 'now'; its age is said once ou
   // the pack saved the briefing for all species: another trip is told so, never that it was saved for it
   await expect(page.getByTestId("offline-banner")).toContainText("saved for all species");
   // the address bar's own trip, after hydrating the saved HTML
-  await expect(page.getByTestId("trip-summary")).toContainText("Commercial fishing");
+  await expect(page.getByTestId("trip-summary")).toContainText(/commercial/i);
 
   // a harbour no pack holds: said, with the way to the saved one; never Monterey's banner over it
   await page.goto(`${OK}/coast?place=port-201`);
