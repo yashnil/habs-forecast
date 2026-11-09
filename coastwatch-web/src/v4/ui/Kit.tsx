@@ -4,8 +4,8 @@ import { useId, useState, type ReactNode } from "react";
 import { Icon } from "@/v4/ui/Icon";
 
 /**
- * The v7 component language (docs/coastwatch/v7/design.md): a few deliberate primitives instead of
- * cards. Sounding (a value read off the instrument), Statement (one claim with its evidence family),
+ * The component language (docs/coastwatch/v11/design.md; the v11 kit sits beside it: Tag, Unverified,
+ * Button, Figure, SectionHead, Freshness): a few deliberate primitives instead of cards. Sounding (a value read off the instrument), Statement (one claim with its evidence family),
  * Note (a folded row: title, count, one-line summary; its body stays mounted so its wording is in the
  * page), Stepper (a number with big ±), Segmented (one choice of a few), ContourRule (the page's one
  * isobath hairline).
@@ -86,7 +86,7 @@ export function Segmented<T extends string>({ label, value, options, onChange, t
           role="radio"
           aria-checked={o.id === value}
           onClick={() => onChange(o.id)}
-          className={`nx-focus min-h-10 rounded-lg px-3 text-[14px] font-semibold ${o.id === value ? "bg-n-surface text-n-ink shadow-[0_1px_2px_rgba(11,24,32,0.12)]" : "text-n-ink-2 hover:text-n-ink"}`}
+          className={`nx-focus min-h-10 rounded-lg px-3 text-[14px] font-medium ${o.id === value ? "bg-n-accent-bg text-n-ink" : "text-n-ink-2 hover:text-n-ink"}`}
         >
           {o.label}
         </button>

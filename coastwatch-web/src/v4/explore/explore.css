@@ -12,16 +12,24 @@
     linear-gradient(0deg, rgba(5, 9, 13, 0.95) 0, rgba(5, 9, 13, 0.9) 150px, rgba(5, 9, 13, 0.55) 196px, rgba(5, 9, 13, 0) 250px);
 }
 
-/* ---- an instrument plate over the field: one hairline, square shoulders, a solid dark ground (no blur
-   over WebGL) ---- */
-.nx-iplate {
-  background: rgba(5, 9, 13, 0.88);
-  border: 1px solid var(--nx-line);
-  border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 14px 36px -10px rgba(0, 0, 0, 0.55);
+/* daylight: the instrument's words are dark ink, so the shade over the (always dark) map is light paper */
+html[data-daylight] .nx-field-shade {
+  background:
+    linear-gradient(180deg, rgba(245, 247, 248, 0.5) 0, rgba(245, 247, 248, 0) 90px),
+    linear-gradient(0deg, rgba(245, 247, 248, 0.97) 0, rgba(245, 247, 248, 0.92) 150px, rgba(245, 247, 248, 0.55) 196px, rgba(245, 247, 248, 0) 250px);
 }
-html[data-daylight] .nx-iplate {
-  background: var(--nx-surface);
+
+html[data-daylight] [data-testid="map-margin"] .nx-on-map,
+html[data-daylight] [data-testid="map-margin"] .nx-on-map a {
+  color: var(--nx-ink-2);
+  text-shadow: none;
+}
+
+/* ---- an instrument plate over the field is a deck (design.md §4.3): no border, no blur over WebGL ---- */
+.nx-iplate {
+  background: var(--nx-deck);
+  border-radius: var(--nx-r-16);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 /* ---- the time rail ---- */
