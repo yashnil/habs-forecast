@@ -15,14 +15,18 @@ test("v10 pass 2: no stack of accordions; each detail sits folded beside its sub
   await expect(page.getByTestId("matters")).toBeVisible();
   // the map of the waters is the decision view's ground, not a fold
   await expect(page.getByTestId("locator")).toBeVisible();
-  for (const id of ["sea", "seasons", "checks", "unknown", "worth"]) await expect(page.getByTestId(`brief-${id}-toggle`)).toHaveAttribute("aria-expanded", "false");
-  await expect(page.getByTestId("checks")).toBeHidden();
+  for (const id of ["sea", "seasons", "unknown", "worth"]) await expect(page.getByTestId(`brief-${id}-toggle`)).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByTestId("checks")).toHaveCount(0);
   await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId("checks")).toBeVisible();
-  // on a wide screen what the statements rest on is open: measured beside official
+  await page.getByTestId("checks-sheet-close").click();
+  // what the statements rest on opens in place; the notices are the map's own sheet
+  await page.getByTestId("brief-evidence-toggle").click();
   await expect(page.getByTestId("brief-measured")).toBeVisible();
+  await page.getByTestId("notices-open").click();
   await expect(page.getByTestId("brief-official")).toBeVisible();
   await expect(page.getByTestId("brief-official")).toContainText("Not verified");
+  await page.getByTestId("notices-sheet-close").click();
   await expect(page.getByTestId("brief-unknown-toggle")).toContainText(/\d/);
   await expect(page.getByTestId("unknowns")).toBeHidden();
   await page.getByTestId("brief-unknown-toggle").click();
@@ -100,7 +104,7 @@ test("v6 P0 4: offline three days later, the saved copy is dated 'as saved' and 
   await expect(page.getByTestId("glance-sea-link")).toHaveText("No NWS period saved for this day");
   await expect(page.getByTestId("sea-no-period")).toHaveText("No NWS period saved for this day.");
   // the water temperature carries its own measured date and where
-  await expect(page.getByTestId("glance-water")).toContainText(/measured Oct 1\d, .*\((CO-OPS|NDBC)/);
+  await expect(page.getByTestId("measured-text")).toContainText(/water \d+ °F at .*\((CO-OPS|NDBC)\).*\(Oct 1\d, /);
   // the saved periods are dated by their own day, never "Tonight"
   await page.getByTestId("brief-sea-toggle").click();
   // every saved period is listed in the note (no second fold), each by its own date
