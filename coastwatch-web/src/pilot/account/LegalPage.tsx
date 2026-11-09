@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { PilotHero, PilotShell } from "@/pilot/shell/PilotShell";
+import { loadTrust } from "@/lib/data";
 import { LEGAL_EFFECTIVE, LEGAL_VERSION } from "./consent";
 
 /**
@@ -10,9 +11,9 @@ import { LEGAL_EFFECTIVE, LEGAL_VERSION } from "./consent";
  */
 export const OWNER_CONTACT = "[OWNER: add a contact email before launch]";
 
-export function LegalPage({ title, testId, children }: { title: string; testId: string; children: ReactNode }) {
+export async function LegalPage({ title, testId, children }: { title: string; testId: string; children: ReactNode }) {
   return (
-    <PilotShell>
+    <PilotShell trust={await loadTrust()}>
       <article data-testid={testId}>
         <PilotHero eyebrow="Neritic private pilot · legal" title={title}>
           <p className="mt-3 text-[14px] text-n-ink-2" data-testid="legal-effective">

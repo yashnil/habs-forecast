@@ -101,7 +101,7 @@ test("storage runs out during a download: said as full, nothing claimed saved, t
   expect(partial!.verified.missing).toBeGreaterThan(0);
   // the status centre says incomplete, never ready
   await closePanel(page);
-  await page.getByTestId("status-center").click();
+  await page.getByTestId("notices-button").click();
   await expect(page.getByTestId("status-panel").getByTestId("source-pack")).toHaveAttribute("data-state", "incomplete");
   await page.keyboard.press("Escape");
 
@@ -181,7 +181,7 @@ test("an older pack format, a damaged record, missing files and an unfinished do
   await expect(page.getByTestId("pack-problem")).toHaveAttribute("data-problem", "damaged-record");
   await expect(page.getByTestId("pack-status")).toHaveCount(0);
   await closePanel(page);
-  await page.getByTestId("status-center").click();
+  await page.getByTestId("notices-button").click();
   await expect(page.getByTestId("status-panel").getByTestId("source-pack")).toHaveAttribute("data-state", "incomplete");
   await page.keyboard.press("Escape");
   await page.getByTestId("pack-open").click();

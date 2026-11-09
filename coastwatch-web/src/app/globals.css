@@ -312,7 +312,7 @@ body {
 }
 
 /* v11: the outlined neutral button becomes a filled secondary (no outline); family outlines keep theirs */
-:where(.env-chart, .env-instrument) :where(button, a):where([class*="border-n-line-strong"], [class*="border-hairline-strong"]) {
+:where(.env-chart, .env-instrument) :where(button, a):where([class~="border-n-line-strong"], [class~="border-hairline-strong"]) {
   border-color: transparent;
   background-color: var(--nx-surface-2);
 }

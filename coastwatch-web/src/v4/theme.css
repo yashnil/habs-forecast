@@ -869,7 +869,7 @@ html[data-daylight] .env-instrument .nx-select {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 html[data-daylight] .nx-dock { box-shadow: 0 -8px 24px rgba(11, 24, 32, 0.1); }
-.nx-dock-item { position: relative; display: flex; min-height: 56px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--nx-ink-3); font: 500 12.5px/1 var(--nx-font-ui); }
+.nx-dock-item { position: relative; display: flex; min-height: 60px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--nx-ink-3); font: 500 12.5px/1 var(--nx-font-ui); }
 .nx-dock-item[aria-current="page"] { color: var(--nx-ink); }
 .nx-dock-item[aria-current="page"]::before { content: ""; position: absolute; top: 6px; width: 16px; height: 2px; border-radius: 1px; background: var(--nx-ink); }
 /* numbers in reading text: the interface face with tabular figures (an instrument readout, not code) */
