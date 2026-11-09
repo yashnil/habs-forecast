@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { AppShell } from "@/components/AppShell";
-import { loadData } from "@/lib/data";
 import { LegalPage, OWNER_CONTACT } from "@/pilot/account/LegalPage";
 
 export const dynamic = "force-dynamic";
@@ -8,9 +6,7 @@ export const metadata = { title: "Privacy Policy" };
 
 /** CalOPPA-oriented privacy policy for the Neritic pilot. Draft until the owner and counsel review it. */
 export default async function PrivacyPage() {
-  const data = await loadData();
   return (
-    <AppShell active="about" manifest={data.ok ? data.manifest : null} official={data.ok ? data.official : null}>
       <LegalPage title="Privacy Policy" testId="privacy-page">
         <p>
           Neritic is an independent research preview that summarises California coastal and fisheries information for fishermen. This policy explains what we collect when you use the Neritic website and its
@@ -113,6 +109,5 @@ export default async function PrivacyPage() {
           Questions or requests: <strong>{OWNER_CONTACT}</strong>.
         </p>
       </LegalPage>
-    </AppShell>
   );
 }

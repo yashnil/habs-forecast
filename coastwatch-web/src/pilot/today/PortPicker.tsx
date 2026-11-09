@@ -4,7 +4,8 @@ import "./today.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { TopBar, NavTabs } from "@/v4/shell/TopBar";
+import { TopBar } from "@/v4/shell/TopBar";
+import { PilotDock, PilotFooter } from "@/pilot/shell/PilotShell";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { readHome } from "@/v4/coast/home";
 import { Icon } from "@/v4/ui/Icon";
@@ -88,12 +89,11 @@ export function PortPicker({ ports, requested, pick, now }: { ports: PortOption[
             </ul>
             {!rest.length && <p className="today-src mt-3">No port matches &ldquo;{q}&rdquo;.</p>}
           </section>
-          <p className="nx-margin mt-8">Research preview, not an official source. The pilot ports have the most complete data; elsewhere some sections may be empty.</p>
+          <p className="nx-margin mt-8">The pilot ports have the most complete data; elsewhere some sections may be empty.</p>
+          <PilotFooter />
         </div>
       </main>
-      <div className="env-instrument fixed inset-x-0 bottom-0 z-40 border-t border-n-line bg-n-surface lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <NavTabs active="today" size="dock" />
-      </div>
+      <PilotDock active="today" />
     </div>
   );
 }

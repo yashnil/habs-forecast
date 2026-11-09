@@ -1,5 +1,6 @@
 "use client";
 
+import "@/pilot/shell/pilot.css";
 import { useEffect, useId, useState } from "react";
 import { usePilotAccount } from "./context";
 import { feedbackFor, saveFeedback, type FeedbackRecord } from "./records";
@@ -31,7 +32,7 @@ export function Feedback({ factId, placeId = null }: { factId: string; placeId?:
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px] text-n-ink-2" data-testid="feedback" data-fact={factId}>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px] text-n-ink-3" data-testid="feedback" data-fact={factId}>
       <span id={`${noteId}-q`}>Was this useful?</span>
       <div role="group" aria-labelledby={`${noteId}-q`} className="flex gap-1">
         {[
@@ -46,7 +47,7 @@ export function Feedback({ factId, placeId = null }: { factId: string; placeId?:
               void answer(o.v, note || null);
               if (!o.v) setNoteOpen(true);
             }}
-            className={`nx-focus min-h-11 min-w-11 rounded-full border px-3 font-medium ${given?.useful === o.v ? "border-n-accent bg-n-accent-bg text-n-ink" : "border-n-line-strong text-n-ink-2"}`}
+            className="pilot-choice nx-focus !min-h-11 !px-3 !text-[13.5px]"
             data-testid={`feedback-${o.label.toLowerCase()}`}
           >
             {o.label}
@@ -54,7 +55,7 @@ export function Feedback({ factId, placeId = null }: { factId: string; placeId?:
         ))}
       </div>
       {given && !noteOpen && (
-        <button type="button" onClick={() => setNoteOpen(true)} className="nx-focus min-h-11 text-n-accent underline underline-offset-2">
+        <button type="button" onClick={() => setNoteOpen(true)} className="pilot-link nx-focus min-h-11">
           Add a note
         </button>
       )}
@@ -67,16 +68,16 @@ export function Feedback({ factId, placeId = null }: { factId: string; placeId?:
             setNoteOpen(false);
           }}
         >
-          <label htmlFor={noteId} className="w-full text-[13px]">
+          <label htmlFor={noteId} className="w-full text-[13.5px] text-n-ink-2">
             What would make it more useful? (optional, no personal details)
           </label>
-          <input id={noteId} value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} className="nx-focus min-h-11 min-w-0 flex-1 rounded-lg border border-n-line-strong bg-n-surface px-3 text-[15px] text-n-ink" data-testid="feedback-note" />
-          <button type="submit" className="nx-press nx-focus min-h-11 rounded-lg bg-n-accent px-4 font-semibold text-n-on-accent">
+          <input id={noteId} value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} className="pilot-field nx-focus min-w-0 flex-1" data-testid="feedback-note" />
+          <button type="submit" className="today-btn primary nx-press nx-focus !min-h-12 px-5">
             Send
           </button>
         </form>
       )}
-      <span role="status" className="w-full text-[12.5px]">
+      <span role="status" className="w-full text-[12.5px] empty:hidden">
         {sent === "account" ? "Thanks — saved to your account." : sent === "device" ? "Thanks — saved on this device." : ""}
       </span>
     </div>

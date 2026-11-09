@@ -1,5 +1,6 @@
 "use client";
 
+import "@/pilot/shell/pilot.css";
 import { useEffect, useId, useState } from "react";
 import { PILOT_PORTS } from "@/pilot/contracts";
 import { usePilotAccount } from "./context";
@@ -65,16 +66,16 @@ export function TripLogForm({ defaultPlace }: { defaultPlace?: string | null }) 
     setMsg(`Trip saved ${where}.`);
   }
 
-  const field = "nx-focus min-h-11 w-full rounded-lg border border-n-line-strong bg-n-surface px-3 text-[15px] text-n-ink";
+  const field = "pilot-field nx-focus";
   return (
     <div data-testid="trip-log">
       <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor={`${id}-date`} className="mb-1 block text-[13.5px] font-medium text-n-ink-2">Date</label>
+          <label htmlFor={`${id}-date`} className="pilot-label">Date</label>
           <input id={`${id}-date`} type="date" required value={date} onChange={(e) => setDate(e.target.value)} className={field} />
         </div>
         <div>
-          <label htmlFor={`${id}-place`} className="mb-1 block text-[13.5px] font-medium text-n-ink-2">Port</label>
+          <label htmlFor={`${id}-place`} className="pilot-label">Port</label>
           <select id={`${id}-place`} value={place} onChange={(e) => setPlace(e.target.value)} className={field}>
             {PILOT_PORTS.map((p) => (
               <option key={p.place_id} value={p.place_id}>{p.label}</option>
@@ -82,7 +83,7 @@ export function TripLogForm({ defaultPlace }: { defaultPlace?: string | null }) 
           </select>
         </div>
         <div>
-          <label htmlFor={`${id}-fishery`} className="mb-1 block text-[13.5px] font-medium text-n-ink-2">Fishery (optional)</label>
+          <label htmlFor={`${id}-fishery`} className="pilot-label">Fishery (optional)</label>
           <select id={`${id}-fishery`} value={fishery} onChange={(e) => setFishery(e.target.value)} className={field}>
             <option value="">—</option>
             {FISHERIES.map((f) => (
@@ -91,10 +92,10 @@ export function TripLogForm({ defaultPlace }: { defaultPlace?: string | null }) 
           </select>
         </div>
         <fieldset>
-          <legend className="mb-1 text-[13.5px] font-medium text-n-ink-2">How did it go? (optional)</legend>
+          <legend className="pilot-label">How did it go? (optional)</legend>
           <div className="flex flex-wrap gap-1.5">
             {OUTCOMES.map((o) => (
-              <label key={o.id} className={`flex min-h-11 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-n-accent cursor-pointer items-center rounded-full border px-3 text-[14px] ${outcome === o.id ? "border-n-accent bg-n-accent-bg text-n-ink" : "border-n-line-strong text-n-ink-2"}`}>
+              <label key={o.id} className={`pilot-choice ${outcome === o.id ? "on" : ""}`}>
                 <input type="radio" name={`${id}-outcome`} value={o.id} checked={outcome === o.id} onChange={() => setOutcome(o.id)} className="sr-only" />
                 {o.label}
               </label>
@@ -102,14 +103,14 @@ export function TripLogForm({ defaultPlace }: { defaultPlace?: string | null }) 
           </div>
         </fieldset>
         <div className="sm:col-span-2">
-          <label htmlFor={`${id}-obs`} className="mb-1 block text-[13.5px] font-medium text-n-ink-2">What was the water like? (optional)</label>
+          <label htmlFor={`${id}-obs`} className="pilot-label">What was the water like? (optional)</label>
           <input id={`${id}-obs`} value={observed} maxLength={1000} onChange={(e) => setObserved(e.target.value)} placeholder="e.g. brown water off the jetty, 6 ft swell" className={field} />
         </div>
         <fieldset className="sm:col-span-2">
-          <legend className="mb-1 text-[13.5px] font-medium text-n-ink-2">Did Neritic help with this trip? (optional)</legend>
+          <legend className="pilot-label">Did Neritic help with this trip? (optional)</legend>
           <div className="flex gap-1.5">
             {(["yes", "no"] as const).map((v) => (
-              <label key={v} className={`flex min-h-11 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-n-accent cursor-pointer items-center rounded-full border px-4 text-[14px] ${useful === v ? "border-n-accent bg-n-accent-bg text-n-ink" : "border-n-line-strong text-n-ink-2"}`}>
+              <label key={v} className={`pilot-choice ${useful === v ? "on" : ""}`}>
                 <input type="radio" name={`${id}-useful`} value={v} checked={useful === v} onChange={() => setUseful(v)} className="sr-only" />
                 {v === "yes" ? "Yes" : "No"}
               </label>
@@ -117,16 +118,16 @@ export function TripLogForm({ defaultPlace }: { defaultPlace?: string | null }) 
           </div>
         </fieldset>
         <div className="sm:col-span-2">
-          <button type="submit" className="nx-press nx-focus min-h-11 rounded-lg bg-n-accent px-5 text-[15px] font-semibold text-n-on-accent" data-testid="trip-save">
+          <button type="submit" className="today-btn primary nx-press nx-focus !min-h-12 px-5" data-testid="trip-save">
             Save trip
           </button>
           <span role="status" className="ml-3 text-[13.5px] text-n-ink-2" data-testid="trip-status">{msg}</span>
         </div>
       </form>
       {trips.length > 0 && (
-        <ul className="mt-4 divide-y divide-n-line border-t border-n-line" data-testid="trip-list">
+        <ul className="mt-5 border-t border-n-line" data-testid="trip-list">
           {trips.slice(0, 10).map((t) => (
-            <li key={t.id} className="flex items-center justify-between gap-3 py-2 text-[14px] text-n-ink-2">
+            <li key={t.id} className="flex items-center justify-between gap-3 border-b border-n-line py-1.5 text-[14.5px] text-n-ink-2">
               <span>
                 <span className="font-medium text-n-ink">{t.trip_date}</span> · {placeLabel(t.place_id)}
                 {t.outcome_band ? ` · ${OUTCOMES.find((o) => o.id === t.outcome_band)?.label}` : ""}
@@ -137,7 +138,7 @@ export function TripLogForm({ defaultPlace }: { defaultPlace?: string | null }) 
                   deleteTrip(t.id);
                   setTrips(readTrips());
                 }}
-                className="nx-focus min-h-11 px-2 text-[13.5px] text-n-accent"
+                className="pilot-link nx-focus min-h-11 px-2 text-[13.5px]"
                 aria-label={`Delete trip on ${t.trip_date} at ${placeLabel(t.place_id)}`}
               >
                 Delete

@@ -6,7 +6,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FisheryId, Readiness } from "@/pilot/contracts";
 import type { Conditions } from "@/lib/conditions";
 import { DEFAULT_FISHERIES, FISHERY_OPTIONS, buildTodayModel, dayWords, nextTide, type PortTodayInputs, type StatusRow } from "@/pilot/facts";
-import { TopBar, NavTabs } from "@/v4/shell/TopBar";
+import { TopBar } from "@/v4/shell/TopBar";
+import { PilotDock, PilotFooter } from "@/pilot/shell/PilotShell";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { readDaylight, setDaylight } from "@/v4/shell/daylight";
 import { Icon } from "@/v4/ui/Icon";
@@ -218,14 +219,10 @@ export function TodayView({ inputs, linkFisheries, readiness }: TodayProps) {
             <WhatChanged place={place.place_id} facts={allFacts} ready={conditions !== null} now={now} />
             <Actions place={place.place_id} label={place.label} conditionsUrl={conditionsUrl} readiness={readiness} />
           </div>
-          <footer className="mt-10 border-t border-n-line py-6 text-[13px] leading-relaxed text-n-ink-3">
-            Neritic is an independent research preview, not an official source and not a seafood-safety service. Closures, seasons and advisories come from CDFW and CDPH; their notices always take precedence. Chlorophyll does not measure toxin. Forecasts are probabilities, not guarantees.
-          </footer>
+          <PilotFooter />
         </div>
       </main>
-      <div className="env-instrument fixed inset-x-0 bottom-0 z-40 border-t border-n-line bg-n-surface lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <NavTabs active="today" size="dock" />
-      </div>
+      <PilotDock active="today" />
       <StatusSheet row={sheet} now={now} onClose={() => setSheet(null)} />
       <FisheryPicker open={picking} selected={selected} onClose={() => setPicking(false)} onSave={onSave} />
     </div>

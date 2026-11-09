@@ -1,0 +1,165 @@
+/*
+ * The pilot pages around Today (Ask Neritic, Your ports and alerts, the legal pages) in the same
+ * "Almanac" voice as Today (src/pilot/today/today.css; docs/coastwatch/pilot/design/README.md):
+ * a serif title over a hairline, caps section labels, plain sentences, square-shouldered controls of
+ * 44 px or more, no pills and no card stacks. Everything resolves from the Ocean Instrument tokens
+ * (src/v4/theme.css), so the dark ground and the daylight mode come for free.
+ */
+.pilot-title {
+  font-family: var(--nx-font-display);
+  font-weight: 500;
+  font-size: clamp(38px, 10vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.pilot-lede {
+  font-family: var(--nx-font-display);
+  font-size: clamp(18px, 4.6vw, 22px);
+  line-height: 1.4;
+  max-width: 44ch;
+  text-wrap: pretty;
+  color: var(--nx-ink-2);
+}
+/* a note set against a rule, not in a box: what is connected, what is a draft, what is a sample */
+.pilot-note {
+  border-left: 2px solid var(--nx-line-strong);
+  padding: 2px 0 2px 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--nx-ink);
+  max-width: 68ch;
+}
+.pilot-note.amber { border-left-color: var(--t-amber); }
+.pilot-note.model { border-left-color: var(--nx-model); }
+.pilot-note.red { border-left-color: var(--t-red); }
+
+/* links in running text: ink with a quiet underline, as on Today */
+.pilot-link {
+  color: var(--nx-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--nx-line-strong);
+  text-underline-offset: 4px;
+}
+.pilot-link:hover { text-decoration-color: var(--nx-ink-2); }
+
+/* fields */
+.pilot-field {
+  min-height: 48px;
+  width: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--nx-line-strong);
+  border-radius: 4px;
+  background: var(--nx-surface);
+  color: var(--nx-ink);
+  font-size: 16px;
+}
+select.pilot-field { padding-right: 28px; }
+.pilot-label { display: block; margin-bottom: 6px; font: 500 11px/1.2 var(--nx-font-caps); letter-spacing: 0.12em; text-transform: uppercase; color: var(--nx-ink-2); }
+.pilot-check { margin-top: 2px; width: 20px; height: 20px; flex: none; accent-color: var(--nx-accent); }
+/* a choice among a few (trip outcome, yes/no): a square toggle, pressed = inked */
+.pilot-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--nx-line-strong);
+  border-radius: 4px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--nx-ink-2);
+  cursor: pointer;
+}
+.pilot-choice[aria-pressed="true"], .pilot-choice.on { border-color: var(--nx-ink); background: var(--nx-ink); color: var(--nx-bg); }
+.pilot-choice:has(:focus-visible) { outline: 2px solid var(--nx-accent); outline-offset: 2px; }
+
+/* a readiness word: the same caps label as a status word on Today, never a coloured pill */
+.pilot-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font: 600 10.5px/1 var(--nx-font-caps);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--nx-ink-2);
+}
+.pilot-badge[data-readiness="demo"] { color: var(--nx-model); }
+.pilot-badge[data-readiness="not_configured"] { color: var(--nx-ink-2); border-style: dashed; }
+.pilot-badge[data-readiness="live"] { color: var(--nx-measured); }
+.pilot-badge.sample { color: var(--t-amber); border-style: dashed; }
+
+/* sections on the account page: Today's caps header, then a sentence of what the section is for */
+.pilot-sec-lede { margin-top: 12px; max-width: 68ch; font-size: 15px; line-height: 1.5; color: var(--nx-ink-2); }
+
+/* long reading (privacy, terms): a measure, serif section heads over hairlines */
+.pilot-prose { max-width: 70ch; font-size: 16.5px; line-height: 1.62; color: var(--nx-ink-2); }
+.pilot-prose > * + * { margin-top: 14px; }
+.pilot-prose h2 {
+  margin-top: 36px;
+  padding-top: 20px;
+  border-top: 1px solid var(--nx-line);
+  font: 500 25px/1.2 var(--nx-font-display);
+  letter-spacing: -0.01em;
+  color: var(--nx-ink);
+  scroll-margin-top: 72px;
+}
+.pilot-prose h3 { margin-top: 22px; font: 500 11.5px/1.2 var(--nx-font-caps); letter-spacing: 0.14em; text-transform: uppercase; color: var(--nx-ink-2); }
+.pilot-prose strong { color: var(--nx-ink); font-weight: 600; }
+.pilot-prose ul { list-style: none; padding: 0; }
+.pilot-prose li { position: relative; padding-left: 18px; margin-top: 7px; }
+.pilot-prose li::before { content: ""; position: absolute; left: 2px; top: 0.72em; width: 8px; height: 1px; background: var(--nx-ink-3); }
+.pilot-prose a { color: var(--nx-ink); text-decoration: underline; text-decoration-color: var(--nx-line-strong); text-underline-offset: 4px; }
+
+/* Ask Neritic: a question set as a line of the almanac, the answer under a hairline */
+.ask-q { font-family: var(--nx-font-display); font-size: 20px; line-height: 1.35; color: var(--nx-ink); text-wrap: pretty; }
+.ask-a { border-top: 1px solid var(--nx-line); padding-top: 14px; }
+.ask-a.safety { border-top: 0; border-left: 2px solid var(--nx-official); padding: 2px 0 2px 14px; }
+.ask-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 4px 10px;
+  border: 1px solid var(--nx-line-strong);
+  border-radius: 4px;
+  font-size: 13.5px;
+  text-align: left;
+  color: var(--nx-ink);
+}
+.ask-chip[aria-expanded="true"] { border-color: var(--nx-ink-2); background: var(--nx-surface-2); }
+.ask-chip i { font: 400 11px/1 var(--nx-font-data); font-style: normal; color: var(--nx-ink-3); }
+.ask-suggest {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--nx-line);
+  border-radius: 4px;
+  font-size: 14.5px;
+  text-align: left;
+  color: var(--nx-ink-2);
+}
+.ask-suggest:hover:not(:disabled) { border-color: var(--nx-line-strong); color: var(--nx-ink); }
+.ask-sms { border-radius: 14px 14px 14px 3px; background: var(--nx-surface-3); padding: 10px 12px; font-size: 14.5px; line-height: 1.4; color: var(--nx-ink); white-space: pre-wrap; }
+
+/* a fact card reached from a citation: marked for a few seconds, then quiet again */
+@keyframes fact-hit {
+  0%, 60% { background-color: color-mix(in srgb, var(--nx-accent) 16%, transparent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--nx-accent) 16%, transparent), inset 3px 0 0 var(--nx-accent); }
+  100% { background-color: transparent; box-shadow: 0 0 0 6px transparent, inset 3px 0 0 transparent; }
+}
+.fact-hit { animation: fact-hit 3.2s ease-out both; border-radius: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .fact-hit { animation: none; box-shadow: inset 3px 0 0 var(--nx-accent); background-color: color-mix(in srgb, var(--nx-accent) 12%, transparent); }
+}
+
+/* Your ports and alerts on a wide screen: settings on the left, the inbox beside them */
+@media (min-width: 1024px) {
+  .account-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: 48px; align-items: start; }
+  .account-grid > * { grid-column: 1; }
+  .account-grid > [data-testid="account-inbox"] { grid-column: 2; grid-row: 1 / span 7; }
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import "@/pilot/today/today.css";
 import { useEffect, useState } from "react";
 import { usePilotAccount } from "@/pilot/account/context";
 import { PUSH_CONSENT_TEXT } from "@/pilot/account/consent";
@@ -38,7 +39,7 @@ export function PushPanel() {
   };
 
   return (
-    <div className="space-y-3 text-[14.5px] leading-relaxed text-n-ink-2" data-testid="push-panel" data-advice={advice}>
+    <div className="max-w-[68ch] space-y-3 text-[15px] leading-relaxed text-n-ink-2" data-testid="push-panel" data-advice={advice}>
       <p data-testid="push-advice">{text[advice]}</p>
       {advice === "ios_install" && (
         <ol className="list-decimal space-y-1 pl-5" data-testid="ios-steps">
@@ -55,7 +56,7 @@ export function PushPanel() {
           <button
             type="button"
             disabled={!signedIn}
-            className="nx-press nx-focus inline-flex min-h-11 items-center rounded-lg bg-n-accent px-5 text-[15px] font-semibold text-n-on-accent disabled:opacity-50"
+            className="today-btn primary nx-press nx-focus !min-h-12 px-5 disabled:opacity-50"
             onClick={async () => {
               try {
                 const s = await subscribe(config.vapidPublicKey!);
@@ -79,7 +80,7 @@ export function PushPanel() {
       {advice === "on" && (
         <button
           type="button"
-          className="nx-focus inline-flex min-h-11 items-center rounded-lg border border-n-line-strong px-4 font-medium text-n-ink"
+          className="today-btn nx-press nx-focus nx-tint"
           onClick={async () => {
             await unsubscribe();
             if (session.client) await recordConsent(session.client, "web_push", false, PUSH_CONSENT_TEXT);

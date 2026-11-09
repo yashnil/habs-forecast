@@ -10,6 +10,7 @@ import { useInbox } from "@/pilot/alerts/useInbox";
 import { PushPanel } from "@/pilot/alerts/PushPanel";
 import type { PilotAccountConfig } from "./config";
 import { PilotAccountProvider, usePilotAccount } from "./context";
+import { PilotHero } from "@/pilot/shell/PilotShell";
 import { AGE_TEXT, SMS_CONSENT_TEXT, toE164US } from "./consent";
 import { useAccount } from "./hooks";
 import { FISHERIES, ROLES, VESSEL_CLASSES, forgetDevice, placeLabel, readAccount, removePlace, savePlace, setChannel, setTrigger, updateAccount, type LocalAccount } from "./local";
@@ -30,21 +31,24 @@ export function AccountApp({ config, todays, sample }: { config: PilotAccountCon
   );
 }
 
-const field = "nx-focus min-h-11 w-full rounded-lg border border-n-line-strong bg-n-surface px-3 text-[15px] text-n-ink";
-const primary = "nx-press nx-focus inline-flex min-h-11 items-center justify-center rounded-lg bg-n-accent px-5 text-[15px] font-semibold text-n-on-accent disabled:opacity-50";
-const quiet = "nx-focus inline-flex min-h-11 items-center rounded-lg border border-n-line-strong px-4 text-[14.5px] font-medium text-n-ink";
-const check = "mt-[3px] h-5 w-5 shrink-0 accent-[var(--color-n-accent)]";
+// the Almanac controls (src/pilot/shell/pilot.css, src/pilot/today/today.css): square shoulders, 44 px or more
+const field = "pilot-field nx-focus";
+const primary = "today-btn primary nx-press nx-focus !min-h-12 px-5 disabled:opacity-50";
+const quiet = "today-btn nx-press nx-focus nx-tint";
+const check = "pilot-check";
+const link = "pilot-link nx-focus";
+const label = "pilot-label";
 
 function Section({ id, title, badge, children, lede }: { id: string; title: string; badge?: ReactNode; lede?: ReactNode; children: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-20 border-t border-n-line py-7" data-testid={`account-${id}`}>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h2 id={`${id}-h`} className="font-display text-[23px] font-medium leading-tight text-n-ink">
+    <section id={id} aria-labelledby={`${id}-h`} className="today-sec" data-testid={`account-${id}`}>
+      <header>
+        <h2 id={`${id}-h`} className="today-h2">
           {title}
         </h2>
         {badge}
-      </div>
-      {lede && <p className="mt-1.5 max-w-[68ch] text-[14.5px] leading-relaxed text-n-ink-2">{lede}</p>}
+      </header>
+      {lede && <p className="pilot-sec-lede">{lede}</p>}
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -80,43 +84,85 @@ function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
     return () => clearTimeout(t);
   }, [account, signedIn, session.client, hydrated]);
 
+  // "Set an alert" on Today arrives as /account?place=port-592: that port is put first, one tap from its alerts
+  const [want, setWant] = useState<string | null>(null);
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("place");
+    if (p && PILOT_PORTS.some((x) => x.place_id === p)) setWant(p);
+  }, []);
+  const wantSaved = !!want && account.saved_places.includes(want);
+  const toAlerts = (place: string) => requestAnimationFrame(() => document.getElementById(`alerts-${place}`)?.scrollIntoView({ block: "start" }));
+
   const mode = !configured ? "device" : signedIn ? "account" : "signed_out";
   const edit = (fn: (a: LocalAccount) => LocalAccount) => updateAccount(fn);
 
   return (
-    <div className="mx-auto w-full max-w-[860px] px-4 pb-20 pt-8 sm:px-8 sm:pt-12" data-testid="account-page" data-mode={mode}>
-      <header className="space-y-3">
-        <p className="text-[13px] font-medium text-n-ink-2">Neritic private pilot</p>
-        <h1 className="font-display text-[34px] font-medium leading-[1.08] text-n-ink sm:text-[42px]">Your ports and alerts</h1>
-        <ul className="flex flex-wrap items-center gap-x-4 gap-y-2" aria-label="What is connected">
+    <div data-testid="account-page" data-mode={mode}>
+      <PilotHero eyebrow="Neritic private pilot" title="Your ports and alerts" lede="The ports you follow, what should alert you, and the alerts themselves. Official status always comes first.">
+        <ul className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="What is connected">
           {(
             [
               ["Accounts", config.readiness.accounts, "readiness-accounts"],
               ["Notifications", config.readiness.web_push, "readiness-push"],
               ["Text alerts", config.readiness.sms, "readiness-sms"],
             ] as const
-          ).map(([label, value, testId]) => (
-            <li key={label} className="flex items-center gap-2 whitespace-nowrap text-[14px] text-n-ink-2">
-              {label} <ReadinessBadge value={value} testId={testId} />
+          ).map(([name, value, testId]) => (
+            <li key={name} className="flex items-center gap-2 whitespace-nowrap text-[14px] text-n-ink-2">
+              {name} <ReadinessBadge value={value} testId={testId} />
             </li>
           ))}
         </ul>
-        {!configured && (
-          <p className="rounded-xl border border-n-line-strong bg-n-surface px-4 py-3 text-[15px] leading-relaxed text-n-ink" data-testid="device-only-banner">
-            <strong className="font-semibold">Saved on this device — accounts not yet connected.</strong> Your ports, fisheries, alert choices and inbox stay in this browser. Nothing is sent anywhere. Clearing the browser&rsquo;s data removes them.
-          </p>
-        )}
-        {hydrated && !persistent && (
-          <p role="alert" className="rounded-xl border border-n-stale px-4 py-3 text-[14.5px] text-n-ink" data-testid="storage-blocked">
-            This browser is not letting Neritic keep anything (private window or blocked site data). Your choices work for this visit only.
-          </p>
-        )}
-        {syncNote && signedIn && (
-          <p role="status" className="text-[13.5px] text-n-ink-2" data-testid="sync-note">
-            {syncNote}
-          </p>
-        )}
-      </header>
+        <div className="mt-4 space-y-3">
+          {want && hydrated && (
+            <div className="pilot-note" data-testid="want-port" data-place={want} data-saved={wantSaved ? "1" : "0"}>
+              {wantSaved ? (
+                <p>
+                  <strong className="font-semibold">{placeLabel(want)} is saved on this device.</strong>{" "}
+                  <a href={`#alerts-${want}`} className={link} data-testid="want-alerts-link">
+                    Choose what alerts you
+                  </a>{" "}
+                  below.
+                </p>
+              ) : (
+                <>
+                  <p>
+                    <strong className="font-semibold">Alerts for {placeLabel(want)}.</strong> Save the port, then choose what should alert you: official status changes, new toxin tests, whale-rule actions.
+                  </p>
+                  <button
+                    type="button"
+                    className={`${primary} mt-3`}
+                    onClick={() => {
+                      edit((a) => savePlace(a, want));
+                      toAlerts(want);
+                    }}
+                    data-testid="want-save"
+                  >
+                    Save {placeLabel(want)} and set alerts
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+          {!configured && (
+            <p className="pilot-note" data-testid="device-only-banner">
+              <strong className="font-semibold">Saved on this device — accounts not yet connected.</strong> Your ports, fisheries, alert choices and inbox stay in this browser. Nothing is sent anywhere. Clearing the browser&rsquo;s data removes them.
+            </p>
+          )}
+          {hydrated && !persistent && (
+            <p role="alert" className="pilot-note amber" data-testid="storage-blocked">
+              This browser is not letting Neritic keep anything (private window or blocked site data). Your choices work for this visit only.
+            </p>
+          )}
+          {syncNote && signedIn && (
+            <p role="status" className="today-src" data-testid="sync-note">
+              {syncNote}
+            </p>
+          )}
+        </div>
+      </PilotHero>
+      <div className="today-wrap">
+      {/* one column on a phone; on a wide screen the inbox sits beside the settings, as Today's columns do (pilot.css) */}
+      <div className="account-grid">
 
       <Section id="signin" title={configured ? (signedIn ? "Signed in" : "Sign in") : "Set up on this device"} lede={configured ? (signedIn ? null : "We email you a 6-digit code. No password.") : "Confirm your age once; everything else is optional."}>
         <SignIn account={account} hydrated={hydrated} />
@@ -125,7 +171,7 @@ function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
       <Section id="profile" title="Your fishing" lede="Used to put your fisheries first. It changes no value, caveat or official status.">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="acct-role" className="mb-1 block text-[13.5px] font-medium text-n-ink-2">You are</label>
+            <label htmlFor="acct-role" className={label}>You are</label>
             <select id="acct-role" value={account.role ?? ""} onChange={(e) => edit((a) => ({ ...a, role: (e.target.value || null) as LocalAccount["role"] }))} className={field} data-testid="acct-role">
               <option value="">Choose…</option>
               {ROLES.map((r) => (
@@ -134,7 +180,7 @@ function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
             </select>
           </div>
           <div>
-            <label htmlFor="acct-vessel" className="mb-1 block text-[13.5px] font-medium text-n-ink-2">Vessel length (optional)</label>
+            <label htmlFor="acct-vessel" className={label}>Vessel length (optional)</label>
             <select id="acct-vessel" value={account.vessel_length_class ?? ""} onChange={(e) => edit((a) => ({ ...a, vessel_length_class: (e.target.value || null) as LocalAccount["vessel_length_class"] }))} className={field}>
               <option value="">—</option>
               {VESSEL_CLASSES.map((v) => (
@@ -144,7 +190,7 @@ function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
           </div>
         </div>
         <fieldset className="mt-5">
-          <legend className="mb-2 text-[13.5px] font-medium text-n-ink-2">Fisheries you work</legend>
+          <legend className={label}>Fisheries you work</legend>
           <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2" data-testid="acct-fisheries">
             {FISHERIES.map((f) => (
               <label key={f.id} className="flex min-h-11 cursor-pointer items-start gap-3 py-1.5 text-[15px] text-n-ink">
@@ -162,16 +208,16 @@ function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
       </Section>
 
       <Section id="ports" title="Saved ports" lede="Pilot ports first. Your home port opens first on Today.">
-        <ul className="divide-y divide-n-line" data-testid="acct-ports">
+        <ul data-testid="acct-ports">
           {PILOT_PORTS.map((p) => {
             const on = account.saved_places.includes(p.place_id);
             const home = account.home_place_id === p.place_id;
             return (
-              <li key={p.place_id} className="flex flex-wrap items-center justify-between gap-2 py-2.5" data-testid={`port-${p.place_id}`} data-saved={on ? "1" : "0"}>
+              <li key={p.place_id} className="flex flex-wrap items-center justify-between gap-2 border-b border-n-line py-3" data-testid={`port-${p.place_id}`} data-saved={on ? "1" : "0"} data-want={want === p.place_id ? "1" : undefined}>
                 <div className="min-w-0">
-                  <span className="text-[16px] font-medium text-n-ink">{p.label}</span>
-                  {home && <span className="ml-2 text-[13px] text-n-ink-2">· home port</span>}
-                  <Link href={`/today?place=${p.place_id}`} className="nx-focus ml-2 text-[13.5px] text-n-accent underline underline-offset-2">
+                  <span className="font-serif text-[22px] leading-tight text-n-ink">{p.label}</span>
+                  {home && <span className="nx-caps ml-2">Home port</span>}
+                  <Link href={`/today?place=${p.place_id}`} className={`${link} ml-3 inline-flex min-h-11 items-center text-[14px]`}>
                     Today<span className="sr-only"> at {p.label}</span>
                   </Link>
                 </div>
@@ -203,7 +249,7 @@ function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
         }
       >
         {sample && (
-          <p className="mb-3 rounded-lg border border-n-model-line px-3 py-2 text-[13.5px] text-n-ink-2" data-testid="sample-facts-note">
+          <p className="pilot-note model mb-4" data-testid="sample-facts-note">
             Sample data: this build is reading Neritic&rsquo;s test fixture, not today&rsquo;s published data. Alerts made from it are marked &ldquo;Sample data&rdquo; and are never sent to a phone.
           </p>
         )}
@@ -214,9 +260,9 @@ function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
             {account.saved_places.map((place) => {
               const pref = account.alerts.find((p) => p.place_id === place);
               return (
-                <fieldset key={place} className="rounded-xl border border-n-line p-4" data-testid={`alerts-${place}`}>
-                  <legend className="px-1 text-[16px] font-semibold text-n-ink">{placeLabel(place)}</legend>
-                  <div className="grid gap-x-6 sm:grid-cols-2">
+                <fieldset key={place} id={`alerts-${place}`} className="scroll-mt-20 border-t border-n-line-strong pt-3" data-testid={`alerts-${place}`}>
+                  <legend className="float-left mb-2 w-full font-serif text-[22px] leading-tight text-n-ink">{placeLabel(place)}</legend>
+                  <div className="clear-both grid gap-x-6 sm:grid-cols-2">
                     {TRIGGERS.map((t) => (
                       <label key={t} className="flex min-h-11 cursor-pointer items-start gap-3 py-1.5">
                         <input type="checkbox" className={check} checked={!!pref?.triggers.includes(t)} onChange={(e) => edit((a) => setTrigger(a, place, t, e.target.checked))} data-testid={`trigger-${place}-${t}`} />
@@ -228,7 +274,7 @@ function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
                     ))}
                   </div>
                   <div className="mt-3 border-t border-n-line pt-3">
-                    <p className="mb-1 text-[13.5px] font-medium text-n-ink-2">How</p>
+                    <p className={label}>How</p>
                     <div className="flex flex-wrap gap-x-6 gap-y-1">
                       <label className="flex min-h-11 items-center gap-3 text-[15px] text-n-ink">
                         <input type="checkbox" className={check} checked={!!pref?.channels.includes("in_app")} onChange={(e) => edit((a) => setChannel(a, place, "in_app", e.target.checked))} />
@@ -260,7 +306,7 @@ function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
       <Section
         id="inbox"
         title="Inbox"
-        badge={inbox.unread ? <span className="text-[14px] font-semibold text-n-ink" data-testid="inbox-unread">{inbox.unread} unread</span> : null}
+        badge={inbox.unread ? <span className="text-[13.5px] font-semibold text-n-ink" data-testid="inbox-unread">{inbox.unread} unread</span> : null}
         lede="Each alert says what changed, its source and the date that applies. Official status comes first. Nothing here says waters are safe."
       >
         <InboxList items={inbox.items} />
@@ -286,13 +332,8 @@ function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
         <DataControls />
       </Section>
 
-      <p className="border-t border-n-line pt-6 text-[14px] text-n-ink-2">
-        <Link href="/privacy" className="nx-focus text-n-accent underline underline-offset-2">Privacy Policy</Link>
-        {" · "}
-        <Link href="/terms" className="nx-focus text-n-accent underline underline-offset-2">Terms of Use</Link>
-        {" · "}
-        <Link href="/sms-terms" className="nx-focus text-n-accent underline underline-offset-2">SMS Terms</Link>
-      </p>
+      </div>
+      </div>
     </div>
   );
 }
@@ -338,22 +379,22 @@ function SignIn({ account, hydrated }: { account: LocalAccount; hydrated: boolea
           <input type="checkbox" required className={check} checked={age} onChange={(e) => setAge(e.target.checked)} data-testid="consent-age" />
           <span>
             I am 13 or older, and I have read the{" "}
-            <Link href="/terms" className="nx-focus text-n-accent underline underline-offset-2">Terms of Use</Link> and the{" "}
-            <Link href="/privacy" className="nx-focus text-n-accent underline underline-offset-2">Privacy Policy</Link>.
+            <Link href="/terms" className={link}>Terms of Use</Link> and the{" "}
+            <Link href="/privacy" className={link}>Privacy Policy</Link>.
           </span>
         </label>
       )}
-      <div className="rounded-xl border border-n-line p-3">
+      <div className="border-l-2 border-n-line-strong pl-3">
         <label className="flex cursor-pointer items-start gap-3 text-[14.5px] leading-snug text-n-ink">
           <input type="checkbox" className={check} checked={smsOn} onChange={(e) => setSmsOn(e.target.checked)} data-testid="consent-sms" aria-describedby={`${id}-sms-note`} />
           <span data-testid="sms-disclosure">{SMS_CONSENT_TEXT}</span>
         </label>
         <p id={`${id}-sms-note`} className="mt-1 pl-8 text-[13px] text-n-ink-2">
-          Optional. <Link href="/sms-terms" className="nx-focus text-n-accent underline underline-offset-2">SMS Terms</Link>. Text alerts are not sent yet (carrier registration pending); your choice is recorded for when they are.
+          Optional. <Link href="/sms-terms" className={link}>SMS Terms</Link>. Text alerts are not sent yet (carrier registration pending); your choice is recorded for when they are.
         </p>
         {smsOn && (
           <div className="mt-2 pl-8">
-            <label htmlFor={`${id}-phone`} className="mb-1 block text-[13.5px] font-medium text-n-ink-2">Mobile number (US)</label>
+            <label htmlFor={`${id}-phone`} className={label}>Mobile number (US)</label>
             <input id={`${id}-phone`} type="tel" inputMode="tel" autoComplete="tel-national" value={phone} onChange={(e) => setPhone(e.target.value)} className={`${field} max-w-[240px]`} data-testid="sms-phone" />
           </div>
         )}
@@ -426,7 +467,7 @@ function SignIn({ account, hydrated }: { account: LocalAccount; hydrated: boolea
           }}
         >
           <div>
-            <label htmlFor={`${id}-email`} className="mb-1 block text-[13.5px] font-medium text-n-ink-2">Email</label>
+            <label htmlFor={`${id}-email`} className={label}>Email</label>
             <input id={`${id}-email`} type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`${field} max-w-[360px]`} data-testid="signin-email" />
           </div>
           {consentFields}
@@ -467,7 +508,7 @@ function SignIn({ account, hydrated }: { account: LocalAccount; hydrated: boolea
           }}
         >
           <div>
-            <label htmlFor={`${id}-code`} className="mb-1 block text-[13.5px] font-medium text-n-ink-2">6-digit code</label>
+            <label htmlFor={`${id}-code`} className={label}>6-digit code</label>
             <input id={`${id}-code`} required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} className={`${field} max-w-[180px] tracking-[0.3em]`} data-testid="signin-code" />
           </div>
           <div className="flex flex-wrap gap-2">
@@ -487,7 +528,7 @@ function SignIn({ account, hydrated }: { account: LocalAccount; hydrated: boolea
 
 function Msg({ msg }: { msg: { tone: "ok" | "error"; text: string } | null }) {
   return (
-    <p role={msg?.tone === "error" ? "alert" : "status"} className={`mt-3 text-[14.5px] ${msg?.tone === "error" ? "font-medium text-n-down" : "text-n-ink-2"}`} data-testid="signin-msg">
+    <p role={msg?.tone === "error" ? "alert" : "status"} className={`mt-3 text-[14.5px] ${msg?.tone === "error" ? "font-medium t-red" : "text-n-ink-2"}`} data-testid="signin-msg">
       {msg?.text ?? ""}
     </p>
   );
@@ -504,27 +545,27 @@ function DataControls() {
         {signedIn
           ? "Your profile, saved ports, alert choices, inbox, feedback and trip logs are stored in your Neritic account (Supabase, US West) and on this device. Nothing is sold or shared for marketing."
           : "Everything on this page is kept in this browser only. Neritic has no copy."}{" "}
-        See the <Link href="/privacy" className="nx-focus text-n-accent underline underline-offset-2">Privacy Policy</Link> for what is kept and for how long.
+        See the <Link href="/privacy" className={link}>Privacy Policy</Link> for what is kept and for how long.
       </p>
       <div className="flex flex-wrap gap-2">
         <button type="button" className={quiet} onClick={() => setConfirm("device")} data-testid="forget-device">
           Delete everything on this device
         </button>
         {signedIn && (
-          <button type="button" className={`${quiet} border-n-down text-n-down`} onClick={() => setConfirm("account")} data-testid="delete-account">
+          <button type="button" className={`${quiet} !border-[var(--t-red)] t-red`} onClick={() => setConfirm("account")} data-testid="delete-account">
             Delete my account
           </button>
         )}
       </div>
       {confirm && (
-        <div role="alertdialog" aria-labelledby="confirm-h" className="rounded-xl border border-n-down p-4" data-testid="confirm-delete">
+        <div role="alertdialog" aria-labelledby="confirm-h" className="pilot-note red" data-testid="confirm-delete">
           <p id="confirm-h" className="font-semibold text-n-ink">
             {confirm === "device" ? "Delete your ports, alerts, inbox, feedback and trips from this device?" : "Delete your Neritic account and everything in it? This cannot be undone."}
           </p>
           <div className="mt-3 flex gap-2">
             <button
               type="button"
-              className={`${primary} bg-n-down`}
+              className={`${primary} !border-[var(--t-red)] !bg-[var(--t-red)]`}
               onClick={async () => {
                 if (confirm === "account" && session.client) {
                   const r = await deleteAccount(session.client);
