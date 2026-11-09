@@ -1,4 +1,5 @@
 @import "../stage/stage.css";
+@import "../charts/kit.css";
 
 /*
  * The Swell motion system's CSS (docs/coastwatch/v11/design.md §5). Scripts in this folder set the states;
