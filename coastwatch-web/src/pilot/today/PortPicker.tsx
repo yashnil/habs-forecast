@@ -44,7 +44,8 @@ export function PortPicker({ ports, requested, pick, now, trust, stage }: { port
     if (e.metaKey || e.ctrlKey || e.shiftKey || !map.current || cameraTier() === "none") return;
     e.preventDefault();
     journeyTo(map.current, { center: [p.lon, p.lat], zoom: 9.3 });
-    window.setTimeout(() => router.push(`/today?place=${p.place_id}`), 1300);
+    // the flight is a courtesy, never a wait: a device that cannot fly it smoothly goes straight on
+    window.setTimeout(() => router.push(`/today?place=${p.place_id}`), cameraTier() === "full" ? 1300 : 300);
   };
   return (
     <div className="env-instrument today min-h-dvh pb-[calc(76px+env(safe-area-inset-bottom,0px))] lg:pb-0" data-testid="today-picker">
