@@ -15,6 +15,12 @@ It ends with a few actions: save offline, set an alert, Ask Neritic.
 
 Explore, My Coast, Research and Sources stay as supporting views. Public v1 (`coastwatch-demo`) is never touched.
 
+## As integrated
+- **One fact source.** `loadPortTodayFacts(placeId)` (`coastwatch-web/src/pilot/today/portToday.ts`) is the port's facts for every fishery: Today draws them, alerts compare them, Ask Neritic answers from them, with the same `PortFact.id`s. Each has an address on Today (`/today?place=…#fact-<id>`).
+- **One shell.** Today, `/ask`, `/account` and the legal pages share the v4 top bar (with the alerts bell), the phone dock and the Almanac styling (`src/pilot/shell/`, `today.css`, `pilot.css`).
+- **Front door.** With `NERITIC_PILOT=1` a bare `/` opens `/today`; every deep link (`?region`, `?port`, `?layer`, `?sel`, …) still opens Explore, whose own address is `/?view=map`. Without the flag `/` is Explore, as on the public release.
+- **The whole journey** is `tests/e2e/pilot-journey.spec.ts` (390 and 1440 px, axe clean). The demo's fallback screenshots are in [`pitch/shots/`](pitch/shots/); recapture with `scripts/pilot-shots.mjs`.
+
 ## Tracks
 | Track | Branch | Owns |
 |---|---|---|

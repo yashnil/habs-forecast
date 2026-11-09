@@ -101,16 +101,10 @@ npx supabase@2.121.0 stop --project-id neritic-pilot
    - then remove the draft banner and bump `LEGAL_VERSION` in `src/pilot/account/consent.ts`.
 7. SMS stays off until the Twilio 10DLC campaign is approved (Track Q).
 
-## Integrator notes (shared files)
+## As integrated (shared files)
 
-- **TopBar** (`src/v4/shell/TopBar.tsx`): add one line next to `<MoreMenu />`: `<AlertsBell />`, from `@/pilot/alerts/AlertsBell`. It works with no provider (device inbox only).
-- **Today page:**
-  - mount `<AlertCheck todays={[today]} />` (from `@/pilot/alerts/AlertCheck`) to run the device alert check;
-  - mount `<Feedback factId={fact.id} placeId={fact.place_id} />` under fact cards;
-  - optionally wrap the page in `<PilotAccountProvider config={pilotAccountConfig()}>` so feedback syncs when the person is signed in.
-- **`public/sw.js`:** add `importScripts("/sw-push.js");` after the constants. It adds only push, notificationclick and a ping listener. Until then, the account page says notifications are not in this build.
-- **`package.json`:**
-  - dependencies: `@supabase/supabase-js@2.118.0`, `@supabase/ssr@0.12.7`, `web-push@3.6.7`
-  - devDependencies: `@types/web-push@3.6.4`
-- **Facts:** replace the body of `loadPortTodays()` in `src/pilot/alerts/source.ts` with the real `facts.ts` builder and return `stub: false`.
-- A link to `/account` (for example "Your ports and alerts" in the ⋯ menu) is the integrator's call.
+- **Top bar** (`src/v4/shell/TopBar.tsx`): `<AlertsBell />` sits next to the ⋯ menu on every page, and ⋯ lists "Your ports and alerts" and "Ask Neritic".
+- **One shell:** `/account`, `/privacy`, `/terms` and `/sms-terms` render in `PilotShell` (`src/pilot/shell/`), the same top bar, dock and Almanac styling as Today and Ask. The shell provides `PilotAccountProvider`, so the bell and feedback follow the signed-in account.
+- **Today page:** mounts `<AlertCheck todays={[today]} sample={fixture} />` on the port's facts for every fishery, and one compact `<Feedback factId placeId compact />` per section. "Set an alert" opens `/account?place=<port>`, which puts that port first with one button to save it and reach its alerts.
+- **`public/sw.js`** imports `/sw-push.js` (push, notificationclick and a ping listener only).
+- **Facts:** `loadPortTodays()` in `src/pilot/alerts/source.ts` reads `loadPortTodayFacts` (`src/pilot/today/portToday.ts`), the same facts Today shows. It returns `sample: true` only when the server is reading the test fixture; alerts made from it are marked "Sample data", and `/api/alerts/fanout` then refuses to run against a live project (409) and never pushes.
