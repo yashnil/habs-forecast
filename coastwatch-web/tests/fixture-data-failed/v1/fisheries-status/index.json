@@ -1,0 +1,226 @@
+{
+  "version": 1,
+  "generated_at": "2026-10-12T18:00:00Z",
+  "records": [
+    {
+      "id": "dungeness-commercial-2026-27",
+      "fishery": "dungeness_commercial",
+      "label": "Commercial Dungeness crab",
+      "level": "delayed",
+      "cause": "whale_entanglement",
+      "headline": "Commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements).",
+      "detail": "CDFW's October 30, 2026 risk assessment delayed the commercial season in Fishing Zones 1-5 (California/Oregon border to Point Conception) until at least January 1, 2027, because of the number of humpback whale entanglements during the 2026 calendar year; a temporary crab trap prohibition and a Fleet Advisory apply in those zones. This is a whale-entanglement decision, not a domoic acid closure. Next CDFW risk assessments (subject to change): December 15-18 and January 13-15.",
+      "area_label": "California/Oregon border to Point Conception (Fishing Zones 1-5)",
+      "applies_to_places": [],
+      "effective": "2026-10-30",
+      "until": null,
+      "next_review": "2026-12-15",
+      "source_name": "CDFW",
+      "source_url": "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries",
+      "checked_at": "2026-11-08",
+      "review_state": "pending_human_review",
+      "reviewed_by": null,
+      "reviewed_at": null,
+      "other_sources": [
+        "https://wildlife.ca.gov/News/Archive/recreational-dungeness-crab-fishing-begins-in-most-areas-nov-7-with-trap-restrictions-commercial-season-delayed",
+        "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=247860&inline"
+      ]
+    },
+    {
+      "id": "dungeness-recreational-2026-27",
+      "fishery": "dungeness_recreational",
+      "label": "Recreational Dungeness crab",
+      "level": "restricted",
+      "cause": "whale_entanglement",
+      "headline": "Recreational season open since Nov 7 with crab traps prohibited; hoop nets and snares allowed.",
+      "detail": "CDFW: the recreational season opened November 7, 2026 to hoop net and loop (snare) gear; crab traps are prohibited from the California/Oregon border to Point Conception (Fishing Zones 1-5) until at least January 1, 2027. Hoop nets must be serviced at least every two hours. Separately, recreational take and possession of Dungeness crab is prohibited for domoic acid on part of the north coast (the Whale-Safe Fisheries page reads Reading Rock SMPA, 41 17.6' N, to Ten Mile SMR, 39 33.3' N; CDPH SN26-023 names Cape Mendocino, 40 10' N, to Ten Mile SMR); that area is far north of the pilot ports. CDPH recommends removing and discarding the viscera of crab from every other area.",
+      "area_label": "California/Oregon border to Point Conception (Fishing Zones 1-5)",
+      "applies_to_places": [],
+      "effective": "2026-11-07",
+      "until": null,
+      "next_review": "2026-12-15",
+      "source_name": "CDFW",
+      "source_url": "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries",
+      "checked_at": "2026-11-08",
+      "review_state": "pending_human_review",
+      "reviewed_by": null,
+      "reviewed_at": null,
+      "other_sources": [
+        "https://wildlife.ca.gov/News/Archive/recreational-dungeness-crab-fishing-begins-in-most-areas-nov-7-with-trap-restrictions-commercial-season-delayed",
+        "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-023.aspx"
+      ]
+    },
+    {
+      "id": "anchovy-monterey-bay-2026-09",
+      "fishery": "anchovy_sardine",
+      "label": "Northern anchovy (Monterey Bay)",
+      "level": "restricted",
+      "cause": "domoic_acid",
+      "headline": "Monterey Bay anchovy: no take for human consumption since Sep 11 (domoic acid); bait only.",
+      "detail": "CDFW restricted commercial and recreational take of northern anchovy for human consumption from Pigeon Point (37 11.000' N) to Point Lobos (36 31.461' N) on September 11, 2026; commercial take for bait is allowed (dead bait labelled not for human or pet consumption) and recreational take is bait only. CDPH (SN26-019, September 14, 2026) advises the public not to eat northern anchovy from those waters until further notice. The restriction names northern anchovy only; the June 26 anchovy and sardine restriction was lifted on July 31 (CDFW) and August 3 (CDPH). No lift has been announced for the September restriction.",
+      "area_label": "Pigeon Point to Point Lobos (Monterey Bay)",
+      "applies_to_places": [
+        "port-592",
+        "port-550",
+        "port-593"
+      ],
+      "effective": "2026-09-11",
+      "until": null,
+      "next_review": null,
+      "source_name": "CDFW",
+      "source_url": "https://wildlife.ca.gov/News/Archive/commercial-and-recreational-take-restrictions-in-place-for-northern-anchovy-in-monterey-bay-due-to-public-health-hazard",
+      "checked_at": "2026-11-08",
+      "review_state": "pending_human_review",
+      "reviewed_by": null,
+      "reviewed_at": null,
+      "other_sources": [
+        "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-019.aspx",
+        "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories"
+      ]
+    },
+    {
+      "id": "mussel-quarantine-2026",
+      "fishery": "bivalve_shellfish",
+      "label": "Sport-harvested mussels (annual quarantine)",
+      "level": "watch",
+      "cause": "psp",
+      "headline": "CDPH announced the 2026 mussel quarantine ended Oct 31; check CDPH before harvesting.",
+      "detail": "CDPH (SN26-022, October 28, 2026) announced that the statewide annual quarantine on sport-harvested mussels (May 1 - October 31) ends at midnight on Saturday, October 31, 2026, saying domoic acid and PSP toxins remain at low or undetectable levels in recent mussel samples. Warnings remain for sport-harvested razor clams from Del Norte and Humboldt counties and for mussels, clams, scallops and oysters from the Northern Channel Islands. Held at \"watch\" until a person confirms the end of the quarantine; Neritic does not expire records on its own. CDPH Shellfish Information Line: (800) 553-4133. The Monterey County bivalve warning of September 14 was lifted October 12 (SN26-021).",
+      "area_label": "California coast, bays and estuaries",
+      "applies_to_places": [],
+      "effective": "2026-05-01",
+      "until": null,
+      "next_review": null,
+      "source_name": "CDPH",
+      "source_url": "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-022.aspx",
+      "checked_at": "2026-11-08",
+      "review_state": "pending_human_review",
+      "reviewed_by": null,
+      "reviewed_at": null,
+      "other_sources": [
+        "https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx",
+        "https://www.cdph.ca.gov/Programs/OPA/Pages/SN26-021.aspx"
+      ]
+    },
+    {
+      "id": "salmon-commercial-2026",
+      "fishery": "salmon_commercial",
+      "label": "Commercial ocean salmon",
+      "level": "closed",
+      "cause": "season",
+      "headline": "The 2026 commercial ocean salmon season has concluded.",
+      "detail": "CDFW's ocean salmon page: \"The 2026 commercial ocean salmon fishery has concluded.\" In-season action on August 19-21, 2026 closed the summer commercial season statewide for the rest of August; it reopened in September only for the 38 02' N to Pigeon Point subarea (fall harvest limit 20,000 Chinook). The 2027 season is set by the PFMC/NMFS process in spring.",
+      "area_label": "California",
+      "applies_to_places": [],
+      "effective": null,
+      "until": null,
+      "next_review": null,
+      "source_name": "CDFW",
+      "source_url": "https://wildlife.ca.gov/Fishing/Ocean/Regulations/Salmon",
+      "checked_at": "2026-11-08",
+      "review_state": "pending_human_review",
+      "reviewed_by": null,
+      "reviewed_at": null,
+      "other_sources": [
+        "https://cdfwmarine.wordpress.com/2026/08/21/inseason-ocean-salmon-changes-announced-for-august/",
+        "https://wildlife.ca.gov/Fishing/Ocean/Regulations/Inseason"
+      ]
+    },
+    {
+      "id": "rock-crab-central-coast-2026",
+      "fishery": "rock_crab",
+      "label": "Rock crab (Monterey Bay and San Mateo coast)",
+      "level": "no_restriction_on_record",
+      "cause": "domoic_acid",
+      "headline": "No rock crab closure on record for the pilot ports; the only commercial closure is on the north coast.",
+      "detail": "CDFW's Health Advisories page lists a domoic acid closure of the commercial rock crab fishery only from the Mendocino/Humboldt county line (40 00.00' N) to near Cape Mendocino (40 30.00' N), and a CDPH advisory not to eat rock crab viscera from the Oregon border to the Mendocino/Sonoma county line and from the Northern Channel Islands. Nothing listed covers Monterey Bay or the San Mateo coast. No restriction on record is not a statement that crab is free of toxin: CDPH's latest Monterey Bay rock crab set (September 28) is in the toxin tests.",
+      "area_label": "Pigeon Point to Point Lobos and the San Mateo coast",
+      "applies_to_places": [
+        "port-592",
+        "port-550",
+        "port-593",
+        "port-452"
+      ],
+      "effective": null,
+      "until": null,
+      "next_review": null,
+      "source_name": "CDFW",
+      "source_url": "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories",
+      "checked_at": "2026-11-08",
+      "review_state": "pending_human_review",
+      "reviewed_by": null,
+      "reviewed_at": null,
+      "other_sources": []
+    }
+  ],
+  "ramp": {
+    "season": "2026-27",
+    "zones": [
+      {
+        "zone": "1",
+        "label": "California/Oregon border (42 N) to Cape Mendocino (40 10' N)",
+        "action": "Commercial season delayed to at least Jan 1, 2027; recreational crab traps prohibited; Fleet Advisory.",
+        "depth_limit_fathoms": null,
+        "gear_reduction_pct": null,
+        "lat_north": 42.0,
+        "lat_south": 40.1667,
+        "applies_to_places": []
+      },
+      {
+        "zone": "2",
+        "label": "Cape Mendocino (40 10' N) to the Sonoma/Mendocino county line (38 46.125' N)",
+        "action": "Commercial season delayed to at least Jan 1, 2027; recreational crab traps prohibited; Fleet Advisory.",
+        "depth_limit_fathoms": null,
+        "gear_reduction_pct": null,
+        "lat_north": 40.1667,
+        "lat_south": 38.7688,
+        "applies_to_places": []
+      },
+      {
+        "zone": "3",
+        "label": "Sonoma/Mendocino county line (38 46.125' N) to Pigeon Point (37 11' N)",
+        "action": "Commercial season delayed to at least Jan 1, 2027; recreational crab traps prohibited; Fleet Advisory.",
+        "depth_limit_fathoms": null,
+        "gear_reduction_pct": null,
+        "lat_north": 38.7688,
+        "lat_south": 37.1833,
+        "applies_to_places": [
+          "port-452"
+        ]
+      },
+      {
+        "zone": "4",
+        "label": "Pigeon Point (37 11' N) to Lopez Point (36 N)",
+        "action": "Commercial season delayed to at least Jan 1, 2027; recreational crab traps prohibited; Fleet Advisory.",
+        "depth_limit_fathoms": null,
+        "gear_reduction_pct": null,
+        "lat_north": 37.1833,
+        "lat_south": 36.0,
+        "applies_to_places": [
+          "port-592",
+          "port-550",
+          "port-593"
+        ]
+      },
+      {
+        "zone": "5",
+        "label": "Lopez Point (36 N) to Point Conception (34 27' N)",
+        "action": "Commercial season delayed to at least Jan 1, 2027; recreational crab traps prohibited; Fleet Advisory.",
+        "depth_limit_fathoms": null,
+        "gear_reduction_pct": null,
+        "lat_north": 36.0,
+        "lat_south": 34.45,
+        "applies_to_places": []
+      }
+    ],
+    "last_assessment": "2026-10-30",
+    "next_assessment": "2026-12-15",
+    "source_url": "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries",
+    "review_state": "pending_human_review",
+    "checked_at": "2026-11-08",
+    "next_assessment_window": "December 15-18 (then January 13-15), subject to change",
+    "zone_source_url": "https://filelib.wildlife.ca.gov/Public/BDB/GIS/BIOS/metadata/DS3120.html",
+    "reviewed_by": null,
+    "reviewed_at": null
+  }
+}
