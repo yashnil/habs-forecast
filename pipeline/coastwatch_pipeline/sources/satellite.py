@@ -275,8 +275,17 @@ def target_for(p: Product, d: Domain, lattice: tuple[float, float] | None = None
 
 # ---------------------------------------------------------------- upstream access
 def times_url(server: str, ds: str, start: date) -> str:
+    """A windowed time listing. Kept for reference and tests; the pipeline reads the whole axis
+    (axis_url) instead, because coastwatch.noaa.gov answers a site-wide HTML 404 for any ERDDAP
+    error, including a start bound outside the axis (issue #95)."""
     q = f"time[({start.isoformat()}T00:00:00Z):1:(last)]"
     return f"{server}/griddap/{ds}.csv0?" + quote(q, safe=":(),")
+
+
+def axis_url(server: str, ds: str) -> str:
+    """The dataset's whole time axis, unconstrained: no bound can fall outside it, so a 404 here is
+    an outage or an unknown dataset, never "nothing newer" (a 90-day OLCI axis is about 2 KB)."""
+    return f"{server}/griddap/{ds}.csv0?time"
 
 
 def scene_url(server: str, ds: str, var: str, t: str, target: Target, lon_lo: float, lon_hi: float, lat_max: float) -> str:
@@ -314,29 +323,39 @@ def masked_404(e: Exception) -> bool:
     return bool(detail) and ("<html" in detail or "<!doctype" in detail or "noaa coastwatch" in detail) and "no matching results" not in detail and "unknown datasetid" not in detail
 
 
+def axis_times(ctx: RunContext, server: str, ds: str) -> list[str]:
+    """Every time on a dataset's axis (ISO, Z), read once per run and cached on the run context.
+
+    Requests are then made only for times the axis lists (issue #95): coastwatch.noaa.gov's front
+    end turns every ERDDAP error, including a time that is not on the axis (the 2026-10-31/11-01
+    gap) or a bound outside the rolling 90-day OLCI window, into the same HTML 404 as an outage, so
+    a request must never depend on ERDDAP accepting a bound."""
+    cache = ctx.options.setdefault("_erddap_time_axes", {})
+    key = (server, ds)
+    if key not in cache:
+        try:
+            r = ctx.fetcher(axis_url(server, ds))
+        except FetchError as e:
+            # ERDDAP's own "no matching results" is an answer (an empty axis); anything else here,
+            # an unknown datasetID or the front end's HTML 404, is the outage it looks like
+            if no_matching_results(e):
+                cache[key] = []
+                return []
+            raise
+        out = []
+        for line in r.body.decode("utf-8", "replace").splitlines():
+            line = line.strip()
+            if line and line[:1].isdigit():
+                out.append(line if line.endswith("Z") else line + "Z")
+        cache[key] = sorted(out)
+    return list(cache[key])
+
+
 def list_times(ctx: RunContext, server: str, ds: str, start: date) -> list[str]:
-    try:
-        r = ctx.fetcher(times_url(server, ds, start))
-    except FetchError as e:
-        # ERDDAP answers 404 "Your query produced no matching results" when nothing is newer
-        # than start; a 404 for "Currently unknown datasetID" is an outage, not "no data"
-        if no_matching_results(e):
-            return []
-        # a front-end HTML 404 hides which it was: the dataset's own metadata settles it
-        # (reachable: nothing newer than start; not reachable: the outage it looks like)
-        if masked_404(e):
-            try:
-                ctx.fetcher(f"{server}/griddap/{ds}.das")
-            except FetchError:
-                raise e
-            return []
-        raise
-    out = []
-    for line in r.body.decode("utf-8", "replace").splitlines():
-        line = line.strip()
-        if line:
-            out.append(line if line.endswith("Z") else line + "Z")
-    return out
+    """Times on the axis from the evening before `start` on (callers keep only their window).
+    An empty list means no new granule; a failure to read the axis raises."""
+    lo = (start - timedelta(days=1)).isoformat()
+    return [t for t in axis_times(ctx, server, ds) if t[:10] >= lo]
 
 
 @dataclass
@@ -759,6 +778,7 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
             by_day.setdefault(date.fromisoformat(t[:10]), []).append((plat, ds, t))
     prev_days = {lyr.time.observed_date: lyr for lyr in prev_layers if lyr.layer_id.startswith(f"{p.key}_chl_2")}
     days: list[Day] = []
+    gone: list[str] = []
     order = [plat for plat, _ in p.platforms]
     for d in sorted(by_day):
         entries = by_day[d]
@@ -784,6 +804,13 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
                 url = scene_url(p.server, ds, p.variable, t, target, sec[1], sec[2], sec[3])
                 r = ctx.fetcher(url)
                 scenes.append(load_scene(r.body, p, plat, ds, t, url, target))
+            except FetchError as e:
+                if no_matching_results(e) or masked_404(e):
+                    # listed a moment ago, not served now (e.g. rolled out of the 90-day window):
+                    # no granule, said so; an outage that loses every scene still fails below
+                    gone.append(f"{plat} {ds} {t}: listed on the time axis but not served (HTTP 404); skipped")
+                else:
+                    errors.append(f"{plat} {ds} {t}: {e}")
             except Exception as e:
                 errors.append(f"{plat} {ds} {t}: {e}")
         if not scenes or target is None:
@@ -798,7 +825,8 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
                   platforms=[pl for pl in order if any(s.platform == pl for s in scenes)], checks=checks, source=src)
         days.append(day)
     if not days or target is None:
-        return SatelliteResult([], errors or [f"{p.key}: no scenes in the last {p.window_days} days"], notes, None)
+        return SatelliteResult([], errors + gone or [f"{p.key}: no scenes in the last {p.window_days} days"], notes, None)
+    notes.extend(gone)
 
     layers: list[LayerArtifact] = []
     nbytes = 0
