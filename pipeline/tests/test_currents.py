@@ -316,3 +316,34 @@ def test_verification_samples_settled_hours_not_the_newest_still_revised_ones(tm
     rep = verify_currents(out, live=False, now=datetime.fromisoformat(hours[0].replace("Z", "+00:00")))
     assert hours[-1] in {r["time"] for r in rep["rows"] if r["kind"] == "value"}
     assert rep["summary"]["unsettled_hours_not_sampled"] == 0
+
+
+def test_a_cell_no_server_answered_for_is_asked_again_before_it_fails(tmp_path, monkeypatch):
+    # staging run 42569650052: 30 of 32 checks passed, 2 cells got no answer from either server for a
+    # moment and the whole dataset was withheld. Such a cell is asked again after a pause; the check
+    # is unchanged, and a cell that never gets an answer still fails (the test above).
+    from coastwatch_pipeline import verify_currents as vc
+
+    out = tmp_path / "v1"
+    run_pipeline(fixture_context(out))
+    fx = FixtureFetcher()
+    state = {"fail": 3, "slept": []}
+
+    def flaky(url, **kw):
+        if "ucsdHfrW2" in url:  # the layers' own server is down throughout
+            raise FetchError(f"HTTP 404 for {url} (unknown)", detail='Error { code=404; message="Not Found: Currently unknown datasetID=ucsdHfrW2"; }')
+        if "hfradar_uswc_2km.dods" in url and "%5B" in url:  # NDBC point queries: the first few get no answer
+            if state["fail"] > 0:
+                state["fail"] -= 1
+                raise FetchError(f"Failed after 4 attempts: {url} (timed out)", hang=True)
+            return fx(url.replace("%5B", "[").replace("%5D", "]"))
+        return fx(url)
+
+    monkeypatch.setattr(vc, "fetch", flaky)
+    monkeypatch.setattr(vc.time, "sleep", lambda s: state["slept"].append(s))
+    rep = verify_currents(out, live=True)
+    live = [r for r in rep["rows"] if r["kind"] in ("value", "no_value")]
+    assert rep["summary"]["cells_asked_again"] == 3 and vc.UNVERIFIABLE_WAIT_S in state["slept"]
+    assert sum(r.get("attempts", 1) > 1 for r in live) == 3
+    assert all(r["status"] == "pass" for r in live) and rep["summary"]["all_passed"]
+    assert rep["summary"]["unverifiable_upstream_unreachable"] == 0
