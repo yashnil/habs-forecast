@@ -1,0 +1,5 @@
+/* The quiet head of a reference page: the real isobath ground, once, behind the title (never the reader's waters). */
+.as-ground { position: absolute; top: -72px; right: 0; width: min(62vw, 880px); height: 480px; z-index: -1; color: var(--nx-ink); opacity: 0.11; pointer-events: none; overflow: hidden; }
+.as-ground svg { width: 100%; height: 100%; }
+@media (max-width: 639px) { .as-ground { width: 100%; opacity: 0.07; height: 300px; } }
+.as-footer { margin-top: 40px; }

@@ -6,6 +6,7 @@ import { SourceTable } from "@/components/SourceTable";
 import { DISCLAIMER, RESEARCH } from "@/content/copy";
 import { loadData } from "@/lib/data";
 import { sourceStatus } from "@/lib/layers";
+import "./sources.css";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Data & sources" };
@@ -20,17 +21,17 @@ export default async function SourcesPage() {
       official={data.ok ? data.official : null}
       officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null}
       scroll="page">
-      <div className="mx-auto w-full max-w-4xl space-y-6 overflow-y-auto px-4 py-6">
-        <header className="space-y-2">
-          <h1 className="font-display text-[34px] font-medium leading-tight text-ink">Data &amp; sources</h1>
-          <p className="max-w-2xl text-[14px] leading-relaxed text-ink-2">{DISCLAIMER}</p>
-          <p className="max-w-2xl text-[13px] leading-relaxed text-ink-3" data-testid="sources-independence">
+      <div className="sources-page mx-auto w-full max-w-[880px] space-y-14 px-4 pb-20 pt-10 sm:px-8 sm:pt-16">
+        <header className="space-y-4">
+          <h1 className="nx-display-hero font-display font-medium text-ink">Data &amp; sources</h1>
+          <p className="nx-lede !max-w-[40ch] text-ink-2">{DISCLAIMER}</p>
+          <p className="max-w-[64ch] text-[14.5px] leading-relaxed text-ink-3" data-testid="sources-independence">
             {BRAND.independence} Satellite data credited to NOAA CoastWatch below come from that NOAA program.
           </p>
         </header>
         <OfficialStatusCard />
-        <section aria-labelledby="research-h" data-testid="research" className="space-y-2 text-[14px] leading-relaxed text-ink-2">
-          <h2 id="research-h" className="font-display text-[22px] font-medium leading-tight text-ink">The research behind Neritic</h2>
+        <section aria-labelledby="research-h" data-testid="research" className="space-y-3 text-[15px] leading-relaxed text-ink-2">
+          <h2 id="research-h" className="nx-title">The research behind Neritic</h2>
           <p className="max-w-2xl">
             <span className="font-display text-[17px] leading-snug text-ink">{RESEARCH.title}</span>
             <br />
@@ -51,8 +52,8 @@ export default async function SourcesPage() {
         ) : (
           <p className="text-ink-2">Source status cannot be shown because the data manifest is unavailable.</p>
         )}
-        <section className="space-y-2 text-[13px] leading-relaxed text-ink-2">
-          <h2 className="text-[15px] font-semibold text-ink">How freshness is decided</h2>
+        <section className="space-y-3 text-[15px] leading-relaxed text-ink-2">
+          <h2 className="nx-title">How freshness is decided</h2>
           <p>
             Each source publishes its own dates. Your browser compares them with today&apos;s date: <strong className="text-ink">Current</strong>{" "}
             means within the source&apos;s normal update window, <strong className="text-ink">Stale</strong> means newer data should exist but has
