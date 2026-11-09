@@ -72,11 +72,13 @@ for (const [label, viewport] of [["phone 390", { width: 390, height: 844 }], ["d
     const answer = ask.getByTestId("ask-answer");
     await expect(answer).toContainText("Monterey Bay Dungeness tested well under the limit on Sep 28: avg 5.5 ppm, limit 30.");
     // the hierarchy holds in the answer too: the official delay comes before the test, and is marked unverified
-    expect(await answer.getByTestId("ask-lines").locator("p").first().innerText()).toContain("Commercial season delayed to at least Jan 1, 2027");
+    expect(await answer.getByTestId("ask-lines").locator("p").first().innerText()).toContain("Dungeness crab: commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements).");
     await expect(answer).toContainText("not yet verified by a person");
-    // the answer's own lines never call anything safe (the standing disclaimer above them says Neritic never decides that)
+    // the answer's own lines never call anything safe (the standing notice under them says Neritic never decides that)
     await expect(answer.getByTestId("ask-lines")).not.toContainText(/\bsafe\b/i);
     await expect(answer.getByTestId("ask-notice")).toContainText("Never use Neritic to decide whether seafood is safe");
+    // dates as Today words them, in the answer and on its source chips
+    await expect(answer).not.toContainText(/\d{4}-\d{2}-\d{2}/);
     expect(await axe(page)).toEqual([]);
 
     // ---- its citation → the card on Today that it names
