@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AXES, axisPosition, onAxis } from "@/lib/bloom";
 import { DAY, type ObsVariableId, type Sample } from "@/lib/observations";
 import { useWidth } from "./useWidth";
+import { DirectLabel } from "./kit";
+import { prefersReducedMotion } from "@/v4/motion/reduced";
 
 /**
  * The whole record in one strip, with the window the chart shows as a brush (v10). Drag across the
@@ -45,9 +47,9 @@ export function BrushStrip({
   const [box, W] = useWidth<HTMLDivElement>(1040, 240);
   const svg = useRef<SVGSVGElement | null>(null);
   const axis = AXES[variable];
-  const H = 58;
-  const pad = { l: 0, r: 0, t: 6 };
-  const plotH = 30;
+  const H = 62;
+  const pad = { l: 0, r: 0, t: 4 };
+  const plotH = 34;
   const span = Math.max(1, x1 - x0);
   const x = (t: number) => pad.l + ((t - x0) / span) * (W - pad.l - pad.r);
   const tAt = (px: number) => x0 + ((px - pad.l) / (W - pad.l - pad.r)) * span;
@@ -107,6 +109,19 @@ export function BrushStrip({
     setLive(next);
     onBrush(next[0], next[1]);
   };
+  // a preset (or a link) moves the window in one movement with the chart above it; a drag follows the finger
+  const win = useRef<SVGGElement | null>(null);
+  const shown = useRef<{ a: number; b: number } | null>(null);
+  useLayoutEffect(() => {
+    const ax = pad.l + ((a - x0) / span) * (W - pad.l - pad.r);
+    const bx = pad.l + ((b - x0) / span) * (W - pad.l - pad.r);
+    const prev = shown.current;
+    shown.current = { a: ax, b: bx };
+    if (!prev || live != null || drag.current || prefersReducedMotion() || (Math.abs(prev.a - ax) < 1 && Math.abs(prev.b - bx) < 1) || bx - ax < 1) return;
+    win.current?.animate?.([{ transform: `translateX(${prev.a - ax}px) scaleX(${(prev.b - prev.a) / (bx - ax)})`, transformOrigin: `${ax}px 0` }, { transform: "none", transformOrigin: `${ax}px 0` }], { duration: 360, easing: "cubic-bezier(0.05, 0.7, 0.1, 1)" });
+    // on a new window only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [a, b, W]);
   const up = (e: React.PointerEvent) => {
     const d = drag.current;
     if (!d || d.id !== e.pointerId) return;
@@ -139,7 +154,7 @@ export function BrushStrip({
         ref={svg}
         width={W}
         height={H}
-        className="block cursor-crosshair [touch-action:none]"
+        className="nx-k block cursor-crosshair [touch-action:none]"
         aria-hidden
         onPointerDown={down}
         onPointerMove={move}
@@ -150,30 +165,37 @@ export function BrushStrip({
         }}
         data-testid="brush-svg"
       >
-        <rect x={0} y={pad.t} width={W} height={plotH} fill="var(--nx-surface)" />
+        {/* the window: a filled band, no outline, under the record */}
+        <g ref={win}>
+          <rect x={ax} y={pad.t} width={Math.max(1, bx - ax)} height={plotH} rx={8} fill="var(--nx-surface-2)" data-testid="brush-window" data-from={new Date(a).toISOString().slice(0, 10)} data-to={new Date(b).toISOString().slice(0, 10)} />
+          <rect x={ax + 4} y={pad.t + 10} width={3} height={plotH - 20} rx={1.5} fill="var(--nx-ink-2)" />
+          <rect x={bx - 7} y={pad.t + 10} width={3} height={plotH - 20} rx={1.5} fill="var(--nx-ink-2)" />
+        </g>
+        {/* the whole record on the chart's own fixed axis; outside the window it steps back */}
         {samples.map((s, i) => {
           const cx = x(s.t);
-          if (s.value === 0 || s.q === "reported_zero") return <rect key={i} x={cx - 0.75} y={pad.t + plotH - 2} width={1.5} height={2} fill="var(--nx-ink-3)" />;
+          const out = s.t < a || s.t > b;
+          if (s.value === 0 || s.q === "reported_zero") return <rect key={i} x={cx - 0.75} y={pad.t + plotH - 2} width={1.5} height={2} fill="var(--nx-ink-3)" opacity={out ? 0.45 : 1} />;
           if (!onAxis(s, axis) || axisPosition(s.value!, axis) !== "in") return null;
-          return <circle key={i} cx={cx} cy={y(s.value!)} r={1.1} fill="var(--nx-measured)" opacity={0.85} />;
+          return <circle key={i} cx={cx} cy={y(s.value!)} r={1.1} fill="var(--nx-measured)" opacity={out ? 0.32 : 0.95} />;
         })}
         {modelStart != null && modelEnd != null && (
-          <line x1={x(Math.max(x0, modelStart))} x2={x(Math.min(x1, modelEnd))} y1={pad.t + plotH + 4} y2={pad.t + plotH + 4} stroke="var(--nx-model)" strokeWidth={2} strokeLinecap="round" data-testid="brush-model" />
+          <g>
+            <line x1={x(Math.max(x0, modelStart))} x2={x(Math.min(x1, modelEnd))} y1={pad.t + plotH + 4} y2={pad.t + plotH + 4} stroke="var(--nx-model)" strokeWidth={2} strokeLinecap="round" data-testid="brush-model" />
+            {x(Math.max(x0, modelStart)) > 110 && (
+              <DirectLabel x={x(Math.max(x0, modelStart)) - 6} y={pad.t + plotH + 8} family="model" anchor="end">
+                model history
+              </DirectLabel>
+            )}
+          </g>
         )}
-        {years.filter((_, i) => i % yearStep === 0).map((t) => (
-          <g key={t}>
-            <line x1={x(t)} x2={x(t)} y1={pad.t} y2={pad.t + plotH} stroke="var(--nx-line)" />
-            <text x={x(t) + 3} y={H - 4} fontFamily="var(--nx-font-data)" fontSize="10" fill="var(--nx-ink-3)">
+        <g className="nx-k-axis">
+          {years.filter((_, i) => i % yearStep === 0).map((t) => (
+            <text key={t} x={x(t)} y={H - 3} textAnchor="middle">
               {new Date(t).getUTCFullYear()}
             </text>
-          </g>
-        ))}
-        {/* outside the window, dimmed; the window itself, outlined */}
-        <rect x={0} y={pad.t} width={Math.max(0, ax)} height={plotH} fill="var(--nx-bg)" opacity={0.62} />
-        <rect x={bx} y={pad.t} width={Math.max(0, W - bx)} height={plotH} fill="var(--nx-bg)" opacity={0.62} />
-        <rect x={ax} y={pad.t + 0.5} width={Math.max(1, bx - ax)} height={plotH - 1} fill="none" stroke="var(--nx-ink-2)" strokeWidth={1} data-testid="brush-window" data-from={new Date(a).toISOString().slice(0, 10)} data-to={new Date(b).toISOString().slice(0, 10)} />
-        <rect x={ax - 2} y={pad.t + 7} width={4} height={plotH - 14} rx={1} fill="var(--nx-ink)" />
-        <rect x={bx - 2} y={pad.t + 7} width={4} height={plotH - 14} rx={1} fill="var(--nx-ink)" />
+          ))}
+        </g>
       </svg>
       {/* the edges as sliders, over the drawn grips */}
       <div
@@ -185,7 +207,7 @@ export function BrushStrip({
         aria-valuenow={Math.round(a)}
         aria-valuetext={date(a)}
         onKeyDown={key("a")}
-        className="nx-focus absolute h-[30px] w-3 -translate-x-1/2 rounded-[2px] opacity-0 focus-visible:opacity-100"
+        className="nx-focus absolute h-[34px] w-3 -translate-x-1/2 rounded-[6px] opacity-0 focus-visible:opacity-100"
         style={{ left: ax, top: pad.t, pointerEvents: "none" }}
         data-testid="brush-start"
       />
@@ -198,7 +220,7 @@ export function BrushStrip({
         aria-valuenow={Math.round(b)}
         aria-valuetext={date(b)}
         onKeyDown={key("b")}
-        className="nx-focus absolute h-[30px] w-3 -translate-x-1/2 rounded-[2px] opacity-0 focus-visible:opacity-100"
+        className="nx-focus absolute h-[34px] w-3 -translate-x-1/2 rounded-[6px] opacity-0 focus-visible:opacity-100"
         style={{ left: bx, top: pad.t, pointerEvents: "none" }}
         data-testid="brush-end"
       />

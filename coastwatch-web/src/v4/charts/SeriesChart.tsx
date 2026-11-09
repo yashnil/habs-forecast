@@ -115,7 +115,7 @@ export function SeriesChart({
   if (!inWin.some((s) => s.value != null || s.q === "rejected_negative")) {
     const newest = samples.findLast((s) => s.value != null);
     return (
-      <p className="rounded-lg border border-dashed border-n-line-strong px-3 py-4 text-[14px] text-n-ink-2" data-testid="series-empty">
+      <p className="py-4 text-[14px] text-n-ink-2" data-testid="series-empty">
         No {label.toLowerCase()} measured in this window
         {newest ? `; the newest measurement is from ${new Date(newest.t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}` : ""}. No sample is not a clean result.
       </p>
@@ -165,13 +165,13 @@ export function SeriesChart({
         {ticks.map((v) => (
           <g key={v}>
             <line x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="var(--nx-line)" strokeWidth={1} />
-            <text x={pad.l - 6} y={y(v) + 4} textAnchor="end" fontSize="11" fill="var(--nx-ink-3)" className="nx-data">
+            <text x={pad.l - 6} y={y(v) + 4} textAnchor="end" fontSize="11" fontFamily="var(--nx-font-data)" fill="var(--nx-ink-3)">
               {tickFmt(v)}
             </text>
           </g>
         ))}
         {months.filter((t) => x(t) <= W - pad.r - 18).map((t) => (
-          <text key={t} x={x(t)} y={H - 6} fontSize="11.5" fill="var(--nx-ink-3)" textAnchor="middle">
+          <text key={t} x={x(t)} y={H - 6} fontSize="11" fontFamily="var(--nx-font-data)" fill="var(--nx-ink-3)" textAnchor="middle">
             {tickLabel(t, from, to)}
           </text>
         ))}

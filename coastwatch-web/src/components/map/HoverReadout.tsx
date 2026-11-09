@@ -156,7 +156,7 @@ export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds,
       style={{ left, top, width: W }}
     >
       {r.label && (
-        <p className={`text-[11.5px] font-semibold uppercase tracking-[0.06em] ${r.tone === "outside" || r.tone === "context" ? "text-white/75" : "text-[#cbbcf7]"}`} data-testid="hover-label">
+        <p className={`text-[12.5px] font-semibold ${r.tone === "outside" || r.tone === "context" ? "text-white/75" : "text-[#cbbcf7]"}`} data-testid="hover-label">
           {r.label}
         </p>
       )}
