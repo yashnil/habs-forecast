@@ -4,11 +4,12 @@ import path from "node:path";
 import type { BiotoxinIndex, FisheriesStatusIndex, PortFact } from "@/pilot/contracts";
 import type { Conditions } from "@/lib/conditions";
 import { buildPortToday, buildTodayModel, diffFacts, parseFisheries, rampZoneFor, skillWords, snapFacts, testSentence, type CharmInput, type NoticeInput, type OutlookInput, type PortTodayInputs } from "@/pilot/facts";
-import { parseBiotoxin, parseFisheriesStatus } from "@/pilot/today/sidecars";
+import { parseBiotoxin, parseFisheriesStatus } from "@/pilot/data";
 
-const fx = (rel: string) => JSON.parse(readFileSync(path.join(__dirname, "..", "fixture-derived", "v1", rel), "utf8"));
-const BIO = parseBiotoxin(fx("biotoxin/index.json"))!;
-const FISH = parseFisheriesStatus(fx("fisheries-status/index.json"))!;
+// the data track's fixtures (pilot/data: `cwp fixture`), as the page reads them
+const fx = (rel: string) => JSON.parse(readFileSync(path.join(__dirname, "..", "fixture-data", "v1", rel), "utf8"));
+const BIO = parseBiotoxin(fx("biotoxin/index.json"))! as BiotoxinIndex;
+const FISH = parseFisheriesStatus(fx("fisheries-status/index.json"))! as FisheriesStatusIndex;
 const NOW = "2026-10-13T13:00:00Z"; // 6 AM PDT
 
 const charm = (p: number, state: CharmInput["state"] = "current", here = false): CharmInput => ({
@@ -43,6 +44,13 @@ const base = (over: Partial<PortTodayInputs> = {}): PortTodayInputs => ({
   conditions: null,
   ...over,
 });
+const set = (date: string, values: (number | null)[], lvl = 30): BiotoxinIndex["sites"][number]["sets"][number] => {
+  const nums = values.filter((v): v is number => v != null);
+  return { date, kind: "routine", tissue: "viscera", values_ppm: values, nd_count: values.length - nums.length, avg_ppm: Number((nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(1)), max_ppm: Math.max(...nums), pct_over_action: null, action_level_ppm: lvl };
+};
+const PROGRESS: BiotoxinIndex["sites"][number] = { id: "test-progress-dungeness", bma: "G", bma_label: "Monterey Bay", port_label: null, site_label: "Test site", species: "Dungeness crab", lat: null, lon: null, informs_places: ["port-592"], sets: [set("2026-09-28", [3.1, 4.8, 9.2, 2.5, 6.0, 7.4]), set("2026-09-14", [null, 4.0, 12.1, 6.2, 8.3, 3.9]), set("2026-08-31", [14.2, 22.0, 9.8, 31.5, 18.0, 12.4])] };
+const ANCHOVY: BiotoxinIndex["sites"][number] = { id: "test-anchovy", bma: null, bma_label: "Monterey Bay", port_label: null, site_label: "Monterey Bay (Block 509)", species: "Northern anchovy", lat: null, lon: null, informs_places: ["port-592"], sets: [set("2026-10-05", [85, 210, 44, 120, 66, 31], 20)] };
+const BIO_PLUS: BiotoxinIndex = { ...BIO, sites: [...BIO.sites, PROGRESS, ANCHOVY] };
 const SAFETY = /\b(safe|safety|all clear|clear to|good to go|go fishing|green light|no risk)\b/i;
 const text = (f: PortFact) => [f.headline, f.value, f.detail].filter(Boolean).join(" ");
 
@@ -73,11 +81,11 @@ describe("buildPortToday: hierarchy", () => {
 
   it("a clean test never softens an official delay of the same fishery", () => {
     const m = buildTodayModel(base());
-    const t = m.tests.find((x) => x.site.id === "bma-g-monterey-bay-dungeness")!;
+    const t = m.tests.find((x) => x.site.id === "bma-g-monterey-bay-dungeness-crab")!;
     expect(t.fact.detail).toMatch(/still delayed/);
     expect(m.lede.label).toBe("Dungeness crab (commercial)");
     expect(m.lede.text).toMatch(/^Commercial season delayed to at least Jan 1, 2027/);
-    expect(m.lede.more).toBe(2); // anchovy/sardine and salmon restrictions below
+    expect(m.lede.more).toBe(3); // salmon (season over), anchovy/sardine, mussels (watch) below
   });
 
   it("keeps the strip order of the reader's fisheries and stable ids", () => {
@@ -137,10 +145,9 @@ describe("buildPortToday: words", () => {
   });
 
   it("states a test plainly first: place, species, verdict against the limit, date, average", () => {
-    const site = BIO.sites.find((s) => s.id === "bma-g-monterey-bay-dungeness")!;
+    const site = BIO.sites.find((s) => s.id === "bma-g-monterey-bay-dungeness-crab")!;
     expect(testSentence(site, site.sets[0], 30, NOW)).toBe("Monterey Bay Dungeness tested well under the limit on Sep 28: avg 5.5 ppm, limit 30.");
-    const anchovy = BIO.sites.find((s) => s.id === "monterey-bay-northern-anchovy")!;
-    expect(testSentence(anchovy, anchovy.sets[0], 20, NOW)).toMatch(/tested over the limit on Oct 5: 6 of 6 samples at or over 20 ppm, max 210 ppm/);
+    expect(testSentence(ANCHOVY, ANCHOVY.sets[0], 20, NOW)).toMatch(/tested over the limit on Oct 5: 6 of 6 samples at or over 20 ppm, max 210 ppm/);
   });
 
   it("observations are measured with their own time; forecasts are forecasts", () => {
@@ -173,9 +180,9 @@ describe("buildPortToday: stale and missing data", () => {
   });
 
   it("flags old tests, old status checks and an old refresh", () => {
-    const later = "2026-11-20T16:00:00Z";
+    const later = "2026-11-25T16:00:00Z";
     const m = buildTodayModel(base({ now: later }));
-    const t = m.tests.find((x) => x.site.id === "bma-g-monterey-bay-dungeness")!;
+    const t = m.tests.find((x) => x.site.id === "bma-g-monterey-bay-dungeness-crab")!;
     expect(t.stale).toBe(true);
     expect(t.fact.detail).toMatch(/over 30 days old/);
     expect(m.status.find((r) => r.fishery === "dungeness_commercial")!.stale).toBe(true);
@@ -194,12 +201,12 @@ describe("buildPortToday: stale and missing data", () => {
   });
 
   it("shows progress toward two clean sets after a set over the action level", () => {
-    const m = buildTodayModel(base());
-    const t = m.tests.find((x) => x.site.id === "bma-g-monterey-bay-dungeness")!;
+    const m = buildTodayModel(base({ biotoxin: BIO_PLUS }));
+    const t = m.tests.find((x) => x.site.id === "test-progress-dungeness")!;
     expect(t.cleanStreak).toBe(2);
     expect(t.showProgress).toBe(true);
     expect(t.progressWords).toMatch(/^Two consecutive sets under the action level \(Sep 14 and Sep 28\)/);
-    const a = m.tests.find((x) => x.site.id === "monterey-bay-northern-anchovy")!;
+    const a = m.tests.find((x) => x.site.id === "test-anchovy")!;
     expect(a.over).toBe(true);
     expect(a.fact.severity).toBe("amber");
     expect(a.cleanStreak).toBe(0);
@@ -214,7 +221,7 @@ describe("whale rules and helpers", () => {
     const m = buildTodayModel(base());
     expect(m.whale!.zone).toBe("4");
     expect(m.whale!.fact.severity).toBe("red");
-    expect(m.whale!.fact.detail).toMatch(/Next CDFW risk assessment Dec 15/);
+    expect(m.whale!.fact.detail).toMatch(/Next CDFW risk assessment December 15-18/);
     expect(m.whale!.verified).toBe(false);
   });
 
@@ -234,15 +241,18 @@ describe("what changed since the last visit", () => {
     expect(d.some((c) => c.id.startsWith("sea:") || c.id.startsWith("tide:"))).toBe(false);
     expect(diffFacts(snapFacts(next.facts), next.facts)).toEqual([]);
     const gone = diffFacts(snapFacts(next.facts), buildPortToday(base({ biotoxin: null })).facts);
-    expect(gone.filter((c) => c.change === "gone").map((c) => c.id)).toContain("test:bma-g-monterey-bay-dungeness");
+    expect(gone.filter((c) => c.change === "gone").map((c) => c.id)).toContain("test:bma-g-monterey-bay-dungeness-crab");
   });
 });
 
-describe("temporary sidecar checks", () => {
-  it("rejects malformed sidecars", () => {
-    expect(parseBiotoxin({ version: 2 })).toBeNull();
-    expect(parseFisheriesStatus({ version: 1, records: [{ id: "x", level: "safe" }] })!.records).toEqual([]);
-    expect((parseBiotoxin(fx("biotoxin/index.json")) as BiotoxinIndex).sites.length).toBe(4);
-    expect((parseFisheriesStatus(fx("fisheries-status/index.json")) as FisheriesStatusIndex).ramp!.zones.length).toBe(5);
+describe("the data track's fixtures, as Today reads them", () => {
+  it("Monterey Bay's ports get their crab sites and RAMP zone 4; Half Moon Bay gets its own", () => {
+    expect(BIO.sites.filter((x) => x.informs_places.includes("port-592")).map((x) => x.id)).toEqual(expect.arrayContaining(["bma-g-monterey-bay-dungeness-crab", "bma-g-monterey-bay-rock-crab"]));
+    const hmb = buildTodayModel(base({ place: { place_id: "port-452", label: "Princeton / Half Moon Bay", lat: 37.5037, lon: -122.48185 } }));
+    expect(hmb.whale!.zone).toBe("3");
+    expect(hmb.tests.map((t) => t.site.id)).toEqual(expect.arrayContaining(["bma-f-pillar-point-dungeness-crab", "bma-f-pigeon-point-dungeness-crab"]));
+    expect(hmb.status.find((r) => r.fishery === "anchovy_sardine")!.level).toBe("no_restriction_on_record");
+    // every curated record is pending, so every one says Not verified
+    expect(buildTodayModel(base()).status.filter((r) => r.records.length).every((r) => r.verified === false)).toBe(true);
   });
 });

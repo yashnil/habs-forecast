@@ -278,6 +278,8 @@ export type WhaleView = {
   gear_reduction_pct: number | null;
   last_assessment: string | null;
   next_assessment: string | null;
+  /** the assessment window as CDFW words it ("December 15-18 (then January 13-15), subject to change"), when published */
+  next_window: string | null;
   season: string | null;
   source_url: string | null;
   verified: boolean | null;
@@ -529,14 +531,19 @@ function ledeOf(rows: StatusRow[], statusError: boolean, sea: SeaView): Lede {
 // ---------------------------------------------------------------- whale (RAMP)
 
 function whaleView(ramp: RampState | null, place: TodayPlace, now: string, fact: (f: Omit<PortFact, "place_id">) => PortFact): WhaleView | null {
-  const z = rampZoneFor(place.lat);
   if (!ramp) return null;
-  const zone = ramp.zones.find((x) => x.zone.replace(/\D/g, "") === z.zone) ?? null;
+  // the zone the data file maps this place to, else the zone whose published latitudes hold it, else CDFW's bounds (14 CCR §132.8)
+  type Z = RampState["zones"][number] & { applies_to_places?: string[]; lat_north?: number | null; lat_south?: number | null };
+  const zs = ramp.zones as Z[];
+  const mapped = zs.find((x) => x.applies_to_places?.includes(place.place_id)) ?? zs.find((x) => x.lat_north != null && x.lat_south != null && place.lat <= x.lat_north && place.lat > x.lat_south) ?? null;
+  const z = mapped ? { zone: mapped.zone.replace(/\D/g, "") || mapped.zone, label: mapped.label } : rampZoneFor(place.lat);
+  const zone = mapped ?? zs.find((x) => x.zone.replace(/\D/g, "") === z.zone) ?? null;
+  const window = (ramp as RampState & { next_assessment_window?: string | null }).next_assessment_window ?? null;
   const action = zone?.action ?? null;
   const severity: Severity = !zone ? "info" : /delay|clos/i.test(action ?? "") ? "red" : zone.depth_limit_fathoms != null || zone.gear_reduction_pct != null || /depth|gear|advis|restrict|reduc/i.test(action ?? "") ? "amber" : "neutral";
   const extras = [zone?.depth_limit_fathoms != null ? `traps limited to ${zone.depth_limit_fathoms} fathoms or shallower` : null, zone?.gear_reduction_pct != null ? `trap numbers reduced by ${zone.gear_reduction_pct}%` : null].filter(Boolean);
   const headline = zone ? `Whale rules, RAMP Zone ${z.zone} (${zone.label || z.label}): ${lower1(action ?? "no action on record").replace(/\.$/, "")}.` : `Whale rules: Neritic has no RAMP action on record for Zone ${z.zone} (${z.label}).`;
-  const detail = [extras.length ? `${extras.join("; ")}.` : null, ramp.next_assessment ? `Next CDFW risk assessment ${dayWords(ramp.next_assessment, now)}.` : null, "RAMP rules apply to commercial and recreational Dungeness trap gear; they are about whale entanglement, not toxin."].filter(Boolean).join(" ");
+  const detail = [extras.length ? `${extras.join("; ")}.` : null, ramp.next_assessment ? `Next CDFW risk assessment ${window ?? dayWords(ramp.next_assessment, now)}.` : null, "RAMP rules apply to commercial and recreational Dungeness trap gear; they are about whale entanglement, not toxin."].filter(Boolean).join(" ");
   return {
     zone: z.zone,
     label: zone?.label || z.label,
@@ -545,6 +552,7 @@ function whaleView(ramp: RampState | null, place: TodayPlace, now: string, fact:
     gear_reduction_pct: zone?.gear_reduction_pct ?? null,
     last_assessment: ramp.last_assessment,
     next_assessment: ramp.next_assessment,
+    next_window: window,
     season: ramp.season,
     source_url: ramp.source_url,
     verified: ramp.review_state === "human_verified",
@@ -569,7 +577,8 @@ const isClean = (s: BiotoxinSet, lvl: number | null) => {
 };
 
 export function testSentence(site: BiotoxinSite, set: BiotoxinSet | null, lvl: number | null, now: string): string {
-  const where = site.bma_label ?? site.port_label ?? site.site_label;
+  // the collection site as CDPH writes it ("Monterey Bay", "Pillar Point"): more specific than the BMA
+  const where = site.site_label || site.bma_label || site.port_label || "CDPH site";
   const sp = site.species.replace(/ crab$/i, "").replace(/^Northern /, "northern ");
   const subject = `${where} ${sp}`;
   if (!set) return `${subject}: no test results published.`;

@@ -35,7 +35,7 @@ export function ToxinTests({ tests, error, now, sourceUrl }: { tests: TestSiteVi
               <li key={t.site.id} className="border-t border-n-line py-4 first:border-t-0" data-testid={`test-${t.site.id}`}>
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <h3 className="text-[16px] font-semibold text-n-ink">
-                    {t.site.species} <span className="font-normal text-n-ink-2">· {t.site.bma ? `BMA ${t.site.bma}, ` : ""}{t.site.site_label}</span>
+                    {t.site.species} <span className="font-normal text-n-ink-2">· {t.site.bma ? `BMA ${t.site.bma}${t.site.bma_label ? ` (${t.site.bma_label})` : ""}, ` : ""}{t.site.site_label}</span>
                   </h3>
                   {t.latest && (
                     <span className={`text-[13px] ${t.stale ? "t-amber" : "text-n-ink-3"}`} data-testid="test-age">
@@ -65,7 +65,7 @@ export function ToxinTests({ tests, error, now, sourceUrl }: { tests: TestSiteVi
                         <svg width="8" height="8" aria-hidden className="mr-1 inline">
                           <circle cx="4" cy="4" r="2.6" fill="none" stroke="var(--nx-measured)" strokeWidth="1.2" />
                         </svg>
-                        not detected
+                        not detected or below the reporting limit
                       </span>
                       {t.latest.tissue !== "unknown" && <span>{t.latest.tissue}</span>}
                     </p>

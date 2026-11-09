@@ -43,8 +43,8 @@ C keeps the Neritic editorial voice: the Newsreader display serif for places and
   - the dark tokens are the default for 4 a.m.
 - **Lean:** no map library in `/today`. The charts are small hand-drawn SVGs, and the page is server-rendered from `buildPortToday`.
 
-## As built (fixture data, recorded NOAA answers of 2026-10-13)
+## As built (the data track's fixtures, recorded NOAA answers of 2026-10-13)
 - **Phone:** `today-phone-dark.png`, `today-phone-day.png` (bright-sun mode), `today-phone-dark-full.png` (the whole page), `today-picker-phone.png` (no port).
-- **Desktop:** `today-desktop-dark.png`, `today-desktop-day.png`, `today-desktop-day-full.png`.
+- **Desktop:** `today-desktop-dark.png`, `today-desktop-day.png`, `today-desktop-day-full.png`, and `today-hmb-desktop-dark-full.png` (Half Moon Bay).
 
 On desktop the hero gains an "At a glance" column, and the sections sit in two columns: status beside sea, tests beside bloom, whale rules beside what changed. The DOM order stays the phone order, so headings and screen readers follow the same hierarchy.

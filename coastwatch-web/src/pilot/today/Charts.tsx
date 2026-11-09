@@ -62,7 +62,7 @@ export function ToxinChart({ sets, action, label, now }: { sets: BiotoxinSet[]; 
               const cx = x(i) + (j - (n - 1) / 2) * Math.min(6, (step - 10) / Math.max(n, 1));
               return v == null ? <circle key={j} className="dot nd" cx={cx} cy={y(log ? 1 : 0)} r={2.6} /> : <circle key={j} className={`dot${action != null && v >= action ? " over" : ""}`} cx={cx} cy={y(v)} r={3} />;
             })}
-            {s.avg_ppm != null && <line className="avg" x1={x(i) - step * 0.32} x2={x(i) + step * 0.32} y1={y(s.avg_ppm)} y2={y(s.avg_ppm)} />}
+            {s.avg_ppm != null && <line className="avg" x1={x(i) - Math.min(step * 0.32, 26)} x2={x(i) + Math.min(step * 0.32, 26)} y1={y(s.avg_ppm)} y2={y(s.avg_ppm)} />}
             <text x={x(i)} y={H - 6} textAnchor="middle">
               {dayWords(s.date, now).replace(/, \d{4}$/, "")}
             </text>

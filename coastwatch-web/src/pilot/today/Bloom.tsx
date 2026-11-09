@@ -75,7 +75,7 @@ export function WhaleRules({ whale, now }: { whale: WhaleView | null; now: strin
           <ZoneLadder zone={whale.zone} severity={whale.fact.severity} />
           <div className="min-w-0 flex-1">
             <p className="text-[17px] leading-snug text-n-ink" data-testid="whale-lede">
-              Zone {whale.zone}, {whale.label}: <b className="font-semibold">{whale.action ?? "no action on record"}</b>.
+              Zone {whale.zone}, {whale.label}: <b className="font-semibold">{(whale.action ?? "no action on record").replace(/\.+$/, "")}</b>.
             </p>
             <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[14.5px]">
               <dt className="text-n-ink-3">Depth limit</dt>
@@ -91,6 +91,7 @@ export function WhaleRules({ whale, now }: { whale: WhaleView | null; now: strin
               <dt className="text-n-ink-3">Next assessment</dt>
               <dd className="text-n-ink" data-testid="whale-next">
                 {whale.next_assessment ? dayWords(whale.next_assessment, now) : "not announced"}
+                {whale.next_window && <span className="block text-[13px] text-n-ink-3">CDFW: {whale.next_window}</span>}
               </dd>
             </dl>
             <p className="today-src mt-2 flex flex-wrap items-center gap-2">
@@ -102,7 +103,7 @@ export function WhaleRules({ whale, now }: { whale: WhaleView | null; now: strin
               </span>
               <Unverified verified={whale.verified} />
             </p>
-            <p className="nx-margin mt-2">About whale entanglement in trap gear, not toxin. There is no whale-sighting feed for Monterey Bay in Neritic.</p>
+            <p className="nx-margin mt-2">About whale entanglement in trap gear, not toxin. Neritic has no whale-sighting feed for these waters.</p>
           </div>
         </div>
       )}

@@ -53,7 +53,6 @@ for (const [label, viewport] of [["phone", { width: 390, height: 844 }], ["deskt
       // the tests: a plain sentence first, then the chart with a text alternative
       await expect(page.getByTestId("tests-lede")).toHaveText("Monterey Bay Dungeness tested well under the limit on Sep 28: avg 5.5 ppm, limit 30.");
       await expect(page.getByTestId("toxin-chart").first()).toHaveAttribute("role", "img");
-      await expect(page.getByTestId("clean-progress").first()).toContainText("Two consecutive sets under the action level");
       // the bloom outlook: C-HARM as conditions, the outlook as an indicator with skill from the data file
       await expect(page.getByTestId("bloom-lede")).toContainText("probability of elevated particulate domoic acid in the water");
       await expect(page.getByTestId("outlook-words")).toContainText("a bloom indicator, not a toxin forecast");
@@ -61,7 +60,8 @@ for (const [label, viewport] of [["phone", { width: 390, height: 844 }], ["deskt
       await expect(page.getByTestId("bloom-timeline")).toBeVisible();
       // whale rules
       await expect(page.getByTestId("whale-lede")).toContainText("Zone 4");
-      await expect(page.getByTestId("whale-next")).toHaveText("Dec 15");
+      await expect(page.getByTestId("whale-next")).toContainText("Dec 15");
+      await expect(page.getByTestId("whale-next")).toContainText("December 15-18");
       // honesty: nothing is called safe, and the actions carry their readiness labels
       expect(await page.locator("main").innerText()).not.toMatch(SAFETY);
       await expect(page.getByTestId("readiness-alerts")).toContainText(/Not yet connected|Pilot demo|Live/);

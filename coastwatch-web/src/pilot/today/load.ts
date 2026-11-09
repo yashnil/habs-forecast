@@ -22,7 +22,7 @@ import { neighbourhood, NEIGHBOURHOOD_KM } from "@/lib/hab";
 import { derivedOutlook, parseDerived, type DerivedGrid } from "@/lib/derived";
 import { PILOT_PORTS } from "@/pilot/contracts";
 import type { CharmInput, CharmProb, NoticeInput, OutlookInput, PortTodayInputs } from "@/pilot/facts";
-import { parseBiotoxin, parseFisheriesStatus } from "./sidecars";
+import { parseBiotoxin, parseFisheriesStatus } from "@/pilot/data";
 
 export type PortOption = { place_id: string; label: string; county: string | null; pilot: boolean; lat: number; lon: number };
 
