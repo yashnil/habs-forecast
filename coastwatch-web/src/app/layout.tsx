@@ -5,6 +5,8 @@ import { BRAND } from "@/content/brand";
 import { SplashDecide } from "@/v4/shell/Splash";
 import { MotionRoot } from "@/v4/shell/MotionRoot";
 import { DAYLIGHT_SCRIPT } from "@/v4/shell/daylight";
+import { FrontDoorProvider } from "@/pilot/FrontDoorContext";
+import { pilotFrontDoor } from "@/pilot/frontDoor";
 
 // Self-hosted by next/font at build time: no runtime request to Google.
 // v7: the v2 faces (IBM Plex Sans, Newsreader) are no longer loaded; theme.css maps their variables
@@ -42,7 +44,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {/* daylight mode before the first paint (src/v4/shell/daylight.ts) */}
         <script dangerouslySetInnerHTML={{ __html: DAYLIGHT_SCRIPT }} />
         <SplashDecide />
-        <MotionRoot>{children}</MotionRoot>
+        {/* pilot (NERITIC_PILOT=1): the nav's Explore link is the map's own address, since `/` opens Today */}
+        <FrontDoorProvider pilot={pilotFrontDoor()}>
+          <MotionRoot>{children}</MotionRoot>
+        </FrontDoorProvider>
       </body>
     </html>
   );

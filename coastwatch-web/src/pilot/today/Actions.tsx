@@ -94,7 +94,7 @@ export function Actions({
         {save.phase === "idle" && "Keeps this page, its sea and weather, and its code on this device for use without signal."}
       </p>
       <nav aria-label="More about this port" className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-[15px]">
-        <Link href={`/?sel=harbor:${port}`} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink underline decoration-n-line-strong underline-offset-4" data-testid="link-explore">
+        <Link href={`/?view=map&sel=harbor:${port}`} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink underline decoration-n-line-strong underline-offset-4" data-testid="link-explore">
           <Icon name="map" className="h-4 w-4" /> Explore the map
         </Link>
         <Link href={`/coast?${q}`} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink underline decoration-n-line-strong underline-offset-4">

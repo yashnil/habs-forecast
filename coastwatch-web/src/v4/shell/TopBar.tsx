@@ -8,6 +8,8 @@ import { StatusCenter } from "@/v4/readiness/StatusCenter";
 import { homeHref, readHome } from "@/v4/coast/home";
 import { readTodayHref } from "@/pilot/today/navPlace";
 import { AlertsBell } from "@/pilot/alerts/AlertsBell";
+import { usePilotFrontDoor } from "@/pilot/FrontDoorContext";
+import { exploreHref } from "@/pilot/frontDoor";
 import { exitProps, usePresence } from "@/v4/motion";
 import { readDaylight, setDaylight } from "./daylight";
 
@@ -113,6 +115,8 @@ export function NavTabs({ active, size = "bar" }: { active: Workspace; size?: "b
     setHome(h ? homeHref(h) : null);
     setTodayHref(readTodayHref());
   }, []);
+  // pilot front door: `/` opens Today, so Explore is linked by its own address
+  const pilot = usePilotFrontDoor();
   const nav = useRef<HTMLElement | null>(null);
   useGlidePill(nav, size === "bar");
   return (
@@ -122,7 +126,7 @@ export function NavTabs({ active, size = "bar" }: { active: Workspace; size?: "b
         return (
           <Link
             key={n.id}
-            href={n.id === "coast" && home ? home : n.id === "today" && todayHref ? todayHref : n.href}
+            href={n.id === "coast" && home ? home : n.id === "today" && todayHref ? todayHref : n.id === "explore" ? exploreHref(pilot) : n.href}
             aria-current={on ? "page" : undefined}
             data-testid={`nav-${n.id}`}
             className={
