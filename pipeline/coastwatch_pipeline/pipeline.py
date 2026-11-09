@@ -107,6 +107,7 @@ SOURCE_BUDGET_S = {
     "foss_landings": 300,
 }
 RUN_BUDGET_S = 25 * 60
+POST_MANIFEST_BUDGET_S = 4 * 60
 
 
 def _source(name: str) -> None:
@@ -446,6 +447,22 @@ def _run(ctx: RunContext, only: tuple[str, ...]) -> Manifest:
     )
     write_json(ctx.out_dir / "manifest.json", manifest.model_dump(mode="json"))
     prune(ctx.out_dir, manifest, prev)
+    # Derived layers and the pilot sidecars make a few small requests after every source has run.
+    # They get their own short budget instead of what is left of the sources' run budget (staging
+    # run 42565307093: a slow SCCOOS used it up and the outlook, SST and CDPH requests were skipped).
+    http.clear_budgets()
+    http.start_budget("derived and sidecars", POST_MANIFEST_BUDGET_S, scope="run")
+    if "satellite_chl" in only:
+        # Derived layers (estimate, outlook) go to v1/derived/, never into the manifest; a failure
+        # here never affects the published observations.
+        _progress("derived: start")
+        try:
+            from .derived import run as derived
+
+            r = derived.run(ctx, manifest)
+            _progress(f"derived: {r['layers']} ({r['bytes_written']} bytes)")
+        except Exception as e:  # pragma: no cover - logged, never fatal
+            _progress(f"derived: failed: {e}")
     run_sidecars(ctx, only)
     return manifest
 
@@ -456,7 +473,7 @@ def run_sidecars(ctx: RunContext, only: tuple[str, ...]) -> dict[str, str]:
     out: dict[str, str] = {}
     if "cdph_biotoxin" in only:
         _progress("cdph_biotoxin: start")
-        http.start_budget("cdph_biotoxin", 180)
+        http.start_budget("cdph_biotoxin", 120)
         try:
             from .sources import biotoxin
 

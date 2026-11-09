@@ -35,7 +35,7 @@ from urllib.parse import quote
 
 import numpy as np
 
-from .http import FetchError, fetch
+from .http import FetchError, clear_budgets, fetch, start_budget
 from .models import LayerArtifact, Manifest
 from .process import grid as gridcodec
 from .process import opendap
@@ -94,13 +94,25 @@ class _Ndbc:
         return {"lat": float(ax.lat[i]), "lon": float(ax.lon[j]), "u": val("water_u"), "v": val("water_v"), "hdop": val("hdop"), "sites": val("number_of_sites")}
 
 
-def _upstream(lookups: dict, host: cur.Host, t: str, lat: float, lon: float) -> tuple[dict | None, cur.Host]:
-    """The value at the layer's own server, else at the other copy; raises if neither answers."""
+HOST_LAST_AFTER = 3  # a server that failed this many cells in a row is asked after the other copy
+
+
+def _upstream(lookups: dict, host: cur.Host, t: str, lat: float, lon: float, failing: dict | None = None) -> tuple[dict | None, cur.Host]:
+    """The value at the layer's own server, else at the other copy; raises if neither answers.
+    `failing` counts each server's consecutive unanswered cells: one that keeps failing is asked
+    last (each failed request costs its retries; runs 42485019815 and 42528644587 spent 23-26
+    minutes asking a silent server first for every cell and were cancelled at the job limit)."""
+    failing = failing if failing is not None else {}
+    order = [host] + [x for x in cur.HOSTS if x is not host]
+    order.sort(key=lambda h: failing.get(h.key, 0) >= HOST_LAST_AFTER)  # stable: own server first unless it keeps failing
     errors = []
-    for h in [host] + [x for x in cur.HOSTS if x is not host]:
+    for h in order:
         try:
-            return lookups[h.key](t, lat, lon), h
+            out = lookups[h.key](t, lat, lon), h
+            failing[h.key] = 0
+            return out
         except RuntimeError as e:
+            failing[h.key] = failing.get(h.key, 0) + 1
             errors.append(str(e))
     raise RuntimeError("; ".join(errors))
 
@@ -114,6 +126,11 @@ def _cells(mask: np.ndarray, n: int) -> list[tuple[int, int]]:
 
 
 SETTLE_HOURS = 6
+UNVERIFIABLE_RETRIES = 2
+UNVERIFIABLE_WAIT_S = 45
+# The live comparison never runs longer than this: once used up, requests fail at once and the cells
+# left are UNVERIFIABLE (the step fails, visibly, instead of the job being cancelled at its limit).
+VERIFY_BUDGET_S = 10 * 60
 
 
 def settled(layers: list[LayerArtifact], now: datetime, hours: float = SETTLE_HOURS) -> list[LayerArtifact]:
@@ -133,44 +150,76 @@ def verify_currents(out_dir: Path, live: bool = True, per_layer: int = 6, hourly
     pool = ripe or new  # nothing settled yet: check the newest hours as before
     unsettled = len(new) - len(ripe) if ripe else 0
     picks = pool[-1:] + pool[:: max(1, len(pool) // max(1, hourly_layers - 1))][: hourly_layers - 1] if pool else []
-    for lyr in {x.layer_id: x for x in picks}.values():
-        u, v = _field(out_dir, lyr)
+    def check(lyr: LayerArtifact, u: np.ndarray, v: np.ndarray, kind: str, r: int, c: int) -> dict:
         g = lyr.vectors.u_grid  # type: ignore[union-attr]
         tol = g.max_quantization_error + 1e-6
         t = lyr.time.valid_time or ""
         host = cur.host_for(lyr.provenance.dataset_id)
+        lat, lon = g.lat_first + r * g.lat_step, g.lon_first + c * g.lon_step
+        row: dict = {"layer_id": lyr.layer_id, "time": t, "kind": kind, "row": r, "col": c, "lat": round(lat, 6), "lon": round(lon, 6)}
+        if kind == "value":
+            row.update(u=round(float(u[r, c]), 5), v=round(float(v[r, c]), 5))
+        ok = True
+        if live:
+            try:
+                up, used = _upstream(lookups, host, t, lat, lon, failing)
+                row["verified_against"] = used.dataset
+                time.sleep(0.2)
+            except RuntimeError as e:
+                up, ok = None, False
+                row["source_error"] = str(e)
+            if up is not None:
+                row["source_cell"] = [up["lat"], up["lon"]]
+                row["source_cell_matches"] = abs(up["lat"] - lat) < 1e-4 and abs(up["lon"] - lon) < 1e-4
+                has = np.isfinite(up["u"]) and np.isfinite(up["v"]) and abs(up["u"]) < 100
+                if kind == "value":
+                    row.update(source_u=up["u"], source_v=up["v"])
+                    row["source_matches"] = bool(has and abs(up["u"] - u[r, c]) <= tol and abs(up["v"] - v[r, c]) <= tol)
+                    ok = ok and row["source_cell_matches"] and row["source_matches"]
+                else:
+                    fails = (not has) or not (up["sites"] >= cur.MIN_SITES) or not (up["hdop"] <= cur.HDOP_MAX) or float(np.hypot(up["u"], up["v"])) > cur.SPEED_MAX
+                    row["dropped_correctly"] = bool(fails)
+                    ok = ok and row["source_cell_matches"] and row["dropped_correctly"]
+            elif "source_error" not in row and kind == "value":
+                ok = False
+                row["source_error"] = f"{row['verified_against']} has no value at a published cell"
+        row["status"] = "pass" if ok else "FAIL"
+        return row
+
+    failing: dict[str, int] = {}
+    deadline = time.monotonic() + VERIFY_BUDGET_S
+    if live:
+        start_budget("verify-currents", VERIFY_BUDGET_S)
+    unanswered = lambda row: str(row.get("source_error", "")).startswith("UNVERIFIABLE")  # noqa: E731
+    again: list[tuple[int, tuple]] = []
+    for lyr in {x.layer_id: x for x in picks}.values():
+        u, v = _field(out_dir, lyr)
         for kind, cells in (("value", _cells(np.isfinite(u), per_layer)), ("no_value", _cells(~np.isfinite(u), max(2, per_layer // 3)))):
             for r, c in cells:
-                lat, lon = g.lat_first + r * g.lat_step, g.lon_first + c * g.lon_step
-                row: dict = {"layer_id": lyr.layer_id, "time": t, "kind": kind, "row": r, "col": c, "lat": round(lat, 6), "lon": round(lon, 6)}
-                if kind == "value":
-                    row.update(u=round(float(u[r, c]), 5), v=round(float(v[r, c]), 5))
-                ok = True
-                if live:
-                    try:
-                        up, used = _upstream(lookups, host, t, lat, lon)
-                        row["verified_against"] = used.dataset
-                        time.sleep(0.2)
-                    except RuntimeError as e:
-                        up, ok = None, False
-                        row["source_error"] = str(e)
-                    if up is not None:
-                        row["source_cell"] = [up["lat"], up["lon"]]
-                        row["source_cell_matches"] = abs(up["lat"] - lat) < 1e-4 and abs(up["lon"] - lon) < 1e-4
-                        has = np.isfinite(up["u"]) and np.isfinite(up["v"]) and abs(up["u"]) < 100
-                        if kind == "value":
-                            row.update(source_u=up["u"], source_v=up["v"])
-                            row["source_matches"] = bool(has and abs(up["u"] - u[r, c]) <= tol and abs(up["v"] - v[r, c]) <= tol)
-                            ok = ok and row["source_cell_matches"] and row["source_matches"]
-                        else:
-                            fails = (not has) or not (up["sites"] >= cur.MIN_SITES) or not (up["hdop"] <= cur.HDOP_MAX) or float(np.hypot(up["u"], up["v"])) > cur.SPEED_MAX
-                            row["dropped_correctly"] = bool(fails)
-                            ok = ok and row["source_cell_matches"] and row["dropped_correctly"]
-                    elif "source_error" not in row and kind == "value":
-                        ok = False
-                        row["source_error"] = f"{row['verified_against']} has no value at a published cell"
-                row["status"] = "pass" if ok else "FAIL"
+                row = check(lyr, u, v, kind, r, c)
+                if unanswered(row):
+                    again.append((len(rows), (lyr, u, v, kind, r, c)))
                 rows.append(row)
+    # A cell neither server answered for is asked again, after a pause, before it counts: staging
+    # run 42569650052 (2026-11-09) had 30 of 32 checks pass and 2 cells unanswered (ERDDAP 404 and
+    # NDBC silent for a moment), which withheld a whole verified dataset. The check itself is the
+    # same; a cell still unanswered after UNVERIFIABLE_RETRIES stays UNVERIFIABLE and fails.
+    retried = len(again)
+    for attempt in range(UNVERIFIABLE_RETRIES):
+        if not again or time.monotonic() + UNVERIFIABLE_WAIT_S >= deadline:
+            break
+        time.sleep(UNVERIFIABLE_WAIT_S)
+        failing.clear()
+        still = []
+        for k, args in again:
+            row = check(*args)
+            row["attempts"] = attempt + 2
+            rows[k] = row
+            if unanswered(row):
+                still.append((k, args))
+        again = still
+    if live:
+        clear_budgets()
     # 24-hour mean equals the mean of the published hours
     mean = next((x for x in all_cur if x.layer_id == "hfr2km_currents_mean24h" and x.provenance.pipeline_run_id == m.pipeline_run_id), None)
     if mean:
@@ -195,7 +244,7 @@ def verify_currents(out_dir: Path, live: bool = True, per_layer: int = 6, hourly
         "live_source_comparison": live,
         "summary": {
             "hourly_layers_new": len(new), "hourly_layers_checked": len({x.layer_id for x in picks}), "checks": len(rows),
-            "settle_hours": SETTLE_HOURS, "unsettled_hours_not_sampled": unsettled,
+            "settle_hours": SETTLE_HOURS, "unsettled_hours_not_sampled": unsettled, "cells_asked_again": retried, "time_budget_s": VERIFY_BUDGET_S,
             "failures": len(failed), "unverifiable_upstream_unreachable": len(unverifiable),
             "all_passed": not failed and (bool(rows) or not new),
         },
