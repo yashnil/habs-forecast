@@ -96,17 +96,19 @@ function SunToggle() {
 
 /** Desktop only: the page at a glance, beside the answer (each line links to its section). */
 function Glance({ model, now }: { model: ReturnType<typeof buildTodayModel>; now: string }) {
-  const n = (sev: string) => model.status.filter((r) => r.severity === sev).length;
+  const n = (sev: string) => model.status.filter((r) => r.severity === sev && !r.seasonal && r.level !== "unknown").length;
+  const seasonal = model.status.filter((r) => r.seasonal).length;
+  const unknown = model.status.filter((r) => r.level === "unknown").length;
   const first = model.sea.lanes[0];
   const tide = nextTide(model.sea.tides, now);
   const t = model.tests[0];
   const rows: [string, string, string][] = [
-    ["Status", [n("red") && `${n("red")} closed or delayed`, n("amber") && `${n("amber")} restricted`, n("neutral") && `${n("neutral")} none on record`].filter(Boolean).join(" · ") || "not available", "#status"],
+    ["Status", [n("red") && `${n("red")} closed or delayed`, n("amber") && `${n("amber")} restricted`, seasonal && `${seasonal} season closed`, n("neutral") && `${n("neutral")} none on record`, unknown && `${unknown} not available`].filter(Boolean).join(" · ") || "not available", "#status"],
     ["Sea", first ? `${first.name}: ${periodLine(first) ?? "see NWS"}` : model.sea.state === "loading" ? "loading…" : "not available", "#sea"],
     ["Next tide", tide ? `${tide.type === "H" ? "High" : "Low"} ${tide.ft.toFixed(1)} ft at ${((h, m) => `${h % 12 || 12}:${m} ${h < 12 ? "AM" : "PM"}`)(Number(tide.at.slice(11, 13)), tide.at.slice(14, 16))}` : model.sea.state === "loading" ? "loading…" : "not available", "#sea"],
-    ["Latest test", t?.latest ? `${t.site.species}, ${dayWords(t.latest.date, now)}${t.latest.avg_ppm != null ? ` · avg ${t.latest.avg_ppm} ppm` : ""}` : "none published here", "#tests"],
+    ["Latest test", t?.latest ? `${t.site.species}, ${dayWords(t.latest.date, now)}${t.latest.avg_ppm != null ? ` · avg ${t.latest.avg_ppm} ppm` : ""}` : model.testsError ? "not available" : "none published here", "#tests"],
     ["C-HARM", model.bloom.charmFact.value ? `${model.bloom.charmFact.value} (run ${model.bloom.charm?.issued ? dayWords(model.bloom.charm.issued, now) : "?"})` : "no value here", "#bloom"],
-    ["Whale rules", model.whale ? `Zone ${model.whale.zone}: ${model.whale.action ?? "none on record"}` : "no record", "#whale"],
+    ["Whale rules", model.whale ? `Zone ${model.whale.zone}: ${(model.whale.action ?? "none on record").split(";")[0].replace(/\.$/, "")}` : "not available", "#whale"],
   ];
   return (
     <aside aria-label="At a glance" className="hidden self-end lg:block" data-testid="today-glance">
@@ -239,7 +241,7 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture }: TodayPr
             <p className="today-lede mt-3 text-n-ink" data-testid="today-lede">
               {lede.label ? (
                 <>
-                  <b className={sevClass(lede.severity)}>{lede.label}</b>: {lede.text}
+                  <b className={lede.seasonal ? undefined : sevClass(lede.severity)}>{lede.label}</b>: {lede.text}
                 </>
               ) : (
                 <span className={lede.severity === "amber" ? "t-amber" : undefined}>{lede.text}</span>
@@ -247,10 +249,15 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture }: TodayPr
               {lede.more > 0 && (
                 <>
                   {" "}
-                  <a href="#status" className="nx-focus underline decoration-n-line-strong underline-offset-4">
-                    {lede.more} more {lede.more === 1 ? "restriction" : "restrictions"} below.
+                  <a href="#status" className="nx-focus whitespace-nowrap underline decoration-n-line-strong underline-offset-4">
+                    {lede.more} more below.
                   </a>
                 </>
+              )}
+              {lede.caution && (
+                <span className="t-amber block pt-1" data-testid="lede-caution">
+                  {lede.caution}
+                </span>
               )}
               {lede.sea && <span className="block pt-1 text-n-ink-2">{lede.sea}</span>}
             </p>
@@ -260,7 +267,7 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture }: TodayPr
               {model.freshness.map((f) => (
                 <li key={f.label} className={f.stale ? "t-amber" : undefined}>
                   <span className="text-n-ink-3">{f.label}</span> {f.when}
-                  {f.stale ? " (old)" : ""}
+                  {f.stale && !f.missing ? " (old)" : ""}
                 </li>
               ))}
             </ul>
@@ -293,7 +300,7 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture }: TodayPr
         </header>
 
         <div className="today-wrap">
-          <div className="today-grid">
+          <div className="today-grid" data-layout={model.testsError || !model.tests.length ? (model.statusError ? "sparse" : "notests") : undefined}>
             <StatusStrip rows={model.status} now={now} place={place.place_id} statusError={model.statusError} otherNotices={noticeIds} onOpen={setSheet} onEdit={() => setPicking(true)} />
             <SeaWeather sea={model.sea} now={now} lede={lede.sea} place={place.place_id} factIds={seaFactIds} />
             <ToxinTests tests={model.tests} error={model.testsError} now={now} sourceUrl={inputs.biotoxin?.source.url ?? null} place={place.place_id} reveal={target} />

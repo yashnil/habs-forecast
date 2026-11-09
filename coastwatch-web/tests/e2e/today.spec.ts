@@ -43,6 +43,11 @@ for (const [label, viewport] of [["phone", { width: 390, height: 844 }], ["deskt
       await expect(page.getByTestId("status-groundfish").getByTestId("status-word")).toHaveText("None on record");
       await expect(page.getByTestId("status-groundfish")).toHaveAttribute("data-severity", "neutral");
       await expect(page.getByTestId("status-anchovy_sardine")).toHaveAttribute("data-severity", "amber");
+      // a season that has simply ended is closed, said calmly: a barred disc and "Season closed", not the alarm triangle
+      const salmon = page.getByTestId("status-salmon_commercial");
+      await expect(salmon.getByTestId("status-word")).toHaveText("Season closed");
+      await expect(salmon.locator('svg[data-mark="season"]')).toBeVisible();
+      await expect(salmon).toContainText("season has concluded");
       // the order on the page follows the hierarchy
       const order = await page.locator("[data-area]").evaluateAll((els) => els.map((e) => e.getAttribute("data-area")));
       expect(order).toEqual(["status", "sea", "tests", "bloom", "whale", "changed", "actions"]);
@@ -186,7 +191,8 @@ test("known gaps are said plainly: a wave buoy's missing wind comes from the nex
   await ready(page);
   // the nearest buoy (46236) has no anemometer: the wind is from the nearest that has one, named with its distance
   await expect(page.getByTestId("wind-now")).toContainText("6");
-  await expect(page.getByTestId("wind-where")).toHaveText("at buoy 46092, 22 km");
+  await expect(page.getByTestId("wind-where")).toContainText("buoy 46092");
+  await expect(page.getByTestId("wind-where")).toContainText("22 km away");
   await expect(page.getByTestId("today-sea")).toContainText("it has no wind sensor, so wind is from buoy 46092, 22 km away");
   await expect(page.getByTestId("sea-now")).toContainText("4.9");
   // mussels: the notices registry lists the quarantine, the curated status says CDPH announced its end.
@@ -291,9 +297,20 @@ test("missing sidecars: tests, whale rules, status and outlook say they are unav
   await expect(page.getByTestId("tests-unavailable")).toBeVisible();
   await expect(page.getByTestId("whale-unavailable")).toBeVisible();
   await expect(page.getByTestId("outlook-missing")).toBeVisible();
-  await expect(page.getByTestId("today-lede")).toContainText("Fishery status could not be loaded");
-  await expect(page.getByTestId("status-dungeness_commercial").getByTestId("status-word")).toHaveText("Status not available");
+  // an official notice still leads (this dataset has the notices registry), and the missing list is said right after it
+  await expect(page.getByTestId("today-lede")).toContainText("Annual quarantine of sport-harvested mussels");
+  await expect(page.getByTestId("lede-caution")).toHaveText("The rest of Neritic's season list did not load. Check CDFW and CDPH before you go.");
+  await expect(page.getByTestId("today-status")).toContainText("Neritic’s list of seasons and restrictions did not load. Unknown is not open");
+  // one statement for the fisheries Neritic cannot speak to, by name: never a row that reads like a status, never "open"
+  const unknown = page.getByTestId("status-unknown");
+  await expect(unknown.getByTestId("status-word")).toHaveText("Status not available");
+  await expect(unknown).toContainText("Dungeness crab (commercial) · Rock crab · Salmon (commercial) · Groundfish");
+  await expect(unknown).toContainText("Unknown is not open.");
+  await expect(page.getByTestId("status-dungeness_commercial")).toHaveCount(0);
   await expect(page.getByTestId("status-strip")).not.toContainText("None on record");
+  await expect(page.getByTestId("status-strip")).not.toContainText(/\b(is|are) open\b/i);
+  await expect(page.getByTestId("today-freshness")).toContainText("Status not available");
+  await expect(page.getByTestId("today-freshness")).not.toContainText("not available (old)");
   expect(await axe(page)).toEqual([]);
 });
 

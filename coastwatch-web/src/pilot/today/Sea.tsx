@@ -122,7 +122,7 @@ export function SeaWeather({ sea, now, lede, place, factIds = [] }: { sea: SeaVi
                 </tbody>
               </table>
               <p className="today-src mt-2">
-                The number is the highest wind NWS states for the period; a bar is solid to the low end of its range and lighter to the top. Forecasters&rsquo; words in full:{" "}
+                Each bar is the wind range NWS states, solid to its low end; the number is the top. Forecasters&rsquo; words:{" "}
                 {sea.marineUrl ? (
                   <a href={sea.marineUrl} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center">
                     NWS {sea.zone}, issued {sea.issued ? clock(sea.issued) : ""}
@@ -150,9 +150,21 @@ export function SeaWeather({ sea, now, lede, place, factIds = [] }: { sea: SeaVi
                 <p className="today-v mt-1.5 text-n-ink-3">—</p>
               )}
               <p className="today-src mt-1.5" data-testid="wind-where">
-                {!wind
-                  ? "no wind reading within 60 km"
-                  : [wind.gustKt != null ? `gust ${Math.round(wind.gustKt)}` : null, sea.windBuoy ? `at buoy ${sea.windBuoy.id}, ${Math.round(sea.windBuoy.km)} km` : wind.gustKt == null ? "measured" : null].filter(Boolean).join(" · ")}
+                {!wind ? (
+                  "no wind reading within 60 km"
+                ) : (
+                  <>
+                    {wind.gustKt != null && <span className="block">gust {Math.round(wind.gustKt)}</span>}
+                    {sea.windBuoy ? (
+                      <>
+                        <span className="block">buoy {sea.windBuoy.id}</span>
+                        <span className="block">{Math.round(sea.windBuoy.km)} km away</span>
+                      </>
+                    ) : (
+                      wind.gustKt == null && "measured"
+                    )}
+                  </>
+                )}
               </p>
             </div>
             <div>
@@ -177,7 +189,16 @@ export function SeaWeather({ sea, now, lede, place, factIds = [] }: { sea: SeaVi
               ) : (
                 <p className="today-v mt-1.5 text-n-ink-3">—</p>
               )}
-              <p className="today-src mt-1.5">{sea.water ? `${sea.water.c.toFixed(1)} °C ${sea.water.where}` : "no reading nearby"}</p>
+              <p className="today-src mt-1.5">
+                {sea.water ? (
+                  <>
+                    <span className="block">{sea.water.c.toFixed(1)} °C</span>
+                    <span className="block">{sea.water.where.replace(/^at /, "")}</span>
+                  </>
+                ) : (
+                  "no reading nearby"
+                )}
+              </p>
             </div>
           </div>
           <p className="today-src mt-2">
@@ -207,10 +228,10 @@ export function SeaWeather({ sea, now, lede, place, factIds = [] }: { sea: SeaVi
 
           <div className="mt-5" data-testid="sea-tide" data-fact-card="">
             <FactAnchors ids={ids("tide:")} />
-            <div className="flex items-baseline justify-between gap-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               <p className="nx-caps">Tide today{sea.tideStation ? ` · ${sea.tideStation.name}` : ""}</p>
               {nt && (
-                <p className="text-[14px] text-n-ink">
+                <p className="whitespace-nowrap text-[14px] text-n-ink">
                   Next: <b className="font-semibold">{nt.type === "H" ? "high" : "low"}</b> {nt.ft.toFixed(1)} ft at {tclock(nt.at)}
                 </p>
               )}

@@ -51,6 +51,10 @@ export function ToxinTests({ tests, error, now, sourceUrl, place, reveal = null 
                 {t.latest && (
                   <div className="mt-2 max-w-[460px]">
                     <ToxinChart sets={t.site.sets} action={t.action} label={`${t.site.species}, ${t.site.site_label}`} now={now} />
+                    {/* the key to the dots is given once, under the first chart; every chart names its tissue */}
+                    {t !== list[0] ? (
+                      t.latest.tissue !== "unknown" && <p className="today-src mt-1">{t.latest.tissue}</p>
+                    ) : (
                     <p className="today-src mt-1 flex flex-wrap gap-x-3">
                       <span>
                         <svg width="8" height="8" aria-hidden className="mr-1 inline">
@@ -72,6 +76,7 @@ export function ToxinTests({ tests, error, now, sourceUrl, place, reveal = null 
                       </span>
                       {t.latest.tissue !== "unknown" && <span>{t.latest.tissue}</span>}
                     </p>
+                    )}
                   </div>
                 )}
                 {t.showProgress && (

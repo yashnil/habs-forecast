@@ -126,8 +126,8 @@ export function BloomTimeline({ days, outlook, today, old, now }: { days: BloomD
       </text>
       <line className="grid" x1={L} x2={W - R} y1={B1} y2={B1} />
       <line className="grid" x1={L} x2={W - R} y1={yP(0.5)} y2={yP(0.5)} strokeDasharray="2 3" />
-      <text x={W - R} y={yP(0.5) - 3} textAnchor="end">
-        50%
+      <text x={W - R} y={T1 - 8} textAnchor="end">
+        dashed line: 50%
       </text>
       {dated.map((d) => {
         const x0 = xOf(d.date!);

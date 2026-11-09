@@ -22,9 +22,20 @@ export function FactAnchors({ ids }: { ids: string[] }) {
   );
 }
 
-/** A status shape, so state never relies on colour alone: a filled triangle (red), a half disc (amber), a ring (none), a dashed ring (unknown). */
-export function StatusMark({ severity, className = "" }: { severity: Severity; className?: string }) {
-  const c = severity === "red" ? "t-red" : severity === "amber" ? "t-amber" : severity === "neutral" ? "t-neutral" : "t-info";
+/**
+ * A status shape, so state never relies on colour alone: a filled triangle (red: an emergency closure
+ * or delay), a half disc (amber), a ring (none on record), a dashed ring (unknown). A fishery that is
+ * simply out of season is a barred disc in ink: plainly not open, and not an alarm.
+ */
+export function StatusMark({ severity, seasonal = false, className = "" }: { severity: Severity; seasonal?: boolean; className?: string }) {
+  const c = seasonal ? "t-season" : severity === "red" ? "t-red" : severity === "amber" ? "t-amber" : severity === "neutral" ? "t-neutral" : "t-info";
+  if (seasonal)
+    return (
+      <svg viewBox="0 0 24 24" width="22" height="22" className={`${c} ${className} shrink-0`} aria-hidden="true" data-mark="season">
+        <circle cx="12" cy="12" r="8.6" fill="currentColor" />
+        <path d="M7.4 12h9.2" stroke="var(--nx-bg)" strokeWidth="2.4" strokeLinecap="round" />
+      </svg>
+    );
   return (
     <svg viewBox="0 0 24 24" width="22" height="22" className={`${c} ${className} shrink-0`} aria-hidden="true">
       {severity === "red" && (
@@ -46,7 +57,7 @@ export function StatusMark({ severity, className = "" }: { severity: Severity; c
   );
 }
 
-export const sevClass = (s: Severity) => (s === "red" ? "t-red" : s === "amber" ? "t-amber" : s === "neutral" ? "t-neutral" : "t-info");
+export const sevClass = (s: Severity, seasonal = false) => (seasonal ? "t-season" : s === "red" ? "t-red" : s === "amber" ? "t-amber" : s === "neutral" ? "t-neutral" : "t-info");
 
 export function Unverified({ verified }: { verified: boolean | null }) {
   if (verified !== false) return null;

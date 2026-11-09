@@ -149,6 +149,8 @@ const LEVEL_RANK: Record<StatusLevel, number> = { closed: 0, delayed: 0, restric
 const SEVERITY_RANK: Record<Severity, number> = { red: 0, amber: 1, neutral: 2, info: 3 };
 const BASIS_RANK: Record<PortFact["basis"], number> = { official: 0, measured: 1, analysis: 2, forecast: 2, outlook: 3, derived: 4 };
 
+/** A fishery closed by its own season dates (concluded, or not yet begun): not open, and not an emergency. */
+export const SEASON_CLOSED_WORD = "Season closed";
 /** Status older than this is flagged (curated records are re-read at least weekly). */
 export const STATUS_STALE_DAYS = 14;
 /** A toxin test older than this is flagged (CDPH samples sites every 1–4 weeks). */
@@ -243,6 +245,8 @@ export type StatusRow = {
   /** official notices for this fishery's species tied to this place */
   notices: NoticeInput[];
   stale: boolean;
+  /** closed because the season's own dates ended or have not begun (routine), not by an emergency action: drawn calmly, still plainly not open */
+  seasonal: boolean;
   /** the curated status and the official-notices registry disagree about this fishery here (one restricts, the other does not) */
   conflict: SourceConflict | null;
   fact: PortFact;
@@ -325,7 +329,18 @@ export type SeaView = {
 };
 
 /** The answer in one breath: `label` (the fishery, when one leads) and `text`; `status` joins them. */
-export type Lede = { label: string | null; text: string; status: string; severity: Severity; more: number; sea: string | null };
+export type Lede = {
+  label: string | null;
+  text: string;
+  status: string;
+  severity: Severity;
+  more: number;
+  sea: string | null;
+  /** the fishery that leads is closed by its season dates (said calmly) */
+  seasonal: boolean;
+  /** Neritic's season list did not load, though a notice still leads: said after the answer */
+  caution: string | null;
+};
 
 export type TodayModel = {
   today: PortToday;
@@ -339,7 +354,7 @@ export type TodayModel = {
   sea: SeaView;
   /** data-age facts, for the header's freshness line */
   ages: PortFact[];
-  freshness: { label: string; when: string | null; stale: boolean }[];
+  freshness: Freshness[];
 };
 
 // ---------------------------------------------------------------- the build
@@ -399,7 +414,9 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
         verified: topNotice.verified,
         records: recs,
         notices: nts,
-        stale: false,
+        // the registry's own read date ages like any other check
+        stale: !!topNotice.registry_checked && daysOld(topNotice.registry_checked, now) > STATUS_STALE_DAYS,
+        seasonal: false,
         conflict,
       };
     } else if (top) {
@@ -409,7 +426,7 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
         label,
         level: top.level,
         severity: LEVEL_SEVERITY[top.level],
-        word: LEVEL_WORD[top.level],
+        word: top.level === "closed" && top.cause === "season" ? SEASON_CLOSED_WORD : LEVEL_WORD[top.level],
         headline: sentence(top.headline),
         cause: top.cause,
         causeWord: top.level === "no_restriction_on_record" ? null : CAUSE_WORD[top.cause],
@@ -421,10 +438,11 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
         records: recs,
         notices: nts,
         stale,
+        seasonal: top.level === "closed" && top.cause === "season",
         conflict,
       };
     } else if (statusError) {
-      row = { fishery, label, level: "unknown", severity: "info", word: LEVEL_WORD.unknown, headline: "Status could not be loaded. Check CDFW.", cause: null, causeWord: null, area: null, next_review: null, source: null, checked_at: null, verified: null, records: [], notices: nts, stale: false, conflict: null };
+      row = { fishery, label, level: "unknown", severity: "info", word: LEVEL_WORD.unknown, headline: "Status could not be loaded. Check CDFW.", cause: null, causeWord: null, area: null, next_review: null, source: null, checked_at: null, verified: null, records: [], notices: nts, stale: false, seasonal: false, conflict: null };
     } else {
       // the calmest state: nothing on record (never "open" or "safe")
       row = {
@@ -444,6 +462,7 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
         records: [],
         notices: nts,
         stale: false,
+        seasonal: false,
         conflict: null,
       };
     }
@@ -472,7 +491,7 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
   });
   const staleRows = status.filter((r) => r.stale);
   if (staleRows.length) {
-    const oldest = staleRows.map((r) => r.checked_at!).sort()[0];
+    const oldest = staleRows.map((r) => pacificDay(r.checked_at!)).sort()[0];
     age("fisheries-status", "amber", `Fishery status last checked ${dayWords(oldest, now)} (${ageWords(daysOld(oldest, now))}).`, "A person transcribes these records from CDFW and CDPH; a later change may be missing. Check the agencies.", oldest);
   }
 
@@ -564,22 +583,23 @@ function conflictOf(rec: FisheryStatus, n: NoticeInput, nLevel: StatusLevel, now
 
 // ---------------------------------------------------------------- lede
 
+const STATUS_NOT_LOADED = "Fishery status could not be loaded. Check CDFW and CDPH before you go.";
+
 function ledeOf(rows: StatusRow[], statusError: boolean, sea: SeaView): Lede {
-  const flagged = rows.filter((r) => r.severity === "red" || r.severity === "amber").sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] || LEVEL_RANK[a.level as StatusLevel] - LEVEL_RANK[b.level as StatusLevel]);
+  // what leads: an emergency closure or delay, then a restriction or watch, then a fishery that is simply out of season
+  const rank = (r: StatusRow) => (r.seasonal ? 2 : SEVERITY_RANK[r.severity]);
+  const flagged = rows.filter((r) => r.severity === "red" || r.severity === "amber").sort((a, b) => rank(a) - rank(b) || LEVEL_RANK[a.level as StatusLevel] - LEVEL_RANK[b.level as StatusLevel]);
   const first = sea.lanes[0];
   const seaLine = first ? periodLine(first) : null;
   const seaWords = first && seaLine ? `${first.name}: ${seaLine}.` : null;
-  if (statusError) {
-    const text = "Fishery status could not be loaded. Check CDFW and CDPH before you go.";
-    return { label: null, text, status: text, severity: "amber", more: 0, sea: seaWords };
-  }
   if (!flagged.length) {
-    const text = "No closure or restriction on record for your fisheries here. Notices can lag; check CDFW and CDPH before you go.";
-    return { label: null, text, status: text, severity: "neutral", more: 0, sea: seaWords };
+    const text = statusError ? STATUS_NOT_LOADED : "No closure or restriction on record for your fisheries here. Notices can lag; check CDFW and CDPH before you go.";
+    return { label: null, text, status: text, severity: statusError ? "amber" : "neutral", more: 0, sea: seaWords, seasonal: false, caution: null };
   }
   const top = flagged[0];
   const text = top.headline;
-  return { label: top.label, text, status: `${top.label}: ${lower1(text)}`, severity: top.severity, more: flagged.length - 1, sea: seaWords };
+  // an official notice still leads when Neritic's own list is missing; the gap is said right after it
+  return { label: top.label, text, status: `${top.label}: ${lower1(text)}`, severity: top.severity, more: flagged.length - 1, sea: seaWords, seasonal: top.seasonal, caution: statusError ? "The rest of Neritic's season list did not load. Check CDFW and CDPH before you go." : null };
 }
 
 // ---------------------------------------------------------------- whale (RAMP)
@@ -809,7 +829,8 @@ function seaView(c: Conditions | null | "error", now: string): SeaView {
     v.marineReason = c.marine.reason;
     v.marineUrl = c.marine.url ?? null;
   }
-  if (c.alerts.status === "ok") v.alerts = c.alerts.data.map((a) => ({ event: a.event, headline: a.headline, url: a.url }));
+  // NWS headlines arrive in capitals and are sentence-cased upstream; a day's name keeps its capital
+  if (c.alerts.status === "ok") v.alerts = c.alerts.data.map((a) => ({ event: a.event, headline: a.headline.replace(/\b(mon|tues|wednes|thurs|fri|satur|sun)day\b/g, (d) => d.charAt(0).toUpperCase() + d.slice(1)), url: a.url }));
   if (c.buoy.status === "ok") {
     const b = c.buoy.data;
     const times = [b.windKt, b.waveFt, b.waterC].map((o) => o?.at).filter((x): x is string => !!x).sort();
@@ -902,10 +923,12 @@ function seaFactsOf(sea: SeaView, place: TodayPlace, now: string, fact: (f: Omit
 
 // ---------------------------------------------------------------- freshness, in plain words
 
-function freshnessOf(inp: PortTodayInputs, sea: SeaView, now: string): { label: string; when: string | null; stale: boolean }[] {
-  const out: { label: string; when: string | null; stale: boolean }[] = [];
+export type Freshness = { label: string; when: string | null; stale: boolean; /** not loaded at all (said as such, not as "old") */ missing?: boolean };
+
+function freshnessOf(inp: PortTodayInputs, sea: SeaView, now: string): Freshness[] {
+  const out: Freshness[] = [];
   const checked = (inp.fisheries?.records ?? []).map((r) => r.checked_at).sort().at(-1) ?? null;
-  out.push({ label: "Status", when: checked ? `checked ${dayWords(checked, now)}` : inp.fisheries ? "no records" : "not available", stale: !inp.fisheries || (!!checked && daysOld(checked, now) > STATUS_STALE_DAYS) });
+  out.push({ label: "Status", when: checked ? `checked ${dayWords(checked, now)}` : inp.fisheries ? "no records" : "not available", stale: !inp.fisheries || (!!checked && daysOld(checked, now) > STATUS_STALE_DAYS), missing: !inp.fisheries });
   if (sea.issued) out.push({ label: "NWS", when: PT_CLOCK.format(new Date(sea.issued)).replace(/\s/g, " ") + (pacificDay(sea.issued) === pacificDay(now) ? "" : ` ${dayWords(sea.issued, now)}`), stale: (Date.parse(now) - Date.parse(sea.issued)) / 3_600_000 > 12 });
   if (sea.buoy?.at) {
     const m = Math.max(0, Math.round((Date.parse(now) - Date.parse(sea.buoy.at)) / 60000));

@@ -6,6 +6,8 @@ import { pacificToday } from "@/lib/time";
 const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const addDays = (date: string, n: number) => new Date(Date.parse(`${date}T12:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
 const weekdayOf = (date: string) => new Date(`${date}T12:00:00Z`).getUTCDay();
+/** NWS names a holiday's period by the holiday ("Veterans Day", "Thanksgiving Day", "Christmas Night"), not the weekday. */
+const HOLIDAY = /veterans|thanksgiving|christmas|new year|independence|labor day|memorial|columbus|indigenous|washington|president|king|juneteenth/;
 
 /** A NWS zone-forecast period with the Pacific date and part of day it starts on, worked out from its own name and the forecast's issue time. */
 export type DatedPeriod = MarinePeriod & { date: string | null; night: boolean; start: string | null };
@@ -13,7 +15,8 @@ export type DatedPeriod = MarinePeriod & { date: string | null; night: boolean; 
 /**
  * Each period's own start, from the forecast's issue time and the period's name: "Today", "This
  * Afternoon", "Tonight" and "Overnight" start on the day of issue; "Wed" and "Wednesday Night" on the next
- * Wednesday on or after the previous period's day. A period that cannot be placed has no date (null),
+ * Wednesday on or after the previous period's day. A holiday period ("Veterans Day") follows the dated
+ * period before it: the next day after a night, the same day for its own night. A period that cannot be placed has no date (null),
  * and is never matched to a trip day. `issued` is NWS's `updated` (ISO); without it nothing is dated.
  */
 export function datePeriods(periods: MarinePeriod[], issued: string | null): DatedPeriod[] {
@@ -21,6 +24,7 @@ export function datePeriods(periods: MarinePeriod[], issued: string | null): Dat
   if (!Number.isFinite(t)) return periods.map((p) => ({ ...p, date: null, night: /night|tonight|overnight|evening/i.test(p.name), start: null }));
   const day0 = pacificToday(new Date(t));
   let off = 0;
+  let prev: { night: boolean } | null = null;
   return periods.map((p, i) => {
     const name = p.name.trim().toLowerCase();
     const night = /night|tonight|overnight|evening/.test(name);
@@ -37,8 +41,13 @@ export function datePeriods(periods: MarinePeriod[], issued: string | null): Dat
           off = j;
           date = addDays(day0, j);
         }
+      } else if (HOLIDAY.test(name) && prev) {
+        // after a night comes the next day; a holiday's own night shares its day
+        if (prev.night || !night) off += 1;
+        date = addDays(day0, off);
       }
     }
+    prev = date ? { night } : null;
     return { ...p, date, night, start: date ? `${date}T${night ? "18" : "06"}:00` : null };
   });
 }

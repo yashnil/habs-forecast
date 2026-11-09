@@ -116,6 +116,35 @@ describe("buildPortToday: hierarchy", () => {
     expect(m.lede.more).toBe(3); // salmon (season over), anchovy/sardine, mussels (watch) below
   });
 
+  it("a fishery closed by its season dates is said calmly, and never leads over an emergency or a restriction", () => {
+    const m = buildTodayModel(base());
+    const salmon = m.status.find((r) => r.fishery === "salmon_commercial")!;
+    // still closed, still not open: only the manner differs from an emergency closure
+    expect(salmon).toMatchObject({ level: "closed", seasonal: true, word: "Season closed" });
+    expect(salmon.fact).toMatchObject({ severity: "red", value: "Season closed" });
+    expect(m.status.find((r) => r.fishery === "dungeness_commercial")).toMatchObject({ level: "delayed", seasonal: false, word: "Delayed" });
+    // alone, it leads; beside a restriction, the restriction leads
+    const only = buildTodayModel(base({ selected: ["salmon_commercial", "groundfish"] }));
+    expect(only.lede).toMatchObject({ label: "Salmon (commercial)", seasonal: true, more: 0 });
+    const both = buildTodayModel(base({ selected: ["salmon_commercial", "anchovy_sardine"] }));
+    expect(both.lede).toMatchObject({ label: "Anchovy & sardine", seasonal: false, more: 1 });
+  });
+
+  it("when Neritic's season list is missing, an official notice still leads and the gap is said after it", () => {
+    const n: NoticeInput = { id: "cdph-mussels", agency: "CDPH", title: "Annual quarantine of sport-harvested mussels", summary: "Quarantine.", action: "quarantine", species: ["mussels (all species)"], fishery: "sport_harvest", effective: "2026-05-01", url: "https://cdph.ca.gov", verified: false, registry_checked: "2026-09-01T00:00:00Z" };
+    const m = buildTodayModel(base({ fisheries: null, notices: [n] }));
+    expect(m.lede).toMatchObject({ label: "Shellfish (mussels, clams, oysters)", severity: "red", caution: "The rest of Neritic's season list did not load. Check CDFW and CDPH before you go." });
+    // a registry not read for over two weeks is flagged like any other old check
+    const row = m.status.find((r) => r.fishery === "bivalve_shellfish")!;
+    expect(row.stale).toBe(true);
+    expect(m.today.facts.some((f) => f.id === "age:fisheries-status" && f.severity === "amber")).toBe(true);
+    expect(m.freshness.find((f) => f.label === "Status")).toMatchObject({ when: "not available", missing: true });
+    // with nothing at all to lead, the answer is that the status could not be loaded
+    const none = buildTodayModel(base({ fisheries: null }));
+    expect(none.lede).toMatchObject({ label: null, severity: "amber", caution: null });
+    expect(none.lede.text).toMatch(/^Fishery status could not be loaded/);
+  });
+
   it("keeps the strip order of the reader's fisheries and stable ids", () => {
     const a = buildTodayModel(base({ selected: ["groundfish", "dungeness_commercial"] }));
     expect(a.status.map((r) => r.fact.id)).toEqual(["status:groundfish", "status:dungeness_commercial"]);

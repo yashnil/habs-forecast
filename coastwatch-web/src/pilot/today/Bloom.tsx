@@ -9,34 +9,50 @@ import { Section, SourceLink, Unverified, factProps } from "./ui";
 export function BloomOutlook({ bloom, now, label, place }: { bloom: BloomView; now: string; label: string; place: string }) {
   const c = bloom.charm;
   const old = c?.state === "historical";
+  const chart = (
+    <div className="mt-3">
+      <BloomTimeline days={bloom.days} outlook={bloom.outlook} today={pacificDay(now)} old={!!old} now={now} />
+      <p className="today-src mt-1 flex flex-wrap gap-x-4">
+        <span>
+          <svg width="10" height="10" aria-hidden className="mr-1 inline">
+            <rect width="10" height="10" rx="1.5" fill="var(--nx-model)" />
+          </svg>
+          particulate domoic acid &gt; 500 ng/L
+        </span>
+        <span>
+          <svg width="10" height="10" aria-hidden className="mr-1 inline">
+            <rect width="10" height="10" rx="1.5" fill="color-mix(in srgb, var(--nx-model) 38%, transparent)" />
+          </svg>
+          <i>Pseudo-nitzschia</i> &gt; 10,000 cells/L
+        </span>
+      </p>
+    </div>
+  );
   return (
     <Section id="bloom" area="bloom" title="Bloom outlook" feedback={{ factId: bloom.charmFact.id, placeId: place }}>
       <div {...factProps(bloom.charmFact.id)}>
       <p className="today-say" data-testid="bloom-lede">
         {bloom.charmFact.headline}
       </p>
-      {c && c.state !== "current" && c.issued && (
-        <p className={`mt-2 text-[14px] ${old ? "t-amber" : "text-n-ink-2"}`} data-testid="charm-stale">
-          {old ? "Out of date: " : ""}C-HARM run of {dayWords(c.issued, now)}, {ageWords(c.ageDays ?? 0)}. {old ? "It does not describe today's water." : "NOAA has not published a newer run; the days shown are that run's own dates."}
+      {c && c.state === "stale" && c.issued && (
+        <p className="mt-2 text-[14px] text-n-ink-2" data-testid="charm-stale">
+          C-HARM run of {dayWords(c.issued, now)}, {ageWords(c.ageDays ?? 0)}. NOAA has not published a newer run; the days shown are that run&rsquo;s own dates.
         </p>
       )}
-      <div className="mt-3">
-        <BloomTimeline days={bloom.days} outlook={bloom.outlook} today={pacificDay(now)} old={!!old} now={now} />
-        <p className="today-src mt-1 flex flex-wrap gap-x-4">
-          <span>
-            <svg width="10" height="10" aria-hidden className="mr-1 inline">
-              <rect width="10" height="10" rx="1.5" fill="var(--nx-model)" />
-            </svg>
-            particulate domoic acid &gt; 500 ng/L
-          </span>
-          <span>
-            <svg width="10" height="10" aria-hidden className="mr-1 inline">
-              <rect width="10" height="10" rx="1.5" fill="color-mix(in srgb, var(--nx-model) 38%, transparent)" />
-            </svg>
-            <i>Pseudo-nitzschia</i> &gt; 10,000 cells/L
-          </span>
-        </p>
-      </div>
+      {old && c?.issued ? (
+        // too old to describe today's water: said once, in amber; the old run is still there for anyone who wants it
+        <>
+          <p className="t-amber mt-2 text-[14px]" data-testid="charm-stale">
+            That run is {ageWords(c.ageDays ?? 0).replace(" ago", "")} old. Neritic shows no bloom forecast for today rather than an old one.
+          </p>
+          <details className="mt-2" data-testid="charm-old-run">
+            <summary className="nx-focus inline-flex min-h-11 cursor-pointer items-center text-[14.5px] text-n-ink underline decoration-n-line-strong underline-offset-4">Show the old run and outlook</summary>
+            {chart}
+          </details>
+        </>
+      ) : (
+        chart
+      )}
       </div>
       <div className="mt-4 grid gap-3 text-[14px] leading-relaxed text-n-ink-2">
         <p>

@@ -27,7 +27,9 @@ export function StatusStrip({
 }) {
   // a notice is addressed inside the first row that lists it (one id, once on the page)
   const placed = new Set<string>();
-  const noticeIds = rows.map((r) => r.notices.map((n) => `notice:${n.id}`).filter((id) => !placed.has(id) && (placed.add(id), true)));
+  const known = rows.filter((r) => r.level !== "unknown");
+  const unknown = rows.filter((r) => r.level === "unknown");
+  const noticeIds = rows.map((r) => (r.level === "unknown" ? [] : r.notices.map((n) => `notice:${n.id}`).filter((id) => !placed.has(id) && (placed.add(id), true))));
   return (
     <Section
       id="status"
@@ -54,19 +56,22 @@ export function StatusStrip({
         </p>
       )}
       <ul className="mt-0" data-testid="status-strip">
-        {rows.map((r, i) => (
+        {known.map((r) => (
           <li key={r.fishery} {...factProps(r.fact.id)}>
-            <FactAnchors ids={noticeIds[i]} />
-            <button type="button" className="today-row nx-focus nx-tint" onClick={() => onOpen(r)} data-testid={`status-${r.fishery}`} data-severity={r.severity} aria-haspopup="dialog">
-              <StatusMark severity={r.severity} className="mt-0.5" />
-              <span className="min-w-0">
-                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="text-[16.5px] font-semibold leading-snug text-n-ink">{r.label}</span>
-                  <Unverified verified={r.verified} />
-                </span>
-                <span className="mt-0.5 block text-[15px] leading-snug text-n-ink-2">{r.headline}</span>
+            <FactAnchors ids={noticeIds[rows.indexOf(r)]} />
+            <button type="button" className="today-row nx-focus nx-tint" onClick={() => onOpen(r)} data-testid={`status-${r.fishery}`} data-severity={r.severity} data-seasonal={r.seasonal ? "" : undefined} aria-haspopup="dialog">
+              <StatusMark severity={r.severity} seasonal={r.seasonal} className="today-row-mark mt-0.5" />
+              <span className="today-row-label flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="text-[16.5px] font-semibold leading-snug text-n-ink">{r.label}</span>
+                <Unverified verified={r.verified} />
+              </span>
+              <span className={`today-word ${sevClass(r.severity, r.seasonal)}`} data-testid="status-word">
+                {r.level === "no_restriction_on_record" ? "None on record" : r.word}
+              </span>
+              <span className="today-row-body">
+                <span className="block text-[15px] leading-snug text-n-ink-2">{r.headline}</span>
                 <span className="today-src mt-1 block">
-                  {[r.causeWord ? `Cause: ${r.causeWord}` : null, r.next_review ? `Next review ${dayWords(r.next_review, now)}` : null, r.source ? `${r.source.name}${r.checked_at ? `, checked ${dayWords(r.checked_at, now)}` : ""}` : null].filter(Boolean).join(" · ")}
+                  {[r.causeWord && !r.seasonal ? `Cause: ${r.causeWord}` : null, r.next_review ? `Next review ${dayWords(r.next_review, now)}` : null, r.source ? `${r.source.name}${r.checked_at ? `, checked ${dayWords(r.checked_at, now)}` : ""}` : null].filter(Boolean).join(" · ")}
                   {r.stale && <span className="t-amber"> · check is old</span>}
                   {r.conflict && (
                     <span className="t-amber" data-testid="sources-differ">
@@ -76,15 +81,27 @@ export function StatusStrip({
                   )}
                 </span>
               </span>
-              <span className="flex flex-col items-end gap-2">
-                <span className={`today-word ${sevClass(r.severity)}`} data-testid="status-word">
-                  {r.level === "no_restriction_on_record" ? "None on record" : r.word}
-                </span>
-                <Icon name="chevronRight" className="today-row-go h-4 w-4 text-n-ink-3" />
-              </span>
+              <Icon name="chevronRight" className="today-row-go h-4 w-4 text-n-ink-3" />
             </button>
           </li>
         ))}
+        {unknown.length > 0 && (
+          // Neritic's list did not load: one statement for the fisheries it cannot speak to, never a row each that reads like a status
+          <li className="today-row" data-testid="status-unknown" data-severity="info" data-fact-card="">
+            <StatusMark severity="info" className="today-row-mark mt-0.5" />
+            <span className="today-row-label text-[16.5px] font-semibold leading-snug text-n-ink">
+              <FactAnchors ids={unknown.map((r) => r.fact.id)} />
+              {unknown.length === rows.length ? "Your fisheries" : `${unknown.length} other ${unknown.length === 1 ? "fishery" : "fisheries"}`}
+            </span>
+            <span className="today-word t-info" data-testid="status-word">
+              {unknown[0].word}
+            </span>
+            <span className="today-row-body">
+              <span className="block text-[15px] leading-snug text-n-ink-2">{unknown.map((r) => r.label).join(" · ")}</span>
+              <span className="today-src mt-1 block">Unknown is not open. CDFW closure line (831) 649-2883.</span>
+            </span>
+          </li>
+        )}
       </ul>
       <FactAnchors ids={otherNotices.filter((id) => !placed.has(id))} />
       <p className="nx-margin mt-3">
@@ -140,9 +157,9 @@ export function StatusSheet({ row, now, onClose }: { row: StatusRow | null; now:
       {r && (
         <div className="flex max-h-[88dvh] flex-col md:max-h-dvh">
           <div className="flex items-start gap-3 border-b border-n-line px-4 py-4">
-            <StatusMark severity={r.severity} className="mt-1" />
+            <StatusMark severity={r.severity} seasonal={r.seasonal} className="mt-1" />
             <div className="min-w-0 flex-1">
-              <p className={`today-word inline-block ${sevClass(r.severity)}`}>{r.word}</p>
+              <p className={`today-word inline-block ${sevClass(r.severity, r.seasonal)}`}>{r.word}</p>
               <h2 id="status-sheet-h" className="mt-2 font-serif text-[26px] leading-tight text-n-ink">
                 {r.label}
               </h2>
@@ -191,7 +208,7 @@ export function StatusSheet({ row, now, onClose }: { row: StatusRow | null; now:
             )}
             <Dl
               rows={[
-                ...(r.causeWord ? ([["Cause", r.causeWord]] as [string, ReactNode][]) : []),
+                ...(r.seasonal ? ([["Why", "Closed by its season dates, not by an emergency action. It is not open."]] as [string, ReactNode][]) : r.causeWord ? ([["Cause", r.causeWord]] as [string, ReactNode][]) : []),
                 ...(r.area ? ([["Area", r.area]] as [string, ReactNode][]) : []),
                 ...(r.records[0]?.effective ? ([["Effective", dayWords(r.records[0].effective, now)]] as [string, ReactNode][]) : []),
                 ...(r.records[0]?.until ? ([["Until", dayWords(r.records[0].until, now)]] as [string, ReactNode][]) : []),

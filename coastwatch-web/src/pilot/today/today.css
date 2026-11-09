@@ -59,6 +59,17 @@ html[data-daylight] .today-hero-iso { opacity: 0.35; }
     grid-template-areas: "status sea" "tests bloom" "whale changed" "actions actions";
     align-items: start;
   }
+  /* Sections that have only a sentence to say (a sidecar not published yet) are stacked, so the page never has a hole in its middle.
+     No toxin tests: the short sections sit beside the bloom outlook. */
+  .today-grid[data-layout="notests"] {
+    grid-template-areas: "status sea" "tests bloom" "whale bloom" "changed bloom" "actions actions";
+    grid-template-rows: auto auto auto 1fr auto;
+  }
+  /* No season list either: status, tests and whale rules sit beside the sea, then what changed beside the bloom outlook. */
+  .today-grid[data-layout="sparse"] {
+    grid-template-areas: "status sea" "tests sea" "whale sea" "changed bloom" "actions actions";
+    grid-template-rows: auto auto 1fr auto auto;
+  }
   .today-grid > [data-area="status"] { grid-area: status; }
   .today-grid > [data-area="sea"] { grid-area: sea; }
   .today-grid > [data-area="tests"] { grid-area: tests; }
@@ -72,18 +83,25 @@ html[data-daylight] .today-hero-iso { opacity: 0.35; }
 .today-h2 { font: 500 11.5px/1.2 var(--nx-font-caps); letter-spacing: 0.14em; text-transform: uppercase; color: var(--nx-ink-2); }
 .today-say { font-size: 17px; line-height: 1.45; color: var(--nx-ink); margin-top: 12px; text-wrap: pretty; }
 
-/* ---- status strip */
+/* ---- status strip: the mark, the fishery and its word on one line; the sentence under them at full width */
 .today-row {
   display: grid;
-  grid-template-columns: 26px minmax(0, 1fr) auto;
-  gap: 2px 12px;
+  grid-template-columns: 26px minmax(0, 1fr) auto 18px;
+  grid-template-areas: "mark label word word" "mark body body go";
+  gap: 4px 12px;
   width: 100%;
   min-height: 64px;
   padding: 14px 4px 14px 0;
   text-align: left;
   border-bottom: 1px solid var(--nx-line);
 }
+.today-row-mark { grid-area: mark; }
+.today-row-label { grid-area: label; min-width: 0; align-self: center; }
+.today-row > .today-word { grid-area: word; justify-self: end; }
+.today-row-body { grid-area: body; min-width: 0; }
+.today-row-go { grid-area: go; justify-self: end; align-self: center; }
 .today-row:hover .today-row-go { color: var(--nx-ink); }
+.t-season { color: var(--nx-ink-2); }
 .today-word {
   font: 600 11px/1 var(--nx-font-caps);
   letter-spacing: 0.1em;
@@ -119,6 +137,12 @@ html[data-daylight] .today-hero-iso { opacity: 0.35; }
 .today-lane-num { position: absolute; left: 0; right: 0; bottom: 4px; font: 400 12.5px/1 var(--nx-font-data); font-variant-numeric: tabular-nums; color: var(--nx-ink); }
 .today-lane-seas td { height: 40px; font: 400 12.5px/1 var(--nx-font-data); font-variant-numeric: tabular-nums; color: var(--nx-ink); }
 .today-lanes .night { background: color-mix(in srgb, var(--nx-ink) 3.5%, transparent); }
+@media (max-width: 479px) {
+  /* ten periods across a phone: the day names tighten so "Today" never touches its neighbour */
+  .today-lanes thead th { font-size: 11px; letter-spacing: -0.01em; }
+  .today-lanes thead th small { font-size: 9.5px; }
+  .today-lanes th:first-child, .today-lanes td:first-child { width: 36px; }
+}
 .today-dir { position: absolute; left: 0; right: 0; top: 6px; font: 500 10px/1 var(--nx-font-caps); letter-spacing: 0.04em; color: var(--nx-ink-3); }
 
 /* ---- readouts */
