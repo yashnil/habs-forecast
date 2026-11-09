@@ -58,6 +58,9 @@ test("desktop: three zones (the field dock and rail along the bottom, tools at t
   const line = (await page.getByTestId("registry-disclosure").boundingBox())!;
   const idx2 = (await page.getByTestId("field-dock").boundingBox())!;
   for (const [a, b, what] of [[dock2, tools, "rail/tools"], [dock2, panel, "rail/panel"], [tools, panel, "tools/panel"], [line, dock2, "line/rail"], [line, panel, "line/panel"], [idx2, panel, "dock/panel"], [idx2, dock2, "dock/rail"]] as const) expect(overlap(a, b), what).toBe(false);
+  // the panel arrives in the server's HTML: wait for the map (so the page has hydrated and listens for keys), or a
+  // slow runner presses Escape before anything can hear it
+  await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { loaded(): boolean } }).__cwMap?.loaded());
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("inspect-panel")).toHaveCount(0);
 });
