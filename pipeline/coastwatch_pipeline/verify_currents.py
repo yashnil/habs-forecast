@@ -49,11 +49,17 @@ def _field(out_dir: Path, lyr: LayerArtifact) -> tuple[np.ndarray, np.ndarray]:
     )
 
 
+# One cell is a response of a few hundred bytes that normally arrives in about a second. A request
+# gets one retry and 30 s: staging run 42579801434 spent its whole budget on a server answering 502
+# after 15 s, four attempts per cell. Cells left unanswered are asked again later (verify_currents).
+POINT = {"retries": 1, "backoff": 3, "timeout": 30.0}
+
+
 def _erddap(t: str, lat: float, lon: float) -> dict | None:
     sel = f"[({t})][({lat:.6f})][({lon:.6f})]"
     url = f"{cur.SERVER}/griddap/{cur.DATASET}.csv0?" + quote(",".join(v + sel for v in cur.VARS), safe=",():")
     try:
-        line = fetch(url, retries=3, backoff=3).body.decode().strip().splitlines()[-1].split(",")
+        line = fetch(url, **POINT).body.decode().strip().splitlines()[-1].split(",")
     except FetchError as e:
         if cur.sat.no_matching_results(e):  # no data there: an answer
             return None
@@ -86,7 +92,7 @@ class _Ndbc:
                 return None  # that hour is not on the server: no data there
             i, j = int(np.argmin(abs(ax.lat - lat))), int(np.argmin(abs(ax.lon - lon)))
             sel = f"[{k}:1:{k}][{i}:1:{i}][{j}:1:{j}]"
-            body = fetch(f"{cur.NDBC_URL}.dods?" + quote(",".join(v + sel for v in cur.NDBC_VARS), safe=",:"), retries=3, backoff=3).body
+            body = fetch(f"{cur.NDBC_URL}.dods?" + quote(",".join(v + sel for v in cur.NDBC_VARS), safe=",:"), **POINT).body
             arrays, _ = cur._ndbc_arrays(body, ax)
         except (FetchError, ValueError) as e:
             raise RuntimeError(f"UNVERIFIABLE, NDBC unreachable: {str(e)[:160]}") from e
@@ -94,7 +100,7 @@ class _Ndbc:
         return {"lat": float(ax.lat[i]), "lon": float(ax.lon[j]), "u": val("water_u"), "v": val("water_v"), "hdop": val("hdop"), "sites": val("number_of_sites")}
 
 
-HOST_LAST_AFTER = 3  # a server that failed this many cells in a row is asked after the other copy
+HOST_LAST_AFTER = 2  # a server that failed this many cells in a row is asked after the other copy
 
 
 def _upstream(lookups: dict, host: cur.Host, t: str, lat: float, lon: float, failing: dict | None = None) -> tuple[dict | None, cur.Host]:
