@@ -110,12 +110,29 @@ export async function forecastRead(manifest: Manifest, baseUrl: string, l: Layer
 }
 
 /**
+ * The published value of the layer at a point: what the hover readout and the dock's ramp marker show.
+ * `water`: is the point water (null: unknown).
+ */
+export async function readSource(manifest: Manifest, baseUrl: string, source: NonNullable<HoverSource>, point: { lat: number; lon: number }, water: boolean | null): Promise<Read> {
+  if (source.kind === "forecast") return forecastRead(manifest, baseUrl, source.layer, point.lat, point.lon, !!source.context, source.context ? water : null, source.check);
+  if (source.kind === "outlook") return outlookRead(baseUrl, source.layer, point.lat, point.lon);
+  if (source.kind === "sst") return sstRead(baseUrl, source.layer, point.lat, point.lon);
+  if (source.kind === "satellite") {
+    const obs = withBayCaveat(await satelliteAt(manifest, baseUrl, source.layer, point.lat, point.lon), point.lat, point.lon);
+    // an observed pixel is always what is read; the estimate only where nothing was observed
+    if (obs.value != null || !source.estimate || water === false) return obs;
+    return (await estimateRead(baseUrl, source.estimate, point.lat, point.lon)) ?? obs;
+  }
+  return currentsAt(source.field, source.layer, point.lat, point.lon);
+}
+
+/**
  * Desktop hover readout (M5): the exact published value of the cell under the pointer, with
  * its date and source, in a small label beside the cursor. The latest pointer position wins;
  * grids are fetched once and cached. Click opens the full inspector, which is also the
  * keyboard and screen-reader route to the same values, so this label is aria-hidden.
  */
-export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds, waterAt }: { manifest: Manifest; baseUrl: string; source: HoverSource; point: { lat: number; lon: number } | null; screen: { x: number; y: number } | null; bounds: { w: number; h: number }; waterAt?: (screen: { x: number; y: number }) => boolean | null }) {
+export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds, waterAt, onRead }: { manifest: Manifest; baseUrl: string; source: HoverSource; point: { lat: number; lon: number } | null; screen: { x: number; y: number } | null; bounds: { w: number; h: number }; waterAt?: (screen: { x: number; y: number }) => boolean | null; onRead?: (r: Read | null) => void }) {
   const [r, setR] = useState<Read | null>(null);
   const seq = useRef(0);
   useEffect(() => {
@@ -124,24 +141,19 @@ export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds,
       setR(null);
       return;
     }
-    const run = async (): Promise<Read> => {
-      if (source.kind === "forecast") return forecastRead(manifest, baseUrl, source.layer, point.lat, point.lon, !!source.context, source.context && screen && waterAt ? waterAt(screen) : null, source.check);
-      if (source.kind === "outlook") return outlookRead(baseUrl, source.layer, point.lat, point.lon);
-      if (source.kind === "sst") return sstRead(baseUrl, source.layer, point.lat, point.lon);
-      if (source.kind === "satellite") {
-        const obs = withBayCaveat(await satelliteAt(manifest, baseUrl, source.layer, point.lat, point.lon), point.lat, point.lon);
-        // an observed pixel is always what is read; the estimate only where nothing was observed
-        if (obs.value != null || !source.estimate || (screen && waterAt?.(screen) === false)) return obs;
-        return (await estimateRead(baseUrl, source.estimate, point.lat, point.lon)) ?? obs;
-      }
-      return currentsAt(source.field, source.layer, point.lat, point.lon);
-    };
-    run()
+    readSource(manifest, baseUrl, source, point, screen && waterAt ? waterAt(screen) : null)
       .then((x) => n === seq.current && setR(x))
       .catch(() => n === seq.current && setR(null));
     // the screen position follows the point (they arrive together)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manifest, baseUrl, source, point]);
+
+  const onReadRef = useRef(onRead);
+  onReadRef.current = onRead;
+  useEffect(() => {
+    onReadRef.current?.(r);
+  }, [r]);
+  useEffect(() => () => onReadRef.current?.(null), []);
 
   if (!r || !screen || !point) return null;
   const W = 264;
@@ -152,11 +164,11 @@ export function HoverReadout({ manifest, baseUrl, source, point, screen, bounds,
       aria-hidden
       data-testid="hover-readout"
       data-tone={r.tone}
-      className="pointer-events-none absolute z-30 rounded-lg bg-navy-950/[0.93] px-2.5 py-1.5 text-[13px] leading-snug text-on-navy-2 shadow-[0_6px_18px_rgba(4,11,23,0.4)] ring-1 ring-white/10 backdrop-blur-sm"
+      className="pointer-events-none absolute z-30 rounded-[12px] bg-[rgba(7,14,20,0.96)] px-3 py-2 text-[13px] leading-snug text-on-navy-2 shadow-[0_6px_18px_rgba(4,11,23,0.4)]"
       style={{ left, top, width: W }}
     >
       {r.label && (
-        <p className={`text-[12.5px] font-semibold ${r.tone === "outside" || r.tone === "context" ? "text-white/75" : "text-[#cbbcf7]"}`} data-testid="hover-label">
+        <p className={`text-[13px] font-medium ${r.tone === "outside" || r.tone === "context" ? "text-white/75" : "text-[#cbbcf7]"}`} data-testid="hover-label">
           {r.label}
         </p>
       )}

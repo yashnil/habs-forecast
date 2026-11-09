@@ -61,7 +61,7 @@ test("L4: a layer's subtitle (what it is and how new) is never cut off", async (
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=forecast`);
-  const cut = await page.getByTestId("layer-list").locator("span.block.text-\\[13px\\]").evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent));
+  const cut = await page.getByTestId("layer-list").locator("span.truncate").evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent));
   expect(cut).toEqual([]);
 });
 
@@ -109,6 +109,7 @@ test("L8: on a phone, choosing another layer from the sheet leaves it open at ha
   const peekTop = (await card.boundingBox())!.y;
   expect(peekTop).toBeGreaterThan(844 * 0.6); // the sheet peeks: only its first lines show
   // the peek is the dock: the layer button opens the list in the sheet
+  await openLayers(page);
   await openLayers(page);
   await page.getByTestId("layer-currents").click();
   await expect(page).toHaveURL(/layer=currents/);

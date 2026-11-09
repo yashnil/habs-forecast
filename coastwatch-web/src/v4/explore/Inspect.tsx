@@ -17,6 +17,8 @@ import { disputeOf, officialAt } from "@/lib/official";
 import { currentsAt, forecastAt, pnSibling, satelliteAt, type Readout } from "@/lib/readout";
 import { KNOTS_PER_MS, currentsMean, defaultHour, loadFieldCached, type CurrentField } from "@/lib/currents";
 import { Icon } from "@/v4/ui/Icon";
+import { LinkButton } from "@/v4/ui/Button";
+import { Unverified } from "@/v4/ui/Unverified";
 import { clockLabel, dayLabel, kmLabel, lastHabWords, relTime } from "@/v4/ui/time";
 import { lastHabSample } from "@/lib/provenance";
 import { SeriesChart, recentSamples } from "@/v4/charts/SeriesChart";
@@ -112,11 +114,11 @@ export function Header({ kind, title, sub, onClose, onBack, canBack, action }: {
         </button>
       )}
       <div className="min-w-0 flex-1 pt-1">
-        <h2 className="nx-display text-balance text-[22px] leading-[26px] text-n-ink" data-testid="inspect-title">
+        <h2 className="nx-display text-balance text-[30px] leading-[34px] text-n-ink" data-testid="inspect-title">
           {title}
         </h2>
-        <p className="mt-1 flex items-center gap-1.5 text-[12.5px] leading-snug text-n-ink-2">
-          <span className="nx-caps shrink-0">{kind}</span>
+        <p className="mt-1 flex items-center gap-1.5 text-[13.5px] leading-snug text-n-ink-2">
+          <span className="shrink-0">{kind}</span>
           {sub && <span className="min-w-0 truncate">· {sub}</span>}
         </p>
       </div>
@@ -128,10 +130,10 @@ export function Header({ kind, title, sub, onClose, onBack, canBack, action }: {
   );
 }
 
-function Section({ title, children, testid }: { title: string; children: React.ReactNode; testid?: string }) {
+function Section({ title, children, testid, plain = false }: { title: string; children: React.ReactNode; testid?: string; plain?: boolean }) {
   return (
-    <section className="flex flex-col gap-2.5 border-t border-n-line pt-4" data-testid={testid}>
-      <h3 className="nx-eyebrow">{title}</h3>
+    <section className={plain ? "flex flex-col gap-2.5" : "flex flex-col gap-2.5 border-t border-n-line pt-4"} data-testid={testid}>
+      <h3 className={plain ? "nx-margin" : "nx-eyebrow"}>{title}</h3>
       {children}
     </section>
   );
@@ -176,17 +178,13 @@ export function ClaimRow({ c, graph, stations, onSelect, fallback = null, compac
   const [more, setMore] = useState(false);
   const hasMore = compact && !!(c.quote || c.also || c.detail || c.history || c.provenance || c.agencyWords?.length);
   const nodes = new Map(graph.nodes.map((n) => [n.id, n]));
+  // an official claim is Neritic's copy until a person has reviewed the record behind it: said in words (design.md §3)
+  const official = c.kind === "official" || c.kind === "agency_page";
+  const verified = official && (c.supports ?? []).length > 0 && (c.supports ?? []).every((id) => nodes.get(id)?.lineage?.includes("reviewed"));
+  const disputed = c.id.startsWith("disputed-");
   const target = (c.supports ?? []).map((id) => nodeSelection(nodes.get(id), stations)).find(Boolean) ?? fallback;
-  return (
-    // an alert keeps its dot, its "Official" label and a 2 px official rule; no filled card
-    <li className={`flex gap-3 ${c.tone === "alert" ? "-ml-3 border-l-2 border-l-n-official pl-[10px]" : ""}`} data-testid={`claim-${c.id}`} data-kind={c.kind} data-tone={c.tone} data-supports={(c.supports ?? []).join(" ")}>
-      {/* older evidence is drawn hollow (its age is in the line itself), as in v2 */}
-      <span className={`mt-2 h-2.5 w-2.5 shrink-0 rounded-full ${c.aged ? k.hollow : k.dot}`} data-aged={c.aged ? "true" : undefined} aria-hidden />
-      <div className="min-w-0 flex-1">
-        <p className={`${compact ? "text-[15px]" : "text-[15.5px]"} font-semibold leading-snug text-n-ink`} data-headline>
-          {c.headline}
-        </p>
-        <div hidden={compact && !more}>
+  const details = () => (
+    <>
         {/* the agency's own words: quoted in full, never paraphrased into the headline */}
         {c.quote && (
           <blockquote className="mt-1 border-l-2 border-n-official-line pl-2.5 font-serif text-[15.5px] leading-snug text-n-ink" data-testid="claim-quote">
@@ -233,7 +231,52 @@ export function ClaimRow({ c, graph, stations, onSelect, fallback = null, compac
             </ul>
           </details>
         )}
+    </>
+  );
+  if (compact)
+    return (
+      <li className="flex flex-col gap-0.5" data-testid={`claim-${c.id}`} data-kind={c.kind} data-tone={c.tone} data-supports={(c.supports ?? []).join(" ")}>
+        <div className="flex min-h-6 flex-wrap items-center gap-x-2 text-[13px]">
+          <span className={`h-2 w-2 shrink-0 rounded-full ${c.aged ? k.hollow : k.dot}`} data-aged={c.aged ? "true" : undefined} aria-hidden />
+          <span className="font-medium text-n-ink-2">{k.word}</span>
+          {disputed && <span className="text-n-stale" data-testid="claim-awaiting">awaiting review</span>}
+          {official && !verified && <Unverified testId="claim-not-verified" className="text-[13px]" />}
+          <span className="flex-1" />
+          {target && onSelect && (
+            <button type="button" aria-label="Show on map" title="Show on map" onClick={() => onSelect(target)} className="nx-focus -my-1.5 grid h-11 w-11 place-items-center rounded-lg text-n-ink-2 hover:text-n-ink" data-testid={`claim-show-${c.id}`}>
+              <Icon name="locate" className="h-4 w-4" />
+            </button>
+          )}
+          {hasMore && (
+            <button type="button" aria-expanded={more} onClick={() => setMore((m) => !m)} className="nx-focus -my-1.5 inline-flex min-h-11 items-center gap-1 text-[13px] text-n-ink-2 hover:text-n-ink" data-testid={`claim-more-${c.id}`}>
+              {more ? "Less" : "Details"}
+              <Icon name="chevronDown" className={`h-3.5 w-3.5 transition-transform ${more ? "rotate-180" : ""}`} />
+            </button>
+          )}
         </div>
+        <p className="text-[16px] leading-[23px] text-n-ink" data-headline>
+          {c.headline}
+        </p>
+        <div hidden={!more} className="mt-1 flex flex-col gap-1">
+          {details()}
+          {c.source?.url && (
+            <a href={c.source.url} target="_blank" rel="noreferrer" className="nx-link nx-focus inline-flex min-h-11 items-center gap-1 text-[13px]">
+              {c.source.label} <Icon name="external" className="h-3.5 w-3.5" />
+            </a>
+          )}
+        </div>
+      </li>
+    );
+  return (
+    // an alert keeps its dot, its "Official" label and a 2 px official rule; no filled card
+    <li className={`flex gap-3 ${c.tone === "alert" ? "-ml-3 border-l-2 border-l-n-official pl-[10px]" : ""}`} data-testid={`claim-${c.id}`} data-kind={c.kind} data-tone={c.tone} data-supports={(c.supports ?? []).join(" ")}>
+      {/* older evidence is drawn hollow (its age is in the line itself), as in v2 */}
+      <span className={`mt-2 h-2.5 w-2.5 shrink-0 rounded-full ${c.aged ? k.hollow : k.dot}`} data-aged={c.aged ? "true" : undefined} aria-hidden />
+      <div className="min-w-0 flex-1">
+        <p className={`${compact ? "text-[15px]" : "text-[15.5px]"} font-semibold leading-snug text-n-ink`} data-headline>
+          {c.headline}
+        </p>
+        {details()}
         <div className={`flex flex-wrap items-center gap-x-3 gap-y-0 text-[13px] ${compact ? "" : "mt-1"}`}>
           <span className={`font-semibold ${k.tone}`}>{k.word}</span>
           {hasMore && (
@@ -285,7 +328,7 @@ function Failed({ what, message, retry }: { what: string; message: string; retry
 
 export type InspectCtx = Ctx;
 
-export function HarborView({ code, ctx, concise = false, evidenceFirst = false }: { code: number; ctx: Ctx; concise?: boolean; evidenceFirst?: boolean }) {
+export function HarborView({ code, ctx, concise = false }: { code: number; ctx: Ctx; concise?: boolean }) {
   const intel = ctx.portIntel?.ports.find((p) => p.port_code === code) ?? null;
   const f = ctx.ports?.features.find((x) => x.properties.port_code === code);
   const [lon, lat] = (f?.geometry.coordinates as number[] | undefined) ?? [intel?.lon ?? 0, intel?.lat ?? 0];
@@ -347,10 +390,13 @@ export function HarborView({ code, ctx, concise = false, evidenceFirst = false }
       </Section>
     </>
   );
-  const top = claims.slice(0, concise ? 3 : claims.length);
-  const later = concise ? claims.slice(3) : [];
+  // the place sheet leads with three statements in authority order (official, measured, model, then the rest)
+  const AUTHORITY: Record<string, number> = { official: 0, agency_page: 1, measured: 2, satellite: 3, conditions: 3, model: 4, gap: 5 };
+  const ranked = concise ? [...claims].sort((a, b) => (AUTHORITY[a.kind] ?? 6) - (AUTHORITY[b.kind] ?? 6)) : claims;
+  const top = ranked.slice(0, concise ? 3 : claims.length);
+  const later = concise ? ranked.slice(3) : [];
   const claimsSection = (
-    <Section title={saved ? `As saved ${clockLabel(saved.savedAt)}` : concise ? `Now${evDay ? ` · ${dayLabel(evDay, true)}` : ""}` : "What the evidence says now"} testid="harbor-claims">
+    <Section plain={concise} title={saved ? `As saved ${clockLabel(saved.savedAt)}` : concise ? `Now${evDay ? `, ${dayLabel(evDay, true)}` : ""}` : "What the evidence says now"} testid="harbor-claims">
       {evDay && (
         <p className={`-mt-1 text-[13px] leading-snug text-n-ink-3 ${concise && !(mapDay?.date && ctx.layer === "forecast" && mapDay.date !== evDay) ? "sr-only" : ""}`} data-testid="harbor-day">
           For {dayLabel(evDay, true)}
@@ -358,40 +404,46 @@ export function HarborView({ code, ctx, concise = false, evidenceFirst = false }
         </p>
       )}
       {!ev || ev.status === "loading" ? (
-        <Loading what="Reading the evidence for these waters…" />
+        // the place sheet keeps the statements' room while they load, so the action below them does not jump
+        <div style={concise ? { minHeight: 196 } : undefined}>
+          <Loading what="Reading the evidence for these waters…" />
+        </div>
       ) : ev.status === "error" ? (
         <Failed what="The evidence" message={ev.message} retry={retryEv} />
       ) : (
         <>
-          <ul className={`flex flex-col divide-y divide-n-line [&>li:first-child]:pt-0 [&>li:last-child]:pb-0 ${concise ? "[&>li]:py-2" : "[&>li]:py-3"}`}>
+          <ul className={concise ? "flex flex-col gap-2.5" : "flex flex-col divide-y divide-n-line [&>li:first-child]:pt-0 [&>li:last-child]:pb-0 [&>li]:py-3"}>
             {top.map((c) => (
               <ClaimRow key={c.id} c={c} graph={ev.data} stations={ctx.stations} onSelect={ctx.onSelect} compact={concise} />
             ))}
           </ul>
-          {later.length > 0 && (
+        </>
+      )}
+    </Section>
+  );
+  // the lines past the first three follow the action, so the action stays in the sheet as it opens
+  const moreClaims =
+    later.length > 0 && ev?.status === "ready" ? (
             <details className="group" data-testid="harbor-claims-more">
               <summary className="nx-focus inline-flex min-h-11 cursor-pointer list-none items-center gap-1 text-[13.5px] font-semibold text-n-ink-2 hover:text-n-ink [&::-webkit-details-marker]:hidden">
                 {later.length} more {later.length === 1 ? "line" : "lines"} of evidence
                 <Icon name="chevronDown" className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
               </summary>
-              <ul className="flex flex-col divide-y divide-n-line border-t border-n-line [&>li]:py-2">
+              <ul className="mt-1 flex flex-col gap-3.5">
                 {later.map((c) => (
                   <ClaimRow key={c.id} c={c} graph={ev.data} stations={ctx.stations} onSelect={ctx.onSelect} compact />
                 ))}
               </ul>
             </details>
-          )}
-        </>
-      )}
-    </Section>
-  );
-  const actions = <CrossLinks ctx={ctx} place={`port-${code}`} lat={lat} lon={lon} name={name} variant={concise ? "actions" : "row"} primary="brief" briefTestId={concise ? "open-briefing" : undefined} briefLabel={concise ? "Open the briefing" : `Open the ${name} briefing`} />;
+    ) : null;
+  const actions = <CrossLinks ctx={ctx} place={`port-${code}`} lat={lat} lon={lon} name={name} variant={concise ? "actions" : "row"} primary="brief" briefTestId={concise ? "open-briefing" : undefined} briefLabel={concise ? "Open today's briefing" : `Open the ${name} briefing`} today={concise && !ctx.from?.startsWith("/coast")} />;
   if (concise)
     return (
       <div className="flex flex-col gap-4" data-testid="inspect-harbor">
-        {/* a phone's sheet opens at half height: the first line of evidence is in it, then the actions */}
-        {evidenceFirst ? claimsSection : actions}
-        {evidenceFirst ? actions : claimsSection}
+        {/* name, three statements in authority order, then the one action; the evidence is folded */}
+        {claimsSection}
+        {actions}
+        {moreClaims}
         <EvidenceFold summary="Harbour water, shore stations nearby, each product near the harbour">
           {water}
           {intel && <HarbourSummary intel={intel} lead={ctx.lead} />}
@@ -1165,43 +1217,47 @@ export function crossHrefs(o: { place: string; lat: number; lon: number; station
  * nearest one, with the variable, the day and the way back). `variant="actions"` (v7 panel): the one
  * primary action as a filled button and the other as a quiet link beside it, at the top of the panel.
  */
-export function CrossLinks({ ctx, place, lat, lon, name, station = null, obsVariable, variant = "row", primary = "brief", briefTestId, briefLabel }: { ctx: Ctx; place: string; lat: number; lon: number; name: string; station?: string | null; obsVariable?: string; variant?: "row" | "actions"; primary?: "brief" | "research"; briefTestId?: string; briefLabel?: string }) {
+export function CrossLinks({ ctx, place, lat, lon, name, station = null, obsVariable, variant = "row", primary = "brief", briefTestId, briefLabel, today = false }: { ctx: Ctx; place: string; lat: number; lon: number; name: string; station?: string | null; obsVariable?: string; variant?: "row" | "actions"; primary?: "brief" | "research"; briefTestId?: string; briefLabel?: string; today?: boolean }) {
   // the reader's home trip is read after mount (localStorage); the server renders without it
   const [home, setHome] = useState<{ for: string; species: string } | null>(null);
   useEffect(() => setHome(readHome()), []);
   const day = useMemo(() => runDays(ctx.manifest, ctx.now).find((d) => d.lead === ctx.lead)?.date ?? null, [ctx.manifest, ctx.now, ctx.lead]);
   const h = crossHrefs({ place, lat, lon, station, stations: ctx.stations, variable: obsVariable ?? researchVariable(ctx.layer, ctx.variable), day, from: ctx.from, here: ctx.here, home });
   if (variant === "actions") {
-    // v10: the one primary action as a hairline button (direction A's "Open the briefing →"), the other a quiet link
-    const fill = "nx-press nx-focus flex min-h-11 min-w-[11rem] flex-1 items-center justify-between gap-2 rounded-[3px] border border-n-line-strong px-3.5 text-[14px] text-n-ink hover:border-n-ink-2";
-    const quiet = "nx-focus inline-flex min-h-11 shrink-0 items-center gap-1 rounded-[3px] px-2 text-[13.5px] text-n-ink-2 underline decoration-n-line-strong underline-offset-4 hover:text-n-ink";
+    // the one primary action, ink-filled; the other a quiet link. A harbour's briefing is Today; My Coast is its trip plan.
+    const fill = "w-full justify-between";
+    const quiet = "nx-link nx-focus inline-flex min-h-11 shrink-0 items-center gap-1 pr-3 text-[14px]";
     const brief = (
-      <Link key="b" href={h.brief} className={primary === "brief" ? fill : quiet} data-testid={briefTestId ?? "brief-this"}>
-        {primary === "brief" ? (
-          <>
-            <span className="truncate">{briefLabel ?? "Open the briefing"}</span>
-            <Icon name="chevronRight" className="h-[18px] w-[18px] shrink-0" />
-          </>
-        ) : (
-          "Brief this"
-        )}
-      </Link>
+      <LinkButton key="b" kind="primary" className={fill} href={today ? `/today?place=${encodeURIComponent(place)}` : h.brief} testId={briefTestId ?? "brief-this"}>
+        <span>{briefLabel ?? "Open the briefing"}</span>
+        <Icon name="chevronRight" className="h-[18px] w-[18px]" />
+      </LinkButton>
     );
-    const research = (
-      <Link key="r" href={h.research} className={primary === "research" ? fill : quiet} data-testid="research-this" title={`The ${station ? "station's" : "nearest station's"} record${h.stationName && !station ? ` (${h.stationName})` : ""} in Research`}>
-        {primary === "research" ? (
-          <>
-            <span className="truncate">Research this station</span>
-            <Icon name="chevronRight" className="h-[18px] w-[18px] shrink-0" />
-          </>
-        ) : (
-          "History in Research"
-        )}
-      </Link>
-    );
+    const research =
+      primary === "research" ? (
+        <LinkButton key="r" kind="primary" className={fill} href={h.research} testId="research-this">
+          <span>Research this station</span>
+          <Icon name="chevronRight" className="h-[18px] w-[18px]" />
+        </LinkButton>
+      ) : (
+        <Link key="r" href={h.research} className={quiet} data-testid="research-this" title={`The ${station ? "station's" : "nearest station's"} record${h.stationName && !station ? ` (${h.stationName})` : ""} in Research`}>
+          History in Research
+        </Link>
+      );
+    const trip =
+      primary === "brief" && today ? (
+        <Link key="t" href={h.brief} className={quiet} data-testid="brief-this">
+          Plan a trip
+        </Link>
+      ) : primary === "research" ? (
+        <Link key="t" href={h.brief} className={quiet} data-testid="brief-this">
+          Brief this
+        </Link>
+      ) : null;
     return (
-      <nav aria-label={`Next steps for ${name}`} className="flex flex-wrap items-center gap-x-1 gap-y-1.5" data-testid="inspect-crosslinks">
-        {primary === "brief" ? [brief, research] : [research, brief]}
+      <nav aria-label={`Next steps for ${name}`} className="flex flex-col gap-1" data-testid="inspect-crosslinks">
+        {primary === "brief" ? brief : research}
+        <div className="flex flex-wrap items-center">{primary === "brief" ? [trip, research] : [trip]}</div>
       </nav>
     );
   }

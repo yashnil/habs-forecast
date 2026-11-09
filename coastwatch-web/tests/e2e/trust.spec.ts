@@ -144,7 +144,10 @@ test.describe("freshness: old or failed data never reads as current", () => {
     await expect(page.getByTestId("show-latest-forecast").first()).toHaveText(/^Show the (\w+, )?\w+ \d{1,2}(, \d{4})? forecast · out of date, \d+ days? old$/);
     await page.getByTestId("show-latest-forecast").first().click();
     await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
-    await expect(page.getByTestId("historical-note").or(page.getByTestId("stale-note")).first()).toBeVisible();
+    // v11: an old date is marked on the dock's head, in place; the sentence behind it is one tap in (asserted below)
+    await expect(page.getByTestId("dock-date")).toHaveAttribute("data-stale", "true");
+    await expect(page.getByTestId("dock-date")).toContainText("(old)");
+    await expect(page.getByTestId("historical-note").or(page.getByTestId("stale-note")).first()).toContainText(/No newer|out of date/);
   });
 
   test("with nothing current, the newest satellite view is offered with its date, and opens marked as old", async ({ page }) => {
@@ -167,7 +170,8 @@ test.describe("freshness: old or failed data never reads as current", () => {
     await page.clock.setFixedTime(new Date("2026-10-12T20:00:00Z"));
     await page.reload();
     await map(page);
-    await expect(page.getByTestId("stale-note").or(page.getByTestId("historical-note")).first()).toBeVisible();
+    await expect(page.getByTestId("dock-date")).toHaveAttribute("data-stale", "true");
+    await expect(page.getByTestId("stale-note").or(page.getByTestId("historical-note")).first()).toContainText(/Older than usual|out of date/);
     expect(await statusOf(page, "satellite")).toBe("stale");
   });
 

@@ -153,6 +153,7 @@ test("on a phone the outlook is two taps away (the layer button, then the outloo
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=forecast`);
   await openLayers(page);
+  await openLayers(page);
   await page.getByTestId("layer-outlook").click();
   await expect(page.getByTestId("layer-outlook")).toHaveAttribute("aria-checked", "true");
   await expect(page.getByTestId("outlook-horizon").first()).toBeVisible();

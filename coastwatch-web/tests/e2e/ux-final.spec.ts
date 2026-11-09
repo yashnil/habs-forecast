@@ -62,8 +62,8 @@ test("M5: comparing currents with chlorophyll, both times are above the fold on 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=currents&chl=1`);
   await mapReady(page);
-  // v7: both lines sit under the legend in the dock (a layer list is not needed to read them)
-  for (const id of ["stamp-currents", "stamp-satellite"]) await expect(page.getByTestId("timebar-deck").getByTestId(id).first()).toBeInViewport();
+  // v11: compared, both lines sit in the rail's caption (the head can name only one time)
+  for (const id of ["stamp-currents", "stamp-satellite"]) await expect(page.getByTestId("rail-status").getByTestId(id).first()).toBeInViewport();
 });
 
 test("M6: on a phone with a harbour open the layers are one tap away, and a statewide notice count says it is statewide", async ({ browser }) => {
@@ -75,6 +75,7 @@ test("M6: on a phone with a harbour open the layers are one tap away, and a stat
   await expect(page.getByTestId("notices-here")).toBeVisible();
   // the sheet keeps the dock's layer button above the place: the list is one tap away
   await expect(page.getByTestId("layer-capsule")).toBeVisible();
+  await openLayers(page);
   await openLayers(page);
   await page.getByTestId("layer-currents").click();
   await expect(page).toHaveURL(/layer=currents/);

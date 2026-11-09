@@ -258,8 +258,8 @@ for (const width of [1440, 320]) {
     await page.getByRole("link", { name: "Open in Explore" }).click();
     const back = page.getByTestId("back-to-briefing");
     await expect(back).toBeInViewport();
-    const top = await back.evaluate((el) => { const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!hit && el.contains(hit); });
-    expect(top).toBe(true);
+    // polled: during the route's view transition elementFromPoint answers with the root element
+    await expect.poll(() => back.evaluate((el) => { const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!hit && el.contains(hit); })).toBe(true);
     await back.click();
     await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
     await ctx.close();
