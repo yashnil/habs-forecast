@@ -14,12 +14,14 @@
     "data:live": "cd ../pipeline && uv run cwp run --out ../coastwatch-web/public/data/v1",
     "data:fixture": "node scripts/copy-fixture-data.mjs",
     "test": "vitest run",
+    "eval:ask:live": "NERITIC_ASK_LIVE_EVALS=1 vitest run tests/unit/ask/live-evals.test.ts",
     "test:e2e": "npm run data:fixture && npm run build && playwright test",
     "test:published": "playwright test -c playwright.published.config.ts",
     "shots": "node scripts/shoot.mjs",
     "test:offline": "node scripts/offline-proof.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
     "@mapbox/vector-tile": "3.0.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.118.0",
