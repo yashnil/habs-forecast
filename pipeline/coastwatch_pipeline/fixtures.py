@@ -291,6 +291,15 @@ class FixtureFetcher:
         return Response(url=url, status=200, content_type="application/octet-stream", body=body)
 
     def _serve(self, url: str) -> Response:
+        # CDPH domoic-acid PDFs and the page linking them, recorded 2026-11-08 (tests/fixtures/cdph)
+        cdph = {
+            "/DomoicAcid/CrabDAResults.pdf": ("cdph/CrabDAResults-2026-11-02.pdf", "application/pdf"),
+            "/DomoicAcid/SeafoodDAResults082826to102226.pdf": ("cdph/SeafoodDAResults082826to102226.pdf", "application/pdf"),
+            "/FoodSafetyProgram/DomoicAcid.aspx": ("cdph/DomoicAcid-links.html", "text/html"),
+        }
+        for tail, (rel, ctype) in cdph.items():
+            if url.startswith("https://www.cdph.ca.gov/") and url.endswith(tail):
+                return self._file(url, rel, ctype)
         rec = self._recorded(url) or self._jpss_port(url)
         if rec is not None:
             return rec
