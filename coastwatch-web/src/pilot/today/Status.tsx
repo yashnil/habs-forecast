@@ -105,7 +105,14 @@ export function StatusStrip({
       </ul>
       <FactAnchors ids={otherNotices.filter((id) => !placed.has(id))} />
       <p className="nx-margin mt-3">
-        Transcribed from CDFW and CDPH. <b>No restriction on record</b> is not a promise that a fishery is open or that seafood is free of toxin; notices can lag.
+        Transcribed from CDFW and CDPH.{" "}
+        {rows.some((r) => r.level === "no_restriction_on_record") ? (
+          <>
+            <b>No restriction on record</b> is not a promise that a fishery is open or that seafood is free of toxin; notices can lag.
+          </>
+        ) : (
+          "A notice here can lag the agency's own page; the agencies are the authority."
+        )}
       </p>
     </Section>
   );

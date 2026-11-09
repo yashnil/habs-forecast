@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PortFact, PortToday } from "@/pilot/contracts";
 import { BLOOM_JUMP_PTS, diffFacts, factVersion, snapshotOf, triggerFor, TRIGGERS, type AlertTrigger } from "@/pilot/alerts/diff";
 import { MemoryFanoutStore, runFanout, type PushSender } from "@/pilot/alerts/fanout";
-import { realPortToday } from "./fixtures/portToday";
+import { fixtureServerEnv, realPortToday } from "./fixtures/portToday";
 
 const NOW = "2026-11-09T14:00:00.000Z";
 // the real fact shape: Moss Landing built by buildPortToday from the fixture sidecars (every fishery)
@@ -148,4 +148,51 @@ describe("runFanout (idempotent server fan-out)", () => {
     expect(r.push.skipped_not_configured).toBe(1);
     expect(r.push.sent).toBe(0);
   });
+});
+
+describe("where alerts get their facts (the same ones Today shows)", () => {
+  const server = fixtureServerEnv();
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("loads every pilot port's facts for every fishery, without the sea, and says when they are the test fixture's", async () => {
+    Object.entries(server).forEach(([k, v]) => vi.stubEnv(k, v));
+    const { loadPortTodays } = await import("@/pilot/alerts/source");
+    const r = await loadPortTodays();
+    expect(r.sample).toBe(true);
+    expect(r.todays.map((t) => t.place_id)).toEqual(["port-592", "port-550", "port-593", "port-452"]);
+    const moss = r.todays[0];
+    for (const id of ["status:dungeness_commercial", "status:spiny_lobster", "whale:ramp:zone-4", "test:bma-g-monterey-bay-dungeness-crab", "charm:pda", "age:data"]) expect(moss.facts.map((f) => f.id)).toContain(id);
+    // no alert trigger reads the sea, so it is not fetched for alerts
+    expect(moss.facts.some((f) => f.kind === "weather" || f.kind === "tide" || f.kind === "observation")).toBe(false);
+    // the alert-relevant facts are the very ones Ask Neritic and Today get (with the sea): same ids, same versions
+    const { loadPortTodayFacts } = await import("@/pilot/today/portToday");
+    const full = (await loadPortTodayFacts("port-592"))!.today;
+    const versions = (t: PortToday) => Object.fromEntries(t.facts.filter((f) => triggerFor(f)).map((f) => [f.id, factVersion(f)]));
+    expect(versions(moss)).toEqual(versions(full));
+    // a port with no data is absent, never invented
+    expect((await loadPortTodays(["port-99999"])).todays).toEqual([]);
+  }, 30_000);
+
+  it("the fan-out refuses to send the test fixture's facts to a live project, and never pushes them", async () => {
+    Object.entries(server).forEach(([k, v]) => vi.stubEnv(k, v));
+    vi.stubEnv("ALERTS_FANOUT_SECRET", "s3cret");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service");
+    vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "BPub");
+    vi.stubEnv("VAPID_PRIVATE_KEY", "priv");
+    const fetched = vi.fn(() => Promise.reject(new Error("no network in this test")));
+    vi.stubGlobal("fetch", fetched);
+    const { POST } = await import("@/app/api/alerts/fanout/route");
+    expect((await POST(new Request("https://neritic.example/api/alerts/fanout", { method: "POST" }))).status).toBe(401);
+    const res = await POST(new Request("https://neritic.example/api/alerts/fanout", { method: "POST", headers: { authorization: "Bearer s3cret" } }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ readiness: "live", facts: "sample" });
+    // nothing was read from or written to the project, and nothing was pushed
+    expect(fetched).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  }, 30_000);
 });
