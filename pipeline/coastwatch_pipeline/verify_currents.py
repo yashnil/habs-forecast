@@ -14,11 +14,22 @@ ERDDAP (ucsdHfrW2) or NOAA NDBC's THREDDS copy (hfradar_uswc_2km), which hold th
 so (verified_against). Only when neither answers is a row UNVERIFIABLE (and fails), never a
 mismatch: run 38560029579 (2026-10-14) fetched hours from ERDDAP minutes before it restarted,
 and the unanswerable check blocked every source from publishing.
+
+Settled hours only (issue #95): HFRNet recomputes an hour's totals as late radials arrive, so the
+newest hours change upstream after the pipeline read them. Runs 42176911402, 42375268587,
+42417909426 and 42453211803 (2026-11-06..08) each failed on the newest hour, 2.2-2.6 h old at
+verification (a cell gained, lost or changed a value), while every one of the 18 hours of the
+2026-11-05 run (the newest 8 h old when read) still matched NDBC exactly three days later
+(64/64 checks, 2026-11-08). The source and dropped checks therefore sample hours at least
+SETTLE_HOURS old at verification; the pass criteria are unchanged. If no new hour is that old, the
+newest hours are checked as before (and may fail). The report states how many new hours were left
+out as unsettled; they are still published, labelled with their observation time.
 """
 
 from __future__ import annotations
 
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote
 
@@ -102,14 +113,26 @@ def _cells(mask: np.ndarray, n: int) -> list[tuple[int, int]]:
     return [(int(rr[i]), int(cc[i])) for i in idx]
 
 
-def verify_currents(out_dir: Path, live: bool = True, per_layer: int = 6, hourly_layers: int = 2) -> dict:
+SETTLE_HOURS = 6
+
+
+def settled(layers: list[LayerArtifact], now: datetime, hours: float = SETTLE_HOURS) -> list[LayerArtifact]:
+    """The hourly layers whose valid time is at least `hours` before `now`."""
+    cut = (now - timedelta(hours=hours)).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return [lyr for lyr in layers if (lyr.time.valid_time or "9999") <= cut]
+
+
+def verify_currents(out_dir: Path, live: bool = True, per_layer: int = 6, hourly_layers: int = 2, now: datetime | None = None) -> dict:
     m = Manifest.model_validate_json((out_dir / "manifest.json").read_text())
     all_cur = [lyr for lyr in m.layers if lyr.provenance.source_id == cur.SOURCE_ID and lyr.vectors]
     hourly = sorted((lyr for lyr in all_cur if lyr.layer_id.startswith("hfr2km_currents_2")), key=lambda x: x.time.valid_time or "")
     new = [lyr for lyr in hourly if lyr.provenance.pipeline_run_id == m.pipeline_run_id]
     rows: list[dict] = []
     lookups = {cur.ERDDAP.key: _erddap, cur.NDBC.key: _Ndbc()}
-    picks = new[-1:] + new[:: max(1, len(new) // max(1, hourly_layers - 1))][: hourly_layers - 1] if new else []
+    ripe = settled(new, now or datetime.now(timezone.utc))
+    pool = ripe or new  # nothing settled yet: check the newest hours as before
+    unsettled = len(new) - len(ripe) if ripe else 0
+    picks = pool[-1:] + pool[:: max(1, len(pool) // max(1, hourly_layers - 1))][: hourly_layers - 1] if pool else []
     for lyr in {x.layer_id: x for x in picks}.values():
         u, v = _field(out_dir, lyr)
         g = lyr.vectors.u_grid  # type: ignore[union-attr]
@@ -172,6 +195,7 @@ def verify_currents(out_dir: Path, live: bool = True, per_layer: int = 6, hourly
         "live_source_comparison": live,
         "summary": {
             "hourly_layers_new": len(new), "hourly_layers_checked": len({x.layer_id for x in picks}), "checks": len(rows),
+            "settle_hours": SETTLE_HOURS, "unsettled_hours_not_sampled": unsettled,
             "failures": len(failed), "unverifiable_upstream_unreachable": len(unverifiable),
             "all_passed": not failed and (bool(rows) or not new),
         },
