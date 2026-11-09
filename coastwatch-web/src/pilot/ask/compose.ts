@@ -94,18 +94,30 @@ function toxin(t: PortToday, port: PilotPort, q: string): Composed {
   };
 }
 
+/**
+ * Does a forecast speak to `target`? With valid_for, by its dates. Without one (the current NWS
+ * product, the next tide), only while it is fresh: its own headline names the period, so quoting it
+ * is honest, and the stale note says when it is old.
+ */
+function covers(f: PortFact, target: string, now: Date): boolean {
+  if (f.valid_for) return f.valid_for.from <= target && target <= f.valid_for.to;
+  return !isStale(f, now);
+}
+
 function sea(t: PortToday, port: PilotPort, q: string, now: Date): Composed {
   const today = pacificDate(now);
   const want = dayIn(q);
   const target = want === "today" ? today : addDays(today, 1);
   const forecasts = t.facts
     .filter((f) => (f.kind === "sea" || f.kind === "weather" || f.kind === "tide") && f.basis === "forecast")
-    .filter((f) => (f.valid_for ? f.valid_for.from <= target && target <= f.valid_for.to : false));
+    .filter((f) => covers(f, target, now));
   const wantsTide = /\btides?\b/i.test(q) && !/\b(wind|sea|swell|wave|weather)/i.test(q);
   const chosen = wantsTide ? forecasts.filter((f) => f.kind === "tide") : forecasts;
   const obs = want === "tomorrow" ? [] : t.facts.filter((f) => f.kind === "observation" && /buoy|wind|seas?\b/i.test(f.headline)).slice(0, 1);
   const lines = [...chosen.map(plainLine), ...obs.map(observationLine)];
   if (!chosen.length) lines.unshift({ text: `Neritic has no ${wantsTide ? "tide prediction" : "marine forecast"} on record for ${port.label} for ${want === "today" ? "today" : "tomorrow"}.`, cites: [] });
+  else if (want !== "today" && chosen.every((f) => !f.valid_for))
+    lines.unshift({ text: "Neritic holds only the current NWS forecast period, which may not reach tomorrow; the full NWS forecast is linked below.", cites: [] });
   return {
     outcome: chosen.length ? "answered" : "no_data",
     lines,
@@ -229,7 +241,7 @@ export function relatedForSafety(kind: SafetyKind, t: PortToday, q: string, now:
     return [...official.map(officialLine), ...unverifiedLine(official)];
   }
   const target = dayIn(q) === "today" ? pacificDate(now) : addDays(pacificDate(now), 1);
-  const fc = t.facts.filter((f) => (f.kind === "sea" || f.kind === "weather") && f.valid_for && f.valid_for.from <= target && target <= f.valid_for.to);
+  const fc = t.facts.filter((f) => (f.kind === "sea" || f.kind === "weather") && f.basis === "forecast" && covers(f, target, now));
   const obs = t.facts.filter((f) => f.kind === "observation" && /buoy/i.test(f.headline)).slice(0, 1);
   return [...fc.map(plainLine), ...obs.map(observationLine)];
 }
