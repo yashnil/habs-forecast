@@ -392,6 +392,10 @@ def build_fixture_dataset(out: Path, now: str = FIXTURE_NOW, scenario: str = "no
             }
         )
         m = run_pipeline(fixture_context(out, later, fetcher))
+        # The web's failed fixture is also its dataset WITHOUT derived products
+        # (coastwatch-web/tests/e2e/v5-map.spec.ts: "without a derived index nothing derived is
+        # offered"): derived/ is optional and is left out here. The pilot sidecars stay.
+        shutil.rmtree(out / "derived", ignore_errors=True)
     elif scenario != "normal":
         raise ValueError(f"unknown scenario {scenario}")
     from .verify_satellite import verify_satellite

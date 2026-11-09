@@ -435,3 +435,15 @@ def test_an_ended_outlook_and_an_old_sst_are_dropped_not_carried(dataset: Path, 
     R.run(fixture_context(copy, now="2026-10-20T12:00:00Z", fetcher=_refusing_fetcher()))
     idx = json.loads((copy / "derived" / "index.json").read_text())
     assert "sst_latest" not in [lyr["id"] for lyr in idx["layers"]]
+
+
+def test_the_failed_web_fixture_carries_no_derived_products(tmp_path):
+    # the web's e2e suite uses the charm-failed fixture as its dataset without a derived index
+    from coastwatch_pipeline.fixtures import build_fixture_dataset
+    from coastwatch_pipeline.publish.check import check_published
+
+    out = tmp_path / "v1"
+    build_fixture_dataset(out, scenario="charm-failed")
+    assert not (out / "derived").exists()
+    assert (out / "biotoxin" / "index.json").exists() and (out / "fisheries-status" / "index.json").exists()
+    assert check_published(str(out))["ok"]
