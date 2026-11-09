@@ -68,8 +68,9 @@ test("the briefing (v10 pass 2): what changed, the season (its details at hand),
   await page.clock.setFixedTime(new Date("2026-10-13T06:00:00Z"));
   await page.goto(`${OK}/coast?place=port-201&for=commercial&species=dungeness`);
   const order = await page.locator('[data-testid^="brief-"]:not([data-testid$="-toggle"])').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
-  expect(order.slice(0, 9)).toEqual(["brief-changes", "brief-glance", "brief-seasons", "brief-econ", "brief-checks", "brief-lanes", "brief-sea", "brief-now", "brief-evidence"]);
-  expect(order.indexOf("brief-checks")).toBeLessThan(order.indexOf("brief-measured"));
+  // v11: the glance and the lanes, the evidence and its folds, then the ledger
+  expect(order.slice(0, 7)).toEqual(["brief-changes", "brief-glance", "brief-lanes", "brief-now", "brief-sea", "brief-seasons", "brief-evidence"]);
+  expect(order.at(-1)).toBe("brief-econ");
 });
 
 test("phone: a place picked in search lands in the map strip above the sheet, not behind it", async ({ browser }) => {

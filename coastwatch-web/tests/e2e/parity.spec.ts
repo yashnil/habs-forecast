@@ -161,19 +161,21 @@ test("advanced harbour summary: each product's neighbourhood statistic with its 
 test("trip checklist: the reader's own ticks, kept per trip on this device, never a verification", async ({ page }) => {
   await page.clock.setFixedTime(new Date(BRIEF));
   await page.goto(`${OK}/coast?place=port-201&for=commercial&species=dungeness`);
+  await page.getByTestId("brief-checks-toggle").click();
   const first = page.getByTestId("checks").locator(":scope > li").first();
   const id = (await first.getAttribute("data-testid"))!;
-  await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId("checks-progress")).toContainText("0 of");
   await expect(page.getByTestId("checks-progress")).toContainText("not a check by Neritic or by any agency");
   await page.getByTestId(`${id}-box`).check();
   await expect(first).toHaveAttribute("data-done", "true");
   await expect(page.getByTestId("checks-progress")).toContainText("1 of");
   await page.reload();
+  await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId(`${id}-box`)).toBeChecked();
   await expect(page.getByTestId("brief-checks-toggle")).toContainText("1 of");
   // another trip has its own list
   await page.goto(`${OK}/coast?place=port-201&for=recreational`);
+  await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId("checks-progress")).toContainText("0 of");
 });
 
@@ -253,7 +255,7 @@ for (const width of [1440, 320]) {
     const page = await ctx.newPage();
     await page.clock.setFixedTime(new Date(NOW));
     await page.goto(`${OK}/coast?place=port-550`);
-    await page.getByTestId("locator-explore").click();
+    await page.getByRole("link", { name: "Open in Explore" }).click();
     const back = page.getByTestId("back-to-briefing");
     await expect(back).toBeInViewport();
     const top = await back.evaluate((el) => { const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!hit && el.contains(hit); });

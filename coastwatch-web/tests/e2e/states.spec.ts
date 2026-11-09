@@ -27,7 +27,7 @@ test("a slow conditions service: the briefing says it is reading, the rest is th
   await expect(page.getByTestId("matters-reading")).toContainText("Reading the notices");
   // the page around it is already usable
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
-  await expect(page.getByTestId("brief-official")).toBeVisible();
+  await expect(page.getByTestId("notices-open")).toBeVisible();
   expect(await status(page, "evidence")).toBe("loading");
   expect(await status(page, "conditions")).toBe("loading");
   await expect(page.getByTestId("matters").locator(":scope > li").first()).toBeVisible({ timeout: 30_000 });

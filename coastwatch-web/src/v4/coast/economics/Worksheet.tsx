@@ -10,6 +10,7 @@ import { LB_PER_KG, LB_PER_TON, num } from "@/lib/tripEconomics";
 import type { CrewChoice, FieldKey, Output, TripEvaluation } from "@/lib/tripEvaluation";
 import { MAX_VESSELS, draftKey, type Draft } from "@/lib/tripEconomicsStore";
 import { useNow } from "@/lib/useNow";
+import { Segmented } from "@/v4/motion/Segmented";
 import { toast } from "@/v4/ui/toast";
 import { Icon } from "@/v4/ui/Icon";
 import { dayLabel } from "@/v4/ui/time";
@@ -31,6 +32,8 @@ export type WorksheetProps = {
   /** a field to bring into view and focus on opening (a "Needs …" link on the briefing) */
   focus: FieldKey | null;
   season: SeasonStatus;
+  /** on the briefing's ledger: no page-level result bar; on a phone the inputs wait behind one tap */
+  embedded?: boolean;
 };
 
 const ext = { target: "_blank", rel: "noreferrer" } as const;
@@ -56,7 +59,7 @@ const CREW_EFFECT: Record<CrewChoice, string> = {
  * them that appear the moment their own inputs exist. References sit beside fields, tinted, with their
  * source, and are copied in only on a tap. Recreational trips are cost-only. Device-only storage.
  */
-export default function Worksheet({ place, species, audience, tripDate, shared, initial, focus }: WorksheetProps) {
+export default function Worksheet({ place, species, audience, tripDate, shared, initial, focus, embedded = false }: WorksheetProps) {
   const data = useTripData();
   const key = draftKey(place.key, species);
   const [draft, setDraft] = useState<Draft>(() => clone(shared ?? initial));
@@ -131,6 +134,14 @@ export default function Worksheet({ place, species, audience, tripDate, shared, 
 
   const lines = draft.inputs.catch ?? [];
   const sp = speciesById(species);
+  // the ledger on a phone: the answer and the waterfall lead; the inputs open on one tap
+  const [stepsShown, setStepsShown] = useState(!embedded);
+  useEffect(() => {
+    if (embedded && window.matchMedia("(min-width: 1024px)").matches) setStepsShown(true);
+  }, [embedded]);
+  const list = data?.scenarios ?? [];
+  const tabs = list.slice(0, 3);
+  const tabValue = scenarioId && tabs.some((t) => t.id === scenarioId) ? scenarioId : "current";
 
   return (
     <div className="flex flex-col gap-8" data-testid="econ-worksheet">
@@ -152,10 +163,29 @@ export default function Worksheet({ place, species, audience, tripDate, shared, 
         </div>
       )}
       <StoreStatus />
+      {tabs.length > 0 && (
+        <Segmented
+          mode="tabs"
+          label="Scenarios"
+          testid="econ-scen-tabs"
+          value={tabValue}
+          onChange={(v) => {
+            if (v === "current") setScenarioId(null);
+            else {
+              const s = list.find((x) => x.id === v);
+              if (s) {
+                setScenarioId(s.id);
+                update((x) => Object.assign(x, clone(s.draft)));
+              }
+            }
+          }}
+          options={[{ value: "current", label: "This trip" }, ...tabs.map((t) => ({ value: t.id, label: t.name.length > 18 ? `${t.name.slice(0, 17)}…` : t.name, testid: `econ-scen-tab-${t.id}` }))]}
+        />
+      )}
 
       {folded ? (
         <div className="flex flex-col gap-8" data-testid="econ-results" data-folded="true">
-          <div className="flex flex-col gap-3 border-y border-n-line-strong py-4">
+          <div className="flex flex-col gap-3 py-2">
             <h3 id="econ-results-h" className="flex items-baseline justify-between gap-3">
               <Caps>Result · hypothetical</Caps>
               <span className="text-[12.5px] text-n-ink-2">from the inputs below</span>
@@ -180,10 +210,10 @@ export default function Worksheet({ place, species, audience, tripDate, shared, 
           </div>
         </div>
       ) : (
-      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(400px,460px)] lg:items-start lg:gap-x-14">
+      <div className="ledger-body flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(440px,520px)] lg:items-start lg:gap-x-16">
         {/* results: first on a phone (then the inputs, then the charts); a sticky column on a wide screen */}
         <aside aria-labelledby="econ-results-h" className="max-lg:contents lg:sticky lg:top-4 lg:col-start-2 lg:row-start-1 lg:flex lg:flex-col lg:gap-7" data-testid="econ-results">
-          <div ref={headRef} className="order-1 flex flex-col gap-3 border-y border-n-line-strong py-4">
+          <div ref={headRef} className="order-1 flex flex-col gap-3">
             <h3 id="econ-results-h" className="flex items-baseline justify-between gap-3">
               <Caps>Result · hypothetical</Caps>
               {complete ? (
@@ -191,7 +221,7 @@ export default function Worksheet({ place, species, audience, tripDate, shared, 
                   Fold the inputs
                 </button>
               ) : (
-                <span className="text-[12.5px] text-n-ink-2">updates as you type</span>
+                <span className="text-[13px] text-n-ink-2">updates as you type</span>
               )}
             </h3>
             <Headline ev={ev} draft={draft} onFocus={focusField} wu={wu} />
@@ -214,7 +244,7 @@ export default function Worksheet({ place, species, audience, tripDate, shared, 
           </div>
         </aside>
 
-        <div className="order-2 flex min-w-0 flex-col lg:col-start-1 lg:row-start-1" data-testid="econ-steps">
+        <div className="order-2 flex min-w-0 flex-col lg:col-start-1 lg:row-start-1" data-testid="econ-steps" hidden={!stepsShown}>
           {!rec && (
             <Step n={1} title="What the catch would bring" o={ev.gross} draft={draft} onFocus={focusField} testId="econ-g-catch" sums={[ev.gross]}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -389,7 +419,13 @@ export default function Worksheet({ place, species, audience, tripDate, shared, 
       </div>
       )}
 
-      <div className="grid grid-cols-1 gap-8 border-t border-n-line-strong pt-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:gap-x-14">
+      {!stepsShown && (
+        <button type="button" onClick={() => setStepsShown(true)} className="nx-btn nx-btn-primary nx-focus self-start" data-testid="econ-show-steps">
+          Enter your numbers
+        </button>
+      )}
+
+      <div className={`grid grid-cols-1 gap-8 pt-2 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:gap-x-14 ${embedded && !stepsShown ? "hidden" : ""}`}>
         <Scenarios place={place} species={species} audience={audience} draft={draft} scenarioId={scenarioId} setScenarioId={setScenarioId} readOnly={readOnly} onOpen={(d) => update((x) => Object.assign(x, clone(d)))} />
         <div className="flex flex-col gap-4">
           <ShareLink draft={draft} />
@@ -399,7 +435,8 @@ export default function Worksheet({ place, species, audience, tripDate, shared, 
 
       {/* phones: a result line above the dock once the result block has scrolled away (in a portal: an
           ancestor transform or size container would pin a fixed bar to itself) */}
-      {!headSeen &&
+      {!embedded &&
+        !headSeen &&
         typeof document !== "undefined" &&
         createPortal(
           <a href="#econ-results-h" className="nx-focus fixed inset-x-0 z-30 block border-t border-n-line-strong bg-n-surface px-4 py-2 lg:hidden" style={{ bottom: "calc(60px + env(safe-area-inset-bottom, 0px))" }} data-testid="econ-bar" aria-label={barLabel(ev)}>
@@ -433,14 +470,14 @@ function Step({ n, title, o, draft, onFocus, testId, sums, children, optional = 
   const formulas = sums.filter((s): s is Extract<Output, { status: "value" }> => s.status === "value");
   const notes = [...new Set(sums.flatMap((s) => (s.status === "value" ? s.assumptions.map((a) => a.note) : [])))];
   return (
-    <fieldset className={`min-w-0 border-t border-n-line-strong pb-7 pt-4 ${last ? "" : ""}`} data-testid={testId}>
+    <fieldset className={`min-w-0 border-t border-n-line pb-8 pt-5 ${last ? "" : ""}`} data-testid={testId}>
       <legend className="sr-only">
         {n}. {title}
       </legend>
       <div aria-hidden className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <span className="flex items-baseline gap-3">
-          <span className="font-data text-[13px] text-n-ink-3">{String(n).padStart(2, "0")}</span>
-          <span className="font-serif font-medium tracking-[-0.015em] text-[22px] leading-tight text-n-ink">{title}</span>
+          <span className="sr-only">{String(n).padStart(2, "0")}</span>
+          <span className="nx-title !text-[22px] !leading-tight">{title}</span>
         </span>
         <span className="text-[13px] text-n-ink-2" data-testid={`${testId}-status`}>
           {status ?? (o.status === "missing" ? `Needs ${o.missing.length === 1 ? "1 input" : `${o.missing.length} inputs`}` : "")}
