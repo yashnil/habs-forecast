@@ -80,7 +80,13 @@ for (const [theme, options, day] of THEMES) {
   await section("03-toxin-tests", "today-tests");
   await section("04-sea-weather", "today-sea");
   await section("05-bloom-outlook", "today-bloom");
-  await section("06-whale-rules", "today-whale");
+  // the whale rules are a row in the status chapter now; its detail is a sheet
+  await page.getByTestId("status-whale").scrollIntoViewIfNeeded();
+  await page.getByTestId("status-whale").click();
+  await page.getByTestId("whale-sheet").waitFor();
+  await page.waitForTimeout(500);
+  await shot("06-whale-rules");
+  await page.keyboard.press("Escape");
 
   // 07 what changed: this visit is the first on this device; the second shows what differs. So that the
   // picture shows the list itself, the remembered visit is made a week old and one fact older (as the e2e does).
@@ -135,7 +141,7 @@ for (const [theme, options, day] of THEMES) {
   }
   // the same chat, in place on Today
   await today();
-  await page.getByTestId("hero-ask").click();
+  await page.getByTestId("action-ask").click();
   await page.getByTestId("ask-sheet").waitFor();
   await page.waitForTimeout(700);
   await shot("10-ask-sheet-on-today");

@@ -2,10 +2,16 @@
 
 import "./today.css";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { PILOT_PORTS, type FisheryId, type Readiness } from "@/pilot/contracts";
 import type { Conditions } from "@/lib/conditions";
-import { DEFAULT_FISHERIES, FISHERY_OPTIONS, buildTodayModel, dayWords, nextTide, statusTally, type PortTodayInputs, type StatusRow } from "@/pilot/facts";
+import { DEFAULT_FISHERIES, FISHERY_OPTIONS, buildTodayModel, dayWords, type PortTodayInputs, type StatusRow, type TodayModel } from "@/pilot/facts";
+import { OceanStage } from "@/v4/stage/OceanStage";
+import type { StageData, StageMark } from "@/v4/stage/types";
+import { useFocusLink } from "@/v4/motion";
+import { Freshness } from "@/v4/ui/Freshness";
+import { Unverified } from "@/v4/ui/Unverified";
+import { Pop } from "@/v4/ui/Pop";
 import { TopBar } from "@/v4/shell/TopBar";
 import { useReportTrust, type Trust } from "@/v4/shell/Notices";
 import { useReportSource } from "@/v4/readiness/store";
@@ -14,16 +20,16 @@ import { SkipLink } from "@/v4/shell/SkipLink";
 import { Icon } from "@/v4/ui/Icon";
 import { readFisheries, writeFisheries, writeTodayPlace } from "./prefs";
 import { savedMark } from "./offline";
-import { FisheryPicker, StatusSheet, StatusStrip } from "./Status";
+import { FisheryPicker, StatusSheet, StatusStrip, WhaleSheet, statusFocusId } from "./Status";
 import { SeaWeather } from "./Sea";
 import { ToxinTests } from "./Tests";
-import { BloomOutlook, WhaleRules } from "./Bloom";
+import { BloomOutlook } from "./Bloom";
 import { WhatChanged } from "./Changed";
 import { Actions } from "./Actions";
-import { FactAnchors, factAnchor, sevClass } from "./ui";
+import { FactAnchors, StatusMark, factAnchor, sevClass } from "./ui";
 import { AlertCheck } from "@/pilot/alerts/AlertCheck";
 import { AskSheet } from "@/pilot/ask/ui/AskSheet";
-import { periodLine } from "./marine";
+import { periodLine, windWords } from "./marine";
 
 export type TodayProps = {
   /** what the top bar's trust pill says */
@@ -34,6 +40,8 @@ export type TodayProps = {
   readiness: { alerts: Readiness; ask: Readiness; sms: Readiness };
   /** the server is reading the test fixture: alerts made here are marked as samples */
   fixture: boolean;
+  /** what the ocean stage draws; null shows the poster */
+  stage: StageData | null;
 };
 
 const ALL_FISHERIES = FISHERY_OPTIONS.map((o) => o.id);
@@ -77,39 +85,68 @@ function useConditions(url: string): Conditions | null | "error" {
   return c;
 }
 
-/** Desktop only: the page at a glance, beside the answer (each line links to its section). */
-function Glance({ model, now }: { model: ReturnType<typeof buildTodayModel>; now: string }) {
-  const first = model.sea.lanes[0];
-  const tide = nextTide(model.sea.tides, now);
-  const t = model.tests[0];
-  const rows: [string, string, string][] = [
-    ["Status", statusTally(model.status) || "not available", "#status"],
-    ["Sea", first ? `${first.name}: ${periodLine(first) ?? "see NWS"}` : model.sea.state === "loading" ? "loading…" : "not available", "#sea"],
-    ["Next tide", tide ? `${tide.type === "H" ? "High" : "Low"} ${tide.ft.toFixed(1)} ft at ${((h, m) => `${h % 12 || 12}:${m} ${h < 12 ? "AM" : "PM"}`)(Number(tide.at.slice(11, 13)), tide.at.slice(14, 16))}` : model.sea.state === "loading" ? "loading…" : "not available", "#sea"],
-    ["Latest test", t?.latest ? `${t.site.species}, ${dayWords(t.latest.date, now)}${t.latest.avg_ppm != null ? ` · avg ${t.latest.avg_ppm} ppm` : ""}` : model.testsError ? "not available" : "none published here", "#tests"],
-    ["C-HARM", model.bloom.charmFact.value ? `${model.bloom.charmFact.value} (run ${model.bloom.charm?.issued ? dayWords(model.bloom.charm.issued, now) : "?"})` : "no value here", "#bloom"],
-    ["Whale rules", model.whale ? `Zone ${model.whale.zone}: ${(model.whale.action ?? "none on record").split(";")[0].replace(/\.$/, "")}` : "not available", "#whale"],
-  ];
+type Bind = ReturnType<typeof useFocusLink>["bind"];
+function Glance({ href, id, bind, label, children, sub, testid }: { href: string; id?: string | null; bind: Bind; label: ReactNode; children: ReactNode; sub: ReactNode; testid: string }) {
   return (
-    <aside aria-label="At a glance" className="hidden self-end lg:block" data-testid="today-glance">
-      <p className="nx-caps">At a glance</p>
-      <dl className="mt-2 border-t border-n-line">
-        {rows.map(([k, v, href]) => (
-          <div key={k} className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 border-b border-n-line py-2.5 text-[14px] leading-snug">
-            <dt className="text-n-ink-3">{k}</dt>
-            <dd>
-              <a href={href} className="nx-focus text-n-ink hover:underline">
-                {v}
-              </a>
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </aside>
+    <li>
+      <a href={href} className="today-gl nx-focus nx-press" data-testid={testid} {...(id ? bind(id) : {})}>
+        <span className="today-gl-k">{label}</span>
+        <span className="today-gl-v">{children}</span>
+        <span className="today-gl-s">{sub}</span>
+      </a>
+    </li>
   );
 }
 
-export function TodayView({ inputs, linkFisheries, readiness, fixture, trust }: TodayProps) {
+/** The glance row along the stage's foot: four items, unboxed, each a link to its chapter and each lighting its subject on the map. */
+function GlanceRow({ model, now, bind }: { model: TodayModel; now: string; bind: Bind }) {
+  const flagged = model.status.filter((r) => r.level !== "unknown" && r.level !== "no_restriction_on_record");
+  const known = model.status.some((r) => r.level !== "unknown");
+  const top = flagged[0] ? statusFocusId(flagged[0]) : null;
+  const sea = model.sea;
+  const wind = sea.buoy?.windKt != null ? { kt: sea.buoy.windKt, dir: sea.buoy.windDir } : sea.windBuoy ? { kt: sea.windBuoy.windKt, dir: sea.windBuoy.windDir } : null;
+  const nowSea = [wind ? `${wind.dir ?? ""} ${Math.round(wind.kt)} kt`.trim() : null, sea.buoy?.waveFt != null ? `${sea.buoy.waveFt.toFixed(1)} ft` : null].filter(Boolean).join(", ");
+  const next = sea.lanes[1];
+  const nextWind = next ? windWords(next)?.split(", then ")[0] : null;
+  const test = model.tests[0];
+  const read = model.bloom.outlookRead;
+  const outlook = model.bloom.outlook;
+  return (
+    <nav aria-label="This briefing" data-beat="3">
+      <ul className="today-glance" data-testid="today-glance">
+        <Glance bind={bind} href="#status" id={top} label={
+            <>
+              Fisheries
+            </>
+          } testid="glance-status" sub={known ? (flagged.length ? "not verified" : "not a promise they are open") : "status not available"}>
+          {known ? (
+            <>
+              <span>{flagged.length ? `${flagged.length} flagged` : "None flagged"}</span>
+              <span className="today-ribbon" aria-hidden>
+                {model.status.map((r) => (
+                  <StatusMark key={r.fishery} severity={r.severity} seasonal={r.seasonal} className="today-ribbon-m" />
+                ))}
+              </span>
+            </>
+          ) : (
+            "Unknown"
+          )}
+        </Glance>
+        <Glance bind={bind} href="#sea" id={sea.buoy ? `buoy:${sea.buoy.id}` : null} label="Sea" testid="glance-sea" sub={sea.state === "loading" ? "reading NWS and NDBC…" : next && nextWind ? `${next.name}: ${nextWind}` : "NWS, measured buoys"}>
+          {nowSea || (sea.state === "loading" ? "…" : "No reading")}
+        </Glance>
+        <Glance bind={bind} href="#tests" id={test ? `site:${test.site.id}` : null} label="Tests" testid="glance-tests" sub={test?.latest ? `${dayWords(test.latest.date, now).replace(/, \d{4}$/, "")}${test.stale ? " (old)" : ""}` : model.testsError ? "not available" : "none published here"}>
+          {test?.latest?.avg_ppm != null && test.action != null ? `${test.latest.avg_ppm} of ${test.action} ppm` : test?.latest ? "Not detected" : "No test"}
+        </Glance>
+        <Glance bind={bind} href="#bloom" label={outlook && !model.bloom.outlookStale ? <>Bloom<span className="today-gl-more">, next 8 days</span></> : "Bloom"} testid="glance-bloom" sub="chlorophyll, not toxin">
+          {read ? read.phrase.charAt(0).toUpperCase() + read.phrase.slice(1) : outlook ? "No usual to compare" : "No outlook"}
+        </Glance>
+      </ul>
+    </nav>
+  );
+}
+
+export function TodayView({ inputs, linkFisheries, readiness, fixture, trust, stage }: TodayProps) {
   const { place, now } = inputs;
   const [selected, setSelected] = useState<FisheryId[]>(linkFisheries ?? DEFAULT_FISHERIES);
   const [picking, setPicking] = useState(false);
@@ -118,6 +155,7 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture, trust }: 
   const pilot = PILOT_PORTS.some((p) => p.place_id === place.place_id);
   const target = useFactTarget();
   const [sheet, setSheet] = useState<StatusRow | null>(null);
+  const [whaleOpen, setWhaleOpen] = useState(false);
   const [saved, setSaved] = useState<{ at: string | null } | null>(null);
   // the same point and periods the server asks for (portToday.ts), so both read one answer
   const conditionsUrl = `/api/conditions?lat=${place.lat.toFixed(4)}&lon=${place.lon.toFixed(4)}&periods=12`;
@@ -148,6 +186,7 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture, trust }: 
 
   // arrive on the card a citation named: scroll it into view and mark it for a few seconds
   const marked = useRef<string | null>(null);
+  const resettle = useRef(0);
   const seaReady = conditions !== null;
   useEffect(() => {
     if (!target || marked.current === target) return;
@@ -160,7 +199,18 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture, trust }: 
         x.classList.remove("fact-hit");
         x.removeAttribute("data-fact-hit");
       });
-      card.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      // a citation may name a fact inside a closed fold: the fold opens so the reader lands on it, also when
+      // it was shut by hand after an earlier visit to the same link (Fold itself reacts only to a hash change)
+      window.clearTimeout(resettle.current);
+      let inFold = false;
+      for (let f = card.closest(".nx-fold"); f; f = f.parentElement?.closest(".nx-fold") ?? null) {
+        inFold = true;
+        f.previousElementSibling?.querySelector<HTMLButtonElement>('button[aria-expanded="false"]')?.click();
+      }
+      card.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+      // once a fold's height has settled; a newer citation cancels this, so it never pulls the reader back
+      if (inFold) resettle.current = window.setTimeout(() => card.scrollIntoView({ block: "center", behavior: "auto" }), 320);
       void card.offsetWidth; // restart the mark when the same card is reached again
       card.classList.add("fact-hit");
       card.setAttribute("data-fact-hit", target);
@@ -170,6 +220,7 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture, trust }: 
   useEffect(() => {
     if (!target) marked.current = null;
   }, [target]);
+  useEffect(() => () => window.clearTimeout(resettle.current), []);
 
   const seaFactIds = useMemo(() => allFacts.filter((f) => f.kind === "weather" || f.kind === "tide" || f.kind === "sea" || f.kind === "observation").map((f) => f.id), [allFacts]);
   const noticeIds = useMemo(() => allFacts.filter((f) => f.kind === "notice").map((f) => f.id), [allFacts]);
@@ -193,111 +244,146 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture, trust }: 
 
   const lede = model.lede;
   const stamp = STAMP.format(new Date(now));
+  const { bind } = useFocusLink();
+  const code = Number(place.place_id.replace(/^port-/, ""));
+  const port = Number.isFinite(code) ? code : null;
+  const marks: StageMark[] = [
+    ...model.tests.filter((t) => t.site.lat != null && t.site.lon != null).map((t) => ({ id: `site:${t.site.id}`, lon: t.site.lon!, lat: t.site.lat!, kind: "site" as const })),
+    ...(model.sea.buoy?.lat != null && model.sea.buoy.lon != null ? [{ id: `buoy:${model.sea.buoy.id}`, lon: model.sea.buoy.lon, lat: model.sea.buoy.lat, kind: "buoy" as const }] : []),
+  ];
+  // the notice lines stay; their words stay in the briefing, not across the title and the glance row
+  const lines = useMemo(() => (stage?.official ? { ...stage.official, features: stage.official.features.map((f) => ({ ...f, properties: { kind: f.properties?.kind, record_ids: f.properties?.record_ids } })) } : null), [stage]);
+  const advisory = model.sea.alerts[0]?.event ?? null;
+  const seaLine = lede.sea ? `${lede.sea.replace(/\.$/, "")}${advisory ? ` · ${advisory.toLowerCase()}` : ""}` : null;
+  // the hero's one line: at most two of the winds NWS stated, an ellipsis when it stated more (the Sea chapter says them all)
+  const heroSea = model.sea.lanes[0] && periodLine(model.sea.lanes[0], 2) ? `${model.sea.lanes[0].name}: ${periodLine(model.sea.lanes[0], 2)}${advisory ? ` · ${advisory.toLowerCase()}` : ""}` : seaLine;
+  // on a wide screen the words take the left, so the water and the port stand to the right of them (client only: the camera never renders on the server)
+  const [westward] = useState(() => (typeof window !== "undefined" && window.innerWidth >= 1024 ? 0.14 : 0));
+  const feedbackFact = model.status[0]?.fact.id ?? null;
   return (
-    <div className="env-instrument today min-h-dvh pb-[calc(76px+env(safe-area-inset-bottom,0px))] lg:pb-10" data-testid="today">
+    <div className="env-instrument today min-h-dvh pb-[calc(76px+env(safe-area-inset-bottom,0px))] lg:pb-0" data-testid="today">
       <SkipLink />
-      <TopBar active="today" now={new Date(now)} trust={trust} />
+      <TopBar active="today" now={new Date(now)} trust={trust} over />
       <main id="main">
-        <header className="today-hero" data-testid="today-hero">
-          <svg className="today-hero-iso" viewBox="0 0 400 200" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M0 150 C80 128 120 172 200 142 S330 100 400 120" />
-            <path d="M0 172 C90 152 140 190 220 166 S340 132 400 148" />
-            <path d="M0 128 C70 104 130 146 190 118 S320 74 400 92" className="index" />
-            <path d="M0 106 C60 82 120 120 180 96 S310 52 400 66" />
-            <path d="M0 194 C100 178 150 206 230 188 S350 160 400 172" />
-          </svg>
-          <div className="today-wrap relative grid gap-x-12 pb-6 pt-5 md:pb-9 md:pt-8 lg:grid-cols-[minmax(0,1fr)_340px]">
-            <div className="min-w-0">
-            {saved && (
-              <p className="mb-4 flex items-start gap-2 rounded-[4px] border border-[var(--t-amber)] px-3 py-2 text-[14px] text-n-ink" role="status" data-testid="today-saved-copy">
-                <Icon name="offline" className="mt-0.5 h-4 w-4 t-amber" />
-                <span>
-                  <b className="font-semibold">Saved copy</b>
-                  {saved.at ? `, saved ${STAMP.format(new Date(saved.at))}` : ""}. Status, tests and the sea may have changed since; check again when you have signal.
-                </span>
-              </p>
-            )}
-            <p className="nx-caps">
-              Today at your port · <span data-testid="today-stamp">{stamp}</span>
-            </p>
-            <h1 className="today-port mt-2 text-n-ink" data-testid="today-port">
-              {place.label}
-            </h1>
-            <p className="today-lede mt-3 text-n-ink" data-testid="today-lede">
-              {lede.label ? (
-                <>
-                  <b className={lede.seasonal ? undefined : sevClass(lede.severity)}>{lede.label}</b>: {lede.text}
-                </>
-              ) : (
-                <span className={lede.severity === "amber" ? "t-amber" : undefined}>{lede.text}</span>
+        <div className="today-stack">
+          <OceanStage
+            className="today-stage"
+            center={[place.lon - westward, place.lat]}
+            zoom={9.3}
+            phoneZoom={8.7}
+            pitch={45}
+            bearing={24}
+            field="chlorophyll"
+            currents
+            data={stage}
+            port={port}
+            marks={marks}
+            lines={lines}
+            arrival={place.place_id}
+            scrollLinked
+          >
+            <div className="today-over" data-testid="today-hero">
+              {stage?.chlorophyll && (
+                <Pop label="Map key" testId="today-map-key" triggerClass="today-key nx-focus" trigger={<><Icon name="info" className="h-[18px] w-[18px]" /><span className="sr-only">Map key</span></>}>
+                  <p className="text-[15px] font-semibold text-n-ink">
+                    {stage.chlorophyll.caption.what}, {stage.chlorophyll.caption.kind}, {stage.chlorophyll.caption.date}. Not toxin.
+                  </p>
+                  {stage.chlorophyll.caption.ramp && (
+                    <>
+                      <div className="mt-2 h-2 rounded-[2px]" style={{ background: stage.chlorophyll.caption.ramp.css }} aria-hidden />
+                      <p className="mt-1 flex justify-between font-data text-[12px] text-n-ink-2" aria-label="Scale in milligrams per cubic metre">
+                        {stage.chlorophyll.caption.ramp.labels.map((l) => (
+                          <span key={l}>{l}</span>
+                        ))}
+                      </p>
+                    </>
+                  )}
+                  {stage.currents && <p className="mt-2 text-[14px] leading-[20px] text-n-ink-2">Streaks are measured surface currents, {stage.currents.hour}.</p>}
+                </Pop>
               )}
-              {lede.more > 0 && (
-                <>
-                  {" "}
-                  <a href="#status" className="nx-focus whitespace-nowrap underline decoration-n-line-strong underline-offset-4">
-                    {lede.more} more below.
-                  </a>
-                </>
+              {saved && (
+                <p className="today-saved" role="status" data-testid="today-saved-copy">
+                  <Icon name="offline" className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    <b className="font-semibold">Saved copy</b>
+                    {saved.at ? `, saved ${STAMP.format(new Date(saved.at))}` : ""}. Status, tests and the sea may have changed since; check again when you have signal.
+                  </span>
+                </p>
               )}
-              {lede.caution && (
-                <span className="t-amber block pt-1" data-testid="lede-caution">
-                  {lede.caution}
-                </span>
-              )}
-              {lede.sea && <span className="block pt-1 text-n-ink-2">{lede.sea}</span>}
-            </p>
-            <div className="mt-4" data-fact-card="">
-            <FactAnchors ids={model.ages.map((f) => f.id)} />
-            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[13.5px] text-n-ink-2" aria-label="How fresh the data are" data-testid="today-freshness">
-              {model.freshness.map((f) => (
-                <li key={f.label} className={f.stale ? "t-amber" : undefined}>
-                  <span className="text-n-ink-3">{f.label}</span> {f.when}
-                  {f.stale && !f.missing ? " (old)" : ""}
-                </li>
-              ))}
-            </ul>
+              <div className="today-date" data-beat="1">
+                <span data-testid="today-stamp">{stamp}</span>
+                <Freshness items={model.freshness.map((f) => ({ label: f.label, when: f.when ?? "", stale: f.stale, missing: f.missing }))} testId="today-freshness" />
+              </div>
+              {/* the arrival beat is on a wrapper: on the same element it would replace the scroll-linked condense */}
+              <div data-beat="1">
+              <h1 className="nx-display nx-display-hero nx-scroll-title today-port" data-testid="today-port">
+                <Link href="/today?pick=1" className="today-port-a nx-focus" data-testid="today-change-port" aria-label={`${place.label}: change port`}>
+                  {place.label}
+                  <svg aria-hidden viewBox="0 0 24 24" className="today-port-c" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </Link>
+              </h1>
+              </div>
+              <div data-beat="2">
+                <p className="nx-lede today-lede" data-testid="today-lede">
+                  {lede.label ? (
+                    <>
+                      <b className={lede.seasonal ? undefined : sevClass(lede.severity)}>{lede.label}</b>: {lede.text}
+                    </>
+                  ) : (
+                    <span>{lede.text}</span>
+                  )}
+                  {lede.caution && (
+                    <span className="today-old block pt-1 text-[0.8em]" data-testid="lede-caution">
+                      {lede.caution}
+                    </span>
+                  )}
+                </p>
+                {lede.source && (
+                  <div className="today-cue" data-testid="lede-cue">
+                    <span>
+                      {lede.source.name}
+                      {lede.checked_at ? ` · checked ${dayWords(lede.checked_at, now)}` : ""}
+                    </span>
+                    {lede.verified === true ? null : <Unverified testId="lede-not-verified" />}
+                  </div>
+                )}
+                <div data-fact-card="">
+                  <FactAnchors ids={model.ages.map((f) => f.id)} />
+                  <p className="today-sealine" data-testid="today-sealine">
+                    {heroSea
+                      ? heroSea.split(" · ").flatMap((part, i) => [i ? " · " : null, <span key={part}>{part}</span>])
+                      : model.sea.state === "loading"
+                        ? "Reading the marine forecast…"
+                        : "Marine forecast not available."}
+                  </p>
+                </div>
+              </div>
+              <GlanceRow model={model} now={now} bind={bind} />
             </div>
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <Link href="/today?pick=1" className="today-btn nx-focus nx-press nx-tint" data-testid="today-change-port">
-                <Icon name="harbor" className="h-[18px] w-[18px]" /> Change port
-              </Link>
-              <a
-                href={`/ask?place=${encodeURIComponent(place.place_id)}`}
-                onClick={(e) => {
-                  if (!pilot) return;
-                  e.preventDefault();
-                  setAsking(true);
-                }}
-                aria-haspopup={pilot ? "dialog" : undefined}
-                className="today-btn nx-focus nx-press nx-tint"
-                data-testid="hero-ask"
-              >
-                <Icon name="ask" className="h-[18px] w-[18px]" /> Ask
-              </a>
-            </div>
-            </div>
-            <Glance model={model} now={now} />
-          </div>
-        </header>
+          </OceanStage>
+          <div className="today-pin" aria-hidden />
+        </div>
 
-        <div className="today-wrap">
-          <div className="today-grid" data-layout={model.testsError || !model.tests.length ? (model.statusError ? "sparse" : "notests") : undefined}>
-            <StatusStrip rows={model.status} now={now} place={place.place_id} statusError={model.statusError} otherNotices={noticeIds} onOpen={setSheet} onEdit={() => setPicking(true)} />
-            <SeaWeather sea={model.sea} now={now} lede={lede.sea} place={place.place_id} factIds={seaFactIds} />
-            <ToxinTests tests={model.tests} error={model.testsError} now={now} sourceUrl={inputs.biotoxin?.source.url ?? null} place={place.place_id} reveal={target} />
-            <BloomOutlook bloom={model.bloom} now={now} label={place.label} place={place.place_id} />
-            <WhaleRules whale={model.whale} now={now} place={place.place_id} />
+        <div className="today-brief" data-testid="today-brief">
+          <div className="today-brief-in">
             <WhatChanged place={place.place_id} facts={allFacts} ready={conditions !== null} now={now} />
-            <Actions place={place.place_id} label={place.label} conditionsUrl={conditionsUrl} readiness={readiness} pilot={pilot} onAsk={() => setAsking(true)} />
+            <StatusStrip rows={model.status} statusError={model.statusError} whale={model.whale} otherNotices={noticeIds} onOpen={setSheet} onOpenWhale={() => setWhaleOpen(true)} onEdit={() => setPicking(true)} />
+            <SeaWeather sea={model.sea} now={now} seaLine={seaLine} place={place.place_id} factIds={seaFactIds} />
+            <ToxinTests tests={model.tests} error={model.testsError} now={now} sourceUrl={inputs.biotoxin?.source.url ?? null} />
+            <BloomOutlook bloom={model.bloom} now={now} label={place.label} exploreHref={`/?view=map&sel=harbor:${place.place_id.replace(/^port-/, "")}`} />
+            <Actions place={place.place_id} label={place.label} conditionsUrl={conditionsUrl} readiness={readiness} pilot={pilot} onAsk={() => setAsking(true)} feedbackFact={feedbackFact} />
+            <PilotFooter />
           </div>
-          <PilotFooter />
         </div>
       </main>
       <PilotDock active="today" />
       {/* the device's alert check, on the same facts /account and the fan-out compare */}
       <AlertCheck todays={[all.today]} sample={fixture} />
       {pilot && <AskSheet place={place.place_id} open={asking} onClose={() => setAsking(false)} />}
-      <StatusSheet row={sheet} now={now} onClose={() => setSheet(null)} />
+      <StatusSheet row={sheet} whale={model.whale} now={now} onClose={() => setSheet(null)} />
+      <WhaleSheet open={whaleOpen} whale={model.whale} now={now} onClose={() => setWhaleOpen(false)} />
       <FisheryPicker open={picking} selected={selected} onClose={() => setPicking(false)} onSave={onSave} />
     </div>
   );
