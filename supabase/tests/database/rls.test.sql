@@ -1,7 +1,7 @@
 -- RLS isolation for the Neritic pilot tables. Run: npx supabase@2.121.0 test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(43);
 
 -- two people, A and B
 insert into auth.users (id, email, aud, role) values
@@ -84,6 +84,17 @@ reset role;
 select is((select count(*) from auth.users where id = '00000000-0000-0000-0000-00000000000a')::int, 0, 'A''s auth user is gone');
 select is((select count(*) from public.alerts) + (select count(*) from public.saved_places) + (select count(*) from public.consent_log)
           + (select count(*) from public.notifications_sent) + (select count(*) from public.trip_logs), 0::bigint, 'every row of A''s cascaded away');
+
+-- ---------------------------------------------------------------- retention (privacy policy)
+insert into public.alerts (user_id, place_id, fact_id, fact_version, trigger, severity, title, body, created_at) values
+  ('00000000-0000-0000-0000-00000000000b', 'port-550', 'old', 'v', 'status_change', 'info', 'old', 'old', now() - interval '181 days'),
+  ('00000000-0000-0000-0000-00000000000b', 'port-550', 'new', 'v', 'status_change', 'info', 'new', 'new', now() - interval '10 days');
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000b","role":"authenticated"}';
+select throws_ok($$ select public.prune_pilot_data() $$, '42501', null, 'people cannot run the retention job');
+reset role;
+select lives_ok($$ select public.prune_pilot_data() $$, 'the server runs the retention job');
+select is((select array_agg(fact_id) from public.alerts), array['new'], 'alerts older than 180 days are deleted, newer kept');
 
 select * from finish();
 rollback;
