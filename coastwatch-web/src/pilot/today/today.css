@@ -26,94 +26,11 @@
   position: relative;
   overflow: hidden;
 }
-html[data-daylight] .today-hero-iso { opacity: 0.35; }
-.today-hero-iso { position: absolute; inset: auto 0 0 0; width: 100%; height: 38%; pointer-events: none; opacity: 0.7; }
-.today-hero-iso path { fill: none; stroke: var(--nx-line-strong); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.today-hero-iso path.index { stroke: color-mix(in srgb, var(--nx-conditions) 55%, transparent); stroke-width: 1.5; }
 .today-wrap { max-width: var(--t-max); margin: 0 auto; padding-left: var(--t-gutter); padding-right: var(--t-gutter); }
-.today-port {
-  font-family: var(--nx-font-display);
-  font-weight: 500;
-  font-size: clamp(44px, 12.5vw, 88px);
-  line-height: 0.98;
-  letter-spacing: -0.022em;
-  text-wrap: balance;
-}
-.today-lede {
-  font-family: var(--nx-font-display);
-  font-size: clamp(19px, 4.9vw, 25px);
-  line-height: 1.38;
-  max-width: 38ch;
-  text-wrap: pretty;
-}
-.today-lede b { font-weight: 600; }
-
-/* ---- sections: one idea each, a caps label, a plain sentence, then the instrument */
-.today-grid { display: grid; gap: 0 48px; grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 1024px) {
-  .today-grid {
-    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    grid-template-areas: "status sea" "tests bloom" "whale changed" "actions actions";
-    align-items: start;
-  }
-  /* Sections that have only a sentence to say (a sidecar not published yet) are stacked, so the page never has a hole in its middle.
-     No toxin tests: the short sections sit beside the bloom outlook. */
-  .today-grid[data-layout="notests"] {
-    grid-template-areas: "status sea" "tests bloom" "whale bloom" "changed bloom" "actions actions";
-    grid-template-rows: auto auto auto 1fr auto;
-  }
-  /* No season list either: status, tests and whale rules sit beside the sea, then what changed beside the bloom outlook. */
-  .today-grid[data-layout="sparse"] {
-    grid-template-areas: "status sea" "tests sea" "whale sea" "changed bloom" "actions actions";
-    grid-template-rows: auto auto 1fr auto auto;
-  }
-  .today-grid > [data-area="status"] { grid-area: status; }
-  .today-grid > [data-area="sea"] { grid-area: sea; }
-  .today-grid > [data-area="tests"] { grid-area: tests; }
-  .today-grid > [data-area="bloom"] { grid-area: bloom; }
-  .today-grid > [data-area="whale"] { grid-area: whale; }
-  .today-grid > [data-area="changed"] { grid-area: changed; }
-  .today-grid > [data-area="actions"] { grid-area: actions; }
-}
 .today-sec { padding: 28px 0 8px; scroll-margin-top: 72px; }
 .today-sec > header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 8px; }
 .today-h2 { font: 500 22px/28px var(--nx-font-display); letter-spacing: -0.01em; color: var(--nx-ink); }
 .today-say { font-size: 17px; line-height: 1.45; color: var(--nx-ink); margin-top: 12px; text-wrap: pretty; }
-
-/* ---- status strip: the mark, the fishery and its word on one line; the sentence under them at full width */
-.today-row {
-  display: grid;
-  grid-template-columns: 26px minmax(0, 1fr) auto 18px;
-  grid-template-areas: "mark label word word" "mark body body go";
-  gap: 4px 12px;
-  width: 100%;
-  min-height: 64px;
-  padding: 14px 4px 14px 0;
-  text-align: left;
-  border-bottom: 1px solid var(--nx-line);
-}
-.today-row-mark { grid-area: mark; }
-.today-row-label { grid-area: label; min-width: 0; align-self: center; }
-.today-row > .today-word { grid-area: word; justify-self: end; }
-.today-row-body { grid-area: body; min-width: 0; }
-.today-row-go { grid-area: go; justify-self: end; align-self: center; }
-.today-row:hover .today-row-go { color: var(--nx-ink); }
-.t-season { color: var(--nx-ink-2); }
-.today-word {
-  font: 500 13px/18px var(--nx-font-ui);
-  white-space: nowrap;
-  padding: 3px 8px;
-  border-radius: var(--nx-r-8);
-  background: color-mix(in srgb, currentColor 14%, transparent);
-  align-self: start;
-}
-.today-unverified {
-  font: 500 13px/18px var(--nx-font-ui);
-  color: var(--nx-ink-2);
-  text-decoration: underline dotted var(--nx-line-strong);
-  text-underline-offset: 3px;
-  white-space: nowrap;
-}
 
 /* ---- sea lanes (a table drawn as an instrument) */
 .today-lanes { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -137,12 +54,6 @@ html[data-daylight] .today-hero-iso { opacity: 0.35; }
 }
 .today-dir { position: absolute; left: 0; right: 0; top: 6px; font: 500 11px/1 var(--nx-font-ui); color: var(--nx-ink-3); }
 
-/* ---- readouts */
-.today-readouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; }
-.today-readouts > div { padding: 2px 10px 2px 0; min-width: 0; }
-.today-readouts > div + div { border-left: 1px solid var(--nx-line); padding-left: 12px; }
-.today-v { font: 300 32px/1 var(--nx-font-ui); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--nx-ink); white-space: nowrap; }
-.today-v small { font-size: 12.5px; letter-spacing: 0; color: var(--nx-ink-2); margin-left: 3px; }
 .today-src { font-size: 12.5px; line-height: 1.4; color: var(--nx-ink-3); }
 .today-src a { color: var(--nx-ink-2); text-decoration: underline; text-decoration-color: var(--nx-line-strong); text-underline-offset: 3px; }
 
@@ -179,25 +90,6 @@ html[data-daylight] .today-hero-iso { opacity: 0.35; }
 .today-more > summary::before { content: "+"; display: inline-block; width: 1em; color: var(--nx-ink-3); }
 .today-more[open] > summary::before { content: "–"; }
 
-/* ---- the detail sheet: a bottom sheet on phones, a side panel on desktop */
-.today-sheet {
-  margin: auto 0 0 0;
-  width: 100%;
-  max-width: 100%;
-  max-height: 88dvh;
-  border: 0;
-  border-radius: var(--nx-r-24) var(--nx-r-24) 0 0;
-  background: var(--nx-surface);
-  color: var(--nx-ink);
-  padding: 0;
-}
-.today-sheet::backdrop { background: rgba(2, 6, 9, 0.6); }
-html[data-daylight] .today-sheet::backdrop { background: rgba(11, 24, 32, 0.35); }
-@media (min-width: 768px) {
-  .today-sheet { margin: 0 0 0 auto; height: 100dvh; max-height: 100dvh; width: 460px; border-radius: var(--nx-r-24) 0 0 var(--nx-r-24); border: 0; }
-}
-.today-sheet[open] { animation: nx-rise var(--nx-t-panel) var(--nx-ease-out) both; }
-
 /* ---- buttons */
 .today-btn {
   display: inline-flex;
@@ -218,8 +110,148 @@ html[data-daylight] .today-sheet::backdrop { background: rgba(11, 24, 32, 0.35);
 
 /* a flat skeleton: no shimmer (system rule) */
 .today-skel { background: var(--nx-surface-2); border-radius: var(--nx-r-8); }
-@media (prefers-reduced-motion: reduce) { .today-sheet[open] { animation: nx-fade var(--nx-t-pop) both; } }
 
 /* ---- fact addresses (#fact-<id>): an anchor clears the top bar when it is scrolled to */
 [data-fact-card], .fact-anchor { scroll-margin-top: 84px; }
 .fact-anchor { display: block; height: 0; overflow: hidden; }
+
+/* ---- v11: the stage is the front door (design.md 7.2) ---- */
+.today { --today-stage-h: 68svh; --today-pin: 34svh; }
+@media (max-width: 767px) { .today { --today-stage-h: 52svh; --today-pin: 18svh; } }
+.today-stack { position: relative; }
+/* the stage stands while the briefing rises over it, then leaves with the page */
+.today-stage { position: sticky; top: 0; min-height: var(--today-stage-h); z-index: 0; }
+.today-pin { height: var(--today-pin); }
+/* The words sit high enough on a wide screen that the stage's bottom scrim does not reach them all: a left-hand
+   scrim carries the title and lede; on a phone the map keeps the top band and the words get a solid ground. */
+.today-stage .nx-stage-scene::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
+@media (min-width: 768px) {
+  .today-stage .nx-stage-scene::after { background: linear-gradient(to right, color-mix(in srgb, var(--nx-bg) 78%, transparent) 0, color-mix(in srgb, var(--nx-bg) 58%, transparent) 38%, transparent 62%); }
+}
+@media (max-width: 767px) {
+  /* the phone's first screen: the top of the stage is clear water; the words start below it on a solid ground */
+  .today-stage:not(.today-stage-coast) .nx-stage-scrim { background: none !important; }
+  .today-stage .nx-stage-scene::after { background: linear-gradient(to bottom, transparent 40%, color-mix(in srgb, var(--nx-bg) 80%, transparent) 48%, color-mix(in srgb, var(--nx-bg) 94%, transparent) 60%); }
+  .today-stage-coast .nx-stage-scene::after { background: linear-gradient(to bottom, transparent 16%, color-mix(in srgb, var(--nx-bg) 72%, transparent) 28%, color-mix(in srgb, var(--nx-bg) 90%, transparent) 44%); }
+  /* the caption is one line; the ramp and the streaks' hour are one tap away (the map key) */
+  .today-stage .nx-stage-cap-at { top: calc(var(--nx-bar-h, 56px) + 6px); left: 12px; right: auto; max-width: calc(100% - 72px); }
+  .today-stage .nx-stage-cap { padding: 4px 9px; border-radius: 8px; font-size: 12px; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .today-stage .nx-stage-ramp, .today-stage .nx-stage-ramp + .nx-stage-cap-c { display: none; }
+  .today-stage .nx-stage-cap > *:not(.nx-stage-ramp):not(.nx-stage-ramp + .nx-stage-cap-c) { display: inline; }
+  .today-stage .nx-stage-cap-c::before { content: " · "; color: var(--nx-ink-3); }
+  .today-stage-coast .nx-stage-cap-c::before { content: none; }
+  .today-stage .today-over { position: relative; padding-top: 38svh; padding-bottom: 36px; }
+  .today-stage.today-stage-coast .today-over { padding-top: calc(var(--nx-bar-h, 56px) + 64px); }
+  .today-key { position: absolute; top: calc(var(--nx-bar-h, 56px) + 0px); right: 6px; display: none; width: 44px; height: 44px; align-items: center; justify-content: center; color: #eef3f5; }
+  .nx-stage[data-state="map"] .today-key { display: inline-flex; }
+  .today-date { min-height: 24px; font-size: 13px; }
+  .today-date .nx-focus { margin-block: -10px; font-size: 13px; }
+  .today-lede { margin-top: 8px; font-size: 19px; line-height: 24px; max-width: none; }
+  .today-cue { margin-top: 3px; font-size: 13px; }
+  .today-stage-coast .nx-stage-cap { white-space: normal; }
+  .today-sealine { margin-top: 3px; font-size: 13.5px; line-height: 19px; }
+}
+@media (min-width: 768px) { .today-key { display: none; } }
+.today-stage .nx-stage-over { position: relative; inset: auto; min-height: var(--today-stage-h); }
+.today-over { padding: calc(var(--nx-bar-h, 64px) + 104px) var(--t-gutter) 22px; }
+@media (min-width: 1024px) { .today-over { padding-left: clamp(40px, 5vw, 80px); padding-right: clamp(40px, 5vw, 80px); padding-bottom: 28px; } }
+.today-date { display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; font-size: 13.5px; line-height: 20px; color: var(--nx-ink-2); }
+.today-port { color: var(--nx-ink); }
+.today-port-a { display: inline-flex; align-items: flex-end; gap: 0.08em; }
+.today-port-c { width: 0.42em; height: 0.42em; margin-bottom: 0.2em; color: var(--nx-ink-2); transition: transform var(--nx-t-hover, 150ms) var(--nx-ease-out, ease-out); }
+@media (hover: hover) { .today-port-a:hover .today-port-c { transform: translateY(2px); } }
+.today-lede { margin-top: 12px; color: var(--nx-ink); }
+.today-lede b { font-weight: 500; }
+.today-cue { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; margin-top: 6px; font-size: 13.5px; line-height: 20px; color: var(--nx-ink-2); }
+.today-sealine { margin-top: 8px; font-size: 15.5px; line-height: 22px; color: var(--nx-ink); }
+.today-sealine > span { white-space: nowrap; }
+/* the kit's marker is 18 px tall: its hit area is 44 without moving the words around it */
+.today button.nx-unverified { min-height: 44px; margin-block: -13px; }
+.today-saved { display: flex; gap: 8px; max-width: 60ch; margin-bottom: 12px; padding: 8px 12px; border-radius: var(--nx-r-12); background: var(--nx-tag-watch); color: var(--nx-ink); font-size: 14px; line-height: 20px; }
+/* the glance row: four items, unboxed, along the stage's foot */
+.today-glance { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 28px; margin-top: 20px; }
+.today-gl { display: flex; min-height: 44px; flex-direction: column; gap: 2px; padding: 6px 0; color: var(--nx-ink); }
+.today-gl-k { font-size: 13px; line-height: 16px; color: var(--nx-ink-2); }
+.today-gl-v { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; font: 500 19px/26px var(--nx-font-ui); font-variant-numeric: tabular-nums; }
+.today-gl-s { font-size: 13px; line-height: 18px; color: var(--nx-ink-2); }
+.today-ribbon { display: inline-flex; gap: 2px; }
+.today-ribbon-m { width: 14px !important; height: 14px !important; }
+@media (hover: hover) { .today-gl:hover .today-gl-v { text-decoration: underline; text-decoration-color: var(--nx-line-strong); text-underline-offset: 3px; } }
+@media (max-width: 767px) {
+  /* compact: the value leads, its label and note share the line under it */
+  .today-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; margin-top: 8px; }
+  .today-gl { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 4px; align-content: center; padding: 3px 0; }
+  .today-gl-v { order: -1; grid-column: 1 / -1; flex-wrap: nowrap; font-size: 16px; line-height: 21px; }
+  .today-gl-k, .today-gl-s { font-size: 12.5px; line-height: 16px; white-space: nowrap; }
+  .today-gl-k::after { content: " ·"; }
+  .today-gl-more, [data-testid="glance-bloom"] .today-gl-k { display: none; }
+  .today-ribbon-m { width: 12px !important; height: 12px !important; }
+  .today-ribbon { gap: 1px; }
+  .today-pick .today-gl { display: flex; }
+}
+.today-pick .today-gl-v { font: 500 clamp(24px, 3vw, 34px)/1.08 var(--nx-font-display); }
+.today-pick { margin-top: 14px; }
+
+/* ---- the briefing, a sheet that rises over the stage ---- */
+.today-brief { position: relative; z-index: 1; margin-top: calc(-1 * var(--today-pin) - 28px); border-radius: var(--nx-r-24) var(--nx-r-24) 0 0; background: var(--nx-surface); }
+.today-brief-in { max-width: var(--t-max); margin: 0 auto; padding: 0 var(--t-gutter); }
+.today-ch { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; padding: calc(var(--nx-section) * 0.62) 0 0; scroll-margin-top: 72px; }
+.today-ch:first-child { padding-top: 36px; }
+@media (min-width: 1024px) {
+  .today-ch { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 64px; }
+  .today-ch-head { position: sticky; top: 84px; align-self: start; }
+}
+.today-ch-head .today-say { margin-top: 10px; }
+.today-changed { padding-top: 28px; }
+.today-changed + .today-ch { padding-top: 24px; }
+.today-note { font-size: 13.5px; line-height: 20px; color: var(--nx-ink-2); }
+.today-old { color: var(--nx-stale); fill: var(--nx-stale); }
+.today-edit { display: inline-flex; min-height: 44px; align-items: center; padding: 0 2px; font-size: 14px; color: var(--nx-ink-2); text-decoration: underline; text-decoration-color: var(--nx-line-strong); text-underline-offset: 3px; }
+.today-go { display: inline-flex; min-height: 44px; align-items: center; font-size: 15px; margin-top: 2px; }
+.today-fold { margin-top: 4px; }
+
+/* the fisheries' rows: the fishery large, its tag, one line; hairlines only between rows */
+.today-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 18px; grid-template-areas: "name tag go" "body body go"; gap: 4px 14px; width: 100%; min-height: 64px; padding: 14px 4px 14px 0; text-align: left; border-bottom: 1px solid var(--nx-line); }
+.today-row-name { grid-area: name; font: 500 clamp(19px, 2vw, 23px)/1.2 var(--nx-font-display); color: var(--nx-ink); min-width: 0; }
+.today-row > .nx-tag, .today-row > .nx-caps { grid-area: tag; justify-self: end; align-self: center; }
+.today-row-body { grid-area: body; min-width: 0; font-size: 15px; line-height: 21px; color: var(--nx-ink-2); }
+.today-row-go { grid-area: go; justify-self: end; align-self: center; color: var(--nx-ink-3); }
+@media (hover: hover) { .today-row:hover .today-row-go { color: var(--nx-ink); } }
+.today-row-static { min-height: 0; }
+.today-none .nx-m-fold-t { padding-top: 12px; padding-bottom: 12px; }
+.nx-tag[data-level="season"] { color: var(--nx-ink-2); background: var(--nx-tag-none); }
+
+/* sea */
+.today-band { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; padding-bottom: 16px; font-size: 16px; line-height: 22px; font-weight: 500; color: var(--nx-ink); }
+.today-figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 28px; }
+@media (max-width: 479px) { .today-figures { gap: 12px 12px; } .today-figures .nx-note-t { font-size: 12.5px; } }
+.today-strip { margin-top: 18px; }
+.today-strip-t { font-size: 13px; fill: var(--nx-ink-2); }
+.today-strip-v { font: 400 12.5px var(--nx-font-ui); fill: var(--nx-ink-2); font-variant-numeric: tabular-nums; }
+
+/* bloom */
+.today-step-say { margin-top: 3px; font-size: 16px; line-height: 23px; color: var(--nx-ink); text-wrap: pretty; }
+
+/* actions: three, unboxed */
+.today-actions { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 720px) { .today-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; } }
+.today-act { display: inline-flex; width: 100%; min-height: 56px; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border-radius: var(--nx-r-12); background: var(--nx-surface-2); font-size: 16px; font-weight: 500; color: var(--nx-ink); }
+[data-testid="today-actions"] .today-act[data-testid="save-offline"] { background: var(--nx-ink); color: var(--nx-on-accent); font-weight: 600; }
+.today-skel { background: var(--nx-surface-2); border-radius: var(--nx-r-8); }
+/* daylight: the stage stays a dark sea with its own light ink (a light wash over a dark map was neither), the bar over it
+   too until it turns solid; the briefing sheet below is the daylight page */
+html[data-daylight] .today-stage,
+html[data-daylight] .today .nx-topbar[data-over]:not([data-solid]) {
+  --nx-bg: #04090e; --nx-surface: #0a141c; --nx-surface-2: #101d27; --nx-surface-3: #182a36;
+  --nx-line: rgba(200, 220, 232, 0.1); --nx-line-strong: rgba(200, 220, 232, 0.22);
+  --nx-ink: #eef3f5; --nx-ink-2: #b3c2cb; --nx-ink-3: #8598a4;
+  --nx-accent: #eef3f5; --nx-accent-bg: rgba(238, 243, 245, 0.1); --nx-on-accent: #04121c; --nx-link: #eef3f5;
+  --nx-official: #f0a94a; --nx-stale: #e5b25a; --nx-offline: #9fb2be; --nx-down: #f08a74;
+  --nx-deck: rgba(7, 14, 20, 0.9); --nx-scrim: 7, 23, 34;
+  --nx-mark-tile: #134a6e; --nx-mark-line: #bfe4ec; --nx-mark-index: #7fe3f5; --nx-mark-word: #e6eef2;
+  --nx-tag-closed: rgba(240, 138, 116, 0.16); --nx-tag-watch: rgba(229, 178, 90, 0.15); --nx-tag-none: rgba(159, 178, 190, 0.14);
+  --t-red: #f08a74; --t-amber: #e5b25a; --t-none: #9fb2be; --t-info: #8598a4;
+  color: #eef3f5;
+}
+/* the whole coast: the only moving layer is the measured currents, so their line is the whole caption */
+.today-stage.today-stage-coast .nx-stage-cap > .nx-stage-cap-t { display: none; }

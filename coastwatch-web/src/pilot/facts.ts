@@ -159,6 +159,7 @@ const BASIS_RANK: Record<PortFact["basis"], number> = { official: 0, measured: 1
 
 /** A fishery closed by its own season dates (concluded, or not yet begun): not open, and not an emergency. */
 export const SEASON_CLOSED_WORD = "Season closed";
+export const STATUS_UNCLEAR_WORD = "Status unclear";
 /** Status older than this is flagged (curated records are re-read at least weekly). */
 export const STATUS_STALE_DAYS = 14;
 /** A toxin test older than this is flagged (CDPH samples sites every 1–4 weeks). */
@@ -320,6 +321,8 @@ export type BloomView = {
   outlookFact: PortFact | null;
   /** the outlook against usual; null when there is no value, or no usual value to compare it with */
   outlookRead: OutlookRead | null;
+  /** every day of the C-HARM run is before today: a past run, never an outlook, and it steps back behind the 8-day outlook */
+  charmPast: boolean;
   /** the outlook's typical error as a factor either way, from the published skill (2.1 for an RMSE of 0.754 ln); null when the metric is not a log RMSE */
   errorFactor: number | null;
   /** what the outlook is and how sure, in one sentence (also the opening of the fact's detail) */
@@ -354,8 +357,8 @@ export type SeaView = {
   issued: string | null;
   marineUrl: string | null;
   marineReason: string | null;
-  alerts: { event: string; headline: string; url: string }[];
-  buoy: { name: string; id: string; km: number; url: string; windKt: number | null; windDir: string | null; gustKt: number | null; waveFt: number | null; periodS: number | null; waterC: number | null; at: string | null } | null;
+  alerts: { event: string; headline: string; url: string; ends: string | null }[];
+  buoy: { name: string; id: string; km: number; url: string; windKt: number | null; windDir: string | null; gustKt: number | null; waveFt: number | null; periodS: number | null; waterC: number | null; at: string | null; lat: number | null; lon: number | null } | null;
   buoyReason: string | null;
   /** the nearest station that measures wind, when the nearest buoy does not (a wave buoy): its own id, distance and time */
   windBuoy: { name: string; id: string; km: number; url: string; windKt: number; windDir: string | null; gustKt: number | null; at: string } | null;
@@ -377,6 +380,11 @@ export type Lede = {
   seasonal: boolean;
   /** Neritic's season list did not load, though a notice still leads: said after the answer */
   caution: string | null;
+  /** whose record this sentence quotes, and when Neritic last read it (the lede carries its own "Not verified") */
+  source: { name: string; url: string | null } | null;
+  checked_at: string | null;
+  /** a person has checked the quoted record against the source; null: no curated record behind this sentence */
+  verified: boolean | null;
 };
 
 export type TodayModel = {
@@ -408,13 +416,21 @@ const recordScope = (r: FisheryStatus): string | null => (/\bsport[- ]harvest/i.
 const scopedWord = (scope: string | null, word: string) => (scope ? `${scope} ${word.toLowerCase()}` : word);
 
 /**
+ * What a row says on the page. Two sources that disagree are not settled here: the row says the status is
+ * unclear and awaiting a person's review (as My Coast and Explore do). It keeps the more restrictive level for
+ * ordering and never picks a side; the sheet shows both records. The fact itself keeps its words for Ask and alerts.
+ */
+export const rowWord = (r: Pick<StatusRow, "conflict" | "word">) => (r.conflict ? STATUS_UNCLEAR_WORD : r.word);
+export const rowHeadline = (r: Pick<StatusRow, "conflict" | "scope" | "headline">) => (r.conflict ? `${r.scope ? `${r.scope}: s` : "S"}ources differ, awaiting a person's review.` : r.headline);
+
+/**
  * The status rows counted in the page's own words, most serious first: "1 delayed · 1 sport harvest
  * closed · 1 restricted · 1 season closed · 3 none on record". Each row is counted under the word its
  * pill shows, so a quarantine on sport harvest is never added to the commercial closures, and a
  * "watch" is not called a restriction.
  */
 export function statusTally(rows: StatusRow[]): string {
-  const name = (r: StatusRow) => (r.level === "unknown" ? "not available" : r.level === "no_restriction_on_record" ? "none on record" : r.word.toLowerCase());
+  const name = (r: StatusRow) => (r.level === "unknown" ? "not available" : r.level === "no_restriction_on_record" ? "none on record" : rowWord(r).toLowerCase());
   // most serious first; a routine season closure after the restrictions; the scoped rules after the fishery's own
   const rank = (r: StatusRow) => (r.level === "unknown" ? 9 : r.seasonal ? 4 : r.severity === "red" || r.severity === "amber" ? SEVERITY_RANK[r.severity] * 2 + (r.scope ? 1 : 0) : 6);
   const counts = new Map<string, { n: number; rank: number }>();
@@ -424,6 +440,18 @@ export function statusTally(rows: StatusRow[]): string {
     counts.set(k, { n: c.n + 1, rank: Math.min(c.rank, rank(r)) });
   }
   return [...counts.entries()].sort((a, b) => a[1].rank - b[1].rank).map(([k, c]) => `${c.n} ${k}`).join(" · ");
+}
+
+/**
+ * The status group's own marker, computed from its records (never a fixed "not verified"): how many of
+ * the group have not been checked by a person. A row with no curated record (`verified: null`) counts as
+ * not verified: nothing about it was checked, so it must not read as checked beside the marked rows.
+ * Fisheries Neritic could not read at all are left out; they carry "status not available" instead.
+ */
+export function unverifiedCount(records: { verified: boolean | null; known: boolean }[]): { n: number; of: number; words: string | null; mixed: boolean } {
+  const known = records.filter((r) => r.known);
+  const n = known.filter((r) => r.verified !== true).length;
+  return { n, of: known.length, words: n > 0 ? `${n} of ${known.length}` : null, mixed: n > 0 && n < known.length };
 }
 
 export function buildPortToday(inputs: PortTodayInputs): PortToday {
@@ -690,13 +718,14 @@ function ledeOf(rows: StatusRow[], statusError: boolean, sea: SeaView): Lede {
   const seaLine = first ? periodLine(first) : null;
   const seaWords = first && seaLine ? `${first.name}: ${seaLine}.` : null;
   if (!flagged.length) {
-    const text = statusError ? STATUS_NOT_LOADED : "No closure or restriction on record for your fisheries here. Notices can lag; check CDFW and CDPH before you go.";
-    return { label: null, text, status: text, severity: statusError ? "amber" : "neutral", more: 0, sea: seaWords, seasonal: false, caution: null };
+    const text = statusError ? STATUS_NOT_LOADED : "No closure or restriction on record for your fisheries here. Not a promise they are open: notices can lag, so check CDFW and CDPH before you go.";
+    const any = rows.find((r) => r.source) ?? null;
+    return { label: null, text, status: text, severity: statusError ? "amber" : "neutral", more: 0, sea: seaWords, seasonal: false, caution: null, source: statusError ? null : (any?.source ?? null), checked_at: statusError ? null : (any?.checked_at ?? null), verified: statusError ? null : rows.some((r) => r.verified === true) && rows.every((r) => r.verified === true) };
   }
   const top = flagged[0];
-  const { label, text } = ledeParts(top.label, top.headline);
+  const { label, text } = ledeParts(top.label, rowHeadline(top));
   // an official notice still leads when Neritic's own list is missing; the gap is said right after it
-  return { label, text, status: `${label}: ${text}`, severity: top.severity, more: flagged.length - 1, sea: seaWords, seasonal: top.seasonal, caution: statusError ? "The rest of Neritic's season list did not load. Check CDFW and CDPH before you go." : null };
+  return { label, text, status: `${label}: ${text}`, severity: top.severity, more: flagged.length - 1, sea: seaWords, seasonal: top.seasonal, caution: statusError ? "The rest of Neritic's season list did not load. Check CDFW and CDPH before you go." : null, source: top.source, checked_at: top.checked_at, verified: top.verified };
 }
 
 // ---------------------------------------------------------------- whale (RAMP)
@@ -899,6 +928,8 @@ function bloomView(charm: CharmInput | null, outlook: OutlookInput | null, place
     return { lead: d.lead, date: d.date, pda: a.v, pn: b.v, basis: a.basis ?? b.basis };
   });
   const withPda = days.filter((d) => d.pda != null);
+  const todayPT = pacificDay(now);
+  const charmPast = days.length > 0 && days.every((d) => !!d.date && d.date < todayPT);
   let charmFact: PortFact;
   const src = { name: "NOAA C-HARM", url: charm?.url ?? "https://coastalscience.noaa.gov/science-areas/habs/hab-forecasts/california/" };
   if (!charm || charm.state === "unavailable" || !days.length) {
@@ -917,10 +948,12 @@ function bloomView(charm: CharmInput | null, outlook: OutlookInput | null, place
     charmFact = fact({
       id: "charm:pda",
       kind: "bloom_forecast",
-      severity: historical ? "info" : hi >= CHARM_WATCH ? "amber" : "info",
+      severity: historical || charmPast ? "info" : hi >= CHARM_WATCH ? "amber" : "info",
       headline: historical
         ? `C-HARM's newest run (${charm.issued ? dayWords(charm.issued, now) : "date unknown"}) is out of date; it does not describe today's water.`
-        : `C-HARM: ${range} probability of elevated particulate domoic acid in the water near ${place.label}, ${rangeWords(from, to, now)}.`,
+        : charmPast
+          ? `C-HARM past run (${charm.issued ? dayWords(charm.issued, now) : "date unknown"}): ${range} probability of elevated particulate domoic acid in the water near ${place.label}, ${rangeWords(from, to, now)}. Those days have passed.`
+          : `C-HARM: ${range} probability of elevated particulate domoic acid in the water near ${place.label}, ${rangeWords(from, to, now)}.`,
       value: range,
       detail: `A NOAA model probability of conditions in the water (particulate domoic acid above 500 ng/L), not toxin in seafood.${nearby ? " Harbours sit inside C-HARM's coastal gap, so this is the median of its cells within 15 km, not a value at the harbour." : ""}${charm.state === "stale" ? ` From the run of ${charm.issued ? dayWords(charm.issued, now) : "an earlier day"}; NOAA has not published a newer one.` : ""}`,
       basis: "forecast",
@@ -969,10 +1002,18 @@ function bloomView(charm: CharmInput | null, outlook: OutlookInput | null, place
       valid_for: { from: outlook.valid_from, to: outlook.valid_to },
     });
   }
-  return { charm, days, charmFact, outlook, outlookFact, outlookRead: read, errorFactor, outlookHonest: honest, outlookUse: use, skillWords: sw, outlookStale };
+  return { charm, days, charmFact, charmPast, outlook, outlookFact, outlookRead: read, errorFactor, outlookHonest: honest, outlookUse: use, skillWords: sw, outlookStale };
 }
 
 // ---------------------------------------------------------------- sea and weather
+
+/** When an advisory ends, only as NWS stated it; the same wording as My Coast's advisory lane when it gave none. */
+export function alertEndWords(ends: string | null, now: string): string {
+  if (!ends) return "no end time given";
+  const d = new Date(ends);
+  if (Number.isNaN(d.getTime())) return "no end time given";
+  return `until ${pacificDay(ends) === pacificDay(now) ? "" : `${dayWords(pacificDay(ends), now)}, `}${PT_CLOCK.format(d).replace(/\s/g, " ")}`;
+}
 
 function seaView(c: Conditions | null | "error", now: string): SeaView {
   const empty: SeaView = { state: c === null ? "loading" : "error", lanes: [], zone: null, issued: null, marineUrl: null, marineReason: null, alerts: [], buoy: null, buoyReason: null, windBuoy: null, tides: [], tideStation: null, tideReason: null, water: null };
@@ -994,7 +1035,7 @@ function seaView(c: Conditions | null | "error", now: string): SeaView {
     v.marineUrl = c.marine.url ?? null;
   }
   // NWS headlines arrive in capitals and are sentence-cased upstream; a day's name keeps its capital
-  if (c.alerts.status === "ok") v.alerts = c.alerts.data.map((a) => ({ event: a.event, headline: a.headline.replace(/\b(mon|tues|wednes|thurs|fri|satur|sun)day\b/g, (d) => d.charAt(0).toUpperCase() + d.slice(1)), url: a.url }));
+  if (c.alerts.status === "ok") v.alerts = c.alerts.data.map((a) => ({ event: a.event, headline: a.headline.replace(/\b(mon|tues|wednes|thurs|fri|satur|sun)day\b/g, (d) => d.charAt(0).toUpperCase() + d.slice(1)), url: a.url, ends: a.ends }));
   if (c.buoy.status === "ok") {
     const b = c.buoy.data;
     const times = [b.windKt, b.waveFt, b.waterC].map((o) => o?.at).filter((x): x is string => !!x).sort();
@@ -1010,6 +1051,8 @@ function seaView(c: Conditions | null | "error", now: string): SeaView {
       periodS: b.periodS?.value ?? null,
       waterC: b.waterC?.value ?? null,
       at: times.at(-1) ?? null,
+      lat: c.buoy.station?.lat ?? null,
+      lon: c.buoy.station?.lon ?? null,
     };
   } else v.buoyReason = c.buoy.reason;
   if (v.buoy && v.buoy.windKt == null && c.buoyWind?.status === "ok" && c.buoyWind.data.windKt) {
@@ -1046,7 +1089,7 @@ function seaFactsOf(sea: SeaView, place: TodayPlace, now: string, fact: (f: Omit
   if (sea.state !== "ok") return [];
   const out: PortFact[] = [];
   const nws = { name: "NOAA National Weather Service", url: sea.marineUrl };
-  for (const a of sea.alerts) out.push(fact({ id: alertFactId(a.event), kind: "weather", severity: "amber", headline: sentence(`NWS: ${a.headline}`), detail: "In effect for these waters, as issued by NWS.", basis: "official", verified: null, source: { name: nws.name, url: a.url }, as_of: sea.issued }));
+  for (const a of sea.alerts) out.push(fact({ id: alertFactId(a.event), kind: "weather", severity: "amber", headline: sentence(`NWS: ${a.headline}`), detail: `In effect for these waters, as issued by NWS. ${alertEndWords(a.ends, now)}.`, basis: "official", verified: null, source: { name: nws.name, url: a.url }, as_of: sea.issued }));
   const first = sea.lanes[0];
   if (first) {
     const line = periodLine(first);
