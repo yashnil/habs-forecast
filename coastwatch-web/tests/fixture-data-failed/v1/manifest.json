@@ -8946,7 +8946,7 @@
       "last_attempt_at": "2026-10-12T18:00:00Z",
       "last_success_at": "2026-10-12T18:00:00Z",
       "outcome": "partial",
-      "error": "NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: time listing failed: HTTP 502 for https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.csv0?time%5B(2026-10-05T00:00:00Z):1:(last)%5D; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: time listing failed: HTTP 502 for https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.csv0?time%5B(2026-10-05T00:00:00Z):1:(last)%5D; S-NPP fallback: S-NPP erdVHNchla1day: time listing failed: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.csv0?time%5B(2026-10-05T00:00:00Z):1:(last)%5D",
+      "error": "NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: time listing failed: HTTP 502 for https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.csv0?time; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: time listing failed: HTTP 502 for https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.csv0?time; S-NPP fallback: S-NPP erdVHNchla1day: time listing failed: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.csv0?time",
       "notes": [
         "olci300 2026-10-05: same overpasses as the published day; reused it.",
         "olci300 2026-10-06: same overpasses as the published day; reused it.",
