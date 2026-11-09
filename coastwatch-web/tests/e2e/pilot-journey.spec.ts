@@ -41,7 +41,7 @@ for (const [label, viewport] of [["phone 390", { width: 390, height: 844 }], ["d
     await expect(page.getByTestId("sea-lanes")).toBeVisible({ timeout: 15_000 });
     await oneShell(page, phone);
     // official status first, in words
-    await expect(page.getByTestId("today-lede")).toContainText("Dungeness crab (commercial): Commercial season delayed to at least Jan 1, 2027");
+    await expect(page.getByTestId("today-lede")).toContainText("Dungeness crab: commercial season delayed to at least Jan 1, 2027");
     expect(await axe(page)).toEqual([]);
 
     // ---- a status row's detail: the record, its source, and that no person has verified it

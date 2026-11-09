@@ -240,7 +240,15 @@ export type StatusRow = {
   label: string;
   level: StatusLevel | "unknown";
   severity: Severity;
+  /** the pill: the level's word, led by the scope when the rule is not about the commercial fishery ("Sport harvest closed") */
   word: string;
+  /**
+   * Who the shown rule applies to, when it is not the fishery as a whole: "Sport harvest" for a CDPH
+   * quarantine or advisory on sport-harvested shellfish, "Recreational" for a recreational-only notice.
+   * Taken from the record's own fields (the registry's `fishery`, a curated record's label), never
+   * guessed. Null: the rule is about the fishery the row is named for.
+   */
+  scope: string | null;
   headline: string;
   cause: FisheryStatus["cause"] | null;
   causeWord: string | null;
@@ -388,6 +396,36 @@ export type TodayModel = {
 
 // ---------------------------------------------------------------- the build
 
+/**
+ * The scope of an official notice, from the registry's own `fishery` field: a rule on SPORT harvest (the
+ * annual mussel quarantine, CDPH's sport-harvest advisories) or on the recreational fishery is not a
+ * closure of a commercial fishery, and the row must not read like one.
+ */
+const noticeScope = (n: NoticeInput): string | null => (/sport/i.test(n.fishery) ? "Sport harvest" : /recreational/i.test(n.fishery) ? "Recreational" : null);
+/** The same for a curated record, from its label as transcribed ("Sport-harvested mussels (annual quarantine)"). */
+const recordScope = (r: FisheryStatus): string | null => (/\bsport[- ]harvest/i.test(r.label) ? "Sport harvest" : null);
+/** "Sport harvest closed", "Sport harvest watch": the scope leads, the level follows. */
+const scopedWord = (scope: string | null, word: string) => (scope ? `${scope} ${word.toLowerCase()}` : word);
+
+/**
+ * The status rows counted in the page's own words, most serious first: "1 delayed · 1 sport harvest
+ * closed · 1 restricted · 1 season closed · 3 none on record". Each row is counted under the word its
+ * pill shows, so a quarantine on sport harvest is never added to the commercial closures, and a
+ * "watch" is not called a restriction.
+ */
+export function statusTally(rows: StatusRow[]): string {
+  const name = (r: StatusRow) => (r.level === "unknown" ? "not available" : r.level === "no_restriction_on_record" ? "none on record" : r.word.toLowerCase());
+  // most serious first; a routine season closure after the restrictions; the scoped rules after the fishery's own
+  const rank = (r: StatusRow) => (r.level === "unknown" ? 9 : r.seasonal ? 4 : r.severity === "red" || r.severity === "amber" ? SEVERITY_RANK[r.severity] * 2 + (r.scope ? 1 : 0) : 6);
+  const counts = new Map<string, { n: number; rank: number }>();
+  for (const r of rows) {
+    const k = name(r);
+    const c = counts.get(k) ?? { n: 0, rank: rank(r) };
+    counts.set(k, { n: c.n + 1, rank: Math.min(c.rank, rank(r)) });
+  }
+  return [...counts.entries()].sort((a, b) => a[1].rank - b[1].rank).map(([k, c]) => `${c.n} ${k}`).join(" · ");
+}
+
 export function buildPortToday(inputs: PortTodayInputs): PortToday {
   return buildTodayModel(inputs).today;
 }
@@ -425,15 +463,19 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
     // beside a restriction is two instruments, not a disagreement)
     const conflict = top && topNotice && restricts(noticeLevel(topNotice)) !== restricts(top.level) ? conflictOf(top, topNotice, noticeLevel(topNotice), now) : null;
     let row: Omit<StatusRow, "fact">;
+    // a rule on sport or recreational harvest is said as that in the pill and the headline (the recreational Dungeness row already is)
+    const ownScope = fishery === "dungeness_recreational";
     if (useNotice) {
       const level = noticeLevel(topNotice);
+      const scope = ownScope ? null : noticeScope(topNotice);
       row = {
         fishery,
         label,
         level,
         severity: LEVEL_SEVERITY[level],
-        word: LEVEL_WORD[level],
-        headline: sentence(topNotice.title),
+        word: scopedWord(scope, LEVEL_WORD[level]),
+        scope,
+        headline: scope ? `${sentence(topNotice.title).replace(/[.!?]$/, "")} (${scope.toLowerCase()} only).` : sentence(topNotice.title),
         cause: null,
         causeWord: null,
         area: null,
@@ -450,12 +492,14 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
       };
     } else if (top) {
       const stale = daysOld(top.checked_at, now) > STATUS_STALE_DAYS;
+      const scope = ownScope || top.level === "no_restriction_on_record" ? null : recordScope(top);
       row = {
         fishery,
         label,
         level: top.level,
         severity: LEVEL_SEVERITY[top.level],
-        word: top.level === "closed" && top.cause === "season" ? SEASON_CLOSED_WORD : LEVEL_WORD[top.level],
+        word: top.level === "closed" && top.cause === "season" ? SEASON_CLOSED_WORD : scopedWord(scope, LEVEL_WORD[top.level]),
+        scope,
         headline: sentence(top.headline),
         cause: top.cause,
         causeWord: top.level === "no_restriction_on_record" ? null : CAUSE_WORD[top.cause],
@@ -471,7 +515,7 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
         conflict,
       };
     } else if (statusError) {
-      row = { fishery, label, level: "unknown", severity: "info", word: LEVEL_WORD.unknown, headline: "Status could not be loaded. Check CDFW.", cause: null, causeWord: null, area: null, next_review: null, source: null, checked_at: null, verified: null, records: [], notices: nts, stale: false, seasonal: false, conflict: null };
+      row = { fishery, label, level: "unknown", severity: "info", word: LEVEL_WORD.unknown, scope: null, headline: "Status could not be loaded. Check CDFW.", cause: null, causeWord: null, area: null, next_review: null, source: null, checked_at: null, verified: null, records: [], notices: nts, stale: false, seasonal: false, conflict: null };
     } else {
       // the calmest state: nothing on record (never "open" or "safe")
       row = {
@@ -480,6 +524,7 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
         level: "no_restriction_on_record",
         severity: "neutral",
         word: LEVEL_WORD.no_restriction_on_record,
+        scope: null,
         headline: "No closure or restriction on record here.",
         cause: null,
         causeWord: null,
@@ -499,7 +544,7 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
     const body =
       row.level === "no_restriction_on_record"
         ? "Neritic's list has no CDFW or CDPH closure or restriction for this fishery here. That is not a guarantee: notices can lag. Check the agencies before you go."
-        : `${row.records[0] && !useNotice ? sentence(row.records[0].detail) : topNotice ? sentence(topNotice.summary) : ""}${nextWords}`.trim() || null;
+        : `${row.records[0] && !useNotice ? sentence(row.records[0].detail) : topNotice ? sentence(topNotice.summary) : ""}${row.scope && useNotice ? ` This is a rule for ${row.scope.toLowerCase()}, not a closure of a commercial fishery.` : ""}${nextWords}`.trim() || null;
     // a disagreement between the sources is said in the detail itself, so alerts and Ask Neritic carry it too
     const detail = row.conflict ? [body, row.conflict.words].filter(Boolean).join(" ") : body;
     return {
@@ -527,7 +572,7 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
   // notices tied here (each its own fact, for alerts and Ask)
   const noticeFacts = notices.map((n) => {
     const level: StatusLevel = n.action === "fishery_closure" || n.action === "quarantine" ? "closed" : "restricted";
-    return fact({ id: `notice:${n.id}`, kind: "notice", severity: LEVEL_SEVERITY[level], headline: sentence(`${n.agency}: ${n.title}`), value: LEVEL_WORD[level], detail: n.summary, basis: "official", verified: n.verified, source: { name: n.agency, url: n.url }, as_of: n.effective });
+    return fact({ id: `notice:${n.id}`, kind: "notice", severity: LEVEL_SEVERITY[level], headline: sentence(`${n.agency}: ${n.title}`), value: scopedWord(noticeScope(n), LEVEL_WORD[level]), detail: n.summary, basis: "official", verified: n.verified, source: { name: n.agency, url: n.url }, as_of: n.effective });
   });
   if (inp.notices === null) age("notices", "amber", "Official notices could not be loaded. Check CDFW and CDPH.", null, null);
 
@@ -614,6 +659,29 @@ function conflictOf(rec: FisheryStatus, n: NoticeInput, nLevel: StatusLevel, now
 
 const STATUS_NOT_LOADED = "Fishery status could not be loaded. Check CDFW and CDPH before you go.";
 
+/** Words a headline may open with that are not names: lowered after "Fishery: " ("Monterey Bay anchovy…" keeps its capital). */
+const COMMON_OPENERS = new Set(["the", "a", "an", "no", "annual", "commercial", "recreational", "sport", "season", "open", "closed", "delayed", "take", "do", "all", "this", "there"]);
+
+/**
+ * The hero sentence's two parts, so the lead reads as one sentence for every fishery. A fishery whose
+ * label ends in a one-word sector ("Dungeness crab (commercial)") drops it when the headline says the
+ * sector itself, and the headline continues in lower case after the colon:
+ *   "Dungeness crab (commercial)" + "Commercial season delayed to …"  →  "Dungeness crab: commercial season delayed to …"
+ *   "Salmon (commercial)" + "The 2026 commercial ocean salmon season has concluded."  →  "Salmon: the 2026 commercial ocean salmon season has concluded."
+ * A label whose brackets list species ("Shellfish (mussels, clams, oysters)") is kept whole. A headline
+ * that names its own subject before a colon, in the fishery's words, leads with that subject instead:
+ *   "Anchovy & sardine" + "Monterey Bay anchovy: no take for human consumption …"  →  "Monterey Bay anchovy: no take for human consumption …"
+ */
+export function ledeParts(label: string, headline: string): { label: string; text: string } {
+  const own = headline.match(/^([^:.;()\d]{3,40}): (\S.*)$/);
+  if (own && label.toLowerCase().split(/[^a-z]+/).some((w) => w.length >= 5 && own[1].toLowerCase().includes(w.replace(/(ies|s)$/, "")))) return { label: own[1], text: own[2] };
+  const m = label.match(/^(.*\S)\s*\((\w+)\)$/);
+  const said = m && new RegExp(`\\b${m[2]}\\b`, "i").test(headline);
+  const first = headline.match(/^[A-Za-z]+/)?.[0] ?? "";
+  const text = COMMON_OPENERS.has(first.toLowerCase()) && /^[A-Z][a-z]*$/.test(first) ? headline.charAt(0).toLowerCase() + headline.slice(1) : headline;
+  return { label: said ? m![1] : label, text };
+}
+
 function ledeOf(rows: StatusRow[], statusError: boolean, sea: SeaView): Lede {
   // what leads: an emergency closure or delay, then a restriction or watch, then a fishery that is simply out of season
   const rank = (r: StatusRow) => (r.seasonal ? 2 : SEVERITY_RANK[r.severity]);
@@ -626,9 +694,9 @@ function ledeOf(rows: StatusRow[], statusError: boolean, sea: SeaView): Lede {
     return { label: null, text, status: text, severity: statusError ? "amber" : "neutral", more: 0, sea: seaWords, seasonal: false, caution: null };
   }
   const top = flagged[0];
-  const text = top.headline;
+  const { label, text } = ledeParts(top.label, top.headline);
   // an official notice still leads when Neritic's own list is missing; the gap is said right after it
-  return { label: top.label, text, status: `${top.label}: ${lower1(text)}`, severity: top.severity, more: flagged.length - 1, sea: seaWords, seasonal: top.seasonal, caution: statusError ? "The rest of Neritic's season list did not load. Check CDFW and CDPH before you go." : null };
+  return { label, text, status: `${label}: ${text}`, severity: top.severity, more: flagged.length - 1, sea: seaWords, seasonal: top.seasonal, caution: statusError ? "The rest of Neritic's season list did not load. Check CDFW and CDPH before you go." : null };
 }
 
 // ---------------------------------------------------------------- whale (RAMP)

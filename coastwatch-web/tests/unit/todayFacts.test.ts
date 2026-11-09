@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { BiotoxinIndex, FisheriesStatusIndex, PortFact } from "@/pilot/contracts";
 import type { Conditions } from "@/lib/conditions";
-import { OUTLOOK_SIGNAL_RATIO, buildPortToday, buildTodayModel, diffFacts, factorWords, outlookErrorFactor, outlookRead, parseFisheries, rampZoneFor, skillWords, snapFacts, testSentence, type CharmInput, type NoticeInput, type OutlookInput, type PortTodayInputs } from "@/pilot/facts";
+import { FISHERY_OPTIONS, OUTLOOK_SIGNAL_RATIO, buildPortToday, buildTodayModel, diffFacts, factorWords, ledeParts, outlookErrorFactor, outlookRead, parseFisheries, statusTally, rampZoneFor, skillWords, snapFacts, testSentence, type CharmInput, type NoticeInput, type OutlookInput, type PortTodayInputs } from "@/pilot/facts";
 import { parseBiotoxin, parseFisheriesStatus } from "@/pilot/data";
 
 // the data track's fixtures (pilot/data: `cwp fixture`), as the page reads them
@@ -74,9 +74,59 @@ describe("buildPortToday: hierarchy", () => {
     const m = buildTodayModel(base({ notices: [n] }));
     const row = m.status.find((r) => r.fishery === "bivalve_shellfish")!;
     expect(row.severity).toBe("red");
-    expect(row.word).toBe("Closed");
+    expect(row.level).toBe("closed");
     expect(row.verified).toBe(false);
     expect(m.today.facts.some((f) => f.id === "notice:cdph-mussels" && f.basis === "official" && f.verified === false)).toBe(true);
+  });
+
+  it("a rule on sport harvest is said as one: in the pill, the headline and the count, never as a commercial closure", () => {
+    const n: NoticeInput = { id: "cdph-mussels", agency: "CDPH", title: "Annual quarantine of sport-harvested mussels", summary: "Sport-harvested mussels may not be harvested for human consumption (bait only).", action: "quarantine", species: ["mussels (all species)"], fishery: "sport_harvest", effective: "2026-05-01", url: "https://cdph.ca.gov", verified: false, registry_checked: "2026-10-08T19:32:08Z" };
+    const m = buildTodayModel(base({ notices: [n] }));
+    const row = m.status.find((r) => r.fishery === "bivalve_shellfish")!;
+    // the stricter source still leads and keeps its level and colour: only the scope is now said
+    expect(row).toMatchObject({ level: "closed", severity: "red", scope: "Sport harvest", word: "Sport harvest closed", verified: false });
+    expect(row.headline).toBe("Annual quarantine of sport-harvested mussels (sport harvest only).");
+    expect(row.conflict?.shown).toBe("notice");
+    expect(row.fact).toMatchObject({ id: "status:bivalve_shellfish", value: "Sport harvest closed", severity: "red", verified: false });
+    expect(row.fact.headline).toBe("Shellfish (mussels, clams, oysters): Annual quarantine of sport-harvested mussels (sport harvest only).");
+    expect(row.fact.detail).toContain("This is a rule for sport harvest, not a closure of a commercial fishery.");
+    expect(m.today.facts.find((f) => f.id === "notice:cdph-mussels")).toMatchObject({ value: "Sport harvest closed", severity: "red" });
+    // the count is in the pills' own words: the delay is the one commercial action, the quarantine is counted as what it is
+    expect(statusTally(m.status)).toBe("1 delayed · 1 sport harvest closed · 1 restricted · 1 season closed · 3 none on record");
+    expect(statusTally(m.status)).not.toMatch(/closed or delayed/);
+    // without the notice the curated record leads: a watch on sport harvest, counted as a watch (not a restriction)
+    const calm = buildTodayModel(base());
+    expect(calm.status.find((r) => r.fishery === "bivalve_shellfish")).toMatchObject({ level: "watch", severity: "amber", scope: "Sport harvest", word: "Sport harvest watch" });
+    expect(statusTally(calm.status)).toBe("1 delayed · 1 restricted · 1 sport harvest watch · 1 season closed · 3 none on record");
+    // a notice on the whole fishery is not scoped, and the recreational Dungeness row needs no second label
+    const all: NoticeInput = { ...n, id: "cdph-rock", title: "Do not eat rock crab viscera", action: "consumption_advisory", species: ["rock crab"], fishery: "all" };
+    expect(buildTodayModel(base({ notices: [all] })).status.find((r) => r.fishery === "rock_crab")).toMatchObject({ scope: null, word: "Restricted", headline: "Do not eat rock crab viscera." });
+    const rec = buildTodayModel(base({ selected: ["dungeness_recreational"] })).status[0];
+    expect(rec.scope).toBeNull();
+    // nothing could be loaded: said as that
+    expect(statusTally(buildTodayModel(base({ fisheries: null })).status)).toBe("7 not available");
+  });
+
+  it("the hero sentence says the sector once and reads as one sentence for every fishery", () => {
+    expect(ledeParts("Dungeness crab (commercial)", "Commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements).")).toEqual({ label: "Dungeness crab", text: "commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements)." });
+    expect(ledeParts("Dungeness crab (recreational)", "Recreational season open since Nov 7 with crab traps prohibited; hoop nets and snares allowed.")).toEqual({ label: "Dungeness crab", text: "recreational season open since Nov 7 with crab traps prohibited; hoop nets and snares allowed." });
+    expect(ledeParts("Salmon (commercial)", "The 2026 commercial ocean salmon season has concluded.")).toEqual({ label: "Salmon", text: "the 2026 commercial ocean salmon season has concluded." });
+    // the sector stays in the label when the headline does not say it; a name keeps its capital; a species list is not a sector
+    expect(ledeParts("Salmon (commercial)", "Closed south of Pigeon Point.")).toEqual({ label: "Salmon (commercial)", text: "closed south of Pigeon Point." });
+    // a headline that names its own subject in the fishery's words leads with it: one colon, not two
+    expect(ledeParts("Anchovy & sardine", "Monterey Bay anchovy: no take for human consumption since Sep 11 (domoic acid); bait only.")).toEqual({ label: "Monterey Bay anchovy", text: "no take for human consumption since Sep 11 (domoic acid); bait only." });
+    expect(ledeParts("Groundfish", "Zones 3-4: closed inside 20 fathoms.")).toEqual({ label: "Groundfish", text: "Zones 3-4: closed inside 20 fathoms." });
+    expect(ledeParts("Rock crab", "CDPH advises against eating the viscera.")).toEqual({ label: "Rock crab", text: "CDPH advises against eating the viscera." });
+    expect(ledeParts("Shellfish (mussels, clams, oysters)", "Annual quarantine of sport-harvested mussels (sport harvest only).")).toEqual({ label: "Shellfish (mussels, clams, oysters)", text: "annual quarantine of sport-harvested mussels (sport harvest only)." });
+    // every fishery's lead, from the fixture records: no sector said twice, no "X: X …"
+    for (const f of FISHERY_OPTIONS) {
+      const l = buildTodayModel(base({ selected: [f.id] })).lede;
+      if (!l.label) continue;
+      expect(l.status).toBe(`${l.label}: ${l.text}`);
+      expect(l.status.split(": ").length, l.status).toBeLessThanOrEqual(2);
+      expect(l.status.match(/\bcommercial\b/gi)?.length ?? 0).toBeLessThanOrEqual(1);
+      expect(l.status.match(/\brecreational\b/gi)?.length ?? 0).toBeLessThanOrEqual(1);
+    }
   });
 
   it("when the registry and the curated status disagree, the row keeps the more restrictive and says so, with both dates", () => {
@@ -111,8 +161,9 @@ describe("buildPortToday: hierarchy", () => {
     const m = buildTodayModel(base());
     const t = m.tests.find((x) => x.site.id === "bma-g-monterey-bay-dungeness-crab")!;
     expect(t.fact.detail).toMatch(/still delayed/);
-    expect(m.lede.label).toBe("Dungeness crab (commercial)");
-    expect(m.lede.text).toMatch(/^Commercial season delayed to at least Jan 1, 2027/);
+    expect(m.lede.label).toBe("Dungeness crab");
+    expect(m.lede.text).toMatch(/^commercial season delayed to at least Jan 1, 2027/);
+    expect(m.lede.status).toBe("Dungeness crab: commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements).");
     expect(m.lede.more).toBe(3); // salmon (season over), anchovy/sardine, mussels (watch) below
   });
 
@@ -125,9 +176,9 @@ describe("buildPortToday: hierarchy", () => {
     expect(m.status.find((r) => r.fishery === "dungeness_commercial")).toMatchObject({ level: "delayed", seasonal: false, word: "Delayed" });
     // alone, it leads; beside a restriction, the restriction leads
     const only = buildTodayModel(base({ selected: ["salmon_commercial", "groundfish"] }));
-    expect(only.lede).toMatchObject({ label: "Salmon (commercial)", seasonal: true, more: 0 });
+    expect(only.lede).toMatchObject({ label: "Salmon", text: "the 2026 commercial ocean salmon season has concluded.", seasonal: true, more: 0 });
     const both = buildTodayModel(base({ selected: ["salmon_commercial", "anchovy_sardine"] }));
-    expect(both.lede).toMatchObject({ label: "Anchovy & sardine", seasonal: false, more: 1 });
+    expect(both.lede).toMatchObject({ label: "Monterey Bay anchovy", text: "no take for human consumption since Sep 11 (domoic acid); bait only.", seasonal: false, more: 1 });
   });
 
   it("when Neritic's season list is missing, an official notice still leads and the gap is said after it", () => {
