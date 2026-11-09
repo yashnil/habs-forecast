@@ -83,7 +83,9 @@ const VIEW: Record<string, [[number, number], [number, number]]> = {
   central_coast: [[-121.45, 34.75], [-120.4, 35.85]],
   southern_california: [[-120.55, 32.55], [-117.05, 34.55]],
 };
-const DOCK = 64; // phone navigation dock height
+const DOCK = 60; // phone navigation dock height
+/** A phone sheet at half height: the name, three statements and the one action fit it at 390×844. */
+const HALF = 0.58;
 /** The credits' margin line under the map (design.md §7.3: 20 px, never covered). */
 const MARGIN = 20;
 /** Clear of the bar at the top: the place sheet and the tools' popovers start here. */
@@ -493,7 +495,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       if (bp === "desktop" || bp === "tablet") return { top: 84, bottom: marginH + dockH + 28, left: 24, right: open ? panelW + 28 + 24 : 16 + 44 + 24 };
       // phone: a selection opens the sheet to half height, so the camera centres it in the map strip
       // that stays visible above the sheet (not behind it)
-      const sheet = open ? Math.round((window.innerHeight - DOCK) * 0.5) : peekH;
+      const sheet = open ? Math.round((window.innerHeight - DOCK) * HALF) : peekH;
       return { top: 112, bottom: sheet + DOCK + 24, left: 20, right: 20 };
     },
     [bp, panelOpen, panelW, marginH, dockH, peekH],
@@ -984,7 +986,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // phone sheet
   const [snap, setSnap] = useState<SnapId>("peek");
   const [vh, setVh] = useState(800);
-  const sheetHalf = Math.round((vh - DOCK) * 0.5);
+  const sheetHalf = Math.round((vh - DOCK) * HALF);
   useEffect(() => {
     const f = () => setVh(window.innerHeight);
     f();
@@ -1053,6 +1055,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       <LayerList manifest={manifest} choice={active} onChoice={pickLayer} now={now} defaults={{ lead: firstLead }} derived={derived} />
       <LayerOptions manifest={manifest} choice={active} onChoice={setChoiceRaw} estimate={resolved.estimateLayer} part="primary" />
       {/* what the colours mean, every caveat and the no-data marks: one level in, in the page */}
+{bp !== "phone" && (
       <details className="nx-note group border-t border-n-line" data-testid="legend-fold">
         <summary className="nx-focus flex min-h-11 cursor-pointer items-center gap-2">
           <span className="min-w-0 flex-1 text-[14.5px] text-n-ink">What the colours mean</span>
@@ -1065,6 +1068,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           {adjustable && <p className="nx-margin" data-testid="state-scale-note">At state scale a {active.kind === "forecast" ? "3 km model cell" : "pixel"} is a few screen pixels wide: zoom in and tap the water to read one, or tap a harbour for its briefing.</p>}
         </div>
       </details>
+      )}
       {adjustable && (
         <details className="nx-note group border-t border-n-line" data-testid="layer-adjust" open={adjustOpen} onToggle={(e) => setAdjustOpen(e.currentTarget.open)}>
           <summary className="nx-focus flex min-h-11 cursor-pointer items-center gap-2">
@@ -1359,6 +1363,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
             {offlineBanner && <div className="pointer-events-auto w-full">{offlineBanner}</div>}
             {fieldProblem && <div className="pointer-events-auto w-full">{fieldProblem}</div>}
             {backTo && <BackToBriefing {...backTo} className="pointer-events-auto w-fit max-w-full" />}
+            {readHint && <div className="w-full">{readHint}</div>}
             {/* a place open: the sheet leads with it, and the layer is a small chip on the map, still one tap away */}
             {selection && (
               <button
@@ -1373,7 +1378,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
               >
                 <MiniRamp ramp={ramp} />
                 <span className="truncate">{words.title}</span>
-                {words.caveat && <span className="truncate text-n-ink-2" data-testid="capsule-caveat">{words.caveat === "probability of conditions, not toxin in seafood" ? "probability, not toxin" : words.caveat}</span>}
+                {words.caveat && <span className="shrink-0 text-n-ink-2" data-testid="capsule-caveat">{words.caveat === "probability of conditions, not toxin in seafood" ? "probability, not toxin" : words.caveat}</span>}
                 <Icon name="layers" className="h-4 w-4 shrink-0 text-n-ink-2" />
               </button>
             )}

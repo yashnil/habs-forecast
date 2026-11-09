@@ -739,7 +739,8 @@ function ObservedProvenance({ manifest, choice, resolved, now, regions = [], par
   // About this layer keeps any further line
   // (the forecast's own line repeats the timebar's run and day, so it is in About this layer)
   // (v11: the date and its age are on the dock's head; only a gap, a name of what the radar missed, stays in view)
-  const docked = (x: (typeof stamps)[number]) => x.kind === "gap";
+  // two sources compared keep both their lines in view: the head can name only one time
+  const docked = (x: (typeof stamps)[number]) => x.kind === "gap" || (choice.kind === "currents" && !!choice.chl);
   const shown = stamps.filter((x) => part === "all" || (part === "dock" ? docked(x) : !docked(x)));
   const dock = part !== "about";
   const about = part !== "dock";

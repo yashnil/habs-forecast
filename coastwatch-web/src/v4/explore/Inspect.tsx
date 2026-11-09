@@ -404,7 +404,10 @@ export function HarborView({ code, ctx, concise = false }: { code: number; ctx: 
         </p>
       )}
       {!ev || ev.status === "loading" ? (
-        <Loading what="Reading the evidence for these waters…" />
+        // the place sheet keeps the statements' room while they load, so the action below them does not jump
+        <div style={concise ? { minHeight: 196 } : undefined}>
+          <Loading what="Reading the evidence for these waters…" />
+        </div>
       ) : ev.status === "error" ? (
         <Failed what="The evidence" message={ev.message} retry={retryEv} />
       ) : (
@@ -414,7 +417,13 @@ export function HarborView({ code, ctx, concise = false }: { code: number; ctx: 
               <ClaimRow key={c.id} c={c} graph={ev.data} stations={ctx.stations} onSelect={ctx.onSelect} compact={concise} />
             ))}
           </ul>
-          {later.length > 0 && (
+        </>
+      )}
+    </Section>
+  );
+  // the lines past the first three follow the action, so the action stays in the sheet as it opens
+  const moreClaims =
+    later.length > 0 && ev?.status === "ready" ? (
             <details className="group" data-testid="harbor-claims-more">
               <summary className="nx-focus inline-flex min-h-11 cursor-pointer list-none items-center gap-1 text-[13.5px] font-semibold text-n-ink-2 hover:text-n-ink [&::-webkit-details-marker]:hidden">
                 {later.length} more {later.length === 1 ? "line" : "lines"} of evidence
@@ -426,11 +435,7 @@ export function HarborView({ code, ctx, concise = false }: { code: number; ctx: 
                 ))}
               </ul>
             </details>
-          )}
-        </>
-      )}
-    </Section>
-  );
+    ) : null;
   const actions = <CrossLinks ctx={ctx} place={`port-${code}`} lat={lat} lon={lon} name={name} variant={concise ? "actions" : "row"} primary="brief" briefTestId={concise ? "open-briefing" : undefined} briefLabel={concise ? "Open today's briefing" : `Open the ${name} briefing`} today={concise && !ctx.from?.startsWith("/coast")} />;
   if (concise)
     return (
@@ -438,6 +443,7 @@ export function HarborView({ code, ctx, concise = false }: { code: number; ctx: 
         {/* name, three statements in authority order, then the one action; the evidence is folded */}
         {claimsSection}
         {actions}
+        {moreClaims}
         <EvidenceFold summary="Harbour water, shore stations nearby, each product near the harbour">
           {water}
           {intel && <HarbourSummary intel={intel} lead={ctx.lead} />}
