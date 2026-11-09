@@ -24,22 +24,30 @@ export function useDeviceInbox(): InboxItem[] {
 
 export type Session = { client: SupabaseClient | null; user: User | null; status: "off" | "loading" | "signed_out" | "signed_in" };
 
-/** The Supabase session when accounts are configured; status "off" when they are not. */
+/** The Supabase session when accounts are configured; status "off" when they are not (and then no account code is loaded at all). */
 export function useSession(cfg: SupabaseConfig): Session {
-  const client = useMemo(() => browserClient(cfg), [cfg]);
-  const [state, setState] = useState<Omit<Session, "client">>({ user: null, status: client ? "loading" : "off" });
+  const url = cfg?.url ?? null;
+  const anonKey = cfg?.anonKey ?? null;
+  const [state, setState] = useState<Session>({ client: null, user: null, status: url && anonKey ? "loading" : "off" });
   useEffect(() => {
-    if (!client) return;
+    if (!url || !anonKey) return;
     let live = true;
-    client.auth
-      .getUser()
-      .then(({ data }) => live && setState({ user: data.user, status: data.user ? "signed_in" : "signed_out" }))
-      .catch(() => live && setState({ user: null, status: "signed_out" }));
-    const { data } = client.auth.onAuthStateChange((_e, s) => setState({ user: s?.user ?? null, status: s?.user ? "signed_in" : "signed_out" }));
+    let stop: (() => void) | null = null;
+    void browserClient({ url, anonKey }).then((client) => {
+      if (!live) return;
+      if (!client) return setState({ client: null, user: null, status: "off" });
+      setState((s) => ({ ...s, client }));
+      client.auth
+        .getUser()
+        .then(({ data }) => live && setState({ client, user: data.user, status: data.user ? "signed_in" : "signed_out" }))
+        .catch(() => live && setState({ client, user: null, status: "signed_out" }));
+      const { data } = client.auth.onAuthStateChange((_e, s) => live && setState({ client, user: s?.user ?? null, status: s?.user ? "signed_in" : "signed_out" }));
+      stop = () => data.subscription.unsubscribe();
+    });
     return () => {
       live = false;
-      data.subscription.unsubscribe();
+      stop?.();
     };
-  }, [client]);
-  return { client, ...state };
+  }, [url, anonKey]);
+  return state;
 }
