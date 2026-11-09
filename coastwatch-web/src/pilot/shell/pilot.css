@@ -147,14 +147,14 @@ select.pilot-field { padding-right: 28px; }
 .ask-suggest:hover:not(:disabled) { border-color: var(--nx-line-strong); color: var(--nx-ink); }
 .ask-sms { border-radius: 14px 14px 14px 3px; background: var(--nx-surface-3); padding: 10px 12px; font-size: 14.5px; line-height: 1.4; color: var(--nx-ink); white-space: pre-wrap; }
 
-/* a fact card reached from a citation: marked for a few seconds, then quiet again */
+/* a fact card reached from a citation: ringed and tinted for a few seconds, then quiet again */
 @keyframes fact-hit {
-  0%, 60% { background-color: color-mix(in srgb, var(--nx-accent) 16%, transparent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--nx-accent) 16%, transparent), inset 3px 0 0 var(--nx-accent); }
-  100% { background-color: transparent; box-shadow: 0 0 0 6px transparent, inset 3px 0 0 transparent; }
+  0%, 65% { background-color: color-mix(in srgb, var(--nx-accent) 14%, transparent); box-shadow: 0 0 0 8px color-mix(in srgb, var(--nx-accent) 14%, transparent); outline-color: var(--nx-accent); }
+  100% { background-color: transparent; box-shadow: 0 0 0 8px transparent; outline-color: transparent; }
 }
-.fact-hit { animation: fact-hit 3.2s ease-out both; border-radius: 3px; }
+.fact-hit { animation: fact-hit 3.6s ease-out both; border-radius: 2px; outline: 2px solid transparent; outline-offset: 8px; }
 @media (prefers-reduced-motion: reduce) {
-  .fact-hit { animation: none; box-shadow: inset 3px 0 0 var(--nx-accent); background-color: color-mix(in srgb, var(--nx-accent) 12%, transparent); }
+  .fact-hit { animation: none; outline-color: var(--nx-accent); }
 }
 
 /* Your ports and alerts on a wide screen: settings on the left, the inbox beside them */

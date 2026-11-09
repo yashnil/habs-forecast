@@ -13,9 +13,8 @@ import { useInbox } from "./useInbox";
  * The alerts bell for the top bar: unread count, and the newest alerts in a small panel with a link
  * to the full inbox (/account#inbox). Works with no account (the device inbox).
  *
- * INTEGRATOR (one line in src/v4/shell/TopBar.tsx, next to the ⋯ menu):
- *     <AlertsBell />
- * Optional `todays`: pass the page's PortToday facts and the bell also runs the device's alert check.
+ * Mounted in the top bar (src/v4/shell/TopBar.tsx), next to the ⋯ menu, on every page. Today runs the
+ * device's alert check itself (<AlertCheck>); `todays` lets another page do it through the bell.
  */
 export function AlertsBell({ todays }: { todays?: PortToday[] }) {
   const { session } = usePilotAccount();
@@ -67,11 +66,11 @@ export function AlertsBell({ todays }: { todays?: PortToday[] }) {
         )}
       </button>
       {open && (
-        <div id={panelId} role="dialog" aria-label="Alerts" className="nx-pop absolute right-0 top-[52px] z-50 w-[min(360px,calc(100vw-24px))] rounded-[18px] border border-n-line bg-n-surface p-3 shadow-[var(--nx-shadow)]" data-testid="alerts-panel">
+        <div id={panelId} role="dialog" aria-label="Alerts" className="nx-pop absolute right-0 top-[52px] z-50 w-[min(360px,calc(100vw-24px))] rounded-[18px] border border-n-line bg-n-surface p-3 shadow-[var(--nx-shadow)] max-sm:-right-11" data-testid="alerts-panel">
           <div className="flex items-center justify-between gap-2 px-1">
             <h2 className="text-[15px] font-semibold text-n-ink">Alerts</h2>
             {unread > 0 && (
-              <button type="button" onClick={markAllRead} className="nx-focus min-h-11 rounded-lg px-2 text-[13.5px] font-medium text-n-accent">
+              <button type="button" onClick={markAllRead} className="nx-focus min-h-11 rounded-lg px-2 text-[13.5px] font-medium text-n-ink-2 underline decoration-n-line-strong underline-offset-4">
                 Mark all read
               </button>
             )}
@@ -79,7 +78,7 @@ export function AlertsBell({ todays }: { todays?: PortToday[] }) {
           <div className="max-h-[50vh] overflow-y-auto px-1">
             <InboxList items={items.slice(0, 5)} compact empty={account.saved_places.length ? undefined : "Save a port to get alerts when its official status, toxin tests or whale rules change."} />
           </div>
-          <Link href="/account#inbox" onClick={() => setOpen(false)} className="nx-focus mt-1 flex min-h-11 items-center justify-center rounded-lg text-[14px] font-medium text-n-accent hover:bg-n-surface-2" data-testid="alerts-open-inbox">
+          <Link href="/account#inbox" onClick={() => setOpen(false)} className="nx-focus mt-1 flex min-h-11 items-center justify-center rounded-lg text-[14px] font-medium text-n-ink underline decoration-n-line-strong underline-offset-4 hover:bg-n-surface-2" data-testid="alerts-open-inbox">
             Open inbox and alert settings
           </Link>
         </div>

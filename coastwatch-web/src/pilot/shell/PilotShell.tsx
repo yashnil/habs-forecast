@@ -5,6 +5,8 @@ import "./pilot.css";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useNow } from "@/lib/useNow";
+import { NOT_CONFIGURED, type PilotAccountConfig } from "@/pilot/account/config";
+import { PilotAccountProvider } from "@/pilot/account/context";
 import { ReadinessProvider } from "@/v4/readiness/store";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { NavTabs, TopBar, type Workspace } from "@/v4/shell/TopBar";
@@ -69,9 +71,24 @@ export function PilotHero({ eyebrow, title, titleId, lede, children }: { eyebrow
   );
 }
 
-export function PilotShell({ active = "page", children, testid, footer = true }: { active?: Workspace; children: ReactNode; testid?: string; /** false: the page ends with its own footer */ footer?: boolean }) {
+export function PilotShell({
+  active = "page",
+  children,
+  testid,
+  footer = true,
+  account = NOT_CONFIGURED,
+}: {
+  active?: Workspace;
+  children: ReactNode;
+  testid?: string;
+  /** false: the page ends with its own footer */
+  footer?: boolean;
+  /** what accounts may do here (pilotAccountConfig(), computed on the server): the bell and feedback then follow the signed-in account */
+  account?: PilotAccountConfig;
+}) {
   const now = useNow();
   return (
+    <PilotAccountProvider config={account}>
     <ReadinessProvider>
       <div className="env-instrument today pilot min-h-dvh pb-[calc(76px+env(safe-area-inset-bottom,0px))] lg:pb-10" data-testid={testid}>
         <SkipLink />
@@ -87,5 +104,6 @@ export function PilotShell({ active = "page", children, testid, footer = true }:
         <PilotDock active={active} />
       </div>
     </ReadinessProvider>
+    </PilotAccountProvider>
   );
 }

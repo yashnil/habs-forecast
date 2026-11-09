@@ -14,9 +14,10 @@ export const metadata = { title: "Your ports and alerts", robots: { index: false
  */
 export default async function AccountPage() {
   const facts = await loadPortTodays();
+  const config = pilotAccountConfig();
   return (
-    <PilotShell testid="account-shell">
-      <AccountApp config={pilotAccountConfig()} todays={facts.todays} sample={facts.sample} />
+    <PilotShell testid="account-shell" account={config}>
+      <AccountApp config={config} todays={facts.todays} sample={facts.sample} />
     </PilotShell>
   );
 }

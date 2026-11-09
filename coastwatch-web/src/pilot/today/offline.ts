@@ -28,7 +28,7 @@ export async function saveTodayOffline(place: string, label: string, conditionsU
     const page = await fetch(pageUrl, { credentials: "same-origin", cache: "no-store" });
     if (!page.ok) return { ok: false, why: `the page did not load (HTTP ${page.status}).` };
     const html = await page.text();
-    await c.put(pageUrl, new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", "x-neritic-saved-at": at, "x-neritic-saved-url": pageUrl } }));
+    await c.put(pageUrl, new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", "x-neritic-saved-at": at, "x-neritic-saved-url": pageUrl, "x-neritic-saved-label": encodeURIComponent(label) } }));
     const cond = await fetch(conditionsUrl, { cache: "no-store" }).catch(() => null);
     if (cond?.ok) await c.put(conditionsUrl, cond);
     const files = staticRefs(html);

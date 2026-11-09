@@ -1,5 +1,26 @@
 import type { ReactNode } from "react";
 import type { Severity } from "@/pilot/contracts";
+import { Feedback } from "@/pilot/account/Feedback";
+
+/**
+ * Every statement on Today has an address: `#fact-<PortFact.id>`. Ask Neritic's citations and alerts
+ * link to it (`/today?place=…#fact-status:dungeness_commercial`). A card carries its own fact's id
+ * (`factProps`); facts drawn inside a shared instrument (a forecast period in the lanes, a day's
+ * tides) get an invisible anchor there (`FactAnchors`). TodayView marks the card when it is reached.
+ */
+export const factAnchor = (factId: string) => `fact-${factId}`;
+/** Spread on the element that IS the fact's card. */
+export const factProps = (factId: string) => ({ id: factAnchor(factId), "data-fact-card": "" }) as const;
+/** Invisible anchors for facts shown inside the surrounding card (place inside a `data-fact-card`). */
+export function FactAnchors({ ids }: { ids: string[] }) {
+  return (
+    <>
+      {ids.map((id) => (
+        <span key={id} id={factAnchor(id)} className="fact-anchor" />
+      ))}
+    </>
+  );
+}
 
 /** A status shape, so state never relies on colour alone: a filled triangle (red), a half disc (amber), a ring (none), a dashed ring (unknown). */
 export function StatusMark({ severity, className = "" }: { severity: Severity; className?: string }) {
@@ -36,7 +57,24 @@ export function Unverified({ verified }: { verified: boolean | null }) {
   );
 }
 
-export function Section({ id, area, title, aside, children, testid }: { id: string; area: string; title: string; aside?: ReactNode; children: ReactNode; testid?: string }) {
+export function Section({
+  id,
+  area,
+  title,
+  aside,
+  children,
+  testid,
+  feedback,
+}: {
+  id: string;
+  area: string;
+  title: string;
+  aside?: ReactNode;
+  children: ReactNode;
+  testid?: string;
+  /** "Was this useful?" once for the section, about its leading fact (kept on this device; src/pilot/account/Feedback) */
+  feedback?: { factId: string; placeId: string } | null;
+}) {
   return (
     <section className="today-sec" data-area={area} aria-labelledby={`${id}-h`} id={id} data-testid={testid ?? `today-${id}`}>
       <header>
@@ -46,6 +84,11 @@ export function Section({ id, area, title, aside, children, testid }: { id: stri
         {aside}
       </header>
       {children}
+      {feedback && (
+        <div className="mt-1 flex justify-end">
+          <Feedback factId={feedback.factId} placeId={feedback.placeId} compact />
+        </div>
+      )}
     </section>
   );
 }

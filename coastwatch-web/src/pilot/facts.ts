@@ -189,6 +189,8 @@ const pct = (p: number) => `${Math.round(p * 100)}%`;
 const ppm = (v: number) => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1).replace(/\.0$/, "") : v.toFixed(1));
 const mg = (v: number) => (v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(2));
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+/** The fact id of an NWS alert in force ("Small Craft Advisory" → "weather:alert:small-craft-advisory"). */
+export const alertFactId = (event: string) => `weather:alert:${slug(event)}`;
 const sentence = (s: string) => (/[.!?]$/.test(s.trim()) ? s.trim() : `${s.trim()}.`);
 const lower1 = (s: string) => (/^[A-Z][a-z]/.test(s) ? s.charAt(0).toLowerCase() + s.slice(1) : s);
 
@@ -806,7 +808,7 @@ function seaFactsOf(sea: SeaView, place: TodayPlace, now: string, fact: (f: Omit
   if (sea.state !== "ok") return [];
   const out: PortFact[] = [];
   const nws = { name: "NOAA National Weather Service", url: sea.marineUrl };
-  for (const a of sea.alerts) out.push(fact({ id: `weather:alert:${slug(a.event)}`, kind: "weather", severity: "amber", headline: sentence(`NWS: ${a.headline}`), detail: "In effect for these waters, as issued by NWS.", basis: "official", verified: null, source: { name: nws.name, url: a.url }, as_of: sea.issued }));
+  for (const a of sea.alerts) out.push(fact({ id: alertFactId(a.event), kind: "weather", severity: "amber", headline: sentence(`NWS: ${a.headline}`), detail: "In effect for these waters, as issued by NWS.", basis: "official", verified: null, source: { name: nws.name, url: a.url }, as_of: sea.issued }));
   const first = sea.lanes[0];
   if (first) {
     const line = periodLine(first);

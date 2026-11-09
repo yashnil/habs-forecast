@@ -1,6 +1,5 @@
 "use client";
 
-import "@/pilot/today/today.css";
 import { useEffect, useState } from "react";
 import { usePilotAccount } from "@/pilot/account/context";
 import { PUSH_CONSENT_TEXT } from "@/pilot/account/consent";

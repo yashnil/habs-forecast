@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ageWords, dayWords, type TestSiteView } from "@/pilot/facts";
 import { ToxinChart } from "./Charts";
-import { Section } from "./ui";
+import { Section, factProps } from "./ui";
 
 const SHOWN = 2;
 
 /** CDPH crab and seafood toxin tests: the plain sentence first, then every sample as a dot against the action level. */
-export function ToxinTests({ tests, error, now, sourceUrl }: { tests: TestSiteView[]; error: boolean; now: string; sourceUrl: string | null }) {
+export function ToxinTests({ tests, error, now, sourceUrl, place, reveal = null }: { tests: TestSiteView[]; error: boolean; now: string; sourceUrl: string | null; place: string; /** a fact id reached by a link: its site is shown even when it is past the first two */ reveal?: string | null }) {
   const [all, setAll] = useState(false);
+  useEffect(() => {
+    if (reveal && tests.slice(SHOWN).some((t) => t.fact.id === reveal)) setAll(true);
+  }, [reveal, tests]);
   const list = all ? tests : tests.slice(0, SHOWN);
   return (
-    <Section id="tests" area="tests" title="Crab & seafood toxin tests">
+    <Section id="tests" area="tests" title="Crab & seafood toxin tests" feedback={tests[0] ? { factId: tests[0].fact.id, placeId: place } : null}>
       {error ? (
         <p className="today-say" data-testid="tests-unavailable">
           CDPH&rsquo;s domoic acid results are not available in Neritic right now. Read them on{" "}
@@ -32,7 +35,7 @@ export function ToxinTests({ tests, error, now, sourceUrl }: { tests: TestSiteVi
           </p>
           <ul className="mt-2">
             {list.map((t) => (
-              <li key={t.site.id} className="border-t border-n-line py-4 first:border-t-0" data-testid={`test-${t.site.id}`}>
+              <li key={t.site.id} className="border-t border-n-line py-4 first:border-t-0" data-testid={`test-${t.site.id}`} {...factProps(t.fact.id)}>
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <h3 className="text-[16px] font-semibold text-n-ink">
                     {t.site.species} <span className="font-normal text-n-ink-2">· {t.site.bma ? `BMA ${t.site.bma}${t.site.bma_label ? ` (${t.site.bma_label})` : ""}, ` : ""}{t.site.site_label}</span>

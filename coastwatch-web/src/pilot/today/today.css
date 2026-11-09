@@ -193,3 +193,7 @@ html[data-daylight] .today-sheet::backdrop { background: rgba(11, 24, 32, 0.35);
 .today-skel { background: linear-gradient(90deg, var(--nx-surface-2), var(--nx-surface-3), var(--nx-surface-2)); background-size: 200% 100%; animation: today-shimmer 1.4s linear infinite; border-radius: 3px; }
 @keyframes today-shimmer { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .today-skel { animation: none; } .today-sheet[open] { animation: nx-fade var(--nx-t-pop) both; } }
+
+/* ---- fact addresses (#fact-<id>): an anchor clears the top bar when it is scrolled to */
+[data-fact-card], .fact-anchor { scroll-margin-top: 84px; }
+.fact-anchor { display: block; height: 0; overflow: hidden; }

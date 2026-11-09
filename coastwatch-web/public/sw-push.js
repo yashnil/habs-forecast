@@ -1,11 +1,10 @@
 /*
  * Neritic pilot: web push handler for the service worker.
  *
- * INTEGRATOR: add ONE line near the top of public/sw.js (after the constants):
- *     importScripts("/sw-push.js");
- * It only adds "push", "notificationclick" and a "neritic-push-ping" message listener; it never
- * touches fetch handling or caches. Until it is imported, the account page says notifications are
- * not available on this build (src/pilot/alerts/push.ts → workerHandlesPush).
+ * Imported by public/sw.js (importScripts, after its constants). It only adds "push",
+ * "notificationclick" and a "neritic-push-ping" message listener; it never touches fetch handling or
+ * caches. The account page asks the worker for that ping before offering notifications
+ * (src/pilot/alerts/push.ts → workerHandlesPush).
  *
  * Payload (from /api/alerts/fanout): { title, body, url, tag }. A notification only repeats what the
  * inbox says; it never says "safe".

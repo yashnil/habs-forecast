@@ -3,14 +3,15 @@
 import type { BloomView, WhaleView } from "@/pilot/facts";
 import { ageWords, dayWords, pacificDay } from "@/pilot/facts";
 import { BloomTimeline, ZoneLadder } from "./Charts";
-import { Section, SourceLink, Unverified } from "./ui";
+import { Section, SourceLink, Unverified, factProps } from "./ui";
 
 /** Bloom outlook: C-HARM days 0–3 (probability of conditions in the water) then the 8-day chlorophyll outlook, on one timeline. */
-export function BloomOutlook({ bloom, now, label }: { bloom: BloomView; now: string; label: string }) {
+export function BloomOutlook({ bloom, now, label, place }: { bloom: BloomView; now: string; label: string; place: string }) {
   const c = bloom.charm;
   const old = c?.state === "historical";
   return (
-    <Section id="bloom" area="bloom" title="Bloom outlook">
+    <Section id="bloom" area="bloom" title="Bloom outlook" feedback={{ factId: bloom.charmFact.id, placeId: place }}>
+      <div {...factProps(bloom.charmFact.id)}>
       <p className="today-say" data-testid="bloom-lede">
         {bloom.charmFact.headline}
       </p>
@@ -36,6 +37,7 @@ export function BloomOutlook({ bloom, now, label }: { bloom: BloomView; now: str
           </span>
         </p>
       </div>
+      </div>
       <div className="mt-4 grid gap-3 text-[14px] leading-relaxed text-n-ink-2">
         <p>
           <b className="font-semibold text-n-ink">C-HARM</b> is NOAA&rsquo;s model probability of bloom and toxin <i>conditions in the water</i> for the next three days, not toxin in crab or shellfish. Its 3 km cells often stop short of harbours; near {label} it is the median of its cells within 15 km.{" "}
@@ -45,7 +47,7 @@ export function BloomOutlook({ bloom, now, label }: { bloom: BloomView; now: str
           .
         </p>
         {bloom.outlookFact ? (
-          <p data-testid="outlook-words">
+          <p data-testid="outlook-words" {...factProps(bloom.outlookFact.id)}>
             <b className="font-semibold text-n-ink">Chlorophyll outlook</b>: a bloom indicator, not a toxin forecast. {bloom.outlookFact.value ? `About ${bloom.outlookFact.value} as one mean over ${dayWords(bloom.outlook!.valid_from, now)}–${dayWords(bloom.outlook!.valid_to, now)}` : "No value near this port"}
             {bloom.outlook?.basis === "nearby" ? " (median of water within 15 km)" : ""}. Chlorophyll is algae of every kind. {bloom.skillWords}
             {bloom.outlookStale ? " Its window has passed." : ""}
@@ -59,9 +61,9 @@ export function BloomOutlook({ bloom, now, label }: { bloom: BloomView; now: str
 }
 
 /** Whale-entanglement rules (CDFW RAMP) for the zone the port is in. */
-export function WhaleRules({ whale, now }: { whale: WhaleView | null; now: string }) {
+export function WhaleRules({ whale, now, place }: { whale: WhaleView | null; now: string; place: string }) {
   return (
-    <Section id="whale" area="whale" title="Whale rules (RAMP)">
+    <Section id="whale" area="whale" title="Whale rules (RAMP)" feedback={whale ? { factId: whale.fact.id, placeId: place } : null}>
       {!whale ? (
         <p className="today-say" data-testid="whale-unavailable">
           Neritic has no current whale-entanglement (RAMP) record. See{" "}
@@ -71,7 +73,7 @@ export function WhaleRules({ whale, now }: { whale: WhaleView | null; now: strin
           .
         </p>
       ) : (
-        <div className="mt-3 flex gap-4">
+        <div className="mt-3 flex gap-4" {...factProps(whale.fact.id)}>
           <ZoneLadder zone={whale.zone} severity={whale.fact.severity} />
           <div className="min-w-0 flex-1">
             <p className="text-[17px] leading-snug text-n-ink" data-testid="whale-lede">

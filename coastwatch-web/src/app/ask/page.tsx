@@ -4,6 +4,7 @@ import { askDataset, meta } from "@/pilot/ask/service";
 import { suggestionsFor } from "@/pilot/ask/suggestions";
 import { AskChat } from "@/pilot/ask/ui/AskChat";
 import { PilotShell } from "@/pilot/shell/PilotShell";
+import { pilotAccountConfig } from "@/pilot/account/config";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Ask Neritic" };
@@ -18,7 +19,7 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
   const raw = typeof sp.place === "string" ? sp.place : null;
   const place = portById(raw)?.place_id ?? PILOT_PORTS[0].place_id;
   return (
-    <PilotShell testid="ask-page">
+    <PilotShell testid="ask-page" account={pilotAccountConfig()}>
       <AskChat initialPlace={place} preferSaved={!raw} meta={meta(process.env, await askDataset())} suggestions={suggestionsFor(place)} />
     </PilotShell>
   );

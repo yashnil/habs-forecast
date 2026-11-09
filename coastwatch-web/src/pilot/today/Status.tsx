@@ -4,15 +4,36 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { FisheryId } from "@/pilot/contracts";
 import { FISHERY_OPTIONS, dayWords, type StatusRow } from "@/pilot/facts";
 import { Icon } from "@/v4/ui/Icon";
-import { Section, SourceLink, StatusMark, Unverified, sevClass } from "./ui";
+import { FactAnchors, Section, SourceLink, StatusMark, Unverified, factProps, sevClass } from "./ui";
 
 /** The status strip: one row per fishery the reader follows, official status first. A row opens its detail sheet. */
-export function StatusStrip({ rows, now, statusError, onOpen, onEdit }: { rows: StatusRow[]; now: string; statusError: boolean; onOpen: (r: StatusRow) => void; onEdit: () => void }) {
+export function StatusStrip({
+  rows,
+  now,
+  place,
+  statusError,
+  otherNotices = [],
+  onOpen,
+  onEdit,
+}: {
+  rows: StatusRow[];
+  now: string;
+  place: string;
+  statusError: boolean;
+  /** notice facts tied to this port that belong to no row shown (their address is the section itself) */
+  otherNotices?: string[];
+  onOpen: (r: StatusRow) => void;
+  onEdit: () => void;
+}) {
+  // a notice is addressed inside the first row that lists it (one id, once on the page)
+  const placed = new Set<string>();
+  const noticeIds = rows.map((r) => r.notices.map((n) => `notice:${n.id}`).filter((id) => !placed.has(id) && (placed.add(id), true)));
   return (
     <Section
       id="status"
       area="status"
       title="Your fisheries · official status"
+      feedback={rows[0] ? { factId: rows[0].fact.id, placeId: place } : null}
       aside={
         <button type="button" onClick={onEdit} className="nx-focus nx-tint -my-2 inline-flex min-h-11 items-center gap-1 rounded-[3px] px-2 text-[14px] text-n-ink-2 hover:text-n-ink" data-testid="fisheries-edit">
           Edit list
@@ -33,8 +54,9 @@ export function StatusStrip({ rows, now, statusError, onOpen, onEdit }: { rows: 
         </p>
       )}
       <ul className="mt-0" data-testid="status-strip">
-        {rows.map((r) => (
-          <li key={r.fishery}>
+        {rows.map((r, i) => (
+          <li key={r.fishery} {...factProps(r.fact.id)}>
+            <FactAnchors ids={noticeIds[i]} />
             <button type="button" className="today-row nx-focus nx-tint" onClick={() => onOpen(r)} data-testid={`status-${r.fishery}`} data-severity={r.severity} aria-haspopup="dialog">
               <StatusMark severity={r.severity} className="mt-0.5" />
               <span className="min-w-0">
@@ -58,6 +80,7 @@ export function StatusStrip({ rows, now, statusError, onOpen, onEdit }: { rows: 
           </li>
         ))}
       </ul>
+      <FactAnchors ids={otherNotices.filter((id) => !placed.has(id))} />
       <p className="nx-margin mt-3">
         Transcribed from CDFW and CDPH. <b>No restriction on record</b> is not a promise that a fishery is open or that seafood is free of toxin; notices can lag.
       </p>

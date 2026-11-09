@@ -1,10 +1,10 @@
 "use client";
 
 import type { SeaView } from "@/pilot/facts";
-import { dayWords, nextTide, pacificDay } from "@/pilot/facts";
+import { alertFactId, dayWords, nextTide, pacificDay } from "@/pilot/facts";
 import { periodLine } from "./marine";
 import { TideCurve } from "./Charts";
-import { Section } from "./ui";
+import { FactAnchors, Section, factProps } from "./ui";
 
 const PT_CLOCK = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "2-digit" });
 const PT_HM = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Los_Angeles", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
@@ -21,7 +21,8 @@ const ago = (iso: string, now: string) => {
 };
 
 /** Sea and weather: the daily-habit layer. NWS's forecast as lanes, the nearest buoy now, the tide, the water. */
-export function SeaWeather({ sea, now, lede }: { sea: SeaView; now: string; lede: string | null }) {
+export function SeaWeather({ sea, now, lede, place, factIds = [] }: { sea: SeaView; now: string; lede: string | null; place: string; /** the ids of the sea, weather and tide facts drawn here (their addresses) */ factIds?: string[] }) {
+  const ids = (prefix: string) => factIds.filter((id) => id.startsWith(prefix));
   const day = pacificDay(now);
   const [hh, mm] = PT_HM.format(new Date(now)).split(":").map(Number);
   const nowMin = hh * 60 + mm;
@@ -29,7 +30,7 @@ export function SeaWeather({ sea, now, lede }: { sea: SeaView; now: string; lede
   const nt = nextTide(sea.tides, now);
   const todays = sea.tides.filter((t) => t.at.startsWith(day));
   return (
-    <Section id="sea" area="sea" title="Sea & weather" aside={sea.zone ? <span className="today-src">NWS {sea.zone}</span> : undefined}>
+    <Section id="sea" area="sea" title="Sea & weather" aside={sea.zone ? <span className="today-src">NWS {sea.zone}</span> : undefined} feedback={sea.state === "ok" && factIds.length ? { factId: factIds.includes("weather:nws") ? "weather:nws" : factIds[0], placeId: place } : null}>
       {sea.state === "loading" && (
         <div aria-busy="true" aria-live="polite" data-testid="sea-loading">
           <p className="sr-only">Loading the marine forecast, buoy and tide…</p>
@@ -54,10 +55,12 @@ export function SeaWeather({ sea, now, lede }: { sea: SeaView; now: string; lede
       {sea.state === "ok" && (
         <>
           {sea.alerts.map((a) => (
-            <p key={a.event} className="mt-3 flex items-start gap-2 border-l-2 border-[var(--t-amber)] pl-3 text-[15px] font-medium text-n-ink" data-testid="sea-alert">
+            <p key={a.event} className="mt-3 flex items-start gap-2 border-l-2 border-[var(--t-amber)] pl-3 text-[15px] font-medium text-n-ink" data-testid="sea-alert" {...factProps(alertFactId(a.event))}>
               <span className="t-amber">NWS:</span> {a.headline}
             </p>
           ))}
+          <div {...factProps("weather:nws")}>
+          <FactAnchors ids={ids("weather:nws:")} />
           {lede ? <p className="today-say">{lede}</p> : sea.marineReason && <p className="today-say">{sea.marineReason}</p>}
           {sea.lanes.length > 0 && (
             <div className="mt-3 overflow-hidden">
@@ -129,7 +132,10 @@ export function SeaWeather({ sea, now, lede }: { sea: SeaView; now: string; lede
               </p>
             </div>
           )}
+          </div>
 
+          <div data-fact-card="">
+          <FactAnchors ids={factIds.filter((id) => id.startsWith("sea:"))} />
           <div className="today-readouts" data-testid="sea-now">
             <div>
               <p className="nx-caps">Wind now</p>
@@ -181,8 +187,10 @@ export function SeaWeather({ sea, now, lede }: { sea: SeaView; now: string; lede
               (sea.buoyReason ?? "No buoy reading.")
             )}
           </p>
+          </div>
 
-          <div className="mt-5" data-testid="sea-tide">
+          <div className="mt-5" data-testid="sea-tide" data-fact-card="">
+            <FactAnchors ids={ids("tide:")} />
             <div className="flex items-baseline justify-between gap-3">
               <p className="nx-caps">Tide today{sea.tideStation ? ` · ${sea.tideStation.name}` : ""}</p>
               {nt && (

@@ -1,6 +1,5 @@
 "use client";
 
-import "@/pilot/shell/pilot.css";
 import { useEffect, useId, useState } from "react";
 import { PILOT_PORTS } from "@/pilot/contracts";
 import { usePilotAccount } from "./context";
