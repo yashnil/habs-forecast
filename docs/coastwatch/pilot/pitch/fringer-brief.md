@@ -19,7 +19,7 @@ His project produces Bay HAB knowledge; Neritic is a **last-mile dissemination l
 
 ## Asks, ranked
 1. **Methods critique and a shared baseline.** Will he (or his student) look at the clim+AR(1) baseline and the PINN audit, and compare against their Bay ML models on one protocol?
-2. **Faculty PI or mentor on a Big Ideas for Oceans proposal.** Up to $150k, "expected to reopen in November", needs a faculty PI (plan §1.8; reopening date **unverified**). Owner offers to write the first draft.
+2. **Faculty PI on a Big Ideas for Oceans (or EVP) proposal.** Big Ideas: $10,000–$150,000 over up to two years; Woods' page says applications are "expected to reopen in November" (read 2026-11-08; no date posted yet). The PI must have Academic Council or Medical Center Line status, so a student cannot lead; see [grants.md](grants.md). Owner offers to write the first draft.
 3. **Data and model access.** SUNTANS / SFEI Bay hindcasts for validation; permission to surface their validated Bay HAB likelihood maps in Neritic with attribution.
 4. **Introductions:** David Senn (SFEI); CeNCOOS; Raphael Kudela (UCSC, C-HARM); California Sea Grant extension (fishermen interviews); Moss Landing Marine Labs / Hopkins Marine Station.
 5. **A defined student role and venue** (directed study or RA) for the corrected PINN re-analysis, including where an honest negative result could be written up.
