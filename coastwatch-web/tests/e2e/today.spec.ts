@@ -461,3 +461,12 @@ test("save for offline: the page and its sea reopen with no connection, marked a
   await ctx.setOffline(false);
   await ctx.close();
 });
+
+test("the bloom glance names the outlook's own period, so a period already under way never reads as the next 8 days; the chapter opens with its sentence", async ({ page }) => {
+  await page.goto(MOSS);
+  const glance = page.getByTestId("glance-bloom");
+  await expect(glance).toContainText(/[A-Z][a-z]{2} \d+/);
+  await expect(glance).not.toContainText("next 8 days");
+  await expect(glance).toContainText("chlorophyll, not toxin");
+  await expect(page.getByTestId("today-bloom").locator(".today-say")).toContainText("That says nothing about toxin.");
+});

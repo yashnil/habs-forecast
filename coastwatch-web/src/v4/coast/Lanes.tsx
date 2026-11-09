@@ -177,7 +177,7 @@ function Lanes({ cond, today, asSaved, limits, outlook, runIssued, data, when, w
     const unit = isWind ? "kt" : "ft";
     const top = y0 + headH;
     const base = top + laneH;
-    const Y = scaleLinear([0, isWind ? maxW : maxS], [base, top + 2]);
+    const Y = scaleLinear([0, isWind ? maxW : maxS], [base, top + 18]); // room above the tallest block for its value, clear of the lane's heading
     return (
       <g data-testid={`lane-${kind}`}>
         <text x={0} y={y0 + 12} className="coast-lane-head">

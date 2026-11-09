@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { PILOT_PORTS, type FisheryId, type Readiness } from "@/pilot/contracts";
 import type { Conditions } from "@/lib/conditions";
-import { DEFAULT_FISHERIES, FISHERY_OPTIONS, buildTodayModel, dayWords, type PortTodayInputs, type StatusRow, type TodayModel } from "@/pilot/facts";
+import { DEFAULT_FISHERIES, FISHERY_OPTIONS, buildTodayModel, dayWords, rangeWords, type PortTodayInputs, type StatusRow, type TodayModel } from "@/pilot/facts";
 import { OceanStage } from "@/v4/stage/OceanStage";
 import type { StageData, StageMark } from "@/v4/stage/types";
 import { useFocusLink } from "@/v4/motion";
@@ -138,7 +138,7 @@ function GlanceRow({ model, now, bind }: { model: TodayModel; now: string; bind:
         <Glance bind={bind} href="#tests" id={test ? `site:${test.site.id}` : null} label="Tests" testid="glance-tests" sub={test?.latest ? `${dayWords(test.latest.date, now).replace(/, \d{4}$/, "")}${test.stale ? " (old)" : ""}` : model.testsError ? "not available" : "none published here"}>
           {test?.latest?.avg_ppm != null && test.action != null ? `${test.latest.avg_ppm} of ${test.action} ppm` : test?.latest ? "Not detected" : "No test"}
         </Glance>
-        <Glance bind={bind} href="#bloom" label={outlook && !model.bloom.outlookStale ? <>Bloom<span className="today-gl-more">, next 8 days</span></> : "Bloom"} testid="glance-bloom" sub="chlorophyll, not toxin">
+        <Glance bind={bind} href="#bloom" label={outlook && !model.bloom.outlookStale ? <>Bloom<span className="today-gl-more">, {rangeWords(outlook.valid_from, outlook.valid_to, now)}</span></> : "Bloom"} testid="glance-bloom" sub="chlorophyll, not toxin">
           {read ? read.phrase.charAt(0).toUpperCase() + read.phrase.slice(1) : outlook ? "No usual to compare" : "No outlook"}
         </Glance>
       </ul>

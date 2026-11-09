@@ -159,3 +159,17 @@ test("v10 fix 2 (1440): the map legend clears the header chip; 320: nothing scro
   await expect(p.getByTestId("glance-no-permission")).toBeVisible();
   await ctx.close();
 });
+
+test("the lanes: a block's value never prints over its lane's heading", async ({ page }) => {
+  await open(page);
+  await page.getByTestId("lanes").scrollIntoViewIfNeeded();
+  await expect(page.getByTestId("lane-seas").locator(".coast-lane-value").first()).toBeVisible({ timeout: 20_000 });
+  for (const kind of ["wind", "seas"]) {
+    const lane = page.getByTestId(`lane-${kind}`);
+    const sub = await lane.locator(".coast-lane-sub").first().boundingBox();
+    for (const v of await lane.locator(".coast-lane-value").all()) {
+      const b = await v.boundingBox();
+      expect(b!.y, `${kind} value below its heading`).toBeGreaterThanOrEqual(sub!.y + sub!.height - 1);
+    }
+  }
+});

@@ -346,7 +346,7 @@ export function SeaStrip({ lanes, tides, day, nowMin }: { lanes: LanePeriod[]; t
               return (
                 <g key={t.at}>
                   <circle cx={x(t.m)} cy={ty(t.ft)} r={2.6} fill="var(--nx-k-conditions)" />
-                  <DirectLabel x={tx} y={t.type === "H" ? ty(t.ft) - 6 : ty(t.ft) + 13} anchor="middle" family="ink">
+                  <DirectLabel x={tx} y={ty(t.ft) - 7} anchor="middle" family="ink">
                     {t.ft.toFixed(1)}
                   </DirectLabel>
                 </g>

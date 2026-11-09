@@ -505,7 +505,9 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // so the land is a narrow margin and the ocean fills the rest (under and beside the layer index)
   const coastInsets = useCallback((): Insets => {
     if (bp === "phone") return { top: 92, bottom: peekH + DOCK + 40, left: 12, right: 14 };
-    return { top: 72, bottom: marginH + dockH + 20, left: 72, right: 16 + 44 + 56 };
+    // wide screens: the coast sits toward the centre, so the published water, not the empty sea west of it, leads the first view
+    const right = (mapRef.current?.getContainer().clientWidth ?? window.innerWidth) >= 1200 ? 240 : 16 + 44 + 56;
+    return { top: 72, bottom: marginH + dockH + 20, left: 72, right };
   }, [bp, marginH, dockH, peekH]);
   const coastView = useCallback(() => {
     const c = mapRef.current?.getContainer();

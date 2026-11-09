@@ -65,7 +65,15 @@ export function BloomOutlook({ bloom, now, label, exploreHref }: { bloom: BloomV
     );
   const pastRun = bloom.charmPast || old;
   return (
-    <Chapter id="bloom" area="bloom" title="Bloom" testid="today-bloom">
+    <Chapter
+      id="bloom"
+      area="bloom"
+      title="Bloom"
+      testid="today-bloom"
+      say={
+        read && !bloom.outlookStale ? `Chlorophyll is expected to run ${read.phrase} for this time of year. That says nothing about toxin.${pastRun ? " NOAA's newest C-HARM run has already passed." : ""}` : pastRun ? "NOAA's newest C-HARM run has already passed." : undefined
+      }
+    >
       <BloomAxis days={old ? [] : bloom.days} today={today} past={!!bloom.charmPast} outlook={o ? { from: o.valid_from, to: o.valid_to, phrase: read?.phrase ?? "outlook", stale: bloom.outlookStale } : null} />
       <div className="mt-4 grid gap-5">
         {/* a past run steps back behind the outlook; a current run comes first, in time order */}
