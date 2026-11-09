@@ -31,8 +31,7 @@ export function tileSource(tiles0: string | null | undefined): { template: strin
   return { template, index: index ? decodeURIComponent(index) : null };
 }
 
-/** v10 Explore: the layer index is always in view on a wide screen; on a phone (and a short window) it
- *  opens from the layer button. */
+/** v11 Explore: the layer list opens from the field dock's head (the layer button), on every width. */
 export async function openLayers(page: Page) {
   const deck = page.getByTestId("layer-deck");
   if (!(await deck.isVisible())) await page.getByTestId("layer-capsule").click();
@@ -54,6 +53,33 @@ export async function openAbout(page: Page) {
   await openLayers(page);
   const d = page.getByTestId("layer-about");
   if ((await d.getAttribute("open")) == null) await d.locator("summary").first().click();
+  return d;
+}
+
+/** v11 Explore: share, the field pack and the area tool are behind the tools' one "more". */
+export async function openMoreTools(page: Page) {
+  const more = page.getByTestId("map-tools-toggle");
+  await expect(more).toBeVisible();
+  if ((await more.getAttribute("aria-expanded")) !== "true") await more.click();
+  await expect(more).toHaveAttribute("aria-expanded", "true");
+}
+
+/** v11 Explore: the field pack dialog, from More. */
+export async function openPack(page: Page) {
+  const pack = page.getByTestId("pack-open");
+  // the map's pack is behind More; the briefing's own button is in the page
+  const more = page.getByTestId("map-tools-toggle");
+  await expect(pack.or(more).first()).toBeVisible();
+  if (!(await pack.isVisible())) await openMoreTools(page);
+  await pack.click();
+}
+
+/** v11 Explore: what the colours mean (the full legend, the no-data marks), one fold in the layer list. */
+export async function openLegend(page: Page) {
+  await openLayers(page);
+  const d = page.getByTestId("legend-fold");
+  if ((await d.getAttribute("open")) == null) await d.locator("summary").first().click();
+  await expect(d).toHaveAttribute("open", "");
   return d;
 }
 

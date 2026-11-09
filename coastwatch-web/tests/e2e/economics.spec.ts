@@ -93,14 +93,13 @@ test("Santa Cruz salmon, the owner's state: gross with its sum, exactly two miss
   await needs.filter({ hasText: "how crew is paid" }).click();
   await expect(s.locator("#econ-in-crew-kind")).toBeFocused();
   // the briefing's glance says the same, and its links open the worksheet at that field
+  // v11: the briefing's ledger reads the same device numbers, and its links focus the field in place
   await page.getByTestId("econ-back").click();
   const g = page.getByTestId("brief-econ");
-  // v10 pass 2: one reading, the gross, then the one line of what net still needs
-  await expect(g.getByTestId("econ-glance-result")).toContainText("$3,600");
-  await expect(g.getByTestId("econ-glance-result")).toHaveAttribute("data-label", "gross");
-  await expect(g.getByTestId("econ-glance-need")).toHaveText(["fuel used", "how crew is paid"]);
-  await g.getByTestId("econ-glance-need").filter({ hasText: "how crew is paid" }).click();
-  await expect(page).toHaveURL(/sheet=trip.*focus=crew\.kind/);
+  await g.scrollIntoViewIfNeeded();
+  await expect(g.getByTestId("econ-sum-gross")).toHaveText("$3,600");
+  await expect(g.getByTestId("econ-needs").getByTestId("econ-need")).toHaveText(["fuel used", "how crew is paid"]);
+  await g.getByTestId("econ-needs").getByTestId("econ-need").filter({ hasText: "how crew is paid" }).click();
   await expect(page.locator("#econ-in-crew-kind")).toBeFocused();
 });
 
@@ -108,7 +107,7 @@ test("closed species: the hypothetical framing and the season sit above every nu
   await openWorksheet(page, SANTA_CRUZ);
   // v10 pass 2: the season and the hypothetical framing are one line, said once
   await expect(page.getByTestId("econ-official")).toContainText("closed on CDFW’s sport list");
-  await expect(page.getByTestId("econ-official")).toContainText("Neritic holds no commercial season");
+  await expect(page.getByTestId("econ-official")).not.toContainText("holds no commercial season");
   const h = page.getByTestId("econ-hypothetical");
   await expect(h).toContainText("not a forecast or permission to fish");
   await expect(h.getByTestId("econ-closed")).toContainText("Ocean Salmon is closed");
@@ -264,16 +263,17 @@ test("the briefing's glance: fixed height before the device's numbers are read, 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(PRINCETON);
   const g = page.getByTestId("brief-econ");
-  await expect(g.getByTestId("econ-kicker")).toHaveText("Scenario from your inputs, not a forecast.");
-  await expect(g.getByTestId("econ-glance-empty")).toContainText("Nothing entered yet");
-  await g.getByTestId("econ-open").click();
-  await expect(page).toHaveURL(/sheet=trip/);
-  await expect(page.getByTestId("econ-worksheet")).toBeVisible();
-  await page.getByTestId("econ-catch-0-lb").fill("1000");
-  await page.getByTestId("econ-catch-0-price").fill("3.5");
-  await page.goBack();
-  await expect(page.getByTestId("coast-title")).toContainText("Princeton");
-  await expect(g.getByTestId("econ-glance-result")).toContainText("$3,500");
+  await g.scrollIntoViewIfNeeded();
+  await expect(g.getByTestId("econ-hypothetical")).toContainText("Hypothetical: your numbers, not a forecast or permission to fish.");
+  // the ledger's fields are on the page; the numbers are the reader's and live on this device
+  await expect(g.getByTestId("econ-sum-net")).toHaveText("—");
+  await g.getByTestId("econ-catch-0-lb").fill("1000");
+  await g.getByTestId("econ-catch-0-price").fill("3.5");
+  await expect(g.getByTestId("econ-sum-gross")).toHaveText("$3,500");
+  await expect(g.getByTestId("econ-r-gross")).toHaveText("$3,500");
+  await page.reload();
+  await g.scrollIntoViewIfNeeded();
+  await expect(g.getByTestId("econ-sum-gross")).toHaveText("$3,500");
 });
 
 test("rock crab: CDFW's 2024 statewide value sits beside the price as history, copied in only on a tap", async ({ page }) => {

@@ -47,6 +47,9 @@ export function LocatorMap({
   onPick,
   height = 196,
   label,
+  onOpen,
+  openLabel,
+  quiet = false,
 }: {
   stations: LadderStation[];
   selected: LadderStation;
@@ -55,6 +58,11 @@ export function LocatorMap({
   onPick: (id: string) => void;
   height?: number;
   label: string;
+  /** the mini map in the head: a click on the water (or the corner button) opens the station picker */
+  onOpen?: () => void;
+  openLabel?: string;
+  /** the ring's caption is a screen-reader line (its words are under "Sources") */
+  quiet?: boolean;
 }) {
   const map = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -119,7 +127,7 @@ export function LocatorMap({
             initialBounds={bounds}
             initialPadding={8}
             onPort={() => undefined}
-            onPoint={() => undefined}
+            onPoint={() => onOpen?.()}
             onReady={(m) => {
               // the page's own map (window.__cwMap) is the grid map; this one is the locator
               const w = window as unknown as Win;
@@ -134,49 +142,15 @@ export function LocatorMap({
           <span className="absolute inset-0 grid place-items-center text-[12.5px] text-n-ink-3">Map of {selected.name}</span>
         )}
         <span className="nx-on-map pointer-events-none absolute bottom-1 right-1.5 text-[9.5px]">© OpenStreetMap · not for navigation</span>
-      </div>
-      <figcaption className="nx-margin text-[12.5px] leading-[17px]">{label}</figcaption>
-    </figure>
-  );
-}
-
-/** The station picker on a phone: a sheet with the coast ladder and the linked map. */
-export function StationSheet({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
-  const panel = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!open) return;
-    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", key);
-    const prev = document.activeElement as HTMLElement | null;
-    panel.current?.focus();
-    return () => {
-      document.removeEventListener("keydown", key);
-      prev?.focus?.();
-    };
-  }, [open, onClose]);
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end" data-testid="station-sheet">
-      <button type="button" aria-label="Close the station list" className="absolute inset-0 bg-[rgba(2,6,9,0.62)]" onClick={onClose} />
-      <div
-        ref={panel}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="r-sheet-t"
-        tabIndex={-1}
-        style={{ animation: "nx-rise var(--nx-t-panel) var(--nx-ease-out) both" }}
-        className="nx-plate relative max-h-[86dvh] overflow-y-auto rounded-b-none border-b-0 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 outline-none"
-      >
-        <div className="sticky top-0 z-10 -mx-4 mb-2 flex items-center justify-between bg-n-surface px-4 pb-2">
-          <h2 id="r-sheet-t" className="nx-caps">
-            Shore stations, north to south
-          </h2>
-          <button type="button" onClick={onClose} className="nx-focus -mr-2 grid h-11 w-11 place-items-center rounded-[4px] text-n-ink-2" aria-label="Close" data-testid="station-sheet-close">
-            <Icon name="close" className="h-5 w-5" />
+        {onOpen && (
+          <button type="button" onClick={onOpen} className="nx-focus absolute bottom-0 left-0 inline-flex min-h-11 items-center rounded-[12px] px-1.5 text-[13px] font-medium text-[#eef4f8]" data-testid="research-map-open">
+            <span className="inline-flex items-center gap-1 rounded-[9px] bg-[rgba(7,14,20,0.82)] py-1 pl-2.5 pr-1.5">
+              {openLabel ?? "Stations"} <Icon name="chevronDown" className="h-4 w-4" />
+            </span>
           </button>
-        </div>
-        {children}
+        )}
       </div>
-    </div>
+      <figcaption className={quiet ? "sr-only" : "nx-margin text-[12.5px] leading-[17px]"}>{label}</figcaption>
+    </figure>
   );
 }

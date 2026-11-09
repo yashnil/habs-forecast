@@ -13,20 +13,20 @@ test("the briefing answers first, in order, and every statement says its kind", 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-550`);
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
-  // v10 pass 2: the decision (season, the readings, the trip's economics, the checks), the 60 hours, then
-  // the one evidence section (statements, what they rest on, what is not known)
+  // v11: the glance, the 60 hours, the evidence and its folds, then the trip ledger; the checklist is a sheet
   const order = await page.locator('[data-testid^="brief-"]:not([data-testid$="-toggle"])').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
-  expect(order.indexOf("brief-glance")).toBeLessThan(order.indexOf("brief-econ"));
-  expect(order.indexOf("brief-econ")).toBeLessThan(order.indexOf("brief-checks"));
-  expect(order.indexOf("brief-checks")).toBeLessThan(order.indexOf("brief-lanes"));
+  expect(order.indexOf("brief-glance")).toBeLessThan(order.indexOf("brief-lanes"));
   expect(order.indexOf("brief-lanes")).toBeLessThan(order.indexOf("brief-now"));
-  expect(order).toEqual(expect.arrayContaining(["brief-measured", "brief-official", "brief-unknown", "brief-checks"]));
-  for (const id of ["brief-evidence", "brief-official", "brief-unknown"]) expect(order.indexOf(id)).toBeGreaterThan(order.indexOf("brief-now"));
+  expect(order.indexOf("brief-now")).toBeLessThan(order.indexOf("brief-econ"));
+  expect(order).toEqual(expect.arrayContaining(["brief-measured", "brief-unknown"]));
+  for (const id of ["brief-evidence", "brief-unknown"]) expect(order.indexOf(id)).toBeGreaterThan(order.indexOf("brief-now"));
   await expect(page.getByTestId("matters")).toBeVisible();
   const kinds = await page.locator('[data-testid="matters"] [data-kind]').evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")));
   expect(kinds.length).toBeGreaterThanOrEqual(3);
   for (const k of kinds) expect(["official", "measured", "model", "satellite", "conditions", "gap"]).toContain(k);
+  await page.getByTestId("notices-open").click();
   await expect(page.getByTestId("brief-official")).toContainText("Not verified");
+  await page.getByTestId("notices-sheet-close").click();
   await expect(page.getByTestId("unknowns")).toContainText("Toxin in seafood is not measured by Neritic");
   // nothing is called safe; chlorophyll is never toxin
   const text = await page.locator("main").innerText();
@@ -44,6 +44,7 @@ test("the briefing answers first, in order, and every statement says its kind", 
 test("the trip controls write the link, and the link reproduces the trip", async ({ page }) => {
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-201`);
+  await page.getByTestId("trip-change").click();
   await page.getByTestId("trip-activity").selectOption("commercial");
   await expect(page).toHaveURL(/for=commercial/);
   await page.getByTestId("trip-species").selectOption("dungeness");
@@ -51,6 +52,7 @@ test("the trip controls write the link, and the link reproduces the trip", async
   await page.reload();
   await expect(page.getByTestId("trip-activity")).toHaveValue("commercial");
   await expect(page.getByTestId("trip-species")).toHaveValue("dungeness");
+  await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId("brief-checks")).toContainText("Dungeness crab");
 });
 
@@ -97,7 +99,7 @@ test("on a phone the trip is one line, the answer is near the top, and nothing s
     const page = await ctx.newPage();
     await page.clock.setFixedTime(new Date(NOW));
     await page.goto(`${OK}/coast?place=port-550&for=commercial&species=dungeness`);
-    await expect(page.getByTestId("trip-summary")).toContainText("Commercial fishing");
+    await expect(page.getByTestId("trip-summary")).toContainText("commercial");
     await expect(page.getByTestId("trip-controls")).toBeHidden();
     // v5: the answer is the at-a-glance block (season, sea, notices, worth); "What matters now" follows it
     await expect(page.getByTestId("brief-glance")).toBeVisible();
@@ -131,10 +133,9 @@ test("one count of notices: the top bar, the glance and the notices section agre
   await expect(page.getByTestId("matters")).toBeVisible();
   const here = Number(await page.getByTestId("notices-count").innerText());
   expect(here).toBeGreaterThan(0);
-  // v10 pass 2: the decision row counts them once (unverified), and says what names the species
-  const cell = page.getByTestId("glance-notices-cell");
-  await expect(page.getByTestId("glance-notices")).toHaveText(new RegExp(`^${here}\\s*tied here$`));
-  await expect(cell).toContainText(/Not verified · (none|\d+) names? Dungeness crab/i);
+  // v11: counted once, on the map's control, unverified; the sheet lists them
+  await expect(page.getByTestId("notices-open")).toContainText(new RegExp(`^.*${here} notices? tied here, not verified`));
+  await page.getByTestId("notices-open").click();
   await expect(page.getByTestId("brief-official")).toContainText("Not verified");
   // never "none here" when notices are tied to these waters
   expect(await page.locator("main").innerText()).not.toMatch(/None (in Neritic's list is )?tied to these waters/);

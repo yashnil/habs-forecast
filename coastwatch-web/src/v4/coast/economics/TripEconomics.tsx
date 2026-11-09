@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useInView } from "@/v4/motion/inView";
 import type { Audience } from "@/lib/coast";
 import type { SpeciesId } from "@/content/species";
 import type { FieldKey } from "@/lib/tripEvaluation";
@@ -128,6 +129,37 @@ export function TripGlance({ place, species, audience, onOpen }: TripEconomicsPr
         )}
       </dd>
     </>
+  );
+}
+
+/**
+ * The trip ledger on the briefing (v11): one designed module, the width of the page, with the worksheet's
+ * inputs on the left and the live waterfall on the right. Mounted when it nears the screen; hypothetical
+ * always shown, and never a statement that a trip is allowed.
+ */
+export function TripLedger({ place, species, audience, tripDate, season, statusSentence }: TripEconomicsProps & { statusSentence: string | null }) {
+  const mounted = useMounted();
+  const w = useWorkingDraft(place.key, species);
+  const box = useRef<HTMLDivElement | null>(null);
+  const near = useInView(box, { rootMargin: "700px 0px" });
+  const [shared] = useState<Draft | null>(() => (typeof window === "undefined" ? null : sharedFromHash()));
+  const rec = audience === "recreational" || audience === "shellfish";
+  return (
+    <section id="trip-worksheet" aria-labelledby="ledger-h" className="coast-ledger-inner flex flex-col gap-6 scroll-mt-20" data-testid="brief-econ">
+      <header className="flex flex-col gap-3">
+        <h2 id="ledger-h" className="nx-display coast-ledger-title">
+          Trip ledger
+        </h2>
+        <p className="coast-ledger-frame" data-testid="econ-hypothetical">
+          <b className="font-medium">Hypothetical: your numbers, not a forecast or permission to fish.</b> {statusSentence ? <span data-testid="econ-status">{statusSentence} (Not verified.) </span> : null}
+          {rec ? <span data-testid="econ-rec-note">A recreational trip is worked out as its cost only: no price, gross, crew pay or net. </span> : null}
+          <span className="whitespace-nowrap">Kept on this device only.</span>
+        </p>
+      </header>
+      <div ref={box} data-testid="trip-economics-section">
+        {mounted && w && near ? <Worksheet key={`${place.key}|${species}`} place={place} species={species} audience={audience} tripDate={tripDate} shared={shared} initial={w.draft} focus={null} season={season} embedded /> : <div aria-hidden className="h-[900px]" data-testid="econ-placeholder" />}
+      </div>
+    </section>
   );
 }
 

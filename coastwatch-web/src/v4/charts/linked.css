@@ -1,0 +1,35 @@
+/* The record chart (LinkedSeries): panel titles, the reading on its rail, the crosshair's glide. */
+/* nothing in the chart may widen the page (a rider placed before the width is measured, a long label) */
+.lk { overflow-x: clip; }
+.lk-title { font: 500 13px/1 var(--nx-font-ui); letter-spacing: 0; }
+.lk-rider { position: absolute; left: 0; pointer-events: none; text-align: center; white-space: nowrap; transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1); }
+.lk-fig { font: 300 30px/1.05 var(--nx-font-ui); letter-spacing: -0.02em; font-variant-numeric: tabular-nums lining-nums; color: var(--nx-ink); }
+.lk-fig small { font-size: 12.5px; font-weight: 400; letter-spacing: 0; margin-left: 0.3em; color: var(--nx-ink-2); }
+.lk-fig-word { font-size: 16px; line-height: 30px; font-weight: 400; letter-spacing: 0; color: var(--nx-ink-2); }
+.lk-note { font: 400 12.5px/17px var(--nx-font-ui); color: var(--nx-ink-2); font-variant-numeric: tabular-nums; }
+.lk-note b { font-weight: 500; color: var(--nx-ink); }
+.lk-rider-one { min-height: 22px; }
+.lk-rider-one .lk-note { line-height: 22px; }
+@media (max-width: 639px) {
+  .lk-fig { font-size: 24px; line-height: 26px; }
+  .lk-fig-word { font-size: 14.5px; line-height: 26px; }
+  .lk-src { display: none; }
+}
+@media (max-width: 400px) { .lk-q { display: none; } }
+
+.lk-cross { transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1); }
+/* back to rest, the longer glide; a keyboard step cuts (high-frequency input is not animated) */
+.lk[data-rest] .lk-cross, .lk[data-rest] .lk-rider { transition-duration: 280ms; }
+.lk[data-input="key"] .lk-cross, .lk[data-input="key"] .lk-rider { transition: none; }
+
+/* the ring settles on its sample (position never travels: a day to a day is a cut) */
+.lk-ring { transform-box: fill-box; transform-origin: center; animation: lk-ring 140ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+@keyframes lk-ring { from { transform: scale(0.55); opacity: 0.4; } to { transform: none; opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lk-rider, .lk-cross { transition: none; }
+  .lk-ring { animation: none; }
+}
+
+/* daylight: the lines are ink at 7:1, so the grid steps back further */
+html[data-daylight] .lk .nx-k-grid { stroke-opacity: 0.45; }

@@ -134,10 +134,10 @@ test("units in words, the PN reference line, and the shared cursor reads both li
   // (a vertical line has no width, so it is checked as present, not "visible")
   await expect(page.getByTestId("series-cursor")).toHaveCount(1);
   await expect(page.getByTestId("model-cursor")).toHaveCount(1);
-  expect(await page.getByTestId("model-cursor").getAttribute("x1")).toBe(await page.getByTestId("series-cursor").getAttribute("x1"));
-  // the tip names the day, the sample (or its absence), its source and the model's same day
-  await expect(page.getByTestId("chart-tip")).toContainText("CalHABMAP");
-  await expect(page.getByTestId("chart-tip")).toContainText("C-HARM");
+  expect(await page.getByTestId("model-cursor").getAttribute("data-x")).toBe(await page.getByTestId("series-cursor").getAttribute("data-x"));
+  // each panel's reading names its own: the day, the sample (or its absence), its source; the model's same day
+  await expect(page.getByTestId("cursor-measured")).toContainText("CalHABMAP");
+  await expect(page.getByTestId("cursor-model")).toContainText("C-HARM");
   const text = await page.getByTestId("research").innerText();
   expect(text).not.toMatch(/correlat|skill score|hit rate|accuracy|R²/i);
   // model history export (in the header's Export menu)
@@ -297,7 +297,9 @@ test("radar: published hours only, a cell's every hour, gaps are no data and not
   await expect(page.getByTestId("research-grid")).toContainText("not where a bloom will go");
   await expect.poll(() => page.evaluate(() => !!(window as unknown as Win).__cwMap!.getSource("currents"))).toBe(true);
   const b = await gridMap(page);
-  await page.mouse.click(b.x + b.width * 0.3, b.y + b.height * 0.65);
+  // a point on the water inside the radar's coverage (the map's width changed with the page; a fraction of it did not stay on the water)
+  const pt = await page.evaluate(() => (window as unknown as { __cwMap: { project(p: [number, number]): { x: number; y: number } } }).__cwMap.project([-122.17, 36.72]));
+  await page.mouse.click(b.x + pt.x, b.y + pt.y);
   await expect(page.getByTestId("obs-point-value")).toContainText("m/s");
   await expect(page.getByTestId("obs-point-date")).toContainText("Observed Oct 8, 5:00 AM PDT");
   await expect(page.getByTestId("obs-radar-strip")).toContainText(/of 24 hours observed here/);
@@ -354,7 +356,7 @@ test("the crosshair: arrow keys move between real samples, Enter pins the readin
   // a sample, with its units and QC words, or a rejected one, never a bare visit
   expect(prev).toMatch(/ng\/mL|rejected by QC/);
   await expect(page.getByTestId("cursor-measured")).not.toContainText("Sep 30");
-  await expect(page.getByTestId("chart-tip")).toBeVisible();
+  await expect(page.getByTestId("cursor-measured")).toBeVisible();
   await page.keyboard.press("ArrowRight");
   await expect.poll(at).toBe(start);
   await page.keyboard.press("Home");
@@ -362,7 +364,6 @@ test("the crosshair: arrow keys move between real samples, Enter pins the readin
   expect(firstDay).not.toBe(start.split(":")[0]);
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/[?&]day=\d{4}-\d{2}-\d{2}/);
-  await expect(page.getByTestId("chart-tip")).toContainText("pinned");
   await expect(page.getByTestId("cursor-measured")).toContainText("pinned");
   // the pin survives a reload (it is in the link)
   await page.reload();
@@ -417,12 +418,14 @@ test("station selection: the ladder and the linked map select each other and kee
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/research?station=HABs-SantaCruzWharf&variable=chl_extracted&range=3y`);
   await expect(page.getByTestId("rvar-chl_extracted")).toHaveAttribute("aria-checked", "true");
+  // the ladder is the picker: opened from the title
+  await page.getByTestId("research-station-button").click();
   await page.getByTestId("research-stations").getByRole("button", { name: /Morro Bay, front bay/ }).click();
+  await expect(page.getByTestId("station-sheet")).toHaveCount(0);
   await expect(page.getByTestId("research-title")).toHaveText("Morro Bay, front bay");
   await expect(page).toHaveURL(/station=HABs-MorroBayFrontBay/);
   await expect(page).toHaveURL(/range=3y/);
   await expect(page.getByTestId("locator-map")).toHaveAttribute("data-station", "HABs-MorroBayFrontBay");
-  await expect(page.getByTestId("ladder-HABs-MorroBayFrontBay")).toHaveAttribute("aria-current", "true");
   // the linked map has moved to the station; its neighbour is a point on it that selects it
   type L = { __cwLocator?: { loaded(): boolean; isMoving(): boolean; getCenter(): { lat: number }; project(p: [number, number]): { x: number; y: number } } };
   await page.waitForFunction(() => {
@@ -433,8 +436,12 @@ test("station selection: the ladder and the linked map select each other and kee
   const box = (await page.getByTestId("locator-map").boundingBox())!;
   await page.mouse.click(box.x + p.x, box.y + p.y);
   await expect(page.getByTestId("research-title")).toHaveText("Morro Bay, back bay");
-  await expect(page.getByTestId("ladder-HABs-MorroBayBackBay")).toHaveAttribute("aria-current", "true");
   await expect(page).toHaveURL(/station=HABs-MorroBayBackBay/);
+  // the picker agrees: opened from the mini map, by its own control
+  await page.getByTestId("research-map-open").click();
+  await expect(page.getByTestId("ladder-HABs-MorroBayBackBay")).toHaveAttribute("aria-current", "true");
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("station-sheet")).toHaveCount(0);
   // the grid map is still the page's own map (window.__cwMap), never the locator
   expect(await page.evaluate(() => !!(window as unknown as { __cwMap?: unknown }).__cwMap)).toBe(false);
   // links out keep the place
@@ -490,14 +497,12 @@ for (const vp of [
     expect(barTop).toBeGreaterThan(vp.height * 0.7);
     expect(floor).toBeLessThanOrEqual(barTop);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(vp.width);
-    // the station picker: a bordered field with its chevron, a full touch target, that opens the sheet
+    // the station picker: the title with its chevron, a full touch target, that opens the sheet
     const pick = page.getByTestId("research-station-button");
     await expect(pick).toBeInViewport();
     await expect(page.getByTestId("research-station-picker")).toBeVisible();
     const pb = (await pick.boundingBox())!;
     expect(pb.height).toBeGreaterThanOrEqual(44);
-    expect(pb.width).toBeGreaterThan(vp.width * 0.8);
-    expect(await pick.evaluate((el) => parseFloat(getComputedStyle(el).borderTopWidth))).toBeGreaterThanOrEqual(1);
     await expect(page.getByTestId("research-title")).toHaveText("Santa Cruz Wharf");
     // the threshold's label is a key above the plot, never on the line among the samples
     const key = (await page.getByTestId("series-ref-key").boundingBox())!;
@@ -511,3 +516,83 @@ for (const vp of [
     await expect(page.getByTestId("station-sheet")).toBeVisible();
     await ctx.close();
   });
+
+// ---------------------------------------------------------------- v11: the record chart is the page
+
+test("the chart keeps its honest words on the chart itself, at every width", async ({ browser }) => {
+  for (const [vp, phone] of [[{ width: 1440, height: 900 }, false], [{ width: 390, height: 844 }, true]] as const) {
+    const ctx = await browser.newContext({ viewport: vp, isMobile: phone, hasTouch: phone });
+    const page = await ctx.newPage();
+    await page.clock.setFixedTime(new Date(NOW));
+    await page.goto(`${OK}/research?station=HABs-SantaCruzWharf&range=all`);
+    const svg = page.getByTestId("linked-svg");
+    await expect(svg.getByTestId("series-zero-key")).toContainText("reported 0: not quantified, not absent");
+    expect((await svg.getByTestId("model-caveat").textContent())!.replace(/\s+/g, " ")).toContain("a model, not comparable with the samples as numbers");
+    await expect(svg.getByTestId("model-title")).toContainText("Model probability");
+    await expect(svg.getByTestId("series-axis-title")).toContainText(/ng\/mL/);
+    // in a window with no measurements at the left of the model history: the hatch and its words
+    await expect(svg.getByTestId("model-hatch")).toHaveCount(1);
+    await expect(svg.getByTestId("model-history-note")).toContainText("no model history kept before");
+    await ctx.close();
+  }
+});
+
+test("the crosshair's default reading is the newest sample with its date; both readings ride their own panel", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
+  await expect(page.getByTestId("cursor-measured")).toContainText(/Measured at the pier · Wed, Sep 30/);
+  await expect(page.getByTestId("cursor-measured")).toContainText(/ng\/mL/);
+  // the model's reading sits in the model panel, the sample's above the sample's plot: never side by side as one number
+  const measured = (await page.getByTestId("cursor-measured").boundingBox())!;
+  const model = (await page.getByTestId("cursor-model").boundingBox())!;
+  const svg = (await page.getByTestId("linked-svg").boundingBox())!;
+  expect(measured.y).toBeLessThan(svg.y + 80);
+  expect(model.y).toBeGreaterThan(measured.y + 200);
+});
+
+test("a change of window never rescales the value axis or joins across a gap", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
+  const yTicks = () => page.getByTestId("linked-svg").locator(".nx-k-axis text").evaluateAll((t) => t.map((x) => x.textContent).filter((x) => /^(0\.\d+|\d{1,3}|\d+%)$/.test(x!)));
+  const before = await yTicks();
+  await page.getByTestId("range-all").click();
+  await expect(page).toHaveURL(/range=all/);
+  expect(await yTicks()).toEqual(before);
+  // a station whose record stops measuring pDA: the hatch says "not measured"; lines break there (a line never spans more than 21 days)
+  await page.goto(`${OK}/research?station=HABs-MontereyWharf&range=all`);
+  await expect(page.getByTestId("series-gap").first()).toContainText("not measured");
+  const widest = await page.getByTestId("linked-svg").evaluate((svg) => {
+    const grid = svg.querySelector(".nx-k-grid") as SVGLineElement;
+    const plotW = Number(grid.getAttribute("x2")) - Number(grid.getAttribute("x1"));
+    const w = document.querySelector('[data-testid="brush-window"]')!;
+    const days = (Date.parse(w.getAttribute("data-to")!) - Date.parse(w.getAttribute("data-from")!)) / 86_400_000;
+    const steps = [...svg.querySelectorAll('polyline[data-testid="series-line"]')].flatMap((l) => {
+      const xs = l.getAttribute("points")!.trim().split(" ").map((p) => Number(p.split(",")[0]));
+      return xs.slice(1).map((x, i) => (x - xs[i]) / (plotW / days));
+    });
+    return Math.max(...steps);
+  });
+  expect(widest).toBeLessThanOrEqual(21.5);
+});
+
+test("the notes are two popovers; the picker is keyboard-operable and returns focus", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(NOW));
+  await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
+  await page.getByTestId("research-how").click();
+  await expect(page.getByTestId("research-how-pop")).toBeVisible();
+  await expect(page.getByTestId("research-how-pop")).toContainText("never compared as numbers");
+  await expect(page.getByTestId("research-how-pop")).toContainText("a reported 0 is not quantified, not absent");
+  await page.keyboard.press("Escape");
+  await page.getByTestId("research-sources").click();
+  await expect(page.getByTestId("research-sources-pop")).toContainText("SCCOOS");
+  await page.keyboard.press("Escape");
+  // the picker: opened by keyboard, last sample dates in words, closing returns focus to the title
+  await page.getByTestId("research-station-button").focus();
+  await page.keyboard.press("Enter");
+  const ladder = page.getByTestId("research-stations");
+  await expect(ladder).toBeVisible();
+  await expect(ladder.getByRole("button", { name: /Monterey Wharf/ })).toContainText(/2025/);
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("station-sheet")).toHaveCount(0);
+  await expect(page.getByTestId("research-station-button")).toBeFocused();
+});

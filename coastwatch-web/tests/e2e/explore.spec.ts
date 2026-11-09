@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { openDisplay, openEvidence, openLayers } from "./helpers";
+import { openDisplay, openEvidence, openLayers, openMoreTools } from "./helpers";
 import { OK } from "./ports";
 
 /**
@@ -50,6 +50,7 @@ test.describe("layers, legend, time", () => {
     await open(page, "/?layer=none");
     await expect(page.getByTestId("timebar")).toHaveCount(0);
     await openLayers(page);
+    await openLayers(page);
     await page.getByTestId("layer-satellite").click();
     await expect(page.getByTestId("legend-satellite")).toContainText("not toxin");
     await expect(page.getByTestId("legend-satellite")).toContainText("a gap is not clear water");
@@ -57,6 +58,7 @@ test.describe("layers, legend, time", () => {
     await page.getByTestId("satview-age").click();
     await expect(page.getByTestId("legend-age")).toContainText("Days since each pixel was last seen clear");
     await expect(page).toHaveURL(/age=1/);
+    await openLayers(page);
     await page.getByTestId("layer-currents").click();
     // v10: moving particles by default; their legend says what an empty sea means, and that the motion is a symbol
     await expect(page.getByTestId("legend-currents")).toContainText("No streaks means no observation, not calm water");
@@ -124,6 +126,7 @@ test.describe("selection: map, inspection surface, charts and URL in step", () =
 
   test("the area tool draws a box with the pointer and selects it", async ({ page }) => {
     await open(page, "/?layer=forecast&var=particulate_domoic&lead=1&region=monterey_bay");
+    await openMoreTools(page);
     await page.getByTestId("area-tool").click();
     const ov = (await page.getByTestId("area-overlay").boundingBox())!;
     await page.mouse.move(ov.x + ov.width * 0.4, ov.y + ov.height * 0.3);
@@ -149,7 +152,9 @@ test.describe("selection: map, inspection surface, charts and URL in step", () =
 
   test("a harbour's evidence leads to the briefing, and a briefing's 'Show on map' comes back to it", async ({ page }) => {
     await open(page, "/?layer=forecast&sel=harbor:550");
-    await expect(page.getByTestId("open-briefing")).toHaveAttribute("href", /\/coast\?place=port-550/);
+    // v11: a harbour's briefing is Today; My Coast is its trip plan
+    await expect(page.getByTestId("open-briefing")).toHaveAttribute("href", "/today?place=port-550");
+    await expect(page.getByTestId("brief-this")).toHaveAttribute("href", /\/coast\?place=port-550/);
     await page.goto(`${OK}/coast?place=port-550`);
     // v10: the waters' map is part of the briefing's decision view (no fold to open)
     const show = page.getByTestId("locator-explore");

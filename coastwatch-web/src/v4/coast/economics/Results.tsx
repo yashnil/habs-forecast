@@ -5,6 +5,7 @@ import { num } from "@/lib/tripEconomics";
 import type { FieldKey, Output, TripEvaluation } from "@/lib/tripEvaluation";
 import type { Draft } from "@/lib/tripEconomicsStore";
 import { Caps } from "@/v4/coast/ui/Instrument";
+import { useWidth } from "@/v4/charts/useWidth";
 import { gapsOf, money, needLabel, valueOf } from "./model";
 
 /**
@@ -39,7 +40,7 @@ export function Needs({ fields, draft, onFocus, lead = "Needs", testId }: { fiel
 /** One headline figure: its value, or "Needs …" in its place (never a number it was not given). */
 function Figure({ label, o, fmt, testId, strong = false, note }: { label: string; o: Output; fmt: (v: number) => string; draft: Draft; onFocus: Focus; testId: string; strong?: boolean; note?: ReactNode }) {
   // a phone reads it as a row (label and what it waits for on the left, the figure on the right); wider, a column
-  const size = strong ? "text-[30px] sm:text-[34px]" : "text-[26px] sm:text-[28px]";
+  const size = strong ? "coast-ledger-net" : "text-[26px] sm:text-[28px]";
   return (
     <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 py-3 sm:flex sm:flex-col sm:gap-1.5 sm:py-0">
       <dt className="sm:order-1">
@@ -69,7 +70,7 @@ function Figure({ label, o, fmt, testId, strong = false, note }: { label: string
 export function Headline({ ev, draft, onFocus, wu }: { ev: TripEvaluation; draft: Draft; onFocus: Focus; wu: WU }) {
   const rec = ev.audience === "recreational";
   return (
-    <dl className="grid grid-cols-1 divide-y divide-n-line sm:grid-cols-3 sm:gap-5 sm:divide-y-0" data-testid="econ-summary" aria-live="polite" aria-atomic="true">
+    <dl className="ledger-summary grid grid-cols-1 divide-y divide-n-line sm:grid-cols-2 sm:gap-x-8 sm:gap-y-5 sm:divide-y-0" data-testid="econ-summary" aria-live="polite" aria-atomic="true">
       {rec ? (
         <>
           <Figure label="Cost of the trip" o={ev.tripCost} fmt={(v) => money(v)} draft={draft} onFocus={onFocus} testId="econ-sum-cost" strong note={<span className="text-[13px] text-n-ink-2">fuel and other costs</span>} />
@@ -107,6 +108,7 @@ type Row = { key: string; label: string; o: Output; sign: 1 | -1 | 0; testId: st
  * hollow, because where they fall is not known).
  */
 export function Waterfall({ ev, draft }: { ev: TripEvaluation; draft: Draft; onFocus?: Focus }) {
+  const [ref, W] = useWidth<HTMLDivElement>(480, 280);
   const rows: Row[] = [
     { key: "gross", label: "Gross", o: ev.gross, sign: 1, testId: "econ-r-gross" },
     ...(ev.fees.status === "value" && ev.fees.value > 0 ? [{ key: "fees", label: "Fees", o: ev.fees, sign: -1 as const, testId: "econ-r-fees" }] : []),
@@ -116,58 +118,80 @@ export function Waterfall({ ev, draft }: { ev: TripEvaluation; draft: Draft; onF
     { key: "net", label: "Net to boat", o: ev.netToBoat, sign: 0, testId: "econ-r-net" },
   ];
   const g = valueOf(ev.gross);
-  const known = rows.filter((r) => r.sign === -1).map((r) => valueOf(r.o) ?? 0);
   const net = valueOf(ev.netToBoat);
-  const hi = Math.max(g ?? 0, known.reduce((a, b) => a + b, 0), 1);
+  const deductions = rows.filter((r) => r.sign === -1).map((r) => valueOf(r.o) ?? 0);
+  const hi = Math.max(g ?? 0, deductions.reduce((a, b) => a + b, 0), 1);
   const lo = Math.min(0, net ?? 0);
-  const span = hi - lo;
-  const pos = (v: number) => `${((v - lo) / span) * 100}%`;
-  const width = (a: number, b: number) => `${(Math.abs(b - a) / span) * 100}%`;
-  let x: number | null = g;
+  const H = 292;
+  const top = 34;
+  const base = H - 52;
+  const y = (v: number) => base - ((v - lo) / (hi - lo)) * (base - top);
+  const gap = W < 420 ? 6 : 12;
+  const colW = (W - gap * (rows.length - 1)) / rows.length;
+  const bars: ReactNode[] = [];
+  let running: number | null = g;
+  rows.forEach((r, i) => {
+    const v = valueOf(r.o);
+    const x = i * (colW + gap);
+    const label = r.label.split(" ");
+    const missing = r.o.status !== "value";
+    let rect: ReactNode;
+    if (missing) {
+      if (r.sign === -1) running = null;
+      rect = <rect x={x} y={top} width={colW} height={base - top} rx={3} className="econ-w-dash" />;
+    } else if (r.sign === 1) {
+      rect = <rect x={x} y={y(v!)} width={colW} height={Math.max(1, y(0) - y(v!))} className="econ-w-gross" />;
+    } else if (r.sign === -1) {
+      if (running !== null) {
+        const from: number = running;
+        rect = <rect x={x} y={y(from)} width={colW} height={Math.max(1, Math.abs(y(from - v!) - y(from)))} className="econ-w-cost" />;
+        running = from - v!;
+      } else {
+        // its size is known, where it falls is not: drawn hollow at the top of its column
+        rect = v === 0 ? null : <rect x={x + 2} y={top} width={colW - 4} height={Math.max(2, (v! / (hi - lo)) * (base - top))} className="econ-w-hollow"><title>Its size is known; where it falls waits for an earlier term</title></rect>;
+      }
+    } else {
+      rect = <rect x={x} y={y(Math.max(0, v!))} width={colW} height={Math.max(2, Math.abs(y(v!) - y(0)))} className={v! < 0 ? "econ-w-loss" : "econ-w-net"} />;
+    }
+    const valueText = v === null ? "—" : r.sign === -1 ? (v === 0 ? "$0" : `−${money(v)}`) : money(v, r.sign === 0);
+    const waits = r.o.status === "missing" ? (r.sign === 0 ? "waits for the rows above" : `waits for ${r.o.missing.map((k) => needLabel(k, draft)).join(", ")}`) : r.o.status === "unreachable" ? r.o.reason : null;
+    bars.push(
+      <g key={r.key} data-row={r.key}>
+        {waits ? <title>{`${r.label}: ${waits}`}</title> : null}
+        {rect}
+        {/* the connector: where the money stands after this term */}
+        {i < rows.length - 1 && running !== null && (
+          <line x1={x + colW} x2={x + colW + gap} y1={y(r.sign === 1 ? v! : running)} y2={y(r.sign === 1 ? v! : running)} className="econ-w-link" />
+        )}
+        <text x={x + colW / 2} y={missing ? (top + base) / 2 + 4 : Math.min(y(r.sign === 0 ? Math.max(0, v!) : r.sign === 1 ? v! : Math.max(running ?? hi, 0) + (v ?? 0)) - 8, base - 6)} textAnchor="middle" className={`econ-w-value ${v === null ? "is-na" : v < 0 && r.sign === 0 ? "is-loss" : ""}`} data-testid={r.testId}>
+          {valueText}
+        </text>
+        <text x={x + colW / 2} y={base + 18} textAnchor="middle" className={`econ-w-label ${r.sign === 0 ? "is-net" : ""}`}>
+          {label.length === 2 ? (
+            <>
+              <tspan x={x + colW / 2}>{label[0]}</tspan>
+              <tspan x={x + colW / 2} dy={14}>
+                {label[1]}
+              </tspan>
+            </>
+          ) : (
+            r.label
+          )}
+        </text>
+      </g>,
+    );
+  });
+  const summary = rows.map((r) => `${r.label}: ${r.o.status === "value" ? money(r.o.value, r.sign === 0) : r.o.status === "missing" ? "not worked out yet" : "not available"}`).join(", ");
   return (
-    <figure className="flex flex-col gap-2" data-testid="econ-waterfall">
+    <figure ref={ref} className="flex flex-col gap-2" data-testid="econ-waterfall">
       <figcaption className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <Caps>From gross to net</Caps>
-        <span className="text-[12.5px] text-n-ink-2">solid: worked out · dashed: waits for an input</span>
+        <span className="nx-caps">From gross to net · hypothetical</span>
+        <span className="text-[13px] text-n-ink-2">solid: worked out · dashed: waits for an input</span>
       </figcaption>
-      <ul className="flex flex-col">
-        {rows.map((r) => {
-          const v = valueOf(r.o);
-          let bar: ReactNode;
-          if (r.o.status !== "value") {
-            bar = (
-              <span className="absolute inset-y-1 left-0 right-0 flex items-center rounded-[2px] border border-dashed border-n-ink-3 px-2">
-                <span className="truncate text-[12px] text-n-ink-2">{r.o.status === "missing" ? (r.sign === 0 ? "waits for the rows above" : `waits for ${r.o.missing.map((k) => needLabel(k, draft)).join(", ")}`) : r.o.status === "unreachable" ? r.o.reason : ""}</span>
-              </span>
-            );
-            if (r.sign === -1) x = null;
-          } else if (r.sign === 1) {
-            bar = <span className="absolute inset-y-1 rounded-[1px] bg-n-ink/80" style={{ left: pos(0), width: width(0, v!) }} />;
-          } else if (r.sign === -1) {
-            if (x !== null) {
-              bar = <span className="absolute inset-y-1 rounded-[1px] bg-n-ink-3/70" style={{ left: pos(x - v!), width: width(x - v!, x) }} />;
-              x -= v!;
-            } else {
-              // its size is known, where it falls is not: drawn hollow at the right edge
-              bar = <span className="absolute inset-y-1 rounded-[1px] border border-n-ink-3" style={{ right: 0, width: width(0, v!) }} title="Its size is known; where it falls waits for an earlier term" />;
-            }
-          } else {
-            bar = <span className={`absolute inset-y-1 rounded-[1px] ${v! < 0 ? "bg-n-down/80" : "bg-n-ink"}`} style={{ left: pos(Math.min(0, v!)), width: width(0, v!) }} />;
-          }
-          return (
-            <li key={r.key} className={`grid grid-cols-[6.5rem_minmax(0,1fr)_5.5rem] items-center gap-3 py-1 ${r.sign === 0 ? "mt-1 border-t border-n-line-strong pt-2" : ""}`} data-row={r.key}>
-              <span className={`text-[13.5px] ${r.sign === 0 ? "font-medium text-n-ink" : "text-n-ink-2"}`}>{r.label}</span>
-              <span className="relative h-7">
-                {lo < 0 && <span aria-hidden className="absolute inset-y-0 w-px bg-n-line-strong" style={{ left: pos(0) }} />}
-                {bar}
-              </span>
-              <span className={`text-right font-data text-[15px] tabular-nums ${v === null ? "text-n-ink-3" : v < 0 && r.sign === 0 ? "text-n-down" : "text-n-ink"}`} data-testid={r.testId}>
-                {v === null ? "—" : r.sign === -1 ? (v === 0 ? "$0" : `−${money(v)}`) : money(v, r.sign === 0)}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="block max-w-full" role="img" aria-label={`Hypothetical trip waterfall. ${summary}`}>
+        <line x1={0} x2={W} y1={y(0)} y2={y(0)} className="econ-w-axis" />
+        {bars}
+      </svg>
     </figure>
   );
 }

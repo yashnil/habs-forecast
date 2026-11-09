@@ -12,12 +12,16 @@ export type PeriodNumbers = {
   windLo: number | null;
   /** the highest wind speed stated anywhere in the period (a "becoming 15 to 20 kt" counts) */
   windHi: number | null;
+  /** each wind as NWS stated it, in its own order: a later change is said as a change, never joined to the first */
+  winds: WindStated[];
   gust: number | null;
   seasLo: number | null;
   seasHi: number | null;
   /** the first swell stated: "W 5 ft at 11 s" */
   swell: { dir: string | null; ft: number; s: number | null } | null;
 };
+
+export type WindStated = { dir: string | null; lo: number | null; hi: number | null };
 
 const DIR = "(N|NNE|NE|ENE|E|ESE|SE|SSE|S|SSW|SW|WSW|W|WNW|NW|NNW)";
 
@@ -38,9 +42,12 @@ export function periodNumbers(text: string): PeriodNumbers {
     hi = Math.max(hi ?? 0, b);
   }
   // a change later in the period ("backing to W 10 to 15 kt") raises the period's top speed
-  for (const m of t.matchAll(new RegExp(`\\b(?:becoming|backing to|veering to|increasing to|rising to|shifting to)\\s+(?:${DIR}\\s+)?(?:around\\s+)?(\\d+)(?:\\s+to\\s+(\\d+))?\\s*kt`, "gi"))) {
-    const b = Number(m[3] ?? m[2]);
-    if (Number.isFinite(b)) hi = Math.max(hi ?? 0, b);
+  const stated: (WindStated & { at: number })[] = winds.map((m) => ({ at: m.index ?? 0, dir: (m[1] ?? m[2]).toUpperCase(), lo: Number(m[3]), hi: m[4] ? Number(m[4]) : Number(m[3]) }));
+  for (const m of t.matchAll(new RegExp(`\\b(?:becoming|backing to|veering to|increasing to|rising to|shifting to)\\s+(?:${DIR}\\b)?(?:\\s*(?:around\\s+)?(\\d+)(?:\\s+to\\s+(\\d+))?\\s*kt)?`, "gi"))) {
+    const speed = m[2] != null ? Number(m[2]) : null;
+    const top = m[3] != null ? Number(m[3]) : speed;
+    if (top != null) hi = Math.max(hi ?? 0, top);
+    if (m[1] || speed != null) stated.push({ at: m.index ?? 0, dir: m[1]?.toUpperCase() ?? null, lo: speed, hi: top });
   }
   if (dir == null) {
     if (/\b(winds? light|light winds?)\b/i.test(t)) dir = "light";
@@ -59,6 +66,7 @@ export function periodNumbers(text: string): PeriodNumbers {
     dir,
     windLo: lo,
     windHi: hi,
+    winds: stated.sort((a, b) => a.at - b.at).map(({ dir: d, lo: l, hi: h }) => ({ dir: d, lo: l, hi: h })),
     gust: gusts.length ? Math.max(...gusts) : null,
     seasLo: seas ? Number(seas[1]) : null,
     seasHi: seas ? Number(seas[2] ?? seas[1]) : null,
@@ -85,15 +93,25 @@ export function lanePeriods(periods: MarinePeriod[], issued: string | null, max 
     .map((p) => ({ ...periodNumbers(p.text), name: p.name, short: shortPeriodName(p.name, p.date), date: p.date, night: p.night, text: p.text }));
 }
 
-/** "NW 10–15 kt, gusts 20 · seas 4–6 ft": the period in one compact line (only what NWS stated). */
-export function periodLine(p: PeriodNumbers): string | null {
-  const wind =
-    p.windHi != null
-      ? `${p.dir && p.dir !== "variable" && p.dir !== "light" ? `${p.dir} ` : p.dir === "light" ? "light, " : p.dir === "variable" ? "variable " : ""}${p.windLo != null && p.windLo !== p.windHi ? `${p.windLo}–${p.windHi}` : p.windHi} kt${p.gust ? `, gusts ${p.gust}` : ""}`
-      : p.dir === "light"
-        ? "light winds"
-        : null;
+const speedWords = (w: WindStated) => (w.hi == null ? null : `${w.lo != null && w.lo !== w.hi ? `${w.lo}–${w.hi}` : w.hi} kt`);
+
+/**
+ * The wind as NWS stated it, each change said as a change: "W 10–15 kt, then NW 5–10 kt, then N". The first
+ * direction is never joined to the period's top speed. Null when the text states no wind.
+ */
+export function windWords(p: PeriodNumbers, maxStated = Infinity): string | null {
+  if (p.winds.length) {
+    const parts = p.winds.slice(0, maxStated).map((w, i) => [i ? "then" : null, w.dir, speedWords(w)].filter(Boolean).join(" "));
+    // cut short for a one-line summary: an ellipsis says NWS stated more; the whole sentence is in the Sea chapter
+    return `${parts.join(", ")}${p.winds.length > maxStated ? " …" : ""}${p.gust ? `, gusts ${p.gust}` : ""}`;
+  }
+  if (p.windHi != null) return `${p.dir === "light" ? "light, " : p.dir === "variable" ? "variable " : ""}${p.windLo != null && p.windLo !== p.windHi ? `${p.windLo}–${p.windHi}` : p.windHi} kt${p.gust ? `, gusts ${p.gust}` : ""}`;
+  return p.dir === "light" ? "light winds" : null;
+}
+
+/** "NW 10–15 kt, gusts 20 · seas 4–6 ft": the period in one line, only what NWS stated. */
+export function periodLine(p: PeriodNumbers, maxStated = Infinity): string | null {
   const seas = p.seasHi != null ? `seas ${p.seasLo != null && p.seasLo !== p.seasHi ? `${p.seasLo}–${p.seasHi}` : p.seasHi} ft` : null;
-  const s = [wind, seas].filter(Boolean).join(" · ");
+  const s = [windWords(p, maxStated), seas].filter(Boolean).join(" · ");
   return s || null;
 }

@@ -26,11 +26,11 @@ export default async function AboutPage() {
       officialStatus={data.ok ? sourceStatus(data.manifest, "official") : null}
       scroll="page"
     >
-      <article className="mx-auto w-full max-w-[1120px] px-4 pb-20 pt-8 sm:px-8 sm:pt-12" data-testid="about-page">
+      <article className="mx-auto w-full max-w-[1120px] px-4 pb-20 pt-10 sm:px-8 sm:pt-16" data-testid="about-page">
         <header className="max-w-[760px] space-y-4">
           <p className="text-[13px] font-medium text-ink-3">About Neritic · {BRAND.tagline}</p>
-          <h1 className="text-balance font-display text-[34px] font-medium leading-[1.08] text-ink sm:text-[46px]">{ABOUT.title}</h1>
-          <p className="font-display text-[19px] leading-[1.5] text-ink-2 sm:text-[21px]">{ABOUT.lede}</p>
+          <h1 className="text-balance font-display text-[clamp(38px,5vw,64px)] font-medium leading-[1.02] tracking-[-0.015em] text-ink">{ABOUT.title}</h1>
+          <p className="max-w-[56ch] font-display text-[19px] leading-[1.45] text-ink-2 sm:text-[21px]">{ABOUT.lede}</p>
           <p className="text-[16px]">
             <Link href={exploreHref(pilotFrontDoor())} className="font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent" data-testid="about-tour">
               Open Explore, the map →
@@ -41,7 +41,7 @@ export default async function AboutPage() {
           </p>
         </header>
 
-        <section aria-labelledby="purpose-h" className="mt-10 max-w-[760px] space-y-2" data-testid="about-purpose">
+        <section aria-labelledby="purpose-h" className="mt-14 max-w-[760px] space-y-2" data-testid="about-purpose">
           <h2 id="purpose-h" className="text-[13.5px] font-semibold text-ink-3">
             What Neritic is set up for on this device
           </h2>
@@ -49,8 +49,8 @@ export default async function AboutPage() {
           <p className="text-[14px] text-ink-3">It changes only where you start and what comes first. Every page, value, caveat and official notice is the same for everyone. Nothing is sent anywhere.</p>
         </section>
 
-        <section aria-labelledby="kinds-h" className="mt-12 border-t border-hairline pt-8">
-          <h2 id="kinds-h" className="font-display text-[26px] font-medium leading-tight text-ink">
+        <section aria-labelledby="kinds-h" className="mt-24">
+          <h2 id="kinds-h" className="nx-title">
             Four kinds of information, never mixed
           </h2>
           <p className="mt-2 max-w-[68ch] text-[16px] leading-relaxed text-ink-2">{ABOUT.kindsIntro}</p>
@@ -72,25 +72,25 @@ export default async function AboutPage() {
           </dl>
         </section>
 
-        <section aria-labelledby="cannot-h" className="mt-12 grid gap-x-12 gap-y-4 border-t border-hairline pt-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]" data-testid="about-cannot">
-          <h2 id="cannot-h" className="font-display text-[26px] font-medium leading-tight text-ink">
+        <section aria-labelledby="cannot-h" className="mt-24 grid gap-x-12 gap-y-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]" data-testid="about-cannot">
+          <h2 id="cannot-h" className="nx-title">
             What Neritic cannot tell you
           </h2>
           <ul className="space-y-3 text-[16px] leading-relaxed text-ink-2">
             {ABOUT.cannot.map((t) => (
-              <li key={t} className="border-l-2 border-official-line pl-3">
+              <li key={t}>
                 {t}
               </li>
             ))}
           </ul>
         </section>
 
-        <section aria-labelledby="research-h" className="mt-12 border-t border-hairline pt-8" data-testid="research">
-          <h2 id="research-h" className="font-display text-[26px] font-medium leading-tight text-ink">
+        <section aria-labelledby="research-h" className="mt-24" data-testid="research">
+          <h2 id="research-h" className="nx-title">
             The research behind it
           </h2>
           <div className="mt-5 grid gap-x-12 gap-y-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-            <figure className="rounded-2xl border border-hairline bg-surface p-6 sm:p-7" data-testid="publication">
+            <figure className="rounded-2xl bg-surface p-6 sm:p-7" data-testid="publication">
               <p className="text-[13px] font-medium text-ink-3">Publication</p>
               <p className="mt-2 font-display text-[22px] font-medium leading-snug text-ink sm:text-[24px]">{RESEARCH.title}</p>
               <p className="mt-3 text-[14px] leading-relaxed text-ink-2">
@@ -114,16 +114,16 @@ export default async function AboutPage() {
             <div className="space-y-3 text-[15.5px] leading-relaxed text-ink-2">
               <p>{ABOUT.research.what}</p>
               <p>{ABOUT.research.result}</p>
-              <p className="border-l-2 border-hairline-strong pl-3 text-ink" data-testid="research-relation">
+              <p className="text-ink" data-testid="research-relation">
                 {ABOUT.research.relation}
               </p>
             </div>
           </div>
         </section>
 
-        <section aria-labelledby="providers-h" className="mt-12 grid gap-x-12 gap-y-4 border-t border-hairline pt-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <section aria-labelledby="providers-h" className="mt-24 grid gap-x-12 gap-y-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
           <div className="space-y-2">
-            <h2 id="providers-h" className="font-display text-[26px] font-medium leading-tight text-ink">
+            <h2 id="providers-h" className="nx-title">
               Data and methods
             </h2>
             <p className="text-[15px] leading-relaxed text-ink-2">{ABOUT.providersIntro}</p>
@@ -136,7 +136,7 @@ export default async function AboutPage() {
               </a>
             </p>
           </div>
-          <ul className="divide-y divide-hairline border-y border-hairline text-[15px]" data-testid="about-providers">
+          <ul className="divide-y divide-hairline text-[15px]" data-testid="about-providers">
             {ABOUT.providers.map((p) => (
               <li key={p.name} className="grid gap-x-6 gap-y-0.5 py-2.5 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
                 <span className="font-medium text-ink">{p.name}</span>
@@ -146,8 +146,8 @@ export default async function AboutPage() {
           </ul>
         </section>
 
-        <section aria-labelledby="review-h" className="mt-12 border-t border-hairline pt-8">
-          <h2 id="review-h" className="font-display text-[26px] font-medium leading-tight text-ink">
+        <section aria-labelledby="review-h" className="mt-24">
+          <h2 id="review-h" className="nx-title">
             Review status
           </h2>
           <ul className="mt-3 max-w-[68ch] list-disc space-y-1.5 pl-5 text-[16px] leading-relaxed text-ink-2" data-testid="about-review">

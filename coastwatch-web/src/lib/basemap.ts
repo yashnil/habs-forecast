@@ -142,8 +142,10 @@ export const BASEMAP_STYLE: StyleSpecification = {
       // inland lakes and reservoirs stay quiet: the sea is the subject
       paint: { "fill-color": ["match", ["get", "class"], ["lake", "river"], "#1b2938", OPEN_SEA] },
     },
-    { id: "relief-sea", type: "raster", source: "relief-sea", paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
-    { id: "relief-sea-monterey", type: "raster", source: "relief-sea-monterey", minzoom: 7, paint: { "raster-fade-duration": 0, "raster-resampling": "linear" } },
+    // the neutral seafloor carries the same muting as the tinted one, so the ground stays deep and the edge of the
+    // relief image (126.6°W) meets the open Pacific without a seam
+    { id: "relief-sea", type: "raster", source: "relief-sea", paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-saturation": -0.32, "raster-brightness-max": 0.86 } },
+    { id: "relief-sea-monterey", type: "raster", source: "relief-sea-monterey", minzoom: 7, paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-saturation": -0.32, "raster-brightness-max": 0.86 } },
     // the tinted seafloor sits over the neutral one and shows only with no data field on the map;
     // MapCanvas cross-fades it (420 ms) to the neutral relief when a field appears, never a toggle
     { id: "relief-sea-tint", type: "raster", source: "relief-sea-tint", paint: { "raster-fade-duration": 0, "raster-resampling": "linear", "raster-saturation": -0.32, "raster-brightness-max": 0.86, "raster-opacity": 1, "raster-opacity-transition": { duration: 420, delay: 0 } } },
@@ -231,27 +233,27 @@ export const BASEMAP_STYLE: StyleSpecification = {
       type: "line",
       source: "omt",
       "source-layer": "waterway",
-      minzoom: 8,
+      minzoom: 9.5,
       filter: ["in", ["get", "class"], ["literal", ["river", "canal"]]],
-      paint: { "line-color": "#3c5574", "line-width": 0.8 },
+      paint: { "line-color": "#2c3f55", "line-width": 0.7 },
     },
     {
       id: "roads-major",
       type: "line",
       source: "omt",
       "source-layer": "transportation",
-      minzoom: 6.5,
+      minzoom: 8.5,
       filter: ["in", ["get", "class"], ["literal", ["motorway", "trunk"]]],
-      paint: { "line-color": "#262f3b", "line-width": ["interpolate", ["linear"], ["zoom"], 6.5, 0.4, 12, 1.3] },
+      paint: { "line-color": "#242c36", "line-width": ["interpolate", ["linear"], ["zoom"], 8.5, 0.4, 12, 1.2] },
     },
     {
       id: "roads-primary",
       type: "line",
       source: "omt",
       "source-layer": "transportation",
-      minzoom: 9.5,
+      minzoom: 10.8,
       filter: ["==", ["get", "class"], "primary"],
-      paint: { "line-color": "#384658", "line-width": ["interpolate", ["linear"], ["zoom"], 9.5, 0.3, 12, 1] },
+      paint: { "line-color": "#2d3846", "line-width": ["interpolate", ["linear"], ["zoom"], 10.8, 0.3, 12, 0.9] },
     },
     {
       id: "boundary-state",
@@ -286,7 +288,7 @@ export const BASEMAP_STYLE: StyleSpecification = {
       type: "symbol",
       source: "omt",
       "source-layer": "place",
-      minzoom: 5.5,
+      minzoom: 6.2,
       filter: ["==", ["get", "class"], "city"],
       layout: {
         "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]],
@@ -296,14 +298,14 @@ export const BASEMAP_STYLE: StyleSpecification = {
         "text-offset": [0.4, 0],
         "symbol-sort-key": ["get", "rank"],
       },
-      paint: { "text-color": "#8090a0", "text-halo-color": LAND, "text-halo-width": 1.2 },
+      paint: { "text-color": "#8e9caa", "text-halo-color": LAND, "text-halo-width": 1.2 },
     },
     {
       id: "place-town",
       type: "symbol",
       source: "omt",
       "source-layer": "place",
-      minzoom: 8,
+      minzoom: 9,
       filter: ["==", ["get", "class"], "town"],
       layout: {
         "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]],
@@ -320,7 +322,7 @@ export const BASEMAP_STYLE: StyleSpecification = {
       type: "symbol",
       source: "omt",
       "source-layer": "place",
-      minzoom: 10.5,
+      minzoom: 11.2,
       filter: ["==", ["get", "class"], "village"],
       layout: {
         "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]],

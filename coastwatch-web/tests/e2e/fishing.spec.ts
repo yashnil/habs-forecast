@@ -18,12 +18,12 @@ test("at a glance: rows for the fishery, the sea, the trip and the gaps, each on
   await expect(g.getByTestId("glance-season")).toContainText("Dungeness Crab");
   await expect(g.getByTestId("glance-season-list")).toHaveText(/on CDFW.s closed list/);
   await expect(g.getByTestId("glance-official")).toContainText("scheduled to reopen on November 7, 2026");
-  await expect(page.getByTestId("brief-official")).toContainText("Not verified");
+  await expect(g.getByTestId("glance-not-verified")).toContainText("Not verified");
   // v6 P0 3: the dock value is history, labelled so, and the species' own fishery's only (v7: in the Evidence note)
   await expect(page.getByTestId("glance-worth")).toContainText("Dock value, 2024 (history)");
   await expect(page.getByTestId("glance-worth")).toContainText("Dungeness Crab");
   await expect(page.getByTestId("glance-worth")).toContainText("Not today's price");
-  for (const [tile, target] of [["glance-season", "#seasons-h"], ["glance-sea-link", "#sea-h"], ["glance-notices", "#official-h"], ["glance-unknown", "#unknown-h"]] as const) {
+  for (const [tile, target] of [["glance-season", "#seasons-h"], ["glance-sea-link", "#sea-h"], ["glance-unknown", "#unknown-h"]] as const) {
     await expect(page.getByTestId(tile)).toHaveAttribute("href", target);
     await expect(page.locator(target)).toHaveCount(1);
   }
@@ -33,16 +33,30 @@ test("at a glance: rows for the fishery, the sea, the trip and the gaps, each on
   expect(await page.locator("main").innerText()).not.toMatch(VERDICTS);
 });
 
-test("v6 P0 2 / v10 D3: a commercial crabber sees the sport list's closed mark as the sport list's, never its reopen date, and that Neritic holds no commercial season", async ({ page }) => {
+test("v11: a commercial crabber's status is Today's status: the same words, marked not verified, the sport list labelled as the sport list and never its reopen date", async ({ page }) => {
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-550&for=commercial&species=dungeness`);
   const o = page.getByTestId("glance-official");
+  await expect(o.getByTestId("glance-status-word")).toHaveText("Delayed");
+  const sentence = await o.getByTestId("glance-status-sentence").innerText();
+  expect(sentence.length).toBeGreaterThan(10);
+  await expect(o.getByTestId("glance-not-verified")).toContainText("Not verified");
+  await expect(o).not.toContainText("holds no commercial season");
   await expect(o.getByTestId("glance-season-list")).toHaveText(/on CDFW.s closed list for sport fishing/);
-  await expect(o.getByTestId("glance-commercial")).toContainText("Neritic holds no commercial season for Dungeness crab");
-  await expect(o).toContainText("Nothing here says a trip is allowed");
+  await expect(o.getByTestId("glance-no-permission")).toHaveText("Nothing here says a trip is allowed.");
   await expect(o).not.toContainText("November 7");
-  await expect(o.getByRole("link", { name: "CDFW commercial" })).toHaveAttribute("href", "https://wildlife.ca.gov/Fishing/Commercial");
-  await expect(o.getByRole("link", { name: "In-season page" })).toHaveAttribute("href", /wildlife\.ca\.gov\/Fishing\/Ocean\/Regulations\/inseason/);
+  // the same statement on Today, for the same port and fishery
+  const today = await page.context().newPage();
+  await today.clock.setFixedTime(new Date(NOW));
+  await today.goto(`${OK}/today?place=port-550&f=dungeness_commercial`);
+  await expect(today.locator("main")).toContainText("Delayed");
+  await expect(today.locator("main")).toContainText(sentence);
+  await today.close();
+  // the agencies' own pages are one tap away, in the season list
+  await page.getByTestId("brief-seasons-toggle").click();
+  const seasons = page.getByTestId("brief-seasons");
+  await expect(seasons.getByRole("link", { name: "CDFW commercial", exact: true })).toHaveAttribute("href", "https://wildlife.ca.gov/Fishing/Commercial");
+  await expect(seasons.getByRole("link", { name: "In-season page" })).toHaveAttribute("href", /wildlife\.ca\.gov\/Fishing\/Ocean\/Regulations\/inseason/);
   // the sport row in Seasons is marked "(sport list)" and never quotes the sport list's dates to a commercial reader
   const mine = page.getByTestId("seasons-mine").locator('li[data-testid^="season-dungeness"]').first();
   await expect(mine).toContainText("(sport list)");
@@ -126,6 +140,7 @@ test("v7: place first, then the species in the trip bar (activity first, species
   await page.goto(`${OK}/coast`);
   await page.getByTestId("coast-start-port-550").click();
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
+  await page.getByTestId("trip-change").click();
   await page.getByTestId("trip-activity").selectOption("shellfish");
   await expect(page.getByTestId("trip-species").locator("option[value=halibut]")).toHaveCount(0);
   await page.getByTestId("trip-activity").selectOption("recreational");

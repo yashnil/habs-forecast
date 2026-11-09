@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openPack } from "./helpers";
 import { OK } from "./ports";
 
 /**
@@ -14,7 +15,7 @@ test("the Monterey pack: plan, download, verify, remove", async ({ browser }) =>
   const page = await ctx.newPage();
   await page.goto(`${OK}/coast?place=port-550`);
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   const plan = page.getByTestId("pack-plan");
   await expect(plan).toContainText("Map of the region", { timeout: 60_000 });
   await expect(plan).toContainText("no day beyond its horizon");

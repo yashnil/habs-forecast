@@ -1,0 +1,45 @@
+/* Research (v11): the record chart is the page. */
+.r-page { padding-top: 12px; }
+
+/* the head: the title over the real isobath ground (brand geometry, never the reader's waters) */
+.r-head { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px 40px; padding-block: 4px 18px; }
+@media (max-width: 1023.98px) { .r-head { grid-template-columns: minmax(0, 1fr); padding-block: 8px 12px; } }
+.r-ground { position: absolute; inset: -56px 0 -40px 42%; z-index: 0; pointer-events: none; color: var(--nx-ink); opacity: 0.14; overflow: hidden; }
+.r-ground svg { width: 100%; height: 100%; }
+@media (max-width: 639px) { .r-ground { display: none; } }
+.r-head-text, .r-mini { position: relative; z-index: 1; }
+.r-mini { width: 280px; }
+.r-mini [data-testid="locator-map"] { cursor: pointer; }
+
+.r-title { font-size: clamp(30px, 5.4vw, 68px); line-height: 0.98; }
+.r-picker { display: inline-flex; max-width: 100%; align-items: center; gap: 0.1em; min-height: 44px; border-radius: 12px; text-align: left; color: inherit; transition: color var(--nx-t-hover, 150ms) var(--nx-ease-out, ease-out); }
+.r-picker-chev { flex: none; display: grid; place-items: center; width: 0.72em; height: 0.72em; color: var(--nx-ink-3); transition: transform var(--nx-t-hover, 150ms) var(--nx-ease-out, ease-out), color var(--nx-t-hover, 150ms) var(--nx-ease-out, ease-out); }
+.r-picker-chev svg { width: 0.5em; height: 0.5em; }
+@media (hover: hover) {
+  .r-picker:hover .r-picker-chev { color: var(--nx-ink); transform: translateY(2px); }
+}
+.r-meta { margin-top: 10px; max-width: 110ch; font: 400 14px/20px var(--nx-font-ui); color: var(--nx-ink-2); }
+@media (max-width: 639px) { .r-meta { margin-top: 2px; font-size: 13px; line-height: 18px; } }
+
+/* quantity and window: one row, no rule under it */
+.r-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; }
+.r-bar-right { display: flex; min-width: 0; align-items: center; gap: 4px 16px; }
+@media (max-width: 639px) { .r-bar-right { width: 100%; justify-content: space-between; } }
+.r-tools { display: flex; align-items: center; }
+.r-scroll { min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; margin-inline: -4px; padding-inline: 4px; }
+.r-seg.nx-seg { background: transparent; padding: 0; min-width: max-content; }
+.r-seg .nx-seg-o { padding: 0 13px; }
+.r-seg .nx-seg-thumb { background: var(--nx-surface-2); }
+.r-seg-range .nx-seg-o { padding: 0 10px; font-family: var(--nx-font-data); font-size: 12.5px; }
+
+@media (max-width: 360px) {
+  .r-seg-range .nx-seg-o { padding: 0 6px; }
+  .r-tools button, .r-tools a { padding-inline: 4px; }
+}
+.r-bar-right { flex-wrap: wrap; }
+@media (max-width: 639px) { .r-bar-right { flex-wrap: nowrap; } }
+.r-window { font: 400 13.5px/20px var(--nx-font-ui); color: var(--nx-ink-2); }
+.r-sections { margin-top: clamp(40px, 7vw, 88px); }
+
+/* the sheet holds the coast ladder, full height */
+.r-sheet .nx-sheet-body, .r-sheet { --nx-sheet-pad: 20px; }

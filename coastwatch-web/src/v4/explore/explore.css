@@ -4,21 +4,7 @@
  * the layer index and the legend's marks. Tokens come from src/v4/theme.css; nothing here redefines one.
  */
 
-/* ---- the field's shading: the map darkens toward its top and bottom edges, where the instrument's
-   text sits (the concept's gradient), so the words keep their contrast over any raster ---- */
-.nx-field-shade {
-  background:
-    linear-gradient(180deg, rgba(5, 9, 13, 0.72) 0, rgba(5, 9, 13, 0) 112px),
-    linear-gradient(0deg, rgba(5, 9, 13, 0.95) 0, rgba(5, 9, 13, 0.9) 150px, rgba(5, 9, 13, 0.55) 196px, rgba(5, 9, 13, 0) 250px);
-}
-
-/* daylight: the instrument's words are dark ink, so the shade over the (always dark) map is light paper */
-html[data-daylight] .nx-field-shade {
-  background:
-    linear-gradient(180deg, rgba(245, 247, 248, 0.5) 0, rgba(245, 247, 248, 0) 90px),
-    linear-gradient(0deg, rgba(245, 247, 248, 0.97) 0, rgba(245, 247, 248, 0.92) 150px, rgba(245, 247, 248, 0.55) 196px, rgba(245, 247, 248, 0) 250px);
-}
-
+/* daylight: the margin line takes the ink */
 html[data-daylight] [data-testid="map-margin"] .nx-on-map,
 html[data-daylight] [data-testid="map-margin"] .nx-on-map a {
   color: var(--nx-ink-2);
@@ -78,7 +64,44 @@ html[data-daylight] [data-testid="map-margin"] .nx-on-map a {
   border-radius: 2px;
 }
 
-/* ---- the layer index: rows on hairlines, the lit one with its family swatch haloed ---- */
+/* ---- the field dock (design.md §7.3): the ramp's marker moves under the cursor or selected point ---- */
+.nx-ramp-mark {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--nx-ink);
+  box-shadow: 0 0 0 1px rgba(5, 9, 13, 0.75);
+  border-radius: 1px;
+  transition: left 80ms linear;
+}
+.nx-layer-group {
+  padding: 8px 8px 2px;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--nx-ink-3);
+}
+.nx-layer-group:first-child {
+  padding-top: 0;
+}
+/* the rail's caption plate shows only when it has something to say */
+.nx-rail-cap {
+  display: none;
+}
+.nx-rail-cap:has(p, button) {
+  display: block;
+}
+/* the place sheet is a reading surface: opaque over any raster */
+.nx-place-sheet {
+  background: var(--nx-surface);
+}
+.nx-place-sheet .nx-note > summary {
+  min-height: 48px;
+}
+
+/* ---- the layer index: rows, the lit one with its family swatch haloed, the lit one with its family swatch haloed ---- */
 .nx-index-row[aria-checked="true"] .nx-index-sw {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 28%, transparent);
 }
@@ -133,5 +156,8 @@ html[data-daylight] [data-testid="map-margin"] .nx-on-map a {
 @media (prefers-reduced-motion: reduce) {
   .nx-rail * {
     transition: none !important;
+  }
+  .nx-ramp-mark {
+    transition: none;
   }
 }

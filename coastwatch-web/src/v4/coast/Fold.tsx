@@ -84,7 +84,7 @@ export function Fold({
       <section ref={box} aria-labelledby={`${id}-h`} className={`scroll-mt-4 ${className}`} data-testid={`brief-${id}`} data-open={open}>
         <h3 id={`${id}-h`} className={`scroll-mt-4 ${openFrom ? "md:sr-only" : ""}`}>
           <button type="button" aria-expanded={open} aria-controls={`${id}-body`} onClick={() => setOpen(!open)} className="nx-focus group inline-flex min-h-11 items-center gap-1.5 rounded-[2px] text-left text-[14px] text-n-ink sm:min-h-9" data-testid={`brief-${id}-toggle`}>
-            <span className="underline decoration-n-line-strong underline-offset-4 group-hover:decoration-n-ink">{title}</span>
+            <span className="nx-link">{title}</span>
             {count != null && <span className="nx-num text-[13px] text-n-ink-3">{count}</span>}
             {summary && <span className="text-[13px] text-n-ink-2 max-sm:hidden">{summary}</span>}
             <Icon name="chevronDown" className={`h-4 w-4 shrink-0 text-n-ink-3 transition-transform duration-[240ms] ease-[var(--nx-ease-move)] ${open ? "rotate-180" : ""}`} />
@@ -98,17 +98,17 @@ export function Fold({
       </section>
     );
   return (
-    <section ref={box} aria-labelledby={`${id}-h`} className={`scroll-mt-4 border-t border-n-line ${className}`} data-testid={`brief-${id}`} data-open={open}>
+    <section ref={box} aria-labelledby={`${id}-h`} className={`coast-fold scroll-mt-4 ${className}`} data-testid={`brief-${id}`} data-open={open}>
       <h2 id={`${id}-h`} className="scroll-mt-4">
-        <button type="button" aria-expanded={open} aria-controls={`${id}-body`} onClick={() => setOpen(!open)} className="nx-tint nx-focus group flex min-h-[60px] w-full items-center gap-3 rounded-lg py-3 text-left" data-testid={`brief-${id}-toggle`}>
+        <button type="button" aria-expanded={open} aria-controls={`${id}-body`} onClick={() => setOpen(!open)} className="nx-focus group flex min-h-[64px] w-full items-center gap-3 py-3 text-left" data-testid={`brief-${id}-toggle`}>
           <span className="min-w-0 flex-1">
-            <span className="flex items-baseline gap-2 text-[16.5px] font-semibold leading-6 text-n-ink">
+            <span className="nx-title flex items-baseline gap-2 !text-[20px] !leading-[26px]">
               {title}
-              {count != null && <span className="nx-num text-[15px] font-medium text-n-ink-3">{count}</span>}
+              {count != null && <span className="text-[15px] font-normal tabular-nums text-n-ink-2">{count}</span>}
             </span>
             {summary && <span className={`block text-[13.5px] font-normal leading-5 text-n-ink-2 ${open ? "" : "line-clamp-2 sm:line-clamp-1"}`}>{summary}</span>}
           </span>
-          <Icon name="chevronDown" className={`h-[18px] w-[18px] shrink-0 text-n-ink-3 transition-transform duration-[240ms] ease-[var(--nx-ease-move)] ${open ? "rotate-180" : ""}`} />
+          <Icon name="chevronDown" className={`h-[18px] w-[18px] shrink-0 text-n-ink-2 transition-transform duration-[240ms] ease-[var(--nx-ease-move)] ${open ? "rotate-180" : ""}`} />
         </button>
       </h2>
       <div className="nx-fold" data-open={expanded}>

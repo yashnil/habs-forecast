@@ -53,17 +53,18 @@ test("data rasters are smoothed at state scale and drawn cell by cell from harbo
   await expect.poll(mode).toBe("nearest");
 });
 
-test("My Coast's front door: the six starting places as cards, each with measured readings or saying none", async ({ page }) => {
+test("My Coast's front door: a short list of six names, the coast as the selector, readings only on a point (each dated or saying none)", async ({ page }) => {
   await page.goto(`${OK}/coast`);
   await expect(page.getByTestId("coast-title")).toHaveText("Where are you fishing?");
-  const cards = page.getByTestId("coast-landing").locator("li");
-  await expect(cards).toHaveCount(6);
-  const monterey = page.getByTestId("coast-start-port-550");
-  await expect(monterey).toContainText("Monterey");
-  await expect(monterey.getByTestId("landing-readings")).toContainText("Water");
+  await expect(page.getByTestId("coast-landing").locator("li")).toHaveCount(6);
+  await expect(page.getByTestId("landing-read")).toHaveCount(0);
+  const point = page.getByTestId("coast-point-port-550");
+  await point.focus();
+  const read = page.getByTestId("landing-read");
+  await expect(read.getByTestId("landing-readings")).toContainText("Water");
   // the readings settle: a measured line with its time and buoy, or the plain statement that none is near
-  await expect(monterey).toContainText(/Measured|No reading near here/, { timeout: 15_000 });
-  await monterey.click();
+  await expect(read).toContainText(/Measured|No reading near here/, { timeout: 15_000 });
+  await page.getByTestId("coast-start-port-550").click();
   await expect(page).toHaveURL(/place=port-550/);
 });
 
@@ -84,7 +85,8 @@ test.describe(() => {
       }),
     );
     await page.goto(`${OK}/coast`);
-    const card = page.getByTestId("coast-start-port-550");
+    await page.getByTestId("coast-start-port-550").focus();
+    const card = page.getByTestId("landing-read");
     await expect(card.getByTestId("landing-water-age")).toHaveText("12 min ago");
     await expect(card.getByTestId("landing-water")).toContainText("Tide gauge");
     // the older wave reading keeps its own age: never the newest reading's
@@ -102,11 +104,7 @@ test("the briefing keeps every change of wind direction the NWS forecasts", asyn
   await page.goto(`${OK}/coast?place=port-550`);
   const wind = page.getByTestId("glance-wind");
   await expect(wind).toContainText("W 10–15", { timeout: 15_000 });
-  // the later stretches keep their own directions: the NW 5–10 is never drawn as W
-  await expect(wind).toContainText("then NW 5–10 kt late this evening, then N after midnight");
-  // on a phone the changes take the full row under wind and seas
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(wind).not.toContainText("then NW", { useInnerText: true });
+  // the later stretches keep their own directions: the NW 5–10 is never drawn as W (one line, at every width)
   await expect(page.getByTestId("glance-wind-changes")).toHaveText("Wind then NW 5–10 kt late this evening, then N after midnight");
   await expect(page.getByTestId("glance-tide")).toContainText(/\d\.\d\s*ft (high|low)/);
 });

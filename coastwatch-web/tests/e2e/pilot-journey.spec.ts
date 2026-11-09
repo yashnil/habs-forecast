@@ -51,7 +51,7 @@ for (const [label, viewport] of [["phone 390", { width: 390, height: 844 }], ["d
     await expect(sheet).toContainText("Not verified: no person has checked this record against the source yet");
     await expect(sheet).toContainText("Next review");
     await expect(sheet.getByRole("link", { name: "CDFW" })).toHaveAttribute("href", /wildlife\.ca\.gov/);
-    await sheet.getByTestId("sheet-close").click();
+    await sheet.getByTestId("status-sheet-close").click();
     await expect(sheet).toBeHidden();
 
     // ---- the toxin test: measured, dated, against the limit

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openPack } from "./helpers";
 import { OK } from "./ports";
 
 /**
@@ -261,7 +262,7 @@ test.describe("v10 fix 2: the phone's map tools are docked, off the coast", () =
       await expect(more).toHaveAttribute("aria-expanded", "true");
       await expect(page.getByTestId("share-view")).toBeVisible();
       await expect(page.getByTestId("pack-open")).toBeVisible();
-      await page.getByTestId("pack-open").click();
+      await openPack(page);
       await expect(page.getByRole("dialog")).toBeVisible();
       await ctx.close();
     });

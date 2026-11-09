@@ -8,6 +8,7 @@ import { TodayView } from "@/pilot/today/TodayView";
 import { PortPicker } from "@/pilot/today/PortPicker";
 import { loadTrust } from "@/lib/data";
 import { localNotices } from "@/lib/applicability";
+import { loadStageData } from "@/v4/stage/data";
 import { pilotAccountConfig } from "@/pilot/account/config";
 import { PilotAccountProvider } from "@/pilot/account/context";
 
@@ -30,7 +31,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SP }): 
  */
 export default async function TodayPage({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
-  const [load, base] = await Promise.all([loadToday(one(sp.place)), loadTrust()]);
+  const [load, base, stage] = await Promise.all([loadToday(one(sp.place)), loadTrust(), loadStageData({ now: fixedNow() })]);
   if (!load.ok) return <DataUnavailable error={load.error} />;
   // the trust pill counts the notices that cover this port's waters
   const trust = load.place ? { ...base, local: localNotices(base.official, load.place.key, load.place.name, load.place.lat, load.place.lon) } : base;
@@ -39,9 +40,9 @@ export default async function TodayPage({ searchParams }: { searchParams: SP }) 
     <PilotAccountProvider config={pilotAccountConfig()}>
       <ReadinessProvider>
         {load.place && load.inputs ? (
-          <TodayView key={load.place.key} inputs={load.inputs} linkFisheries={parseFisheries(one(sp.f))} readiness={{ alerts: readiness("alerts"), ask: readiness("ask"), sms: readiness("sms") }} fixture={load.fixture} trust={trust} />
+          <TodayView key={load.place.key} inputs={load.inputs} linkFisheries={parseFisheries(one(sp.f))} readiness={{ alerts: readiness("alerts"), ask: readiness("ask"), sms: readiness("sms") }} fixture={load.fixture} trust={trust} stage={stage} />
         ) : (
-          <PortPicker ports={load.ports} requested={load.requested} pick={one(sp.pick) === "1"} now={fixedNow().toISOString()} trust={trust} />
+          <PortPicker ports={load.ports} requested={load.requested} pick={one(sp.pick) === "1"} now={fixedNow().toISOString()} trust={trust} stage={stage} />
         )}
       </ReadinessProvider>
     </PilotAccountProvider>

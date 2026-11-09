@@ -87,7 +87,7 @@ test.describe("since you last checked", () => {
 
   test("remembered activity and species: one tap continues with them", async ({ page }) => {
     await page.goto(`${OK}${CRAB}`);
-    await expect(page.getByTestId("since-last-check")).toBeVisible();
+    await expect(page.getByTestId("since-last-check")).toHaveCount(1);
     await page.goto(`${OK}/coast?place=port-201`);
     const resume = page.getByTestId("since-resume");
     await expect(resume).toHaveText("Continue with Commercial fishing · Dungeness crab");
@@ -97,6 +97,7 @@ test.describe("since you last checked", () => {
 
   test("forget on this device removes what was remembered", async ({ page }) => {
     await page.goto(`${OK}${CRAB}`);
+    await page.getByTestId("coast-more").click();
     await page.getByTestId("since-forget").click();
     await expect(page.getByTestId("since-last-check")).toHaveCount(0);
     expect(await page.evaluate(() => localStorage.getItem("cw-waters-v1"))).toBeNull();
@@ -120,6 +121,7 @@ test.describe("since you last checked", () => {
 test.describe("kept briefing", () => {
   test("keeps a dated copy that opens offline as a file, with its time, sources and warning", async ({ page, context }) => {
     await page.goto(`${OK}${CRAB}`);
+    await page.getByTestId("coast-more").click();
     await page.getByTestId("kept-make").click();
     await expect(page.getByTestId("kept-done")).toContainText("Kept ");
     const [dl] = await Promise.all([page.waitForEvent("download"), page.getByTestId("kept-download").click()]);
@@ -143,6 +145,7 @@ test.describe("kept briefing", () => {
 
   test("the print view keeps the warning and hides its buttons when printed", async ({ page }) => {
     await page.goto(`${OK}${CRAB}`);
+    await page.getByTestId("coast-more").click();
     await page.getByTestId("kept-make").click();
     await page.getByTestId("kept-open").click();
     await expect(page).toHaveURL(/\/coast\/kept\?id=/);
@@ -160,7 +163,9 @@ test.describe("on a phone", () => {
   test("touch targets are at least 44 px and the block has no serious accessibility violations", async ({ page }) => {
     await page.goto(`${OK}${CRAB}`);
     const s = page.getByTestId("since-last-check");
+    await page.getByTestId("coast-more").click();
     await expect(s).toBeVisible();
+    await page.waitForTimeout(350); // the menu's own opening scale
     for (const el of await s.locator("a, button").all()) {
       const b = await el.boundingBox();
       expect(b!.height, await el.innerText()).toBeGreaterThanOrEqual(44);

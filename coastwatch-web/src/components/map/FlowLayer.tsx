@@ -50,7 +50,8 @@ void main() {
 const FS_LINE = `#version 300 es
 precision mediump float;
 in float v_alpha; in float v_side; in vec3 v_color; out vec4 o;
-void main() { float e = 1.0 - smoothstep(0.55, 1.0, abs(v_side)); o = vec4(v_color, 1.0) * v_alpha * e; }`;
+uniform float u_casing;
+void main() { float e = 1.0 - smoothstep(0.55, 1.0, abs(v_side)); vec3 c = u_casing > 0.0 ? vec3(0.02, 0.06, 0.11) : v_color; o = vec4(c, 1.0) * v_alpha * e * (u_casing > 0.0 ? u_casing : 1.0); }`;
 const VS_FOOT = `#version 300 es
 uniform mat4 u_matrix;
 in vec2 a_corner; in vec4 a_box;
@@ -295,7 +296,7 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
       gl = ctx as WebGL2RenderingContext;
       pLine = program(gl, VS_LINE, FS_LINE);
       pFoot = program(gl, VS_FOOT, FS_FOOT);
-      uLine = { m: gl.getUniformLocation(pLine, "u_matrix"), vp: gl.getUniformLocation(pLine, "u_viewport"), w: gl.getUniformLocation(pLine, "u_width") };
+      uLine = { m: gl.getUniformLocation(pLine, "u_matrix"), vp: gl.getUniformLocation(pLine, "u_viewport"), w: gl.getUniformLocation(pLine, "u_width"), casing: gl.getUniformLocation(pLine, "u_casing") };
       uFoot = { m: gl.getUniformLocation(pFoot, "u_matrix"), c: gl.getUniformLocation(pFoot, "u_color") };
       // particles: one instanced quad per trail segment
       vaoLine = gl.createVertexArray()!;
@@ -364,16 +365,23 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
         g.bindVertexArray(vaoFoot);
         g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, footCount);
       }
-      const n = sim.build(inst, { colour: opts.colour, alpha: opts.coarser ? 0.7 : 1 });
+      const n = sim.build(inst, { colour: opts.colour, alpha: opts.coarser ? 0.92 : 1 });
       stats.segments = n;
       if (n) {
         g.useProgram(pLine);
         g.uniformMatrix4fv(uLine.m, false, mat);
         g.uniform2f(uLine.vp, g.drawingBufferWidth, g.drawingBufferHeight);
-        g.uniform1f(uLine.w, 1.8 * Math.min(2, window.devicePixelRatio || 1));
         g.bindVertexArray(vaoLine);
         g.bindBuffer(g.ARRAY_BUFFER, instBuf);
         g.bufferSubData(g.ARRAY_BUFFER, 0, inst, 0, n * SEG);
+        // a dark casing under each streak, so sky-blue streaks hold their edge over a chlorophyll field
+        // (FLOW_SKY stays the data colour; the casing carries no value); a no-cost invisibility over dark sea
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        g.uniform1f(uLine.casing, 0.5);
+        g.uniform1f(uLine.w, 3.6 * dpr);
+        g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, n);
+        g.uniform1f(uLine.casing, 0);
+        g.uniform1f(uLine.w, 1.8 * dpr);
         g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, n);
       }
       g.bindVertexArray(null);

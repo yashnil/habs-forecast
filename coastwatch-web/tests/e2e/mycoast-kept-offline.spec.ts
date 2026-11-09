@@ -16,6 +16,7 @@ test("a kept briefing opens offline: /coast/kept reloads from the device, and th
   await page.goto(SANTA_CRUZ);
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
   await page.reload(); // controlled by the worker from here
+  await page.getByTestId("coast-more").click(); // v11: "keep a dated copy" lives in the briefing's More
   await page.getByTestId("kept-make").click();
   await expect(page.getByTestId("kept-offline")).toBeVisible({ timeout: 30_000 });
   await ctx.setOffline(true);

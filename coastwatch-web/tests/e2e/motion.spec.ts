@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { openLayers } from "./helpers";
+import { openLayers, openPack } from "./helpers";
 import { OK } from "./ports";
 
 /**
@@ -63,9 +63,11 @@ test.describe("motion v9: rasters and camera", () => {
     await expect.poll(() => fade(page, "forecast-raster")).toBe(220);
     // forecast -> satellite: the newly switched layer fades
     await openLayers(page);
+    await openLayers(page);
     await page.getByTestId("layer-satellite").click();
     await expect.poll(() => fade(page, "satellite-raster")).toBe(220);
     // back to the forecast, then a day step of it: the new day cuts in
+    await openLayers(page);
     await page.getByTestId("layer-forecast").click();
     await expect.poll(() => fade(page, "forecast-raster")).not.toBe("missing");
     await page.keyboard.press("Escape");
@@ -90,6 +92,7 @@ test.describe("motion v9: rasters and camera", () => {
     const page = await ctx.newPage();
     await open(page, "/?layer=forecast&var=particulate_domoic&lead=1");
     await expect.poll(() => fade(page, "forecast-raster")).toBe(0);
+    await openLayers(page);
     await openLayers(page);
     await page.getByTestId("layer-satellite").click();
     await expect.poll(() => fade(page, "satellite-raster")).toBe(0);
@@ -156,7 +159,7 @@ test.describe("motion v9: the field pack's check", () => {
       const page = await ctx.newPage();
       await page.goto(`${OK}/coast?place=port-550`);
       await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
-      await page.getByTestId("pack-open").click();
+      await openPack(page);
       await expect(page.getByTestId("pack-download")).toBeEnabled({ timeout: 60_000 });
       await page.getByTestId("pack-download").click();
       const saved = page.getByTestId("pack-saved");

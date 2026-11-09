@@ -1,146 +1,184 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { FisheryId } from "@/pilot/contracts";
-import { FISHERY_OPTIONS, dayWords, type StatusRow } from "@/pilot/facts";
+import { FISHERY_OPTIONS, dayWords, rowHeadline, rowWord, unverifiedCount, type StatusRow, type WhaleView } from "@/pilot/facts";
+import { Fold, Sheet, useFocusLink } from "@/v4/motion";
 import { Icon } from "@/v4/ui/Icon";
-import { FactAnchors, Section, SourceLink, StatusMark, Unverified, factProps, sevClass } from "./ui";
+import { Tag, type TagLevel } from "@/v4/ui/Tag";
+import { Unverified } from "@/v4/ui/Unverified";
+import { Button } from "@/v4/ui/Button";
+import { Chapter, FactAnchors, NotVerifiedWords, SourceLink, StatusMark, factProps } from "./ui";
+import { ZoneLadder } from "./Charts";
 
-/** The status strip: one row per fishery the reader follows, official status first. A row opens its detail sheet. */
+const tagLevel = (r: StatusRow): TagLevel => (r.conflict ? "watch" : r.level === "no_restriction_on_record" ? "none" : r.level === "closed" ? "closed" : r.level === "delayed" ? "delayed" : r.level === "restricted" ? "restricted" : "watch");
+
+/** The word and its shape: a tag, never colour alone. A season that simply ended is said calmly, a barred disc in ink, not the alarm. */
+function RowTag({ r, testId = "status-word" }: { r: StatusRow; testId?: string }) {
+  if (r.seasonal)
+    return (
+      <span className="nx-tag" data-level="season" data-testid={testId}>
+        <StatusMark severity={r.severity} seasonal className="!h-3.5 !w-3.5" />
+        {rowWord(r)}
+      </span>
+    );
+  return (
+    <Tag level={tagLevel(r)} testId={testId}>
+      {r.level === "no_restriction_on_record" && !r.conflict ? "None on record" : rowWord(r)}
+    </Tag>
+  );
+}
+
+/** "Rock crab" → "rock crab"; a proper name keeps its capital. */
+const inList = (label: string) => (/^Dungeness/.test(label) ? label : label.charAt(0).toLowerCase() + label.slice(1));
+const listWords = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`);
+
+/** What a row or glance item lights on the stage: the notice's line, when it has one. */
+export const statusFocusId = (r: StatusRow) => r.notices[0]?.id ?? r.records[0]?.id ?? null;
+
+/**
+ * Fisheries, chapter one: official status first. Flagged fisheries as large rows, each opening its sheet;
+ * the fisheries with nothing on record collapse to one line that carries its own caveat; the whale rules
+ * are one line beside them. The group's "not verified" marker is computed from its records.
+ */
 export function StatusStrip({
   rows,
-  now,
-  place,
   statusError,
+  whale,
   otherNotices = [],
   onOpen,
+  onOpenWhale,
   onEdit,
 }: {
   rows: StatusRow[];
-  now: string;
-  place: string;
   statusError: boolean;
+  whale: WhaleView | null;
   /** notice facts tied to this port that belong to no row shown (their address is the section itself) */
   otherNotices?: string[];
   onOpen: (r: StatusRow) => void;
+  onOpenWhale: () => void;
   onEdit: () => void;
 }) {
+  const { bind } = useFocusLink();
   // a notice is addressed inside the first row that lists it (one id, once on the page)
   const placed = new Set<string>();
+  const noticeIds = new Map(rows.map((r) => [r, r.level === "unknown" ? [] : r.notices.map((n) => `notice:${n.id}`).filter((id) => !placed.has(id) && (placed.add(id), true))]));
   const known = rows.filter((r) => r.level !== "unknown");
   const unknown = rows.filter((r) => r.level === "unknown");
-  const noticeIds = rows.map((r) => (r.level === "unknown" ? [] : r.notices.map((n) => `notice:${n.id}`).filter((id) => !placed.has(id) && (placed.add(id), true))));
+  const flagged = known.filter((r) => r.level !== "no_restriction_on_record");
+  const none = known.filter((r) => r.level === "no_restriction_on_record");
+  const count = unverifiedCount([...known.map((r) => ({ verified: r.verified, known: true })), ...(whale ? [{ verified: whale.verified, known: true }] : [])]);
+  const mark = (v: boolean | null) => (count.mixed && v !== true ? <NotVerifiedWords /> : null);
+  const say = statusError
+    ? null
+    : flagged.length
+      ? `${flagged.length} of your ${rows.length} ${rows.length === 1 ? "fishery is" : "fisheries are"} flagged.`
+      : "Nothing is flagged for the fisheries you follow.";
+
+  const row = (r: StatusRow) => (
+    <li key={r.fishery} {...factProps(r.fact.id)} {...(statusFocusId(r) ? bind(statusFocusId(r)!) : {})}>
+      <FactAnchors ids={noticeIds.get(r) ?? []} />
+      <button type="button" className="today-row nx-focus nx-hover-tint" onClick={() => onOpen(r)} data-testid={`status-${r.fishery}`} data-severity={r.severity} data-seasonal={r.seasonal ? "" : undefined} aria-haspopup="dialog">
+        <span className="today-row-name">{r.label}</span>
+        <RowTag r={r} />
+        <span className="today-row-body">
+          {r.conflict ? <span data-testid="sources-differ">{rowHeadline(r)}</span> : r.headline}
+          {r.level === "no_restriction_on_record" ? " Not a promise it is open." : ""}
+          {r.stale ? <span className="today-old"> Check is old.</span> : null}
+          {mark(r.verified) ? <> {mark(r.verified)}</> : null}
+        </span>
+        <Icon name="chevronRight" className="today-row-go h-4 w-4" />
+      </button>
+    </li>
+  );
+
   return (
-    <Section
+    <Chapter
       id="status"
       area="status"
-      title="Your fisheries · official status"
-      feedback={rows[0] ? { factId: rows[0].fact.id, placeId: place } : null}
-      aside={
-        <button type="button" onClick={onEdit} className="nx-focus nx-tint -my-2 inline-flex min-h-11 items-center gap-1 rounded-[3px] px-2 text-[14px] text-n-ink-2 hover:text-n-ink" data-testid="fisheries-edit">
+      title="Fisheries"
+      testid="today-status"
+      say={say}
+      marker={count.words ? <Unverified count={count.words} testId="status-not-verified" /> : undefined}
+      action={
+        <button type="button" onClick={onEdit} className="nx-focus today-edit" data-testid="fisheries-edit">
           Edit list
         </button>
       }
     >
       {statusError && (
-        <p className="today-say t-amber" role="status">
-          Neritic&rsquo;s list of seasons and restrictions did not load. Unknown is not open: check{" "}
-          <a className="nx-focus underline underline-offset-4" href="https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories" target="_blank" rel="noreferrer">
+        <p className="today-say" role="status">
+          <span className="today-old">Neritic&rsquo;s list of seasons and restrictions did not load. Unknown is not open:</span> check{" "}
+          <a className="nx-link nx-focus" href="https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories" target="_blank" rel="noreferrer">
             CDFW
           </a>{" "}
           and{" "}
-          <a className="nx-focus underline underline-offset-4" href="https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx" target="_blank" rel="noreferrer">
+          <a className="nx-link nx-focus" href="https://www.cdph.ca.gov/Programs/OPA/Pages/Shellfish-Advisories.aspx" target="_blank" rel="noreferrer">
             CDPH
           </a>
           .
         </p>
       )}
-      <ul className="mt-0" data-testid="status-strip">
-        {known.map((r) => (
-          <li key={r.fishery} {...factProps(r.fact.id)}>
-            <FactAnchors ids={noticeIds[rows.indexOf(r)]} />
-            <button type="button" className="today-row nx-focus nx-tint" onClick={() => onOpen(r)} data-testid={`status-${r.fishery}`} data-severity={r.severity} data-seasonal={r.seasonal ? "" : undefined} aria-haspopup="dialog">
-              <StatusMark severity={r.severity} seasonal={r.seasonal} className="today-row-mark mt-0.5" />
-              <span className="today-row-label flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="text-[16.5px] font-semibold leading-snug text-n-ink">{r.label}</span>
-                <Unverified verified={r.verified} />
-              </span>
-              <span className={`today-word ${sevClass(r.severity, r.seasonal)}`} data-testid="status-word">
-                {r.level === "no_restriction_on_record" ? "None on record" : r.word}
-              </span>
-              <span className="today-row-body">
-                <span className="block text-[15px] leading-snug text-n-ink-2">{r.headline}</span>
-                <span className="today-src mt-1 block">
-                  {[r.causeWord && !r.seasonal ? `Cause: ${r.causeWord}` : null, r.next_review ? `Next review ${dayWords(r.next_review, now)}` : null, r.source ? `${r.source.name}${r.checked_at ? `, checked ${dayWords(r.checked_at, now)}` : ""}` : null].filter(Boolean).join(" · ")}
-                  {r.stale && <span className="t-amber"> · check is old</span>}
-                  {r.conflict && (
-                    <span className="t-amber" data-testid="sources-differ">
-                      {" "}
-                      · sources differ
-                    </span>
-                  )}
+      <div data-testid="status-strip">
+        {(flagged.length > 0 || unknown.length > 0) && (
+          <ul>
+            {flagged.map(row)}
+            {unknown.length > 0 && (
+              // Neritic's list did not load: one statement for the fisheries it cannot speak to, never a row each that reads like a status
+              <li className="today-row today-row-static" data-testid="status-unknown" data-severity="info" data-fact-card="">
+                <span className="today-row-name">
+                  <FactAnchors ids={unknown.map((r) => r.fact.id)} />
+                  {unknown.length === rows.length ? "Your fisheries" : `${unknown.length} other ${unknown.length === 1 ? "fishery" : "fisheries"}`}
                 </span>
+                <span className="nx-tag" data-level="none" data-testid="status-word">
+                  {unknown[0].word}
+                </span>
+                <span className="today-row-body">
+                  {unknown.map((r) => r.label).join(" · ")}
+                  <span className="block">Unknown is not open. CDFW closure line (831) 649-2883.</span>
+                </span>
+              </li>
+            )}
+          </ul>
+        )}
+        {none.length > 0 && (
+          <Fold
+            className="today-none"
+            testid="status-none"
+            title={
+              <span data-testid="status-none-line">
+                None on record for {listWords(none.map((r) => inList(r.label)))}. <b className="font-medium text-n-ink">Not a promise {none.length === 1 ? "it is" : "they are"} open.</b>
               </span>
-              <Icon name="chevronRight" className="today-row-go h-4 w-4 text-n-ink-3" />
-            </button>
-          </li>
-        ))}
-        {unknown.length > 0 && (
-          // Neritic's list did not load: one statement for the fisheries it cannot speak to, never a row each that reads like a status
-          <li className="today-row" data-testid="status-unknown" data-severity="info" data-fact-card="">
-            <StatusMark severity="info" className="today-row-mark mt-0.5" />
-            <span className="today-row-label text-[16.5px] font-semibold leading-snug text-n-ink">
-              <FactAnchors ids={unknown.map((r) => r.fact.id)} />
-              {unknown.length === rows.length ? "Your fisheries" : `${unknown.length} other ${unknown.length === 1 ? "fishery" : "fisheries"}`}
-            </span>
-            <span className="today-word t-info" data-testid="status-word">
-              {unknown[0].word}
-            </span>
-            <span className="today-row-body">
-              <span className="block text-[15px] leading-snug text-n-ink-2">{unknown.map((r) => r.label).join(" · ")}</span>
-              <span className="today-src mt-1 block">Unknown is not open. CDFW closure line (831) 649-2883.</span>
-            </span>
-          </li>
+            }
+            bodyClassName="pt-1"
+          >
+            <ul>{none.map(row)}</ul>
+          </Fold>
         )}
-      </ul>
+      </div>
+      {whale ? (
+        <div className="today-whale" {...factProps(whale.fact.id)}>
+          <button type="button" className="today-row nx-focus nx-hover-tint" onClick={onOpenWhale} data-testid="status-whale" aria-haspopup="dialog">
+            <span className="today-row-name">Whale rules</span>
+            <span className="nx-caps">Zone {whale.zone}</span>
+            <span className="today-row-body" data-testid="whale-lede">
+              Zone {whale.zone}, {whale.label}: {(whale.action ?? "no action on record").replace(/\.+$/, "")}.{mark(whale.verified) ? <> {mark(whale.verified)}</> : null}
+            </span>
+            <Icon name="chevronRight" className="today-row-go h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <p className="today-note" data-testid="whale-unavailable">
+          Neritic has no current whale-entanglement (RAMP) record. See{" "}
+          <a className="nx-link nx-focus" href="https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries" target="_blank" rel="noreferrer">
+            CDFW Whale Safe Fisheries
+          </a>
+          .
+        </p>
+      )}
       <FactAnchors ids={otherNotices.filter((id) => !placed.has(id))} />
-      <p className="nx-margin mt-3">
-        Transcribed from CDFW and CDPH.{" "}
-        {rows.some((r) => r.level === "no_restriction_on_record") ? (
-          <>
-            <b>No restriction on record</b> is not a promise that a fishery is open or that seafood is free of toxin; notices can lag.
-          </>
-        ) : (
-          "A notice here can lag the agency's own page; the agencies are the authority."
-        )}
-      </p>
-    </Section>
-  );
-}
-
-/** A native modal dialog (focus is trapped and returned by the browser), drawn as a bottom sheet on phones. */
-export function Sheet({ open, onClose, labelledBy, children, testid }: { open: boolean; onClose: () => void; labelledBy: string; children: ReactNode; testid: string }) {
-  const ref = useRef<HTMLDialogElement | null>(null);
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) d.showModal();
-    if (!open && d.open) d.close();
-  }, [open]);
-  return (
-    <dialog
-      ref={ref}
-      className="today-sheet"
-      aria-labelledby={labelledBy}
-      onClose={onClose}
-      onClick={(e) => {
-        // a tap on the backdrop closes
-        if (e.target === ref.current) onClose();
-      }}
-      data-testid={testid}
-    >
-      {open && children}
-    </dialog>
+      <p className="nx-margin mt-4">Transcribed from CDFW and CDPH, whose notices take precedence. Notices can lag; Neritic checks them once a day.</p>
+    </Chapter>
   );
 }
 
@@ -157,108 +195,151 @@ function Dl({ rows }: { rows: [string, ReactNode][] }) {
   );
 }
 
-export function StatusSheet({ row, now, onClose }: { row: StatusRow | null; now: string; onClose: () => void }) {
-  const r = row;
+/** The RAMP zone, its rule and its next assessment: the whale row's sheet, and inside a crab fishery's sheet. */
+function WhaleDetail({ whale, now }: { whale: WhaleView; now: string }) {
   return (
-    <Sheet open={!!r} onClose={onClose} labelledBy="status-sheet-h" testid="status-sheet">
-      {r && (
-        <div className="flex max-h-[88dvh] flex-col md:max-h-dvh">
-          <div className="flex items-start gap-3 border-b border-n-line px-4 py-4">
-            <StatusMark severity={r.severity} seasonal={r.seasonal} className="mt-1" />
-            <div className="min-w-0 flex-1">
-              <p className={`today-word inline-block ${sevClass(r.severity, r.seasonal)}`}>{r.word}</p>
-              <h2 id="status-sheet-h" className="mt-2 font-serif text-[26px] leading-tight text-n-ink">
-                {r.label}
-              </h2>
+    <div className="mt-2 flex gap-4" data-testid="whale-detail">
+      <ZoneLadder zone={whale.zone} severity={whale.fact.severity} />
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] leading-snug text-n-ink">
+          Zone {whale.zone}, {whale.label}: <b className="font-semibold">{(whale.action ?? "no action on record").replace(/\.+$/, "")}</b>.
+        </p>
+        <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[14.5px]">
+          <dt className="text-n-ink-3">Depth limit</dt>
+          <dd className="text-n-ink">{whale.depth_limit_fathoms != null ? `${whale.depth_limit_fathoms} fathoms` : "none on record"}</dd>
+          <dt className="text-n-ink-3">Gear reduction</dt>
+          <dd className="text-n-ink">{whale.gear_reduction_pct != null ? `${whale.gear_reduction_pct}% fewer traps` : "none on record"}</dd>
+          {whale.last_assessment && (
+            <>
+              <dt className="text-n-ink-3">Last assessment</dt>
+              <dd className="text-n-ink">{dayWords(whale.last_assessment, now)}</dd>
+            </>
+          )}
+          <dt className="text-n-ink-3">Next assessment</dt>
+          <dd className="text-n-ink" data-testid="whale-next">
+            {whale.next_assessment ? dayWords(whale.next_assessment, now) : "not announced"}
+            {whale.next_window && <span className="block text-[13px] text-n-ink-3">CDFW: {whale.next_window}</span>}
+          </dd>
+        </dl>
+        <p className="today-src mt-2">
+          CDFW Risk Assessment Mitigation Program{whale.season ? `, ${whale.season} season` : ""} ·{" "}
+          <SourceLink name="source" url={whale.source_url}>
+            source
+          </SourceLink>{" "}
+          · {whale.verified ? "checked by a person against the source" : <NotVerifiedWords />}
+        </p>
+        <p className="nx-margin mt-2">About whale entanglement in trap gear, not toxin. Neritic has no whale-sighting feed for these waters.</p>
+      </div>
+    </div>
+  );
+}
+
+export function WhaleSheet({ open, whale, now, onClose }: { open: boolean; whale: WhaleView | null; now: string; onClose: () => void }) {
+  return (
+    <Sheet open={open && !!whale} onClose={onClose} title="Whale rules (RAMP)" testid="whale-sheet">
+      {whale && <WhaleDetail whale={whale} now={now} />}
+    </Sheet>
+  );
+}
+
+export function StatusSheet({ row, whale, now, onClose }: { row: StatusRow | null; whale: WhaleView | null; now: string; onClose: () => void }) {
+  const r = row;
+  // kept through the exit, so the sheet does not empty while it leaves
+  const [last, setLast] = useState<StatusRow | null>(r);
+  if (r && r !== last) setLast(r);
+  const shown = r ?? last;
+  return (
+    <Sheet open={!!r} onClose={onClose} title={shown?.label ?? ""} head={shown ? <RowTag r={shown} testId="sheet-word" /> : undefined} testid="status-sheet">
+      {shown && (
+        <div>
+          <p className="text-[17px] leading-snug text-n-ink">{rowHeadline(shown)}</p>
+          {shown.fact.detail && <p className="mt-2 text-[15px] leading-relaxed text-n-ink-2">{shown.conflict ? shown.fact.detail.replace(shown.conflict.words, "").trim() : shown.fact.detail}</p>}
+          {shown.conflict && (
+            <div className="mt-4" data-testid="conflict">
+              <h3 className="nx-caps text-n-stale">The sources differ</h3>
+              <p className="mt-1.5 text-[14.5px] leading-relaxed text-n-ink">Neritic has two records for this fishery here and they do not agree. It treats the fishery by the more restrictive one and does not choose between them: a person has to check both.</p>
+              <dl className="mt-2 grid gap-3 text-[14.5px] leading-snug">
+                {(
+                  [
+                    ["notice", "Official-notices registry", `${shown.conflict.notice.word}: ${shown.conflict.notice.title}`, [shown.conflict.notice.agency, shown.conflict.notice.effective ? `in effect since ${dayWords(shown.conflict.notice.effective, now)}` : null, shown.conflict.notice.checked ? `registry last read ${dayWords(shown.conflict.notice.checked, now)}` : "read date not recorded", shown.conflict.notice.verified ? "verified" : "not verified"], shown.conflict.notice.url],
+                    ["record", "Neritic's curated status", `${shown.conflict.record.word}: ${shown.conflict.record.headline}`, [shown.conflict.record.source, `checked ${dayWords(shown.conflict.record.checked, now)}`, shown.conflict.record.verified ? "verified" : "not verified"], shown.conflict.record.url],
+                  ] as const
+                ).map(([key, name, says, when, url]) => (
+                  <div key={key} data-testid={`conflict-${key}`}>
+                    <dt className="nx-caps">
+                      {name}
+                      {shown.conflict!.shown === key ? " · the more restrictive" : ""}
+                    </dt>
+                    <dd className="mt-0.5 text-n-ink">
+                      {says}
+                      <span className="block text-[13px] text-n-ink-3">
+                        {when.filter(Boolean).join(" · ")}
+                        {url && (
+                          <>
+                            {" · "}
+                            <a href={url} target="_blank" rel="noreferrer" className="nx-link nx-focus">
+                              source
+                            </a>
+                          </>
+                        )}
+                      </span>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
             </div>
-            <button type="button" onClick={onClose} className="nx-focus nx-press grid h-11 w-11 place-items-center rounded-[3px] border border-n-line" aria-label="Close" data-testid="sheet-close">
-              <Icon name="close" />
-            </button>
-          </div>
-          <div className="overflow-y-auto px-4 pb-8 pt-3">
-            <p className="text-[17px] leading-snug text-n-ink">{r.headline}</p>
-            {r.fact.detail && <p className="mt-2 text-[15px] leading-relaxed text-n-ink-2">{r.conflict ? r.fact.detail.replace(r.conflict.words, "").trim() : r.fact.detail}</p>}
-            {r.conflict && (
-              <div className="mt-4 border-l-2 border-[var(--t-amber)] pl-3" data-testid="conflict">
-                <h3 className="today-h2 t-amber">The sources differ</h3>
-                <p className="mt-1.5 text-[14.5px] leading-relaxed text-n-ink">Neritic has two records for this fishery here and they do not agree. It shows the more restrictive one and does not choose between them: a person has to check both.</p>
-                <dl className="mt-2 grid gap-2 text-[14.5px] leading-snug">
-                  {(
-                    [
-                      ["notice", "Official-notices registry", `${r.conflict.notice.word}: ${r.conflict.notice.title}`, [r.conflict.notice.agency, r.conflict.notice.effective ? `in effect since ${dayWords(r.conflict.notice.effective, now)}` : null, r.conflict.notice.checked ? `registry last read ${dayWords(r.conflict.notice.checked, now)}` : "read date not recorded", r.conflict.notice.verified ? "verified" : "not verified"], r.conflict.notice.url],
-                      ["record", "Neritic's curated status", `${r.conflict.record.word}: ${r.conflict.record.headline}`, [r.conflict.record.source, `checked ${dayWords(r.conflict.record.checked, now)}`, r.conflict.record.verified ? "verified" : "not verified"], r.conflict.record.url],
-                    ] as const
-                  ).map(([key, name, says, when, url]) => (
-                    <div key={key} data-testid={`conflict-${key}`}>
-                      <dt className="nx-caps">
-                        {name}
-                        {r.conflict!.shown === key ? " · shown" : ""}
-                      </dt>
-                      <dd className="mt-0.5 text-n-ink">
-                        {says}
-                        <span className="block text-[13px] text-n-ink-3">
-                          {when.filter(Boolean).join(" · ")}
-                          {url && (
-                            <>
-                              {" · "}
-                              <a href={url} target="_blank" rel="noreferrer" className="nx-focus underline underline-offset-4">
-                                source
-                              </a>
-                            </>
-                          )}
-                        </span>
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            )}
-            <Dl
-              rows={[
-                ...(r.seasonal ? ([["Why", "Closed by its season dates, not by an emergency action. It is not open."]] as [string, ReactNode][]) : r.causeWord ? ([["Cause", r.causeWord]] as [string, ReactNode][]) : []),
-                ...(r.area ? ([["Area", r.area]] as [string, ReactNode][]) : []),
-                ...(r.records[0]?.effective ? ([["Effective", dayWords(r.records[0].effective, now)]] as [string, ReactNode][]) : []),
-                ...(r.records[0]?.until ? ([["Until", dayWords(r.records[0].until, now)]] as [string, ReactNode][]) : []),
-                ...(r.next_review ? ([["Next review", dayWords(r.next_review, now)]] as [string, ReactNode][]) : []),
-                ...(r.source ? ([["Source", <SourceLink key="s" name={r.source.name} url={r.source.url} />]] as [string, ReactNode][]) : []),
-                ...(r.checked_at ? ([["Checked", dayWords(r.checked_at, now)]] as [string, ReactNode][]) : []),
-                ["Verified", r.verified === false ? <span key="v" className="text-n-official">Not verified: no person has checked this record against the source yet</span> : r.verified ? "Checked by a person against the source" : "No curated record"],
-              ]}
-            />
-            {r.records.length > 1 && (
-              <>
-                <h3 className="today-h2 mt-6">Also on record</h3>
-                <ul className="mt-2">
-                  {r.records.slice(1).map((x) => (
-                    <li key={x.id} className="border-t border-n-line py-2 text-[14.5px] text-n-ink-2">
-                      {x.headline}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {r.notices.length > 0 && (
-              <>
-                <h3 className="today-h2 mt-6">Official notices for this fishery here</h3>
-                <ul className="mt-2">
-                  {r.notices.map((n) => (
-                    <li key={n.id} className="border-t border-n-line py-2.5 text-[14.5px]">
-                      <span className="text-n-ink">
-                        {n.agency}: {n.title}
-                      </span>{" "}
-                      <Unverified verified={n.verified} />
-                      {n.url && (
-                        <a href={n.url} target="_blank" rel="noreferrer" className="nx-focus ml-1 inline-flex min-h-11 items-center gap-1 text-n-ink-2 underline underline-offset-4">
-                          source <Icon name="external" className="h-3.5 w-3.5" />
-                        </a>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-            <p className="nx-margin mt-6">Neritic is not an official source. CDFW and CDPH decide closures and reopenings; call before you go: CDFW closure line (831) 649-2883, CDPH biotoxin line 1 (800) 553-4133.</p>
-          </div>
+          )}
+          <Dl
+            rows={[
+              ...(shown.seasonal ? ([["Why", "Closed by its season dates, not by an emergency action. It is not open."]] as [string, ReactNode][]) : shown.causeWord ? ([["Cause", shown.causeWord]] as [string, ReactNode][]) : []),
+              ...(shown.area ? ([["Area", shown.area]] as [string, ReactNode][]) : []),
+              ...(shown.records[0]?.effective ? ([["Effective", dayWords(shown.records[0].effective, now)]] as [string, ReactNode][]) : []),
+              ...(shown.records[0]?.until ? ([["Until", dayWords(shown.records[0].until, now)]] as [string, ReactNode][]) : []),
+              ...(shown.next_review ? ([["Next review", dayWords(shown.next_review, now)]] as [string, ReactNode][]) : []),
+              ...(shown.source ? ([["Source", <SourceLink key="s" name={shown.source.name} url={shown.source.url} />]] as [string, ReactNode][]) : []),
+              ...(shown.checked_at ? ([["Checked", dayWords(shown.checked_at, now)]] as [string, ReactNode][]) : []),
+              ["Review", shown.verified === true ? "Checked by a person against the source" : <span key="v" className="text-n-official">{shown.verified === false ? "Not verified: no person has checked this record against the source yet" : "Not verified: Neritic holds no record for this fishery here, so no person has checked anything"}</span>],
+            ]}
+          />
+          {shown.records.length > 1 && (
+            <>
+              <h3 className="nx-caps mt-6">Also on record</h3>
+              <ul className="mt-2">
+                {shown.records.slice(1).map((x) => (
+                  <li key={x.id} className="border-t border-n-line py-2 text-[14.5px] text-n-ink-2">
+                    {x.headline}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {shown.notices.length > 0 && (
+            <>
+              <h3 className="nx-caps mt-6">Official notices for this fishery here</h3>
+              <ul className="mt-2">
+                {shown.notices.map((n) => (
+                  <li key={n.id} className="border-t border-n-line py-2.5 text-[14.5px]">
+                    <span className="text-n-ink">
+                      {n.agency}: {n.title}
+                    </span>{" "}
+                    {n.verified ? null : <NotVerifiedWords />}
+                    {n.url && (
+                      <a href={n.url} target="_blank" rel="noreferrer" className="nx-link nx-focus ml-1 inline-flex min-h-11 items-center gap-1">
+                        source <Icon name="external" className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {whale && /^dungeness/.test(shown.fishery) && (
+            <>
+              <h3 className="nx-caps mt-6">Whale rules (RAMP)</h3>
+              <WhaleDetail whale={whale} now={now} />
+            </>
+          )}
+          <p className="nx-margin mt-6">Neritic is not an official source. CDFW and CDPH decide closures and reopenings; call before you go: CDFW closure line (831) 649-2883, CDPH biotoxin line 1 (800) 553-4133.</p>
         </div>
       )}
     </Sheet>
@@ -271,23 +352,14 @@ export function FisheryPicker({ open, selected, onClose, onSave }: { open: boole
     if (open) setPick(selected);
   }, [open, selected]);
   return (
-    <Sheet open={open} onClose={onClose} labelledBy="fisheries-sheet-h" testid="fisheries-sheet">
+    <Sheet open={open} onClose={onClose} title="Fisheries you follow" testid="fisheries-sheet">
       <form
-        className="flex max-h-[88dvh] flex-col md:max-h-dvh"
         onSubmit={(e) => {
           e.preventDefault();
           onSave(FISHERY_OPTIONS.map((o) => o.id).filter((id) => pick.includes(id)));
         }}
       >
-        <div className="flex items-center justify-between border-b border-n-line px-4 py-3">
-          <h2 id="fisheries-sheet-h" className="font-serif text-[24px] text-n-ink">
-            Fisheries you follow
-          </h2>
-          <button type="button" onClick={onClose} className="nx-focus nx-press grid h-11 w-11 place-items-center rounded-[3px] border border-n-line" aria-label="Close">
-            <Icon name="close" />
-          </button>
-        </div>
-        <fieldset className="overflow-y-auto px-4 py-2">
+        <fieldset>
           <legend className="sr-only">Fisheries shown in the status strip</legend>
           {FISHERY_OPTIONS.map((o) => (
             <label key={o.id} className="flex min-h-12 cursor-pointer items-center gap-3 border-b border-n-line text-[16px] text-n-ink">
@@ -303,10 +375,10 @@ export function FisheryPicker({ open, selected, onClose, onSave }: { open: boole
           ))}
           <p className="today-src mt-3">Kept on this device only.</p>
         </fieldset>
-        <div className="flex gap-2 border-t border-n-line px-4 py-3">
-          <button type="submit" disabled={!pick.length} className="today-btn primary nx-focus nx-press flex-1 disabled:opacity-50" data-testid="fisheries-save">
+        <div className="mt-4">
+          <Button type="submit" kind="primary" disabled={!pick.length} testId="fisheries-save" className="w-full">
             Show these
-          </button>
+          </Button>
         </div>
       </form>
     </Sheet>
