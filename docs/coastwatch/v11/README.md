@@ -78,6 +78,7 @@ The audit found the old pages contradicting each other. Each is fixed and tested
 - The advisory's end differed between pages. Both now say what NWS gave, or "no end time given".
 - A C-HARM run whose days had passed was charted as an outlook. It is now a "past run" and steps back.
 - The outlook read "next 8 days" for a period already under way. It now names its dates.
+- A forecast period already over no longer leads (NWS's 8:55 PM bulletin can still open with "This Afternoon"), and an advisory whose stated end has passed is no longer shown as current. A headline's end time is read only when NWS states a clock time.
 - My Coast told a commercial reader Neritic held no commercial season while Today led with one. Both now read one model.
 - The Monterey shellfish row is "Status unclear" everywhere, awaiting a person's review.
 - Today's lede quoted an unreviewed record with no marker. It now carries its own "Not verified", and the trust pill is on every page.
