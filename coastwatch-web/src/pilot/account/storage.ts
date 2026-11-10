@@ -4,6 +4,8 @@
  * this page view and says so (`persistent() === false`), so the page can tell the person their
  * choices will not survive a reload. Nothing here is sent anywhere.
  */
+import { PORT_KEY, resetPortMemory } from "@/lib/portRecord";
+
 type Listener = () => void;
 
 const memory = new Map<string, string>();
@@ -88,7 +90,7 @@ function emit() {
 export function subscribe(l: Listener): () => void {
   listeners.add(l);
   const onStorage = (e: StorageEvent) => {
-    if (e.key == null || e.key.startsWith("nrt-pilot-")) emit();
+    if (e.key == null || e.key.startsWith("nrt-pilot-") || e.key === PORT_KEY) emit();
   };
   if (typeof window !== "undefined") window.addEventListener("storage", onStorage);
   return () => {
@@ -104,5 +106,6 @@ export function storeVersion(): number {
 /** test hook: forget the in-memory fallback */
 export function __resetMemory(): void {
   memory.clear();
+  resetPortMemory();
   emit();
 }

@@ -1,12 +1,12 @@
 import type { FisheryId } from "@/pilot/contracts";
 import { parseFisheries, type FactSnap } from "@/pilot/facts";
+import { readPortRecord, updatePortRecord } from "@/lib/portRecord";
 
 /**
- * What Today keeps on this device only (never sent anywhere): the last port opened, the fisheries
- * followed, and the facts seen at the last visit to each port. Every read and write survives storage
- * being blocked (private windows), and then simply remembers nothing.
+ * What Today keeps on this device: the last port opened and the fisheries followed (the saved-port
+ * record, `lib/portRecord`), and the facts seen at the last visit to each port. Every read and write
+ * survives storage being blocked (private windows), and then simply remembers nothing.
  */
-export const TODAY_FISHERIES_KEY = "nx-today-fisheries-v1";
 export const TODAY_SEEN_PREFIX = "nx-today-seen-v1:";
 export const TODAY_SAVED_KEY = "nx-today-saved-v1";
 
@@ -27,10 +27,10 @@ const set = (k: string, v: string | null) => {
   }
 };
 
-export { TODAY_PLACE_KEY, readTodayPlace, writeTodayPlace, readTodayHref } from "./navPlace";
+export { readTodayPlace, writeTodayPlace, readTodayHref } from "./navPlace";
 
-export const readFisheries = (): FisheryId[] | null => parseFisheries(get(TODAY_FISHERIES_KEY));
-export const writeFisheries = (ids: FisheryId[]) => set(TODAY_FISHERIES_KEY, ids.join(","));
+export const readFisheries = (): FisheryId[] | null => parseFisheries(readPortRecord().fisheries.join(","));
+export const writeFisheries = (ids: FisheryId[]) => updatePortRecord((r) => ({ ...r, fisheries: ids }));
 
 export type Seen = { at: string; facts: FactSnap[] };
 export function readSeen(place: string): Seen | null {
