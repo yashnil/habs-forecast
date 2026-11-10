@@ -107,6 +107,8 @@ jobs:
       - name: Generated types are in sync with schemas/v1
         run: npm run gen:types && git diff --exit-code src/generated
       - run: npm run lint
+      - name: Design system rules (docs/coastwatch/v12/design-system/README.md section 3)
+        run: npm run lint:design
       - run: npm run typecheck
       - run: npm test
 

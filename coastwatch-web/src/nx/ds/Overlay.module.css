@@ -1,0 +1,141 @@
+/* the page behind fades under paper, not under a dark scrim */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--halo);
+}
+
+.dialog {
+  position: fixed;
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--rule) solid var(--ink);
+  border-radius: var(--r-0);
+  font-family: var(--font-sans);
+  font-size: var(--t-16);
+  line-height: 1.42;
+  outline: none;
+}
+
+.center {
+  left: 50%;
+  top: 50%;
+  width: min(560px, calc(100vw - var(--s-32)));
+  max-height: calc(100vh - var(--s-64));
+  translate: -50% -50%;
+  padding: var(--s-24) var(--s-32) var(--s-32);
+}
+
+.side {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(440px, 100vw);
+  border-width: 0 0 0 var(--rule);
+  padding: var(--s-16) var(--s-24) var(--s-24);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-16);
+}
+
+.title {
+  margin: 0;
+  padding-top: var(--s-8);
+  font: 500 var(--t-28) / 1.12 var(--font-serif);
+  font-optical-sizing: auto;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+}
+
+.close {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: var(--target);
+  height: var(--target);
+  margin: 0 calc(-1 * var(--s-12)) 0 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+}
+.close:hover {
+  color: var(--ink-2);
+}
+
+.description {
+  margin: var(--s-8) 0 0;
+  max-width: 52ch;
+}
+.vhDesc {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.body {
+  margin-top: var(--s-16);
+  overflow: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.footer {
+  margin-top: var(--s-24);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-12) var(--s-24);
+  align-items: center;
+}
+
+.popover {
+  z-index: 50;
+  width: min(320px, calc(100vw - var(--s-32)));
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--rule) solid var(--ink);
+  border-radius: var(--r-0);
+  padding: var(--s-16);
+  font-family: var(--font-sans);
+  font-size: var(--t-16);
+  line-height: 1.42;
+  outline: none;
+}
+
+.tooltip {
+  z-index: 70;
+  max-width: 280px;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--hair) solid var(--ink);
+  padding: var(--s-4) var(--s-8);
+  font: 400 var(--t-14) / 1.36 var(--font-sans);
+}
+
+@media (max-width: 720px) {
+  .side {
+    top: auto;
+    left: 0;
+    width: 100vw;
+    max-height: 88vh;
+    border-width: var(--rule) 0 0;
+    padding: var(--s-8) var(--s-16) var(--s-24);
+  }
+  .center {
+    padding: var(--s-16) var(--s-16) var(--s-24);
+  }
+  .title {
+    font-size: var(--t-22);
+  }
+}
