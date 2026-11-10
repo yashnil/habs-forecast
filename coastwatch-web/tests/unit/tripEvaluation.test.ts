@@ -112,16 +112,20 @@ describe("the Santa Cruz salmon state (catch, price, fuel price; burn references
 });
 
 describe("partial states", () => {
-  it("hours alone count fishing fuel and say that steaming is not counted (audit step 4)", () => {
+  it("hours alone keep the fishing leg and wait for steaming, until 0 nm says there is none (audit E1)", () => {
     const s: TripScenario = { ...santaCruz(), fishingHours: 10, fishingGph: 3.6 };
     const e = evaluateTrip(s);
-    expect(v(e.fuelGallons).value).toBeCloseTo(36);
-    expect(v(e.fuelGallons).assumptions).toEqual([{ field: "roundTripNm", note: expect.stringMatching(/Steaming not counted/) }]);
-    expect(v(e.tripCost).value).toBeCloseTo(296.712);
-    expect(v(e.tripCost).assumptions.map((a) => a.field)).toContain("roundTripNm");
-    // the arithmetic of record agrees
-    expect(computeTrip(s as TripInputs).fuelGal).toBeCloseTo(36);
+    expect(v(e.fishingGallons).value).toBeCloseTo(36);
+    expect(m(e.fuelGallons).missing).toEqual(["roundTripNm", "cruiseKt", "steamGph"]);
+    expect(m(e.fuelGallons).reason).toMatch(/Enter 0 nm/);
+    expect(m(e.tripCost).missing).toEqual(["roundTripNm", "cruiseKt", "steamGph"]);
+    expect(computeTrip(s as TripInputs).fuelGal).toBeNull();
     wellFormed(e);
+    const none: TripScenario = { ...s, roundTripNm: 0 };
+    const z = evaluateTrip(none);
+    expect(v(z.fuelGallons).value).toBeCloseTo(36);
+    expect(v(z.tripCost).value).toBeCloseTo(296.712);
+    expect(computeTrip(none as TripInputs).fuelGal).toBeCloseTo(36);
   });
 
   it("distance before speed names the cruising speed and keeps the fishing leg (audit step 5)", () => {
@@ -140,15 +144,15 @@ describe("partial states", () => {
 
   it("a cruising speed of 0 is named, not taken", () => {
     const e = evaluateTrip({ ...santaCruz(), roundTripNm: 40, cruiseKt: 0, steamGph: 7.8 });
-    expect(m(e.fuelGallons).missing).toEqual(["cruiseKt"]);
+    expect(m(e.fuelGallons).missing).toEqual(["cruiseKt", "fishingHours", "fishingGph"]);
     expect(m(e.steamingGallons).reason).toMatch(/above 0/);
   });
 
-  it("a tapped burn reference alone asks for the rest of its leg, with the other leg as an alternative", () => {
+  it("a tapped burn reference alone asks for the rest of its leg and the other leg, or the gallons", () => {
     const e = evaluateTrip(applyReference(santaCruz(), ref("steamGph")));
     const f = m(e.fuelGallons);
-    expect(f.missing).toEqual(["roundTripNm", "cruiseKt"]);
-    expect(f.alternatives).toEqual([["fishingHours", "fishingGph"], ["fuelGal"]]);
+    expect(f.missing).toEqual(["roundTripNm", "cruiseKt", "fishingHours", "fishingGph"]);
+    expect(f.alternatives).toEqual([["fuelGal"]]);
   });
 
   it("the partial workspace state: fuel 75 gal, $618, before crew $2,982; net waits only for crew", () => {

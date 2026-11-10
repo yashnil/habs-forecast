@@ -28,7 +28,7 @@ test("home port: set it from the title's place menu with the trip, it survives a
   await page.getByTestId("coast-home-set").click();
   await expect(page.getByTestId("coast-home")).toContainText("Your home port");
   // stored with its trip, on this device only
-  expect(JSON.parse((await page.evaluate(() => localStorage.getItem("cw-home-port")))!)).toEqual({ place: "port-550", for: "commercial", species: "any" });
+  expect(JSON.parse((await page.evaluate(() => localStorage.getItem("nx-port-v1")))!)).toMatchObject({ place: "port-550", for: "commercial", species: "any" });
   await page.reload();
   await expect(page.getByTestId("coast-home")).toContainText("Your home port");
   // change harbour from the place menu: the trip is kept, the home port is one tap away
@@ -48,6 +48,7 @@ test("home port: set it from the title's place menu with the trip, it survives a
   await page.getByTestId("coast-place-button").click();
   await page.getByTestId("coast-home-clear").click();
   await expect(page.getByTestId("coast-home-set")).toBeVisible();
+  expect(JSON.parse((await page.evaluate(() => localStorage.getItem("nx-port-v1")))!).place).toBeNull();
   expect(await page.evaluate(() => localStorage.getItem("cw-home-port"))).toBeNull();
 });
 

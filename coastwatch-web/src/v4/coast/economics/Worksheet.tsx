@@ -69,9 +69,10 @@ export default function Worksheet({ place, species, audience, tripDate, shared, 
   const readOnly = data?.status.readOnly ?? false;
   const unitPref = data?.meta.unit ?? "lb";
   const preset = presetById(draft.preset);
-  const wu: WU = preset?.unit === "ton" ? { unit: "ton", w: 1 / LB_PER_TON, p: LB_PER_TON } : unitPref === "kg" ? { unit: "kg", w: 1 / LB_PER_KG, p: LB_PER_KG } : { unit: "lb", w: 1, p: 1 };
+  const presetUnit = preset?.unit;
+  const wu: WU = useMemo(() => (presetUnit === "ton" ? { unit: "ton", w: 1 / LB_PER_TON, p: LB_PER_TON } : unitPref === "kg" ? { unit: "kg", w: 1 / LB_PER_KG, p: LB_PER_KG } : { unit: "lb", w: 1, p: 1 }), [presetUnit, unitPref]);
   const rec = econAudience(audience) === "recreational";
-  const ev = useMemo(() => evaluateDraft(draft, audience), [draft, audience]);
+  const ev = useMemo(() => evaluateDraft(draft, audience, wu), [draft, audience, wu]);
   const needed = useMemo(() => new Set<string>(ev.missingFields), [ev]);
   // complete (net, or a recreational trip's cost, is worked out): the inputs fold to one line and the results
   // fill the page. Only a worksheet opened complete starts folded; one completed while typing stays open.
@@ -383,7 +384,7 @@ export default function Worksheet({ place, species, audience, tripDate, shared, 
                   <NumIn id={fieldDomId("feesPctOfGross")} label="Fees, share of gross" unit="%" kind="pct" value={draft.inputs.feesPctOfGross ?? null} onChange={setNum("feesPctOfGross")} testId="econ-fees-pct" />
                   <FisheryRefs field="feesPctOfGross" draft={draft} update={update} />
                 </div>
-                <NumIn id={fieldDomId("feesUsdPerLb")} label={preset?.perLbLabel ?? "Fees, $ per lb"} unit="$/lb" kind="usdPerLb" value={draft.inputs.feesUsdPerLb ?? null} onChange={setNum("feesUsdPerLb")} testId="econ-fees-lb" />
+                <NumIn id={fieldDomId("feesUsdPerLb")} label={(preset?.perLbLabel ?? "Fees, $ per lb").replace("per lb", `per ${wu.unit}`)} unit={`$/${wu.unit}`} kind="usdPerLb" scale={wu.p} value={draft.inputs.feesUsdPerLb ?? null} onChange={setNum("feesUsdPerLb")} testId="econ-fees-lb" />
               </div>
             )}
           </Step>

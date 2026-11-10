@@ -1,4 +1,5 @@
 import { PILOT_PORTS, type FisheryId } from "@/pilot/contracts";
+import { LEGACY_HOME_KEY, LEGACY_TODAY_FISHERIES_KEY, LEGACY_TODAY_PLACE_KEY, PORT_KEY, isPortKey, readPortRecord, resetPortMemory, updatePortRecord, type PortRecord } from "@/lib/portRecord";
 import { TRIGGERS, type AlertTrigger } from "@/pilot/alerts/diff";
 import { readJSON, removeKeys, writeJSON } from "./storage";
 
@@ -6,6 +7,12 @@ import { readJSON, removeKeys, writeJSON } from "./storage";
  * The pilot account as kept on this device. With accounts not yet connected this IS the account;
  * once Supabase is configured and the person signs in, it is synced to their rows (sync.ts) and
  * stays as the offline copy. Ports and fisheries are the pilot's own ids (contracts.ts).
+ *
+ * The home port, fisheries and vessel length are the device's saved-port record (`lib/portRecord`):
+ * read from it and written to it here, so My Coast, Today and the account hold one answer. The JSON
+ * under ACCOUNT_KEY still carries a copy of those fields for an earlier build after a rollback.
+ * A saved point or harvest site is not a port: the account shows no home for it, cannot replace it,
+ * and it is never sent to the person's rows.
  */
 export const ACCOUNT_KEY = "nrt-pilot-account-v1";
 
@@ -83,12 +90,16 @@ const isAccount = (v: unknown): v is LocalAccount => !!v && typeof v === "object
 /** Read tolerantly: unknown fisheries, triggers or malformed parts are dropped, never trusted. */
 export function readAccount(): LocalAccount {
   const a = readJSON<LocalAccount>(ACCOUNT_KEY, EMPTY_ACCOUNT, isAccount);
-  const fish = new Set(FISHERIES.map((f) => f.id));
+  const fish = new Set<string>(FISHERIES.map((f) => f.id));
+  const saved = readPortRecord();
+  const vessels = new Set<string>(VESSEL_CLASSES.map((v) => v.id));
   const trig = new Set<string>(TRIGGERS);
   return {
     ...EMPTY_ACCOUNT,
     ...a,
-    fisheries: (a.fisheries ?? []).filter((f) => fish.has(f)),
+    fisheries: saved.fisheries.filter((f) => fish.has(f)) as FisheryId[],
+    home_place_id: isPortKey(saved.place) ? saved.place : null,
+    vessel_length_class: saved.vessel && vessels.has(saved.vessel) ? (saved.vessel as VesselClass) : null,
     saved_places: (a.saved_places ?? []).filter((p) => typeof p === "string" && /^[a-z0-9:-]{1,64}$/.test(p)).slice(0, MAX_SAVED),
     alerts: (Array.isArray(a.alerts) ? a.alerts : [])
       .filter((p) => p && typeof p.place_id === "string")
@@ -96,8 +107,18 @@ export function readAccount(): LocalAccount {
   };
 }
 
+/** The saved-port record with the account's own choices applied; a kept point or site is left alone. */
+function withAccount(r: PortRecord, a: LocalAccount): PortRecord {
+  const known = new Set<string>(FISHERIES.map((f) => f.id));
+  const next: PortRecord = { ...r, fisheries: [...a.fisheries, ...r.fisheries.filter((f) => !known.has(f))], vessel: a.vessel_length_class };
+  if (r.place !== null && !isPortKey(r.place)) return next;
+  if (a.home_place_id === r.place) return next;
+  return isPortKey(a.home_place_id) ? { ...next, place: a.home_place_id, for: "all", species: "any" } : a.home_place_id === null ? { ...next, place: null, for: "all", species: "any" } : next;
+}
+
 export function writeAccount(a: LocalAccount): boolean {
-  return writeJSON(ACCOUNT_KEY, a);
+  const kept = updatePortRecord((r) => withAccount(r, a));
+  return writeJSON(ACCOUNT_KEY, a) && kept;
 }
 
 export function updateAccount(fn: (a: LocalAccount) => LocalAccount): { account: LocalAccount; persisted: boolean } {
@@ -143,5 +164,6 @@ export function placeLabel(id: string): string {
 
 /** Forget everything this feature kept on this device (account, inbox, snapshots, feedback, trips). */
 export function forgetDevice(): void {
-  removeKeys([ACCOUNT_KEY, "nrt-pilot-inbox-v1", "nrt-pilot-alert-snap-v1", "nrt-pilot-feedback-v1", "nrt-pilot-trips-v1"]);
+  resetPortMemory();
+  removeKeys([ACCOUNT_KEY, "nrt-pilot-inbox-v1", "nrt-pilot-alert-snap-v1", "nrt-pilot-feedback-v1", "nrt-pilot-trips-v1", PORT_KEY, LEGACY_HOME_KEY, LEGACY_TODAY_PLACE_KEY, LEGACY_TODAY_FISHERIES_KEY]);
 }

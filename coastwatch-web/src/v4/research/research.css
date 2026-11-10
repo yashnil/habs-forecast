@@ -8,7 +8,8 @@
 .r-ground svg { width: 100%; height: 100%; }
 @media (max-width: 639px) { .r-ground { display: none; } }
 .r-head-text, .r-mini { position: relative; z-index: 1; }
-.r-mini { width: 280px; }
+.r-mini { width: 280px; min-height: 136px; }
+@media (max-width: 1023px) { .r-mini { display: none; } }
 .r-mini [data-testid="locator-map"] { cursor: pointer; }
 
 .r-title { font-size: clamp(30px, 5.4vw, 68px); line-height: 0.98; }

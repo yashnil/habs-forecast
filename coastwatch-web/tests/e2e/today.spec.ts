@@ -160,7 +160,7 @@ test("every fact has an address: a citation link lands on its card and marks it"
   const row = page.locator('[data-fact-hit="status:dungeness_recreational"]');
   await expect(row).toBeInViewport();
   await expect(row.getByTestId("status-dungeness_recreational")).toContainText("crab traps prohibited");
-  expect(await page.evaluate(() => localStorage.getItem("nx-today-fisheries-v1"))).toBeNull();
+  expect(JSON.parse((await page.evaluate(() => localStorage.getItem("nx-port-v1")))!).fisheries).toEqual([]);
   // a citation to a fact inside a fold opens the fold, even one the reader shut by hand
   await page.goto(`${MOSS}#fact-${encodeURIComponent("status:rock_crab")}`);
   await ready(page);

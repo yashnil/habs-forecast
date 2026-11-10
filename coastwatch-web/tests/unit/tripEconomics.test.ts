@@ -47,7 +47,9 @@ describe("fuel", () => {
   it("is unknown when a started estimate is incomplete", () => {
     expect(fuelGallons(trip({ cruiseKt: null }))).toBeNull();
     expect(fuelGallons(trip({ cruiseKt: 0 }))).toBeNull();
-    expect(fuelGallons({ fishingHours: 6, fishingGph: 3 })).toBe(18);
+    // a blank leg is unknown, not nothing; 0 nm says there is no steaming
+    expect(fuelGallons({ fishingHours: 6, fishingGph: 3 })).toBeNull();
+    expect(fuelGallons({ roundTripNm: 0, fishingHours: 6, fishingGph: 3 })).toBe(18);
   });
 });
 

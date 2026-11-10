@@ -431,11 +431,10 @@ export function Research({ manifest, ports, observations, official, baseUrl, ini
               {st.status !== "updated" ? ` · last update ${st.status.replace("_", " ")}` : ""}
             </p>
           </div>
-          {wide && (
-            <div className="r-mini" data-testid="research-mini">
-              <LocatorMap stations={ladder} selected={ladderSel} radiusKm={radiusKm} forecast={locatorRaster} onPick={pickStation} onOpen={openPicker} openLabel={`All ${stations.length} stations`} quiet label={locatorLabel} height={136} />
-            </div>
-          )}
+          {/* the slot is sized by CSS for the width (none on a phone), so the server's guess at the device never moves the page */}
+          <div className="r-mini" data-testid={wide ? "research-mini" : undefined} aria-hidden={wide ? undefined : true}>
+            {wide && <LocatorMap stations={ladder} selected={ladderSel} radiusKm={radiusKm} forecast={locatorRaster} onPick={pickStation} onOpen={openPicker} openLabel={`All ${stations.length} stations`} quiet label={locatorLabel} height={136} />}
+          </div>
         </header>
 
         {/* the instrument: quantity and window, the two linked panels, the record as a brush */}
