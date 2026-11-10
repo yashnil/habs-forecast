@@ -55,6 +55,9 @@ function coveredInsets(frame: HTMLElement): Insets {
   return { top: 0, right: 0, bottom: Math.max(0, f.bottom - r.top), left: 0 };
 }
 
+/** The chart's own zoom limits; a scene may narrow them (ChartScene.zoomRange). */
+const CHART_ZOOM = [4, 13.5] as const;
+
 const chartModeOf = () => document.documentElement.getAttribute("data-chart-mode") || "day";
 
 /**
@@ -239,8 +242,8 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         style: chartStyle(palette, location.origin, { hidden }),
         center: start.center,
         zoom: start.zoom,
-        minZoom: 4,
-        maxZoom: 13.5,
+        minZoom: CHART_ZOOM[0],
+        maxZoom: CHART_ZOOM[1],
         maxBounds: [
           [w, s],
           [e, n],
@@ -339,6 +342,17 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       if (w.__nxChart) w.__nxChart.scene = scene.id;
       document.documentElement.dataset.nxScene = scene.id;
       if (m) {
+        // the view's own zoom limits (Explore keeps the coast in sight), else the chart's
+        const [zLo, zHi] = scene.zoomRange ?? [CHART_ZOOM[0], CHART_ZOOM[1]];
+        const limit = (also: number[]) => {
+          m.setMinZoom(Math.min(zLo, target.zoom, ...also));
+          m.setMaxZoom(Math.max(zHi, target.zoom, ...also));
+        };
+        // loosened to the present zoom while the camera travels (a clamp would jump it), tightened when it lands
+        limit([m.getZoom()]);
+        m.once("moveend", () => {
+          if (getScene()?.id === scene.id) limit([]);
+        });
         const interactive = scene.interactive !== false;
         for (const h of [m.dragPan, m.scrollZoom, m.boxZoom, m.doubleClickZoom, m.touchZoomRotate, m.keyboard]) {
           if (interactive) h.enable();

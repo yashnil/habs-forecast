@@ -26,6 +26,8 @@ export type ChartScene = {
   interactive?: boolean;
   /** index isobath depth labels ("200 m"), on by default */
   depthLabels?: boolean;
+  /** how far the reader may zoom out and in on this view (the chart's own limits otherwise), so context is never lost */
+  zoomRange?: [number, number];
 };
 
 let current: ChartScene | null = null;
