@@ -7,7 +7,8 @@
  *
  * Without the flag nothing changes: `/` is Explore, as on the public release.
  */
-export const EXPLORE_URL = "/?view=map";
+// v12: one front door (src/app/(neritic)/page.tsx). Explore has its own address whatever the flag.
+export const EXPLORE_URL = "/explore";
 
 /** Read on the server at request time (the root layout hands it to the top bar). */
 export function pilotFrontDoor(env: Record<string, string | undefined> = process.env): boolean {
@@ -28,4 +29,5 @@ export function frontDoorRedirect(searchParams: Record<string, string | string[]
 }
 
 /** The Explore link for the nav and for "open the map" links. */
-export const exploreHref = (pilot: boolean) => (pilot ? EXPLORE_URL : "/");
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const exploreHref = (_pilot: boolean) => EXPLORE_URL;

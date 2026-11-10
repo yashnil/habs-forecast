@@ -2,11 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Newsreader } from "next/font/google";
 import "./globals.css";
 import { BRAND } from "@/content/brand";
-import { SplashDecide } from "@/v4/shell/Splash";
-import { MotionRoot } from "@/v4/shell/MotionRoot";
 import { DAYLIGHT_SCRIPT } from "@/v4/shell/daylight";
-import { FrontDoorProvider } from "@/pilot/FrontDoorContext";
 import { pilotFrontDoor } from "@/pilot/frontDoor";
+import { LegacyChrome } from "@/nx/shell/LegacyChrome";
 
 // Self-hosted by next/font at build time: no runtime request to Google.
 // v7: the v2 faces (IBM Plex Sans, Newsreader) are no longer loaded; theme.css maps their variables
@@ -33,6 +31,7 @@ export const viewport: Viewport = {
   themeColor: "#071722",
   colorScheme: "dark",
 };
+// (the route group sets its own: the chart's paper, and loads its own two faces, src/nx/ds/fonts.ts)
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
@@ -42,11 +41,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="antialiased">
         {/* daylight mode before the first paint (src/v4/shell/daylight.ts) */}
         <script dangerouslySetInnerHTML={{ __html: DAYLIGHT_SCRIPT }} />
-        <SplashDecide />
-        {/* pilot (NERITIC_PILOT=1): the nav's Explore link is the map's own address, since `/` opens Today */}
-        <FrontDoorProvider pilot={pilotFrontDoor()}>
-          <MotionRoot>{children}</MotionRoot>
-        </FrontDoorProvider>
+        {/* v12: the route group (/, Today, Explore, My Coast, Research) has its own shell and one entry; the old
+            launch film is gone, and the legacy pages keep the v4 root (src/nx/shell/LegacyChrome.tsx) */}
+        <LegacyChrome pilot={pilotFrontDoor()}>{children}</LegacyChrome>
       </body>
     </html>
   );
