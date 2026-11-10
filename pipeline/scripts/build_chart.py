@@ -361,6 +361,15 @@ def bake_chart_image(zs, zraw, rows_lat, cols_lon, px, land_cov, coast_feats, is
     return np.clip(img, 0, 255).astype(np.uint8)
 
 
+def inset_weight(rows_lat, cols_lon, band=0.06):
+    """1 well inside the Monterey inset, easing to 0 at its edge over `band` degrees (smoothstep)."""
+    w, s, e, n = INSET
+    dx = np.minimum(cols_lon - w, e - cols_lon)[None, :]
+    dy = np.minimum(rows_lat - s, n - rows_lat)[:, None]
+    t = np.clip(np.minimum(dx, dy) / band, 0, 1)
+    return t * t * (3 - 2 * t)
+
+
 def thalweg(lat, lon, zs):
     """The canyon's axis: the deepest cell per longitude column, walking west from the head."""
     pts = []
@@ -446,6 +455,9 @@ def main(etopo: Path, crm: Path, out: Path) -> None:
         land_cov = rasterize([land], w, s, e, n, r["width"], height)
         dx = px * np.cos(np.radians(rows_lat))
         rel = relief_rgba(zraw, dx, land_cov, tok)
+        # the two reliefs cross-fade over the inset's edge, so neither shows a rectangle nor doubles the shading
+        wgt = inset_weight(rows_lat, cols_lon)
+        rel[..., 3] = (rel[..., 3] * ((1 - wgt) if name == "ca" else wgt)).astype(np.uint8)
         rel_name = "relief-land.webp" if name == "ca" else "relief-land-monterey.webp"
         rw = r["relief_width"]
         rh = round(height * rw / r["width"])
