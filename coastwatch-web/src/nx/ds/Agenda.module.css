@@ -1,0 +1,142 @@
+.agenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  --when: 136px;
+  --railw: 24px;
+}
+
+.item,
+.now {
+  display: grid;
+  grid-template-columns: var(--when) var(--railw) minmax(0, 1fr);
+  column-gap: var(--s-8);
+  position: relative;
+}
+
+.item {
+  padding: var(--s-8) 0 var(--s-12);
+}
+
+.when {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.rail {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+/* the rail runs the full height of the row, solid behind us, dashed ahead */
+.rail::before {
+  content: "";
+  position: absolute;
+  top: calc(-1 * var(--s-8));
+  bottom: calc(-1 * var(--s-12));
+  left: 50%;
+  border-left: var(--rule) solid var(--ink);
+  transform: translateX(-50%);
+}
+.future .rail::before {
+  border-left: var(--rule) dashed var(--ink-2);
+}
+.item:first-child .rail::before {
+  top: var(--s-8);
+}
+.item:last-child .rail::before {
+  bottom: auto;
+  height: var(--s-12);
+}
+
+.dot {
+  position: relative;
+  margin-top: var(--s-4);
+  fill: var(--ink);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.future .dot {
+  fill: var(--paper);
+}
+
+.what {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.title {
+  font-weight: 600;
+}
+.title[data-tone="regulation"] {
+  color: var(--reg-text);
+}
+.title[data-tone="closure"] {
+  color: var(--closure);
+}
+.tentative {
+  color: var(--ink-2);
+}
+.detail {
+  margin-top: var(--s-4);
+}
+.stamp {
+  margin-top: var(--s-4);
+}
+
+.past .when,
+.past .detail {
+  color: var(--ink-2);
+}
+
+/* the now line: a ledger rule across, labelled */
+.now {
+  align-items: center;
+  min-height: var(--s-32);
+}
+.now::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: var(--rule) solid var(--ink);
+}
+.nowWhen,
+.nowWhat {
+  position: relative;
+  z-index: 1;
+  background: var(--paper);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.nowWhen {
+  justify-self: end;
+  padding-left: var(--s-8);
+}
+.nowWhat {
+  justify-self: start;
+  padding-right: var(--s-8);
+}
+.nowRail {
+  position: relative;
+  align-self: stretch;
+}
+.nowRail::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: var(--rule) solid var(--ink);
+  transform: translateX(-50%);
+}
+
+@media (max-width: 720px) {
+  .agenda {
+    --when: 104px;
+    --railw: 16px;
+  }
+}

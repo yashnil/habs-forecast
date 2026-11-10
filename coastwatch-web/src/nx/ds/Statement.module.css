@@ -1,0 +1,82 @@
+.statement {
+  color: var(--ink);
+}
+
+.scope {
+  margin: 0 0 var(--s-8);
+  font: 600 var(--t-18) / 1.3 var(--font-sans);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-optical-sizing: auto;
+  letter-spacing: -0.018em;
+  line-height: 1.04;
+  text-wrap: balance;
+  font-variant-numeric: lining-nums;
+}
+.xl .title {
+  font-size: var(--t-64);
+  max-width: 11em;
+}
+.lg .title {
+  font-size: var(--t-48);
+  line-height: 1.06;
+  max-width: 12em;
+}
+.md .title {
+  font-size: var(--t-36);
+  line-height: 1.1;
+  letter-spacing: -0.012em;
+  max-width: 14em;
+}
+
+[data-tone="regulation"] > .title {
+  color: var(--reg-text);
+}
+[data-tone="closure"] > .title {
+  color: var(--closure);
+}
+
+.why {
+  max-width: 30em;
+  margin: var(--s-8) 0 0;
+  font: 400 var(--t-22) / 1.25 var(--font-serif);
+  font-optical-sizing: auto;
+}
+
+.rule {
+  display: block;
+  max-width: 34em;
+  margin-top: var(--s-12);
+  fill: var(--reg);
+}
+
+.body {
+  margin-top: var(--s-12);
+  max-width: 52ch;
+  font-size: var(--t-16);
+}
+.body > * + * {
+  margin-top: var(--s-4);
+}
+
+@media (max-width: 720px) {
+  .xl .title {
+    font-size: var(--t-40);
+  }
+  .lg .title {
+    font-size: var(--t-32);
+  }
+  .md .title {
+    font-size: var(--t-28);
+  }
+  .why {
+    font-size: var(--t-18);
+  }
+  .scope {
+    font-size: var(--t-16);
+  }
+}

@@ -1,0 +1,114 @@
+.state {
+  display: flex;
+  gap: var(--s-12);
+  align-items: flex-start;
+  max-width: 60ch;
+  padding: var(--s-12) 0;
+  border-top: var(--rule) solid var(--ink);
+  color: var(--ink);
+}
+
+.what {
+  margin: 0;
+  font-weight: 600;
+}
+.why {
+  margin: var(--s-4) 0 0;
+}
+.next {
+  margin-top: var(--s-8);
+}
+
+/* the no-data mark as a rail */
+.hatchRail {
+  flex: none;
+  align-self: stretch;
+  width: var(--s-12);
+  min-height: var(--s-48);
+  position: relative;
+  outline: var(--hair) solid var(--ink-2);
+  outline-offset: -1px;
+}
+.hatchRail svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: var(--hatch);
+  stroke-width: 1;
+}
+
+.offline > svg {
+  flex: none;
+  margin-top: var(--s-4);
+}
+
+.differ {
+  display: block;
+  max-width: 76ch;
+}
+.differHead {
+  display: flex;
+  align-items: center;
+  gap: var(--s-8);
+}
+.subject {
+  margin: var(--s-4) 0 0;
+}
+.claims {
+  list-style: none;
+  margin: var(--s-12) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0 var(--s-24);
+}
+.claim {
+  padding: var(--s-8) 0 var(--s-12);
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.agency {
+  margin: 0;
+  font-weight: 700;
+}
+.quote {
+  margin: var(--s-4) 0 0;
+  padding: 0;
+}
+.ref {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+  font-size: var(--t-14);
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 3px;
+}
+.ref:hover {
+  text-decoration-thickness: var(--rule);
+}
+
+.loading {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  color: var(--ink-2);
+}
+.loadingWords {
+  font-weight: 500;
+}
+.loadingTrack {
+  position: relative;
+  display: block;
+  width: var(--s-64);
+  height: var(--rule);
+  background: var(--rule-soft);
+}
+.loadingLine {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  transform-origin: 0 50%;
+}

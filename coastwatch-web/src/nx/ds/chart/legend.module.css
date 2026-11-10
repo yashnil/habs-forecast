@@ -1,0 +1,98 @@
+.legend {
+  margin: 0;
+  color: var(--ink);
+  max-width: var(--margin-w);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-12);
+}
+.title {
+  font: 400 var(--t-22) / 1.2 var(--font-serif);
+  font-optical-sizing: auto;
+}
+.unit {
+  font-size: var(--t-14);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.scaleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-12);
+  margin-top: var(--s-8);
+}
+.rampCol {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.bar {
+  display: flex;
+  height: var(--s-16);
+  outline: var(--hair) solid var(--ink);
+}
+.step {
+  flex: 1 1 0;
+}
+
+.ticks {
+  position: relative;
+  height: var(--s-24);
+  font: 600 var(--t-14) / 1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.tick {
+  position: absolute;
+  top: 0;
+  padding-top: var(--s-8);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.tick::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  height: var(--s-4);
+  border-left: var(--hair) solid var(--ink);
+}
+
+.noViewCol {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: var(--s-48);
+}
+.noView {
+  display: block;
+  width: 100%;
+  height: var(--s-16);
+}
+.noViewFrame {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.noViewHatch {
+  fill: none;
+  stroke: var(--hatch);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.noViewLabel {
+  padding-top: var(--s-8);
+  font: 600 var(--t-14) / 1 var(--font-sans);
+  white-space: nowrap;
+}
+
+.caption {
+  margin: var(--s-4) 0 0;
+  font-size: var(--t-14);
+  line-height: 1.4;
+}

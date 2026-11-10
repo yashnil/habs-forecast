@@ -1,0 +1,218 @@
+.series {
+  margin: 0;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-8);
+  font-weight: 600;
+}
+.head small {
+  font-size: var(--t-14);
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.readout {
+  margin: 0 0 var(--s-4);
+  min-height: 1.42em;
+  font-variant-numeric: tabular-nums;
+}
+.hint {
+  color: var(--ink-2);
+}
+
+.plot {
+  position: relative;
+  width: 100%;
+  touch-action: pan-y;
+  cursor: crosshair;
+  outline-offset: var(--s-4);
+}
+.svg {
+  display: block;
+  overflow: visible;
+}
+
+.grid {
+  stroke: var(--rule-soft);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.baseline {
+  stroke: var(--ink);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.yTick,
+.xTick,
+.nowLabel,
+.thresholdLabel {
+  font-family: var(--font-sans);
+  font-size: var(--t-14);
+  font-variant-numeric: tabular-nums;
+  fill: var(--ink-2);
+}
+.yTick {
+  text-anchor: end;
+}
+.emptyText {
+  font-family: var(--font-sans);
+  font-size: var(--t-16);
+  fill: var(--ink-2);
+  text-anchor: middle;
+}
+.xTick {
+  text-anchor: middle;
+}
+.thresholdLabel {
+  text-anchor: end;
+  font-weight: 600;
+  fill: var(--ink);
+}
+.nowLabel {
+  font-weight: 700;
+  fill: var(--ink);
+}
+
+.threshold {
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-dasharray: 6 4;
+}
+.now {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.lineModel {
+  stroke-dasharray: 5 3;
+}
+.pt {
+  fill: var(--ink);
+}
+.ptHollow {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.ptCensored {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.25;
+}
+
+.crossLine {
+  stroke: var(--ink);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.crossMark {
+  fill: var(--ink);
+  stroke: var(--paper);
+  stroke-width: 2;
+}
+.crossHollow {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* brush */
+.brush {
+  position: relative;
+  width: 100%;
+  margin-top: var(--s-8);
+  touch-action: none;
+  user-select: none;
+}
+.brushSvg {
+  display: block;
+  overflow: visible;
+}
+.brushDot {
+  fill: var(--ink-2);
+}
+.brushShade {
+  fill: var(--paper);
+  opacity: 0.72;
+}
+.brushWindow {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+.brushHandle {
+  position: absolute;
+  top: 0;
+  width: var(--target);
+  margin-left: calc(var(--target) / -2);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: ew-resize;
+}
+.brushHandle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 25%;
+  bottom: 25%;
+  border-left: 3px solid var(--ink);
+  transform: translateX(-50%);
+}
+.brushHandle:focus-visible {
+  outline: 2px solid var(--focus, var(--ink));
+  outline-offset: -2px;
+}
+.brushPan {
+  position: absolute;
+  top: 0;
+  cursor: grab;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.brushPan:active {
+  cursor: grabbing;
+}
+.brushPan:focus-visible {
+  outline: 2px solid var(--focus, var(--ink));
+  outline-offset: 2px;
+}
+.brushCaption {
+  margin: var(--s-4) 0 0;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* small multiples */
+.multiples > * + * {
+  margin-top: var(--s-16);
+}
+.stripReadout {
+  margin-left: auto;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

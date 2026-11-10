@@ -1,0 +1,80 @@
+.readout {
+  position: relative;
+  border-top: var(--rule) solid var(--ink);
+  padding-top: var(--s-8);
+  color: var(--ink);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-8);
+}
+.title {
+  margin: 0;
+  font: 600 var(--t-16) / 1.3 var(--font-sans);
+}
+.coord {
+  margin: 0;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.close {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: var(--target);
+  height: var(--target);
+  margin: calc(-1 * var(--s-8)) calc(-1 * var(--s-12)) 0 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.big {
+  margin: var(--s-8) 0 0;
+  font: 600 var(--t-36) / 1.05 var(--font-sans);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.unit {
+  font-size: 0.46em;
+  font-weight: 600;
+  letter-spacing: 0;
+  margin-left: 0.2em;
+}
+.stamp {
+  margin: var(--s-4) 0 0;
+}
+.note {
+  margin: var(--s-8) 0 0;
+  max-width: 52ch;
+}
+.chart {
+  margin-top: var(--s-12);
+}
+.action {
+  margin-top: var(--s-12);
+}
+
+.message {
+  margin: var(--s-8) 0 0;
+  max-width: 52ch;
+  color: var(--ink);
+}
+[data-state="loading"] .message {
+  color: var(--ink-2);
+}
+.noview {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-12);
+  margin-top: var(--s-8);
+}
+.noview > :first-child {
+  margin-top: var(--s-12);
+}

@@ -1,0 +1,421 @@
+/* ---------- shared ---------- */
+.label {
+  display: block;
+  font-weight: 500;
+}
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.isDisabled {
+  color: var(--ink-2);
+}
+.isDisabled .input,
+.isDisabled .stepInput {
+  border-bottom-style: dotted;
+  color: var(--ink-2);
+}
+
+/* ---------- Field ---------- */
+.field {
+  display: grid;
+  gap: var(--s-4);
+  align-content: start;
+}
+.inline {
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  column-gap: var(--s-12);
+}
+.inline .note {
+  grid-column: 1 / -1;
+}
+.figure {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-4);
+  min-height: var(--target);
+}
+.input {
+  height: var(--target);
+  min-width: 3ch;
+  padding: 0 var(--s-4);
+  border: 0;
+  border-bottom: var(--rule) solid var(--ink);
+  border-radius: var(--r-1) var(--r-1) 0 0;
+  background: transparent;
+  color: var(--ink);
+  font: 600 var(--t-18) / 1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  caret-color: var(--ink);
+}
+.input:focus {
+  outline: none;
+  border-bottom-width: 3px;
+}
+.input:focus-visible {
+  outline: none;
+}
+.hasError .input {
+  border-bottom-style: dashed;
+}
+.unitBefore,
+.unitAfter {
+  font-size: var(--t-16);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.note {
+  font-size: var(--t-14);
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.error {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+  color: var(--ink);
+  font-weight: 600;
+}
+.refButton {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 600 var(--t-14) / 1.4 var(--font-sans);
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.refButton::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--target);
+  transform: translateY(-50%);
+}
+.refButton:hover {
+  text-decoration-thickness: var(--rule);
+}
+
+/* ---------- Stepper ---------- */
+.stepper {
+  display: grid;
+  gap: var(--s-4);
+}
+.stepRow {
+  display: inline-flex;
+  align-items: stretch;
+}
+.stepBtn {
+  display: inline-grid;
+  place-items: center;
+  width: var(--target);
+  height: var(--target);
+  padding: 0;
+  border: var(--rule) solid var(--ink);
+  border-radius: var(--r-0);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--dur-quick) linear, color var(--dur-quick) linear;
+}
+.stepBtn:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper);
+}
+.stepBtn:disabled {
+  cursor: not-allowed;
+  border-style: dashed;
+  color: var(--ink-2);
+}
+.stepValue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-4);
+  min-width: var(--s-64);
+  padding: 0 var(--s-12);
+  border-top: var(--rule) solid var(--ink);
+  border-bottom: var(--rule) solid var(--ink);
+}
+.stepInput {
+  width: 3ch;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 600 var(--t-18) / 1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.stepInput:focus {
+  outline: none;
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 4px;
+}
+
+/* ---------- Segmented ---------- */
+.segWrap {
+  display: grid;
+  gap: var(--s-4);
+}
+.segmented {
+  display: inline-flex;
+  border: var(--rule) solid var(--ink);
+  width: max-content;
+  max-width: 100%;
+}
+.segment {
+  min-height: calc(var(--target) - 3px);
+  padding: 0 var(--s-16);
+  border: 0;
+  border-radius: var(--r-0);
+  background: transparent;
+  color: var(--ink);
+  font: 500 var(--t-16) / 1.2 var(--font-sans);
+  cursor: pointer;
+  transition: background-color var(--dur-quick) linear, color var(--dur-quick) linear;
+}
+.segment + .segment {
+  border-left: var(--hair) solid var(--ink);
+}
+.segment:hover:not([aria-checked="true"]) {
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
+}
+.segment[aria-checked="true"] {
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 700;
+}
+.segment:focus-visible {
+  outline-offset: -5px;
+  outline-color: var(--paper);
+}
+.segment[aria-checked="false"]:focus-visible {
+  outline-color: var(--ink);
+}
+
+/* ---------- Toggle ---------- */
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-16);
+  width: 100%;
+  min-height: var(--target);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 400 var(--t-16) / 1.3 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.toggleLabel {
+  font-weight: 500;
+}
+.toggleState {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-8);
+}
+.track {
+  display: inline-flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 44px;
+  height: var(--s-24);
+  padding: 0 3px;
+  border: var(--rule) solid var(--ink);
+}
+.track[data-on] {
+  justify-content: flex-end;
+  background: var(--ink);
+}
+.knob {
+  width: var(--s-16);
+  height: var(--s-16);
+  background: var(--ink);
+}
+.track[data-on] .knob {
+  background: var(--paper);
+}
+.toggleWord {
+  min-width: 3ch;
+  font-weight: 600;
+}
+
+/* ---------- Waterfall ledger ---------- */
+.ledger {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: var(--rule) solid var(--ink);
+  font-variant-numeric: tabular-nums;
+  --rh: 48px;
+  --bh: 22px;
+}
+.lrow {
+  height: var(--rh);
+}
+.lrow th,
+.lrow td {
+  border-bottom: var(--hair) solid var(--rule-soft);
+  vertical-align: middle;
+  padding: 0;
+}
+.lab {
+  text-align: left;
+  font-weight: 500;
+  white-space: nowrap;
+  padding-right: var(--s-12);
+}
+.amt {
+  width: 96px;
+  text-align: right;
+  white-space: nowrap;
+  padding-right: var(--s-16);
+}
+.waiting {
+  color: var(--ink-2);
+  font-size: var(--t-14);
+}
+.barCell {
+  position: relative;
+  width: 36%;
+}
+.barTrack {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--s-8);
+  right: var(--s-4);
+}
+.bar {
+  position: absolute;
+  top: calc((var(--rh) - var(--bh)) / 2);
+  height: var(--bh);
+  overflow: hidden;
+}
+.barSolid {
+  background: var(--ink);
+}
+.barCost {
+  background: var(--paper);
+  outline: var(--hair) solid var(--ink);
+  outline-offset: -1px;
+}
+.hatchSvg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.hatchLine {
+  stroke: var(--ink);
+  stroke-width: 1.25;
+}
+.join {
+  position: absolute;
+  top: calc(-1 * (var(--rh) - var(--bh)) / 2);
+  height: calc(var(--rh) - var(--bh));
+  border-left: var(--hair) solid var(--ink);
+}
+.zero {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: var(--hair) solid var(--ink-2);
+}
+.sum th,
+.sum td {
+  font-weight: 700;
+  border-top: var(--rule) solid var(--ink);
+  border-bottom: 4px double var(--ink);
+}
+
+/* ---------- Sensitivity ---------- */
+.sens {
+  font-variant-numeric: tabular-nums;
+}
+.sensTable {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: var(--rule) solid var(--ink);
+}
+.sensTable th {
+  font-weight: 500;
+  text-align: right;
+  padding: 0 var(--s-8) 0 0;
+  height: var(--target);
+  border-bottom: var(--hair) solid var(--rule-soft);
+  white-space: nowrap;
+}
+.sensTable .corner {
+  text-align: left;
+}
+.sensTable td {
+  padding: 0;
+  height: 56px;
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.cellBtn {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: var(--target);
+  padding: 0 var(--s-8) 0 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 600 var(--t-16) / 1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+}
+.cellBtn:hover:not(:disabled) {
+  border-bottom-color: var(--rule-soft);
+}
+.cellBtn:disabled {
+  color: var(--ink-2);
+  cursor: default;
+}
+.cellBtn:focus-visible {
+  outline-offset: -2px;
+}
+.base .cellBtn {
+  font-weight: 800;
+}
+.on .cellBtn {
+  border-bottom-color: var(--ink);
+}
+.sensCap {
+  margin: var(--s-8) 0 0;
+  font-size: var(--t-14);
+  line-height: 1.4;
+}
+
+@media (max-width: 720px) {
+  .ledger {
+    --rh: 56px;
+  }
+  .amt {
+    width: 76px;
+    padding-right: var(--s-8);
+  }
+  .barCell {
+    width: 30%;
+  }
+}

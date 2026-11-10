@@ -91,6 +91,20 @@
   --dur-quick: 120ms;
 }
 
+/* Added for the component library (v12 system). The font stacks are re-declared on every mode scope so
+   they resolve wherever the next/font variables (ds/fonts.ts) are applied: a custom property that refers
+   to another is resolved where it is declared, and the variables may sit below :root. Same values. */
+[data-chart-mode] {
+  --font-serif: var(--nx-literata), Georgia, serif;
+  --font-sans: var(--nx-public-sans), system-ui, -apple-system, sans-serif;
+  --focus: var(--ink);
+}
+
+:root {
+  /* the knockout halo behind any text set on the chart */
+  --halo-w: 3px;
+}
+
 @media (max-width: 720px) {
   :root { --neat-band: 3px; --neat-label: 16px; }
 }
