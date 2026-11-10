@@ -26,7 +26,7 @@ const TINT_OF = CHART.depth_areas.tint_of as Record<string, number>;
 const IMG = CHART.images as unknown as Record<string, { corners_lnglat: [number, number][] }>;
 const corners = (name: string) => IMG[name].corners_lnglat as [[number, number], [number, number], [number, number], [number, number]];
 
-export const CHART_FRAME = CHART.frame as { ca: [number, number, number, number]; inset: [number, number, number, number] };
+export const CHART_FRAME = CHART.frame as { ca: [number, number, number, number]; inset: [number, number, number, number]; bounds: [number, number, number, number] };
 export const DEPTH_LAYERS = DEPTH_THRESHOLDS.map((d) => `depth-${d}`);
 export const ISOBATH_LAYERS = ["isobaths-minor", "isobaths-index", "isobath-labels"];
 

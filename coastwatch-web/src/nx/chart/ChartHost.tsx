@@ -232,13 +232,14 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const box = mapEl.current.getBoundingClientRect();
       const viewport = { width: box.width, height: box.height };
       const start = scene ? cameraFor(scene, viewport, coveredInsets(frameRef.current!)) : { center: [-120.5, 37] as [number, number], zoom: 5 };
-      const [w, s, e, n] = CHART_FRAME.ca;
+      // the land polygon's whole box (a little inside it, so its outline never shows)
+      const [w, s, e, n] = CHART_FRAME.bounds.map((v, i) => v + (i < 2 ? 0.05 : -0.05));
       const map = new ml.Map({
         container: mapEl.current,
         style: chartStyle(palette, location.origin, { hidden }),
         center: start.center,
         zoom: start.zoom,
-        minZoom: 4.6,
+        minZoom: 4,
         maxZoom: 13.5,
         maxBounds: [
           [w, s],

@@ -62,8 +62,11 @@ TOKENS = WEB / "src" / "nx" / "ds" / "tokens.css"
 WATER = WEB / "public" / "basemap" / "water-fallback.json"
 
 R = 6378137.0
-# the chart's statewide frame (the map's maxBounds sit inside it)
-CA = (-127.6, 31.4, -115.6, 43.2)
+# the chart's statewide frame: the ETOPO subset's own extent (nothing is drawn from beyond the grid)
+CA = (-126.8, 31.9, -116.2, 42.7)
+# land and the map's pannable bounds: the bundled ocean's whole domain, so a wide screen at state scale never
+# shows the frame's edge (beyond CA the land is plain buff and the open ocean the deepest tint)
+LAND_BOX = (-131.4, 29.6, -112.6, 44.7)
 # the Monterey inset, where the CRM's 3" grid replaces ETOPO (the same box as relief.json)
 INSET = (-122.72, 36.22, -121.58, 37.33)
 # ENC depth areas: a polygon set per threshold, coloured with the band just shallower than it
@@ -393,7 +396,7 @@ def main(etopo: Path, crm: Path, out: Path) -> None:
 
     # ---- land (OpenMapTiles ocean, complemented over a frame wider than the map's bounds, so the frame's own
     # edges are never on screen); the coastline is this polygon's outline, drawn by the page
-    land_box = box(CA[0] - 0.6, CA[1] - 0.6, CA[2] + 0.6, CA[3] + 0.6)
+    land_box = box(*LAND_BOX)
     water_ca = water.intersection(land_box.buffer(0.5))
     land = land_box.difference(water_ca).simplify(0.00022, preserve_topology=True)
     land_feats = [{"type": "Feature", "properties": {}, "geometry": rounded(p, 5)} for p in polys_of(land) if p.area > 4e-7]
@@ -432,7 +435,7 @@ def main(etopo: Path, crm: Path, out: Path) -> None:
 
     # ---- rasters: statewide (ETOPO) and the Monterey inset (CRM)
     regions = {
-        "ca": dict(box=CA, lat=elat, lon=elon, z=ez, zs=ezs, width=2400, relief_width=1500),
+        "ca": dict(box=CA, lat=elat, lon=elon, z=ez, zs=ezs, width=2400, relief_width=1300),
         "monterey": dict(box=INSET, lat=clat, lon=clon, z=cz, zs=czs, width=1600, relief_width=1100),
     }
     for name, r in regions.items():
@@ -446,7 +449,7 @@ def main(etopo: Path, crm: Path, out: Path) -> None:
         rel_name = "relief-land.webp" if name == "ca" else "relief-land-monterey.webp"
         rw = r["relief_width"]
         rh = round(height * rw / r["width"])
-        Image.fromarray(rel, "RGBA").resize((rw, rh), Image.LANCZOS).save(out / rel_name, "WEBP", quality=60, alpha_quality=40, method=6)
+        Image.fromarray(rel, "RGBA").resize((rw, rh), Image.LANCZOS).save(out / rel_name, "WEBP", quality=55, alpha_quality=32, method=6)
         meta["images"][rel_name] = {"corners_lnglat": [[w, n], [e, n], [e, s], [w, s]], "width": rw, "height": rh}
         for mode in MODES:
             strength = tok[mode].get("land-relief-opacity", (0.5,))[0]
@@ -493,7 +496,7 @@ def main(etopo: Path, crm: Path, out: Path) -> None:
         "crm": "NOAA NCEI U.S. Coastal Relief Model, volumes 6 and 7, 3 arc-second; Monterey inset only. Public domain; not for navigation.",
         "coast": "OpenMapTiles water (public/basemap/water-fallback.json). © OpenMapTiles © OpenStreetMap contributors (ODbL).",
     }
-    meta["frame"] = {"ca": CA, "inset": INSET}
+    meta["frame"] = {"ca": CA, "inset": INSET, "bounds": LAND_BOX}
     meta["depth_areas"] = {"thresholds_m": THRESHOLDS, "tint_of": TINT_OF, "smoothing": "Gaussian 1.2 cells (ETOPO), 1.4 cells (CRM)"}
     meta["isobaths"] = {"index_m": INDEX, "crm_minor_m": CRM_MINOR}
     (out / "chart.json").write_text(json.dumps(meta, indent=2) + "\n")
