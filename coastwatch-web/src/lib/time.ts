@@ -37,13 +37,13 @@ export function formatDateTimePT(iso: string): string {
   if (Number.isNaN(d.getTime())) return iso;
   return stableFormat(
     dtf("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: PT,
-    timeZoneName: "short",
-  }),
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: PT,
+      timeZoneName: "short",
+    }),
     d,
   );
 }

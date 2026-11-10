@@ -83,11 +83,12 @@ The audit found the old pages contradicting each other. Each is fixed and tested
 - Today's lede quoted an unreviewed record with no marker. It now carries its own "Not verified", and the trust pill is on every page.
 - "None on record" always carries "Not a promise it is open" on the same line.
 - "Not toxin" and the model caveats that were hidden on phones are now visible.
+- Safari writes dates differently from the server ("Nov 9 at 9:23 PM"), which made React rebuild Today and three older pages on load. Dates with times are now formatted one way, and a test blocks new ones.
 - The invented curves behind Today's title and My Coast's hand-drawn coast are gone. Every contour is real geometry.
 
 ## Tradeoffs and deferred ideas
 
-- **Not verified in Safari or Firefox.** All checks ran in Chrome.
+- **Not checked on a real iPhone.** All 14 pages and page-to-page navigation were run in Playwright's WebKit (phone and desktop) and Firefox with no page errors or sideways scroll, but that is the Safari engine, not iOS Safari. Firefox has no scroll-linked animation, so its hero stays static as designed.
 - **Today to Explore is not a true map morph.** Keeping one live map across routes needs a shared layout; every page still renders its own shell.
 - **Explore stays flat and north-up** for reading. The pitched camera is Today's only.
 - **My Coast's map is the restyled `HarbourMap`,** without currents or pitch.
@@ -109,4 +110,4 @@ On `253a945c2`, in Chrome on macOS, with fixture data:
 
 Tests that pinned the old layout were rewritten to assert the new layout and the rule behind it. Honesty and accessibility assertions were not weakened.
 
-Not run: Safari, Firefox, the live Ask evals, cloud Supabase accounts, real SMS, and a full Linux Playwright run on this machine (GitHub CI is the Linux check).
+Not run: a real iPhone, the full browser suite in WebKit or Firefox (they had a smoke pass of every page), the live Ask evals, cloud Supabase accounts, real SMS, and a full Linux Playwright run on this machine (GitHub CI is the Linux check).
