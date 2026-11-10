@@ -1,4 +1,5 @@
 import type { LngLatBoundsLike, Map as MlMap, PaddingOptions } from "maplibre-gl";
+import { gpu, noteSlowFrames, reducedMotion } from "@/lib/capability";
 
 /**
  * Coastal journeys (signature interaction §2), adapted to the device. Place changes keep their
@@ -18,23 +19,9 @@ export type CameraTier = "full" | "short" | "none";
 let probed: CameraTier | null = null;
 const KEY = "cw-camera-tier-v1";
 
-function software(): boolean {
-  try {
-    const c = document.createElement("canvas");
-    const gl = (c.getContext("webgl") ?? c.getContext("experimental-webgl")) as WebGLRenderingContext | null;
-    if (!gl) return true;
-    const ext = gl.getExtension("WEBGL_debug_renderer_info");
-    const r = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : "";
-    gl.getExtension("WEBGL_lose_context")?.loseContext();
-    return /swiftshader|llvmpipe|software|basic render|softpipe/i.test(r);
-  } catch {
-    return false;
-  }
-}
-
 export function cameraTier(): CameraTier {
   if (typeof window === "undefined") return "none";
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return "none";
+  if (reducedMotion()) return "none";
   if (probed) return probed;
   let saved: string | null = null;
   try {
@@ -42,7 +29,7 @@ export function cameraTier(): CameraTier {
   } catch {
     // not kept
   }
-  probed = saved === "short" ? "short" : software() ? "short" : "full";
+  probed = saved === "short" || gpu().software ? "short" : "full";
   return probed;
 }
 
@@ -63,6 +50,7 @@ function watchFrames(m: MlMap) {
     const s = [...times].sort((a, b) => a - b);
     if (s[Math.floor(s.length / 2)] > 33) {
       probed = "short";
+      noteSlowFrames();
       try {
         sessionStorage.setItem(KEY, "short");
       } catch {

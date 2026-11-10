@@ -79,6 +79,28 @@ test.describe("v10 currents: an honest flow field", () => {
     await flowReady(page);
   });
 
+  test("a lost WebGL context brings the currents back: MapLibre does not restore a custom layer", async ({ page }) => {
+    await open(page, "/?layer=currents&region=monterey_bay");
+    await flowReady(page);
+    const lose = () =>
+      page.evaluate(() => {
+        const m = (window as unknown as { __cwMap: { getCanvas(): HTMLCanvasElement; __lose?: WEBGL_lose_context } }).__cwMap;
+        const ext = m.getCanvas().getContext("webgl2")!.getExtension("WEBGL_lose_context")!;
+        m.__lose = ext;
+        ext.loseContext();
+      });
+    await lose();
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __cwMap: { getCanvas(): HTMLCanvasElement } }).__cwMap.getCanvas().getContext("webgl2")!.isContextLost())).toBe(true);
+    const beforeSegments = await page.evaluate(() => (window as unknown as W).__cwFlow!.stats.frames);
+    await page.evaluate(() => (window as unknown as { __cwMap: { __lose: WEBGL_lose_context } }).__cwMap.__lose.restoreContext());
+    // the layer is in the restored style and draws again, with a working footprint
+    await expect.poll(() => page.evaluate(() => (window as unknown as W).__cwMap!.getLayer("nx-flow")?.type ?? null), { timeout: 20_000 }).toBe("custom");
+    await expect.poll(() => page.evaluate(() => (window as unknown as W).__cwFlow!.stats.frames), { timeout: 20_000 }).toBeGreaterThan(beforeSegments);
+    expect(await page.evaluate(() => (window as unknown as W).__cwFlow!.stats.footprintCells)).toBeGreaterThan(0);
+    // and, like the first time, under the labels
+    expect(await page.evaluate(() => (window as unknown as W).__cwMap!.getLayersOrder().indexOf("nx-flow"))).toBeGreaterThan(-1);
+  });
+
   test("particles stay inside observed cells, at every sample (the layer's own positions against the cell mask)", async ({ page }) => {
     await open(page, "/?layer=currents&at=36.8,-122.05,10.5");
     await flowReady(page);
