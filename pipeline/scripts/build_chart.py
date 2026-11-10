@@ -409,12 +409,12 @@ def main(etopo: Path, crm: Path, out: Path) -> None:
     # ---- depth areas and isobaths
     ezs = ndimage.gaussian_filter(ez, 1.2)
     czs = ndimage.gaussian_filter(cz, 1.4)
-    depth = depth_areas(elat, elon, ezs, outside, 0.0035) + depth_areas(clat, clon, czs, inset, 0.0006)
+    depth = depth_areas(elat, elon, ezs, outside, 0.0035) + depth_areas(clat, clon, czs, inset, 0.00025)
     for f in depth:
         f["properties"]["src"] = "crm" if shape(f["geometry"]).within(inset.buffer(1e-6)) else "etopo"
     write_geojson(out / "depth.geojson", depth)
     iso = isobath_feats(elat, elon, ezs, INDEX, outside, 0.004, set(INDEX), 0.08)
-    iso += isobath_feats(clat, clon, czs, sorted(INDEX + CRM_MINOR), inset, 0.0007, set(INDEX), 0.02)
+    iso += isobath_feats(clat, clon, czs, sorted(INDEX + CRM_MINOR), inset, 0.0003, set(INDEX), 0.02)
     # minor lines in the shallows stay off the land (a smoothed grid can cross a harbour's edge)
     water_inset = water.intersection(inset)
     keep = []

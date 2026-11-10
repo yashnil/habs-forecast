@@ -1,0 +1,417 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Map as MapLibreMap } from "maplibre-gl";
+import { capability, noteContextLoss, type GraphicsTier } from "@/lib/capability";
+import { EASE_CHART, pan } from "@/nx/ds/motion";
+import { coverCamera, fitBounds, NO_INSETS, scaleBar, screenRect, unproject, type Camera, type Insets, type Viewport } from "./mercator";
+import { placeAll, type Anchor, type Rect } from "./placement";
+import { allMarks, onMarksChange, publishFrame, staticProjector, type ChartFrame } from "./runtime";
+import { getScene, subscribeScene, type ChartScene } from "./scene";
+import { setChartMap } from "./control";
+import { chartStyle, CHART_FRAME, modePaint, posterImages, readPalette } from "./style";
+import { Neatline } from "./Neatline";
+import { ChartLabels, CanyonName, type ChartPort } from "./Labels";
+
+type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null } };
+
+const bezier = (t: number) => {
+  // cubic-bezier(EASE_CHART) solved for y at x = t
+  const [x1, y1, x2, y2] = EASE_CHART;
+  const bx = (u: number) => 3 * x1 * u * (1 - u) ** 2 + 3 * x2 * u * u * (1 - u) + u ** 3;
+  const by = (u: number) => 3 * y1 * u * (1 - u) ** 2 + 3 * y2 * u * u * (1 - u) + u ** 3;
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 22; i++) {
+    const m = (lo + hi) / 2;
+    if (bx(m) < t) lo = m;
+    else hi = m;
+  }
+  return by((lo + hi) / 2);
+};
+
+/** The free area inside the sheet: room for the neatline's breath, plus whatever covers the sheet (the phone's margin sheet). */
+function sceneInsets(vp: Viewport, cover: Insets): Insets {
+  const pad = vp.width < 560 ? 20 : 44;
+  return { top: cover.top + pad, right: cover.right + pad, bottom: cover.bottom + pad, left: cover.left + pad };
+}
+
+export function cameraFor(scene: ChartScene, vp: Viewport, cover: Insets): Camera {
+  if ("cover" in scene.view) {
+    // the box covers the free part of the sheet (the phone's resting margin excluded), as the still's CSS does
+    const free = { width: vp.width, height: Math.max(1, vp.height - cover.bottom) };
+    const c = coverCamera(scene.view.cover, free, scene.view.position);
+    return { center: unproject(c, free, free.width / 2, free.height / 2 + cover.bottom / 2), zoom: c.zoom };
+  }
+  return fitBounds(scene.view.bounds, vp, sceneInsets(vp, cover), scene.view.maxZoom ?? 12.5);
+}
+
+/** How much of the sheet the margin covers (phones: the margin is a sheet over the chart's lower part). */
+function coveredInsets(frame: HTMLElement): Insets {
+  const m = document.querySelector<HTMLElement>("[data-nx-margin]");
+  if (!m) return NO_INSETS;
+  const f = frame.getBoundingClientRect();
+  const r = m.getBoundingClientRect();
+  if (r.width < f.width * 0.8 || r.top >= f.bottom || r.bottom <= f.top) return NO_INSETS;
+  return { top: 0, right: 0, bottom: Math.max(0, f.bottom - r.top), left: 0 };
+}
+
+const chartModeOf = () => document.documentElement.getAttribute("data-chart-mode") || "day";
+
+/**
+ * The persistent chart (README §9 Sheet): one MapLibre instance for every page of the route group, mounted
+ * once by its layout and never rebuilt. Pages declare scenes; the host pans to each with the `pan` preset
+ * (a jump under reduced motion). Everything written on the chart is placed here in one collision pass. The
+ * static tier (no WebGL2, data saver, offline, a saved copy, repeated context loss) never loads MapLibre: it
+ * shows the baked chart image of the same view under the same names and notes.
+ */
+export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: React.ReactNode }) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const mapEl = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
+  const [tier, setTier] = useState<GraphicsTier | null>(null);
+  const [reduced, setReduced] = useState(false);
+  const [vp, setVp] = useState<Viewport | null>(null);
+  const [cam, setCam] = useState<Camera | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [lost, setLost] = useState(false);
+  const [mode, setMode] = useState("day");
+  const [neat, setNeat] = useState({ band: 4, label: 20 });
+  const coverRef = useRef<Insets>(NO_INSETS);
+  const sceneId = useRef<string | null>(null);
+  const prevAnchors = useRef(new Map<string, Anchor>());
+  const raf = useRef(0);
+  const frameRefLatest = useRef<ChartFrame | null>(null);
+
+  // ---------------------------------------------------------------- placement of everything on the chart
+  const placeNow = useCallback(() => {
+    raf.current = 0;
+    const f = frameRefLatest.current;
+    const frameEl = frameRef.current;
+    if (!f || !frameEl) return;
+    const { width: W, height: H } = f.viewport;
+    const area: Rect = { x0: 6, y0: 6, x1: W - 6, y1: H - 6 - f.insets.bottom };
+    const obstacles: Rect[] = [];
+    const scale = frameEl.querySelector<HTMLElement>(".n12-scale");
+    if (scale) obstacles.push({ x0: 0, y0: H - f.insets.bottom - scale.offsetHeight - 16, x1: scale.offsetWidth + 24, y1: H });
+    const canyon = frameEl.querySelector<SVGGraphicsElement>(".n12-canyon-name text");
+    if (canyon && canyon.getAttribute("visibility") !== "hidden") {
+      const b = canyon.getBBox();
+      if (b.width) obstacles.push({ x0: b.x, y0: b.y, x1: b.x + b.width, y1: b.y + b.height });
+    }
+    const z = f.camera.zoom;
+    const entries = allMarks().filter((e) => (e.spec.minZoom ?? -1) <= z && z <= (e.spec.maxZoom ?? 99));
+    const items = entries.map((e) => {
+      const p = f.project(e.spec.lon, e.spec.lat);
+      return { ...e.spec, x: p.x, y: p.y, width: e.w, height: e.h };
+    });
+    const placed = placeAll(items, area, obstacles, prevAnchors.current);
+    const shown = new Set<string>();
+    const leaders: string[] = [];
+    placed.forEach((pl, i) => {
+      const e = entries[i];
+      const it = items[i];
+      if (pl.visible) {
+        shown.add(pl.id);
+        prevAnchors.current.set(pl.id, pl.anchor);
+        e.el.style.transform = `translate(${Math.round(pl.left)}px, ${Math.round(pl.top)}px)`;
+        e.el.style.visibility = "visible";
+        e.el.dataset.anchor = pl.anchor;
+        e.el.style.setProperty("--nx-px", `${Math.round(it.x - pl.left)}px`);
+        e.el.style.setProperty("--nx-py", `${Math.round(it.y - pl.top)}px`);
+        if (e.spec.leader) {
+          // from the point to the nearest corner of the box's near edge
+          const bx = Math.min(Math.max(it.x, pl.left), pl.left + it.width);
+          const by = it.y < pl.top ? pl.top : it.y > pl.top + it.height ? pl.top + it.height : pl.top + it.height / 2;
+          const ex = it.x < pl.left ? pl.left : it.x > pl.left + it.width ? pl.left + it.width : bx;
+          leaders.push(`<line x1="${it.x.toFixed(1)}" y1="${it.y.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${by.toFixed(1)}"/><circle cx="${it.x.toFixed(1)}" cy="${it.y.toFixed(1)}" r="4"/>`);
+        }
+      } else e.el.style.visibility = "hidden";
+      const pt = e.el.previousElementSibling as HTMLElement | null;
+      if (pt?.dataset.nxPoint === e.spec.id) {
+        pt.style.transform = `translate(${Math.round(it.x)}px, ${Math.round(it.y)}px)`;
+        pt.style.visibility = pl.visible ? "visible" : "hidden";
+      }
+    });
+    const svg = frameEl.querySelector(".n12-leaders");
+    if (svg) svg.innerHTML = leaders.join("");
+    for (const e of allMarks()) {
+      if (shown.has(e.spec.id)) continue;
+      e.el.style.visibility = "hidden";
+      const pt = e.el.previousElementSibling as HTMLElement | null;
+      if (pt?.dataset.nxPoint === e.spec.id) pt.style.visibility = "hidden";
+    }
+  }, []);
+
+  const schedule = useCallback(() => {
+    if (!raf.current) raf.current = requestAnimationFrame(placeNow);
+  }, [placeNow]);
+
+  const publish = useCallback(
+    (camera: Camera, viewport: Viewport, live: boolean) => {
+      const m = mapRef.current;
+      const project = live && m ? (lon: number, lat: number) => m.project([lon, lat]) : staticProjector(camera, viewport);
+      const f: ChartFrame = { camera, viewport, insets: coverRef.current, project, live };
+      frameRef.current?.style.setProperty("--nx-cover-bottom", `${coverRef.current.bottom}px`);
+      frameRefLatest.current = f;
+      publishFrame(f);
+      setCam(camera);
+      schedule();
+      const w = window as Win;
+      if (w.__nxChart) w.__nxChart.camera = camera;
+    },
+    [schedule],
+  );
+
+  // ---------------------------------------------------------------- capability, mode, size
+  useEffect(() => {
+    const c = capability();
+    setTier(c.tier);
+    setReduced(c.reducedMotion);
+    setMode(chartModeOf());
+    const w = window as Win;
+    w.__nxChart ??= { inits: 0, map: null, tier: c.tier, camera: null, scene: null };
+    w.__nxChart.tier = c.tier;
+    const mo = new MutationObserver(() => setMode(chartModeOf()));
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-chart-mode"] });
+    const mq = matchMedia("(prefers-reduced-motion: reduce)");
+    const onMq = () => setReduced(mq.matches);
+    mq.addEventListener("change", onMq);
+    return () => {
+      mo.disconnect();
+      mq.removeEventListener("change", onMq);
+    };
+  }, []);
+
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      coverRef.current = coveredInsets(el);
+      const cs = getComputedStyle(el);
+      setNeat((o) => {
+        const band = parseFloat(cs.getPropertyValue("--neat-band")) || 4;
+        const label = parseFloat(cs.getPropertyValue("--neat-label")) || 20;
+        return o.band === band && o.label === label ? o : { band, label };
+      });
+      setVp((v) => (v && Math.abs(v.width - r.width) < 0.5 && Math.abs(v.height - r.height) < 0.5 ? v : { width: Math.round(r.width), height: Math.round(r.height) }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    const margin = () => document.querySelector("[data-nx-margin]");
+    const m0 = margin();
+    if (m0) ro.observe(m0);
+    // the margin is re-rendered per page: watch for a new one
+    const mo = new MutationObserver(() => {
+      const m = margin();
+      if (m) ro.observe(m);
+      measure();
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
+  }, []);
+
+  // ---------------------------------------------------------------- the map (once)
+  useEffect(() => {
+    if (tier === null || tier === "static" || !mapEl.current || mapRef.current) return;
+    let cancelled = false;
+    let destroy = () => {};
+    (async () => {
+      const ml = await import("maplibre-gl");
+      if (cancelled || !mapEl.current) return;
+      // MapLibre 6's worker is an ES module the bundler does not emit (scripts/copy-maplibre-worker.mjs)
+      ml.setWorkerUrl("/vendor/maplibre/maplibre-gl-worker.mjs");
+      const palette = readPalette();
+      const op = document.documentElement.getAttribute("data-nx-opening");
+      const hidden = op === "on" || op === "run";
+      const scene = getScene();
+      const box = mapEl.current.getBoundingClientRect();
+      const viewport = { width: box.width, height: box.height };
+      const start = scene ? cameraFor(scene, viewport, coveredInsets(frameRef.current!)) : { center: [-120.5, 37] as [number, number], zoom: 5 };
+      const [w, s, e, n] = CHART_FRAME.ca;
+      const map = new ml.Map({
+        container: mapEl.current,
+        style: chartStyle(palette, location.origin, { hidden }),
+        center: start.center,
+        zoom: start.zoom,
+        minZoom: 4.6,
+        maxZoom: 13.5,
+        maxBounds: [
+          [w, s],
+          [e, n],
+        ],
+        renderWorldCopies: false,
+        attributionControl: false,
+        dragRotate: false,
+        pitchWithRotate: false,
+        touchPitch: false,
+        trackResize: false,
+        fadeDuration: 0,
+        pixelRatio: Math.min(window.devicePixelRatio || 1, tier === "full" ? 2 : 1.5),
+        canvasContextAttributes: { antialias: true },
+      });
+      map.touchZoomRotate.disableRotation();
+      map.keyboard.disableRotation();
+      const win = window as Win;
+      win.__nxChart!.inits += 1;
+      win.__nxChart!.map = map;
+      win.__cwMap = map;
+      mapRef.current = map;
+      setChartMap(map, false);
+      const onMove = () => {
+        const c = map.getCenter();
+        const cvs = map.getCanvas();
+        publish({ center: [c.lng, c.lat], zoom: map.getZoom() }, { width: cvs.clientWidth, height: cvs.clientHeight }, true);
+      };
+      map.on("move", onMove);
+      map.once("idle", () => {
+        if (cancelled) return;
+        setMapReady(true);
+        setChartMap(map, true);
+        onMove();
+      });
+      const canvas = map.getCanvas();
+      canvas.setAttribute("aria-label", "Chart of the California coast");
+      const onLost = (ev: Event) => {
+        ev.preventDefault();
+        noteContextLoss();
+        setLost(true);
+        if (capability().tier === "static") setTier("static");
+      };
+      const onRestored = () => {
+        setLost(false);
+        const sc = getScene();
+        const cvs = map.getCanvas();
+        if (sc) {
+          const c = cameraFor(sc, { width: cvs.clientWidth, height: cvs.clientHeight }, coverRef.current);
+          map.jumpTo({ center: c.center, zoom: c.zoom });
+        }
+      };
+      canvas.addEventListener("webglcontextlost", onLost);
+      canvas.addEventListener("webglcontextrestored", onRestored);
+      destroy = () => {
+        canvas.removeEventListener("webglcontextlost", onLost);
+        canvas.removeEventListener("webglcontextrestored", onRestored);
+        map.remove();
+        mapRef.current = null;
+        setChartMap(null);
+      };
+    })();
+    return () => {
+      cancelled = true;
+      destroy();
+    };
+  }, [tier, publish]);
+
+  // static tier: drop a map that was running (a second context loss)
+  useEffect(() => {
+    if (tier === "static" && mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+      setChartMap(null);
+      setMapReady(false);
+    }
+  }, [tier]);
+
+  // ---------------------------------------------------------------- mode
+  useEffect(() => {
+    const m = mapRef.current;
+    if (!m || !mapReady) return;
+    const p = readPalette();
+    for (const [layer, prop, value] of modePaint(p)) if (m.getLayer(layer)) m.setPaintProperty(layer, prop as Parameters<MapLibreMap["setPaintProperty"]>[1], value as Parameters<MapLibreMap["setPaintProperty"]>[2]);
+  }, [mode, mapReady]);
+
+  // ---------------------------------------------------------------- scenes
+  const applyScene = useCallback(
+    (animate: boolean) => {
+      const scene = getScene();
+      const el = frameRef.current;
+      if (!scene || !el || !vp) return;
+      coverRef.current = coveredInsets(el);
+      const target = cameraFor(scene, vp, coverRef.current);
+      const m = mapRef.current;
+      const w = window as Win;
+      if (w.__nxChart) w.__nxChart.scene = scene.id;
+      document.documentElement.dataset.nxScene = scene.id;
+      if (m) {
+        const interactive = scene.interactive !== false;
+        for (const h of [m.dragPan, m.scrollZoom, m.boxZoom, m.doubleClickZoom, m.touchZoomRotate, m.keyboard]) {
+          if (interactive) h.enable();
+          else h.disable();
+        }
+        const opening = document.documentElement.getAttribute("data-nx-opening");
+        const still = !animate || reduced || opening === "on" || opening === "run";
+        if (still) m.jumpTo({ center: target.center, zoom: target.zoom });
+        else m.easeTo({ center: target.center, zoom: target.zoom, duration: tier === "reduced" ? 300 : (pan.duration as number) * 1000, easing: bezier, essential: false });
+      } else publish(target, vp, false);
+    },
+    [vp, reduced, tier, publish],
+  );
+
+  useEffect(() => {
+    const onScene = () => {
+      const s = getScene();
+      const fresh = s?.id !== sceneId.current;
+      sceneId.current = s?.id ?? null;
+      applyScene(fresh);
+    };
+    onScene();
+    return subscribeScene(onScene);
+  }, [applyScene]);
+
+  // a new size: resize the canvas (only on a real change; the phone's address bar does not reach here) and re-fit
+  useEffect(() => {
+    const m = mapRef.current;
+    if (m && vp) m.resize();
+    applyScene(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vp?.width, vp?.height]);
+
+  useEffect(() => onMarksChange(schedule), [schedule]);
+
+  const showPoster = tier === "static" || !mapReady || lost;
+  const scale = cam && vp ? scaleBar(cam.center[1], cam.zoom, Math.min(240, vp.width * 0.3)) : null;
+
+  return (
+    <div className="n12-sheet" data-testid="nx-sheet" data-tier={tier ?? "pending"} data-map-ready={mapReady ? "1" : "0"}>
+      <div className="n12-frame" ref={frameRef}>
+        {showPoster && cam && vp ? (
+          <div className="n12-poster" data-testid="nx-poster" aria-hidden="true">
+            {posterImages(mode).map((img) => {
+              const r = screenRect(cam, vp, img.bounds);
+              // eslint-disable-next-line @next/next/no-img-element
+              return <img key={img.url} src={img.url} alt="" style={{ left: r.left, top: r.top, width: r.width, height: r.height }} decoding="async" />;
+            })}
+          </div>
+        ) : null}
+        <div className="n12-map" ref={mapEl} data-testid="nx-map" />
+        {opening}
+        <div className="n12-overlay" data-testid="nx-overlay">
+          <CanyonName />
+          <svg className="n12-leaders" aria-hidden="true" />
+          <ChartLabels ports={ports} />
+          <div id="nx-chart-marks" className="n12-marks" />
+        </div>
+        {scale ? (
+          <div className="n12-scale" aria-label={`Scale bar ${scale.label}. Not for navigation.`}>
+            <span className="n12-scale-bar" style={{ width: scale.px }}>
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+            <span className="n12-scale-text">{scale.label}. Not for navigation.</span>
+          </div>
+        ) : null}
+        <p className="n12-attrib">
+          Depth NOAA ETOPO, CRM · Coast © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
+        </p>
+        <Neatline camera={cam} viewport={vp} band={neat.band} label={neat.label} />
+      </div>
+    </div>
+  );
+}
