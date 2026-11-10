@@ -256,3 +256,39 @@ html[data-daylight] .today .nx-topbar[data-over]:not([data-solid]) {
 }
 /* the whole coast: the only moving layer is the measured currents, so their line is the whole caption */
 .today-stage.today-stage-coast .nx-stage-cap > .nx-stage-cap-t { display: none; }
+
+/* ---- the port picker: the map is the whole first screen, and nothing rises over it ---- */
+.today.today-front { --today-stage-h: 100svh; }
+.today-front .today-stage { position: relative; }
+.today-front-foot { max-width: var(--t-max); margin: 0 auto; padding: 0 var(--t-gutter); }
+.today-browse { display: inline-flex; min-height: 44px; align-items: center; gap: 8px; margin-top: 14px; margin-left: -10px; padding: 0 10px; border-radius: var(--nx-r-12); font-size: 15px; font-weight: 500; color: var(--nx-ink-2); transition: color var(--nx-t-hover) var(--nx-ease-out), background-color var(--nx-t-hover) var(--nx-ease-out); }
+@media (hover: hover) { .today-browse:hover { background: color-mix(in srgb, var(--nx-ink) 8%, transparent); color: var(--nx-ink); } }
+.today-directory-filter { display: flex; min-height: 48px; align-items: center; gap: 8px; margin-top: 12px; padding: 0 12px; border-radius: var(--nx-r-12); background: var(--nx-surface-2); }
+/* the field runs under the close button, to the list's own right edge (46 px: the button and its gap); one ring, on the field */
+.today-directory-filter { margin-right: -46px; }
+.today-directory-filter:focus-within { outline: 2px solid var(--nx-ink); outline-offset: 1px; }
+.today-directory-filter input:focus, .today-directory-filter input:focus-visible { outline: none; box-shadow: none; }
+.today-directory-row { display: flex; min-height: 48px; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--nx-line); font-size: 15.5px; color: var(--nx-ink); }
+.today-directory-where { flex: none; font-size: 13px; color: var(--nx-ink-2); }
+@media (max-width: 767px) {
+  /* one height while filtering: the sheet does not jump as the list shortens */
+  .today-directory.nx-msheet { height: 86dvh; }
+  .today-directory .nx-msheet-inner { height: 100%; }
+  /* the words end above the phone dock */
+  .today-front .today-stage .today-over { padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+  /* one caption line for the coast (the caption's own label repeats it), clear of the title */
+  .today-stage.today-stage-coast .nx-stage-cap > .nx-stage-cap-t { display: none !important; }
+  .today-front .today-pick { gap: 10px 14px; }
+  .today-front .today-pick .today-gl { display: block; }
+  .today-front .today-pick .today-gl-v { font-size: 22px; line-height: 26px; }
+}
+@media (min-width: 768px) and (max-width: 1023px) { .today-front .today-stage .today-over { padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); } }
+/* a short desktop window: the title gives way so the ports and the action stay on the first screen */
+@media (min-width: 768px) and (max-height: 760px) {
+  .today-front .today-over { padding-top: calc(var(--nx-bar-h, 64px) + 24px); padding-bottom: 16px; }
+  .today-front .nx-display-hero { font-size: clamp(44px, 10vh, 76px); line-height: 1; }
+  .today-front .today-lede { margin-top: 8px; font-size: 19px; line-height: 25px; max-width: 60ch; }
+  .today-front .today-pick { margin-top: 10px; }
+  .today-front .today-pick .today-gl-v { font-size: 24px; line-height: 28px; }
+  .today-front .today-browse { margin-top: 6px; }
+}

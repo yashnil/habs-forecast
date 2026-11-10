@@ -34,7 +34,7 @@ function lockScroll() {
  * Use for: a row's or a place's detail.
  * Do not use for: anything short enough for a Fold, or confirmations.
  */
-export function Sheet({ open, onClose, title, children, modal = true, closeLabel = "Close", testid, className = "", head }: { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; modal?: boolean; closeLabel?: string; testid?: string; className?: string; /** beside the title, above the content (a status tag) */ head?: ReactNode }) {
+export function Sheet({ open, onClose, title, children, modal = true, closeLabel = "Close", testid, className = "", head, initialFocus }: { initialFocus?: { current: HTMLElement | null }; open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; modal?: boolean; closeLabel?: string; testid?: string; className?: string; /** beside the title, above the content (a status tag) */ head?: ReactNode }) {
   const [exitMs, setExitMs] = useState(EXIT_MS);
   const { mounted, state } = usePresence(open, prefersReducedMotionSafe() ? 120 : exitMs);
   const dialog = useRef<HTMLDialogElement | null>(null);
@@ -56,7 +56,7 @@ export function Sheet({ open, onClose, title, children, modal = true, closeLabel
       if (modal) d.showModal();
       else d.show();
     }
-    titleRef.current?.focus({ preventScroll: true });
+    (initialFocus?.current ?? titleRef.current)?.focus({ preventScroll: true });
     const unlock = modal ? lockScroll() : null;
     return () => {
       unlock?.();
@@ -65,6 +65,7 @@ export function Sheet({ open, onClose, title, children, modal = true, closeLabel
       if (o?.isConnected) o.focus({ preventScroll: true });
       opener.current = null;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- where focus lands is decided once, on opening
   }, [mounted, modal]);
 
   // a non-modal sheet has no browser-provided Escape
