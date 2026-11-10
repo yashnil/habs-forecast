@@ -6,7 +6,7 @@ import type { FieldKey, Output, TripEvaluation } from "@/lib/tripEvaluation";
 import type { Draft } from "@/lib/tripEconomicsStore";
 import { Caps } from "@/v4/coast/ui/Instrument";
 import { useWidth } from "@/v4/charts/useWidth";
-import { gapsOf, money, needLabel, valueOf } from "./model";
+import { SENSITIVITY_HELD, fuelBreakEvenWords, gapsOf, money, needLabel, valueOf, waterfallDomain } from "./model";
 
 /**
  * The worksheet's results (v10): each result appears the moment its own inputs exist; one that cannot
@@ -118,10 +118,7 @@ export function Waterfall({ ev, draft }: { ev: TripEvaluation; draft: Draft; onF
     { key: "net", label: "Net to boat", o: ev.netToBoat, sign: 0, testId: "econ-r-net" },
   ];
   const g = valueOf(ev.gross);
-  const net = valueOf(ev.netToBoat);
-  const deductions = rows.filter((r) => r.sign === -1).map((r) => valueOf(r.o) ?? 0);
-  const hi = Math.max(g ?? 0, deductions.reduce((a, b) => a + b, 0), 1);
-  const lo = Math.min(0, net ?? 0);
+  const { hi, lo } = waterfallDomain(g, rows.filter((r) => r.sign === -1).map((r) => valueOf(r.o)), valueOf(ev.netToBoat));
   const H = 292;
   const top = 34;
   const base = H - 52;
@@ -163,7 +160,7 @@ export function Waterfall({ ev, draft }: { ev: TripEvaluation; draft: Draft; onF
         {i < rows.length - 1 && running !== null && (
           <line x1={x + colW} x2={x + colW + gap} y1={y(r.sign === 1 ? v! : running)} y2={y(r.sign === 1 ? v! : running)} className="econ-w-link" />
         )}
-        <text x={x + colW / 2} y={missing ? (top + base) / 2 + 4 : Math.min(y(r.sign === 0 ? Math.max(0, v!) : r.sign === 1 ? v! : Math.max(running ?? hi, 0) + (v ?? 0)) - 8, base - 6)} textAnchor="middle" className={`econ-w-value ${v === null ? "is-na" : v < 0 && r.sign === 0 ? "is-loss" : ""}`} data-testid={r.testId}>
+        <text x={x + colW / 2} y={missing ? (top + base) / 2 + 4 : Math.min(y(r.sign === 0 ? Math.max(0, v!) : r.sign === 1 ? v! : running !== null ? running + (v ?? 0) : hi) - 8, base - 6)} textAnchor="middle" className={`econ-w-value ${v === null ? "is-na" : v < 0 && r.sign === 0 ? "is-loss" : ""}`} data-testid={r.testId}>
           {valueText}
         </text>
         <text x={x + colW / 2} y={base + 18} textAnchor="middle" className={`econ-w-label ${r.sign === 0 ? "is-net" : ""}`}>
@@ -257,7 +254,7 @@ export function BreakEven({ ev, draft, onFocus, wu }: { ev: TripEvaluation; draf
           </>
         )}{" "}
         {bp.status === "value" && lb !== null && <>At {W(lb)} {unit}, net reaches $0 at {P(bp.value)}. </>}
-        {bf.status === "value" && <>Fuel would have to reach ${bf.value.toFixed(2)}/gal.</>}
+        {bf.status === "value" && <>Fuel would have to reach {fuelBreakEvenWords(bf.value)}.</>}
       </p>
     </figure>
   );
@@ -302,6 +299,7 @@ export function Sensitivity({ ev, draft, onFocus, wu }: { ev: TripEvaluation; dr
       <table className="w-full table-fixed border-collapse text-right" data-testid="econ-sensitivity">
         <caption className="mb-2 text-left">
           <Caps>Net to boat if price (rows) or catch (columns) differ</Caps>
+          <span className="mt-0.5 block text-[12.5px] leading-snug text-n-ink-2" data-testid="econ-grid-held">{SENSITIVITY_HELD}</span>
         </caption>
         <thead>
           <tr className="text-[11.5px] text-n-ink-2">

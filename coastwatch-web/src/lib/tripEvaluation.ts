@@ -8,7 +8,8 @@
  * - partial results: each output appears as soon as its own inputs exist (gross before fuel, fuel
  *   cost before crew, break-even catch before the catch itself);
  * - field-level gaps (`missing: FieldKey[]`), never a dash without a reason;
- * - the module's implicit zeros returned as data (`assumptions`), e.g. "steaming not counted";
+ * - the module's implicit values returned as data (`assumptions`), e.g. a blank fee, or fuel taken
+ *   off before crew shares when nobody chose that (a blank fuel leg is not one of them: it is a gap);
  * - a crew model that may be unset (no default: net waits for it) or "none" (no hired crew);
  * - a cost-only mode for recreational trips (no price, gross, crew or net);
  * - a comparison of two scenarios (differing inputs and result deltas).
@@ -17,7 +18,7 @@
  * are the user's own inputs worked through.
  */
 
-import { computeTrip, fuelGallons as fuelGallons_, sanitizeInputs, clampNum, type CrewKind, type CrewModel, type SensitivityCell, type TripInputs } from "./tripEconomics";
+import { computeTrip, fuelGallons as fuelGallons_, sanitizeInputs, clampNum, LIMITS, type CrewKind, type CrewModel, type SensitivityCell, type TripInputs } from "./tripEconomics";
 
 // ---------------------------------------------------------------- inputs
 
@@ -34,6 +35,10 @@ export type TripScenario = Omit<TripInputs, "crew"> & {
 };
 
 export type Audience = "commercial" | "recreational";
+
+/** The weighing unit worked sums are written in: `w` scales pounds, `p` scales $/lb. The arithmetic stays in pounds. */
+export type WeightUnit = { unit: "lb" | "kg" | "ton"; w: number; p: number };
+const POUNDS: WeightUnit = { unit: "lb", w: 1, p: 1 };
 
 /** An input field the UI can name and focus. Catch and cost indexes are positions in the scenario's own arrays. */
 export type FieldKey =
@@ -245,8 +250,12 @@ function clean(s: TripScenario): Clean {
 
 // ---------------------------------------------------------------- the evaluation
 
-export function evaluateTrip(scenario: TripScenario, opts: { audience?: Audience } = {}): TripEvaluation {
+export function evaluateTrip(scenario: TripScenario, opts: { audience?: Audience; weight?: WeightUnit } = {}): TripEvaluation {
   const audience: Audience = opts.audience === "recreational" ? "recreational" : "commercial";
+  const wu = opts.weight ?? POUNDS;
+  /** an amount in pounds and a price per pound, as the worksheet reads them */
+  const w = (lb: number, d = wu.unit === "ton" ? 2 : 1) => `${n(lb * wu.w, d)} ${wu.unit}`;
+  const pw = (usdPerLb: number) => $p(usdPerLb * wu.p);
   const rec = audience === "recreational";
   const { inputs: i, crewKind, anglers } = clean(scenario);
   const crew = i.crew!;
@@ -283,24 +292,21 @@ export function evaluateTrip(scenario: TripScenario, opts: { audience?: Audience
     const a: Assumption[] = steamStarted || fishStarted ? [{ field: "fuelGal", note: "Gallons entered directly: distance, speed and burn are not used." }] : [];
     fuelGallons = value(i.fuelGal, `Fuel ${n(i.fuelGal)} gal (entered)`, a);
   } else if (gal !== null) {
-    const a: Assumption[] = [];
     const parts: string[] = [];
     if (steamKnown) parts.push(steamBody);
     else if (nm === 0) parts.push("no steaming (0 nm)");
-    else a.push({ field: "roundTripNm", note: "Steaming not counted: no round trip entered. Add it to include steaming." });
     if (fishKnown) parts.push(fishBody);
     else if (hrs === 0) parts.push("no fishing time (0 h)");
-    else a.push({ field: "fishingHours", note: "Fishing time not counted: no hours fishing entered. Add them to include fishing." });
-    fuelGallons = value(gal, `Fuel ${n(gal)} gal = ${parts.join(" + ")}`, a);
+    fuelGallons = value(gal, `Fuel ${n(gal)} gal = ${parts.join(" + ")}`);
   } else if (!steamStarted && !fishStarted) {
     fuelGallons = missing(["fuelGal"], "Fuel used: enter the gallons, or the trip's distance, speed and burn.", [
       ["roundTripNm", "cruiseKt", "steamGph"],
       ["fishingHours", "fishingGph"],
     ]);
   } else {
-    // a started leg that is incomplete is what blocks; with nothing blocking, any one leg completes it
-    const steamBlocks = !steamKnown && known(nm) && nm > 0;
-    const fishBlocks = !fishKnown && known(hrs) && hrs > 0;
+    // a leg not worked out and not set to 0 blocks the total: a blank leg is unknown, never nothing
+    const steamBlocks = !steamKnown && nm !== 0;
+    const fishBlocks = !fishKnown && hrs !== 0;
     let need: FieldKey[];
     let alternatives: FieldKey[][];
     if (steamBlocks || fishBlocks) {
@@ -314,7 +320,8 @@ export function evaluateTrip(scenario: TripScenario, opts: { audience?: Audience
     }
     const kept = steamKnown ? "steaming" : fishKnown ? "fishing" : null;
     const say = need.map(fieldLabel).join(", ");
-    fuelGallons = missing(need, kept ? `Fuel needs ${say}; the ${kept} leg is worked out and kept.` : `Fuel needs ${say}.`, alternatives);
+    const zero = steamBlocks && !steamStarted ? " Enter 0 nm if there is no steaming." : fishBlocks && !fishStarted ? " Enter 0 hours if there is no fishing." : "";
+    fuelGallons = missing(need, `${kept ? `Fuel needs ${say}; the ${kept} leg is worked out and kept.` : `Fuel needs ${say}.`}${zero}`, alternatives);
   }
   // ---- fuel cost
   let fuelCost: Output;
@@ -405,7 +412,7 @@ export function evaluateTrip(scenario: TripScenario, opts: { audience?: Audience
   }
   const R = catchGaps.length === 0 ? lines.reduce((a, l) => a + l.lb! * l.usdPerLb!, 0) : null;
   const Q = catchGaps.length === 0 ? lines.reduce((a, l) => a + l.lb!, 0) : null;
-  const gross: Output = R !== null ? value(R, `Gross ${$(R)} = ${lines.map((l) => `${n(l.lb!, 2)} lb × ${$p(l.usdPerLb!)}`).join(" + ")}`) : missing(catchGaps, "Gross needs pounds landed and the price per pound.");
+  const gross: Output = R !== null ? value(R, `Gross ${$(R)} = ${lines.map((l) => `${w(l.lb!, 2)} × ${pw(l.usdPerLb!)}`).join(" + ")}`) : missing(catchGaps, "Gross needs pounds landed and the price per pound.");
 
   // ---- fees (blank = none, said so)
   const feeAssumptions: Assumption[] = [];
@@ -417,7 +424,7 @@ export function evaluateTrip(scenario: TripScenario, opts: { audience?: Audience
   if (R === null || Q === null) fees = missing(catchGaps, "Fees need the gross and pounds landed.");
   else {
     const f = R * tau + u * Q;
-    const parts = [known(i.feesPctOfGross) && i.feesPctOfGross > 0 ? `${n(i.feesPctOfGross, 2)} % × ${$(R)}` : null, known(i.feesUsdPerLb) && i.feesUsdPerLb > 0 ? `${$p(i.feesUsdPerLb)}/lb × ${n(Q, 2)} lb` : null].filter(Boolean);
+    const parts = [known(i.feesPctOfGross) && i.feesPctOfGross > 0 ? `${n(i.feesPctOfGross, 2)} % × ${$(R)}` : null, known(i.feesUsdPerLb) && i.feesUsdPerLb > 0 ? `${pw(i.feesUsdPerLb)}/${wu.unit} × ${w(Q, 2)}` : null].filter(Boolean);
     fees = value(f, parts.length ? `Fees ${$(f)} = ${parts.join(" + ")}` : "Fees $0 (none entered)", feeAssumptions);
   }
 
@@ -461,6 +468,8 @@ export function evaluateTrip(scenario: TripScenario, opts: { audience?: Audience
       const N = R * (1 - tau) - u * Q - D;
       const pay = N > 0 ? s * N : 0;
       const a = [...(isVal(fees) ? fees.assumptions : []), ...costAssumptions, ...(fuelShared && isVal(fuelCost) ? fuelCost.assumptions : [])];
+      // the one case where who pays for fuel moves the money, so an unmade choice is stated, never silent
+      if (typeof scenario.fuelShared !== "boolean" && fu > 0 && s > 0) a.push({ field: "fuelShared", note: "Fuel is taken off before crew shares because that box has not been changed. Untick it if the boat pays for fuel." });
       crewPay = value(pay, N > 0 ? `Crew pay ${$(pay)} = ${n(crew.pct!, 2)} % × ${$(N)} (gross − fees − shared costs)` : `Crew pay $0: gross − fees − shared costs is ${$(N)}, nothing to share`, a);
     }
   }
@@ -495,20 +504,20 @@ export function evaluateTrip(scenario: TripScenario, opts: { audience?: Audience
   const beLbNeed: FieldKey[] = [...(primary && known(primary.usdPerLb) ? [] : [`catch.${pIdx}.usdPerLb` as FieldKey]), ...otherGaps, ...costGap, ...crewGap];
   let breakEvenCatch: Output;
   if (beLbNeed.length) breakEvenCatch = missing(beLbNeed, "Break-even catch needs the price per pound, the trip cost and how crew is paid (not the catch itself).", costAlt && !otherGaps.length && !crewGap.length && primary && known(primary.usdPerLb) ? costAlt : undefined);
-  else breakEvenCatch = fromBreakEven(ref.breakEvenLb, (v) => `Break-even catch ${n(v)} lb${unit}: net to boat reaches $0 at ${$p(primary!.usdPerLb!)}/lb`, beA, "No catch covers the costs at this price: fees and crew pay take all of each pound's value.");
+  else breakEvenCatch = fromBreakEven(ref.breakEvenLb, (v) => `Break-even catch ${w(v)}${unit}: net to boat reaches $0 at ${pw(primary!.usdPerLb!)}/${wu.unit}`, beA, "No catch covers the costs at this price: fees and crew pay take all of each pound's value.");
 
   const beUsdNeed: FieldKey[] = [...(primary && known(primary.lb) ? [] : [`catch.${pIdx}.lb` as FieldKey]), ...otherGaps, ...costGap, ...crewGap];
   let breakEvenPrice: Output;
   if (beUsdNeed.length) breakEvenPrice = missing(beUsdNeed, "Break-even price needs the pounds landed, the trip cost and how crew is paid (not the price itself).", costAlt && !otherGaps.length && !crewGap.length && primary && known(primary.lb) ? costAlt : undefined);
-  else breakEvenPrice = fromBreakEven(ref.breakEvenUsdPerLb, (v) => `Break-even price ${$p(v)}/lb${unit}: net to boat reaches $0 at ${n(primary!.lb!, 2)} lb`, beA, primary!.lb === 0 ? "No price covers the costs with 0 lb landed." : "No price covers the costs: fees and crew share take all of the gross.");
+  else breakEvenPrice = fromBreakEven(ref.breakEvenUsdPerLb, (v) => `Break-even price ${pw(v)}/${wu.unit}${unit}: net to boat reaches $0 at ${w(primary!.lb!, 2)}`, beA, primary!.lb === 0 ? "No price covers the costs with 0 lb landed." : "No price covers the costs: fees and crew share take all of the gross.");
 
   const beFuelNeed: FieldKey[] = [...netNeed, ...(isVal(fuelGallons) ? [] : gaps(fuelGallons))];
   let breakEvenFuelPrice: Output;
   if (beFuelNeed.length) breakEvenFuelPrice = missing(uniq(beFuelNeed), "Break-even fuel price needs everything net to boat needs.", catchGaps.length || crewGap.length ? undefined : costAlt);
-  else breakEvenFuelPrice = fromBreakEven(ref.breakEvenFuelUsdPerGal, (v) => `Break-even fuel price ${$p(v)}/gal: net to boat reaches $0 at ${n((fuelGallons as Value<number>).value)} gal`, allA, (fuelGallons as Value<number>).value === 0 ? "No fuel is used, so the fuel price does not move net." : "Net to boat is below $0 even with free fuel.");
+  else breakEvenFuelPrice = fromBreakEven(ref.breakEvenFuelUsdPerGal, (v) => `Break-even fuel price ${v > LIMITS.usdPerGal ? `above $${LIMITS.usdPerGal}` : $p(v)}/gal: net to boat reaches $0 at ${n((fuelGallons as Value<number>).value)} gal`, allA, (fuelGallons as Value<number>).value === 0 ? "No fuel is used, so the fuel price does not move net." : "Net to boat is below $0 even with free fuel.");
 
   const sensitivity: Output<SensitivityCell[]> = isVal(netToBoat) && ref.sensitivity
-    ? value(ref.sensitivity, `Net to boat at price −20 / 0 / +20 % × catch −30 / 0 / +30 %; the centre is your ${$(netToBoat.value)}`, allA)
+    ? value(ref.sensitivity, `Net to boat at price −20 / 0 / +20 % × catch −30 / 0 / +30 %, fuel, other costs and day-rate pay held as entered; the centre is your ${$(netToBoat.value)}`, allA)
     : missing(netNeed, "The price × catch grid needs everything net to boat needs.", (netToBoat as Missing).alternatives);
   const fuelSensitivity: Output<FuelSensitivity> = isVal(netToBoat) && ref.fuelSensitivity
     ? value({ ...ref.fuelSensitivity, measure: "netToBoat" as const }, `Net to boat with fuel −20 % ${$(ref.fuelSensitivity.down)}, +20 % ${$(ref.fuelSensitivity.up)}`, allA)
