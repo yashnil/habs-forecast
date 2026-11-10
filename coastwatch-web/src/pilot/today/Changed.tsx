@@ -1,5 +1,6 @@
 "use client";
 
+import { stableFormat } from "@/lib/time";
 import { useEffect, useRef, useState } from "react";
 import type { PortFact } from "@/pilot/contracts";
 import { diffFacts, snapFacts, type FactChange } from "@/pilot/facts";
@@ -34,7 +35,7 @@ export function WhatChanged({ place, facts, ready, now }: { place: string; facts
         testid="changed-fold"
         title={
           <span data-testid="changed-summary">
-            {diff.changes.length} change{diff.changes.length > 1 ? "s" : ""} in Neritic&rsquo;s records since your last visit, {PT.format(new Date(diff.since))}
+            {diff.changes.length} change{diff.changes.length > 1 ? "s" : ""} in Neritic&rsquo;s records since your last visit, {stableFormat(PT, new Date(diff.since))}
           </span>
         }
       >

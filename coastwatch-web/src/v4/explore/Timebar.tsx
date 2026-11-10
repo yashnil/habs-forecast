@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Manifest } from "@/generated/schema";
 import { charmRun, satelliteDays, satelliteLatest, type CharmVariable, type SatProduct } from "@/lib/layers";
 import { currentsHourly, currentsMean, defaultHour, observedCells, usableHours } from "@/lib/currents";
-import { dtf, pacificToday } from "@/lib/time";
+import { dtf, pacificToday, stableFormat } from "@/lib/time";
 import { Icon } from "@/v4/ui/Icon";
 import { clockLabel, dayLabel } from "@/v4/ui/time";
 import { runDays, type LayerChoice } from "./layers";
@@ -459,7 +459,7 @@ export function TimeRail({
   // target; the rail scrolls sideways when its frames would be narrower than a finger
   const chips = compact ? marks.filter((x) => x.step && x.row === 1) : [];
   const minPx = compact ? Math.ceil((hi - lo) * 46) : 0;
-  const nowIso = now ? PT_NOW.format(now) : null;
+  const nowIso = now ? stableFormat(PT_NOW, now) : null;
 
   // the axis: days (weekday and date, then sparser as the rail narrows) or hours (with the date at midnight)
   const ticks: { u: number; text: string; now?: boolean }[] = [];

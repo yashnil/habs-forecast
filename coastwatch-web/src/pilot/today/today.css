@@ -131,7 +131,8 @@
 @media (max-width: 767px) {
   /* the phone's first screen: the top of the stage is clear water; the words start below it on a solid ground */
   .today-stage:not(.today-stage-coast) .nx-stage-scrim { background: none !important; }
-  .today-stage .nx-stage-scene::after { background: linear-gradient(to bottom, transparent 40%, color-mix(in srgb, var(--nx-bg) 80%, transparent) 48%, color-mix(in srgb, var(--nx-bg) 94%, transparent) 60%); }
+  /* in svh, where the words start (38svh): a percentage would slide with the height of the text below */
+  .today-stage .nx-stage-scene::after { background: linear-gradient(to bottom, transparent 30svh, color-mix(in srgb, var(--nx-bg) 88%, transparent) 37.5svh, color-mix(in srgb, var(--nx-bg) 96%, transparent) 50svh); }
   .today-stage-coast .nx-stage-scene::after { background: linear-gradient(to bottom, transparent 16%, color-mix(in srgb, var(--nx-bg) 72%, transparent) 28%, color-mix(in srgb, var(--nx-bg) 90%, transparent) 44%); }
   /* the caption is one line; the ramp and the streaks' hour are one tap away (the map key) */
   .today-stage .nx-stage-cap-at { top: calc(var(--nx-bar-h, 56px) + 6px); left: 12px; right: auto; max-width: calc(100% - 72px); }

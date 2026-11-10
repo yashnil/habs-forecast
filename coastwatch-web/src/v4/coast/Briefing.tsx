@@ -1,5 +1,6 @@
 "use client";
 
+import { stableFormat } from "@/lib/time";
 import { toast } from "@/v4/ui/toast";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -290,7 +291,7 @@ export function Briefing(props: Props) {
   const season = seasonStatus(place, species, audience, b.tripDate ?? b.today);
   const runLayer = charmLayer(props.manifest, "particulate_domoic", 0) ?? charmLayer(props.manifest, "pseudo_nitzschia", 0);
   const runIssued = runLayer?.time.issued_date ? dayLabel(runLayer.time.issued_date) : null;
-  const stamp = asSaved ? `Briefing ${asSaved}` : now ? `Briefing · ${PT_STAMP.format(now).replace(/,(?= \d{1,2}:)/, " ·")}` : "Briefing";
+  const stamp = asSaved ? `Briefing ${asSaved}` : now ? `Briefing · ${stableFormat(PT_STAMP, now).replace(/,(?= \d{1,2}:)/, " ·")}` : "Briefing";
   const exploreLink = exploreHref(placeSel!, back);
   const researchLink = `/research?${new URLSearchParams({ place: place.key, from: back }).toString()}`;
   const econProps = { place: { key: place.key, name: place.name, portCode }, species: species.id, audience, tripDate: b.tripDate, season };

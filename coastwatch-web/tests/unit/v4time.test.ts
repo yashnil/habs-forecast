@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dayLabel, pacificDay, relTime } from "@/v4/ui/time";
+import { stableFormat } from "@/lib/time";
 import { coverageWhen } from "@/v4/explore/layers";
 import { hoursAgo } from "@/lib/currents";
 
@@ -51,5 +52,30 @@ describe("coverage dates", () => {
   it("keeps 'overpass of' for a single day", () => {
     const l = { composite: null, multisensor: null, time: t({ observed_date: "2026-10-15", observed_times: ["2026-10-15T16:47:48Z", "2026-10-15T19:08:58Z"] }) };
     expect(coverageWhen(l)).toBe("overpass of Oct 15");
+  });
+});
+
+describe("stableFormat: a date with a time reads the same in every engine", () => {
+  const fake = (at: string, gap: string) =>
+    ({
+      formatToParts: () => [
+        { type: "month", value: "Nov" },
+        { type: "literal", value: " " },
+        { type: "day", value: "9" },
+        { type: "literal", value: at },
+        { type: "hour", value: "9" },
+        { type: "literal", value: ":" },
+        { type: "minute", value: "23" },
+        { type: "literal", value: gap },
+        { type: "dayPeriod", value: "PM" },
+      ],
+    }) as unknown as Intl.DateTimeFormat;
+  it("Safari's ' at ' and Chrome's ', ' give one string, whichever space comes before PM", () => {
+    expect(stableFormat(fake(" at ", " "), new Date(0))).toBe("Nov 9, 9:23 PM");
+    expect(stableFormat(fake(", ", "\u202f"), new Date(0))).toBe("Nov 9, 9:23 PM");
+  });
+  it("a time alone keeps its own form", () => {
+    const f = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit" });
+    expect(stableFormat(f, new Date("2026-11-09T21:23:00Z"))).toMatch(/^9:23 PM$/);
   });
 });

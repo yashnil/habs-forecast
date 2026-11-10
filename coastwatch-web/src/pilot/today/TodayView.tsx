@@ -1,5 +1,6 @@
 "use client";
 
+import { stableFormat } from "@/lib/time";
 import "./today.css";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -243,7 +244,7 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture, trust, st
   useReportSource(oldHere.length ? { id: "evidence", label: "Today's facts", state: "stale", detail: oldHere.map((f) => `${f.label} ${f.when}`).join(" · ") } : null);
 
   const lede = model.lede;
-  const stamp = STAMP.format(new Date(now));
+  const stamp = stableFormat(STAMP, new Date(now));
   const { bind } = useFocusLink();
   const code = Number(place.place_id.replace(/^port-/, ""));
   const port = Number.isFinite(code) ? code : null;
@@ -306,7 +307,7 @@ export function TodayView({ inputs, linkFisheries, readiness, fixture, trust, st
                   <Icon name="offline" className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>
                     <b className="font-semibold">Saved copy</b>
-                    {saved.at ? `, saved ${STAMP.format(new Date(saved.at))}` : ""}. Status, tests and the sea may have changed since; check again when you have signal.
+                    {saved.at ? `, saved ${stableFormat(STAMP, new Date(saved.at))}` : ""}. Status, tests and the sea may have changed since; check again when you have signal.
                   </span>
                 </p>
               )}
