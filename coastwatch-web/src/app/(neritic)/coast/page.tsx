@@ -1,12 +1,12 @@
 import { permanentRedirect } from "next/navigation";
 import { coastRedirect } from "@/nx/shell/redirects";
-import { CoastMargin } from "@/nx/shell/views";
+import { CoastPage } from "@/nx/coast/CoastPage";
 
 export const metadata = { title: "My Coast" };
 
-/** My Coast: gates, the sea window, trip economics. Placeholder margin until the My Coast feature lands. */
-export default async function CoastPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+/** My Coast: plan a trip. The gates for your fishery, the sea window, then a worksheet from your own numbers. */
+export default async function Coast({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const to = coastRedirect(await searchParams);
   if (to) permanentRedirect(to);
-  return <CoastMargin />;
+  return <CoastPage />;
 }
