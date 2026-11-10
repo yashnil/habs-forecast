@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { dayLabel, pacificDay, relTime } from "@/v4/ui/time";
 import { stableFormat } from "@/lib/time";
@@ -77,5 +79,18 @@ describe("stableFormat: a date with a time reads the same in every engine", () =
   it("a time alone keeps its own form", () => {
     const f = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit" });
     expect(stableFormat(f, new Date("2026-11-09T21:23:00Z"))).toMatch(/^9:23 PM$/);
+  });
+});
+
+describe("no date-with-time formatter reaches a page without stableFormat", () => {
+  it("every formatter asking for a month or day and an hour lives in a file that uses it", () => {
+    const walk = (d: string): string[] => readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(d, e.name)) : /\.tsx?$/.test(e.name) ? [join(d, e.name)] : []));
+    const raw: string[] = [];
+    for (const f of walk("src")) {
+      const s = readFileSync(f, "utf8");
+      for (const m of s.matchAll(/(?:toLocaleString\(|DateTimeFormat\(|dtf\()[^;]{0,260}?\{([^}]*)\}/g))
+        if (/hour/.test(m[1]) && /month|day:|weekday/.test(m[1]) && !/h23|hour12: false/.test(m[1]) && !s.includes("stableFormat")) raw.push(f);
+    }
+    expect(raw).toEqual([]);
   });
 });

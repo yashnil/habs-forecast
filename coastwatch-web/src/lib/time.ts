@@ -35,14 +35,17 @@ export function formatDate(date: string, opts: { year?: boolean } = {}): string 
 export function formatDateTimePT(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return dtf("en-US", {
+  return stableFormat(
+    dtf("en-US", {
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
     timeZone: PT,
     timeZoneName: "short",
-  }).format(d);
+  }),
+    d,
+  );
 }
 
 /** Today's calendar date in Pacific time, YYYY-MM-DD. */
