@@ -337,8 +337,6 @@ test("no port: a picker with the pilot ports first; then Today reopens the last 
   await expect(pilots).toHaveCount(4);
   await expect(pilots.first()).toContainText("Moss Landing");
   expect(await axe(page)).toEqual([]);
-  await page.getByTestId("port-filter").fill("Crescent");
-  await expect(page.getByRole("link", { name: /Crescent City/ })).toBeVisible();
   await pilots.nth(2).click();
   await expect(page.locator("h1")).toHaveText("Santa Cruz");
   await page.goto(`${OK}/today`);

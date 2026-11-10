@@ -1,5 +1,6 @@
 "use client";
 
+import { stableFormat } from "@/lib/time";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Readiness } from "@/pilot/contracts";
@@ -69,7 +70,7 @@ export function Actions({
             {save.phase === "saving" ? "Saving…" : save.phase === "saved" ? "Saved · update" : "Keep it offline"}
           </button>
           <p className="today-note mt-1.5" role="status" aria-live="polite" data-testid="save-status">
-            {save.phase === "saved" && `Saved ${PT.format(new Date(save.at))}. This page opens without a connection, as it was then.`}
+            {save.phase === "saved" && `Saved ${stableFormat(PT, new Date(save.at))}. This page opens without a connection, as it was then.`}
             {save.phase === "failed" && `Could not save for offline: ${save.why}`}
             {save.phase === "idle" && "Keeps this page and its sea on this device, for use without signal."}
           </p>

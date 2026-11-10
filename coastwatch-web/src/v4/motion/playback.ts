@@ -43,9 +43,13 @@ export function playbackClock({ count, intervalMs, loop, onStep, onStop }: { cou
 
 /** Input that stops playback, unless it lands on a control marked `data-playback-control` (Play, Pause). */
 export const PLAYBACK_STOP_EVENTS = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
-export function stopsPlayback(target: EventTarget | null): boolean {
+export function stopsPlayback(target: EventTarget | null, key?: string): boolean {
   const t = target as { closest?: (s: string) => unknown } | null;
-  return !t?.closest?.("[data-playback-control]");
+  if (t?.closest?.("[data-playback-control]")) return false;
+  // Space inside a [data-playback-space] region is that region's own play/pause key: stopping here as well would
+  // pause first and let its handler start playback again. A real button there keeps Space for itself.
+  if (key === " " && t?.closest?.("[data-playback-space]") && !t.closest?.('button:not([role="radio"])')) return false;
+  return true;
 }
 
 /**
@@ -99,7 +103,7 @@ export function usePlayback<F>(frames: readonly F[], { intervalMs = PLAYBACK_MS,
   useEffect(() => {
     if (!playing) return;
     const stop = (e: Event) => {
-      if (stopsPlayback(e.target)) pause();
+      if (stopsPlayback(e.target, (e as KeyboardEvent).key)) pause();
     };
     const opts = { capture: true, passive: true } as const;
     for (const ev of PLAYBACK_STOP_EVENTS) window.addEventListener(ev, stop, opts);

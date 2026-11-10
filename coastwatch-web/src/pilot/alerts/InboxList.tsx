@@ -1,5 +1,6 @@
 "use client";
 
+import { stableFormat } from "@/lib/time";
 import type { InboxItem } from "./inbox";
 import { Feedback } from "@/pilot/account/Feedback";
 import { TRIGGER_LABELS } from "./diff";
@@ -13,7 +14,7 @@ const DOT: Record<InboxItem["severity"], string> = {
 
 const when = (iso: string) => {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" });
+  return Number.isNaN(d.getTime()) ? "" : stableFormat(new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" }), d);
 };
 
 /**

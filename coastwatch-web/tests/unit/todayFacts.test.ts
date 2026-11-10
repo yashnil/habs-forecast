@@ -402,6 +402,17 @@ describe("buildPortToday: words", () => {
     // issued last evening: at 6 AM "Tonight" (Oct 12) is over and not shown; at 11 PM it is
     expect(m.sea.lanes[0].name).toBe("Tue");
     expect(buildTodayModel(base({ conditions: cond, now: "2026-10-13T06:00:00Z" })).sea.lanes[0].name).toBe("Tonight");
+    // NWS's evening bulletin can still open with "This Afternoon": by 6 PM that period is over and does not lead
+    const evening: Conditions = {
+      ...cond,
+      marine: { status: "ok", source: "NWS", url: "https://x", fetchedAt: "2026-11-10T05:45:00Z", data: { zone: "PZZ535", zoneName: "Monterey Bay", updated: "2026-11-10T04:55:00.000Z", periods: [{ name: "This Afternoon", text: "NW wind 5 to 10 kt. Seas 5 to 7 ft." }, { name: "Tonight", text: "N wind 10 to 15 kt. Seas 5 to 7 ft." }] } },
+      alerts: { status: "ok", source: "NWS", url: "https://x", fetchedAt: "2026-11-10T05:45:00Z", data: [{ event: "Small craft advisory", headline: "Small craft advisory in effect until 9 pm pst this evening", onset: null, ends: "2026-11-10T05:00:00.000Z", url: "https://x" }] },
+    } as Conditions;
+    const night = buildTodayModel(base({ conditions: evening, now: "2026-11-10T05:45:00Z" }));
+    expect(night.sea.lanes[0].name).toBe("Tonight");
+    expect(night.sea.alerts).toEqual([]); // its stated end has passed
+    const before = buildTodayModel(base({ conditions: evening, now: "2026-11-10T04:58:00Z" }));
+    expect(before.sea.alerts).toHaveLength(1);
     expect(m.lede.sea).toMatch(/kt/);
   });
 });

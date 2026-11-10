@@ -1021,11 +1021,12 @@ function seaView(c: Conditions | null | "error", now: string): SeaView {
   const v: SeaView = { ...empty, state: "ok" };
   if (c.marine.status === "ok") {
     // a period already over is not shown (a forecast issued last evening still opens with "Tonight"):
-    // yesterday's night lasts until 6 AM; anything dated earlier is gone
+    // yesterday's night lasts until 6 AM; anything dated earlier is gone. NWS's evening bulletin can still open with
+    // "This Afternoon", so today's daytime period is gone by 6 PM
     const today = pacificDay(now);
     const hour = Number(localNow(now).slice(11, 13));
     v.lanes = lanePeriods(c.marine.data.periods, c.marine.data.updated, 14)
-      .filter((p) => !p.date || p.date >= today || (p.night && hour < 6 && daysOld(p.date, now) === 1))
+      .filter((p) => !p.date || (p.date > today) || (p.date === today && (p.night || hour < 18)) || (p.night && hour < 6 && daysOld(p.date, now) === 1))
       .slice(0, 10);
     v.zone = c.marine.data.zone;
     v.issued = c.marine.data.updated;
@@ -1035,7 +1036,7 @@ function seaView(c: Conditions | null | "error", now: string): SeaView {
     v.marineUrl = c.marine.url ?? null;
   }
   // NWS headlines arrive in capitals and are sentence-cased upstream; a day's name keeps its capital
-  if (c.alerts.status === "ok") v.alerts = c.alerts.data.map((a) => ({ event: a.event, headline: a.headline.replace(/\b(mon|tues|wednes|thurs|fri|satur|sun)day\b/g, (d) => d.charAt(0).toUpperCase() + d.slice(1)), url: a.url, ends: a.ends }));
+  if (c.alerts.status === "ok") v.alerts = c.alerts.data.filter((a) => !a.ends || Date.parse(a.ends) > Date.parse(now)).map((a) => ({ event: a.event, headline: a.headline.replace(/\b(mon|tues|wednes|thurs|fri|satur|sun)day\b/g, (d) => d.charAt(0).toUpperCase() + d.slice(1)), url: a.url, ends: a.ends }));
   if (c.buoy.status === "ok") {
     const b = c.buoy.data;
     const times = [b.windKt, b.waveFt, b.waterC].map((o) => o?.at).filter((x): x is string => !!x).sort();

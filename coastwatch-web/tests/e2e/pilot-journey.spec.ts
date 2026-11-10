@@ -37,7 +37,7 @@ for (const [label, viewport] of [["phone 390", { width: 390, height: 844 }], ["d
     await page.goto(`${PILOT}/`);
     await expect(page).toHaveURL(`${PILOT}/today`);
     await page.getByTestId("pick-port-port-592").click();
-    await expect(page.locator("h1")).toHaveText("Moss Landing");
+    await expect(page.locator("h1")).toHaveText("Moss Landing", { timeout: 15_000 }); // the flight, then a server render
     await expect(page.getByTestId("sea-lanes")).toBeVisible({ timeout: 15_000 });
     await oneShell(page, phone);
     // official status first, in words

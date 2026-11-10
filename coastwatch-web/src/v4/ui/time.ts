@@ -1,6 +1,6 @@
 /** Times in the reader's words, from the source's own timestamp (never re-dated). */
 
-import { dtf, pacificToday } from "@/lib/time";
+import { dtf, pacificToday, stableFormat } from "@/lib/time";
 
 const TZ = "America/Los_Angeles";
 
@@ -55,7 +55,7 @@ export const lastHabWords = (d: string | null, now: Date | null = null) => (d ? 
 export function clockLabel(iso: string): string {
   const d = new Date(iso);
   // an unparseable stamp stays as it was published (toLocaleString would say "Invalid Date")
-  return Number.isNaN(d.getTime()) ? "Invalid Date" : dtf("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: TZ, timeZoneName: "short" }).format(d);
+  return Number.isNaN(d.getTime()) ? "Invalid Date" : stableFormat(dtf("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: TZ, timeZoneName: "short" }), d);
 }
 
 export function kmLabel(km: number): string {

@@ -144,7 +144,8 @@ function Lanes({ cond, today, asSaved, limits, outlook, runIssued, data, when, w
     );
   const { nowMin, start, end, segs, nowIn, title } = data;
   const phone = W < 480;
-  const alerts = c?.alerts.status === "ok" ? c.alerts.data.slice(0, 2) : [];
+  // an advisory whose stated end has passed is over, even while its bulletin is still the newest
+  const alerts = c?.alerts.status === "ok" ? c.alerts.data.filter((a) => !a.ends || (instantMin(a.ends, today) ?? Infinity) > nowMin).slice(0, 2) : [];
   const X = scaleLinear([start, end], [0, W]);
   const clamp = (m: number) => Math.min(Math.max(m, start), end);
   const fromOf = (a: number) => (nowIn ? Math.max(a, nowMin) : a);

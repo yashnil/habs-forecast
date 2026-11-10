@@ -75,6 +75,11 @@ describe("usePlayback's clock", () => {
     expect(stopsPlayback({ closest: () => null } as unknown as EventTarget)).toBe(true);
     expect(stopsPlayback({ closest: () => ({}) } as unknown as EventTarget)).toBe(false);
     expect(stopsPlayback(null)).toBe(true);
+    // Space in the time rail is its own play/pause key: the "any input" rule must not pause first and let it restart
+    const inRail = (radio: boolean) => ({ closest: (s: string) => (s === "[data-playback-space]" ? {} : s.startsWith("button") && !radio ? {} : null) }) as unknown as EventTarget;
+    expect(stopsPlayback(inRail(true), " ")).toBe(false);
+    expect(stopsPlayback(inRail(true), "ArrowRight")).toBe(true);
+    expect(stopsPlayback(inRail(false), " ")).toBe(true);
   });
 });
 
