@@ -26,6 +26,7 @@
   position: absolute;
   width: 1px;
   height: 1px;
+  /* design-lint-allow space-scale: the standard visually-hidden pattern, not layout spacing */
   margin: -1px;
   padding: 0;
   overflow: hidden;

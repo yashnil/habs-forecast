@@ -9,6 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint src tests",
+    "lint:design": "node scripts/design-lint.mjs",
     "typecheck": "tsc --noEmit",
     "gen:types": "node scripts/gen-types.mjs",
     "data:live": "cd ../pipeline && uv run cwp run --out ../coastwatch-web/public/data/v1",

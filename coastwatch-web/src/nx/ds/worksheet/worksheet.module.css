@@ -236,9 +236,9 @@
   display: inline-flex;
   justify-content: flex-start;
   align-items: center;
-  width: 44px;
+  width: var(--target);
   height: var(--s-24);
-  padding: 0 3px;
+  padding: 0 var(--s-4);
   border: var(--rule) solid var(--ink);
 }
 .track[data-on] {
