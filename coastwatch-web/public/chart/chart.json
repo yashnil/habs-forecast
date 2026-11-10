@@ -1,0 +1,272 @@
+{
+  "sources": {
+    "etopo": "ETOPO 2022 v1, 15 arc-second (Ice Surface), NOAA NCEI, doi:10.25921/fd45-gt74. Free to use; not for navigation.",
+    "crm": "NOAA NCEI U.S. Coastal Relief Model, volumes 6 and 7, 3 arc-second; Monterey inset only. Public domain; not for navigation.",
+    "coast": "OpenMapTiles water (public/basemap/water-fallback.json). \u00a9 OpenMapTiles \u00a9 OpenStreetMap contributors (ODbL)."
+  },
+  "images": {
+    "relief-land.webp": {
+      "corners_lnglat": [
+        [
+          -127.6,
+          43.2
+        ],
+        [
+          -115.6,
+          43.2
+        ],
+        [
+          -115.6,
+          31.4
+        ],
+        [
+          -127.6,
+          31.4
+        ]
+      ],
+      "width": 1500,
+      "height": 1861
+    },
+    "chart-day-ca.webp": {
+      "corners_lnglat": [
+        [
+          -127.6,
+          43.2
+        ],
+        [
+          -115.6,
+          43.2
+        ],
+        [
+          -115.6,
+          31.4
+        ],
+        [
+          -127.6,
+          31.4
+        ]
+      ],
+      "width": 2400,
+      "height": 2978
+    },
+    "chart-dusk-ca.webp": {
+      "corners_lnglat": [
+        [
+          -127.6,
+          43.2
+        ],
+        [
+          -115.6,
+          43.2
+        ],
+        [
+          -115.6,
+          31.4
+        ],
+        [
+          -127.6,
+          31.4
+        ]
+      ],
+      "width": 2400,
+      "height": 2978
+    },
+    "chart-night-ca.webp": {
+      "corners_lnglat": [
+        [
+          -127.6,
+          43.2
+        ],
+        [
+          -115.6,
+          43.2
+        ],
+        [
+          -115.6,
+          31.4
+        ],
+        [
+          -127.6,
+          31.4
+        ]
+      ],
+      "width": 2400,
+      "height": 2978
+    },
+    "relief-land-monterey.webp": {
+      "corners_lnglat": [
+        [
+          -122.72,
+          37.33
+        ],
+        [
+          -121.58,
+          37.33
+        ],
+        [
+          -121.58,
+          36.22
+        ],
+        [
+          -122.72,
+          36.22
+        ]
+      ],
+      "width": 1100,
+      "height": 1337
+    },
+    "chart-day-monterey.webp": {
+      "corners_lnglat": [
+        [
+          -122.72,
+          37.33
+        ],
+        [
+          -121.58,
+          37.33
+        ],
+        [
+          -121.58,
+          36.22
+        ],
+        [
+          -122.72,
+          36.22
+        ]
+      ],
+      "width": 1600,
+      "height": 1945
+    },
+    "chart-dusk-monterey.webp": {
+      "corners_lnglat": [
+        [
+          -122.72,
+          37.33
+        ],
+        [
+          -121.58,
+          37.33
+        ],
+        [
+          -121.58,
+          36.22
+        ],
+        [
+          -122.72,
+          36.22
+        ]
+      ],
+      "width": 1600,
+      "height": 1945
+    },
+    "chart-night-monterey.webp": {
+      "corners_lnglat": [
+        [
+          -122.72,
+          37.33
+        ],
+        [
+          -121.58,
+          37.33
+        ],
+        [
+          -121.58,
+          36.22
+        ],
+        [
+          -122.72,
+          36.22
+        ]
+      ],
+      "width": 1600,
+      "height": 1945
+    },
+    "opening-canyon.webp": {
+      "corners_lnglat": [
+        [
+          -122.31,
+          37.06779565197724
+        ],
+        [
+          -121.59,
+          37.06779565197724
+        ],
+        [
+          -121.59,
+          36.49111962283758
+        ],
+        [
+          -122.31,
+          36.49111962283758
+        ]
+      ],
+      "width": 1600,
+      "height": 1600,
+      "rendering": "NOAA CRM 3\", hillshade from 300\u00b0 at 32\u00b0, seafloor exaggerated 4x, land 1x, dithered (Paper Shaders image-dithering, scripts/bake-opening.mjs)",
+      "exaggeration": 4.0
+    }
+  },
+  "notes": "Not for navigation (NOAA). Depth areas and isobaths from smoothed grids; no soundings are drawn from them.",
+  "frame": {
+    "ca": [
+      -127.6,
+      31.4,
+      -115.6,
+      43.2
+    ],
+    "inset": [
+      -122.72,
+      36.22,
+      -121.58,
+      37.33
+    ]
+  },
+  "depth_areas": {
+    "thresholds_m": [
+      2000,
+      1000,
+      500,
+      200,
+      100,
+      50,
+      20,
+      10
+    ],
+    "tint_of": {
+      "2000": 7,
+      "1000": 6,
+      "500": 5,
+      "200": 4,
+      "100": 3,
+      "50": 2,
+      "20": 1,
+      "10": 0
+    },
+    "smoothing": "Gaussian 1.2 cells (ETOPO), 1.4 cells (CRM)"
+  },
+  "isobaths": {
+    "index_m": [
+      200,
+      500,
+      1000,
+      2000,
+      3000
+    ],
+    "crm_minor_m": [
+      50,
+      100,
+      300,
+      400,
+      600,
+      700,
+      800,
+      900,
+      1250,
+      1500,
+      1750,
+      2250,
+      2500,
+      2750
+    ]
+  }
+}
