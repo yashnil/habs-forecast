@@ -33,6 +33,9 @@ export const cut: Transition = { duration: 0 };
 /** Margin content when the route changes (the chart pans underneath). */
 export const marginSwap: Transition = { duration: 0.18, ease: [0.2, 0, 0, 1] };
 
+/** A layer handing over to another (opening caption, drawn lines giving way to live ones). */
+export const fadeOut: Transition = { duration: 0.3, ease: [0.2, 0, 0, 1] };
+
 /** The first-visit opening: phase boundaries in seconds. Statement is visible from 0. */
 export const OPENING = {
   total: 4.8,

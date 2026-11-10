@@ -34,7 +34,8 @@
 .n12-port-ring { fill: var(--halo); stroke: var(--ink); stroke-width: 1.5; }
 .n12-port-sym-focus .n12-port-dot { stroke: none; }
 .n12-canyon-name { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.n12-water-name-svg { font-family: var(--font-serif); font-style: italic; fill: var(--water-name); letter-spacing: 0.06em; paint-order: stroke fill; stroke: var(--halo); stroke-width: 6px; stroke-linejoin: round; }
+/* design-lint-allow caps: spec section 5, water names are letter-spaced 0.04em on the chart, as cartographers set them; italic, not caps */
+.n12-water-name-svg { font-family: var(--font-serif); font-style: italic; fill: var(--water-name); letter-spacing: 0.04em; paint-order: stroke fill; stroke: var(--halo); stroke-width: 6px; stroke-linejoin: round; }
 .n12-leaders { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .n12-leaders line { stroke: var(--ink); stroke-width: 1.5; }
 .n12-leaders circle { fill: var(--ink); stroke: var(--halo); stroke-width: 2; }

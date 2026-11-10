@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { animate } from "motion/react";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { EASE_CHART, ink as inkPreset, OPENING, register } from "@/nx/ds/motion";
+import { EASE_CHART, ink as inkPreset, OPENING, register, fadeOut } from "@/nx/ds/motion";
 import { getChartMap, whenChartReady } from "@/nx/chart/control";
 import { DEPTH_THRESHOLDS, STILL } from "@/nx/chart/style";
 
@@ -121,7 +121,7 @@ export function OpeningController() {
       at(T(OPENING.settleToChart[0]), () => {
         if (still) stops.push(animate(still, { opacity: [1, 0] }, { duration: D(OPENING.settleToChart), ease: EASE_CHART }));
         if (stillInk) stops.push(animate(stillInk, { scale: [1.025, 1] }, { duration: D(OPENING.settleToChart), ease: EASE_CHART }));
-        if (caption) stops.push(animate(caption, { opacity: [1, 0] }, { duration: 0.4 }));
+        if (caption) stops.push(animate(caption, { opacity: [1, 0] }, fadeOut));
       });
       if (map && svg) {
         at(T(OPENING.isobathsInk[0]) - 0.15, () => void drawInk(svg, map));
@@ -135,7 +135,7 @@ export function OpeningController() {
           // the live lines take over from the drawn ones
           map.setPaintProperty("isobaths-minor", "line-opacity", MINOR);
           map.setPaintProperty("isobaths-index", "line-opacity", INDEX);
-          stops.push(animate(svg, { opacity: [1, 0] }, { duration: 0.3 }));
+          stops.push(animate(svg, { opacity: [1, 0] }, fadeOut));
         });
         at(T(OPENING.tintsFlood[0]), () => {
           const span = D(OPENING.tintsFlood) * 1000;

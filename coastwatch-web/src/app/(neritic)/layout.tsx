@@ -3,6 +3,7 @@ import "@/nx/ds/tokens.css";
 import "@/nx/chart/chart.css";
 import "@/nx/shell/shell.css";
 import { literata, publicSans } from "@/nx/ds/fonts";
+import { PAPER_DAY } from "@/nx/ds/palette";
 import { ChartHost } from "@/nx/chart/ChartHost";
 import { OpeningController, OpeningStill } from "@/nx/opening/Opening";
 import { ENTRY_SCRIPT } from "@/nx/shell/entry";
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   title: { default: "Neritic: season status, crab tests and the next date for your port", template: "%s · Neritic" },
 };
 
-export const viewport: Viewport = { themeColor: "#fffefa", colorScheme: "light dark" };
+export const viewport: Viewport = { themeColor: PAPER_DAY, colorScheme: "light dark" };
 
 /**
  * The Neritic v12 route group: `/`, Today, Explore, My Coast and Research share one layout, so the chart (one
