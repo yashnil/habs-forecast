@@ -33,7 +33,7 @@
  * Packs are never deleted here: a new worker version keeps them (they are removed only from the
  * page, by the reader). Browsers may still evict storage; the page says so.
  */
-const VERSION = "neritic-sw-4";
+const VERSION = "neritic-sw-5";
 /** How long a page or an /api answer waits for the network before a field pack answers instead. */
 const DEADLINE_MS = 5000;
 // one code cache per build: hashed files of an old build are never needed by the new one
@@ -147,10 +147,35 @@ async function ranged(request, resp) {
   });
 }
 
-/** The pack's own page for the paths it saves (Explore and the briefing), else null. */
-const PACK_PAGE = { "/": "/__pack__/page/explore", "/coast": "/__pack__/page/coast" };
-async function savedPageFor(path) {
-  const key = PACK_PAGE[path];
+/**
+ * The pack's own page for the paths it saves (Explore and the briefing), else null.
+ * v12 (sw-5) moved Explore from `/?…` to `/explore` and made `/` the front door, which opens Today at the saved
+ * port. Packs are not rewritten (their page keys never named a URL, and Today's are still `/today?place=…`);
+ * the worker answers the new addresses from them instead, and an old `/?…` Explore address too:
+ *   /explore, or / with Explore's parameters   the pack's Explore page
+ *   / (bare), /today without a port            the newest saved Today, else the pack's Explore page
+ *   /coast                                     the pack's briefing
+ */
+const PACK_PAGE = { "/explore": "/__pack__/page/explore", "/coast": "/__pack__/page/coast" };
+const CAMPAIGN = /^(utm_[a-z_]+|fbclid|gclid|msclkid|mc_[a-z]+|ref|source|pick)$/i;
+const namesExplore = (url) => [...url.searchParams.keys()].some((k) => !CAMPAIGN.test(k));
+/** Pages the worker can answer from a pack for this address (see savedPageFor). */
+function hasPackPage(url) {
+  return !!PACK_PAGE[url.pathname] || url.pathname === "/" || (url.pathname === "/today" && !url.searchParams.get("place"));
+}
+async function savedPageFor(path, url) {
+  const u = url || new URL(path, self.location.origin);
+  if (u.pathname === "/" && namesExplore(u)) return packPage(new Request(PACK_PAGE["/explore"]));
+  if (u.pathname === "/" || (u.pathname === "/today" && !u.searchParams.get("place"))) {
+    const t = (await savedTodays())[0];
+    if (t) {
+      const c = await caches.open(TODAY_PACK);
+      const r = await c.match(t.href);
+      if (r) return marked(r, new URL(t.href, self.location.origin).href);
+    }
+    return packPage(new Request(PACK_PAGE["/explore"]));
+  }
+  const key = PACK_PAGE[u.pathname];
   return key ? packPage(new Request(key)) : null;
 }
 
@@ -180,8 +205,8 @@ async function savedTodays() {
 
 /** The offline page, in the site's own dark system: what is not saved, the kept briefing and the saved
  *  briefing when there is one, a way to try again, and the agencies (pages and tap-to-call lines). */
-async function offlinePage(path) {
-  const saved = await savedPageFor(path);
+async function offlinePage(path, url) {
+  const saved = await savedPageFor(path, url);
   if (saved) return saved;
   const kept = await keptMeta();
   const brief = await savedPageFor("/coast");
@@ -310,14 +335,14 @@ self.addEventListener("fetch", (event) => {
           const saved = (await packPage(req)) || (await keptPage(url.pathname));
           if (saved) return saved;
           // offline and the pack never held this page: say so at once (no request that cannot succeed)
-          if (!PACK_PAGE[url.pathname] && (await hasPack())) return offlinePage(url.pathname);
+          if (!hasPackPage(url) && (await hasPack())) return offlinePage(url.pathname, url);
         }
         try {
           // a slow network gives way to the pack after the deadline: the saved copy of this page, else
           // the short offline page (with a way to try again); with no pack at all, the network is waited for
-          return await withDeadline(req, async () => (await packPage(req)) || offlinePage(url.pathname), (await hasPack()) ? DEADLINE_MS : 0);
+          return await withDeadline(req, async () => (await packPage(req)) || offlinePage(url.pathname, url), (await hasPack()) ? DEADLINE_MS : 0);
         } catch {
-          return (await packPage(req)) || (await keptPage(url.pathname)) || offlinePage(url.pathname);
+          return (await packPage(req)) || (await keptPage(url.pathname)) || offlinePage(url.pathname, url);
         }
       })(),
     );
