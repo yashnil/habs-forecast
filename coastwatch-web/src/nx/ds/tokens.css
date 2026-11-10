@@ -1,0 +1,96 @@
+/* Neritic Chart design tokens. The only file in src/nx allowed to hold colour literals (with palette.ts).
+   Spec: docs/coastwatch/v12/design-system/README.md. Three chart modes, each specified, never inverted.
+   Contrast (WCAG 2) of each text token on its mode's paper is noted. */
+
+:root,
+[data-chart-mode="day"] {
+  --paper: #fffefa;
+  --ink: #0e1417;          /* 18.4 */
+  --ink-2: #2f4a5b;        /* 9.2 */
+  --water-name: #1f4c74;   /* 8.9 */
+  --reg: #a83ba6;          /* regulation line/rail colour, never text */
+  --reg-text: #7b2279;     /* 8.9 */
+  --closure: #8a3307;      /* 8.1, official closures only */
+  --land: #dfd8ae;
+  --land-relief-opacity: 0.55;
+  --depth-0: #7cb5f0; --depth-1: #90c3f4; --depth-2: #a5cff5; --depth-3: #badbf3; --depth-4: #cbe6f0;
+  --depth-5: #d6edee; --depth-6: #def1ee; --depth-7: #e5f4f0; --depth-8: #ebf6f2;
+  --isobath: #4b6270;
+  --halo: rgba(255, 255, 255, 0.92);
+  --rule-soft: rgba(14, 20, 23, 0.26);
+  --neat-a: #b7c4ca;
+  --hatch: rgba(14, 20, 23, 0.55);
+  --chl-0: #f6f4dc; --chl-1: #e6ebb8; --chl-2: #bdd68f; --chl-3: #82b77c;
+  --chl-4: #418f74; --chl-5: #1b635b; --chl-6: #0b3e41; --chl-7: #052327;
+  --streak: #0e1417;
+  color-scheme: light;
+}
+
+[data-chart-mode="dusk"] {
+  --paper: #1c2226;
+  --ink: #e2e7e8;          /* 12.9 */
+  --ink-2: #aebbc0;        /* 8.2 */
+  --water-name: #a9c6de;   /* 9.0 */
+  --reg: #cf8ccd;
+  --reg-text: #e6b8e4;     /* 9.4 */
+  --closure: #f0a27c;      /* 7.8 */
+  --land: #3d3a2e;
+  --land-relief-opacity: 0.35;
+  --depth-0: #35617f; --depth-1: #315a75; --depth-2: #2d526b; --depth-3: #2a4a61; --depth-4: #274357;
+  --depth-5: #243c4e; --depth-6: #223645; --depth-7: #20313e; --depth-8: #1f2d38;
+  --isobath: #7d97a6;
+  --halo: rgba(28, 34, 38, 0.92);
+  --rule-soft: rgba(226, 231, 232, 0.24);
+  --neat-a: #4a5a63;
+  --hatch: rgba(226, 231, 232, 0.5);
+  /* on a dark ground high chlorophyll is light; lightness stays monotone */
+  --chl-0: #10302f; --chl-1: #17473f; --chl-2: #1f6150; --chl-3: #3a7d5c;
+  --chl-4: #6a9a63; --chl-5: #a3b76e; --chl-6: #d4d48a; --chl-7: #f4f1c4;
+  --streak: #e2e7e8;
+  color-scheme: dark;
+}
+
+[data-chart-mode="night"] {
+  --paper: #06090b;
+  --ink: #a89c88;          /* 7.4, dim and warm for dark adaptation */
+  --ink-2: #8a8070;        /* 5.1 */
+  --water-name: #7f93a3;   /* 6.3 */
+  --reg: #8f6a8d;
+  --reg-text: #b98db6;     /* 7.2 */
+  --closure: #c08a6a;      /* 6.7 */
+  --land: #15140f;
+  --land-relief-opacity: 0;
+  --depth-0: #13222c; --depth-1: #13222c; --depth-2: #13222c; --depth-3: #0e1a21; --depth-4: #0e1a21;
+  --depth-5: #0e1a21; --depth-6: #0a1217; --depth-7: #0a1217; --depth-8: #0a1217;
+  --isobath: #4a5560;
+  --halo: rgba(6, 9, 11, 0.92);
+  --rule-soft: rgba(168, 156, 136, 0.22);
+  --neat-a: #2a2a24;
+  --hatch: rgba(168, 156, 136, 0.45);
+  --chl-0: #0b1715; --chl-1: #10221e; --chl-2: #163027; --chl-3: #213f2f;
+  --chl-4: #344e37; --chl-5: #4e5d40; --chl-6: #6e6e4c; --chl-7: #8f855c;
+  --streak: #a89c88;
+  color-scheme: dark;
+}
+
+:root {
+  /* type */
+  --font-serif: var(--nx-literata), Georgia, serif;
+  --font-sans: var(--nx-public-sans), system-ui, -apple-system, sans-serif;
+  --t-14: 14px; --t-16: 16px; --t-18: 18px; --t-22: 22px; --t-28: 28px;
+  --t-32: 32px; --t-36: 36px; --t-40: 40px; --t-48: 48px; --t-64: 64px;
+  /* space */
+  --s-4: 4px; --s-8: 8px; --s-12: 12px; --s-16: 16px; --s-24: 24px; --s-32: 32px; --s-48: 48px; --s-64: 64px;
+  /* structure */
+  --bar-h: 52px; --tabbar-h: 56px; --margin-w: clamp(340px, 26vw, 372px);
+  --neat-band: 4px; --neat-label: 20px; --rule: 1.5px; --hair: 1px;
+  --r-0: 0; --r-1: 2px;
+  --target: 48px;
+  /* motion (mirrors ds/motion.ts; CSS only for hover/press colour changes) */
+  --ease-chart: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-quick: 120ms;
+}
+
+@media (max-width: 720px) {
+  :root { --neat-band: 3px; --neat-label: 16px; }
+}
