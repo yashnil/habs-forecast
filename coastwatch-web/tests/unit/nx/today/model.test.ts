@@ -199,7 +199,7 @@ describe("since your last visit (Journey 2)", () => {
     expect(changeLine({ at: "2026-10-08T17:00:00Z", facts: snapFacts(other.allFacts) }, v.allFacts, now)!.changes).toEqual([]);
     const before = snapFacts(v.allFacts).map((f) => (f.id === "status:dungeness_commercial" ? { ...f, value: "No restriction on record", headline: "x" } : f));
     const l = changeLine({ at: "2026-10-08T17:00:00Z", facts: before }, v.allFacts, now)!;
-    expect(l.text).toBe("Since Oct 8: dungeness crab (commercial): now delayed.");
+    expect(l.text).toBe("Since Oct 8: Dungeness crab (commercial) is now delayed.");
     expect(sinceWords("2026-10-13T04:10:00Z", now)).toBe("9:10 PM PT");
   });
 });

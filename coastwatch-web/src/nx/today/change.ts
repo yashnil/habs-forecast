@@ -18,7 +18,7 @@ export function changeWords(c: FactChange): string {
   const f = (c.after ?? c.before) as FactSnap;
   if (f.kind === "status") {
     const label = fisheryLabel(fisheryOf(f.id));
-    return c.change === "gone" ? `${label}: status no longer listed` : `${label}: now ${(c.after?.value ?? "changed").toLowerCase()}`;
+    return c.change === "gone" ? `${label}: status no longer listed` : `${label} is now ${(c.after?.value ?? "changed").toLowerCase()}`;
   }
   if (f.kind === "test") {
     const site = strip(f.headline.split(/ (tested|:)/)[0] ?? "");
@@ -43,6 +43,6 @@ export function changeLine(prev: { at: string; facts: FactSnap[] } | null, facts
   const when = sinceWords(prev.at, now);
   if (!changes.length) return { since: prev.at, text: `Since ${when}: no change in season status, tests, notices or models.`, changes };
   const first = changes[0].words;
-  const text = `Since ${when}: ${first.charAt(0).toLowerCase() === first.charAt(0) ? first : first.charAt(0).toLowerCase() + first.slice(1)}${changes.length > 1 ? `, and ${changes.length - 1} more` : ""}.`;
+  const text = `Since ${when}: ${first}${changes.length > 1 ? `, and ${changes.length - 1} more` : ""}.`;
   return { since: prev.at, text, changes };
 }

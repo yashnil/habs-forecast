@@ -45,13 +45,13 @@
   border-top: var(--hair) solid var(--rule-soft);
 }
 .quietLine {
-  margin: 0;
+  margin-bottom: 0;
   color: var(--ink-2);
 }
 
 /* ---- since your last visit */
 .change {
-  margin: 0;
+  margin-bottom: 0;
   padding-left: var(--s-12);
   border-left: var(--rule) solid var(--ink);
   font-size: var(--t-16);

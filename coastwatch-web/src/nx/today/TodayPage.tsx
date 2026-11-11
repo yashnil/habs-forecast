@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { ChartScene } from "@/nx/chart/scene";
 import { Button } from "@/nx/ds/Button";
 import { openPortFinder } from "@/nx/shell/PortFinder";
-import { savePort, useCurrentPort } from "@/nx/shell/port";
+import { savePort, useCurrentPort, usePorts } from "@/nx/shell/port";
 import { CA_COAST } from "@/nx/shell/views";
 import type { Initial } from "./data";
 import { TodayView } from "./TodayView";
@@ -12,7 +12,14 @@ import s from "./today.module.css";
 
 /** /today: the address's port (a deep link wins, and becomes the reader's port), else the saved one. */
 export function TodayPage({ initial }: { initial: Initial }) {
-  const { port, key, fromUrl, pending } = useCurrentPort();
+  const current = useCurrentPort();
+  const ports = usePorts();
+  // the port the server rendered for wins until the address names another: a saved copy of this page
+  // answered at `/` offline (public/sw.js) hydrates the HTML it was given
+  const seeded = !current.fromUrl && initial ? (ports.find((p) => p.key === initial.key) ?? null) : null;
+  const port = seeded ?? current.port;
+  const { key, fromUrl } = current;
+  const pending = !seeded && current.pending;
   useEffect(() => {
     if (fromUrl && key) savePort(key);
   }, [key, fromUrl]);
