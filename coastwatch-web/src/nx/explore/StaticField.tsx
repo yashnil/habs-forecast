@@ -119,11 +119,15 @@ function bake(g: GridSpec, codes: Uint16Array, kind: Kind, past: boolean, domain
       if (row < 0 || col < 0 || row >= g.height || col >= g.width) continue;
       const v = decodeValue(g, codes[row * g.width + col]);
       const line = (spacing: number) => ((x + y) % spacing) < 1.2;
+      // the grid's own extent ends at a neatline; "no view" comes in over the first pixels inside it
+      const edge = Math.min(x, y, W - 1 - x, H - 1 - y);
       let px: [number, number, number, number] = [0, 0, 0, 0];
-      if (v === null) {
+      if (kind === "ramp" && edge < 1) px = over(px, ink2, 0.7);
+      else if (v === null) {
         if (kind !== "ramp") continue;
-        px = over(px, paper, 0.22);
-        if (line(11)) px = over(px, hatchCol, 0.32);
+        const inA = Math.min(1, edge / 24);
+        px = over(px, paper, 0.22 * inA);
+        if (line(11)) px = over(px, hatchCol, 0.32 * inA);
       } else if (kind === "classes") {
         px = over(px, prob[Math.max(0, Math.min(9, Math.floor(v * 10)))], past ? 0.42 : 0.72);
         if (line(8)) px = over(px, past ? ink2 : ink, 0.2);

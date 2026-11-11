@@ -108,7 +108,8 @@ test.describe("Explore", () => {
   test("C-HARM: the event and threshold, its mandatory words, classes that are not risk levels, a past run said so (T3, T9, T10, T12)", async ({ page }) => {
     await page.goto(`${OK}/explore?place=port-592&layer=charm`);
     const m = margin(page);
-    await expect(m).toContainText("C-HARM, P(pDA > 500 ng/L)");
+    await expect(m.getByTestId("nx-legend")).toContainText("C-HARM");
+    await expect(m.getByTestId("nx-legend")).toContainText("P(pDA > 500 ng/L)");
     await expect(m).toContainText("Probability of conditions in the water, not toxin in seafood.");
     await expect(m).toContainText("Classes are display steps, not risk levels");
     await expect(m).toContainText("a lower probability does not mean open or safe");

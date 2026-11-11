@@ -37,7 +37,8 @@ type Win = Window & { __nxExplore?: Record<string, unknown> };
 function styleFor(p: ExploreProduct, f: ExploreFrame): FieldStyle {
   if (p.id === "chl") return { kind: "ramp", domain: CHL_DOMAIN, scale: "log" };
   if (p.id === "outlook") return { kind: "outlook", domain: CHL_DOMAIN, scale: "log", opacity: 0.9 };
-  if (p.id === "charm") return { kind: "classes", past: f.past };
+  // a past run is past in every frame: drawn lighter, as its legend is (T3, T23)
+  if (p.id === "charm") return { kind: "classes", past: f.past || !!p.pastRun };
   return { kind: "isolines", ...ISO_F };
 }
 
@@ -98,7 +99,8 @@ export function Explore({ model }: { model: ExploreModel }) {
   const current = model.currents?.frames.find((f) => f.id === hourId) ?? null;
   // T25: no streaks on a forecast layer; over a model or outlook the currents wait, switched on
   const overModel = product?.kind === "model" || product?.kind === "outlook";
-  const streaks = currentsOn && !overModel;
+  // and the static tier draws none (no GPU), so its legend does not promise any
+  const streaks = currentsOn && !overModel && tier !== "static";
   const fieldRef = useRef<FieldController | null>(null);
   const flowRef = useRef<FlowController | null>(null);
   const [field, setField] = useState<CurrentField | null>(null);
@@ -202,7 +204,7 @@ export function Explore({ model }: { model: ExploreModel }) {
   const flowState = useMemo(() => ({ still: reduce, paused: false }), [reduce]);
   // the streak layer is added once while currents are on; a new hour swaps its field (a cut)
   useEffect(() => {
-    if (!map || !streaks || !tier || tier === "static") return;
+    if (!map || !streaks || !tier) return;
     flowRef.current ??= createFlowLayer("nx-flow", tier === "reduced" ? "reduced" : "full", modeColours(), flowState);
     const layer = flowRef.current;
     const remove = addChartLayer(map, layer, "flow");
@@ -471,7 +473,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       <h1 className={s.srOnly}>Explore: {LAYER_LABEL[product.id]}</h1>
       <ExploreLegend product={product} frame={frame} currents={streaks ? current : null} />
       {tier === "static" && frame?.grid && product.id !== "sst" ? (
-        <StaticField base={model.baseUrl} grid={frame.grid} kind={product.id === "charm" ? "classes" : product.id === "outlook" ? "outlook" : "ramp"} past={product.id === "charm" ? frame.past : undefined} domain={CHL_DOMAIN} />
+        <StaticField base={model.baseUrl} grid={frame.grid} kind={product.id === "charm" ? "classes" : product.id === "outlook" ? "outlook" : "ramp"} past={product.id === "charm" ? frame.past || !!product.pastRun : undefined} domain={CHL_DOMAIN} />
       ) : null}
       {tier === "static" ? (
         product.id === "sst" ? (

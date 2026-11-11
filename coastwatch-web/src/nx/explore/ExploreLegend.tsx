@@ -52,12 +52,12 @@ export function ExploreLegend({ product, frame, currents }: { product: ExplorePr
     body = (
       <>
         <RampLegend
-          title="C-HARM, P(pDA > 500 ng/L)"
-          unit="probability, ten display classes"
+          title="C-HARM"
+          unit="P(pDA > 500 ng/L)"
           steps={PROB_STEPS}
           domain={[0, 1]}
           scale="linear"
-          ticks={[0, 0.5, 1]}
+          ticks={[0.2, 0.5, 0.8]}
           tickFormat={(v) => `${Math.round(v * 100)} %`}
           noView={false}
           opacity={product.pastRun ? 0.42 : 0.72}

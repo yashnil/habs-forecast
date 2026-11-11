@@ -116,13 +116,15 @@ void main() {
     vec2 hi = (vec2(u_size) - 0.5 - f) / fw;
     float edge = min(min(lo.x, lo.y), min(hi.x, hi.y));
     if (edge < u_dpr) {
-      o = pm(u_ink2, 0.55);
+      o = pm(u_ink2, 0.7);
       return;
     }
     if (nodata) {
-      // "no view": a quiet hatch over a light paper veil, so measured water dominates (T19)
-      vec4 veil = pm(u_paper, 0.22);
-      o = over(pm(u_hatch, 0.32 * hatch(11.0, 1.0)), veil);
+      // "no view": a quiet hatch over a light paper veil, so measured water dominates (T19); it comes in over
+      // the first 32 px inside the neatline, so the edge is the line, not a step in tone
+      float inA = smoothstep(0.0, 32.0 * u_dpr, edge);
+      vec4 veil = pm(u_paper, 0.22 * inA);
+      o = over(pm(u_hatch, 0.32 * inA * hatch(11.0, 1.0)), veil);
       return;
     }
     o = pm(ramp(rampT(v)), u_opacity);
