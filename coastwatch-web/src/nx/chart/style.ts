@@ -88,7 +88,9 @@ export function chartStyle(p: ChartPalette, origin: string, { hidden = false }: 
       })),
       { id: "land", type: "fill", source: "land", paint: { "fill-color": p.land, "fill-antialias": true } },
       { id: "relief-land", type: "raster", source: "relief-land", paint: { "raster-opacity": p.reliefOpacity, "raster-fade-duration": 0, "raster-resampling": "linear" } },
-      { id: "relief-land-monterey", type: "raster", source: "relief-land-monterey", minzoom: 8, paint: { "raster-opacity": p.reliefOpacity, "raster-fade-duration": 0, "raster-resampling": "linear" } },
+      // at every zoom: the statewide relief steps back inside the inset (the cross-fade), so hiding this one
+      // below some zoom would leave a pale square off Monterey
+      { id: "relief-land-monterey", type: "raster", source: "relief-land-monterey", paint: { "raster-opacity": p.reliefOpacity, "raster-fade-duration": 0, "raster-resampling": "linear" } },
       {
         id: "isobaths-minor",
         type: "line",

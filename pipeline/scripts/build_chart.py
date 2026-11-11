@@ -315,16 +315,16 @@ def stroke(w, s, e, n, width, height, widths, ss=3):
     return out
 
 
-def edge_fade(rows_lat, cols_lon, box_, width_deg):
+def edge_fade(rows_lat, cols_lon, box_, width_deg, east_deg=None):
     """1 inside, easing (smoothstep) to 0 over `width_deg` at the box's east, north and south edges, where the
     land continues past the relief's grid. The west edge is open ocean and needs none."""
     w, s, e, n = box_
     lat = np.asarray(rows_lat)[:, None]
     lon = np.asarray(cols_lon)[None, :]
-    def ease(d):
-        t = np.clip(d / width_deg, 0, 1)
+    def ease(d, wd=width_deg):
+        t = np.clip(d / wd, 0, 1)
         return t * t * (3 - 2 * t)
-    return ease(e - lon) * ease(n - lat) * ease(lat - s)
+    return ease(e - lon, east_deg or width_deg) * ease(n - lat) * ease(lat - s)
 
 
 def relief_rgba(zm, dx, land_mask, tok):
@@ -471,13 +471,13 @@ def main(etopo: Path, crm: Path, out: Path) -> None:
         wgt = inset_weight(rows_lat, cols_lon)
         rel[..., 3] = (rel[..., 3] * ((1 - wgt) if name == "ca" else wgt)).astype(np.uint8)
         if name == "ca":
-            # the land runs on past the ETOPO box (to the frame's bounds): the relief eases out over its last
-            # 0.35 degrees on the east, north and south, so no edge shows where the shading stops
-            rel[..., 3] = (rel[..., 3] * edge_fade(rows_lat, cols_lon, r["box"], 0.35)).astype(np.uint8)
+            # the land runs on past the ETOPO box (to the frame's bounds): the relief eases out over its last 1.5
+            # degrees on the east (seen whole at state scale) and 0.35 north and south, so no edge shows
+            rel[..., 3] = (rel[..., 3] * edge_fade(rows_lat, cols_lon, r["box"], 0.35, east_deg=1.5)).astype(np.uint8)
         rel_name = "relief-land.webp" if name == "ca" else "relief-land-monterey.webp"
         rw = r["relief_width"]
         rh = round(height * rw / r["width"])
-        Image.fromarray(rel, "RGBA").resize((rw, rh), Image.LANCZOS).save(out / rel_name, "WEBP", quality=55, alpha_quality=32, method=6)
+        Image.fromarray(rel, "RGBA").resize((rw, rh), Image.LANCZOS).save(out / rel_name, "WEBP", quality=70, alpha_quality=100, method=6)
         meta["images"][rel_name] = {"corners_lnglat": [[w, n], [e, n], [e, s], [w, s]], "width": rw, "height": rh}
         for mode in MODES:
             strength = tok[mode].get("land-relief-opacity", (0.5,))[0]
