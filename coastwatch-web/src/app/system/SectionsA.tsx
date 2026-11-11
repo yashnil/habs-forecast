@@ -41,6 +41,8 @@ const ramp = S.fishery_status.ramp_zone_4;
 
 const DEPTHS = ["--depth-0", "--depth-1", "--depth-2", "--depth-3", "--depth-4", "--depth-5", "--depth-6", "--depth-7", "--depth-8"];
 const CHL = ["--chl-0", "--chl-1", "--chl-2", "--chl-3", "--chl-4", "--chl-5", "--chl-6", "--chl-7"];
+const PROB = Array.from({ length: 10 }, (_, i) => `--prob-${i}`);
+const SST = Array.from({ length: 8 }, (_, i) => `--sst-${i}`);
 const INK = [
   ["--paper", "Paper", "Sheet and margin ground"],
   ["--ink", "Ink", "Text, interaction, rules"],
@@ -107,6 +109,20 @@ function Foundations({ mode }: { mode: ChartMode }) {
       <Specimen state="Chlorophyll ramp" note="log10 0.05 to 50 mg/m³, lightness monotone">
         <div className={s.strip}>
           {CHL.map((v) => (
+            <span key={v} style={{ background: `var(${v})` }} />
+          ))}
+        </div>
+      </Specimen>
+      <Specimen state="C-HARM probability classes" note="cw-probability-classes-v1, ten 10-point display intervals, not risk tiers">
+        <div className={s.strip}>
+          {PROB.map((v) => (
+            <span key={v} style={{ background: `var(${v})` }} />
+          ))}
+        </div>
+      </Specimen>
+      <Specimen state="Sea temperature ramp" note="sequential, its own hue family">
+        <div className={s.strip}>
+          {SST.map((v) => (
             <span key={v} style={{ background: `var(${v})` }} />
           ))}
         </div>

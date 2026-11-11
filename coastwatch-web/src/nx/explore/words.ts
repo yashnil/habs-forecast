@@ -13,8 +13,8 @@ export const CHL_TICKS = [0.1, 1, 10];
 export const CHL_STEPS = Array.from({ length: 8 }, (_, i) => `--chl-${i}`);
 /** Isotherms: every whole °F, heavier every 2 °F (MUR is in °C: F = C x 1.8 + 32). */
 export const ISO_F = { step: 1, index: 2, scale: 1.8, offset: 32 } as const;
-/** C-HARM display classes drawn as hatch density (20-point steps: display intervals, not risk levels, T12). */
-export const CHARM_CLASSES = ["0–20 %", "20–40 %", "40–60 %", "60–80 %", "80–100 %"];
+/** C-HARM's display classes, cw-probability-classes-v1: ten 10-point intervals (display intervals, not risk levels, T12). */
+export const PROB_STEPS = Array.from({ length: 10 }, (_, i) => `--prob-${i}`);
 
 export const LAYER_LABEL: Record<ExploreProduct["id"], string> = { chl: "Chlorophyll", sst: "Temperature", charm: "C-HARM", outlook: "Outlook" };
 export const KIND_LABEL: Record<ExploreFrame["kind"], string> = { measured: "measured", analysis: "analysis", model: "model", outlook: "outlook" };

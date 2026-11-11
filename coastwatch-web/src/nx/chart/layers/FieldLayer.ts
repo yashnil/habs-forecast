@@ -12,7 +12,8 @@ import { gridBounds, mercX, mercY, type FieldGrid } from "./grid";
  *   "no view" hatch over a paper veil, never a low colour (T19, T20);
  * - a model or outlook never shares a mark with an observation (T2): an outlook carries a hatch over its ramp,
  *   and cells where it equals the climatology carry dots and no colour ("no signal", E finding 2); C-HARM is
- *   drawn as hatch density in ink by display class (T12: no alarm colour), lighter when the run is past (T3);
+ *   drawn in cw-probability-classes-v1's ten display intervals on the quiet --prob ramp with a model hatch over
+ *   it (T12: no alarm colour), lighter when the run is past (T3);
  * - a temperature analysis is drawn as isotherms (lines), so it never borrows the chlorophyll ramp (T22);
  * - colours come from the mode's tokens (day, dusk, night); a new frame swaps the texture, a cut (T26).
  * Screen-space patterns (hatch, dots) are drawn in device pixels, so they read the same at every zoom.
@@ -22,7 +23,7 @@ export type FieldStyle =
   | { kind: "ramp"; domain: [number, number]; scale: "log" | "linear"; opacity?: number }
   /** an outlook on the same ramp, hatched as a model; `aux` (the climatology) marks "no signal" cells with dots */
   | { kind: "outlook"; domain: [number, number]; scale: "log" | "linear"; opacity?: number }
-  /** a probability 0..1 as ink hatch density by display class; `past` draws it lighter */
+  /** a probability 0..1 in cw-probability-classes-v1 on the --prob ramp, hatched as a model; `past` draws it lighter */
   | { kind: "classes"; past: boolean }
   /** lines of equal value every `step` (in `value * scale + offset`: °C drawn as whole °F), heavier every `index` steps */
   | { kind: "isolines"; step: number; index: number; scale?: number; offset?: number };
@@ -50,6 +51,7 @@ uniform vec3 u_decAux;
 uniform int u_takeLog;
 uniform int u_variant;
 uniform vec4 u_ramp[8];
+uniform vec4 u_prob[10];
 uniform vec2 u_domain;
 uniform vec4 u_ink;
 uniform vec4 u_ink2;
@@ -130,10 +132,11 @@ void main() {
   }
   if (u_variant == 2) {
     if (nodata) discard;
-    int k = int(clamp(floor(v * 5.0), 0.0, 4.0));
-    float spacing = k == 0 ? 18.0 : k == 1 ? 12.0 : k == 2 ? 8.5 : k == 3 ? 6.0 : 4.5;
-    vec4 ink = u_past > 0.5 ? u_ink2 : u_ink;
-    o = pm(ink, (u_past > 0.5 ? 0.5 : 0.72) * hatch(spacing, 1.0));
+    // cw-probability-classes-v1: ten 10-point display intervals in the mode's quiet --prob ramp, at 0.72 as the
+    // legend draws it (T23), with the model's hatch over it (T2); a past run steps back (T3)
+    int k = int(clamp(floor(v * 10.0), 0.0, 9.0));
+    vec4 col = pm(u_prob[k], u_past > 0.5 ? 0.42 : 0.72);
+    o = over(pm(u_past > 0.5 ? u_ink2 : u_ink, 0.2 * hatch(8.0, 1.0)), col);
     return;
   }
   // isolines: bilinear between four valid cells only (an analysis is smooth by construction); none across land
@@ -259,7 +262,7 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
       map = m;
       gl = ctx as WebGL2RenderingContext;
       prog = compile(gl, VS, FS);
-      for (const k of ["u_matrix", "u_data", "u_aux", "u_hasAux", "u_geo", "u_size", "u_stride", "u_dec", "u_decAux", "u_takeLog", "u_variant", "u_ramp", "u_domain", "u_ink", "u_ink2", "u_hatch", "u_paper", "u_dpr", "u_opacity", "u_step", "u_index", "u_past", "u_iso"]) u[k] = gl.getUniformLocation(prog, k);
+      for (const k of ["u_matrix", "u_data", "u_aux", "u_hasAux", "u_geo", "u_size", "u_stride", "u_dec", "u_decAux", "u_takeLog", "u_variant", "u_ramp", "u_prob", "u_domain", "u_ink", "u_ink2", "u_hatch", "u_paper", "u_dpr", "u_opacity", "u_step", "u_index", "u_past", "u_iso"]) u[k] = gl.getUniformLocation(prog, k);
       vao = gl.createVertexArray();
       gl.bindVertexArray(vao);
       quad = gl.createBuffer();
@@ -317,6 +320,7 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
       // a linear grid on a log ramp: the shader takes the log of each value
       g.uniform1i(u.u_takeLog, !logGrid && "scale" in style && style.scale === "log" ? 1 : 0);
       g.uniform4fv(u.u_ramp, new Float32Array(cols.chl.flatMap((c: RGBA) => c)));
+      g.uniform4fv(u.u_prob, new Float32Array(cols.prob.flatMap((c: RGBA) => c)));
       if (style.kind === "ramp" || style.kind === "outlook") {
         const [lo, hi] = style.domain;
         // the ramp's domain in the grid's own units: log10 values for a log10 grid, values otherwise

@@ -14,11 +14,7 @@
 .figUnit { font-size: var(--t-14); font-weight: 600; white-space: nowrap; }
 .caption { margin: var(--s-4) 0 0; font-size: var(--t-14); line-height: 1.4; color: var(--ink); }
 .keys { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-16); font-size: var(--t-14); font-weight: 600; }
-.keys li, .classes li { display: flex; align-items: center; gap: var(--s-8); }
-.classes { list-style: none; margin: var(--s-8) 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--s-4); font-size: var(--t-14); font-weight: 600; font-variant-numeric: tabular-nums; }
-.classes li { flex-direction: column; align-items: stretch; gap: var(--s-4); }
-.classes li span { white-space: nowrap; }
-.classes .swatch { width: 100%; }
+.keys li { display: flex; align-items: center; gap: var(--s-8); }
 .swatch { display: block; width: 40px; height: 16px; flex: none; overflow: hidden; }
 .swatchFrame { fill: var(--paper); stroke: var(--ink); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .swatchHatch line { stroke: var(--ink); stroke-width: 1; vector-effect: non-scaling-stroke; }

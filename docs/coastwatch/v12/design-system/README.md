@@ -67,6 +67,8 @@ Day tokens (contrast on paper `#FFFEFA`):
 | `--rule` / `--rule-soft` | ink / `rgba(14,20,23,.26)` | 1.5 px heads and tallies / 1 px hairlines |
 | `--focus` | ink | 2 px outline, 2 px offset |
 | `--chl-0…7` | `#F6F4DC` → `#052327` | Chlorophyll, log10 0.05–50 mg/m³, high is dark, lightness monotone |
+| `--prob-0…9` | `#F4F2FB` → `#34315D` | C-HARM probability in cw-probability-classes-v1's ten 10-point display intervals (not risk tiers, T12): a quiet slate-violet clear of `--reg`, drawn at 0.72 under a model hatch; L* 95.9 → 22.7, min ΔL* 8.0 |
+| `--sst-0…7` | `#F8F2DC` → `#853E19` | Sea temperature, sequential cream to rust (its own hue family, T22); L* 95.4 → 35.0, min ΔL* 8.4. Explore draws temperature as isotherms; the ramp is there for a filled field or a legend that needs one |
 
 Dusk and Night tables are defined in `tokens.css` with their own computed contrast; Night keeps text ≥ 4.5:1 at
 its low luminance and drops depth tints to three steps.

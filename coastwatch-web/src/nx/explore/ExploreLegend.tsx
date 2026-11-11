@@ -2,17 +2,16 @@
 
 import { RampLegend } from "@/nx/ds";
 import type { CurrentFrame, ExploreFrame, ExploreProduct } from "./model";
-import { CHARM_CLASSES, CHL_DOMAIN, CHL_STEPS, CHL_TICKS, currentsCaption, legendCaption } from "./words";
+import { CHL_DOMAIN, CHL_STEPS, CHL_TICKS, currentsCaption, legendCaption, PROB_STEPS } from "./words";
 import s from "./explore.module.css";
 
 /**
  * Legend-as-title (README §9 RampLegend): the active layer's name is the title, its scale drawn as the data is
  * drawn (T23), its caption the kind, source, dates and mandatory words. Chlorophyll and the outlook use the
- * ds RampLegend; C-HARM's hatch classes and the temperature's isotherms have no colour ramp (T22), so their
- * legends draw their own marks in the same form.
+ * ds RampLegend, and so does C-HARM: its ten display classes (cw-probability-classes-v1) on the quiet --prob
+ * ramp at the opacity the chart draws them, with the model's hatch keyed beside it. The temperature's isotherms
+ * have no colour ramp (T22), so its legend draws its own marks in the same form.
  */
-const HATCH = [18, 12, 8.5, 6, 4.5];
-
 function HatchSwatch({ spacing, past }: { spacing: number; past?: boolean }) {
   const lines = [];
   for (let x = -24; x < 48; x += spacing) lines.push(<line key={x} x1={x} y1={24} x2={x + 24} y2={0} />);
@@ -51,21 +50,27 @@ export function ExploreLegend({ product, frame, currents }: { product: ExplorePr
     );
   } else if (product.id === "charm") {
     body = (
-      <figure className={s.figure} aria-label={`${product.name}. Probability in five display classes.`}>
-        <figcaption className={s.figHead}>
-          <span className={s.figTitle}>C-HARM, P(pDA &gt; 500 ng/L)</span>
-          <span className={s.figUnit}>probability</span>
-        </figcaption>
-        <ol className={s.classes}>
-          {CHARM_CLASSES.map((c, i) => (
-            <li key={c}>
-              <HatchSwatch spacing={HATCH[i]} past={product.pastRun} />
-              <span>{c}</span>
-            </li>
-          ))}
-        </ol>
+      <>
+        <RampLegend
+          title="C-HARM, P(pDA > 500 ng/L)"
+          unit="probability, ten display classes"
+          steps={PROB_STEPS}
+          domain={[0, 1]}
+          scale="linear"
+          ticks={[0, 0.5, 1]}
+          tickFormat={(v) => `${Math.round(v * 100)} %`}
+          noView={false}
+          opacity={product.pastRun ? 0.42 : 0.72}
+          className={s.legend}
+        />
+        <ul className={s.keys} aria-label="Marks">
+          <li>
+            <HatchSwatch spacing={8} past={product.pastRun} />
+            <span>Hatched: a model{product.pastRun ? ", past run drawn lighter" : ""}</span>
+          </li>
+        </ul>
         <p className={s.caption}>{caption}</p>
-      </figure>
+      </>
     );
   } else {
     body = (
