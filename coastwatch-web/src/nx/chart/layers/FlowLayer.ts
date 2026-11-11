@@ -3,6 +3,8 @@
 import type { CustomLayerInterface, Map as MapLibreMap } from "maplibre-gl";
 import type { CurrentField } from "@/lib/currents";
 import { FlowSim, HIST, HIST_MS, SEG, mercX, mercY } from "@/lib/flowSim";
+
+
 import { noteSlowFrames } from "@/lib/capability";
 import type { ModeColours } from "./colors";
 import { coverageEdges } from "./grid";
@@ -24,7 +26,9 @@ export type FlowState = { still: boolean; paused: boolean };
 export type FlowDebug = { running: () => boolean; count: () => number; segments: () => number; edges: () => number; heads: () => [number, number][]; fieldId: () => string; frames: () => number };
 
 /** Streaks move this many times faster than lib/flowSim's base rate (still proportional to the water's speed). */
-export const FLOW_TIME_SCALE = 2.2;
+export const FLOW_TIME_SCALE = 4;
+/** Seconds between trail samples: a trail of HIST samples spans about 3 s, long enough to read as a streamline. */
+export const TRAIL_SAMPLE_S = 0.2;
 
 const VS = `#version 300 es
 uniform mat4 u_matrix; uniform vec2 u_viewport; uniform float u_width; uniform float u_taper;
@@ -38,16 +42,16 @@ void main() {
   vec2 d = sb - sa; float len = length(d);
   vec2 dir = len > 1e-4 ? d / len : vec2(1.0, 0.0);
   vec2 n = vec2(-dir.y, dir.x);
-  float w = u_width * mix(1.0, mix(0.22, 1.0, sqrt(clamp(a_alpha * 1.4, 0.0, 1.0))), u_taper);
+  float w = u_width * mix(1.0, mix(0.3, 1.0, sqrt(clamp(a_alpha * 1.6, 0.0, 1.0))), u_taper);
   vec2 s = mix(sa, sb, a_corner.x) + n * a_corner.y * w * 0.5 + dir * (a_corner.x * 2.0 - 1.0) * w * 0.35;
-  gl_Position = vec4(s / (u_viewport * 0.5), 0.0, 1.0);
+  gl_Position = vec4(s / (u_viewport * 0.5), pa.z / pa.w, 1.0);
   v_alpha = a_alpha; v_side = a_corner.y;
 }`;
 const FS = `#version 300 es
 precision mediump float;
 uniform vec4 u_color;
 in float v_alpha; in float v_side; out vec4 o;
-void main() { float e = 1.0 - smoothstep(0.5, 1.0, abs(v_side)); float a = clamp(v_alpha, 0.0, 1.0) * e * u_color.a; o = vec4(u_color.rgb * a, a); }`;
+void main() { float e = 1.0 - smoothstep(0.5, 1.0, abs(v_side)); float a = clamp(v_alpha * 1.7, 0.0, 1.0) * e * u_color.a; o = vec4(u_color.rgb * a, a); }`;
 
 function compile(gl: WebGL2RenderingContext) {
   const sh = (t: number, s: string) => {
@@ -118,7 +122,8 @@ export function createFlowLayer(layerId: string, tier: FlowTier, colours: ModeCo
 
   const settle = () => {
     if (!map || !sim.field) return;
-    sim.settle(worldPx() / FLOW_TIME_SCALE);
+    // the still frame's trails span what a moving one's do (flowSim settles in HIST_MS steps)
+    sim.settle((worldPx() * HIST_MS) / 1000 / (TRAIL_SAMPLE_S * FLOW_TIME_SCALE));
     map.triggerRepaint();
   };
 
@@ -158,7 +163,7 @@ export function createFlowLayer(layerId: string, tier: FlowTier, colours: ModeCo
     }
     const dt = Math.min(0.05, (t - last) / 1000);
     last = t;
-    const sample = t - lastHist >= HIST_MS;
+    const sample = t - lastHist >= TRAIL_SAMPLE_S * 1000;
     if (sample) lastHist = t;
     sim.step(dt * FLOW_TIME_SCALE, worldPx(), sample);
     map.triggerRepaint();
@@ -280,7 +285,7 @@ export function createFlowLayer(layerId: string, tier: FlowTier, colours: ModeCo
       const ws = worldPx();
       for (let i = 0; i < 16; i++) mat[i] = src[i] * (i < 8 ? ws : 1);
       g.disable(g.STENCIL_TEST);
-      g.disable(g.DEPTH_TEST);
+      // the depth test MapLibre set for this layer's slot stays on: its opaque land, drawn earlier front to back, masks the data
       g.disable(g.CULL_FACE);
       g.enable(g.BLEND);
       g.blendFunc(g.ONE, g.ONE_MINUS_SRC_ALPHA);
@@ -293,7 +298,7 @@ export function createFlowLayer(layerId: string, tier: FlowTier, colours: ModeCo
         g.uniform1f(u.u_taper, 0);
         g.uniform1f(u.u_width, 1.2 * dpr);
         const [r, gg, b] = cols.ink2;
-        g.uniform4f(u.u_color, r, gg, b, 0.5);
+        g.uniform4f(u.u_color, r, gg, b, 0.32);
         g.bindVertexArray(edgeVao);
         g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, edgeCount);
       }
@@ -313,11 +318,11 @@ export function createFlowLayer(layerId: string, tier: FlowTier, colours: ModeCo
         g.bufferSubData(g.ARRAY_BUFFER, 0, inst, 0, n * SEG);
         g.uniform1f(u.u_taper, 1);
         // a casing in the halo colour holds each streak's edge over any ground (it carries no value)
-        g.uniform1f(u.u_width, 4.6 * dpr);
+        g.uniform1f(u.u_width, 4.2 * dpr);
         const [hr, hg, hb, ha] = cols.halo;
-        g.uniform4f(u.u_color, hr, hg, hb, ha * 0.55);
+        g.uniform4f(u.u_color, hr, hg, hb, ha * 0.38);
         g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, n);
-        g.uniform1f(u.u_width, 2.2 * dpr);
+        g.uniform1f(u.u_width, 2.4 * dpr);
         const [sr, sg, sb, sa] = cols.streak;
         g.uniform4f(u.u_color, sr, sg, sb, sa * 0.92);
         g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, n);

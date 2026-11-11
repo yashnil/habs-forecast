@@ -108,8 +108,8 @@ void main() {
 
   if (u_variant == 0) {
     if (nodata) {
-      vec4 veil = pm(u_paper, 0.55);
-      o = over(pm(u_hatch, hatch(7.0, 1.0)), veil);
+      vec4 veil = pm(u_paper, 0.42);
+      o = over(pm(u_hatch, 0.5 * hatch(10.0, 1.0)), veil);
       return;
     }
     o = pm(ramp(rampT(v)), u_opacity);
@@ -292,7 +292,7 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
       for (let i = 0; i < 16; i++) mat[i] = src[i] * (i < 8 ? ws : 1);
       const { grid } = data;
       g.disable(g.STENCIL_TEST);
-      g.disable(g.DEPTH_TEST);
+      // the depth test MapLibre set for this layer's slot stays on: its opaque land, drawn earlier front to back, masks the data
       g.disable(g.CULL_FACE);
       g.enable(g.BLEND);
       g.blendFunc(g.ONE, g.ONE_MINUS_SRC_ALPHA);
