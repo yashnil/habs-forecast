@@ -18,7 +18,7 @@ test.describe("agency source discrepancy", () => {
   test("the notices panel sets the reported-lifted notice apart and does not count it", async ({ page }) => {
     await open(page, `${FAILED}/coast?place=port-550`);
     const button = page.getByTestId("notices-button");
-    const count = Number(await button.locator(".nx-data").innerText());
+    const count = Number(await page.getByTestId("notices-count").innerText());
     await button.click();
     const panel = page.getByTestId("notices-panel");
     const disputed = panel.getByTestId("notices-disputed");
@@ -57,6 +57,7 @@ test.describe("agency source discrepancy", () => {
     await expect(claim.getByRole("link", { name: /SN26-021/ })).toHaveAttribute("href", /SN26-021\.aspx$/);
     await expect(page.getByTestId("unknowns")).toContainText("release SN26-021 appears to lift");
     // in the official list it carries the release, never a plain "in effect"
+    await page.getByTestId("notices-open").click();
     await expect(page.getByTestId(`notice-official:${ID}`)).toContainText("appears to lift it; awaiting review");
     // and no ordinary official statement counts it as applying
     expect(await page.locator(`[data-testid="matters"] [data-kind="official"][data-supports~="official:${ID}"]:not([data-testid^="claim-disputed-"])`).count()).toBe(0);
@@ -71,9 +72,11 @@ test.describe("agency source discrepancy", () => {
     await open(page, `${OK}/coast?place=port-550`);
     await expect(page.getByTestId(`claim-disputed-${ID}`)).toHaveCount(0);
     // the notice is listed for Monterey as an ordinary, unverified notice
+    await page.getByTestId("notices-open").click();
     const row = page.getByTestId(`notice-official:${ID}`);
     await expect(row).toContainText("Not verified");
     await expect(row).not.toContainText("appears to lift");
+    await page.getByTestId("notices-sheet-close").click();
     await page.getByTestId("notices-button").click();
     await expect(page.getByTestId("notices-disputed")).toHaveCount(0);
     // listed once, as a notice covering Monterey's waters (the briefing's place)

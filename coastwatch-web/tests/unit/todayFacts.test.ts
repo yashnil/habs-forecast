@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { BiotoxinIndex, FisheriesStatusIndex, PortFact } from "@/pilot/contracts";
 import type { Conditions } from "@/lib/conditions";
-import { FISHERY_OPTIONS, OUTLOOK_SIGNAL_RATIO, buildPortToday, buildTodayModel, diffFacts, factorWords, ledeParts, outlookErrorFactor, outlookRead, parseFisheries, statusTally, rampZoneFor, skillWords, snapFacts, testSentence, type CharmInput, type NoticeInput, type OutlookInput, type PortTodayInputs } from "@/pilot/facts";
+import { FISHERY_OPTIONS, OUTLOOK_SIGNAL_RATIO, alertEndWords, rowHeadline, rowWord, unverifiedCount, buildPortToday, buildTodayModel, diffFacts, factorWords, ledeParts, outlookErrorFactor, outlookRead, parseFisheries, statusTally, rampZoneFor, skillWords, snapFacts, testSentence, type CharmInput, type NoticeInput, type OutlookInput, type PortTodayInputs } from "@/pilot/facts";
 import { parseBiotoxin, parseFisheriesStatus } from "@/pilot/data";
 
 // the data track's fixtures (pilot/data: `cwp fixture`), as the page reads them
@@ -54,6 +54,38 @@ const BIO_PLUS: BiotoxinIndex = { ...BIO, sites: [...BIO.sites, PROGRESS, ANCHOV
 const SAFETY = /\b(safe|safety|all clear|clear to|good to go|go fishing|green light|no risk)\b/i;
 const text = (f: PortFact) => [f.headline, f.value, f.detail].filter(Boolean).join(" ");
 
+describe("Today's honesty rules", () => {
+  it("counts the group's not-verified marker, with no-record rows as not verified and exceptions only in a mixed group", () => {
+    expect(unverifiedCount([{ verified: false, known: true }, { verified: null, known: true }, { verified: true, known: false }])).toMatchObject({ n: 2, of: 2, words: "2 of 2", mixed: false });
+    expect(unverifiedCount([{ verified: false, known: true }, { verified: true, known: true }])).toMatchObject({ n: 1, of: 2, words: "1 of 2", mixed: true });
+    expect(unverifiedCount([{ verified: true, known: true }])).toMatchObject({ n: 0, words: null, mixed: false });
+  });
+
+  it("the lede carries its own source, date and review state, and 'none on record' carries its caveat in the same sentence", () => {
+    const m = buildTodayModel(base({ selected: ["dungeness_commercial"] }));
+    expect(m.lede.source?.name).toBe("CDFW");
+    expect(m.lede.checked_at).toBeTruthy();
+    expect(m.lede.verified).toBe(false);
+    const quiet = buildTodayModel(base({ selected: ["groundfish"] }));
+    expect(quiet.lede.text).toMatch(/No closure or restriction on record.*Not a promise they are open/);
+    expect(quiet.lede.verified).not.toBe(true);
+  });
+
+  it("a C-HARM run whose days have all passed is a past run, never an outlook, and raises no watch", () => {
+    const oldRun: CharmInput = { ...charm(0.9, "stale"), days: charm(0.9, "stale").days.map((d, i) => ({ ...d, date: `2026-10-0${i + 1}` })) };
+    const v = buildTodayModel(base({ charm: oldRun }));
+    expect(v.bloom.charmPast).toBe(true);
+    expect(v.bloom.charmFact.headline).toMatch(/past run/);
+    expect(v.bloom.charmFact.headline).toMatch(/Those days have passed/);
+    expect(v.bloom.charmFact.severity).toBe("info");
+  });
+
+  it("says an advisory's end only as NWS stated it", () => {
+    expect(alertEndWords(null, "2026-10-13T06:00:00Z")).toBe("no end time given");
+    expect(alertEndWords("2026-10-13T15:00:00-07:00", "2026-10-13T06:00:00Z")).toBe("until Oct 13, 3:00 PM");
+  });
+});
+
 describe("buildPortToday: hierarchy", () => {
   it("puts an official closure or delay first, ahead of every test, forecast and outlook", () => {
     const t = buildPortToday(base({ charm: charm(0.9) }));
@@ -92,7 +124,8 @@ describe("buildPortToday: hierarchy", () => {
     expect(row.fact.detail).toContain("This is a rule for sport harvest, not a closure of a commercial fishery.");
     expect(m.today.facts.find((f) => f.id === "notice:cdph-mussels")).toMatchObject({ value: "Sport harvest closed", severity: "red" });
     // the count is in the pills' own words: the delay is the one commercial action, the quarantine is counted as what it is
-    expect(statusTally(m.status)).toBe("1 delayed · 1 sport harvest closed · 1 restricted · 1 season closed · 3 none on record");
+    // (here the registry and the curated record disagree, so the row counts as unclear, never as settled)
+    expect(statusTally(m.status)).toBe("1 delayed · 1 status unclear · 1 restricted · 1 season closed · 3 none on record");
     expect(statusTally(m.status)).not.toMatch(/closed or delayed/);
     // without the notice the curated record leads: a watch on sport harvest, counted as a watch (not a restriction)
     const calm = buildTodayModel(base());
@@ -140,6 +173,10 @@ describe("buildPortToday: hierarchy", () => {
     expect(row.level).toBe("closed");
     expect(row.conflict).toMatchObject({ shown: "notice", notice: { word: "Closed", agency: "CDPH", effective: "2026-05-01", checked: "2026-10-08T19:32:08Z", verified: false }, record: { word: "Watch", source: "CDPH", checked: curated.checked_at, verified: false } });
     expect(row.checked_at).toBe("2026-10-08T19:32:08Z");
+    // the row never states it as settled: unclear, awaiting a person's review (the sheet shows both records)
+    expect(rowWord(row)).toBe("Status unclear");
+    expect(rowHeadline(row)).toBe("Sport harvest: sources differ, awaiting a person's review.");
+    expect(statusTally([row])).toBe("1 status unclear");
     const d = row.fact.detail!;
     expect(d).toContain("Sources differ: the official-notices registry lists “Annual quarantine of sport-harvested mussels” as in effect (CDPH, in effect since May 1, registry last read Oct 8, not verified)");
     expect(d).toContain(`while Neritic's curated status says “${curated.headline.replace(/\.$/, "")}” (CDPH, checked Nov 8, not verified)`);
@@ -365,6 +402,17 @@ describe("buildPortToday: words", () => {
     // issued last evening: at 6 AM "Tonight" (Oct 12) is over and not shown; at 11 PM it is
     expect(m.sea.lanes[0].name).toBe("Tue");
     expect(buildTodayModel(base({ conditions: cond, now: "2026-10-13T06:00:00Z" })).sea.lanes[0].name).toBe("Tonight");
+    // NWS's evening bulletin can still open with "This Afternoon": by 6 PM that period is over and does not lead
+    const evening: Conditions = {
+      ...cond,
+      marine: { status: "ok", source: "NWS", url: "https://x", fetchedAt: "2026-11-10T05:45:00Z", data: { zone: "PZZ535", zoneName: "Monterey Bay", updated: "2026-11-10T04:55:00.000Z", periods: [{ name: "This Afternoon", text: "NW wind 5 to 10 kt. Seas 5 to 7 ft." }, { name: "Tonight", text: "N wind 10 to 15 kt. Seas 5 to 7 ft." }] } },
+      alerts: { status: "ok", source: "NWS", url: "https://x", fetchedAt: "2026-11-10T05:45:00Z", data: [{ event: "Small craft advisory", headline: "Small craft advisory in effect until 9 pm pst this evening", onset: null, ends: "2026-11-10T05:00:00.000Z", url: "https://x" }] },
+    } as Conditions;
+    const night = buildTodayModel(base({ conditions: evening, now: "2026-11-10T05:45:00Z" }));
+    expect(night.sea.lanes[0].name).toBe("Tonight");
+    expect(night.sea.alerts).toEqual([]); // its stated end has passed
+    const before = buildTodayModel(base({ conditions: evening, now: "2026-11-10T04:58:00Z" }));
+    expect(before.sea.alerts).toHaveLength(1);
     expect(m.lede.sea).toMatch(/kt/);
   });
 });

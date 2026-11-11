@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { openPack } from "./helpers";
 import { OK } from "./ports";
 
 /**
@@ -20,7 +21,7 @@ const RECORD = "/__pack__/record.json";
 async function openPanel(page: Page) {
   await page.goto(`${OK}/coast?place=port-550`);
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   await expect(page.getByTestId("pack-download")).toBeEnabled({ timeout: 60_000 });
 }
 async function save(page: Page) {
@@ -38,7 +39,7 @@ const record = (page: Page) =>
   );
 async function reopen(page: Page) {
   await page.reload();
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   await expect(page.getByTestId("pack-download")).toBeEnabled({ timeout: 60_000 });
 }
 async function closePanel(page: Page) {
@@ -101,13 +102,13 @@ test("storage runs out during a download: said as full, nothing claimed saved, t
   expect(partial!.verified.missing).toBeGreaterThan(0);
   // the status centre says incomplete, never ready
   await closePanel(page);
-  await page.getByTestId("status-center").click();
+  await page.getByTestId("notices-button").click();
   await expect(page.getByTestId("status-panel").getByTestId("source-pack")).toHaveAttribute("data-state", "incomplete");
   await page.keyboard.press("Escape");
 
   // space is freed: the download finishes, keeping what was already saved
   await cdp.send("Storage.overrideQuotaForOrigin", { origin: OK });
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   await expect(page.getByTestId("pack-download")).toContainText("Finish the download", { timeout: 60_000 });
   await page.getByTestId("pack-download").click();
   await expect(status).toHaveAttribute("data-complete", "true", { timeout: 90_000 });
@@ -147,7 +148,7 @@ test("an older pack format, a damaged record, missing files and an unfinished do
   await expect.poll(() => page.evaluate(() => (window as unknown as { __cwMap?: { getStyle(): { sources: { omt?: { url?: string } } } } }).__cwMap?.getStyle().sources.omt?.url ?? ""), { timeout: 20_000 }).toMatch(/^pmtiles:/);
   await goOnline(ctx);
   await page.goto(`${OK}/coast?place=port-550`);
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   await expect(page.getByTestId("pack-download")).toBeEnabled({ timeout: 60_000 });
   await page.getByTestId("pack-download").click();
   await expect(page.getByTestId("pack-status")).toContainText("verified", { timeout: 90_000 });
@@ -181,10 +182,10 @@ test("an older pack format, a damaged record, missing files and an unfinished do
   await expect(page.getByTestId("pack-problem")).toHaveAttribute("data-problem", "damaged-record");
   await expect(page.getByTestId("pack-status")).toHaveCount(0);
   await closePanel(page);
-  await page.getByTestId("status-center").click();
+  await page.getByTestId("notices-button").click();
   await expect(page.getByTestId("status-panel").getByTestId("source-pack")).toHaveAttribute("data-state", "incomplete");
   await page.keyboard.press("Escape");
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   await expect(page.getByTestId("pack-download")).toBeEnabled({ timeout: 60_000 });
   await page.getByTestId("pack-download").click();
   await expect(page.getByTestId("pack-status")).toHaveAttribute("data-complete", "true", { timeout: 90_000 });
@@ -278,7 +279,7 @@ test("offline, the saved briefing is dated, never 'now'; its age is said once ou
   // the pack saved the briefing for all species: another trip is told so, never that it was saved for it
   await expect(page.getByTestId("offline-banner")).toContainText("saved for all species");
   // the address bar's own trip, after hydrating the saved HTML
-  await expect(page.getByTestId("trip-summary")).toContainText("Commercial fishing");
+  await expect(page.getByTestId("trip-summary")).toContainText(/commercial/i);
 
   // a harbour no pack holds: said, with the way to the saved one; never Monterey's banner over it
   await page.goto(`${OK}/coast?place=port-201`);
@@ -317,7 +318,7 @@ test("the pack dialog: focus moves in and stays, Escape closes it and returns fo
     await new Promise((d) => setTimeout(d, 150));
     await r.continue();
   });
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   await expect(page.getByTestId("pack-download")).toBeEnabled({ timeout: 60_000 });
   await page.getByTestId("pack-download").click();
   await expect(page.getByTestId("pack-progress")).toBeVisible();
@@ -326,7 +327,7 @@ test("the pack dialog: focus moves in and stays, Escape closes it and returns fo
   await expect(dialog).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   await expect(page.getByTestId("pack-progress")).toBeVisible();
   await expect(page.getByTestId("pack-status")).toHaveAttribute("data-complete", "true", { timeout: 120_000 });
   await ctx.unrouteAll({ behavior: "ignoreErrors" });

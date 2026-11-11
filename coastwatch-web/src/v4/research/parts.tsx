@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Sample } from "@/lib/observations";
-import type { CharmVariable } from "@/lib/layers";
 import { distanceKm } from "@/lib/grid";
 import { Icon } from "@/v4/ui/Icon";
-import { dayLabel } from "@/v4/ui/time";
-import { qcWords, readingAt, type LinkedModel, type LinkedReading } from "@/v4/charts/LinkedSeries";
+import { readingAt, type LinkedModel } from "@/v4/charts/LinkedSeries";
 import { useWidth } from "@/v4/charts/useWidth";
-import { preciseProbability } from "@/v4/explore/Inspect";
-import { VARIABLE_WORDS } from "@/v4/explore/layers";
 import type { TransectCell } from "./transect";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
@@ -33,7 +29,7 @@ export function ExportButton({ onClick, testid, children }: { onClick: () => voi
 export function Seg<T extends string | number>({ label, value, options, onChange, testId, scroll = false }: { label: string; value: T; options: { id: T; label: ReactNode; testId?: string; title?: string }[]; onChange: (v: T) => void; testId?: string; scroll?: boolean }) {
   return (
     <div className={scroll ? "-mx-4 min-w-0 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-40px),transparent)] max-sm:pr-10" : "min-w-0"}>
-      <div role="radiogroup" aria-label={label} className={`inline-flex rounded-[4px] border border-n-line p-0.5 ${scroll ? "" : "flex-wrap"}`} data-testid={testId}>
+      <div role="radiogroup" aria-label={label} className={`inline-flex rounded-[12px] bg-n-surface-2 p-[3px] ${scroll ? "" : "flex-wrap"}`} data-testid={testId}>
         {options.map((o) => (
           <button
             key={String(o.id)}
@@ -42,7 +38,7 @@ export function Seg<T extends string | number>({ label, value, options, onChange
             aria-checked={o.id === value}
             title={o.title}
             onClick={() => onChange(o.id)}
-            className={`nx-focus min-h-10 shrink-0 whitespace-nowrap rounded-[3px] px-3 text-[13.5px] font-medium ${o.id === value ? "bg-n-surface-3 text-n-ink" : "text-n-ink-2 hover:text-n-ink"}`}
+            className={`nx-focus min-h-11 shrink-0 whitespace-nowrap rounded-[9px] px-3 text-[13.5px] font-medium ${o.id === value ? "bg-n-surface-3 text-n-ink" : "text-n-ink-2 hover:text-n-ink"}`}
             data-testid={o.testId}
           >
             {o.label}
@@ -53,51 +49,9 @@ export function Seg<T extends string | number>({ label, value, options, onChange
   );
 }
 
-/** The section tabs: an underline tablist; every panel stays mounted (hidden), so its wording is in the page. */
-export function Tabs<T extends string>({ tabs, value, onChange, idBase }: { tabs: { id: T; label: string }[]; value: T; onChange: (v: T) => void; idBase: string }) {
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const onKey = (e: KeyboardEvent, i: number) => {
-    const n = tabs.length;
-    const j = e.key === "ArrowRight" ? (i + 1) % n : e.key === "ArrowLeft" ? (i - 1 + n) % n : e.key === "Home" ? 0 : e.key === "End" ? n - 1 : -1;
-    if (j < 0) return;
-    e.preventDefault();
-    onChange(tabs[j].id);
-    refs.current[j]?.focus();
-  };
+export function TabPanel({ id, idBase, active, label, children, className = "" }: { id: string; idBase: string; active: boolean; label: string; children: ReactNode; className?: string }) {
   return (
-    <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-40px),transparent)] max-sm:pr-10">
-      <div role="tablist" aria-label="Station record sections" className="flex min-w-max gap-5 border-b border-n-line sm:gap-7">
-        {tabs.map((t, i) => {
-          const on = t.id === value;
-          return (
-            <button
-              key={t.id}
-              ref={(el) => {
-                refs.current[i] = el;
-              }}
-              type="button"
-              role="tab"
-              id={`${idBase}-tab-${t.id}`}
-              aria-selected={on}
-              aria-controls={`${idBase}-panel-${t.id}`}
-              tabIndex={on ? 0 : -1}
-              onClick={() => onChange(t.id)}
-              onKeyDown={(e) => onKey(e, i)}
-              className={`nx-focus -mb-px min-h-12 whitespace-nowrap border-b-2 text-[14.5px] ${on ? "border-n-ink text-n-ink" : "border-transparent text-n-ink-2 hover:text-n-ink"}`}
-              data-testid={`research-tab-${t.id}`}
-            >
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-export function TabPanel({ id, idBase, active, children, className = "" }: { id: string; idBase: string; active: boolean; children: ReactNode; className?: string }) {
-  return (
-    <div role="tabpanel" id={`${idBase}-panel-${id}`} aria-labelledby={`${idBase}-tab-${id}`} hidden={!active} className={`pt-6 ${className}`} data-testid={`research-panel-${id}`}>
+    <div role="tabpanel" id={`${idBase}-panel-${id}`} aria-label={label} hidden={!active} className={`pt-8 ${className}`} data-testid={`research-panel-${id}`}>
       {children}
     </div>
   );
@@ -132,105 +86,6 @@ export function ExportMenu({ children }: { children: (close: () => void) => Reac
 
 /** A row of the Export menu. */
 export const MENU_ITEM = "nx-focus flex min-h-12 w-full flex-col items-start justify-center rounded-lg px-3 py-1.5 text-left hover:bg-n-surface-2";
-
-/**
- * The crosshair's two readings (v10), large: what was measured at the pier that day and what C-HARM
- * published for the same day, each with its family, kind and date. Two different quantities; nothing
- * is computed between them. They follow the crosshair; at rest it stands on the window's newest sample.
- */
-export function Readings({ reading, unit, fmt, quantity, variable, radiusKm, pinned }: { reading: LinkedReading | null; unit: string; fmt: (v: number) => string; quantity: string; variable: CharmVariable | null; radiusKm: number; pinned: boolean }) {
-  if (!reading) return <p className="text-[14px] text-n-ink-2" data-testid="cursor-readout">No sample in this window.</p>;
-  const s = reading.sample;
-  const m = reading.model;
-  return (
-    <div className={`grid gap-x-5 gap-y-3 sm:gap-x-8 ${variable ? "grid-cols-2" : "grid-cols-1"}`} data-testid="cursor-readout">
-      <div className="min-w-0" data-testid="cursor-measured">
-        <p className="nx-caps !text-n-measured">
-          Measured<span className="max-sm:hidden"> at the pier</span> · <span className="whitespace-nowrap max-sm:hidden">{dayLabel(reading.day, true)}</span>
-          <span className="whitespace-nowrap sm:hidden">{dayLabel(reading.day)}</span>
-          {pinned && <span className="text-n-ink"> · pinned</span>}
-        </p>
-        <p className="mt-1 min-h-[24px] leading-none sm:mt-2 sm:min-h-[34px]">
-          {s ? (
-            s.q === "rejected_negative" ? (
-              <span className="text-[17px] text-n-down">rejected (QC), not a measurement</span>
-            ) : (
-              <span className="nx-value max-sm:!text-[22px]">
-                {s.q === "reported_zero" || s.value === 0 ? "0" : fmt(s.value!)}
-                <small>{unit}</small>
-              </span>
-            )
-          ) : (
-            <span className="text-[15px] text-n-ink-2">no sample that day</span>
-          )}
-        </p>
-        <p className="mt-1 text-[12.5px] leading-[17px] text-n-ink-3 sm:mt-1.5">
-          <span className="max-sm:hidden">{quantity} · </span>
-          {s ? qcWords(s) : "measured on sampling days only"}
-        </p>
-      </div>
-      {variable && (
-        <div className="min-w-0" data-testid="cursor-model">
-          <p className="nx-caps !text-n-model">
-            <span className="max-sm:hidden">NOAA </span>C-HARM<span className="max-sm:hidden"> nowcast</span>, same day
-          </p>
-          <p className="mt-1 min-h-[24px] leading-none sm:mt-2 sm:min-h-[34px]">{m ? <span className="nx-value !text-n-model max-sm:!text-[22px]">{pct(m.v)}</span> : <span className="text-[15px] text-n-ink-2">{reading.modelWhy}</span>}</p>
-          {m && (
-            <p className="mt-1 text-[12.5px] leading-[17px] text-n-ink-3 sm:mt-1.5">
-              model probability <span className="max-sm:hidden">({preciseProbability(m.v, null)}) of {VARIABLE_WORDS[variable].short}, median of {m.n} cells within {radiusKm} km{m.partial ? "; fewer cells than usual" : ""}</span>
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * The quantity tabs (v10): an underline row, each with its units; the measured family's teal marks the
- * one shown. Radios, so the arrow keys move between them.
- */
-export function VariableTabs<T extends string>({ value, options, onChange }: { value: T; options: { id: T; label: string; unit: string; title?: string }[]; onChange: (v: T) => void }) {
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const onKey = (e: KeyboardEvent, i: number) => {
-    const n = options.length;
-    const j = e.key === "ArrowRight" || e.key === "ArrowDown" ? (i + 1) % n : e.key === "ArrowLeft" || e.key === "ArrowUp" ? (i - 1 + n) % n : -1;
-    if (j < 0) return;
-    e.preventDefault();
-    onChange(options[j].id);
-    refs.current[j]?.focus();
-  };
-  return (
-    <div className="-mx-4 min-w-0 overflow-x-auto px-4 [scrollbar-width:none] max-sm:w-[calc(100%+32px)] max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-32px),transparent)] sm:mx-0 sm:px-0">
-      <div role="radiogroup" aria-label="Quantity" className="flex min-w-max gap-6 sm:gap-7" data-testid="rvar-rail">
-        {options.map((o, i) => {
-          const on = o.id === value;
-          return (
-            <button
-              key={o.id}
-              ref={(el) => {
-                refs.current[i] = el;
-              }}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              tabIndex={on ? 0 : -1}
-              title={o.title}
-              onClick={() => onChange(o.id)}
-              onKeyDown={(e) => onKey(e, i)}
-              className={`nx-focus relative flex min-h-11 items-center gap-1.5 whitespace-nowrap text-[15px] sm:min-h-12 ${on ? "text-n-ink" : "text-n-ink-2 hover:text-n-ink"}`}
-              data-testid={`rvar-${o.id}`}
-            >
-              {o.label}
-              <span className="font-data text-[10.5px] text-n-ink-3">{o.unit}</span>
-              {on && <span aria-hidden className="absolute inset-x-0 -bottom-px h-[2px] bg-n-measured" />}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 /** The window's samples as a table (newest first): the same values, QC words and the model's same day. */
 export function SamplesTable({ samples, unit, model }: { samples: Sample[]; unit: string; model: LinkedModel | null }) {

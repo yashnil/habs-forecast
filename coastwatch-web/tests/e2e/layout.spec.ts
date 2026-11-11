@@ -129,7 +129,7 @@ test("the briefing and Research arrive in the first HTML, not in a streamed boun
   }
 });
 
-test("a short screen (a phone held sideways): one compact top bar line; the preview disclosure folds into the notices pill", async ({ browser }) => {
+test("a short screen (a phone held sideways): one compact top bar line; the pill keeps its words", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   await page.clock.setFixedTime(new Date(NOW));
@@ -139,29 +139,26 @@ test("a short screen (a phone held sideways): one compact top bar line; the prev
     await expect(bar).toBeVisible();
     // one line of 44 px controls with a few pixels around them
     expect((await bar.boundingBox())!.height, p).toBeLessThanOrEqual(56);
-    await expect(page.getByTestId("registry-disclosure").first(), p).toBeHidden();
-    await expect(page.getByTestId("notices-preview").first(), p).toBeVisible();
-    // the agencies stay one tap away: in the notices panel
+    await expect(page.getByTestId("registry-disclosure").first(), p).toContainText(/not verified/i, { useInnerText: true });
+    // the agencies stay one tap away: in the pill's panel
     await page.getByTestId("notices-button").first().click();
     await expect(page.getByRole("dialog", { name: "Official notices" }).getByRole("link", { name: /CDFW/ })).toBeVisible();
     await page.keyboard.press("Escape");
   }
-  // a tall screen keeps the disclosure and a plain pill
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(`${OK}/coast?place=port-550`);
-  await expect(page.getByTestId("registry-disclosure").first()).toBeVisible();
-  await expect(page.getByTestId("notices-preview").first()).toBeHidden();
   await ctx.close();
 });
 
-test("touch targets: the agencies' links in the preview disclosure are at least 44 px at 320", async ({ browser }) => {
+test("touch targets: the agencies' links in the trust pill's panel are at least 44 px at 320", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   await page.clock.setFixedTime(new Date(NOW));
   for (const p of ["/coast?place=port-550", "/?layer=forecast"]) {
     await page.goto(`${OK}${p}`);
+    await page.getByTestId("notices-button").first().click();
+    // measured once the panel has finished growing in
+    await page.getByTestId("notices-panel").evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
     for (const name of ["CDFW", "CDPH"]) {
-      const b = await page.getByTestId("registry-disclosure").first().getByRole("link", { name, exact: true }).boundingBox();
+      const b = await page.getByTestId("notices-panel").getByRole("link", { name }).boundingBox();
       expect(b!.width, `${p} ${name}`).toBeGreaterThanOrEqual(44);
       expect(b!.height, `${p} ${name}`).toBeGreaterThanOrEqual(44);
     }

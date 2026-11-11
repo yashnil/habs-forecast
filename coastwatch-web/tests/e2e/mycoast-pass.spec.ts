@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import { openPack } from "./helpers";
 import { expect, test } from "@playwright/test";
 import { OK } from "./ports";
 
@@ -15,14 +16,18 @@ test("v10 pass 2: no stack of accordions; each detail sits folded beside its sub
   await expect(page.getByTestId("matters")).toBeVisible();
   // the map of the waters is the decision view's ground, not a fold
   await expect(page.getByTestId("locator")).toBeVisible();
-  for (const id of ["sea", "seasons", "checks", "unknown", "worth"]) await expect(page.getByTestId(`brief-${id}-toggle`)).toHaveAttribute("aria-expanded", "false");
-  await expect(page.getByTestId("checks")).toBeHidden();
+  for (const id of ["sea", "seasons", "unknown", "worth"]) await expect(page.getByTestId(`brief-${id}-toggle`)).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByTestId("checks")).toHaveCount(0);
   await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId("checks")).toBeVisible();
-  // on a wide screen what the statements rest on is open: measured beside official
+  await page.getByTestId("checks-sheet-close").click();
+  // what the statements rest on opens in place; the notices are the map's own sheet
+  await page.getByTestId("brief-evidence-toggle").click();
   await expect(page.getByTestId("brief-measured")).toBeVisible();
+  await page.getByTestId("notices-open").click();
   await expect(page.getByTestId("brief-official")).toBeVisible();
   await expect(page.getByTestId("brief-official")).toContainText("Not verified");
+  await page.getByTestId("notices-sheet-close").click();
   await expect(page.getByTestId("brief-unknown-toggle")).toContainText(/\d/);
   await expect(page.getByTestId("unknowns")).toBeHidden();
   await page.getByTestId("brief-unknown-toggle").click();
@@ -69,7 +74,7 @@ test("the phone sheet over the map is the instrument's own dark surface (v7), ne
   const sheet = page.getByTestId("mobile-sheet");
   await expect(sheet).toBeVisible({ timeout: 20_000 });
   // the env-instrument surface token (#0c1921)
-  expect(await sheet.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(10, 18, 25)"); // v10: the Instrument surface, --nx-surface #0a1219
+  expect(await sheet.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(10, 20, 28)"); // v11: --nx-surface #0a141c
   await ctx.close();
 });
 
@@ -80,7 +85,7 @@ test("v6 P0 4: offline three days later, the saved copy is dated 'as saved' and 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-550&for=commercial&species=dungeness`);
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   await expect(page.getByTestId("pack-download")).toBeEnabled({ timeout: 60_000 });
   await page.getByTestId("pack-download").click();
   await expect(page.getByTestId("pack-status")).toHaveAttribute("data-complete", "true", { timeout: 90_000 });
@@ -100,7 +105,7 @@ test("v6 P0 4: offline three days later, the saved copy is dated 'as saved' and 
   await expect(page.getByTestId("glance-sea-link")).toHaveText("No NWS period saved for this day");
   await expect(page.getByTestId("sea-no-period")).toHaveText("No NWS period saved for this day.");
   // the water temperature carries its own measured date and where
-  await expect(page.getByTestId("glance-water")).toContainText(/measured Oct 1\d, .*\((CO-OPS|NDBC)/);
+  await expect(page.getByTestId("measured-text")).toContainText(/water \d+ °F at .*\((CO-OPS|NDBC)\).*\(Oct 1\d, /);
   // the saved periods are dated by their own day, never "Tonight"
   await page.getByTestId("brief-sea-toggle").click();
   // every saved period is listed in the note (no second fold), each by its own date

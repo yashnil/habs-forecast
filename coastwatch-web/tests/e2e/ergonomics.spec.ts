@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { OK } from "./ports";
-import { openEvidence } from "./helpers";
+import { openEvidence, openLayers } from "./helpers";
 
 /**
  * Fixes from the v2/v4 task walkthrough (scratchpad tasks-audit): the phone workspace never scrolls
@@ -34,6 +34,7 @@ test("phone: the layer list is one tap from the sheet's peek (the dock's layer b
   await expect(page.getByTestId("mobile-sheet")).toHaveAttribute("data-snap", "peek");
   await page.getByTestId("layer-capsule").click();
   await expect(page.getByTestId("layer-deck")).toBeVisible();
+  await openLayers(page);
   await page.getByTestId("layer-forecast").click();
   await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
   await expect(page).toHaveURL(/layer=forecast/);
@@ -68,8 +69,9 @@ test("the briefing (v10 pass 2): what changed, the season (its details at hand),
   await page.clock.setFixedTime(new Date("2026-10-13T06:00:00Z"));
   await page.goto(`${OK}/coast?place=port-201&for=commercial&species=dungeness`);
   const order = await page.locator('[data-testid^="brief-"]:not([data-testid$="-toggle"])').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
-  expect(order.slice(0, 9)).toEqual(["brief-changes", "brief-glance", "brief-seasons", "brief-econ", "brief-checks", "brief-lanes", "brief-sea", "brief-now", "brief-evidence"]);
-  expect(order.indexOf("brief-checks")).toBeLessThan(order.indexOf("brief-measured"));
+  // v11: the glance and the lanes, the evidence and its folds, then the ledger
+  expect(order.slice(0, 7)).toEqual(["brief-changes", "brief-glance", "brief-lanes", "brief-now", "brief-sea", "brief-seasons", "brief-evidence"]);
+  expect(order.at(-1)).toBe("brief-econ");
 });
 
 test("phone: a place picked in search lands in the map strip above the sheet, not behind it", async ({ browser }) => {

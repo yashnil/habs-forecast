@@ -114,7 +114,7 @@ async function marineParts(lat: number, lon: number, max = 4): Promise<[Conditio
       const fetchedAt = now().toISOString();
       return [
         { status: "ok", data: r.forecast, source, url: zonePageUrl(z.zone), fetchedAt },
-        { status: "ok", data: headlineAlerts(r.headlines, zonePageUrl(z.zone)), source, url: zonePageUrl(z.zone), fetchedAt },
+        { status: "ok", data: headlineAlerts(r.headlines, zonePageUrl(z.zone), r.forecast.updated), source, url: zonePageUrl(z.zone), fetchedAt },
       ];
     } catch (e) {
       return [{ status: "unavailable", reason: `The NWS forecast did not load (${msg(e)}).`, source, url: zonePageUrl(z.zone) }, link];

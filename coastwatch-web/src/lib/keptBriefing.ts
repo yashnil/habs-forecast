@@ -2,7 +2,7 @@ import type { Snapshot } from "@/lib/briefingSnapshot";
 import { AGENCY_LINKS } from "@/content/coast";
 import { speciesById } from "@/content/species";
 import { AUDIENCES } from "@/lib/coast";
-import { dtf, formatDate } from "@/lib/time";
+import { dtf, formatDate, stableFormat } from "@/lib/time";
 
 /**
  * A kept briefing: a dated copy of a snapshot that someone can print, or save as one self-contained
@@ -53,7 +53,7 @@ export function deleteKept(id: string): void {
 export function stamp(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return dtf("en-US", { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles", timeZoneName: "short" }).format(d);
+  return stableFormat(dtf("en-US", { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles", timeZoneName: "short" }), d);
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);

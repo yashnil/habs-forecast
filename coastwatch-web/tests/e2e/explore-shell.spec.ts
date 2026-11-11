@@ -19,7 +19,7 @@ test("phone: the status centre opens inside the screen, under the top bar", asyn
     const page = await ctx.newPage();
     await page.clock.setFixedTime(new Date(NOW));
     await page.goto(`${OK}/?layer=forecast`);
-    await page.getByTestId("status-center-compact").click();
+    await page.getByTestId("notices-button").click();
     const b = (await page.getByTestId("status-panel").boundingBox())!;
     expect(b.x).toBeGreaterThanOrEqual(0);
     expect(b.x + b.width).toBeLessThanOrEqual(w);
@@ -28,39 +28,44 @@ test("phone: the status centre opens inside the screen, under the top bar", asyn
   }
 });
 
-test("desktop: the layer index is always in view (no popover hunt), the time rail runs along the bottom, and nothing overlaps; Escape closes the place", async ({ page }) => {
+test("desktop: three zones (the field dock and rail along the bottom, tools at the right), nothing overlaps; Escape closes the place", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=forecast&lead=1`);
-  // v10: every family by its honest name and kind, the lit one checked; the layer button is the folded form only
-  const deck = page.getByTestId("layer-deck");
-  await expect(deck).toBeVisible();
-  await expect(page.getByTestId("layer-capsule")).toHaveCount(0);
+  // v11: the legend is the dock's head; the layer list opens from it
+  const dock = page.getByTestId("field-dock");
+  await expect(dock).toBeVisible();
+  await expect(page.getByTestId("layer-deck")).toBeHidden();
+  await expect(page.getByTestId("layer-capsule")).toContainText("Bloom & toxin probability");
+  await expect(page.getByTestId("dock-kind")).toContainText("model");
   await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByTestId("layer-forecast")).toContainText("Model");
   for (const f of ["satellite", "currents", "none"]) await expect(page.getByTestId(`layer-${f}`)).toHaveAttribute("aria-checked", "false");
-  // the index sits top left, the rail spans the bottom under it
-  const idx = (await deck.boundingBox())!;
+  // the dock sits bottom left, the rail beside it, the tools at the right edge
+  const d = (await dock.boundingBox())!;
   const rail = (await page.getByTestId("timebar-deck").boundingBox())!;
-  expect(idx.x).toBeLessThan(40);
-  expect(idx.y + idx.height).toBeLessThan(rail.y);
-  expect(rail.width).toBeGreaterThan(1440 * 0.9);
+  expect(d.x).toBeLessThan(40);
+  expect(rail.x).toBeGreaterThan(d.x + d.width - 1);
+  expect(rail.width).toBeGreaterThan(1440 * 0.55);
+  expect(Math.abs(d.y + d.height - (rail.y + rail.height))).toBeLessThan(3);
   // with a place open, Escape closes the place
   await page.goto(`${OK}/?layer=forecast&lead=1&sel=harbor:550`);
   await expect(page.getByTestId("inspect-panel")).toBeVisible();
   await expect(page.getByTestId("attribution-line")).toContainText("© OpenStreetMap contributors");
-  // the rail, the tools, the panel and the index never overlap, and the disclosure line is never under any of them
+  // the dock, the rail, the tools, the sheet and the trust pill never overlap
   const panel = (await page.getByTestId("inspect-panel").locator("xpath=ancestor::aside").boundingBox())!;
   const dock2 = (await page.getByTestId("timebar-deck").boundingBox())!;
   const tools = (await page.getByTestId("map-controls").boundingBox())!;
   const line = (await page.getByTestId("registry-disclosure").boundingBox())!;
-  const idx2 = (await page.getByTestId("layer-deck").boundingBox())!;
-  for (const [a, b, what] of [[dock2, tools, "dock/tools"], [dock2, panel, "dock/panel"], [tools, panel, "tools/panel"], [line, dock2, "line/dock"], [line, panel, "line/panel"], [idx2, panel, "index/panel"], [idx2, dock2, "index/dock"]] as const) expect(overlap(a, b), what).toBe(false);
+  const idx2 = (await page.getByTestId("field-dock").boundingBox())!;
+  for (const [a, b, what] of [[dock2, tools, "rail/tools"], [dock2, panel, "rail/panel"], [tools, panel, "tools/panel"], [line, dock2, "line/rail"], [line, panel, "line/panel"], [idx2, panel, "dock/panel"], [idx2, dock2, "dock/rail"]] as const) expect(overlap(a, b), what).toBe(false);
+  // the panel arrives in the server's HTML: wait for the map (so the page has hydrated and listens for keys), or a
+  // slow runner presses Escape before anything can hear it
+  await page.waitForFunction(() => !!(window as unknown as { __cwMap?: { loaded(): boolean } }).__cwMap?.loaded());
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("inspect-panel")).toHaveCount(0);
 });
 
-test("a short wide window folds the index behind the layer button, which opens it over the map and closes on Escape", async ({ page }) => {
+test("a short wide window: the layer list opens over the map from the dock and closes on Escape, leaving the place open", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 620 });
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?layer=forecast&lead=1&sel=harbor:550`);

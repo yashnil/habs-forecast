@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { Severity } from "@/pilot/contracts";
-import { Feedback } from "@/pilot/account/Feedback";
+import { Reveal } from "@/v4/motion";
 
 /**
  * Every statement on Today has an address: `#fact-<PortFact.id>`. Ask Neritic's citations and alerts
@@ -59,48 +59,35 @@ export function StatusMark({ severity, seasonal = false, className = "" }: { sev
 
 export const sevClass = (s: Severity, seasonal = false) => (seasonal ? "t-season" : s === "red" ? "t-red" : s === "amber" ? "t-amber" : s === "neutral" ? "t-neutral" : "t-info");
 
-export function Unverified({ verified }: { verified: boolean | null }) {
-  if (verified !== false) return null;
+/** "Not verified" in words inside a row or a sheet (the row is itself a control, so this one opens nothing; the group's header marker explains it). */
+export function NotVerifiedWords() {
   return (
-    <span className="today-unverified" title="Transcribed from the agency; no person has checked it against the source yet" data-testid="not-verified">
+    <span className="nx-unverified" data-testid="not-verified">
       Not verified
     </span>
   );
 }
 
-export function Section({
-  id,
-  area,
-  title,
-  aside,
-  children,
-  testid,
-  feedback,
-}: {
-  id: string;
-  area: string;
-  title: string;
-  aside?: ReactNode;
-  children: ReactNode;
-  testid?: string;
-  /** "Was this useful?" once for the section, about its leading fact (kept on this device; src/pilot/account/Feedback) */
-  feedback?: { factId: string; placeId: string } | null;
-}) {
+/**
+ * One chapter of the briefing: a title and one sentence, then one graphic, its detail behind a Fold or a
+ * Sheet. On a wide screen the head holds to the left while the graphic reads beside it; the order in the
+ * document is the order of authority.
+ */
+export function Chapter({ id, area, title, marker, action, say, children, testid }: { id: string; area: string; title: string; marker?: ReactNode; action?: ReactNode; say?: ReactNode; children: ReactNode; testid?: string }) {
   return (
-    <section className="today-sec" data-area={area} aria-labelledby={`${id}-h`} id={id} data-testid={testid ?? `today-${id}`}>
-      <header>
-        <h2 id={`${id}-h`} className="today-h2">
-          {title}
-        </h2>
-        {aside}
-      </header>
-      {children}
-      {feedback && (
-        <div className="mt-1 flex justify-end">
-          <Feedback factId={feedback.factId} placeId={feedback.placeId} compact />
+    <Reveal as="section" className="today-ch" data-area={area} aria-labelledby={`${id}-h`} id={id} data-testid={testid ?? `today-${id}`}>
+      <div className="today-ch-head">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 id={`${id}-h`} className="nx-title">
+            {title}
+          </h2>
+          {action}
         </div>
-      )}
-    </section>
+        {marker && <div className="mt-1.5">{marker}</div>}
+        {say && <p className="today-say">{say}</p>}
+      </div>
+      <div className="today-ch-body">{children}</div>
+    </Reveal>
   );
 }
 

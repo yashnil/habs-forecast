@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useDrawOnce } from "@/v4/motion/draw";
 import { AXES, axisPosition, decadeTicks, onAxis, segments, type Axis } from "@/lib/bloom";
 import { unitLabel, type ObsVariableId, type Sample } from "@/lib/observations";
 import { dayLabel } from "@/v4/ui/time";
@@ -114,7 +115,7 @@ export function SeriesChart({
   if (!inWin.some((s) => s.value != null || s.q === "rejected_negative")) {
     const newest = samples.findLast((s) => s.value != null);
     return (
-      <p className="rounded-lg border border-dashed border-n-line-strong px-3 py-4 text-[14px] text-n-ink-2" data-testid="series-empty">
+      <p className="py-4 text-[14px] text-n-ink-2" data-testid="series-empty">
         No {label.toLowerCase()} measured in this window
         {newest ? `; the newest measurement is from ${new Date(newest.t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}` : ""}. No sample is not a clean result.
       </p>
@@ -164,13 +165,13 @@ export function SeriesChart({
         {ticks.map((v) => (
           <g key={v}>
             <line x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="var(--nx-line)" strokeWidth={1} />
-            <text x={pad.l - 6} y={y(v) + 4} textAnchor="end" fontSize="11" fill="var(--nx-ink-3)" className="nx-data">
+            <text x={pad.l - 6} y={y(v) + 4} textAnchor="end" fontSize="11" fontFamily="var(--nx-font-data)" fill="var(--nx-ink-3)">
               {tickFmt(v)}
             </text>
           </g>
         ))}
         {months.filter((t) => x(t) <= W - pad.r - 18).map((t) => (
-          <text key={t} x={x(t)} y={H - 6} fontSize="11.5" fill="var(--nx-ink-3)" textAnchor="middle">
+          <text key={t} x={x(t)} y={H - 6} fontSize="11" fontFamily="var(--nx-font-data)" fill="var(--nx-ink-3)" textAnchor="middle">
             {tickLabel(t, from, to)}
           </text>
         ))}
@@ -359,36 +360,4 @@ export function measuredSegments(ss: Sample[], axis: Axis, from: number, to: num
 /** StationLite.recent pairs → samples */
 export function recentSamples(pairs: [string, number | null][] | undefined): Sample[] {
   return (pairs ?? []).map(([d, v], i) => ({ t: Date.parse(`${d}T12:00:00Z`), time: d, value: v, q: v === 0 ? "reported_zero" : null, index: i }));
-}
-
-/**
- * A chart's line draws itself once, the first time it comes into view (a chart already on the screen
- * when the page opens is left as drawn). Never again: not on a new window, a hover or new data.
- */
-function useDrawOnce(ref: React.RefObject<SVGSVGElement | null>): "idle" | "wait" | "draw" | "done" {
-  const [phase, setPhase] = useState<"idle" | "wait" | "draw" | "done">("idle");
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const r = el.getBoundingClientRect();
-    if (r.width > 0 && r.top < window.innerHeight && r.bottom > 0) return;
-    let t = 0;
-    const io = new IntersectionObserver(
-      (es) => {
-        if (!es.some((e) => e.isIntersecting)) return setPhase("wait");
-        io.disconnect();
-        setPhase("draw");
-        t = window.setTimeout(() => setPhase("done"), 700);
-      },
-      { threshold: 0.25 },
-    );
-    io.observe(el);
-    return () => {
-      io.disconnect();
-      window.clearTimeout(t);
-    };
-    // once per chart
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return phase;
 }

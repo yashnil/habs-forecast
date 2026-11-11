@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openPack } from "./helpers";
 import { OK } from "./ports";
 
 /**
@@ -9,7 +10,7 @@ import { OK } from "./ports";
 const NOW = "2026-10-08T20:00:00Z";
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const status = async (page: Page, id: string) => {
-  await page.getByTestId("status-center").click();
+  await page.getByTestId("notices-button").click();
   const s = await page.getByTestId("status-panel").getByTestId(`source-${id}`).getAttribute("data-state");
   await page.keyboard.press("Escape");
   return s;
@@ -27,7 +28,7 @@ test("a slow conditions service: the briefing says it is reading, the rest is th
   await expect(page.getByTestId("matters-reading")).toContainText("Reading the notices");
   // the page around it is already usable
   await expect(page.getByTestId("coast-title")).toHaveText("Monterey");
-  await expect(page.getByTestId("brief-official")).toBeVisible();
+  await expect(page.getByTestId("notices-open")).toBeVisible();
   expect(await status(page, "evidence")).toBe("loading");
   expect(await status(page, "conditions")).toBe("loading");
   await expect(page.getByTestId("matters").locator(":scope > li").first()).toBeVisible({ timeout: 30_000 });
@@ -100,7 +101,7 @@ test("a saved pack: older than a day it is marked stale; it survives a service-w
   const page = await ctx.newPage();
   await page.goto(`${OK}/coast?place=port-550`);
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   const go = page.getByTestId("pack-download");
   await expect(go).toBeEnabled({ timeout: 60_000 });
   await go.click();
@@ -109,7 +110,7 @@ test("a saved pack: older than a day it is marked stale; it survives a service-w
   // a day and a half later
   await page.clock.setFixedTime(new Date(Date.now() + 36 * 3_600_000));
   await page.reload();
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   await expect(page.getByTestId("pack-status")).toContainText("More than a day old");
   await page.keyboard.press("Escape");
   await page.reload();
@@ -132,7 +133,7 @@ test("a saved pack: older than a day it is marked stale; it survives a service-w
   await expect.poll(() => page.evaluate(() => caches.has("neritic-static-v0")), { timeout: 20000 }).toBe(false);
   expect(await page.evaluate(() => caches.has("neritic-pack-monterey"))).toBe(true);
   await page.reload();
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   await expect(page.getByTestId("pack-status")).toHaveAttribute("data-complete", "true");
   await page.keyboard.press("Escape");
 
@@ -140,7 +141,7 @@ test("a saved pack: older than a day it is marked stale; it survives a service-w
   await page.evaluate(() => caches.delete("neritic-pack-monterey"));
   await page.reload();
   expect(await status(page, "pack")).toBe("unavailable");
-  await page.getByTestId("pack-open").click();
+  await openPack(page);
   await expect(page.getByTestId("pack-evicted")).toContainText("the browser removed it");
   await expect(page.getByTestId("pack-download")).toBeVisible({ timeout: 60_000 });
   await ctx.close();

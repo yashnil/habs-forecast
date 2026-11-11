@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Manifest } from "@/generated/schema";
 import { charmRun, satelliteDays, satelliteLatest, type CharmVariable, type SatProduct } from "@/lib/layers";
 import { currentsHourly, currentsMean, defaultHour, observedCells, usableHours } from "@/lib/currents";
-import { dtf, pacificToday } from "@/lib/time";
+import { dtf, pacificToday, stableFormat } from "@/lib/time";
 import { Icon } from "@/v4/ui/Icon";
 import { clockLabel, dayLabel } from "@/v4/ui/time";
 import { runDays, type LayerChoice } from "./layers";
 import { derivedOutlook, derivedSst, type DerivedIndex } from "@/lib/derived";
+import { usePlayback, PLAYBACK_MS } from "@/v4/motion";
+import { PLAYBACK_STOP_EVENTS, stopsPlayback } from "@/v4/motion/playback";
 
-/** One frame every PLAY_MS while playing: long enough for the map to draw and the eye to compare. */
-const PLAY_MS = 1200;
+/** One frame every PLAY_MS while playing: design.md §5 (900 ms), long enough for the map to cut and the eye to compare. */
+const PLAY_MS = PLAYBACK_MS;
 const WEEKDAY = dtf("en-US", { weekday: "short", timeZone: "UTC" });
 /** "Thu" for a date; an unreadable date gives "Invalid Date", as toLocaleDateString did */
 const weekdayOf = (d: string) => {
@@ -49,7 +51,7 @@ export function timeSteps(m: Manifest, c: LayerChoice, now: Date | null, derived
         key: `lead${d.lead}`,
         label: d.date ? dayLabel(d.date) : "—",
         top: d.date ? WEEKDAY.format(new Date(`${d.date}T12:00:00Z`)) : undefined,
-        sub: d.lead === 0 ? "nowcast" : "forecast",
+        sub: d.lead === 0 ? "nowcast" : !!d.date && !!today && d.date < today ? "past run" : "forecast",
         forecast: d.lead > 0,
         today: !!d.date && d.date === today,
         disabled: !d.issued,
@@ -231,7 +233,8 @@ function railModel(m: Manifest, choice: LayerChoice, t: ReturnType<typeof timeSt
   const fcMarks = marks.filter((x) => x.family === "model");
   if (run && fcMarks.length) {
     const ds = days.filter((x) => x.issued && x.date).map((x) => x.date!);
-    const text = `C-HARM model · valid ${span(ds[0], ds[ds.length - 1])}, run ${dayLabel(run.issued_date)}${run.issued_date_derived ? " (inferred)" : ""}`;
+    const past = !!now && ds.every((d) => d < pacificToday(now));
+    const text = `C-HARM ${past ? "past run" : "model"} · valid ${span(ds[0], ds[ds.length - 1])}, run ${dayLabel(run.issued_date)}${run.issued_date_derived ? " (inferred)" : ""}`;
     groups.push({ key: "model", family: "model", t0: Math.min(...fcMarks.map((x) => x.t0)), label: text, text, active: choice.kind === "forecast" });
   }
 
@@ -314,7 +317,6 @@ export function TimeRail({
   pending = null,
   onPrefetch,
   compact = false,
-  caption = null,
   variable = "particulate_domoic",
   lead = 1,
 }: {
@@ -329,42 +331,77 @@ export function TimeRail({
   onPrefetch?: (c: LayerChoice) => void;
   /** phone: no lane labels over the cells (the active one is said above), sparse day labels, taller targets */
   compact?: boolean;
-  /** the layer's own date line and anything wrong with it (Provenance), under the rail */
-  caption?: React.ReactNode;
   variable?: CharmVariable;
   lead?: number;
 }) {
   const t0 = timeSteps(manifest, choice, now, derived, region);
   const t = t0 && t0.steps.length ? (shown && pending && t0.steps.some((s) => s.key === shown) ? { ...t0, current: shown } : t0) : null;
   const rail = railModel(manifest, choice, t, now, derived, variable, lead, compact);
-  const [playing, setPlaying] = useState(false);
-  const live = useRef({ t, onChoice, pending, onPrefetch });
-  live.current = { t, onChoice, pending, onPrefetch };
+  // the published frames, never a value between two of them; the current one held until its data is in
+  const stepsKey = (t?.steps ?? []).map((s) => s.key + (s.disabled ? "!" : "")).join(",");
+  // a frame's choice is rebuilt with the rail; the frames are the same set while the keys are
+  const usable = useMemo(() => (t?.steps ?? []).filter((s) => !s.disabled), [stepsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const at0 = usable.findIndex((s) => s.key === t?.current);
+  const pb = usePlayback(usable, { intervalMs: PLAY_MS, initial: Math.max(0, at0) });
+  const live = useRef({ t, onChoice, onPrefetch, usable });
+  live.current = { t, onChoice, onPrefetch, usable };
+  const ahead = (i: number, k: number) => {
+    const { usable: u, onPrefetch: pre } = live.current;
+    if (pre && u.length > 1) pre(u[(i + k) % u.length].choice);
+  };
+  // stopped, the rail follows the map (a key, a tap, a URL); playing, the map follows the rail
   useEffect(() => {
-    if (!playing) return;
-    const ahead = (k: number) => {
-      const { t: tt, onPrefetch: pre } = live.current;
-      const usable = tt?.steps.filter((s) => !s.disabled) ?? [];
-      const at = usable.findIndex((s) => s.key === tt?.current);
-      if (pre && usable.length > 1) pre(usable[(at + k) % usable.length].choice);
+    if (!pb.playing && at0 >= 0 && pb.index !== at0) pb.seek(at0);
+  }, [pb.playing, pb.index, at0, pb.seek]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!pb.playing) return;
+    const { t: tt, onChoice: pick, usable: u } = live.current;
+    const f = u[pb.index];
+    if (f && f.key !== tt?.current) pick(f.choice);
+    ahead(pb.index, 1);
+  }, [pb.playing, pb.index]); // eslint-disable-line react-hooks/exhaustive-deps
+  // the frame asked for has not arrived: hold the one shown (and its label), never run ahead of the data
+  const [holding, setHolding] = useState(false);
+  useEffect(() => {
+    if (pb.playing && pending) {
+      pb.pause();
+      setHolding(true);
+    }
+  }, [pb.playing, pending]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!holding || pending) return;
+    setHolding(false);
+    pb.play();
+  }, [holding, pending]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!holding) return;
+    const stop = (e: Event) => stopsPlayback(e.target) && setHolding(false);
+    const opts = { capture: true, passive: true } as const;
+    for (const ev of PLAYBACK_STOP_EVENTS) window.addEventListener(ev, stop, opts);
+    return () => {
+      for (const ev of PLAYBACK_STOP_EVENTS) window.removeEventListener(ev, stop, opts);
     };
-    ahead(1);
-    const tick = window.setInterval(() => {
-      const { t: tt, onChoice: pick, pending: wait } = live.current;
-      if (!tt || document.hidden) return setPlaying(false);
-      // the frame asked for has not arrived: hold the one shown (and its label), never skip ahead of the data
-      if (wait) return;
-      const usable = tt.steps.filter((s) => !s.disabled);
-      if (usable.length < 2) return setPlaying(false);
-      const at = usable.findIndex((s) => s.key === tt.current);
-      pick(usable[(at + 1) % usable.length].choice);
-      ahead(2);
-    }, PLAY_MS);
-    return () => window.clearInterval(tick);
-  }, [playing]);
-  // a new layer kind stops playback (its frames are another series)
+  }, [holding]);
+  const playing = pb.playing || holding;
+  const stopPlaying = () => {
+    pb.pause();
+    setHolding(false);
+  };
+  const togglePlay = () => {
+    if (holding) setHolding(false);
+    else pb.toggle();
+  };
+  // a new layer kind stops playback (its frames are another series); so does a hidden tab
   const kind = choice.kind;
-  useEffect(() => setPlaying(false), [kind]);
+  useEffect(() => {
+    pb.pause();
+    setHolding(false);
+  }, [kind]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const f = () => document.hidden && stopPlaying();
+    document.addEventListener("visibilitychange", f);
+    return () => document.removeEventListener("visibilitychange", f);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const track = useRef<HTMLDivElement | null>(null);
   const [w, setW] = useState(0);
   const hasRail = !!rail;
@@ -393,7 +430,7 @@ export function TimeRail({
   const steps = t?.steps ?? [];
   const i = Math.max(0, steps.findIndex((s) => s.key === t?.current));
   const go = (j: number) => {
-    setPlaying(false);
+    stopPlaying();
     const s = steps[Math.max(0, Math.min(steps.length - 1, j))];
     if (s && !s.disabled) onChoice(s.choice);
   };
@@ -410,19 +447,19 @@ export function TimeRail({
     let best = pool[0];
     for (const x of pool) if (Math.abs((x.t0 + x.t1) / 2 - u) < Math.abs((best.t0 + best.t1) / 2 - u)) best = x;
     if (best.step && best.step.key !== t?.current) {
-      setPlaying(false);
+      stopPlaying();
       onChoice(best.step.choice);
     }
   };
-  const cellH = compact ? 56 : 28;
-  const spanH = compact ? 12 : 18;
+  const cellH = compact ? 56 : 22;
+  const spanH = compact ? 12 : 10;
   const pxPer = w / Math.max(1, hi - lo);
-  const visH = compact ? 22 : 16;
+  const visH = compact ? 22 : 18;
   // a phone: the spans (the latest clear view, the outlook's window) are chips beside the rail, each a full
   // target; the rail scrolls sideways when its frames would be narrower than a finger
   const chips = compact ? marks.filter((x) => x.step && x.row === 1) : [];
   const minPx = compact ? Math.ceil((hi - lo) * 46) : 0;
-  const nowIso = now ? PT_NOW.format(now) : null;
+  const nowIso = now ? stableFormat(PT_NOW, now) : null;
 
   // the axis: days (weekday and date, then sparser as the rail narrows) or hours (with the date at midnight)
   const ticks: { u: number; text: string; now?: boolean }[] = [];
@@ -433,7 +470,9 @@ export function TimeRail({
       const date = dateOf(d);
       const isToday = d === today;
       if (!isToday && (d - Math.ceil(lo)) % every) continue;
-      ticks.push({ u: d + 0.5, now: isToday, text: pxPer >= 50 || (isToday && pxPer >= 34) ? `${weekdayOf(date)} ${date.slice(8).replace(/^0/, "")}` : date.slice(8).replace(/^0/, "") });
+            const dd = date.slice(8).replace(/^0/, "");
+      // roomy: weekday and date; tight: the date, with its month where the month starts on the rail
+      ticks.push({ u: d + 0.5, now: isToday, text: pxPer >= 52 ? `${weekdayOf(date)} ${dd}` : d === Math.ceil(lo) || dd === "1" ? dayLabel(date) : dd });
     }
   } else {
     const every = pxPer >= 46 ? 1 : pxPer >= 24 ? 2 : pxPer >= 14 ? 3 : 6;
@@ -453,13 +492,14 @@ export function TimeRail({
       aria-label="Time"
       data-testid={t ? "timebar" : "time-rail"}
       data-unit={unit}
+      data-playback-space
       onKeyDown={(e) => {
         if (!t) return;
         if (e.key === "ArrowRight") go(i + 1);
         else if (e.key === "ArrowLeft") go(i - 1);
         else if (e.key === "Home") go(0);
         else if (e.key === "End") go(steps.length - 1);
-        else if (e.key === " " && playable && !(e.target instanceof HTMLButtonElement && e.target.getAttribute("role") !== "radio")) setPlaying((v) => !v);
+        else if (e.key === " " && playable && !(e.target instanceof HTMLButtonElement && e.target.getAttribute("role") !== "radio")) togglePlay();
         else return;
         e.preventDefault();
       }}
@@ -484,14 +524,15 @@ export function TimeRail({
             aria-label={playing ? "Pause" : "Play the frames in turn"}
             aria-pressed={playing}
             title={playing ? "Pause (space)" : "Play (space)"}
-            onClick={() => setPlaying((v) => !v)}
+            onClick={togglePlay}
+            data-playback-control
             data-testid="time-play"
-            className={`nx-press nx-focus grid shrink-0 place-items-center rounded-full border ${compact ? "h-14 w-14" : "h-11 w-11"} ${playing ? "border-n-ink bg-n-ink text-n-bg" : "border-n-line-strong text-n-ink hover:border-n-ink-2"}`}
+            className={`nx-press nx-focus grid shrink-0 place-items-center rounded-full ${compact ? "h-14 w-14" : "h-11 w-11"} ${playing ? "bg-n-ink text-n-bg" : "bg-n-surface-2 text-n-ink hover:bg-n-surface-3"}`}
           >
             <Icon name={playing ? "pause" : "play"} className="h-4 w-4" />
           </button>
         ) : (
-          <span aria-hidden className={`grid shrink-0 place-items-center rounded-full border border-n-line text-n-ink-3 opacity-60 ${compact ? "h-14 w-14" : "h-11 w-11"}`}>
+          <span aria-hidden className={`grid shrink-0 place-items-center rounded-full bg-n-surface text-n-ink-3 ${compact ? "h-14 w-14" : "h-11 w-11"}`}>
             <Icon name="clock" className="h-4 w-4" />
           </span>
         )}
@@ -499,7 +540,7 @@ export function TimeRail({
           {/* the families on the rail, each named at the start of its frames */}
           {!compact && (
             <div className="flex gap-2" aria-hidden={t ? undefined : true}>
-              <div className="relative h-[18px] min-w-0 flex-1">
+              <div className="relative h-4 min-w-0 flex-1">
                 {groups.map((g, k) => {
                   const next = groups[k + 1];
                   const left = Math.min(X(g.t0), 100);
@@ -508,7 +549,7 @@ export function TimeRail({
                   return (
                     <span
                       key={g.key}
-                      className={`absolute top-0 truncate text-[11.5px] leading-[16px] ${g.active ? "" : "opacity-70"}`}
+                      className={`absolute top-0 truncate text-[12px] leading-[16px] ${g.active ? "" : "opacity-70"}`}
                       style={{ color: FAMILY_TONE[g.family], ...(end ? { right: 0, maxWidth: `${100 - left + 30}%` } : { left: `${left}%`, maxWidth: `calc(${room}% - 10px)` }) }}
                       title={g.text}
                       data-testid={`rail-label-${g.key}`}
@@ -601,7 +642,7 @@ export function TimeRail({
                       disabled={s.disabled}
                       title={mk.title}
                       onClick={() => {
-                        setPlaying(false);
+                        stopPlaying();
                         if (s.key !== t?.current) onChoice(s.choice);
                       }}
                       data-testid={`time-${s.key}`}
@@ -649,15 +690,21 @@ export function TimeRail({
                   return f1 && n0 ? <span aria-hidden data-testid="time-forecast-break" className="absolute w-[2px] bg-n-bg" style={{ left: `calc(${X(f1.t0)}% - 1px)`, top: 2, height: cellH - 4 }} /> : null;
                 })()}
               {rail.nowAt != null && (
-                <span aria-hidden data-testid="rail-now" className="nx-rail-now pointer-events-none absolute w-[1.5px]" style={{ left: `${X(rail.nowAt)}%`, top: compact ? 0 : -20, bottom: -18 }} />
+                <span aria-hidden data-testid="rail-now" className="nx-rail-now pointer-events-none absolute w-[1.5px]" style={{ left: `${X(rail.nowAt)}%`, top: compact ? 0 : -16, bottom: -2 }} />
               )}
             </div>
-            <div className="relative h-[16px]" aria-hidden>
-              {ticks.map((k) => (
-                <span key={k.u} className={`nx-data absolute top-0.5 -translate-x-1/2 whitespace-nowrap text-[10.5px] leading-[14px] ${k.now ? "text-n-ink" : "text-n-ink-3"}`} style={{ left: `${X(k.u)}%` }}>
+            <div className="relative h-[14px]" aria-hidden>
+              {ticks.filter((k) => rail.nowAt == null || Math.abs(X(k.u) - X(rail.nowAt)) * (w / 100) > 34).map((k) => (
+                <span key={k.u} className="nx-data absolute top-0 -translate-x-1/2 whitespace-nowrap text-[11px] leading-[14px] text-n-ink-3" style={{ left: `${X(k.u)}%` }}>
                   {k.text}
                 </span>
               ))}
+              {/* the now line's own word: past is left of it, future right */}
+              {rail.nowAt != null && (
+                <span className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-[12px] font-medium leading-[14px] text-n-ink" style={{ left: `${X(rail.nowAt)}%` }} data-testid="rail-now-label">
+                  now
+                </span>
+              )}
             </div>
             </div>
             </div>
@@ -671,7 +718,7 @@ export function TimeRail({
                   aria-checked={on}
                   tabIndex={on ? 0 : -1}
                   onClick={() => {
-                    setPlaying(false);
+                    stopPlaying();
                     if (!on) onChoice(s.choice);
                   }}
                   data-testid={`time-${s.key}`}
@@ -692,7 +739,6 @@ export function TimeRail({
           {nowIso && <span className="sr-only">Now: {nowIso}</span>}
         </div>
       </div>
-      {caption && <div className={`min-w-0 ${compact ? "" : "pl-14"}`}>{caption}</div>}
     </div>
   );
 }

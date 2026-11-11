@@ -1,5 +1,8 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { dayLabel, pacificDay, relTime } from "@/v4/ui/time";
+import { stableFormat } from "@/lib/time";
 import { coverageWhen } from "@/v4/explore/layers";
 import { hoursAgo } from "@/lib/currents";
 
@@ -51,5 +54,43 @@ describe("coverage dates", () => {
   it("keeps 'overpass of' for a single day", () => {
     const l = { composite: null, multisensor: null, time: t({ observed_date: "2026-10-15", observed_times: ["2026-10-15T16:47:48Z", "2026-10-15T19:08:58Z"] }) };
     expect(coverageWhen(l)).toBe("overpass of Oct 15");
+  });
+});
+
+describe("stableFormat: a date with a time reads the same in every engine", () => {
+  const fake = (at: string, gap: string) =>
+    ({
+      formatToParts: () => [
+        { type: "month", value: "Nov" },
+        { type: "literal", value: " " },
+        { type: "day", value: "9" },
+        { type: "literal", value: at },
+        { type: "hour", value: "9" },
+        { type: "literal", value: ":" },
+        { type: "minute", value: "23" },
+        { type: "literal", value: gap },
+        { type: "dayPeriod", value: "PM" },
+      ],
+    }) as unknown as Intl.DateTimeFormat;
+  it("Safari's ' at ' and Chrome's ', ' give one string, whichever space comes before PM", () => {
+    expect(stableFormat(fake(" at ", " "), new Date(0))).toBe("Nov 9, 9:23 PM");
+    expect(stableFormat(fake(", ", "\u202f"), new Date(0))).toBe("Nov 9, 9:23 PM");
+  });
+  it("a time alone keeps its own form", () => {
+    const f = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit" });
+    expect(stableFormat(f, new Date("2026-11-09T21:23:00Z"))).toMatch(/^9:23 PM$/);
+  });
+});
+
+describe("no date-with-time formatter reaches a page without stableFormat", () => {
+  it("every formatter asking for a month or day and an hour lives in a file that uses it", () => {
+    const walk = (d: string): string[] => readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(d, e.name)) : /\.tsx?$/.test(e.name) ? [join(d, e.name)] : []));
+    const raw: string[] = [];
+    for (const f of walk("src")) {
+      const s = readFileSync(f, "utf8");
+      for (const m of s.matchAll(/(?:toLocaleString\(|DateTimeFormat\(|dtf\()[^;]{0,260}?\{([^}]*)\}/g))
+        if (/hour/.test(m[1]) && /month|day:|weekday/.test(m[1]) && !/h23|hour12: false/.test(m[1]) && !s.includes("stableFormat")) raw.push(f);
+    }
+    expect(raw).toEqual([]);
   });
 });

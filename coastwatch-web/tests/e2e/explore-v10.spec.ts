@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { OK } from "./ports";
-import { openDisplay } from "./helpers";
+import { openDisplay, openLayers } from "./helpers";
 
 /**
  * v10 Explore, the living instrument (docs/coastwatch/v10/system.md, direction A): the layer index, the
@@ -93,10 +93,12 @@ test.describe("the layer index", () => {
     await expect.poll(() => page.evaluate(() => (window as unknown as Win).__cwMap.getPaintProperty("satellite-raster", "raster-opacity"))).toBe(0.5);
     // the legend keeps the full-opacity colours and says what a gap is
     await expect(page.getByTestId("legend-gap")).toContainText("not low chlorophyll");
+    await openLayers(page);
     await page.getByTestId("layer-satellite").focus();
+    // v11: the keys move in the order drawn (Observed: chlorophyll, then the currents)
     await page.keyboard.press("ArrowDown");
-    await expect(page).toHaveURL(/layer=outlook/);
-    await expect(page.getByTestId("layer-outlook")).toBeFocused();
+    await expect(page).toHaveURL(/layer=currents/);
+    await expect(page.getByTestId("layer-currents")).toBeFocused();
   });
 });
 

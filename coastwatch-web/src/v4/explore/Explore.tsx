@@ -26,13 +26,12 @@ import { pacificToday } from "@/lib/time";
 import { useNow } from "@/lib/useNow";
 import type { CurrentsOverlay, FootprintOverlay, MapPoint } from "@/components/map/MapCanvas";
 import { MobileSheet, type SnapId } from "@/components/MobileSheet";
-import { HoverReadout, type HoverSource } from "@/components/map/HoverReadout";
+import { HoverReadout, readSource, type HoverSource, type Read } from "@/components/map/HoverReadout";
 import { useReportSource } from "@/v4/readiness/store";
 import { currentsEntry, fieldState, layerFreshness, modelEntry, newestSatellite, satelliteEntry } from "@/v4/readiness/shown";
 import { SourceList } from "@/v4/readiness/StatusCenter";
-import { TopBar, NavTabs } from "@/v4/shell/TopBar";
-import { NoticesButton, type LocalNotices } from "@/v4/shell/Notices";
-import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { TopBar, Dock } from "@/v4/shell/TopBar";
+import type { LocalNotices } from "@/v4/shell/Notices";
 import { associationsAt, localNotices } from "@/lib/applicability";
 import { bearingName, coastHref, pointKey, sitePlaces } from "@/lib/coast";
 import { readHome } from "@/v4/coast/home";
@@ -42,7 +41,8 @@ import { dayLabel, kmLabel, lastHabWords } from "@/v4/ui/time";
 import { decodeSelection, encodeSelection, sameSelection, type Camera, type HistoryEntry, type Selection } from "@/v4/state/selection";
 import { choiceParams, parseChoice, resolve, runDays, useDerivedIndex, VARIABLE_WORDS, type LayerChoice } from "./layers";
 import { derivedEstimate, derivedOutlook, derivedSst, nearshoreCheck } from "@/lib/derived";
-import { LayerList, LayerOptions, Legend, LegendLine, Provenance, ReferenceLines, layerWords } from "./LayerPanel";
+import { LayerList, LayerOptions, Legend, Provenance, ReferenceLines, layerWords } from "./LayerPanel";
+import { DockHead, MiniRamp, dockWords, rampOf, useDockSink } from "./FieldDock";
 import { TimeRail, timeSteps } from "./Timebar";
 import "./explore.css";
 import { FlowControls, useFlowPrefs, useReducedMotion } from "./FlowControls";
@@ -57,7 +57,7 @@ import { PackDialog } from "@/v4/offline/PackDialog";
 import { OfflineBanner } from "@/v4/offline/OfflineBanner";
 import { readHomePort } from "@/v4/state/homePort";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
-import { EASE_IN, EASE_OUT, T, markAppReady, useSwapFade } from "@/v4/motion";
+import { EASE_IN, EASE_OUT, T, markAppReady, usePresence, useSwapFade } from "@/v4/motion";
 import { ContourLoader } from "@/v4/ui/ContourLoader";
 import { onceSettled } from "@/components/map/settled";
 
@@ -83,10 +83,16 @@ const VIEW: Record<string, [[number, number], [number, number]]> = {
   central_coast: [[-121.45, 34.75], [-120.4, 35.85]],
   southern_california: [[-120.55, 32.55], [-117.05, 34.55]],
 };
-const DOCK = 64; // phone navigation dock height
-const PEEK = 196; // phone sheet at its peek: the dock (layer button, ramp, the time rail)
-// at rest with nothing current: the layer button, the one status line and its two dated choices (taller on a narrow phone, where they wrap)
-const peekRest = (w: number) => (w < 360 ? 296 : 262);
+const DOCK = 60; // phone navigation dock height
+/** A phone sheet at half height: the name, three statements and the one action fit it at 390×844. */
+const HALF = 0.58;
+/** The credits' margin line under the map (design.md §7.3: 20 px, never covered). */
+const MARGIN = 20;
+/** Clear of the bar at the top: the place sheet and the tools' popovers start here. */
+const SHEET_TOP = 68;
+const DOCK_W = 412;
+/** The one-time coach mark: seen once on this device, then the state-scale hint is in the layer list's words. */
+const COACH_KEY = "nx-explore-coach-v1";
 
 
 /** The height of an element as laid out (the dock and the map's bottom margin): the camera's insets follow it. */
@@ -474,11 +480,14 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const [deckOpen, setDeckOpen] = useState(false);
   useEffect(() => setDeckOpen(false), [selection]);
   // what the floating surfaces occlude, from the layout itself: the camera frames a selection in the open map
-  const panelW = bp === "desktop" ? 380 : 360;
+  const panelW = bp === "desktop" ? 400 : 360;
   const dockRef = useRef<HTMLDivElement | null>(null);
-  const marginRef = useRef<HTMLDivElement | null>(null);
-  const dockH = useHeight(dockRef, 112, bp);
-  const marginH = useHeight(marginRef, 30, bp);
+  const dockH = useHeight(dockRef, 72, bp);
+  const marginH = MARGIN;
+  // a phone's peek is the dock's head, as laid out (it wraps on a narrow phone; "nothing current" adds its line)
+  const phoneEdgeRef = useRef<HTMLDivElement | null>(null);
+  const edgeH = useHeight(phoneEdgeRef, 88, bp);
+  const peekH = edgeH + 18;
   // `open`: frame for the panel being open (a camera move made for a new selection, in the same
   // step that selects it, before panelOpen has caught up)
   const padding = useCallback(
@@ -486,18 +495,20 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       if (bp === "desktop" || bp === "tablet") return { top: 84, bottom: marginH + dockH + 28, left: 24, right: open ? panelW + 28 + 24 : 16 + 44 + 24 };
       // phone: a selection opens the sheet to half height, so the camera centres it in the map strip
       // that stays visible above the sheet (not behind it)
-      const sheet = open ? Math.round((window.innerHeight - DOCK) * 0.5) : atRest ? peekRest(window.innerWidth) : PEEK;
+      const sheet = open ? Math.round((window.innerHeight - DOCK) * HALF) : peekH;
       return { top: 112, bottom: sheet + DOCK + 24, left: 20, right: 20 };
     },
-    [bp, panelOpen, panelW, marginH, dockH, atRest],
+    [bp, panelOpen, panelW, marginH, dockH, peekH],
   );
   // v10 rework: the opening frames the coastal ocean, not the state. The coast (Crescent City to San Diego)
   // fills the height between the header and the time rail; its east edge sits just left of the map tools,
   // so the land is a narrow margin and the ocean fills the rest (under and beside the layer index)
   const coastInsets = useCallback((): Insets => {
-    if (bp === "phone") return { top: 108, bottom: (atRest ? peekRest(window.innerWidth) : PEEK) + DOCK + 48, left: 12, right: 14 };
-    return { top: 64, bottom: marginH + dockH + 12, left: (bp === "desktop" ? 264 : 236) + 40, right: 16 + 44 + 56 };
-  }, [bp, marginH, dockH, atRest]);
+    if (bp === "phone") return { top: 92, bottom: peekH + DOCK + 40, left: 12, right: 14 };
+    // wide screens: the coast sits toward the centre, so the published water, not the empty sea west of it, leads the first view
+    const right = (mapRef.current?.getContainer().clientWidth ?? window.innerWidth) >= 1200 ? 240 : 16 + 44 + 56;
+    return { top: 72, bottom: marginH + dockH + 20, left: 72, right };
+  }, [bp, marginH, dockH, peekH]);
   const coastView = useCallback(() => {
     const c = mapRef.current?.getContainer();
     return coastCamera(c?.clientWidth ?? window.innerWidth, c?.clientHeight ?? window.innerHeight, coastInsets());
@@ -763,6 +774,20 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     writeUrlRef.current();
   }, [fpEnc]);
 
+  // the point selected, read from the layer on the map: its value finds its place on the dock's ramp
+  const dockSink = useDockSink();
+  const [selRead, setSelRead] = useState<Read | null>(null);
+  useEffect(() => {
+    if (!selPoint || !hoverSource) return setSelRead(null);
+    let live = true;
+    readSource(manifest, baseUrl, hoverSource, selPoint, null)
+      .then((r) => live && setSelRead(r))
+      .catch(() => live && setSelRead(null));
+    return () => {
+      live = false;
+    };
+  }, [manifest, baseUrl, hoverSource, selPoint?.lat, selPoint?.lon]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // this view's own address (layer and selection, no camera): where Research's back link returns
   const here = useMemo(() => {
     const q = new URLSearchParams();
@@ -835,7 +860,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       {selection.kind === "harbor" && (
         <>
           <Header icon="harbor" kind="Harbour" title={placeName ?? "Harbour"} sub={harborF?.properties.county ? `${harborF.properties.county} County` : undefined} onClose={() => select(null)} onBack={back} canBack={stack.length > 0} />
-          <HarborView code={selection.port} ctx={ctx} concise evidenceFirst={bp === "phone"} />
+          <HarborView code={selection.port} ctx={ctx} concise />
         </>
       )}
       {selection.kind === "station" && (
@@ -912,38 +937,58 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         )}
       </div>
     ) : null;
-  // a data layer at state scale: its 3 km cells are a few pixels wide, so say how to read one (the first
-  // thing a new reader needs: it sits on the dock, and goes once the map is zoomed in or a place is open)
+  // a data layer at state scale: its 3 km cells are a few pixels wide, so say how to read one, once: a coach
+  // mark on the map, gone when dismissed, when the map is zoomed in or a place is opened. After that the same
+  // words stay in the layer list (`state-scale-note`).
+  const atStateScale = (active.kind === "forecast" || active.kind === "satellite" || active.kind === "outlook" || active.kind === "sst") && !selection && zoom != null && zoom < 7;
+  const [coachDone, setCoachDone] = useState(true);
+  useEffect(() => {
+    try {
+      setCoachDone(window.localStorage.getItem(COACH_KEY) === "1");
+    } catch {
+      setCoachDone(false);
+    }
+  }, []);
+  const dismissCoach = useCallback(() => {
+    setCoachDone(true);
+    try {
+      window.localStorage.setItem(COACH_KEY, "1");
+    } catch {
+      // storage unavailable (private window): gone for this page
+    }
+  }, []);
+  // the reader did what it asks: it does not come back
+  const coachShown = useRef(false);
+  useEffect(() => {
+    if (atStateScale && !coachDone && mapReady) coachShown.current = true;
+    else if (coachShown.current && !atStateScale && !coachDone && mapReady) dismissCoach();
+  }, [atStateScale, coachDone, mapReady, dismissCoach]);
+  const cellWord = active.kind === "forecast" ? "model cell" : "pixel";
   const readHint =
-    (active.kind === "forecast" || active.kind === "satellite" || active.kind === "outlook" || active.kind === "sst") && !selection && zoom != null && zoom < 7 ? (
-      <p className="flex flex-wrap items-center gap-x-2 text-[13px] leading-snug text-n-ink-2" data-testid="read-hint">
-        <span>
-          Tap a harbour for its briefing, or zoom in and tap the water to read a {active.kind === "forecast" ? "model cell" : "pixel"}.
-        </span>
-        <button
-          type="button"
-          onClick={() => mapRef.current && journeyTo(mapRef.current, { bounds: (VIEW.monterey_bay ?? [[-122.3, 36.5], [-121.7, 37.05]]) as [[number, number], [number, number]], padding: padding() })}
-          className="nx-focus -my-2 inline-flex min-h-11 items-center font-semibold text-n-accent underline underline-offset-2"
-          data-testid="zoom-monterey"
-        >
-          Go to Monterey Bay
-        </button>
-      </p>
+    atStateScale && !coachDone && mapReady ? (
+      <div className="nx-iplate nx-rise pointer-events-auto flex flex-col gap-1.5 px-3.5 py-2.5 text-[14px] leading-[20px] text-n-ink" data-testid="read-hint" role="status">
+        <p>Tap a harbour for its briefing, or zoom in and tap the water to read a {cellWord}.</p>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => mapRef.current && journeyTo(mapRef.current, { bounds: (VIEW.monterey_bay ?? [[-122.3, 36.5], [-121.7, 37.05]]) as [[number, number], [number, number]], padding: padding() })}
+            className="nx-btn nx-btn-secondary nx-press nx-focus inline-flex min-h-11 items-center rounded-[12px] px-3.5 text-[14px] font-medium"
+            data-testid="zoom-monterey"
+          >
+            Go to Monterey Bay
+          </button>
+          <button type="button" onClick={dismissCoach} className="nx-link nx-focus inline-flex min-h-11 items-center px-3 text-[14px]" data-testid="coach-dismiss">
+            Got it
+          </button>
+        </div>
+      </div>
     ) : null;
 
   // ------------------------------------------------------------------ the layer index (v10)
   // phone sheet
   const [snap, setSnap] = useState<SnapId>("peek");
   const [vh, setVh] = useState(800);
-  const sheetHalf = Math.round((vh - DOCK) * 0.5);
-  const [vw, setVw] = useState(390);
-  useEffect(() => {
-    const f = () => setVw(window.innerWidth);
-    f();
-    window.addEventListener("resize", f);
-    return () => window.removeEventListener("resize", f);
-  }, []);
-  const peekH = atRest && !selection ? peekRest(vw) : PEEK;
+  const sheetHalf = Math.round((vh - DOCK) * HALF);
   useEffect(() => {
     const f = () => setVh(window.innerHeight);
     f();
@@ -951,15 +996,14 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     return () => window.removeEventListener("resize", f);
   }, []);
   // phone: the credits chip on the map edge, just above the sheet
-  const creditsRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => setSnap(selection ? "half" : "peek"), [selection]);
   const wide = bp === "desktop" || bp === "tablet";
   // a short wide window (a landscape phone, a small laptop window): the index folds behind the layer
   // button, which opens it over the map; everywhere else on a wide screen it is always in view
-  const shortWide = wide && vh < 700;
-  const folded = bp === "phone" || shortWide;
+  const folded = true;
   const deckRef = useRef<HTMLElement | null>(null);
   const capsuleRef = useRef<HTMLButtonElement | null>(null);
+  const deckPresence = usePresence(deckOpen, 120);
   const toggleDeck = () => {
     setDeckOpen((o) => {
       // on a phone the list opens in the sheet, which rises to show it
@@ -969,7 +1013,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   };
   // folded: a tap outside the list, or Escape, closes it (Escape is taken here, before it would close the place)
   useEffect(() => {
-    if (!deckOpen || !folded) return;
+    if (!deckOpen) return;
     const k = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || e.defaultPrevented) return;
       e.preventDefault();
@@ -987,7 +1031,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       window.removeEventListener("keydown", k, true);
       window.removeEventListener("pointerdown", c);
     };
-  }, [deckOpen, folded]);
+  }, [deckOpen]);
   // choosing another kind of layer: on a phone the list closes and the sheet shows the layer's time and legend
   const pickLayer = (c: LayerChoice) => {
     setChoiceRaw(c);
@@ -1000,28 +1044,11 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [opacity, setOpacity] = useState(1);
   const lw = layerWords(active);
-  const layerButton = (
-    <button
-      ref={capsuleRef}
-      type="button"
-      aria-expanded={deckOpen}
-      aria-controls="layer-deck"
-      aria-label={`Map layer: ${[lw.title, lw.detail].filter(Boolean).join(", ")} (${lw.kind}). ${deckOpen ? "Close the layer list" : "Change the layer"}`}
-      onClick={toggleDeck}
-      className={`nx-press nx-focus flex min-h-12 w-full min-w-0 items-center gap-3 rounded-[4px] px-2.5 py-1 text-left hover:bg-n-surface-2 ${deckOpen ? "bg-n-surface-2" : ""}`}
-      data-testid="layer-capsule"
-    >
-      <span aria-hidden className={`h-2.5 w-2.5 shrink-0 rounded-[1px] ${lw.hatch ? "nx-index-sw nx-index-sw-hatch" : "nx-index-sw"}`} style={{ ["--tone" as string]: lw.sw }} />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15px] leading-tight text-n-ink">{lw.title}</span>
-        <span className="block truncate text-[12px] leading-snug text-n-ink-2">
-          <span className={lw.tone}>{lw.kind}</span>
-          {lw.detail ? ` · ${lw.detail}` : ""}
-        </span>
-      </span>
-      {bp !== "phone" && <Icon name="chevronDown" className={`h-4 w-4 shrink-0 text-n-ink-3 transition-transform ${deckOpen ? "rotate-180" : ""}`} />}
-    </button>
-  );
+  const flowR = active.kind === "currents" && !arrows ? { colour: flowPrefs.colour } : null;
+  const words = dockWords(manifest, active, shownResolved, now, derived);
+  const ramp = rampOf(active, shownResolved, flowR);
+  const headDescribe = [words.title, words.kind, words.when, words.caveat].filter(Boolean).join(", ");
+  const head = (phone: boolean) => <DockHead words={words} ramp={ramp} sink={dockSink} selected={selRead} open={deckOpen} onToggle={toggleDeck} capsuleRef={capsuleRef} phone={phone} describe={headDescribe} />;
   const flowPause = active.kind === "currents" ? <FlowControls part="pause" prefs={flowPrefs} onPrefs={setFlowPrefs} reduced={reduced} /> : null;
   const flowView = active.kind === "currents" ? <FlowControls part="view" prefs={flowPrefs} onPrefs={setFlowPrefs} reduced={reduced} /> : null;
   const adjustable = active.kind !== "none";
@@ -1029,10 +1056,25 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     <div className="flex flex-col gap-3">
       <LayerList manifest={manifest} choice={active} onChoice={pickLayer} now={now} defaults={{ lead: firstLead }} derived={derived} />
       <LayerOptions manifest={manifest} choice={active} onChoice={setChoiceRaw} estimate={resolved.estimateLayer} part="primary" />
+      {/* what the colours mean, every caveat and the no-data marks: one level in, in the page */}
+{bp !== "phone" && (
+      <details className="nx-note group border-t border-n-line" data-testid="legend-fold">
+        <summary className="nx-focus flex min-h-11 cursor-pointer items-center gap-2">
+          <span className="min-w-0 flex-1 text-[14.5px] text-n-ink">What the colours mean</span>
+          <Icon name="chevronDown" className="nx-note-chev h-4 w-4 shrink-0 text-n-ink-3" />
+        </summary>
+        <div className="nx-note-body flex flex-col gap-3 pb-3">
+          <div className="flex flex-col gap-2.5" data-testid="map-legend">
+            <Legend choice={active} resolved={shownResolved} check={check} flow={flowLegend} />
+          </div>
+          {adjustable && <p className="nx-margin" data-testid="state-scale-note">At state scale a {active.kind === "forecast" ? "3 km model cell" : "pixel"} is a few screen pixels wide: zoom in and tap the water to read one, or tap a harbour for its briefing.</p>}
+        </div>
+      </details>
+      )}
       {adjustable && (
         <details className="nx-note group border-t border-n-line" data-testid="layer-adjust" open={adjustOpen} onToggle={(e) => setAdjustOpen(e.currentTarget.open)}>
           <summary className="nx-focus flex min-h-11 cursor-pointer items-center gap-2">
-            <span className="min-w-0 flex-1 text-[13.5px] text-n-ink">Display</span>
+            <span className="min-w-0 flex-1 text-[14.5px] text-n-ink">Display</span>
             <span className="nx-data text-[11px] text-n-ink-3">{active.kind === "currents" && !active.chl ? (arrows ? "arrows" : "streaks") : `${Math.round(opacity * 100)}%`}</span>
             <Icon name="chevronDown" className="nx-note-chev h-4 w-4 shrink-0 text-n-ink-3" />
           </summary>
@@ -1044,7 +1086,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       {/* the science and the full credits, on demand: provenance, coverage, method and skill, reference lines */}
       <details className="nx-note group border-t border-n-line" data-testid="layer-about">
         <summary className="nx-focus flex min-h-11 cursor-pointer items-center gap-2">
-          <span className="min-w-0 flex-1 text-[13.5px] text-n-ink">About this layer</span>
+          <span className="min-w-0 flex-1 text-[14.5px] text-n-ink">About this layer</span>
           <Icon name="chevronDown" className="nx-note-chev h-4 w-4 shrink-0 text-n-ink-3" />
         </summary>
         <div className="nx-note-body flex flex-col gap-3 pb-2">
@@ -1081,21 +1123,21 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
     </p>
   ) : null;
 
-  // the map's tools, one column: the zoom pair, then recentre, area, share and the field pack
-  const stackCls = "pointer-events-auto flex flex-col divide-y divide-n-line rounded-[4px] border border-n-line bg-[rgba(5,9,13,0.88)]";
+  // the map's tools, right edge: zoom, locate and one "more" (share, field pack, select area)
+  const stackCls = "nx-deck pointer-events-auto flex flex-col divide-y divide-n-line overflow-hidden";
   const toolCls = "nx-press nx-focus grid h-11 w-11 place-items-center text-n-ink-2 hover:text-n-ink max-md:h-14 max-md:w-14";
   const recenter = (
     <button type="button" aria-label={selection ? "Centre on the selection" : "Show the whole coast"} onClick={() => (selection ? focusOn(selection) : fitState())} className={toolCls} data-testid="recenter">
       <Icon name="locate" />
     </button>
   );
-  const packButton = (
-    <button type="button" aria-label={`Field pack: save ${pack.name} for offline use`} onClick={() => setPackOpen(true)} className={toolCls} data-testid="pack-open">
-      <Icon name={off.record?.complete ? "check" : "download"} />
+  const packButton = (cls: string, withLabel: boolean) => (
+    <button type="button" aria-label={`Field pack: save ${pack.name} for offline use`} onClick={() => setPackOpen(true)} className={cls} data-testid="pack-open">
+      <Icon name={off.record?.complete ? "check" : "download"} className="h-5 w-5 shrink-0" />
+      {withLabel && <span>Field pack</span>}
     </button>
   );
-  // with the inspector open on a wide screen the tools lie in one row under it, off the coast beside it
-  // (they sat over the shore and its labels, between the field and the panel)
+  // with the place sheet open on a wide screen the tools lie in one row under it, off the coast beside it
   const toolRow = panelOpen && (bp === "desktop" || bp === "tablet");
   const rowCls = toolRow ? "flex-row divide-x divide-y-0" : "";
   const mapControls = (
@@ -1108,13 +1150,9 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
           <Icon name="minus" />
         </button>
       </div>
-      <div className={`${stackCls} ${rowCls}`}>
+      <div className={`${stackCls} ${rowCls} overflow-visible`}>
         {recenter}
-        <button type="button" aria-label="Select an area" aria-pressed={areaMode} onClick={() => setAreaMode((v) => !v)} className={`${toolCls} ${areaMode ? "bg-n-accent text-n-on-accent" : ""}`} data-testid="area-tool">
-          <Icon name="area" />
-        </button>
-        <ShareButton className={toolCls} />
-        {packButton}
+        <MoreTools toolCls={toolCls} packOpen={packOpen} areaMode={areaMode} onArea={() => setAreaMode((v) => !v)} pack={packButton(moreItemCls, true)} />
       </div>
     </div>
   );
@@ -1151,9 +1189,18 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       gap={harbourOn && !selection ? harbour!.gap : null}
       stations={stationPoints}
       onHover={bp !== "phone" && canHover && !areaMode ? onHover : undefined}
-      onPort={(code) => select({ kind: "harbor", port: code })}
-      onStationPick={(id) => select({ kind: "station", id })}
-      onPoint={(p: MapPoint) => select(active.kind === "forecast" ? { kind: "cell", lat: p.lat, lon: p.lon } : { kind: "point", lat: p.lat, lon: p.lon })}
+      onPort={(code) => selectAndGo({ kind: "harbor", port: code })}
+      onStationPick={(id) => selectAndGo({ kind: "station", id })}
+      onPoint={(p: MapPoint) => {
+        select(active.kind === "forecast" ? { kind: "cell", lat: p.lat, lon: p.lon } : { kind: "point", lat: p.lat, lon: p.lon });
+        // reading a pixel keeps the map still; only a point the sheet would cover glides into the open map
+        const m = mapRef.current;
+        if (!m) return;
+        const at = m.project([p.lon, p.lat]);
+        const c = m.getContainer();
+        const covered = bp === "phone" ? at.y > c.clientHeight * 0.45 : at.x > c.clientWidth - panelW - 32;
+        if (covered) journeyTo(m, { center: [p.lon, p.lat], zoom: m.getZoom(), padding: padding(true) });
+      }}
       onReady={(m) => {
         mapRef.current = m;
         setMapReady(true);
@@ -1198,11 +1245,12 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
   // three lines are reserved from the start (the stamp, a region the radar missed, an older-than-usual hour):
   // an hour that turns stale during playback folds into the reserved row (v10 fix 2)
   const railCaption = (
-    <StableCaption key={active.kind} min={active.kind === "currents" ? 56 : 0}>
+    <StableCaption key={active.kind}>
       {nothingCurrent}
-      <div className="flex min-w-0 flex-wrap items-start gap-x-5 gap-y-0.5 empty:hidden [&_[data-testid=provenance]]:gap-0.5 [&_[data-testid=provenance]_p]:text-[11.5px] [&_[data-testid=provenance]_p]:leading-[16px] [&_[data-testid=currents-hour-note]]:text-[11.5px] [&_[data-testid=currents-hour-note]]:leading-[16px]">
+      <div className="flex min-w-0 flex-wrap items-start gap-x-5 gap-y-0.5 empty:hidden [&_[data-testid=provenance]]:gap-0.5 [&_[data-testid=provenance]_p]:text-[13px] [&_[data-testid=provenance]_p]:leading-[18px] [&_[data-testid=currents-hour-note]]:text-[13px] [&_[data-testid=currents-hour-note]]:leading-[18px]">
         <Provenance manifest={manifest} choice={active} resolved={shownResolved} now={now} regions={ports?.regions ?? []} part="dock" />
         {hourNote}
+        {fieldLoading}
       </div>
     </StableCaption>
   );
@@ -1218,35 +1266,23 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
       pending={curPending && curLayer ? hourKey(curLayer) : null}
       onPrefetch={prefetch}
       compact={compact}
-      caption={compact ? null : railCaption}
       variable={variable}
       lead={firstLead}
     />
   );
-  const legendBody = (
-    <div ref={legendRef} className="flex min-w-0 flex-col gap-2.5" data-testid="map-legend">
-      <Legend choice={active} resolved={shownResolved} check={check} flow={flowLegend} />
-      {flowPause}
-      {fieldLoading}
-      {readHint}
-    </div>
-  );
-  const colW = bp === "desktop" ? 264 : 236;
   // clip, not hidden: a hidden overflow can still be scrolled by focus or scrollIntoView, which slid
   // the whole workspace (and the dock) up the screen on phones
   return (
     <div className="env-instrument relative h-dvh w-full overflow-clip" data-testid="explore">
       <SkipLink to="place-search" label="Skip to search places" />
       <h1 className="sr-only">Explore: harmful algal bloom evidence on the California coast{placeName ? `, ${placeName}` : ""}</h1>
-      <div className="absolute inset-0" data-testid="map">
+      <div className="nx-vt-stage absolute inset-0" data-testid="map">
         {basemapPm !== undefined && synced ? map : null}
       </div>
-      {/* the field darkens toward the instrument's edges (its words keep their contrast over any raster) */}
-      {wide && <div aria-hidden className="nx-field-shade pointer-events-none absolute inset-0 z-[4]" />}
-      {hoverSource && bp !== "phone" && <HoverLayer sink={hoverSink} manifest={manifest} baseUrl={baseUrl} source={hoverSource} inset={panelOpen ? panelW + 32 : 0} waterAt={waterAt} />}
+      {hoverSource && bp !== "phone" && <HoverLayer sink={hoverSink} manifest={manifest} baseUrl={baseUrl} source={hoverSource} inset={panelOpen ? panelW + 32 : 0} waterAt={waterAt} onRead={(r) => dockSink.current?.(r)} />}
       {packOpen && <PackDialog pack={pack} manifest={manifest} baseUrl={baseUrl} official={official} onClose={() => setPackOpen(false)} />}
       {/* the start state: the seafloor first, and what is being read (never a bare spinner) */}
-      <AnimatePresence>{starting && <StartCard key="start" now={now} manifest={manifest} phone={bp === "phone"} />}</AnimatePresence>
+      <AnimatePresence>{starting && <StartCard key="start" now={now} manifest={manifest} phone={bp === "phone"} quiet={!!selection} />}</AnimatePresence>
       {areaMode && (
         <div {...areaHandlers} className="absolute inset-0 z-[5] cursor-crosshair touch-none" data-testid="area-overlay">
           <p className="nx-iplate pointer-events-none absolute left-1/2 top-24 -translate-x-1/2 px-4 py-2 text-[14px] text-n-ink">Drag across the water to select an area · Esc to cancel</p>
@@ -1268,65 +1304,55 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
             </div>
           ) : null
         }
-        notices={<NoticesButton official={official} status={officialStatus} compact={bp === "phone"} local={harbourNotices ?? pointNotices} />}
+        trust={{ official, status: officialStatus, fixture, local: harbourNotices ?? pointNotices }}
       />
 
       {wide && (
         <>
-          {/* the instrument's left margin: the layer index (always in view) and, under it, the legend */}
-          <div className="pointer-events-none absolute left-4 z-20 flex flex-col gap-3" style={{ top: 72, bottom: marginH + dockH + 14, width: colW }}>
-            {shortWide ? (
-              <div className="nx-iplate pointer-events-auto relative shrink-0 p-1">
-                {layerButton}
-                <section
-                  ref={deckRef}
-                  id="layer-deck"
-                  aria-label="Map layers"
-                  hidden={!deckOpen}
-                  className="nx-iplate absolute left-0 top-[calc(100%+8px)] z-30 w-[min(320px,calc(100vw-32px))] overflow-y-auto overscroll-contain p-3 [scrollbar-width:thin]"
-                  style={{ maxHeight: `calc(100dvh - ${72 + 60 + marginH + dockH + 24}px)` }}
-                  data-testid="layer-deck"
-                >
-                  {indexBody}
-                  <div className="mt-3 border-t border-n-line pt-3">{legendBody}</div>
-                </section>
-              </div>
-            ) : (
-              <section ref={deckRef} id="layer-deck" aria-label="Map layers" className="nx-iplate pointer-events-auto min-h-0 shrink overflow-y-auto overscroll-contain px-3.5 pb-1.5 pt-3 [scrollbar-width:thin]" data-testid="layer-deck">
-                <p className="nx-caps pb-1.5">Field</p>
-                {indexBody}
-              </section>
-            )}
-            {!shortWide && (
-              <section aria-label="Legend" className="nx-iplate pointer-events-auto mt-auto shrink-0 px-3.5 py-3">
-                {legendBody}
-              </section>
-            )}
-          </div>
-
-          {/* the selection: right, top-aligned under the header, never down over the time rail */}
+          {/* the place sheet: right, under the bar, never down over the time rail */}
           <AnimatePresence>
             {inspection && (
-              <InspectAside key="inspect" className="nx-iplate absolute right-4 top-[68px] z-20 overflow-y-auto overscroll-contain p-5 text-n-ink [scrollbar-width:thin]" style={{ width: panelW, maxHeight: `calc(100% - ${68 + marginH + dockH + 18 + 56}px)` }}>
+              <InspectAside key="inspect" className="nx-iplate nx-place-sheet absolute right-4 z-20 overflow-y-auto overscroll-contain p-6 text-n-ink [scrollbar-width:thin]" style={{ top: SHEET_TOP, width: panelW, maxHeight: `calc(100% - ${SHEET_TOP + marginH + 12 + dockH + 12}px)` }}>
                 {inspection}
               </InspectAside>
             )}
           </AnimatePresence>
 
-          <div className="absolute z-20" style={{ right: toolsRight, bottom: marginH + dockH + 14 }}>
-            {mapControls}
+          {/* the bottom: the field dock (what the map is), the time rail (when it is), the tools */}
+          <div className="pointer-events-none absolute inset-x-4 z-20 flex items-end gap-2.5" style={{ bottom: marginH + 12 }} data-testid="field-row">
+            <div className="relative shrink-0" style={{ width: DOCK_W }}>
+              <div className="absolute bottom-[calc(100%+8px)] left-0 w-full">{readHint}</div>
+              <div ref={dockRef} className="nx-iplate pointer-events-auto relative px-3.5 pb-1.5 pt-1.5" data-testid="field-dock">
+                <div ref={legendRef}>{head(false)}</div>
+              </div>
+              <section
+                ref={deckRef}
+                id="layer-deck"
+                aria-label="Map layers"
+                hidden={!deckPresence.mounted}
+                inert={!deckOpen}
+                data-state={deckOpen ? "open" : "closed"}
+                className="nx-iplate nx-pop pointer-events-auto absolute bottom-[calc(100%+8px)] left-0 z-30 w-full overflow-y-auto overscroll-contain p-3 [--nx-origin:bottom_left] [scrollbar-width:thin]"
+                style={{ maxHeight: `calc(100dvh - ${SHEET_TOP + 8 + marginH + 12 + dockH + 8}px)` }}
+                data-testid="layer-deck"
+              >
+                {indexBody}
+              </section>
+            </div>
+
+            <div className="pointer-events-auto relative min-w-0 flex-1">
+              <div className="nx-rail-cap nx-iplate absolute bottom-[calc(100%+8px)] left-0 right-0 px-3.5 py-2">{railCaption}</div>
+              <section aria-label="Map time" className="nx-iplate flex items-center gap-2 px-3 py-1.5" data-testid={hasTime ? "timebar-deck" : "instrument-dock"}>
+                <div className="min-w-0 flex-1">{rail(false)}</div>
+                {flowPause}
+              </section>
+            </div>
+
+            <div className="shrink-0">{mapControls}</div>
           </div>
 
-          {/* the time rail: full width along the bottom, a first-class instrument */}
-          <div ref={dockRef} className="pointer-events-none absolute inset-x-4 z-20" style={{ bottom: marginH + 2 }}>
-            <section aria-label="Map time" className="pointer-events-auto relative pt-1" data-testid={hasTime ? "timebar-deck" : "instrument-dock"}>
-              {rail(false)}
-            </section>
-          </div>
-
-          {/* the map's bottom margin: the one disclosure line and the credits, on the map, never covered */}
-          <div ref={marginRef} className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-wrap items-center justify-between gap-x-6 px-5 pb-1.5 pt-1" data-testid="map-margin">
-            <RegistryDisclosure tone="map" fixture={fixture} className="pointer-events-auto" />
+          {/* the map's margin line: the credits, complete, on the ground colour; nothing covers it */}
+          <div className="absolute inset-x-0 bottom-0 z-20 flex items-center justify-end bg-n-bg px-5" style={{ height: MARGIN }} data-testid="map-margin">
             <MapCredits className="pointer-events-auto" extra={layerCredit} />
           </div>
         </>
@@ -1336,10 +1362,10 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
         <>
           {/* one line under the header: the disclosure; then the offline state, a failed layer, the way back */}
           <div className="pointer-events-none absolute inset-x-0 top-[72px] z-20 flex flex-col items-start gap-1.5 px-4">
-            <RegistryDisclosure tone="map" fixture={fixture} className="pointer-events-auto max-w-full" />
             {offlineBanner && <div className="pointer-events-auto w-full">{offlineBanner}</div>}
             {fieldProblem && <div className="pointer-events-auto w-full">{fieldProblem}</div>}
             {backTo && <BackToBriefing {...backTo} className="pointer-events-auto w-fit max-w-full" />}
+            {readHint && <div className="w-full">{readHint}</div>}
             {/* a place open: the sheet leads with it, and the layer is a small chip on the map, still one tap away */}
             {selection && (
               <button
@@ -1352,8 +1378,9 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                 className="nx-press nx-focus nx-iplate pointer-events-auto inline-flex min-h-11 max-w-full items-center gap-2 px-3 text-[13px] text-n-ink"
                 data-testid="layer-capsule"
               >
-                <span aria-hidden className={`h-2.5 w-2.5 shrink-0 rounded-[1px] ${lw.hatch ? "nx-index-sw nx-index-sw-hatch" : "nx-index-sw"}`} style={{ ["--tone" as string]: lw.sw }} />
-                <span className="truncate">{lw.title}</span>
+                <MiniRamp ramp={ramp} />
+                <span className="truncate">{words.title}</span>
+                {words.caveat && <span className="shrink-0 text-n-ink-2" data-testid="capsule-caveat">{words.caveat === "probability of conditions, not toxin in seafood" ? "probability, not toxin" : words.caveat}</span>}
                 <Icon name="layers" className="h-4 w-4 shrink-0 text-n-ink-2" />
               </button>
             )}
@@ -1363,14 +1390,14 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
             {/* the map's credits (ODbL) on the map's edge, one line just above the sheet at every height
                 the map shows; at full height (the map all but covered) they ride on the sheet's edge */}
             {snap !== "full" && (
-              <div ref={creditsRef} className="pointer-events-none absolute left-2 right-2 flex items-end justify-between gap-2 transition-[bottom] duration-200" style={{ bottom: (snap === "peek" ? peekH + 8 : sheetHalf + 4) }}>
+              <div className="pointer-events-none absolute left-2 right-2 flex items-end justify-between gap-2 transition-[bottom] duration-200" style={{ bottom: (snap === "peek" ? peekH + 8 : sheetHalf + 4) }}>
                 <div className="pointer-events-none min-w-0 flex-1 [&>*]:pointer-events-auto">
                   <CreditsChip extra={layerCredit} />
                 </div>
                 {/* the tools docked at the right edge just above the sheet, beside the credits (v10 fix 2): off the
                     coast the frame is about, which runs from the upper left to the lower right of a phone. Locate
                     stays one tap away; sharing and the field pack fold behind "More" */}
-                {snap === "peek" && <PhoneTools recenter={recenter} packButton={packButton} stackCls={stackCls} toolCls={toolCls} />}
+                {snap === "peek" && <PhoneTools recenter={recenter} packButton={packButton(toolCls, false)} stackCls={stackCls} toolCls={toolCls} />}
               </div>
             )}
             <div className="pointer-events-auto">
@@ -1386,35 +1413,43 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
                 label={selection ? "Selected" : "Layer, legend and time"}
                 header={null}
                 field
-                edge={snap === "full" ? <MapCredits short extra={layerCredit} /> : null}
+                edge={
+                  selection ? (
+                    snap === "full" ? (
+                      <MapCredits short extra={layerCredit} />
+                    ) : null
+                  ) : (
+                    <>
+                      <div ref={phoneEdgeRef}>
+                        <div ref={legendPhoneRef}>{head(true)}</div>
+                        {nothingCurrent && <div className="mt-2">{nothingCurrent}</div>}
+                      </div>
+                      {snap === "full" && (
+                        <div className="mt-1.5">
+                          <MapCredits short extra={layerCredit} />
+                        </div>
+                      )}
+                    </>
+                  )
+                }
               >
                 <div className="pb-6 text-n-ink">
-                  {/* the peek is the dock: the layer button, the ramp, the time rail */}
-                  {/* a selection open: the place leads, the layer row steps aside (one header, not two stacked) */}
-                  {!selection && <div className="-mx-1.5 pr-[52px]">{layerButton}</div>}
-                  <section ref={deckRef} id="layer-deck" aria-label="Map layers" hidden={!deckOpen} className="mt-2 border-t border-n-line pt-3" data-testid="layer-deck">
+                  {/* the sheet's edge is the dock's head, at every height; a selection open: the place leads */}
+                  <section ref={deckRef} id="layer-deck" aria-label="Map layers" hidden={!deckOpen} className="mb-3" data-testid="layer-deck">
                     {indexBody}
                   </section>
                   {inspection ? (
                     // the sheet's own resize handle sits at its top right: the place's close button keeps clear of it
                     <div className="pt-1 [&_header]:pr-12">{inspection}</div>
                   ) : (
-                    <div ref={legendPhoneRef} className="mt-1 flex flex-col gap-2" data-testid="active-layer">
-                      {nothingCurrent ? (
-                        <div className="px-1">{nothingCurrent}</div>
-                      ) : (
-                        <div className="px-1">
-                          <LegendLine choice={active} resolved={shownResolved} flow={flowLegend} />
-                        </div>
-                      )}
+                    <div className="flex flex-col gap-3" data-testid="active-layer">
                       {rail(true)}
-                      <div className="mt-2 flex flex-col gap-3 border-t border-n-line pt-3">
-                        {readHint}
-                        {flowPause}
-                        {fieldLoading}
-                        <Legend choice={active} resolved={shownResolved} check={check} inline noRamp flow={flowLegend} />
-                        <Provenance manifest={manifest} choice={active} resolved={shownResolved} now={now} regions={ports?.regions ?? []} part="dock" />
-                        {hourNote}
+                      {flowPause}
+                      {fieldLoading}
+                      <Provenance manifest={manifest} choice={active} resolved={shownResolved} now={now} regions={ports?.regions ?? []} part="dock" />
+                      {hourNote}
+                      <div className="border-t border-n-line pt-3">
+                        <Legend choice={active} resolved={shownResolved} check={check} noRamp flow={flowLegend} />
                       </div>
                     </div>
                   )}
@@ -1422,9 +1457,7 @@ export function Explore({ manifest, ports, official, portIntel, stations, statio
               </MobileSheet>
             </div>
           </div>
-          <div className="absolute inset-x-0 bottom-0 z-40 border-t border-n-line bg-n-surface" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-            <NavTabs active="explore" size="dock" />
-          </div>
+          <Dock active="explore" absolute />
         </>
       )}
     </div>
@@ -1523,7 +1556,60 @@ function PhoneTools({ recenter, packButton, stackCls, toolCls }: { recenter: Rea
   );
 }
 
-function ShareButton({ className }: { className: string }) {
+const moreItemCls = "nx-focus nx-tint flex min-h-11 w-full items-center gap-3 rounded-[10px] px-2.5 text-left text-[14.5px] text-n-ink hover:bg-n-surface-2";
+
+/** Desktop tools' "more": share, the field pack and the area tool, each with its words. */
+function MoreTools({ toolCls, packOpen, areaMode, onArea, pack }: { toolCls: string; packOpen: boolean; areaMode: boolean; onArea: () => void; pack: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const pop = usePresence(open, 120);
+  const box = useRef<HTMLDivElement | null>(null);
+  const moreRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const k = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      e.preventDefault();
+      setOpen(false);
+      moreRef.current?.focus({ preventScroll: true });
+    };
+    // the pack dialog keeps this open, so its opener gets focus back when it closes
+    const c = (e: PointerEvent) => !packOpen && !box.current?.contains(e.target as Node) && setOpen(false);
+    window.addEventListener("keydown", k, true);
+    window.addEventListener("pointerdown", c);
+    return () => {
+      window.removeEventListener("keydown", k, true);
+      window.removeEventListener("pointerdown", c);
+    };
+  }, [open, packOpen]);
+  return (
+    <div ref={box} className="relative">
+      {pop.mounted && (
+        <div id="map-tools-more" data-state={pop.state} inert={!open} role="group" aria-label="More map tools" className="nx-deck nx-pop absolute bottom-0 right-[calc(100%+8px)] z-30 w-52 p-1.5 [--nx-origin:bottom_right]" data-testid="map-tools-more">
+          <ShareButton className={moreItemCls} withLabel />
+          {pack}
+          <button
+            type="button"
+            aria-pressed={areaMode}
+            onClick={() => {
+              onArea();
+              setOpen(false);
+            }}
+            className={`${moreItemCls} ${areaMode ? "bg-n-accent-bg font-medium" : ""}`}
+            data-testid="area-tool"
+          >
+            <Icon name="area" className="h-5 w-5 shrink-0" />
+            <span>Select an area</span>
+          </button>
+        </div>
+      )}
+      <button ref={moreRef} type="button" aria-label={open ? "Fewer map tools" : "More map tools: share, field pack, select an area"} aria-expanded={open} aria-controls="map-tools-more" onClick={() => setOpen((o) => !o)} className={toolCls} data-testid="map-tools-toggle">
+        <Icon name={open ? "close" : "more"} />
+      </button>
+    </div>
+  );
+}
+
+function ShareButton({ className, withLabel = false }: { className: string; withLabel?: boolean }) {
   const [done, setDone] = useState(false);
   return (
     <button
@@ -1542,7 +1628,8 @@ function ShareButton({ className }: { className: string }) {
       className={className}
       data-testid="share-view"
     >
-      <Icon name={done ? "check" : "share"} />
+      <Icon name={done ? "check" : "share"} className={withLabel ? "h-5 w-5 shrink-0" : undefined} />
+      {withLabel && <span>{done ? "Link copied" : "Copy a link"}</span>}
       <span className="sr-only" aria-live="polite">
         {done ? "Link copied" : ""}
       </span>
@@ -1550,7 +1637,7 @@ function ShareButton({ className }: { className: string }) {
   );
 }
 
-function StartCard({ now, manifest, phone }: { now: Date | null; manifest: Manifest; phone: boolean }) {
+function StartCard({ now, manifest, phone, quiet }: { now: Date | null; manifest: Manifest; phone: boolean; quiet: boolean }) {
   // v10 (direction A's loading screen): the seafloor and coast first, then "Reading the published layers",
   // each source in place with its own state and date. It appears only after 400 ms of real waiting and
   // steps back (a fade) as the map arrives; while leaving it is inert and has no test id. Behind it the
@@ -1568,7 +1655,8 @@ function StartCard({ now, manifest, phone }: { now: Date | null; manifest: Manif
       aria-hidden={!present || undefined}
     >
       <ContourLoader className="absolute inset-0 h-full w-full text-n-accent opacity-35" />
-      <div className={`nx-iplate pointer-events-auto absolute overflow-y-auto overscroll-contain [scrollbar-width:thin] ${phone ? "inset-x-3 top-[112px] max-h-[calc(100dvh-112px-260px)] px-4 py-3.5" : "right-[84px] top-24 max-h-[calc(100dvh-96px-200px)] w-[400px] px-5 py-[18px]"}`}>
+      {/* a place opened by a link: its sheet is what the reader came for, and the loader alone says the map is coming */}
+      <div hidden={quiet} className={`nx-iplate pointer-events-auto absolute overflow-y-auto overscroll-contain [scrollbar-width:thin] ${phone ? "inset-x-3 top-[112px] max-h-[calc(100dvh-112px-260px)] px-4 py-3.5" : "right-[84px] top-24 max-h-[calc(100dvh-96px-200px)] w-[400px] px-5 py-[18px]"}`}>
         <p className={`${phone ? "text-[21px]" : "text-[24px]"} font-light leading-tight text-n-ink`}>Reading the published layers</p>
         <p className="nx-data mt-1 text-[11px] text-n-ink-3">
           Data run {manifest.pipeline_run_id.slice(0, 8)} · generated {dayLabel(gen.slice(0, 10))}, {gen.slice(11, 16)} UTC
@@ -1672,7 +1760,7 @@ function BackToBriefing({ href, name, className }: { href: string; name: string;
 type HoverAt = { p: MapPoint; s: { x: number; y: number } };
 
 /** The hover readout and the pointer state behind it: the workspace hands it positions through `sink`. */
-function HoverLayer({ sink, manifest, baseUrl, source, inset, waterAt }: { sink: React.RefObject<((h: HoverAt | null) => void) | null>; manifest: Manifest; baseUrl: string; source: HoverSource; inset: number; waterAt: (s: { x: number; y: number }) => boolean | null }) {
+function HoverLayer({ sink, manifest, baseUrl, source, inset, waterAt, onRead }: { sink: React.RefObject<((h: HoverAt | null) => void) | null>; manifest: Manifest; baseUrl: string; source: HoverSource; inset: number; waterAt: (s: { x: number; y: number }) => boolean | null; onRead: (r: Read | null) => void }) {
   const [hover, setHover] = useState<HoverAt | null>(null);
   useEffect(() => {
     sink.current = setHover;
@@ -1684,7 +1772,7 @@ function HoverLayer({ sink, manifest, baseUrl, source, inset, waterAt }: { sink:
   return (
     // the readout takes the dark tokens but must never paint over the map: transparent wrapper
     <div className="theme-dark pointer-events-none absolute inset-0 z-[12] !bg-transparent">
-      <HoverReadout manifest={manifest} baseUrl={baseUrl} source={source} point={hover.p} screen={hover.s} waterAt={waterAt} bounds={{ w: window.innerWidth - inset, h: window.innerHeight }} />
+      <HoverReadout manifest={manifest} baseUrl={baseUrl} source={source} point={hover.p} screen={hover.s} waterAt={waterAt} bounds={{ w: window.innerWidth - inset, h: window.innerHeight }} onRead={onRead} />
     </div>
   );
 }

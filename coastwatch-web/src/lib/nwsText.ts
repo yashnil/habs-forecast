@@ -97,10 +97,33 @@ export function parseCoastalText(zone: string, text: string, max = 4): { forecas
   return { forecast: { zone: zone.toUpperCase(), zoneName: name.join(" ").replace(/-$/, "").trim(), updated: parseIssued(issued), periods: periods.slice(0, max) }, headlines };
 }
 
+const WEEKDAY_NAMES = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+/**
+ * When a headline says it ends, only for a stated clock time: "... UNTIL 9 PM PST THIS EVENING" is the first 9 PM after
+ * the bulletin was issued; "... UNTIL 3 AM PST WEDNESDAY" the first one on that day. "THROUGH MONDAY EVENING" names no
+ * time, so it stays null rather than being given one.
+ */
+export function headlineEnds(h: string, issued: string | null): string | null {
+  if (!issued) return null;
+  const m = h.toUpperCase().match(new RegExp(`\\bUNTIL (\\d{1,2})(?::?(\\d{2}))? (AM|PM) (PDT|PST)\\b(?: (${WEEKDAY_NAMES.join("|")}))?`));
+  const t0 = Date.parse(issued);
+  if (!m || !Number.isFinite(t0)) return null;
+  const off = m[4] === "PDT" ? 7 : 8;
+  const hour = (Number(m[1]) % 12) + (m[3] === "PM" ? 12 : 0);
+  const local = new Date(t0 - off * 3_600_000);
+  for (let d = 0; d < 8; d++) {
+    const c = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() + d, hour + off, Number(m[2] ?? 0));
+    if (c <= t0) continue;
+    if (m[5] && WEEKDAY_NAMES[new Date(c - off * 3_600_000).getUTCDay()] !== m[5]) continue;
+    return new Date(c).toISOString();
+  }
+  return null;
+}
+
 /** Headlines as alerts (the event is the headline's first clause, e.g. "SMALL CRAFT ADVISORY IN EFFECT ..."). */
-export function headlineAlerts(headlines: string[], url: string): MarineAlert[] {
+export function headlineAlerts(headlines: string[], url: string, issued: string | null = null): MarineAlert[] {
   return headlines.map((h) => {
     const event = h.match(/^(.*?)\s+(IN EFFECT|REMAINS IN EFFECT|NOW IN EFFECT|CANCELLED|EXPIRES?)\b/)?.[1] ?? h;
-    return { event: event.charAt(0) + event.slice(1).toLowerCase(), headline: h.charAt(0) + h.slice(1).toLowerCase(), onset: null, ends: null, url };
+    return { event: event.charAt(0) + event.slice(1).toLowerCase(), headline: h.charAt(0) + h.slice(1).toLowerCase(), onset: null, ends: headlineEnds(h, issued), url };
   });
 }

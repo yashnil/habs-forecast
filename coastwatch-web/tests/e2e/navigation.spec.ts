@@ -54,8 +54,8 @@ test("v2 links open the same view: a port, a region, a research-mode briefing", 
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/?region=monterey_bay&port=550&layer=forecast`);
   await expect(page.getByTestId("inspect-title")).toHaveText("Monterey");
-  // v10: the layer index (always in view on a wide screen) lights the layer and names it honestly
-  await expect(page.getByTestId("layer-deck")).toBeVisible();
+  // v11: the field dock names the layer; its list lights it and names it honestly
+  await expect(page.getByTestId("dock-title")).toContainText("Bloom & toxin probability");
   await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
   await expect(page.getByTestId("layer-forecast")).toContainText("Bloom & toxin probability");
   await expect(page.getByTestId("layer-forecast")).toContainText("Model · NOAA C-HARM");
@@ -103,8 +103,9 @@ test("the layer list moves with the arrow keys, and county lines and names are a
   await openLayers(page);
   await page.getByTestId("layer-none").focus();
   await page.keyboard.press("ArrowDown");
-  await expect(page.getByTestId("layer-forecast")).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByTestId("layer-forecast")).toBeFocused();
+  // v11: the keys move in the order drawn (grouped by kind); from the last, back to the first
+  await expect(page.getByTestId("layer-satellite")).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByTestId("layer-satellite")).toBeFocused();
   await expect(page.getByTestId("county-note")).toContainText("do not define fishery closures");
   // part of the basemap: no checkbox or map control, and every county layer is on
   await expect(page.getByTestId("county-lines")).toHaveCount(0);

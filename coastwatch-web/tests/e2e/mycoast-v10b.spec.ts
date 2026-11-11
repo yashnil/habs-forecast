@@ -16,29 +16,27 @@ async function open(page: Page, url = SANTA_CRUZ) {
   await expect(page.getByTestId("decision-row")).toBeVisible();
 }
 
-test("1440: one decision row above the fold, beside a full-height map that stays while the column scrolls", async ({ page }) => {
+test("1440: title, trip line, status, three figures and the 60-hour lanes above the fold, beside a full-height map that stays while the column scrolls", async ({ page }) => {
   await open(page);
   const row = page.getByTestId("decision-row");
-  const cells = ["glance-wind", "glance-seas", "glance-tide", "glance-notices-cell", "brief-econ"];
-  const boxes = await Promise.all(cells.map((id) => row.getByTestId(id).boundingBox()));
-  // one row: every reading starts on the same line, above the fold
+  const boxes = await Promise.all(["glance-wind", "glance-seas", "glance-tide"].map((id) => row.getByTestId(id).boundingBox()));
   for (const b of boxes) {
     expect(Math.abs(b!.y - boxes[0]!.y)).toBeLessThan(2);
-    expect(b!.y + b!.height).toBeLessThan(900);
+    expect(b!.y + b!.height).toBeLessThan(700);
   }
-  // no empty "—" tiles for what is not measured nearby: one small line says so instead
-  await expect(page.getByTestId("glance-waves")).toHaveCount(0);
-  await expect(page.getByTestId("glance-water-t")).toHaveCount(0);
-  await expect(row.getByTestId("glance-measured")).toBeVisible();
-  // the notices are a count, unverified, linked to the list
-  await expect(row.getByTestId("glance-notices-cell")).toContainText("not verified");
-  await expect(row.getByTestId("glance-notices")).toHaveAttribute("href", "#official-h");
+  await expect(page.getByTestId("trip-summary")).toContainText("Salmon");
+  // the lanes begin on the first screen, with the now line
+  const lanes = (await page.getByTestId("lanes").boundingBox())!;
+  expect(lanes.y).toBeLessThan(640);
+  await expect(page.getByTestId("lanes-now")).toHaveCount(1);
+  // the notices are counted on the map's own control, unverified
+  await expect(page.getByTestId("notices-open")).toContainText("not verified");
   // the map is the right side of the page, the whole window high, and still there after scrolling
   const map = page.getByTestId("locator");
   const m = (await map.boundingBox())!;
   expect(m.x).toBeGreaterThan(700);
   expect(m.height).toBeGreaterThanOrEqual(880);
-  await page.mouse.wheel(0, 1400);
+  await page.mouse.wheel(0, 500);
   await page.waitForTimeout(300);
   const after = (await map.boundingBox())!;
   expect(after.y).toBeGreaterThanOrEqual(-1);
@@ -51,12 +49,15 @@ test("one evidence section; the notices counted once; no stack of accordions", a
   await expect(page.getByTestId("matters").locator(":scope > li").first()).toBeVisible();
   await expect(page.getByTestId("brief-now")).toHaveCount(1);
   await expect(page.getByText("More for this trip")).toHaveCount(0);
-  await expect(page.getByTestId("brief-now").getByTestId("brief-official")).toBeVisible();
+  await page.getByTestId("brief-evidence-toggle").click();
   await expect(page.getByTestId("brief-now").getByTestId("brief-measured")).toBeVisible();
-  // the count of notices tied here is said once on the page, in the decision row
+  // the count of notices tied here is said once on the page, on the map's control
   const text = await page.locator("main").innerText();
   expect(text.match(/\b3 notices tied to these waters/g) ?? []).toHaveLength(0);
   expect((text.match(/tied here/g) ?? []).length).toBe(1);
+  await page.getByTestId("notices-open").click();
+  await expect(page.getByTestId("brief-official")).toBeVisible();
+  await page.getByTestId("notices-sheet-close").click();
   // the disclosures that remain sit where their subject is, never two in a row
   const folds = await page.locator('[data-testid$="-toggle"]').evaluateAll((els) => els.filter((e) => (e as HTMLElement).offsetParent !== null).map((e) => (e as HTMLElement).getBoundingClientRect().top + window.scrollY));
   for (let i = 1; i < folds.length; i++) expect(folds[i] - folds[i - 1], `folds ${i - 1} and ${i}`).toBeGreaterThan(20);
@@ -66,17 +67,18 @@ test("one evidence section; the notices counted once; no stack of accordions", a
   await expect(page.getByTestId("seasons-all")).toBeVisible();
 });
 
-test("phone: place and trip, a one-paragraph season, then wind, seas, tide and notices on the first screen", async ({ browser }) => {
+test("phone: the stage above; place, trip, the status with its caveat and wind and seas on the first screen; the caveat is never hidden", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   await open(page);
-  for (const id of ["coast-title", "trip-summary", "glance-season", "glance-wind", "glance-seas", "glance-tide", "glance-notices-cell"]) {
+  for (const id of ["coast-title", "trip-summary", "glance-status-word", "glance-no-permission", "glance-not-verified", "glance-wind", "glance-seas"]) {
     const b = await page.getByTestId(id).boundingBox();
     expect(b!.y + b!.height, id).toBeLessThan(844);
   }
-  // the map comes after the readings, as a band
+  await expect(page.getByTestId("glance-no-permission")).toBeVisible();
+  // the map comes above the column, as a band
   const map = (await page.getByTestId("locator").boundingBox())!;
-  expect(map.y).toBeGreaterThan((await page.getByTestId("glance-tide").boundingBox())!.y);
+  expect(map.y).toBeLessThan((await page.getByTestId("coast-title").boundingBox())!.y);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   await ctx.close();
 });
@@ -88,7 +90,7 @@ test("worksheet: gross leads once catch and price exist; the missing list is sai
   await expect(s.getByTestId("econ-worksheet")).toBeVisible();
   // the one framing line, above every number
   await expect(page.getByTestId("econ-hypothetical")).toContainText("Hypothetical: your numbers, not a forecast or permission to fish.");
-  await expect(page.getByTestId("econ-hypothetical")).toContainText("Neritic holds no commercial season");
+  await expect(page.getByTestId("econ-hypothetical")).not.toContainText("holds no commercial season");
   await s.getByTestId("econ-catch-0-lb").fill("400");
   await s.getByTestId("econ-catch-0-price").fill("9");
   await expect(s.getByTestId("econ-sum-gross")).toHaveText("$3,600");
@@ -115,9 +117,10 @@ test("worksheet: gross leads once catch and price exist; the missing list is sai
   await s.getByTestId("econ-edit-inputs").click();
   await expect(s.getByTestId("econ-steps")).toBeVisible();
   await expect(s.getByTestId("econ-fuel-gal")).toHaveValue("40");
-  // the briefing's reading: net, with the trip cost
+  // the briefing's ledger reads the same net
   await page.getByTestId("econ-back").click();
-  await expect(page.getByTestId("econ-glance-result")).toHaveAttribute("data-label", "net to boat");
+  await page.getByTestId("brief-econ").scrollIntoViewIfNeeded();
+  await expect(page.getByTestId("brief-econ").getByTestId("econ-sum-net")).toHaveText(/^\+\$/);
 });
 
 test("v10 fix 2: the 60-hour lanes: a gap said once per span, nothing under the now line, tide turns inside the lane", async ({ page }) => {
@@ -128,16 +131,12 @@ test("v10 fix 2: the 60-hour lanes: a gap said once per span, nothing under the 
   await expect(model.getByTestId("model-gap").first()).toBeVisible();
   // the fixture's run ends before this window: one span, its words once
   await expect(model.getByTestId("model-gap")).toHaveCount(1);
-  expect(((await model.innerText()).match(/no run/g) ?? []).length).toBe(1);
+  expect(((await model.textContent())!.match(/no run/g) ?? []).length).toBe(1);
   // the buoy's words start after the now line
-  const now = await lanes.evaluate((el) => {
-    const line = [...el.querySelectorAll("span")].find((s) => s.className.includes("w-px") && s.className.includes("bg-n-ink"));
-    return line ? line.getBoundingClientRect().x : null;
-  });
-  expect(now).not.toBeNull();
+  const now = await page.getByTestId("lanes-now").locator("line").evaluate((l) => l.getBoundingClientRect().x);
   const measured = page.getByTestId("measured-text");
   if (await measured.count()) expect((await measured.boundingBox())!.x).toBeGreaterThan(now!);
-  const gapText = model.getByTestId("model-gap").first().locator("span span");
+  const gapText = model.getByTestId("model-gap").first().locator("text");
   expect((await gapText.boundingBox())!.x).toBeGreaterThan(now!);
   // every tide turn's label lies inside the lane
   const tide = (await page.getByTestId("lane-tide").boundingBox())!;
@@ -148,7 +147,7 @@ test("v10 fix 2: the 60-hour lanes: a gap said once per span, nothing under the 
   }
 });
 
-test("v10 fix 2 (1440): the map legend clears the header chip; 320: the readings are one column of compact rows", async ({ page, browser }) => {
+test("v10 fix 2 (1440): the map legend clears the header chip; 320: nothing scrolls sideways and the caveat reads", async ({ page, browser }) => {
   await open(page);
   const chip = (await page.getByTestId("status-center").boundingBox())!;
   const legend = (await page.getByTestId("locator-legend").boundingBox())!;
@@ -156,12 +155,21 @@ test("v10 fix 2 (1440): the map legend clears the header chip; 320: the readings
   const ctx = await browser.newContext({ viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true });
   const p = await ctx.newPage();
   await open(p);
-  const row = p.getByTestId("decision-row");
-  const boxes = await Promise.all(["glance-wind", "glance-seas", "glance-tide", "glance-notices-cell"].map((id) => row.getByTestId(id).boundingBox()));
-  for (let i = 1; i < boxes.length; i++) expect(boxes[i]!.y).toBeGreaterThan(boxes[i - 1]!.y + 10);
-  for (const b of boxes) {
-    expect(b!.width).toBeGreaterThan(280);
-    expect(b!.height).toBeLessThan(90);
-  }
+  expect(await p.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  await expect(p.getByTestId("glance-no-permission")).toBeVisible();
   await ctx.close();
+});
+
+test("the lanes: a block's value never prints over its lane's heading", async ({ page }) => {
+  await open(page);
+  await page.getByTestId("lanes").scrollIntoViewIfNeeded();
+  await expect(page.getByTestId("lane-seas").locator(".coast-lane-value").first()).toBeVisible({ timeout: 20_000 });
+  for (const kind of ["wind", "seas"]) {
+    const lane = page.getByTestId(`lane-${kind}`);
+    const sub = await lane.locator(".coast-lane-sub").first().boundingBox();
+    for (const v of await lane.locator(".coast-lane-value").all()) {
+      const b = await v.boundingBox();
+      expect(b!.y, `${kind} value below its heading`).toBeGreaterThanOrEqual(sub!.y + sub!.height - 1);
+    }
+  }
 });

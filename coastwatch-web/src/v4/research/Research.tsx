@@ -16,15 +16,13 @@ import { cellEdges, distanceKm, loadGrid } from "@/lib/grid";
 import { useNow } from "@/lib/useNow";
 import { coastHref, pointKey, resolvePlace } from "@/lib/coast";
 import { labelledGeometry } from "@/lib/officialGeometry";
-import { TopBar, NavTabs } from "@/v4/shell/TopBar";
-import { NoticesButton } from "@/v4/shell/Notices";
-import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { TopBar, Dock } from "@/v4/shell/TopBar";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import { Icon } from "@/v4/ui/Icon";
 import { dayLabel, kmLabel, lastHabWords, relTime } from "@/v4/ui/time";
 import { HAB_SAMPLE_VARIABLES } from "@/lib/provenance";
 import { pacificDate } from "@/lib/time";
-import { LinkedSeries, readingAt, realSamples } from "@/v4/charts/LinkedSeries";
+import { LinkedSeries, realSamples } from "@/v4/charts/LinkedSeries";
 import { BrushStrip } from "@/v4/charts/BrushStrip";
 import { useReportSource } from "@/v4/readiness/store";
 import { currentsEntry, modelEntry, satelliteEntry } from "@/v4/readiness/shown";
@@ -34,8 +32,12 @@ import { VARIABLE_WORDS } from "@/v4/explore/layers";
 import { boxFeature, useAreaDrag, type BBox } from "@/v4/explore/AreaDrag";
 import { transect, type TransectCell } from "./transect";
 import { CoastLadder, type LadderStation } from "./CoastLadder";
-import { LocatorMap, StationSheet } from "./Stations";
-import { ExportButton, ExportMenu, MENU_ITEM, QUIET, Readings, SamplesTable, Seg, TabPanel, Tabs, TransectChart, VariableTabs } from "./parts";
+import { LocatorMap } from "./Stations";
+import { ExportButton, ExportMenu, MENU_ITEM, QUIET, SamplesTable, Seg, TabPanel, TransectChart } from "./parts";
+import { Pop } from "@/v4/ui/Pop";
+import { Sheet } from "@/v4/motion/Sheet";
+import { Segmented } from "@/v4/motion/Segmented";
+import { StagePoster } from "@/v4/stage/StagePoster";
 import { areaCsv, cellLeadsCsv, download, modelHistoryCsv, stationCsv, transectCsv } from "./exports";
 import { Lineage } from "./Lineage";
 import { footprintOf, footprintOutline, obsArea, obsPoint, obsTransect, pixelPolygon, radarLayerFor, satLayerFor, type BBox as ObsBox, type RadarChoice, type SatChoice } from "./obsGrid";
@@ -43,7 +45,7 @@ import { ObsArea, ObsControls, ObsNote, ObsPointPanel, ObsTransect, obsSensor, o
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
 
-type Props = { manifest: Manifest; ports: PortsCollection | null; observations: ObservationDataset; official: OfficialDataset | null; baseUrl: string };
+type Props = { manifest: Manifest; ports: PortsCollection | null; observations: ObservationDataset; official: OfficialDataset | null; baseUrl: string; initialWide?: boolean };
 
 export const RANGES = [
   { id: "90d", label: "90 days", short: "90 d", days: 90 },
@@ -140,10 +142,10 @@ export function researchVar(v: string | null): ObsVariableId | null {
   return ["pDA", "dDA", "tDA", "pn_seriata", "pn_delicatissima", "chl_extracted", "temp"].includes(v) ? (v as ObsVariableId) : null;
 }
 
-export function Research({ manifest, ports, observations, official, baseUrl }: Props) {
+export function Research({ manifest, ports, observations, official, baseUrl, initialWide = false }: Props) {
   const sp = useSearchParams();
   const now = useNow();
-  const wide = useWide();
+  const wide = useWide(initialWide);
   const stations = useMemo(() => observations.stations.filter((s) => s.lat != null && s.lon != null), [observations]);
   // a place (My Coast, or Explore's "Research this") opens on its nearest station, and says so (v6);
   // the place is kept as context when another station is chosen (the links back keep it)
@@ -195,7 +197,6 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
   const showModel = variable === "pDA" || variable === "pn_seriata" || variable === "pn_delicatissima";
   const history = st.charm?.history?.[modelVar];
   const hasHistory = showModel && !!history?.length;
-  const fmt = (v: number) => (v >= 1000 ? Math.round(v).toLocaleString("en-US") : v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toPrecision(2));
 
   // the crosshair (chart, model panel, readings): the pointer's reading, else the pinned day, else the window's newest sample
   const hoverKey = `${st.station_id}|${variable}`;
@@ -204,11 +205,11 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
   const pinnedT = askedDay;
   const defaultT = real.length ? real[real.length - 1].t : null;
   const cursorT = hoverT ?? (pinnedT != null && pinnedT >= from && pinnedT <= to ? pinnedT : defaultT);
-  const onHover = useCallback((t: number | null) => setHover(t == null ? null : { k: hoverKey, t }), [hoverKey]);
+  // a pointer that stays on the same sample changes nothing: no re-render of the page
+  const onHover = useCallback((t: number | null) => setHover((h) => (t == null ? null : h?.k === hoverKey && h.t === t ? h : { k: hoverKey, t })), [hoverKey]);
   const onPin = useCallback((t: number | null) => setParams({ day: t == null ? null : dayKey(t) }), []);
   const model = useMemo(() => (hasHistory ? modelOnAxis(history, from, to) : null), [hasHistory, history, from, to]);
   const linkedModel = model ? { points: model.points, historyStart: model.historyStart, what: VARIABLE_WORDS[modelVar].short, radiusKm: st.charm?.radius_km ?? 15 } : null;
-  const reading = cursorT != null ? readingAt(cursorT, win, linkedModel) : null;
   const modelAll = useMemo(() => (hasHistory ? modelOnAxis(history, -Infinity, Infinity) : null), [hasHistory, history]);
   const modelEnd = modelAll?.points.length ? modelAll.points[modelAll.points.length - 1].t : null;
 
@@ -374,236 +375,241 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
     chooseStation(id);
     setSheet(false);
   };
-  const ladderH = Math.max(470, Math.min(580, stations.length * 28 + 20));
+
+  const openPicker = () => setSheet(true);
+  const legendItems = legendFor(win, !!linkedModel, !!model?.points.some((p) => p.partial));
 
   return (
     <div className="env-chart min-h-dvh bg-n-bg text-n-ink" data-testid="research">
       <SkipLink />
-      <TopBar active="research" now={now} notices={<NoticesButton official={official} status={sourceStatus(manifest, "official")} />} />
-      <RegistryDisclosure className="mx-auto w-full max-w-[1520px] px-4 pb-2 sm:px-6 lg:px-8" fixture={isFixture(manifest)} />
-      <div className="mx-auto grid w-full max-w-[1520px] gap-x-10 px-4 pb-32 pt-2 sm:px-6 lg:grid-cols-[248px_minmax(0,1fr)] lg:px-8 lg:pb-16">
-        {/* the stations: the linked map (the station and its model neighbourhood) and the coast ladder (north to south, true latitude) */}
-        <nav aria-label="Shore stations" className="hidden lg:sticky lg:top-3 lg:flex lg:max-h-[calc(100dvh-24px)] lg:flex-col lg:gap-5 lg:self-start lg:overflow-y-auto lg:[scrollbar-width:none]" data-testid="research-stations">
-          {wide && <LocatorMap stations={ladder} selected={ladderSel} radiusKm={radiusKm} forecast={locatorRaster} onPick={pickStation} label={locatorLabel} height={180} />}
-          <div>
-            <p className="nx-caps mb-1.5 flex items-baseline justify-between pr-1">
-              <span>Shore stations · {stations.length}</span>
-              <span>last HAB sample</span>
-            </p>
-            <CoastLadder stations={ladder} selected={st.station_id} onSelect={pickStation} height={ladderH} />
-                      </div>
-        </nav>
-
-        <main id="main" className="cw-fade-in flex min-w-0 flex-col">
-          {/* the station, where and how long it was sampled, and the crosshair's two readings */}
-          <header className="grid gap-x-10 gap-y-2 pb-2 sm:gap-y-4 sm:pb-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] xl:items-end">
-            <div className="min-w-0">
-              {(arrived || backHref) && (
-                <p className="mb-2 flex flex-wrap items-center gap-x-3 text-[13.5px] leading-snug text-n-ink-2" data-testid="research-arrived">
-                  {arrived && (
-                    <span>
-                      Arrived from <span className="font-semibold text-n-ink">{arrived.name}</span> · nearest station {st.name}, {kmLabel(arrived.km)}
-                    </span>
-                  )}
-                  {backHref && (
-                    <Link href={backHref} className="nx-focus -my-2 inline-flex min-h-11 items-center gap-1 font-semibold text-n-accent" data-testid="research-back">
-                      <Icon name="back" className="h-4 w-4" /> Back{place ? ` to ${place.name}` : ""}
-                    </Link>
-                  )}
-                </p>
-              )}
-              <p className="nx-caps !text-n-measured max-sm:hidden">Shore station · measured · CalHABMAP</p>
-              <h1 className="nx-display text-[24px] leading-[28px] sm:mt-1.5 sm:text-[46px] sm:leading-[50px]" data-testid="research-title">
-                {/* the name is the station picker. Below 1024 px (no ladder beside it) it is drawn as a control of its
-                    own, a bordered field with its chevron that opens the sheet; on a wide screen it focuses the ladder */}
-                <button
-                  type="button"
-                  onClick={() => (wide ? document.querySelector<HTMLElement>(`[data-testid="ladder-${st.station_id}"]`)?.focus() : setSheet(true))}
-                  aria-haspopup={wide ? undefined : "dialog"}
-                  aria-describedby="r-station-hint"
-                  className="nx-focus inline-flex max-w-full items-center gap-2 text-left max-lg:min-h-12 max-lg:w-full max-lg:justify-between max-lg:rounded-[6px] max-lg:border max-lg:border-n-line-strong max-lg:bg-n-surface max-lg:py-1.5 max-lg:pl-3 max-lg:pr-2 lg:-mx-1 lg:cursor-default lg:rounded-[4px] lg:px-1"
-                  data-testid="research-station-button"
-                >
-                  <span className="min-w-0">{st.name}</span>
-                  <span aria-hidden className="flex shrink-0 items-center gap-1 lg:hidden" data-testid="research-station-picker">
-                    <Icon name="chevronDown" className="h-5 w-5 text-n-ink-2" />
+      <TopBar active="research" now={now} trust={{ official, status: sourceStatus(manifest, "official"), fixture: isFixture(manifest) }} />
+      <main id="main" className="r-page mx-auto flex w-full max-w-[1520px] min-w-0 flex-col px-4 pb-32 sm:px-6 lg:px-8 lg:pb-20">
+        {/* the head: the real isobath ground (brand geometry, never the reader's waters), the station as the title, the picker */}
+        <header className="r-head">
+          <div className="r-ground" aria-hidden>
+            <StagePoster />
+          </div>
+          <div className="r-head-text min-w-0">
+            {(arrived || backHref) && (
+              <p className="mb-2 flex flex-wrap items-center gap-x-3 text-[13.5px] leading-snug text-n-ink-2" data-testid="research-arrived">
+                {arrived && (
+                  <span>
+                    Arrived from <span className="font-semibold text-n-ink">{arrived.name}</span> · nearest station {st.name}, {kmLabel(arrived.km)}
                   </span>
-                </button>
-              </h1>
-              <span id="r-station-hint" hidden>
-                Choose another shore station ({stations.length} stations)
-              </span>
-              <p className="mt-0.5 truncate font-data text-[11.5px] leading-[18px] text-n-ink-3 sm:mt-2 sm:whitespace-normal sm:text-[12px]">
-                <span className="max-sm:hidden">
+                )}
+                {backHref && (
+                  <Link href={backHref} className="nx-focus -my-2 inline-flex min-h-11 items-center gap-1 font-medium underline underline-offset-2" data-testid="research-back">
+                    <Icon name="back" className="h-4 w-4" /> Back{place ? ` to ${place.name}` : ""}
+                  </Link>
+                )}
+              </p>
+            )}
+            <h1 className="nx-display r-title" data-testid="research-title">
+              {/* the name is the station picker: it opens the coast ladder (the list, the map and the dates) */}
+              <button type="button" onClick={openPicker} aria-haspopup="dialog" aria-describedby="r-station-hint" className="nx-focus r-picker" data-testid="research-station-button">
+                <span className="min-w-0">{st.name}</span>
+                <span aria-hidden className="r-picker-chev" data-testid="research-station-picker">
+                  <Icon name="chevronDown" className="h-6 w-6" />
+                </span>
+              </button>
+            </h1>
+            <span id="r-station-hint" hidden>
+              Choose another shore station ({stations.length} stations)
+            </span>
+            <p className="r-meta">
+              <span className="text-n-measured">Shore station · measured</span>
+              <span className="max-sm:hidden">
+                {" · "}
+                <span className="font-data text-[12.5px]">
                   {st.lat!.toFixed(3)}°N {Math.abs(st.lon!).toFixed(3)}°W
                 </span>
-                {st.nearest_port_name && <span className="max-sm:hidden"> · {kmLabel(st.nearest_port_km ?? 0)} from {st.nearest_port_name}</span>}
-                <span className="max-sm:hidden">
-                  {" "}
-                  · sampled {sampledFrom} – {sampledTo}
-                </span>
-                <span className="sm:hidden">{(st.sample_times[0] ?? "").slice(0, 4)}–{sampledTo}</span> · {allMeasured.length.toLocaleString("en-US")} {AXIS_NAME[variable]} values · {allZeros.toLocaleString("en-US")} reported 0
-                {st.status !== "updated" ? ` · last update ${st.status.replace("_", " ")}` : ""}
-              </p>
+                {st.nearest_port_name ? ` · ${kmLabel(st.nearest_port_km ?? 0)} from ${st.nearest_port_name}` : ""} · sampled {sampledFrom} – {sampledTo}
+              </span>
+              <span className="sm:hidden"> · {(st.sample_times[0] ?? "").slice(0, 4)}–{sampledTo}</span>
+              {" · "}
+              {allMeasured.length.toLocaleString("en-US")} {AXIS_NAME[variable]} values · {allZeros.toLocaleString("en-US")} reported 0
+              {st.status !== "updated" ? ` · last update ${st.status.replace("_", " ")}` : ""}
+            </p>
+          </div>
+          {wide && (
+            <div className="r-mini" data-testid="research-mini">
+              <LocatorMap stations={ladder} selected={ladderSel} radiusKm={radiusKm} forecast={locatorRaster} onPick={pickStation} onOpen={openPicker} openLabel={`All ${stations.length} stations`} quiet label={locatorLabel} height={136} />
             </div>
-            <Readings reading={reading} unit={unit} fmt={fmt} quantity={vmeta.label} variable={hasHistory ? modelVar : null} radiusKm={radiusKm} pinned={pinnedT != null && reading != null && reading.day === dayKey(pinnedT)} />
-          </header>
+          )}
+        </header>
 
-          {/* the instrument: quantity and window, the two linked panels, the record as a brush */}
-          <section id="r-record" className="flex scroll-mt-4 flex-col" data-testid="research-chart">
-            <div className="flex flex-wrap items-end justify-between gap-x-6 border-b border-n-line">
-              <VariableTabs value={variable} onChange={chooseVariable} options={vars.map((v) => ({ id: v.id, label: varShort(v.id), unit: unitLabel(v.units), title: v.label }))} />
-              <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 py-0.5 sm:py-1.5 max-sm:w-full max-sm:flex-nowrap max-sm:justify-between">
-                <RangePresets value={range} onChange={chooseRange} />
-                <span aria-hidden className="mx-2 h-5 w-px bg-n-line max-sm:hidden" />
-                <div className="flex items-center">
-                  <button type="button" onClick={() => setTable((o) => !o)} aria-expanded={table} aria-controls="r-table" className={TOOL} data-testid="research-table-toggle">
-                    Table
-                  </button>
-                  <ExportMenu>
-                    {(close) => (
-                      <>
+        {/* the instrument: quantity and window, the two linked panels, the record as a brush */}
+        <section id="r-record" className="flex scroll-mt-4 flex-col" data-testid="research-chart">
+          <div className="r-bar">
+            <div className="r-scroll">
+              <Segmented<ObsVariableId> className="r-seg" label="Quantity" value={variable} onChange={chooseVariable} options={vars.map((v) => ({ value: v.id, testid: `rvar-${v.id}`, label: varShort(v.id) }))} testid="rvar-rail" />
+            </div>
+            <div className="r-bar-right">
+              <Segmented<RangeId | "custom"> className="r-seg r-seg-range" label="Time range" value={range ?? "custom"} onChange={(r) => r !== "custom" && chooseRange(r)} options={[...RANGES.map((r) => ({ value: r.id as RangeId | "custom", label: r.short, testid: `range-${r.id}` })), ...(range == null ? [{ value: "custom" as RangeId | "custom", label: "custom", testid: "range-custom" }] : [])]} testid="range-presets" />
+              <div className="r-tools">
+                <button type="button" onClick={() => setTable((o) => !o)} aria-expanded={table} aria-controls="r-table" className={TOOL} data-testid="research-table-toggle">
+                  Table
+                </button>
+                <ExportMenu>
+                  {(close) => (
+                    <>
+                      <button
+                        type="button"
+                        className={MENU_ITEM}
+                        onClick={() => {
+                          exportWindow();
+                          close();
+                        }}
+                        data-testid="research-export"
+                      >
+                        <span className="text-[14px] font-semibold">This window (CSV)</span>
+                        <span className="nx-note-t">
+                          {vmeta.label}, {win.length} visits, with its provenance header
+                        </span>
+                      </button>
+                      {hasHistory && (
                         <button
                           type="button"
                           className={MENU_ITEM}
                           onClick={() => {
-                            exportWindow();
+                            exportModel();
                             close();
                           }}
-                          data-testid="research-export"
+                          data-testid="export-model"
                         >
-                          <span className="text-[14px] font-semibold">This window (CSV)</span>
-                          <span className="nx-note-t">
-                            {vmeta.label}, {win.length} visits, with its provenance header
+                          <span className="text-[14px] font-semibold">Model history (CSV)</span>
+                          <span className="nx-note-t">C-HARM nowcast near the station, every day kept</span>
+                        </button>
+                      )}
+                      {csv && (
+                        <a href={csv} target="_blank" rel="noreferrer" className={MENU_ITEM} onClick={close} data-testid="research-original">
+                          <span className="inline-flex items-center gap-1 text-[14px] font-semibold">
+                            Original data (SCCOOS) <Icon name="external" className="h-3.5 w-3.5" />
                           </span>
-                        </button>
-                        {hasHistory && (
-                          <button
-                            type="button"
-                            className={MENU_ITEM}
-                            onClick={() => {
-                              exportModel();
-                              close();
-                            }}
-                            data-testid="export-model"
-                          >
-                            <span className="text-[14px] font-semibold">Model history (CSV)</span>
-                            <span className="nx-note-t">C-HARM nowcast near the station, every day kept</span>
-                          </button>
-                        )}
-                        {csv && (
-                          <a href={csv} target="_blank" rel="noreferrer" className={MENU_ITEM} onClick={close} data-testid="research-original">
-                            <span className="inline-flex items-center gap-1 text-[14px] font-semibold">
-                              Original data (SCCOOS) <Icon name="external" className="h-3.5 w-3.5" />
-                            </span>
-                            <span className="nx-note-t">The station&rsquo;s own file, as published</span>
-                          </a>
-                        )}
-                        <button
-                          type="button"
-                          className={`${MENU_ITEM} mt-1 !rounded-t-none border-t border-n-line`}
-                          onClick={() => {
-                            close();
-                            openSection("exports");
-                          }}
-                        >
-                          <span className="text-[13.5px] font-semibold text-n-accent">What each file holds · grid exports</span>
-                        </button>
-                      </>
-                    )}
-                  </ExportMenu>
-                  <button type="button" onClick={() => openSection("lineage")} className={`${TOOL} max-sm:hidden`} data-testid="research-lineage-open">
-                    Lineage
-                  </button>
-                  <button type="button" onClick={() => openSection("grid")} className={`${TOOL} lg:hidden`} data-testid="research-jump-r-tools">
-                    <Icon name="cell" className="h-4 w-4" />
-                    <span className="max-sm:sr-only">Grid tools</span>
-                  </button>
-                </div>
+                          <span className="nx-note-t">The station&rsquo;s own file, as published</span>
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        className={`${MENU_ITEM} mt-1 !rounded-t-none border-t border-n-line`}
+                        onClick={() => {
+                          close();
+                          openSection("exports");
+                        }}
+                      >
+                        <span className="text-[13.5px] font-semibold text-n-accent">What each file holds · grid exports</span>
+                      </button>
+                    </>
+                  )}
+                </ExportMenu>
+                <button type="button" onClick={() => openSection("lineage")} className={`${TOOL} max-sm:hidden`} data-testid="research-lineage-open">
+                  Lineage
+                </button>
+                <button type="button" onClick={() => openSection("grid")} className={`${TOOL} lg:hidden`} data-testid="research-jump-r-tools">
+                  <Icon name="cell" className="h-4 w-4" />
+                  <span className="max-sm:sr-only">Grid tools</span>
+                </button>
               </div>
             </div>
+          </div>
 
-            <div className="pt-2 sm:pt-5">
-              <LinkedSeries
-                key={`${st.station_id}|${variable}`}
-                samples={ss}
-                variable={variable}
-                units={vmeta.units}
-                label={vmeta.label}
-                axisTitle={`${wide ? "Measured at the pier · " : ""}${AXIS_NAME[variable]}, ${unit}${variable === "temp" ? "" : " · log scale"}`}
-                from={from}
-                to={to}
-                refLine={variable === "pDA" ? PDA_REF : variable === "pn_seriata" || variable === "pn_delicatissima" ? PN_REF : undefined}
-                model={linkedModel}
-                modelNote={
-                  showModel ? (
-                    <div className="nx-rule pt-3 text-[14px] text-n-ink-2" data-testid="model-panel-none">
-                      <p>No C-HARM nowcast history is published for this station.</p>
-                      {st.charm?.error && (
-                        <details className="mt-1 text-[12.5px] text-n-ink-3">
-                          <summary className="nx-focus min-h-11 cursor-pointer py-2 font-semibold text-n-accent">What the pipeline reported</summary>
-                          <p className="break-all">{st.charm.error}</p>
-                        </details>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="nx-margin nx-rule pt-3" data-testid="model-panel-absent">
-                      C-HARM models domoic acid and <i>Pseudo-nitzschia</i> only: there is no model panel for {vmeta.label.toLowerCase()}.
-                    </p>
-                  )
-                }
-                cursorT={cursorT}
-                pinnedT={pinnedT}
-                onHover={onHover}
-                onPin={onPin}
-                source={`CalHABMAP · ${st.name} · via SCCOOS`}
-                obsHeight={wide ? 264 : 180}
-                modelHeight={wide ? 100 : 84}
-                compact={!wide}
-              />
-              <Legend samples={win} hasModel={!!linkedModel} partial={!!model?.points.some((p) => p.partial)} />
-            </div>
+          <div className="pt-1 sm:pt-3">
+            <LinkedSeries
+              key={`${st.station_id}|${variable}`}
+              samples={ss}
+              variable={variable}
+              units={vmeta.units}
+              label={vmeta.label}
+              axisTitle={`${wide ? "Measured at the pier · " : ""}${AXIS_NAME[variable]}, ${unit}${variable === "temp" ? "" : " · log scale"}`}
+              from={from}
+              to={to}
+              live={preview != null}
+              refLine={variable === "pDA" ? PDA_REF : variable === "pn_seriata" || variable === "pn_delicatissima" ? PN_REF : undefined}
+              model={linkedModel}
+              modelNote={
+                showModel ? (
+                  <div className="pt-3 text-[14px] text-n-ink-2" data-testid="model-panel-none">
+                    <p>No C-HARM nowcast history is published for this station.</p>
+                    {st.charm?.error && (
+                      <details className="mt-1 text-[12.5px] text-n-ink-3">
+                        <summary className="nx-focus min-h-11 cursor-pointer py-2 font-semibold">What the pipeline reported</summary>
+                        <p className="break-all">{st.charm.error}</p>
+                      </details>
+                    )}
+                  </div>
+                ) : (
+                  <p className="nx-margin pt-3" data-testid="model-panel-absent">
+                    C-HARM models domoic acid and <i>Pseudo-nitzschia</i> only: there is no model panel for {vmeta.label.toLowerCase()}.
+                  </p>
+                )
+              }
+              cursorT={cursorT}
+              pinnedT={pinnedT}
+              onHover={onHover}
+              onPin={onPin}
+              source={`CalHABMAP · ${st.name} · via SCCOOS`}
+              obsHeight={wide ? 252 : 180}
+              modelHeight={wide ? 92 : 84}
+              compact={!wide}
+            />
+          </div>
 
-            <div className="mt-4 flex flex-col gap-1" data-testid="research-window">
-              <p className="flex flex-wrap items-baseline justify-between gap-x-4">
-                <span className="nx-caps">
-                  Window · <span className="text-n-ink-2">{dayLabel(dayKey(from), false, now)} – {dayLabel(dayKey(to), false, now)}</span> · {real.length} samples
-                </span>
-                <span className="nx-margin text-[12.5px] max-sm:hidden">Drag across the record to set the window; drag the window to move it.</span>
+          <div className="mt-3 flex flex-col gap-1 sm:mt-4" data-testid="research-window">
+            <BrushStrip samples={ss} variable={variable} x0={x0} x1={x1} from={from} to={to} modelStart={modelAll?.historyStart ?? null} modelEnd={modelEnd} onBrush={(a, b) => setPreview([a, b])} onCommit={commitWindow} />
+            <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-1">
+              <p className="r-window">
+                {dayLabel(dayKey(from), false, now)} – {dayLabel(dayKey(to), false, now)} <span className="text-n-ink-3">· {real.length} samples</span>
+                {legendItems.length > 0 && (
+                  <span className="text-n-ink-3" data-testid="series-legend">
+                    {" · "}
+                    {legendItems.join(" · ")}
+                  </span>
+                )}
               </p>
-              <BrushStrip samples={ss} variable={variable} x0={x0} x1={x1} from={from} to={to} modelStart={modelAll?.historyStart ?? null} modelEnd={modelEnd} onBrush={(a, b) => setPreview([a, b])} onCommit={commitWindow} />
+              <div className="flex items-center gap-1" data-testid="research-notes">
+                <Pop trigger={<><Icon name="info" className="h-4 w-4" /> How to read this</>} label="How to read this chart" triggerClass={TOOL} testId="research-how">
+                  <h3 className="nx-title !text-[20px] !leading-6">How to read this</h3>
+                  <p className="nx-margin mt-3">
+                    <b>Two panels, never one axis.</b> A pier sample and a model probability are different quantities: they are drawn on the same dates and never compared as numbers.
+                  </p>
+                  <p className="nx-margin mt-3">
+                    <b>Toxin in seawater is not toxin in seafood.</b> One sample, one pier, one day. Lines join samples less than 21 days apart; a reported 0 is not quantified, not absent.
+                  </p>
+                  <p className="mt-3 text-[13.5px] leading-5 text-n-ink-2">
+                    Axes are {variable === "temp" ? "a fixed scale" : "fixed whole decades"}, never rescaled to the data. Each tick under the plot is a sampling visit; a grey tick is a visit that did not measure this quantity. A red ring is a value flagged high by QC, kept as published; a red cross is a rejected value, never a measurement. Drag across the record to set the window; drag the window to move it.</p>
+                </Pop>
+                <Pop trigger={<><Icon name="book" className="h-4 w-4" /> Sources</>} label="Sources of this chart" triggerClass={TOOL} testId="research-sources">
+                  <h3 className="nx-title !text-[20px] !leading-6">Sources</h3>
+                  <p className="nx-margin mt-3">
+                    <b>Sources.</b> CalHABMAP via SCCOOS ERDDAP{st.retrieved_at ? `, retrieved ${dayLabel(st.retrieved_at, false, now)}` : ""}
+                    {modelAll?.historyStart != null ? ` · NOAA C-HARM v3.1 nowcast, kept daily since ${dayLabel(dayKey(modelAll.historyStart), false, now)}` : ""} · fixed axes, never rescaled to the data.
+                  </p>
+                  {wide && <p className="mt-3 text-[13.5px] leading-5 text-n-ink-2">{locatorLabel}</p>}
+                  <p className="mt-3 flex flex-col items-start text-[14px]">
+                    <Link href={`/?sel=station:${encodeURIComponent(st.station_id)}`} className="nx-focus inline-flex min-h-11 items-center underline underline-offset-2" data-testid="research-explore">
+                      Open in Explore
+                    </Link>
+                    <Link href={coastHref({ place: coastPlace })} className="nx-focus inline-flex min-h-11 items-center underline underline-offset-2" data-testid="research-coast">
+                      My Coast{coastName ? `: ${coastName}` : ""}
+                    </Link>
+                  </p>
+                </Pop>
+              </div>
             </div>
+          </div>
 
-            <div id="r-table" hidden={!table} className="mt-5" data-testid="research-table">
-              <SamplesTable samples={win} unit={unit} model={linkedModel} />
-            </div>
-
-            <div className="nx-rule mt-6 grid gap-x-8 gap-y-3 pt-4 md:grid-cols-3" data-testid="research-notes">
-              <p className="nx-margin">
-                <b>Two panels, never one axis.</b> A pier sample and a model probability are different quantities: they are drawn on the same dates and never compared as numbers.
-              </p>
-              <p className="nx-margin">
-                <b>Toxin in seawater is not toxin in seafood.</b> One sample, one pier, one day. Lines join samples less than 21 days apart; a reported 0 is not quantified, not absent.
-              </p>
-              <p className="nx-margin">
-                <b>Sources.</b> CalHABMAP via SCCOOS ERDDAP{st.retrieved_at ? `, retrieved ${dayLabel(st.retrieved_at, false, now)}` : ""}
-                {modelAll?.historyStart != null ? ` · NOAA C-HARM v3.1 nowcast, kept daily since ${dayLabel(dayKey(modelAll.historyStart), false, now)}` : ""} · fixed axes, never rescaled to the data.{" "}
-                <Link href={`/?sel=station:${encodeURIComponent(st.station_id)}`} className="nx-focus whitespace-nowrap font-sans text-[13px] not-italic text-n-accent" data-testid="research-explore">
-                  Open in Explore
-                </Link>
-                {" · "}
-                <Link href={coastHref({ place: coastPlace })} className="nx-focus whitespace-nowrap font-sans text-[13px] not-italic text-n-accent" data-testid="research-coast">
-                  My Coast{coastName ? `: ${coastName}` : ""}
-                </Link>
-              </p>
-            </div>
-          </section>
+          <div id="r-table" hidden={!table} className="mt-5" data-testid="research-table">
+            <SamplesTable samples={win} unit={unit} model={linkedModel} />
+          </div>
+        </section>
 
           {/* the record's sections: one tap away, every panel mounted (its wording stays in the page) */}
-          <div id="r-sections" className="mt-8 scroll-mt-4">
-            <Tabs idBase="r" tabs={TABS} value={tab} onChange={setTab} />
+          <div id="r-sections" className="r-sections scroll-mt-4">
+            <div className="r-scroll">
+              <Segmented<TabId> mode="tabs" className="r-seg" label="Station record sections" value={tab} onChange={setTab} panelIdFor={(t) => `r-panel-${t}`} options={TABS.map((t) => ({ value: t.id, label: t.label, testid: `research-tab-${t.id}` }))} />
+            </div>
 
-            <TabPanel idBase="r" id="window" active={tab === "window"}>
+            <TabPanel idBase="r" id="window" label="In this window" active={tab === "window"}>
               <div id="r-stats" data-testid="research-stats">
                 <h2 className="sr-only">In this window</h2>
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
@@ -620,7 +626,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
               </div>
             </TabPanel>
 
-            <TabPanel idBase="r" id="provenance" active={tab === "provenance"}>
+            <TabPanel idBase="r" id="provenance" label="Provenance and QC" active={tab === "provenance"}>
               <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]" data-testid="research-provenance">
                 <div className="min-w-0">
                   <h2 className="nx-caps mb-3">How {vmeta.label.toLowerCase()} is measured</h2>
@@ -676,7 +682,7 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
               </div>
             </TabPanel>
 
-            <TabPanel idBase="r" id="grid" active={tab === "grid"}>
+            <TabPanel idBase="r" id="grid" label="Native grid" active={tab === "grid"}>
               <section id="r-tools" className="flex scroll-mt-4 flex-col gap-4" data-testid="research-grid">
                 <div className="flex flex-col gap-1">
                   <h2 className="nx-display text-[22px] leading-[28px]" data-testid="grid-heading">
@@ -897,11 +903,11 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
               </section>
             </TabPanel>
 
-            <TabPanel idBase="r" id="lineage" active={tab === "lineage"}>
+            <TabPanel idBase="r" id="lineage" label="Lineage and citation" active={tab === "lineage"}>
               {source === "charm" ? forecastLayer && <Lineage layer={forecastLayer} manifest={manifest} /> : obsLayer && <Lineage layer={obsLayer} manifest={manifest} />}
             </TabPanel>
 
-            <TabPanel idBase="r" id="exports" active={tab === "exports"}>
+            <TabPanel idBase="r" id="exports" label="Exports" active={tab === "exports"}>
               <div className="flex max-w-[78ch] flex-col">
                 <p className="text-[14.5px] leading-6 text-n-ink-2">Every file starts with lines beginning with #: its source, the pipeline run, the licence and what kind of data it is. An empty value is never a zero.</p>
                 <ul className="mt-4 flex flex-col border-t border-n-line">
@@ -922,28 +928,26 @@ export function Research({ manifest, ports, observations, official, baseUrl }: P
             </TabPanel>
           </div>
         </main>
-      </div>
-      <div className="env-instrument fixed inset-x-0 bottom-0 z-40 border-t border-n-line bg-n-surface lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <NavTabs active="research" size="dock" />
-      </div>
-      <StationSheet open={sheet && !wide} onClose={closeSheet}>
-        <div className="flex flex-col gap-4">
-          <LocatorMap stations={ladder} selected={ladderSel} radiusKm={radiusKm} forecast={locatorRaster} onPick={pickStation} label={locatorLabel} height={180} />
+      <Dock active="research" />
+      {/* the station picker: the coast ladder at true latitude, every station with its last sample; the linked map beside it on a phone (on a desktop it stays in the head) */}
+      <Sheet open={sheet} onClose={closeSheet} title="Shore stations, north to south" testid="station-sheet" className="r-sheet">
+        <nav aria-label="Shore stations" className="flex flex-col gap-4" data-testid="research-stations">
+          {!wide && <LocatorMap stations={ladder} selected={ladderSel} radiusKm={radiusKm} forecast={locatorRaster} onPick={pickStation} label={locatorLabel} height={180} />}
           <div>
-            <p className="nx-caps mb-1.5 flex items-baseline justify-between pr-1">
+            <p className="nx-caps mb-2 flex items-baseline justify-between pr-1">
               <span>{stations.length} stations</span>
               <span>last HAB sample</span>
             </p>
             <CoastLadder stations={ladder} selected={st.station_id} onSelect={pickStation} height={Math.max(560, stations.length * 36 + 20)} />
           </div>
-        </div>
-      </StationSheet>
+        </nav>
+      </Sheet>
     </div>
   );
 }
 
 /** A quiet tool in the chart's bar (Table, Lineage, Grid): text, no outline; the Export menu is the same size. */
-const TOOL = "nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-[4px] px-2 sm:px-2.5 text-[13.5px] font-medium text-n-ink-2 hover:text-n-ink aria-expanded:text-n-ink";
+const TOOL = "nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-[12px] px-2 sm:px-3 text-[13.5px] font-medium text-n-ink-2 hover:text-n-ink aria-expanded:text-n-ink";
 
 type TabId = "window" | "provenance" | "grid" | "lineage" | "exports";
 const TABS: { id: TabId; label: string }[] = [
@@ -967,8 +971,8 @@ const SHORT: Record<ObsVariableId, string> = {
 };
 
 /** ≥ 1024 px: the desktop instrument (after hydration; the server draws the phone). */
-function useWide() {
-  const [wide, setWide] = useState(false);
+function useWide(initial: boolean) {
+  const [wide, setWide] = useState(initial);
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
     const on = () => setWide(mq.matches);
@@ -979,94 +983,15 @@ function useWide() {
   return wide;
 }
 
-/** The window presets (90 d, 1 y, 3 y, All); a brushed window is "custom" until a preset is chosen. */
-function RangePresets({ value, onChange }: { value: RangeId | null; onChange: (r: RangeId) => void }) {
-  return (
-    <div role="radiogroup" aria-label="Time range" className="flex items-center" data-testid="range-presets">
-      {RANGES.map((r) => {
-        const on = r.id === value;
-        return (
-          <button
-            key={r.id}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            onClick={() => onChange(r.id)}
-            className={`nx-focus relative min-h-11 whitespace-nowrap rounded-[4px] px-1.5 sm:px-2 font-data text-[12.5px] ${on ? "text-n-ink" : "text-n-ink-3 hover:text-n-ink"}`}
-            data-testid={`range-${r.id}`}
-          >
-            {r.short}
-            {on && <span aria-hidden className="absolute inset-x-2 bottom-2 h-px bg-n-ink" />}
-          </button>
-        );
-      })}
-      {value == null && (
-        <span className="relative px-2 font-data text-[12.5px] text-n-ink" data-testid="range-custom">
-          custom
-          <span aria-hidden className="absolute inset-x-2 -bottom-[11px] h-px bg-n-ink" />
-        </span>
-      )}
-    </div>
-  );
-}
-
-/** What the marks mean, only the ones in view: a legend row under the chart. */
-function Legend({ samples, hasModel, partial }: { samples: { value: number | null; q: string | null }[]; hasModel: boolean; partial: boolean }) {
-  const zeros = samples.some((s) => s.q === "reported_zero" || s.value === 0);
+/** What only sometimes appears in view, said as words beside the window (the marks that are always there are explained on the chart or under "How to read this"). */
+function legendFor(samples: { value: number | null; q: string | null }[], hasModel: boolean, partial: boolean): string[] {
   const rejected = samples.filter((s) => s.q === "rejected_negative").length;
   const flagged = samples.filter((s) => s.q === "flag_high" && s.value != null).length;
-  const bare = samples.some((s) => s.value == null && s.q !== "rejected_negative");
-  const item = "inline-flex items-center gap-1.5 whitespace-nowrap";
-  return (
-    <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-n-ink-3" data-testid="series-legend">
-      <span className={item}>
-        <svg width="18" height="8" aria-hidden>
-          <line x1="1" x2="17" y1="4" y2="4" stroke="var(--nx-measured)" strokeWidth="1.6" />
-          <circle cx="9" cy="4" r="2.4" fill="var(--nx-measured)" />
-        </svg>
-        sample (joined when under 21 days apart)
-      </span>
-      {zeros && (
-        <span className={item}>
-          <svg width="8" height="8" aria-hidden>
-            <rect x="1" y="5" width="6" height="3" fill="var(--nx-ink-3)" />
-          </svg>
-          <span className="whitespace-normal">on the floor: reported 0 (not quantified; the line breaks there)</span>
-        </span>
-      )}
-      {flagged > 0 && (
-        <span className={item}>
-          <svg width="14" height="14" aria-hidden>
-            <circle cx="7" cy="7" r="5.5" fill="none" stroke="var(--nx-down)" strokeWidth="1.3" />
-          </svg>
-          flagged high by QC, kept as published ({flagged})
-        </span>
-      )}
-      {rejected > 0 && (
-        <span className={item}>
-          <svg width="10" height="10" aria-hidden>
-            <path d="M1.5,1.5 l7,7 m0,-7 l-7,7" stroke="var(--nx-down)" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-          rejected (QC), not a measurement ({rejected})
-        </span>
-      )}
-      <span className={item}>
-        <svg width="10" height="10" aria-hidden>
-          <line x1="2" x2="2" y1="2" y2="8" stroke="var(--nx-measured)" strokeOpacity="0.6" />
-          <line x1="7" x2="7" y1="2" y2="8" stroke="var(--nx-gap)" />
-        </svg>
-        rug: every visit{bare ? " (grey: this quantity not measured)" : ""}
-      </span>
-      {hasModel && partial && (
-        <span className={item}>
-          <svg width="10" height="10" aria-hidden>
-            <circle cx="5" cy="5" r="2.8" fill="none" stroke="var(--nx-model)" strokeWidth="1.1" />
-          </svg>
-          model day with fewer than 60% of the usual cells (not joined)
-        </span>
-      )}
-    </p>
-  );
+  const out: string[] = [];
+  if (flagged > 0) out.push(`red ring: flagged high by QC, kept as published (${flagged})`);
+  if (rejected > 0) out.push(`red cross: rejected (QC), not a measurement (${rejected})`);
+  if (hasModel && partial) out.push("open circle: model day with fewer than 60% of the usual cells (not joined)");
+  return out;
 }
 
 function Stat({ label, value, unit, note }: { label: string; value: React.ReactNode; unit?: string; note?: string }) {

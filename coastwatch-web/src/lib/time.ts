@@ -35,14 +35,17 @@ export function formatDate(date: string, opts: { year?: boolean } = {}): string 
 export function formatDateTimePT(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return dtf("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: PT,
-    timeZoneName: "short",
-  }).format(d);
+  return stableFormat(
+    dtf("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: PT,
+      timeZoneName: "short",
+    }),
+    d,
+  );
 }
 
 /** Today's calendar date in Pacific time, YYYY-MM-DD. */
@@ -99,4 +102,14 @@ export function formatAge(days: number | null): string {
   if (days <= 0) return "today";
   if (days === 1) return "1 day ago";
   return `${days} days ago`;
+}
+
+/**
+ * A date with a time, the same in every engine. Safari writes "Mon, Nov 9 at 9:23 PM" where Node and Chrome write
+ * "Mon, Nov 9, 9:23 PM", and engines differ on the space before AM/PM. A difference between the server's text and the
+ * browser's is a hydration error, and React then throws away and rebuilds the page around it.
+ */
+export function stableFormat(f: Intl.DateTimeFormat, d: Date): string {
+  const parts = f.formatToParts(d);
+  return parts.map((p, i) => (p.type !== "literal" ? p.value : i > 0 && parts[i + 1]?.type === "hour" ? ", " : p.value.replace(/\u202f/g, " "))).join("");
 }

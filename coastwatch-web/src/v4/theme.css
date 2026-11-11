@@ -1,22 +1,13 @@
 /*
- * Neritic v4 design tokens.
+ * Neritic design tokens (v11 "Open Water", docs/coastwatch/v11/design.md §4, §5).
  *
- * Two environments share one vocabulary:
- * - Instrument: the dark ocean workspace (Explore, map surfaces). Solid decks over the map, no
- *   heavy blur over WebGL; one cyan accent for selection and focus.
- * - Chart: the light reading environment (My Coast briefing, Research, reference pages). Cool and
- *   crisp, like chart paper, never cream.
- *
- * Data families keep their meaning everywhere: official = amber, model = violet,
- * measured = teal, conditions = sky. State never relies on colour alone (each state ships an icon
- * and a word). Names are --nx-* so v2 components (--cw-*) keep working while routes migrate.
+ * One dark system for every page; daylight mode (html[data-daylight], below) is the high-contrast
+ * choice for bright sun. The ocean is the stage and the interface has no colour: chrome is neutral ink
+ * on deep water; hue belongs to the four data families (official = amber, model = violet,
+ * measured = teal, conditions = sky) and the three status colours. State never relies on colour alone
+ * (each state ships an icon and a word). Names are --nx-* so older components (--cw-*) keep working.
  */
 
-/* v10 "Ocean Instrument" (docs/coastwatch/design-research/concepts.md, direction A): one dark system for
-   every page. The ocean is the interface; reading surfaces are plates over the same abyss, not a second
-   light environment. Daylight mode (html[data-daylight], below) is the high-contrast choice for bright sun.
-   The old light "chart" values are retired; .env-chart now resolves to the same instrument tokens so every
-   component keeps working while pages are recomposed. */
 :root,
 .env-chart,
 .env-instrument {
@@ -27,18 +18,24 @@
   --nx-mark-word: #e6eef2;
   color-scheme: dark;
   /* depth ramp of the ground: abyss (page), deep (plates), shelf (raised), slope (controls) */
-  --nx-bg: #05090d;
-  --nx-surface: #0a1219;
-  --nx-surface-2: #0f1a23;
-  --nx-surface-3: #16242f;
-  --nx-line: rgba(190, 215, 230, 0.14);
-  --nx-line-strong: rgba(190, 215, 230, 0.28);
-  --nx-ink: #e6eef2;
-  --nx-ink-2: #a9bac5;
-  --nx-ink-3: #8193a0;
-  --nx-accent: #74c7ff;
-  --nx-accent-bg: rgba(116, 199, 255, 0.12);
+  --nx-bg: #04090e;
+  /* the fixed page ground (body::before): deep water, slightly blue at the top; the bar's solid state is its top colour */
+  --nx-ground-top: #071722;
+  --nx-page: linear-gradient(180deg, #071722 0, #03070b 100%);
+  --nx-surface: #0a141c;
+  --nx-surface-2: #101d27;
+  --nx-surface-3: #182a36;
+  /* hairlines only between list rows and on axes */
+  --nx-line: rgba(200, 220, 232, 0.1);
+  --nx-line-strong: rgba(200, 220, 232, 0.22);
+  --nx-ink: #eef3f5;
+  --nx-ink-2: #b3c2cb;
+  --nx-ink-3: #8598a4;
+  /* the accent is ink: selection, focus and active states carry no hue; links are underlined ink */
+  --nx-accent: #eef3f5;
+  --nx-accent-bg: rgba(238, 243, 245, 0.1);
   --nx-on-accent: #04121c;
+  --nx-link: #eef3f5;
 
   --nx-official: #f0a94a;
   --nx-official-bg: rgba(240, 169, 74, 0.1);
@@ -53,27 +50,43 @@
   --nx-conditions-bg: rgba(116, 199, 255, 0.1);
 
   --nx-ok: #3fd6bd;
-  --nx-partial: #74c7ff;
+  --nx-partial: #b3c2cb;
   --nx-stale: #e5b25a;
   --nx-offline: #9fb2be;
   --nx-down: #f08a74;
 
   --nx-gap: #8ea2af;
-  --nx-shadow: 0 1px 1px rgba(0, 0, 0, 0.35), 0 12px 32px rgba(0, 0, 0, 0.4);
+  --nx-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
+  /* a deck floats on the canvas; solid enough to read over any raster, never blurred */
+  --nx-deck: rgba(7, 14, 20, 0.9);
+  /* the top bar's soft scrim over a stage */
+  --nx-scrim: 7, 23, 34;
+  /* filled tints of a status tag */
+  --nx-tag-closed: rgba(240, 138, 116, 0.16);
+  --nx-tag-watch: rgba(229, 178, 90, 0.15);
+  --nx-tag-none: rgba(159, 178, 190, 0.14);
 }
-.env-chart,
-.env-instrument {
-  background: var(--nx-bg);
-  color: var(--nx-ink);
+/* a page root shows the fixed ground through it; a nested surface takes a utility colour (hence the base layer) */
+@layer base {
+  .env-chart,
+  .env-instrument {
+    background: var(--nx-bg);
+    color: var(--nx-ink);
+  }
+}
+.env-chart.min-h-dvh,
+.env-instrument.min-h-dvh {
+  background: transparent;
 }
 
 :root {
-  /* type: one sans for the interface and reading (Atkinson Hyperlegible Next: built for
-     legibility, which also serves bright sun), a serif for editorial headlines, a mono for values */
+  /* type: Plex Sans for the interface and figures (tabular), Newsreader for editorial titles, Plex Mono
+     only for coordinates, station ids and axis ticks. IBM Plex Sans Condensed is retired. */
   --nx-font-ui: var(--font-plex-sans-v10), system-ui, -apple-system, "Segoe UI", sans-serif;
-  /* v10: the editorial voice (places, headlines, margin notes) and the instrument's small capitals */
+  /* the editorial voice: places, titles, ledes, margin notes */
   --nx-font-display: var(--font-newsreader-v10), "Iowan Old Style", Georgia, serif;
-  --nx-font-caps: var(--font-plex-cond), var(--font-plex-sans-v10), system-ui, sans-serif;
+  /* retired token, kept as an alias for the charts until the Research pass drops it */
+  --nx-font-caps: var(--nx-font-ui);
   --nx-font-data: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
   /* motion: short, ease-out, interruptible; frequent map operations are instant. Exits are about a
@@ -92,6 +105,14 @@
   /* a reading page's content fades in (opacity only, never the map canvas) */
   --nx-t-page: 200ms;
   --nx-t-sheet: 460ms;
+  /* v11 "Swell" (design.md §5): a section entering view, a chart drawing itself once, the stage arriving,
+     a route cross-fade; tokens only here, the primitives live in src/v4/motion */
+  --nx-t-reveal: 480ms;
+  --nx-t-draw: 700ms;
+  --nx-t-stage: 1400ms;
+  --nx-t-route: 320ms;
+  --nx-ease-emph: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --nx-ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
   --nx-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --nx-ease-in: cubic-bezier(0.4, 0, 1, 1);
   --nx-ease-move: cubic-bezier(0.77, 0, 0.175, 1);
@@ -110,7 +131,22 @@
   --nx-hit-field: 56px;
   --nx-hit: 44px;
   --nx-radius: 12px;
-  --nx-radius-lg: 18px;
+  --nx-radius-lg: 16px;
+  /* radii: 8 tags and small controls, 12 buttons and inputs, 16 decks and cards, 24 sheets */
+  --nx-r-8: 8px;
+  --nx-r-12: 12px;
+  --nx-r-16: 16px;
+  --nx-r-24: 24px;
+  /* section rhythm: sections are separated by space, not rules */
+  --nx-section: clamp(72px, 8vw, 112px);
+  --nx-gutter: 28px;
+  --nx-sheet-pad: clamp(24px, 3vw, 40px);
+}
+@media (max-width: 639px) {
+  :root {
+    --nx-section: clamp(48px, 14vw, 64px);
+    --nx-gutter: 16px;
+  }
 }
 
 @supports (transition-timing-function: linear(0, 1)) {
@@ -139,6 +175,7 @@
   --color-n-accent: var(--nx-accent);
   --color-n-accent-bg: var(--nx-accent-bg);
   --color-n-on-accent: var(--nx-on-accent);
+  --color-n-link: var(--nx-link);
   --color-n-official: var(--nx-official);
   --color-n-official-bg: var(--nx-official-bg);
   --color-n-official-line: var(--nx-official-line);
@@ -274,18 +311,11 @@ html[data-daylight] .theme-paper {
   font-feature-settings: "tnum" 1, "lnum" 1;
 }
 
-/* v4 surfaces: a deck is the one floating surface over the map (solid, a hairline, one shadow) */
+/* a deck: a control cluster floating on the canvas (no border, no blur over WebGL) */
 .nx-deck {
-  background: var(--nx-surface);
-  border: 1px solid var(--nx-line);
-  border-radius: var(--nx-radius-lg);
-  box-shadow: var(--nx-shadow);
-}
-/* v8: a deck over the map catches a little light along its top edge (an instrument bezel), and its
-   shadow is layered: a tight contact shadow and a wide soft one */
-.env-instrument .nx-deck {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--nx-surface) 92%, #9fd8e8) 0, var(--nx-surface) 56px);
-  box-shadow: inset 0 1px 0 rgba(214, 240, 248, 0.06), 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 32px -6px rgba(0, 0, 0, 0.45);
+  background: var(--nx-deck);
+  border-radius: var(--nx-r-16);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 .nx-data {
   font-family: var(--nx-font-data);
@@ -318,9 +348,9 @@ html[data-daylight] .theme-paper {
   transition-timing-function: var(--nx-ease-out);
   -webkit-tap-highlight-color: transparent;
 }
-/* pressing is quick and direct (scale .965 in 90 ms); letting go eases back (the duration above) */
+/* pressing is quick and direct (scale .97 in 90 ms); letting go eases back (the duration above) */
 .nx-press:active:not(:disabled):not([aria-disabled="true"]) {
-  transform: scale(calc(1 - 0.035 * var(--nx-shift)));
+  transform: scale(calc(1 - 0.03 * var(--nx-shift)));
   transition-duration: var(--nx-t-press), 60ms, 60ms, 60ms, 60ms, 60ms, var(--nx-t-ring), var(--nx-t-ring);
   transition-timing-function: var(--nx-ease-out);
 }
@@ -362,7 +392,7 @@ html[data-daylight] .theme-paper {
 .nx-row {
   transition: background-color var(--nx-t-hover) var(--nx-ease-out), color var(--nx-t-hover) var(--nx-ease-out), --nx-tint var(--nx-t-hover) var(--nx-ease-out);
 }
-/* cards that lead somewhere lift a pixel under a mouse (never on touch), their edge firming up */
+/* cards that lead somewhere lift a pixel under a mouse (never on touch) */
 @media (hover: hover) {
   .nx-lift {
     transition-property: transform, border-color, background-color, box-shadow, outline-color, outline-offset, --nx-tint;
@@ -370,17 +400,15 @@ html[data-daylight] .theme-paper {
     transition-timing-function: var(--nx-ease-out);
   }
   .nx-lift:hover {
-    transform: translateY(calc(-2px * var(--nx-shift)));
-    border-color: var(--nx-line-strong);
-    box-shadow: 0 6px 16px -10px rgba(4, 16, 24, 0.35);
+    transform: translateY(calc(-1px * var(--nx-shift)));
   }
   .nx-lift.nx-press:hover:active {
     transform: translateY(calc(-1px * var(--nx-shift))) scale(calc(1 - 0.03 * var(--nx-shift)));
   }
 }
-/* the deck: its edge and shadow ease when it changes state (open, selected) */
+/* the deck: its shadow eases when it changes state (open, selected) */
 .nx-deck {
-  transition: border-color var(--nx-t-hover) var(--nx-ease-out), box-shadow var(--nx-t-panel) var(--nx-ease-out);
+  transition: box-shadow var(--nx-t-panel) var(--nx-ease-out);
 }
 
 @keyframes nx-rise {
@@ -709,24 +737,20 @@ html.nx-splash-out .nx-splash.nx-splash { animation: nx-splash-gone var(--nx-t-s
   .nx-fold { transition: none; }
 }
 @media (prefers-contrast: more) {
+  :root,
+  .env-chart,
   .env-instrument {
     --nx-line: rgba(220, 235, 245, 0.35);
     --nx-ink-2: #d6e3ea;
     --nx-ink-3: #b6c8d3;
   }
-  :root,
-  .env-chart {
-    --nx-line: #9fb0b9;
-    --nx-ink-2: #22343f;
-    --nx-ink-3: #3a4e5b;
-  }
 }
 
 /* ---- daylight mode (html[data-daylight], the ⋯ menu, stored in nx-daylight-v1) ----
    For bright sun on a phone: the high-contrast set (darker secondary ink, firmer lines) plus darker
-   data and state colours, each at least 7:1 on the page's white. Every deck over the map (the
-   instrument environment) reads on the same light paper; the basemap itself stays dark (its style is
-   the map's, not these tokens). Data families keep their hues and meanings. */
+   data and state colours, each at least 7:1 on the page's white. Its accent is its ink, as at night.
+   Every deck over the map (the instrument environment) reads on the same light paper; the basemap
+   itself stays dark (its style is the map's, not these tokens). Data families keep their hues. */
 html[data-daylight],
 html[data-daylight] .env-chart,
 html[data-daylight] .env-instrument {
@@ -736,17 +760,20 @@ html[data-daylight] .env-instrument {
   --nx-mark-index: #5fd0e6;
   --nx-mark-word: #0e3352;
   --nx-bg: #f5f7f8;
+  --nx-ground-top: #f5f7f8;
+  --nx-page: linear-gradient(180deg, #f5f7f8 0, #f5f7f8 100%);
   --nx-surface: #ffffff;
-  --nx-surface-2: #f3f6f7;
-  --nx-surface-3: #e6ecef;
+  --nx-surface-2: #eaeff2;
+  --nx-surface-3: #dee5e9;
   --nx-line: #8a9ba5;
   --nx-line-strong: #6d7f89;
   --nx-ink: #0b1820;
   --nx-ink-2: #22343f;
   --nx-ink-3: #3a4e5b;
-  --nx-accent: #04566c;
-  --nx-accent-bg: #e3f2f6;
+  --nx-accent: #0b1820;
+  --nx-accent-bg: rgba(11, 24, 32, 0.08);
   --nx-on-accent: #ffffff;
+  --nx-link: #0b1820;
   --nx-official: #7f3a00;
   --nx-official-bg: #fdf1df;
   --nx-official-line: #c98a3a;
@@ -759,37 +786,92 @@ html[data-daylight] .env-instrument {
   --nx-conditions: #164f78;
   --nx-conditions-bg: #e6f0f8;
   --nx-ok: #0f5e3b;
-  --nx-partial: #04566c;
+  --nx-partial: #22343f;
   --nx-stale: #6b4500;
   --nx-offline: #3a4e5b;
   --nx-down: #922a16;
   --nx-gap: #45565f;
   --nx-shadow: 0 1px 2px rgba(11, 24, 32, 0.12), 0 8px 24px rgba(11, 24, 32, 0.14);
+  --nx-deck: rgba(255, 255, 255, 0.96);
+  --nx-scrim: 245, 247, 248;
+  --nx-tag-closed: #fbe7e2;
+  --nx-tag-watch: #fbeed7;
+  --nx-tag-none: #e6ecef;
+}
+html[data-daylight] .nx-deck {
+  box-shadow: 0 1px 2px rgba(11, 24, 32, 0.12), 0 8px 24px rgba(11, 24, 32, 0.14);
 }
 html[data-daylight] .env-instrument .nx-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233a4e5b' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 /* ---- a short screen (a phone held sideways): one compact top bar line ----
-   The bar keeps its 44 px controls but loses its padding; the preview disclosure folds into the
-   notices pill ("Preview ·", the panel holds the agencies' links and the unverified state). */
-.nx-short-only { display: none; }
+   The bar keeps its 44 px controls but loses its padding; the trust pill keeps its words. */
 
 /* ---------------------------------------------------------------- v7 composition (docs/coastwatch/v7/design.md) */
 
-/* the header's two quiet surfaces */
-/* v10: the header's two surfaces are instrument plates, not pills: square-shouldered, a hairline, solid
-   over the map (no blur over WebGL) */
-.nx-bar {
-  background: var(--nx-surface);
-  border: 1px solid var(--nx-line);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+/* ---- the top bar (src/v4/shell/TopBar.tsx): sticky on solid ground by default; over a stage it is
+   transparent with a soft top scrim and takes the ground once the page has scrolled ---- */
+.nx-topbar {
+  --nx-bar-h: 60px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--nx-bar-h);
+  padding: max(8px, env(safe-area-inset-top, 0px)) 12px 8px;
+  background: var(--nx-ground-top);
+  transition: background-color var(--nx-t-panel) var(--nx-ease-out);
 }
-.env-instrument .nx-bar {
-  /* solid over the map: at 94% the place names under it showed through its numbers */
-  background: var(--nx-surface);
-  box-shadow: var(--nx-shadow);
+@media (min-width: 768px) {
+  .nx-topbar { gap: 12px; padding-left: 20px; padding-right: 16px; }
 }
+.nx-topbar[data-over] { background: transparent; }
+.nx-topbar[data-over]::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -28px 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(var(--nx-scrim), 0.92) 0, rgba(var(--nx-scrim), 0.82) 58%, rgba(var(--nx-scrim), 0) 100%);
+}
+.nx-topbar[data-over][data-solid] { background: var(--nx-ground-top); }
+.nx-topbar[data-over][data-solid]::before { opacity: 0; }
+/* the gliding pill's fill under the current workspace (a soft ink tint) */
+.nx-nav-pill { position: absolute; inset: 0; z-index: -1; border-radius: var(--nx-r-8); background: var(--nx-accent-bg); }
+/* the trust pill: what Neritic is and that notices are not verified, on every page */
+.nx-trust {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  max-width: 100%;
+  padding: 0 12px;
+  border-radius: var(--nx-r-12);
+  background: var(--nx-surface-2);
+  color: var(--nx-ink);
+  font: 500 13px/16px var(--nx-font-ui);
+  white-space: nowrap;
+}
+.nx-topbar[data-over]:not([data-solid]) .nx-trust { background: var(--nx-surface); }
+.nx-trust-sep { color: var(--nx-ink-3); }
+.nx-trust-soft { color: var(--nx-ink-2); }
+@media (max-width: 767px) {
+  .nx-trust { font-size: 12px; line-height: 15px; padding: 0 8px; min-width: 0; }
+}
+/* the phone dock: a soft surface, the active item marked by ink and a small indicator */
+.nx-dock {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 40;
+  background: var(--nx-surface);
+  box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.28);
+  border-radius: var(--nx-r-16) var(--nx-r-16) 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+html[data-daylight] .nx-dock { box-shadow: 0 -8px 24px rgba(11, 24, 32, 0.1); }
+.nx-dock-item { position: relative; display: flex; min-height: 60px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--nx-ink-3); font: 500 12.5px/1 var(--nx-font-ui); }
+.nx-dock-item[aria-current="page"] { color: var(--nx-ink); }
+.nx-dock-item[aria-current="page"]::before { content: ""; position: absolute; top: 6px; width: 16px; height: 2px; border-radius: 1px; background: var(--nx-ink); }
 /* numbers in reading text: the interface face with tabular figures (an instrument readout, not code) */
 .nx-num {
   font-variant-numeric: tabular-nums lining-nums;
@@ -807,14 +889,7 @@ html[data-daylight] .env-instrument .nx-select {
 @media (max-width: 639px) {
   .nx-sounding-v { font-size: 22px; line-height: 26px; }
 }
-.nx-title {
-  font-family: var(--nx-font-display);
-  font-size: 21px;
-  line-height: 28px;
-  font-weight: 600;
-  letter-spacing: -0.005em;
-}
-.nx-note-t { font-size: 12.5px; line-height: 17px; color: var(--nx-ink-3); }
+.nx-note-t { font-size: 13px; line-height: 18px; color: var(--nx-ink-3); }
 /* a statement's family tick */
 .nx-tick { width: 3px; border-radius: 2px; align-self: stretch; flex: none; background: var(--nx-gap); }
 .nx-tick[data-family="official"] { background: var(--nx-official); }
@@ -833,12 +908,11 @@ html[data-daylight] .env-instrument .nx-select {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) 44px;
   align-items: center;
-  border: 1px solid var(--nx-line-strong);
-  border-radius: 12px;
-  background: var(--nx-surface);
+  border-radius: var(--nx-r-12);
+  background: var(--nx-surface-2);
   min-height: 48px;
 }
-.nx-step:focus-within { border-color: var(--nx-accent); box-shadow: 0 0 0 3px var(--nx-accent-bg); }
+.nx-step:focus-within { border-color: var(--nx-accent); }
 .nx-step > button { height: 46px; display: grid; place-items: center; color: var(--nx-ink-2); border-radius: 10px; }
 .nx-step > button:hover { color: var(--nx-ink); background: var(--nx-surface-2); }
 .nx-step input {
@@ -864,21 +938,16 @@ html[data-daylight] .env-instrument .nx-select {
 
 @media (max-height: 500px) {
   .nx-topbar {
-    padding-top: max(4px, env(safe-area-inset-top, 0px)) !important;
+    --nx-bar-h: 52px;
+    padding-top: max(4px, env(safe-area-inset-top, 0px));
     padding-bottom: 4px;
   }
-  .nx-disclosure { display: none !important; }
-  .nx-short-only { display: inline !important; }
 }
 
 /* ---- My Coast front door (v8, src/v4/coast/Landing.tsx) ---- */
-/* the hero is the instrument ground of Explore, lit from the canyon at its upper left */
+/* v11: the map's own ground, flat (no decorative gradient, no glow) */
 .nx-landing-hero {
-  background:
-    radial-gradient(ellipse 70% 90% at 12% 0%, rgba(30, 92, 128, 0.55), transparent 70%),
-    radial-gradient(ellipse 60% 80% at 100% 100%, rgba(20, 74, 110, 0.35), transparent 70%),
-    #061016;
-  box-shadow: inset 0 1px 0 rgba(214, 240, 248, 0.06), 0 20px 40px -24px rgba(6, 16, 22, 0.55);
+  background: #061016;
 }
 /* the coast draws once, briefly (a reading page, not a splash) */
 .nx-landing-coast {
@@ -898,54 +967,199 @@ html[data-daylight] .env-instrument .nx-select {
   background: color-mix(in srgb, var(--nx-accent) 26%, transparent);
   color: inherit;
 }
+/* links are underlined ink, never blue: a link that took its look from the old accent underlines here */
+:where(.env-chart, .env-instrument) :where(a.text-n-accent, a.text-accent) {
+  text-decoration-line: underline;
+  text-decoration-color: var(--nx-line-strong);
+  text-underline-offset: 3px;
+}
+:where(.env-chart, .env-instrument) :where(a.text-n-accent, a.text-accent):hover {
+  text-decoration-color: var(--nx-link);
+}
 :where(input, textarea) { caret-color: var(--nx-accent); }
 .env-instrument { scrollbar-color: var(--nx-line-strong) transparent; }
 
 /* ---- v10 Ocean Instrument vocabulary (docs/coastwatch/v10/system.md) ----
    Shared by every page; pages compose with these instead of inventing their own.
    They sit in the components layer, so a utility class (a family colour, a size) overrides them. */
+/* an explanation panel (src/v4/ui/Pop.tsx, native popover): under its trigger, a bottom sheet on a phone */
+.nx-pop-panel {
+  margin: 0;
+  inset: auto;
+  border: 0;
+  width: min(340px, calc(100vw - 24px));
+  padding: 16px 18px 12px;
+  background: var(--nx-surface);
+  color: var(--nx-ink);
+  border-radius: var(--nx-r-16);
+  box-shadow: var(--nx-shadow);
+}
+.nx-pop-panel:popover-open { animation: nx-pop-in var(--nx-t-pop) var(--nx-ease-out) both; }
+.nx-pop-panel::backdrop { background: transparent; }
+@media (max-width: 639px) {
+  .nx-pop-panel {
+    inset: auto 0 0 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--nx-r-24) var(--nx-r-24) 0 0;
+    padding: 24px 24px calc(20px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.35);
+  }
+}
+
+/* ---- v11 vocabulary (docs/coastwatch/v11/design.md §4): shared by every page; pages compose with these.
+   They sit in the components layer, so a utility class (a size, a family colour) overrides them. */
 @layer components {
-  /* a small-capital label: what a value is and which family it belongs to (colour it with a family) */
-  .nx-caps {
-    font: 500 10.5px/1.2 var(--nx-font-caps);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--nx-ink-3);
-  }
-  /* a reading value: light mono figures, large, tabular; units small beside them */
-  .nx-value {
-    font: 300 30px/1 var(--nx-font-data);
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-    color: var(--nx-ink);
-  }
-  .nx-value small { font-size: 0.4em; letter-spacing: 0; margin-left: 0.2em; color: var(--nx-ink-2); }
-  /* the editorial voice: places and headlines */
-  /* (the v7 title size is its default; a size utility overrides it) */
+  /* the page title: Newsreader 500, optical sizing; .nx-display-hero is the place-name scale */
   .nx-display {
     font-family: var(--nx-font-display);
+    font-optical-sizing: auto;
     font-weight: 500;
     font-size: 40px;
     line-height: 44px;
     letter-spacing: -0.015em;
     text-wrap: balance;
   }
+  .nx-display-hero {
+    font-size: clamp(44px, 7vw, 96px);
+    line-height: 0.95;
+  }
   @media (max-width: 639px) {
     .nx-display { font-size: 31px; line-height: 35px; }
+    .nx-display-hero { font-size: clamp(44px, 12vw, 64px); line-height: 0.98; }
   }
-  /* a margin note: caveats and context set as an italic aside, never grey fine print */
+  /* a section title in sentence case: replaces caps labels above sections */
+  .nx-title {
+    font-family: var(--nx-font-display);
+    font-weight: 500;
+    font-size: 26px;
+    line-height: 30px;
+    letter-spacing: -0.01em;
+    color: var(--nx-ink);
+  }
+  @media (max-width: 639px) {
+    .nx-title { font-size: 22px; line-height: 26px; }
+  }
+  /* the one sentence a page or chapter opens with */
+  .nx-lede {
+    font-family: var(--nx-font-display);
+    font-weight: 400;
+    font-size: clamp(22px, 2.6vw, 28px);
+    line-height: 1.25;
+    max-width: 34ch;
+    text-wrap: pretty;
+    color: var(--nx-ink);
+  }
+  /* a hero number: large and light; the unit beside it at 0.4em */
+  .nx-figure {
+    font-family: var(--nx-font-ui);
+    font-weight: 300;
+    font-size: clamp(40px, 5vw, 64px);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums lining-nums;
+    color: var(--nx-ink);
+  }
+  .nx-figure small { font-size: 0.4em; font-weight: 400; letter-spacing: 0; margin-left: 0.25em; color: var(--nx-ink-2); }
+  /* a label: sentence case, what a value is (colour it with a family where it names one) */
+  .nx-caps {
+    font: 500 12.5px/1.3 var(--nx-font-ui);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--nx-ink-2);
+  }
+  /* a value: tabular Plex Sans, not mono; units small beside it */
+  .nx-value {
+    font-family: var(--nx-font-ui);
+    font-weight: 400;
+    font-size: clamp(20px, 2vw, 26px);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums lining-nums;
+    color: var(--nx-ink);
+  }
+  .nx-value small { font-size: 0.5em; letter-spacing: 0; margin-left: 0.2em; color: var(--nx-ink-2); }
+  /* a margin note: a caveat in a short italic line beside what it qualifies */
   .nx-margin {
-    font: italic 400 13px/1.5 var(--nx-font-display);
+    font: italic 400 14.5px/1.5 var(--nx-font-display);
     color: var(--nx-ink-2);
   }
   .nx-margin b, .nx-margin strong { font-style: normal; font-weight: 600; color: var(--nx-ink); }
-  /* a plate: a reading surface over the abyss (one hairline, square shoulders, no card stack) */
+  /* a plate: a reading surface (surface 1, no border). Never nested. */
   .nx-plate {
     background: var(--nx-surface);
-    border: 1px solid var(--nx-line);
-    border-radius: 4px;
+    border-radius: var(--nx-r-16);
+  }
+  /* a sheet: a reading surface that rises over the canvas; radius 24 on its leading edge */
+  .nx-sheet {
+    background: var(--nx-surface);
+    border-radius: var(--nx-r-24) var(--nx-r-24) 0 0;
+    padding: var(--nx-sheet-pad);
   }
   /* a hairline rule between rows */
   .nx-rule { border-top: 1px solid var(--nx-line); }
-
+  /* a status word with its shape, filled tint: closed|delayed|restricted|watch|none (src/v4/ui/Tag.tsx) */
+  .nx-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 26px;
+    padding: 2px 8px;
+    border-radius: var(--nx-r-8);
+    font: 500 13px/18px var(--nx-font-ui);
+    white-space: nowrap;
+    color: var(--nx-ink-2);
+    background: var(--nx-tag-none);
+  }
+  .nx-tag[data-level="closed"], .nx-tag[data-level="delayed"] { color: var(--nx-down); background: var(--nx-tag-closed); }
+  .nx-tag[data-level="restricted"], .nx-tag[data-level="watch"] { color: var(--nx-stale); background: var(--nx-tag-watch); }
+  .nx-tag[data-level="none"] { color: var(--nx-offline); background: var(--nx-tag-none); }
+  /* the not-verified marker: shield-slash and the words, ink-2, dotted underline; opens the explanation */
+  .nx-unverified {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font: 500 13px/18px var(--nx-font-ui);
+    color: var(--nx-ink-2);
+    white-space: nowrap;
+    text-decoration: underline dotted var(--nx-line-strong);
+    text-underline-offset: 3px;
+    cursor: help;
+  }
+  /* buttons: primary ink-filled, secondary surface-filled, tertiary underlined */
+  .nx-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: var(--nx-r-12);
+    font: 500 15px/1.2 var(--nx-font-ui);
+    text-align: center;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .nx-btn:disabled, .nx-btn[aria-disabled="true"] { opacity: 0.55; cursor: default; }
+  .nx-btn-primary { background: var(--nx-ink); color: var(--nx-on-accent); font-weight: 600; }
+  .nx-btn-secondary { background: var(--nx-surface-2); color: var(--nx-ink); }
+  .nx-btn-tertiary {
+    padding: 0 2px;
+    color: var(--nx-link);
+    text-decoration: underline;
+    text-decoration-color: var(--nx-line-strong);
+    text-underline-offset: 4px;
+    border-radius: var(--nx-r-8);
+  }
+  .nx-btn-lg { min-height: 56px; padding: 0 22px; font-size: 16px; }
+  @media (max-width: 639px) {
+    .nx-btn-primary { min-height: 56px; }
+  }
+  @media (hover: hover) {
+    .nx-btn-primary:hover:not(:disabled):not([aria-disabled="true"]) { background: color-mix(in srgb, var(--nx-ink) 86%, var(--nx-bg)); }
+    .nx-btn-tertiary:hover { text-decoration-color: var(--nx-link); }
+  }
+  /* a link in running text */
+  .nx-link { color: var(--nx-link); text-decoration: underline; text-decoration-color: var(--nx-line-strong); text-underline-offset: 3px; }
+  .nx-link:hover { text-decoration-color: var(--nx-link); }
 }

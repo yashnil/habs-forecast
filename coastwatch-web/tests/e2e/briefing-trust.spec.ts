@@ -14,7 +14,8 @@ test("Crescent City: its notices, not verified; what no person has reviewed; no 
   await page.goto(`${OK}/coast?place=port-201`);
   await settled(page);
   // v10 pass 2: counted once in the decision row; listed, each not verified, in the one evidence section
-  await expect(page.getByTestId("glance-notices")).toContainText(/\d/);
+  await expect(page.getByTestId("notices-open")).toContainText(/\d/);
+  await page.getByTestId("notices-open").click();
   await expect(page.getByTestId("brief-official")).toBeVisible();
   await expect(page.getByTestId("notice-official:cdfw-2026-razor-clam-del-norte")).toContainText("Not verified");
   await expect(page.getByTestId("notice-official:cdph-2026-sn26-020-razor-clam-del-norte")).toBeVisible();
@@ -41,6 +42,7 @@ test("official geography decides: a notice outside the waters is not listed; an 
   await page.goto(`${OK}/coast?place=port-605`);
   await settled(page);
   await expect(page.getByTestId("unknowns")).toContainText("is not settled by");
+  await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId("brief-checks")).toContainText(/Confirm whether “.*”/);
 });
 
@@ -70,10 +72,13 @@ test("changing the species changes the official headline and the checks at once,
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=port-201`);
   await settled(page);
+  await page.getByTestId("trip-change").click();
   await page.getByTestId("trip-species").selectOption("razor-clam");
   await expect(page).toHaveURL(/species=razor-clam/);
   await expect(page.getByTestId("claim-notices")).toContainText("razor clam");
+  await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId("brief-checks")).toContainText("CDPH");
+  await page.keyboard.press("Escape");
   const opts = await page.getByTestId("trip-day").locator("option").evaluateAll((o) => o.map((x) => (x as HTMLOptionElement).value));
   await page.getByTestId("trip-day").selectOption(opts.at(-1)!);
   await expect(page).toHaveURL(new RegExp(`date=${opts.at(-1)}`));
@@ -89,6 +94,7 @@ test("Dungeness, commercial, Crescent City: the season status leads, quoted with
   // the agency's own words, quoted in full, beside the headline (never only "season status")
   await expect(page.getByTestId("claim-season").getByTestId("claim-quote")).toContainText("Season is");
   await expect(page.getByTestId("claim-season")).toHaveAttribute("data-tone", /alert|note/);
+  await page.getByTestId("brief-checks-toggle").click();
   await expect(page.getByTestId("checks").locator(":scope > li").first()).toContainText("Confirm the season status on CDFW's page");
   const tel = page.getByTestId("brief-checks").getByTestId("check-tel").first();
   await expect(tel).toHaveAttribute("href", /^tel:\+?1?8316492883$/);
@@ -111,6 +117,7 @@ test("a point in Monterey Bay: the notices between the agency's latitudes, not v
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=point-36.800,-121.950`);
   await settled(page);
+  await page.getByTestId("notices-open").click();
   await expect(page.getByTestId("notice-official:cdph-2026-sn26-019-anchovy-central-coast")).toContainText("Not verified");
 });
 
@@ -120,7 +127,8 @@ test("a shellfish harvester's CDPH site link opens that site with its notices, o
   await page.clock.setFixedTime(new Date(NOW));
   await page.goto(`${OK}/coast?place=site-clam-beach&for=shellfish`);
   await expect(page.getByTestId("coast-title")).toHaveText("Clam Beach, Humboldt");
-  await expect(page.getByTestId("trip-summary")).toContainText("Shellfish");
+  await expect(page.getByTestId("trip-summary")).toContainText(/shellfish/i);
+  await page.getByTestId("notices-open").click();
   await expect(page.getByTestId("notice-official:cdfw-2024-razor-clam-humboldt")).toContainText("Not verified");
   await ctx.close();
 });
