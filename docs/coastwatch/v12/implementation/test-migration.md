@@ -59,8 +59,11 @@ Behaviour the old specs required that the v12 pages do not have (not papered ove
    cache `neritic-pack-field`): Today, My Coast (gates for every fishery, the sea window; the worksheet is in
    device storage), Explore's latest frame of each layer around the port, Research's open station record, the
    baked chart in all three modes. The Menu says what is saved and when; `npm run test:offline` proves it.
-3. **No list of every current official notice** (trust, regulatory, navigation, ux-final M6/M8 on the page): v12
-   shows the reader's fishery and an "Others" row; the Del Norte razor clam records appear only on legacy pages.
+3. ~~**No list of every current official notice**~~ Resolved: `/notices?place=…` lists every current notice
+   at the port (statewide ones included), those whose reach there is not settled, "sources differ" records
+   (both quoted, never lifted) and every other notice on the coast (the Del Norte razor clam records among
+   them), each with agency, action, dates, area, source links and "not verified". Reached from Today's Notices
+   and Others rows and from Alerts (`/account`). `v12-notices.spec.ts` (4).
 4. **T37 for C-HARM:** no "a low value does not mean open or safe" near the probability (trust.spec "a low value is not safe").
 5. **ds Stamp does not return focus** to the stamp when its provenance sheet closes (components.md promises it):
    `v12-a11y` fixme.

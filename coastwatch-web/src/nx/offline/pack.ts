@@ -22,7 +22,7 @@ export const FIELD_RECORD = "/__field__/record.json";
 const RECORD_KEY = "nx-field-v1";
 const SW_URL = `/sw.js${process.env.NEXT_PUBLIC_NERITIC_BUILD ? `?b=${process.env.NEXT_PUBLIC_NERITIC_BUILD}` : ""}`;
 
-export type PackPage = { id: "today" | "coast" | "explore" | "research"; label: string; path: string; ok: boolean };
+export type PackPage = { id: "today" | "notices" | "coast" | "explore" | "research"; label: string; path: string; ok: boolean };
 export type PackFrame = { layer: string; label: string; stamp: string; ok: boolean };
 export type FieldRecord = {
   v: 1;
@@ -180,6 +180,7 @@ export async function saveFieldPack(port: SavePort, opts: { researchPath?: strin
     const researchPath = opts.researchPath && opts.researchPath.startsWith("/research") ? opts.researchPath : `/research?place=${place}`;
     const pageDefs: Array<Omit<PackPage, "ok">> = [
       { id: "today", label: "Today", path: `/today?place=${place}` },
+      { id: "notices", label: "Official notices", path: `/notices?place=${place}` },
       { id: "coast", label: "My Coast", path: `/coast?place=${place}` },
       { id: "explore", label: "Explore", path: `/explore?place=${place}` },
       { id: "research", label: "Research", path: researchPath },
@@ -276,13 +277,14 @@ export async function saveFieldPack(port: SavePort, opts: { researchPath?: strin
 export function packWords(r: FieldRecord | null, page: string): { saved: string | null; notSaved: string } {
   const notSaved: Record<string, string> = {
     today: "Newer tests, notices and forecasts, Alerts and Ask wait for a connection.",
+    notices: "Notices issued or changed since then wait for a connection; call the agencies to be sure.",
     coast: "A newer sea window waits for a connection. The worksheet works as usual and stays on this device.",
     explore: "Only each layer's latest frame is saved, as a still picture: earlier frames, temperature lines, currents and tapping the water wait for a connection.",
     research: "Other stations, the native grid and the model's cells wait for a connection. The export works from what is on this page.",
     home: "Newer records wait for a connection.",
   };
   if (!r) return { saved: null, notSaved: notSaved[page] ?? notSaved.home };
-  const parts = r.pages.filter((p) => p.ok).map((p) => (p.id === "explore" ? "Explore's latest frames" : p.id === "research" ? "Research's record" : p.label));
+  const parts = r.pages.filter((p) => p.ok && p.id !== "notices").map((p) => (p.id === "explore" ? "Explore's latest frames" : p.id === "research" ? "Research's record" : p.label));
   return { saved: parts.length ? `Saved for ${r.port.name}: ${list(parts)}.` : null, notSaved: notSaved[page] ?? notSaved.home };
 }
 

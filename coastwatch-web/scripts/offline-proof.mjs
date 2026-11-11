@@ -7,7 +7,7 @@
  *      names: the saved pages must run on the pack's code alone), close the browser and STOP the app server;
  *   3. reopen the same browser profile offline, with every request (the service worker's too, and loopback)
  *      sent to a dead proxy;
- *   4. `/`, `/today`, `/coast`, `/explore` and `/research` must each open from the pack, at a phone and a desktop
+ *   4. `/`, `/today`, `/notices`, `/coast`, `/explore` and `/research` must each open from the pack, at a phone and a desktop
  *      size: the page's own content, the baked chart (the static tier's images, loaded), Explore's baked frame,
  *      and the offline notice saying when the copy was saved and what is and is not available; a tab tapped
  *      offline opens the next saved page; a page that was not saved says it is offline and links to the pack;
@@ -102,7 +102,7 @@ try {
   await p.locator('[data-testid="nx-pack"][data-complete]').waitFor({ timeout: 150_000 });
   const rec = await p.evaluate(async () => (await (await caches.open("neritic-pack-field")).match("/__field__/record.json"))?.json());
   check((await p.getByTestId("nx-pack").getAttribute("data-complete")) === "true", `the pack is complete online${rec?.missing?.length ? ` (missing: ${rec.missing.join("; ")})` : ""}`);
-  check(rec?.pages?.filter((x) => x.ok).length === 4, "the pack holds Today, My Coast, Explore and Research");
+  check(["today", "notices", "coast", "explore", "research"].every((id) => rec?.pages?.some((x) => x.id === id && x.ok)), "the pack holds Today, the official notices, My Coast, Explore and Research");
   check((rec?.frames ?? []).filter((f) => f.ok).length >= 2, `the pack holds Explore's latest frames (${(rec?.frames ?? []).map((f) => `${f.layer} ${f.label}`).join(", ")})`);
   check(/Moss Landing saved/.test(await p.getByTestId("nx-pack-status").innerText().catch(() => "")), "the Menu says what is saved and when");
   console.log(`  pack: ${rec?.files} files, ${(rec?.bytes / 1e6).toFixed(1)} MB, station ${rec?.station}`);
@@ -145,6 +145,7 @@ try {
     ["/today", async (pg) => /Season/.test(await pg.getByTestId("nx-today").getByRole("heading", { level: 1 }).innerText()), "Today at Moss Landing"],
     ["/coast", async (pg) => (await pg.getByTestId("coast-worksheet").count()) > 0 && /Moss Landing/.test(await pg.getByTestId("nx-coast").innerText()), "My Coast with the worksheet"],
     ["/explore", async (pg) => (await pg.getByTestId("nx-static-field").count()) > 0 && (await pg.getByTestId("nx-static-field").evaluate((i) => i.complete && i.naturalWidth > 0)), "Explore with its baked frame"],
+    ["/notices", async (pg) => (await pg.getByTestId("nx-notice").count()) > 0 && /not verified/.test(await pg.getByTestId("nx-notices").innerText()), "every official notice, not verified"],
     ["/research", async (pg) => (await pg.getByTestId("research-title").count()) > 0 && (await pg.getByTestId("research-record").count()) > 0, "Research with the station record"],
   ];
   for (const [size, vp] of [

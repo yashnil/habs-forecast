@@ -307,6 +307,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
             />
           ),
         )}
+        <NoticesRow notices={inputs.notices} portKey={port.key} portName={port.name} />
         {v.others.length ? (
           <MarginRow
             label="Others"
@@ -326,6 +327,13 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
                     </p>
                   </li>
                 ))}
+                <li>
+                  <p>
+                    <Button variant="text" href={noticesHref(port.key)}>
+                      Every official notice, here and on the rest of the coast
+                    </Button>
+                  </p>
+                </li>
               </ul>
             }
           />
@@ -340,6 +348,42 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
       </p>
       {touring ? <Tour hasSounding={v.soundings.length > 0} onEnd={() => setTouring(false)} /> : null}
     </>
+  );
+}
+
+const noticesHref = (key: string) => `/notices?place=${encodeURIComponent(key)}`;
+
+/**
+ * The notices row: how many official notices the registry ties to this port, their titles, and the way to the
+ * full list (every notice here and on the rest of the coast, each with its dates, sources and "not verified").
+ */
+function NoticesRow({ notices, portKey, portName }: { notices: TodayInputs["notices"]; portKey: string; portName: string }) {
+  if (notices === null) return <MarginRow label="Notices" state="unavailable" note="The official notices did not load. Check CDFW and CDPH." />;
+  const shown = notices.filter((n) => n.action !== "reopening" && n.action !== "advisory_lifted");
+  return (
+    <MarginRow
+      label="Notices"
+      value={<Figure text={shown.length ? `${shown.length} official, not verified` : "None listed here"} />}
+      detail={
+        <ul className={s.detailList} data-testid="nx-notices-row">
+          {shown.map((n) => (
+            <li key={n.id}>
+              <p>
+                <strong>{n.agency}</strong>: {n.title}
+              </p>
+            </li>
+          ))}
+          {!shown.length ? <li><p>The registry ties no current notice to {portName}. That does not mean open: check CDFW and CDPH.</p></li> : null}
+          <li>
+            <p>
+              <Button variant="text" href={noticesHref(portKey)} data-testid="nx-notices-link">
+                All notices, with dates and sources
+              </Button>
+            </p>
+          </li>
+        </ul>
+      }
+    />
   );
 }
 
