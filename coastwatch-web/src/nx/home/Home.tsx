@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { Button } from "@/nx/ds/Button";
 import { PortFinder, type PortEntry } from "@/nx/ds/PortFinder";
 import { Statement } from "@/nx/ds/Statement";
 import { SkipOpening } from "@/nx/opening/Opening";
+import { PORT_NAME_LAYOUT } from "@/nx/today/layout";
 import type { FinderData } from "./finder.server";
 import s from "./home.module.css";
 
-export type Picked = { key: string; name: string; rect: { left: number; top: number; width: number; height: number } | null };
+export type Picked = { key: string; name: string };
 
 /**
  * Home, a first visit (journeys.md Journey 1): what Neritic is in one sentence, the one action (Find your
@@ -18,15 +19,14 @@ export type Picked = { key: string; name: string; rect: { left: number; top: num
  */
 export function Home({ finder, onPick }: { finder: FinderData; onPick: (p: Picked) => void }) {
   const [step, setStep] = useState<"intro" | "find">("intro");
-  const pick = (p: PortEntry) => {
-    const key = finder.keys[p.code];
-    if (!key) return;
-    // where the name was, so it can travel into Today's title (README §8 `layout`)
-    const item = document.querySelector<HTMLElement>('[cmdk-item][data-selected="true"]');
-    const name = item?.children[1] as HTMLElement | undefined;
-    const r = name?.getBoundingClientRect();
-    onPick({ key, name: p.name, rect: r ? { left: r.left, top: r.top, width: r.width, height: r.height } : null });
-  };
+  // the chosen name first takes the shared layoutId where it stands in the list; once that is drawn, the
+  // port is handed on and the name travels into the chooser's title (README §8 `layout`)
+  const [chosen, setChosen] = useState<PortEntry | null>(null);
+  useLayoutEffect(() => {
+    if (!chosen) return;
+    const key = finder.keys[chosen.code];
+    if (key) onPick({ key, name: chosen.name });
+  }, [chosen, finder.keys, onPick]);
   return (
     <section className={s.home} data-nx-home data-testid="nx-home" data-step={step}>
       {step === "intro" ? (
@@ -53,7 +53,15 @@ export function Home({ finder, onPick }: { finder: FinderData; onPick: (p: Picke
             </button>
           </div>
           {finder.ports.length ? (
-            <PortFinder className={s.finder} ports={finder.ports} regions={finder.regions} onSelect={pick} autoFocus label="Find your port" />
+            <PortFinder
+              className={s.finder}
+              ports={finder.ports}
+              regions={finder.regions}
+              onSelect={(p) => finder.keys[p.code] && setChosen(p)}
+              nameLayoutId={(p) => (p.code === chosen?.code ? PORT_NAME_LAYOUT : undefined)}
+              autoFocus
+              label="Find your port"
+            />
           ) : (
             <p className={s.empty}>The port list could not be read just now. Try again in a minute, or open a page from the bar.</p>
           )}

@@ -24,6 +24,7 @@ import { distanceKm, phoneBounds, portWater, todayBounds } from "./camera";
 import { changeLine, type ChangeLine } from "./change";
 import { conditionsUrl, useConditions, useTodayInputs, type Initial } from "./data";
 import { FisheryChooser } from "./FisheryChooser";
+import { PORT_NAME_LAYOUT } from "./layout";
 import { buildToday, othersLine, scopeWords, type TodayInputs, type TodayView as View } from "./model";
 import { COMPACT, TodaySoundings } from "./Soundings";
 import { chooseFishery, useFisheries, useTourState } from "./store";
@@ -37,8 +38,6 @@ export type TodayProps = {
   arriving?: boolean;
 };
 
-/** The port name travels from the finder into the chooser's title and on into Today's scope line (README §8 `layout`). */
-export const PORT_NAME_LAYOUT = "nx-port-name";
 
 const canyonHead = { lon: CANYON_AXIS[0][0], lat: CANYON_AXIS[0][1] };
 

@@ -6,6 +6,16 @@
   pointer-events: none;
 }
 
+/* a box the host measures and places (the chart's marks layer): in flow, at its own size */
+.boxed {
+  position: relative;
+  display: inline-block;
+  white-space: normal;
+}
+.boxed .block {
+  position: relative;
+}
+
 .halo .block {
   /* the knockout halo: a paper stroke painted behind each glyph (spec section 5) */
   paint-order: stroke fill;

@@ -34,6 +34,7 @@ import {
   agendaPhase,
   censoredWords,
   clampWindow,
+  labelledTicks,
   classify,
   day,
   daysBetween,
@@ -139,6 +140,23 @@ describe("series: censored marks and gaps (T7, T19, T20)", () => {
     expect(html).toContain("Below limit");
     expect((html.match(/ptCensored/g) ?? []).length).toBe(2);
     expect(html).toContain("6 samples, Jan 1, 2026 to May 8, 2026; 2 below the limit or reported 0");
+  });
+});
+
+describe("strips: low-cell model days and thinned tick labels", () => {
+  it("a model day from few cells is never joined into the line and says so", () => {
+    const pts: SeriesPoint[] = [
+      { t: "2026-10-01", v: 0.4 },
+      { t: "2026-10-02", v: 0.5, low: true },
+      { t: "2026-10-03", v: 0.6 },
+      { t: "2026-10-04", v: 0.7 },
+    ];
+    expect(segments(pts).map((r) => r.map((p) => p.t))).toEqual([["2026-10-01"], ["2026-10-03", "2026-10-04"]]);
+    expect(readoutText(pts[1], "%", "model")).toContain("from few model cells");
+  });
+  it("labels only as many ticks as fit, always the top one", () => {
+    expect(labelledTicks([1, 10, 100, 1000, 10000], 200)).toEqual([true, true, true, true, true]);
+    expect(labelledTicks([1, 10, 100, 1000, 10000], 40)).toEqual([true, false, true, false, true]);
   });
 });
 

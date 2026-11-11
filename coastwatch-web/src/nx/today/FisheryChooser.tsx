@@ -5,10 +5,10 @@ import type { FisheryId } from "@/pilot/contracts";
 import { FISHERY_OPTIONS } from "@/pilot/facts";
 import { pan, press } from "@/nx/ds/motion";
 import { Loading } from "@/nx/ds/States";
+import { PORT_NAME_LAYOUT } from "./layout";
 import { suggestFisheries, type TodayInputs } from "./model";
 import s from "./today.module.css";
 
-const PORT_NAME_LAYOUT = "nx-port-name";
 
 /**
  * Which fishery Today leads with (journeys.md Journey 1). Nothing is chosen for the reader. The fisheries

@@ -23,6 +23,11 @@ export interface SmallMultiplesProps {
   overview?: string;
   /** Initial window, ms; defaults to the last three years of the record. */
   initial?: [number, number];
+  /**
+   * The window, controlled (ms): the page holds it (URL state, presets, export) and `onWindow` asks to change
+   * it. Without it the strips keep their own window from `initial`.
+   */
+  value?: [number, number];
   /** Called as the window changes (to keep URL state or export the window). */
   onWindow?: (w: [number, number]) => void;
   /** What the window filters, for the brush's words. */
@@ -35,16 +40,17 @@ export interface SmallMultiplesProps {
  * A station's record as strips on one time axis with one brush (spec section 9). The crosshair is shared:
  * reading a date in one strip reads it in all, each with its own words.
  */
-export function SmallMultiples({ strips, overview, initial, onWindow, label = "every strip above", stripHeight = 110, className }: SmallMultiplesProps) {
+export function SmallMultiples({ strips, overview, initial, value, onWindow, label = "every strip above", stripHeight = 110, className }: SmallMultiplesProps) {
   const extent = useMemo<[number, number]>(() => {
     const ts = strips.flatMap((st) => st.points.filter((p) => classify(p) !== "missing").map((p) => toMs(p.t)));
     return ts.length ? [Math.min(...ts), Math.max(...ts)] : [0, 1];
   }, [strips]);
-  const [win, setWin] = useState<[number, number]>(initial ?? [Math.max(extent[0], extent[1] - 3 * 365 * 86_400_000), extent[1]]);
+  const [own, setOwn] = useState<[number, number]>(initial ?? [Math.max(extent[0], extent[1] - 3 * 365 * 86_400_000), extent[1]]);
+  const win = value ?? own;
   const [hoverT, setHoverT] = useState<number | null>(null);
   const ov = strips.find((st) => st.id === overview) ?? strips[0];
   const change = (w: [number, number]) => {
-    setWin(w);
+    if (!value) setOwn(w);
     onWindow?.(w);
   };
   return (

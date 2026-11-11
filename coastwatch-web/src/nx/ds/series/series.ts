@@ -15,6 +15,11 @@ export interface SeriesPoint {
   /** What the source printed, kept verbatim ("<2.5", "ND"). */
   raw?: string;
   flag?: Flag;
+  /**
+   * A model value worked out from too few cells to stand for the area (C-HARM's median of cells within
+   * 15 km when most were missing that day). Drawn as an open mark, never joined into a line, and said so.
+   */
+  low?: boolean;
 }
 
 export type PointClass = "value" | "censored" | "missing";
@@ -48,11 +53,11 @@ export function segments(points: SeriesPoint[], gapDays = 45): SeriesPoint[][] {
     const c = classify(p);
     if (c === "missing") continue;
     const t = ms(p.t);
-    if (c === "censored" || (lastT !== null && t - lastT > gapDays * 86_400_000)) {
+    if (c === "censored" || p.low || (lastT !== null && t - lastT > gapDays * 86_400_000)) {
       if (run.length) out.push(run);
       run = [];
     }
-    if (c === "value") run.push(p);
+    if (c === "value" && !p.low) run.push(p);
     lastT = t;
   }
   if (run.length) out.push(run);
@@ -66,6 +71,15 @@ export function logDomain(values: number[], floor = 1e-4): [number, number] {
   const lo = Math.max(floor, 10 ** Math.floor(Math.log10(Math.min(...pos))));
   const hi = 10 ** Math.ceil(Math.log10(Math.max(...pos)));
   return [lo, hi === lo ? lo * 10 : hi];
+}
+
+/**
+ * Which ticks carry a label so labels sit at least `minGap` px apart on a plot `plotH` px tall (the grid
+ * lines stay on every tick). The top tick is always labelled.
+ */
+export function labelledTicks(ticks: number[], plotH: number, minGap = 18): boolean[] {
+  const every = Math.max(1, Math.ceil(minGap / Math.max(1, plotH / Math.max(1, ticks.length - 1))));
+  return ticks.map((_, i) => (ticks.length - 1 - i) % every === 0);
 }
 
 export function logTicks([lo, hi]: [number, number]): number[] {
@@ -100,7 +114,7 @@ export function readoutText(p: SeriesPoint, unit: string, kindWord: string): str
   const when = day(p.t, { year: true });
   if (c === "censored") return `${when} · ${censoredWords(p)} · ${kindWord}`;
   if (c === "missing") return `${when} · not measured in this sample`;
-  return `${when} · ${sig(p.v as number, 2)} ${unit} · ${kindWord}`;
+  return `${when} · ${sig(p.v as number, 2)} ${unit} · ${kindWord}${p.low ? ", from few model cells" : ""}`;
 }
 
 /** One sentence for assistive tech: count, span, censored count. */

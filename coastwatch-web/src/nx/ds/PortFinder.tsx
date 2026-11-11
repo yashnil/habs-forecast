@@ -1,5 +1,6 @@
 "use client";
 import { Command } from "cmdk";
+import { motion } from "motion/react";
 import { useState } from "react";
 import { Icon } from "./Icon";
 import { cx } from "./util";
@@ -24,6 +25,11 @@ export interface PortFinderProps {
   current?: number;
   label?: string;
   autoFocus?: boolean;
+  /**
+   * A Motion `layoutId` for a port's name, so the name can travel on into the next view's title (spec
+   * section 8, `layout`). Give it to the chosen port only; every other name returns undefined.
+   */
+  nameLayoutId?: (port: PortEntry) => string | undefined;
   className?: string;
 }
 
@@ -31,7 +37,7 @@ export interface PortFinderProps {
  * Find a port by typing or by reading down the coast (spec section 9): cmdk search over CDFW landing ports,
  * a north-to-south directory grouped by region, and recent ports first. Keyboard: type, arrows, Enter.
  */
-export function PortFinder({ ports, regions, recent = [], onSelect, current, label = "Find your port", autoFocus, className }: PortFinderProps) {
+export function PortFinder({ ports, regions, recent = [], onSelect, current, label = "Find your port", autoFocus, nameLayoutId, className }: PortFinderProps) {
   const [q, setQ] = useState("");
   const byCode = new Map(ports.map((p) => [p.code, p]));
   const recents = recent.map((c) => byCode.get(c)).filter((p): p is PortEntry => Boolean(p));
@@ -39,7 +45,13 @@ export function PortFinder({ ports, regions, recent = [], onSelect, current, lab
   const item = (p: PortEntry, group: string) => (
     <Command.Item key={`${group}-${p.code}`} value={`${group} ${p.name} ${p.county} ${p.code}`} keywords={[p.name, p.county]} onSelect={() => onSelect(p)} className={s.item} data-current={p.code === current || undefined}>
       <Icon name="port" size={20} />
-      <span className={s.name}>{p.name}</span>
+      {nameLayoutId?.(p) ? (
+        <motion.span layoutId={nameLayoutId(p)} className={s.name}>
+          {p.name}
+        </motion.span>
+      ) : (
+        <span className={s.name}>{p.name}</span>
+      )}
       <span className={s.county}>{p.county} County</span>
       {p.code === current ? <span className={s.currentWord}>Chosen</span> : null}
     </Command.Item>

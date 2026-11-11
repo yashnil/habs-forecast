@@ -78,8 +78,9 @@ mode. Use it to check a mode's table at a glance.
 - **Don't use** for continuous time series (SeriesChart) or for more than about ten items.
 - **Props.** `items: AgendaItem[]` (`id`, `start`, `end?`, `title`, `detail?`, `tone?`, `tentative?`,
   `stamp?`), `now`, `label`. `agendaPhase(item, now)` is exported.
-- **States.** Past, under way (today inside the item), coming; tentative ("Subject to change."); regulation
-  tone on the title only.
+- **States.** Past, under way (today inside the item: an item with its own date and a solid dot, never the now
+  line's rule; the now line above it then prints only "Today"), coming; tentative ("Subject to change.");
+  regulation tone on the title only. Dates wrap inside their column when a year is printed.
 - **Accessibility.** An ordered list with an accessible name; each item is prefixed for screen readers with
   "Past.", "Under way." or "Coming."; the now line is a list item named "Today, Nov 10".
 
@@ -109,7 +110,9 @@ mode. Use it to check a mode's table at a glance.
 - **Use** under or beside every reading, in the margin and in readouts.
 - **Don't use** the sheet for long explanations; caveats are short lines.
 - **Props.** `Stamp`: `provenance: Provenance`, `now?`, `interactive` (false inside a sheet). `Provenance`:
-  `kind`, `title`, `value?`, `source`, `sourceLong?`, `sourceUrl?`, `date`, `dateRole?`, `retrieved?`,
+  `kind`, `title`, `value?`, `source`, `sourceLong?`, `sourceUrl?`, `date`, `dateRole?` (`measured | issued |
+  sampled | checked | assessed | valid | predicted | set`; `assessed` is an agency's own assessment date, as
+  CDFW's RAMP risk assessments: "assessed Nov 6"), `retrieved?`,
   `place?`, `resolution?`, `method?`, `caveats?`, `stale?`. `ProvenanceSheet`: `provenance`, `open`,
   `onOpenChange`, `trigger?`. `stampText()` gives the line as a string.
 - **States.** Measured, model, official (always "not verified", T38), old ("(old)" beside it, T17), plain.
@@ -159,7 +162,10 @@ mode. Use it to check a mode's table at a glance.
 - **Don't use** for anything without a place, or for a number already shown elsewhere on the screen.
 - **Props.** `x`, `y` (screen px from the chart host), `value` (already at honest precision), `unit?`,
   `label?`, `caption?` (kind, source, date), `kind`, `anchor` (`ne nw se sw e w n s`), `leader` (`{dx, dy}`
-  or null), `priority`, `dropped`, `halo`, `size` `lg | md`, `stale?`, `onActivate?`, `ariaLabel?`, `width?`.
+  or null), `priority`, `dropped`, `halo`, `size` `lg | md`, `stale?`, `onActivate?`, `ariaLabel?`, `width?`
+  (the most the type may take), `placement` `point | box`. `box` sets the type in normal flow at its own size
+  with no leader or point, for the chart's marks layer (`ChartMarks`), which measures the box, places it and
+  draws the leader and point itself.
 - **States.** Measured (solid dot), model (hollow dot), official (ring), old, interactive (button, focus
   ring), dropped (leaves with `register`). Phone sizes 36/28.
 - **Motion.** Appears with `register` (0.24 s, from 0.96).
@@ -221,10 +227,19 @@ mode. Use it to check a mode's table at a glance.
 ![SmallMultiples and Brush](catalog/multiples-day-1440.png)
 
 - **Purpose.** A station's record as strips on one time axis with one brush; the crosshair is shared.
-- **Props.** `SmallMultiples`: `strips: Strip[]`, `overview?`, `initial?`, `onWindow?` (for URL state and
-  export), `label?`, `stripHeight?`. `Brush`: `extent`, `value`, `onChange`, `points?`, `scale?`, `height?`,
+- **Props.** `SmallMultiples`: `strips: Strip[]`, `overview?`, `initial?`, `value?` (the window, controlled by
+  the page: URL state, presets, export), `onWindow?`, `label?`, `stripHeight?`. Points may carry `low` (a model
+  value from too few cells: an open circle, never joined, read as "from few model cells"). Short strips keep
+  every grid line and label only the ticks that fit (`labelledTicks`). `Brush`: `extent`, `value`, `onChange`, `points?`, `scale?`, `height?`,
   `minDays?`, `label`. `clampWindow()` is exported.
 - **States.** Default window (last two to three years), dragged, resized, at either end.
+- **Research keeps its own strips.** `src/nx/research/RecordStrips.tsx` draws a station's record as one SVG
+  stack, which the library's per-strip `SeriesChart`s cannot be without becoming a second component: the stack
+  exports as a single figure (the SVG export), strips with nothing in the window fold to their header line,
+  every strip carries its own reported-0 and rejected lanes, the model strip hatches the span before any
+  history was kept, and plot height is solved to fill the record panel. What generalises was promoted here
+  (the controlled window, tick thinning, the shared crosshair, the low-cell model mark); the rest is the
+  record's own layout and stays with Research.
 - **Accessibility.** The window and both edges are sliders (arrows a month, Shift a year, Home, End) with
   date value text; a caption states the window in words.
 
@@ -244,10 +259,14 @@ mode. Use it to check a mode's table at a glance.
   - `Segmented`: `label`, `options`, `value` (may be null: nothing assumed, E2), `onChange`.
   - `Toggle`: `label`, `checked`, `onChange`, `onWord`, `offWord`, `disabled?`.
   - `Waterfall`: `steps: WaterfallStep[]` (`gross | cost | net`, `amount` or null with `waiting` words),
-    `cells?` (inputs in the label column), `label`. `layoutWaterfall()` is the DOM-free layout (E3: the
-    domain follows the running minimum).
+    `cells?` (inputs in the label column), `label`, `domain?` (a money scale held from outside, so scenario
+    previews move against one axis; clamped), `testIdPrefix?`. `layoutWaterfall()` is the DOM-free layout
+    (E3: without `domain` the scale follows the running minimum). Figures settle (`SettlingMoney`); a blank
+    row says what it waits for across figure and bar.
   - `SensitivityTable`: `rows`, `cols`, `value(rf, cf)`, `selected`, `onSelect`, `corner`, `caption`
-    (state what is held fixed, E4).
+    (state what is held fixed, E4). Mouse and pen preview on hover and return on leaving; a touch counts only
+    its click (a tap shows a scenario, a second tap on it returns), so the enter, leave, click a touch sends
+    never shows and clears a scenario at once.
 - **States.** Empty with a reference, from a reference, error (words, dashed rule), disabled (dotted rule,
   reason); waiting ("waiting for price", never 0); costs over gross; scenario previewed from the grid.
 - **Motion.** Bars and connectors move with `settle` springs when a figure or scenario changes; the toggle
@@ -263,6 +282,7 @@ mode. Use it to check a mode's table at a glance.
 - **Purpose.** Primary (ink, one per view), secondary (ruled), text (underlined link).
 - **Props.** `variant`, `children`, `icon?`, `href?` (renders a link; `external`), `onClick?`, `disabled?`
   (stays focusable, `aria-disabled`), `busy?` and `busyLabel` (worded, an ink line draws under it), `full?`.
+  Every `aria-*` and `data-*` prop (test ids, tour anchors) passes through to the element.
 - **States.** Default, hover (primary lightens to ink 2; secondary inverts; text thickens), focus, pressed,
   busy, disabled (dashed rule, reason beside it).
 - **Accessibility.** Native button or link; busy sets `aria-busy`.
@@ -274,7 +294,8 @@ mode. Use it to check a mode's table at a glance.
 - **Purpose.** Find a port by typing (cmdk) or by reading down the coast, north to south, with recent
   ports first.
 - **Props.** `ports: PortEntry[]`, `regions` (north-to-south order), `recent?`, `onSelect`, `current?`,
-  `label?`, `autoFocus?`.
+  `label?`, `autoFocus?`, `nameLayoutId?(port)` (a Motion `layoutId` for the chosen port's name, so it travels
+  into the next view's title; return undefined for every other port).
 - **States.** Open, with recent, filtered, no match (words that say what to try), current port marked.
 - **Accessibility.** cmdk's combobox and listbox semantics; type, arrows, Enter; 48 px rows.
 

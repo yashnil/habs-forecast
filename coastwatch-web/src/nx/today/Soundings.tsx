@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChartMarks } from "@/nx/chart/Labels";
 import { onFrame } from "@/nx/chart/runtime";
 import { Sounding } from "@/nx/ds/chart/Sounding";
@@ -36,24 +36,13 @@ export function useChartSettled(sceneId: string): boolean {
   return settled;
 }
 
-/** The ds Sounding draws absolutely; the host measures boxes, so the box takes the type's own size. */
-function Box({ d, onOpen, phone, narrow }: { d: SoundingDatum; onOpen: () => void; phone: boolean; narrow: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ w: phone ? 200 : 236, h: phone ? 84 : 104 });
-  useLayoutEffect(() => {
-    const block = ref.current?.querySelector<HTMLElement>("[data-priority] > :last-child");
-    if (!block) return;
-    const measure = () => setSize((s) => (s.w === block.offsetWidth && s.h === block.offsetHeight ? s : { w: block.offsetWidth, h: block.offsetHeight }));
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(block);
-    return () => ro.disconnect();
-  }, []);
+function Figure({ d, onOpen, phone, narrow }: { d: SoundingDatum; onOpen: () => void; phone: boolean; narrow: boolean }) {
   return (
-    <div ref={ref} className="nx-today-sounding" style={{ position: "relative", width: size.w, height: size.h, whiteSpace: "normal" }} data-nx-sounding={d.id} data-tour={d.id === "test" ? "sounding" : undefined}>
+    <div className="nx-today-sounding" data-nx-sounding={d.id} data-tour={d.id === "test" ? "sounding" : undefined}>
       <Sounding
         x={0}
         y={0}
+        placement="box"
         value={d.value}
         unit={d.unit ?? undefined}
         label={phone ? undefined : d.label}
@@ -72,7 +61,6 @@ function Box({ d, onOpen, phone, narrow }: { d: SoundingDatum; onOpen: () => voi
         }
         kind="measured"
         anchor="se"
-        leader={null}
         size={phone ? "md" : "lg"}
         stale={d.stale}
         onActivate={onOpen}
@@ -105,7 +93,7 @@ export function TodaySoundings({ items, sceneId, onOpen }: { items: SoundingDatu
           : d.id === "buoy"
             ? ["bottom-right", "top-right", "right", "bottom-left", "left", "top-left"]
             : ["top-right", "top-left", "right", "left", "bottom-right", "bottom-left"],
-        content: <Box d={d} phone={phone} narrow={narrow} onOpen={() => onOpen(d.id)} />,
+        content: <Figure d={d} phone={phone} narrow={narrow} onOpen={() => onOpen(d.id)} />,
       }))}
     />
   );
