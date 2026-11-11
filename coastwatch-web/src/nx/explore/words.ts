@@ -27,9 +27,9 @@ export function legendCaption(p: ExploreProduct, f: ExploreFrame): string {
     case "chl":
       return `Measured · ${f.sensor} · ${f.label === "Latest" ? `latest view, ${f.stamp}` : f.stamp}. Algae, not toxin.`;
     case "sst":
-      return `${cap(KIND_LABEL[f.kind])} · ${f.sensor} · ${day(f.end)}. Lines every 1 °F, heavier every 2 °F.${f.kind === "analysis" ? " Blended from satellites and buoys, not a measurement at a point." : ""}`;
+      return `${cap(KIND_LABEL[f.kind])} · ${f.sensor} · ${day(f.end)}.${f.kind === "analysis" ? " Blended from satellites and buoys, not a measurement at a point." : ""}`;
     case "charm":
-      return `Model · ${p.source} · ${f.stamp}.${p.pastRun ? ` Past run: every day it covers is before today${p.runIssued ? ` (run of ${day(p.runIssued)})` : ""}.` : ""} Probability of conditions in the water, not toxin in seafood. Classes are display steps, not risk levels.`;
+      return `Model · ${p.source} · ${f.stamp}.${p.pastRun ? " Past run: every day it covers is before today." : ""} Probability of conditions in the water, not toxin in seafood. Classes are display steps, not risk levels.`;
     case "outlook":
       return `Outlook · ${p.source} · ${f.stamp}. Typical error about a factor of 2: read as higher or lower than usual, not as a value. Dotted: no signal, the usual for this time of year. Algae, not toxin.`;
   }

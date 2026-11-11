@@ -70,8 +70,11 @@ function compile(gl: WebGL2RenderingContext) {
 }
 
 const MAX = { full: 460, reduced: 220 } as const;
-/** About one streak for every two to three measured cells in view: the structure of the flow, not static. */
-const countFor = (visible: number, tier: FlowTier) => Math.min(MAX[tier], Math.max(40, Math.round(visible * 0.42)));
+/**
+ * About one streak for every two to three measured cells in view, and never more than one per ~26 x 26 screen
+ * pixels of measured water, so a zoomed-out view shows the structure of the flow, not a scrawl.
+ */
+const countFor = (visible: number, tier: FlowTier, cellPx: number) => Math.min(MAX[tier], Math.max(12, Math.round(Math.min(visible * 0.42, (visible * cellPx * cellPx) / 680))));
 /** A map frame measured over this (ms) means a device that should animate at 30 fps (FlowLayer v4's budget). */
 const FRAME_BUDGET_MS = 8;
 
@@ -117,7 +120,8 @@ export function createFlowLayer(layerId: string, tier: FlowTier, colours: ModeCo
     if (!map || !sim.field) return;
     const b = map.getBounds();
     sim.setView({ west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth() });
-    sim.setCount(countFor(sim.visible.length, fps < 60 ? "reduced" : tier));
+    const cellPx = (Math.abs(sim.field.g.lon_step) / 360) * worldPx();
+    sim.setCount(countFor(sim.visible.length, fps < 60 ? "reduced" : tier, cellPx));
   };
 
   const settle = () => {
@@ -318,11 +322,13 @@ export function createFlowLayer(layerId: string, tier: FlowTier, colours: ModeCo
         g.bufferSubData(g.ARRAY_BUFFER, 0, inst, 0, n * SEG);
         g.uniform1f(u.u_taper, 1);
         // a casing in the halo colour holds each streak's edge over any ground (it carries no value)
-        g.uniform1f(u.u_width, 4.2 * dpr);
+        // thinner when zoomed out, where a 2 km cell is only a few pixels
+        const zw = Math.min(1, Math.max(0.6, (map.getZoom() - 6.5) / 3));
+        g.uniform1f(u.u_width, 4.2 * dpr * zw);
         const [hr, hg, hb, ha] = cols.halo;
         g.uniform4f(u.u_color, hr, hg, hb, ha * 0.38);
         g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, n);
-        g.uniform1f(u.u_width, 2.4 * dpr);
+        g.uniform1f(u.u_width, 2.4 * dpr * zw);
         const [sr, sg, sb, sa] = cols.streak;
         g.uniform4f(u.u_color, sr, sg, sb, sa * 0.92);
         g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, n);

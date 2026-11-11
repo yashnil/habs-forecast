@@ -129,7 +129,13 @@ export function chartStyle(p: ChartPalette, origin: string, { hidden = false }: 
         type: "line",
         source: "land",
         layout: { "line-join": "round" },
-        paint: { "line-color": p.ink, "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.6, 9, 1, 12, 1.5] },
+        // the coast's outline also traces every slough and lagoon (Elkhorn Slough at Moss Landing): both banks of a
+        // narrow channel drawn heavy read as a black scrawl at harbour zoom, so the line thins and softens as it nears
+        paint: {
+          "line-color": p.ink,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.6, 9, 0.95, 11, 0.9, 13, 1.05],
+          "line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 1, 11, 0.78, 13, 0.7],
+        },
       },
     ],
   } as StyleSpecification;

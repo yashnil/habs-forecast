@@ -90,6 +90,9 @@ export function Explore({ model }: { model: ExploreModel }) {
   const product = model.products.find((p) => p.id === productId) ?? null;
   const frame = product?.frames.find((f) => f.id === frameId) ?? null;
   const current = model.currents?.frames.find((f) => f.id === hourId) ?? null;
+  // T25: no streaks on a forecast layer; over a model or outlook the currents wait, switched on
+  const overModel = product?.kind === "model" || product?.kind === "outlook";
+  const streaks = currentsOn && !overModel;
   const fieldRef = useRef<FieldController | null>(null);
   const flowRef = useRef<FlowController | null>(null);
   const [field, setField] = useState<CurrentField | null>(null);
@@ -190,7 +193,7 @@ export function Explore({ model }: { model: ExploreModel }) {
   const flowState = useMemo(() => ({ still: reduce, paused: false }), [reduce]);
   // the streak layer is added once while currents are on; a new hour swaps its field (a cut)
   useEffect(() => {
-    if (!map || !currentsOn || !tier || tier === "static") return;
+    if (!map || !streaks || !tier || tier === "static") return;
     flowRef.current ??= createFlowLayer("nx-flow", tier === "reduced" ? "reduced" : "full", modeColours(), flowState);
     const layer = flowRef.current;
     const remove = addChartLayer(map, layer, "flow");
@@ -202,12 +205,28 @@ export function Explore({ model }: { model: ExploreModel }) {
     };
     // flowState is applied by its own effect
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, currentsOn, tier]);
+  }, [map, streaks, tier]);
   useEffect(() => {
     const layer = flowRef.current;
-    if (!layer || !field || !current || !currentsOn) return;
+    if (!layer || !field || !current || !streaks) return;
     layer.setField(current.id, field, quality && quality.length === field.u.length ? quality : null);
-  }, [field, current, quality, currentsOn, map, tier]);
+  }, [field, current, quality, streaks, map, tier]);
+
+  // isotherms and isobaths are both lines: under the temperature the depth lines step back
+  useEffect(() => {
+    if (!map || product?.id !== "sst") return;
+    const dim: Array<[string, number]> = [
+      ["isobaths-minor", 0.14],
+      ["isobaths-index", 0.32],
+    ];
+    const was = dim.map(([id]) => (map.getLayer(id) ? map.getPaintProperty(id, "line-opacity") : undefined));
+    for (const [id, o] of dim) if (map.getLayer(id)) map.setPaintProperty(id, "line-opacity", o);
+    return () => {
+      dim.forEach(([id], i) => {
+        if (map.style && map.getLayer(id) && was[i] !== undefined) map.setPaintProperty(id, "line-opacity", was[i] as number);
+      });
+    };
+  }, [map, product?.id]);
   useEffect(() => {
     flowRef.current?.setState(flowState);
   }, [flowState]);
@@ -248,14 +267,14 @@ export function Explore({ model }: { model: ExploreModel }) {
         const t = await loadCodes(model.baseUrl, frame.typicalGrid);
         typical = readPoint(frame.typicalGrid, t.codes, at.lat, at.lon)?.value ?? null;
       }
-      const cur = field && currentsOn ? nearestCurrent(field.g as unknown as GridSpec, field.u, field.v, at.lat, at.lon) : null;
+      const cur = field && streaks ? nearestCurrent(field.g as unknown as GridSpec, field.u, field.v, at.lat, at.lon) : null;
       if (!live) return;
       setReading({ status: "ready", value: pt.value, typical, cellLat: pt.lat, cellLon: pt.lon, pixel, transect: transect(g, c.codes, at.lat, at.lon), current: cur, station: nearestStation(model.stations, at.lat, at.lon) });
     })().catch(() => live && setReading({ status: "error" }));
     return () => {
       live = false;
     };
-  }, [at, frame, model, field, currentsOn]);
+  }, [at, frame, model, field, streaks]);
 
   useEffect(() => {
     if (reading?.status === "ready") readoutRef.current?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
@@ -283,7 +302,7 @@ export function Explore({ model }: { model: ExploreModel }) {
 
   const hours = useMemo(() => (model.currents ? playHours(model.currents.frames) : []), [model.currents]);
   const dayFrames = useMemo(() => (product ? playFrames(product) : []), [product]);
-  const playsHours = currentsOn && hours.length > 1;
+  const playsHours = streaks && hours.length > 1;
   const canPlay = playsHours || dayFrames.length > 1;
   useEffect(() => {
     if (!playing) return;
@@ -299,8 +318,8 @@ export function Explore({ model }: { model: ExploreModel }) {
 
   // the e2e hook: what is drawn, read from the page
   useEffect(() => {
-    (window as Win).__nxExplore = { ...(window as Win).__nxExplore, product: productId, frame: frameId, hour: currentsOn ? hourId : null };
-  }, [productId, frameId, hourId, currentsOn]);
+    (window as Win).__nxExplore = { ...(window as Win).__nxExplore, product: productId, frame: frameId, hour: streaks ? hourId : null };
+  }, [productId, frameId, hourId, streaks]);
 
   const extent = model.extent;
   const scene = useMemo(
@@ -355,7 +374,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       };
       const cur = r.current;
       const curLine =
-        currentsOn && current
+        streaks && current
           ? cur
             ? `Nearest measured current ${cur.km < 1 ? "here" : `${sig(cur.km, 2)} km away`}: ${sig(cur.speed * KNOTS, 2)} kt toward the ${compassWord(cur.dirTo)} (HF radar, ${current.mean ? current.label : current.stamp}).`
             : `No measured current within 6 km in ${current.mean ? "the 24 h mean" : "this hour"}.`
@@ -435,7 +454,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       {pt ? <ReadingOnChart lat={pt.lat} lon={pt.lon} lon0={tStart} lon1={tEnd} hoverLon={hover?.lon ?? null} /> : null}
       {phone ? <Locator /> : null}
       <h1 className={s.srOnly}>Explore: {LAYER_LABEL[product.id]}</h1>
-      <ExploreLegend product={product} frame={frame} currents={currentsOn ? current : null} />
+      <ExploreLegend product={product} frame={frame} currents={streaks ? current : null} />
       {tier === "static" ? (
         <Unavailable what="The layers can't be drawn on this device" why="The chart is showing as a still picture (no WebGL, data saver, offline or a saved copy)." next="Station records are in Research, as tables and series." />
       ) : null}
@@ -449,7 +468,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         {model.currents ? (
           <button type="button" role="switch" aria-checked={currentsOn} className={s.switchItem} data-on={currentsOn ? "1" : "0"} onClick={() => setCurrentsOn((v) => !v)} data-testid="nx-currents-toggle">
             <span>Currents</span>
-            <small>{currentsOn ? "on, measured" : "off"}</small>
+            <small>{!currentsOn ? "off" : overModel ? "not over a model" : "on, measured"}</small>
           </button>
         ) : null}
       </div>
@@ -458,7 +477,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         product={product}
         frameId={frame.id}
         onFrame={chooseFrame}
-        currentsOn={currentsOn}
+        currentsOn={streaks}
         currentId={hourId}
         onCurrent={chooseHour}
         playing={playing}
