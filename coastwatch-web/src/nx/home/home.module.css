@@ -12,9 +12,6 @@
   gap: var(--s-16);
   margin-top: var(--s-32);
 }
-.primary {
-  display: inline-flex;
-}
 
 .paths {
   display: flex;

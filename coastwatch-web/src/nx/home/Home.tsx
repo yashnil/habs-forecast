@@ -33,11 +33,9 @@ export function Home({ finder, onPick }: { finder: FinderData; onPick: (p: Picke
         <>
           <Statement size="md" as="h1" scope="Free, for California commercial fishermen and coastal researchers" title="Season status, crab tests, whale measures and the next decision date for your port." />
           <div className={s.actions}>
-            <span className={s.primary} data-testid="nx-find-port">
-              <Button variant="primary" onClick={() => setStep("find")} aria-label="Find your port">
-                Find your port
-              </Button>
-            </span>
+            <Button variant="primary" onClick={() => setStep("find")} data-testid="nx-find-port">
+              Find your port
+            </Button>
             <SkipOpening />
           </div>
           <nav className={s.paths} aria-label="Other ways in">

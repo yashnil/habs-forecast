@@ -20,9 +20,12 @@ export interface Provenance {
   /** Longer source for the sheet: "NDBC 46236 Monterey Canyon Outer, a wave buoy without wind". */
   sourceLong?: string;
   sourceUrl?: string;
-  /** When it was measured, issued, sampled, checked or valid (ISO; a time is shown when present). */
+  /**
+   * When it was measured, issued, sampled, checked, assessed or valid (ISO; a time is shown when present).
+   * `assessed` is an agency's own assessment date (CDFW's RAMP risk assessments): "assessed Nov 6".
+   */
   date: string;
-  dateRole?: "measured" | "issued" | "sampled" | "checked" | "valid" | "predicted" | "set";
+  dateRole?: "measured" | "issued" | "sampled" | "checked" | "assessed" | "valid" | "predicted" | "set";
   /** When Neritic read it. */
   retrieved?: string;
   place?: string;

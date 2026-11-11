@@ -24,6 +24,8 @@ vi.mock("@/nx/ds/worksheet/worksheet.module.css", () => css);
 import {
   Agenda,
   BigDate,
+  Button,
+  Waterfall,
   Legend,
   Mark,
   RampLegend,
@@ -78,6 +80,14 @@ describe("format: absolute dates in Pacific time, honest figures", () => {
 });
 
 describe("kinds, modes and stamps", () => {
+  it("a RAMP assessment date reads as assessed", () => {
+    expect(stampText({ kind: "official", title: "Whale measures", source: "CDFW RAMP", date: "2026-11-06", dateRole: "assessed" }, NOW)).toBe("Official · CDFW RAMP · assessed Nov 6 · not verified");
+  });
+  it("buttons pass data- and aria- attributes through", () => {
+    const html = renderToStaticMarkup(h(Button, { variant: "primary", "data-testid": "go-find", "aria-describedby": "x", children: "Find your port" }));
+    expect(html).toContain('data-testid="go-find"');
+    expect(html).toContain('aria-describedby="x"');
+  });
   it("only measured readings are solid; official keeps its own ring", () => {
     expect(markFor("measured")).toBe("measured");
     expect(markFor("analysis")).toBe("model");
@@ -158,6 +168,18 @@ describe("waterfall layout (E3) and brush", () => {
     ]);
     expect(l.bars.every((b) => b.waiting)).toBe(true);
   });
+  it("a waterfall on a scale held from outside keeps that scale, and a blank figure waits in words", () => {
+    const steps = [
+      { id: "gross", label: "Landed", kind: "gross" as const, amount: 1000 },
+      { id: "fuel", label: "Fuel", kind: "cost" as const, amount: 250 },
+      { id: "net", label: "Net", kind: "net" as const, amount: null, waiting: "waiting for crew share" },
+    ];
+    const html = renderToStaticMarkup(h(Waterfall, { steps, label: "Trip", domain: [0, 2000], testIdPrefix: "ledger" }));
+    expect(html).toContain('data-testid="ledger-gross"');
+    expect(html).toContain("width:50%");
+    expect(html).toContain('colSpan="2"');
+    expect(html).toContain("waiting for crew share");
+  });
   it("the brush window stays inside the record and never narrower than its minimum", () => {
     expect(clampWindow([-50, 50], [0, 1000], 10)).toEqual([0, 100]);
     expect(clampWindow([990, 1100], [0, 1000], 10)).toEqual([890, 1000]);
@@ -187,6 +209,25 @@ describe("agenda, legend and type render accessibly", () => {
     expect(html).toContain("Past. ");
     expect(html).toContain("Coming. ");
     expect(html).toContain("Subject to change.");
+  });
+  it("an item under way today is an item, and the now line above it does not repeat its date", () => {
+    const html = renderToStaticMarkup(
+      h(Agenda, {
+        label: "Dates",
+        now: NOW,
+        items: [
+          { id: "b", start: "2026-10-30", title: "Delayed" },
+          { id: "w", start: "2026-11-10", title: "Wind forecast" },
+        ],
+      }),
+    );
+    const item = html.slice(html.indexOf('data-phase="now"') - 40, html.indexOf("Wind forecast"));
+    expect(item).toContain("underway");
+    expect(item).not.toMatch(/class="now"/);
+    // the now line keeps its spoken date but prints only "Today"
+    const line = html.slice(html.indexOf("Today, Nov 10"), html.indexOf('data-phase="now"'));
+    expect(line).not.toContain("nowWhat");
+    expect(html.match(/>Nov 10</g)?.length).toBe(1);
   });
   it("official marks carry their words; the no-view mark is named", () => {
     expect(renderToStaticMarkup(h(Mark, { kind: "official" }))).toContain("not verified");

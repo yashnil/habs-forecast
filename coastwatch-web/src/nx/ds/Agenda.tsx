@@ -46,11 +46,13 @@ export function Agenda({ items, now, label, className }: AgendaProps) {
   const firstFuture = sorted.findIndex((it) => agendaPhase(it, now) !== "past");
   const nowAt = firstFuture === -1 ? sorted.length : firstFuture;
   const rows: ReactNode[] = [];
+  // an item under way today already prints its own date right under the now line: the line then says only "Today"
+  const dated = !(nowAt < sorted.length && agendaPhase(sorted[nowAt], now) === "now");
   sorted.forEach((it, i) => {
-    if (i === nowAt) rows.push(<NowLine key="now" now={now} />);
+    if (i === nowAt) rows.push(<NowLine key="now" now={now} dated={dated} />);
     const phase = agendaPhase(it, now);
     rows.push(
-      <li key={it.id} className={cx(s.item, s[phase])} data-phase={phase}>
+      <li key={it.id} className={cx(s.item, PHASE_CLASS[phase])} data-phase={phase}>
         <span className={s.when}>
           <time dateTime={toDate(it.start).toISOString()}>{range(it.start, it.end, { ref: now })}</time>
         </span>
@@ -71,7 +73,7 @@ export function Agenda({ items, now, label, className }: AgendaProps) {
       </li>,
     );
   });
-  if (nowAt === sorted.length) rows.push(<NowLine key="now" now={now} />);
+  if (nowAt === sorted.length) rows.push(<NowLine key="now" now={now} dated />);
   return (
     <ol className={cx(s.agenda, className)} aria-label={label}>
       {rows}
@@ -79,12 +81,15 @@ export function Agenda({ items, now, label, className }: AgendaProps) {
   );
 }
 
-function NowLine({ now }: { now: string }) {
+/** The phases' own classes: an item under way is an item (solid dot, its own date), never the now line. */
+const PHASE_CLASS: Record<AgendaPhase, string> = { past: s.past, now: s.underway, future: s.future };
+
+function NowLine({ now, dated }: { now: string; dated: boolean }) {
   return (
     <li className={s.now} aria-label={`Today, ${day(now)}`}>
       <span className={s.nowWhen}>Today</span>
       <span className={s.nowRail} aria-hidden />
-      <span className={s.nowWhat}>{day(now)}</span>
+      {dated ? <span className={s.nowWhat}>{day(now)}</span> : null}
     </li>
   );
 }

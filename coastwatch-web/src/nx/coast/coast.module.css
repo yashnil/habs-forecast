@@ -402,93 +402,6 @@
   transform: translateY(-50%);
 }
 
-/* the ledger: label, figure, bar */
-.ledger {
-  width: 100%;
-  border-collapse: collapse;
-  border-top: var(--rule) solid var(--ink);
-  font-variant-numeric: tabular-nums;
-  --rh: 44px;
-  --bh: 20px;
-}
-.lrow {
-  height: var(--rh);
-}
-.lrow th,
-.lrow td {
-  padding: 0;
-  border-bottom: var(--hair) solid var(--rule-soft);
-  vertical-align: middle;
-}
-.llab {
-  width: 30%;
-  text-align: left;
-  font-weight: 500;
-  padding-right: var(--s-8);
-  line-height: 1.2;
-}
-.lamt {
-  width: 76px;
-  text-align: right;
-  white-space: nowrap;
-  padding-right: var(--s-12);
-}
-.lwait {
-  color: var(--ink-2);
-  font-size: var(--t-14);
-  line-height: 1.3;
-}
-.lbar {
-  position: relative;
-}
-.ltrack {
-  position: absolute;
-  inset: 0 0 0 var(--s-4);
-}
-.lbarFill {
-  position: absolute;
-  top: calc((var(--rh) - var(--bh)) / 2);
-  height: var(--bh);
-  overflow: hidden;
-}
-.lsolid {
-  background: var(--ink);
-}
-.lcost {
-  background: var(--paper);
-  box-shadow: none;
-  outline: var(--hair) solid var(--ink);
-  outline-offset: -1px;
-}
-.lhatch {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.lhatch path {
-  stroke: var(--ink);
-  stroke-width: 1.25;
-  fill: none;
-}
-.ljoin {
-  position: absolute;
-  top: calc(-1 * (var(--rh) - var(--bh)) / 2);
-  height: calc(var(--rh) - var(--bh));
-  border-left: var(--hair) solid var(--ink);
-}
-.lzero {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  border-left: var(--hair) solid var(--ink-2);
-}
-.lsum th,
-.lsum td {
-  font-weight: 700;
-  border-top: var(--rule) solid var(--ink);
-  border-bottom: 4px double var(--ink);
-}
-
 .outs {
   margin: var(--s-12) 0 0;
   display: grid;
@@ -595,17 +508,10 @@
   .section {
     margin-top: var(--s-16);
   }
-  .ledger {
-    --rh: 48px;
-  }
 }
 @media (max-width: 360px) {
   .title {
     font-size: var(--t-22);
-  }
-  .lamt {
-    width: 68px;
-    padding-right: var(--s-8);
   }
   .stripHead,
   .dayRow {

@@ -150,19 +150,6 @@
   --when: 76px;
   --railw: 20px;
 }
-/* ds Agenda gives an under-way item the now line's class (reported); here it reads as an item */
-.agendaWrap .agenda > li[data-phase="now"] {
-  align-items: start;
-  min-height: 0;
-  padding: var(--s-8) 0 var(--s-12);
-}
-.agendaWrap .agenda > li[data-phase="now"]::after {
-  content: none;
-}
-/* a date with its year wraps inside the date column */
-.agendaWrap .agenda > li > span:first-child {
-  white-space: normal;
-}
 
 /* ---- rows */
 .rows {

@@ -230,7 +230,7 @@ function decisionOf(model: TodayModel, row: StatusRow | undefined, fishery: Fish
           sourceLong: "CDFW Risk Assessment Mitigation Program (whale entanglement)",
           sourceUrl: w.source_url ?? undefined,
           date: checked,
-          dateRole: "checked",
+          dateRole: ramp?.checked_at ? "checked" : "assessed",
           place: `Zone ${w.zone}: ${w.label}`,
           caveats: ["RAMP is about whale entanglement, not domoic acid.", ...(tentative ? ["CDFW says these dates are subject to change."] : [])],
         }
@@ -402,7 +402,7 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
       label: "Whale",
       state: "ok",
       value: `Zone ${w.zone}, ${short}`,
-      detail: [{ text: `${parts.map(cap1).join(". ")}.` }, { text: `Zone ${w.zone}: ${w.label}. RAMP is about whale entanglement, not domoic acid.`, provenance: provenanceOf(w.fact, `Whale measures, RAMP zone ${w.zone}`) }],
+      detail: [{ text: `${parts.map(cap1).join(". ")}.` }, { text: `Zone ${w.zone}: ${w.label}. RAMP is about whale entanglement, not domoic acid.`, provenance: provenanceOf(w.fact, `Whale measures, RAMP zone ${w.zone}`, { dateRole: "assessed" }) }],
     });
   }
   const moreTests = model.tests.filter((t) => t !== test && t.latest);
