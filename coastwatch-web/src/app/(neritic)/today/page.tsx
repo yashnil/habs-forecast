@@ -1,8 +1,19 @@
-import { TodayMargin } from "@/nx/shell/views";
+import { isPortKey } from "@/lib/portRecord";
+import { loadToday } from "@/pilot/today/load";
+import { TodayPage } from "@/nx/today/TodayPage";
 
 export const metadata = { title: "Today at your port" };
 
-/** Today: what changed at my port, what needs attention, the next date. Placeholder margin until the Today feature lands. */
-export default function TodayPage() {
-  return <TodayMargin />;
+type SP = Promise<Record<string, string | string[] | undefined>>;
+
+/**
+ * Today: the season status, the next date and what changed at a port. With `?place=` the port's published
+ * records arrive with the page; without it the saved port is read on the device and its records fetched.
+ */
+export default async function Today({ searchParams }: { searchParams: SP }) {
+  const raw = (await searchParams).place;
+  const place = typeof raw === "string" && isPortKey(raw) ? raw : null;
+  const l = place ? await loadToday(place).catch(() => null) : null;
+  const initial = place && l?.ok && l.inputs ? { key: place, inputs: l.inputs, fixture: l.fixture } : null;
+  return <TodayPage initial={initial} />;
 }

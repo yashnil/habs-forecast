@@ -1,0 +1,686 @@
+/* Research (docs/coastwatch/v12/design-system/README.md; journeys.md Journey 3). Tokens only. On a phone, and on
+   any screen too narrow or short for the record beside the chart, everything reads in the margin; on a wide screen
+   the record is a ruled panel set on the sheet, inside the neatline, with the chart free to its left. */
+
+.page {
+  color: var(--ink);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: var(--t-36);
+  line-height: 1.1;
+  letter-spacing: -0.012em;
+  font-variation-settings: "opsz" 48;
+  text-wrap: balance;
+}
+.lead {
+  margin: var(--s-12) 0 0;
+  font-size: var(--t-18);
+  line-height: 1.45;
+  color: var(--ink-2);
+  max-width: 34em;
+}
+.arrived {
+  margin: var(--s-12) 0 0;
+  font-size: var(--t-16);
+  line-height: 1.45;
+}
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-left: var(--s-8);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
+}
+.stamp {
+  margin-top: var(--s-12);
+}
+.quiet {
+  color: var(--ink-2);
+}
+.small {
+  margin: var(--s-8) 0 0;
+  font-size: var(--t-14);
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ the record panel */
+.panel {
+  margin-top: var(--s-24);
+  padding-top: var(--s-12);
+  border-top: var(--rule) solid var(--ink);
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.panelHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-8) var(--s-16);
+  padding-bottom: var(--s-8);
+}
+.windowLine {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.windowDates {
+  font-family: var(--font-serif);
+  font-size: var(--t-22);
+  font-weight: 500;
+}
+.presets {
+  flex: none;
+}
+.stripsBox {
+  position: relative;
+  min-width: 0;
+}
+.brushRow {
+  position: relative;
+  border-top: var(--hair) solid var(--rule-soft);
+  padding-top: var(--s-4);
+  touch-action: none;
+}
+.brushLabel {
+  position: absolute;
+  left: 0;
+  top: var(--s-24);
+  font-weight: 600;
+  pointer-events: none;
+}
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4) var(--s-16);
+  margin-top: var(--s-8);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-16);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+.glyph {
+  flex: none;
+  overflow: visible;
+}
+.attrib {
+  display: none;
+  margin: 0;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+
+/* read in the margin (a phone, a short or narrow screen): the window's brush sits above the strips, so dragging it
+   with a thumb shows every strip below it change */
+@media not ((min-width: 1180px) and (min-height: 620px)) {
+  .panelHead {
+    order: 0;
+  }
+  .brushRow {
+    order: 1;
+    border-top: 0;
+    padding-top: 0;
+    margin-bottom: var(--s-16);
+  }
+  .stripsBox {
+    order: 2;
+  }
+  .foot {
+    order: 3;
+  }
+}
+
+@media (min-width: 1180px) and (min-height: 620px) {
+  .panel {
+    position: fixed;
+    z-index: 2;
+    top: calc(var(--bar-h) + var(--neat-label) + var(--neat-band) + 6px);
+    right: calc(var(--neat-band) + var(--s-16));
+    bottom: calc(var(--neat-band) + var(--s-16));
+    width: min(900px, calc(100vw - var(--margin-w) - 420px));
+    margin: 0;
+    padding: var(--s-16) var(--s-24) var(--s-12) var(--s-24);
+    border-top: 0;
+    border-left: var(--rule) solid var(--ink);
+  }
+  .stripsBox {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    padding-top: var(--s-8);
+  }
+  .attrib {
+    display: block;
+  }
+}
+
+/* ------------------------------------------------------------------ the strips */
+.strips {
+  position: relative;
+}
+.stripHead {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 26px;
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-8);
+  z-index: 1;
+  pointer-events: none;
+}
+.stripHead > * {
+  pointer-events: auto;
+}
+.stripName {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-8);
+  min-height: 26px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: left;
+}
+button.stripName {
+  cursor: pointer;
+  text-decoration: none;
+}
+button.stripName:hover,
+button.stripName[aria-pressed="true"] {
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 4px;
+}
+.stripName i {
+  font-style: italic;
+}
+.stripUnit {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.stripReading {
+  flex: none;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.modelMark {
+  overflow: visible;
+}
+.modelMark path {
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+.modelMark rect {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.plotArea {
+  position: relative;
+  width: 100%;
+  touch-action: pan-y;
+  cursor: crosshair;
+  outline-offset: var(--s-4);
+}
+.svg {
+  display: block;
+  overflow: visible;
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+.grid {
+  stroke: var(--rule-soft);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.baseline {
+  stroke: var(--ink);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.yTick,
+.xTick,
+.thresholdLabel,
+.hatchText,
+.empty {
+  font-family: var(--font-sans);
+  font-size: var(--t-14);
+  font-variant-numeric: tabular-nums;
+  fill: var(--ink-2);
+}
+.yTick {
+  text-anchor: end;
+}
+.xTick {
+  text-anchor: middle;
+}
+.thresholdLabel {
+  text-anchor: end;
+  fill: var(--ink);
+  paint-order: stroke fill;
+  stroke: var(--paper);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.hatchText {
+  paint-order: stroke fill;
+  stroke: var(--paper);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+.empty {
+  text-anchor: middle;
+  font-size: var(--t-16);
+}
+.threshold {
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-dasharray: 6 4;
+}
+.now {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.hatch {
+  stroke: var(--hatch);
+  stroke-width: 1;
+  fill: none;
+}
+.line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+}
+.lineModel {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.25;
+  stroke-dasharray: 5 3;
+}
+.pt {
+  fill: var(--ink);
+}
+.ptHollow {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.ptZero {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.25;
+}
+.ring {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.25;
+}
+.cross {
+  stroke: var(--ink);
+  stroke-width: 1.25;
+  fill: none;
+  shape-rendering: crispEdges;
+}
+.flag rect {
+  fill: var(--ink);
+}
+.flag text {
+  fill: var(--paper);
+  font-family: var(--font-sans);
+  font-size: var(--t-14);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-anchor: middle;
+}
+.crossMark {
+  fill: var(--ink);
+  stroke: var(--paper);
+  stroke-width: 2;
+}
+.crossHollow {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+/* ------------------------------------------------------------------ the margin under the record */
+.primary {
+  margin-top: var(--s-24);
+}
+.rows {
+  margin-top: var(--s-24);
+}
+.detailText > * + * {
+  margin-top: var(--s-8);
+}
+.detailText p {
+  margin: 0;
+}
+/* a table or list uses the margin's whole width, not the row's indented detail column */
+.bleed {
+  margin-left: calc(-72px - var(--s-8));
+}
+.facts {
+  margin: 0;
+  display: grid;
+  gap: var(--s-4);
+}
+.facts > div {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: var(--s-8);
+}
+.facts dt {
+  color: var(--ink-2);
+}
+.facts dd {
+  margin: 0;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+.url {
+  overflow-wrap: anywhere;
+  font-size: var(--t-14);
+}
+.url a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.caveats {
+  margin: var(--s-8) 0 0;
+  padding: 0 0 0 var(--s-16);
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.caveats li + li {
+  margin-top: var(--s-4);
+}
+.checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.checks li {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: var(--s-8);
+  padding: var(--s-4) 0;
+}
+.checks li + li {
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.checkWord {
+  font-weight: 600;
+}
+[data-passed="0"] .checkWord {
+  color: var(--closure);
+}
+.stationList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.stationList li + li {
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.stationList button {
+  display: flex;
+  width: 100%;
+  min-height: var(--target);
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-12);
+  padding: var(--s-12) 0;
+  text-align: left;
+}
+.stationList button:hover .stationListName {
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
+}
+.stationList button[aria-current="true"] .stationListName {
+  font-weight: 700;
+}
+.stationList button[aria-current="true"]::before {
+  content: "";
+  flex: none;
+  align-self: center;
+  width: 8px;
+  height: 8px;
+  margin-right: calc(-1 * var(--s-4));
+  background: var(--ink);
+}
+.stationListName {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.stationList .quiet {
+  font-size: var(--t-14);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.links {
+  display: flex;
+  flex-direction: column;
+  margin: var(--s-8) 0 0;
+}
+.links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
+}
+.exportButtons {
+  display: grid;
+  gap: var(--s-8);
+}
+.cite {
+  margin: var(--s-16) 0 0;
+}
+.cite figcaption {
+  font-weight: 600;
+}
+.cite blockquote {
+  margin: var(--s-4) 0 var(--s-8);
+  padding-left: var(--s-12);
+  border-left: var(--rule) solid var(--ink);
+  font-size: var(--t-14);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.imprint {
+  margin: var(--s-24) 0 0;
+  padding-top: var(--s-12);
+  border-top: var(--hair) solid var(--rule-soft);
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+
+/* the dated log */
+.logWrap {
+  max-height: 420px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.log {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.log thead th {
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  border-bottom: var(--rule) solid var(--ink);
+  text-align: left;
+  font-weight: 600;
+  padding: 0;
+}
+.log thead th button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+  min-height: 44px;
+  font-weight: 600;
+}
+.log thead th button:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.log .num {
+  text-align: right;
+}
+.log thead .num button {
+  justify-content: flex-end;
+}
+.log tbody th,
+.log tbody td {
+  padding: 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+  font-weight: 400;
+  text-align: left;
+}
+.log tbody td.num {
+  text-align: right;
+}
+.log tbody th button {
+  min-height: 40px;
+  width: 100%;
+  text-align: left;
+}
+.log tbody th button:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.log tr[data-on="1"] th,
+.log tr[data-on="1"] td {
+  font-weight: 700;
+}
+.log tr[data-on="1"] th button::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: var(--s-8);
+  background: var(--ink);
+}
+.log tr[data-cls="zero"] td,
+.log tr[data-cls="rejected"] td {
+  color: var(--ink-2);
+}
+.logFoot {
+  margin: var(--s-8) 0 0;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+
+/* ------------------------------------------------------------------ stations on the chart */
+.stationSym {
+  overflow: visible;
+}
+.stationDot {
+  fill: var(--ink);
+  stroke: var(--halo);
+  stroke-width: 2;
+}
+.stationRing {
+  fill: var(--halo);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.stationRadius {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-dasharray: 5 4;
+}
+.stationName {
+  position: relative;
+  display: block;
+  font-family: var(--font-sans);
+  font-size: var(--t-14);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ink);
+  cursor: pointer;
+  text-shadow: 0 0 1px var(--halo), 1.5px 0 0 var(--halo), -1.5px 0 0 var(--halo), 0 1.5px 0 var(--halo), 0 -1.5px 0 var(--halo), 1px 1px 0 var(--halo), -1px -1px 0 var(--halo), 1px -1px 0 var(--halo), -1px 1px 0 var(--halo), 0 0 3px var(--halo);
+}
+.stationName::after {
+  /* a 48 px touch target that does not move the lettering */
+  content: "";
+  position: absolute;
+  inset: -14px -6px;
+}
+.stationName:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.stationName[data-on] {
+  font-size: var(--t-18);
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .title {
+    font-size: var(--t-28);
+  }
+  .lead {
+    font-size: var(--t-16);
+    margin-top: var(--s-8);
+  }
+  .bleed {
+    margin-left: calc(-64px - var(--s-8));
+  }
+  .windowDates {
+    font-size: var(--t-18);
+  }
+}
+@media (max-width: 360px) {
+  .title {
+    font-size: var(--t-22);
+  }
+}

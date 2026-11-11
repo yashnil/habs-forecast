@@ -1,0 +1,150 @@
+/* The native-grid dialog. Its parts come from v11 (src/v4/research, styled with the v4 theme's --nx-* tokens);
+   inside this scope those tokens resolve to the chart mode's own (src/nx/ds/tokens.css), so the instrument reads
+   as ink on paper in Day, Dusk and Night. Tokens only. */
+
+.dialog.dialog {
+  width: min(1180px, calc(100vw - var(--s-32)));
+  max-height: calc(100dvh - var(--s-32));
+}
+
+.scope {
+  --nx-bg: var(--paper);
+  --nx-page: var(--paper);
+  --nx-surface: var(--paper);
+  --nx-surface-2: var(--paper);
+  --nx-surface-3: var(--paper);
+  --nx-deck: var(--paper);
+  --nx-ink: var(--ink);
+  --nx-ink-2: var(--ink-2);
+  --nx-ink-3: var(--ink-2);
+  --nx-line: var(--rule-soft);
+  --nx-line-strong: var(--ink);
+  --nx-accent: var(--ink);
+  --nx-accent-bg: var(--paper);
+  --nx-on-accent: var(--paper);
+  --nx-link: var(--ink);
+  --nx-model: var(--ink);
+  --nx-model-bg: var(--paper);
+  --nx-model-line: var(--ink);
+  --nx-measured: var(--ink);
+  --nx-measured-bg: var(--paper);
+  --nx-measured-line: var(--ink);
+  --nx-official: var(--reg-text);
+  --nx-official-bg: var(--paper);
+  --nx-official-line: var(--reg);
+  --nx-conditions: var(--ink);
+  --nx-conditions-bg: var(--paper);
+  --nx-ok: var(--ink);
+  --nx-partial: var(--ink-2);
+  --nx-stale: var(--ink-2);
+  --nx-offline: var(--ink-2);
+  --nx-down: var(--closure);
+  --nx-gap: var(--hatch);
+  --nx-shadow: none;
+  --nx-font-ui: var(--font-sans);
+  --nx-font-display: var(--font-serif);
+  --nx-font-data: var(--font-sans);
+  --nx-font-caps: var(--font-sans);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+.heading {
+  margin: 0 0 var(--s-12);
+  font-family: var(--font-serif);
+  font-size: var(--t-22);
+  font-weight: 500;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-12) var(--s-24);
+  margin-bottom: var(--s-12);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  min-width: 0;
+}
+.fieldLabel {
+  font-size: var(--t-14);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-8);
+  min-height: var(--target);
+  font-weight: 600;
+}
+.check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ink);
+}
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--s-24);
+}
+.mapCol,
+.readCol {
+  min-width: 0;
+}
+.map {
+  position: relative;
+  height: 420px;
+  overflow: hidden;
+  border: var(--rule) solid var(--ink);
+}
+.areaOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  cursor: crosshair;
+  touch-action: none;
+}
+.areaOverlay p {
+  position: absolute;
+  left: 50%;
+  top: var(--s-12);
+  transform: translateX(-50%);
+  margin: 0;
+  padding: var(--s-4) var(--s-12);
+  background: var(--paper);
+  border: var(--hair) solid var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.small {
+  margin: var(--s-4) 0 0;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.stack > * + * {
+  margin-top: var(--s-12);
+}
+.lineage {
+  margin-top: var(--s-16);
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.lineage summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--target);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 860px) {
+  .body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .map {
+    height: 300px;
+  }
+}

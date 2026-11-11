@@ -1,0 +1,51 @@
+"use client";
+
+import { motion } from "motion/react";
+import type { FisheryId } from "@/pilot/contracts";
+import { FISHERY_OPTIONS } from "@/pilot/facts";
+import { pan, press } from "@/nx/ds/motion";
+import { Loading } from "@/nx/ds/States";
+import { suggestFisheries, type TodayInputs } from "./model";
+import s from "./today.module.css";
+
+const PORT_NAME_LAYOUT = "nx-port-name";
+
+/**
+ * Which fishery Today leads with (journeys.md Journey 1). Nothing is chosen for the reader. The fisheries
+ * Neritic has a test site or a place-specific record for at this port come first, labelled as a suggestion
+ * (port-level landings are not published openly; src/content/landings.ts holds port areas only). One tap
+ * chooses and Today assembles in place.
+ */
+export function FisheryChooser({ port, inputs, onChoose }: { port: { key: string; name: string }; inputs: TodayInputs | null | undefined; onChoose: (f: FisheryId) => void }) {
+  const suggested = inputs ? suggestFisheries(inputs) : [];
+  const rest = FISHERY_OPTIONS.filter((f) => !suggested.includes(f.id));
+  const option = (id: FisheryId, label: string) => (
+    <li key={id}>
+      <motion.button type="button" className={s.option} onClick={() => onChoose(id)} data-fishery={id} {...press}>
+        {label}
+      </motion.button>
+    </li>
+  );
+  return (
+    <div className={s.chooser} data-testid="nx-fishery-chooser">
+      <motion.h1 id="nx-today-title" layoutId={PORT_NAME_LAYOUT} className={s.chooserTitle} transition={pan}>
+        {port.name}
+      </motion.h1>
+      <p className={s.chooserLead}>What do you fish from here? Today leads with it.</p>
+      {inputs === undefined ? (
+        <Loading className={s.block}>Reading what Neritic has for {port.name}</Loading>
+      ) : suggested.length ? (
+        <>
+          <h2 className={s.groupHead}>Suggested: Neritic has records for these here</h2>
+          <ul className={s.options}>{suggested.map((id) => option(id, FISHERY_OPTIONS.find((f) => f.id === id)!.label))}</ul>
+        </>
+      ) : null}
+      {inputs !== undefined ? (
+        <>
+          <h2 className={s.groupHead}>{suggested.length ? "Other fisheries" : "Fisheries"}</h2>
+          <ul className={s.options}>{rest.map((f) => option(f.id, f.label))}</ul>
+        </>
+      ) : null}
+    </div>
+  );
+}
