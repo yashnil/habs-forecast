@@ -65,7 +65,7 @@ function Figure({ d, onOpen, phone, narrow }: { d: SoundingDatum; onOpen: () => 
         stale={d.stale}
         onActivate={onOpen}
         ariaLabel={d.spoken}
-        width={narrow ? 150 : phone ? 176 : 256}
+        width={narrow ? 128 : phone ? 136 : 256}
       />
     </div>
   );
@@ -85,11 +85,12 @@ export function TodaySoundings({ items, sceneId, onOpen }: { items: SoundingDatu
         lat: d.lat,
         priority: d.id === "test" ? 90 : 85,
         leader: true,
-        offset: phone ? 30 : 26,
+        offset: phone ? 22 : 26,
+        // on a phone the water lies west of the points (camera.ts phoneBounds): the type goes there first
         anchors: phone
           ? d.id === "test"
-            ? ["top-right", "bottom-right", "top", "right", "top-left", "left"]
-            : ["bottom-right", "bottom", "bottom-left", "right", "left", "top-right"]
+            ? ["top-left", "bottom-left", "left", "top", "bottom", "top-right", "right"]
+            : ["bottom-left", "bottom", "left", "bottom-right", "right", "top-left"]
           : d.id === "buoy"
             ? ["bottom-right", "top-right", "right", "bottom-left", "left", "top-left"]
             : ["top-right", "top-left", "right", "left", "bottom-right", "bottom-left"],

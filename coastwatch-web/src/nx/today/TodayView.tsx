@@ -8,7 +8,7 @@ import { readSeen, storageWorks, writeSeen } from "@/pilot/today/prefs";
 import { readSaved } from "@/pilot/today/prefs";
 import { saveTodayOffline } from "@/pilot/today/offline";
 import { ChartScene } from "@/nx/chart/scene";
-import { Agenda, type AgendaItem } from "@/nx/ds/Agenda";
+import { Agenda, agendaPhase, type AgendaItem } from "@/nx/ds/Agenda";
 import { BigDate } from "@/nx/ds/BigDate";
 import { Button } from "@/nx/ds/Button";
 import { dayTime } from "@/nx/ds/format";
@@ -277,7 +277,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
 
       <motion.div className={s.agendaWrap} key={`${port.key}:${fishery}`} initial={registerFrom} animate={registerTo} transition={register} data-tour="agenda">
         <h2 className={s.head}>Dates</h2>
-        <Agenda className={s.agenda} label={`Dates at ${port.name}`} now={v.now} items={agendaItems(v)} />
+        <DatesAgenda v={v} portName={port.name} />
       </motion.div>
 
       <MarginRows className={s.rows} label={`More at ${port.name}`}>
@@ -351,6 +351,28 @@ function Figure({ text }: { text: string }) {
         {text}
       </motion.span>
     </AnimatePresence>
+  );
+}
+
+/**
+ * The agenda opens on what is next: today's line and the next two dates. What is past (already said above, as
+ * the test sounding and the status) and later dates wait behind one control, so the first screen stays short.
+ */
+function DatesAgenda({ v, portName }: { v: View; portName: string }) {
+  const [all, setAll] = useState(false);
+  const items = agendaItems(v);
+  const ahead = items.filter((it) => agendaPhase(it, v.now) !== "past").slice(0, 2);
+  const shown = all ? items : ahead;
+  const hidden = items.length - ahead.length;
+  return (
+    <>
+      <Agenda className={s.agenda} label={`Dates at ${portName}`} now={v.now} items={shown} />
+      {hidden > 0 ? (
+        <Button variant="text" onClick={() => setAll((x) => !x)} aria-expanded={all} className={s.allDates}>
+          {all ? "Only what is next" : `All ${items.length} dates, earlier and later`}
+        </Button>
+      ) : null}
+    </>
   );
 }
 

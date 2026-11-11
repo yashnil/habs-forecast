@@ -137,8 +137,9 @@
 }
 
 /* ---- the agenda */
+/* the agenda starts below the lead's first screen on a desktop: status, date, change and actions read alone */
 .agendaWrap {
-  margin-top: var(--s-48);
+  margin-top: var(--s-64);
 }
 .head {
   margin: 0 0 var(--s-12);
@@ -149,6 +150,9 @@
 .agendaWrap .agenda {
   --when: 76px;
   --railw: 20px;
+}
+.allDates {
+  margin-top: var(--s-4);
 }
 
 /* ---- rows */
