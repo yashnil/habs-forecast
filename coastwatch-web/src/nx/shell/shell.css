@@ -57,7 +57,8 @@
 
 .n12-menu { position: relative; }
 .n12-menu-panel {
-  position: absolute; right: 0; top: calc(100% - 4px); z-index: 20; width: 280px; padding: var(--s-16);
+  position: absolute; right: 0; top: calc(100% - 4px); z-index: 20; width: 304px; max-width: calc(100vw - var(--s-16));
+  max-height: calc(100dvh - var(--bar-h) - var(--s-16)); overflow: auto; overscroll-behavior: contain; padding: var(--s-16);
   background: var(--paper); border: var(--hair) solid var(--ink);
 }
 .n12-mode { border: 0; margin: 0 0 var(--s-16); padding: 0; }

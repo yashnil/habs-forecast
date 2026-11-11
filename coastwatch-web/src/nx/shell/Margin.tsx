@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useChartCover } from "@/nx/chart/cover";
 import { MarginSheet } from "@/nx/ds/MarginSheet";
 import { PHONE_QUERY, useMedia } from "@/nx/ds/useMedia";
+import { OfflineNotice } from "@/nx/offline/OfflineNotice";
 
 /**
  * The phone sheet's detents: resting (the page's statement in view above the tab bar), half (a reading and the
@@ -56,7 +57,10 @@ export function MarginFrame({ children }: { children: React.ReactNode }) {
   const phone = useMedia(PHONE_QUERY);
   const page = (
     <ViewTransition name="nx-margin" default="nx-margin-swap">
-      <div className="n12-margin-page">{children}</div>
+      <div className="n12-margin-page">
+        <OfflineNotice />
+        {children}
+      </div>
     </ViewTransition>
   );
   if (phone) return <PhoneMargin>{page}</PhoneMargin>;

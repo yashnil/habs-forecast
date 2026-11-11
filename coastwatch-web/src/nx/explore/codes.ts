@@ -3,6 +3,9 @@
 import { loadGrid } from "@/lib/grid";
 import { gridBounds } from "@/nx/chart/layers/grid";
 import type { GridSpec } from "./model";
+import { chunksFor } from "./chunks";
+
+export { chunksFor };
 
 /**
  * A grid's raw codes in the browser, assembled from the published file or chunks, fetched once (lib/grid caches
@@ -12,7 +15,6 @@ import type { GridSpec } from "./model";
  */
 export type Codes = { codes: Uint16Array; complete: boolean };
 
-const WHOLE_LIMIT = 4_000_000;
 const join = (base: string, rel: string) => `${base.replace(/\/$/, "")}/${rel}`;
 
 type Assembly = { codes: Uint16Array; loaded: Set<string>; pending: Map<string, Promise<void>> };
@@ -32,25 +34,6 @@ function assembly(base: string, g: GridSpec): Assembly {
     while (assemblies.size > 8) assemblies.delete(assemblies.keys().next().value!);
   }
   return a;
-}
-
-/** The chunk keys of a chunked grid that cover a box [w, s, e, n] (all present chunks without one). */
-export function chunksFor(g: GridSpec, box: [number, number, number, number] | null): string[] {
-  const ch = g.chunks;
-  if (!ch) return [];
-  if (!box || g.width * g.height <= WHOLE_LIMIT) return ch.present;
-  const [w, s, e, n] = box;
-  const colOf = (lon: number) => Math.floor((lon - g.lon_first) / g.lon_step + 0.5);
-  const rowOf = (lat: number) => Math.floor((lat - g.lat_first) / g.lat_step + 0.5);
-  const [c0, c1] = [colOf(w), colOf(e)].sort((a, b) => a - b);
-  const [r0, r1] = [rowOf(s), rowOf(n)].sort((a, b) => a - b);
-  const out: string[] = [];
-  for (let r = Math.max(0, Math.floor(r0 / ch.rows)); r <= Math.min(Math.ceil(g.height / ch.rows) - 1, Math.floor(r1 / ch.rows)); r++)
-    for (let c = Math.max(0, Math.floor(c0 / ch.cols)); c <= Math.min(Math.ceil(g.width / ch.cols) - 1, Math.floor(c1 / ch.cols)); c++) {
-      const key = `${r}_${c}`;
-      if (ch.present.includes(key)) out.push(key);
-    }
-  return out;
 }
 
 function placeChunk(a: Assembly, g: GridSpec, key: string, codes: Uint16Array) {

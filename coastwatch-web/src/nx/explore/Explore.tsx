@@ -178,7 +178,8 @@ export function Explore({ model }: { model: ExploreModel }) {
 
   // currents: the hour's field (and how steadily each cell was measured across the published hours)
   useEffect(() => {
-    if (!current) return setField(null);
+    // the static tier draws no streaks and reads no point, so it never fetches the hour's vectors
+    if (!current || !tier || tier === "static") return setField(null);
     let live = true;
     loadCurrent(model.baseUrl, current)
       .then((f) => live && setField(f))
@@ -186,11 +187,11 @@ export function Explore({ model }: { model: ExploreModel }) {
     return () => {
       live = false;
     };
-  }, [current, model.baseUrl]);
+  }, [current, model.baseUrl, tier]);
 
   const [quality, setQuality] = useState<Float32Array | null>(null);
   useEffect(() => {
-    if (!currentsOn || !model.currents || quality) return;
+    if (!currentsOn || !model.currents || quality || !tier || tier === "static") return;
     let live = true;
     const hours = model.currents.frames.filter((f) => !f.mean);
     Promise.all(hours.map((h) => loadCodes(model.baseUrl, h.u).then((c) => Uint8Array.from(c.codes, (x) => (x === h.u.nodata ? 0 : 1)))))
@@ -199,7 +200,7 @@ export function Explore({ model }: { model: ExploreModel }) {
     return () => {
       live = false;
     };
-  }, [currentsOn, model, quality]);
+  }, [currentsOn, model, quality, tier]);
 
   const flowState = useMemo(() => ({ still: reduce, paused: false }), [reduce]);
   // the streak layer is added once while currents are on; a new hour swaps its field (a cut)

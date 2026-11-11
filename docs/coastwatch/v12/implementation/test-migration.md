@@ -52,10 +52,13 @@ Where a behaviour was already covered by the v12 suites, the row says so: **shel
 
 Behaviour the old specs required that the v12 pages do not have (not papered over; for the owner):
 
-1. **No offline notice.** When the connection drops, no v12 page says so (states, readiness, hardening L6). ds
-   `Offline` exists but is mounted nowhere.
-2. **No way to save a field pack** for Explore, My Coast or Research (offline, offline-recovery); only Today keeps
-   a copy of itself. README §12 promises "offline field pack keeps every page readable with the baked chart".
+1. ~~**No offline notice.**~~ Resolved in the final pass: every v12 page's margin opens with the ds `Offline`
+   notice when the browser is offline or the page is a saved copy (`src/nx/offline/OfflineNotice.tsx`): when it
+   was saved, what this device holds, and what on this page waits for a connection.
+2. ~~**No way to save a field pack**~~ Resolved: Menu, Offline saves the port's field pack (`src/nx/offline/pack.ts`,
+   cache `neritic-pack-field`): Today, My Coast (gates for every fishery, the sea window; the worksheet is in
+   device storage), Explore's latest frame of each layer around the port, Research's open station record, the
+   baked chart in all three modes. The Menu says what is saved and when; `npm run test:offline` proves it.
 3. **No list of every current official notice** (trust, regulatory, navigation, ux-final M6/M8 on the page): v12
    shows the reader's fishery and an "Others" row; the Del Norte razor clam records appear only on legacy pages.
 4. **T37 for C-HARM:** no "a low value does not mean open or safe" near the probability (trust.spec "a low value is not safe").
@@ -68,13 +71,10 @@ Behaviour the old specs required that the v12 pages do not have (not papered ove
 
 ## `npm run test:offline` (scripts/offline-proof.mjs)
 
-The proof is written for v11's field pack: it opens `/coast?place=port-550`, waits for the service worker,
-then presses `pack-open` and `pack-download`. On v12 it does not get past its first step: `/coast` is the
-v12 My Coast page, which registers no service worker and has no field-pack control (Missing in v12, item 2;
-only Today registers the worker, when it keeps its own copy). Before v12 it ran to the end with 3 failures
-(the map's OpenStreetMap and OpenMapTiles credit offline, 4 same-origin resources missing from the pack, and
-one summary check); those checks cannot be reached now, so they neither pass nor fail. The script now stops
-with a FAIL line naming the step after six minutes, and its actions time out after a minute, instead of
-waiting for ever. v12's offline behaviour is covered instead by `nx-shell-offline.spec.ts` (saved packs at
-the new addresses) and Journey 1 (Today at `/` offline from the copy the device kept). Porting the proof
-needs the field-pack decision first.
+Ported to v12 in the final pass. The proof opens Today at Moss Landing, saves the port's field pack from the
+Menu, empties the worker's own code cache (as after a deploy), stops the app server, and reopens the same
+browser profile with every request sent to a dead proxy. `/`, `/today`, `/coast`, `/explore` and `/research`
+must each open from the pack at 390 and 1440 px with their own content, the baked chart (static tier, every
+image loaded), Explore's baked frame and the offline notice; a tab tapped offline opens the next saved page; an
+unsaved page says it is offline and links to the saved ones; no request leaves the device, no same-origin
+request fails, no page error. Result on the fixture build: 41 checks, all pass ("PROVEN").

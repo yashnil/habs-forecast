@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { CHART_MODE_KEY, type ChartMode } from "./entry";
 import { openPortFinder } from "./finder";
-import { useCurrentPort, useSavedPortKey } from "./port";
+import { FieldPack } from "@/nx/offline/FieldPack";
+import { useCurrentPort, useSavedPortKey, type ShellPort } from "./port";
 
 export const DESTINATIONS = [
   { path: "/today", label: "Today" },
@@ -31,7 +32,7 @@ function Chevron() {
   );
 }
 
-function ChartModeMenu() {
+function ChartModeMenu({ port }: { port: ShellPort | null }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<ChartMode>("day");
   const ref = useRef<HTMLDivElement>(null);
@@ -84,6 +85,7 @@ function ChartModeMenu() {
               </label>
             ))}
           </fieldset>
+          <FieldPack port={port ? { key: port.key, name: port.name, lat: port.lat, lon: port.lon } : null} />
           <nav className="n12-menu-links" aria-label="More">
             <Link href="/ask" className="n12-menu-narrow">
               Ask
@@ -145,7 +147,7 @@ export function Shell() {
           <Link href={key ? `/account?place=${encodeURIComponent(key)}#alerts` : "/account#alerts"} className="n12-bar-link">
             Alerts
           </Link>
-          <ChartModeMenu />
+          <ChartModeMenu port={port} />
         </div>
       </header>
       <nav className="n12-tabs" aria-label="Destinations" data-testid="nx-tabs">
