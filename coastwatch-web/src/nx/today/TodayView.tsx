@@ -18,14 +18,14 @@ import { register, registerFrom, registerTo, settle } from "@/nx/ds/motion";
 import { ProvenanceSheet, Stamp, type Provenance } from "@/nx/ds/Stamp";
 import { Loading, SourcesDiffer, Unavailable } from "@/nx/ds/States";
 import { Statement } from "@/nx/ds/Statement";
-import { usePhone } from "@/nx/ds/useMedia";
+import { useMedia, usePhone } from "@/nx/ds/useMedia";
 import { CANYON_AXIS } from "@/nx/chart/features";
 import { distanceKm, phoneBounds, portWater, todayBounds } from "./camera";
 import { changeLine, type ChangeLine } from "./change";
 import { conditionsUrl, useConditions, useTodayInputs, type Initial } from "./data";
 import { FisheryChooser } from "./FisheryChooser";
 import { buildToday, othersLine, scopeWords, type TodayInputs, type TodayView as View } from "./model";
-import { TodaySoundings } from "./Soundings";
+import { COMPACT, TodaySoundings } from "./Soundings";
 import { chooseFishery, useFisheries, useTourState } from "./store";
 import { Tour, TourLink } from "./Tour";
 import s from "./today.module.css";
@@ -146,7 +146,21 @@ function useOfflineCopy(key: string, name: string, url: string, ready: boolean) 
   return at;
 }
 
+/**
+ * Overlays (the provenance sheet) portal to <body>, outside the app element that carries the font
+ * variables; until the layout puts them on <html> (reported to the shell owner), they are copied there.
+ */
+function useFontsOnRoot() {
+  useEffect(() => {
+    const app = document.querySelector<HTMLElement>("[data-testid=nx-app]");
+    if (!app) return;
+    const vars = [...app.classList].filter((c) => c !== "n12-app");
+    document.documentElement.classList.add(...vars);
+  }, []);
+}
+
 function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["port"]>; inputs: TodayInputs; fishery: FisheryId }) {
+  useFontsOnRoot();
   const curl = conditionsUrl(inputs.place.lat, inputs.place.lon);
   const sea = useConditions(curl);
   const v = useMemo(() => buildToday(inputs, { fishery, sea, place: { key: port.key, name: port.name } }), [inputs, fishery, sea, port.key, port.name]);
@@ -155,12 +169,13 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
   const [open, setOpen] = useState<Provenance | null>(null);
   const tour = useTourState();
   const phone = usePhone();
+  const compact = useMedia(COMPACT);
   const [touring, setTouring] = useState(false);
 
   // the camera: the port and the water that matters, with room for the soundings
   const pts = v.soundings.map((d) => ({ lon: d.lon, lat: d.lat }));
   if (distanceKm(port, canyonHead) < 25) pts.push(canyonHead);
-  const bounds = phone ? phoneBounds(port, pts) : todayBounds(port, pts);
+  const bounds = phone ? phoneBounds(port, pts) : todayBounds(port, pts, compact ? { minHalfKm: 14 } : {});
   const sceneId = `today:${port.key}`;
   const st = v.statement;
 

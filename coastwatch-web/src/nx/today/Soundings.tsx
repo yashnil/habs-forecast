@@ -4,7 +4,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChartMarks } from "@/nx/chart/Labels";
 import { onFrame } from "@/nx/chart/runtime";
 import { Sounding } from "@/nx/ds/chart/Sounding";
-import { useMedia, usePhone } from "@/nx/ds/useMedia";
+import { useMedia } from "@/nx/ds/useMedia";
+
+export const COMPACT = "(max-width: 720px), (max-height: 480px)";
 import type { SoundingDatum } from "./model";
 
 /**
@@ -83,7 +85,8 @@ function Box({ d, onOpen, phone, narrow }: { d: SoundingDatum; onOpen: () => voi
 
 export function TodaySoundings({ items, sceneId, onOpen }: { items: SoundingDatum[]; sceneId: string; onOpen: (id: SoundingDatum["id"]) => void }) {
   const settled = useChartSettled(sceneId);
-  const phone = usePhone();
+  // phones, and short landscape screens: a figure and one line
+  const phone = useMedia(COMPACT);
   const narrow = useMedia("(max-width: 360px)");
   if (!settled || !items.length) return null;
   return (
