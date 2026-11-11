@@ -68,7 +68,7 @@ def test_noaa21_first_noaa20_only_where_noaa21_has_no_value(tmp_path, region):
     assert lyr.platforms == ["VIIRS", "NOAA-21", "NOAA-20"]
     assert lyr.provenance.dataset_id == f"{N21},{N20}" and "coastwatch.noaa.gov" in lyr.provenance.source_url
     md = lyr.provenance.upstream_metadata
-    assert md["processing"] == sat.PROCESSING_VERSION == "satellite-processing-3"
+    assert md["processing"] == sat.PROCESSING_VERSION == "satellite-processing-4"
     assert "-0.020" in md["offsets"] and "not corrected" in md["offsets"]
     assert lyr.native_resolution_m == 750.0 and lyr.resolution_deg == 0.0075
     # overpass-time stamps, verbatim, ~19 UTC on the observation date
@@ -388,3 +388,71 @@ def test_port_a_lagging_noaa_summary_never_hides_a_newer_snpp_composite(tmp_path
     chl = port_intel.chlorophyll_near(ctx, lat, lon, date(2026, 10, 8))
     assert chl.dataset_id.startswith(N21) and chl.latest_center_date == "2026-10-01"
     assert not [u for u in f.calls if "erdVHNchla8day" in u]
+
+
+# ---------------------------------------------------------------- "latest" selection (2026-10-19 audit)
+def _age_days(ctx, lyr) -> set[int]:
+    age = sat.load_published(ctx.out_dir, lyr.composite.age_grid)
+    return {int(a) for a in np.unique(age[np.isfinite(age)])}
+
+
+def _assert_dates_match_pixels(ctx, lyr):
+    """observed_date, newest/oldest, observed_times and the age grid name the same days."""
+    ref = datetime.fromisoformat(lyr.composite.reference_date).date()
+    pixel_days = {(ref - sat.timedelta(days=a)).isoformat() for a in _age_days(ctx, lyr)}
+    used = {d.date for d in lyr.composite.days if d.pixels_used > 0}
+    assert pixel_days == used
+    assert lyr.time.observed_date == lyr.composite.newest_observed_date == max(pixel_days)
+    assert lyr.composite.oldest_observed_date == min(pixel_days)
+    assert {t[:10] for t in lyr.time.observed_times} == pixel_days
+
+
+def test_latest_is_the_newest_listed_day_and_its_dates_are_its_pixels(tmp_path):
+    ctx, res = run_sat(tmp_path)
+    lyr = viirs(res)
+    idx = json.loads((FIXTURES / "satellite" / "index.json").read_text())["monterey"]
+    newest = max(e["time"][:10] for ds in (N21, N20) for e in idx[ds])
+    assert lyr.time.observed_date == newest == "2026-10-04"
+    _assert_dates_match_pixels(ctx, lyr)
+
+
+def test_an_upstream_stall_gives_a_one_day_layer_that_says_so(tmp_path):
+    """2026-10-19: NOAA-21, NOAA-20 (US sector, 750 m) and the S-NPP 1-day composite all ended at
+    10-12 upstream (the last NOAA-21 file was written 10-14 07:20Z), so the 7-day window
+    (10-12..10-19) held one day. That is the newest 750 m data that exists; the layer says
+    which day it is, every pixel is 7 days old, and health alerts (above 5 days)."""
+    stall = {r"noaacwN2[01]VIIRS": _frozen("VIIRSchlaSectorUSDaily", "2026-10-01"), r"erdVHNchla1day": _frozen("erdVHNchla1day", "2026-10-01")}
+    ctx, res = run_sat(tmp_path, **stall)
+    lyr = viirs(res)
+    assert lyr.time.observed_date == "2026-10-01" and [d.date for d in lyr.composite.days] == ["2026-10-01"]
+    assert _age_days(ctx, lyr) == {7} and 7 > health.VIIRS_MAX_AGE_DAYS
+    _assert_dates_match_pixels(ctx, lyr)
+
+
+def test_a_newer_day_that_fails_to_download_is_reported_not_silently_dropped(tmp_path):
+    ctx, res = run_sat(tmp_path, **{r"(noaacwN2[01]VIIRSchlaSectorUSDaily|erdVHNchla1day)\.nc\?.*2026-10-04T": fail(502)})
+    lyr = viirs(res)
+    assert lyr.time.observed_date == "2026-10-03"
+    assert any("2026-10-04" in e and "502" in e for e in res.errors)
+    _assert_dates_match_pixels(ctx, lyr)
+
+
+def test_a_refused_snpp_listing_is_reported_not_read_as_nothing_newer(tmp_path):
+    _, res = run_sat(tmp_path, **{r"erdVHNchla1day": fail(403)})
+    assert viirs(res).platforms[:2] == ["VIIRS", "NOAA-21"]
+    assert any("could not check the S-NPP composite" in n and "403" in n for n in res.notes)
+
+
+def test_a_day_whose_pixels_are_all_covered_by_newer_days_dates_nothing(tmp_path):
+    ctx = fixture_context(tmp_path / "v1")
+    t = sat.Target(37.0, -122.5, 0.0075, 4, 4)
+    newer = np.full((4, 4), 1.0)
+    older = np.full((4, 4), 2.0)
+    days = [
+        sat.Day(datetime(2026, 10, 7).date(), newer, observed_times=["2026-10-07T19:00:00Z"], platforms=["NOAA-21"], source=np.ones((4, 4), np.uint8)),
+        sat.Day(datetime(2026, 10, 3).date(), older, observed_times=["2026-10-03T19:00:00Z"], platforms=["NOAA-20"], source=np.full((4, 4), 2, np.uint8)),
+    ]
+    lyr, _ = sat.composite_layer(ctx, sat.VIIRS_JPSS, t, days, range(5, 6))
+    assert lyr.composite.oldest_observed_date == lyr.time.observed_date == "2026-10-07"
+    assert lyr.time.observed_times == ["2026-10-07T19:00:00Z"] and lyr.platforms == ["VIIRS", "NOAA-21"]
+    assert [(d.date, d.pixels_used) for d in lyr.composite.days] == [("2026-10-07", 16), ("2026-10-03", 0)]
