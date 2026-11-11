@@ -9,6 +9,7 @@ import { age, day, fixed, latLon, pct, sig, usePhone, Readout, Unavailable, type
 import { capability, type GraphicsTier } from "@/lib/capability";
 import type { CurrentField } from "@/lib/currents";
 import { ChartScene } from "@/nx/chart/scene";
+import { ChartMarks } from "@/nx/chart/Labels";
 import { whenChartReady } from "@/nx/chart/control";
 import { addChartLayer } from "@/nx/chart/layers/registry";
 import { modeColours, onModeChange } from "@/nx/chart/layers/colors";
@@ -21,7 +22,7 @@ import { EXPLORE_ZOOM, exploreBounds } from "./camera";
 import { ExploreLegend } from "./ExploreLegend";
 import { Locator, ReadingOnChart } from "./ChartOverlay";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, GridSpec, ProductId } from "./model";
-import { compassWord, KNOTS, nearestCurrent, nearestStation, pixelDate, readPoint, researchHref, transect, type NearestCurrent, type TransectPoint } from "./read";
+import { compassWord, isothermLabels, KNOTS, nearestCurrent, type IsoLabel, nearestStation, pixelDate, readPoint, researchHref, transect, type NearestCurrent, type TransectPoint } from "./read";
 import { nextOf, playFrames, playHours } from "./timeline";
 import { TimeRail } from "./TimeRail";
 import { Transect } from "./Transect";
@@ -62,7 +63,10 @@ type Reading =
 
 /** URL state: ?layer=chl&frame=olci:latest&cur=0&hour=<id>&at=36.80,-121.95 (with the shell's place). */
 function readUrl(model: ExploreModel, sp: URLSearchParams) {
-  const p = model.products.find((x) => x.id === sp.get("layer")) ?? model.products[0] ?? null;
+  // older Explore links name the model "forecast" and a sensor for chlorophyll
+  const alias: Record<string, ProductId> = { forecast: "charm", olci300: "chl", viirs750: "chl", multi: "chl" };
+  const asked = sp.get("layer") ?? "";
+  const p = model.products.find((x) => x.id === (alias[asked.split(":")[0]] ?? asked)) ?? model.products[0] ?? null;
   const f = p?.frames.find((x) => x.id === sp.get("frame")) ?? p?.frames.find((x) => x.id === p.defaultFrame) ?? null;
   const hour = model.currents?.frames.find((x) => x.id === sp.get("hour"))?.id ?? model.currents?.defaultFrame ?? null;
   const m = /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/.exec(sp.get("at") ?? "");
@@ -96,6 +100,7 @@ export function Explore({ model }: { model: ExploreModel }) {
   const fieldRef = useRef<FieldController | null>(null);
   const flowRef = useRef<FlowController | null>(null);
   const [field, setField] = useState<CurrentField | null>(null);
+  const [isoLabels, setIsoLabels] = useState<IsoLabel[]>([]);
   const readoutRef = useRef<HTMLDivElement>(null);
 
   // ------------------------------------------------------------- URL state (the Explore selection survives a reload and a link)
@@ -141,6 +146,7 @@ export function Explore({ model }: { model: ExploreModel }) {
     const layer = fieldRef.current;
     if (!map || !layer || !product || !frame?.grid) {
       layer?.setData(null, { kind: "ramp", domain: CHL_DOMAIN, scale: "log" });
+      setIsoLabels([]);
       return;
     }
     let live = true;
@@ -152,6 +158,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         .then(([c, a]) => {
           if (!live) return;
           layer.setData({ grid: g, codes: c.codes, aux: a && aux ? { grid: aux, codes: a.codes } : null }, st);
+          setIsoLabels(st.kind === "isolines" ? isothermLabels(g, c.codes, ISO_F.index) : []);
           (window as Win).__nxExplore = { ...(window as Win).__nxExplore, field: frame.id, fieldDraws: layer.draws };
         })
         .catch(() => undefined);
@@ -318,8 +325,8 @@ export function Explore({ model }: { model: ExploreModel }) {
 
   // the e2e hook: what is drawn, read from the page
   useEffect(() => {
-    (window as Win).__nxExplore = { ...(window as Win).__nxExplore, product: productId, frame: frameId, hour: streaks ? hourId : null };
-  }, [productId, frameId, hourId, streaks]);
+    (window as Win).__nxExplore = { ...(window as Win).__nxExplore, product: productId, frame: frameId, hour: streaks ? hourId : null, at };
+  }, [productId, frameId, hourId, streaks, at]);
 
   const extent = model.extent;
   const scene = useMemo(
@@ -453,6 +460,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       <ChartScene scene={scene} />
       {pt ? <ReadingOnChart lat={pt.lat} lon={pt.lon} lon0={tStart} lon1={tEnd} hoverLon={hover?.lon ?? null} /> : null}
       {phone ? <Locator /> : null}
+      {product.id === "sst" && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
       <h1 className={s.srOnly}>Explore: {LAYER_LABEL[product.id]}</h1>
       <ExploreLegend product={product} frame={frame} currents={streaks ? current : null} />
       {tier === "static" ? (

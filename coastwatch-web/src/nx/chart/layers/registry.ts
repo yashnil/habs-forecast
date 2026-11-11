@@ -27,13 +27,21 @@ function ordered(): Entry[] {
   return [...entries.values()].sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot));
 }
 
-/** Put every registered layer on the map in slot order (adding the missing ones). */
-function sync(map: MapLibreMap) {
-  if (lost || !map.style || !map.isStyleLoaded()) return;
-  const before = map.getLayer(DATA_BEFORE) ? DATA_BEFORE : undefined;
-  for (const e of ordered()) {
-    if (!map.getLayer(e.layer.id)) map.addLayer(e.layer, before);
-    else if (before) map.moveLayer(e.layer.id, before);
+/**
+ * Put every registered layer on the map in slot order (adding the missing ones). `styleReady` is true right
+ * after "style.load", when the style accepts layers although its sources are still loading.
+ */
+function sync(map: MapLibreMap, styleReady = false): boolean {
+  if (lost || !map.style || (!styleReady && !map.isStyleLoaded())) return false;
+  try {
+    const before = map.getLayer(DATA_BEFORE) ? DATA_BEFORE : undefined;
+    for (const e of ordered()) {
+      if (!map.getLayer(e.layer.id)) map.addLayer(e.layer, before);
+      else if (before) map.moveLayer(e.layer.id, before);
+    }
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -47,13 +55,12 @@ function bind(map: MapLibreMap) {
   });
   map.on("webglcontextrestored", () => {
     lost = false;
-    // MapLibre reloads its style after a restore; the custom layers come back once it has
-    const again = () => {
-      if (map.isStyleLoaded()) sync(map);
-      else map.once("styledata", again);
-    };
-    map.once("style.load", () => sync(map));
-    again();
+    // MapLibre reloads its style after a restore (without custom layers); they come back once it has, and
+    // again at the next idle in case the style was still settling
+    map.once("style.load", () => {
+      if (!sync(map, true)) map.once("idle", () => sync(map, true));
+    });
+    map.once("idle", () => sync(map, true));
   });
 }
 

@@ -118,3 +118,32 @@ export function researchHref(o: { station: string; to: string; product: ProductI
 export function readingDate(frame: Pick<ExploreFrame, "end">, pixel: string | null): string {
   return pixel ?? frame.end;
 }
+
+export type IsoLabel = { id: string; lon: number; lat: number; text: string };
+
+/**
+ * Where to letter the heavier isotherms: along a few rows of the grid, the cell edges where the value crosses a
+ * whole multiple of `every` °F (between two cells that both have a value, so never across land). One label per
+ * line value per row, at most `max` in all.
+ */
+export function isothermLabels(g: FieldGrid, codes: Uint16Array, every = 2, rows = 6, max = 14): IsoLabel[] {
+  const out: IsoLabel[] = [];
+  const toF = (c: number) => (c * g.scale_factor + g.add_offset) * 1.8 + 32;
+  for (let k = 1; k <= rows && out.length < max; k++) {
+    const r = Math.floor((g.height * k) / (rows + 1));
+    const seen = new Set<number>();
+    for (let c = 0; c + 1 < g.width && out.length < max; c++) {
+      const a = codes[r * g.width + c], b = codes[r * g.width + c + 1];
+      if (a === g.nodata || b === g.nodata) continue;
+      const fa = toF(a), fb = toF(b);
+      const lo = Math.min(fa, fb), hi = Math.max(fa, fb);
+      const line = Math.ceil(lo / every) * every;
+      if (line > hi || line === lo || seen.has(line)) continue;
+      seen.add(line);
+      const t = (line - fa) / (fb - fa);
+      const { lat, lon } = cellCentre(g, r, c);
+      out.push({ id: `iso-${r}-${line}`, lat, lon: lon + t * g.lon_step, text: `${line}°` });
+    }
+  }
+  return out;
+}

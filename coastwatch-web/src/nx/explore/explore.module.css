@@ -81,7 +81,7 @@
 .bracketSel { fill: none; stroke: var(--ink); stroke-width: 1.5; }
 .meanBox { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 2; }
 .railTick { font: 400 var(--t-14) / 1 var(--font-sans); fill: var(--ink-2); }
-.railHit { position: absolute; top: 0; bottom: 0; padding: 0; background: none; border: 0; pointer-events: none; }
+.railHit { position: absolute; top: 0; bottom: 0; padding: 0; background: none; border: 0; cursor: pointer; }
 .railHit:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; }
 .railKey { margin: 0; font-size: var(--t-14); line-height: 1.4; color: var(--ink-2); }
 
@@ -119,4 +119,8 @@
 @media (max-width: 720px) {
   .explore { gap: var(--s-16); }
   .legend figcaption span:first-child, .figTitle { font-size: var(--t-22); }
+}
+.isoLabel {
+  display: block; font: 600 var(--t-14) / 1 var(--font-sans); color: var(--ink); font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 1px var(--halo), 1.5px 0 0 var(--halo), -1.5px 0 0 var(--halo), 0 1.5px 0 var(--halo), 0 -1.5px 0 var(--halo), 1px 1px 0 var(--halo), -1px -1px 0 var(--halo), 1px -1px 0 var(--halo), -1px 1px 0 var(--halo), 0 0 3px var(--halo);
 }

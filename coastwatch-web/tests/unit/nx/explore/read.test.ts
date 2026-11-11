@@ -96,3 +96,16 @@ describe("grid geometry and quality", () => {
     expect([d.w, d.h, ...Array.from(d.codes)]).toEqual([2, 2, 1, 3, 7, 9]);
   });
 });
+
+describe("isotherm lettering", () => {
+  it("letters whole even °F where a row crosses them, never across a cell without a value", async () => {
+    const { isothermLabels } = await import("@/nx/explore/read");
+    // °C grid, 1 row of 4 cells across a gap: 13.0, 14.5 | gap | 15.0 (55.4, 58.1, -, 59 °F)
+    const sg: FieldGrid = { width: 4, height: 3, lat_first: 37, lat_step: -0.01, lon_first: -122, lon_step: 0.01, scale_factor: 0.1, add_offset: 0, nodata: 65535, transform: "none" };
+    const row = [130, 145, 65535, 150];
+    const c = Uint16Array.from([...row, ...row, ...row]);
+    const labels = isothermLabels(sg, c, 2, 1);
+    expect(labels.map((l) => l.text)).toEqual(["56°"]);
+    expect(labels.every((l) => l.lon > -122 && l.lon < -121.99)).toBe(true);
+  });
+});
