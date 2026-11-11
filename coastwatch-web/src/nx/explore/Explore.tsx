@@ -5,9 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { age, day, fixed, latLon, pct, sig, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
+import { age, day, fixed, latLon, pct, plainError, sig, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
 import { capability, type GraphicsTier } from "@/lib/capability";
 import type { CurrentField } from "@/lib/currents";
+import { openMargin } from "@/nx/shell/Margin";
+import { StaticField } from "./StaticField";
 import { ChartScene } from "@/nx/chart/scene";
 import { ChartMarks } from "@/nx/chart/Labels";
 import { whenChartReady } from "@/nx/chart/control";
@@ -283,9 +285,14 @@ export function Explore({ model }: { model: ExploreModel }) {
     };
   }, [at, frame, model, field, streaks]);
 
+  // a reading arrives: on a phone the sheet rises to half (the tapped point stays in view above it), then the
+  // readout scrolls into view wherever the margin is
   useEffect(() => {
-    if (reading?.status === "ready") readoutRef.current?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
-  }, [reading?.status, reduce]);
+    if (reading?.status !== "ready") return;
+    if (phone) openMargin("half");
+    const t = window.setTimeout(() => readoutRef.current?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" }), phone ? 360 : 0);
+    return () => window.clearTimeout(t);
+  }, [reading?.status, reduce, phone]);
 
   // ------------------------------------------------------------- choosing and playing frames (cuts, never tweens: T26)
   const chooseFrame = useCallback((p: ExploreProduct, f: ExploreFrame) => {
@@ -463,8 +470,17 @@ export function Explore({ model }: { model: ExploreModel }) {
       {product.id === "sst" && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
       <h1 className={s.srOnly}>Explore: {LAYER_LABEL[product.id]}</h1>
       <ExploreLegend product={product} frame={frame} currents={streaks ? current : null} />
+      {tier === "static" && frame?.grid && product.id !== "sst" ? (
+        <StaticField base={model.baseUrl} grid={frame.grid} kind={product.id === "charm" ? "classes" : product.id === "outlook" ? "outlook" : "ramp"} past={product.id === "charm" ? frame.past : undefined} domain={CHL_DOMAIN} />
+      ) : null}
       {tier === "static" ? (
-        <Unavailable what="The layers can't be drawn on this device" why="The chart is showing as a still picture (no WebGL, data saver, offline or a saved copy)." next="Station records are in Research, as tables and series." />
+        product.id === "sst" ? (
+          <Unavailable what="Isotherms need a device that draws the chart live" why="This device shows the chart as a still picture (no WebGL, data saver, or a saved copy); the other layers are baked into it." next="Station temperatures are in Research, as tables and series." />
+        ) : (
+          <p className={s.prompt} data-testid="nx-static-note">
+            A still picture of this frame, baked on this device (no WebGL, data saver, or a saved copy). Tapping the water needs the live chart.
+          </p>
+        )
       ) : null}
       <div className={s.switch} role="radiogroup" aria-label="Layer" data-testid="nx-layers">
         {model.products.map((p) => (
@@ -503,7 +519,7 @@ export function ExploreUnavailable({ why }: { why: string }) {
   return (
     <section className={s.explore} data-testid="nx-explore">
       <p className={s.kicker}>Explore</p>
-      <Unavailable what="The water can't be shown right now" why={`The published data could not be read (${why}).`} next="Try again in a few minutes; the data is republished several times a day." />
+      <Unavailable what="The water can't be shown right now" why={`The published data could not be read (${plainError(why)}).`} next="Try again in a few minutes; the data is republished several times a day." />
     </section>
   );
 }

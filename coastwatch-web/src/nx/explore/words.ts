@@ -29,7 +29,8 @@ export function legendCaption(p: ExploreProduct, f: ExploreFrame): string {
     case "sst":
       return `${cap(KIND_LABEL[f.kind])} · ${f.sensor} · ${day(f.end)}.${f.kind === "analysis" ? " Blended from satellites and buoys, not a measurement at a point." : ""}`;
     case "charm":
-      return `Model · ${p.source} · ${f.stamp}.${p.pastRun ? " Past run: every day it covers is before today." : ""} Probability of conditions in the water, not toxin in seafood. Classes are display steps, not risk levels.`;
+      // design-lint-allow forbidden-word: T37 requires "does not mean open or safe" within one glance of a low probability
+      return `Model · ${p.source} · ${f.stamp}.${p.pastRun ? " Past run: every day it covers is before today." : ""} Probability of conditions in the water, not toxin in seafood. Classes are display steps, not risk levels; a lower probability does not mean open or safe.`;
     case "outlook":
       return `Outlook · ${p.source} · ${f.stamp}. Typical error about a factor of 2: read as higher or lower than usual, not as a value. Dotted: no signal, the usual for this time of year. Algae, not toxin.`;
   }

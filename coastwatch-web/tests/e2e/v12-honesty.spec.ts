@@ -41,6 +41,8 @@ test.describe("Today (Moss Landing, Dungeness commercial)", () => {
   test("a test is a named lab result with its age; the agenda keeps it as a dated line (T6, T8, T17)", async ({ page }) => {
     await page.goto(`${OK}/today?place=port-592`);
     const m = margin(page);
+    // the agenda opens on what is next; the earlier dates are one control away
+    await m.getByRole("button", { name: /^All \d+ dates, earlier and later$/ }).click();
     await expect(m).toContainText("CDPH test, Monterey Bay Dungeness");
     await expect(m).toContainText("All 6 under the action level. 14 days ago.");
     await expect(m.getByRole("button", { name: /^Measured · CDPH · sampled Sep 28/ }).first()).toBeVisible();
@@ -108,7 +110,8 @@ test.describe("Explore", () => {
     const m = margin(page);
     await expect(m).toContainText("C-HARM, P(pDA > 500 ng/L)");
     await expect(m).toContainText("Probability of conditions in the water, not toxin in seafood.");
-    await expect(m).toContainText("Classes are display steps, not risk levels.");
+    await expect(m).toContainText("Classes are display steps, not risk levels");
+    await expect(m).toContainText("a lower probability does not mean open or safe");
     await expect(m).toContainText("Past run: every day it covers is before today.");
     await expect(m).toContainText("Currents");
     await expect(m).toContainText("not over a model");

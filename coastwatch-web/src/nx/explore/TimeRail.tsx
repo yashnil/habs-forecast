@@ -142,7 +142,19 @@ function HoursStrip({ model, currentId, onCurrent, width, on }: { model: Explore
     e.preventDefault();
     onCurrent(all[Math.max(0, Math.min(all.length - 1, to))]);
   };
-  const ticks = hours.filter((h, i) => i === 0 || /^(12|6):00 (AM|PM)/.test(h.label));
+  // hour labels at 12 and 6 o'clock, thinned so each keeps its own room (about 7.5 px a character at 14 px)
+  const tickText = (h: CurrentFrame) => h.label.replace(":00", "").replace(" PT", "");
+  const ticks: CurrentFrame[] = [];
+  let right = -Infinity;
+  hours.forEach((h, i) => {
+    if (i !== 0 && !/^(12|6):00 (AM|PM)/.test(h.label)) return;
+    const x = i * step + 1;
+    if (x < right + 10) return;
+    const w = tickText(h).length * 7.5;
+    if (x + w > HT) return;
+    ticks.push(h);
+    right = x + w;
+  });
   return (
     <div className={s.railRow} data-active={on ? "1" : "0"} data-off={on ? undefined : "1"} style={{ height: ROW_ACTIVE + 18 }} data-testid="nx-rail-hours">
       <span className={s.railLabel}>
@@ -167,7 +179,7 @@ function HoursStrip({ model, currentId, onCurrent, width, on }: { model: Explore
             const i = hours.indexOf(h);
             return (
               <text key={h.id} x={i * step + 1} y={ROW_ACTIVE + 15} className={s.railTick}>
-                {h.label.replace(":00", "").replace(" PT", "")}
+                {tickText(h)}
               </text>
             );
           })}

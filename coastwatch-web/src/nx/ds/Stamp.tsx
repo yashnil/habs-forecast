@@ -74,13 +74,19 @@ export function Stamp({ provenance: p, now, interactive = true, className }: Sta
     </>
   );
   if (!interactive) return <span className={cx(s.stamp, className)}>{inner}</span>;
+  // the stamp is the sheet's trigger, so closing the sheet returns focus to it
   return (
-    <>
-      <button type="button" className={cx(s.stamp, s.button, className)} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label={`${text}${p.stale ? ", old" : ""}. Open where this comes from`}>
-        {inner}
-      </button>
-      <ProvenanceSheet provenance={p} now={now} open={open} onOpenChange={setOpen} />
-    </>
+    <ProvenanceSheet
+      provenance={p}
+      now={now}
+      open={open}
+      onOpenChange={setOpen}
+      trigger={
+        <button type="button" className={cx(s.stamp, s.button, className)} aria-haspopup="dialog" aria-label={`${text}${p.stale ? ", old" : ""}. Open where this comes from`}>
+          {inner}
+        </button>
+      }
+    />
   );
 }
 

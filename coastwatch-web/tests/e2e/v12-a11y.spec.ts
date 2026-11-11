@@ -67,7 +67,7 @@ test("the provenance sheet: a dialog that traps focus, closes on Escape and pass
 
 // Missing in v12 (test-migration.md): the ds Stamp opens its sheet from its own state, not a Radix trigger, so
 // focus is not returned to the stamp on close (components.md promises "focus trapped and returned").
-test.fixme("closing the provenance sheet returns focus to the stamp that opened it", async ({ page, context }) => {
+test("closing the provenance sheet returns focus to the stamp that opened it", async ({ page, context }) => {
   await context.addInitScript((port) => {
     localStorage.setItem("nx-opening-seen-v1", "1");
     localStorage.setItem("nx-tour-v1", "dismissed");
@@ -110,7 +110,7 @@ test("on a 320 px phone the bar's and tab bar's controls are at least 44 px tall
 });
 
 // Missing in v12 (test-migration.md): at 320 px the wordmark link (home) is 27 px tall.
-test.fixme("on a 320 px phone the wordmark link is a 44 px target too", async ({ browser }) => {
+test("on a 320 px phone the wordmark link is a 44 px target too", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true, storageState: { cookies: [], origins: [] } });
   const page = await ctx.newPage();
   await page.goto(`${OK}/explore`);

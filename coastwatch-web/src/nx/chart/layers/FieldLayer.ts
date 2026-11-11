@@ -109,9 +109,20 @@ void main() {
   bool nodata = v < -1e29;
 
   if (u_variant == 0) {
+    // the data's own extent ends at a neatline (a hairline in ink 2), so the edge of the grid reads as the edge of
+    // the sensor's view, not as a pale strip of chart
+    vec2 fw = max(fwidth(f), vec2(1e-6));
+    vec2 lo = (f + 0.5) / fw;
+    vec2 hi = (vec2(u_size) - 0.5 - f) / fw;
+    float edge = min(min(lo.x, lo.y), min(hi.x, hi.y));
+    if (edge < u_dpr) {
+      o = pm(u_ink2, 0.55);
+      return;
+    }
     if (nodata) {
-      vec4 veil = pm(u_paper, 0.3);
-      o = over(pm(u_hatch, 0.46 * hatch(10.0, 1.0)), veil);
+      // "no view": a quiet hatch over a light paper veil, so measured water dominates (T19)
+      vec4 veil = pm(u_paper, 0.22);
+      o = over(pm(u_hatch, 0.32 * hatch(11.0, 1.0)), veil);
       return;
     }
     o = pm(ramp(rampT(v)), u_opacity);
