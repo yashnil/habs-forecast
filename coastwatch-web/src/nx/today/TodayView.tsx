@@ -145,21 +145,7 @@ function useOfflineCopy(key: string, name: string, url: string, ready: boolean) 
   return at;
 }
 
-/**
- * Overlays (the provenance sheet) portal to <body>, outside the app element that carries the font
- * variables; until the layout puts them on <html> (reported to the shell owner), they are copied there.
- */
-function useFontsOnRoot() {
-  useEffect(() => {
-    const app = document.querySelector<HTMLElement>("[data-testid=nx-app]");
-    if (!app) return;
-    const vars = [...app.classList].filter((c) => c !== "n12-app");
-    document.documentElement.classList.add(...vars);
-  }, []);
-}
-
 function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["port"]>; inputs: TodayInputs; fishery: FisheryId }) {
-  useFontsOnRoot();
   const curl = conditionsUrl(inputs.place.lat, inputs.place.lon);
   const sea = useConditions(curl);
   const v = useMemo(() => buildToday(inputs, { fishery, sea, place: { key: port.key, name: port.name } }), [inputs, fishery, sea, port.key, port.name]);

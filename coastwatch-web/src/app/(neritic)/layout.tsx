@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import "@/nx/ds/tokens.css";
 import "@/nx/chart/chart.css";
 import "@/nx/shell/shell.css";
-import { literata, publicSans } from "@/nx/ds/fonts";
 import { PAPER_DAY } from "@/nx/ds/palette";
 import { ChartHost } from "@/nx/chart/ChartHost";
 import { OpeningController, OpeningStill } from "@/nx/opening/Opening";
@@ -30,7 +29,7 @@ export const viewport: Viewport = { themeColor: PAPER_DAY, colorScheme: "light d
 export default async function NeriticLayout({ children }: { children: React.ReactNode }) {
   const ports = await shellPorts();
   return (
-    <div className={`n12-app ${literata.variable} ${publicSans.variable}`} data-testid="nx-app">
+    <div className="n12-app" data-testid="nx-app">
       {/* before the first paint: what `/` is (home, the opening, or Today at the saved port) and the chart mode */}
       <script dangerouslySetInnerHTML={{ __html: ENTRY_SCRIPT }} />
       <PortsProvider value={ports}>

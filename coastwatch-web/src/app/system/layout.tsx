@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "@/nx/ds/tokens.css";
-import { fontVariables } from "@/nx/ds/fonts";
 
 // The living catalog of the v12 design system: a review and screenshot surface, never indexed.
 export const metadata: Metadata = {
@@ -10,5 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default function SystemLayout({ children }: { children: ReactNode }) {
-  return <div className={fontVariables}>{children}</div>;
+  // the two faces' variables are on <html> (src/app/layout.tsx)
+  return children;
 }
