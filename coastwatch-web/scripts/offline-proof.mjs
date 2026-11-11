@@ -66,12 +66,28 @@ function watch(ctx, phase) {
 
 const dir = mkdtempSync(join(tmpdir(), "neritic-offline-"));
 const server = startServer();
+// a step that never settles (a control or a service worker that is not there) fails the proof, never hangs it
+const watchdog = setTimeout(() => {
+  console.log(`FAIL  the proof stopped answering after ${fail.length} failed check(s); last step: ${step}`);
+  try {
+    process.kill(-server.pid, "SIGTERM");
+  } catch {
+    // already stopped
+  }
+  console.log("\nNOT PROVEN: the run did not finish");
+  process.exit(1);
+}, 6 * 60_000);
+watchdog.unref();
 try {
   await waitUp();
   let ctx = await chromium.launchPersistentContext(dir, VP);
+  // a missing control fails the proof in a minute instead of waiting for ever
+  ctx.setDefaultTimeout(60_000);
   let p = ctx.pages()[0] ?? (await ctx.newPage());
+  step = "open /coast and wait for the service worker";
   await p.goto(`${BASE}/coast?place=port-550`, { waitUntil: "load" });
   await p.evaluate(() => navigator.serviceWorker.ready);
+  step = "open the field-pack dialog (pack-open)";
   await p.reload({ waitUntil: "load" });
   await p.getByTestId("pack-open").click();
   const go = p.getByTestId("pack-download");
@@ -99,6 +115,7 @@ try {
 
   const OFFLINE = { offline: true, proxy: { server: "http://127.0.0.1:9" }, args: ["--proxy-bypass-list=<-loopback>"] };
   ctx = await chromium.launchPersistentContext(dir, { ...VP, ...OFFLINE });
+  ctx.setDefaultTimeout(60_000);
   watch(ctx, "phone");
   p = ctx.pages()[0] ?? (await ctx.newPage());
   const errors = [];
@@ -157,6 +174,7 @@ try {
 
   // the coverage walk: Explore on a wide screen, every layer, sensor and day, in and around the box
   ctx = await chromium.launchPersistentContext(dir, { viewport: { width: 1440, height: 900 }, ...OFFLINE });
+  ctx.setDefaultTimeout(60_000);
   watch(ctx, "explore");
   p = ctx.pages()[0] ?? (await ctx.newPage());
   p.on("pageerror", (e) => errors.push(e.message));

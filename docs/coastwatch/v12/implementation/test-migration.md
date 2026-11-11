@@ -65,3 +65,16 @@ Behaviour the old specs required that the v12 pages do not have (not papered ove
 7. Seen while porting: the unavailable states on Explore and Research print the server's file path from the
    error (`manifest not available (ENOENT … /public/data/…)`), and the `/` title repeats the name
    ("… for your port — Neritic").
+
+## `npm run test:offline` (scripts/offline-proof.mjs)
+
+The proof is written for v11's field pack: it opens `/coast?place=port-550`, waits for the service worker,
+then presses `pack-open` and `pack-download`. On v12 it does not get past its first step: `/coast` is the
+v12 My Coast page, which registers no service worker and has no field-pack control (Missing in v12, item 2;
+only Today registers the worker, when it keeps its own copy). Before v12 it ran to the end with 3 failures
+(the map's OpenStreetMap and OpenMapTiles credit offline, 4 same-origin resources missing from the pack, and
+one summary check); those checks cannot be reached now, so they neither pass nor fail. The script now stops
+with a FAIL line naming the step after six minutes, and its actions time out after a minute, instead of
+waiting for ever. v12's offline behaviour is covered instead by `nx-shell-offline.spec.ts` (saved packs at
+the new addresses) and Journey 1 (Today at `/` offline from the copy the device kept). Porting the proof
+needs the field-pack decision first.
