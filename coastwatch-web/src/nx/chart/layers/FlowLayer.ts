@@ -302,7 +302,7 @@ export function createFlowLayer(layerId: string, tier: FlowTier, colours: ModeCo
         g.uniform1f(u.u_taper, 0);
         g.uniform1f(u.u_width, 1.2 * dpr);
         const [r, gg, b] = cols.ink2;
-        g.uniform4f(u.u_color, r, gg, b, 0.32);
+        g.uniform4f(u.u_color, r, gg, b, 0.22 * Math.min(1, Math.max(0, map.getZoom() - 7)));
         g.bindVertexArray(edgeVao);
         g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, edgeCount);
       }

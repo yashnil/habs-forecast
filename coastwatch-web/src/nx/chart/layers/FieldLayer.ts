@@ -108,8 +108,8 @@ void main() {
 
   if (u_variant == 0) {
     if (nodata) {
-      vec4 veil = pm(u_paper, 0.42);
-      o = over(pm(u_hatch, 0.5 * hatch(10.0, 1.0)), veil);
+      vec4 veil = pm(u_paper, 0.3);
+      o = over(pm(u_hatch, 0.46 * hatch(10.0, 1.0)), veil);
       return;
     }
     o = pm(ramp(rampT(v)), u_opacity);
