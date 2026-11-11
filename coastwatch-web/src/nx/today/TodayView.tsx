@@ -20,7 +20,7 @@ import { Loading, SourcesDiffer, Unavailable } from "@/nx/ds/States";
 import { Statement } from "@/nx/ds/Statement";
 import { usePhone } from "@/nx/ds/useMedia";
 import { CANYON_AXIS } from "@/nx/chart/features";
-import { distanceKm, portWater, todayBounds } from "./camera";
+import { distanceKm, phoneBounds, portWater, todayBounds } from "./camera";
 import { changeLine, type ChangeLine } from "./change";
 import { conditionsUrl, useConditions, useTodayInputs, type Initial } from "./data";
 import { FisheryChooser } from "./FisheryChooser";
@@ -160,7 +160,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
   // the camera: the port and the water that matters, with room for the soundings
   const pts = v.soundings.map((d) => ({ lon: d.lon, lat: d.lat }));
   if (distanceKm(port, canyonHead) < 25) pts.push(canyonHead);
-  const bounds = todayBounds(port, pts, phone ? { pad: 0.3, minHalfKm: 16, south: 0.9 } : {});
+  const bounds = phone ? phoneBounds(port, pts) : todayBounds(port, pts);
   const sceneId = `today:${port.key}`;
   const st = v.statement;
 
@@ -178,7 +178,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
               as="h1"
               id="nx-today-title"
               tone={st.tone}
-              rule={st.tone === "regulation"}
+              rule={st.tone === "regulation" && !phone}
               scope={
                 <span className={s.scopeInner}>
                   <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName} transition={settle}>

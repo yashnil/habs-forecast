@@ -12,7 +12,7 @@ const KM_LAT = 111.32;
 const kmLon = (lat: number) => KM_LAT * Math.cos((lat * Math.PI) / 180);
 export const distanceKm = (a: P, b: P) => Math.hypot((a.lon - b.lon) * kmLon((a.lat + b.lat) / 2), (a.lat - b.lat) * KM_LAT);
 
-export function todayBounds(port: P, points: P[], o: { maxKm?: number; minHalfKm?: number; pad?: number; south?: number } = {}): Bounds {
+export function todayBounds(port: P, points: P[], o: { maxKm?: number; minHalfKm?: number; pad?: number; south?: number; eastKm?: number } = {}): Bounds {
   const maxKm = o.maxKm ?? 70;
   const minHalf = o.minHalfKm ?? 20;
   const pad = o.pad ?? 0.22;
@@ -35,13 +35,34 @@ export function todayBounds(port: P, points: P[], o: { maxKm?: number; minHalfKm
   const hy = Math.max((n - s) / 2, (minHalf * 0.8) / KM_LAT);
   // phones: open water below the points, where the soundings' type can sit above the resting sheet
   const below = (o.south ?? 0) * hy;
+  // and room east of the port for its name, so the name never sits over the water the soundings need
+  const east = (o.eastKm ?? 0) / kmLon(cy);
   return [
     [cx - hx, cy - hy - below],
-    [cx + hx, cy + hy],
+    [cx + hx + east, cy + hy],
   ];
 }
 
 /** A port's own water before a fishery is chosen: the port with the sea to its west and south-west in view. */
 export function portWater(port: P): Bounds {
   return todayBounds(port, [{ lon: port.lon - 0.3, lat: port.lat - 0.08 }], { pad: 0.1 });
+}
+
+/**
+ * The phone's view above the resting sheet: small, so it is composed rather than fitted. The port sits a
+ * little right of centre with room to its east for its name (over land), the readings' points sit in the
+ * upper part, and open water below them takes the soundings' type.
+ */
+export function phoneBounds(port: P, points: P[], maxKm = 70): Bounds {
+  const near = points.filter((p) => distanceKm(port, p) <= maxKm);
+  const k = kmLon(port.lat);
+  const west = Math.min(port.lon, ...near.map((p) => p.lon)) - 6 / k;
+  const e = port.lon + 26 / k;
+  const w = Math.min(west, e - 48 / k);
+  const n = Math.max(port.lat, ...near.map((p) => p.lat)) + 10 / KM_LAT;
+  const s = Math.min(port.lat, ...near.map((p) => p.lat)) - 26 / KM_LAT;
+  return [
+    [w, s],
+    [e, n],
+  ];
 }

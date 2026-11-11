@@ -73,6 +73,8 @@ export type SoundingDatum = {
   value: string;
   unit: string | null;
   caption: string[];
+  /** phones: the figure with one short line under it (kind and source, date); the rest is in the provenance */
+  short: string;
   stale: boolean;
   /** the full spoken reading */
   spoken: string;
@@ -359,6 +361,7 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
       value: max == null ? "ND" : ppmWords(max),
       unit: test.action != null ? `of ${test.action} ppm` : "ppm",
       caption: [`CDPH, ${day(test.latest.date, { ref: now })}, ${ageWords(test.latest.date, now)}`],
+      short: `${speciesShort(test.site.species)} test, CDPH, ${day(test.latest.date, { ref: now })}`,
       stale: test.stale,
       spoken: `${speciesShort(test.site.species)} test at ${test.site.site_label}: highest ${max == null ? "not detected" : `${ppmWords(max)} ppm`}${test.action != null ? ` of the ${test.action} ppm action level` : ""}${avg != null ? `, average ${ppmWords(avg)}` : ""}. Measured by CDPH, ${day(test.latest.date, { ref: now })}, ${ageWords(test.latest.date, now)}. Open where this comes from.`,
       provenance: testProvenance(test),
@@ -380,6 +383,7 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
       value,
       unit,
       caption: [`NDBC, ${when}`],
+      short: `Buoy ${b.id}, ${when.replace(/ PT$/, "")}`,
       stale: ageMin > 180,
       spoken: `${waves ? "Waves" : "Wind"} measured at NDBC buoy ${b.id}: ${value} ${unit}, ${when}. Open where this comes from.`,
       provenance: f ? provenanceOf(f, `Buoy ${b.id}, ${b.name}`, { place: `${Math.round(b.km)} km from ${o.place.name}`, stale: ageMin > 180 }) : null,
