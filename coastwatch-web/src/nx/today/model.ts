@@ -16,7 +16,7 @@
  */
 import type { FisheryId, PortFact, StatusLevel } from "@/pilot/contracts";
 import type { Conditions } from "@/lib/conditions";
-import { buildTodayModel, FISHERY_OPTIONS, fisheryLabel, nextTide, pacificDay, rowHeadline, type PortTodayInputs, type StatusRow, type TestSiteView, type TodayModel } from "@/pilot/facts";
+import { buildTodayModel, factorWords, FISHERY_OPTIONS, fisheryLabel, nextTide, pacificDay, rowHeadline, type PortTodayInputs, type StatusRow, type TestSiteView, type TodayModel } from "@/pilot/facts";
 import { periodLine, type LanePeriod } from "@/pilot/today/marine";
 import type { Provenance } from "@/nx/ds/Stamp";
 import { age as ageWords, day } from "@/nx/ds/format";
@@ -493,11 +493,15 @@ function modelsOf(model: TodayModel): ModelsView {
   if (b.outlook && b.outlookFact) {
     const r = b.outlookRead;
     const signal = r ? (r.level === "usual" ? "none" : r.level) : "unknown";
-    const head = r && r.level === "usual" ? `No signal: the 8-day chlorophyll outlook is about usual for this time of year.` : b.outlookFact.headline;
+    // T9: the words "toxin forecast" are not used, even negated; T5 and T14 are said plainly instead
+    const plain = (x: string) => x.replace(/\s*A bloom indicator, not a toxin forecast[:.]\s*(chlorophyll is algae of every kind\.)?\s*/gi, " ").trim();
+    const days = Math.round((Date.parse(`${b.outlook.valid_to}T00:00:00Z`) - Date.parse(`${b.outlook.valid_from}T00:00:00Z`)) / 86_400_000) + 1;
+    const honest = `Chlorophyll is algae of every kind, not toxin. One ${Number.isFinite(days) && days > 0 ? days : 8}-day average, not a day-by-day forecast${b.errorFactor != null ? `; its typical error is about a factor of ${factorWords(b.errorFactor)} either way` : ""}.`;
+    const head = r && r.level === "usual" ? "No signal: the 8-day chlorophyll outlook is about usual for this time of year." : plain(b.outlookFact.headline);
     outlook = {
       headline: head,
-      words: [b.outlookHonest ?? "Chlorophyll is algae, not toxin.", b.outlookUse].filter((x): x is string => !!x),
-      provenance: provenanceOf(b.outlookFact, "Chlorophyll outlook, 8 days", { stale: b.outlookStale }),
+      words: [honest, b.outlookUse].filter((x): x is string => !!x),
+      provenance: provenanceOf({ ...b.outlookFact, detail: b.outlookFact.detail ? plain(b.outlookFact.detail) : null }, "Chlorophyll outlook, 8 days", { stale: b.outlookStale }),
       signal,
     };
     value = signal === "none" ? "No signal" : signal === "higher" ? "Algae higher than usual, not toxin" : signal === "lower" ? "Algae lower than usual, not toxin" : "Algae outlook, not toxin";
