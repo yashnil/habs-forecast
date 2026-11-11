@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { CHART_MODE_KEY, type ChartMode } from "./entry";
-import { openPortFinder } from "./PortFinder";
+import { openPortFinder } from "./finder";
 import { useCurrentPort, useSavedPortKey } from "./port";
 
 export const DESTINATIONS = [

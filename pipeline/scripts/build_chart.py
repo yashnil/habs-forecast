@@ -315,6 +315,18 @@ def stroke(w, s, e, n, width, height, widths, ss=3):
     return out
 
 
+def edge_fade(rows_lat, cols_lon, box_, width_deg):
+    """1 inside, easing (smoothstep) to 0 over `width_deg` at the box's east, north and south edges, where the
+    land continues past the relief's grid. The west edge is open ocean and needs none."""
+    w, s, e, n = box_
+    lat = np.asarray(rows_lat)[:, None]
+    lon = np.asarray(cols_lon)[None, :]
+    def ease(d):
+        t = np.clip(d / width_deg, 0, 1)
+        return t * t * (3 - 2 * t)
+    return ease(e - lon) * ease(n - lat) * ease(lat - s)
+
+
 def relief_rgba(zm, dx, land_mask, tok):
     """Land relief at 1x (no exaggeration) as one warm shadow colour with alpha: slopes facing the light carry
     less shadow than the flat, slopes away from it more, so a single darkening layer reads both ways and
@@ -458,6 +470,10 @@ def main(etopo: Path, crm: Path, out: Path) -> None:
         # the two reliefs cross-fade over the inset's edge, so neither shows a rectangle nor doubles the shading
         wgt = inset_weight(rows_lat, cols_lon)
         rel[..., 3] = (rel[..., 3] * ((1 - wgt) if name == "ca" else wgt)).astype(np.uint8)
+        if name == "ca":
+            # the land runs on past the ETOPO box (to the frame's bounds): the relief eases out over its last
+            # 0.35 degrees on the east, north and south, so no edge shows where the shading stops
+            rel[..., 3] = (rel[..., 3] * edge_fade(rows_lat, cols_lon, r["box"], 0.35)).astype(np.uint8)
         rel_name = "relief-land.webp" if name == "ca" else "relief-land-monterey.webp"
         rw = r["relief_width"]
         rh = round(height * rw / r["width"])

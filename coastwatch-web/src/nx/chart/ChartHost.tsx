@@ -9,7 +9,8 @@ import { placeAll, type Anchor, type Rect } from "./placement";
 import { allMarks, onMarksChange, publishFrame, staticProjector, type ChartFrame } from "./runtime";
 import { getScene, subscribeScene, type ChartScene } from "./scene";
 import { setChartMap } from "./control";
-import { chartStyle, CHART_FRAME, modePaint, posterImages, readPalette } from "./style";
+import { measureCovers, onCoversChange } from "./cover";
+import { chartStyle, CHART_FRAME, modePaint, posterImages, posterLandEast, readPalette } from "./style";
 import { Neatline } from "./Neatline";
 import { ChartLabels, CanyonName, type ChartPort } from "./Labels";
 
@@ -29,7 +30,7 @@ const bezier = (t: number) => {
   return by((lo + hi) / 2);
 };
 
-/** The free area inside the sheet: room for the neatline's breath, plus whatever covers the sheet (the phone's margin sheet). */
+/** The free area inside the sheet: room for the neatline's breath, plus whatever covers the sheet (the phone sheet, a panel). */
 function sceneInsets(vp: Viewport, cover: Insets): Insets {
   const pad = vp.width < 560 ? 20 : 44;
   return { top: cover.top + pad, right: cover.right + pad, bottom: cover.bottom + pad, left: cover.left + pad };
@@ -45,15 +46,9 @@ export function cameraFor(scene: ChartScene, vp: Viewport, cover: Insets): Camer
   return fitBounds(scene.view.bounds, vp, sceneInsets(vp, cover), scene.view.maxZoom ?? 12.5);
 }
 
-/** How much of the sheet the margin covers (phones: the margin is a sheet over the chart's lower part). */
-function coveredInsets(frame: HTMLElement): Insets {
-  const m = document.querySelector<HTMLElement>("[data-nx-margin]");
-  if (!m) return NO_INSETS;
-  const f = frame.getBoundingClientRect();
-  const r = m.getBoundingClientRect();
-  if (r.width < f.width * 0.8 || r.top >= f.bottom || r.bottom <= f.top) return NO_INSETS;
-  return { top: 0, right: 0, bottom: Math.max(0, f.bottom - r.top), left: 0 };
-}
+/** How much of the sheet is covered, edge by edge, and what covers it elsewhere (src/nx/chart/cover.ts). */
+const covered = (frame: HTMLElement) => measureCovers(frame.getBoundingClientRect());
+const sameInsets = (a: Insets, b: Insets) => a.top === b.top && a.right === b.right && a.bottom === b.bottom && a.left === b.left;
 
 /** The chart's own zoom limits; a scene may narrow them (ChartScene.zoomRange). */
 const CHART_ZOOM = [4, 13.5] as const;
@@ -80,6 +75,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   const [mode, setMode] = useState("day");
   const [neat, setNeat] = useState({ band: 4, label: 20 });
   const coverRef = useRef<Insets>(NO_INSETS);
+  const coverObstacles = useRef<Rect[]>([]);
   const sceneId = useRef<string | null>(null);
   const prevAnchors = useRef(new Map<string, Anchor>());
   const raf = useRef(0);
@@ -92,10 +88,14 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
     const frameEl = frameRef.current;
     if (!f || !frameEl) return;
     const { width: W, height: H } = f.viewport;
-    const area: Rect = { x0: 6, y0: 6, x1: W - 6, y1: H - 6 - f.insets.bottom };
-    const obstacles: Rect[] = [];
+    const ins = f.insets;
+    // nothing is written under a panel, the resting phone sheet or the chart's own scale and sources
+    const area: Rect = { x0: 6 + ins.left, y0: 6 + ins.top, x1: W - 6 - ins.right, y1: H - 6 - ins.bottom };
+    const obstacles: Rect[] = [...coverObstacles.current];
     const scale = frameEl.querySelector<HTMLElement>(".n12-scale");
-    if (scale) obstacles.push({ x0: 0, y0: H - f.insets.bottom - scale.offsetHeight - 16, x1: scale.offsetWidth + 24, y1: H });
+    if (scale) obstacles.push({ x0: ins.left, y0: H - ins.bottom - scale.offsetHeight - 16, x1: ins.left + scale.offsetWidth + 24, y1: H });
+    const attrib = frameEl.querySelector<HTMLElement>(".n12-attrib");
+    if (attrib && attrib.offsetWidth) obstacles.push({ x0: W - ins.right - attrib.offsetWidth - 20, y0: H - ins.bottom - attrib.offsetHeight - 16, x1: W - ins.right, y1: H - ins.bottom });
     const canyon = frameEl.querySelector<SVGGraphicsElement>(".n12-canyon-name text");
     if (canyon && canyon.getAttribute("visibility") !== "hidden") {
       const b = canyon.getBBox();
@@ -154,7 +154,11 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const m = mapRef.current;
       const project = live && m ? (lon: number, lat: number) => m.project([lon, lat]) : staticProjector(camera, viewport);
       const f: ChartFrame = { camera, viewport, insets: coverRef.current, project, live };
-      frameRef.current?.style.setProperty("--nx-cover-bottom", `${coverRef.current.bottom}px`);
+      const el = frameRef.current;
+      if (el) {
+        for (const k of ["top", "right", "bottom", "left"] as const) el.style.setProperty(`--nx-cover-${k}`, `${coverRef.current[k]}px`);
+        el.dataset.free = viewport.width - coverRef.current.left - coverRef.current.right < 600 ? "narrow" : "wide";
+      }
       frameRefLatest.current = f;
       publishFrame(f);
       setCam(camera);
@@ -190,7 +194,9 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
     if (!el) return;
     const measure = () => {
       const r = el.getBoundingClientRect();
-      coverRef.current = coveredInsets(el);
+      const c = covered(el);
+      coverRef.current = c.insets;
+      coverObstacles.current = c.obstacles;
       const cs = getComputedStyle(el);
       setNeat((o) => {
         const band = parseFloat(cs.getPropertyValue("--neat-band")) || 4;
@@ -202,20 +208,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
-    const margin = () => document.querySelector("[data-nx-margin]");
-    const m0 = margin();
-    if (m0) ro.observe(m0);
-    // the margin is re-rendered per page: watch for a new one
-    const mo = new MutationObserver(() => {
-      const m = margin();
-      if (m) ro.observe(m);
-      measure();
-    });
-    mo.observe(document.body, { childList: true, subtree: true });
-    return () => {
-      ro.disconnect();
-      mo.disconnect();
-    };
+    return () => ro.disconnect();
   }, []);
 
   // ---------------------------------------------------------------- the map (once)
@@ -234,7 +227,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const scene = getScene();
       const box = mapEl.current.getBoundingClientRect();
       const viewport = { width: box.width, height: box.height };
-      const start = scene ? cameraFor(scene, viewport, coveredInsets(frameRef.current!)) : { center: [-120.5, 37] as [number, number], zoom: 5 };
+      const start = scene ? cameraFor(scene, viewport, covered(frameRef.current!).insets) : { center: [-120.5, 37] as [number, number], zoom: 5 };
       // the land polygon's whole box (a little inside it, so its outline never shows)
       const [w, s, e, n] = CHART_FRAME.bounds.map((v, i) => v + (i < 2 ? 0.05 : -0.05));
       const map = new ml.Map({
@@ -335,7 +328,9 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const scene = getScene();
       const el = frameRef.current;
       if (!scene || !el || !vp) return;
-      coverRef.current = coveredInsets(el);
+      const c = covered(el);
+      coverRef.current = c.insets;
+      coverObstacles.current = c.obstacles;
       const target = cameraFor(scene, vp, coverRef.current);
       const m = mapRef.current;
       const w = window as Win;
@@ -388,6 +383,21 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
 
   useEffect(() => onMarksChange(schedule), [schedule]);
 
+  // a panel or the phone sheet arriving, leaving or changing size: the camera refits into the free part of the
+  // sheet (gliding, since it is the same view) and the names are placed again
+  useEffect(
+    () =>
+      onCoversChange(() => {
+        const el = frameRef.current;
+        if (!el) return;
+        const c = covered(el);
+        coverObstacles.current = c.obstacles;
+        if (sameInsets(c.insets, coverRef.current)) return schedule();
+        applyScene(true);
+      }),
+    [applyScene, schedule],
+  );
+
   const showPoster = tier === "static" || !mapReady || lost;
   const scale = cam && vp ? scaleBar(cam.center[1], cam.zoom, Math.min(240, vp.width * 0.3)) : null;
 
@@ -396,6 +406,10 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       <div className="n12-frame" ref={frameRef}>
         {showPoster && cam && vp ? (
           <div className="n12-poster" data-testid="nx-poster" aria-hidden="true">
+            {(() => {
+              const r = screenRect(cam, vp, posterLandEast());
+              return <span className="n12-poster-land" style={{ left: r.left, top: r.top, width: r.width, height: r.height }} />;
+            })()}
             {posterImages(mode).map((img) => {
               const r = screenRect(cam, vp, img.bounds);
               // eslint-disable-next-line @next/next/no-img-element
@@ -404,6 +418,8 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
           </div>
         ) : null}
         <div className="n12-map" ref={mapEl} data-testid="nx-map" />
+        {/* the static tier's data images (a page's baked frame) lie here, on the baked chart and under its names */}
+        <div id="nx-chart-underlay" className="n12-underlay" aria-hidden="true" />
         {opening}
         <div className="n12-overlay" data-testid="nx-overlay">
           <CanyonName />

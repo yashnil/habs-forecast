@@ -150,7 +150,7 @@ test("on a phone: the gates rest in the sheet; one thumb fills the worksheet; a 
   await expect(p.getByLabel("Catch", { exact: true })).toHaveAttribute("inputmode", "decimal");
   await expect(p.getByLabel("Crew", { exact: true })).toHaveAttribute("inputmode", "numeric");
   expect((await p.getByLabel("Catch", { exact: true }).boundingBox())!.height).toBeGreaterThanOrEqual(48);
-  await p.locator(".n12-margin-handle").tap();
+  for (let i = 0; i < 2; i++) await p.getByRole("button", { name: "Show more of this page" }).tap();
   await fill(p);
   await p.getByRole("radio", { name: "Shared, off the top" }).tap();
   await expect(net(p)).toContainText("$2,015", { timeout: 5000 });
@@ -201,7 +201,7 @@ test("media: stills at the widths and modes the page is used at", async ({ brows
       await expect(net(p)).toContainText("$2,015", { timeout: 5000 });
     }
     if (scrollTo) {
-      if (w < 721) await p.locator(".n12-margin-handle").click();
+      if (w < 721) for (let i = 0; i < 2; i++) await p.getByRole("button", { name: "Show more of this page" }).click();
       await p.locator(scrollTo).first().evaluate((el) => el.scrollIntoView({ block: "start" }));
     }
     if (hover) await p.getByRole("button", { name: /^\+30 % catch, \+20 % price/ }).hover();

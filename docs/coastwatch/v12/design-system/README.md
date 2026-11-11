@@ -133,7 +133,7 @@ Each has states: default, hover, focus, pressed, disabled, loading, empty, stale
 | `Neatline` | Graduated frame with real ticks |
 | `Sounding` | A figure placed at a lon/lat, with unit, kind mark and a leader line; collision-aware |
 | `ChartNote` | A short note on the water with knockout halo; drops by priority when space is short |
-| `Margin` / `MarginRow` / `MarginSheet` | Ruled column; rows expand in place; phone bottom sheet (vaul) |
+| `Margin` / `MarginRow` / `MarginSheet` | Ruled column; rows expand in place; phone bottom sheet with detents (Motion drag, `sheet` spring) |
 | `Statement` | Page title plus status sentence, Literata |
 | `BigDate` | The next date that matters, with what it is and its source |
 | `Agenda` | Dated items: past solid, future hollow, now line (from Tide) |
@@ -165,12 +165,11 @@ on request, fathoms for depth limits.
 | `maplibre-gl` | 6.x (installed) | BSD-3 | The persistent chart |
 | `@paper-design/shaders-react` | 0.0.82 | Apache-2.0 | `paper-texture` for the sheet's paper and `image-dithering` for the opening's canyon still; never on water at runtime |
 | `@radix-ui/react-dialog`, `-popover`, `-tooltip` | 1.3.1 / 1.3.1 / 1.4.1 | MIT | Accessible primitives |
-| `vaul` | 1.1.2 | MIT | Phone margin sheet with detents |
 | `cmdk` | 1.1.1 | MIT | Port finder |
 | `d3-scale`, `d3-shape` | 4.0.x, 3.2.x | ISC | Chart maths; we render SVG ourselves |
 | Literata, Public Sans | via `next/font` | OFL-1.1 | Type |
 
-Not used, on purpose: three.js and deck.gl (one scene doesn't justify the weight), visx, icon libraries,
+Not used, on purpose: vaul (1.1.2 always opens a modal Radix dialog: it hides the page from assistive tech and traps focus, which a page margin must never do; the sheet is Motion's drag with the `sheet` spring), three.js and deck.gl (one scene doesn't justify the weight), visx, icon libraries,
 Tailwind component kits, runtime fluid shaders.
 
 ## 12. Budgets

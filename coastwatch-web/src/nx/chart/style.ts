@@ -153,6 +153,18 @@ export function posterImages(mode: string): Array<{ url: string; bounds: [[numbe
   return [`chart-${mode}-ca.webp`, `chart-${mode}-monterey.webp`].map((n) => ({ url: `/chart/${n}`, bounds: box(n) }));
 }
 
+/**
+ * East of the statewide image the land runs on to the chart's bounds: the static tier lays plain land there,
+ * so a wide or zoomed-out still never ends in a pale edge where the bake stops.
+ */
+export function posterLandEast(): [[number, number], [number, number]] {
+  const c = corners(`chart-day-ca.webp`);
+  return [
+    [c[1][0], CHART_FRAME.bounds[1]],
+    [CHART_FRAME.bounds[2], CHART_FRAME.bounds[3]],
+  ];
+}
+
 export const STILL = (() => {
   const c = corners("opening-canyon.webp");
   return {

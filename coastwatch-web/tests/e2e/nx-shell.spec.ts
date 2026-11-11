@@ -66,13 +66,30 @@ test.describe("one chart across the four destinations", () => {
   test("choosing a port from the finder opens Today there and remembers it", async ({ page, context }) => {
     await seed(context, { "nx-opening-seen-v1": "1" });
     await page.goto(`${OK}/`);
+    await mapReady(page);
+    // a first visit stays at /: the finder opens in the margin, the port's name travels into the chooser, a
+    // fishery is asked, and Today assembles in place (journeys.md Journey 1, three taps)
     await page.getByTestId("nx-find-port").click();
-    const finder = page.getByTestId("nx-port-finder");
-    await finder.getByRole("textbox").fill("moss");
-    await finder.getByRole("button", { name: /Moss Landing/ }).click();
-    await expect(page).toHaveURL(/\/today\?place=port-592$/);
-    await expect(page.getByTestId("nx-today")).toContainText("Moss Landing");
+    const finder = page.getByTestId("nx-home-finder");
+    await finder.getByRole("combobox").fill("moss");
+    await finder.getByRole("option", { name: /Moss Landing/ }).click();
+    const chooser = page.getByTestId("nx-fishery-chooser");
+    await expect(chooser.getByRole("heading", { level: 1 })).toHaveText("Moss Landing");
+    await expect(page).toHaveURL(`${OK}/`);
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("nx-port-v1") ?? "{}").lastPort)).toBe("port-592");
+    await chooser.getByRole("button", { name: "Dungeness crab (commercial)" }).click();
+    await expect(page.getByTestId("nx-today")).toContainText("Moss Landing");
+    await expect(page.getByTestId("nx-today").getByRole("heading", { level: 1 })).toHaveText("Season delayed to at least Jan 1, 2027");
+    await expect(page).toHaveURL(`${OK}/`);
+    await expect.poll(() => scene(page)).toBe("today:port-592");
+    // the bar's port control changes the port from any page, and the page follows it
+    await page.goto(`${OK}/explore`);
+    await page.getByTestId("nx-port-control").click();
+    const bar = page.getByTestId("nx-port-finder");
+    await bar.getByRole("combobox").fill("monterey");
+    await bar.getByRole("option", { name: /^Monterey/ }).first().click();
+    await expect(page).toHaveURL(/\/explore\?place=port-550$/);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("nx-port-v1") ?? "{}").lastPort)).toBe("port-550");
   });
 });
 
@@ -281,9 +298,15 @@ test.describe("phone", () => {
     for (const a of await tabs.getByRole("link").all()) expect((await a.boundingBox())!.height).toBeGreaterThanOrEqual(48);
     await tabs.getByRole("link", { name: "Research" }).click();
     await expect(page).toHaveURL(/\/research\?place=port-592$/);
+    // the margin is the ds MarginSheet: it rests with the page's statement above the tab bar, More raises it
     const margin = page.getByTestId("nx-margin");
-    const rest = (await margin.boundingBox())!.height;
-    await margin.getByRole("button", { name: "Read more" }).click();
-    await expect.poll(async () => (await margin.boundingBox())!.height).toBeGreaterThan(rest + 100);
+    await expect(page.getByTestId("research-title")).toBeInViewport();
+    const rest = (await margin.boundingBox())!.y;
+    expect(rest).toBeGreaterThan(844 * 0.4);
+    await margin.getByRole("button", { name: "Show more of this page" }).click();
+    await expect.poll(async () => (await margin.boundingBox())!.y).toBeLessThan(rest - 100);
+    // the chart frames its scene in the part the resting sheet leaves free
+    const cover = await page.evaluate(() => getComputedStyle(document.querySelector(".n12-frame")!).getPropertyValue("--nx-cover-bottom"));
+    expect(parseFloat(cover)).toBeGreaterThan(200);
   });
 });

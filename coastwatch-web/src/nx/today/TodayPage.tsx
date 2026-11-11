@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { ChartScene } from "@/nx/chart/scene";
 import { Button } from "@/nx/ds/Button";
-import { openPortFinder } from "@/nx/shell/PortFinder";
+import { openPortFinder } from "@/nx/shell/finder";
 import { savePort, useCurrentPort, usePorts } from "@/nx/shell/port";
 import { CA_COAST } from "@/nx/shell/views";
 import type { Initial } from "./data";

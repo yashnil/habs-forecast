@@ -141,17 +141,23 @@ mode. Use it to check a mode's table at a glance.
 
 ![MarginSheet at rest](catalog/sheet-open-day-390.png) ![MarginSheet raised](catalog/sheet-up-day-390.png)
 
-- **Purpose.** The phone margin: a non-modal bottom sheet (vaul) that rests where the status is visible and
-  drags up with velocity.
-- **Use** on phone layouts only, for the page's margin, or for a transient readout (with `onClose`).
+- **Purpose.** The phone margin: a bottom sheet that rests where the status is visible and drags up with
+  velocity to the nearest detent. It is not a dialog: the page and the chart stay live and reachable around it.
+- **Use** on phone layouts only, for the page's margin (the shell mounts it for every page), or for a transient
+  readout (with `onClose`).
 - **Don't use** on desktop, or for confirmations (use Dialog).
-- **Props.** `label`, `peek` (shown at rest), `children`, `detents` (default `176px`, `0.55`, `0.94`),
-  `onClose?`.
-- **States.** Resting, half, reading height; scrolls only at reading height.
-- **Motion.** vaul's drag physics and snap (its own 0.5 s transition, outside `ds/motion`; recorded here as
-  the one library-owned timing).
-- **Accessibility.** "More"/"Less" moves between detents for keyboard and switch users; the sheet has a
-  title; the chart stays operable underneath (non-modal).
+- **Props.** `label`, `peek?` (shown at rest; without it the page's own first lines rest in view and More sits in
+  the handle row), `children`, `detents` (default `176px`, `0.55`, `0.94`), `detent?`/`onDetentChange?`
+  (controlled; the shell's `openMargin("rest" | "half" | "full")` drives it, e.g. Explore when a reading
+  arrives), `bottomInset?` (the tab bar over its lowest part), `inline?` (no portal), `scroll?` (`reading`, or
+  `always` so a page can scroll a new part into view below reading height), `onClose?`.
+- **States.** Resting, half, reading height; the body scrolls at reading height (or always).
+- **Motion.** Motion's drag from the handle row; release flings to the nearest detent with the `sheet` spring
+  (stiffness 380, damping 36); More and Less use the same spring; reduced motion jumps. The first frame is
+  drawn at the resting detent. (vaul was dropped: 1.1.2 always opens a modal Radix dialog, hiding the page
+  from assistive tech and trapping focus.)
+- **Accessibility.** A labelled region, never modal; "More"/"Less" moves between detents for keyboard and
+  switch users; the chart stays operable above it.
 
 ## Sounding
 
