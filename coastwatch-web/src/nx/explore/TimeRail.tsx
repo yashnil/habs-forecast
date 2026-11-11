@@ -1,27 +1,31 @@
 "use client";
 
 import { useId, type KeyboardEvent, type PointerEvent } from "react";
-import { day, sig, useElementWidth } from "@/nx/ds";
-import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, Track } from "./model";
-import { axisDays, axisLength, axisX, nearestFrame, nearestHour, nowX } from "./timeline";
+import { range, sig, useElementWidth } from "@/nx/ds";
+import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, ProductId, Track } from "./model";
+import { axisLabels, axisX, nearestFrame, nearestHour, nowX, productSpan } from "./timeline";
+import { LAYER_LABEL } from "./words";
 import s from "./explore.module.css";
 
 /**
- * The time rail (README §9 TimeRail; the availability ribbon grafted from the Tide concept): one row per
- * product's time track on a shared day axis. Bars are each day's published coverage (how much of the coastal
+ * The time rail (README §9 TimeRail; the availability ribbon grafted from the Tide concept): the active layer's
+ * time tracks on a day axis, with the weight. Bars are each day's published coverage (how much of the coastal
  * ocean had a value); solid bars are measured, hatched boxes are model or outlook frames, a past model run is
  * drawn lighter with the words "past run"; the now line crosses every row. Choosing a frame is a cut (T26).
- * With currents on, the hours strip shows every published radar hour.
+ * With currents on, the hours strip shows every published radar hour. Every other layer is one quiet line of
+ * what it holds and when, each a way to switch to it, so the rail is short and its labels never collide.
  */
-const LABEL_W = 96;
-const ROW = 30;
-const ROW_ACTIVE = 48;
+const LABEL_W = 88;
+const ROW = 36;
+const ROW_ACTIVE = 56;
 
 type Props = {
   model: ExploreModel;
   product: ExploreProduct;
   frameId: string;
   onFrame: (product: ExploreProduct, frame: ExploreFrame) => void;
+  /** make another layer the active one (from the availability line) */
+  onProduct: (id: ProductId) => void;
   currentsOn: boolean;
   currentId: string | null;
   onCurrent: (f: CurrentFrame) => void;
@@ -44,10 +48,10 @@ function frameWords(f: ExploreFrame): string {
   return `${f.label === "Latest" ? `Latest view, ${f.stamp}` : f.stamp}, ${kind}${cov}`;
 }
 
-function TrackRow({ model, product, track, active, frameId, onFrame, width, hatchId, hatchPastId }: { model: ExploreModel; product: ExploreProduct; track: Track; active: boolean; frameId: string; onFrame: Props["onFrame"]; width: number; hatchId: string; hatchPastId: string }) {
+function TrackRow({ model, product, track, active, height, frameId, onFrame, width, hatchId, hatchPastId }: { model: ExploreModel; product: ExploreProduct; track: Track; active: boolean; height: number; frameId: string; onFrame: Props["onFrame"]; width: number; hatchId: string; hatchPastId: string }) {
   const frames = product.frames.filter((f) => f.track === track.id);
   const T = Math.max(40, width - LABEL_W);
-  const H = active ? ROW_ACTIVE : ROW;
+  const H = height;
   const x = (d: string, frac = 0) => axisX(model.axis, d, frac) * T;
   const maxVol = Math.max(0.0001, ...track.days.map((d) => d.volume), ...frames.map((f) => (f.start === f.end ? (f.volume ?? 0) : 0)));
   const pick = (e: PointerEvent<HTMLDivElement>) => {
@@ -64,7 +68,7 @@ function TrackRow({ model, product, track, active, frameId, onFrame, width, hatc
     if (f) onFrame(product, f);
   };
   const measured = product.kind === "measured";
-  const name = track.id === "viirs" ? "VIIRS" : product.id === "chl" ? "Chlorophyll" : product.id === "sst" ? "Temperature" : product.id === "charm" ? "C-HARM" : "Outlook";
+  const name = track.id === "viirs" ? "VIIRS" : track.id === "olci" ? "OLCI" : product.id === "chl" ? "Chlorophyll" : product.id === "sst" ? "Temperature" : product.id === "charm" ? "C-HARM" : "Outlook";
   const pastRun = product.pastRun && track.id === "charm";
   return (
     <div className={s.railRow} data-active={active ? "1" : "0"} style={{ height: H }} data-testid={`nx-rail-${track.id}`}>
@@ -211,17 +215,48 @@ function HoursStrip({ model, currentId, onCurrent, width, on }: { model: Explore
   );
 }
 
-export function TimeRail({ model, product, frameId, onFrame, currentsOn, currentId, onCurrent, playing, canPlay, onPlay }: Props) {
+const kindWord = (p: ExploreProduct) => (p.kind === "measured" ? "measured" : p.kind === "analysis" ? "analysis" : p.pastRun ? "past run" : p.kind);
+
+/** The other layers in one line: what each holds and when, each a button that makes it the active layer. */
+function Availability({ model, product, currentsShown, onProduct }: { model: ExploreModel; product: ExploreProduct; currentsShown: boolean; onProduct: (id: ProductId) => void }) {
+  const others = model.products.filter((p) => p.id !== product.id);
+  const hours = (model.currents?.frames ?? []).filter((f) => !f.mean);
+  const items = others.map((p) => {
+    const sp = productSpan(p);
+    const when = sp ? range(sp.first, sp.last) : "nothing published";
+    const days = sp && (p.kind === "measured" || p.kind === "analysis") && sp.days > 1 ? `, ${sp.days} days with a view` : "";
+    return { id: p.id, text: `${LAYER_LABEL[p.id]} ${when}`, sub: `${kindWord(p)}${days}` };
+  });
+  if (!items.length && (currentsShown || !hours.length)) return null;
+  return (
+    <p className={s.railAlso} data-testid="nx-rail-also">
+      <span className={s.railAlsoHead}>Also</span>
+      {items.map((it, i) => (
+        <span key={it.id}>
+          <button type="button" className={s.railAlsoItem} onClick={() => onProduct(it.id)} data-testid={`nx-rail-also-${it.id}`}>
+            {it.text}
+          </button>{" "}
+          <span className={s.railAlsoSub}>({it.sub})</span>
+          {i < items.length - 1 || (!currentsShown && hours.length) ? <span aria-hidden="true"> · </span> : null}
+        </span>
+      ))}
+      {!currentsShown && hours.length ? (
+        <span>
+          Currents {range(hours[0].date, hours[hours.length - 1].date)} <span className={s.railAlsoSub}>(measured, {hours.length} hours{product.kind === "model" || product.kind === "outlook" ? "; not over a model" : ""})</span>
+        </span>
+      ) : null}
+    </p>
+  );
+}
+
+export function TimeRail({ model, product, frameId, onFrame, onProduct, currentsOn, currentId, onCurrent, playing, canPlay, onPlay }: Props) {
   const [ref, width] = useElementWidth<HTMLDivElement>(320);
   const uid = useId().replace(/:/g, "");
   const hatchId = `nxh-${uid}`;
   const hatchPastId = `nxhp-${uid}`;
   const T = Math.max(40, width - LABEL_W);
-  const days = axisDays(model.axis);
-  const n = axisLength(model.axis);
-  const every = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(T / 38))));
   const nx = nowX(model.axis, model.now) * T;
-  const rows = model.products.flatMap((p) => p.tracks.map((t) => ({ p, t })));
+  const labels = axisLabels(model.axis, T, nx);
   const frame = product.frames.find((f) => f.id === frameId);
   const cur = model.currents?.frames.find((f) => f.id === currentId) ?? null;
   return (
@@ -246,29 +281,28 @@ export function TimeRail({ model, product, frameId, onFrame, currentsOn, current
           </defs>
         </svg>
         <div className={s.railAxis} style={{ marginLeft: LABEL_W, width: T }} aria-hidden="true">
-          {days.map((d, i) =>
-            i % every === 0 && Math.abs(axisX(model.axis, d, 0) * T + 10 - nx) > 34 ? (
-              <span key={d} className={s.railDay} style={{ left: axisX(model.axis, d, 0) * T }}>
-                {i === 0 || d.endsWith("-01") ? day(d) : String(Number(d.slice(8, 10)))}
-              </span>
-            ) : null,
-          )}
-          <span className={s.railNowLabel} style={{ left: nx }}>
+          {labels.map((l) => (
+            <span key={l.date} className={s.railDay} style={{ left: l.x }}>
+              {l.text}
+            </span>
+          ))}
+          <span className={s.railNowLabel} style={{ left: Math.min(Math.max(nx, 20), T - 20) }}>
             Now
           </span>
         </div>
         <div className={s.railRows}>
           <span className={s.nowLine} style={{ left: LABEL_W + nx }} aria-hidden="true" />
-          {rows.map(({ p, t }) => (
-            <TrackRow key={t.id} model={model} product={p} track={t} active={p.id === product.id} frameId={frameId} onFrame={onFrame} width={width} hatchId={hatchId} hatchPastId={hatchPastId} />
+          {product.tracks.map((t, i) => (
+            <TrackRow key={t.id} model={model} product={product} track={t} active height={i === 0 ? ROW_ACTIVE : ROW} frameId={frameId} onFrame={onFrame} width={width} hatchId={hatchId} hatchPastId={hatchPastId} />
           ))}
-          {model.currents ? <HoursStrip model={model} currentId={currentId} onCurrent={onCurrent} width={width} on={currentsOn} /> : null}
+          {model.currents && currentsOn ? <HoursStrip model={model} currentId={currentId} onCurrent={onCurrent} width={width} on /> : null}
         </div>
       </div>
       <p className={s.railKey}>
-        Bars: share of the coastal ocean with a value that day. Hatched: model or outlook. {product.pastRun ? "Past run: every day it covers is before today." : ""}
+        {product.kind === "measured" ? "Bars: share of the coastal ocean with a value that day." : "Hatched: a model or outlook frame, the days it is valid for."} {product.pastRun ? "Past run: every day it covers is before today." : ""}
         {frame && frame.volume != null && frame.kind === "measured" ? ` This frame: values over ${sig(frame.volume * 100, 2)} %.` : ""}
       </p>
+      <Availability model={model} product={product} currentsShown={!!model.currents && currentsOn} onProduct={onProduct} />
     </section>
   );
 }

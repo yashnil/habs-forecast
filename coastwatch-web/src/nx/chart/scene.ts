@@ -12,7 +12,7 @@ import type { Bounds, LngLat } from "./mercator";
  */
 export type SceneView =
   /** fit this box in the free part of the sheet (the margin, bars and phone sheet excluded) */
-  | { bounds: Bounds; maxZoom?: number }
+  | { bounds: Bounds; maxZoom?: number; /** where the view may slide to so it stops at the data's edge (mercator.ts slideWithin) */ within?: Bounds | null }
   /** cover the whole sheet with this box, as CSS `cover` would (the opening's still registers to it) */
   | { cover: Bounds; position?: [number, number] };
 

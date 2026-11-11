@@ -82,3 +82,33 @@ export function nextOf<T extends { id: string }>(list: T[], id: string | null): 
   const i = list.findIndex((x) => x.id === id);
   return list[(i + 1) % list.length];
 }
+
+/**
+ * The day labels the axis can carry without touching each other or the now label: greedily from the left, each
+ * label about 7.5 px a character at 14 px plus its tick's 4 px, a gap of 8 px. The first day and the first of a
+ * month say the month ("Oct 1"); others the day number. `T` is the axis width in px; `nx` the now line's x.
+ */
+export function axisLabels(axis: [string, string], T: number, nx: number): Array<{ date: string; text: string; x: number }> {
+  const w = (t: string) => t.length * 7.5 + 8;
+  const nowHalf = w("Now") / 2 + 4;
+  const out: Array<{ date: string; text: string; x: number }> = [];
+  let right = -Infinity;
+  axisDays(axis).forEach((d, i) => {
+    const x = axisX(axis, d, 0) * T;
+    const text = i === 0 || d.endsWith("-01") ? `${new Date(`${d}T12:00:00Z`).toLocaleString("en-US", { month: "short", timeZone: "UTC" })} ${Number(d.slice(8, 10))}` : String(Number(d.slice(8, 10)));
+    const x1 = x + w(text);
+    if (x < right + 8 || x1 > T) return;
+    if (x1 > nx - nowHalf && x < nx + nowHalf) return;
+    out.push({ date: d, text, x });
+    right = x1;
+  });
+  return out;
+}
+
+/** A product's span on the rail and how much of it has data, for the rail's one availability line. */
+export function productSpan(p: ExploreProduct): { first: string; last: string; days: number } | null {
+  const dates = [...p.frames.flatMap((f) => [f.start, f.end]), ...p.tracks.flatMap((t) => t.days.filter((d) => d.volume > 0).map((d) => d.date))].filter(Boolean).sort();
+  if (!dates.length) return null;
+  const days = new Set(p.tracks.flatMap((t) => t.days.filter((d) => d.volume > 0).map((d) => d.date)));
+  return { first: dates[0], last: dates[dates.length - 1], days: days.size };
+}

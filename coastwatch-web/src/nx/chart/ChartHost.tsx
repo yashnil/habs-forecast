@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { capability, noteContextLoss, type GraphicsTier } from "@/lib/capability";
 import { EASE_CHART, pan } from "@/nx/ds/motion";
-import { coverCamera, fitBounds, NO_INSETS, scaleBar, screenRect, unproject, type Camera, type Insets, type Viewport } from "./mercator";
+import { coverCamera, fitBounds, NO_INSETS, scaleBar, screenRect, slideWithin, unproject, type Camera, type Insets, type Viewport } from "./mercator";
 import { placeAll, type Anchor, type Rect } from "./placement";
 import { allMarks, onMarksChange, publishFrame, staticProjector, type ChartFrame } from "./runtime";
 import { getScene, subscribeScene, type ChartScene } from "./scene";
@@ -43,7 +43,8 @@ export function cameraFor(scene: ChartScene, vp: Viewport, cover: Insets): Camer
     const c = coverCamera(scene.view.cover, free, scene.view.position);
     return { center: unproject(c, free, free.width / 2, free.height / 2 + cover.bottom / 2), zoom: c.zoom };
   }
-  return fitBounds(scene.view.bounds, vp, sceneInsets(vp, cover), scene.view.maxZoom ?? 12.5);
+  const cam = fitBounds(scene.view.bounds, vp, sceneInsets(vp, cover), scene.view.maxZoom ?? 12.5);
+  return scene.view.within ? slideWithin(cam, vp, scene.view.bounds, scene.view.within, cover) : cam;
 }
 
 /** How much of the sheet is covered, edge by edge, and what covers it elsewhere (src/nx/chart/cover.ts). */

@@ -6,6 +6,18 @@
  */
 import type { Bounds } from "@/nx/chart/mercator";
 
+/**
+ * The data's extent as bounds for a scene's `within` (the view slides to stop at the grid's sea edges), or null.
+ * East is left open: California's grids end at the coast, and land beyond a grid's east edge shows no edge.
+ */
+export const extentBounds = (extent: [number, number, number, number] | null): Bounds | null =>
+  extent
+    ? [
+        [extent[0], extent[1]],
+        [-114, extent[3]],
+      ]
+    : null;
+
 export const EXPLORE_ZOOM: [number, number] = [5.2, 12.6];
 /** California's coast, Oregon to Mexico. */
 export const CA_COAST: Bounds = [

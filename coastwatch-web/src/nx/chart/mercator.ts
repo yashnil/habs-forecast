@@ -68,6 +68,34 @@ export function fitBounds(bounds: Bounds, vp: Viewport, insets: Insets = NO_INSE
 }
 
 /**
+ * Slide a fitted camera, without changing its zoom, so the visible area stops at `within`'s edges where it can:
+ * a view of a port fitted into a wider sheet otherwise shows a sliver past the data's edge (Explore: a pale strip
+ * west of the satellite grid). Per axis, it moves toward the side with room, never further than keeps the part
+ * of `box` (the fitted bounds) inside `within` in view, and not at all when the view is wider than `within` there.
+ * `cover` is the part of the viewport something lies over (the phone sheet); it does not count as visible.
+ */
+export function slideWithin(cam: Camera, vp: Viewport, box: Bounds, within: Bounds, cover: Insets = NO_INSETS): Camera {
+  const ws = worldSize(cam.zoom);
+  const cx = lngX(cam.center[0]), cy = latY(cam.center[1]);
+  const shift = (lo: number, hi: number, wLo: number, wHi: number, bLo: number, bHi: number) => {
+    if (hi - lo >= wHi - wLo) return 0;
+    if (lo < wLo && hi < wHi) return Math.max(0, Math.min(wLo - lo, wHi - hi, bLo - lo));
+    if (hi > wHi && lo > wLo) return -Math.max(0, Math.min(hi - wHi, lo - wLo, hi - bHi));
+    return 0;
+  };
+  const left = cx + (cover.left - vp.width / 2) / ws, right = cx + (vp.width / 2 - cover.right) / ws;
+  const top = cy + (cover.top - vp.height / 2) / ws, bottom = cy + (vp.height / 2 - cover.bottom) / ws;
+  // what must stay in view: the box, less any margin it keeps past `within` (that margin is the sliver)
+  const [[bw, bs], [be, bn]] = [
+    [Math.max(box[0][0], within[0][0]), Math.max(box[0][1], within[0][1])],
+    [Math.min(box[1][0], within[1][0]), Math.min(box[1][1], within[1][1])],
+  ];
+  const dx = shift(left, right, lngX(within[0][0]), lngX(within[1][0]), lngX(bw), lngX(be));
+  const dy = shift(top, bottom, latY(within[1][1]), latY(within[0][1]), latY(bn), latY(bs));
+  return { center: [xLng(cx + dx), yLat(cy + dy)], zoom: cam.zoom };
+}
+
+/**
  * The camera at which an image covering `bounds` fills the viewport as CSS `object-fit: cover` (or
  * `mask-size: cover`) with `object-position: px% py%` would place it. The opening's still is drawn by CSS
  * from the first frame; the live chart is moved to this camera, so the two register exactly.

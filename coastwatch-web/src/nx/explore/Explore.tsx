@@ -20,7 +20,7 @@ import { createFlowLayer, type FlowController } from "@/nx/chart/layers/FlowLaye
 import { persistence } from "@/nx/chart/layers/grid";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
 import { loadCodes, boxAround } from "./codes";
-import { EXPLORE_ZOOM, exploreBounds } from "./camera";
+import { EXPLORE_ZOOM, exploreBounds, extentBounds } from "./camera";
 import { ExploreLegend } from "./ExploreLegend";
 import { Locator, ReadingOnChart } from "./ChartOverlay";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, GridSpec, ProductId } from "./model";
@@ -342,7 +342,8 @@ export function Explore({ model }: { model: ExploreModel }) {
   const scene = useMemo(
     () => ({
       id: `explore:${port?.key ?? "coast"}`,
-      view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent) },
+      // with a port, the view stops at the data's own edge rather than showing a sliver past it
+      view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent), within: port ? extentBounds(extent) : null },
       focus: port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null,
       zoomRange: EXPLORE_ZOOM,
     }),
@@ -495,7 +496,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         {model.currents ? (
           <button type="button" role="switch" aria-checked={currentsOn} className={s.switchItem} data-on={currentsOn ? "1" : "0"} onClick={() => setCurrentsOn((v) => !v)} data-testid="nx-currents-toggle">
             <span>Currents</span>
-            <small>{!currentsOn ? "off" : overModel ? "not over a model" : "on, measured"}</small>
+            <small>{!currentsOn ? "off" : overModel ? "not over a model" : tier === "static" ? "not on a still picture" : "on, measured"}</small>
           </button>
         ) : null}
       </div>
@@ -504,6 +505,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         product={product}
         frameId={frame.id}
         onFrame={chooseFrame}
+        onProduct={chooseProduct}
         currentsOn={streaks}
         currentId={hourId}
         onCurrent={chooseHour}
