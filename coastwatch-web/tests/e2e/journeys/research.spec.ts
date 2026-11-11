@@ -8,7 +8,8 @@ import { OK } from "../ports";
  * a window and a quantity in the address, brushes the record, reads the filtered log and exports exactly the
  * window. The journey is recorded as video into docs/coastwatch/v12/implementation/research/.
  */
-const MEDIA = path.resolve(__dirname, "../../../../docs/coastwatch/v12/implementation/research");
+// the recording goes to the docs only on request (NX_MEDIA=1); an ordinary run keeps it with its own results
+const MEDIA = process.env.NX_MEDIA ? path.resolve(__dirname, "../../../../docs/coastwatch/v12/implementation/research") : path.resolve(__dirname, "../../../test-results/journey-media/research");
 test.use({ storageState: { cookies: [], origins: [] } });
 
 const params = (page: Page) => Object.fromEntries(new URL(page.url()).searchParams);

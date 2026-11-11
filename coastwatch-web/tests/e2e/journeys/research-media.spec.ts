@@ -4,7 +4,8 @@ import { expect, test } from "@playwright/test";
 import { OK } from "../ports";
 
 /** Review stills of Research (docs/coastwatch/v12/implementation/research/). Runs only with NX_MEDIA=1. */
-const OUT = path.resolve(__dirname, "../../../../docs/coastwatch/v12/implementation/research");
+// review media go to the docs only on request (NX_MEDIA=1); an ordinary run keeps them with its own results
+const OUT = process.env.NX_MEDIA ? path.resolve(__dirname, "../../../../docs/coastwatch/v12/implementation/research") : path.resolve(__dirname, "../../../test-results/journey-media/research");
 test.skip(!process.env.NX_MEDIA, "media only on request (NX_MEDIA=1)");
 
 const Q = "station=HABs-SantaCruzWharf&var=pDA&from=2023-10-13&to=2026-10-12";

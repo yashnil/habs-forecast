@@ -10,7 +10,8 @@ import { OK } from "../ports";
  * previewing a grid scenario and returning, a trip saved on this device and reopened.
  * Run with tests/e2e/journeys/coast.config.ts. NX_MEDIA=1 writes the video and stills for review.
  */
-const OUT = path.resolve(__dirname, "../../../../docs/coastwatch/v12/implementation/coast");
+// review media go to the docs only on request (NX_MEDIA=1); an ordinary run keeps them with its own results
+const OUT = process.env.NX_MEDIA ? path.resolve(__dirname, "../../../../docs/coastwatch/v12/implementation/coast") : path.resolve(__dirname, "../../../test-results/journey-media/coast");
 const MEDIA = !!process.env.NX_MEDIA;
 
 async function seed(ctx: BrowserContext, mode = "day") {
