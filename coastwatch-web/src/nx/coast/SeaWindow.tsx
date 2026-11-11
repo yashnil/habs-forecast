@@ -7,7 +7,8 @@ import { hatchSegments } from "@/nx/ds/Mark";
 import { sig } from "@/nx/ds/format";
 import { cx } from "@/nx/ds/util";
 import { BAR_RULE_URL, REGULATED_BARS, type CoastSea, type SeaPeriod } from "./brief";
-import { risingSpans, seaDays, seasScale, seasWords, tideWords, type SeaDay } from "./sea";
+import { risingSpans, seaDays, seasScale, seasWords, tideClock, tideFeet, tidesOn, tideWords, type SeaDay } from "./sea";
+import type { Tide } from "@/lib/conditions";
 import type { Loadable } from "./useCoast";
 import s from "./coast.module.css";
 
@@ -94,7 +95,7 @@ export function SeaWindow({ sea, placeKey }: { sea: Loadable<CoastSea>; placeKey
         <MarginRows label={`${pick.label}, forecast and tide`} className={s.rowsTight}>
           <Period label="Day" p={pick.day} />
           <Period label="Night" p={pick.night} />
-          <MarginRow label="Tide" value={tideWords(v.tides, pick.date) ?? <span className={s.quiet}>{v.tideReason ?? "No predictions for this day."}</span>} stamp={tide ? <Stamp now={now} provenance={tide} /> : undefined} />
+          <MarginRow label="Tide" value={tideWords(v.tides, pick.date) ? <TideTable tides={tidesOn(v.tides, pick.date)} /> : <span className={s.quiet}>{v.tideReason ?? "No predictions for this day."}</span>} stamp={tide ? <Stamp now={now} provenance={tide} /> : undefined} />
           {bar ? (
             <MarginRow
               label="Bar"
@@ -123,9 +124,24 @@ export function SeaWindow({ sea, placeKey }: { sea: Loadable<CoastSea>; placeKey
   );
 }
 
+/** The day's highs and lows, one per line: kind, height, time. */
+function TideTable({ tides }: { tides: Tide[] }) {
+  return (
+    <span className={s.tides} role="list">
+      {tides.map((t) => (
+        <span key={t.at} role="listitem" className={s.tide}>
+          <span>{t.type === "H" ? "High" : "Low"}</span>
+          <span className={s.tideFt}>{tideFeet(t.ft)}</span>
+          <span>{tideClock(t.at)}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function Measured({ v }: { v: CoastSea["sea"] }) {
   const b = v.buoy!;
-  const parts = [b.waveFt != null ? `waves ${sig(b.waveFt)} ft${b.periodS != null ? ` at ${Math.round(b.periodS)} s` : ""}` : null, b.windKt != null ? `wind ${b.windDir ?? ""} ${Math.round(b.windKt)} kt`.replace("  ", " ") : v.windBuoy ? `wind ${v.windBuoy.windDir ?? ""} ${Math.round(v.windBuoy.windKt)} kt`.replace("  ", " ") : null].filter(Boolean);
+  const parts = [b.waveFt != null ? `waves ${sig(b.waveFt)}\u00a0ft${b.periodS != null ? ` at ${Math.round(b.periodS)}\u00a0s` : ""}` : null, b.windKt != null ? `wind ${b.windDir ?? ""} ${Math.round(b.windKt)}\u00a0kt`.replace("  ", " ") : v.windBuoy ? `wind ${v.windBuoy.windDir ?? ""} ${Math.round(v.windBuoy.windKt)}\u00a0kt`.replace("  ", " ") : null].filter(Boolean);
   const t = parts.join(", ");
   return <span>{t ? t.charAt(0).toUpperCase() + t.slice(1) : "No wave or wind value in the last hours."}</span>;
 }

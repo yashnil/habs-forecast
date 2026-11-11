@@ -137,6 +137,7 @@ describe("nothing is assumed", () => {
 
   it("names many gaps briefly", () => {
     expect(waitingWords({ status: "waiting", fields: ["catch", "price", "fees", "crew"] }, crab)).toBe("waiting for catch, price and 2 more");
+    expect(waitingWords({ status: "waiting", fields: ["catch", "price", "fees"] }, crab)).toBe("waiting for catch, price and fees");
   });
 });
 

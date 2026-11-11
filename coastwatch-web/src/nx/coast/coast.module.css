@@ -283,6 +283,18 @@
   font-weight: 600;
   white-space: nowrap;
 }
+.tides {
+  display: grid;
+}
+.tide {
+  display: grid;
+  grid-template-columns: 48px 64px auto;
+  column-gap: var(--s-8);
+}
+.tideFt {
+  text-align: right;
+  font-weight: 600;
+}
 .stripStamp {
   margin: var(--s-8) 0 0;
 }
