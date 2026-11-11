@@ -14,7 +14,7 @@ import { Button } from "@/nx/ds/Button";
 import { dayTime } from "@/nx/ds/format";
 import { Legend } from "@/nx/ds/Mark";
 import { MarginRow, MarginRows } from "@/nx/ds/Margin";
-import { register, registerFrom, registerTo, settle } from "@/nx/ds/motion";
+import { pan, register, registerFrom, registerTo, settle } from "@/nx/ds/motion";
 import { ProvenanceSheet, Stamp, type Provenance } from "@/nx/ds/Stamp";
 import { Loading, SourcesDiffer, Unavailable } from "@/nx/ds/States";
 import { Statement } from "@/nx/ds/Statement";
@@ -98,7 +98,7 @@ export function TodayView({ port, initial, arriving = false }: TodayProps) {
 function PortHeading({ name, fishery }: { name: string; fishery?: FisheryId }) {
   return (
     <p className={s.scope}>
-      <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName}>
+      <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName} transition={pan}>
         {name}
       </motion.span>
       {fishery ? <span className={s.scopeFishery}> · {scopeWords(labelOf(fishery))}</span> : null}
@@ -181,7 +181,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
               rule={st.tone === "regulation" && !phone}
               scope={
                 <span className={s.scopeInner}>
-                  <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName} transition={settle}>
+                  <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName} transition={pan}>
                     {port.name}
                   </motion.span>
                   <span className={s.scopeFishery}> · {scopeWords(st.fisheryLabel)}</span>
@@ -213,7 +213,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
         ) : (
           <div data-tour="status">
             <p className={s.scope}>
-              <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName}>
+              <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName} transition={pan}>
                 {port.name}
               </motion.span>
               <span className={s.scopeFishery}> · {scopeWords(st.fisheryLabel)}</span>

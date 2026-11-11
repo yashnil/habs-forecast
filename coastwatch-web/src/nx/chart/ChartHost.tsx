@@ -80,6 +80,8 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   const sceneId = useRef<string | null>(null);
   const prevAnchors = useRef(new Map<string, Anchor>());
   const raf = useRef(0);
+  /** when the pan now travelling lands (performance.now() ms); a refinement of the same view glides on until then */
+  const panUntil = useRef(0);
   const frameRefLatest = useRef<ChartFrame | null>(null);
 
   // ---------------------------------------------------------------- placement of everything on the chart
@@ -355,9 +357,17 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
           else h.disable();
         }
         const opening = document.documentElement.getAttribute("data-nx-opening");
-        const still = !animate || reduced || opening === "on" || opening === "run";
+        // the same view refined while its pan is still travelling (Today's soundings arrive a moment after the
+        // page): the pan carries on to the refined camera instead of jumping there
+        const left = panUntil.current - performance.now();
+        const glide = !animate && left > 60;
+        const still = (!animate && !glide) || reduced || opening === "on" || opening === "run";
         if (still) m.jumpTo({ center: target.center, zoom: target.zoom });
-        else m.easeTo({ center: target.center, zoom: target.zoom, duration: tier === "reduced" ? 300 : (pan.duration as number) * 1000, easing: bezier, essential: false });
+        else {
+          const duration = glide ? left : tier === "reduced" ? 300 : (pan.duration as number) * 1000;
+          if (!glide) panUntil.current = performance.now() + duration;
+          m.easeTo({ center: target.center, zoom: target.zoom, duration, easing: glide ? (t: number) => 1 - (1 - t) ** 2 : bezier, essential: false });
+        }
       } else publish(target, vp, false);
     },
     [vp, reduced, tier, publish],

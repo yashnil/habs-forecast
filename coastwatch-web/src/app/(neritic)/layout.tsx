@@ -4,6 +4,7 @@ import "@/nx/chart/chart.css";
 import "@/nx/shell/shell.css";
 import { PAPER_DAY } from "@/nx/ds/palette";
 import { ChartHost } from "@/nx/chart/ChartHost";
+import { MotionPrefs } from "@/nx/ds/MotionPrefs";
 import { OpeningController, OpeningStill } from "@/nx/opening/Opening";
 import { ENTRY_SCRIPT } from "@/nx/shell/entry";
 import { MarginFrame } from "@/nx/shell/Margin";
@@ -34,6 +35,7 @@ export default async function NeriticLayout({ children }: { children: React.Reac
     <div className="n12-app" data-testid="nx-app">
       {/* before the first paint: what `/` is (home, the opening, or Today at the saved port) and the chart mode */}
       <script dangerouslySetInnerHTML={{ __html: ENTRY_SCRIPT }} />
+      <MotionPrefs />
       <PortsProvider value={ports}>
         <Shell />
         <ChartHost ports={ports.map((p) => ({ key: p.key, name: p.name, lon: p.lon, lat: p.lat, pilot: p.pilot }))} opening={<OpeningStill />} />

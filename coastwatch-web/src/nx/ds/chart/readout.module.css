@@ -41,6 +41,9 @@
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
+.bigValue {
+  display: inline-block;
+}
 .unit {
   font-size: 0.46em;
   font-weight: 600;
