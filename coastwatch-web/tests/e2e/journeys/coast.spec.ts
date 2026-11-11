@@ -10,7 +10,8 @@ import { OK } from "../ports";
  * previewing a grid scenario and returning, a trip saved on this device and reopened.
  * Run with tests/e2e/journeys/coast.config.ts. NX_MEDIA=1 writes the video and stills for review.
  */
-const OUT = path.resolve(__dirname, "../../../../docs/coastwatch/v12/implementation/coast");
+// review media go to the docs only on request (NX_MEDIA=1); an ordinary run keeps them with its own results
+const OUT = process.env.NX_MEDIA ? path.resolve(__dirname, "../../../../docs/coastwatch/v12/implementation/coast") : path.resolve(__dirname, "../../../test-results/journey-media/coast");
 const MEDIA = !!process.env.NX_MEDIA;
 
 async function seed(ctx: BrowserContext, mode = "day") {
@@ -150,7 +151,7 @@ test("on a phone: the gates rest in the sheet; one thumb fills the worksheet; a 
   await expect(p.getByLabel("Catch", { exact: true })).toHaveAttribute("inputmode", "decimal");
   await expect(p.getByLabel("Crew", { exact: true })).toHaveAttribute("inputmode", "numeric");
   expect((await p.getByLabel("Catch", { exact: true }).boundingBox())!.height).toBeGreaterThanOrEqual(48);
-  await p.locator(".n12-margin-handle").tap();
+  for (let i = 0; i < 2; i++) await p.getByRole("button", { name: "Show more of this page" }).tap();
   await fill(p);
   await p.getByRole("radio", { name: "Shared, off the top" }).tap();
   await expect(net(p)).toContainText("$2,015", { timeout: 5000 });
@@ -201,7 +202,7 @@ test("media: stills at the widths and modes the page is used at", async ({ brows
       await expect(net(p)).toContainText("$2,015", { timeout: 5000 });
     }
     if (scrollTo) {
-      if (w < 721) await p.locator(".n12-margin-handle").click();
+      if (w < 721) for (let i = 0; i < 2; i++) await p.getByRole("button", { name: "Show more of this page" }).click();
       await p.locator(scrollTo).first().evaluate((el) => el.scrollIntoView({ block: "start" }));
     }
     if (hover) await p.getByRole("button", { name: /^\+30 % catch, \+20 % price/ }).hover();

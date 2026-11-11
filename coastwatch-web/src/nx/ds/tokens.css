@@ -23,6 +23,15 @@
   --chl-0: #f6f4dc; --chl-1: #e6ebb8; --chl-2: #bdd68f; --chl-3: #82b77c;
   --chl-4: #418f74; --chl-5: #1b635b; --chl-6: #0b3e41; --chl-7: #052327;
   --streak: #0e1417;
+  /* C-HARM probability, cw-probability-classes-v1's ten 10-point display intervals (display classes, not risk
+     tiers, T12): a quiet slate-violet, high is dark, never a warning hue and well clear of --reg. Built in OKLCH,
+     L* 95.9 → 22.7 in near-equal steps (min ΔL* 8.0); on paper 1.10:1 (class 0) to 11.9:1 (class 9). */
+  --prob-0: #f4f2fb; --prob-1: #dedae8; --prob-2: #c7c3d5; --prob-3: #b1acc3; --prob-4: #9b96b2;
+  --prob-5: #8581a0; --prob-6: #706c8f; --prob-7: #5c587e; --prob-8: #48446d; --prob-9: #34315d;
+  /* Sea temperature, sequential (T21: never diverging without a stated climatology), cream to rust, its own
+     hue family (T22). OKLCH, L* 95.4 → 35.0 (min ΔL* 8.4); on paper 1.11:1 to 7.7:1. */
+  --sst-0: #f8f2dc; --sst-1: #e8d9b5; --sst-2: #d9be90; --sst-3: #cba36f;
+  --sst-4: #bc8952; --sst-5: #ac6f3b; --sst-6: #995628; --sst-7: #853e19;
   color-scheme: light;
 }
 
@@ -47,6 +56,12 @@
   --chl-0: #10302f; --chl-1: #17473f; --chl-2: #1f6150; --chl-3: #3a7d5c;
   --chl-4: #6a9a63; --chl-5: #a3b76e; --chl-6: #d4d48a; --chl-7: #f4f1c4;
   --streak: #e2e7e8;
+  /* dusk: high is light on the dark ground, lightness monotone. prob L* 18.4 → 85.7 (min ΔL* 7.1), on paper
+     1.17:1 to 11.1:1; sst L* 18.1 → 86.0 (min ΔL* 9.6), 1.16:1 to 11.2:1 */
+  --prob-0: #2d2b3c; --prob-1: #3e3b53; --prob-2: #504a6a; --prob-3: #635b80; --prob-4: #766d96;
+  --prob-5: #8a7faa; --prob-6: #9e93bd; --prob-7: #b2a7ce; --prob-8: #c7bcdf; --prob-9: #dbd2ef;
+  --sst-0: #422518; --sst-1: #5f3820; --sst-2: #7b4e2a; --sst-3: #956636;
+  --sst-4: #ac8049; --sst-5: #c29c62; --sst-6: #d6b981; --sst-7: #e9d6a3;
   color-scheme: dark;
 }
 
@@ -70,6 +85,12 @@
   --chl-0: #0b1715; --chl-1: #10221e; --chl-2: #163027; --chl-3: #213f2f;
   --chl-4: #344e37; --chl-5: #4e5d40; --chl-6: #6e6e4c; --chl-7: #8f855c;
   --streak: #a89c88;
+  /* night: very low emission, high is light. prob L* 4.3 → 41.9 (min ΔL* 3.5), on paper 1.04:1 to 3.3:1;
+     sst L* 4.3 → 44.1 (min ΔL* 5.1), 1.04:1 to 3.6:1 (fills, never text) */
+  --prob-0: #100e14; --prob-1: #18161d; --prob-2: #211e27; --prob-3: #2a2731; --prob-4: #33303b;
+  --prob-5: #3d3945; --prob-6: #474250; --prob-7: #514c5b; --prob-8: #5b5667; --prob-9: #666072;
+  --sst-0: #160d07; --sst-1: #23180f; --sst-2: #302418; --sst-3: #3e3021;
+  --sst-4: #4d3c2a; --sst-5: #5c4934; --sst-6: #6b573e; --sst-7: #7a6548;
   color-scheme: dark;
 }
 

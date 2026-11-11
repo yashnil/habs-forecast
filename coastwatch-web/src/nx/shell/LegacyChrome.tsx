@@ -4,8 +4,9 @@ import { usePathname } from "next/navigation";
 import { FrontDoorProvider } from "@/pilot/FrontDoorContext";
 import { MotionRoot } from "@/v4/shell/MotionRoot";
 
-/** The pages of the v12 route group (src/app/(neritic)): their shell is the group's own layout. */
-export const NERITIC_PATHS = new Set(["/", "/today", "/explore", "/coast", "/research"]);
+/** The pages of the v12 route group (src/app/(neritic)): their shell is the group's own layout. A page missing here
+ *  is wrapped differently by the root, so navigating to it remounts the whole group (the chart included). */
+export const NERITIC_PATHS = new Set(["/", "/today", "/explore", "/coast", "/research", "/notices"]);
 export const isNeriticPath = (p: string | null) => !!p && NERITIC_PATHS.has(p);
 
 /**

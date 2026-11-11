@@ -8,7 +8,7 @@ import { readSeen, storageWorks, writeSeen } from "@/pilot/today/prefs";
 import { readSaved } from "@/pilot/today/prefs";
 import { saveTodayOffline } from "@/pilot/today/offline";
 import { ChartScene } from "@/nx/chart/scene";
-import { Agenda, type AgendaItem } from "@/nx/ds/Agenda";
+import { Agenda, agendaPhase, type AgendaItem } from "@/nx/ds/Agenda";
 import { BigDate } from "@/nx/ds/BigDate";
 import { Button } from "@/nx/ds/Button";
 import { dayTime } from "@/nx/ds/format";
@@ -24,6 +24,7 @@ import { distanceKm, phoneBounds, portWater, todayBounds } from "./camera";
 import { changeLine, type ChangeLine } from "./change";
 import { conditionsUrl, useConditions, useTodayInputs, type Initial } from "./data";
 import { FisheryChooser } from "./FisheryChooser";
+import { PORT_NAME_LAYOUT } from "./layout";
 import { buildToday, othersLine, scopeWords, type TodayInputs, type TodayView as View } from "./model";
 import { COMPACT, TodaySoundings } from "./Soundings";
 import { chooseFishery, useFisheries, useTourState } from "./store";
@@ -37,8 +38,6 @@ export type TodayProps = {
   arriving?: boolean;
 };
 
-/** The port name travels from the finder into the chooser's title and on into Today's scope line (README §8 `layout`). */
-export const PORT_NAME_LAYOUT = "nx-port-name";
 
 const canyonHead = { lon: CANYON_AXIS[0][0], lat: CANYON_AXIS[0][1] };
 
@@ -146,21 +145,7 @@ function useOfflineCopy(key: string, name: string, url: string, ready: boolean) 
   return at;
 }
 
-/**
- * Overlays (the provenance sheet) portal to <body>, outside the app element that carries the font
- * variables; until the layout puts them on <html> (reported to the shell owner), they are copied there.
- */
-function useFontsOnRoot() {
-  useEffect(() => {
-    const app = document.querySelector<HTMLElement>("[data-testid=nx-app]");
-    if (!app) return;
-    const vars = [...app.classList].filter((c) => c !== "n12-app");
-    document.documentElement.classList.add(...vars);
-  }, []);
-}
-
 function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["port"]>; inputs: TodayInputs; fishery: FisheryId }) {
-  useFontsOnRoot();
   const curl = conditionsUrl(inputs.place.lat, inputs.place.lon);
   const sea = useConditions(curl);
   const v = useMemo(() => buildToday(inputs, { fishery, sea, place: { key: port.key, name: port.name } }), [inputs, fishery, sea, port.key, port.name]);
@@ -292,7 +277,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
 
       <motion.div className={s.agendaWrap} key={`${port.key}:${fishery}`} initial={registerFrom} animate={registerTo} transition={register} data-tour="agenda">
         <h2 className={s.head}>Dates</h2>
-        <Agenda className={s.agenda} label={`Dates at ${port.name}`} now={v.now} items={agendaItems(v)} />
+        <DatesAgenda v={v} portName={port.name} />
       </motion.div>
 
       <MarginRows className={s.rows} label={`More at ${port.name}`}>
@@ -322,6 +307,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
             />
           ),
         )}
+        <NoticesRow notices={inputs.notices} portKey={port.key} portName={port.name} />
         {v.others.length ? (
           <MarginRow
             label="Others"
@@ -341,6 +327,13 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
                     </p>
                   </li>
                 ))}
+                <li>
+                  <p>
+                    <Button variant="text" href={noticesHref(port.key)}>
+                      Every official notice, here and on the rest of the coast
+                    </Button>
+                  </p>
+                </li>
               </ul>
             }
           />
@@ -358,6 +351,42 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
   );
 }
 
+const noticesHref = (key: string) => `/notices?place=${encodeURIComponent(key)}`;
+
+/**
+ * The notices row: how many official notices the registry ties to this port, their titles, and the way to the
+ * full list (every notice here and on the rest of the coast, each with its dates, sources and "not verified").
+ */
+function NoticesRow({ notices, portKey, portName }: { notices: TodayInputs["notices"]; portKey: string; portName: string }) {
+  if (notices === null) return <MarginRow label="Notices" state="unavailable" note="The official notices did not load. Check CDFW and CDPH." />;
+  const shown = notices.filter((n) => n.action !== "reopening" && n.action !== "advisory_lifted");
+  return (
+    <MarginRow
+      label="Notices"
+      value={<Figure text={shown.length ? `${shown.length} official, not verified` : "None listed here"} />}
+      detail={
+        <ul className={s.detailList} data-testid="nx-notices-row">
+          {shown.map((n) => (
+            <li key={n.id}>
+              <p>
+                <strong>{n.agency}</strong>: {n.title}
+              </p>
+            </li>
+          ))}
+          {!shown.length ? <li><p>The registry ties no current notice to {portName}. That does not mean open: check CDFW and CDPH.</p></li> : null}
+          <li>
+            <p>
+              <Button variant="text" href={noticesHref(portKey)} data-testid="nx-notices-link">
+                All notices, with dates and sources
+              </Button>
+            </p>
+          </li>
+        </ul>
+      }
+    />
+  );
+}
+
 /** A value that changes settles in (README §8 `settle`); the first one is simply there. */
 function Figure({ text }: { text: string }) {
   return (
@@ -366,6 +395,28 @@ function Figure({ text }: { text: string }) {
         {text}
       </motion.span>
     </AnimatePresence>
+  );
+}
+
+/**
+ * The agenda opens on what is next: today's line and the next two dates. What is past (already said above, as
+ * the test sounding and the status) and later dates wait behind one control, so the first screen stays short.
+ */
+function DatesAgenda({ v, portName }: { v: View; portName: string }) {
+  const [all, setAll] = useState(false);
+  const items = agendaItems(v);
+  const ahead = items.filter((it) => agendaPhase(it, v.now) !== "past").slice(0, 2);
+  const shown = all ? items : ahead;
+  const hidden = items.length - ahead.length;
+  return (
+    <>
+      <Agenda className={s.agenda} label={`Dates at ${portName}`} now={v.now} items={shown} />
+      {hidden > 0 ? (
+        <Button variant="text" onClick={() => setAll((x) => !x)} aria-expanded={all} className={s.allDates}>
+          {all ? "Only what is next" : `All ${items.length} dates, earlier and later`}
+        </Button>
+      ) : null}
+    </>
   );
 }
 

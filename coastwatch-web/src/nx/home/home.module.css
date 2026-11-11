@@ -12,9 +12,6 @@
   gap: var(--s-16);
   margin-top: var(--s-32);
 }
-.primary {
-  display: inline-flex;
-}
 
 .paths {
   display: flex;
@@ -66,16 +63,6 @@
 .empty {
   margin: 0;
   color: var(--ink-2);
-}
-
-/* the port's name, on its way from the finder into Today's title */
-.proxy {
-  position: fixed;
-  z-index: 60;
-  margin: 0;
-  font-weight: 600;
-  white-space: nowrap;
-  pointer-events: none;
 }
 
 @media (max-width: 720px) {

@@ -67,7 +67,7 @@ export function Gates({ gates, fishery }: { gates: Loadable<CoastGates>; fishery
                 sourceLong: "CDFW Risk Assessment and Mitigation Program (whale entanglement), Whale-Safe Fisheries page",
                 sourceUrl: g.whale.url ?? undefined,
                 date: g.whale.assessed ?? now.slice(0, 10),
-                dateRole: "issued",
+                dateRole: g.whale.assessed ? "assessed" : "checked",
                 caveats: ["RAMP is about whale entanglement, not domoic acid.", "Assessment dates are CDFW's and subject to change."],
               }}
             />

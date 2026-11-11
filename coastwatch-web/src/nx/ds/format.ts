@@ -129,3 +129,9 @@ export function latLon(lat: number, lon: number): string {
   };
   return `${dm(lat)} ${lat >= 0 ? "N" : "S"}, ${dm(lon)} ${lon >= 0 ? "E" : "W"}`;
 }
+
+/** An error in the reader's words: never a server path or a stack. */
+export function plainError(e: string): string {
+  if (/ENOENT|no such file/i.test(e)) return "the file is not there";
+  return e.replace(/(?:[A-Za-z]:)?(?:\/[^\s/'"]+){2,}/g, "a data file").slice(0, 160);
+}

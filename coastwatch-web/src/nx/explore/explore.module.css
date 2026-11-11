@@ -14,11 +14,7 @@
 .figUnit { font-size: var(--t-14); font-weight: 600; white-space: nowrap; }
 .caption { margin: var(--s-4) 0 0; font-size: var(--t-14); line-height: 1.4; color: var(--ink); }
 .keys { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-16); font-size: var(--t-14); font-weight: 600; }
-.keys li, .classes li { display: flex; align-items: center; gap: var(--s-8); }
-.classes { list-style: none; margin: var(--s-8) 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--s-4); font-size: var(--t-14); font-weight: 600; font-variant-numeric: tabular-nums; }
-.classes li { flex-direction: column; align-items: stretch; gap: var(--s-4); }
-.classes li span { white-space: nowrap; }
-.classes .swatch { width: 100%; }
+.keys li { display: flex; align-items: center; gap: var(--s-8); }
 .swatch { display: block; width: 40px; height: 16px; flex: none; overflow: hidden; }
 .swatchFrame { fill: var(--paper); stroke: var(--ink); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .swatchHatch line { stroke: var(--ink); stroke-width: 1; vector-effect: non-scaling-stroke; }
@@ -84,6 +80,11 @@
 .railHit { position: absolute; top: 0; bottom: 0; padding: 0; background: none; border: 0; cursor: pointer; }
 .railHit:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; }
 .railKey { margin: 0; font-size: var(--t-14); line-height: 1.4; color: var(--ink-2); }
+/* the other layers: one quiet line, each a way to switch */
+.railAlso { margin: 0; padding-top: var(--s-8); border-top: var(--hair) solid var(--rule-soft); font-size: var(--t-14); line-height: 1.6; color: var(--ink-2); }
+.railAlsoHead { font-weight: 600; color: var(--ink); margin-right: var(--s-8); }
+.railAlsoItem { display: inline; min-height: 0; padding: 0; font-size: var(--t-14); font-weight: 500; color: var(--ink); text-decoration: underline; text-decoration-thickness: var(--hair); text-underline-offset: 3px; }
+.railAlsoSub { color: var(--ink-2); }
 
 /* ---------------------------------------------------------------- readout and transect */
 .readoutSlot { scroll-margin-bottom: var(--s-24); }

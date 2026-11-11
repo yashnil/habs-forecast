@@ -2,12 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { dieselSnapshot, priceRef, priceSnapshot, type RefSnapshot } from "@/content/referenceValues";
-import { Button, Field, Segmented, SensitivityTable } from "@/nx/ds";
+import { Button, Field, Segmented, SensitivityTable, Waterfall } from "@/nx/ds";
 import { day, usd } from "@/nx/ds/format";
 import { cx } from "@/nx/ds/util";
 import { notifyTrip, tripStore, useTripData } from "@/v4/coast/economics/useTripData";
 import { fuelReference, priceReference, shareReference, type CoastFishery, type CoastReference } from "./fisheries";
-import { Ledger } from "./Ledger";
 import {
   assumptions,
   EMPTY_FORM,
@@ -129,26 +128,6 @@ export function Worksheet({ fishery, placeKey, onFishery, now }: { fishery: Coas
   const crewNone = form.crew.trim() !== "" && Number(form.crew) === 0;
   const share = !crewNone && (form.crewKind === "afterExpenses" || form.crewKind === "ofGross");
 
-  // the grid on a touch screen: a tap shows a scenario and a second tap (or "Back to your numbers") returns;
-  // a pointer previews on hover and returns when it leaves the grid
-  const hoverless = useRef(false);
-  useEffect(() => {
-    hoverless.current = typeof window !== "undefined" && window.matchMedia("(hover: none)").matches;
-  }, []);
-  const burst = useRef<{ first: [number, number] | null; t: ReturnType<typeof setTimeout> | null }>({ first: null, t: null });
-  const onGrid = (c: [number, number] | null) => {
-    if (!hoverless.current) return setCell(c);
-    const b = burst.current;
-    if (c && !b.first) b.first = c;
-    if (b.t) return;
-    b.t = setTimeout(() => {
-      const first = b.first;
-      b.first = null;
-      b.t = null;
-      if (first) setCell((prev) => (prev && prev[0] === first[0] && prev[1] === first[1] ? null : first));
-    }, 80);
-  };
-
   const label = (r: Result, fmt: (v: number) => string) => (r.status === "value" ? fmt(r.value) : r.status === "none" ? r.reason : r.status === "na" ? "no hired crew" : waitingWords(r, fishery));
   const perUnit = (v: number) => (unit === "ton" ? `$${Math.round(v).toLocaleString("en-US")}/ton` : `$${v.toFixed(2)}/lb`);
   const amount = (v: number) => (unit === "ton" ? `${v.toLocaleString("en-US", { maximumFractionDigits: 1 })} ton` : `${Math.round(v).toLocaleString("en-US")} lb`);
@@ -234,7 +213,7 @@ export function Worksheet({ fishery, placeKey, onFishery, now }: { fishery: Coas
             ) : null}
           </span>
         </p>
-        <Ledger steps={shown.steps} domain={domain} label="Gross to net to boat, hypothetical, from your numbers" />
+        <Waterfall steps={shown.steps} domain={domain} testIdPrefix="ledger" label="Gross to net to boat, hypothetical, from your numbers" />
         <div className={s.grid} role="group" aria-label="If catch and price move">
           <h3 className={s.h3}>If catch and price move</h3>
           {base.grid ? (
@@ -243,7 +222,7 @@ export function Worksheet({ fishery, placeKey, onFishery, now }: { fishery: Coas
               cols={GRID_COLS}
               value={(r, c) => gridValue(base.grid, r, c)}
               selected={cell}
-              onSelect={onGrid}
+              onSelect={setCell}
               corner="Catch"
               caption={`Net to boat, price across and catch down. ${form.crewKind === "dayRate" ? `${cap(withFuel(fishery))} and day pay` : cap(withFuel(fishery))} stay as entered; fees and shares move with gross. Hover or tap a figure to see it above.`}
               className={s.sens}

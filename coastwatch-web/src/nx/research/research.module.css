@@ -133,12 +133,6 @@
   flex: none;
   overflow: visible;
 }
-.attrib {
-  display: none;
-  margin: 0;
-  font-size: var(--t-14);
-  color: var(--ink-2);
-}
 
 /* read in the margin (a phone, a short or narrow screen): the window's brush sits above the strips, so dragging it
    with a thumb shows every strip below it change */
@@ -180,9 +174,6 @@
     overflow-x: hidden;
     overscroll-behavior: contain;
     padding-top: var(--s-8);
-  }
-  .attrib {
-    display: block;
   }
 }
 

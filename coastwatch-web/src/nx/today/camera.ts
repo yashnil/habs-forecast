@@ -49,14 +49,16 @@ export function portWater(port: P): Bounds {
 }
 
 /**
- * The phone's view above the resting sheet: small, so it is composed rather than fitted. The port sits a
- * little right of centre with room to its east for its name (over land), the readings' points sit in the
- * upper part, and open water below them takes the soundings' type.
+ * The phone's view above the resting sheet: small, so it is composed rather than fitted. The port sits right
+ * of centre with room to its east for its name (over land); the readings' points sit high with open water to
+ * their west and south, where the soundings' type is set (Soundings.tsx tries those anchors first on a phone),
+ * so the test reads over the water it describes, not over the hills. When the two do not both fit, the buoy
+ * drops to the margin's water row, by priority.
  */
 export function phoneBounds(port: P, points: P[], maxKm = 70): Bounds {
   const near = points.filter((p) => distanceKm(port, p) <= maxKm);
   const k = kmLon(port.lat);
-  const west = Math.min(port.lon, ...near.map((p) => p.lon)) - 6 / k;
+  const west = Math.min(port.lon, ...near.map((p) => p.lon)) - 18 / k;
   const e = port.lon + 26 / k;
   const w = Math.min(west, e - 48 / k);
   const n = Math.max(port.lat, ...near.map((p) => p.lat)) + 10 / KM_LAT;

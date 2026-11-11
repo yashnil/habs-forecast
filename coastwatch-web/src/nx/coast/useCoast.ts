@@ -30,8 +30,11 @@ function useJson<T extends { ok: true }>(url: string | null): Loadable<T> {
   return v.url === url ? v.value : { state: "loading" };
 }
 
-export const useGates = (place: string | null, fishery: FisheryId | null) => useJson<CoastGates>(place && fishery ? `/coast/data?${new URLSearchParams({ place, fishery })}` : null);
-export const useSea = (place: string | null) => useJson<CoastSea>(place ? `/coast/data?${new URLSearchParams({ place, part: "sea" })}` : null);
+/** The two addresses My Coast reads; a field pack (src/nx/offline/pack.ts) saves exactly these. */
+export const gatesUrl = (place: string, fishery: string) => `/coast/data?${new URLSearchParams({ place, fishery })}`;
+export const seaUrl = (place: string) => `/coast/data?${new URLSearchParams({ place, part: "sea" })}`;
+export const useGates = (place: string | null, fishery: FisheryId | null) => useJson<CoastGates>(place && fishery ? gatesUrl(place, fishery) : null);
+export const useSea = (place: string | null) => useJson<CoastSea>(place ? seaUrl(place) : null);
 
 // ---------------------------------------------------------------- the fishery a trip is planned for
 

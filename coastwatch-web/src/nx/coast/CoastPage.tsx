@@ -4,7 +4,8 @@ import { MotionConfig } from "motion/react";
 import { useEffect, useId, useState } from "react";
 import { ChartScene } from "@/nx/chart/scene";
 import { Legend } from "@/nx/ds";
-import { openPortFinder } from "@/nx/shell/PortFinder";
+import { Button } from "@/nx/ds/Button";
+import { openPortFinder } from "@/nx/shell/finder";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
 import { portScene } from "@/nx/shell/views";
 import type { FisheryId } from "@/pilot/contracts";
@@ -64,9 +65,9 @@ export function CoastPage() {
           {!port ? (
             <div className={s.empty}>
               <p>Choose your port to see its season status, whale measures and latest test.</p>
-              <button type="button" className="n12-primary" onClick={openPortFinder}>
+              <Button variant="primary" onClick={openPortFinder}>
                 Find your port
-              </button>
+              </Button>
             </div>
           ) : !fishery ? (
             <p className={s.empty}>Choose a fishery above to see its season status, whale measures and latest test.</p>

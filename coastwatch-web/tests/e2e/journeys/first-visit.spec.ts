@@ -9,7 +9,8 @@ import { OK } from "../ports";
  * `/`, in three taps. Then the same device offline: Today still opens. Recorded on video into
  * docs/coastwatch/v12/implementation/today/.
  */
-const OUT = path.resolve(__dirname, "../../../../docs/coastwatch/v12/implementation/today");
+// review media go to the docs only on request (NX_MEDIA=1); an ordinary run keeps them with its own results
+const OUT = process.env.NX_MEDIA ? path.resolve(__dirname, "../../../../docs/coastwatch/v12/implementation/today") : path.resolve(__dirname, "../../../test-results/journey-media/today");
 test.use({ storageState: { cookies: [], origins: [] } });
 test.describe.configure({ mode: "serial" });
 

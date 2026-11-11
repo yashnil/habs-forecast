@@ -3,10 +3,9 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { coverCamera, fitBounds, formatDegrees, latY, lngX, project, scaleBar, screenRect, ticks, unproject, xLng, yLat, type Bounds } from "@/nx/chart/mercator";
 import { boxAt, overlaps, placeAll, type PlaceItem } from "@/nx/chart/placement";
-import { bloomRedirect, coastRedirect, rootRedirect } from "@/nx/shell/redirects";
+import { bloomRedirect, coastRedirect, hrefForPort, rootRedirect } from "@/nx/shell/redirects";
 import { ENTRY_SCRIPT } from "@/nx/shell/entry";
 import { activeDestination, withPlace } from "@/nx/shell/Shell";
-import { hrefForPort } from "@/nx/shell/PortFinder";
 
 const MONTEREY: Bounds = [
   [-122.3, 36.5],

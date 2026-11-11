@@ -5,6 +5,7 @@ import { BRAND } from "@/content/brand";
 import { DAYLIGHT_SCRIPT } from "@/v4/shell/daylight";
 import { pilotFrontDoor } from "@/pilot/frontDoor";
 import { LegacyChrome } from "@/nx/shell/LegacyChrome";
+import { fontVariables } from "@/nx/ds/fonts";
 
 // Self-hosted by next/font at build time: no runtime request to Google.
 // v7: the v2 faces (IBM Plex Sans, Newsreader) are no longer loaded; theme.css maps their variables
@@ -35,9 +36,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    // the font variables live on <html>, so the v4 tokens defined at :root can resolve them;
-    // suppressHydrationWarning: the launch screen's and daylight mode's inline scripts may mark <html> before hydration
-    <html lang="en" suppressHydrationWarning className={`${plexMono.variable} ${plexSans.variable} ${newsreader.variable}`}>
+    // the font variables live on <html>, so the v4 tokens defined at :root can resolve them, and so do v12's two
+    // faces (src/nx/ds/fonts.ts): dialogs, sheets and Radix portals land in <body>, outside any page element, and
+    // keep Literata and Public Sans; suppressHydrationWarning: the pre-paint entry and daylight scripts mark <html>
+    <html lang="en" suppressHydrationWarning className={`${plexMono.variable} ${plexSans.variable} ${newsreader.variable} ${fontVariables}`}>
       <body className="antialiased">
         {/* daylight mode before the first paint (src/v4/shell/daylight.ts) */}
         <script dangerouslySetInnerHTML={{ __html: DAYLIGHT_SCRIPT }} />

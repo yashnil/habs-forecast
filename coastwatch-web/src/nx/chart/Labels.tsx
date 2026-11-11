@@ -128,7 +128,7 @@ export function CanyonName() {
         if (!path || !text) return;
         const show = f.camera.zoom >= CANYON_NAME.minZoom;
         const pts = [...CANYON_AXIS].reverse().map(([lon, lat]) => f.project(lon, lat));
-        const onScreen = pts.filter((p) => p.x > 0 && p.y > 0 && p.x < f.viewport.width && p.y < f.viewport.height - f.insets.bottom);
+        const onScreen = pts.filter((p) => p.x > f.insets.left && p.y > f.insets.top && p.x < f.viewport.width - f.insets.right && p.y < f.viewport.height - f.insets.bottom);
         if (!show || onScreen.length < pts.length * 0.6) {
           text.setAttribute("visibility", "hidden");
           return;

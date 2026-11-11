@@ -254,7 +254,13 @@ function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
           </p>
         )}
         {!account.saved_places.length ? (
-          <p className="text-[14.5px] text-n-ink-2">Save a port above to choose its alerts.</p>
+          <p className="text-[14.5px] text-n-ink-2">
+            Save a port above to choose its alerts. Every current official notice on the coast is listed on{" "}
+            <a href="/notices" className={link} data-testid="notices-all">
+              one page
+            </a>
+            .
+          </p>
         ) : (
           <div className="space-y-6">
             {account.saved_places.map((place) => {
@@ -262,6 +268,11 @@ function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
               return (
                 <fieldset key={place} id={`alerts-${place}`} className="scroll-mt-20 border-t border-n-line-strong pt-3" data-testid={`alerts-${place}`}>
                   <legend className="float-left mb-2 w-full font-serif text-[22px] leading-tight text-n-ink">{placeLabel(place)}</legend>
+                  <p className="clear-both mb-2 text-[14.5px]">
+                    <a href={`/notices?place=${encodeURIComponent(place)}`} className={link} data-testid={`notices-${place}`}>
+                      Every official notice at {placeLabel(place)} and on the rest of the coast
+                    </a>
+                  </p>
                   <div className="clear-both grid gap-x-6 sm:grid-cols-2">
                     {TRIGGERS.map((t) => (
                       <label key={t} className="flex min-h-11 cursor-pointer items-start gap-3 py-1.5">

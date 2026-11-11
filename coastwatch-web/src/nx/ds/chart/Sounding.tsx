@@ -38,14 +38,22 @@ export interface SoundingProps {
   ariaLabel?: string;
   /** Width the type may take before wrapping, in px. */
   width?: number;
+  /**
+   * `point` (default): drawn from `x`, `y` with its own leader, for a plain overlay. `box`: the type in
+   * normal flow at its own size, no leader or point, for a host that measures each box and places it
+   * itself (the chart's marks layer, which draws the leader and the point from its collision pass).
+   */
+  placement?: "point" | "box";
 }
 
 /**
  * A figure placed where it was measured (principle 2), with unit, kind mark and a leader line.
  * Presentational: the chart host owns projection and collisions.
  */
-export function Sounding({ x, y, value, unit, label, caption, kind, anchor = "se", leader = null, priority = 5, dropped = false, halo = true, size = "lg", stale, onActivate, ariaLabel, width = 260 }: SoundingProps) {
+export function Sounding({ x, y, value, unit, label, caption, kind, anchor = "se", leader = null, priority = 5, dropped = false, halo = true, size = "lg", stale, onActivate, ariaLabel, width = 260, placement = "point" }: SoundingProps) {
   const mark = markFor(kind);
+  const box = placement === "box";
+  if (box) leader = null;
   const lx = leader?.dx ?? 0;
   const ly = leader?.dy ?? 0;
   const gap = leader ? anchorGap(anchor) : { x: 0, y: 0 };
@@ -55,8 +63,8 @@ export function Sounding({ x, y, value, unit, label, caption, kind, anchor = "se
     <AnimatePresence>
       {dropped ? null : (
         <motion.div
-          className={cx(s.placed, halo && s.halo)}
-          style={{ left: x, top: y, zIndex: 20 - priority }}
+          className={cx(box ? s.boxed : s.placed, halo && s.halo)}
+          style={box ? { maxWidth: width } : { left: x, top: y, zIndex: 20 - priority }}
           data-priority={priority}
           initial={registerFrom}
           animate={registerTo}
@@ -72,7 +80,7 @@ export function Sounding({ x, y, value, unit, label, caption, kind, anchor = "se
           ) : null}
           <Tag
             className={cx(s.block, s.sounding, s[size], onActivate && s.activate)}
-            style={{ left: lx + gap.x, top: ly + gap.y, transform: anchorTranslate(anchor), textAlign: align, width }}
+            style={box ? { textAlign: align } : { left: lx + gap.x, top: ly + gap.y, transform: anchorTranslate(anchor), textAlign: align, width }}
             onClick={onActivate}
             type={onActivate ? "button" : undefined}
             aria-label={ariaLabel}

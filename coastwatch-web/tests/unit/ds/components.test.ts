@@ -24,6 +24,8 @@ vi.mock("@/nx/ds/worksheet/worksheet.module.css", () => css);
 import {
   Agenda,
   BigDate,
+  Button,
+  Waterfall,
   Legend,
   Mark,
   RampLegend,
@@ -32,6 +34,7 @@ import {
   agendaPhase,
   censoredWords,
   clampWindow,
+  labelledTicks,
   classify,
   day,
   daysBetween,
@@ -78,6 +81,14 @@ describe("format: absolute dates in Pacific time, honest figures", () => {
 });
 
 describe("kinds, modes and stamps", () => {
+  it("a RAMP assessment date reads as assessed", () => {
+    expect(stampText({ kind: "official", title: "Whale measures", source: "CDFW RAMP", date: "2026-11-06", dateRole: "assessed" }, NOW)).toBe("Official · CDFW RAMP · assessed Nov 6 · not verified");
+  });
+  it("buttons pass data- and aria- attributes through", () => {
+    const html = renderToStaticMarkup(h(Button, { variant: "primary", "data-testid": "go-find", "aria-describedby": "x", children: "Find your port" }));
+    expect(html).toContain('data-testid="go-find"');
+    expect(html).toContain('aria-describedby="x"');
+  });
   it("only measured readings are solid; official keeps its own ring", () => {
     expect(markFor("measured")).toBe("measured");
     expect(markFor("analysis")).toBe("model");
@@ -132,6 +143,23 @@ describe("series: censored marks and gaps (T7, T19, T20)", () => {
   });
 });
 
+describe("strips: low-cell model days and thinned tick labels", () => {
+  it("a model day from few cells is never joined into the line and says so", () => {
+    const pts: SeriesPoint[] = [
+      { t: "2026-10-01", v: 0.4 },
+      { t: "2026-10-02", v: 0.5, low: true },
+      { t: "2026-10-03", v: 0.6 },
+      { t: "2026-10-04", v: 0.7 },
+    ];
+    expect(segments(pts).map((r) => r.map((p) => p.t))).toEqual([["2026-10-01"], ["2026-10-03", "2026-10-04"]]);
+    expect(readoutText(pts[1], "%", "model")).toContain("from few model cells");
+  });
+  it("labels only as many ticks as fit, always the top one", () => {
+    expect(labelledTicks([1, 10, 100, 1000, 10000], 200)).toEqual([true, true, true, true, true]);
+    expect(labelledTicks([1, 10, 100, 1000, 10000], 40)).toEqual([true, false, true, false, true]);
+  });
+});
+
 describe("waterfall layout (E3) and brush", () => {
   it("costs step down from where the last bar ended; net sits on zero", () => {
     const l = layoutWaterfall([
@@ -157,6 +185,18 @@ describe("waterfall layout (E3) and brush", () => {
       { id: "f", label: "Fuel", kind: "cost", amount: 552 },
     ]);
     expect(l.bars.every((b) => b.waiting)).toBe(true);
+  });
+  it("a waterfall on a scale held from outside keeps that scale, and a blank figure waits in words", () => {
+    const steps = [
+      { id: "gross", label: "Landed", kind: "gross" as const, amount: 1000 },
+      { id: "fuel", label: "Fuel", kind: "cost" as const, amount: 250 },
+      { id: "net", label: "Net", kind: "net" as const, amount: null, waiting: "waiting for crew share" },
+    ];
+    const html = renderToStaticMarkup(h(Waterfall, { steps, label: "Trip", domain: [0, 2000], testIdPrefix: "ledger" }));
+    expect(html).toContain('data-testid="ledger-gross"');
+    expect(html).toContain("width:50%");
+    expect(html).toContain('colSpan="2"');
+    expect(html).toContain("waiting for crew share");
   });
   it("the brush window stays inside the record and never narrower than its minimum", () => {
     expect(clampWindow([-50, 50], [0, 1000], 10)).toEqual([0, 100]);
@@ -187,6 +227,25 @@ describe("agenda, legend and type render accessibly", () => {
     expect(html).toContain("Past. ");
     expect(html).toContain("Coming. ");
     expect(html).toContain("Subject to change.");
+  });
+  it("an item under way today is an item, and the now line above it does not repeat its date", () => {
+    const html = renderToStaticMarkup(
+      h(Agenda, {
+        label: "Dates",
+        now: NOW,
+        items: [
+          { id: "b", start: "2026-10-30", title: "Delayed" },
+          { id: "w", start: "2026-11-10", title: "Wind forecast" },
+        ],
+      }),
+    );
+    const item = html.slice(html.indexOf('data-phase="now"') - 40, html.indexOf("Wind forecast"));
+    expect(item).toContain("underway");
+    expect(item).not.toMatch(/class="now"/);
+    // the now line keeps its spoken date but prints only "Today"
+    const line = html.slice(html.indexOf("Today, Nov 10"), html.indexOf('data-phase="now"'));
+    expect(line).not.toContain("nowWhat");
+    expect(html.match(/>Nov 10</g)?.length).toBe(1);
   });
   it("official marks carry their words; the no-view mark is named", () => {
     expect(renderToStaticMarkup(h(Mark, { kind: "official" }))).toContain("not verified");

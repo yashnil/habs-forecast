@@ -18,7 +18,6 @@ import { currentsHourly, fieldFeatures } from "@/lib/currents";
 import { cellEdges, loadGrid } from "@/lib/grid";
 import { labelledGeometry } from "@/lib/officialGeometry";
 import { Dialog } from "@/nx/ds/Overlay";
-import { literata, publicSans } from "@/nx/ds/fonts";
 import { day } from "@/nx/ds/format";
 import { ReadinessProvider } from "@/v4/readiness/store";
 import { AreaModel, CellBody } from "@/v4/explore/Inspect";
@@ -53,8 +52,7 @@ export function NativeGrid(props: NativeGridProps) {
       description="Published model and observation grids, cell by cell. A cell without a value is a gap, never a low value."
       open={props.open}
       onOpenChange={props.onOpenChange}
-      // the dialog portals outside the route group's font scope: carry the two faces' variables with it
-      className={`${g.dialog} ${literata.variable} ${publicSans.variable}`}
+      className={g.dialog}
     >
       <ReadinessProvider>
         <GridInstrument {...props} />

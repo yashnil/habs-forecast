@@ -137,8 +137,9 @@
 }
 
 /* ---- the agenda */
+/* the agenda starts below the lead's first screen on a desktop: status, date, change and actions read alone */
 .agendaWrap {
-  margin-top: var(--s-48);
+  margin-top: var(--s-64);
 }
 .head {
   margin: 0 0 var(--s-12);
@@ -150,18 +151,8 @@
   --when: 76px;
   --railw: 20px;
 }
-/* ds Agenda gives an under-way item the now line's class (reported); here it reads as an item */
-.agendaWrap .agenda > li[data-phase="now"] {
-  align-items: start;
-  min-height: 0;
-  padding: var(--s-8) 0 var(--s-12);
-}
-.agendaWrap .agenda > li[data-phase="now"]::after {
-  content: none;
-}
-/* a date with its year wraps inside the date column */
-.agendaWrap .agenda > li > span:first-child {
-  white-space: normal;
+.allDates {
+  margin-top: var(--s-4);
 }
 
 /* ---- rows */

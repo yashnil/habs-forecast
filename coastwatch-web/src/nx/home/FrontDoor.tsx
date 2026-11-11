@@ -1,16 +1,15 @@
 "use client";
 
-import { LayoutGroup, motion, MotionConfig } from "motion/react";
-import { useLayoutEffect, useState, useSyncExternalStore } from "react";
+import { LayoutGroup, MotionConfig } from "motion/react";
+import { useCallback, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { ChartScene } from "@/nx/chart/scene";
 import { Loading } from "@/nx/ds/States";
 import { savePort, usePorts, useSavedPortKey } from "@/nx/shell/port";
 import { HOME_SCENE } from "@/nx/shell/views";
-import { PORT_NAME_LAYOUT, TodayView } from "@/nx/today/TodayView";
+import { TodayView } from "@/nx/today/TodayView";
 import { useFisheries } from "@/nx/today/store";
 import type { FinderData } from "./finder.server";
 import { Home, type Picked } from "./Home";
-import s from "./home.module.css";
 import t from "@/nx/today/today.module.css";
 
 const subscribeNone = () => () => {};
@@ -27,20 +26,18 @@ export function FrontDoor({ finder }: { finder: FinderData }) {
   const ports = usePorts();
   const fisheries = useFisheries();
   const hydrated = useSyncExternalStore(subscribeNone, () => true, () => false);
-  const [picked, setPicked] = useState<Picked | null>(null);
   const [arriving, setArriving] = useState(false);
   const entry: "today" | "home" | null = saved === undefined ? null : saved ? "today" : "home";
 
   useLayoutEffect(() => {
     if (entry) document.documentElement.setAttribute("data-nx-entry", entry);
   }, [entry]);
-  // the proxy has been drawn where the name was: now the port is saved, and the title takes the name over
-  useLayoutEffect(() => {
-    if (!picked) return;
+  // the chosen name already holds the shared layoutId in the finder: saving the port swaps Home for Today,
+  // and the chooser's title takes the name over from where it stood
+  const onPick = useCallback((p: Picked) => {
     setArriving(true);
-    savePort(picked.key);
-    setPicked(null);
-  }, [picked]);
+    savePort(p.key);
+  }, []);
 
   const port = saved ? (ports.find((p) => p.key === saved) ?? null) : null;
   const pre = typeof document !== "undefined" ? document.documentElement.getAttribute("data-nx-entry") : null;
@@ -51,12 +48,7 @@ export function FrontDoor({ finder }: { finder: FinderData }) {
     <MotionConfig reducedMotion="user">
       <LayoutGroup>
         {hydrated && holdCoast ? <ChartScene scene={HOME_SCENE} /> : null}
-        {entry !== "today" ? <Home finder={finder} onPick={setPicked} /> : null}
-        {picked?.rect ? (
-          <motion.span layoutId={PORT_NAME_LAYOUT} className={s.proxy} style={{ left: picked.rect.left, top: picked.rect.top }}>
-            {picked.name}
-          </motion.span>
-        ) : null}
+        {entry !== "today" ? <Home finder={finder} onPick={onPick} /> : null}
         {entry !== "home" ? (
           <div data-nx-root-today>
             {entry === "today" && port ? (

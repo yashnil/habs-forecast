@@ -10,7 +10,8 @@ import { OK } from "../ports";
  * to Research with the station and the time window in the URL. The journey is recorded on video into
  * docs/coastwatch/v12/implementation/explore/. With NX_MEDIA=1 the review stills and videos are written too.
  */
-const OUT = path.resolve(__dirname, "../../../../docs/coastwatch/v12/implementation/explore");
+// review media go to the docs only on request (NX_MEDIA=1); an ordinary run keeps them with its own results
+const OUT = process.env.NX_MEDIA ? path.resolve(__dirname, "../../../../docs/coastwatch/v12/implementation/explore") : path.resolve(__dirname, "../../../test-results/journey-media/explore");
 const DATA = path.resolve(__dirname, "../../../public/data/fixture/v1");
 const manifest = JSON.parse(readFileSync(path.join(DATA, "manifest.json"), "utf8")) as { layers: Array<{ layer_id: string; grid: { url: string; width: number; height: number; lat_first: number; lat_step: number; lon_first: number; lon_step: number; scale_factor: number; add_offset: number; nodata: number; chunks?: { url_template: string } | null } | null }> };
 

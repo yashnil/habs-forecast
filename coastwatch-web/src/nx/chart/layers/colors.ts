@@ -35,6 +35,10 @@ export function token(name: string, el: Element = document.documentElement): RGB
 
 export type ModeColours = {
   chl: RGBA[];
+  /** C-HARM's ten display classes (cw-probability-classes-v1), --prob-0…9 */
+  prob: RGBA[];
+  /** sea temperature, sequential, --sst-0…7 */
+  sst: RGBA[];
   ink: RGBA;
   ink2: RGBA;
   hatch: RGBA;
@@ -50,6 +54,8 @@ export function modeColours(el: Element = document.documentElement): ModeColours
   const v = (k: string) => cssColour(cs.getPropertyValue(k).trim());
   return {
     chl: Array.from({ length: 8 }, (_, i) => v(`--chl-${i}`)),
+    prob: Array.from({ length: 10 }, (_, i) => v(`--prob-${i}`)),
+    sst: Array.from({ length: 8 }, (_, i) => v(`--sst-${i}`)),
     ink: v("--ink"),
     ink2: v("--ink-2"),
     hatch: v("--hatch"),

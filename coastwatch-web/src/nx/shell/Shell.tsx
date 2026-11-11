@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { CHART_MODE_KEY, type ChartMode } from "./entry";
-import { openPortFinder } from "./PortFinder";
-import { useCurrentPort, useSavedPortKey } from "./port";
+import { openPortFinder } from "./finder";
+import { FieldPack } from "@/nx/offline/FieldPack";
+import { useCurrentPort, useSavedPortKey, type ShellPort } from "./port";
 
 export const DESTINATIONS = [
   { path: "/today", label: "Today" },
@@ -17,6 +18,8 @@ export const DESTINATIONS = [
 /** The page a pathname belongs to; `/` is Today for a reader with a saved port, else no tab. */
 export function activeDestination(pathname: string, savedPort: string | null | undefined): string | null {
   if (pathname === "/") return savedPort ? "/today" : null;
+  // every official notice is reached from Today (its Notices row): Today stays the current page
+  if (pathname === "/notices") return "/today";
   return DESTINATIONS.find((d) => pathname === d.path || pathname.startsWith(`${d.path}/`))?.path ?? null;
 }
 
@@ -31,7 +34,7 @@ function Chevron() {
   );
 }
 
-function ChartModeMenu() {
+function ChartModeMenu({ port }: { port: ShellPort | null }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<ChartMode>("day");
   const ref = useRef<HTMLDivElement>(null);
@@ -84,6 +87,7 @@ function ChartModeMenu() {
               </label>
             ))}
           </fieldset>
+          <FieldPack port={port ? { key: port.key, name: port.name, lat: port.lat, lon: port.lon } : null} />
           <nav className="n12-menu-links" aria-label="More">
             <Link href="/ask" className="n12-menu-narrow">
               Ask
@@ -145,7 +149,7 @@ export function Shell() {
           <Link href={key ? `/account?place=${encodeURIComponent(key)}#alerts` : "/account#alerts"} className="n12-bar-link">
             Alerts
           </Link>
-          <ChartModeMenu />
+          <ChartModeMenu port={port} />
         </div>
       </header>
       <nav className="n12-tabs" aria-label="Destinations" data-testid="nx-tabs">

@@ -3,7 +3,7 @@ import { scaleLinear, scaleLog, scaleUtc } from "d3-scale";
 import { line as d3line } from "d3-shape";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useId, useMemo, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { ms as toMs, type SeriesPoint, classify, describeSeries, logDomain, logTickLabel, logTicks, nearestIndex, readoutText, segments } from "./series";
+import { ms as toMs, type SeriesPoint, classify, describeSeries, labelledTicks, logDomain, logTickLabel, logTicks, nearestIndex, readoutText, segments } from "./series";
 import { KIND_WORD, type Kind } from "../kinds";
 import { ink } from "../motion";
 import { useElementWidth } from "../useMedia";
@@ -114,7 +114,9 @@ export function SeriesChart({
   const x = Object.assign((d: Date) => r2(xs(d)), { invert: (px: number) => xs.invert(px), ticks: (n: number) => xs.ticks(n) });
   const ys = scale === "log" ? scaleLog().domain(yd).range([plotBottom, M.top]).clamp(true) : scaleLinear().domain(yd).range([plotBottom, M.top]).nice();
   const y = (v: number) => r2(ys(v));
-  const yTicks = scale === "log" ? logTicks(yd) : (ys as ReturnType<typeof scaleLinear<number, number>>).ticks(5);
+  // a short strip keeps every grid line but labels only as many as fit (tick thinning)
+  const yTicks = scale === "log" ? logTicks(yd) : (ys as ReturnType<typeof scaleLinear<number, number>>).ticks(Math.max(2, Math.min(5, Math.floor(height / 22))));
+  const yLabelled = labelledTicks(yTicks, height);
   const spanDays = (span[1] - span[0]) / 86_400_000;
   const xTicks = x.ticks(spanDays > 3 * 365 ? Math.max(2, Math.min(Math.round(spanDays / 365), Math.floor(plotW / 64))) : Math.max(2, Math.round(plotW / 110)));
 
@@ -189,12 +191,14 @@ export function SeriesChart({
             </clipPath>
           </defs>
           {/* grid */}
-          {yTicks.map((v) => (
+          {yTicks.map((v, i) => (
             <g key={`y${v}`}>
               <line x1={M.left} x2={M.left + plotW} y1={y(v)} y2={y(v)} className={s.grid} />
-              <text x={M.left - 8} y={y(v)} className={s.yTick} dy="0.34em">
-                {scale === "log" ? logTickLabel(v) : v.toLocaleString("en-US")}
-              </text>
+              {yLabelled[i] ? (
+                <text x={M.left - 8} y={y(v)} className={s.yTick} dy="0.34em">
+                  {scale === "log" ? logTickLabel(v) : v.toLocaleString("en-US")}
+                </text>
+              ) : null}
             </g>
           ))}
           {xTicks.map((d) => (
@@ -235,10 +239,12 @@ export function SeriesChart({
               : null}
             {pointMarks || lineMarks
               ? visible
-                  .filter((p) => classify(p) === "value" && (pointMarks || runs.some((r) => r.length === 1 && r[0] === p)))
+                  .filter((p) => classify(p) === "value" && (pointMarks || p.low || runs.some((r) => r.length === 1 && r[0] === p)))
                   .map((p) => {
                     const cx_ = x(new Date(toMs(p.t)));
                     const cy = y(p.v as number);
+                    // from few model cells: an open circle, apart from the line
+                    if (p.low) return <circle key={p.t} cx={cx_} cy={cy} r={3.2} className={s.ptHollow} />;
                     return hollow ? (
                       <rect key={p.t} x={cx_ - 3} y={cy - 3} width={6} height={6} className={s.ptHollow} />
                     ) : (

@@ -9,11 +9,14 @@
 }
 .n12-frame { position: relative; width: 100%; height: 100%; background: var(--depth-8); container-type: size; container-name: n12-frame; }
 @container n12-frame (max-width: 640px) { .n12-attrib { display: none; } }
-.n12-map, .n12-poster, .n12-overlay, .n12-still { position: absolute; inset: 0; overflow: hidden; }
+.n12-map, .n12-poster, .n12-overlay, .n12-still, .n12-underlay { position: absolute; inset: 0; overflow: hidden; }
+.n12-underlay { pointer-events: none; }
+.n12-static-field { position: absolute; max-width: none; image-rendering: pixelated; }
 .n12-map .maplibregl-canvas { outline: none; }
 .n12-map .maplibregl-canvas:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 .n12-sheet[data-tier="static"] .n12-map { display: none; }
 .n12-poster img { position: absolute; max-width: none; user-select: none; }
+.n12-poster-land { position: absolute; background: var(--land); }
 .n12-overlay { pointer-events: none; }
 .n12-overlay a, .n12-overlay button { pointer-events: auto; }
 .n12-labels, .n12-marks { position: absolute; inset: 0; }
@@ -41,11 +44,14 @@
 .n12-leaders circle { fill: var(--ink); stroke: var(--halo); stroke-width: 2; }
 
 /* scale bar and sources, bottom of the sheet */
-.n12-scale { position: absolute; left: var(--s-16); bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12)); display: flex; align-items: center; gap: var(--s-8); pointer-events: none; }
+/* both sit in the free part of the sheet: clear of a panel on either side and of the resting phone sheet */
+.n12-scale { position: absolute; left: calc(var(--nx-cover-left, 0px) + var(--s-16)); bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12)); display: flex; align-items: center; gap: var(--s-8); pointer-events: none; }
 .n12-scale-bar { display: grid; grid-template-columns: repeat(4, 1fr); height: 6px; border: var(--hair) solid var(--ink); background: var(--paper); }
 .n12-scale-bar i:nth-child(odd) { background: var(--ink); }
 .n12-scale-text, .n12-attrib { font-size: var(--t-14); color: var(--ink); text-shadow: 0 0 1px var(--halo), 1.5px 0 0 var(--halo), -1.5px 0 0 var(--halo), 0 1.5px 0 var(--halo), 0 -1.5px 0 var(--halo), 1px 1px 0 var(--halo), -1px -1px 0 var(--halo), 1px -1px 0 var(--halo), -1px 1px 0 var(--halo), 0 0 3px var(--halo); white-space: nowrap; }
-.n12-attrib { position: absolute; right: var(--s-12); bottom: var(--s-12); margin: 0; color: var(--ink-2); }
+.n12-attrib { position: absolute; right: calc(var(--nx-cover-right, 0px) + var(--s-12)); bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12)); margin: 0; color: var(--ink-2); }
+/* a narrow free part (a panel beside it): the sources stand above the scale bar instead of beside it */
+.n12-frame[data-free="narrow"] .n12-attrib { bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12) + var(--s-32)); left: calc(var(--nx-cover-left, 0px) + var(--s-16)); right: auto; }
 .n12-attrib a { pointer-events: auto; }
 
 /* the neatline */

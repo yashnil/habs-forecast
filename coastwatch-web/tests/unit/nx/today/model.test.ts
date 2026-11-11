@@ -219,11 +219,11 @@ describe("camera", () => {
     expect(todayBounds(port, [{ lon: -121.9, lat: 36.8 }, { lon: -123.5, lat: 37.5 }])).toEqual(near);
   });
 
-  it("phone: the port has room to its east and the water south of the points is in view", () => {
+  it("phone: the port has room to its east, and open water west and south of the points takes their type", () => {
     const [[w, s], [e, n]] = phoneBounds(port, [{ lon: -121.9, lat: 36.8 }]);
     expect(distanceKm({ lon: port.lon, lat: port.lat }, { lon: e, lat: port.lat })).toBeGreaterThan(20);
     expect(port.lat - s).toBeGreaterThan(n - port.lat);
-    expect(w).toBeLessThan(-121.9);
+    expect(distanceKm({ lon: -121.9, lat: 36.8 }, { lon: w, lat: 36.8 })).toBeGreaterThan(15);
   });
 });
 

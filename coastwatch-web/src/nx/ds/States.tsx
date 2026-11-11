@@ -75,21 +75,23 @@ export function Stale({ children, date, now, why, className }: StaleProps) {
 }
 
 export interface OfflineProps {
-  /** When this device saved what is shown. */
-  savedAt: string;
+  /** When this device saved what is shown; null when the connection dropped on a page that was not saved. */
+  savedAt: string | null;
   now?: string;
+  /** The first word: "Offline" (default), or "A saved copy" when a slow network gave way to one. */
+  heading?: string;
   /** Override for the second sentence. */
   children?: ReactNode;
   className?: string;
 }
 
 /** Offline: what is shown and from when. A saved pack only ever shows its own dates. */
-export function Offline({ savedAt, now, children, className }: OfflineProps) {
+export function Offline({ savedAt, now, heading = "Offline", children, className }: OfflineProps) {
   return (
     <section className={cx(s.state, s.offline, className)} role="status" aria-label="Offline">
       <Icon name="offline" />
       <div>
-        <p className={s.what}>Offline. Showing what this device saved {dayTime(savedAt, { ref: now })}.</p>
+        <p className={s.what}>{savedAt ? `${heading}. Showing what this device saved ${dayTime(savedAt, { ref: now })}.` : `${heading}. You've lost the connection.`}</p>
         <p className={s.why}>{children ?? "Every value is as of then. Nothing updates until you're back online."}</p>
       </div>
     </section>

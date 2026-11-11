@@ -88,7 +88,9 @@ export function chartStyle(p: ChartPalette, origin: string, { hidden = false }: 
       })),
       { id: "land", type: "fill", source: "land", paint: { "fill-color": p.land, "fill-antialias": true } },
       { id: "relief-land", type: "raster", source: "relief-land", paint: { "raster-opacity": p.reliefOpacity, "raster-fade-duration": 0, "raster-resampling": "linear" } },
-      { id: "relief-land-monterey", type: "raster", source: "relief-land-monterey", minzoom: 8, paint: { "raster-opacity": p.reliefOpacity, "raster-fade-duration": 0, "raster-resampling": "linear" } },
+      // at every zoom: the statewide relief steps back inside the inset (the cross-fade), so hiding this one
+      // below some zoom would leave a pale square off Monterey
+      { id: "relief-land-monterey", type: "raster", source: "relief-land-monterey", paint: { "raster-opacity": p.reliefOpacity, "raster-fade-duration": 0, "raster-resampling": "linear" } },
       {
         id: "isobaths-minor",
         type: "line",
@@ -151,6 +153,18 @@ export function posterImages(mode: string): Array<{ url: string; bounds: [[numbe
     ] as [[number, number], [number, number]];
   };
   return [`chart-${mode}-ca.webp`, `chart-${mode}-monterey.webp`].map((n) => ({ url: `/chart/${n}`, bounds: box(n) }));
+}
+
+/**
+ * East of the statewide image the land runs on to the chart's bounds: the static tier lays plain land there,
+ * so a wide or zoomed-out still never ends in a pale edge where the bake stops.
+ */
+export function posterLandEast(): [[number, number], [number, number]] {
+  const c = corners(`chart-day-ca.webp`);
+  return [
+    [c[1][0], CHART_FRAME.bounds[1]],
+    [CHART_FRAME.bounds[2], CHART_FRAME.bounds[3]],
+  ];
 }
 
 export const STILL = (() => {

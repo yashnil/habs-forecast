@@ -1,6 +1,6 @@
 "use client";
 import { motion, useReducedMotion } from "motion/react";
-import type { MouseEvent, ReactNode } from "react";
+import type { AriaAttributes, MouseEvent, ReactNode } from "react";
 import { forwardRef } from "react";
 import { ink, press } from "./motion";
 import { Icon, type IconName } from "./Icon";
@@ -9,7 +9,10 @@ import s from "./Button.module.css";
 
 export type ButtonVariant = "primary" | "secondary" | "text";
 
-interface Common {
+/** `data-*` attributes pass through to the element (test ids, tour anchors). */
+type DataAttributes = { [key: `data-${string}`]: string | number | boolean | undefined };
+
+interface Common extends AriaAttributes, DataAttributes {
   variant?: ButtonVariant;
   children: ReactNode;
   icon?: IconName;
@@ -20,10 +23,6 @@ interface Common {
   busyLabel?: string;
   full?: boolean;
   className?: string;
-  "aria-label"?: string;
-  "aria-describedby"?: string;
-  "aria-controls"?: string;
-  "aria-expanded"?: boolean;
 }
 
 type AsButton = Common & { href?: undefined; type?: "button" | "submit"; onClick?: (e: MouseEvent<HTMLButtonElement>) => void };
@@ -54,14 +53,11 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
       ) : null}
     </>
   );
-  const aria = {
-    "aria-label": props["aria-label"],
-    "aria-describedby": props["aria-describedby"],
-    "aria-controls": props["aria-controls"],
-    "aria-expanded": props["aria-expanded"],
-    "aria-disabled": disabled ? true : undefined,
-    "aria-busy": busy ? true : undefined,
-  };
+  // every aria-* and data-* prop passes through; disabled and busy set their own states
+  const aria: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(props)) if (k.startsWith("aria-") || k.startsWith("data-")) aria[k] = v;
+  if (disabled) aria["aria-disabled"] = true;
+  if (busy) aria["aria-busy"] = true;
   const tap = inert ? {} : press;
   if (props.href !== undefined) {
     const { href, external, onClick } = props;

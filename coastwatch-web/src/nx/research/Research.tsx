@@ -16,6 +16,7 @@ import { Segmented } from "@/nx/ds/worksheet/Inputs";
 import { Stamp, type Provenance } from "@/nx/ds/Stamp";
 import { Unavailable } from "@/nx/ds/States";
 import { useMedia } from "@/nx/ds/useMedia";
+import { useChartCover } from "@/nx/chart/cover";
 import { ChartScene, boundsAround, type ChartScene as Scene } from "@/nx/chart/scene";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
 import { download, svgFigure } from "./dom";
@@ -191,52 +192,18 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   }, [wide, room, strips, folded]);
 
   // ------------------------------------------------------------ the chart: the station in the free part of the sheet, its neighbours around it
+  // on a wide screen the record panel lies over the sheet's right side: registered as a cover, so the chart
+  // fits the station into what is left and writes no name (and not its sources) under the panel
   const panelRef = useRef<HTMLElement>(null);
-  const [frame, setFrame] = useState<{ W: number; H: number; free: number } | null>(null);
-  useEffect(() => {
-    if (!wide) return setFrame(null);
-    const fr = document.querySelector<HTMLElement>(".n12-frame");
-    const pn = panelRef.current;
-    if (!fr || !pn) return;
-    const measure = () => {
-      const a = fr.getBoundingClientRect();
-      const b = pn.getBoundingClientRect();
-      setFrame((o) => {
-        const n = { W: Math.round(a.width), H: Math.round(a.height), free: Math.round(Math.max(0, b.left - a.left)) };
-        return o && o.W === n.W && o.H === n.H && o.free === n.free ? o : n;
-      });
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(fr);
-    ro.observe(pn);
-    return () => ro.disconnect();
-  }, [wide]);
+  useChartCover("research-record", panelRef, "right", wide);
   const homeStation = port ? nearestStation(stations, port.lat, port.lon, port.key)?.station.station_id : DEFAULT_STATION;
   const sceneBase = port ? `research:${port.key}` : "research";
   const scene: Scene = useMemo(() => {
     const id = st.station_id === homeStation ? sceneBase : `${sceneBase}:${st.station_id}`;
     const focusPort = port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null;
-    if (frame && frame.free > 120) {
-      const pad = frame.W < 560 ? 20 : 44;
-      const K = 70;
-      const k = (2 * K) / Math.max(1, frame.H - 2 * pad);
-      const kmLon = 111.32 * Math.cos((st.lat * Math.PI) / 180);
-      const xs = Math.max(pad + 10, frame.free * 0.6);
-      return {
-        id,
-        focus: focusPort,
-        view: {
-          bounds: [
-            [st.lon - ((xs - pad) * k) / kmLon, st.lat - K / 111.32],
-            [st.lon + ((frame.W - pad - xs) * k) / kmLon, st.lat + K / 111.32],
-          ],
-          maxZoom: 12,
-        },
-      };
-    }
-    return { id, focus: focusPort, view: { bounds: boundsAround([st.lon, st.lat], 32, 24), maxZoom: 12 } };
-  }, [st, frame, port, sceneBase, homeStation]);
+    // beside the panel the free part is tall and narrow: 70 km up and down the coast, the station centred
+    return { id, focus: focusPort, view: { bounds: wide ? boundsAround([st.lon, st.lat], 12, 70) : boundsAround([st.lon, st.lat], 32, 24), maxZoom: 12 } };
+  }, [st, port, sceneBase, homeStation, wide]);
 
   // ------------------------------------------------------------ exports
   const figureRef = useRef<RecordStripsHandle>(null);
@@ -363,7 +330,6 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
               </li>
             ))}
           </ul>
-          <p className={s.attrib}>Chart: depth NOAA ETOPO, CRM · coast © OpenStreetMap</p>
         </div>
       </section>
 

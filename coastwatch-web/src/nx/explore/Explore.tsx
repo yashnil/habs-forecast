@@ -5,9 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { age, day, fixed, latLon, pct, sig, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
+import { age, day, fixed, latLon, pct, plainError, sig, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
 import { capability, type GraphicsTier } from "@/lib/capability";
 import type { CurrentField } from "@/lib/currents";
+import { openMargin } from "@/nx/shell/Margin";
+import { StaticField } from "./StaticField";
 import { ChartScene } from "@/nx/chart/scene";
 import { ChartMarks } from "@/nx/chart/Labels";
 import { whenChartReady } from "@/nx/chart/control";
@@ -18,7 +20,7 @@ import { createFlowLayer, type FlowController } from "@/nx/chart/layers/FlowLaye
 import { persistence } from "@/nx/chart/layers/grid";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
 import { loadCodes, boxAround } from "./codes";
-import { EXPLORE_ZOOM, exploreBounds } from "./camera";
+import { EXPLORE_ZOOM, exploreBounds, extentBounds } from "./camera";
 import { ExploreLegend } from "./ExploreLegend";
 import { Locator, ReadingOnChart } from "./ChartOverlay";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, GridSpec, ProductId } from "./model";
@@ -35,7 +37,8 @@ type Win = Window & { __nxExplore?: Record<string, unknown> };
 function styleFor(p: ExploreProduct, f: ExploreFrame): FieldStyle {
   if (p.id === "chl") return { kind: "ramp", domain: CHL_DOMAIN, scale: "log" };
   if (p.id === "outlook") return { kind: "outlook", domain: CHL_DOMAIN, scale: "log", opacity: 0.9 };
-  if (p.id === "charm") return { kind: "classes", past: f.past };
+  // a past run is past in every frame: drawn lighter, as its legend is (T3, T23)
+  if (p.id === "charm") return { kind: "classes", past: f.past || !!p.pastRun };
   return { kind: "isolines", ...ISO_F };
 }
 
@@ -96,7 +99,8 @@ export function Explore({ model }: { model: ExploreModel }) {
   const current = model.currents?.frames.find((f) => f.id === hourId) ?? null;
   // T25: no streaks on a forecast layer; over a model or outlook the currents wait, switched on
   const overModel = product?.kind === "model" || product?.kind === "outlook";
-  const streaks = currentsOn && !overModel;
+  // and the static tier draws none (no GPU), so its legend does not promise any
+  const streaks = currentsOn && !overModel && tier !== "static";
   const fieldRef = useRef<FieldController | null>(null);
   const flowRef = useRef<FlowController | null>(null);
   const [field, setField] = useState<CurrentField | null>(null);
@@ -174,7 +178,8 @@ export function Explore({ model }: { model: ExploreModel }) {
 
   // currents: the hour's field (and how steadily each cell was measured across the published hours)
   useEffect(() => {
-    if (!current) return setField(null);
+    // the static tier draws no streaks and reads no point, so it never fetches the hour's vectors
+    if (!current || !tier || tier === "static") return setField(null);
     let live = true;
     loadCurrent(model.baseUrl, current)
       .then((f) => live && setField(f))
@@ -182,11 +187,11 @@ export function Explore({ model }: { model: ExploreModel }) {
     return () => {
       live = false;
     };
-  }, [current, model.baseUrl]);
+  }, [current, model.baseUrl, tier]);
 
   const [quality, setQuality] = useState<Float32Array | null>(null);
   useEffect(() => {
-    if (!currentsOn || !model.currents || quality) return;
+    if (!currentsOn || !model.currents || quality || !tier || tier === "static") return;
     let live = true;
     const hours = model.currents.frames.filter((f) => !f.mean);
     Promise.all(hours.map((h) => loadCodes(model.baseUrl, h.u).then((c) => Uint8Array.from(c.codes, (x) => (x === h.u.nodata ? 0 : 1)))))
@@ -195,12 +200,12 @@ export function Explore({ model }: { model: ExploreModel }) {
     return () => {
       live = false;
     };
-  }, [currentsOn, model, quality]);
+  }, [currentsOn, model, quality, tier]);
 
   const flowState = useMemo(() => ({ still: reduce, paused: false }), [reduce]);
   // the streak layer is added once while currents are on; a new hour swaps its field (a cut)
   useEffect(() => {
-    if (!map || !streaks || !tier || tier === "static") return;
+    if (!map || !streaks || !tier) return;
     flowRef.current ??= createFlowLayer("nx-flow", tier === "reduced" ? "reduced" : "full", modeColours(), flowState);
     const layer = flowRef.current;
     const remove = addChartLayer(map, layer, "flow");
@@ -283,9 +288,14 @@ export function Explore({ model }: { model: ExploreModel }) {
     };
   }, [at, frame, model, field, streaks]);
 
+  // a reading arrives: on a phone the sheet rises to half (the tapped point stays in view above it), then the
+  // readout scrolls into view wherever the margin is
   useEffect(() => {
-    if (reading?.status === "ready") readoutRef.current?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
-  }, [reading?.status, reduce]);
+    if (reading?.status !== "ready") return;
+    if (phone) openMargin("half");
+    const t = window.setTimeout(() => readoutRef.current?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" }), phone ? 360 : 0);
+    return () => window.clearTimeout(t);
+  }, [reading?.status, reduce, phone]);
 
   // ------------------------------------------------------------- choosing and playing frames (cuts, never tweens: T26)
   const chooseFrame = useCallback((p: ExploreProduct, f: ExploreFrame) => {
@@ -332,7 +342,8 @@ export function Explore({ model }: { model: ExploreModel }) {
   const scene = useMemo(
     () => ({
       id: `explore:${port?.key ?? "coast"}`,
-      view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent) },
+      // with a port, the view stops at the data's own edge rather than showing a sliver past it
+      view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent), within: port ? extentBounds(extent) : null },
       focus: port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null,
       zoomRange: EXPLORE_ZOOM,
     }),
@@ -463,8 +474,17 @@ export function Explore({ model }: { model: ExploreModel }) {
       {product.id === "sst" && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
       <h1 className={s.srOnly}>Explore: {LAYER_LABEL[product.id]}</h1>
       <ExploreLegend product={product} frame={frame} currents={streaks ? current : null} />
+      {tier === "static" && frame?.grid && product.id !== "sst" ? (
+        <StaticField base={model.baseUrl} grid={frame.grid} kind={product.id === "charm" ? "classes" : product.id === "outlook" ? "outlook" : "ramp"} past={product.id === "charm" ? frame.past || !!product.pastRun : undefined} domain={CHL_DOMAIN} />
+      ) : null}
       {tier === "static" ? (
-        <Unavailable what="The layers can't be drawn on this device" why="The chart is showing as a still picture (no WebGL, data saver, offline or a saved copy)." next="Station records are in Research, as tables and series." />
+        product.id === "sst" ? (
+          <Unavailable what="Isotherms need a device that draws the chart live" why="This device shows the chart as a still picture (no WebGL, data saver, or a saved copy); the other layers are baked into it." next="Station temperatures are in Research, as tables and series." />
+        ) : (
+          <p className={s.prompt} data-testid="nx-static-note">
+            A still picture of this frame, baked on this device (no WebGL, data saver, or a saved copy). Tapping the water needs the live chart.
+          </p>
+        )
       ) : null}
       <div className={s.switch} role="radiogroup" aria-label="Layer" data-testid="nx-layers">
         {model.products.map((p) => (
@@ -476,7 +496,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         {model.currents ? (
           <button type="button" role="switch" aria-checked={currentsOn} className={s.switchItem} data-on={currentsOn ? "1" : "0"} onClick={() => setCurrentsOn((v) => !v)} data-testid="nx-currents-toggle">
             <span>Currents</span>
-            <small>{!currentsOn ? "off" : overModel ? "not over a model" : "on, measured"}</small>
+            <small>{!currentsOn ? "off" : overModel ? "not over a model" : tier === "static" ? "not on a still picture" : "on, measured"}</small>
           </button>
         ) : null}
       </div>
@@ -485,6 +505,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         product={product}
         frameId={frame.id}
         onFrame={chooseFrame}
+        onProduct={chooseProduct}
         currentsOn={streaks}
         currentId={hourId}
         onCurrent={chooseHour}
@@ -503,7 +524,7 @@ export function ExploreUnavailable({ why }: { why: string }) {
   return (
     <section className={s.explore} data-testid="nx-explore">
       <p className={s.kicker}>Explore</p>
-      <Unavailable what="The water can't be shown right now" why={`The published data could not be read (${why}).`} next="Try again in a few minutes; the data is republished several times a day." />
+      <Unavailable what="The water can't be shown right now" why={`The published data could not be read (${plainError(why)}).`} next="Try again in a few minutes; the data is republished several times a day." />
     </section>
   );
 }

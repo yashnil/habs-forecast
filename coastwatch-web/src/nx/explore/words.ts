@@ -13,8 +13,8 @@ export const CHL_TICKS = [0.1, 1, 10];
 export const CHL_STEPS = Array.from({ length: 8 }, (_, i) => `--chl-${i}`);
 /** Isotherms: every whole °F, heavier every 2 °F (MUR is in °C: F = C x 1.8 + 32). */
 export const ISO_F = { step: 1, index: 2, scale: 1.8, offset: 32 } as const;
-/** C-HARM display classes drawn as hatch density (20-point steps: display intervals, not risk levels, T12). */
-export const CHARM_CLASSES = ["0–20 %", "20–40 %", "40–60 %", "60–80 %", "80–100 %"];
+/** C-HARM's display classes, cw-probability-classes-v1: ten 10-point intervals (display intervals, not risk levels, T12). */
+export const PROB_STEPS = Array.from({ length: 10 }, (_, i) => `--prob-${i}`);
 
 export const LAYER_LABEL: Record<ExploreProduct["id"], string> = { chl: "Chlorophyll", sst: "Temperature", charm: "C-HARM", outlook: "Outlook" };
 export const KIND_LABEL: Record<ExploreFrame["kind"], string> = { measured: "measured", analysis: "analysis", model: "model", outlook: "outlook" };
@@ -29,7 +29,8 @@ export function legendCaption(p: ExploreProduct, f: ExploreFrame): string {
     case "sst":
       return `${cap(KIND_LABEL[f.kind])} · ${f.sensor} · ${day(f.end)}.${f.kind === "analysis" ? " Blended from satellites and buoys, not a measurement at a point." : ""}`;
     case "charm":
-      return `Model · ${p.source} · ${f.stamp}.${p.pastRun ? " Past run: every day it covers is before today." : ""} Probability of conditions in the water, not toxin in seafood. Classes are display steps, not risk levels.`;
+      // design-lint-allow forbidden-word: T37 requires "does not mean open or safe" within one glance of a low probability
+      return `Model · ${p.source} · ${f.stamp}.${p.pastRun ? " Past run: every day it covers is before today." : ""} Probability of conditions in the water, not toxin in seafood. Classes are display steps, not risk levels; a lower probability does not mean open or safe.`;
     case "outlook":
       return `Outlook · ${p.source} · ${f.stamp}. Typical error about a factor of 2: read as higher or lower than usual, not as a value. Dotted: no signal, the usual for this time of year. Algae, not toxin.`;
   }
