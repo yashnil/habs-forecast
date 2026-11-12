@@ -342,8 +342,8 @@ export function Explore({ model }: { model: ExploreModel }) {
   const scene = useMemo(
     () => ({
       id: `explore:${port?.key ?? "coast"}`,
-      // with a port, the view stops at the data's own edge rather than showing a sliver past it
-      view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent), within: port ? extentBounds(extent) : null },
+      // the view stops at the data's own edge rather than showing a sliver of chart past it
+      view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent), within: extentBounds(extent) },
       focus: port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null,
       zoomRange: EXPLORE_ZOOM,
     }),
