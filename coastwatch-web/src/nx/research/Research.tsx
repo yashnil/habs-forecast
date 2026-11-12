@@ -123,6 +123,8 @@ function writeAddress(qs: string) {
 }
 
 const SHORT: Record<ObsVariableId, string> = { pDA: "pDA", dDA: "dDA", tDA: "tDA", pn_seriata: "seriata group", pn_delicatissima: "delicatissima group", chl_extracted: "chlorophyll", temp: "temperature" };
+/** The short names at the head of a sentence: an abbreviation keeps its own case (pDA is never "PDA"). */
+const SHORT_HEAD: Record<ObsVariableId, string> = { pDA: "pDA", dDA: "dDA", tDA: "tDA", pn_seriata: "Seriata group", pn_delicatissima: "Delicatissima group", chl_extracted: "Chlorophyll", temp: "Temperature" };
 const kmWords = (km: number) => (km < 1 ? `${Math.round(km * 1000)} m` : km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`);
 const checkName = (n: string) => ({ units: "Units", duplicates: "Duplicates", time: "Sample times" })[n] ?? n.charAt(0).toUpperCase() + n.slice(1).replace(/_/g, " ");
 const count = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
@@ -134,6 +136,8 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   useEffect(() => setHash(window.location.hash), []);
   const query = useMemo(() => parseQuery(sp, hash), [sp, hash]);
   const wide = useMedia(WIDE);
+  // at 320 px the range row holds "Custom" too: the whole record is "All" there
+  const narrow = useMedia("(max-width: 360px)");
   // The drawings (the rail's ticks, the brush's overview, the plots) are made in the browser, in boxes the
   // stylesheet has already sized. Sent as HTML they were about 100 KB ahead of the chart pane in the document:
   // on a slow connection the page was painted before the pane arrived and then pushed down by it (CLS 0.64 on a
@@ -293,7 +297,47 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   };
   const chooseVariable = (id: ObsVariableId) => commit(null, { v: id, day: null });
   const choosePreset = (r: RangeId) => commit(presetWindow(r, extent));
-  const jumpLatest = () => latest && commit(latest.win, { day: latest.day });
+  const mainRef = useRef<HTMLDivElement>(null);
+  const jumpLatest = () => {
+    if (!latest) return;
+    // as a tap on the sample does: its card opens (pinned on a phone), and on a phone the plot is brought back
+    // under the header, since the control that was pressed stands below it
+    setOpened(true);
+    commit(latest.win, { day: latest.day });
+    if (window.matchMedia("(max-width: 720px)").matches) requestAnimationFrame(() => requestAnimationFrame(() => mainRef.current?.scrollIntoView({ block: "start", behavior: "auto" })));
+  };
+  // On a phone the pinned card takes the screen's lower half: the marked sample is kept in the part of the plot
+  // still in view between the header and the card (at 320 px that part is shorter than the plot).
+  const selectedIndex = selected?.i ?? null;
+  useEffect(() => {
+    if (selectedIndex == null || !opened || !window.matchMedia("(max-width: 720px)").matches) return;
+    let tries = 0;
+    let raf = 0;
+    const place = () => {
+      const main = mainRef.current;
+      // the ring on the sample itself (the group also holds a rule the plot's whole height)
+      const mark = main?.querySelector("[data-selection] rect");
+      const card = document.querySelector("[data-nx-inspector]");
+      const head = document.querySelector("[data-nx-desk-header]");
+      if (!main || !mark || !card) {
+        if (tries++ < 30) raf = requestAnimationFrame(place);
+        return;
+      }
+      let sc: HTMLElement | null = main.parentElement;
+      while (sc && !/(auto|scroll)/.test(getComputedStyle(sc).overflowY)) sc = sc.parentElement;
+      const m = mark.getBoundingClientRect();
+      const top = (head?.getBoundingClientRect().bottom ?? 0) + 12;
+      const bottom = card.getBoundingClientRect().top - 12;
+      const y = m.top + m.height / 2;
+      if (y < top || y > bottom) (sc ?? document.scrollingElement)?.scrollBy({ top: y - (top + bottom) / 2, behavior: "auto" });
+    };
+    // after the jump's own scroll and the card's entrance
+    const t = window.setTimeout(() => (raf = requestAnimationFrame(place)), 120);
+    return () => {
+      window.clearTimeout(t);
+      cancelAnimationFrame(raf);
+    };
+  }, [selectedIndex, opened]);
   const openNeighbour = () => {
     if (!neighbour) return;
     // open the neighbour on a year that holds its newest sample of this variable
@@ -420,7 +464,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const status = (
     <span data-testid="research-status" className={focusStrip ? `${v.onlyWide} ${v.oneLine}` : undefined} title={statusWords}>
       {/* one line beside the station picker: the variable's short name, so the value at the end is never cut */}
-      {focusStrip ? `${SHORT[focus].charAt(0).toUpperCase()}${SHORT[focus].slice(1)}${statusWords.slice(LABEL[focus].length)}` : statusWords}
+      {focusStrip ? `${SHORT_HEAD[focus]}${statusWords.slice(LABEL[focus].length)}` : statusWords}
     </span>
   );
 
@@ -513,7 +557,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                     <div className={v.rangeCell}>
                     <RangeControl<RangeId>
                       label="Window"
-                      presets={RANGES.map((r) => ({ value: r.id, label: PRESET_LABEL[r.id] }))}
+                      presets={RANGES.map((r) => ({ value: r.id, label: narrow && r.id === "all" ? "All" : PRESET_LABEL[r.id] }))}
                       value={preset}
                       onChange={choosePreset}
                       onJumpLatest={latest ? jumpLatest : undefined}
@@ -535,7 +579,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                     <PlotSync value={sync} onChange={onSync}>
                       {/* the plot and, beside it on a wide screen, the selected sample: both in the first screen */}
                       <div className={v.mainRow} data-inspecting={record ? "" : undefined}>
-                      <div className={v.main} data-testid="research-main" data-empty={empty ? "" : undefined}>
+                      <div ref={mainRef} className={v.main} data-testid="research-main" data-empty={empty ? "" : undefined}>
                         {empty ? (
                           <PlotState
                             kind="not-collected"

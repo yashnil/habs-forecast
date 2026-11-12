@@ -265,3 +265,78 @@ for (const [w, h] of [[1440, 900], [390, 844], [320, 640]] as const) {
     await ctx.close();
   });
 }
+
+for (const [w, h] of [[390, 844], [320, 640]] as const) {
+  test(`phone ${w} px: "Latest sample" opens the sample's card as a tap does, with the plot and its marked point in view`, async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: true, isMobile: true, storageState: { cookies: [], origins: [] } });
+    const page = await ctx.newPage();
+    const opened = async (utc: string) => {
+      await expect(page.getByTestId("inspector-utc")).toContainText(utc);
+      await expect(page.getByTestId("inspector-value")).toBeInViewport({ ratio: 1 });
+      await expect(page.getByTestId("research-sample-line")).toHaveCount(0); // never a bare "Details" control
+      // the ring on the sample itself (the selection also draws a rule the plot's whole height)
+      const mark = page.getByTestId("research-plot").locator("[data-selection] rect");
+      await expect(mark).toBeInViewport({ ratio: 1 });
+      // the marked point is above the pinned card and below the header, not under either
+      await expect(async () => {
+        const m = (await mark.boundingBox())!;
+        const card = (await page.getByTestId("research-inspector").boundingBox())!;
+        const head = (await page.locator("[data-nx-desk-header]").boundingBox())!;
+        expect(m.y + m.height).toBeLessThanOrEqual(card.y);
+        expect(m.y).toBeGreaterThanOrEqual(head.y + head.height);
+      }).toPass({ timeout: 5000 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(w);
+    };
+    // the headline action, from where it stands under the plot
+    await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=1y");
+    await page.getByTestId("range-latest").scrollIntoViewIfNeeded();
+    await page.getByTestId("range-latest").tap();
+    await opened("2026-09-30");
+    // R-4: with the range the reader's own, "Custom" is inside the screen
+    await open(page, "station=HABs-SantaCruzWharf&var=pDA&from=2025-01-10&to=2025-09-20");
+    await page.getByTestId("range-custom").scrollIntoViewIfNeeded();
+    const custom = (await page.getByTestId("range-custom").boundingBox())!;
+    expect(custom.x).toBeGreaterThanOrEqual(0);
+    expect(custom.x + custom.width).toBeLessThanOrEqual(w);
+    const latestBox = (await page.getByTestId("range-latest").boundingBox())!;
+    expect(latestBox.x + latestBox.width).toBeLessThanOrEqual(w);
+    // the empty range's first action
+    await open(page, MW_1Y);
+    await page.getByTestId("empty-latest").scrollIntoViewIfNeeded();
+    await page.getByTestId("empty-latest").tap();
+    await opened("2022-08-31");
+    await ctx.close();
+  });
+}
+
+test("the header sentence keeps an abbreviation's case; the threshold's name has a ground that covers the data (Santa Cruz Wharf, 3 y)", async ({ page }) => {
+  await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=3y");
+  await expect(page.getByTestId("research-status")).toHaveText(/^pDA: last measured /);
+  // F-13: nothing is drawn after the ground but the words, and the ground is the page's colour and wider than them
+  const label = page.getByTestId("research-threshold-label").first();
+  const ground = page.getByTestId("research-threshold-ground").first();
+  const lb = (await label.boundingBox())!;
+  const gb = (await ground.boundingBox())!;
+  expect(gb.x).toBeLessThanOrEqual(lb.x);
+  expect(gb.x + gb.width).toBeGreaterThanOrEqual(lb.x + lb.width);
+  expect(gb.y).toBeLessThanOrEqual(lb.y + 1);
+  expect(gb.y + gb.height).toBeGreaterThanOrEqual(lb.y + lb.height - 3);
+  const paint = await ground.evaluate((el) => {
+    const paper = getComputedStyle(document.querySelector("[data-chart-mode]") ?? document.documentElement).getPropertyValue("--paper").trim();
+    const probe = document.createElement("span");
+    probe.style.color = paper;
+    document.body.append(probe);
+    const want = getComputedStyle(probe).color;
+    probe.remove();
+    const after = el.nextElementSibling;
+    return { fill: getComputedStyle(el).fill, want, lastIsLabel: after?.getAttribute("data-testid") === "research-threshold-label" && !after.nextElementSibling, dataBefore: !!el.closest("svg")?.querySelector("[data-line]") };
+  });
+  expect(paint.fill).toBe(paint.want);
+  expect(paint.lastIsLabel).toBe(true);
+  // the threshold group is drawn after the data's line and points
+  expect(await page.getByTestId("research-plot").evaluate((el) => { const kids = [...el.querySelectorAll("svg > *")]; return kids.findIndex((k) => k.hasAttribute("data-threshold")) > Math.max(kids.findIndex((k) => k.hasAttribute("data-line")), kids.findIndex((k) => k.hasAttribute("data-points"))); })).toBe(true);
+  for (const id of ["temp", "pn_seriata", "chl_extracted"] as const) {
+    await page.getByTestId(`rail-${id}`).click();
+    await expect(page.getByTestId("research-status")).toHaveText(id === "temp" ? /^Temperature: last measured / : id === "pn_seriata" ? /^Seriata group: last measured / : /^Chlorophyll: last measured /);
+  }
+});
