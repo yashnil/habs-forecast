@@ -125,6 +125,14 @@ test("the owner's test, to the cent, with port, fishery, 'hypothetical' and the 
   expect((await p.getByTestId("trip-name").boundingBox())!.height, "the saved name is on one line (its rename control is 44 px)").toBeLessThanOrEqual(48);
   const buttons = await Promise.all(["trip-update", "trip-save-new", "trip-saved-open"].map(async (id) => (await p.getByTestId(id).boundingBox())!.y));
   expect(new Set(buttons.map((y) => Math.round(y))).size, "the buttons are one row").toBe(1);
+  // and inside the header: the last one ends at or before the header's own right edge
+  const headBox = (await p.locator("[data-nx-desk-header]").boundingBox())!;
+  const lastBox = (await p.getByTestId("trip-saved-open").boundingBox())!;
+  expect(lastBox.x + lastBox.width).toBeLessThanOrEqual(headBox.x + headBox.width + 0.5);
+  // the confirmation is longer than its line: it is cut with an ellipsis (its whole text in the title), not clipped
+  const cut = await said(p).evaluate((el) => ({ cs: getComputedStyle(el), over: el.scrollWidth > el.clientWidth, title: el.getAttribute("title") ?? "" }));
+  expect([cut.cs.textOverflow, cut.cs.whiteSpace, cut.cs.overflowX, cut.cs.display]).toEqual(["ellipsis", "nowrap", "hidden", "block"]);
+  expect(cut.title).toContain("Saved as “Dungeness crab, 400 lb at $9, 1 crew 20 % after costs,");
   // the confirmation is said and then goes; the line it had stays, so nothing moves
   await expect(said(p)).toHaveText("", { timeout: 9000 });
   expect((await p.locator("[data-nx-desk-header]").boundingBox())!.height).toBe(headAfter);
@@ -449,7 +457,7 @@ test("offline after a restart: the saved field pack opens the workspace, the sav
   // it is the page working, not a picture of it: an edit recomputes with no network
   await type(p, "Catch", "400");
   await expect(exact(p, "trip-net")).toHaveText("$2,602.24");
-  await expect(p.getByTestId("trip-saved-open")).toHaveText("Saved trips (1)");
+  await expect(p.getByTestId("trip-saved-open")).toHaveAccessibleName("Saved trips (1)");
   await ctx.close();
 });
 

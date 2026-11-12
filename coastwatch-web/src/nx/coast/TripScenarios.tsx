@@ -83,9 +83,7 @@ export function useTripScenarios({ trip, fishery, placeKey }: { trip: TripWorksp
     <section className={s.scBar} aria-label="This trip" data-testid="trip-strip">
       <div className={s.stripHead}>
         {isOpen ? (
-          <span className={s.nameOne} title={st.name}>
-            <EditableText label="Trip name" value={st.name} maxLength={90} size="body" onChange={(name) => tell(trip.rename(st.id, name), (n) => `Renamed to “${n}”.`)} data-testid="trip-name" />
-          </span>
+          <EditableText label="Trip name" value={st.name} maxLength={90} size="body" truncate onChange={(name) => tell(trip.rename(st.id, name), (n) => `Renamed to “${n}”.`)} data-testid="trip-name" />
         ) : (
           <p className={s.tripName} data-testid="trip-name">
             {entry ? "A trip not saved yet" : "A new trip"}
@@ -104,8 +102,8 @@ export function useTripScenarios({ trip, fishery, placeKey }: { trip: TripWorksp
         <Button variant={isOpen ? "secondary" : "primary"} disabled={!entry} onClick={() => tell(trip.saveAsNew(), (n) => `Saved as “${n}”. Kept on this device only.`)} data-testid="trip-save-new">
           Save as new
         </Button>
-        <Button variant="secondary" onClick={() => setOpen(true)} data-testid="trip-saved-open">
-          Saved trips ({trip.capacity.used})
+        <Button variant="secondary" onClick={() => setOpen(true)} aria-label={`Saved trips (${trip.capacity.used})`} data-testid="trip-saved-open">
+          Saved ({trip.capacity.used})
         </Button>
       </ButtonGroup>
       <p className={s.said} aria-live="polite" data-testid="trip-said" title={said?.words}>

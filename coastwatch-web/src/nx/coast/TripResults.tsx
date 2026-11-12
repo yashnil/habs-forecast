@@ -188,7 +188,6 @@ export function TripResults({
           cents
           height={{ desktop: 260, phone: 240 }}
           label={rec ? "Fuel and costs up to the trip cost, hypothetical, from your numbers" : "Gross to net to boat, hypothetical, from your numbers"}
-          className={s.fallChart}
           data-testid="trip-waterfall"
         />
         )}

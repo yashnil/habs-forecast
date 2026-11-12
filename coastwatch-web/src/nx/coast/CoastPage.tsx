@@ -180,7 +180,7 @@ export function CoastPage() {
       <ChartScene scene={scene} />
       {/* the chosen fishery's regulation on the chart: RAMP's zone lines for crab, the port's zone heavier (E T43) */}
       <ChartRegulation spec={fishery?.ramp ? { zones: { highlight: port ? rampZoneAt(port.lat) : null } } : null} />
-      <PageLayout mode="desk" paneKey="coast" />
+      <PageLayout mode="desk" paneKey="coast" chartLabel={port?.name} />
       <article className={s.page} data-testid="nx-coast" data-view={view} ref={page}>
         <Desk>
           {trip ? null : header(null)}
