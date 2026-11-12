@@ -314,6 +314,15 @@ describe("the three gates (v13 lead decision 6)", () => {
     // the port's other CDPH sites sit in the domoic gate, highest result first, with their age
     expect(domoic.facts.find((f) => /rock crab/.test(f.text))!.text).toMatch(/highest 20 ppm of 30.*14 days ago\.$/);
     expect(whale.relation).toEqual([RELATION.whaleDecides]);
+    // the three-line summary under the status: a few words each, never a verdict
+    expect(v.gates.map((g) => g.summary)).toEqual(["Delay · next Dec 15–18", "Test 14 days ago", expect.stringMatching(/^Seas \d+–\d+ ft forecast$/)]);
+    for (const g of v.gates) expect(g.summary.length).toBeLessThanOrEqual(25);
+    // the whale stamp's sheet: the reader's own clauses first, the whole official sentence labelled (T42)
+    const wp = whale.provenance!;
+    expect(wp.value).not.toMatch(/recreational/i);
+    expect(wp.caveats![0]).toMatch(/^For commercial crabbers, in CDFW's words: “Commercial season delayed/);
+    expect(wp.caveats![0]).not.toMatch(/recreational/i);
+    expect(wp.caveats![1]).toMatch(/^Full CDFW text \(all sectors\): “.*recreational/i);
     expect(domoic).toMatchObject({ authority: "CDPH tests", dateRole: "sampled", date: "2026-09-28", age: "14 days ago", state: "ok" });
     expect(domoic.headline).toBe("Dungeness test, Monterey Bay, Sep 28: highest 9.8 of 30 ppm, 6 samples");
     expect(seaGate).toMatchObject({ authority: "NWS and NDBC", dateRole: "issued", state: "ok" });
@@ -342,6 +351,7 @@ describe("the three gates (v13 lead decision 6)", () => {
     expect(v.soundings.find((s) => s.id === "test")).toBeUndefined();
     const d = v.gates.find((g) => g.id === "domoic")!;
     expect(d.state).toBe("old");
+    expect(d.summary).toBe("Test 45 days ago");
     expect(d.age).toBe("45 days ago");
     expect(d.relation[0]).toBe("This test is older than 30 days: it is history, not a reading of the water now.");
     expect(d.headline).toMatch(/highest 9\.8 of 30 ppm/);
@@ -363,6 +373,7 @@ describe("the three gates (v13 lead decision 6)", () => {
     expect(alertWords("Small craft advisory", "Small craft advisory in effect until 3 PM.")).toBe("NWS Small craft advisory in effect until 3 PM");
     expect(alertWords("Gale Warning", "Winds 35 kt expected")).toBe("NWS Gale Warning: Winds 35 kt expected");
     expect(v.advisories.map((a) => a.id)).toEqual(["alert-Small Craft Advisory"]);
+    expect(g.summary).toBe("Small Craft Advisory");
     expect(v.advisories[0].provenance).toMatchObject({ kind: "advisory", source: "NWS", dateRole: "issued" });
     expect(v.agenda.find((a) => a.id === "alert-Small Craft Advisory")!.provenance?.kind).toBe("advisory");
     // only the "official" kind carries "not verified" on its stamp (ds Stamp): an advisory never does

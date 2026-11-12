@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { range, sig, useElementWidth } from "@/nx/ds";
+import { Button, range, sig, useElementWidth } from "@/nx/ds";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, ProductId, Track } from "./model";
 import { axisLabels, axisX, frameCount, nearestFrame, nearestHour, nowX, productSpan } from "./timeline";
 import { LAYER_LABEL, layerKindWord, oldMark } from "./words";
@@ -105,6 +105,7 @@ function TrackRow({ model, product, track, active, height, frameId, onFrame, wid
         {frames.map((f) => {
           const a = x(f.start), b = x(f.end, 1);
           return (
+            // design-lint-allow raw-button: the rail's frames and hours are invisible hit areas laid over an SVG track, sized and placed by the time axis (a radio group drawn as bars); no ds control draws on a time axis
             <button
               key={f.id}
               type="button"
@@ -285,9 +286,9 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
           ) : null}
         </p>
         {canPlay ? (
-          <button type="button" className={s.textButton} onClick={onPlay} aria-pressed={playing} data-testid="nx-play">
+          <Button variant="text" onClick={onPlay} aria-pressed={playing} data-testid="nx-play">
             {playing ? "Pause" : "Play"}
-          </button>
+          </Button>
         ) : null}
       </div>
       <div className={s.railBody}>
@@ -316,9 +317,9 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
         </div>
       </div>
       <div className={s.railMore}>
-        <button type="button" className={s.railMoreButton} aria-expanded={more} aria-controls={moreId} onClick={() => setMore((v) => !v)} data-testid="nx-rail-more">
+        <Button variant="text" aria-expanded={more} aria-controls={moreId} onClick={() => setMore((v) => !v)} data-testid="nx-rail-more">
           {more ? "Hide sources and coverage" : "Sources and coverage"}
-        </button>
+        </Button>
         <div id={moreId} hidden={!more} className={s.railMoreBody}>
           <p className={s.railKey}>
             {product.kind === "measured" ? "Bars: share of the coastal ocean with a value that day." : "Hatched: a model or outlook frame, the days it is valid for."} {product.pastRun ? "Past run: every day it covers is before today." : ""}

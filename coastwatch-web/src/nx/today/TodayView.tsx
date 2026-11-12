@@ -18,7 +18,9 @@ import { Legend } from "@/nx/ds/Mark";
 import { MarginRow, MarginRows } from "@/nx/ds/Margin";
 import { pan, register, registerFrom, registerTo, settle } from "@/nx/ds/motion";
 import { ProvenanceSheet, Stamp, type Provenance } from "@/nx/ds/Stamp";
-import { Loading, SourcesDiffer, Unavailable } from "@/nx/ds/States";
+import { SourcesDiffer, Unavailable } from "@/nx/ds/States";
+import { Skeleton } from "@/nx/ds/DataState";
+import { Mark } from "@/nx/ds/Mark";
 import { Statement } from "@/nx/ds/Statement";
 import { useMedia, usePhone } from "@/nx/ds/useMedia";
 import { CANYON_AXIS } from "@/nx/chart/features";
@@ -74,7 +76,8 @@ export function TodayView({ port, initial, arriving = false }: TodayProps) {
           <>
             <ChartScene scene={{ id: `today:${port.key}`, view: { bounds: portWater(port) }, focus: { key: port.key, name: port.name, lon: port.lon, lat: port.lat } }} />
             <PortHeading name={port.name} fishery={primary} />
-            <Loading>Reading the records for {port.name}</Loading>
+            {/* a placeholder at the page's own geometry: the statement, then the gates' three lines */}
+            <Skeleton label={`Reading the records for ${port.name}`} figure lines={4} />
           </>
         ) : data.state === "error" || !inputs ? (
           <>
@@ -157,6 +160,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
   const bounds = phone ? phoneBounds(port, pts) : todayBounds(port, pts, compact ? { minHalfKm: 14 } : {});
   const sceneId = `today:${port.key}`;
   const st = v.statement;
+  const primaryAction = st.state === "ok" && st.source ? { href: st.source.url, external: true, label: `Read ${st.source.agency}’s notice` } : { href: gateHrefs.trip(port.key), external: false, label: "Plan a trip" };
   // dated items the gates do not already hold: when the notice took effect, later assessments, coming NWS periods
   const ahead = agendaItems(v).filter((it) => it.id !== "today" && it.id !== "test" && !it.id.startsWith("alert-"));
 
@@ -229,6 +233,27 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
           </div>
         )}
 
+        {/* what decides a trip, in three lines, before anything else: the detail of each is the list below */}
+        <h2 className={s.summaryHead} id="nx-gate-summary-head">
+          What decides a trip
+        </h2>
+        <ul className={s.summary} aria-labelledby="nx-gate-summary-head" data-testid="nx-gate-summary">
+          {v.gates.map((g) => (
+            <li key={g.id} data-gate={g.id} data-state={g.state} data-advisory={g.id === "sea" && v.advisories.length ? "1" : undefined}>
+              <strong>{g.id === "whale" ? "Whale" : g.title}</strong>
+              <span>
+                {g.summary}
+                {g.state === "old" ? (
+                  <>
+                    {" "}
+                    <Mark kind="stale" />
+                  </>
+                ) : null}
+              </span>
+            </li>
+          ))}
+        </ul>
+
         {/* NWS advisories in force: under the status, in the first screen at every size (lead decision 6) */}
         <Advisories label="In force now" items={v.advisories.map((a) => ({ id: a.id, text: a.text, source: a.provenance ? <Stamp provenance={a.provenance} now={v.now} /> : "NWS" }))} />
 
@@ -247,16 +272,11 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
         ) : null}
 
         <div className={s.actions}>
-          {st.state === "ok" && st.source ? (
-            <Button variant="primary" href={st.source.url} external>
-              Read {st.source.agency}&rsquo;s notice
-            </Button>
-          ) : (
-            <Button variant="primary" href={gateHrefs.trip(port.key)}>
-              Plan a trip
-            </Button>
-          )}
-          <span className={s.quiet}>
+          {/* the one primary action: the agency's own page when the record names one, else planning */}
+          <Button variant="primary" href={primaryAction.href} external={primaryAction.external}>
+            {primaryAction.label}
+          </Button>
+<span className={s.quiet}>
             <Button variant="text" href={gateHrefs.alerts(port.key)}>
               Alerts for {port.name}
             </Button>
@@ -270,7 +290,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
       </div>
 
       <motion.div className={s.gatesWrap} key={`${port.key}:${fishery}`} initial={registerFrom} animate={registerTo} transition={register} data-tour="gates">
-        <h2 className={s.gatesHead}>What decides a trip</h2>
+        <h2 className={s.gatesHead}>In detail</h2>
         <GateList label={`What decides a trip from ${port.name}`} level={3} gates={v.gates.map((g) => gateItem(g, v.now, !!v.decision))} />
       </motion.div>
 
@@ -433,10 +453,12 @@ function Change({ line }: { line: ChangeLine | null | undefined }) {
     );
   return (
     <div className={s.changeWrap}>
-      <button type="button" className={s.changeToggle} aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)} data-testid="nx-change">
+      <p className={s.changeLine} data-testid="nx-change">
         {line.text}
-        <span className={s.more}>{open ? "Less" : "What changed"}</span>
-      </button>
+      </p>
+      <Button variant="text" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)} data-testid="nx-change-more">
+        {open ? "Less" : "What changed"}
+      </Button>
       <AnimatePresence initial={false}>
         {open ? (
           <motion.ul id={id} className={s.changeList} initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={settle}>
