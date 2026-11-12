@@ -26,12 +26,16 @@ import { ExploreLegend } from "./ExploreLegend";
 import { Locator, ReadingOnChart } from "./ChartOverlay";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, GridSpec, ProductId } from "./model";
 import { ADJACENT_WORDS, isLandAdjacent, loadAdjacency } from "./adjacency";
+import { markAdjacent } from "@/nx/chart/layers/adjacent";
 import { cellGeometry, cellSizeWords, coastHref, compassWord, gapPosition, isothermLabels, KNOTS, NEARBY_KM, nearestCurrent, type CellGeometry, type GapPosition, type IsoLabel, pixelDate, readPoint, researchHref, RESEARCH_VAR, stationFor, transect, type TransectPoint } from "./read";
 import { nextOf, playFrames, playHours, qualityHours } from "./timeline";
-import { TimeRail } from "./TimeRail";
+import { TimeHead, TimeRail } from "./TimeRail";
 import { Transect } from "./Transect";
 import { aboutWords, CHL_DOMAIN, coverageNote, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, oldMark, readingStamp, readoutTitle, unitOf, valueWords, type CurrentsState } from "./words";
 import s from "./explore.module.css";
+
+/** What a layer's nearest pier measurement is called, in a sentence. */
+const MEASURE_WORDS: Record<ProductId, string> = { chl: "chlorophyll", outlook: "chlorophyll", sst: "water temperature", charm: "domoic acid" };
 
 type Win = Window & { __nxExplore?: Record<string, unknown> };
 
@@ -134,6 +138,7 @@ export function Explore({ model }: { model: ExploreModel }) {
   const [fieldState, setFieldState] = useState<{ status: "idle" | "loading" | "failed" } | { status: "ready"; cells: number }>({ status: "idle" });
   const [isoLabels, setIsoLabels] = useState<IsoLabel[]>([]);
   const readoutRef = useRef<HTMLDivElement>(null);
+  const switchRef = useRef<HTMLDivElement>(null);
 
   // ------------------------------------------------------------- URL state (the Explore selection survives a reload and a link)
   useEffect(() => {
@@ -186,13 +191,21 @@ export function Explore({ model }: { model: ExploreModel }) {
     const g = frame.grid;
     const st = styleFor(product, frame);
     const aux = frame.typicalGrid ?? null;
+    // the band the pipeline left out beside land is drawn as its own mark, not as cloud (adjacency.ts); the
+    // reference is read only for a frame whose QC says the rule was applied, and without it nothing changes
+    const maskP = frame.besideLandLeftOut ? loadAdjacency() : Promise.resolve(null);
+    const marked = async (codes: Uint16Array) => {
+      const mask = await maskP;
+      return mask ? markAdjacent(g, codes, mask) : { codes, adjacentCode: null };
+    };
     const load = () =>
-      Promise.all([loadCodes(model.baseUrl, g, viewBox(map), (c) => live && layer.setData({ grid: g, codes: c.codes }, st)), aux ? loadCodes(model.baseUrl, aux).catch(() => null) : Promise.resolve(null)])
-        .then(([c, a]) => {
+      Promise.all([loadCodes(model.baseUrl, g, viewBox(map), (c) => void marked(c.codes).then((d) => live && layer.setData({ grid: g, ...d }, st))), aux ? loadCodes(model.baseUrl, aux).catch(() => null) : Promise.resolve(null)])
+        .then(async ([c, a]) => {
+          const d = await marked(c.codes);
           if (!live) return;
-          layer.setData({ grid: g, codes: c.codes, aux: a && aux ? { grid: aux, codes: a.codes } : null }, st);
+          layer.setData({ grid: g, ...d, aux: a && aux ? { grid: aux, codes: a.codes } : null }, st);
           setIsoLabels(st.kind === "isolines" ? isothermLabels(g, c.codes, ISO_F.index) : []);
-          (window as Win).__nxExplore = { ...(window as Win).__nxExplore, field: frame.id, fieldDraws: layer.draws };
+          (window as Win).__nxExplore = { ...(window as Win).__nxExplore, field: frame.id, fieldDraws: layer.draws, adjacentCode: d.adjacentCode };
         })
         .catch(() => undefined);
     load();
@@ -379,7 +392,9 @@ export function Explore({ model }: { model: ExploreModel }) {
     const cell = reading.cell;
     const t = window.setTimeout(
       () => {
-        readoutRef.current?.scrollIntoView({ block: phone ? "start" : "nearest", behavior: reduce || phone ? "auto" : "smooth" });
+        // phone: the sheet returns to its top, where the layer switch, the time and then the reading are
+        if (phone) switchRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+        else readoutRef.current?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
         keepChartPointInView(cell.lon, cell.lat);
       },
       phone ? 380 : 0,
@@ -515,7 +530,8 @@ export function Explore({ model }: { model: ExploreModel }) {
       // a "nearby" record is within 25 km and measures the variable; a farther one is named with its distance
       const choice = stationFor(model.stations, r.cell.lat, r.cell.lon, RESEARCH_VAR[product.id]);
       // what was sampled: one cell of the layer's own grid
-      const subtitle = `One cell of the ${rf.sensor} grid`;
+      // (on a phone the stamp below already names the grid, and the line's height is the value's room at the peek)
+      const subtitle = phone ? undefined : `One cell of the ${rf.sensor} grid`;
       const action = (
         <span className={s.actions}>
           {choice.link ? (
@@ -530,11 +546,12 @@ export function Explore({ model }: { model: ExploreModel }) {
               </Link>
             </span>
           ) : choice.unknown ? (
-            // the station list carries toxin and Pseudo-nitzschia only: for this measurement no pier is claimed
+            // the station list carries toxin and Pseudo-nitzschia only, so for this measurement no pier is KNOWN to
+            // measure it (some may): said from the reader's side, with the nearest pier's record to look in
             <span data-testid="nx-record-unknown">
-              Neritic&rsquo;s station list does not say which piers measure this.{" "}
+              No pier nearby is known to measure {MEASURE_WORDS[product.id]}.{" "}
               <Link className={s.recordLink} href={researchHref({ station: choice.unknown.id, to: date, product: product.id, place: key })} data-testid="nx-record-look">
-                Look in the nearest pier&rsquo;s record: {choice.unknown.name}, {sig(choice.unknown.km, 2)} km{choice.unknown.km > NEARBY_KM ? " away" : ""}
+                Nearest pier&rsquo;s record: {choice.unknown.name}, {sig(choice.unknown.km, 2)} km{choice.unknown.km > NEARBY_KM ? " away" : ""}
               </Link>
             </span>
           ) : (
@@ -637,7 +654,7 @@ export function Explore({ model }: { model: ExploreModel }) {
           </p>
         )
       ) : null}
-      <div className={s.switch} role="radiogroup" aria-label="Layer" data-testid="nx-layers">
+      <div ref={switchRef} className={s.switch} role="radiogroup" aria-label="Layer" data-testid="nx-layers">
         {model.products.map((p) => (
           // design-lint-allow raw-button: the layer switch is one radio group whose items carry a second line (the layer's kind) and per-layer test hooks, with a switch (currents) in the same row; ds Segmented and OptionList are single-line
           <button key={p.id} type="button" role="radio" aria-checked={p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`}>
@@ -660,9 +677,16 @@ export function Explore({ model }: { model: ExploreModel }) {
           </button>
         ) : null}
       </div>
+      {/* phone: what is on show and Play sit with the layer switch at the top of the sheet (review F-01) */}
+      {phone ? (
+        <div className={s.timeBar}>
+          <TimeHead model={model} product={product} frameId={frame.id} currentsOn={streaks} currentId={hourId} playing={playing} canPlay={canPlay} onPlay={() => setPlaying((p) => !p)} />
+        </div>
+      ) : null}
       {/* wide: the rail runs along the foot of the chart it steps, full width; on a phone it reads in the sheet */}
       <ChartDock label="Time" height={streaks ? 284 : 204} align="frame" variant="rail">
       <TimeRail
+        head={!phone}
         model={model}
         product={product}
         frameId={frame.id}

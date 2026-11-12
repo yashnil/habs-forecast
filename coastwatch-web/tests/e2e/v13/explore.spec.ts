@@ -87,7 +87,8 @@ test("a 'nearby' record is within 25 km and measures the variable; otherwise the
   await page.getByTestId("nx-layer-chl").click();
   await fieldDrawn(page, "olci:latest");
   await tapWater(page, 36.87, -122.02);
-  await expect(page.getByTestId("nx-record-unknown")).toContainText("station list does not say which piers measure this");
+  await expect(page.getByTestId("nx-record-unknown")).toContainText("No pier nearby is known to measure chlorophyll.");
+  await expect(page.getByTestId("nx-record-look")).toContainText(/^Nearest pier’s record: .+, \d+(\.\d)? km/);
   await expect(page.getByTestId("nx-record-link")).toHaveCount(0);
   await expect(page.getByTestId("nx-record-look")).toHaveAttribute("href", /var=chl_extracted&place=port-592$/);
 });
@@ -394,4 +395,109 @@ test("OLCI chlorophyll: the two pixels beside land are 'left out', in words and 
   await expect(page.getByTestId("nx-legend")).toBeVisible();
   await expect(page.getByTestId("nx-key-beside-land")).toHaveCount(0);
   await expect(readout(page)).not.toContainText("Left out");
+});
+
+test("phone: with a reading open, the layer switch and Play are in reach at the sheet's lowest height, the chart still in view (F-01)", async ({ page }) => {
+  for (const size of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
+    await page.setViewportSize(size);
+    await page.goto(`${OK}/explore?place=port-592`);
+    await mapReady(page);
+    await fieldDrawn(page, "olci:latest");
+    const sheet = page.getByTestId("nx-margin");
+    const m = (await page.getByTestId("nx-map").boundingBox())!;
+    await page.mouse.click(m.x + m.width * 0.35, m.y + ((await sheet.boundingBox())!.y - m.y) * 0.5);
+    await expect(readout(page)).toContainText("Chlorophyll in this 300 m cell");
+    await expect(sheet).toHaveAttribute("data-detent", "peek");
+    await page.waitForTimeout(1200);
+    const top = (await sheet.boundingBox())!.y;
+    // the chart keeps most of the screen at this height
+    expect(top).toBeGreaterThan(size.height * 0.5);
+    // the controls lead the sheet: the switch, then what is on show and Play, all on screen without raising it
+    const sw = page.getByTestId("nx-layers");
+    await expect(sw).toBeInViewport({ ratio: 1 });
+    const head = page.getByTestId("nx-margin").getByTestId("nx-time-head");
+    await expect(head).toBeInViewport({ ratio: 1 });
+    await expect(page.getByTestId("nx-play")).toBeInViewport({ ratio: 1 });
+    expect((await sw.boundingBox())!.y).toBeLessThan((await head.boundingBox())!.y);
+    // a layer changes from here, the sheet staying down and the reading following
+    await page.getByTestId("nx-layer-sst").click();
+    await expect(page.getByTestId("nx-legend")).toHaveAttribute("data-product", "sst");
+    await expect(sheet).toHaveAttribute("data-detent", "peek");
+    await expect(readout(page)).toContainText("Sea temperature in this");
+    // and back; time steps from here too
+    await page.getByTestId("nx-layer-chl").click();
+    await expect(page.getByTestId("nx-legend")).toHaveAttribute("data-product", "chl");
+    const before = await page.getByTestId("nx-explore").getAttribute("data-frame");
+    await page.getByTestId("nx-play").click();
+    await expect.poll(() => page.getByTestId("nx-explore").getAttribute("data-frame"), { timeout: 8000 }).not.toBe(before);
+    await page.getByTestId("nx-play").click();
+    expect((await sheet.boundingBox())!.y).toBeGreaterThan(size.height * 0.5);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
+});
+
+test("the time rail fits what holds it: Play inside the dock at every pane width, the rail unclipped at 390 and 320 (F-10, F-01)", async ({ page }) => {
+  const fits = async (label: string) => {
+    const rail = page.getByTestId("nx-timerail").first();
+    await expect(rail).toBeVisible();
+    const r = (await rail.boundingBox())!;
+    const v = page.viewportSize()!;
+    expect(r.x, `${label}: rail starts on screen`).toBeGreaterThanOrEqual(0);
+    expect(r.x + r.width, `${label}: rail ends on screen`).toBeLessThanOrEqual(v.width + 0.5);
+    // nothing inside it is wider than it (a track drawn too wide would push the head's button out)
+    // no drawn part of it is wider than it (a track drawn too wide pushed the head's button out). A quiet
+    // button's touch target reaches 4 px past its words, so the scroll width alone may exceed by that much
+    const over = await rail.evaluate((e) => {
+      const rb = e.getBoundingClientRect();
+      let worst = 0;
+      for (const c of e.querySelectorAll("*")) {
+        const b = c.getBoundingClientRect();
+        if (b.width && b.height) worst = Math.max(worst, b.right - rb.right, rb.left - b.left);
+      }
+      return { worst, scroll: e.scrollWidth - e.clientWidth };
+    });
+    expect(over.worst, `${label}: nothing drawn past the rail`).toBeLessThanOrEqual(1);
+    expect(over.scroll, `${label}: no overflow beyond a touch target's reach`).toBeLessThanOrEqual(4);
+    const play = page.getByTestId("nx-play");
+    if (await play.count()) {
+      const p = (await play.first().boundingBox())!;
+      expect(p.x + p.width, `${label}: Play ends on screen`).toBeLessThanOrEqual(v.width);
+      expect(p.x, `${label}: Play starts on screen`).toBeGreaterThanOrEqual(0);
+      expect((await play.first().innerText()).trim()).toBe("Play");
+    }
+  };
+  for (const w of [1440, 1280, 1100, 900]) {
+    await page.setViewportSize({ width: w, height: 900 });
+    await page.goto(`${OK}/explore?place=port-592`);
+    await mapReady(page);
+    await page.waitForTimeout(500);
+    await fits(`${w}`);
+    // with the currents' hours on, the rail is at its widest content
+    await page.getByTestId("nx-layer-sst").click();
+    await page.getByTestId("nx-currents-toggle").click();
+    await page.waitForTimeout(800);
+    await fits(`${w} with hours`);
+  }
+  for (const size of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
+    await page.setViewportSize(size);
+    await page.goto(`${OK}/explore?place=port-592`);
+    await mapReady(page);
+    await page.getByTestId("nx-timerail").scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
+    await fits(`${size.width}`);
+    await expect(page.getByTestId("nx-timerail")).toContainText("Chlorophyll");
+  }
+});
+
+test("the band left out beside land has its own mark on the chart and its key in the legend", async ({ page }) => {
+  await page.goto(`${OK}/explore?place=port-592`);
+  await mapReady(page);
+  await fieldDrawn(page, "olci:latest");
+  await expect(page.getByTestId("nx-key-beside-land")).toContainText("Left out: beside land");
+  // the layer was given the marked cells (FieldLayer draws them as a flat band, not the cloud hatch)
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __nxExplore: { adjacentCode?: number | null } }).__nxExplore.adjacentCode ?? null), { timeout: 10_000 }).toBe(65534);
+  // a layer the rule does not apply to is given none
+  await page.getByTestId("nx-layer-charm").click();
+  await fieldDrawn(page, "charm:3");
+  expect(await page.evaluate(() => (window as unknown as { __nxExplore: { adjacentCode?: number | null } }).__nxExplore.adjacentCode ?? null)).toBeNull();
 });
