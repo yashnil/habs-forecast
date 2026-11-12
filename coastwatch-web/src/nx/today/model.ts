@@ -367,8 +367,8 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
       value: max == null ? "ND" : ppmWords(max),
       unit: test.action != null ? `of ${test.action} ppm` : "ppm",
       caption: [`CDPH, ${day(test.latest.date, { ref: now })}, ${ageWords(test.latest.date, now)}`],
-      // phones keep the qualifier and the age (T8): the highest of n, never a bare figure
-      short: `Highest of ${n}, ${day(test.latest.date, { ref: now })}, ${ageWords(test.latest.date, now)}`,
+      // phones keep what and who (T1, T6: the species, CDPH) and the qualifier and age (T8): never a bare figure
+      short: `${speciesShort(test.site.species)}, highest of ${n} · CDPH, ${day(test.latest.date, { ref: now })} (${ageWords(test.latest.date, now).replace(/ ago$/, "")})`,
       stale: test.stale,
       spoken: `${speciesShort(test.site.species)} test at ${test.site.site_label}: highest ${max == null ? "not detected" : `${ppmWords(max)} ppm`}${test.action != null ? ` of the ${test.action} ppm action level` : ""}, of ${n} samples${cens ? `, ${cens} below detection` : ""}. Measured by CDPH, ${day(test.latest.date, { ref: now })}, ${ageWords(test.latest.date, now)}. Open where this comes from.`,
       provenance: testProvenance(test),

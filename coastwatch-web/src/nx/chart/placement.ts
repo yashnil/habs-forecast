@@ -105,7 +105,10 @@ export function placeAll(items: PlaceItem[], area: Rect, obstacles: Rect[] = [],
       }
       // kept even without a free spot, but never written over a panel when its point lies under one
       if (!placed && it.keep && pointIn(it, area)) {
-        const r = boxAt(it, tries[0]);
+        // kept with no free spot: its first anchor, slid back inside the free area so the name is never cut by the frame
+        const r0 = boxAt(it, tries[0]);
+        const dx = r0.x0 < area.x0 ? area.x0 - r0.x0 : r0.x1 > area.x1 ? area.x1 - r0.x1 : 0;
+        const r = { x0: r0.x0 + dx, y0: r0.y0, x1: r0.x1 + dx, y1: r0.y1 };
         taken.push(r);
         placed = { id: it.id, left: r.x0, top: r.y0, anchor: tries[0], visible: true };
       }
@@ -115,5 +118,9 @@ export function placeAll(items: PlaceItem[], area: Rect, obstacles: Rect[] = [],
   return items.map((it) => out.get(it.id)!);
 }
 
-const pointIn = (it: PlaceItem, a: Rect) => it.x >= a.x0 && it.x <= a.x1 && it.y >= a.y0 && it.y <= a.y1;
+// a point's own mark (a port's circled dot) must lie wholly inside: a symbol cut by the frame or a panel is not drawn
+const pointIn = (it: PlaceItem, a: Rect) => {
+  const r = it.pointRadius ?? 0;
+  return it.x - r >= a.x0 && it.x + r <= a.x1 && it.y - r >= a.y0 && it.y + r <= a.y1;
+};
 const isOwnPoint = (t: Rect, it: PlaceItem) => !!it.pointRadius && t.x0 === it.x - it.pointRadius && t.y0 === it.y - it.pointRadius;

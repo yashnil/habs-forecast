@@ -65,7 +65,7 @@ function Figure({ d, onOpen, phone, narrow }: { d: SoundingDatum; onOpen: () => 
         stale={d.stale}
         onActivate={onOpen}
         ariaLabel={d.spoken}
-        width={narrow ? 128 : phone ? 136 : 256}
+        width={narrow ? 150 : phone ? 156 : 256}
       />
     </div>
   );
@@ -88,7 +88,8 @@ export function TodaySoundings({ items, sceneId, onOpen }: { items: SoundingDatu
         // than be dropped (critic 12, 320 px); the buoy still drops to the margin's water row
         insist: d.id === "test",
         leader: true,
-        offset: phone ? 22 : 26,
+        // 320 px: a shorter leader, so the named figure fits between the point and the scale bar
+        offset: narrow ? 14 : phone ? 22 : 26,
         // on a phone the water lies west of the points (camera.ts phoneBounds): the type goes there first
         anchors: phone
           ? d.id === "test"

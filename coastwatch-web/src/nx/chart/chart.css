@@ -49,12 +49,11 @@
 .n12-reg path { fill: none; vector-effect: non-scaling-stroke; }
 .n12-reg-line { stroke: var(--reg); stroke-width: 1.5; opacity: 0.8; }
 .n12-reg-line-hl { stroke-width: 2.5; opacity: 1; }
-.n12-reg-bracket { stroke: var(--reg); stroke-width: 2.5; stroke-linejoin: miter; }
+.n12-reg-bracket { stroke: var(--reg); stroke-width: 4; stroke-linejoin: miter; }
 .n12-reg-limitline { stroke: var(--reg); stroke-width: 1.5; stroke-dasharray: 8 6; }
 .n12-reg-text { font-family: var(--font-sans); font-size: var(--t-14); fill: var(--reg-text); paint-order: stroke fill; stroke: var(--halo); stroke-width: 5px; stroke-linejoin: round; }
 .n12-reg-zone { font-size: var(--t-16); font-weight: 600; }
 .n12-reg-zone-hl { font-weight: 700; font-size: var(--t-18); }
-.n12-reg-zone-sub { font-size: var(--t-14); font-weight: 600; }
 .n12-reg-ext { font-weight: 600; }
 
 /* scale bar and sources, bottom of the sheet */

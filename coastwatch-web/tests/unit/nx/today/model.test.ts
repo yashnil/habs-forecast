@@ -120,7 +120,7 @@ describe("the agenda and the soundings", () => {
     expect(a.detail).toBe("All 6 under the action level. 14 days ago.");
     expect(a.detail).not.toMatch(/9\.8/);
     // phones keep "highest of n" and the age; nothing speaks an average (T8)
-    expect(t.short).toBe("Highest of 6, Sep 28, 14 days ago");
+    expect(t.short).toBe("Dungeness, highest of 6 · CDPH, Sep 28 (14 days)");
     expect(t.spoken).not.toMatch(/average|avg/);
   });
 

@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { alignIn, fillZoom, fitBounds, keepInFrame, latY, lngX, unproject, worldSize, type Bounds } from "@/nx/chart/mercator";
 import { noticeExtents, RAMP_BOUNDARIES, RAMP_ZONES, rampZoneAt } from "@/nx/chart/regulation";
-import { limitLat } from "@/nx/chart/RegulationLayer";
+import { extentLabel, limitLat } from "@/nx/chart/RegulationLayer";
 import { eastmostShore, shoreLon } from "@/nx/chart/shore";
 import { exploreBounds } from "@/nx/explore/camera";
 
@@ -59,6 +59,16 @@ describe("notice extents (official latitude bands, never verified)", () => {
     expect(out[0]).toMatchObject({ label: "2 anchovy notices", count: 2 });
     expect(out[1].label).toBe("CDFW rock crab fishery closure");
     expect(out.every((e) => !/verified|confirmed|lifted/i.test(e.label))).toBe(true);
+  });
+  it("labels every band 'not verified', long or short (T38; critic N1: the phone label is shorter, never bare)", () => {
+    const [anch, rock] = noticeExtents([
+      n("cdph-anchovy", "CDPH", "northern anchovy", { south: 36.524333, north: 37.183333 }),
+      n("cdfw-anchovy", "CDFW", "northern anchovy", { south: 36.52435, north: 37.183333 }, "Take restriction"),
+      n("rock", "CDFW", "rock crab", { south: 40, north: 40.5 }, "Fishery closure"),
+    ]);
+    expect(extentLabel(anch, true)).toBe("2 anchovy notices · not verified");
+    expect(extentLabel(anch, false)).toBe("2 notices · not verified");
+    expect(extentLabel(rock, false)).toBe("CDFW notice · not verified");
   });
 });
 

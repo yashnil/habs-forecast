@@ -151,6 +151,12 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const b = canyon.getBBox();
       if (b.width) obstacles.push({ x0: b.x, y0: b.y, x1: b.x + b.width, y1: b.y + b.height });
     }
+    // a regulation line's or band's name holds its place (RegulationLayer.tsx draws a line only with its name)
+    frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg text[data-reg-hold]").forEach((t) => {
+      if (t.getAttribute("visibility") === "hidden") return;
+      const b = t.getBBox();
+      if (b.width) obstacles.push({ x0: b.x - 2, y0: b.y - 2, x1: b.x + b.width + 2, y1: b.y + b.height + 2 });
+    });
     const z = f.camera.zoom;
     const entries = allMarks().filter((e) => (e.spec.minZoom ?? -1) <= z && z <= (e.spec.maxZoom ?? 99));
     const items = entries.map((e) => {
@@ -158,10 +164,11 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       return { ...e.spec, x: p.x, y: p.y, width: e.w, height: e.h };
     });
     const placed = placeAll(items, area, obstacles, prevAnchors.current);
-    // regulation's lettering (RegulationLayer.tsx) yields to readings, stations and ports (priority 20 and up),
-    // which matter more where they stand, and holds its place against the names of water below them
-    // (a label that yielded keeps `data-reg-yield` so the layer's per-frame drawing does not flash it back)
-    const reg = [...frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg text")].filter((t) => t.getAttribute("visibility") !== "hidden" || t.hasAttribute("data-reg-yield")).map((t) => ({ t, b: t.getBBox() }));
+    // the rest of regulation's lettering (zone names, the corner note, a notice's latitudes) yields to readings,
+    // stations and ports (priority 20 and up), which matter more where they stand, and holds its place against the
+    // names of water below them (a label that yielded keeps `data-reg-yield` so the layer's per-frame drawing does
+    // not flash it back)
+    const reg = [...frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg text:not([data-reg-hold])")].filter((t) => t.getAttribute("visibility") !== "hidden" || t.hasAttribute("data-reg-yield")).map((t) => ({ t, b: t.getBBox() }));
     if (reg.length) {
       const hits = (i: number, b: DOMRect) => b.x < placed[i].left + items[i].width && b.x + b.width > placed[i].left && b.y < placed[i].top + items[i].height && b.y + b.height > placed[i].top;
       const live = reg.filter(({ t, b }) => {
