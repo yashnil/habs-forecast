@@ -151,13 +151,31 @@ test("a station picked on the chart or in the list opens its record and the char
   await expect(page.getByTestId("strip-model")).toHaveCount(0);
 });
 
-test("on a phone the record reads in the sheet, the brush above the strips", async ({ browser }) => {
+test("on a phone the record reads in the page under the chart strip, the brush above the strips", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, storageState: { cookies: [], origins: [] } });
   const page = await ctx.newPage();
   await open(page, "station=HABs-SantaCruzWharf&var=pDA");
+  // v13: Research is a desk page. On a phone the page is the page (no sheet over the chart), under a chart strip
+  const margin = page.getByTestId("nx-margin");
+  // the page's element is the same one from the server's HTML through hydration and the phone query resolving
+  // (it used to be replaced about a second after load, which dropped the brush from under this test)
+  await margin.evaluate((el) => ((el as HTMLElement & { __kept?: boolean }).__kept = true));
+  await page.waitForTimeout(1500);
+  expect(await margin.evaluate((el) => (el as HTMLElement & { __kept?: boolean }).__kept === true)).toBe(true);
   const brush = (await page.getByTestId("research-brush").boundingBox())!;
   const strips = (await page.getByTestId("research-strips").boundingBox())!;
   expect(brush.y).toBeLessThan(strips.y);
-  await expect(page.getByTestId("nx-research")).toHaveAttribute("data-layout", "inline");
+  await expect(page.getByTestId("nx-research")).toHaveAttribute("data-layout", "desk");
+  await expect(page.getByRole("button", { name: "Show more of this page" })).toBeHidden();
+  // the chart is a strip above the page, and the page starts under it
+  const pane = (await page.getByTestId("nx-pane").boundingBox())!;
+  expect(pane.height).toBeGreaterThan(200);
+  expect(pane.height).toBeLessThan(844 * 0.45);
+  expect((await page.getByTestId("research-title").boundingBox())!.y).toBeGreaterThanOrEqual(pane.y + pane.height - 1);
+  // scrolled, the strip leaves a bar with the chart's control and the record takes the screen
+  await page.getByTestId("research-strips").scrollIntoViewIfNeeded();
+  await page.getByTestId("nx-work").evaluate((el) => el.scrollBy(0, 400));
+  await expect(page.getByTestId("nx-pane-toggle")).toBeInViewport();
+  expect((await page.getByTestId("nx-pane").boundingBox())!.y).toBeLessThan(0);
   await ctx.close();
 });

@@ -4,9 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { capability, noteContextLoss, type GraphicsTier } from "@/lib/capability";
 import { EASE_CHART, pan } from "@/nx/ds/motion";
+import { paneJustChanged } from "@/nx/ds/layout/pane";
 import { alignIn, coverCamera, fillZoom, fitAtZoom, fitBounds, keepInFrame, NO_INSETS, scaleBar, screenRect, slideWithin, unproject, type Bounds, type Camera, type Insets, type Viewport, latY, lngX, worldSize, xLng, yLat } from "./mercator";
 import { placeAll, type Anchor, type Rect } from "./placement";
-import { allMarks, onMarksChange, publishFrame, staticProjector, type ChartFrame } from "./runtime";
+import { allMarks, getFrame, onMarksChange, publishFrame, staticProjector, type ChartFrame } from "./runtime";
 import { getScene, subscribeScene, type ChartScene } from "./scene";
 import { setChartMap } from "./control";
 import { measureCovers, onCoversChange } from "./cover";
@@ -14,6 +15,20 @@ import { chartStyle, CHART_FRAME, modePaint, posterImages, posterLandEast, readP
 import { Neatline } from "./Neatline";
 import { ChartLabels, CanyonName, type ChartPort } from "./Labels";
 import { RegulationLayer } from "./RegulationLayer";
+import { useChartHighlight } from "./highlight";
+
+/** The place lit from outside the chart (highlight.ts): a ring at its point, redrawn with the camera. */
+function Highlight({ cam }: { cam: Camera | null }) {
+  const h = useChartHighlight();
+  const f = getFrame();
+  if (!h || !f || !cam) return null;
+  const p = f.project(h.lon, h.lat);
+  return (
+    <span className="n12-highlight" style={{ transform: `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)` }} data-testid="nx-highlight" aria-hidden="true">
+      {h.label ? <span className="n12-port-name">{h.label}</span> : null}
+    </span>
+  );
+}
 
 type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null } };
 
@@ -456,7 +471,9 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   useEffect(() => {
     const m = mapRef.current;
     if (m && vp) m.resize();
-    applyScene(false);
+    // the reader resized or reopened the chart pane: the same view glides to its new fit (`pan`); any other
+    // change of size (the window, a rotation) refits at once
+    applyScene(paneJustChanged());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vp?.width, vp?.height]);
 
@@ -508,6 +525,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
           <svg className="n12-leaders" aria-hidden="true" />
           <ChartLabels ports={ports} />
           <div id="nx-chart-marks" className="n12-marks" />
+          <Highlight cam={cam} />
         </div>
         {scale ? (
           <div className="n12-scale" aria-label={`Scale bar ${scale.label}. Not for navigation.`}>

@@ -138,20 +138,23 @@ test("a trip from Moss Landing: gates, the sea, the worksheet, a scenario, saved
   }
 });
 
-test("on a phone: the gates rest in the sheet; one thumb fills the worksheet; a tap previews a scenario and a second tap returns", async ({ browser }) => {
+test("on a phone: the page scrolls under the chart strip; one thumb fills the worksheet; a tap previews a scenario and a second tap returns", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   await seed(ctx);
   const p = await ctx.newPage();
   await open(p);
-  // at rest the sheet shows the season line
+  // v13: My Coast is a desk page. On a phone it is the page itself under a chart strip (no sheet to raise), and
+  // what it scrolls to is never under the destinations bar
+  await expect(p.getByRole("button", { name: "Show more of this page" })).toBeHidden();
   const season = p.getByText(/delayed to at least Jan 1, 2027/);
+  await season.scrollIntoViewIfNeeded();
   const box = await season.boundingBox();
-  expect(box!.y + box!.height).toBeLessThan(844 - 56);
+  expect(box!.y).toBeGreaterThanOrEqual(52);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(844 - 56);
   // numeric keyboards and 48 px targets
   await expect(p.getByLabel("Catch", { exact: true })).toHaveAttribute("inputmode", "decimal");
   await expect(p.getByLabel("Crew", { exact: true })).toHaveAttribute("inputmode", "numeric");
   expect((await p.getByLabel("Catch", { exact: true }).boundingBox())!.height).toBeGreaterThanOrEqual(48);
-  for (let i = 0; i < 2; i++) await p.getByRole("button", { name: "Show more of this page" }).tap();
   await fill(p);
   await p.getByRole("radio", { name: "Shared, off the top" }).tap();
   await expect(net(p)).toContainText("$2,015", { timeout: 5000 });

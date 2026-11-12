@@ -7,7 +7,7 @@ import { ChartHost } from "@/nx/chart/ChartHost";
 import { MotionPrefs } from "@/nx/ds/MotionPrefs";
 import { OpeningController, OpeningStill } from "@/nx/opening/Opening";
 import { ENTRY_SCRIPT } from "@/nx/shell/entry";
-import { MarginFrame } from "@/nx/shell/Margin";
+import { Workspace } from "@/nx/shell/Margin";
 import { PortFinder } from "@/nx/shell/PortFinder";
 import { PortsProvider } from "@/nx/shell/port";
 import { Shell } from "@/nx/shell/Shell";
@@ -25,8 +25,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: PAPER_DAY, colorScheme: "light dark" };
 
 /**
- * The Neritic v12 route group: `/`, Today, Explore, My Coast and Research share one layout, so the chart (one
- * MapLibre instance), the bar and the port survive every navigation between them; only the margin changes.
+ * The Neritic route group: `/`, Today, Explore, My Coast and Research share one layout, so the chart (one
+ * MapLibre instance), the bar and the port survive every navigation between them; only the page changes. The
+ * workspace lays the page and the chart pane out from the page's declared mode (chart or desk, v13 README §1).
  * URLs are unchanged by the group. Legacy pages (/about, /account, /ask, …) keep their own shell outside it.
  */
 export default async function NeriticLayout({ children }: { children: React.ReactNode }) {
@@ -38,8 +39,7 @@ export default async function NeriticLayout({ children }: { children: React.Reac
       <MotionPrefs />
       <PortsProvider value={ports}>
         <Shell />
-        <ChartHost ports={ports.map((p) => ({ key: p.key, name: p.name, lon: p.lon, lat: p.lat, pilot: p.pilot }))} opening={<OpeningStill />} />
-        <MarginFrame>{children}</MarginFrame>
+        <Workspace chart={<ChartHost ports={ports.map((p) => ({ key: p.key, name: p.name, lon: p.lon, lat: p.lat, pilot: p.pilot }))} opening={<OpeningStill />} />}>{children}</Workspace>
         <PortFinder finder={finder} />
         <OpeningController />
       </PortsProvider>

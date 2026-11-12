@@ -8,6 +8,9 @@ import { openPortFinder } from "./finder";
 import { FieldPack } from "@/nx/offline/FieldPack";
 import { useCurrentPort, useSavedPortKey, type ShellPort } from "./port";
 import { DESTINATIONS, activeDestination, withPlace } from "./destinations";
+import { alertsHref, useUnread } from "./unread";
+import { motion } from "motion/react";
+import { shared } from "@/nx/ds/motion";
 
 export { DESTINATIONS, activeDestination, withPlace } from "./destinations";
 
@@ -77,10 +80,10 @@ function ChartModeMenu({ port }: { port: ShellPort | null }) {
             <Link href="/ask" className="n12-menu-narrow">
               Ask
             </Link>
-            <Link href="/account#alerts" className="n12-menu-narrow">
+            <Link href={alertsHref(port?.key ?? null)} className="n12-menu-narrow">
               Alerts
             </Link>
-            <Link href="/account">Account</Link>
+            <Link href="/account">Your data</Link>
             <Link href="/sources">Sources</Link>
             <Link href="/about">About</Link>
             <Link href="/privacy">Privacy</Link>
@@ -95,8 +98,8 @@ function ChartModeMenu({ port }: { port: ShellPort | null }) {
 }
 
 /**
- * The shell (README §6): one 52 px bar with the wordmark, the port, the four destinations, Ask and Alerts, and
- * the chart mode in a menu. On a phone the destinations move to a 56 px bottom bar with 48 px targets. Every
+ * The shell (README §6): one 52 px bar with the wordmark, the port, the four destinations, Ask and Alerts (with
+ * the unread count when there is one, src/nx/shell/unread.ts), and the chart mode in a menu. On a phone the destinations move to a 56 px bottom bar with 48 px targets. Every
  * link carries the current port.
  */
 export function Shell() {
@@ -105,6 +108,11 @@ export function Shell() {
   const { port, key } = useCurrentPort();
   const active = activeDestination(pathname, saved);
   const portName = port?.name ?? null;
+  const unread = useUnread();
+  // the travelling underline is drawn once the app has hydrated (the saved port, which decides the active
+  // destination at `/`, is known only then); until then the stylesheet underlines the current link
+  const [live, setLive] = useState(false);
+  useEffect(() => setLive(true), []);
   return (
     <>
       <a className="n12-skip" href="#nx-margin">
@@ -124,6 +132,8 @@ export function Shell() {
           {DESTINATIONS.map((d) => (
             <Link key={d.path} href={withPlace(d.path, key)} aria-current={active === d.path ? "page" : undefined} className="n12-dest-link">
               {d.label}
+              {/* one underline that travels to the new destination (`shared`) */}
+              {live && active === d.path ? <motion.span layoutId="nx-dest" className="n12-dest-on" transition={shared} aria-hidden="true" /> : null}
             </Link>
           ))}
         </nav>
@@ -131,8 +141,13 @@ export function Shell() {
           <Link href={withPlace("/ask", key)} className="n12-bar-link">
             Ask
           </Link>
-          <Link href={key ? `/account?place=${encodeURIComponent(key)}#alerts` : "/account#alerts"} className="n12-bar-link">
+          <Link href={alertsHref(key)} className="n12-bar-link" data-testid="nx-alerts-link" aria-label={unread ? `Alerts, ${unread} unread` : undefined}>
             Alerts
+            {unread ? (
+              <span className="n12-unread" data-testid="nx-unread" aria-hidden="true">
+                {unread > 99 ? "99+" : unread}
+              </span>
+            ) : null}
           </Link>
           <ChartModeMenu port={port} />
         </div>

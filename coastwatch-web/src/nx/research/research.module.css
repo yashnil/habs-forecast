@@ -1,6 +1,5 @@
-/* Research (docs/coastwatch/v12/design-system/README.md; journeys.md Journey 3). Tokens only. On a phone, and on
-   any screen too narrow or short for the record beside the chart, everything reads in the margin; on a wide screen
-   the record is a ruled panel set on the sheet, inside the neatline, with the chart free to its left. */
+/* Research (docs/coastwatch/v12/design-system/README.md; journeys.md Journey 3). Tokens only. A desk page (v13
+   README §1): the record is the desk's main, the export and the details its aside, the chart a pane beside it. */
 
 .page {
   color: var(--ink);
@@ -61,9 +60,6 @@
 
 /* ------------------------------------------------------------------ the record panel */
 .panel {
-  margin-top: var(--s-24);
-  padding-top: var(--s-12);
-  border-top: var(--rule) solid var(--ink);
   background: var(--paper);
   display: flex;
   flex-direction: column;
@@ -134,47 +130,24 @@
   overflow: visible;
 }
 
-/* read in the margin (a phone, a short or narrow screen): the window's brush sits above the strips, so dragging it
-   with a thumb shows every strip below it change */
-@media not ((min-width: 1180px) and (min-height: 620px)) {
-  .panelHead {
-    order: 0;
-  }
-  .brushRow {
-    order: 1;
-    border-top: 0;
-    padding-top: 0;
-    margin-bottom: var(--s-16);
-  }
-  .stripsBox {
-    order: 2;
-  }
-  .foot {
-    order: 3;
-  }
+/* the window's brush sits above the strips, so dragging it shows every strip below it change */
+.panelHead {
+  order: 0;
 }
-
-@media (min-width: 1180px) and (min-height: 620px) {
-  .panel {
-    position: fixed;
-    z-index: 2;
-    top: calc(var(--bar-h) + var(--neat-label) + var(--neat-band) + 6px);
-    right: calc(var(--neat-band) + var(--s-16));
-    bottom: calc(var(--neat-band) + var(--s-16));
-    width: min(900px, calc(100vw - var(--margin-w) - 420px));
-    margin: 0;
-    padding: var(--s-16) var(--s-24) var(--s-12) var(--s-24);
-    border-top: 0;
-    border-left: var(--rule) solid var(--ink);
-  }
-  .stripsBox {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    overscroll-behavior: contain;
-    padding-top: var(--s-8);
-  }
+.brushRow {
+  order: 1;
+  border-top: 0;
+  padding-top: 0;
+  margin-bottom: var(--s-16);
+}
+.stripsBox {
+  order: 2;
+}
+.modelWords {
+  order: 3;
+}
+.foot {
+  order: 4;
 }
 
 /* ------------------------------------------------------------------ the strips */
@@ -390,7 +363,7 @@ button.stripName[aria-pressed="true"] {
 
 /* ------------------------------------------------------------------ the margin under the record */
 .primary {
-  margin-top: var(--s-24);
+  margin-top: 0;
 }
 .rows {
   margin-top: var(--s-24);

@@ -28,7 +28,8 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   column-gap: var(--s-12);
-  margin-top: var(--s-16);
+  max-width: 372px;
+  margin-top: var(--s-12);
   min-height: var(--target);
   border-top: var(--hair) solid var(--rule-soft);
   border-bottom: var(--hair) solid var(--rule-soft);
@@ -75,6 +76,10 @@
 /* ---------------------------------------------------------------- sections */
 .section {
   margin-top: var(--s-32);
+}
+/* the first section of a desk column starts at the column's top */
+.section:first-child {
+  margin-top: 0;
 }
 .h2 {
   margin: 0 0 var(--s-4);
