@@ -259,7 +259,8 @@ export function BreakEvenMarker({ label = "Break-even", at }: BreakEvenMarkerPro
   return (
     <g data-break-even="" pointerEvents="none">
       <line x1={g.left} x2={g.right} y1={y} y2={y} className={s.threshold} />
-      <text x={g.right} y={y - 6} textAnchor="end" className={s.thresholdLabel}>
+      {/* at the axis end of the line, before the first bar */}
+      <text x={g.left + 2} y={y - 6} className={s.thresholdLabel}>
         {label}
       </text>
     </g>

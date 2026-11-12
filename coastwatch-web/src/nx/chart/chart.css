@@ -38,8 +38,8 @@
   text-shadow: 0 0 1px var(--halo), 1.5px 0 0 var(--halo), -1.5px 0 0 var(--halo), 0 1.5px 0 var(--halo), 0 -1.5px 0 var(--halo), 1px 1px 0 var(--halo), -1px -1px 0 var(--halo), 1px -1px 0 var(--halo), -1px 1px 0 var(--halo), 0 0 3px var(--halo);
 }
 .n12-water-name { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--water-name); }
-.n12-port-name { font-family: var(--font-sans); font-weight: 600; font-size: var(--t-16); color: var(--ink); }
-.n12-port-name-focus { font-size: var(--t-18); font-weight: 700; }
+.n12-port-name { font-family: var(--font-sans); font-weight: 600; font-size: var(--type-body); color: var(--ink); }
+.n12-port-name-focus { font-size: var(--type-lead); font-weight: 700; }
 .n12-port-dot { fill: var(--ink); stroke: var(--halo); stroke-width: 2; }
 .n12-port-ring { fill: var(--halo); stroke: var(--ink); stroke-width: 1.5; }
 .n12-port-sym-focus .n12-port-dot { stroke: none; }
@@ -57,9 +57,9 @@
 .n12-reg-line-hl { stroke-width: 2.5; opacity: 1; }
 .n12-reg-bracket { stroke: var(--reg); stroke-width: 4; stroke-linejoin: miter; }
 .n12-reg-limitline { stroke: var(--reg); stroke-width: 1.5; stroke-dasharray: 8 6; }
-.n12-reg-text { font-family: var(--font-sans); font-size: var(--t-14); fill: var(--reg-text); paint-order: stroke fill; stroke: var(--halo); stroke-width: 5px; stroke-linejoin: round; }
-.n12-reg-zone { font-size: var(--t-16); font-weight: 600; }
-.n12-reg-zone-hl { font-weight: 700; font-size: var(--t-18); }
+.n12-reg-text { font-family: var(--font-sans); font-size: var(--type-small); fill: var(--reg-text); paint-order: stroke fill; stroke: var(--halo); stroke-width: 5px; stroke-linejoin: round; }
+.n12-reg-zone { font-size: var(--type-body); font-weight: 600; }
+.n12-reg-zone-hl { font-weight: 700; font-size: var(--type-lead); }
 .n12-reg-ext { font-weight: 600; }
 
 /* scale bar and sources, bottom of the sheet */
@@ -67,7 +67,7 @@
 .n12-scale { position: absolute; left: calc(var(--nx-cover-left, 0px) + var(--s-16)); bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12)); display: flex; align-items: center; gap: var(--s-8); pointer-events: none; }
 .n12-scale-bar { display: grid; grid-template-columns: repeat(4, 1fr); height: 6px; border: var(--hair) solid var(--ink); background: var(--paper); }
 .n12-scale-bar i:nth-child(odd) { background: var(--ink); }
-.n12-scale-text, .n12-attrib { font-size: var(--t-14); color: var(--ink); text-shadow: 0 0 1px var(--halo), 1.5px 0 0 var(--halo), -1.5px 0 0 var(--halo), 0 1.5px 0 var(--halo), 0 -1.5px 0 var(--halo), 1px 1px 0 var(--halo), -1px -1px 0 var(--halo), 1px -1px 0 var(--halo), -1px 1px 0 var(--halo), 0 0 3px var(--halo); white-space: nowrap; }
+.n12-scale-text, .n12-attrib { font-size: var(--type-small); color: var(--ink); text-shadow: 0 0 1px var(--halo), 1.5px 0 0 var(--halo), -1.5px 0 0 var(--halo), 0 1.5px 0 var(--halo), 0 -1.5px 0 var(--halo), 1px 1px 0 var(--halo), -1px -1px 0 var(--halo), 1px -1px 0 var(--halo), -1px 1px 0 var(--halo), 0 0 3px var(--halo); white-space: nowrap; }
 .n12-attrib { position: absolute; right: calc(var(--nx-cover-right, 0px) + var(--s-12)); bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12)); margin: 0; color: var(--ink-2); }
 /* a narrow free part (a panel beside it): the sources stand above the scale bar instead of beside it */
 .n12-frame[data-free="narrow"] .n12-attrib { bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12) + var(--s-32)); left: calc(var(--nx-cover-left, 0px) + var(--s-16)); right: calc(var(--nx-cover-right, 0px) + var(--s-16)); white-space: normal; }
@@ -75,7 +75,7 @@
 
 /* the chart's own buttons (ChartHost ChartControls): paper tiles ruled in ink, in the free part of the sheet */
 .n12-controls { position: absolute; z-index: 3; top: calc(var(--nx-cover-top, 0px) + var(--s-12)); right: calc(var(--nx-cover-right, 0px) + var(--s-12)); display: grid; gap: 0; border: var(--hair) solid var(--ink); background: var(--paper); }
-.n12-controls button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--r-0); background: var(--paper); color: var(--ink); cursor: pointer; font: 600 var(--t-14) / 1.1 var(--font-sans); }
+.n12-controls button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--r-0); background: var(--paper); color: var(--ink); cursor: pointer; font: 600 var(--type-small) / 1.1 var(--font-sans); }
 .n12-controls button + button { border-top: var(--hair) solid var(--ink); }
 .n12-controls button:hover { background: var(--wash); }
 .n12-controls button:focus-visible { outline: 2px solid var(--ink); outline-offset: -4px; }
@@ -104,7 +104,7 @@ html[data-nx-opening="on"] .n12-still, html[data-nx-opening="run"] .n12-still { 
 .n12-ink-index { stroke-width: 1.1; opacity: 0.78; }
 .n12-still-caption {
   position: absolute; right: var(--s-12); bottom: var(--s-12); margin: 0; max-width: 34em; text-align: right;
-  font-size: var(--t-14); color: var(--ink); text-shadow: 0 0 1px var(--paper), 1.5px 0 0 var(--paper), -1.5px 0 0 var(--paper), 0 1.5px 0 var(--paper), 0 -1.5px 0 var(--paper), 1px 1px 0 var(--paper), -1px -1px 0 var(--paper), 1px -1px 0 var(--paper), -1px 1px 0 var(--paper), 0 0 3px var(--paper);
+  font-size: var(--type-small); color: var(--ink); text-shadow: 0 0 1px var(--paper), 1.5px 0 0 var(--paper), -1.5px 0 0 var(--paper), 0 1.5px 0 var(--paper), 0 -1.5px 0 var(--paper), 1px 1px 0 var(--paper), -1px -1px 0 var(--paper), 1px -1px 0 var(--paper), -1px 1px 0 var(--paper), 0 0 3px var(--paper);
 }
 /* while it plays, the chart's names, marks and neatline wait for their beats */
 html[data-nx-opening="on"] .n12-overlay,

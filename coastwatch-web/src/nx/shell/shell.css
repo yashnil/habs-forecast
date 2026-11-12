@@ -13,7 +13,7 @@
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
-  font-size: var(--t-16);
+  font-size: var(--type-body);
   line-height: 1.5;
   font-feature-settings: normal;
   -webkit-font-smoothing: antialiased;
@@ -54,12 +54,16 @@
   text-decoration: none; white-space: nowrap; color: var(--ink-2); font-weight: 500;
   border-bottom: 2px solid transparent; transition: color var(--dur-quick) linear, border-color var(--dur-quick) linear;
 }
-.n12-dest-link:hover, .n12-bar-link:hover { color: var(--ink); }
+.n12-dest-link:hover, .n12-bar-link:hover { color: var(--ink); background: var(--wash); }
+.n12-dest-link:active, .n12-bar-link:active, .n12-port-control:active { background: var(--sel); }
+.n12-port-control { padding: 0 var(--s-8); margin: 0 calc(-1 * var(--s-8)); transition: background-color var(--dur-quick) linear; }
+.n12-port-control:hover { background: var(--wash); }
+.n12-menu-links a:hover, .n12-mode-option:hover { background: var(--wash); }
 .n12-dest-link[aria-current="page"] { color: var(--ink); font-weight: 600; }
 .n12-dest-link[aria-current="page"]:not(:has(.n12-dest-on)) { border-bottom-color: var(--ink); }
 .n12-dest-on { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--ink); }
 /* the unread count beside Alerts: ink on paper, a figure and nothing else (no dot, no hue) */
-.n12-unread { margin-left: var(--s-4); min-width: 20px; padding: 0 var(--s-4); border: var(--hair) solid var(--ink); font-size: var(--t-14); font-weight: 700; line-height: 18px; text-align: center; color: var(--ink); font-variant-numeric: tabular-nums; }
+.n12-unread { margin-left: var(--s-4); min-width: 20px; padding: 0 var(--s-4); border: var(--hair) solid var(--ink); font-size: var(--type-small); font-weight: 700; line-height: 18px; text-align: center; color: var(--ink); font-variant-numeric: tabular-nums; }
 .n12-bar-end { display: flex; align-items: center; gap: var(--s-4); }
 
 .n12-menu { position: relative; }
@@ -72,7 +76,7 @@
 .n12-mode legend { font-weight: 600; margin-bottom: var(--s-8); }
 .n12-mode-option { display: flex; align-items: center; gap: var(--s-12); min-height: var(--target); cursor: pointer; }
 .n12-mode-option input { width: 18px; height: 18px; accent-color: var(--ink); margin: 0; }
-.n12-mode-option small { display: block; font-size: var(--t-14); color: var(--ink-2); }
+.n12-mode-option small { display: block; font-size: var(--type-small); color: var(--ink-2); }
 .n12-menu-links { display: grid; border-top: var(--hair) solid var(--rule-soft); padding-top: var(--s-8); }
 .n12-menu-links a { min-height: 44px; display: flex; align-items: center; text-decoration: none; }
 
@@ -127,6 +131,7 @@
     border-left: var(--hair) solid var(--rule-soft); font-weight: 600; color: var(--ink);
   }
   .n12-pane-rail:hover { background: var(--wash); }
+  .n12-pane-rail span { white-space: nowrap; }
   .n12-pane-rail span { writing-mode: vertical-rl; }
 }
 
@@ -145,7 +150,7 @@
   }
 }
 
-.n12-kicker { margin: 0 0 var(--s-12); font-size: var(--t-16); font-weight: 600; color: var(--ink); }
+.n12-kicker { margin: 0 0 var(--s-12); font-size: var(--type-body); font-weight: 600; color: var(--ink); }
 .n12-statement { margin: 0; font-family: var(--font-serif); font-weight: 500; letter-spacing: -0.012em; color: var(--ink); text-wrap: balance; }
 .n12-statement-l { font-size: var(--t-36); line-height: 1.1; font-variation-settings: "opsz" 48; }
 .n12-statement-m { font-size: var(--t-36); line-height: 1.1; font-variation-settings: "opsz" 48; }
@@ -237,9 +242,9 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
 }
 @media (max-width: 360px) {
   .n12-port-control-name { max-width: 96px; }
-  .n12-wordmark { font-size: var(--t-18); }
+  .n12-wordmark { font-size: var(--type-lead); }
   .n12-statement-l, .n12-statement-m { font-size: var(--t-22); line-height: 1.15; }
-  .n12-tab { font-size: var(--t-14); }
+  .n12-tab { font-size: var(--type-small); }
 }
 @media (max-height: 480px) and (min-width: 721px) {
   .n12-margin-scroll { padding: var(--s-16); }
@@ -247,5 +252,5 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
   }
 
 .n12-menu-narrow { display: none !important; }
-.n12-menu-note { margin: var(--s-12) 0 0; font-size: var(--t-14); color: var(--ink-2); }
+.n12-menu-note { margin: var(--s-12) 0 0; font-size: var(--type-small); color: var(--ink-2); }
 @media (max-width: 380px) { .n12-menu-narrow { display: flex !important; } }

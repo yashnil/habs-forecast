@@ -56,7 +56,8 @@ export function SensitivityGrid({ caption, rows, cols, rowAxis, colAxis, value, 
     }
   };
   return (
-    <table className={cx(s.sens, className)} role="grid" data-testid="sensitivity-grid" onPointerLeave={() => onPreview?.(null)}>
+    <div className={cx(s.sensWrap, className)}>
+    <table className={s.sens} role="grid" data-testid="sensitivity-grid" onPointerLeave={() => onPreview?.(null)}>
       <caption className={s.caption}>{caption}</caption>
       <thead>
         <tr>
@@ -122,5 +123,6 @@ export function SensitivityGrid({ caption, rows, cols, rowAxis, colAxis, value, 
         </tr>
       </tfoot>
     </table>
+    </div>
   );
 }

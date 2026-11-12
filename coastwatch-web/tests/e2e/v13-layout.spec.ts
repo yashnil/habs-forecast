@@ -196,3 +196,125 @@ test("the chart's own buttons zoom and bring the page's view back; names keep cl
   // one map instance through all of it
   expect(await chart(page)).toBe(1);
 });
+
+test("a page change is sequenced: the old page is gone before the new one comes in, and the nav underline travels", async ({ page }) => {
+  await open(page, "/today?place=port-592");
+  await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
+  // every view-transition animation of the page, recorded as it starts
+  await page.evaluate(() => {
+    const w = window as unknown as { __vt: Array<{ pseudo: string; delay: number; duration: number; name: string }> };
+    w.__vt = [];
+    const seen = new WeakSet<Animation>();
+    const read = () => {
+      for (const a of document.getAnimations()) {
+        const e = a.effect as KeyframeEffect | null;
+        if (!e || seen.has(a) || !e.pseudoElement?.startsWith("::view-transition")) continue;
+        seen.add(a);
+        const t = e.getComputedTiming();
+        w.__vt.push({ pseudo: e.pseudoElement, delay: Number(t.delay), duration: Number(t.duration), name: (a as CSSAnimation).animationName ?? "" });
+      }
+      requestAnimationFrame(read);
+    };
+    requestAnimationFrame(read);
+  });
+  await page.getByTestId("nx-bar").getByRole("link", { name: "Explore" }).click();
+  await expect(page.getByTestId("nx-explore")).toBeVisible();
+  await expect(page.getByTestId("nx-bar").getByRole("link", { name: "Explore" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByTestId("nx-bar").locator(".n12-dest-on")).toHaveCount(1);
+  const vt = await page.evaluate(() => (window as unknown as { __vt: Array<{ pseudo: string; delay: number; duration: number; name: string }> }).__vt);
+  const fades = (kind: string) => vt.filter((a) => a.pseudo.startsWith(`::view-transition-${kind}(`) && /fade/.test(a.name));
+  const out = fades("old"), incoming = fades("new");
+  expect(out.length).toBeGreaterThan(0);
+  expect(incoming.length).toBeGreaterThan(0);
+  // no double exposure: the new page's fade starts no earlier than the old page's ends
+  const outEnds = Math.max(...out.map((a) => a.delay + a.duration));
+  const inStarts = Math.min(...incoming.map((a) => a.delay));
+  expect(inStarts).toBeGreaterThanOrEqual(outEnds);
+  expect(outEnds).toBeLessThanOrEqual(120);
+  expect(inStarts + Math.max(...incoming.map((a) => a.duration))).toBeLessThanOrEqual(320);
+});
+
+test("changing the pane's size moves the columns without resizing the map more than once", async ({ page }) => {
+  await open(page, RESEARCH);
+  await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
+  await page.evaluate(() => {
+    const w = window as unknown as { __resizes: number; __widths: number[]; __nxChart: { map: { resize: (...a: unknown[]) => unknown } } };
+    w.__resizes = 0;
+    w.__widths = [];
+    const m = w.__nxChart.map;
+    const o = m.resize.bind(m);
+    m.resize = (...a: unknown[]) => {
+      w.__resizes += 1;
+      return o(...a);
+    };
+    const pane = document.querySelector(".n12-pane")!;
+    const read = () => {
+      w.__widths.push(Math.round(pane.getBoundingClientRect().width));
+      if (w.__widths.length < 80) requestAnimationFrame(read);
+    };
+    requestAnimationFrame(read);
+  });
+  const before = (await box(page, "nx-pane")).width;
+  await page.getByTestId("nx-pane-divider").focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect.poll(async () => (await box(page, "nx-pane")).width).toBeGreaterThan(719);
+  await expect(page.getByTestId("nx-work")).not.toHaveAttribute("data-pane-resizing", "");
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __widths: number[] }).__widths.length)).toBeGreaterThanOrEqual(60);
+  const { widths, resizes } = await page.evaluate(() => {
+    const w = window as unknown as { __resizes: number; __widths: number[] };
+    return { widths: w.__widths, resizes: w.__resizes };
+  });
+  // the column travelled through widths between the two sizes (it did not cut), and the map resized once
+  expect(widths.some((v) => v > before + 20 && v < 700)).toBe(true);
+  expect(resizes).toBe(1);
+  expect(await chart(page)).toBe(1);
+});
+
+test.describe("phone sheet requests", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  test("a page can ask for the peek detent, and for a place to be kept above the sheet where it stands", async ({ page }) => {
+    await open(page, "/explore?place=port-592");
+    await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
+    const margin = page.getByTestId("nx-margin");
+    const rest = (await margin.boundingBox())!.y;
+    const coverBottom = () => page.evaluate(() => parseFloat(getComputedStyle(document.querySelector(".n12-frame")!).getPropertyValue("--nx-cover-bottom")));
+    const restCover = await coverBottom();
+    await page.evaluate(() => (window as unknown as { __nxShell: { openMargin: (d: string) => void } }).__nxShell.openMargin("peek"));
+    await expect(margin).toHaveAttribute("data-detent", "peek");
+    await expect.poll(async () => (await margin.boundingBox())!.y).toBeGreaterThan(rest + 40);
+    // the chart's free area follows the lower sheet
+    await expect.poll(coverBottom).toBeLessThan(restCover - 40);
+    // "More" from the peek goes to rest
+    await margin.getByRole("button", { name: "Show more of this page" }).click();
+    await expect(margin).toHaveAttribute("data-detent", "0");
+    // raise the sheet to half, then ask for a place low on the chart to be kept in view above it
+    await margin.getByRole("button", { name: "Show more of this page" }).click();
+    await expect(margin).toHaveAttribute("data-detent", "1");
+    await expect.poll(async () => (await margin.boundingBox())!.y).toBeLessThan(rest - 100);
+    // the chart has finished refitting to the sheet's changes before a place on it is named
+    await page.waitForTimeout(1500);
+    const sheetTop = (await margin.boundingBox())!.y;
+    const at = await page.evaluate((y) => {
+      const w = window as unknown as { __nxChart: { map: { unproject: (p: [number, number]) => { lng: number; lat: number } } } };
+      const f = document.querySelector(".n12-frame")!.getBoundingClientRect();
+      // a place that is on the chart but under the raised sheet
+      const p = w.__nxChart.map.unproject([f.width / 2, y - f.top + 60]);
+      return [p.lng, p.lat] as [number, number];
+    }, sheetTop);
+    const screenY = () =>
+      page.evaluate(([lon, lat]) => {
+        const w = window as unknown as { __nxChart: { map: { project: (p: [number, number]) => { x: number; y: number } } } };
+        return w.__nxChart.map.project([lon, lat]).y + document.querySelector(".n12-frame")!.getBoundingClientRect().top;
+      }, at);
+    expect(await screenY()).toBeGreaterThan(sheetTop);
+    await page.evaluate(([lon, lat]) => (window as unknown as { __nxChart: { keep: (lon: number, lat: number) => void } }).__nxChart.keep(lon, lat), at);
+    await expect.poll(screenY).toBeLessThan(sheetTop - 40);
+    // already clear: asking again moves nothing (once the first move has landed)
+    await page.waitForTimeout(900);
+    const y1 = await screenY();
+    expect(y1).toBeLessThan(sheetTop - 40);
+    await page.evaluate(([lon, lat]) => (window as unknown as { __nxChart: { keep: (lon: number, lat: number) => void } }).__nxChart.keep(lon, lat), at);
+    await page.waitForTimeout(800);
+    expect(Math.abs((await screenY()) - y1)).toBeLessThan(2);
+  });
+});
