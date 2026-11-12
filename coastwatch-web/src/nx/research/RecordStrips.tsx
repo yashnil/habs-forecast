@@ -28,28 +28,44 @@ function xTickLabel(d: Date, spanDays: number): string {
   return d.getUTCMonth() === 0 ? utcYear.format(d) : utcMonth.format(d);
 }
 
-export type StripLayout = { strip: Strip; top: number; plotTop: number; plotH: number; laneTop: number | null; bottom: number; folded: boolean };
+export type StripLayout = { strip: Strip; top: number; head: number; plotTop: number; plotH: number; laneTop: number | null; bottom: number; folded: boolean };
+
+/** One header line, px; each wrapped line of a threshold strip's unit adds another. */
+export const HEAD_LINE = 18;
+
+/**
+ * A strip's header height: one line. A threshold strip's dashes are labelled on the plot, at the line's right end
+ * ("500 ng/L"), and the view's legend names them "C-HARM threshold", so a header never wraps: at 1440 × 900 every
+ * strip, C-HARM's included, fits its panel beside its caption (critic N3; before, wrapped headers pushed the model
+ * strip into a hidden inner scroll). `width` is kept for callers.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function stripHead(_strip: Strip, _width: number): number {
+  return HEAD;
+}
 
 /**
  * Where each strip sits: header, plot, the censored lane when its record has any reported 0 or rejected sample.
  * A strip with nothing in the window folds to its header line, which says so.
  */
-export function layoutStrips(strips: Strip[], plotH: number, folded: ReadonlySet<string> = new Set()): { rows: StripLayout[]; height: number } {
+export function layoutStrips(strips: Strip[], plotH: number, folded: ReadonlySet<string> = new Set(), headOf: (strip: Strip) => number = () => HEAD): { rows: StripLayout[]; height: number } {
   let y = 0;
   const rows = strips.map((strip) => {
     if (folded.has(strip.id)) {
       const top = y;
       y = top + HEAD + GAP;
-      return { strip, top, plotTop: top + HEAD, plotH: 0, laneTop: null, bottom: top + HEAD, folded: true };
+      return { strip, top, head: HEAD, plotTop: top + HEAD, plotH: 0, laneTop: null, bottom: top + HEAD, folded: true };
     }
     const h = strip.kind === "model" ? Math.max(36, Math.round(plotH * 0.66)) : plotH;
     const lane = strip.points.some((p) => p.cls !== "value");
     const top = y;
-    const plotTop = top + HEAD + 4;
+    const head = headOf(strip);
+    // a wrapped unit line ends at the header's foot: the top tick label (centred on plotTop) needs the extra room
+    const plotTop = top + head + (head > HEAD ? 10 : 4);
     const laneTop = lane ? plotTop + h : null;
     const bottom = plotTop + h + (lane ? LANE : 0);
     y = bottom + GAP;
-    return { strip, top, plotTop, plotH: h, laneTop, bottom, folded: false };
+    return { strip, top, head, plotTop, plotH: h, laneTop, bottom, folded: false };
   });
   return { rows, height: (rows.at(-1)?.bottom ?? 0) + AXIS };
 }
@@ -88,7 +104,7 @@ export const RecordStrips = forwardRef<RecordStripsHandle, RecordStripsProps>(fu
   const [said, setSaid] = useState("");
   const plotW = Math.max(120, width - LEFT - RIGHT);
   const x = useMemo(() => scaleLinear().domain(win).range([LEFT, LEFT + plotW]), [win, plotW]);
-  const { rows, height } = useMemo(() => layoutStrips(strips, plotH, folded), [strips, plotH, folded]);
+  const { rows, height } = useMemo(() => layoutStrips(strips, plotH, folded, (st) => stripHead(st, width)), [strips, plotH, folded, width]);
   const spanDays = (win[1] - win[0]) / 86_400_000;
   const xTicks = useMemo(() => {
     const u = scaleUtc().domain([new Date(win[0]), new Date(win[1])]);
@@ -146,7 +162,7 @@ export const RecordStrips = forwardRef<RecordStripsHandle, RecordStripsProps>(fu
         const reading = cursor != null ? readingAt(st, cursor) : null;
         const focused = st.id === focus;
         return (
-          <div key={st.id} className={s.stripHead} style={{ top: row.top }} data-strip={st.id} data-folded={row.folded || undefined}>
+          <div key={st.id} className={s.stripHead} style={{ top: row.top, height: row.head }} data-strip={st.id} data-folded={row.folded || undefined} data-wrap={(!row.folded && row.head > HEAD) || undefined}>
             {st.kind === "measured" ? (
               <button type="button" className={s.stripName} aria-pressed={focused} onClick={() => onFocus(st.id)} data-testid={`strip-${st.id}`}>
                 <StripLabel strip={st} />
@@ -162,7 +178,6 @@ export const RecordStrips = forwardRef<RecordStripsHandle, RecordStripsProps>(fu
             )}
             <span className={s.stripUnit} title={st.threshold ? `${st.unit}; dashed line: ${st.threshold.label}` : st.unit}>
               {st.unit}
-              {st.threshold ? `; dashes: ${st.threshold.label}` : ""}
             </span>
             <span className={s.stripReading} data-testid={`reading-${st.id}`}>
               {row.folded ? "none in this window" : cursor == null ? "" : reading ? valueWords(st, reading) : st.kind === "model" ? "no run kept that day" : "not measured that day"}
@@ -306,6 +321,10 @@ function StripPlot({ row, x, plotW, xTicks, win, clip, pxPerDay, now, cursor }: 
       {st.threshold ? (
         <g>
           <line x1={LEFT} x2={LEFT + plotW} y1={y(st.threshold.value)} y2={y(st.threshold.value)} className={s.threshold} />
+          {/* the dashes say what they are where they are drawn (the legend names them C-HARM's threshold) */}
+          <text x={LEFT + plotW - 4} y={Math.max(y(st.threshold.value) - 4, plotTop + 11)} className={s.thresholdLabel} data-testid={`threshold-${st.id}`}>
+            {st.threshold.short ?? st.threshold.label}
+          </text>
         </g>
       ) : null}
       {nowX >= LEFT && nowX <= LEFT + plotW ? <line x1={nowX} x2={nowX} y1={plotTop} y2={laneTop != null ? laneTop + LANE : bottom} className={s.now} /> : null}

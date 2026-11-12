@@ -4,7 +4,7 @@ import { parseDerived } from "@/lib/derived";
 import manifest from "../../../fixture-data/v1/manifest.json";
 import derivedRaw from "../../../fixture-derived/v1/derived/index.json";
 import { buildExploreModel } from "@/nx/explore/model";
-import { legendCaption, currentsCaption } from "@/nx/explore/words";
+import { legendCaption, currentsCaption, currentsByDefault, layerKindWord, oldMark } from "@/nx/explore/words";
 
 const now = new Date("2026-10-13T06:00:00Z");
 const model = buildExploreModel({ manifest: manifest as unknown as Manifest, derived: parseDerived(derivedRaw), stations: [], baseUrl: "/data/fixture/v1", now });
@@ -77,5 +77,47 @@ describe("Explore model from the fixture (no manifest field added; frames are th
     const ids = model.products.flatMap((p) => p.frames.map((f) => f.id));
     expect(new Set(ids).size).toBe(ids.length);
     expect(JSON.stringify(model).length).toBeLessThan(60_000);
+  });
+});
+
+describe("past runs and old frames (T3, T17, T25, T27)", () => {
+  it("the outlook whose window has passed is a past run, worded like C-HARM's, never 'outlook' (T3)", () => {
+    // the fixture's outlook covers Oct 13–20 (issued Oct 12); on Oct 22 every one of its days has passed
+    const later = buildExploreModel({ manifest: manifest as unknown as Manifest, derived: parseDerived(derivedRaw), stations: [], baseUrl: "/data/fixture/v1", now: new Date("2026-10-22T18:00:00Z") });
+    const o = later.products.find((p) => p.id === "outlook")!;
+    expect(o.pastRun).toBe(true);
+    expect(o.frames[0].past).toBe(true);
+    expect(layerKindWord(o)).toBe("past run (Oct 12)");
+    expect(legendCaption(o, o.frames[0])).toMatch(/^Outlook, past run · .*Past run: every day it covers is before today/);
+    expect(layerKindWord(product("charm"))).toBe("past run (Oct 8)");
+    expect(layerKindWord(product("chl"))).toBe("measured");
+  });
+
+  it("an outlook whose window holds or follows today is an outlook", () => {
+    const o = product("outlook");
+    expect(o.pastRun).toBe(false);
+    expect(layerKindWord(o)).toBe("outlook");
+    expect(legendCaption(o, o.frames[0])).toMatch(/^Outlook · /);
+  });
+
+  it("each layer is aged by its own freshness limit: the radar's Oct 8 hour is past its 3-day limit, and says (old)", () => {
+    const c = model.currents!;
+    const hour = c.frames.find((f) => f.id === c.defaultFrame)!;
+    expect(hour.fresh).toBe("historical");
+    expect(oldMark(hour.fresh)).toBe(" (old)");
+    expect(currentsCaption(hour)).toMatch(/\(old\)\. Older than the radar's own freshness limit, so drawn still\./);
+    // the same day is still current for a layer with a longer limit
+    expect(oldMark("current")).toBe("");
+  });
+
+  it("currents are off by default over chlorophyll, a model or an outlook, and when the hour is past its stale limit", () => {
+    const hour = model.currents!.frames.find((f) => f.id === model.currents!.defaultFrame)!;
+    expect(currentsByDefault(product("chl"), { fresh: "current" })).toBe(false);
+    expect(currentsByDefault(product("charm"), { fresh: "current" })).toBe(false);
+    expect(currentsByDefault(product("outlook"), { fresh: "current" })).toBe(false);
+    expect(currentsByDefault(product("sst"), { fresh: "current" })).toBe(true);
+    expect(currentsByDefault(product("sst"), { fresh: "stale" })).toBe(true);
+    expect(currentsByDefault(product("sst"), hour)).toBe(false);
+    expect(currentsByDefault(null, hour)).toBe(false);
   });
 });

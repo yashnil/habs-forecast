@@ -47,8 +47,9 @@ async function journey(page: Page) {
   await expect(legend).toContainText("Sentinel-3 OLCI");
   await expect.poll(async () => (await hook(page))?.field, { timeout: 15_000 }).toBe("olci:latest");
   await expect.poll(async () => (await hook(page))?.draws ?? 0).toBeGreaterThan(0);
-  // measured currents stream over the observed layer
-  await expect.poll(async () => (await hook(page))?.flowSegments ?? 0, { timeout: 10_000 }).toBeGreaterThan(0);
+  // T25/T27: no streaks over chlorophyll by default
+  await expect(page.getByTestId("nx-currents-toggle")).toHaveAttribute("aria-checked", "false");
+  expect((await hook(page))?.flowSegments ?? 0).toBe(0);
   await page.waitForTimeout(1200);
 
   // switch layers: each legend is its title, with its kind and mandatory words
@@ -78,11 +79,15 @@ async function journey(page: Page) {
   await page.waitForTimeout(900);
   await page.getByTestId("nx-frame-olci:latest").click();
   await expect.poll(async () => (await hook(page))?.field).toBe("olci:latest");
-  // and an hour of the currents
+  // and an hour of the currents, switched on by the reader: the fixture's hours are past the radar's 3-day
+  // limit, so they are drawn still and say "(old)" (T17)
+  await page.getByTestId("nx-currents-toggle").click();
+  await expect.poll(async () => (await hook(page))?.flowSegments ?? 0, { timeout: 10_000 }).toBeGreaterThan(0);
+  expect((await hook(page))!.flowRunning).toBe(false);
   const hourId = "hfr2km_currents_20261008T02Z";
   await page.getByTestId(`nx-hour-${hourId}`).click();
   await expect.poll(async () => (await hook(page))?.flowField).toBe(hourId);
-  await expect(page.getByTestId("nx-frame-stamp")).toContainText("Currents: Oct 7, 7:00 PM PT");
+  await expect(page.getByTestId("nx-frame-stamp")).toContainText("Currents: Oct 7, 7:00 PM PT (old)");
   await page.waitForTimeout(1200);
 
   // tap the water in Monterey Bay
@@ -139,7 +144,7 @@ test.describe("Journey 3: Explore to the record", () => {
 
   test("a lost WebGL context: the data layers come back", async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem("nx-opening-seen-v1", "1"));
-    await page.goto(`${OK}/explore?place=port-592`);
+    await page.goto(`${OK}/explore?place=port-592&cur=1`);
     await mapReady(page);
     await expect.poll(async () => (await hook(page))?.flowSegments ?? 0, { timeout: 10_000 }).toBeGreaterThan(0);
     const layers = () => page.evaluate(() => (window as unknown as { __cwMap: { getLayersOrder: () => string[] } }).__cwMap.getLayersOrder().filter((id) => id.startsWith("nx-")));
@@ -163,7 +168,7 @@ test.describe("Journey 3: Explore to the record", () => {
     const ctx = await browser.newContext({ reducedMotion: "reduce", storageState: { cookies: [], origins: [] } });
     await ctx.addInitScript(() => localStorage.setItem("nx-opening-seen-v1", "1"));
     const page = await ctx.newPage();
-    await page.goto(`${OK}/explore?place=port-592`);
+    await page.goto(`${OK}/explore?place=port-592&cur=1`);
     await mapReady(page);
     await expect.poll(async () => (await hook(page))?.flowSegments ?? 0, { timeout: 10_000 }).toBeGreaterThan(0);
     expect((await hook(page))!.flowRunning).toBe(false);
@@ -232,7 +237,7 @@ test.describe("review media", () => {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: { cookies: [], origins: [] }, recordVideo: { dir: test.info().outputDir, size: { width: 1440, height: 900 } } });
     await ctx.addInitScript(() => localStorage.setItem("nx-opening-seen-v1", "1"));
     const page = await ctx.newPage();
-    await page.goto(`${OK}${moss}`);
+    await page.goto(`${OK}${moss}&cur=1`);
     await mapReady(page);
     await page.evaluate(() => (window as unknown as { __cwMap: { jumpTo: (o: object) => void } }).__cwMap.jumpTo({ center: [-122.0, 36.82], zoom: 10.2 }));
     await page.waitForTimeout(4000);

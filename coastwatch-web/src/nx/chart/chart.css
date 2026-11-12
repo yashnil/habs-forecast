@@ -11,12 +11,13 @@
 @container n12-frame (max-width: 640px) { .n12-attrib { display: none; } }
 .n12-map, .n12-poster, .n12-overlay, .n12-still, .n12-underlay { position: absolute; inset: 0; overflow: hidden; }
 .n12-underlay { pointer-events: none; }
-.n12-static-field { position: absolute; max-width: none; image-rendering: pixelated; }
+/* placed by transform from the frame's corner: the chart moving them is a camera, never a layout shift (CLS) */
+.n12-static-field { position: absolute; left: 0; top: 0; transform-origin: 0 0; max-width: none; image-rendering: pixelated; }
 .n12-map .maplibregl-canvas { outline: none; }
 .n12-map .maplibregl-canvas:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 .n12-sheet[data-tier="static"] .n12-map { display: none; }
-.n12-poster img { position: absolute; max-width: none; user-select: none; }
-.n12-poster-land { position: absolute; background: var(--land); }
+.n12-poster img { position: absolute; left: 0; top: 0; transform-origin: 0 0; max-width: none; user-select: none; }
+.n12-poster-land { position: absolute; left: 0; top: 0; transform-origin: 0 0; background: var(--land); }
 .n12-overlay { pointer-events: none; }
 .n12-overlay a, .n12-overlay button { pointer-events: auto; }
 .n12-labels, .n12-marks { position: absolute; inset: 0; }
@@ -43,6 +44,18 @@
 .n12-leaders line { stroke: var(--ink); stroke-width: 1.5; }
 .n12-leaders circle { fill: var(--ink); stroke: var(--halo); stroke-width: 2; }
 
+/* regulation (RegulationLayer.tsx): the one foreign hue, lines in --reg, lettering in --reg-text on the halo */
+.n12-reg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+.n12-reg path { fill: none; vector-effect: non-scaling-stroke; }
+.n12-reg-line { stroke: var(--reg); stroke-width: 1.5; opacity: 0.8; }
+.n12-reg-line-hl { stroke-width: 2.5; opacity: 1; }
+.n12-reg-bracket { stroke: var(--reg); stroke-width: 4; stroke-linejoin: miter; }
+.n12-reg-limitline { stroke: var(--reg); stroke-width: 1.5; stroke-dasharray: 8 6; }
+.n12-reg-text { font-family: var(--font-sans); font-size: var(--t-14); fill: var(--reg-text); paint-order: stroke fill; stroke: var(--halo); stroke-width: 5px; stroke-linejoin: round; }
+.n12-reg-zone { font-size: var(--t-16); font-weight: 600; }
+.n12-reg-zone-hl { font-weight: 700; font-size: var(--t-18); }
+.n12-reg-ext { font-weight: 600; }
+
 /* scale bar and sources, bottom of the sheet */
 /* both sit in the free part of the sheet: clear of a panel on either side and of the resting phone sheet */
 .n12-scale { position: absolute; left: calc(var(--nx-cover-left, 0px) + var(--s-16)); bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12)); display: flex; align-items: center; gap: var(--s-8); pointer-events: none; }
@@ -51,12 +64,13 @@
 .n12-scale-text, .n12-attrib { font-size: var(--t-14); color: var(--ink); text-shadow: 0 0 1px var(--halo), 1.5px 0 0 var(--halo), -1.5px 0 0 var(--halo), 0 1.5px 0 var(--halo), 0 -1.5px 0 var(--halo), 1px 1px 0 var(--halo), -1px -1px 0 var(--halo), 1px -1px 0 var(--halo), -1px 1px 0 var(--halo), 0 0 3px var(--halo); white-space: nowrap; }
 .n12-attrib { position: absolute; right: calc(var(--nx-cover-right, 0px) + var(--s-12)); bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12)); margin: 0; color: var(--ink-2); }
 /* a narrow free part (a panel beside it): the sources stand above the scale bar instead of beside it */
-.n12-frame[data-free="narrow"] .n12-attrib { bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12) + var(--s-32)); left: calc(var(--nx-cover-left, 0px) + var(--s-16)); right: auto; }
+.n12-frame[data-free="narrow"] .n12-attrib { bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12) + var(--s-32)); left: calc(var(--nx-cover-left, 0px) + var(--s-16)); right: calc(var(--nx-cover-right, 0px) + var(--s-16)); white-space: normal; }
 .n12-attrib a { pointer-events: auto; }
 
 /* the neatline */
 .n12-neat { position: absolute; overflow: visible; pointer-events: none; }
 .n12-neat-fill rect { fill: var(--neat-a); }
+.n12-neat-paper { fill: var(--paper); }
 .n12-neat-line { fill: none; stroke: var(--ink); stroke-width: 1; shape-rendering: crispEdges; }
 .n12-neat-tick { stroke: var(--ink-2); stroke-width: 1; shape-rendering: crispEdges; }
 .n12-neat-label { font-family: var(--font-sans); font-size: 14px; fill: var(--ink-2); font-variant-numeric: tabular-nums; }

@@ -31,7 +31,7 @@ export function Home({ finder, onPick }: { finder: FinderData; onPick: (p: Picke
     <section className={s.home} data-nx-home data-testid="nx-home" data-step={step}>
       {step === "intro" ? (
         <>
-          <Statement size="md" as="h1" scope="Free, for California commercial fishermen and coastal researchers" title="Season status, crab tests, whale measures and the next decision date for your port." />
+          <Statement className={s.lead} size="md" as="h1" scope="Free, for California commercial fishermen and coastal researchers" title="Season status, crab tests, whale measures and the next decision date for your port." />
           <div className={s.actions}>
             <Button variant="primary" onClick={() => setStep("find")} data-testid="nx-find-port">
               Find your port

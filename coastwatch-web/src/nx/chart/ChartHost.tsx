@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { capability, noteContextLoss, type GraphicsTier } from "@/lib/capability";
 import { EASE_CHART, pan } from "@/nx/ds/motion";
-import { coverCamera, fitBounds, NO_INSETS, scaleBar, screenRect, slideWithin, unproject, type Camera, type Insets, type Viewport } from "./mercator";
+import { alignIn, coverCamera, fillZoom, fitAtZoom, fitBounds, keepInFrame, NO_INSETS, scaleBar, screenRect, slideWithin, unproject, type Bounds, type Camera, type Insets, type Viewport, latY, lngX, worldSize, xLng, yLat } from "./mercator";
 import { placeAll, type Anchor, type Rect } from "./placement";
 import { allMarks, onMarksChange, publishFrame, staticProjector, type ChartFrame } from "./runtime";
 import { getScene, subscribeScene, type ChartScene } from "./scene";
@@ -13,6 +13,7 @@ import { measureCovers, onCoversChange } from "./cover";
 import { chartStyle, CHART_FRAME, modePaint, posterImages, posterLandEast, readPalette } from "./style";
 import { Neatline } from "./Neatline";
 import { ChartLabels, CanyonName, type ChartPort } from "./Labels";
+import { RegulationLayer } from "./RegulationLayer";
 
 type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null } };
 
@@ -30,6 +31,31 @@ const bezier = (t: number) => {
   return by((lo + hi) / 2);
 };
 
+/** The land polygon's whole box, a little inside it so its outline never shows: the map's maxBounds. */
+const FRAME_BOUNDS: Bounds = (() => {
+  const [w, s, e, n] = CHART_FRAME.bounds.map((v, i) => v + (i < 2 ? 0.05 : -0.05));
+  return [
+    [w, s],
+    [e, n],
+  ];
+})();
+
+/**
+ * The chart's extent with room for what covers the sheet: the map's bounds hold the whole canvas, but the part under
+ * the phone sheet or a panel is never seen, so the frame reaches past the drawn extent by the cover's depth (at the
+ * least zoom the view allows, so the visible part never runs off the drawing). Without it a phone could never bring
+ * southern California above its sheet.
+ */
+function frameFor(cover: Insets, minZoom: number): Bounds {
+  const ws = worldSize(minZoom);
+  const [[w, s], [e, n]] = FRAME_BOUNDS;
+  return [
+    [xLng(lngX(w) - cover.left / ws), yLat(latY(s) + cover.bottom / ws)],
+    [xLng(lngX(e) + cover.right / ws), yLat(latY(n) - cover.top / ws)],
+  ];
+}
+const minZoomOf = (scene: ChartScene) => scene.zoomRange?.[0] ?? CHART_ZOOM[0];
+
 /** The free area inside the sheet: room for the neatline's breath, plus whatever covers the sheet (the phone sheet, a panel). */
 function sceneInsets(vp: Viewport, cover: Insets): Insets {
   const pad = vp.width < 560 ? 20 : 44;
@@ -43,12 +69,33 @@ export function cameraFor(scene: ChartScene, vp: Viewport, cover: Insets): Camer
     const c = coverCamera(scene.view.cover, free, scene.view.position);
     return { center: unproject(c, free, free.width / 2, free.height / 2 + cover.bottom / 2), zoom: c.zoom };
   }
-  const cam = fitBounds(scene.view.bounds, vp, sceneInsets(vp, cover), scene.view.maxZoom ?? 12.5);
-  return scene.view.within ? slideWithin(cam, vp, scene.view.bounds, scene.view.within, cover) : cam;
+  const ins = sceneInsets(vp, cover);
+  let cam = fitBounds(scene.view.bounds, vp, ins, scene.view.maxZoom ?? 12.5);
+  if (scene.view.fill) cam = fitAtZoom(scene.view.bounds, vp, ins, Math.min(scene.view.maxZoom ?? 12.5, fillZoom(scene.view.bounds, vp, ins)));
+  // a box too large for this sheet (the whole coast on a phone) is shown from the zoom the chart's extent allows,
+  // centred on the box (then aligned), rather than left for the map's clamp to crop at random
+  const frame = frameFor(cover, minZoomOf(scene));
+  const inFrame = keepInFrame(cam, vp, frame);
+  if (inFrame.zoom > cam.zoom) cam = fitAtZoom(scene.view.bounds, vp, ins, inFrame.zoom);
+  if (scene.view.align) cam = alignIn(cam, scene.view.bounds, vp, ins, scene.view.align);
+  if (scene.view.within) cam = slideWithin(cam, vp, scene.view.bounds, scene.view.within, cover);
+  return keepInFrame(cam, vp, frame);
 }
 
-/** How much of the sheet is covered, edge by edge, and what covers it elsewhere (src/nx/chart/cover.ts). */
-const covered = (frame: HTMLElement) => measureCovers(frame.getBoundingClientRect());
+/** Paper between the chart's own neatline and a panel set beside it (Research's record), so the two read as two sheets. */
+const PANE_GAP = 24;
+
+/**
+ * How much of the sheet is covered, edge by edge, and what covers it elsewhere (src/nx/chart/cover.ts). A panel on
+ * a side also takes a strip of paper beside it: the chart's pane, its neatline and everything written on it stop
+ * there, so no graduation runs on over the panel (README §2.1: never a map behind a panel).
+ */
+const covered = (frame: HTMLElement) => {
+  const c = measureCovers(frame.getBoundingClientRect());
+  if (c.insets.right) c.insets.right += PANE_GAP;
+  if (c.insets.left) c.insets.left += PANE_GAP;
+  return c;
+};
 const sameInsets = (a: Insets, b: Insets) => a.top === b.top && a.right === b.right && a.bottom === b.bottom && a.left === b.left;
 
 /** The chart's own zoom limits; a scene may narrow them (ChartScene.zoomRange). */
@@ -80,6 +127,8 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   const sceneId = useRef<string | null>(null);
   const prevAnchors = useRef(new Map<string, Anchor>());
   const raf = useRef(0);
+  /** when the pan now travelling lands (performance.now() ms); a refinement of the same view glides on until then */
+  const panUntil = useRef(0);
   const frameRefLatest = useRef<ChartFrame | null>(null);
 
   // ---------------------------------------------------------------- placement of everything on the chart
@@ -102,6 +151,12 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const b = canyon.getBBox();
       if (b.width) obstacles.push({ x0: b.x, y0: b.y, x1: b.x + b.width, y1: b.y + b.height });
     }
+    // a regulation line's or band's name holds its place (RegulationLayer.tsx draws a line only with its name)
+    frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg text[data-reg-hold]").forEach((t) => {
+      if (t.getAttribute("visibility") === "hidden") return;
+      const b = t.getBBox();
+      if (b.width) obstacles.push({ x0: b.x - 2, y0: b.y - 2, x1: b.x + b.width + 2, y1: b.y + b.height + 2 });
+    });
     const z = f.camera.zoom;
     const entries = allMarks().filter((e) => (e.spec.minZoom ?? -1) <= z && z <= (e.spec.maxZoom ?? 99));
     const items = entries.map((e) => {
@@ -109,6 +164,24 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       return { ...e.spec, x: p.x, y: p.y, width: e.w, height: e.h };
     });
     const placed = placeAll(items, area, obstacles, prevAnchors.current);
+    // the rest of regulation's lettering (zone names, the corner note, a notice's latitudes) yields to readings,
+    // stations and ports (priority 20 and up), which matter more where they stand, and holds its place against the
+    // names of water below them (a label that yielded keeps `data-reg-yield` so the layer's per-frame drawing does
+    // not flash it back)
+    const reg = [...frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg text:not([data-reg-hold])")].filter((t) => t.getAttribute("visibility") !== "hidden" || t.hasAttribute("data-reg-yield")).map((t) => ({ t, b: t.getBBox() }));
+    if (reg.length) {
+      const hits = (i: number, b: DOMRect) => b.x < placed[i].left + items[i].width && b.x + b.width > placed[i].left && b.y < placed[i].top + items[i].height && b.y + b.height > placed[i].top;
+      const live = reg.filter(({ t, b }) => {
+        const yields = placed.some((pl, i) => pl.visible && items[i].priority >= 20 && hits(i, b));
+        if (yields) t.setAttribute("data-reg-yield", "");
+        else t.removeAttribute("data-reg-yield");
+        t.setAttribute("visibility", yields ? "hidden" : "visible");
+        return !yields;
+      });
+      placed.forEach((pl, i) => {
+        if (pl.visible && items[i].priority < 20 && live.some(({ b }) => hits(i, b))) pl.visible = false;
+      });
+    }
     const shown = new Set<string>();
     const leaders: string[] = [];
     placed.forEach((pl, i) => {
@@ -228,9 +301,8 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const scene = getScene();
       const box = mapEl.current.getBoundingClientRect();
       const viewport = { width: box.width, height: box.height };
-      const start = scene ? cameraFor(scene, viewport, covered(frameRef.current!).insets) : { center: [-120.5, 37] as [number, number], zoom: 5 };
-      // the land polygon's whole box (a little inside it, so its outline never shows)
-      const [w, s, e, n] = CHART_FRAME.bounds.map((v, i) => v + (i < 2 ? 0.05 : -0.05));
+      const startCover = covered(frameRef.current!).insets;
+      const start = scene ? cameraFor(scene, viewport, startCover) : { center: [-120.5, 37] as [number, number], zoom: 5 };
       const map = new ml.Map({
         container: mapEl.current,
         style: chartStyle(palette, location.origin, { hidden }),
@@ -238,10 +310,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         zoom: start.zoom,
         minZoom: CHART_ZOOM[0],
         maxZoom: CHART_ZOOM[1],
-        maxBounds: [
-          [w, s],
-          [e, n],
-        ],
+        maxBounds: scene ? frameFor(startCover, Math.min(minZoomOf(scene), start.zoom)) : FRAME_BOUNDS,
         renderWorldCopies: false,
         attributionControl: false,
         dragRotate: false,
@@ -344,6 +413,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
           m.setMinZoom(Math.min(zLo, target.zoom, ...also));
           m.setMaxZoom(Math.max(zHi, target.zoom, ...also));
         };
+        m.setMaxBounds(frameFor(coverRef.current, Math.min(zLo, target.zoom)));
         // loosened to the present zoom while the camera travels (a clamp would jump it), tightened when it lands
         limit([m.getZoom()]);
         m.once("moveend", () => {
@@ -355,9 +425,17 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
           else h.disable();
         }
         const opening = document.documentElement.getAttribute("data-nx-opening");
-        const still = !animate || reduced || opening === "on" || opening === "run";
+        // the same view refined while its pan is still travelling (Today's soundings arrive a moment after the
+        // page): the pan carries on to the refined camera instead of jumping there
+        const left = panUntil.current - performance.now();
+        const glide = !animate && left > 60;
+        const still = (!animate && !glide) || reduced || opening === "on" || opening === "run";
         if (still) m.jumpTo({ center: target.center, zoom: target.zoom });
-        else m.easeTo({ center: target.center, zoom: target.zoom, duration: tier === "reduced" ? 300 : (pan.duration as number) * 1000, easing: bezier, essential: false });
+        else {
+          const duration = glide ? left : tier === "reduced" ? 300 : (pan.duration as number) * 1000;
+          if (!glide) panUntil.current = performance.now() + duration;
+          m.easeTo({ center: target.center, zoom: target.zoom, duration, easing: glide ? (t: number) => 1 - (1 - t) ** 2 : bezier, essential: false });
+        }
       } else publish(target, vp, false);
     },
     [vp, reduced, tier, publish],
@@ -400,7 +478,9 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   );
 
   const showPoster = tier === "static" || !mapReady || lost;
-  const scale = cam && vp ? scaleBar(cam.center[1], cam.zoom, Math.min(240, vp.width * 0.3)) : null;
+  // the bar is sized to the free part of the sheet, so beside a panel it is never cut by it
+  const freeW = vp ? vp.width - coverRef.current.left - coverRef.current.right : 0;
+  const scale = cam && vp ? scaleBar(cam.center[1], cam.zoom, Math.min(240, freeW * 0.3)) : null;
 
   return (
     <div className="n12-sheet" data-testid="nx-sheet" data-tier={tier ?? "pending"} data-map-ready={mapReady ? "1" : "0"}>
@@ -409,12 +489,12 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
           <div className="n12-poster" data-testid="nx-poster" aria-hidden="true">
             {(() => {
               const r = screenRect(cam, vp, posterLandEast());
-              return <span className="n12-poster-land" style={{ left: r.left, top: r.top, width: r.width, height: r.height }} />;
+              return <span className="n12-poster-land" style={{ transform: `translate(${r.left}px, ${r.top}px)`, width: r.width, height: r.height }} />;
             })()}
             {posterImages(mode).map((img) => {
               const r = screenRect(cam, vp, img.bounds);
               // eslint-disable-next-line @next/next/no-img-element
-              return <img key={img.url} src={img.url} alt="" style={{ left: r.left, top: r.top, width: r.width, height: r.height }} decoding="async" />;
+              return <img key={img.url} src={img.url} alt="" style={{ transform: `translate(${r.left}px, ${r.top}px)`, width: r.width, height: r.height }} decoding="async" />;
             })}
           </div>
         ) : null}
@@ -423,6 +503,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         <div id="nx-chart-underlay" className="n12-underlay" aria-hidden="true" />
         {opening}
         <div className="n12-overlay" data-testid="nx-overlay">
+          <RegulationLayer />
           <CanyonName />
           <svg className="n12-leaders" aria-hidden="true" />
           <ChartLabels ports={ports} />
@@ -442,7 +523,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         <p className="n12-attrib">
           Depth NOAA ETOPO, CRM · Coast © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
         </p>
-        <Neatline camera={cam} viewport={vp} band={neat.band} label={neat.label} />
+        <Neatline camera={cam} viewport={vp} band={neat.band} label={neat.label} pane={{ left: coverRef.current.left, right: coverRef.current.right }} />
       </div>
     </div>
   );

@@ -66,7 +66,8 @@ export function Transect({ points, unit, scale, label, observed, format, onHover
   };
   const hp = hoverKm === null ? null : points[nearestI(hoverKm)];
   const kmTick = (v: number) => (Math.abs(v) < 0.5 ? "here" : `${Math.round(Math.abs(v))} km ${v < 0 ? "W" : "E"}`);
-  const xTicks = [x0 + 2, 0, x1 - 2].filter((v, i, a) => a.indexOf(v) === i);
+  // "here" always; an end label only where it clears "here" (tapping near the coast left "12 km E" over it, critic N8)
+  const xTicks = [x0 + 2, 0, x1 - 2].filter((v, i, a) => a.indexOf(v) === i && (v === 0 || Math.abs(x(v) - x(0)) > 78));
   const readout = hp ? (hp.value === null ? `${kmTick(hp.km)}: ${observed ? "no view" : "no value"}` : `${kmTick(hp.km)}: ${format(hp.value)} ${unit}`) : null;
   return (
     <figure className={s.transect} ref={ref} data-testid="nx-transect">

@@ -173,8 +173,10 @@ describe("references enter only on a tap, labelled", () => {
   });
 
   it("marks the diesel week old after 14 days, and offers NOAA's share only where the survey has one", () => {
-    expect(fuelReference(new Date("2026-11-10T12:00:00Z")).stale).toBe(true);
-    expect(fuelReference(new Date("2026-10-25T12:00:00Z")).stale).toBe(false);
+    expect(fuelReference(new Date("2026-11-10T12:00:00Z"))!.stale).toBe(true);
+    expect(fuelReference(new Date("2026-10-25T12:00:00Z"))!.stale).toBe(false);
+    // a page whose clock is before the reference week is not offered it (the fixture clock, Oct 12)
+    expect(fuelReference(new Date("2026-10-13T06:00:00Z"))).toBeNull();
     expect(shareReference(crab)!.value).toBe("28.1");
     expect(shareReference(squid)).toBeNull();
   });

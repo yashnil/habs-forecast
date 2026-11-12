@@ -6,12 +6,17 @@ import { formatDegrees, ticks, unproject, type Camera, type Viewport } from "./m
  * The graduated neatline (README §6): a narrow band around the sheet, alternating every major interval like a
  * chart's latitude and longitude scale, with real ticks and labels that follow the camera. Labels sit above
  * the top band and beside the left band; the band itself is drawn on all four sides.
+ *
+ * `pane` is the part of the sheet a panel takes on either side (Research's record): the neatline then frames only
+ * the chart's own pane, and paper fills the rest, so no graduation runs on over the panel (critic finding 7).
  */
-export function Neatline({ camera, viewport, band, label }: { camera: Camera | null; viewport: Viewport | null; band: number; label: number }) {
+export function Neatline({ camera, viewport, band, label, pane = { left: 0, right: 0 } }: { camera: Camera | null; viewport: Viewport | null; band: number; label: number; pane?: { left: number; right: number } }) {
   if (!camera || !viewport || viewport.width < 10) return null;
-  const { width: W, height: H } = viewport;
-  const [w, n] = unproject(camera, viewport, 0, 0);
-  const [e, s] = unproject(camera, viewport, W, H);
+  const { width: SW, height: H } = viewport;
+  const px0 = Math.max(0, pane.left), px1 = Math.max(px0 + 10, SW - Math.max(0, pane.right));
+  const W = px1 - px0;
+  const [w, n] = unproject(camera, viewport, px0, 0);
+  const [e, s] = unproject(camera, viewport, px1, H);
   const lon = ticks(w, e, W, W < 500 ? 120 : 150);
   const lat = ticks(s, n, H, H < 400 ? 90 : 120);
   const x = (v: number) => ((v - w) / (e - w)) * W;
@@ -26,8 +31,11 @@ export function Neatline({ camera, viewport, band, label }: { camera: Camera | n
   const parity = (v: number, step: number) => Math.floor(v * 60 / step + 1e-6) % 2 === 0;
   const T = band + label;
   return (
-    <svg className="n12-neat" width={W + band * 2 + label} height={H + band * 2 + label} style={{ left: -band - label, top: -band - label }} aria-hidden="true" data-testid="nx-neatline">
-      <g transform={`translate(${T} ${T})`}>
+    <svg className="n12-neat" width={SW + band * 2 + label} height={H + band * 2 + label} style={{ left: -band - label, top: -band - label }} aria-hidden="true" data-testid="nx-neatline">
+      {/* paper over the sheet outside the chart's pane (under the panel, and the gap beside it) */}
+      {px0 > 0 ? <rect className="n12-neat-paper" x={0} y={0} width={T + px0 - band} height={H + band * 2 + label} /> : null}
+      {px1 < SW ? <rect className="n12-neat-paper" x={T + px1 + band} y={0} width={SW - px1 + label} height={H + band * 2 + label} /> : null}
+      <g transform={`translate(${T + px0} ${T})`}>
         {/* the band: alternate segments filled, the others left as paper, outlined in a hairline */}
         {lonEdges.slice(0, -1).map((a, i) => {
           const b = lonEdges[i + 1];

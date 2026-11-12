@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore, ViewTransition } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, ViewTransition } from "react";
 import { usePathname } from "next/navigation";
+import { animate } from "motion/react";
+import { marginSwap } from "@/nx/ds/motion";
 import { useChartCover } from "@/nx/chart/cover";
 import { MarginSheet } from "@/nx/ds/MarginSheet";
 import { PHONE_QUERY, useMedia } from "@/nx/ds/useMedia";
@@ -55,9 +57,10 @@ function useDetents(): { px: string[]; rest: number; tabs: number } {
  */
 export function MarginFrame({ children }: { children: React.ReactNode }) {
   const phone = useMedia(PHONE_QUERY);
+  const pageRef = useBackForwardSwap();
   const page = (
     <ViewTransition name="nx-margin" default="nx-margin-swap">
-      <div className="n12-margin-page">
+      <div className="n12-margin-page" ref={pageRef}>
         <OfflineNotice />
         {children}
       </div>
@@ -69,6 +72,43 @@ export function MarginFrame({ children }: { children: React.ReactNode }) {
       <div className="n12-margin-scroll">{page}</div>
     </main>
   );
+}
+
+/**
+ * Every route change starts the new page at the margin's top. Back and forward: React runs a history traversal without a view transition (it finishes it at once so the
+ * browser can restore scroll), so the margin would swap with a cut while a tab or link cross-fades. The new
+ * page comes in with the same `marginSwap` fade instead; the chart pans as on every route change. Reduced
+ * motion: no fade (ds/MotionPrefs makes every Motion animation its final state).
+ */
+function useBackForwardSwap() {
+  const pathname = usePathname();
+  const ref = useRef<HTMLDivElement>(null);
+  const traversed = useRef(false);
+  useEffect(() => {
+    const on = () => (traversed.current = true);
+    window.addEventListener("popstate", on, true);
+    return () => window.removeEventListener("popstate", on, true);
+  }, []);
+  const first = useRef(true);
+  useLayoutEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    // a new page starts at its top: the margin is its own scroller, so the router's scroll reset does not reach it
+    for (let el = ref.current?.parentElement; el; el = el.parentElement) {
+      const oy = getComputedStyle(el).overflowY;
+      if (oy === "auto" || oy === "scroll") {
+        el.scrollTop = 0;
+        break;
+      }
+    }
+    if (!traversed.current || !ref.current) return;
+    traversed.current = false;
+    const a = animate(ref.current, { opacity: [0, 1] }, marginSwap);
+    return () => a.stop();
+  }, [pathname]);
+  return ref;
 }
 
 function PhoneMargin({ children }: { children: React.ReactNode }) {

@@ -27,6 +27,11 @@
 .portName {
   display: inline-block;
   font-weight: 700;
+  /* the port's name travels (layoutId) from the finder to the chooser's title to Today's scope line: it passes over
+     the page's other lines, so it rides above them on a paper knockout halo instead of tangling with their letters */
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 0 1px var(--paper), 1.5px 0 0 var(--paper), -1.5px 0 0 var(--paper), 0 1.5px 0 var(--paper), 0 -1.5px 0 var(--paper), 1px 1px 0 var(--paper), -1px -1px 0 var(--paper), 1px -1px 0 var(--paper), -1px 1px 0 var(--paper), 0 0 3px var(--paper);
 }
 .scopeFishery {
   font-weight: 500;
@@ -206,6 +211,10 @@
 .chooserTitle {
   margin: 0;
   align-self: flex-start;
+  /* as .portName: the travelling name rides above the page's other lines on a paper halo */
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 0 1px var(--paper), 1.5px 0 0 var(--paper), -1.5px 0 0 var(--paper), 0 1.5px 0 var(--paper), 0 -1.5px 0 var(--paper), 1px 1px 0 var(--paper), -1px -1px 0 var(--paper), 1px -1px 0 var(--paper), -1px 1px 0 var(--paper), 0 0 3px var(--paper);
   font-family: var(--font-serif);
   font-weight: 500;
   font-size: var(--t-36);

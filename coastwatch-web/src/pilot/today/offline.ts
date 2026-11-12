@@ -14,7 +14,8 @@ export const TODAY_CACHE = "neritic-pack-today";
 /** The same worker URL as the field packs (src/v4/offline/useOfflinePack.ts), without importing the pack code. */
 const SW_URL = `/sw.js${process.env.NEXT_PUBLIC_NERITIC_BUILD ? `?b=${process.env.NEXT_PUBLIC_NERITIC_BUILD}` : ""}`;
 
-export async function saveTodayOffline(place: string, label: string, conditionsUrl: string): Promise<{ ok: true; at: string } | { ok: false; why: string }> {
+/** `now`: the page's clock (ISO); the copy is stamped with it, so a pinned preview clock is never contradicted. */
+export async function saveTodayOffline(place: string, label: string, conditionsUrl: string, now?: string): Promise<{ ok: true; at: string } | { ok: false; why: string }> {
   if (typeof window === "undefined" || !("caches" in window)) return { ok: false, why: "this browser cannot keep pages offline." };
   if (!navigator.onLine) return { ok: false, why: "you are offline now; save while you have a connection." };
   try {
@@ -22,7 +23,7 @@ export async function saveTodayOffline(place: string, label: string, conditionsU
       await navigator.serviceWorker.register(SW_URL, { scope: "/" });
       await navigator.serviceWorker.ready;
     }
-    const at = new Date().toISOString();
+    const at = now && Number.isFinite(Date.parse(now)) ? new Date(now).toISOString() : new Date().toISOString();
     const c = await caches.open(TODAY_CACHE);
     const pageUrl = `/today?place=${encodeURIComponent(place)}`;
     const page = await fetch(pageUrl, { credentials: "same-origin", cache: "no-store" });

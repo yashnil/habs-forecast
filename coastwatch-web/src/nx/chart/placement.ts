@@ -7,7 +7,9 @@
  * so labels do not jump while panning) and takes the first spot that stays inside the free area and clear of
  * every obstacle and every box already placed. An item with no spot is dropped (README §9 ChartNote: notes
  * drop by priority when space is short), unless it is `keep` (the reader's own port), which takes its first
- * anchor regardless.
+ * anchor regardless. An `insist` item (a page's main figure on a small screen) is not dropped for another
+ * place's dot: when no clear spot is left it takes the first spot inside the area that is clear of everything
+ * but those dots.
  */
 export type Anchor = "right" | "left" | "top" | "bottom" | "top-right" | "bottom-right" | "top-left" | "bottom-left" | "center";
 export type Rect = { x0: number; y0: number; x1: number; y1: number };
@@ -28,6 +30,8 @@ export type PlaceItem = {
   pointRadius?: number;
   /** never dropped */
   keep?: boolean;
+  /** with its point in view, may cover lower places' dots rather than be dropped */
+  insist?: boolean;
 };
 
 export type Placed = { id: string; left: number; top: number; anchor: Anchor; visible: boolean };
@@ -67,8 +71,12 @@ export const inside = (a: Rect, area: Rect) => a.x0 >= area.x0 && a.y0 >= area.y
 export function placeAll(items: PlaceItem[], area: Rect, obstacles: Rect[] = [], previous: Map<string, Anchor> = new Map()): Placed[] {
   const taken: Rect[] = [...obstacles];
   // every point mark is reserved before any box is placed, so a name never covers another port's dot
+  const dots = new Set<Rect>();
   for (const it of items) {
-    if (it.pointRadius && pointIn(it, area)) taken.push({ x0: it.x - it.pointRadius, y0: it.y - it.pointRadius, x1: it.x + it.pointRadius, y1: it.y + it.pointRadius });
+    if (!it.pointRadius || !pointIn(it, area)) continue;
+    const dot = { x0: it.x - it.pointRadius, y0: it.y - it.pointRadius, x1: it.x + it.pointRadius, y1: it.y + it.pointRadius };
+    dots.add(dot);
+    taken.push(dot);
   }
   const order = [...items].sort((a, b) => b.priority - a.priority || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const out = new Map<string, Placed>();
@@ -86,8 +94,21 @@ export function placeAll(items: PlaceItem[], area: Rect, obstacles: Rect[] = [],
         placed = { id: it.id, left: r.x0, top: r.y0, anchor: a, visible: true };
         break;
       }
-      if (!placed && it.keep) {
-        const r = boxAt(it, tries[0]);
+      if (!placed && it.insist && pointIn(it, area)) {
+        for (const a of tries) {
+          const r = boxAt(it, a);
+          if (!inside(r, area) || taken.some((t) => !dots.has(t) && overlaps(r, t))) continue;
+          taken.push(r);
+          placed = { id: it.id, left: r.x0, top: r.y0, anchor: a, visible: true };
+          break;
+        }
+      }
+      // kept even without a free spot, but never written over a panel when its point lies under one
+      if (!placed && it.keep && pointIn(it, area)) {
+        // kept with no free spot: its first anchor, slid back inside the free area so the name is never cut by the frame
+        const r0 = boxAt(it, tries[0]);
+        const dx = r0.x0 < area.x0 ? area.x0 - r0.x0 : r0.x1 > area.x1 ? area.x1 - r0.x1 : 0;
+        const r = { x0: r0.x0 + dx, y0: r0.y0, x1: r0.x1 + dx, y1: r0.y1 };
         taken.push(r);
         placed = { id: it.id, left: r.x0, top: r.y0, anchor: tries[0], visible: true };
       }
@@ -97,5 +118,9 @@ export function placeAll(items: PlaceItem[], area: Rect, obstacles: Rect[] = [],
   return items.map((it) => out.get(it.id)!);
 }
 
-const pointIn = (it: PlaceItem, a: Rect) => it.x >= a.x0 && it.x <= a.x1 && it.y >= a.y0 && it.y <= a.y1;
+// a point's own mark (a port's circled dot) must lie wholly inside: a symbol cut by the frame or a panel is not drawn
+const pointIn = (it: PlaceItem, a: Rect) => {
+  const r = it.pointRadius ?? 0;
+  return it.x - r >= a.x0 && it.x + r <= a.x1 && it.y - r >= a.y0 && it.y + r <= a.y1;
+};
 const isOwnPoint = (t: Rect, it: PlaceItem) => !!it.pointRadius && t.x0 === it.x - it.pointRadius && t.y0 === it.y - it.pointRadius;

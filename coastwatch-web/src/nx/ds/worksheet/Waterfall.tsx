@@ -1,9 +1,9 @@
 "use client";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "motion/react";
-import { useEffect, useId, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { usd } from "../format";
 import { settle } from "../motion";
-import { cx, svgId } from "../util";
+import { cx } from "../util";
 import { layoutWaterfall, type WaterfallStep } from "./waterfallLayout";
 import s from "./worksheet.module.css";
 
@@ -22,19 +22,6 @@ export interface WaterfallProps {
   /** Each row gets `data-testid="<prefix>-<step id>"`. */
   testIdPrefix?: string;
   className?: string;
-}
-
-function Hatch({ id }: { id: string }) {
-  return (
-    <svg className={s.hatchSvg} aria-hidden focusable="false">
-      <defs>
-        <pattern id={id} width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="4" className={s.hatchLine} />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill={`url(#${id})`} />
-    </svg>
-  );
 }
 
 /**
@@ -57,12 +44,11 @@ export function SettlingMoney({ value, className }: { value: number; className?:
 }
 
 /**
- * Gross to net as a ruled ledger with a live waterfall: gross solid, each cost hatched from where the last
- * ended, net solid on a double rule. Bars and figures move with `settle` springs when a figure or scenario
+ * Gross to net as a ruled ledger with a live waterfall: gross solid ink, each cost a lighter solid from where
+ * the last ended, net solid ink on a double rule. Never hatched: hatch is the model mark (README, semantic marks). Bars and figures move with `settle` springs when a figure or scenario
  * changes. A row that cannot be worked out says what it waits for across its figure and bar, never 0.
  */
 export function Waterfall({ steps, label, cells, domain: fixed, testIdPrefix, className }: WaterfallProps) {
-  const base = svgId(useId());
   const reduce = useReducedMotion();
   const t = reduce ? { duration: 0 } : settle;
   const own = layoutWaterfall(steps);
@@ -102,9 +88,7 @@ export function Waterfall({ steps, label, cells, domain: fixed, testIdPrefix, cl
                             initial={false}
                             animate={{ left: `${pos(b.from) * 100}%`, width: `${Math.max(0.4, (pos(b.to) - pos(b.from)) * 100)}%` }}
                             transition={t}
-                          >
-                            {st.kind === "cost" ? <Hatch id={`${base}-${i}`} /> : null}
-                          </motion.span>
+                          />
                         </>
                       ) : null}
                     </span>
@@ -129,7 +113,10 @@ export interface SensitivityTableProps {
   /** The scenario the waterfall shows; hovering or focusing a cell previews it. */
   selected: [number, number] | null;
   onSelect: (cell: [number, number] | null) => void;
-  corner: string;
+  /** What the rows vary ("Catch"): said in the corner, pointing down the row labels. */
+  rowAxis: string;
+  /** What the columns vary ("Price"): said over the column labels, pointing across. */
+  colAxis: string;
   /** What is held fixed and that it is hypothetical (E4, T45). */
   caption: ReactNode;
   className?: string;
@@ -141,7 +128,7 @@ export interface SensitivityTableProps {
  * it until the same cell is tapped again (or the page offers a way back). A touch sends pointerenter,
  * pointerleave and then click; only the click counts, so the scenario does not appear and clear at once.
  */
-export function SensitivityTable({ rows, cols, value, selected, onSelect, corner, caption, className }: SensitivityTableProps) {
+export function SensitivityTable({ rows, cols, value, selected, onSelect, rowAxis, colAxis, caption, className }: SensitivityTableProps) {
   // the pointer type of the gesture now under way (focus that follows a tap is not a hover preview either)
   const touch = useRef(false);
   const fine = (e: ReactPointerEvent) => {
@@ -149,12 +136,19 @@ export function SensitivityTable({ rows, cols, value, selected, onSelect, corner
     return !touch.current;
   };
   return (
+    // scrolls inside itself when the figures are wider than a 320 px screen (critic 12)
     <div className={cx(s.sens, className)}>
       <table className={s.sensTable}>
         <thead>
+          <tr className={s.axisRow}>
+            <td />
+            <th scope="colgroup" colSpan={cols.length} className={s.colAxis}>
+              {colAxis} <span aria-hidden>→</span>
+            </th>
+          </tr>
           <tr>
             <th scope="col" className={s.corner}>
-              {corner}
+              {rowAxis} <span aria-hidden>↓</span>
             </th>
             {cols.map((c) => (
               <th key={c.label} scope="col">

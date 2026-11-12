@@ -290,6 +290,14 @@ describe("buildPortToday: words", () => {
     expect(outlookRead(1.34, 2.0)!.level).toBe("usual"); // 0.67x: just inside
     expect(outlookRead(1.3, 2.0)).toMatchObject({ level: "lower", phrase: "lower than usual", ratioWords: "about 65% of the typical level" });
     expect(outlookRead(24, 2.0)!.ratioWords).toBe("about 12× the typical level");
+    // T15: with the model's error factor known, a ratio inside it is never quoted as a multiple (critic N5)
+    expect(outlookRead(3.2, 2.0, 2.1)).toMatchObject({ level: "higher", phrase: "higher than usual", ratioWords: "within the model's typical error" });
+    expect(outlookRead(1.2, 2.0, 2.1)).toMatchObject({ level: "lower", ratioWords: "within the model's typical error" });
+    expect(outlookRead(2.4, 2.0, 2.1)).toMatchObject({ level: "usual", ratioWords: null });
+    // beyond it, one figure
+    expect(outlookRead(9.6, 2.0, 2.1)!.ratioWords).toBe("about 5× the typical level");
+    expect(outlookRead(24, 2.0, 2.1)!.ratioWords).toBe("about 10× the typical level");
+    expect(outlookRead(0.5, 2.0, 2.1)!.ratioWords).toBe("about 30% of the typical level");
     // nothing to compare with, nothing said
     for (const [v, t] of [[3.2, null], [3.2, undefined], [null, 2], [3.2, 0], [0, 2], [3.2, Number.NaN]] as const) expect(outlookRead(v, t)).toBeNull();
   });
@@ -299,7 +307,7 @@ describe("buildPortToday: words", () => {
     const m = buildTodayModel(base({ outlook: { ...OUTLOOK, typical: 2.0 } }));
     const f = m.bloom.outlookFact!;
     expect(f.id).toBe("outlook:chl8d");
-    expect(f.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run higher than usual for this time of year, about 1.6× the typical level.");
+    expect(f.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run higher than usual for this time of year, within the model's typical error.");
     expect(m.bloom.outlookRead).toMatchObject({ level: "higher", phrase: "higher than usual" });
     expect(m.bloom.outlookRead!.ratio).toBeCloseTo(1.6, 5);
     // what it is, how sure (the factor comes from the published RMSE: e^0.754 = 2.1), and a neutral use
@@ -322,7 +330,7 @@ describe("buildPortToday: words", () => {
     expect(usual.outlookUse).toMatch(/says nothing about toxin either way: only CDPH's lab tests of seafood measure it/);
 
     const lower = buildTodayModel(base({ outlook: { ...OUTLOOK, value: 1.0, typical: 2.0 } })).bloom;
-    expect(lower.outlookFact!.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run lower than usual for this time of year, about 50% of the typical level.");
+    expect(lower.outlookFact!.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run lower than usual for this time of year, within the model's typical error.");
     expect(lower.outlookUse).toMatch(/does not rule out toxin/);
     expect(text(lower.outlookFact!)).not.toMatch(SAFETY);
   });
@@ -371,10 +379,19 @@ describe("buildPortToday: words", () => {
     expect(f.valid_for).toEqual({ from: "2026-10-11", to: "2026-10-14" });
   });
 
-  it("states a test plainly first: place, species, verdict against the limit, date, average", () => {
+  it("states a test plainly first: place, species, verdict against the action level, date, the highest result and the count (T8)", () => {
     const site = BIO.sites.find((s) => s.id === "bma-g-monterey-bay-dungeness-crab")!;
-    expect(testSentence(site, site.sets[0], 30, NOW)).toBe("Monterey Bay Dungeness tested well under the limit on Sep 28: avg 5.5 ppm, limit 30.");
-    expect(testSentence(ANCHOVY, ANCHOVY.sets[0], 20, NOW)).toMatch(/tested over the limit on Oct 5: 6 of 6 samples at or over 20 ppm, max 210 ppm/);
+    expect(testSentence(site, site.sets[0], 30, NOW)).toBe("Monterey Bay Dungeness tested under the action level on Sep 28: highest 9.8 ppm of 30, all 6 samples under.");
+    expect(testSentence(ANCHOVY, ANCHOVY.sets[0], 20, NOW)).toMatch(/tested over the action level on Oct 5: highest 210 ppm of 20, 6 of 6 samples at or over/);
+  });
+
+  it("never leads with an average that counts non-detects as zero: the highest result and the censored count instead (T7, T8)", () => {
+    const rock = BIO.sites.find((s) => s.id === "bma-g-monterey-bay-rock-crab");
+    const set = { date: "2026-09-28", kind: "routine" as const, tissue: "viscera" as const, values_ppm: [null, null, null, 20, null, 2.6], nd_count: 4, avg_ppm: 3.8, max_ppm: 20, pct_over_action: 0, action_level_ppm: 30 };
+    const site = rock ?? { ...BIO.sites[0], id: "rock", species: "rock crab", site_label: "Monterey Bay" };
+    const s = testSentence(site, set, 30, NOW);
+    expect(s).toMatch(/highest 20 ppm of 30, all 6 samples under, 4 below detection\.$/);
+    expect(s).not.toMatch(/3\.8|avg|average/);
   });
 
   it("observations are measured with their own time; forecasts are forecasts", () => {

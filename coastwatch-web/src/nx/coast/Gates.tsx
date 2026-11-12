@@ -15,7 +15,13 @@ import s from "./coast.module.css";
  */
 export function Gates({ gates, fishery }: { gates: Loadable<CoastGates>; fishery: CoastFishery }) {
   if (gates.state === "idle") return null;
-  if (gates.state === "loading") return <Loading>Reading the season list, whale measures and CDPH tests…</Loading>;
+  // the loading line holds about the gates' own height, so the sea window and worksheet do not jump down when they land (CLS)
+  if (gates.state === "loading")
+    return (
+      <div className={s.gatesLoading}>
+        <Loading>Reading the season list, whale measures and CDPH tests…</Loading>
+      </div>
+    );
   if (gates.state === "error")
     return (
       <Unavailable
@@ -114,7 +120,10 @@ function testProvenance(t: TestGate): Provenance {
   };
 }
 
-/** "Monterey Bay, Sep 28: highest 9.8 ppm, average 5.5, none of 6 at or over the 30 ppm action level." with the samples drawn against that level. */
+/**
+ * "Monterey Bay, Sep 28: highest 9.8 ppm; none of 6 at or over the 30 ppm action level." with the samples drawn
+ * against that level. No average (T8): CDPH's printed average counts results below detection as zero.
+ */
 function TestLine({ t, now }: { t: TestGate; now: string }) {
   const n = t.raw.length;
   const cens = t.raw.map((r) => r.trim()).filter((r) => /^(<|nd)/i.test(r));
@@ -124,7 +133,6 @@ function TestLine({ t, now }: { t: TestGate; now: string }) {
     <>
       <span>
         {t.site} {/dungeness/i.test(t.species) ? t.species : t.species.toLowerCase()}, {day(t.date, { ref: now })}: {t.max != null ? `highest ${sig(t.max)} ppm` : "no value above detection"}
-        {t.avg != null ? `, average ${sig(t.avg)}` : ""}
         {over ? `; ${over} the ${t.action} ppm action level` : ""}
         {censored ? ` (${censored})` : ""}.
         {t.ageDays != null && t.ageDays > 1 ? ` ${t.ageDays} days ago.` : ""}

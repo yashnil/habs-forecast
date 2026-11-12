@@ -51,7 +51,7 @@ export function StaticField({ base, grid, kind, past, domain }: { base: string; 
         [w, s],
         [e, n],
       ]);
-      Object.assign(img.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+      Object.assign(img.style, { transform: `translate(${r.left}px, ${r.top}px)`, width: `${r.width}px`, height: `${r.height}px` });
     };
     place(getFrame());
     return onFrame(place);

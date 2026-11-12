@@ -193,7 +193,7 @@ export type Strip = {
   domain: [number, number];
   points: RecPoint[];
   /** a reference line on its own scale (C-HARM's own thresholds; T6: never a seafood level on water) */
-  threshold?: { value: number; label: string };
+  threshold?: { value: number; label: string; short?: string };
   /** model days with fewer than 60 % of the usual cells (drawn open, not joined) */
   partial?: Set<number>;
   /** the model's history starts here; before it nothing was kept (hatched) */
@@ -226,10 +226,11 @@ const UNIT_WORDS: Record<ObsVariableId, string> = {
 };
 
 /** C-HARM's own thresholds (its `threshold_text`): references on the water scale, not safety limits. */
-const REF: Partial<Record<ObsVariableId, { value: number; label: string }>> = {
-  pDA: { value: 0.5, label: "C-HARM threshold, 500 ng/L" },
-  pn_seriata: { value: 10_000, label: "C-HARM threshold, 10,000 cells/L (all Pseudo-nitzschia)" },
-  pn_delicatissima: { value: 10_000, label: "C-HARM threshold, 10,000 cells/L (all Pseudo-nitzschia)" },
+// `short` is what a strip's header says beside its unit (the view's legend names the dashes "C-HARM threshold")
+const REF: Partial<Record<ObsVariableId, { value: number; label: string; short: string }>> = {
+  pDA: { value: 0.5, label: "C-HARM threshold, 500 ng/L", short: "500 ng/L" },
+  pn_seriata: { value: 10_000, label: "C-HARM threshold, 10,000 cells/L (all Pseudo-nitzschia)", short: "10,000/L" },
+  pn_delicatissima: { value: 10_000, label: "C-HARM threshold, 10,000 cells/L (all Pseudo-nitzschia)", short: "10,000/L" },
 };
 
 const LOG_VARS = new Set<ObsVariableId>(["pDA", "dDA", "tDA", "pn_seriata", "pn_delicatissima", "chl_extracted"]);

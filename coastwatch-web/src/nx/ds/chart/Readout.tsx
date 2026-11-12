@@ -1,10 +1,10 @@
 "use client";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
 import { latLon } from "../format";
 import { Icon } from "../Icon";
 import { Mark } from "../Mark";
-import { registerFrom, registerTo, sheet } from "../motion";
+import { registerFrom, registerTo, settle, sheet } from "../motion";
 import { Stamp, type Provenance } from "../Stamp";
 import { cx } from "../util";
 import s from "./readout.module.css";
@@ -51,7 +51,12 @@ export function Readout({ title, lat, lon, state, value, unit, provenance, now, 
       {state === "value" ? (
         <>
           <p className={s.big}>
-            {value}
+            {/* a new value (another frame, another point) settles in; the first one is simply there */}
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span key={`${value}`} className={s.bigValue} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={settle}>
+                {value}
+              </motion.span>
+            </AnimatePresence>
             {unit ? <small className={s.unit}>{unit}</small> : null}
           </p>
           {provenance ? (

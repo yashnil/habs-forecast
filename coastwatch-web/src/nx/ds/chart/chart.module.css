@@ -89,7 +89,8 @@
 }
 .unit {
   font-style: normal;
-  font-size: 0.46em;
+  /* never under the 14 px floor: at the phone's 28 px figure, 0.46em alone is 12.9 px (critic 12) */
+  font-size: max(0.46em, var(--t-14));
   font-weight: 600;
   letter-spacing: 0;
   margin-left: 0.16em;

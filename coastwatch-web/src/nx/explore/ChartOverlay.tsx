@@ -90,7 +90,7 @@ export function ReadingOnChart({ lat, lon, lon0, lon1, hoverLon }: { lat: number
 
 // the locator's own small projection: equirectangular, scaled to the coast's box
 const LON0 = -125.2, LON1 = -116.6, LAT0 = 32.2, LAT1 = 42.2;
-const LW = 64, LH = Math.round((LW * (LAT1 - LAT0)) / ((LON1 - LON0) * Math.cos((37 * Math.PI) / 180)));
+const LW = 44, LH = Math.round((LW * (LAT1 - LAT0)) / ((LON1 - LON0) * Math.cos((37 * Math.PI) / 180)));
 const lx = (lon: number) => ((lon - LON0) / (LON1 - LON0)) * LW;
 const ly = (lat: number) => ((LAT1 - lat) / (LAT1 - LAT0)) * LH;
 const COAST_D = (COAST as [number, number][]).map(([lon, lat], i) => `${i ? "L" : "M"}${lx(lon).toFixed(1)},${ly(lat).toFixed(1)}`).join("");

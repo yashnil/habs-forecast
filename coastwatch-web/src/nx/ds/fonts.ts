@@ -15,8 +15,23 @@ export const literata = Literata({
   subsets: ["latin"],
   weight: "variable",
   axes: ["opsz"],
-  style: ["normal", "italic"],
+  style: ["normal"],
   display: "swap",
+});
+
+/**
+ * The italic (water names only) is the same family, declared on its own so it is not preloaded: on a slow phone
+ * connection the page's statement (upright Literata) is the largest text, and the italic's 113 KB downloading
+ * beside it held that statement's final paint back. It is fetched when the chart first names water.
+ */
+export const literataItalic = Literata({
+  variable: "--nx-literata-italic",
+  subsets: ["latin"],
+  weight: "variable",
+  axes: ["opsz"],
+  style: ["italic"],
+  display: "swap",
+  preload: false,
 });
 
 export const publicSans = Public_Sans({
@@ -27,4 +42,4 @@ export const publicSans = Public_Sans({
 });
 
 /** Class names that define both font variables. */
-export const fontVariables = `${literata.variable} ${publicSans.variable}`;
+export const fontVariables = `${literata.variable} ${publicSans.variable} ${literataItalic.variable}`;

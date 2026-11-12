@@ -5,6 +5,7 @@
  * whole state, in to about a harbour (300 m pixels at a few screen pixels each).
  */
 import type { Bounds } from "@/nx/chart/mercator";
+import { eastmostShore } from "@/nx/chart/shore";
 
 /**
  * The data's extent as bounds for a scene's `within` (the view slides to stop at the grid's sea edges), or null.
@@ -34,15 +35,18 @@ type Box = [number, number, number, number];
 export function exploreBounds(port: { lon: number; lat: number } | null, extent: Box | null): Bounds {
   if (!port) {
     if (!extent) return CA_COAST;
+    // a grid's box runs on over the hills east of the coast: the view stops a little past the eastmost shore
+    const shore = eastmostShore(extent[1], extent[3]);
     return [
       [extent[0], extent[1]],
-      [extent[2], extent[3]],
+      [shore == null ? extent[2] : Math.min(extent[2], shore + 0.08), extent[3]],
     ];
   }
   const kmLon = 111.32 * Math.cos((port.lat * Math.PI) / 180);
   const hw = 48 / kmLon;
   const hh = 38 / 111.32;
-  let box: Box = [port.lon - 1.55 * hw, port.lat - hh, port.lon + 0.45 * hw, port.lat + hh];
+  // about 14 km of land east of the port, room for its name; the rest of the width is sea
+  let box: Box = [port.lon - 1.55 * hw, port.lat - hh, port.lon + 0.3 * hw, port.lat + hh];
   if (extent && extent[0] < box[2] && extent[2] > box[0] && extent[1] < box[3] && extent[3] > box[1]) {
     // keep a little beyond the data so its edge reads as an edge, and never less than 30 km across
     const padX = (extent[2] - extent[0]) * 0.03, padY = (extent[3] - extent[1]) * 0.03;

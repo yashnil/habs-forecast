@@ -1,13 +1,14 @@
 "use client";
 
 import { MotionConfig } from "motion/react";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
+import { ChartRegulation, rampZoneAt } from "@/nx/chart/regulation";
 import { ChartScene } from "@/nx/chart/scene";
 import { Legend } from "@/nx/ds";
 import { Button } from "@/nx/ds/Button";
 import { openPortFinder } from "@/nx/shell/finder";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
-import { portScene } from "@/nx/shell/views";
+import { portScene, zoneScene } from "@/nx/shell/views";
 import type { FisheryId } from "@/pilot/contracts";
 import { COAST_FISHERIES, coastFishery } from "./fisheries";
 import { Gates } from "./Gates";
@@ -30,14 +31,20 @@ export function CoastPage() {
   const fishery = coastFishery(fisheryId);
   const gates = useGates(port?.key ?? null, fishery?.id ?? null);
   const sea = useSea(port?.key ?? null);
-  // the clock for reference ages (the diesel week): the device's, after hydration
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => setNow(new Date()), []);
+  // the clock for reference ages (the diesel week): the server's, as the gates and sea answers carry it (a
+  // fixture preview pins it), else the device's after hydration
+  const [deviceNow, setDeviceNow] = useState<Date | null>(null);
+  useEffect(() => setDeviceNow(new Date()), []);
+  const served = gates.state === "ok" ? gates.data.now : sea.state === "ok" ? sea.data.now : null;
+  const now = useMemo(() => (served ? new Date(served) : deviceNow), [served, deviceNow]);
   const selectId = useId();
 
   return (
     <MotionConfig reducedMotion="user">
-      <ChartScene scene={portScene("coast", port, 30)} />
+      {/* a crab trip's water is its RAMP zone, drawn whole; otherwise the port's own water */}
+      <ChartScene scene={(fishery?.ramp && port ? zoneScene("coast", port, rampZoneAt(port.lat)) : null) ?? portScene("coast", port, 30)} />
+      {/* the chosen fishery's regulation on the chart: RAMP's zone lines for crab, the port's zone heavier (E T43) */}
+      <ChartRegulation spec={fishery?.ramp ? { zones: { highlight: port ? rampZoneAt(port.lat) : null } } : null} />
       <article className={s.page} data-testid="nx-coast">
         <header className={s.head}>
           <p className={`n12-kicker ${s.kicker}`}>My Coast</p>

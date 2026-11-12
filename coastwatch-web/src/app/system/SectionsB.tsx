@@ -182,7 +182,8 @@ function Worksheet() {
           <SensitivityTable
             rows={rows}
             cols={cols}
-            corner="Catch \ price"
+            rowAxis="Catch"
+            colAxis="Price"
             value={(rf, cf) => trip(e, who, rf, cf).net}
             selected={cell}
             onSelect={setCell}

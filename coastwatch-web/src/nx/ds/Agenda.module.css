@@ -53,12 +53,28 @@
 .dot {
   position: relative;
   margin-top: var(--s-4);
+}
+/* the marks are the page legend's (ds/Mark): kind, never time */
+.markSolid {
   fill: var(--ink);
+}
+.markPaper {
+  fill: var(--paper);
+}
+.markHatch {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+.markLine {
+  fill: none;
   stroke: var(--ink);
   stroke-width: 1.5;
 }
-.future .dot {
+.markRing {
   fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.5;
 }
 
 .what {

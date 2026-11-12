@@ -223,7 +223,8 @@ export function Worksheet({ fishery, placeKey, onFishery, now }: { fishery: Coas
               value={(r, c) => gridValue(base.grid, r, c)}
               selected={cell}
               onSelect={setCell}
-              corner="Catch"
+              rowAxis="Catch"
+              colAxis="Price"
               caption={`Net to boat, price across and catch down. ${form.crewKind === "dayRate" ? `${cap(withFuel(fishery))} and day pay` : cap(withFuel(fishery))} stay as entered; fees and shares move with gross. Hover or tap a figure to see it above.`}
               className={s.sens}
             />

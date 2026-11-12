@@ -1,5 +1,6 @@
 "use client";
 import { motion, useReducedMotion } from "motion/react";
+import Link from "next/link";
 import type { AriaAttributes, MouseEvent, ReactNode } from "react";
 import { forwardRef } from "react";
 import { ink, press } from "./motion";
@@ -28,6 +29,10 @@ interface Common extends AriaAttributes, DataAttributes {
 type AsButton = Common & { href?: undefined; type?: "button" | "submit"; onClick?: (e: MouseEvent<HTMLButtonElement>) => void };
 type AsLink = Common & { href: string; external?: boolean; onClick?: (e: MouseEvent<HTMLAnchorElement>) => void };
 export type ButtonProps = AsButton | AsLink;
+
+/** A Next link that presses like every control: an address inside Neritic is a client navigation, so the
+ *  chart pans and the margin swaps as on every other route change (never a full page load). */
+const MotionLink = motion.create(Link);
 
 /**
  * Three kinds and no more: primary (ink, one per view), secondary (ruled), text (an underlined link).
@@ -61,6 +66,13 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
   const tap = inert ? {} : press;
   if (props.href !== undefined) {
     const { href, external, onClick } = props;
+    if (!external && !inert && href.startsWith("/")) {
+      return (
+        <MotionLink ref={ref as React.Ref<HTMLAnchorElement>} className={cls} href={href} onClick={onClick} {...tap} {...aria}>
+          {body}
+        </MotionLink>
+      );
+    }
     return (
       <motion.a
         ref={ref as React.Ref<HTMLAnchorElement>}

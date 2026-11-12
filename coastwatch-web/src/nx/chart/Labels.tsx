@@ -71,11 +71,26 @@ const PortSymbol = ({ focus }: { focus: boolean }) => (
 );
 
 /** The chart's own names: water features (Literata italic) and ports (upright sans, circled dot). */
+/**
+ * True once the page has hydrated. The water names wait for it: they cannot be placed before the chart has a
+ * camera anyway, and naming water in the server HTML made the browser fetch Literata italic (113 KB) at the
+ * highest priority beside the page's own code, which held the first statement back on a slow phone.
+ */
+function useHydrated() {
+  const [h, setH] = useState(false);
+  useEffect(() => setH(true), []);
+  return h;
+}
+
 export function ChartLabels({ ports }: { ports: ChartPort[] }) {
   const scene = useScene();
   const focus = scene?.focus?.key ?? null;
+  const hydrated = useHydrated();
+  const named = scene?.named ?? [];
+  // a port the page already names (a station "Monterey Wharf" 1 km from Monterey) is left off, unless it is the reader's
+  const repeated = (p: ChartPort) => p.key !== focus && named.some((n) => n.name.toLowerCase().startsWith(p.name.toLowerCase()) && Math.hypot((n.lon - p.lon) * Math.cos((p.lat * Math.PI) / 180), n.lat - p.lat) * 111.32 < 6);
   const marks: ChartMark[] = [
-    ...WATER_NAMES.map((w) => ({
+    ...(hydrated ? WATER_NAMES : []).map((w) => ({
       id: `water-${w.id}`,
       lon: w.lon,
       lat: w.lat,
@@ -89,7 +104,7 @@ export function ChartLabels({ ports }: { ports: ChartPort[] }) {
         </span>
       ),
     })),
-    ...ports.map((p) => {
+    ...ports.filter((p) => !repeated(p)).map((p) => {
       const isFocus = p.key === focus;
       return {
         id: `port-${p.key}`,
@@ -118,6 +133,7 @@ export function ChartLabels({ ports }: { ports: ChartPort[] }) {
 
 /** "Monterey Canyon", set along the canyon's own axis (west to east, so it reads left to right). */
 export function CanyonName() {
+  const hydrated = useHydrated();
   const pathRef = useRef<SVGPathElement>(null);
   const textRef = useRef<SVGTextElement>(null);
   useEffect(
@@ -150,9 +166,11 @@ export function CanyonName() {
     <svg className="n12-canyon-name" aria-hidden="true">
       <path id="nx-canyon-axis" ref={pathRef} fill="none" />
       <text ref={textRef} visibility="hidden" className="n12-water-name-svg" style={{ fontSize: CANYON_NAME.size }} dy="-6">
-        <textPath href="#nx-canyon-axis" startOffset="58%" textAnchor="middle">
-          {CANYON_NAME.name}
-        </textPath>
+        {hydrated ? (
+          <textPath href="#nx-canyon-axis" startOffset="58%" textAnchor="middle">
+            {CANYON_NAME.name}
+          </textPath>
+        ) : null}
       </text>
     </svg>
   );

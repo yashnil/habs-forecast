@@ -7,14 +7,16 @@ import { fisheryLabel as labelOf, snapFacts } from "@/pilot/facts";
 import { readSeen, storageWorks, writeSeen } from "@/pilot/today/prefs";
 import { readSaved } from "@/pilot/today/prefs";
 import { saveTodayOffline } from "@/pilot/today/offline";
+import { ChartRegulation, RAMP_FISHERIES, rampZoneAt } from "@/nx/chart/regulation";
 import { ChartScene } from "@/nx/chart/scene";
 import { Agenda, agendaPhase, type AgendaItem } from "@/nx/ds/Agenda";
 import { BigDate } from "@/nx/ds/BigDate";
 import { Button } from "@/nx/ds/Button";
 import { dayTime } from "@/nx/ds/format";
+import { markFor } from "@/nx/ds/kinds";
 import { Legend } from "@/nx/ds/Mark";
 import { MarginRow, MarginRows } from "@/nx/ds/Margin";
-import { register, registerFrom, registerTo, settle } from "@/nx/ds/motion";
+import { pan, register, registerFrom, registerTo, settle } from "@/nx/ds/motion";
 import { ProvenanceSheet, Stamp, type Provenance } from "@/nx/ds/Stamp";
 import { Loading, SourcesDiffer, Unavailable } from "@/nx/ds/States";
 import { Statement } from "@/nx/ds/Statement";
@@ -52,8 +54,11 @@ export function TodayView({ port, initial, arriving = false }: TodayProps) {
   const primary = fisheries?.[0];
   if (!port) return null;
   const inputs = data.state === "ok" ? data.inputs : null;
+  // RAMP's zone lines on the chart for a crab reader, the port's own zone heavier (E T43)
+  const ramp = !!fisheries?.some((f) => RAMP_FISHERIES.has(f));
   return (
     <MotionConfig reducedMotion="user">
+      <ChartRegulation spec={ramp ? { zones: { highlight: rampZoneAt(port.lat) } } : null} />
       <section className={s.today} data-testid="nx-today" aria-labelledby="nx-today-title">
         {fisheries === undefined ? (
           <PortHeading name={port.name} />
@@ -98,7 +103,7 @@ export function TodayView({ port, initial, arriving = false }: TodayProps) {
 function PortHeading({ name, fishery }: { name: string; fishery?: FisheryId }) {
   return (
     <p className={s.scope}>
-      <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName}>
+      <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName} transition={pan}>
         {name}
       </motion.span>
       {fishery ? <span className={s.scopeFishery}> · {scopeWords(labelOf(fishery))}</span> : null}
@@ -124,24 +129,28 @@ function useChangeLine(key: string, ready: boolean, facts: View["allFacts"], now
   return line;
 }
 
-/** After the page has drawn, a copy for offline use (sw.js answers `/` with it), at most twice a day. */
-function useOfflineCopy(key: string, name: string, url: string, ready: boolean) {
+/**
+ * After the page has drawn, a copy for offline use (sw.js answers `/` with it), at most twice a day. Its time is
+ * the page's clock (`now`, the server's, which a fixture preview pins), never the device's, so a saved copy is
+ * never stamped after the moment the page shows.
+ */
+function useOfflineCopy(key: string, name: string, url: string, ready: boolean, now: string) {
   const [at, setAt] = useState<string | null>(null);
   useEffect(() => {
     const saved = readSaved().find((x) => x.place === key);
     if (saved) setAt(saved.at);
     if (!ready || process.env.NODE_ENV !== "production") return;
-    if (saved && Date.now() - Date.parse(saved.at) < 12 * 3_600_000) return;
+    if (saved && Math.abs(Date.parse(now) - Date.parse(saved.at)) < 12 * 3_600_000) return;
     const idle = (window as unknown as { requestIdleCallback?: (f: () => void) => number }).requestIdleCallback ?? ((f: () => void) => window.setTimeout(f, 2500));
     let live = true;
     idle(() => {
       if (!live || (window as unknown as { __NERITIC_SAVED__?: unknown }).__NERITIC_SAVED__) return;
-      void saveTodayOffline(key, name, url).then((r) => live && r.ok && setAt(r.at));
+      void saveTodayOffline(key, name, url, now).then((r) => live && r.ok && setAt(r.at));
     });
     return () => {
       live = false;
     };
-  }, [key, name, url, ready]);
+  }, [key, name, url, ready, now]);
   return at;
 }
 
@@ -150,7 +159,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
   const sea = useConditions(curl);
   const v = useMemo(() => buildToday(inputs, { fishery, sea, place: { key: port.key, name: port.name } }), [inputs, fishery, sea, port.key, port.name]);
   const change = useChangeLine(port.key, sea !== null, v.allFacts, v.now);
-  const savedAt = useOfflineCopy(port.key, port.name, curl, sea !== null);
+  const savedAt = useOfflineCopy(port.key, port.name, curl, sea !== null, inputs.now);
   const [open, setOpen] = useState<Provenance | null>(null);
   const tour = useTourState();
   const phone = usePhone();
@@ -181,7 +190,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
               rule={st.tone === "regulation" && !phone}
               scope={
                 <span className={s.scopeInner}>
-                  <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName} transition={settle}>
+                  <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName} transition={pan}>
                     {port.name}
                   </motion.span>
                   <span className={s.scopeFishery}> · {scopeWords(st.fisheryLabel)}</span>
@@ -213,7 +222,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
         ) : (
           <div data-tour="status">
             <p className={s.scope}>
-              <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName}>
+              <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName} transition={pan}>
                 {port.name}
               </motion.span>
               <span className={s.scopeFishery}> · {scopeWords(st.fisheryLabel)}</span>
@@ -430,6 +439,8 @@ function agendaItems(v: View): AgendaItem[] {
     detail: a.detail ?? undefined,
     tone: a.tone,
     tentative: a.tentative,
+    // the legend's mark for the item's kind (T2): an NWS forecast is a prediction, never a solid "measured" dot
+    kind: a.provenance ? markFor(a.provenance.kind) : undefined,
     // a stamp already shown above (the status's, the decision's) is not repeated
     stamp: a.provenance && a.provenance !== statementStamp && a.provenance !== v.decision?.provenance ? <Stamp provenance={a.provenance} now={v.now} /> : undefined,
   }));

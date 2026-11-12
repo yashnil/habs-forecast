@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -34,6 +36,9 @@ import {
   agendaPhase,
   censoredWords,
   clampWindow,
+  frameEdges,
+  MIN_FRAME,
+  SensitivityTable,
   labelledTicks,
   classify,
   day,
@@ -203,6 +208,28 @@ describe("waterfall layout (E3) and brush", () => {
     expect(clampWindow([990, 1100], [0, 1000], 10)).toEqual([890, 1000]);
     expect(clampWindow([500, 502], [0, 1000], 10)).toEqual([500, 510]);
   });
+  it("draws a tiny brush window at a visible minimum width, about its centre, inside the track", () => {
+    expect(frameEdges(100, 300, 0, 1000)).toEqual([100, 300]);
+    expect(frameEdges(500, 505, 0, 1000)).toEqual([502.5 - MIN_FRAME / 2, 502.5 + MIN_FRAME / 2]);
+    expect(frameEdges(996, 1000, 0, 1000)).toEqual([1000 - MIN_FRAME, 1000]);
+    expect(frameEdges(0, 3, 0, 1000)).toEqual([0, MIN_FRAME]);
+  });
+  it("labels the sensitivity grid's axes: catch down the rows, price across the columns", () => {
+    const html = renderToStaticMarkup(
+      h(SensitivityTable, {
+        rows: [{ label: "+30 %", factor: 1.3 }, { label: "As entered", factor: 1 }],
+        cols: [{ label: "−20 %", factor: 0.8 }, { label: "As entered", factor: 1 }],
+        value: () => 100,
+        selected: null,
+        onSelect: () => undefined,
+        rowAxis: "Catch",
+        colAxis: "Price",
+        caption: "Net to boat.",
+      }),
+    );
+    expect(html).toMatch(/<th scope="colgroup" colSpan="2"[^>]*>Price <span aria-hidden="true">→/);
+    expect(html).toMatch(/<th scope="col" class="corner">Catch <span aria-hidden="true">↓/);
+  });
 });
 
 describe("agenda, legend and type render accessibly", () => {
@@ -247,10 +274,41 @@ describe("agenda, legend and type render accessibly", () => {
     expect(line).not.toContain("nowWhat");
     expect(html.match(/>Nov 10</g)?.length).toBe(1);
   });
+  it("the rail mark is the item's kind, as the legend draws it, never its time (T2)", () => {
+    const html = renderToStaticMarkup(
+      h(Agenda, {
+        label: "Dates",
+        now: NOW,
+        items: [
+          { id: "t", start: "2026-10-30", title: "Crab tested", kind: "measured" },
+          { id: "w", start: "2026-11-10", title: "NWS tonight", kind: "model" },
+          { id: "a", start: "2026-12-15", title: "Assessment", kind: "official" },
+        ],
+      }),
+    );
+    const markOf = (title: string) => {
+      const at = html.indexOf(title);
+      const before = html.slice(0, at);
+      return /data-kind="(\w+)"/.exec(before.slice(before.lastIndexOf("<li")))?.[1];
+    };
+    // an NWS forecast for today is under way, yet it is drawn as a prediction, not as a solid measurement
+    expect(markOf("NWS tonight")).toBe("model");
+    expect(markOf("Crab tested")).toBe("measured");
+    expect(markOf("Assessment")).toBe("official");
+  });
   it("official marks carry their words; the no-view mark is named", () => {
     expect(renderToStaticMarkup(h(Mark, { kind: "official" }))).toContain("not verified");
     expect(renderToStaticMarkup(h(Mark, { kind: "noview" }))).toContain('aria-label="no view"');
     expect(renderToStaticMarkup(h(Legend, { kinds: ["measured", "noview"] }))).toContain("No view: no data, not a low value");
+  });
+  it("each mode's tokens say which end of a ramp is more, and the legend words follow them (README §4)", () => {
+    const css = readFileSync(path.join(__dirname, "../../../src/nx/ds/tokens.css"), "utf8");
+    const block = (mode: string) => css.slice(css.indexOf(`[data-chart-mode="${mode}"]`), css.indexOf("}", css.indexOf(`[data-chart-mode="${mode}"]`)));
+    expect(block("day")).toMatch(/--ramp-says-darker: inline; --ramp-says-lighter: none;/);
+    for (const m of ["dusk", "night"]) expect(block(m)).toMatch(/--ramp-says-darker: none; --ramp-says-lighter: inline;/);
+    const html = renderToStaticMarkup(h(RampLegend, { title: "Chlorophyll", unit: "mg/m³", steps: ["--chl-0", "--chl-1"], domain: [0.05, 50], ticks: [0.1, 1, 10] }));
+    expect(html).toContain("Darker is more.");
+    expect(html).toContain("Lighter is more (dark chart).");
   });
   it("the ramp legend places log ticks and says no view", () => {
     expect(rampPosition(1, [0.05, 50])).toBeCloseTo(0.4337, 3);

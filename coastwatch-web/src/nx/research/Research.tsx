@@ -44,7 +44,7 @@ import {
   inWin,
   type RangeId,
 } from "./model";
-import { RecordStrips, LEFT, layoutStrips, type RecordStripsHandle } from "./RecordStrips";
+import { RecordStrips, LEFT, layoutStrips, stripHead, type RecordStripsHandle } from "./RecordStrips";
 import { SampleLog } from "./SampleLog";
 import { StationMarks } from "./StationMarks";
 import { useSettledWindow } from "./useSettledWindow";
@@ -174,10 +174,14 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   // ------------------------------------------------------------ the record's size (wide: fill the panel's height)
   const stripsBox = useRef<HTMLDivElement>(null);
   const [room, setRoom] = useState<number | null>(null);
+  const [roomW, setRoomW] = useState(600);
   useEffect(() => {
     const el = stripsBox.current;
     if (!el || !wide) return setRoom(null);
-    const ro = new ResizeObserver(([e]) => setRoom(Math.round(e.contentRect.height)));
+    const ro = new ResizeObserver(([e]) => {
+      setRoom(Math.round(e.contentRect.height));
+      setRoomW(Math.round(e.contentRect.width));
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, [wide]);
@@ -185,11 +189,12 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const folded = useMemo(() => new Set(strips.filter((x) => !x.points.some((p) => inWin(p.t, committed))).map((x) => x.id)), [strips, committed]);
   const plotH = useMemo(() => {
     if (!wide || room == null) return 76;
-    // the tallest plots that fit the panel without scrolling; below 34 px the panel scrolls instead
-    let h = 34;
-    while (h < 160 && layoutStrips(strips, h + 2, folded).height <= room - 4) h += 2;
+    // the tallest plots that fit the panel without scrolling; below 26 px the panel scrolls instead
+    let h = 26;
+    // (a threshold strip's header takes extra lines for what its dashes mean: RecordStrips stripHead)
+    while (h < 160 && layoutStrips(strips, h + 2, folded, (st) => stripHead(st, roomW)).height <= room - 4) h += 2;
     return h;
-  }, [wide, room, strips, folded]);
+  }, [wide, room, roomW, strips, folded]);
 
   // ------------------------------------------------------------ the chart: the station in the free part of the sheet, its neighbours around it
   // on a wide screen the record panel lies over the sheet's right side: registered as a cover, so the chart
@@ -202,8 +207,15 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
     const id = st.station_id === homeStation ? sceneBase : `${sceneBase}:${st.station_id}`;
     const focusPort = port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null;
     // beside the panel the free part is tall and narrow: 70 km up and down the coast, the station centred
-    return { id, focus: focusPort, view: { bounds: wide ? boundsAround([st.lon, st.lat], 12, 70) : boundsAround([st.lon, st.lat], 32, 24), maxZoom: 12 } };
-  }, [st, port, sceneBase, homeStation, wide]);
+    // the station toward the pane's east side, so the spare width is the sea it samples rather than hillshade;
+    // ports a station's own name repeats beside it are left off the chart (StationMarks names them)
+    return {
+      id,
+      focus: focusPort,
+      view: { bounds: wide ? boundsAround([st.lon, st.lat], 12, 70) : boundsAround([st.lon, st.lat], 32, 24), maxZoom: 12, align: wide ? [1, 0.5] : undefined },
+      named: stations.map((x) => ({ name: x.name, lon: x.lon, lat: x.lat })),
+    };
+  }, [st, port, sceneBase, homeStation, wide, stations]);
 
   // ------------------------------------------------------------ exports
   const figureRef = useRef<RecordStripsHandle>(null);
@@ -307,6 +319,12 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
             <Unavailable what={`${st.name} has published no samples`} why={st.error ?? "The station's last request returned nothing Neritic could read."} />
           )}
         </div>
+        {/* T10: the mandatory words sit under the model strip, always visible, never behind a tap */}
+        {modelStrip ? (
+          <p className={s.modelWords} data-testid="research-model-words">
+            C-HARM: {MODEL_WORDS.charAt(0).toLowerCase()}{MODEL_WORDS.slice(1)} No demonstrated skill at the shore; a high reading here is near-constant background, not an alarm.
+          </p>
+        ) : null}
         {strips.length ? (
           <div
             className={s.brushRow}
@@ -638,7 +656,8 @@ function legendFor(strips: ReturnType<typeof buildStrips>, win: [number, number]
   if (pts.some((p) => p.flagged)) out.push({ id: "flagged", words: "Flagged high, kept" });
   if (m) out.push({ id: "model", words: "Model, hatched where none kept" });
   if (m?.partial && [...m.partial].some((t) => inWin(t, win))) out.push({ id: "partial", words: "Model day, few cells" });
-  if (strips.some((x) => x.threshold)) out.push({ id: "threshold", words: "C-HARM threshold" });
+  // the strips label each dashed line with its value; the legend says whose it is (and that Pseudo-nitzschia's counts all species)
+  if (strips.some((x) => x.threshold)) out.push({ id: "threshold", words: strips.some((x) => x.threshold && /^pn_/.test(x.id)) ? "C-HARM threshold (Pseudo-nitzschia: all species)" : "C-HARM threshold" });
   out.push({ id: "now", words: "Today" });
   return out;
 }

@@ -68,6 +68,56 @@ export function fitBounds(bounds: Bounds, vp: Viewport, insets: Insets = NO_INSE
 }
 
 /**
+ * Move a fitted camera so `bounds` sits at `align` (0..1 per axis) of the free area instead of its centre: the
+ * room the box leaves on one axis goes to the other side. [1, 0.5] puts a stretch of coast against the east edge,
+ * so the spare width is sea, not inland hills.
+ */
+export function alignIn(cam: Camera, bounds: Bounds, vp: Viewport, insets: Insets, [ax, ay]: [number, number]): Camera {
+  const ws = worldSize(cam.zoom);
+  const [[w, s], [e, n]] = bounds;
+  const fw = Math.max(1, vp.width - insets.left - insets.right), fh = Math.max(1, vp.height - insets.top - insets.bottom);
+  // spare room (negative when the box is larger than the free area: then `align` says which side of it stays in view)
+  const spareX = fw - (lngX(e) - lngX(w)) * ws, spareY = fh - (latY(s) - latY(n)) * ws;
+  // the box moves by (align - 0.5) of the spare room; the camera moves the other way
+  const cx = lngX(cam.center[0]) - ((ax - 0.5) * spareX) / ws;
+  const cy = latY(cam.center[1]) - ((ay - 0.5) * spareY) / ws;
+  return { center: [xLng(cx), yLat(cy)], zoom: cam.zoom };
+}
+
+/**
+ * Keep the whole viewport (the part under a panel or the phone sheet too) inside `frame`, the chart's drawn extent,
+ * as MapLibre's maxBounds will: the least zoom at which the viewport fits, then the centre slid inside. Computing it
+ * here means the camera lands where the host aimed it rather than wherever the map's own clamp pushes it.
+ */
+export function keepInFrame(cam: Camera, vp: Viewport, frame: Bounds): Camera {
+  const [[w, s], [e, n]] = frame;
+  const fx0 = lngX(w), fx1 = lngX(e), fy0 = latY(n), fy1 = latY(s);
+  const zMin = Math.log2(Math.max(vp.width / ((fx1 - fx0) * TILE), vp.height / ((fy1 - fy0) * TILE)));
+  const zoom = Math.max(cam.zoom, zMin);
+  const ws = worldSize(zoom);
+  const hw = vp.width / 2 / ws, hh = vp.height / 2 / ws;
+  const cx = Math.min(Math.max(lngX(cam.center[0]), fx0 + hw), fx1 - hw);
+  const cy = Math.min(Math.max(latY(cam.center[1]), fy0 + hh), fy1 - hh);
+  return { center: [xLng(cx), yLat(cy)], zoom };
+}
+
+/** The zoom at which `bounds` fills the free area, its longer side cropped (CSS `cover` for a box). */
+export function fillZoom(bounds: Bounds, vp: Viewport, insets: Insets): number {
+  const [[w, s], [e, n]] = bounds;
+  const fw = Math.max(1, vp.width - insets.left - insets.right), fh = Math.max(1, vp.height - insets.top - insets.bottom);
+  return Math.log2(Math.max(fw / ((lngX(e) - lngX(w)) * TILE), fh / ((latY(s) - latY(n)) * TILE)));
+}
+
+/** The camera that centres `bounds` in the free area at a given zoom (fitBounds without choosing the zoom). */
+export function fitAtZoom(bounds: Bounds, vp: Viewport, insets: Insets, zoom: number): Camera {
+  const [[w, s], [e, n]] = bounds;
+  const ws = worldSize(zoom);
+  const cx = (lngX(w) + lngX(e)) / 2 - (insets.left - insets.right) / 2 / ws;
+  const cy = (latY(n) + latY(s)) / 2 - (insets.top - insets.bottom) / 2 / ws;
+  return { center: [xLng(cx), yLat(cy)], zoom };
+}
+
+/**
  * Slide a fitted camera, without changing its zoom, so the visible area stops at `within`'s edges where it can:
  * a view of a port fitted into a wider sheet otherwise shows a sliver past the data's edge (Explore: a pale strip
  * west of the satellite grid). Per axis, it moves toward the side with room, never further than keeps the part
