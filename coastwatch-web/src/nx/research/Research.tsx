@@ -426,7 +426,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
 
   return (
     <section className={s.page} data-testid="nx-research" data-station={st.station_id} data-var={focus} data-layout="desk">
-      <PageLayout mode="desk" paneKey="research" defaultPane="context" />
+      <PageLayout mode="desk" paneKey="research" defaultPane="context" chartLabel={st.name} />
       <ChartScene scene={scene} />
       <StationMarks stations={stations.map((x) => ({ id: x.station_id, name: x.name, lat: x.lat, lon: x.lon }))} selected={st.station_id} radiusKm={showModel ? radius : null} onPick={(id) => chooseStationId(id)} leanLeft={wide} />
 

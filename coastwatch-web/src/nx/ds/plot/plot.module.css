@@ -113,6 +113,9 @@
   stroke-dasharray: 6 4;
   shape-rendering: crispEdges;
 }
+.thresholdLabel {
+  font-weight: 600;
+}
 .thresholdLabel,
 .nowLabel {
   font-family: var(--font-sans);
@@ -120,7 +123,7 @@
   fill: var(--ink);
   paint-order: stroke fill;
   stroke: var(--paper);
-  stroke-width: 4px;
+  stroke-width: 6px;
   stroke-linejoin: round;
 }
 .now {

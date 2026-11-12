@@ -221,6 +221,8 @@ describe("v13 plot kit", () => {
     expect(out.match(/<rect[^>]*class="ptHollow"/g)).toHaveLength(1);
     expect(out).not.toContain('class="line"');
     expect(out).toContain("Reference 3 ng/mL");
+    // the reference line's name stands at the plot's right end
+    expect(out).toMatch(/text-anchor="end" class="thresholdLabel">Reference 3 ng\/mL/);
     expect(out).toContain("pDA, ng/mL");
   });
   it("a plot with nothing to draw says why and what to do; the table holds the same samples", () => {

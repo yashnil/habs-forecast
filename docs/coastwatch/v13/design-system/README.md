@@ -379,3 +379,9 @@ requests as a page would.
   `overflow-anchor` for it.
 - **A sticky `DeskAside` and `DeskSticky` have paper under them** and stand above the column that scrolls beside
   them (F-17).
+- **Phone desk pages reserve the chart strip's place before the pane is in the document** (the pane follows the
+  page in the HTML), so a long page does not jump down when the pane arrives. No page needs its own reservation.
+- **`Tip` stands above the sample in the plot's lower half**, so it is never cut at the plot's foot.
+  **`Threshold`'s name is at the right end on a paper halo**; draw it after the data marks.
+- A page that styles the condensed header (`[data-condensed] …`) should match `[data-measuring]` too: the header
+  measures its condensed height under that attribute.

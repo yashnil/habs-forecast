@@ -234,6 +234,9 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
     bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
   }
   .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane-open] { --strip-h: 62svh; }
+  /* the pane follows the page in the document, so on a long page the page can be painted before the pane has
+     been parsed: until it is there, the page starts where it will start, under the strip's place (no shift) */
+  .n12-app:has([data-nx-layout="desk"]) .n12-work:not(:has(> .n12-pane)) .n12-margin { margin-top: var(--strip-h); }
   .n12-app:has([data-nx-layout="desk"]) .n12-pane {
     position: sticky; top: calc(var(--strip-bar) - var(--strip-h)); bottom: auto; order: -1; flex: none; z-index: 7;
     height: var(--strip-h); border-bottom: var(--rule) solid var(--ink);

@@ -71,6 +71,8 @@ export interface PlotGeometry {
   right: number;
   top: number;
   bottom: number;
+  /** The whole drawing's height, axis labels included, px. */
+  height: number;
   x: (t: number) => number;
   y: (v: number) => number;
   xSpec: { type: "time" | "linear"; domain: [number, number]; format?: (t: number) => string };
@@ -257,6 +259,7 @@ export function Plot({ label, data, x: xs, y: ys = {}, height = 280, margin, des
     right,
     top,
     bottom,
+    height: bottom + m.bottom,
     x: geo.x,
     y: geo.y,
     xSpec: { type: time ? "time" : "linear", domain: xs.domain, format: xs.format },
@@ -548,7 +551,7 @@ export interface ThresholdProps {
   /** Named, always: "Action level 30 ppm". Written above the line at the plot's left, clear of the data's latest end. */
   label: string;
 }
-/** A reference line with its name. Only on the scale it belongs to; never drawn without its name. */
+/** A reference line with its name at its right end. Only on the scale it belongs to; never drawn without its name. Draw it after the data marks, so its name is on top. */
 export function Threshold({ value, label }: ThresholdProps) {
   const g = usePlot();
   const [lo, hi] = g.ySpec.domain;
@@ -557,7 +560,8 @@ export function Threshold({ value, label }: ThresholdProps) {
   return (
     <g data-threshold="">
       <line x1={g.left} x2={g.right} y1={y} y2={y} className={s.threshold} />
-      <text x={g.left + 6} y={y - 6} className={s.thresholdLabel}>
+      {/* at the right end, on a paper halo: the latest data may pass under the name, never over it */}
+      <text x={g.right - 4} y={y - 6} textAnchor="end" className={s.thresholdLabel}>
         {label}
       </text>
     </g>
@@ -630,9 +634,18 @@ export function Tip({ render }: TipProps) {
   const x = g.x(p.t);
   const y = onAxis(p) ? g.y(p.v as number) : g.bottom;
   const flip = x > (g.left + g.right) / 2;
+  const up = y > (g.top + g.bottom) / 2;
   const kind = p.kind ?? "measured";
   return (
-    <div className={s.tip} data-flip={flip || undefined} style={flip ? { right: g.width - x + 12, top: Math.max(0, y - 20) } : { left: x + 12, top: Math.max(0, y - 20) }} aria-hidden="true" data-testid="plot-tip">
+    // beside the sample on the side with room, and above it in the plot's lower half, so it is never cut at the plot's foot
+    <div
+      className={s.tip}
+      data-flip={flip || undefined}
+      data-up={up || undefined}
+      style={{ ...(flip ? { right: g.width - x + 12 } : { left: x + 12 }), ...(up ? { bottom: Math.max(0, g.height - y + 12) } : { top: Math.max(0, y - 20) }) }}
+      aria-hidden="true"
+      data-testid="plot-tip"
+    >
       {render ? (
         render(p)
       ) : (

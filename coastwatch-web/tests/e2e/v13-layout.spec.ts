@@ -474,3 +474,27 @@ test("an unticked checkbox is an empty ruled box and a ticked one is filled, in 
     expect(r.off.w).toBe(20);
   }
 });
+
+test.describe("phone desk page, before the chart pane has arrived", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  test("the page starts under the strip's place whether or not the pane is in the document yet (no shift when it arrives)", async ({ page }) => {
+    for (const url of [RESEARCH, "/coast?place=port-592"]) {
+      await open(page, url);
+      await expect(page.getByTestId("nx-pane")).toBeVisible();
+      const tops = await page.evaluate(() => {
+        const main = document.querySelector<HTMLElement>(".n12-margin")!;
+        const pane = document.querySelector<HTMLElement>(".n12-pane")!;
+        const work = pane.parentElement!;
+        const withPane = main.getBoundingClientRect().top;
+        // as a browser has it while the page's HTML is still arriving: the pane comes after the page in the document
+        const next = pane.nextSibling;
+        pane.remove();
+        const without = main.getBoundingClientRect().top;
+        work.insertBefore(pane, next);
+        return { withPane, without, back: main.getBoundingClientRect().top };
+      });
+      expect(Math.abs(tops.without - tops.withPane), url).toBeLessThanOrEqual(2);
+      expect(tops.back).toBe(tops.withPane);
+    }
+  });
+});
