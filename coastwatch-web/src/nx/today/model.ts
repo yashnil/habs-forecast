@@ -21,6 +21,7 @@ import { periodLine, type LanePeriod } from "@/pilot/today/marine";
 import type { Provenance } from "@/nx/ds/Stamp";
 import { age as ageWords, day } from "@/nx/ds/format";
 import { provenanceOf, shortSource } from "./provenance";
+import { sectorOf, whaleMeasures } from "@/nx/regulation/whale";
 
 export type TodayInputs = Omit<PortTodayInputs, "conditions" | "selected">;
 export type SeaState = Conditions | null | "error";
@@ -257,6 +258,8 @@ function testFor(model: TodayModel, fishery: FisheryId): TestSiteView | null {
 const speciesShort = (s: string) => (/dungeness/i.test(s) ? "Dungeness" : cap1(s.toLowerCase()));
 const ppmWords = (v: number) => String(Number(v.toPrecision(3)));
 const nums = (t: TestSiteView) => (t.latest?.values_ppm ?? []).filter((v): v is number => v != null);
+/** each result as CDPH printed it ("<2.5", "ND", "20"): censored values stay censored (T7) */
+const rawOf = (t: TestSiteView) => (t.latest as (NonNullable<TestSiteView["latest"]> & { values_raw?: string[] }) | null)?.values_raw ?? (t.latest?.values_ppm ?? []).map((v) => (v == null ? "ND" : String(v)));
 const maxOf = (t: TestSiteView) => t.latest?.max_ppm ?? (nums(t).length ? Math.max(...nums(t)) : null);
 
 /** "All 6 under the action level", "2 of 6 at or over the action level", "None detected": no figure (the sounding holds it). */
@@ -267,7 +270,8 @@ function testPhrase(t: TestSiteView): string {
   if (!vals.length) return set.nd_count ? `None detected in ${set.nd_count || n}` : "No value published";
   if (t.action == null) return `${n} sample${n === 1 ? "" : "s"}`;
   const over = vals.filter((v) => v >= t.action!).length;
-  return over ? `${over} of ${n} at or over the action level` : `All ${n} under the action level`;
+  const below = n - vals.length;
+  return `${over ? `${over} of ${n} at or over the action level` : `All ${n} under the action level`}${below ? `, ${below} below detection` : ""}`;
 }
 
 function testProvenance(t: TestSiteView): Provenance | null {
@@ -275,7 +279,7 @@ function testProvenance(t: TestSiteView): Provenance | null {
   return provenanceOf(t.fact, `${t.site.site_label} ${speciesShort(t.site.species).toLowerCase() === "dungeness" ? "Dungeness" : t.site.species.toLowerCase()}, CDPH test`, {
     value: t.sentence,
     place: [t.site.site_label, t.site.bma_label && t.site.bma_label !== t.site.site_label ? `BMA ${t.site.bma ?? ""} ${t.site.bma_label}`.trim() : null].filter(Boolean).join(", "),
-    method: `${t.latest.values_ppm.length} samples of ${t.latest.tissue}, CDPH laboratory${t.action != null ? `; action level ${t.action} ppm` : ""}`,
+    method: `${t.latest.values_ppm.length} samples of ${t.latest.tissue}, CDPH laboratory${t.action != null ? `; action level ${t.action} ppm` : ""}; results as CDPH printed them: ${rawOf(t).join(", ")}`,
     stale: t.stale,
   });
 }
@@ -351,7 +355,8 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
   if (test?.latest && testHasPlace) {
     const max = maxOf(test);
     const n = test.latest.values_ppm.length;
-    const avg = test.latest.avg_ppm;
+    // no average (T8): CDPH's printed average counts results below detection as zero
+    const cens = test.latest.values_ppm.filter((v) => v == null).length;
     const tissue = test.latest.tissue === "unknown" ? "" : ` ${test.latest.tissue}`;
     soundings.push({
       id: "test",
@@ -361,9 +366,10 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
       value: max == null ? "ND" : ppmWords(max),
       unit: test.action != null ? `of ${test.action} ppm` : "ppm",
       caption: [`CDPH, ${day(test.latest.date, { ref: now })}, ${ageWords(test.latest.date, now)}`],
-      short: `${speciesShort(test.site.species)} test, CDPH, ${day(test.latest.date, { ref: now })}`,
+      // phones keep the qualifier and the age (T8): the highest of n, never a bare figure
+      short: `Highest of ${n}, ${day(test.latest.date, { ref: now })}, ${ageWords(test.latest.date, now)}`,
       stale: test.stale,
-      spoken: `${speciesShort(test.site.species)} test at ${test.site.site_label}: highest ${max == null ? "not detected" : `${ppmWords(max)} ppm`}${test.action != null ? ` of the ${test.action} ppm action level` : ""}${avg != null ? `, average ${ppmWords(avg)}` : ""}. Measured by CDPH, ${day(test.latest.date, { ref: now })}, ${ageWords(test.latest.date, now)}. Open where this comes from.`,
+      spoken: `${speciesShort(test.site.species)} test at ${test.site.site_label}: highest ${max == null ? "not detected" : `${ppmWords(max)} ppm`}${test.action != null ? ` of the ${test.action} ppm action level` : ""}, of ${n} samples${cens ? `, ${cens} below detection` : ""}. Measured by CDPH, ${day(test.latest.date, { ref: now })}, ${ageWords(test.latest.date, now)}. Open where this comes from.`,
       provenance: testProvenance(test),
     });
   }
@@ -394,22 +400,24 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
   const rows: RowDatum[] = [];
   const w = model.whale;
   if (w && isDungeness(o.fishery)) {
-    const a = w.action ?? "";
-    const short = /trap[s]? prohibited|trap prohibition/i.test(a) ? "traps prohibited" : w.depth_limit_fathoms != null ? `${w.depth_limit_fathoms} fathom limit` : w.gear_reduction_pct != null ? `traps cut ${w.gear_reduction_pct}%` : /fleet advisory/i.test(a) ? "Fleet Advisory" : a ? "measures on record" : "no action on record";
-    const parts = a.split(/;\s*/).map(strip).filter(Boolean);
+    // one formatter with My Coast (T42): the reader's sector only, CDFW's clauses in its own words
+    const sector = sectorOf(o.fishery);
+    const seasonSaysIt = !!row && (row.level === "delayed" || row.level === "closed") && row.cause === "whale_entanglement";
+    const m = whaleMeasures(w, sector, { seasonSaysIt });
+    const full = whaleMeasures(w, sector);
     rows.push({
       id: "whale",
       label: "Whale",
       state: "ok",
-      value: `Zone ${w.zone}, ${short}`,
-      detail: [{ text: `${parts.map(cap1).join(". ")}.` }, { text: `Zone ${w.zone}: ${w.label}. RAMP is about whale entanglement, not domoic acid.`, provenance: provenanceOf(w.fact, `Whale measures, RAMP zone ${w.zone}`, { dateRole: "assessed" }) }],
+      value: `Zone ${w.zone}: ${m.short}`,
+      detail: [{ text: [full.quote ? `CDFW, Zone ${w.zone}, for ${sector} crabbers: “${full.quote}”` : null, ...full.fields].filter(Boolean).join(" ") }, { text: `Zone ${w.zone}: ${w.label}. RAMP is about whale entanglement, not domoic acid.`, provenance: provenanceOf(w.fact, `Whale measures, RAMP zone ${w.zone}`, { dateRole: "assessed", value: full.quote ?? full.fields.join(" ") }) }],
     });
   }
   const moreTests = model.tests.filter((t) => t !== test && t.latest);
   if (model.testsError) rows.push({ id: "tests", label: "Tests", state: "unavailable", note: "CDPH test results could not be read just now." });
   else if (!model.tests.length) rows.push({ id: "tests", label: "Tests", state: "ok", value: "No CDPH test site for this port", detail: [{ text: "CDPH publishes domoic acid results by site. None of its sites is tied to this port in Neritic's data." }] });
   else if (moreTests.length)
-    rows.push({ id: "tests", label: "Tests", state: moreTests.some((t) => t.stale) ? "stale" : "ok", value: `${moreTests.length} more ${moreTests.length === 1 ? "site" : "sites"} nearby`, detail: moreTests.map((t) => ({ text: t.sentence, provenance: testProvenance(t) })) });
+    rows.push({ id: "tests", label: "Tests", state: moreTests.some((t) => t.stale) ? "stale" : "ok", value: `${moreTests.length} more ${moreTests.length === 1 ? "site" : "sites"} nearby`, detail: moreTests.map((t) => ({ text: `${t.sentence} ${cap1(ageWords(t.latest!.date, now))}${t.stale ? " (old)" : ""}.`, provenance: testProvenance(t) })) });
   if (sea.state === "error") rows.push({ id: "sea", label: "Sea", state: "unavailable", note: "NWS, the buoy and the tide could not be read just now. Check weather.gov." });
   else if (sea.state === "ok") {
     if (sea.water) {

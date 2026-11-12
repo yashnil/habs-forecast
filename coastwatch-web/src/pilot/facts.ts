@@ -786,12 +786,16 @@ export function testSentence(site: BiotoxinSite, set: BiotoxinSet | null, lvl: n
   const when = dayWords(set.date, now);
   const nums = set.values_ppm.filter((v): v is number => v != null);
   if (!nums.length) return `${subject}: no domoic acid detected in ${set.nd_count || set.values_ppm.length} samples on ${when}${lvl != null ? ` (limit ${lvl} ppm)` : ""}.`;
+  // T8: the highest result leads, against the action level, with the count. No average: CDPH's printed
+  // average counts results below detection ("ND", "<2.5") as zero, so it reads lower than the crab tested.
   const max = setMax(set);
-  const avg = set.avg_ppm;
-  if (lvl == null) return `${subject} tested on ${when}: ${avg != null ? `avg ${ppm(avg)} ppm, ` : ""}max ${ppm(max)} ppm.`;
-  if (max < lvl) return `${subject} tested ${max < lvl / 2 ? "well under" : "under"} the limit on ${when}: avg ${ppm(avg ?? max)} ppm, limit ${lvl}.`;
+  const n = set.values_ppm.length;
+  const below = set.values_ppm.length - nums.length;
+  const belowWords = below ? `, ${below} below detection` : "";
+  if (lvl == null) return `${subject} tested on ${when}: highest ${ppm(max)} ppm of ${n} sample${n === 1 ? "" : "s"}${belowWords}.`;
   const over = set.values_ppm.filter((v) => v != null && v >= lvl).length;
-  return `${subject} tested over the limit on ${when}: ${over} of ${set.values_ppm.length} samples at or over ${lvl} ppm, max ${ppm(max)} ppm${avg != null ? `, avg ${ppm(avg)}` : ""}.`;
+  if (!over) return `${subject} tested under the action level on ${when}: highest ${ppm(max)} ppm of ${lvl}, ${n === 1 ? "1 sample" : `all ${n} samples under`}${belowWords}.`;
+  return `${subject} tested over the action level on ${when}: highest ${ppm(max)} ppm of ${lvl}, ${over} of ${n} samples at or over${belowWords}.`;
 }
 
 function testViews(idx: BiotoxinIndex | null, place: TodayPlace, selected: FisheryId[], rows: StatusRow[], now: string, fact: (f: Omit<PortFact, "place_id">) => PortFact): TestSiteView[] {
@@ -844,7 +848,7 @@ function testViews(idx: BiotoxinIndex | null, place: TodayPlace, selected: Fishe
       cleanStreak,
       showProgress,
       progressWords,
-      fact: fact({ id: `test:${site.id}`, kind: "test", severity: over ? "amber" : "info", headline: s, value: latest?.avg_ppm != null ? `${ppm(latest.avg_ppm)} ppm avg` : latest ? `${ppm(setMax(latest))} ppm max` : null, detail, basis: "measured", verified: null, source: { name: idx.source.name, url: idx.source.url }, as_of: latest?.date ?? null }),
+      fact: fact({ id: `test:${site.id}`, kind: "test", severity: over ? "amber" : "info", headline: s, value: latest && latest.values_ppm.some((v) => v != null) ? `${ppm(setMax(latest))} ppm max` : latest ? "not detected" : null, detail, basis: "measured", verified: null, source: { name: idx.source.name, url: idx.source.url }, as_of: latest?.date ?? null }),
     };
   });
   // in the order of the reader's fisheries (crab first by default), then any over the limit, then the newest

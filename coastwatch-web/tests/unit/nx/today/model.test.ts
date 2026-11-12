@@ -10,6 +10,8 @@ import { distanceKm, phoneBounds, todayBounds } from "@/nx/today/camera";
 import { kindOfFact, provenanceOf, shortSource } from "@/nx/today/provenance";
 import { periodNumbers, type LanePeriod } from "@/pilot/today/marine";
 import { fixtureServerEnv } from "../../fixtures/portToday";
+import { gatesFrom } from "@/nx/coast/brief";
+import { coastFishery } from "@/nx/coast/fisheries";
 
 /**
  * Today v12's view model (src/nx/today/model.ts) on the committed fixture, loaded the way the page loads it
@@ -106,6 +108,19 @@ describe("the agenda and the soundings", () => {
     const a = v.agenda.find((x) => x.id === "test")!;
     expect(a.detail).toBe("All 6 under the action level. 14 days ago.");
     expect(a.detail).not.toMatch(/9\.8/);
+    // phones keep "highest of n" and the age; nothing speaks an average (T8)
+    expect(t.short).toBe("Highest of 6, Sep 28, 14 days ago");
+    expect(t.spoken).not.toMatch(/average|avg/);
+  });
+
+  it("the other test sites lead with the highest result, the censored count and the age, never the average (T7, T8)", () => {
+    const v = buildToday(inputs, { fishery: "dungeness_commercial", sea: null, place });
+    const r = v.rows.find((x) => x.id === "tests");
+    if (!r || r.state === "unavailable") throw new Error("expected a tests row");
+    const rock = r.detail.map((d) => d.text).find((x) => /rock crab/.test(x))!;
+    expect(rock).toBe("Monterey Bay rock crab tested under the action level on Sep 28: highest 20 ppm of 30, all 6 samples under, 4 below detection. 14 days ago.");
+    expect(JSON.stringify(r)).not.toMatch(/3\.8|avg|average/);
+    expect(r.detail.find((d) => /rock crab/.test(d.text))!.provenance?.method).toMatch(/<2\.5, ND, ND, 20, <2\.5, 2\.6/);
   });
 
   it("the buoy is a sounding only once the sea has loaded, measured, with its own time; NWS today is a prediction", () => {
@@ -136,6 +151,27 @@ describe("the agenda and the soundings", () => {
     const first = lane("2026-10-12", "NW wind 5 to 10 kt. Seas 3 to 5 ft.");
     const out = comingThatMatter([first, lane("2026-10-13", "Seas 4 to 6 ft."), lane("2026-10-14", "NW wind 20 to 25 kt. Seas 6 to 8 ft."), lane("2026-10-15", "Seas 11 to 15 ft."), lane("2026-10-16", "Seas 12 ft.")], first, "2026-10-12");
     expect(out.map((p) => p.date)).toEqual(["2026-10-14", "2026-10-15"]);
+  });
+});
+
+describe("whale measures (T42)", () => {
+  it("a commercial crabber gets the commercial clauses only, and Today and My Coast say the same thing", () => {
+    const v = buildToday(inputs, { fishery: "dungeness_commercial", sea: null, place });
+    const w = v.rows.find((r) => r.id === "whale");
+    if (!w || w.state === "unavailable") throw new Error("expected a whale row");
+    expect(w.value).toBe("Zone 4: Fleet Advisory, no depth or gear limit on record");
+    expect(JSON.stringify(w)).not.toMatch(/recreational crab traps|traps prohibited/i);
+    expect(w.detail[0].text).toMatch(/^CDFW, Zone 4, for commercial crabbers: “Commercial season delayed .*; Fleet Advisory\.” No depth limit or gear reduction on record\.$/);
+    const g = gatesFrom(v.model, coastFishery("dungeness_commercial")!, { now: inputs.now, fixture: true });
+    expect(g.whale?.measures).toBe("Fleet Advisory. No depth limit or gear reduction on record.");
+  });
+
+  it("a recreational crabber gets the recreational clause", () => {
+    const v = buildToday(inputs, { fishery: "dungeness_recreational", sea: null, place });
+    const w = v.rows.find((r) => r.id === "whale");
+    if (!w || w.state === "unavailable") throw new Error("expected a whale row");
+    expect(w.value).toBe("Zone 4: Recreational crab traps prohibited");
+    expect(JSON.stringify(w)).not.toMatch(/Fleet Advisory|fathom/);
   });
 });
 

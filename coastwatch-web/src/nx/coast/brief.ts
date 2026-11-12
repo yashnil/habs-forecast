@@ -3,6 +3,7 @@ import type { SeaView, TodayModel } from "@/pilot/facts";
 import { windWords } from "@/pilot/today/marine";
 import { day } from "@/nx/ds/format";
 import type { CoastFishery } from "./fisheries";
+import { sectorOf, whaleMeasures } from "@/nx/regulation/whale";
 
 /**
  * What My Coast's margin shows above the worksheet, built from the same model Today uses
@@ -98,21 +99,6 @@ const sentence = (s: string) => {
   return t ? `${t.charAt(0).toUpperCase()}${t.slice(1)}${/[.!?]$/.test(t) ? "" : "."}` : "";
 };
 
-/** The zone's measures for a commercial reader, without the delay the season line states (no number shown twice). */
-export function whaleMeasures(action: string | null, depth: number | null, gear: number | null, seasonSaysIt: boolean): string {
-  const clauses = (action ?? "")
-    .split(/;\s*/)
-    .map((c) => c.trim().replace(/\.$/, ""))
-    .filter(Boolean)
-    .filter((c) => !(seasonSaysIt && /season (is )?(delayed|closed)/i.test(c)))
-    // a commercial trip is not told the recreational rule (T42)
-    .filter((c) => !/recreational/i.test(c));
-  const extras = [depth != null ? `traps ${depth} fathoms or shallower` : null, gear != null ? `trap numbers cut by ${gear} %` : null].filter((x): x is string => !!x);
-  const parts = [...clauses, ...extras].map(sentence);
-  if (!extras.length) parts.push("No depth limit or gear reduction on record.");
-  return parts.join(" ");
-}
-
 const species = (s: string) => (/dungeness/i.test(s) ? "Dungeness crab" : s.charAt(0).toUpperCase() + s.slice(1).toLowerCase());
 
 /** The gates for one fishery at one port, from Today's model. */
@@ -136,7 +122,7 @@ export function gatesFrom(m: TodayModel, f: CoastFishery, opts: { now: string; f
     ? {
         zone: w.zone,
         area: w.label.replace(/\s*\([^)]*\)/g, ""),
-        measures: whaleMeasures(w.action, w.depth_limit_fathoms, w.gear_reduction_pct, seasonSaysIt),
+        measures: whaleMeasures(w, sectorOf(f.id), { seasonSaysIt }).sentences.join(" "),
         next: w.next_window ? windowWords(w.next_window) : w.next_assessment ? day(w.next_assessment) : null,
         assessed: w.last_assessment,
         url: w.source_url,

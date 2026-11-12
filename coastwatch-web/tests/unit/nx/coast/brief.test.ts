@@ -1,6 +1,7 @@
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { REGULATED_BARS, whaleMeasures, windowWords } from "@/nx/coast/brief";
+import { REGULATED_BARS, windowWords } from "@/nx/coast/brief";
+import { whaleMeasures } from "@/nx/regulation/whale";
 import { coastGates, coastSea } from "@/nx/coast/brief.server";
 
 /** My Coast's gates and sea window on the committed fixture (tests/fixture-data) and recorded NOAA responses. */
@@ -76,8 +77,9 @@ describe("words", () => {
     expect(windowWords("December 15-18 (then January 13-15), subject to change")).toBe("Dec 15–18, then Jan 13–15, subject to change");
   });
   it("states depth limits and gear reductions when the zone has them", () => {
-    expect(whaleMeasures("Fleet Advisory", 30, 50, false)).toBe("Fleet Advisory. Traps 30 fathoms or shallower. Trap numbers cut by 50 %.");
-    expect(whaleMeasures(null, null, null, false)).toBe("No depth limit or gear reduction on record.");
+    const z = (action: string | null, depth: number | null, gear: number | null) => ({ zone: "4", action, depth_limit_fathoms: depth, gear_reduction_pct: gear });
+    expect(whaleMeasures(z("Fleet Advisory", 30, 50), "commercial").sentences.join(" ")).toBe("Fleet Advisory. Traps 30 fathoms or shallower. Trap numbers cut by 50 %.");
+    expect(whaleMeasures(z(null, null, null), "commercial").sentences.join(" ")).toBe("No depth limit or gear reduction on record.");
   });
   it("lists the four regulated bars only", () => {
     expect(Object.keys(REGULATED_BARS).sort()).toEqual(["port-201", "port-220", "port-223", "port-606"]);

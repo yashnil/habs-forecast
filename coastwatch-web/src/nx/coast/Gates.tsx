@@ -120,7 +120,10 @@ function testProvenance(t: TestGate): Provenance {
   };
 }
 
-/** "Monterey Bay, Sep 28: highest 9.8 ppm, average 5.5, none of 6 at or over the 30 ppm action level." with the samples drawn against that level. */
+/**
+ * "Monterey Bay, Sep 28: highest 9.8 ppm; none of 6 at or over the 30 ppm action level." with the samples drawn
+ * against that level. No average (T8): CDPH's printed average counts results below detection as zero.
+ */
 function TestLine({ t, now }: { t: TestGate; now: string }) {
   const n = t.raw.length;
   const cens = t.raw.map((r) => r.trim()).filter((r) => /^(<|nd)/i.test(r));
@@ -130,7 +133,6 @@ function TestLine({ t, now }: { t: TestGate; now: string }) {
     <>
       <span>
         {t.site} {/dungeness/i.test(t.species) ? t.species : t.species.toLowerCase()}, {day(t.date, { ref: now })}: {t.max != null ? `highest ${sig(t.max)} ppm` : "no value above detection"}
-        {t.avg != null ? `, average ${sig(t.avg)}` : ""}
         {over ? `; ${over} the ${t.action} ppm action level` : ""}
         {censored ? ` (${censored})` : ""}.
         {t.ageDays != null && t.ageDays > 1 ? ` ${t.ageDays} days ago.` : ""}

@@ -371,10 +371,19 @@ describe("buildPortToday: words", () => {
     expect(f.valid_for).toEqual({ from: "2026-10-11", to: "2026-10-14" });
   });
 
-  it("states a test plainly first: place, species, verdict against the limit, date, average", () => {
+  it("states a test plainly first: place, species, verdict against the action level, date, the highest result and the count (T8)", () => {
     const site = BIO.sites.find((s) => s.id === "bma-g-monterey-bay-dungeness-crab")!;
-    expect(testSentence(site, site.sets[0], 30, NOW)).toBe("Monterey Bay Dungeness tested well under the limit on Sep 28: avg 5.5 ppm, limit 30.");
-    expect(testSentence(ANCHOVY, ANCHOVY.sets[0], 20, NOW)).toMatch(/tested over the limit on Oct 5: 6 of 6 samples at or over 20 ppm, max 210 ppm/);
+    expect(testSentence(site, site.sets[0], 30, NOW)).toBe("Monterey Bay Dungeness tested under the action level on Sep 28: highest 9.8 ppm of 30, all 6 samples under.");
+    expect(testSentence(ANCHOVY, ANCHOVY.sets[0], 20, NOW)).toMatch(/tested over the action level on Oct 5: highest 210 ppm of 20, 6 of 6 samples at or over/);
+  });
+
+  it("never leads with an average that counts non-detects as zero: the highest result and the censored count instead (T7, T8)", () => {
+    const rock = BIO.sites.find((s) => s.id === "bma-g-monterey-bay-rock-crab");
+    const set = { date: "2026-09-28", kind: "routine" as const, tissue: "viscera" as const, values_ppm: [null, null, null, 20, null, 2.6], nd_count: 4, avg_ppm: 3.8, max_ppm: 20, pct_over_action: 0, action_level_ppm: 30 };
+    const site = rock ?? { ...BIO.sites[0], id: "rock", species: "rock crab", site_label: "Monterey Bay" };
+    const s = testSentence(site, set, 30, NOW);
+    expect(s).toMatch(/highest 20 ppm of 30, all 6 samples under, 4 below detection\.$/);
+    expect(s).not.toMatch(/3\.8|avg|average/);
   });
 
   it("observations are measured with their own time; forecasts are forecasts", () => {

@@ -113,7 +113,7 @@ test.describe("phone", () => {
     await expect(page.getByTestId("ask-chat")).toBeVisible();
     expect(await serious(page)).toEqual([]);
     const a = await ask(page, "What's the latest crab toxin test?");
-    await expect(a).toContainText("5.5 ppm");
+    await expect(a).toContainText("highest 9.8 ppm of 30");
     await expect(a).toContainText("This is a past lab sample, not a forecast.");
     // an out-of-date record is flagged in the answer (the fixture's C-HARM run ended two days before its clock)
     const b = await ask(page, "What's the bloom outlook this week?");

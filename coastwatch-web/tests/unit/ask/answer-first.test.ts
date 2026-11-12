@@ -120,7 +120,7 @@ describe("dates in the reader's terms, as Today words them", () => {
   it("a test is “on Sep 28”, a check is “checked Oct 12”, a run “covered Oct 7–10”: no ISO dates, no hours for a day", async () => {
     const t = await real("What's the latest crab toxin test?");
     const test = t.lines.find((l) => l.primary)!;
-    expect(test.text).toBe("Monterey Bay Dungeness tested well under the limit on Sep 28: avg 5.5 ppm, limit 30. This is a past lab sample, not a forecast.");
+    expect(test.text).toBe("Monterey Bay Dungeness tested under the action level on Sep 28: highest 9.8 ppm of 30, all 6 samples under. This is a past lab sample, not a forecast.");
     expect(t.citations.find((c) => c.kind === "test")).toMatchObject({ as_of: "2026-09-28", as_of_words: "Sep 28" });
     expect(t.data_age!.label).toMatch(/^Oldest record here: CDPH .*, Sep 28 \(14 days old\)\. Newest: CDFW \(today\)\.$/);
     // the official status still leads a test question (it outranks any test), in one line

@@ -161,12 +161,13 @@ test.describe("Research", () => {
 test.describe("My Coast", () => {
   test.beforeEach(async ({ context }) => seed(context));
 
-  test("the gates: official records not verified, RAMP assessed, the test's highest beside its average (T8, T38, T41)", async ({ page }) => {
+  test("the gates: official records not verified, RAMP assessed, the test's highest result and count, no average (T8, T38, T41)", async ({ page }) => {
     await page.goto(`${OK}/coast?place=port-592`);
     const m = margin(page);
     await expect(m).toContainText("Commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements).");
     await expect(m.getByRole("button", { name: /^Official · CDFW RAMP · assessed Oct 30 · not verified\./ })).toBeVisible();
-    await expect(m).toContainText("highest 9.8 ppm, average 5.5; none of 6 at or over the 30 ppm action level. 14 days ago.");
+    await expect(m).toContainText("highest 9.8 ppm; none of 6 at or over the 30 ppm action level. 14 days ago.");
+    await expect(m).not.toContainText("average 5.5");
   });
 
   test("the worksheet fills nothing in; a sourced reference enters only on a tap; every output is hypothetical and waits in words (T45, T47, E2)", async ({ page }) => {
