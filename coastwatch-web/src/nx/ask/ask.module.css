@@ -12,7 +12,7 @@
   margin-top: var(--s-12);
 }
 .label {
-  font-size: var(--type-small);
+  font-size: var(--type-body);
   font-weight: 600;
 }
 .select {
@@ -86,7 +86,7 @@
 }
 .asked {
   margin: 0 0 var(--s-4);
-  font-size: var(--type-small);
+  font-size: var(--type-body);
   font-weight: 600;
   color: var(--ink-2);
 }
@@ -135,7 +135,7 @@
   color: var(--ink-2);
 }
 .kicker {
-  font-size: var(--type-small);
+  font-size: var(--type-body);
   font-weight: 600;
 }
 .chips {
@@ -151,22 +151,8 @@
   max-width: 100%;
 }
 .chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-8);
   max-width: 100%;
-  min-height: 44px;
-  padding: 0 var(--s-12);
-  border: var(--hair) solid var(--ink);
-  border-radius: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font: 500 var(--type-small) / 1.2 var(--font-sans);
-  cursor: pointer;
-}
-.chip:hover,
-.chip[aria-expanded="true"] {
-  background: var(--wash);
+  font-weight: 500;
 }
 .chipNo {
   font-weight: 600;
@@ -221,19 +207,8 @@
   gap: var(--s-8);
 }
 .suggest {
-  min-height: 44px;
-  padding: var(--s-8) var(--s-12);
-  border: var(--hair) solid var(--ink-2);
-  border-radius: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font: 400 var(--type-body) / var(--lh-snug) var(--font-sans);
+  font-weight: 400;
   text-align: left;
-  cursor: pointer;
-}
-.suggest:hover:not(:disabled) {
-  background: var(--wash);
-  border-color: var(--ink);
 }
 .form {
   display: flex;

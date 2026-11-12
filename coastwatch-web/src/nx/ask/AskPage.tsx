@@ -210,9 +210,9 @@ export function AskPage({ initialPlace, uncovered, preferSaved, meta, suggestion
                   <ul className={s.suggestions} aria-labelledby={`${inputId}-sug`} data-testid="ask-suggestions">
                     {suggestions.map((x) => (
                       <li key={x}>
-                        <button type="button" disabled={busy} onClick={() => void ask(x)} className={s.suggest}>
+                        <Button variant="secondary" disabled={busy} onClick={() => void ask(x)} className={s.suggest}>
                           {x}
-                        </button>
+                        </Button>
                       </li>
                     ))}
                   </ul>
@@ -278,14 +278,14 @@ function Chip({ c, i }: { c: Citation; i: number }) {
   const date = c.as_of_words ?? c.as_of?.slice(0, 10) ?? "no date";
   return (
     <li>
-      <button type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen((v) => !v)} className={s.chip} data-testid="ask-chip">
+      <Button variant="secondary" aria-expanded={open} aria-controls={id} onClick={() => setOpen((v) => !v)} className={s.chip} data-testid="ask-chip">
         <span className={s.chipNo} aria-hidden="true">
           {i + 1}
         </span>
         <span className={s.chipName}>{c.source_name}</span>
         <span className={s.chipMeta}>· {date}</span>
         {c.basis === "official" && c.verified === false ? <span className={s.chipMeta}>· not verified</span> : null}
-      </button>
+      </Button>
       {open ? (
         <div id={id} className={s.chipDetail} data-testid="ask-chip-detail">
           <p>{c.headline}</p>
