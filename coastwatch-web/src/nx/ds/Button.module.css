@@ -25,13 +25,13 @@
 
 /* primary: one per view, ink */
 .primary {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--primary-bg);
+  color: var(--primary-fg);
   min-height: 52px;
 }
 .primary:hover:not([aria-disabled="true"]) {
-  background: var(--ink-2);
-  border-color: var(--ink-2);
+  background: var(--primary-hover-bg);
+  border-color: var(--primary-hover-line);
 }
 
 /* secondary: ruled */
@@ -93,7 +93,7 @@
   transform-origin: 0 50%;
 }
 .primary .busyLine {
-  background: var(--paper);
+  background: var(--primary-fg);
   bottom: var(--s-4);
   left: var(--s-24);
   right: var(--s-24);

@@ -137,3 +137,19 @@
 @media (max-width: 720px) {
   :root { --neat-band: 3px; --neat-label: 16px; }
 }
+
+/* The primary button (ds/Button): an ink block on paper by day and dusk. At night a large luminous block is what the
+   Night table exists to avoid, so it is an outline in ink, filled only faintly when pressed or hovered. */
+:root,
+[data-chart-mode] {
+  --primary-bg: var(--ink);
+  --primary-fg: var(--paper);
+  --primary-hover-bg: var(--ink-2);
+  --primary-hover-line: var(--ink-2);
+}
+[data-chart-mode="night"] {
+  --primary-bg: transparent;
+  --primary-fg: var(--ink);
+  --primary-hover-bg: var(--neat-a);
+  --primary-hover-line: var(--ink);
+}
