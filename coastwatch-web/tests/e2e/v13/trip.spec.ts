@@ -374,6 +374,79 @@ test("compare two saved trips: only what differs, and the change in each result"
   await ctx.close();
 });
 
+for (const mode of ["day", "dusk", "night"]) {
+  test(`Saved trips, ${mode}: an unticked Compare box is an empty box, a ticked one is ink (F-12)`, async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, colorScheme: mode === "day" ? "light" : "dark" });
+    await seed(ctx, { mode });
+    const p = await ctx.newPage();
+    await openTrip(p);
+    for (const price of ["9", "10", "11"]) {
+      await type(p, "Catch", "400");
+      await type(p, "Price", price);
+      await p.getByTestId("trip-save-new").tap();
+      await expect(said(p)).toContainText(`400 lb at $${price}`);
+    }
+    await p.getByTestId("trip-saved-open").tap();
+    const dialog = p.getByRole("dialog", { name: "Saved trips" });
+    const boxes = dialog.getByRole("checkbox");
+    await expect(boxes).toHaveCount(3);
+    // the mode's own paper and ink, read where the drawer is drawn
+    const tokens = await dialog.evaluate((el) => {
+      const probe = (v: string) => {
+        const d = document.createElement("i");
+        d.style.backgroundColor = `var(${v})`;
+        el.appendChild(d);
+        const c = getComputedStyle(d).backgroundColor;
+        d.remove();
+        return c;
+      };
+      return { paper: probe("--paper"), ink: probe("--ink") };
+    });
+    expect(tokens.paper).not.toBe(tokens.ink);
+    const look = (i: number) => boxes.nth(i).evaluate((el) => ({ bg: getComputedStyle(el).backgroundColor, border: getComputedStyle(el).borderTopStyle, appearance: getComputedStyle(el).appearance, tick: getComputedStyle(el, "::after").content }));
+    for (const i of [0, 1, 2]) expect(await look(i), `box ${i} unticked`).toMatchObject({ bg: tokens.paper, border: "solid", appearance: "none", tick: "none" });
+    await boxes.nth(0).check();
+    expect(await look(0), "ticked").toMatchObject({ bg: tokens.ink });
+    expect((await look(0)).tick).not.toBe("none");
+    expect(await look(1), "its neighbour stays empty").toMatchObject({ bg: tokens.paper });
+    // two picked: the third cannot be, and still reads as empty (dashed), never as ticked
+    await boxes.nth(1).check();
+    await expect(boxes.nth(2)).toBeDisabled();
+    expect(await look(2), "disabled").toMatchObject({ bg: tokens.paper, border: "dashed", tick: "none" });
+    await boxes.nth(0).uncheck();
+    expect(await look(0), "unticked again").toMatchObject({ bg: tokens.paper, tick: "none" });
+    await ctx.close();
+  });
+}
+
+test("the fishery's whole name is shown in the trip header at 320 px, and the condensed header stays short (R-4)", async ({ browser }) => {
+  const { ctx, p } = await page(browser, 320, 640);
+  await openTrip(p);
+  const select = p.getByTestId("coast-fishery");
+  const whole = async (when: string) => {
+    // the select is wide enough for its chosen option's words: nothing is cut
+    const fits = await select.evaluate((el: HTMLSelectElement) => {
+      const cs = getComputedStyle(el);
+      const c = document.createElement("canvas").getContext("2d")!;
+      c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      const words = c.measureText(el.selectedOptions[0].text).width;
+      return { words, room: el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) };
+    });
+    expect(fits.words, `${when}: "Dungeness crab" fits its select`).toBeLessThanOrEqual(fits.room);
+  };
+  await whole("on opening");
+  await type(p, "Catch", "400");
+  await field(p, "Fuel").scrollIntoViewIfNeeded();
+  const header = p.locator("[data-nx-desk-header]");
+  await expect(header).toHaveAttribute("data-condensed", /^$/);
+  await whole("condensed");
+  expect((await header.boundingBox())!.height, "the condensed header").toBeLessThanOrEqual(140);
+  // the way back to the gates is still in it, and whole
+  expect(await inView(p, p.getByTestId("coast-to-brief"))).toBe(true);
+  expect(await inView(p, p.getByTestId("coast-status"))).toBe(true);
+  await ctx.close();
+});
+
 test("unsaved work and the open trip survive leaving the page, a reload and a browser restart", async () => {
   const dir = mkdtempSync(path.join(tmpdir(), "nx-trip-"));
   const launch = async () => {
