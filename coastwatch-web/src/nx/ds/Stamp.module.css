@@ -1,6 +1,6 @@
 .stamp {
   display: inline;
-  font: 400 var(--t-14) / 1.4 var(--font-sans);
+  font: 400 var(--type-small) / 1.4 var(--font-sans);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
@@ -80,7 +80,7 @@
 }
 .caveatsHead {
   margin: 0 0 var(--s-4);
-  font: 600 var(--t-16) / 1.4 var(--font-sans);
+  font: 600 var(--type-body) / 1.4 var(--font-sans);
 }
 .caveats ul {
   list-style: square;

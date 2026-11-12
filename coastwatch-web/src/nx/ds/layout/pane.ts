@@ -22,10 +22,12 @@ export type LayoutState = {
   open: boolean;
   /** when the pane last changed size (performance.now()), so the chart glides to its new fit */
   changedAt: number;
+  /** the pane's width in px just before its size last changed (the columns travel from it), or null */
+  fromW: number | null;
 };
 
 const KEY = "nx-pane-v1";
-const SERVER: LayoutState = { mode: "chart", paneKey: null, detent: "context", open: false, changedAt: -1e9 };
+const SERVER: LayoutState = { mode: "chart", paneKey: null, detent: "context", open: false, changedAt: -1e9, fromW: null };
 let state: LayoutState = SERVER;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
@@ -53,13 +55,14 @@ export function setPageLayout(mode: PageMode, paneKey: string | null, defaultPan
   const saved = paneKey ? stored()[paneKey] : undefined;
   const detent = saved && PANE_DETENTS.includes(saved) ? saved : defaultPane;
   if (state.mode === mode && state.paneKey === paneKey && state.detent === detent) return;
-  state = { mode, paneKey, detent, open: false, changedAt: state.changedAt };
+  state = { mode, paneKey, detent, open: false, changedAt: state.changedAt, fromW: null };
   emit();
 }
 
 export function setPaneDetent(detent: PaneDetent) {
   if (state.detent === detent) return;
-  state = { ...state, detent, changedAt: performance.now() };
+  const el = typeof document === "undefined" ? null : document.querySelector<HTMLElement>(".n12-pane");
+  state = { ...state, detent, changedAt: performance.now(), fromW: el ? el.offsetWidth : null };
   if (state.paneKey) {
     try {
       window.localStorage.setItem(KEY, JSON.stringify({ ...stored(), [state.paneKey]: detent }));

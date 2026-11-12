@@ -58,7 +58,7 @@ export const reveal: Transition = { duration: 0.22, ease: [0.2, 0, 0, 1] };
  * never passes its target (a figure that is never negative never shows a negative on the way). It never counts
  * up from zero on arrival: the first value is drawn as it is.
  */
-export const value: Transition = { type: "spring", stiffness: 260, damping: 34, restDelta: 0.001 };
+export const value: Transition = { type: "spring", stiffness: 260, damping: 34, restDelta: 0.005, restSpeed: 0.5 };
 
 /** A route's page changing, in sequence: the old page out, then the new one in. Never both on screen at once. */
 export const swapOut: Transition = { duration: 0.09, ease: "linear" };

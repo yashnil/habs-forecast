@@ -204,6 +204,12 @@ unchanged; new work should use the kit.
 | `swap` (`swapOut` 0.09 s, `swapIn` 0.18 s after it) | | A route's page changing, in sequence: the old page out, then the new one in. Applied to the page's view transition in `shell.css` |
 | `scrollCondense` | 64 px | `useScrollCondense()`: a sticky header condensing |
 
+In use: a change of the pane's size beside the desk moves the columns with `pane` (the map is never resized per
+frame: growing, it takes its new size at once and the column uncovers it; shrinking, it is clipped and resizes
+once on arrival). The collapsed rail says what it holds in words ("Chart · Moss Landing"); it has no thumbnail.
+A page change is sequenced, and a test reads the view transition's own timings to hold it there
+(`tests/e2e/v13-layout.spec.ts`).
+
 Reduced motion still means no animation: `MotionPrefs` completes every Motion animation at once, and the view
 transition rules are switched off under `prefers-reduced-motion`.
 
@@ -315,3 +321,14 @@ The v12 rules are unchanged. The page rules below apply outside `src/nx/ds`, `sr
 
 Counts when the rules were added: raw-button 14 files, small-text 3 stylesheets, raw-chart 3 imports, one-primary
 1, fixed-position 3 (all in Today's tour).
+
+## 11. The catalog and the kit's browser tests
+
+`/system` has a plate for every v13 part (Desk, Controls, Figure, DataState and Availability, the plot kit,
+WaterfallChart with SensitivityGrid and a sweep, GateList and Advisories) in each chart mode (`?mode=dusk`).
+`tests/e2e/v13-system.spec.ts` drives them in a browser: the plot's keyboard, mouse and touch contract, the
+figure's travel, the unset choice, the waterfall's worked sums and the grid's keyboard. Pages get that behaviour
+by composing the parts; they do not need to re-test it.
+
+For tests only, `window.__nxShell.openMargin(detent)` and `window.__nxChart.keep(lon, lat)` call the page-facing
+requests as a page would.

@@ -281,6 +281,18 @@
 }
 
 /* ---------------------------------------------------------------- SensitivityGrid */
+/* wider than its column (a phone): the grid scrolls inside itself, its row heads staying in place */
+.sensWrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.sens tbody .sensHead {
+  position: sticky;
+  left: 0;
+  background: var(--paper);
+  z-index: 1;
+}
 .sens {
   width: 100%;
   border-collapse: collapse;
