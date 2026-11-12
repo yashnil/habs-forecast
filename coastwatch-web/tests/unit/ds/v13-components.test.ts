@@ -34,7 +34,7 @@ import { Availability, DataState, DataStateLegend, DATA_STATE_KINDS, DATA_STATE_
 import { Figure } from "@/nx/ds/Figure";
 import { Desk, DeskAside, DeskBody, DeskFoot, DeskHeader, DeskMain, DeskSticky, PageLayout } from "@/nx/ds/layout/Desk";
 import { getLayout, PANE_DETENTS, setPageLayout, setPaneDetent } from "@/nx/ds/layout/pane";
-import { AxisX, AxisY, Crosshair, GridY, Line, NoData, NowRule, Plot, Points, Selection, Threshold, Tip } from "@/nx/ds/plot/Plot";
+import { AxisX, AxisY, Crosshair, GridY, Line, NoData, NowRule, Plot, PlotSync as PlotSyncAny, Points, Selection, Threshold, Tip } from "@/nx/ds/plot/Plot";
 import { PlotState, PlotTable } from "@/nx/ds/plot/Extras";
 import { BreakEvenMarker, WaterfallChart } from "@/nx/ds/plot/Waterfall";
 import { SensitivityGrid } from "@/nx/ds/plot/SensitivityGrid";
@@ -148,7 +148,8 @@ describe("v13 controls", () => {
 
 describe("v13 states", () => {
   it("every state has a word, a legend sentence and a mark", () => {
-    expect(DATA_STATE_KINDS).toHaveLength(14);
+    expect(DATA_STATE_KINDS).toHaveLength(15);
+    expect(DATA_STATE_KINDS).toContain("rejected");
     for (const k of DATA_STATE_KINDS) {
       expect(DATA_STATE_WORDS[k].word.length).toBeGreaterThan(2);
       expect(html(h(DataState, { kind: k }))).toContain(`data-state-mark="${k}"`);
@@ -397,5 +398,54 @@ describe("v13 block 1: chart", () => {
     expect(Math.abs(tall.center[1] - at[1])).toBeLessThan(0.02);
     expect(tall.zoom).toBeGreaterThan(plain.zoom);
     expect(wide.zoom).toBeCloseTo(cameraFor({ id: "p", view: { bounds: scene.view.bounds } }, { width: 1000, height: 800 }, none).zoom, 6);
+  });
+});
+
+describe("v13 block 4", () => {
+  it("a reported zero's default sentence claims no limit and no absence; a page may give its source's own words", () => {
+    expect(DATA_STATE_WORDS["reported-zero"].legend).not.toMatch(/none|not detected|absent\b(?!e)/i);
+    expect(DATA_STATE_WORDS["reported-zero"].legend).toContain("no detection limit is given");
+    const out = html(h(DataStateLegend, { kinds: ["reported-zero", "rejected"], words: { "reported-zero": "Reported 0: at or below a limit CalHABMAP does not publish" } }));
+    expect(out).toContain("at or below a limit CalHABMAP does not publish");
+    expect(out).toContain("Rejected by quality control");
+    expect(html(h(DataState, { kind: "reported-zero", word: "At or below an unpublished limit" }))).toContain("At or below an unpublished limit");
+  });
+  it("a value quality control rejected is never drawn on the axis", () => {
+    const pts = [{ t: t0, v: 5 }, { t: t0 + DAY, v: 900, kind: "rejected" as const }, { t: t0 + 2 * DAY, v: 6 }];
+    const out = html(h(Plot, { label: "x", data: pts, x: { domain: [t0 - DAY, t0 + 3 * DAY] } }, h(Line, { data: pts }), h(Points, { data: pts })));
+    // the y domain ignores it, and the line breaks at it rather than passing through 900
+    expect(out).not.toContain('class="line"');
+    expect(out.match(/class="ptFill"/g)).toHaveLength(2);
+  });
+  it("a page can pin a sample from outside by its position alone, and every plot inside shows it", () => {
+    const pts = [{ t: t0, v: 5 }, { t: t0 + DAY, v: 6 }];
+    const out = html(
+      h(PlotSyncAny, { value: { hoverT: null, pinned: { t: t0 + DAY } } }, h(Plot, { label: "a", data: pts, x: { domain: [t0 - DAY, t0 + 2 * DAY] }, "data-testid": "a" }, h(Selection)), h(Plot, { label: "b", data: pts, x: { domain: [t0 - DAY, t0 + 2 * DAY] }, "data-testid": "b" }, h(Selection))),
+    );
+    expect(out.match(new RegExp(`data-pinned-t="${t0 + DAY}"`, "g"))).toHaveLength(2);
+    expect(out.match(/data-selection/g)).toHaveLength(2);
+  });
+  it("with little room above the plot the y title takes the top tick's place", () => {
+    const pts = [{ t: t0, v: 0 }, { t: t0 + DAY, v: 100 }];
+    const tight = html(h(Plot, { label: "x", data: pts, x: { domain: [t0, t0 + DAY] }, y: { domain: [0, 100] }, height: 200, margin: { top: 8 } }, h(AxisY, { title: "pDA, ng/mL" })));
+    expect(tight).toContain("pDA, ng/mL");
+    expect(tight).not.toMatch(/>100</);
+    expect(html(h(Plot, { label: "x", data: pts, x: { domain: [t0, t0 + DAY] }, y: { domain: [0, 100] }, height: 200 }, h(AxisY, { title: "pDA, ng/mL" })))).toMatch(/>100</);
+  });
+  it("an option can carry a full-width strip under its words", () => {
+    const out = html(h(OptionList, { label: "Variable", value: "a", onChange: () => {}, options: [{ value: "a", label: "pDA", strip: h("i", { "data-strip": "" }) }] }));
+    expect(out).toMatch(/optStrip[^>]*aria-hidden="true"[^>]*><i data-strip/);
+  });
+  it("the waterfall's amount column is as wide as its widest figure", () => {
+    const steps = [
+      { id: "g", label: "Gross", amount: 125000, kind: "gross" as const },
+      { id: "c", label: "Fuel", amount: 2500, kind: "cost" as const },
+      { id: "n", label: "Net to boat", amount: 122500, kind: "net" as const },
+    ];
+    const out = html(h(WaterfallChart, { steps, label: "x", orientation: "rows" }));
+    // every bar ends before the amounts' column begins (640 px wide in a server render)
+    const ends = [...out.matchAll(/<rect y="[\d.]+" height="[\d.]+"[^>]*class="wf(?:Solid|Cost)"/g)].length;
+    expect(ends).toBe(3);
+    expect(out).toContain("$122,500");
   });
 });

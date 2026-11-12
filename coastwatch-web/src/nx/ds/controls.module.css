@@ -679,12 +679,21 @@
   display: grid;
   border-top: var(--rule) solid var(--ink);
 }
-.opt {
-  position: relative;
+.optRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--s-12);
+}
+.optStrip {
+  display: block;
+  margin-top: var(--s-4);
+}
+.opt {
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 0;
   min-height: var(--target);
   padding: var(--s-8) var(--s-8) var(--s-8) var(--s-12);
   border: 0;

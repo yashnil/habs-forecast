@@ -94,7 +94,7 @@
   display: flex; flex-direction: column; background: var(--paper);
   outline: none;
 }
-.n12-margin-scroll { flex: 1; min-height: 0; overflow: auto; padding: var(--s-24) var(--s-24) var(--s-32) var(--s-24); overscroll-behavior: contain; }
+.n12-margin-scroll { scroll-padding: var(--s-24) 0 var(--s-32); flex: 1; min-height: 0; overflow: auto; padding: var(--s-24) var(--s-24) var(--s-32) var(--s-24); overscroll-behavior: contain; }
 .n12-margin-page { min-height: 100%; }
 .n12-sheet-top { display: none; }
 .n12-divider { display: none; grid-column: 2; grid-row: 1; }
@@ -199,6 +199,11 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
   }
   .n12-sheet-top { position: relative; flex: none; display: flex; align-items: center; justify-content: center; min-height: var(--s-32); touch-action: none; cursor: grab; }
   .n12-sheet-handle { display: block; width: var(--s-48); height: var(--s-4); background: var(--ink-2); }
+  /* the hand has more than the row to take hold of: the grab area reaches 12 px above the sheet's edge */
+  .n12-sheet-top::before { content: ""; position: absolute; left: 0; right: 0; top: -12px; height: 12px; }
+  .n12-sheet-top:active { cursor: grabbing; }
+  .n12-sheet-top:active .n12-sheet-handle { background: var(--ink); }
+  .n12-tab:active { background: var(--sel); }
   .n12-sheet-more {
     position: absolute; right: var(--s-8); top: calc((var(--s-32) - var(--target)) / 2);
     display: inline-flex; align-items: center; justify-content: center; gap: var(--s-4);
